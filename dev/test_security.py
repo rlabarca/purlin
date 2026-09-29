@@ -68,48 +68,51 @@ def _ext(path):
     return os.path.splitext(path)[1]
 
 
-# RULE-1: dynamic code and command strings, in the form each language spells it.
+# RULE-1: dynamic code and command strings, in the form each language spells
+# it. Each form carries the name a finding reports.
 _DANGEROUS_BY_EXT = {
-    '.py': [r'\beval\s*\(', r'\bexec\s*\('],
+    '.py': [('eval(', r'\beval\s*\('), ('exec(', r'\bexec\s*\(')],
     # eval in command position: a line's start (indented or not), after ;, &,
     # |, ( or $( or !, or after a keyword that runs a command next.
-    '.sh': [r'(^|[;&|(!{]|\b(if|then|else|elif|do|while|until|time|command|'
-            r'builtin|exec))\s*eval\b', r'`[^`]*`'],
-    '.js': [r'\beval\s*\(', r'new\s+Function\s*\(', r'\bexecSync\s*\(',
-            r'child_process\s*\.\s*exec\s*\('],
-    '.ts': [r'\beval\s*\(', r'new\s+Function\s*\(', r'\bexecSync\s*\(',
-            r'child_process\s*\.\s*exec\s*\('],
-    '.php': [r'\beval\s*\(', r'\bexec\s*\(', r'\bshell_exec\s*\(',
-             r'\bsystem\s*\(', r'\bpassthru\s*\(', r'`[^`]*`'],
-    '.cs': [r'Process\s*\.\s*Start\s*\(\s*"'],
+    '.sh': [('eval', r'(^|[;&|(!{]|\b(if|then|else|elif|do|while|until|time|'
+                     r'command|builtin|exec))\s*eval\b'),
+            ('backticks', r'`[^`]*`')],
+    '.js': [('eval(', r'\beval\s*\('), ('new Function(', r'new\s+Function\s*\('),
+            ('execSync(', r'\bexecSync\s*\('),
+            ('child_process.exec(', r'child_process\s*\.\s*exec\s*\(')],
+    '.php': [('eval(', r'\beval\s*\('), ('exec(', r'\bexec\s*\('),
+             ('shell_exec(', r'\bshell_exec\s*\('), ('system(', r'\bsystem\s*\('),
+             ('passthru(', r'\bpassthru\s*\('), ('backticks', r'`[^`]*`')],
+    '.cs': [('Process.Start("', r'Process\s*\.\s*Start\s*\(\s*"')],
 }
+_DANGEROUS_BY_EXT['.ts'] = _DANGEROUS_BY_EXT['.js']
 
 # RULE-2: the per-language opt-in to a shell.
 _SHELL_FLAG_BY_EXT = {
-    '.py': [r'shell\s*=\s*True'],
-    '.js': [r'shell\s*:\s*true'],
-    '.ts': [r'shell\s*:\s*true'],
-    '.cs': [r'UseShellExecute\s*=\s*true'],
+    '.py': [('shell=True', r'shell\s*=\s*True')],
+    '.js': [('shell: true', r'shell\s*:\s*true')],
+    '.ts': [('shell: true', r'shell\s*:\s*true')],
+    '.cs': [('UseShellExecute = true', r'UseShellExecute\s*=\s*true')],
 }
 
 # RULE-3: the builtins that hand a whole command line to the OS shell.
 _SYSTEM_CALL_BY_EXT = {
-    '.py': [r'os\.system\s*\('],
-    '.php': [r'\bsystem\s*\(', r'\bpassthru\s*\('],
+    '.py': [('os.system(', r'os\.system\s*\(')],
+    '.php': [('system(', r'\bsystem\s*\('), ('passthru(', r'\bpassthru\s*\(')],
 }
 
 
 def _pattern_hits(paths, table, strip=True):
-    """`[(path, pattern), ...]` for each form of `table` a file holds."""
+    """`[(path, form), ...]` for each form of `table` a file holds."""
     hits = []
     for path in paths:
         ext = _ext(path)
         content = _read(path)
         if strip:
             content = _strip_comments(content, ext)
-        for pattern in table.get(ext, []):
+        for form, pattern in table.get(ext, []):
             if re.search(pattern, content, re.MULTILINE):
-                hits.append((path, pattern))
+                hits.append((path, form))
     return hits
 
 
@@ -200,178 +203,355 @@ def _launch_faults(paths):
     return faults
 
 
-def _plant(root, index, name, text):
-    """Write `text` to `<root>/<index>/<name>` and return its path."""
-    folder = os.path.join(str(root), str(index))
-    os.makedirs(folder, exist_ok=True)
-    path = os.path.join(folder, name)
-    with open(path, 'w', encoding='utf-8') as f:
-        f.write(text)
-    return path
+def _plant_each(root, samples):
+    """Write each `(name, text)` to a folder of its own under `root`, and
+    return the paths in the order given."""
+    paths = []
+    for index, (name, text) in enumerate(samples):
+        folder = os.path.join(str(root), str(index))
+        os.makedirs(folder, exist_ok=True)
+        path = os.path.join(folder, name)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(text)
+        paths.append(path)
+    return paths
 
 
-def _misses(root, samples, finds):
-    """The samples for which `finds([path])` found nothing."""
-    return [(name, text) for i, (name, text) in enumerate(samples)
-            if not finds([_plant(root, i, name, text)])]
+def _forms_found(root, samples, table, strip=True):
+    """`{path: {form, ...}}` for planted samples, read the way `scripts/` is
+    read: every file of the six types under the folder, found by its ending."""
+    paths = _plant_each(root, samples)
+    found = {path: set() for path in paths}
+    for path, form in _pattern_hits(_all_script_files(str(root)), table, strip):
+        found[path].add(form)
+    return [(sample, found[path]) for sample, path in zip(samples, paths)]
 
 
-def _false_alarms(root, samples, finds):
-    """The samples for which `finds([path])` found something."""
-    return [(name, text) for i, (name, text) in enumerate(samples)
-            if finds([_plant(root, 'clean-%d' % i, name, text)])]
+def _assert_each_names(root, samples, table, strip=True):
+    """Every planted `(name, text, form)` is found once, naming that form."""
+    results = _forms_found(root, [(n, t) for n, t, _ in samples], table, strip)
+    for (name, text, form), (_, forms) in zip(samples, results):
+        assert forms == {form}, (
+            f"a planted {name} holding {text!r} should be found as {form!r}; "
+            f"found {sorted(forms)}")
 
 
-# A file holding one form of each rule, and files that hold none.
-_PLANTED_DYNAMIC = [
-    ('a.py', 'x = eval(src)\n'), ('a.py', 'exec (src)\n'),
-    ('a.py', 'x = eval(src)  # only a comment follows\n'),
-    ('a.sh', 'eval "$cmd"\n'), ('a.sh', '    eval "$cmd"\n'),
-    ('a.sh', 'if eval "$cmd"; then :; fi\n'), ('a.sh', 'out=$(eval "$cmd")\n'),
-    ('a.sh', 'true && eval "$cmd"\n'), ('a.sh', 'out=`date`\n'),
-    ('a.js', 'eval(src);\n'), ('a.js', 'const f = new Function(src);\n'),
-    ('a.js', 'execSync(cmd);\n'), ('a.js', 'child_process.exec(cmd);\n'),
-    ('a.js', 'eval(src); // only a comment follows\n'),
-    ('a.ts', 'eval(src);\n'), ('a.ts', 'const f = new Function(src);\n'),
-    ('a.ts', 'execSync(cmd);\n'), ('a.ts', 'child_process.exec(cmd);\n'),
-    ('a.php', '<?php eval($src);\n'), ('a.php', '<?php exec($cmd);\n'),
-    ('a.php', '<?php shell_exec($cmd);\n'), ('a.php', '<?php system($cmd);\n'),
-    ('a.php', '<?php passthru($cmd);\n'), ('a.php', '<?php $o = `ls`;\n'),
-    ('a.cs', 'Process.Start("cmd.exe /c dir");\n'),
-]
-_CLEAN_DYNAMIC = [
-    ('a.py', '# eval(src) is never called\nx = evaluate(src)\n'),
-    ('a.sh', '  # eval "$cmd" is never run\nrun_evaluation "$x"\n'),
-    ('a.js', '// eval(src) is never called\nconst x = evaluate(src);\n'),
-    ('a.cs', 'Process.Start(info);\n'),
-]
+def _assert_none_counted(root, samples, table, strip=True):
+    """No planted `(name, text)` is found."""
+    for (name, text), forms in _forms_found(root, samples, table, strip):
+        assert not forms, f"{name} holding {text!r} was counted as {sorted(forms)}"
 
 
-class TestSecurityPatterns:
+def _assert_each_launch_found(root, samples):
+    """Each planted launch is found, and its finding names its file."""
+    for path, (name, text) in zip(_plant_each(root, samples), samples):
+        faults = _launch_faults([path])
+        assert faults, f"{name} holding {text!r} went unfound"
+        assert all(path in fault for fault in faults), faults
+
+
+def _assert_no_launch_counted(root, samples):
+    for path, (name, text) in zip(_plant_each(root, samples), samples):
+        faults = _launch_faults([path])
+        assert not faults, f"{name} holding {text!r} was counted: {faults}"
+
+
+def _assert_each_credential_named(root, samples):
+    """Each planted `(name, text, matched)` is found, naming its file and the
+    name that matched."""
+    paths = _plant_each(root, [(n, t) for n, t, _ in samples])
+    for path, (name, text, matched) in zip(paths, samples):
+        assert _credential_hits([path]) == [(path, [matched])], (
+            name, text, _credential_hits([path]))
+
+
+def _assert_no_credential_counted(root, samples):
+    for path, (name, text) in zip(_plant_each(root, samples), samples):
+        assert not _credential_hits([path]), f"{name} holding {text!r} was counted"
+
+
+class TestRule1RunsNoStringAsCode:
 
     # purlin: security_no_dangerous_patterns PROOF-1
-    def test_no_dynamic_code_execution(self):
+    def test_no_file_under_scripts_runs_a_string_as_code(self):
         hits = _pattern_hits(_all_script_files(), _DANGEROUS_BY_EXT)
-        assert not hits, "\n".join(f"Found dynamic-code pattern {pattern!r} in {path}"
-                                   for path, pattern in hits)
+        assert not hits, "\n".join(f"Found {form!r} in {path}"
+                                   for path, form in hits)
 
-    # purlin: security_no_dangerous_patterns PROOF-1
-    def test_planted_dynamic_code_is_found(self, tmp_path):
-        finds = lambda paths: _pattern_hits(paths, _DANGEROUS_BY_EXT)  # noqa: E731
-        assert not _misses(tmp_path, _PLANTED_DYNAMIC, finds), \
-            "a planted form went unfound"
-        assert not _false_alarms(tmp_path, _CLEAN_DYNAMIC, finds), \
-            "a comment-only line or a harmless word was counted"
-        # The scan of a folder finds every planted file, and names it.
-        found = {path for path, _ in _pattern_hits(_all_script_files(str(tmp_path)),
-                                                   _DANGEROUS_BY_EXT)}
-        assert len(found) == len(_PLANTED_DYNAMIC), found
+    # purlin: security_no_dangerous_patterns PROOF-14
+    def test_python_eval_and_exec_are_found(self, tmp_path):
+        _assert_each_names(tmp_path, [
+            ('a.py', 'x = eval(src)\n', 'eval('),
+            ('a.py', 'exec (src)\n', 'exec('),
+            ('a.py', 'x = eval(src)  # only a comment follows\n', 'eval(')],
+            _DANGEROUS_BY_EXT)
+
+    # purlin: security_no_dangerous_patterns PROOF-15
+    def test_shell_eval_where_a_command_starts_is_found(self, tmp_path):
+        _assert_each_names(tmp_path, [
+            ('a.sh', 'eval "$cmd"\n', 'eval'),
+            ('a.sh', '    eval "$cmd"\n', 'eval'),
+            ('a.sh', 'if eval "$cmd"; then :; fi\n', 'eval'),
+            ('a.sh', 'out=$(eval "$cmd")\n', 'eval'),
+            ('a.sh', 'true && eval "$cmd"\n', 'eval')], _DANGEROUS_BY_EXT)
+
+    # purlin: security_no_dangerous_patterns PROOF-16
+    def test_shell_backticks_are_found(self, tmp_path):
+        _assert_each_names(tmp_path, [('a.sh', 'out=`date`\n', 'backticks')],
+                           _DANGEROUS_BY_EXT)
+
+    # purlin: security_no_dangerous_patterns PROOF-17
+    def test_javascript_forms_are_found(self, tmp_path):
+        _assert_each_names(tmp_path, [
+            ('a.js', 'eval(src);\n', 'eval('),
+            ('a.js', 'const f = new Function(src);\n', 'new Function('),
+            ('a.js', 'execSync(cmd);\n', 'execSync('),
+            ('a.js', 'child_process.exec(cmd);\n', 'child_process.exec('),
+            ('a.js', 'eval(src); // only a comment follows\n', 'eval(')],
+            _DANGEROUS_BY_EXT)
+
+    # purlin: security_no_dangerous_patterns PROOF-18
+    def test_typescript_forms_are_found(self, tmp_path):
+        _assert_each_names(tmp_path, [
+            ('a.ts', 'eval(src);\n', 'eval('),
+            ('a.ts', 'const f = new Function(src);\n', 'new Function('),
+            ('a.ts', 'execSync(cmd);\n', 'execSync('),
+            ('a.ts', 'child_process.exec(cmd);\n', 'child_process.exec(')],
+            _DANGEROUS_BY_EXT)
+
+    # purlin: security_no_dangerous_patterns PROOF-19
+    def test_php_forms_are_found(self, tmp_path):
+        _assert_each_names(tmp_path, [
+            ('a.php', '<?php eval($src);\n', 'eval('),
+            ('a.php', '<?php exec($cmd);\n', 'exec('),
+            ('a.php', '<?php shell_exec($cmd);\n', 'shell_exec('),
+            ('a.php', '<?php system($cmd);\n', 'system('),
+            ('a.php', '<?php passthru($cmd);\n', 'passthru('),
+            ('a.php', '<?php $o = `ls`;\n', 'backticks')], _DANGEROUS_BY_EXT)
+
+    # purlin: security_no_dangerous_patterns PROOF-20
+    def test_csharp_process_start_given_a_quoted_command_is_found(self, tmp_path):
+        _assert_each_names(tmp_path, [
+            ('a.cs', 'Process.Start("cmd.exe /c dir");\n', 'Process.Start("')],
+            _DANGEROUS_BY_EXT)
+
+    # purlin: security_no_dangerous_patterns PROOF-21
+    def test_csharp_process_start_given_a_name_is_not_counted(self, tmp_path):
+        _assert_none_counted(tmp_path, [('a.cs', 'Process.Start(info);\n')],
+                             _DANGEROUS_BY_EXT)
+
+    # purlin: security_no_dangerous_patterns PROOF-22
+    def test_a_comment_only_line_naming_a_form_is_not_counted(self, tmp_path):
+        _assert_none_counted(tmp_path, [
+            ('a.py', '# eval(src) is never called\n'),
+            ('a.sh', '  # eval "$cmd" is never run\n'),
+            ('a.js', '// eval(src) is never called\n')], _DANGEROUS_BY_EXT)
+
+    # purlin: security_no_dangerous_patterns PROOF-23
+    def test_a_word_that_only_contains_a_form_is_not_counted(self, tmp_path):
+        _assert_none_counted(tmp_path, [
+            ('a.py', 'x = evaluate(src)\n'),
+            ('a.sh', 'run_evaluation "$x"\n'),
+            ('a.js', 'const x = evaluate(src);\n')], _DANGEROUS_BY_EXT)
+
+
+class TestRule2OptsNoSubprocessIntoAShell:
 
     # purlin: security_no_dangerous_patterns PROOF-2
-    def test_no_shell_true(self):
+    def test_no_file_under_scripts_asks_for_a_shell(self):
         hits = _pattern_hits(_all_script_files(), _SHELL_FLAG_BY_EXT, strip=False)
-        assert not hits, "\n".join(f"Found shell opt-in {pattern!r} in {path}"
-                                   for path, pattern in hits)
+        assert not hits, "\n".join(f"Found {form!r} in {path}"
+                                   for path, form in hits)
 
-    # purlin: security_no_dangerous_patterns PROOF-2
-    def test_planted_shell_opt_in_is_found(self, tmp_path):
-        finds = lambda paths: _pattern_hits(paths, _SHELL_FLAG_BY_EXT,  # noqa: E731
-                                            strip=False)
-        planted = [('a.py', 'subprocess.run(argv, shell=True)\n'),
-                   ('a.py', 'subprocess.run(argv, shell = True)\n'),
-                   ('a.py', '# subprocess.run(argv, shell=True)\n'),
-                   ('a.js', 'spawn("ls", [], { shell: true });\n'),
-                   ('a.ts', 'spawn("ls", [], { shell :true });\n'),
-                   ('a.cs', 'psi.UseShellExecute = true;\n'),
-                   ('a.cs', 'psi.UseShellExecute=true;\n')]
-        clean = [('a.py', 'subprocess.run(argv, shell=False)\n'),
-                 ('a.js', 'spawn("ls", [], { shell: false });\n'),
-                 ('a.cs', 'psi.UseShellExecute = false;\n')]
-        assert not _misses(tmp_path, planted, finds), "a planted opt-in went unfound"
-        assert not _false_alarms(tmp_path, clean, finds), "an opt-out was counted"
+    # purlin: security_no_dangerous_patterns PROOF-24
+    def test_python_shell_true_is_found(self, tmp_path):
+        _assert_each_names(tmp_path, [
+            ('a.py', 'subprocess.run(argv, shell=True)\n', 'shell=True'),
+            ('a.py', 'subprocess.run(argv, shell = True)\n', 'shell=True')],
+            _SHELL_FLAG_BY_EXT, strip=False)
+
+    # purlin: security_no_dangerous_patterns PROOF-25
+    def test_a_comment_writing_shell_true_is_found(self, tmp_path):
+        _assert_each_names(tmp_path, [
+            ('a.py', '# subprocess.run(argv, shell=True)\n', 'shell=True')],
+            _SHELL_FLAG_BY_EXT, strip=False)
+
+    # purlin: security_no_dangerous_patterns PROOF-26
+    def test_javascript_and_typescript_shell_true_is_found(self, tmp_path):
+        _assert_each_names(tmp_path, [
+            ('a.js', 'spawn("ls", [], { shell: true });\n', 'shell: true'),
+            ('a.ts', 'spawn("ls", [], { shell :true });\n', 'shell: true')],
+            _SHELL_FLAG_BY_EXT, strip=False)
+
+    # purlin: security_no_dangerous_patterns PROOF-27
+    def test_csharp_use_shell_execute_true_is_found(self, tmp_path):
+        _assert_each_names(tmp_path, [
+            ('a.cs', 'psi.UseShellExecute = true;\n', 'UseShellExecute = true'),
+            ('a.cs', 'psi.UseShellExecute=true;\n', 'UseShellExecute = true')],
+            _SHELL_FLAG_BY_EXT, strip=False)
+
+    # purlin: security_no_dangerous_patterns PROOF-28
+    def test_a_shell_turned_off_is_not_counted(self, tmp_path):
+        _assert_none_counted(tmp_path, [
+            ('a.py', 'subprocess.run(argv, shell=False)\n'),
+            ('a.js', 'spawn("ls", [], { shell: false });\n'),
+            ('a.cs', 'psi.UseShellExecute = false;\n')],
+            _SHELL_FLAG_BY_EXT, strip=False)
+
+
+class TestRule3CallsNoShellBuiltin:
 
     # purlin: security_no_dangerous_patterns PROOF-3
-    def test_no_os_system(self):
+    def test_no_file_under_scripts_calls_the_shell_builtin(self):
         hits = _pattern_hits(_all_script_files(), _SYSTEM_CALL_BY_EXT)
-        assert not hits, "\n".join(f"Found shell-command builtin {pattern!r} in {path}"
-                                   for path, pattern in hits)
+        assert not hits, "\n".join(f"Found {form!r} in {path}"
+                                   for path, form in hits)
 
-    # purlin: security_no_dangerous_patterns PROOF-3
-    def test_planted_system_call_is_found(self, tmp_path):
-        finds = lambda paths: _pattern_hits(paths, _SYSTEM_CALL_BY_EXT)  # noqa: E731
-        planted = [('a.py', 'os.system(cmd)\n'), ('a.py', 'os.system (cmd)\n'),
-                   ('a.php', '<?php system($cmd);\n'),
-                   ('a.php', '<?php passthru ($cmd);\n')]
-        clean = [('a.py', '# os.system(cmd) is never called\n'),
-                 ('a.php', '<?php\n// system($cmd) is never called\n')]
-        assert not _misses(tmp_path, planted, finds), "a planted call went unfound"
-        assert not _false_alarms(tmp_path, clean, finds), "a comment was counted"
+    # purlin: security_no_dangerous_patterns PROOF-29
+    def test_python_os_system_is_found(self, tmp_path):
+        _assert_each_names(tmp_path, [
+            ('a.py', 'os.system(cmd)\n', 'os.system('),
+            ('a.py', 'os.system (cmd)\n', 'os.system(')], _SYSTEM_CALL_BY_EXT)
+
+    # purlin: security_no_dangerous_patterns PROOF-30
+    def test_php_system_and_passthru_are_found(self, tmp_path):
+        _assert_each_names(tmp_path, [
+            ('a.php', '<?php system($cmd);\n', 'system('),
+            ('a.php', '<?php passthru ($cmd);\n', 'passthru(')],
+            _SYSTEM_CALL_BY_EXT)
+
+    # purlin: security_no_dangerous_patterns PROOF-31
+    def test_a_comment_only_line_naming_the_builtin_is_not_counted(self, tmp_path):
+        _assert_none_counted(tmp_path, [
+            ('a.py', '# os.system(cmd) is never called\n'),
+            ('a.php', '<?php\n// system($cmd) is never called\n')],
+            _SYSTEM_CALL_BY_EXT)
+
+
+class TestRule4AssignsNoCredential:
 
     # purlin: security_no_dangerous_patterns PROOF-4
-    def test_no_hardcoded_credentials(self):
+    def test_no_file_under_scripts_assigns_a_credential(self):
         hits = _credential_hits(_all_script_files())
-        assert not hits, "\n".join(f"Found hardcoded credential in {path}: {matches}"
+        assert not hits, "\n".join(f"Found a credential in {path}: {matches}"
                                    for path, matches in hits)
 
     # purlin: security_no_dangerous_patterns PROOF-7
-    def test_planted_credential_is_found(self, tmp_path):
-        planted = [('a.py', 'API_KEY = "abc"\n', 'API_KEY'),
-                   ('a.py', "db_password='x'\n", 'db_password'),
-                   ('a.sh', 'GITHUB_TOKEN="abc"\n', 'GITHUB_TOKEN'),
-                   ('a.py', 'TOKEN_NAME = "abc"\n', 'TOKEN_NAME'),
-                   ('a.js', 'const cfg = { password: "x" };\n', 'password'),
-                   ('a.ts', 'const auth = { Token : "abc" };\n', 'Token')]
-        for index, (name, text, matched) in enumerate(planted):
-            path = _plant(tmp_path, index, name, text)
-            assert _credential_hits([path]) == [(path, [matched])], (
-                name, text, _credential_hits([path]))
+    def test_a_credential_given_with_an_equals_sign_is_found(self, tmp_path):
+        _assert_each_credential_named(tmp_path, [
+            ('a.py', 'API_KEY = "abc"\n', 'API_KEY'),
+            ('a.py', "db_password='x'\n", 'db_password'),
+            ('a.sh', 'GITHUB_TOKEN="abc"\n', 'GITHUB_TOKEN'),
+            ('a.py', 'TOKEN_NAME = "abc"\n', 'TOKEN_NAME')])
+
+    # purlin: security_no_dangerous_patterns PROOF-32
+    def test_a_credential_field_in_javascript_or_typescript_is_found(
+            self, tmp_path):
+        _assert_each_credential_named(tmp_path, [
+            ('a.js', 'const cfg = { password: "x" };\n', 'password'),
+            ('a.ts', 'const auth = { Token : "abc" };\n', 'Token')])
 
     # purlin: security_no_dangerous_patterns PROOF-8
-    def test_an_empty_value_a_comparison_or_a_test_file_is_not_counted(
-            self, tmp_path):
-        clean = [('a.py', 'API_KEY = ""\n'), ('a.py', 'if token == "x":\n    pass\n'),
-                 ('test_a.py', 'password = "x"\n'),
-                 ('a.py', 'row = {"password": ""}\n')]
-        assert not _false_alarms(tmp_path, clean, _credential_hits), \
-            "an empty value, a comparison or a test file was counted"
+    def test_an_empty_value_is_not_counted(self, tmp_path):
+        _assert_no_credential_counted(tmp_path, [
+            ('a.py', 'API_KEY = ""\n'),
+            ('a.py', 'row = {"password": ""}\n'),
+            ('a.js', 'const cfg = { password: "" };\n')])
+
+    # purlin: security_no_dangerous_patterns PROOF-33
+    def test_a_comparison_is_not_counted(self, tmp_path):
+        _assert_no_credential_counted(tmp_path, [
+            ('a.py', 'if token == "x":\n    pass\n')])
+
+    # purlin: security_no_dangerous_patterns PROOF-34
+    def test_a_file_named_test_is_not_counted(self, tmp_path):
+        _assert_no_credential_counted(tmp_path, [
+            ('test_a.py', 'password = "x"\n')])
+
+
+class TestRule5LaunchesWithAnArgumentVector:
 
     # purlin: security_no_dangerous_patterns PROOF-5
-    def test_subprocess_uses_list_args(self):
+    def test_no_launch_under_scripts_is_handed_a_command_string(self):
         faults = _launch_faults(_all_script_files())
         assert not faults, "\n".join(faults)
 
-    # purlin: security_no_dangerous_patterns PROOF-5
-    def test_planted_command_string_launch_is_found(self, tmp_path):
-        planted = [('a.py', 'subprocess.run("git status")\n'),
-                   ('a.py', 'subprocess.run(cmd)\n'),
-                   ('a.py', 'subprocess.Popen("git status")\n'),
-                   ('a.py', 'subprocess.Popen(f"git {verb}")\n'),
-                   ('a.py', 'from subprocess import run\nrun("git status")\n'),
-                   ('a.py', 'from subprocess import check_output as co, call\n'
-                            'co("git status")\n'),
-                   ('a.py', 'from subprocess import Popen\nPopen("git status")\n'),
-                   ('a.php', '<?php proc_open("ls -la", $spec, $pipes);\n'),
-                   ('a.js', 'spawn("ls", "-la");\n'), ('a.js', 'spawn("ls -la");\n'),
-                   ('a.ts', 'execFileSync(cmd);\n'),
-                   ('a.cs', 'psi.Arguments = "status --short";\n')]
-        clean = [('a.py', 'subprocess.run(["git", "status"])\n'),
-                 ('a.py', 'subprocess.run(*argv)\n'),
-                 ('a.py', 'from subprocess import run\nrun(["git", "status"])\n'),
-                 ('a.py', 'subprocess.Popen(command, cwd=root)\n'),
-                 ('a.php', '<?php proc_open(["ls", "-la"], $spec, $pipes);\n'),
-                 ('a.js', 'spawn("ls", ["-la"]);\n'),
-                 ('a.cs', 'psi.ArgumentList.Add("status");\n')]
-        assert not _misses(tmp_path, planted, _launch_faults), \
-            "a planted command-string launch went unfound"
-        assert not _false_alarms(tmp_path, clean, _launch_faults), \
-            "a launch handed an argument vector was counted"
+    # purlin: security_no_dangerous_patterns PROOF-35
+    def test_python_run_not_given_a_list_in_place_is_found(self, tmp_path):
+        _assert_each_launch_found(tmp_path, [
+            ('a.py', 'subprocess.run("git status")\n'),
+            ('a.py', 'subprocess.run(cmd)\n')])
+
+    # purlin: security_no_dangerous_patterns PROOF-36
+    def test_python_run_given_a_list_or_a_star_is_not_counted(self, tmp_path):
+        _assert_no_launch_counted(tmp_path, [
+            ('a.py', 'subprocess.run(["git", "status"])\n'),
+            ('a.py', 'subprocess.run(*argv)\n')])
+
+    # purlin: security_no_dangerous_patterns PROOF-37
+    def test_python_popen_given_a_string_is_found(self, tmp_path):
+        _assert_each_launch_found(tmp_path, [
+            ('a.py', 'subprocess.Popen("git status")\n'),
+            ('a.py', 'subprocess.Popen(f"git {verb}")\n')])
+
+    # purlin: security_no_dangerous_patterns PROOF-38
+    def test_python_popen_given_a_name_is_not_counted(self, tmp_path):
+        _assert_no_launch_counted(tmp_path, [
+            ('a.py', 'subprocess.Popen(command, cwd=root)\n')])
+
+    # purlin: security_no_dangerous_patterns PROOF-39
+    def test_a_launch_imported_by_name_given_a_string_is_found(self, tmp_path):
+        _assert_each_launch_found(tmp_path, [
+            ('a.py', 'from subprocess import run\nrun("git status")\n'),
+            ('a.py', 'from subprocess import check_output as co, call\n'
+                     'co("git status")\n'),
+            ('a.py', 'from subprocess import Popen\nPopen("git status")\n')])
+
+    # purlin: security_no_dangerous_patterns PROOF-40
+    def test_a_launch_imported_by_name_given_a_list_is_not_counted(
+            self, tmp_path):
+        _assert_no_launch_counted(tmp_path, [
+            ('a.py', 'from subprocess import run\nrun(["git", "status"])\n')])
+
+    # purlin: security_no_dangerous_patterns PROOF-41
+    def test_php_proc_open_given_a_string_is_found(self, tmp_path):
+        _assert_each_launch_found(tmp_path, [
+            ('a.php', '<?php proc_open("ls -la", $spec, $pipes);\n')])
+
+    # purlin: security_no_dangerous_patterns PROOF-42
+    def test_php_proc_open_given_an_array_is_not_counted(self, tmp_path):
+        _assert_no_launch_counted(tmp_path, [
+            ('a.php', '<?php proc_open(["ls", "-la"], $spec, $pipes);\n')])
+
+    # purlin: security_no_dangerous_patterns PROOF-43
+    def test_javascript_spawn_without_an_args_array_is_found(self, tmp_path):
+        _assert_each_launch_found(tmp_path, [
+            ('a.js', 'spawn("ls", "-la");\n'),
+            ('a.js', 'spawn("ls -la");\n'),
+            ('a.ts', 'execFileSync(cmd);\n')])
+
+    # purlin: security_no_dangerous_patterns PROOF-44
+    def test_javascript_spawn_with_an_args_array_is_not_counted(self, tmp_path):
+        _assert_no_launch_counted(tmp_path, [('a.js', 'spawn("ls", ["-la"]);\n')])
+
+    # purlin: security_no_dangerous_patterns PROOF-45
+    def test_csharp_arguments_set_to_a_string_is_found(self, tmp_path):
+        _assert_each_launch_found(tmp_path, [
+            ('a.cs', 'psi.Arguments = "status --short";\n')])
+
+    # purlin: security_no_dangerous_patterns PROOF-46
+    def test_csharp_argument_list_is_not_counted(self, tmp_path):
+        _assert_no_launch_counted(tmp_path, [
+            ('a.cs', 'psi.ArgumentList.Add("status");\n')])
 
 
-EVIL_SOURCE = '--upload-pack=/bin/echo'
-# The two transports git will run a command for. RULE-6 refuses both
+# Each hostile source ends in `.git`, so it reads as a repository and would
+# be handed to `git ls-remote` if the refusal did not stop it first. The two
+# transports are the ones git will run a command for; RULE-6 refuses both
 # before any subprocess starts, not after quoting them safely.
-EXT_SOURCE = 'ext::sh -c "touch /tmp/purlin-pwned"'
-FD_SOURCE = 'fd::7'
+EVIL_SOURCE = '--upload-pack=/bin/echo /tmp/policy.git'
+EXT_SOURCE = 'ext::sh -c "touch /tmp/purlin-pwned" /tmp/policy.git'
+FD_SOURCE = 'fd::7/policy.git'
 
 
 def _git(args, cwd=None, check=True):
@@ -462,12 +642,38 @@ def _branch_changing_a_spec(project):
         _git(['commit', '-q', '-m', 'spec(demo): rules'], cwd=str(project))
 
 
-def _launched_by(monkeypatch, read):
-    """`(result, git argvs)` of `read()`, every git command it started."""
+def _every_launch_of(monkeypatch, read):
+    """`(result, argvs)` of `read()`, every command it started."""
     calls = _record_launches(monkeypatch)
     result = read()
     monkeypatch.undo()
+    return result, calls
+
+
+def _launched_by(monkeypatch, read):
+    """`(result, git argvs)` of `read()`, every git command it started."""
+    result, calls = _every_launch_of(monkeypatch, read)
     return result, [argv for argv in calls if argv and argv[0] == 'git']
+
+
+def _status_of_a_hostile_source(tmp_path, monkeypatch, anchor, source):
+    """`(status lines, every command started)` for a project whose one anchor
+    names `source`."""
+    project = _project(tmp_path, [(anchor, source)])
+    text, calls = _every_launch_of(
+        monkeypatch, lambda: purlin_status.sync_status(str(project)))
+    return text.splitlines(), calls
+
+
+def _assert_refused(tmp_path, monkeypatch, anchor, source, line):
+    lines, calls = _status_of_a_hostile_source(tmp_path, monkeypatch, anchor,
+                                               source)
+    assert calls, "the status read started no command at all"
+    carrying = [argv for argv in calls if any(source in str(a) for a in argv)]
+    assert not carrying, (
+        f"{source!r} reached a command; RULE-6 refuses it before any "
+        f"subprocess starts: {carrying}")
+    assert line in lines, f"the status has no line {line!r}:\n" + "\n".join(lines)
 
 
 def _is_revision(arg):
@@ -499,24 +705,23 @@ class TestGitArgvHardening:
     """RULE-6: nothing repository-supplied reaches git in option position."""
 
     # purlin: security_no_dangerous_patterns PROOF-6
-    def test_a_hostile_source_is_refused_before_any_command(self, tmp_path,
-                                                             monkeypatch):
-        project = _project(tmp_path, [('evil_policy', EVIL_SOURCE),
-                                      ('ext_policy', EXT_SOURCE),
-                                      ('fd_policy', FD_SOURCE)])
-        text, calls = _launched_by(
-            monkeypatch, lambda: purlin_status.sync_status(str(project)))
-        assert calls, "no git command captured"
-        for rejected in (EVIL_SOURCE, EXT_SOURCE, FD_SOURCE):
-            for argv in calls:
-                assert rejected not in argv, (
-                    f"{rejected!r} reached git; RULE-6 refuses it before any "
-                    f"subprocess starts: {argv}")
-        for reason in ('(source rejected: begins with "-")',
-                       '(source rejected: names an ext:: transport)',
-                       '(source rejected: names an fd:: transport)'):
-            assert reason in text, (
-                f"status text does not name the rejection {reason!r}:\n{text}")
+    def test_a_source_beginning_with_a_dash_is_refused(self, tmp_path,
+                                                       monkeypatch):
+        _assert_refused(tmp_path, monkeypatch, 'evil_policy', EVIL_SOURCE,
+                        'evil_policy: (source rejected: begins with "-")')
+
+    # purlin: security_no_dangerous_patterns PROOF-47
+    def test_a_source_naming_the_ext_transport_is_refused(self, tmp_path,
+                                                          monkeypatch):
+        _assert_refused(tmp_path, monkeypatch, 'ext_policy', EXT_SOURCE,
+                        'ext_policy: (source rejected: names an ext:: '
+                        'transport)')
+
+    # purlin: security_no_dangerous_patterns PROOF-48
+    def test_a_source_naming_the_fd_transport_is_refused(self, tmp_path,
+                                                         monkeypatch):
+        _assert_refused(tmp_path, monkeypatch, 'fd_policy', FD_SOURCE,
+                        'fd_policy: (source rejected: names an fd:: transport)')
 
     # purlin: security_no_dangerous_patterns PROOF-9
     def test_a_source_reaches_ls_remote_after_end_of_options(self, tmp_path,
