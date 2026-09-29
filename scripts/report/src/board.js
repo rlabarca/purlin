@@ -1,11 +1,12 @@
 /* The Board: how many rules reached each step the gate asks for, what is
    left to do, and which specs hold the rules that have not got there yet. */
 
-/* One box per step the gate reaches, each counting the rules that reached
-   it, as the payload's `summary.steps` counts them: green once every rule has
-   reached the step, amber until then. From `strong` up a `No proof` box
-   follows them, counting the rules that have no proof yet. Each box carries
-   the hover its column carries, read over every spec. */
+/* The payload's summary sentence, the one the terminal prints, then one box
+   per step the gate reaches, each counting the rules that reached it, as the
+   payload's `summary.steps` counts them: green once every rule has reached
+   the step, amber until then. From `strong` up a `No proof` box follows
+   them, counting the rules that have no proof yet. Each box carries the
+   hover its column carries, read over every spec. */
 function statStrip() {
   var summary = DATA.summary || {};
   var steps = summary.steps || {};
@@ -23,7 +24,8 @@ function statStrip() {
     boxes.push(box(NO_PROOF, count, count ? 'warn' : 'pass',
       missing.map(function (pair) { return pair[0] + DOT + pair[1]; })));
   }
-  return '<div class="strip"><div class="tiles">' + boxes.join('')
+  return '<p class="sentence">' + esc(summary.sentence || '') + '</p>'
+    + '<div class="strip"><div class="tiles">' + boxes.join('')
     + '</div></div>';
 }
 

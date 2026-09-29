@@ -17,8 +17,8 @@ var SCHEMA = 10;
    this. */
 var REFRESH_AFTER = 60;
 
-/* The three evidence levels, lowest first. The project's gate names the
-   highest level that exists, and every cell, box, column and filter above it
+/* The three steps, lowest first. The project's gate names the
+   highest step that exists, and every cell, box, column and filter above it
    is absent rather than empty: a board that asks a question its project has
    not opted into reads as a project falling short. */
 var GATE_LEVELS = ['passed', 'strong', 'signed'];
@@ -94,7 +94,7 @@ function gateName() {
   return GATE_LEVELS.indexOf(gate) >= 0 ? gate : GATE_LEVELS[0];
 }
 
-/* True when the project's gate is at this level or above it, which is the
+/* True when the project's gate is at this step or above it, which is the
    one question that decides whether a cell, a box, a column or a filter is
    drawn at all. */
 function level(name) {
@@ -455,8 +455,18 @@ function notices() {
   (DATA.warnings || []).forEach(function (warning) { lines.push(warning); });
   return lines.map(function (line) {
     return '<div class="notice"><span class="dot" '
-      + 'style="color:var(--state-warn)"></span>' + esc(line) + '</div>';
+      + 'style="color:var(--state-warn)"></span><span class="notice-text">'
+      + line.split(' ').map(noticeWord).join(' ') + '</span></div>';
   }).join('');
+}
+
+/* One word of a notice. A path or a name never breaks inside itself, except
+   a path too long for a phone's width, which breaks after a `/` and nowhere
+   else, so the page never scrolls sideways. */
+function noticeWord(word) {
+  if (!/[\/\-._]/.test(word)) { return esc(word); }
+  var text = word.length > 36 ? esc(word).replace(/\//g, '/<wbr>') : esc(word);
+  return '<span class="nowrap">' + text + '</span>';
 }
 
 function render() {

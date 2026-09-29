@@ -144,7 +144,7 @@ var TEST_WORDS = {pass: 'passed', fail: 'failed', missing: 'not run',
 
 /* A proof's own word, as the payload wrote it. At the gate `passed` a
    `@manual` proof reads `manual`, because that project is shown no word of
-   a higher level. */
+   a higher step. */
 function proofWord(proof) {
   var word = proof.result || 'not run';
   return word === 'hand check' && !level('strong') ? 'manual' : word;

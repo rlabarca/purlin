@@ -56,20 +56,20 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .btn.glyph{padding:4px 12px;font-size:var(--ui-base);line-height:1}
 .panel{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);padding:var(--space-6)}
 .notice{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4) var(--space-6);background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);margin-bottom:var(--space-5);font-size:var(--ui-base);color:var(--text-primary)}
+.notice-text{min-width:0}
+.nowrap{white-space:nowrap}
 .pill{display:inline-flex;align-items:center;justify-content:center;font-size:var(--ui-sm);font-weight:var(--weight-bold);letter-spacing:.08em;padding:4px 12px;border-radius:var(--radius-pill);border:1.5px solid currentColor;white-space:nowrap}
 .pill.solid{background:currentColor}
 .pill b{font-weight:var(--weight-bold)}
 .pill.solid b{color:var(--canvas-deep)}
 pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-height:1.55;color:var(--text-primary);padding:var(--space-5);background:var(--surface-sunken);border:1px solid var(--border-default);border-radius:var(--radius-sm);overflow-x:auto;white-space:pre-wrap}
+.sentence{margin:0 0 var(--space-4);font-size:var(--ui-lg);color:var(--text-primary)}
 .strip{display:grid;grid-template-columns:1fr;gap:var(--space-4)}
-.strip.flagged{grid-template-columns:7fr 2fr}
-.tiles,.flags{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:var(--space-4)}
-.tile,.flag{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);text-align:center;padding:var(--space-6) var(--space-2)}
-.tile-v,.flag-v{font-size:var(--ui-metric);font-weight:var(--weight-bold);line-height:1}
-.tile-l,.flag-l{margin-top:var(--space-3);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
-.flag{color:var(--state-idle)}
-.flag.on.warn{border-color:var(--state-warn);color:var(--state-warn)}
-.flag.on.fail{border-color:var(--state-fail);color:var(--state-fail)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:var(--space-4)}
+.tile{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);text-align:center;padding:var(--space-6) var(--space-2)}
+.tile-v{font-size:var(--ui-metric);font-weight:var(--weight-bold);line-height:1}
+.tile-l{margin-top:var(--space-3);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
+.todo{font-size:var(--ui-base);color:var(--text-primary)}
 .filters{display:flex;flex-wrap:wrap;gap:var(--space-3);margin-bottom:var(--space-5)}
 .chip{white-space:nowrap;font-size:var(--ui-sm);padding:5px 14px;border-radius:var(--radius-pill);border:1.5px solid var(--border-default);background:transparent;color:var(--text-secondary);cursor:pointer;transition:background var(--duration-fast) var(--ease-standard),color var(--duration-fast) var(--ease-standard)}
 .chip:hover{background:var(--hover-tint)}
@@ -114,6 +114,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .more:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--radius-sm)}
 .rule-proofs{padding:var(--space-4) var(--space-6) var(--space-4) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);cursor:default}
 .rule-proofs>p{margin:0;font-size:var(--ui-sm)}
+.specs>.desc{margin:0;padding:var(--space-3) var(--space-6) var(--space-3) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);font-size:var(--ui-base);color:var(--text-secondary);contain:inline-size}
 .proof+.proof{margin-top:var(--space-4);padding-top:var(--space-4);border-top:1px solid var(--border-hairline)}
 .ptests p{margin:0 0 var(--space-2)}
 .ptests p:last-child{margin-bottom:0}
@@ -125,15 +126,8 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .cmd{font-family:var(--font-mono);font-size:var(--ui-base);color:var(--text-secondary);white-space:nowrap}
 .panel p{margin:0 0 var(--space-3)}
 .panel p:last-child{margin-bottom:0}
-.rev{display:grid;grid-template-columns:0.9fr 0.55fr 2.1fr 0.6fr 1fr 1.9fr;gap:var(--space-4);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline);cursor:pointer;font-size:var(--ui-base)}
-.rev:hover{background:var(--hover-tint)}
-.rev>.pill,.rev>.tag{justify-self:start}
-.rev>span{min-width:0;overflow-wrap:anywhere}
-.rev .cmd{white-space:normal;overflow-wrap:anywhere}
-.rev.th{cursor:default}
-.rev.th:hover{background:none}
-@media (max-width:1023px){.topbar{column-gap:var(--space-4);padding:var(--space-3) var(--space-5)}.topbar .spacer{flex-basis:100%;height:0}.tabs{flex-wrap:wrap;column-gap:var(--space-6);padding:0 var(--space-5)}.wrap{padding:var(--space-6) var(--space-5)}.strip,.strip.flagged{grid-template-columns:repeat(4,minmax(0,1fr))}.tiles,.flags{display:contents}.tbl.specs{display:block}.specs .th{display:none}.specs .tr{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--space-6);row-gap:var(--space-2);padding:var(--space-4) var(--space-5)}.specs .tr>div{flex:none}.specs .tr>div:first-child{flex-basis:100%}.specs .tr>div:empty{display:none}.tr>div[data-label],.rev>[data-label]{display:inline-flex;align-items:baseline;gap:var(--space-2);white-space:nowrap}.tr>div[data-label]::before,.rev>[data-label]::before{content:attr(data-label);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}.rule{grid-template-columns:auto 1fr;gap:var(--space-2) var(--space-4);padding:var(--space-3) var(--space-5)}.rule .rt{grid-row:2;grid-column:1/-1}.rule .rm{grid-column:1/-1}.rule .rp{justify-content:flex-start}.rule-proofs{padding:var(--space-4) var(--space-5)}.rev{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--space-6);row-gap:var(--space-2);padding:var(--space-4) var(--space-5)}.rev.th{display:none}.rev>.claim,.rev>.cmd{flex-basis:100%}.group{padding:var(--space-4) var(--space-5)}.group .gr{margin-left:0;flex-basis:100%}.kv{grid-template-columns:1fr;gap:var(--space-1) 0}.kv dd{margin-bottom:var(--space-3)}}
-@media (max-width:599px){.strip,.strip.flagged{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:var(--space-5) var(--space-4)}}
+@media (max-width:1023px){.topbar{column-gap:var(--space-4);padding:var(--space-3) var(--space-5)}.topbar .spacer{flex-basis:100%;height:0}.tabs{flex-wrap:wrap;column-gap:var(--space-6);padding:0 var(--space-5)}.wrap{padding:var(--space-6) var(--space-5)}.strip{grid-template-columns:repeat(4,minmax(0,1fr))}.tiles{display:contents}.tbl.specs{display:block}.specs .th{display:none}.specs .tr{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--space-6);row-gap:var(--space-2);padding:var(--space-4) var(--space-5)}.specs .tr>div{flex:none}.specs .tr>div:first-child{flex-basis:100%}.specs .tr>div:empty{display:none}.tr>div[data-label]{display:inline-flex;align-items:baseline;gap:var(--space-2);white-space:nowrap}.tr>div[data-label]::before{content:attr(data-label);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}.rule{grid-template-columns:auto 1fr;gap:var(--space-2) var(--space-4);padding:var(--space-3) var(--space-5)}.rule .rt{grid-row:2;grid-column:1/-1}.rule .rm{grid-column:1/-1}.rule .rp{justify-content:flex-start}.rule-proofs,.specs>.desc{padding:var(--space-4) var(--space-5)}.group{padding:var(--space-4) var(--space-5)}.group .gr{margin-left:0;flex-basis:100%}.kv{grid-template-columns:1fr;gap:var(--space-1) 0}.kv dd{margin-bottom:var(--space-3)}}
+@media (max-width:599px){.strip{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:var(--space-5) var(--space-4)}}
 </style>
 </head>
 <body>
@@ -167,35 +161,20 @@ function themeButton() {
   return '<button class="btn glyph" data-act="theme" title="' + next
     + '" aria-label="' + next + '">\u25d0</button>';
 }
-function bucketFilter(bucket) {
-  return {id: bucket, label: BUCKET_LABELS[bucket], level: 'passed',
-    test: function (rule) { return rule.bucket === bucket; }};
-}
 function strongFilter(id, label) {
   var word = label.toLowerCase();
-  return {id: id, label: label, level: 'strong', test: function (rule) {
+  return {id: id, label: label, step: 'strong', test: function (rule) {
     return cellWord(rule, 'strong') === word;
   }};
 }
 function allFilters() {
-  return [bucketFilter('untested'), bucketFilter('failing'),
-          bucketFilter('partial'),
-    strongFilter('weak', 'Weak'),
-    strongFilter('not-audited', 'Not audited'),
-    {id: 'queue', label: 'Queue', level: 'strong', test: function (rule) {
-      return inQueue(rule);
-    }},
-    {id: 'stale', label: 'Stale', level: 'signed', test: function (rule) {
-      return !!(rule.flags || {}).stale;
-    }}];
-}
-function inQueue(rule) {
-  return (DATA.queue || []).some(function (entry) {
-    return entry.owner === rule.feature && entry.rule === rule.id;
-  });
+  return [{id: 'no-proof', label: NO_PROOF, step: 'strong',
+           test: function (rule) { return rule.left === 'no_proof'; }},
+          strongFilter('weak', 'Weak'),
+          strongFilter('not-audited', 'Not audited')];
 }
 function offeredFilters() {
-  return allFilters().filter(function (f) { return level(f.level); });
+  return allFilters().filter(function (f) { return level(f.step); });
 }
 function activeFilters() {
   return offeredFilters().filter(function (f) { return VIEW.filters[f.id]; });
@@ -215,7 +194,9 @@ function visibleRules(feature) {
   });
 }
 function filtersMarkup() {
-  return '<div class="filters">' + offeredFilters().map(function (f) {
+  var offered = offeredFilters();
+  if (!offered.length) { return ''; }
+  return '<div class="filters">' + offered.map(function (f) {
     return '<button class="chip" data-act="filter" data-filter="' + f.id
       + '" aria-pressed="' + (VIEW.filters[f.id] ? 'true' : 'false') + '">'
       + esc(f.label) + '<b>' + filterCount(f) + '</b></button>';
@@ -223,79 +204,58 @@ function filtersMarkup() {
 }
 function statStrip() {
   var summary = DATA.summary || {};
+  var steps = summary.steps || {};
   var project = wholeProject();
-  var shown = BUCKETS.filter(function (bucket) {
-    return GATE_LEVELS.indexOf(bucket) < 0 || level(bucket);
+  var boxes = GATE_LEVELS.filter(level).map(function (step) {
+    var count = steps[step] || 0;
+    return box(STEP_LABELS[step], count,
+               count === (summary.rules || 0) ? 'pass' : 'warn',
+               stepHover(step, project));
   });
-  var tiles = shown.map(function (bucket) {
-    return '<div class="tile"' + hover(tileHover(bucket, project))
-      + '><div class="tile-v" style="color:var(--state-'
-      + bucketTone(bucket) + ')">' + reached(summary, bucket) + '</div>'
-      + '<div class="tile-l">' + esc(BUCKET_LABELS[bucket]) + '</div></div>';
-  }).join('');
-  var flags = level('signed')
-    ? '<div class="flags">'
-      + flagCard('Queue', summary.queue || 0, 'warn', queueLines())
-      + flagCard('Stale', summary.stale || 0, 'fail', staleLines())
-      + '</div>' : '';
-  return '<div class="strip' + (flags ? ' flagged' : '') + '">'
-    + '<div class="tiles">' + tiles + '</div>' + flags + '</div>';
-}
-function flagCard(label, count, hue, lines) {
-  return '<div class="flag' + (count ? ' on ' + hue : '') + '"'
-    + hover(lines) + '><div class="flag-v">' + count
-    + '</div><div class="flag-l">' + esc(label) + '</div></div>';
-}
-function queueLines() {
-  var byFeature = {};
-  var names = [];
-  ((DATA.queue || [])).forEach(function (entry) {
-    if (!byFeature[entry.feature]) {
-      byFeature[entry.feature] = 0;
-      names.push(entry.feature);
-    }
-    byFeature[entry.feature] += 1;
-  });
-  if (!names.length) { return ['No rule is waiting for a person.']; }
-  return names.sort().map(function (name) {
-    return name + DOT + byFeature[name];
-  });
-}
-function staleLines() {
-  var byFeature = {};
-  var names = [];
-  everyRule().forEach(function (pair) {
-    if (!(pair.rule.flags || {}).stale) { return; }
-    var name = pair.feature.name;
-    if (!byFeature[name]) { byFeature[name] = []; names.push(name); }
-    byFeature[name].push(pair.rule.id);
-  });
-  if (!names.length) { return ['Every signature still matches.']; }
-  return names.sort().map(function (name) {
-    return name + DOT + byFeature[name].join(', ');
-  });
-}
-function tileHover(bucket, project) {
-  if (bucket === 'passed') { return platformLines(project); }
-  if (bucket === 'strong') { return auditLines(project); }
-  if (bucket === 'untested') {
-    return [showsProofs() ? TILE_HOVER.untested : TILE_HOVER.untested_no_proofs]
-      .concat(untestedLines());
+  if (level('strong')) {
+    var missing = noProofLines();
+    var count = missing.reduce(function (sum, pair) { return sum + pair[1]; },
+                               0);
+    boxes.push(box(NO_PROOF, count, count ? 'warn' : 'pass',
+      missing.map(function (pair) { return pair[0] + DOT + pair[1]; })));
   }
-  return bucket === 'signed' ? signerLines(project) : [TILE_HOVER[bucket]];
+  return '<p class="sentence">' + esc(summary.sentence || '') + '</p>'
+    + '<div class="strip"><div class="tiles">' + boxes.join('')
+    + '</div></div>';
 }
-function untestedLines() {
-  var counts = {};
-  var order = [];
+function box(label, count, hue, lines) {
+  return '<div class="tile"' + (lines.length ? hover(lines) : '')
+    + '><div class="tile-v" style="color:var(--state-' + hue + ')">' + count
+    + '</div><div class="tile-l">' + esc(label) + '</div></div>';
+}
+function stepHover(step, project) {
+  if (step === 'passed') { return platformLines(project); }
+  if (step === 'strong') { return auditLines(project); }
+  return signerLines(project);
+}
+function noProofLines() {
+  var byFeature = {};
+  var names = [];
   everyRule().forEach(function (pair) {
-    if (pair.rule.bucket !== 'untested') { return; }
-    var word = ((pair.rule.cells || {}).passed || {}).word || 'no test';
-    if (!(word in counts)) { counts[word] = 0; order.push(word); }
-    counts[word] += 1;
+    if (pair.rule.left !== 'no_proof') { return; }
+    var name = pair.feature.name;
+    if (!(name in byFeature)) { byFeature[name] = 0; names.push(name); }
+    byFeature[name] += 1;
   });
-  return order.sort().map(function (word) {
-    return word + DOT + counts[word];
-  });
+  return names.sort().map(function (name) { return [name, byFeature[name]]; });
+}
+function leftToDo() {
+  var items = DATA.left || [];
+  if (!items.length) {
+    return '<div class="panel todo"><p>' + esc(DATA.last_line || '')
+      + '</p></div>';
+  }
+  return '<p class="eyebrow">Left to do</p><div class="panel todo">'
+    + items.map(function (item) {
+      return '<p><span>' + esc(item.text) + ':</span> <span class="cmd">'
+        + esc(item.command) + '</span></p>';
+    }).join('') + '<p class="sec">Type each command in Claude Code.</p>'
+    + '</div>';
 }
 function boardColumns() {
   var columns = [{label: COLUMNS[0], width: '1.7fr', floor: 200},
@@ -348,20 +308,26 @@ function share(count, total) {
 }
 function strongCell(feature) {
   var rollup = feature.rollup || {};
-  if (!rollup.asks_strong) { return ''; }
+  var rules = feature.rules || [];
+  if (!rules.length) { return ''; }
   var value = rollup.test_strength == null
     ? feature.test_strength : rollup.test_strength;
   return '<span' + hover(auditLines(feature)) + '>'
-    + counts([share(reached(rollup, 'strong'), rollup.asks_strong),
+    + counts([share(reading(rules, 'strong'), rules.length),
       [value == null ? 'n/a' : Math.floor(value) + '%', '',
         value == null ? 'idle' : value >= minStrength() ? 'pass' : 'fail']])
     + '</span>';
 }
 function signedCell(feature) {
-  var rollup = feature.rollup || {};
-  if (!rollup.asks_signed) { return ''; }
+  var rules = feature.rules || [];
+  if (!rules.length) { return ''; }
   return '<span' + hover(signerLines(feature)) + '>'
-    + counts([share(rollup.signed || 0, rollup.asks_signed)]) + '</span>';
+    + counts([share(reading(rules, 'signed'), rules.length)]) + '</span>';
+}
+function reading(rules, name) {
+  return rules.filter(function (rule) {
+    return cellWord(rule, name) === name;
+  }).length;
 }
 function noScope(feature) {
   if (!feature.incomplete) { return ''; }
@@ -387,7 +353,7 @@ function featureRow(feature, columns) {
         + '"' : '') + '>' + cell + '</div>';
     }).join('') + '</div>';
   if (!open) { return row; }
-  return row + visibleRules(feature).map(function (rule) {
+  return row + description(feature) + visibleRules(feature).map(function (rule) {
     var shown = !!VIEW.proofs[rule.feature + ' ' + rule.id];
     return '<div class="rule" data-act="rule" data-feature="'
       + esc(rule.feature) + '" data-rule="' + esc(rule.id) + '">'
@@ -400,6 +366,10 @@ function featureRow(feature, columns) {
       + '<span class="rm">' + proofsToggle(rule, shown) + '</span></div>'
       + (shown ? proofsUnder(rule) : '');
   }).join('');
+}
+function description(feature) {
+  return feature.description ? '<p class="desc">' + esc(feature.description)
+    + '</p>' : '';
 }
 function proofsToggle(rule, shown) {
   var proofs = rule.proofs || [];
@@ -471,7 +441,8 @@ function renderBoard() {
     if (!groups[name]) { groups[name] = []; order.push(name); }
     groups[name].push(feature);
   });
-  var head = '<section>' + statStrip() + '</section>';
+  var head = '<section>' + statStrip() + '</section><section>' + leftToDo()
+    + '</section>';
   var table = order.length
     ? '<div class="tbl specs" style="--cols:' + columns.map(function (c) {
         return 'minmax(' + (c.floor ? c.floor + 'px' : 'max-content') + ','
@@ -496,9 +467,9 @@ function platformBoxes(cell) {
     var entry = platforms[os];
     return '<span class="os ' + (entry.word === 'passed' ? 'pass'
         : entry.word === 'failed' ? 'fail' : 'none') + '"'
-      + hover([[os, entry.word, entry.source || 'local',
-        ageText(entry.at).text].join(' \u00b7 ')])
-      + '>' + esc(os.slice(0, 3)) + '</span>';
+      + hover([[systemWords(os).word, entry.word, entry.source || 'local',
+        ageText(entry.at).text].join(DOT)])
+      + '>' + esc(systemWords(os).short) + '</span>';
   }).join(' ');
 }
 function cellRow(rule, name) {
@@ -556,26 +527,32 @@ function signaturesFor(feature, rule) {
 }
 function signPanel(feature, rule) {
   var cell = cellOf(rule, 'signed');
-  var row = queueRowFor(feature.name, rule.id);
-  var hand = row && row.need === 'hand check';
-  if (!level('signed') || (!cell && !hand)) { return ''; }
-  if (cell && cell.word === 'signed') {
-    var where = cell.machine
-      ? ', on ' + cell.machine + (cell.os ? ' (' + cell.os + ')' : '') : '';
-    return '<div class="panel"><h2>Signed</h2><p class="sec">'
-      + esc('Signed by ' + (cell.signer || 'a person') + ' on ' + moment(cell.at) + where
-        + ', against the rule, its proofs, its tests and what the audit '
-        + 'found as this screen shows them. The signature file beside the '
-        + 'spec carries the commit that signed it.')
-      + '</p></div>';
+  if (!level('signed') || !cell) { return ''; }
+  if (cell.word === 'signed') {
+    var who = [cell.signer_name, cell.signer].filter(Boolean).join(', ')
+      || 'a person';
+    var key = String(cell.key_fingerprint || '');
+    var lines = ['Signed by ' + who + (cell.signer_name ? ',' : '') + ' on '
+      + moment(cell.at)
+      + (key ? ' with the key ending ...' + key.slice(-4) : '') + '.'];
+    var machines = rule.machines || {};
+    Object.keys(machines).sort().forEach(function (os) {
+      lines.push('On ' + systemWords(os).word + ' the tests ran on '
+        + machines[os] + '.');
+    });
+    lines.push('The signature covers the rule, its proof, its test, the '
+      + 'code the spec lists, what the audit found and the machine the '
+      + 'tests ran on, as this screen shows them.');
+    return '<div class="panel"><h2>Signed</h2>' + lines.map(line).join('')
+      + '</div>';
   }
-  var command = row ? row.command
-    : 'purlin:sign ' + feature.name + ' ' + rule.id;
+  var hand = rule.left === 'to_test_by_hand';
   return '<div class="panel"><h2>' + (hand ? 'Hand check' : 'Signature')
-    + '</h2><p><span class="cmd">' + esc(command) + '</span> '
-    + '<span class="sec">from Claude Code</span></p>'
-    + '<p class="sec">' + (hand ? 'A hand check is a signature with a note of what you saw; the '
-        + 'page shows it once it is committed.'
+    + '</h2><p><span class="cmd">' + esc('purlin:sign ' + feature.name + ' '
+      + rule.id) + '</span> <span class="sec">from Claude Code</span></p>'
+    + '<p class="sec">' + (hand ? 'A hand check is you checking the rule and '
+        + 'signing it in one act; purlin:sign asks what you saw and records '
+        + 'it. The page shows it once it is committed.'
       : 'A signature is a signed commit that names its signer; the page '
         + 'shows it once it is committed.') + '</p></div>';
 }
@@ -616,10 +593,7 @@ function testsSection(rule) {
     + lines + '</div></section>';
 }
 function backLink() {
-  var from = VIEW.from === 'queue' && level('strong') ? 'queue' : 'board';
-  var label = {queue: 'Queue', board: 'Board'}[from];
-  return '<button class="btn" data-act="close" data-screen="' + from + '">← '
-    + label + '</button>';
+  return '<button class="btn" data-act="close">← Board</button>';
 }
 function renderRule() {
   var found = ruleInView();
@@ -631,10 +605,6 @@ function renderRule() {
   var rule = found.rule;
   var rows = [];
   GATE_LEVELS.forEach(function (name) { rows.push(cellRow(rule, name)); });
-  if (level('strong')) {
-    rows.push('<dt>Level</dt><dd>' + levelTag(rule) + ' <span class="sec">'
-      + esc(levelSource(rule)) + '</span></dd>');
-  }
   rows.push('<dt>Spec</dt><dd>' + hostLink(feature.spec_path, feature.spec_path)
     + '</dd>');
   rows.push('<dt>Last run</dt><dd>' + runLine(feature) + '</dd>');
@@ -659,81 +629,25 @@ function renderRule() {
       + '</div></section>' : '')
     + testsSection(rule);
 }
-var ARRIVES = {
-  strong: 'A rule arrives here when its level is strong and its proof is '
-    + '@manual.',
-  signed: 'A rule arrives here when its proof is @manual, or when its level '
-    + 'is signed and it has passed its tests and its audit.'};
-var RULE_TEXT_MAX = 90;
-function shortText(text) {
-  var value = String(text == null ? '' : text);
-  return value.length <= RULE_TEXT_MAX ? value
-    : value.slice(0, RULE_TEXT_MAX).replace(/\s+\S*$/, '') + '…';
-}
-function queueRow(entry) {
-  var rule = listedRule(entry);
-  return '<div class="rev" data-act="rule" data-feature="'
-    + esc(entry.owner || entry.feature) + '" data-rule="' + esc(entry.rule)
-    + '">'
-    + '<span data-label="Spec">' + esc(entry.feature) + '</span>'
-    + '<span class="mono" data-label="Rule">' + esc(entry.rule) + '</span>'
-    + '<span class="claim">'
-    + esc(shortText(entry.text || (rule ? rule.text : ''))) + '</span>'
-    + '<span data-label="Level">' + levelTag(rule || entry) + '</span>'
-    + '<span data-label="Needs"' + hover([entry.word + ((entry.reasons
-        || []).length ? DOT + entry.reasons.join('; ') : '')]) + '>'
-    + esc(entry.need) + '</span>'
-    + '<span class="cmd">' + esc(entry.command) + '</span></div>';
-}
-function listHead(labels) {
-  return '<div class="rev th">' + labels.map(function (label) {
-    return '<span>' + esc(label) + '</span>';
-  }).join('') + '</div>';
-}
-function renderQueue() {
-  var entries = DATA.queue || [];
-  if (!entries.length) {
-    return '<section><p class="eyebrow">Queue</p><div class="panel empty">'
-      + 'No rule is waiting for a person. ' + ARRIVES[gateName()]
-      + '</div></section>';
-  }
-  var hand = entries.filter(function (entry) {
-    return entry.need === 'hand check';
-  }).length;
-  var head = '<section><p class="eyebrow">Queue</p><h1>'
-    + entries.length + (entries.length === 1 ? ' rule needs' : ' rules need')
-    + ' a person</h1><p class="line">Hand checks ' + hand + DOT
-    + 'Signatures ' + (entries.length - hand) + '</p></section>';
-  return head + '<section><div class="tbl">'
-    + listHead(['Spec', 'Rule', 'What it claims', 'Level', 'Needs',
-                'Command'])
-    + entries.map(queueRow).join('') + '</div></section>';
-}
 var DATA = null;
-var VIEW = {screen: 'board', feature: null, rule: null, from: 'board',
+var VIEW = {screen: 'board', feature: null, rule: null,
             features: {}, groups: {}, filters: {}, proofs: {}};
-var SCHEMA = 9;
+var SCHEMA = 10;
 var REFRESH_AFTER = 60;
 var GATE_LEVELS = ['passed', 'strong', 'signed'];
-var BUCKETS = ['untested', 'failing', 'partial', 'passed', 'strong', 'signed'];
-var BUCKET_LABELS = {untested: 'Untested', failing: 'Failing',
-  partial: 'Partial', passed: 'Passing', strong: 'Strong', signed: 'Signed'};
-var TILE_HOVER = {
-  untested: 'No test, no current run, or no proof written.',
-  untested_no_proofs: 'No test, or no current run.',
-  failing: 'Every platform that ran the tests found a failure.',
-  partial: 'Passed on one platform, failed or did not run on another.'};
+var STEP_LABELS = {passed: 'Passing', strong: 'Strong', signed: 'Signed'};
+var NO_PROOF = 'No proof';
 var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'];
 var DOT = ' \u00b7 ';
 var WORDS = {of: 'of', no_test: 'no test', partial: 'partial',
-             failing: 'failing', stale: 'stale', passed: 'passed',
-             failed: 'failed', not_run: 'not run'};
+             failing: 'failing', passed: 'passed', failed: 'failed',
+             not_run: 'not run'};
 var CELL_TONES = {'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
   'out of date': 'warn', 'strong': 'pass', 'weak': 'warn',
   'waiting': 'neutral',
   'manual test': 'warn', 'not audited': 'idle', 'no proof': 'warn',
-  'signed': 'pass', 'unsigned': 'warn', 'stale': 'fail'};
+  'signed': 'pass', 'unsigned': 'warn'};
 var CELL_LABELS = {passed: 'Passed', strong: 'Strong', signed: 'Signed'};
 function loadData(callback) {
   var frame = document.createElement('iframe');
@@ -782,32 +696,12 @@ function pill(word) {
     + '" style="color:var(--state-' + tone(word) + ')"><b>'
     + esc(String(word).toUpperCase()) + '</b></span>';
 }
-function bucketTone(bucket) {
-  if (bucket === 'untested') { return 'idle'; }
-  if (bucket === 'failing') { return 'fail'; }
-  if (bucket === 'partial') { return 'warn'; }
-  return bucket === gateName() ? 'pass' : 'warn';
-}
-function reached(counted, name) {
-  var from = GATE_LEVELS.indexOf(name);
-  return from < 0 ? counted[name] || 0
-    : GATE_LEVELS.slice(from).reduce(function (sum, key) {
-      return sum + (counted[key] || 0);
-    }, 0);
+function systemWords(os) {
+  var words = (DATA && DATA.os_words) || {};
+  return words[os] || words.linux || {word: os, short: os};
 }
 function tag(text, plain) {
   return '<span class="tag' + (plain ? ' plain' : '') + '">' + esc(text) + '</span>';
-}
-function levelTag(rule) {
-  var level = (rule || {}).level || 'passed';
-  return '<span class="tag' + (level === 'passed' ? ' plain' : '') + '">'
-    + esc(level) + '</span>';
-}
-function levelSource(rule) {
-  var marked = (rule || {}).level_marked;
-  if (!marked) { return '(the gate)'; }
-  if (marked === rule.level) { return '(marked)'; }
-  return '(marked ' + marked + '; the gate is the ceiling)';
 }
 function everyRule() {
   var out = [];
@@ -825,9 +719,6 @@ function ruleNamed(owner, id) {
     if (r.feature === owner && r.id === id) { found = r; }
   });
   return found;
-}
-function listedRule(entry) {
-  return ruleNamed(entry.owner || entry.feature, entry.rule);
 }
 function counts(items) {
   return '<span class="trio">' + items.filter(function (item, index) {
@@ -900,7 +791,8 @@ function platformLines(feature) {
   return names.sort(function (a, b) { return newer(byOs[a].at, byOs[b].at) ? -1 : 1; })
     .map(function (os) {
       var found = byOs[os];
-      return [os, found.source || 'local', ageText(found.at).text].concat(
+      return [systemWords(os).word, found.source || 'local',
+        ageText(found.at).text].concat(
         [WORDS.passed, WORDS.failed, WORDS.not_run].filter(function (word) {
           return found.words[word];
         }).map(function (word) { return found.words[word] + ' ' + word; }))
@@ -927,17 +819,14 @@ function sourceOf(path) {
 function signerLines(feature) {
   var byWho = {};
   var names = [];
-  var stale = 0;
   ownRules(feature).forEach(function (rule) {
     var cell = (rule.cells || {}).signed || {};
-    if (cell.word === 'stale') { stale += 1; }
-    if (!cell.signer) { return; }
+    if (cell.word !== 'signed' || !cell.signer) { return; }
     if (!byWho[cell.signer]) { byWho[cell.signer] = ''; names.push(cell.signer); }
     if (newer(cell.at, byWho[cell.signer])) { byWho[cell.signer] = cell.at; }
   });
   var out = names.sort().map(function (who) { return who + DOT + when(byWho[who]); });
   if (!out.length) { out.push('Nobody has signed a rule here.'); }
-  if (stale) { out.push(stale + ' ' + WORDS.stale); }
   return out;
 }
 function runLine(feature) {
@@ -961,29 +850,22 @@ function webRemote() {
 }
 function ageText(iso) {
   var then = Date.parse(iso || '');
-  if (!then) { return {text: 'age unknown', stale: true}; }
+  if (!then) { return {text: 'age unknown', old: true}; }
   var seconds = Math.max(0, (Date.now() - then) / 1000);
-  if (seconds < 90) { return {text: 'less than a minute old', stale: false}; }
+  if (seconds < 90) { return {text: 'less than a minute old', old: false}; }
   if (seconds < 5400) {
-    return {text: Math.round(seconds / 60) + ' minutes old', stale: false};
+    return {text: Math.round(seconds / 60) + ' minutes old', old: false};
   }
   if (seconds < 172800) {
-    return {text: Math.round(seconds / 3600) + ' hours old', stale: true};
+    return {text: Math.round(seconds / 3600) + ' hours old', old: true};
   }
-  return {text: Math.round(seconds / 86400) + ' days old', stale: true};
+  return {text: Math.round(seconds / 86400) + ' days old', old: true};
 }
 function when(iso) { return String(iso || '').slice(0, 10) || 'date unknown'; }
 function moment(iso) {
   var text = String(iso || '');
   return text.length >= 16 ? text.slice(0, 10) + ' ' + text.slice(11, 16)
     + ' UTC' : when(iso);
-}
-function queueRowFor(owner, id) {
-  var found = null;
-  (DATA.queue || []).forEach(function (entry) {
-    if (entry.owner === owner && entry.rule === id) { found = entry; }
-  });
-  return found;
 }
 function cellOf(rule, name) {
   return (rule.cells || {})[name] || null;
@@ -1000,8 +882,8 @@ function featureNamed(name) {
 }
 function ageLine() {
   var age = ageText(DATA && DATA.generated_at);
-  return {hue: age.stale ? 'warn' : 'pass', text: 'Data: ' + age.text
-    + (age.stale ? ' — run purlin:status to refresh' : '')};
+  return {hue: age.old ? 'warn' : 'pass', text: 'Data: ' + age.text
+    + (age.old ? ' — run purlin:status to refresh' : '')};
 }
 function signedTag() {
   var found = DATA && DATA.tag;
@@ -1014,31 +896,12 @@ function tagChip() {
   if (!found) {
     return '<span class="tag plain"'
       + hover(['This commit carries no signed tag. purlin:sign writes '
-        + 'signed/<version> once every rule meets the gate signed, and a '
-        + 'person pushes it.']) + '>no signed tag</span>';
+        + 'signed/<version> once nothing is left to do at the gate signed, '
+        + 'and a person pushes it.']) + '>no signed tag</span>';
   }
   return '<span class="tag"' + hover(['The signed tag on this commit'
       + (found.at ? DOT + found.at : '')]) + '>'
     + esc(found.name + (found.at ? DOT + found.at : '')) + '</span>';
-}
-function gateChips(gate) {
-  var summary = (DATA && DATA.summary) || {};
-  var met = summary.met || 0;
-  var total = summary.rules || 0;
-  var byLevel = {passed: 0, strong: 0, signed: 0};
-  everyRule().forEach(function (pair) {
-    if (pair.rule.meets_gate) {
-      byLevel[pair.rule.level || 'passed'] += 1;
-    }
-  });
-  var lines = [byLevel.passed + ' need their tests only, and pass them',
-    byLevel.strong + ' need an audit too, and have one that found nothing',
-    byLevel.signed + ' need a signature too, and have one'].filter(
-    function (line) { return line.charAt(0) !== '0'; });
-  return tag('gate: ' + gate, true) + '<span class="tag plain"'
-    + hover(lines) + '>' + esc(met + ' of ' + total
-      + (total === 1 ? ' rule meets' : ' rules meet') + ' the gate')
-    + '</span>';
 }
 function topBar() {
   var line = ageLine();
@@ -1048,7 +911,7 @@ function topBar() {
     + '<button class="btn fresh" data-act="reload" style="color:var(--state-'
     + line.hue + ')"><span class="dot"></span><span class="age">'
     + esc(line.text) + '</span></button><span class="spacer"></span>'
-    + (gate ? gateChips(gate) : '')
+    + (gate ? tag('gate: ' + gate, true) : '')
     + (level('signed') ? tagChip() : '')
     + (DATA && DATA.commit
        ? '<span class="tag plain" title="The commit this data was generated at">at '
@@ -1058,9 +921,6 @@ function topBar() {
 function tabs() {
   var open = VIEW.screen;
   var items = [['board', 'Board']];
-  if (level('strong')) {
-    items.push(['queue', 'Queue (' + (DATA.queue || []).length + ')']);
-  }
   if (VIEW.rule) { items.push(['rule', VIEW.feature + ' ' + VIEW.rule]); }
   return '<nav class="tabs">' + items.map(function (item) {
     return '<button data-act="nav" data-screen="' + item[0] + '"'
@@ -1075,8 +935,14 @@ function notices() {
   (DATA.warnings || []).forEach(function (warning) { lines.push(warning); });
   return lines.map(function (line) {
     return '<div class="notice"><span class="dot" '
-      + 'style="color:var(--state-warn)"></span>' + esc(line) + '</div>';
+      + 'style="color:var(--state-warn)"></span><span class="notice-text">'
+      + line.split(' ').map(noticeWord).join(' ') + '</span></div>';
   }).join('');
+}
+function noticeWord(word) {
+  if (!/[\/\-._]/.test(word)) { return esc(word); }
+  var text = word.length > 36 ? esc(word).replace(/\//g, '/<wbr>') : esc(word);
+  return '<span class="nowrap">' + text + '</span>';
 }
 function render() {
   var app = document.getElementById('app');
@@ -1093,9 +959,8 @@ function render() {
         + 'write it again.') + '</div></div>';
     return;
   }
-  if (VIEW.screen === 'queue' && !level('strong')) { VIEW.screen = 'board'; }
+  if (VIEW.screen !== 'rule') { VIEW.screen = 'board'; }
   var body = VIEW.screen === 'rule' ? renderRule()
-    : VIEW.screen === 'queue' ? renderQueue()
     : notices() + renderBoard();
   app.innerHTML = topBar() + tabs() + '<div class="wrap">' + body + '</div>';
 }
@@ -1110,7 +975,7 @@ function onClick(event) {
   else if (act === 'reload') { reloadPage(); return; }
   else if (act === 'nav') { VIEW.screen = node.getAttribute('data-screen'); }
   else if (act === 'close') {
-    VIEW.screen = node.getAttribute('data-screen') || 'board';
+    VIEW.screen = 'board';
     VIEW.rule = VIEW.feature = null;
   } else if (act === 'filter') {
     var id = node.getAttribute('data-filter');
@@ -1135,7 +1000,6 @@ function onClick(event) {
     if (again) { again.focus(); }
     return;
   } else if (act === 'rule') {
-    VIEW.from = VIEW.screen === 'queue' ? 'queue' : 'board';
     VIEW.feature = node.getAttribute('data-feature');
     VIEW.rule = node.getAttribute('data-rule');
     VIEW.screen = 'rule';
@@ -1165,7 +1029,7 @@ function tickAge() {
   node.style.color = 'var(--state-' + line.hue + ')';
   text.textContent = line.text;
 }
-function refreshIfStale() {
+function refreshIfOld() {
   var then = Date.parse((DATA && DATA.generated_at) || '');
   if (!then || (Date.now() - then) / 1000 <= REFRESH_AFTER) { return; }
   var stamp = String(DATA.generated_at);
@@ -1179,9 +1043,9 @@ function refreshIfStale() {
 restoreTheme();
 restoreView();
 document.addEventListener('visibilitychange', function () {
-  if (document.visibilityState === 'visible') { refreshIfStale(); }
+  if (document.visibilityState === 'visible') { refreshIfOld(); }
 });
-window.addEventListener('focus', refreshIfStale);
+window.addEventListener('focus', refreshIfOld);
 setInterval(tickAge, REFRESH_AFTER * 1000);
 document.getElementById('app').addEventListener('click', onClick);
 document.getElementById('app').addEventListener('keydown', function (event) {

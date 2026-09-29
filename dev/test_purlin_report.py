@@ -550,6 +550,19 @@ def test_nothing_on_the_list_is_ticked(browser, tmp_path):
     page.close()
 
 
+# purlin: purlin_report PROOF-121
+def test_the_summary_sentence_stands_above_the_boxes(browser, tmp_path):
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    above = page.evaluate(
+        "() => { const s = document.querySelector('.sentence');"
+        " const box = document.querySelector('.tile');"
+        " return [s.innerText, !!(s.compareDocumentPosition(box)"
+        " & Node.DOCUMENT_POSITION_FOLLOWING)]; }")
+    assert above == ['10 rules. 7 pass their tests. 2 are strong. 1 is signed.',
+                     True], above
+    page.close()
+
+
 # Every count cell of every spec row, keyed by the spec name, as the text a
 # person reads rather than the markup under it.
 COUNT_CELLS = r"""els => {
@@ -1262,7 +1275,7 @@ def test_no_proof_and_out_of_date_read_their_reasons(browser, tmp_path):
     reg.close()
 
 
-# The words of a higher level than `passed`, which a project at that gate is
+# The words of a higher step than `passed`, which a project at that gate is
 # never shown: the requirement names them, so the test does too.
 HIGHER_WORDS = re.compile(
     r'\b(strong|signed|audit|signature|hand check)', re.I)
@@ -1309,7 +1322,7 @@ def _walk_everything(page):
 
 
 def _higher_words(browser, tmp_path, payload, words=HIGHER_WORDS):
-    """Walk every screen of a `passed` board: the words of a higher level it
+    """Walk every screen of a `passed` board: the words of a higher step it
     showed, and each rule's status in the order the rules were opened."""
     assert payload['gate']['gate'] == 'passed'
     page = open_board(browser, tmp_path, payload)
