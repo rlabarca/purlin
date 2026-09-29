@@ -1,103 +1,79 @@
-/* The Board: where every rule stands against the gate, and which specs hold
-   the rules that have not got there yet. */
+/* The Board: how many rules reached each step the gate asks for, what is
+   left to do, and which specs hold the rules that have not got there yet. */
 
-/* One tile per level the gate reaches, plus the two below them and `Partial`,
-   each counting the rules that got at least that far, and at `signed` two
-   flag cards beside them: the rules waiting for a person, and the
-   signatures that no longer match. A flag is counted beside the tiles, never
-   instead of one, so it never shares their row. Each tile carries the hover
-   its column carries, read over every spec. */
+/* One box per step the gate reaches, each counting the rules that reached
+   it, as the payload's `summary.steps` counts them: green once every rule has
+   reached the step, amber until then. From `strong` up a `No proof` box
+   follows them, counting the rules that have no proof yet. Each box carries
+   the hover its column carries, read over every spec. */
 function statStrip() {
   var summary = DATA.summary || {};
+  var steps = summary.steps || {};
   var project = wholeProject();
-  var shown = BUCKETS.filter(function (bucket) {
-    return GATE_LEVELS.indexOf(bucket) < 0 || level(bucket);
+  var boxes = GATE_LEVELS.filter(level).map(function (step) {
+    var count = steps[step] || 0;
+    return box(STEP_LABELS[step], count,
+               count === (summary.rules || 0) ? 'pass' : 'warn',
+               stepHover(step, project));
   });
-  var tiles = shown.map(function (bucket) {
-    return '<div class="tile"' + hover(tileHover(bucket, project))
-      + '><div class="tile-v" style="color:var(--state-'
-      + bucketTone(bucket) + ')">' + reached(summary, bucket) + '</div>'
-      + '<div class="tile-l">' + esc(BUCKET_LABELS[bucket]) + '</div></div>';
-  }).join('');
-  var flags = level('signed')
-    ? '<div class="flags">'
-      + flagCard('Queue', summary.queue || 0, 'warn', queueLines())
-      + flagCard('Stale', summary.stale || 0, 'fail', staleLines())
-      + '</div>' : '';
-  return '<div class="strip' + (flags ? ' flagged' : '') + '">'
-    + '<div class="tiles">' + tiles + '</div>' + flags + '</div>';
-}
-
-/* One flag card: a count the tiles do not hold, in its own tone once it is
-   above zero, with the hover that says which rules make it up. */
-function flagCard(label, count, hue, lines) {
-  return '<div class="flag' + (count ? ' on ' + hue : '') + '"'
-    + hover(lines) + '><div class="flag-v">' + count
-    + '</div><div class="flag-l">' + esc(label) + '</div></div>';
-}
-
-/* How many rules of each spec wait on a person, which is what the `Queue`
-   card counts for the project and what the Queue tab lists. */
-function queueLines() {
-  var byFeature = {};
-  var names = [];
-  ((DATA.queue || [])).forEach(function (entry) {
-    if (!byFeature[entry.feature]) {
-      byFeature[entry.feature] = 0;
-      names.push(entry.feature);
-    }
-    byFeature[entry.feature] += 1;
-  });
-  if (!names.length) { return ['No rule is waiting for a person.']; }
-  return names.sort().map(function (name) {
-    return name + DOT + byFeature[name];
-  });
-}
-
-/* Which rules carry a signature that no longer matches, one line per spec. */
-function staleLines() {
-  var byFeature = {};
-  var names = [];
-  everyRule().forEach(function (pair) {
-    if (!(pair.rule.flags || {}).stale) { return; }
-    var name = pair.feature.name;
-    if (!byFeature[name]) { byFeature[name] = []; names.push(name); }
-    byFeature[name].push(pair.rule.id);
-  });
-  if (!names.length) { return ['Every signature still matches.']; }
-  return names.sort().map(function (name) {
-    return name + DOT + byFeature[name].join(', ');
-  });
-}
-
-/* What a tile says beyond its count. The three cumulative tiles say what
-   their column says for one spec: where the runs happened, where the audit
-   came from, who signed. The three below them name what they count. */
-function tileHover(bucket, project) {
-  if (bucket === 'passed') { return platformLines(project); }
-  if (bucket === 'strong') { return auditLines(project); }
-  if (bucket === 'untested') {
-    return [showsProofs() ? TILE_HOVER.untested : TILE_HOVER.untested_no_proofs]
-      .concat(untestedLines());
+  if (level('strong')) {
+    var missing = noProofLines();
+    var count = missing.reduce(function (sum, pair) { return sum + pair[1]; },
+                               0);
+    boxes.push(box(NO_PROOF, count, count ? 'warn' : 'pass',
+      missing.map(function (pair) { return pair[0] + DOT + pair[1]; })));
   }
-  return bucket === 'signed' ? signerLines(project) : [TILE_HOVER[bucket]];
+  return '<div class="strip"><div class="tiles">' + boxes.join('')
+    + '</div></div>';
 }
 
-/* The untested rules by what their passed cell reads, `no test · 3` then
-   `not run · 552`: a rule with no marked test is a gap in the tests, and a
-   rule whose test has not run is waiting on a run. */
-function untestedLines() {
-  var counts = {};
-  var order = [];
+/* One box: its count in its tone, its label, and its hover where it has one. */
+function box(label, count, hue, lines) {
+  return '<div class="tile"' + (lines.length ? hover(lines) : '')
+    + '><div class="tile-v" style="color:var(--state-' + hue + ')">' + count
+    + '</div><div class="tile-l">' + esc(label) + '</div></div>';
+}
+
+/* What a step box says beyond its count, which is what its column says for
+   one spec: where the runs happened, where the audit came from, who signed. */
+function stepHover(step, project) {
+  if (step === 'passed') { return platformLines(project); }
+  if (step === 'strong') { return auditLines(project); }
+  return signerLines(project);
+}
+
+/* The specs that hold a rule with no proof, and how many each holds, as
+   `[[spec, count]]`: the kind `no_proof` the payload gives each such rule. */
+function noProofLines() {
+  var byFeature = {};
+  var names = [];
   everyRule().forEach(function (pair) {
-    if (pair.rule.bucket !== 'untested') { return; }
-    var word = ((pair.rule.cells || {}).passed || {}).word || 'no test';
-    if (!(word in counts)) { counts[word] = 0; order.push(word); }
-    counts[word] += 1;
+    if (pair.rule.left !== 'no_proof') { return; }
+    var name = pair.feature.name;
+    if (!(name in byFeature)) { byFeature[name] = 0; names.push(name); }
+    byFeature[name] += 1;
   });
-  return order.sort().map(function (word) {
-    return word + DOT + counts[word];
-  });
+  return names.sort().map(function (name) { return [name, byFeature[name]]; });
+}
+
+/* What is left to do, under the boxes: one line per kind of work, in the
+   order the payload gives, each with its count and the command that does
+   it, as the terminal writes them. The page composes none of it and ticks
+   nothing: a line goes when the command that clears it has run and the data
+   is written again. With nothing left, the payload's last line stands in
+   the list's place. */
+function leftToDo() {
+  var items = DATA.left || [];
+  if (!items.length) {
+    return '<div class="panel todo"><p>' + esc(DATA.last_line || '')
+      + '</p></div>';
+  }
+  return '<p class="eyebrow">Left to do</p><div class="panel todo">'
+    + items.map(function (item) {
+      return '<p><span>' + esc(item.text) + ':</span> <span class="cmd">'
+        + esc(item.command) + '</span></p>';
+    }).join('') + '<p class="sec">Type each command in Claude Code.</p>'
+    + '</div>';
 }
 
 /* The columns the gate reaches, and no others. Every when, who and platform
@@ -184,33 +160,36 @@ function share(count, total) {
           total && count === total ? 'pass' : count ? 'warn' : 'idle'];
 }
 
-/* How many of this spec's rules the audit proved strong, of those whose
-   level asks for the audit, and the strength of the newest record beside it.
-   A signed rule is still strong, so the share is read the way the tiles are:
-   this level and every level above it. A rule whose level is `passed` is not
-   asked, so it is in neither number, and a spec with no rule that is asked
-   shows an empty cell, as `board.strong_cell` does. */
+/* How many of the rules the spec proves the audit found strong, its own and
+   the shared ones alike, and the strength of the newest record beside it. A
+   signed rule is still strong, so its strong cell reads `strong` too. */
 function strongCell(feature) {
   var rollup = feature.rollup || {};
-  if (!rollup.asks_strong) { return ''; }
+  var rules = feature.rules || [];
+  if (!rules.length) { return ''; }
   var value = rollup.test_strength == null
     ? feature.test_strength : rollup.test_strength;
   return '<span' + hover(auditLines(feature)) + '>'
-    + counts([share(reached(rollup, 'strong'), rollup.asks_strong),
+    + counts([share(reading(rules, 'strong'), rules.length),
       [value == null ? 'n/a' : Math.floor(value) + '%', '',
         value == null ? 'idle' : value >= minStrength() ? 'pass' : 'fail']])
     + '</span>';
 }
 
-/* How many of this spec's rules carry a signature that counts, of those
-   whose level is `signed`, and an empty cell where none is. Who signed them
-   and how many signatures stopped matching are in the hover; the `Stale`
-   flag card carries the project's stale count. */
+/* How many of the rules the spec proves carry a signature that counts. Who
+   signed them is in the hover. */
 function signedCell(feature) {
-  var rollup = feature.rollup || {};
-  if (!rollup.asks_signed) { return ''; }
+  var rules = feature.rules || [];
+  if (!rules.length) { return ''; }
   return '<span' + hover(signerLines(feature)) + '>'
-    + counts([share(rollup.signed || 0, rollup.asks_signed)]) + '</span>';
+    + counts([share(reading(rules, 'signed'), rules.length)]) + '</span>';
+}
+
+/* How many of these rules have this cell reading its own name. */
+function reading(rules, name) {
+  return rules.filter(function (rule) {
+    return cellWord(rule, name) === name;
+  }).length;
 }
 
 /* A spec that names no files: Purlin cannot tell which code it covers, so a
@@ -243,7 +222,7 @@ function featureRow(feature, columns) {
         + '"' : '') + '>' + cell + '</div>';
     }).join('') + '</div>';
   if (!open) { return row; }
-  return row + visibleRules(feature).map(function (rule) {
+  return row + description(feature) + visibleRules(feature).map(function (rule) {
     var shown = !!VIEW.proofs[rule.feature + ' ' + rule.id];
     return '<div class="rule" data-act="rule" data-feature="'
       + esc(rule.feature) + '" data-rule="' + esc(rule.id) + '">'
@@ -256,6 +235,13 @@ function featureRow(feature, columns) {
       + '<span class="rm">' + proofsToggle(rule, shown) + '</span></div>'
       + (shown ? proofsUnder(rule) : '');
   }).join('');
+}
+
+/* The spec's `> Description:`, drawn when its row is opened, above its
+   rules. A spec that writes none shows nothing here. */
+function description(feature) {
+  return feature.description ? '<p class="desc">' + esc(feature.description)
+    + '</p>' : '';
 }
 
 /* The control that opens a rule's proofs beneath its row. Closed, it says
@@ -310,8 +296,9 @@ function proofsUnder(rule) {
    how many specs it holds; at the right how many of their rules pass their
    tests, `187 of 187 rules pass`, and a bar of one fixed width, so the bars
    line up down the page. A band counts each rule once, under the spec that
-   owns it, as the tiles do: a shared rule is counted in its anchor's band,
-   so the bands add up to the top bar's total. The whole band is the control
+   owns it, as the summary does: a shared rule is counted in its anchor's
+   band, so the bands add up to the project's rules. The whole band is the
+   control
    that folds the group, from the keyboard too, and says whether it is open.
    Under 1024 pixels the right end drops beneath the left. */
 function groupBand(name, features, columns) {
@@ -349,9 +336,10 @@ function renderBoard() {
     if (!groups[name]) { groups[name] = []; order.push(name); }
     groups[name].push(feature);
   });
-  /* The board opens on the tiles, which carry every count the tests give;
-     how many rules meet the gate sits beside the gate in the top bar. */
-  var head = '<section>' + statStrip() + '</section>';
+  /* The board opens on the step boxes, with what is left to do beneath
+     them. */
+  var head = '<section>' + statStrip() + '</section><section>' + leftToDo()
+    + '</section>';
   var table = order.length
     ? '<div class="tbl specs" style="--cols:' + columns.map(function (c) {
         /* The table owns the tracks and every row shares them, so a heading

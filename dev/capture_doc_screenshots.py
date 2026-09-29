@@ -1,18 +1,18 @@
 """Capture the board screenshots the docs embed.
 
-Three images, from the same fixture payloads `dev/test_purlin_report.py`
+Two images, from the same fixture payloads `dev/test_purlin_report.py`
 renders (`dev/fixtures/report/`) rather than from whatever this checkout
-happens to hold: a screenshot taken from live data goes stale the moment the
-data moves, and shows one project's names to every reader.
+happens to hold: a screenshot taken from live data is out of date the moment
+the data moves, and shows one project's names to every reader.
 
     python3 dev/build_report.py && python3 dev/capture_doc_screenshots.py
 
-    dashboard-board.png   the board at the signed gate: six tiles, the two
-                          flag cards, every column, the filters, and login
-                          open with one rule's proofs beneath it
-    dashboard-queue.png   the Queue tab: a hand check and a signature
-    dashboard-rule.png    one signed rule: its cells, its level, what the
-                          audit found, its signature and its proofs
+    dashboard-board.png   the board at the signed gate: the step boxes, the
+                          `No proof` box, what is left to do, every column,
+                          the filters, and login open with its description
+                          and one rule's proofs beneath it
+    dashboard-rule.png    one signed rule: its cells, what the audit found,
+                          its signature and its proofs
 
 Each is the dark theme at 1440 wide, captured at 2x so the type stays crisp.
 Uses dev/browser_launch.py, so it drives an installed Google Chrome when the
@@ -45,7 +45,6 @@ SHOTS = (
     ('dashboard-board.png', 'regulated',
      ('[data-act="feature"][data-feature="login"]',
       '[data-act="proofs"][data-feature="login"][data-rule="RULE-4"]')),
-    ('dashboard-queue.png', 'regulated', ('[data-screen="queue"]',)),
     # RULE-1 is the signed one: its cells show a platform box, what the audit
     # found and a signature, which is the whole chain on one screen.
     ('dashboard-rule.png', 'regulated',

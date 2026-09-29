@@ -106,7 +106,7 @@ def test_a_signature_writes_the_data_file(capsys):
         path = os.path.join(made.root, DATA)
         if os.path.exists(path):
             os.remove(path)
-        code = sign_module.main(['--batch', '--project-root', made.root])
+        code = sign_module.main(['--all', '--project-root', made.root])
         assert code == 0, capsys.readouterr().out
         data = _data(made.root)
         assert data is not None, 'purlin:sign wrote no data file'

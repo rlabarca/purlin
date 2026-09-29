@@ -1,4 +1,4 @@
-/* The shell: the data file, the chrome, the router and the marks the three
+/* The shell: the data file, the chrome, the router and the marks the two
    screens share.
 
    The data file declares a const, and a const cannot be declared twice in one
@@ -8,7 +8,7 @@
    fetch is blocked. The query string defeats the file:// cache. */
 
 var DATA = null;
-var VIEW = {screen: 'board', feature: null, rule: null, from: 'board',
+var VIEW = {screen: 'board', feature: null, rule: null,
             features: {}, groups: {}, filters: {}, proofs: {}};
 var SCHEMA = 10;
 /* The data file is rewritten when `purlin:status`, `purlin:test`,
@@ -18,30 +18,19 @@ var SCHEMA = 10;
 var REFRESH_AFTER = 60;
 
 /* The three evidence levels, lowest first. The project's gate names the
-   highest level that exists, and every cell, tile, column and filter above it
+   highest level that exists, and every cell, box, column and filter above it
    is absent rather than empty: a board that asks a question its project has
    not opted into reads as a project falling short. */
 var GATE_LEVELS = ['passed', 'strong', 'signed'];
 
-/* The tiles, lowest level first. `Untested`, `Failing` and `Partial` count
-   the rules that are not passing on every platform they ran on. The three
-   above them are cumulative, not exclusive: a signed rule is still passing
-   and still strong, so it is counted in all three. `stale` is a flag
-   counted beside the tiles, never instead of one. The keys and the
-   labels are `board.BUCKET_LABELS`: the bucket `passed` reads `Passing` on a
-   tile, because the tile counts rules whose tests pass now. */
-var BUCKETS = ['untested', 'failing', 'partial', 'passed', 'strong', 'signed'];
-var BUCKET_LABELS = {untested: 'Untested', failing: 'Failing',
-  partial: 'Partial', passed: 'Passing', strong: 'Strong', signed: 'Signed'};
-
-/* What the three tiles that are not a level count, for their hovers. The
-   three above them carry the project's own platform, audit and signer lines
-   instead, which are the column hovers read over every spec. */
-var TILE_HOVER = {
-  untested: 'No test, no current run, or no proof written.',
-  untested_no_proofs: 'No test, or no current run.',
-  failing: 'Every platform that ran the tests found a failure.',
-  partial: 'Passed on one platform, failed or did not run on another.'};
+/* The step boxes, one per step the gate reaches, each counting the rules
+   that reached it: the payload's `summary.steps`, where each step contains
+   the next. The step `passed` reads `Passing` on a box, because it counts
+   rules whose tests pass now. From `strong` up, where every rule needs a
+   proof, one more box counts the rules that have none: the kind `no_proof`
+   the payload gives a rule. */
+var STEP_LABELS = {passed: 'Passing', strong: 'Strong', signed: 'Signed'};
+var NO_PROOF = 'No proof';
 
 /* The board's six column headings and the words its cells append, in one
    place. `scripts/mcp/purlin/board.py` renders the same six columns for
@@ -55,18 +44,18 @@ var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'];
    is `board.DOT`. */
 var DOT = ' \u00b7 ';
 var WORDS = {of: 'of', no_test: 'no test', partial: 'partial',
-             failing: 'failing', stale: 'stale', passed: 'passed',
-             failed: 'failed', not_run: 'not run'};
+             failing: 'failing', passed: 'passed', failed: 'failed',
+             not_run: 'not run'};
 
 /* Every word a cell can read, and the tone it reads in. A word carries the
    same hue wherever it is drawn, so a pill on the board, a row on the rule
-   screen and a row on the Queue tab agree. */
+   screen and a proof beneath a rule agree. */
 var CELL_TONES = {'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
   'out of date': 'warn', 'strong': 'pass', 'weak': 'warn',
   'waiting': 'neutral',
   'manual test': 'warn', 'not audited': 'idle', 'no proof': 'warn',
-  'signed': 'pass', 'unsigned': 'warn', 'stale': 'fail'};
+  'signed': 'pass', 'unsigned': 'warn'};
 
 var CELL_LABELS = {passed: 'Passed', strong: 'Strong', signed: 'Signed'};
 
@@ -106,7 +95,7 @@ function gateName() {
 }
 
 /* True when the project's gate is at this level or above it, which is the
-   one question that decides whether a cell, a tile, a column or a filter is
+   one question that decides whether a cell, a box, a column or a filter is
    drawn at all. */
 function level(name) {
   return GATE_LEVELS.indexOf(gateName()) >= GATE_LEVELS.indexOf(name);
@@ -138,48 +127,16 @@ function pill(word) {
     + esc(String(word).toUpperCase()) + '</b></span>';
 }
 
-/* A tile counts the rules that reached its level, and its tone answers the
-   only question the tile is asked: does a rule sitting there meet this
-   project's gate? Under `signed` a passing rule does not, so it reads warn. */
-function bucketTone(bucket) {
-  if (bucket === 'untested') { return 'idle'; }
-  if (bucket === 'failing') { return 'fail'; }
-  if (bucket === 'partial') { return 'warn'; }
-  return bucket === gateName() ? 'pass' : 'warn';
-}
-
-/* How many rules reached this level, read off the payload's exclusive
-   buckets. The payload counts a rule once, in the highest bucket it reached;
-   the board asks how many got at least this far, which is that bucket and
-   every one above it. A name that is not a level is one bucket of its own. */
-function reached(counted, name) {
-  var from = GATE_LEVELS.indexOf(name);
-  return from < 0 ? counted[name] || 0
-    : GATE_LEVELS.slice(from).reduce(function (sum, key) {
-      return sum + (counted[key] || 0);
-    }, 0);
+/* The words a person reads for an operating system, from the payload's
+   `os_words`: `Windows`, `macOS` and `Linux/Unix`, and in a small box `Win`,
+   `Mac` and `Lin`. A system that is none of the three reads as `linux`. */
+function systemWords(os) {
+  var words = (DATA && DATA.os_words) || {};
+  return words[os] || words.linux || {word: os, short: os};
 }
 
 function tag(text, plain) {
   return '<span class="tag' + (plain ? ' plain' : '') + '">' + esc(text) + '</span>';
-}
-
-/* A rule's level: `passed`, `strong` or `signed`, the gate's own words. A
-   level above `passed` asks for more than the tests, so it carries the accent
-   border the tag already has and a level of `passed` reads muted. */
-function levelTag(rule) {
-  var level = (rule || {}).level || 'passed';
-  return '<span class="tag' + (level === 'passed' ? ' plain' : '') + '">'
-    + esc(level) + '</span>';
-}
-
-/* Where a rule's level came from: the rule's own tag, or the project's gate
-   where the rule carries no tag. A tag above the gate is read as the gate. */
-function levelSource(rule) {
-  var marked = (rule || {}).level_marked;
-  if (!marked) { return '(the gate)'; }
-  if (marked === rule.level) { return '(marked)'; }
-  return '(marked ' + marked + '; the gate is the ceiling)';
 }
 
 /* Every rule the project holds, each paired with the feature that owns it. */
@@ -203,11 +160,6 @@ function ruleNamed(owner, id) {
     if (r.feature === owner && r.id === id) { found = r; }
   });
   return found;
-}
-
-/* The rule one list entry points at, under the spec that owns it. */
-function listedRule(entry) {
-  return ruleNamed(entry.owner || entry.feature, entry.rule);
 }
 
 /* Several counts in one cell, each labelled with the word it counts and set
@@ -316,7 +268,8 @@ function platformLines(feature) {
   return names.sort(function (a, b) { return newer(byOs[a].at, byOs[b].at) ? -1 : 1; })
     .map(function (os) {
       var found = byOs[os];
-      return [os, found.source || 'local', ageText(found.at).text].concat(
+      return [systemWords(os).word, found.source || 'local',
+        ageText(found.at).text].concat(
         [WORDS.passed, WORDS.failed, WORDS.not_run].filter(function (word) {
           return found.words[word];
         }).map(function (word) { return found.words[word] + ' ' + word; }))
@@ -347,22 +300,18 @@ function sourceOf(path) {
   return parts.length > 1 ? parts[parts.length - 2] : 'local';
 }
 
-/* Who has signed a rule here and when their newest signature was written,
-   then how many signatures no longer match. */
+/* Who has signed a rule here and when their newest signature was written. */
 function signerLines(feature) {
   var byWho = {};
   var names = [];
-  var stale = 0;
   ownRules(feature).forEach(function (rule) {
     var cell = (rule.cells || {}).signed || {};
-    if (cell.word === 'stale') { stale += 1; }
-    if (!cell.signer) { return; }
+    if (cell.word !== 'signed' || !cell.signer) { return; }
     if (!byWho[cell.signer]) { byWho[cell.signer] = ''; names.push(cell.signer); }
     if (newer(cell.at, byWho[cell.signer])) { byWho[cell.signer] = cell.at; }
   });
   var out = names.sort().map(function (who) { return who + DOT + when(byWho[who]); });
   if (!out.length) { out.push('Nobody has signed a rule here.'); }
-  if (stale) { out.push(stale + ' ' + WORDS.stale); }
   return out;
 }
 
@@ -394,16 +343,16 @@ function webRemote() {
 
 function ageText(iso) {
   var then = Date.parse(iso || '');
-  if (!then) { return {text: 'age unknown', stale: true}; }
+  if (!then) { return {text: 'age unknown', old: true}; }
   var seconds = Math.max(0, (Date.now() - then) / 1000);
-  if (seconds < 90) { return {text: 'less than a minute old', stale: false}; }
+  if (seconds < 90) { return {text: 'less than a minute old', old: false}; }
   if (seconds < 5400) {
-    return {text: Math.round(seconds / 60) + ' minutes old', stale: false};
+    return {text: Math.round(seconds / 60) + ' minutes old', old: false};
   }
   if (seconds < 172800) {
-    return {text: Math.round(seconds / 3600) + ' hours old', stale: true};
+    return {text: Math.round(seconds / 3600) + ' hours old', old: true};
   }
-  return {text: Math.round(seconds / 86400) + ' days old', stale: true};
+  return {text: Math.round(seconds / 86400) + ' days old', old: true};
 }
 
 /* The date part of an ISO stamp, where a whole day is precise enough. */
@@ -417,19 +366,8 @@ function moment(iso) {
     + ' UTC' : when(iso);
 }
 
-/* The queue row that names this rule under the feature that owns it, or
-   null where the rule waits on nobody. */
-function queueRowFor(owner, id) {
-  var found = null;
-  (DATA.queue || []).forEach(function (entry) {
-    if (entry.owner === owner && entry.rule === id) { found = entry; }
-  });
-  return found;
-}
-
-/* One cell of one rule, or null where the rule's level does not ask for
-   it, which a gate below that level also means: the key is missing, not
-   empty. */
+/* One cell of one rule, or null where the gate does not reach it: the key
+   is missing, not empty. */
 function cellOf(rule, name) {
   return (rule.cells || {})[name] || null;
 }
@@ -452,13 +390,13 @@ function featureNamed(name) {
    minute tick and a full render agree on the threshold. */
 function ageLine() {
   var age = ageText(DATA && DATA.generated_at);
-  return {hue: age.stale ? 'warn' : 'pass', text: 'Data: ' + age.text
-    + (age.stale ? ' — run purlin:status to refresh' : '')};
+  return {hue: age.old ? 'warn' : 'pass', text: 'Data: ' + age.text
+    + (age.old ? ' — run purlin:status to refresh' : '')};
 }
 
 /* The tag this commit carries, which is the marker that a version was signed
-   off: `purlin:sign` writes `signed/<version>` at the gate `signed` once every
-   rule meets it, and a person pushes it. Below `signed` no tag is ever
+   off: `purlin:sign` writes `signed/<version>` at the gate `signed` once
+   nothing is left to do, and a person pushes it. Below `signed` no tag is ever
    written, so the top bar shows no tag chip at all. The payload's `tag`
    carries the tag's name and the commit it points at, and is null where this
    commit carries none. */
@@ -474,38 +412,12 @@ function tagChip() {
   if (!found) {
     return '<span class="tag plain"'
       + hover(['This commit carries no signed tag. purlin:sign writes '
-        + 'signed/<version> once every rule meets the gate signed, and a '
-        + 'person pushes it.']) + '>no signed tag</span>';
+        + 'signed/<version> once nothing is left to do at the gate signed, '
+        + 'and a person pushes it.']) + '>no signed tag</span>';
   }
   return '<span class="tag"' + hover(['The signed tag on this commit'
       + (found.at ? DOT + found.at : '')]) + '>'
     + esc(found.name + (found.at ? DOT + found.at : '')) + '</span>';
-}
-
-/* The gate and where the project stands against it, as two chips that each
-   say one thing: `gate: signed`, the setting, then `553 of 555 rules meet the
-   gate`, the count with its meaning, because `gate: signed · 91 of 562` read
-   as 91 rules signed. The count chip's hover says how the number is made up,
-   one line per level with rules that meet it; at `passed` every rule needs
-   its tests alone, so it has that one line. */
-function gateChips(gate) {
-  var summary = (DATA && DATA.summary) || {};
-  var met = summary.met || 0;
-  var total = summary.rules || 0;
-  var byLevel = {passed: 0, strong: 0, signed: 0};
-  everyRule().forEach(function (pair) {
-    if (pair.rule.meets_gate) {
-      byLevel[pair.rule.level || 'passed'] += 1;
-    }
-  });
-  var lines = [byLevel.passed + ' need their tests only, and pass them',
-    byLevel.strong + ' need an audit too, and have one that found nothing',
-    byLevel.signed + ' need a signature too, and have one'].filter(
-    function (line) { return line.charAt(0) !== '0'; });
-  return tag('gate: ' + gate, true) + '<span class="tag plain"'
-    + hover(lines) + '>' + esc(met + ' of ' + total
-      + (total === 1 ? ' rule meets' : ' rules meet') + ' the gate')
-    + '</span>';
 }
 
 function topBar() {
@@ -516,7 +428,7 @@ function topBar() {
     + '<button class="btn fresh" data-act="reload" style="color:var(--state-'
     + line.hue + ')"><span class="dot"></span><span class="age">'
     + esc(line.text) + '</span></button><span class="spacer"></span>'
-    + (gate ? gateChips(gate) : '')
+    + (gate ? tag('gate: ' + gate, true) : '')
     + (level('signed') ? tagChip() : '')
     + (DATA && DATA.commit
        ? '<span class="tag plain" title="The commit this data was generated at">at '
@@ -524,14 +436,10 @@ function topBar() {
     + themeButton() + '</header>';
 }
 
-/* The queue is the one list of questions for a person, and under `passed`
-   nothing asks one, so the tab is absent rather than empty. */
+/* The board, then the open rule. */
 function tabs() {
   var open = VIEW.screen;
   var items = [['board', 'Board']];
-  if (level('strong')) {
-    items.push(['queue', 'Queue (' + (DATA.queue || []).length + ')']);
-  }
   if (VIEW.rule) { items.push(['rule', VIEW.feature + ' ' + VIEW.rule]); }
   return '<nav class="tabs">' + items.map(function (item) {
     return '<button data-act="nav" data-screen="' + item[0] + '"'
@@ -566,11 +474,10 @@ function render() {
         + 'write it again.') + '</div></div>';
     return;
   }
-  if (VIEW.screen === 'queue' && !level('strong')) { VIEW.screen = 'board'; }
+  if (VIEW.screen !== 'rule') { VIEW.screen = 'board'; }
   /* The notices are about the tree the whole payload came from, so the board
      carries them once rather than every screen repeating them. */
   var body = VIEW.screen === 'rule' ? renderRule()
-    : VIEW.screen === 'queue' ? renderQueue()
     : notices() + renderBoard();
   app.innerHTML = topBar() + tabs() + '<div class="wrap">' + body + '</div>';
 }
@@ -586,7 +493,7 @@ function onClick(event) {
   else if (act === 'reload') { reloadPage(); return; }
   else if (act === 'nav') { VIEW.screen = node.getAttribute('data-screen'); }
   else if (act === 'close') {
-    VIEW.screen = node.getAttribute('data-screen') || 'board';
+    VIEW.screen = 'board';
     VIEW.rule = VIEW.feature = null;
   } else if (act === 'filter') {
     var id = node.getAttribute('data-filter');
@@ -614,7 +521,6 @@ function onClick(event) {
     if (again) { again.focus(); }
     return;
   } else if (act === 'rule') {
-    VIEW.from = VIEW.screen === 'queue' ? 'queue' : 'board';
     VIEW.feature = node.getAttribute('data-feature');
     VIEW.rule = node.getAttribute('data-rule');
     VIEW.screen = 'rule';
@@ -660,7 +566,7 @@ function tickAge() {
 /* At most one reload per stamp: when the data file has not moved, the reload
    would show the same board again, so the page asks once and then waits for
    something new to arrive. */
-function refreshIfStale() {
+function refreshIfOld() {
   var then = Date.parse((DATA && DATA.generated_at) || '');
   if (!then || (Date.now() - then) / 1000 <= REFRESH_AFTER) { return; }
   var stamp = String(DATA.generated_at);
@@ -675,9 +581,9 @@ function refreshIfStale() {
 restoreTheme();
 restoreView();
 document.addEventListener('visibilitychange', function () {
-  if (document.visibilityState === 'visible') { refreshIfStale(); }
+  if (document.visibilityState === 'visible') { refreshIfOld(); }
 });
-window.addEventListener('focus', refreshIfStale);
+window.addEventListener('focus', refreshIfOld);
 setInterval(tickAge, REFRESH_AFTER * 1000);
 document.getElementById('app').addEventListener('click', onClick);
 /* A band is a control drawn as a row, so Enter and Space press it as they
