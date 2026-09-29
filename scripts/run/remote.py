@@ -109,10 +109,15 @@ def run_branch_name(project_root, branch):
 def run_remote(project_root, args=None, cfg=None):
     """Push a run branch, wait for CI, pull it back, delete it. Exit code.
 
-    A project whose settings say `ci: none` has no git host that runs a
-    workflow, so nothing is pushed.
+    A project whose settings file cannot be read, or whose settings say
+    `ci: none`, pushes nothing: the first prints why the file cannot be read,
+    the second that no git host here runs a workflow.
     """
-    from config_engine import resolve_config
+    from config_engine import config_problem, resolve_config
+    problem = config_problem(project_root)
+    if problem:
+        print(problem)
+        return 1
     if resolve_config(project_root).get('ci') == NO_CI:
         print(CI_NONE)
         return 1
@@ -381,10 +386,14 @@ def _branch(project_root):
 
 
 def _have(binary):
-    for folder in (os.environ.get('PATH') or '').split(os.pathsep):
-        if folder and os.path.isfile(os.path.join(folder, binary)):
-            return True
-    return False
+    """True when `binary` is a program on the search path.
+
+    `shutil.which` is the lookup the system itself makes: on Windows it tries
+    each ending `PATHEXT` names, so `gh.exe` and `gh.cmd` are both found, and
+    elsewhere it asks for the exec bit. The program is still started by its
+    bare name.
+    """
+    return shutil.which(binary) is not None
 
 
 def _environment():

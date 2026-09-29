@@ -3,8 +3,9 @@
 `purlin:test --remote` on an Azure DevOps remote finds the pipeline run its
 push started, waits for it to complete, and brings the runner's commit home
 the way the GitHub half does. Every process `remote.py` starts is answered
-here by a stand-in for `subprocess.run`, the `az` it finds on PATH is an
-empty executable file, and the clock only moves when the code sleeps, so
+here by a stand-in for `subprocess.run`, the `az` it finds on PATH is a
+stand-in program, `az` with the exec bit on POSIX and `az.cmd` on Windows,
+and the clock only moves when the code sleeps, so
 nothing reaches a network and no test waits.
 
 What these tests cannot show is how the real Azure DevOps service and the
@@ -101,7 +102,7 @@ class FakeAzure(object):
         if argv[:3] == ['git', 'status', '--porcelain']:
             return self._answer(argv, '')
         self.started.append(argv)
-        if os.path.basename(argv[0]) == 'az':
+        if _is_az(argv[0]):
             if argv[1:4] == ['pipelines', 'runs', 'list']:
                 return self._answer(argv, self._next(self.lookups) + '\n')
             if argv[1:4] == ['pipelines', 'runs', 'show']:
@@ -117,12 +118,27 @@ class FakeAzure(object):
         return subprocess.CompletedProcess(argv, 0, out, '')
 
     def az_calls(self):
-        return [argv[1:] for argv in self.started
-                if os.path.basename(argv[0]) == 'az']
+        return [argv[1:] for argv in self.started if _is_az(argv[0])]
 
     def not_az(self):
-        return [argv for argv in self.started
-                if os.path.basename(argv[0]) != 'az']
+        return [argv for argv in self.started if not _is_az(argv[0])]
+
+
+def _is_az(program):
+    """True for the `az` the lookup found: `az`, or `az.cmd` on Windows."""
+    name = os.path.basename(program)
+    return os.path.splitext(name)[0].lower() == 'az'
+
+
+def _stand_in_az(folder):
+    """The `az` the system's own lookup finds, which nothing ever starts."""
+    if os.name == 'nt':
+        path = folder / 'az.cmd'
+        path.write_text('@echo off\r\n', encoding='utf-8')
+    else:
+        path = folder / 'az'
+        path.write_text('#!/bin/sh\n', encoding='utf-8')
+        path.chmod(0o755)
 
 
 @pytest.fixture
@@ -132,9 +148,7 @@ def azure_run(monkeypatch, tmp_path):
         folder = tmp_path / ('with-az' if az else 'without-az')
         folder.mkdir()
         if az:
-            fake_az = folder / 'az'
-            fake_az.write_text('', encoding='utf-8')
-            fake_az.chmod(0o755)
+            _stand_in_az(folder)
         monkeypatch.setenv('PATH', str(folder))
         fake = FakeAzure(**answers)
         clock = Clock()
@@ -158,18 +172,33 @@ def _looked_up_in(fake):
             first[first.index('--project') + 1])
 
 
-# purlin: host PROOF-36
-@pytest.mark.parametrize('url', [
-    'https://dev.azure.com/acme/widgets/_git/shop',
-    'git@ssh.dev.azure.com:v3/acme/widgets/shop',
-    'https://acme.visualstudio.com/widgets/_git/shop',
-])
-def test_each_remote_form_names_the_organisation_and_the_project(azure_run,
-                                                                url):
+def _organisation_and_project(azure_run, url):
     fake, _clock = azure_run(origin=url)
 
     assert remote_module.run_remote('/project') == 0
-    assert _looked_up_in(fake) == ('https://dev.azure.com/acme', 'widgets')
+    return _looked_up_in(fake)
+
+
+# purlin: host PROOF-36
+def test_the_https_form_names_the_organisation_and_the_project(azure_run):
+    assert _organisation_and_project(
+        azure_run, 'https://dev.azure.com/acme/widgets/_git/shop') == (
+        'https://dev.azure.com/acme', 'widgets')
+
+
+# purlin: host PROOF-111
+def test_the_ssh_form_names_the_organisation_and_the_project(azure_run):
+    assert _organisation_and_project(
+        azure_run, 'git@ssh.dev.azure.com:v3/acme/widgets/shop') == (
+        'https://dev.azure.com/acme', 'widgets')
+
+
+# purlin: host PROOF-112
+def test_the_visualstudio_form_names_the_organisation_and_the_project(
+        azure_run):
+    assert _organisation_and_project(
+        azure_run, 'https://acme.visualstudio.com/widgets/_git/shop') == (
+        'https://dev.azure.com/acme', 'widgets')
 
 
 # purlin: host PROOF-73
@@ -182,15 +211,17 @@ def test_a_user_part_before_the_host_is_ignored(azure_run):
 
 
 # purlin: host PROOF-74
-@pytest.mark.parametrize('url', [
-    'https://dev.azure.com/acme/My%20Widgets/_git/shop',
-    'git@ssh.dev.azure.com:v3/acme/My%20Widgets/shop',
-])
-def test_a_percent_encoded_project_is_decoded(azure_run, url):
-    fake, _clock = azure_run(origin=url)
+def test_a_percent_encoded_project_in_the_https_form_is_decoded(azure_run):
+    assert _organisation_and_project(
+        azure_run, 'https://dev.azure.com/acme/My%20Widgets/_git/shop') == (
+        'https://dev.azure.com/acme', 'My Widgets')
 
-    assert remote_module.run_remote('/project') == 0
-    assert _looked_up_in(fake) == ('https://dev.azure.com/acme', 'My Widgets')
+
+# purlin: host PROOF-113
+def test_a_percent_encoded_project_in_the_ssh_form_is_decoded(azure_run):
+    assert _organisation_and_project(
+        azure_run, 'git@ssh.dev.azure.com:v3/acme/My%20Widgets/shop') == (
+        'https://dev.azure.com/acme', 'My Widgets')
 
 
 # purlin: host PROOF-75
@@ -252,10 +283,8 @@ def test_a_succeeded_run_is_brought_home_green(azure_run, capsys):
     assert printed.rstrip().endswith('the status table')
 
 
-# purlin: host PROOF-79
-@pytest.mark.parametrize('result', ['failed', 'canceled', 'partiallySucceeded'])
-def test_a_run_that_did_not_succeed_is_brought_home_red(azure_run, capsys,
-                                                        result):
+def _brought_home_red(azure_run, capsys, result):
+    """A run that completed with `result`: red, pulled, deleted, tabled."""
     fake, _clock = azure_run(polls=('completed\t%s' % result,))
 
     assert remote_module.run_remote('/project') == 1
@@ -265,6 +294,21 @@ def test_a_run_that_did_not_succeed_is_brought_home_red(azure_run, capsys,
     assert 'Run 42 completed: %s.' % result in lines
     assert 'The run finished red. The table below is what came back.' in lines
     assert printed.rstrip().endswith('the status table')
+
+
+# purlin: host PROOF-79
+def test_a_failed_run_is_brought_home_red(azure_run, capsys):
+    _brought_home_red(azure_run, capsys, 'failed')
+
+
+# purlin: host PROOF-114
+def test_a_canceled_run_is_brought_home_red(azure_run, capsys):
+    _brought_home_red(azure_run, capsys, 'canceled')
+
+
+# purlin: host PROOF-115
+def test_a_partly_succeeded_run_is_brought_home_red(azure_run, capsys):
+    _brought_home_red(azure_run, capsys, 'partiallySucceeded')
 
 
 # purlin: host PROOF-80

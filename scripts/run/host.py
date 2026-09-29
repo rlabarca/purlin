@@ -127,37 +127,6 @@ def _commit_through_api(project_root, paths, message, merge=None):
     return _commit_github(project_root, paths, message, merge)
 
 
-def default_branch(project_root):
-    """The default branch name: what origin points at, else the branch HEAD is
-    on, else `main`.
-
-    A repository with a remote answers this outright. One with no remote, or
-    one whose `origin/HEAD` was never set, has only its own branch to go on,
-    and `main` is a guess that is wrong for every repository made by a git
-    still configured for `master`.
-    """
-    try:
-        # The whole ref comes back here, and the branch is its last part.
-        result = subprocess.run(
-            ['git', 'symbolic-ref', 'refs/remotes/origin/HEAD'],
-            capture_output=True, text=True, cwd=project_root, timeout=10)
-        if result.returncode == 0:
-            named = result.stdout.strip().rsplit('/', 1)[-1]
-            if named:
-                return named
-        # The branch itself comes back here, and a branch name may hold a
-        # slash of its own, so nothing is cut off it. A detached head has no
-        # branch to name and the command fails, which leaves `main`.
-        result = subprocess.run(
-            ['git', 'symbolic-ref', '--short', 'HEAD'],
-            capture_output=True, text=True, cwd=project_root, timeout=10)
-    except (subprocess.SubprocessError, OSError):
-        return 'main'
-    if result.returncode != 0:
-        return 'main'
-    return result.stdout.strip() or 'main'
-
-
 def detect_host():
     """`github`, `azure`, or `` when neither git host's CI is around."""
     if os.environ.get('SYSTEM_TEAMFOUNDATIONCOLLECTIONURI'):
@@ -175,7 +144,9 @@ def current_branch(project_root):
     is the last path part of an Azure DevOps ref, so `run/main-4f1c2ab`
     reaches it as `main-4f1c2ab` alone. The full ref is in
     `BUILD_SOURCEBRANCH`, and that is read first for exactly that reason.
-    Off a runner the branch is the one HEAD is on.
+    With none of them set the branch is the one HEAD is on, and a detached
+    head names none: git answers `HEAD` there, which is no branch, so the
+    answer is `''` and nothing is guessed.
     """
     for name in ('GITHUB_REF_NAME', 'BUILD_SOURCEBRANCH',
                  'BUILD_SOURCEBRANCHNAME'):
@@ -186,7 +157,7 @@ def current_branch(project_root):
             return value
     branch = (_git(project_root, ['rev-parse', '--abbrev-ref', 'HEAD'],
                    check=False) or '').strip()
-    return branch or default_branch(project_root)
+    return '' if branch == 'HEAD' else branch
 
 
 def is_a_tag_run():
@@ -222,10 +193,27 @@ def commits_here(project_root):
     return current_branch(project_root).startswith(RUN_BRANCH_PREFIX)
 
 
+# The lines a CI run prints where it commits nothing, one per reason.
+TAG_RUN = 'Tag run: nothing is written. This run reruns the tests on %s.'
+NOT_A_RUN_REF = ('This run is on %s, which is neither a run branch nor a '
+                 'signed tag: the tests ran and nothing is written.')
+NO_BRANCH = ('No branch could be read from the git host or from git, so the '
+             'results were not committed.')
+
+
 def no_commit_line(project_root):
-    """The one line a CI run prints where it commits nothing."""
-    return ('Tag run: nothing is written. This run reruns the tests on %s.'
-            % (current_branch(project_root) or 'this ref'))
+    """The one line a CI run prints where it commits nothing.
+
+    A tag run reruns the tests on the signed tag. Any other ref that is not a
+    run branch says so by name, and a run that can name no ref at all says
+    that no branch could be read.
+    """
+    ref = current_branch(project_root)
+    if is_a_tag_run():
+        return TAG_RUN % (ref or 'this ref')
+    if not ref:
+        return NO_BRANCH
+    return NOT_A_RUN_REF % ref
 
 
 # The name a remote runner's section gives its machine: its kind and its
@@ -313,8 +301,11 @@ def _commit_github(project_root, paths, message, merge=None):
               'committed.')
         return ''
 
-    base = '%s/repos/%s/git' % (_GITHUB_API, repo)
     branch = current_branch(project_root)
+    if not branch:
+        print(NO_BRANCH)
+        return ''
+    base = '%s/repos/%s/git' % (_GITHUB_API, repo)
     deletions = []
     for rel in deleted_files(project_root):
         entry = {'path': rel, 'type': 'blob', 'sha': None}
@@ -396,8 +387,11 @@ def _commit_azure(project_root, paths, message, merge=None):
               'committed.')
         return ''
 
-    base = '%s/%s/_apis/git/repositories/%s' % (collection, project, repo)
     branch = current_branch(project_root)
+    if not branch:
+        print(NO_BRANCH)
+        return ''
+    base = '%s/%s/_apis/git/repositories/%s' % (collection, project, repo)
     ref = 'refs/heads/%s' % branch
 
     last_error = None

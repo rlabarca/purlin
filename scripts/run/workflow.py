@@ -15,11 +15,12 @@ system this machine is not, so only a runner can run its test. A project with
 no such tag gets no file: at the gate `signed` `purlin:sign` writes the tag, a
 person pushes it, and nothing runs remotely.
 
-The matrix is one job per operating system the `@env` tags in `specs/` name,
-and no other. A proof tagged `@env(windows)` adds a Windows job to prove it;
-an untagged proof is satisfied by any operating system, so whichever job runs
-proves it too. Nothing else about the workflow varies, so two projects with
-the same tags get the same file.
+The matrix names the systems some proof in `specs/` is tagged `@env` for
+that the machine writing the file is not, one job each and no other: setup
+and the upgrade hand `render_workflow` those tags through `foreign_tags`. A
+proof tagged `@env(windows)`, written from a Mac, adds a Windows job to prove
+it. Nothing else about the workflow varies, so two projects with the same
+tags, written from the same system, get the same file.
 
 `prerequisites()` is what `purlin:init` asks before it writes any of this. A
 workflow is a file, a remote that holds it and a host that runs it. Writing
@@ -31,6 +32,7 @@ commit carries it.
 """
 
 import os
+import shutil
 import subprocess
 
 _RUN_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -216,10 +218,12 @@ def prerequisites(project_root):
 
 
 def _which(binary):
-    for folder in (os.environ.get('PATH') or '').split(os.pathsep):
-        if folder and os.path.isfile(os.path.join(folder, binary)):
-            return True
-    return False
+    """True when `binary` is a program on the search path.
+
+    `shutil.which` honours `PATHEXT` on Windows, so `gh.exe` and `gh.cmd` are
+    found, and asks for the exec bit elsewhere.
+    """
+    return shutil.which(binary) is not None
 
 
 def _capture(project_root, args):

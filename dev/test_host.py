@@ -37,13 +37,31 @@ import evidence as writer  # noqa: E402
 import host as host_module  # noqa: E402
 import remote as remote_module  # noqa: E402
 
+def stand_in(folder, name):
+    """A program `name` in `folder` that the system's own lookup finds.
+
+    On POSIX a file with no ending and the exec bit set; on Windows always
+    `<name>.cmd`, which `PATHEXT` names, and never an `.exe`.
+    """
+    if os.name == 'nt':
+        path = os.path.join(str(folder), name + '.cmd')
+        with open(path, 'w', encoding='utf-8') as handle:
+            handle.write('@echo off\r\n')
+    else:
+        path = os.path.join(str(folder), name)
+        with open(path, 'w', encoding='utf-8') as handle:
+            handle.write('#!/bin/sh\n')
+        os.chmod(path, 0o755)
+    return path
+
+
 def _no_workspace(monkeypatch):
     """Take the job's own workspace out of a test's environment.
 
     Every fixture project here is a temporary directory, so on a runner it is
     never the workspace and the git host arms would refuse it, which is the
-    behaviour RULE-26 and RULE-27 ask for and the wrong starting point for
-    every other test in this file.
+    behaviour RULE-27 asks for and the wrong starting point for every other
+    test in this file.
     """
     for variable in ('GITHUB_WORKSPACE', 'BUILD_SOURCESDIRECTORY'):
         monkeypatch.delenv(variable, raising=False)
@@ -1038,7 +1056,7 @@ def remote_run(monkeypatch, tmp_path):
         folder = tmp_path / ('with-gh' if gh else 'without-gh')
         folder.mkdir()
         if gh:
-            (folder / 'gh').write_text('', encoding='utf-8')
+            stand_in(folder, 'gh')
         monkeypatch.setenv('PATH', str(folder))
         fake = FakeProcesses(push=push, watch=watch, run_id=run_id,
                              run_ids=run_ids)
@@ -1108,10 +1126,12 @@ def test_the_run_is_looked_up_by_its_branch_before_it_is_watched(project,
     assert fake.log == [PUSH, LIST, WATCH, PULL, DELETE]
 
 
-# purlin: host PROOF-67
-@pytest.mark.parametrize('gate', ['passed', 'strong', 'signed'])
-def test_the_evidence_comes_home_at_every_gate(project, remote_run, gate):
-    """The runner commits its evidence at every gate, so the pull is the same."""
+def _green_at_gate(project, remote_run, gate):
+    """A green GitHub run in a project whose settings name `gate`.
+
+    The runner commits its evidence at every gate, so the pull is the same.
+    Answers the processes started, in order.
+    """
     os.makedirs(os.path.join(project, '.purlin'), exist_ok=True)
     with open(os.path.join(project, '.purlin', 'config.json'), 'w',
               encoding='utf-8') as handle:
@@ -1119,7 +1139,25 @@ def test_the_evidence_comes_home_at_every_gate(project, remote_run, gate):
     fake = remote_run()
 
     assert remote_module.run_remote(project) == 0
-    assert fake.started == [PUSH, WATCH, PULL, DELETE]
+    return fake.started
+
+
+# purlin: host PROOF-67
+def test_the_evidence_comes_home_at_the_gate_passed(project, remote_run):
+    assert _green_at_gate(project, remote_run, 'passed') == [
+        PUSH, WATCH, PULL, DELETE]
+
+
+# purlin: host PROOF-109
+def test_the_evidence_comes_home_at_the_gate_strong(project, remote_run):
+    assert _green_at_gate(project, remote_run, 'strong') == [
+        PUSH, WATCH, PULL, DELETE]
+
+
+# purlin: host PROOF-110
+def test_the_evidence_comes_home_at_the_gate_signed(project, remote_run):
+    assert _green_at_gate(project, remote_run, 'signed') == [
+        PUSH, WATCH, PULL, DELETE]
 
 
 # purlin: host PROOF-68
@@ -1209,6 +1247,35 @@ def test_a_project_whose_settings_say_ci_none_pushes_nothing(project,
     assert started == [], 'a project with ci: none started %r' % started
 
 
+# purlin: host PROOF-108
+def test_a_settings_file_that_cannot_be_read_pushes_nothing(project,
+                                                           monkeypatch,
+                                                           capsys):
+    """A comma after the last entry, the mistake a hand edit makes most."""
+    text = '{\n  "gate": "passed",\n  "ci": "github",\n}\n'
+    os.makedirs(os.path.join(project, '.purlin'), exist_ok=True)
+    with open(os.path.join(project, '.purlin', 'config.json'), 'w',
+              encoding='utf-8') as handle:
+        handle.write(text)
+    git(project, 'add', '-A')
+    git(project, 'commit', '--quiet', '-m', 'the settings')
+    git(project, 'remote', 'add', 'origin',
+        'https://github.com/acme/widgets.git')
+    with pytest.raises(json.JSONDecodeError) as reader:
+        json.loads(text)
+    started = []
+    monkeypatch.setattr(remote_module.subprocess, 'run',
+                        lambda argv, **_kw: started.append(list(argv)))
+
+    assert remote_module.run_remote(project) == 1
+    printed = capsys.readouterr().out
+    assert printed.splitlines() == [
+        '.purlin/config.json cannot be read: %s at line %d. Fix the file by '
+        'hand; nothing ran and nothing was saved.'
+        % (reader.value.msg, reader.value.lineno)], printed
+    assert started == [], 'an unreadable settings file started %r' % started
+
+
 # ---------------------------------------------------------------------------
 # Where a CI run commits
 # ---------------------------------------------------------------------------
@@ -1251,6 +1318,15 @@ def test_a_tag_run_commits_nothing_and_says_so(project, monkeypatch,
         'signed/0.10.0.')
 
 
+# purlin: host PROOF-107
+def test_any_other_branch_says_it_is_neither_a_run_branch_nor_a_tag(
+        project, monkeypatch, github_env):
+    monkeypatch.setenv('GITHUB_REF_NAME', 'topic')
+    assert host_module.no_commit_line(project) == (
+        'This run is on topic, which is neither a run branch nor a signed '
+        'tag: the tests ran and nothing is written.')
+
+
 # purlin: host PROOF-104
 def test_the_last_part_of_an_azure_ref_alone_commits_nothing(project,
                                                             monkeypatch,
@@ -1269,36 +1345,31 @@ def test_the_whole_azure_ref_is_read_first(project, monkeypatch, azure_env):
 
 
 # ---------------------------------------------------------------------------
-# The default branch
+# A commit with no branch named
 # ---------------------------------------------------------------------------
 
-# purlin: host PROOF-21
-def test_the_default_branch_is_what_origin_points_at(project):
-    git(project, 'update-ref', 'refs/remotes/origin/trunk',
-        git(project, 'rev-parse', 'HEAD').stdout.strip())
-    git(project, 'symbolic-ref', 'refs/remotes/origin/HEAD',
-        'refs/remotes/origin/trunk')
-    assert host_module.default_branch(project) == 'trunk'
-
-
-# purlin: host PROOF-88
-def test_with_no_remote_the_default_branch_is_the_one_head_names(tmp_path):
-    """A git configured for `master` makes a `master` repository.
-
-    That repository has no `origin/HEAD` to read, and `main` is a guess that
-    names a branch it does not have.
-    """
-    root = str(tmp_path / 'no-remote')
-    os.makedirs(root)
-    git(root, '-c', 'init.defaultBranch=master', 'init', '--quiet')
-    assert host_module.default_branch(root) == 'master'
-
-
-# purlin: host PROOF-89
-def test_a_detached_head_falls_back_to_main(project):
+# purlin: host PROOF-106
+def test_a_commit_with_no_branch_named_sends_nothing(project, github_env,
+                                                     monkeypatch, capsys):
+    """Nothing names the branch, so nothing is guessed and nothing is sent."""
+    for name in ('GITHUB_REF_NAME', 'BUILD_SOURCEBRANCH',
+                 'BUILD_SOURCEBRANCHNAME'):
+        monkeypatch.delenv(name, raising=False)
     git(project, 'checkout', '--quiet',
         git(project, 'rev-parse', 'HEAD').stdout.strip())
-    assert host_module.default_branch(project) == 'main'
+    host = FakeHost()
+    monkeypatch.setattr(urllib.request, 'urlopen', host)
+    path = write_ci(project)
+    capsys.readouterr()
+
+    sha = host_module.commit_files(project, [path],
+                                   'purlin: evidence at 4f1c2ab')
+
+    assert sha == ''
+    assert host.calls == [], 'a commit with no branch sent %r' % host.calls
+    assert capsys.readouterr().out.splitlines() == [
+        'No branch could be read from the git host or from git, so the '
+        'results were not committed.']
 
 
 def teardown_module(module):
