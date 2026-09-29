@@ -29,6 +29,7 @@
 - RULE-16: Run with no argument in a project that states no version, the command prints `No version: nothing in this project states one. Name it with --release <version>.`, writes nothing and exits 1
 - RULE-17: Every time in the package is in UTC, ending in `Z`
 - RULE-18: A second `--commit` over the same evidence prints `Package unchanged.` and leaves the commit the evidence was taken at named
+- RULE-19: Where `.purlin/config.json` cannot be read, the command, `--check` included, prints `.purlin/config.json cannot be read: <cause>. Fix the file by hand; nothing ran and nothing was saved.`, writes nothing and exits 1
 
 ## Proof
 
@@ -67,3 +68,5 @@
 - PROOF-21 (RULE-16): In a project with no `VERSION` file and nothing else stating a version, the command is run with no argument; it exits 1, prints only `No version: nothing in this project states one. Name it with --release <version>.`, and no `.purlin/evidence/package` folder exists
 - PROOF-15 (RULE-17): In a signed and tagged project's package, the times stored under `at` and `committed_at` that are not null number at least four, and each reads as a date, `T`, a time to the second and `Z`, as `2026-09-13T12:00:00Z` does, with no offset and no fraction of a second
 - PROOF-34 (RULE-18): After the package was committed with `--commit` over the evidence at `<sha>`, `--commit` is run again with nothing changed; it exits 0, its last line reads `Package unchanged.`, `HEAD` has not moved, and the package's `commit` still reads the full `<sha>`
+- PROOF-36 (RULE-19): In a project whose `VERSION` file reads `2.1.0`, `.purlin/config.json` reads `{"gate": "signed",}`, with a trailing comma, and the command is run with no argument; it exits 1, prints only `.purlin/config.json cannot be read: <the JSON reader's own message> at line 1. Fix the file by hand; nothing ran and nothing was saved.`, and no `.purlin/evidence/package` folder exists
+- PROOF-37 (RULE-19): A package is exported, then `.purlin/config.json` is made to read `{"gate": "signed",}`, with a trailing comma, and the package is checked with `--check`; it exits 1 and prints only `.purlin/config.json cannot be read: <the JSON reader's own message> at line 1. Fix the file by hand; nothing ran and nothing was saved.`

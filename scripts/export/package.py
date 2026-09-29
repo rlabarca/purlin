@@ -46,8 +46,8 @@ as `purlin: evidence at <sha7>`. At the gate `signed`, `purlin:sign` writes
 and commits it before it writes the tag; below `signed` it writes neither. `references/formats/package_format.md` holds every field.
 
 Exit codes: 0 written, or the check matched; 1 the check did not match, the
-project states no version, or the package could not be written; 2 the command
-line was wrong.
+project states no version, the package could not be written, or the settings
+file cannot be read; 2 the command line was wrong.
 """
 
 import hashlib
@@ -64,6 +64,7 @@ for _path in (os.path.join(_SCRIPTS, 'mcp'), os.path.join(_SCRIPTS, 'review')):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
+import config_engine                                          # noqa: E402
 from purlin import (PURLIN_VERSION,                            # noqa: E402
                     console as console_module,
                     evidence as evidence_module,
@@ -627,6 +628,13 @@ def main(argv=None):
         print(USAGE, file=sys.stderr)
         print('package.py: %s' % args['error'], file=sys.stderr)
         return EXIT_BAD_INVOCATION
+
+    # A settings file that cannot be read stops the command before anything
+    # else is read or written, the check of a package file included.
+    problem = config_engine.config_problem(args['root'])
+    if problem:
+        print(problem)
+        return EXIT_FAILED
 
     if args['check']:
         why = check_file(args['check'])

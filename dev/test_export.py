@@ -19,6 +19,8 @@ What each group holds:
 *the fingerprint* what it is taken over, and `--check` on a package as
                   written and on one edited after
 *committing*      `--commit`, run once, run again, and beside a staged change
+*the settings*    a settings file that cannot be read stops the command, the
+                  check of a package file included
 
 Each evidence section records the machine it ran on, as the evidence format
 has it. The tagged project gets its package from the call `purlin:sign`
@@ -691,3 +693,47 @@ class TestCommitting:
         assert git(unsigned.root, 'show', '--name-only', '--format=',
                    'HEAD').stdout.split() == [PACKAGE_REL]
         assert status(unsigned.root) == 'M  src/login.py\n'
+
+
+# ---------------------------------------------------------------------------
+# The settings
+# ---------------------------------------------------------------------------
+
+# A settings file with a trailing comma, which the JSON reader refuses.
+TRAILING_COMMA = '{"gate": "signed",}'
+
+
+def cannot_be_read():
+    """The one line the command prints for TRAILING_COMMA, in the JSON
+    reader's own words, which differ from one Python to the next."""
+    try:
+        json.loads(TRAILING_COMMA)
+    except ValueError as error:
+        return ('.purlin/config.json cannot be read: %s at line %d. Fix the '
+                'file by hand; nothing ran and nothing was saved.'
+                % (error.msg, error.lineno))
+    raise AssertionError('the JSON reader took a trailing comma')
+
+
+def break_the_settings(made):
+    write(os.path.join(made.root, '.purlin', 'config.json'), TRAILING_COMMA)
+
+
+class TestTheSettings:
+
+    # purlin: package PROOF-36
+    def test_a_settings_file_that_cannot_be_read_stops_the_export(
+            self, unsigned):
+        break_the_settings(unsigned)
+        code, lines = export(unsigned.root)
+        assert (code, lines) == (1, [cannot_be_read()])
+        assert not os.path.exists(os.path.join(
+            unsigned.root, '.purlin', 'evidence', 'package'))
+
+    # purlin: package PROOF-37
+    def test_a_settings_file_that_cannot_be_read_stops_the_check(
+            self, unsigned):
+        path, _ = _exported(unsigned)
+        break_the_settings(unsigned)
+        code, lines = export(unsigned.root, '--check', path)
+        assert (code, lines) == (1, [cannot_be_read()])
