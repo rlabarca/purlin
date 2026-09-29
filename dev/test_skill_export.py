@@ -1,9 +1,11 @@
 """Text checks for the export skill, `skills/export/SKILL.md`.
 
 Every rule of `specs/skills/skill_export.md` is proved here, one test for each
-proof. The readers, the checks and the broken copies this file shares with
-the other skill test files are in `dev/skill_checks.py`; the checks only this
-skill needs are at the foot of this file.
+proof; where a broken copy of the skill could slip past a check, the test
+also shows that the check reports it. The readers, the checks and the broken
+copies this file shares with the other skill test files are in
+`dev/skill_checks.py`; the checks only this skill needs are at the foot of
+this file.
 """
 
 import re
@@ -23,55 +25,29 @@ class TestSkillExport:
     # ---------------------------------------------------------------- RULE-1
 
     # purlin: skill_export PROOF-1
-    def test_the_frontmatter_names_the_skill_on_one_line(self):
+    def test_the_frontmatter_names_the_skill_on_one_line(self, monkeypatch):
         assert skill_frontmatter_problems() == []
-
-    # purlin: skill_export PROOF-14
-    def test_the_command_reference_has_a_row_for_export(self):
-        assert command_row_problems() == []
-
-    # purlin: skill_export PROOF-15
-    def test_a_skill_without_its_name_line_is_refused(self, monkeypatch):
         assert refusals(monkeypatch, skill_frontmatter_problems, [
             (SKILL, replace('name: export\n'),
              "%s frontmatter name is None, expected 'export'" % SKILL),
-        ]) == []
-
-    # purlin: skill_export PROOF-16
-    def test_an_empty_description_is_refused(self, monkeypatch):
-        assert refusals(monkeypatch, skill_frontmatter_problems, [
             (SKILL, replace(description_line(), 'description:'),
              NO_DESCRIPTION),
-        ]) == []
-
-    # purlin: skill_export PROOF-17
-    def test_a_description_on_the_line_below_is_refused(self, monkeypatch):
-        assert refusals(monkeypatch, skill_frontmatter_problems, [
             (SKILL, replace(description_line(),
                             'description:\n  ' + description()),
              NO_DESCRIPTION),
-        ]) == []
-
-    # purlin: skill_export PROOF-18
-    def test_a_description_written_as_a_block_is_refused(self, monkeypatch):
-        assert refusals(monkeypatch, skill_frontmatter_problems, [
             (SKILL, replace(description_line(),
                             'description: |\n  ' + description()),
              NO_DESCRIPTION),
-        ]) == []
-
-    # purlin: skill_export PROOF-19
-    def test_a_description_run_on_to_a_second_line_is_refused(self,
-                                                             monkeypatch):
-        assert refusals(monkeypatch, skill_frontmatter_problems, [
             (SKILL, replace(description_line(),
                             description_line() + '\n  and a second line'),
              NO_DESCRIPTION),
         ]) == []
 
-    # purlin: skill_export PROOF-20
-    def test_a_command_reference_without_the_row_is_refused(self,
-                                                           monkeypatch):
+    # ---------------------------------------------------------------- RULE-7
+
+    # purlin: skill_export PROOF-14
+    def test_the_command_reference_has_a_row_for_export(self, monkeypatch):
+        assert command_row_problems() == []
         row = next(line for line in read(COMMAND_REF).splitlines()
                    if line.startswith('| `purlin:export` |'))
         assert refusals(monkeypatch, command_row_problems, [
@@ -79,34 +55,24 @@ class TestSkillExport:
              '%s carries no row for purlin:export' % COMMAND_REF),
         ]) == []
 
-    # ---------------------------------------------------------------- RULE-2
+    # ---------------------------------------------------------------- RULE-8
 
     # purlin: skill_export PROOF-2
-    def test_each_form_of_the_command_has_a_line(self):
+    def test_each_form_of_the_command_has_a_line(self, monkeypatch):
         assert usage_problems() == []
-
-    # purlin: skill_export PROOF-21
-    def test_a_line_runs_the_export_script(self):
-        assert run_line_problems() == []
-
-    # purlin: skill_export PROOF-22
-    def test_a_skill_without_the_bare_form_is_refused(self, monkeypatch):
         assert refusals(monkeypatch, usage_problems, [
             (SKILL, resub(r'^purlin:export {2,}.*?\n'),
              '%s has no usage line for the bare form purlin:export' % SKILL),
-        ]) == []
-
-    # purlin: skill_export PROOF-23
-    def test_a_skill_without_the_check_form_is_refused(self, monkeypatch):
-        assert refusals(monkeypatch, usage_problems, [
             (SKILL, resub(r'^purlin:export --check <file> .*?\n'),
              '%s has no usage line for the form purlin:export --check '
              '<file>' % SKILL),
         ]) == []
 
-    # purlin: skill_export PROOF-24
-    def test_a_skill_that_only_names_the_script_is_refused(self,
-                                                          monkeypatch):
+    # ---------------------------------------------------------------- RULE-2
+
+    # purlin: skill_export PROOF-21
+    def test_a_line_runs_the_export_script(self, monkeypatch):
+        assert run_line_problems() == []
         assert refusals(monkeypatch, run_line_problems, [
             (SKILL, lambda t: t.replace(RUN, 'Run scripts/export/package.py'),
              '%s has no line that runs %s' % (SKILL, RUN)),
@@ -115,8 +81,15 @@ class TestSkillExport:
     # ---------------------------------------------------------------- RULE-3
 
     # purlin: skill_export PROOF-3
-    def test_it_makes_no_claim_of_compliance(self):
+    def test_it_makes_no_claim_of_compliance(self, monkeypatch):
         assert no_claim_problems() == []
+        assert refusals(monkeypatch, no_claim_problems, [
+            (SKILL, lambda t: re.sub(r'Purlin makes no claim that the\s+'
+                                     r'software is compliant\.\s*', '', t),
+             "does not carry %r" % NO_CLAIM),
+        ]) == []
+
+    # ---------------------------------------------------------------- RULE-9
 
     # purlin: skill_export PROOF-25
     def test_it_calls_the_package_evidence_for_review(self):
@@ -124,134 +97,90 @@ class TestSkillExport:
             'The package is evidence for review in a regulated document '
             'and sign-off system']) == []
 
-    # purlin: skill_export PROOF-26
-    def test_a_skill_that_drops_the_no_claim_sentence_is_refused(
-            self, monkeypatch):
-        assert refusals(monkeypatch, no_claim_problems, [
-            (SKILL, lambda t: re.sub(r'Purlin makes no claim that the\s+'
-                                     r'software is compliant\.\s*', '', t),
-             "does not carry %r" % NO_CLAIM),
-        ]) == []
-
     # ---------------------------------------------------------------- RULE-4
 
     # purlin: skill_export PROOF-4
-    def test_the_table_of_states_names_the_two_states(self):
+    def test_the_table_of_states_names_the_two_states(self, monkeypatch):
         assert state_problems() == []
-
-    # purlin: skill_export PROOF-27
-    def test_the_not_finished_row_says_left_holds_left_to_do(self):
-        assert left_problems() == []
-
-    # purlin: skill_export PROOF-7
-    def test_a_not_finished_row_without_left_to_do_is_refused(self,
-                                                             monkeypatch):
-        assert refusals(monkeypatch, left_problems, [
-            (SKILL, replace('holds the lines of `Left to do`',
-                            'holds the work'),
-             'does not say %r' % LEFT),
-        ]) == []
-
-    # purlin: skill_export PROOF-28
-    def test_a_table_of_states_without_not_finished_is_refused(
-            self, monkeypatch):
         assert refusals(monkeypatch, state_problems, [
             (SKILL, resub(r'^\| `not finished` \|.*?\n'),
              "names the states ['`finished`'], expected "
              "['`finished`', '`not finished`']"),
         ]) == []
 
+    # --------------------------------------------------------------- RULE-10
+
+    # purlin: skill_export PROOF-27
+    def test_the_not_finished_row_says_left_holds_left_to_do(
+            self, monkeypatch):
+        assert left_problems() == []
+        assert refusals(monkeypatch, left_problems, [
+            (SKILL, replace('holds the lines of `Left to do`',
+                            'holds the work'),
+             'does not say %r' % LEFT),
+        ]) == []
+
     # ---------------------------------------------------------------- RULE-5
 
     # purlin: skill_export PROOF-5
-    def test_the_last_heading_names_the_next_step(self):
+    def test_the_last_heading_names_the_next_step(self, monkeypatch):
         assert heading_problems() == []
+        text = read(SKILL)
+        last = text.rindex('\n## ')
+        heading = sections(text)[-1][0]
+        assert refusals(monkeypatch, closing_problems, [
+            (SKILL, lambda t: t[:last + 1],
+             "%s closes with the section 'Checking a package', whose "
+             "heading does not carry the words next step" % SKILL),
+            (SKILL, replace('## %s\n' % heading, '## When you are done\n'),
+             "%s closes with the section 'When you are done', whose "
+             "heading does not carry the words next step" % SKILL),
+        ]) == []
+
+    # --------------------------------------------------------------- RULE-11
 
     # purlin: skill_export PROOF-29
-    def test_each_stop_short_names_the_next_step(self):
+    def test_each_stop_short_names_the_next_step(self, monkeypatch):
         assert row_problems(FAILURE_OUTCOMES) == []
+        assert refusals(monkeypatch,
+                        lambda: row_problems(FAILURE_OUTCOMES), [
+            (SKILL, replace('| `--check` named a mismatch | %s |\n'
+                            % FAILURE_OUTCOMES['`--check` named a mismatch']),
+             '%s closing section has no row for %r'
+             % (SKILL, '`--check` named a mismatch')),
+        ]) == []
 
     # purlin: skill_export PROOF-13
     def test_each_state_names_the_next_step(self):
         assert row_problems(STATE_OUTCOMES) == []
 
     # purlin: skill_export PROOF-30
-    def test_every_outcome_row_gives_a_directive(self):
+    def test_every_outcome_row_gives_a_directive(self, monkeypatch):
         assert directive_problems() == []
-
-    # purlin: skill_export PROOF-8
-    def test_a_skill_without_its_closing_section_is_refused(self,
-                                                             monkeypatch):
-        last = read(SKILL).rindex('\n## ')
-        assert refusals(monkeypatch, closing_problems, [
-            (SKILL, lambda t: t[:last + 1],
-             "%s closes with the section 'Checking a package', whose "
-             "heading does not carry the words next step" % SKILL),
-        ]) == []
-
-    # purlin: skill_export PROOF-31
-    def test_a_closing_heading_of_when_you_are_done_is_refused(
-            self, monkeypatch):
-        heading = sections(read(SKILL))[-1][0]
-        assert refusals(monkeypatch, closing_problems, [
-            (SKILL, replace('## %s\n' % heading, '## When you are done\n'),
-             "%s closes with the section 'When you are done', whose "
-             "heading does not carry the words next step" % SKILL),
-        ]) == []
-
-    # purlin: skill_export PROOF-9
-    def test_a_closing_section_without_arrows_is_refused(self, monkeypatch):
-        last = read(SKILL).rindex('\n## ')
-        assert refusals(monkeypatch, closing_problems, [
-            (SKILL, lambda t: t[:last] + t[last:].replace('→', '->'),
-             '%s closing section gives no directive' % SKILL),
-        ]) == []
-
-    # purlin: skill_export PROOF-10
-    def test_a_closing_table_of_one_row_is_refused(self, monkeypatch):
         last = read(SKILL).rindex('\n## ')
         second = '| No version |'
-        assert refusals(monkeypatch, closing_problems, [
-            (SKILL, lambda t: t[:t.index(second, last)],
-             '%s closing section names 1 outcomes, expected at least 2'
-             % SKILL),
-        ]) == []
-
-    # purlin: skill_export PROOF-11
-    def test_a_finished_row_without_its_arrow_is_refused(self, monkeypatch):
         row = ('| `finished` | `→ Hand .purlin/evidence/package/'
                '<version>.json to the system of record.` |')
         assert refusals(monkeypatch, closing_problems, [
+            (SKILL, lambda t: t[:last] + t[last:].replace('→', '->'),
+             '%s closing section gives no directive' % SKILL),
+            (SKILL, lambda t: t[:t.index(second, last)],
+             '%s closing section names 1 outcomes, expected at least 2'
+             % SKILL),
             (SKILL, replace(row, row.replace('→ ', '')),
              '%s closing outcome gives no → directive: %s'
              % (SKILL, row.replace('→ ', ''))),
         ]) == []
 
-    # purlin: skill_export PROOF-12
-    def test_a_table_without_the_mismatch_row_is_refused(self, monkeypatch):
-        assert refusals(monkeypatch,
-                        lambda: row_problems(FAILURE_OUTCOMES), [
-            (SKILL, replace('| `--check` named a mismatch | `→ Export the '
-                            'package again at its tag: purlin:export` |\n'),
-             '%s closing section has no row for %r'
-             % (SKILL, '`--check` named a mismatch')),
-        ]) == []
-
     # ---------------------------------------------------------------- RULE-6
 
     # purlin: skill_export PROOF-6
-    def test_it_stays_under_its_ceiling(self):
+    def test_it_stays_under_its_ceiling(self, monkeypatch):
         assert length_problems() == []
-
-    # purlin: skill_export PROOF-32
-    def test_a_skill_of_91_lines_is_refused(self, monkeypatch):
         assert refusals(monkeypatch, length_problems, [
             (SKILL, padded_to(CEILING + 1),
              '%s is 91 lines, ceiling 90' % SKILL),
         ]) == []
-
-    # purlin: skill_export PROOF-33
-    def test_a_skill_of_exactly_90_lines_passes(self, monkeypatch):
         assert on_copy(monkeypatch, SKILL, padded_to(CEILING),
                        length_problems) == []
 
@@ -287,7 +216,8 @@ def description_line():
 # RULE-2: the usage lines and the line that runs the script
 # ---------------------------------------------------------------------------
 
-RUN = 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/export/package.py"'
+RUN = ('sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" '
+       '"${CLAUDE_PLUGIN_ROOT}/scripts/export/package.py"')
 
 
 def usage_problems():
@@ -356,8 +286,8 @@ def left_problems():
 FAILURE_OUTCOMES = {
     'Evidence not committed': '`→ Run: purlin:test --commit`',
     'No version': '`→ Run: purlin:export --release <version>`',
-    '`--check` named a mismatch': '`→ Export the package again at its '
-                                  'tag: purlin:export`',
+    '`--check` named a mismatch': '`→ Run: git show signed/<version>:'
+                                  '.purlin/evidence/package/<version>.json`',
 }
 
 # The outcomes of the closing table for each state the package reads.

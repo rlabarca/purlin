@@ -29,7 +29,7 @@ Plain language reaches the same place: "export the evidence", "what do we hand t
 ## Step 1: run the script
 
 ```
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/export/package.py" [--release <name>] [--commit]
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/export/package.py" [--release <name>] [--commit]
 ```
 
 It writes `.purlin/evidence/package/<version>.json` and prints the path and the state:
@@ -66,7 +66,7 @@ It never pushes.
 ## Checking a package
 
 ```
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/export/package.py" --check <file>
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/export/package.py" --check <file>
 ```
 
 prints `The package matches its fingerprint.`, or names the mismatch and exits 1. The same tag
@@ -80,4 +80,4 @@ always gives the same bytes, so a package exported again at the tag matches the 
 | No version | `→ Run: purlin:export --release <version>` |
 | `not finished` | `→ Run: <the command of the first line of left>` |
 | `finished` | `→ Hand .purlin/evidence/package/<version>.json to the system of record.` |
-| `--check` named a mismatch | `→ Export the package again at its tag: purlin:export` |
+| `--check` named a mismatch | `→ Run: git show signed/<version>:.purlin/evidence/package/<version>.json` |
