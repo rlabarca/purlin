@@ -217,10 +217,13 @@ rewrite it. Name the flow, never the tool that drives it.
 
 ### The operating system
 
-Add `@env(windows)`, `@env(macos)` or `@env(linux)`, at most one per proof, when the behaviour
-can only be observed on one operating system: a file lock the system holds, a console's default
-encoding, a filesystem that ignores case. Those three are the whole vocabulary. A proof with no
-`@env` is satisfied by a run on any operating system.
+Add `@env(windows)`, `@env(macos)` or `@env(linux)`, at most one per proof, where what the proof
+checks could differ on that operating system because of files or the operating system: a file
+lock the system holds, a console's default encoding, a filesystem that ignores case. Those three
+are the whole vocabulary. A rule that holds everywhere but could differ on Windows keeps its
+untagged proof and gains a second proof tagged `@env(windows)`, tied to the same test by a
+second marker comment; which run proves each is in [references/hard_gates.md](hard_gates.md),
+"Where a runner runs".
 
 ## Manual proofs
 
@@ -250,13 +253,14 @@ below it is, and its row says what moves both.
 | Cell | Word | What it means | What moves it |
 |---|---|---|---|
 | passed | `no test`, with `no proof written` | No proof line names the rule, and no test is marked with the rule's own id. | Write the proof under `## Proof` so it names what is done and an expected value a test can reach. `purlin:spec`. At the gate `passed` a test marked with the rule's id answers it too. |
-| passed | `no test` | A proof names the rule and no test carries its marker comment. | `purlin:build` writes the test, then `purlin:test`. |
+| passed | `no test`, with `no test for <PROOF-N>` | One of the rule's proofs has no test carrying its marker comment; the reason names each such proof. | `purlin:build` writes the test, then `purlin:test`. |
 | passed | `failed` | A test for the rule failed. The reason names the file and the test. | Fix the code, or the test. See the next section. |
 | passed | `not run` | The rule's tests have no result in a current section. | Run `purlin:test`, which counts at every gate. |
-| passed | `not run`, with `<os>: no run yet` | A proof carries `@env` and no current section from that operating system has passed it. | Run `purlin:test --remote`, whose matrix covers it, or drop the `@env` tag if any operating system could show it. |
-| passed | `partial` | The rule's tests passed on one operating system and failed or did not run on another. `partial` is not met. | Fix the platform that failed, or run `purlin:test --remote` for the one that has not run. |
+| passed | `not run`, with `<os>: no run yet` | A proof carries `@env` for an operating system that has not run the rule's tests: no current section comes from it. | Run `purlin:test --remote`, whose matrix covers it, or drop the `@env` tag if any operating system could show it. |
+| passed | `partial` | The rule's tests passed on one operating system and failed on another. `partial` is not met. | Fix the code or the test for the system that failed, then run the tests there again. |
 | passed | `out of date` | A pass exists but the spec, the code or the tests moved since; the reason names which. | Run the tests again; the next run clears it. |
 | strong | `weak`, `strength N% under M%` | The tests did not notice when the behaviour was broken. | Add the case that tells the correct behaviour from the broken one. `purlin:build`, then `purlin:audit`. |
+| strong | `weak`, `strength not measured: <reason>` | The feature's test strength was not measured; the reason says why and names the command that fixes it. When the cell reads so is in [references/hard_gates.md](hard_gates.md), "The three steps". | Do what the reason names, then `purlin:audit`. |
 | strong | `weak`, with a sentence the model wrote | The AI audit settled the question and observed that the test does not read what the proof names. | Write the assertion the sentence asks for. `purlin:build`, then `purlin:audit`. |
 | strong | `no proof` | The rule's test passes and no proof says what it shows, so the audit has nothing to read the test against. | Write the proof with `purlin:spec`, then `purlin:audit`. |
 | strong | `manual test` | The proof is `@manual`, so no test can be written and a person runs it. | `purlin:sign <feature> RULE-N --note "<what you saw>"`. |
