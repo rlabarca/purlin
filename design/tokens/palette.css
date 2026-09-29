@@ -44,11 +44,11 @@
 
   /* --- Warm light-surface ramp (extrapolated) -------------------- */
   --purlin-paper-050:#FBF8EC;  /* yellowish white: the light ground */
-  --purlin-paper-100:#F4EFDF;
-  --purlin-paper-200:#E4DDD4;
-  --purlin-paper-300:#D3C9BC;
+  --purlin-paper-100:#E8E3D4;
+  --purlin-paper-200:#D9D2C9;
+  --purlin-paper-300:#C8BFB3;
   --purlin-ink-700:#1B4A5C;
   --purlin-ink-600:#345865;  /* muted ink on paper, one step darker than 500 */
   --purlin-ink-500:#4D676F;  /* navy under the 30% cream veil */
-  --purlin-ink-650:#3B4F56;  /* muted and idle ink on paper, 7:1 on paper-100 */
+  --purlin-ink-650:#384B52;  /* muted and idle ink on paper, 7:1 on paper-100 */
 }

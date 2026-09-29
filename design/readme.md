@@ -60,7 +60,7 @@ letter-spacing.
 with either theme. Reference the semantic aliases only, never a raw palette value.
 
 Both themes ship. The light theme is extrapolated from the warm half: paper grounds `#FBF8EC` to
-`#D3C9BC` from the cream, navy ink, copper darkened to `#8F5626` for contrast, and the four state
+`#C8BFB3` from the cream, navy ink, copper darkened to `#8F5626` for contrast, and the four state
 hues dropped to their 700 steps so they clear 4.5:1 on paper.
 
 Every neutral text token, in both themes, measures at least 7:1 by the WCAG contrast formula

@@ -807,6 +807,12 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     it must also meet, from shared rules:`, then each anchor with its count. The terminal
     keeps `16 (+6 shared)`, since it has no hover. The two differ by that one word, which the
     rule that the terminal and the dashboard mirror each other's words now allows.
+91. **Small changes to the dashboard, made at once** (added 2026-09-29). The line saying how
+    old the data is reads the age alone, `Data: 7 hours old`; its hover says how to refresh
+    it, and pressing it reloads the page. In the light theme each tan ground but the
+    lightest is 5% darker: `#F4EFDF` to `#E8E3D4`, `#E4DDD4` to `#D9D2C9`, `#D3C9BC` to
+    `#C8BFB3`; the muted ink is darkened from `#3B4F56` to `#384B52` so that neutral text
+    still measures 7 to 1 on every ground it is drawn on.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
