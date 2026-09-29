@@ -124,11 +124,32 @@ def execute(command, cwd, report_path=None, timeout=None):
     try:
         output = process.communicate(timeout=cap)[0]
     except subprocess.TimeoutExpired:
-        process.kill()
+        _stop(process)
         output = process.communicate()[0] or ''
         return TIMED_OUT, output + ('\nthe engine timed out after %d s'
                                     % cap)
     return process.returncode, output or ''
+
+
+def _stop(process):
+    """Stop `process` and, on Windows, every program it started.
+
+    On Windows an engine is often a `.cmd` file, which runs under `cmd.exe`:
+    killing `cmd.exe` alone leaves the engine running and holding the output
+    pipe, so the wait for its output would last as long as the engine does.
+    `taskkill /T` stops the whole tree first.
+    """
+    if os.name == 'nt':
+        taskkill = os.path.join(os.environ.get('SystemRoot', r'C:\Windows'),
+                                'System32', 'taskkill.exe')
+        try:
+            subprocess.run([taskkill, '/F', '/T', '/PID', str(process.pid)],
+                           stdin=subprocess.DEVNULL,
+                           stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL, timeout=30)
+        except (IOError, OSError, subprocess.TimeoutExpired):
+            pass
+    process.kill()
 
 
 def scope_entry(killed=0, survived=0):

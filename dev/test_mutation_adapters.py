@@ -26,6 +26,7 @@ mutmut test builds a git repository holding the files its scope reaches.
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -385,6 +386,7 @@ def test_no_break_counted_reads_none_not_zero():
 # ---------------------------------------------------------------------------
 
 # purlin: mutation PROOF-5
+# purlin: mutation PROOF-86
 def test_stryker_is_given_a_config_scoped_to_the_features_files(project):
     program = install_stryker(project)
     stryker.run(str(project), {'calc': ['src/calc.js', 'src/util.js']})
@@ -458,11 +460,16 @@ def test_a_project_with_no_package_json_runs_stryker_with_jest(project):
 
 
 # purlin: mutation PROOF-7
+# purlin: mutation PROOF-87
 def test_the_projects_own_stryker_is_started_over_one_on_the_path(tools,
                                                                     project):
     own = install_stryker(project)
     on_path = install_program(tools, 'stryker', _STRYKER,
                               report=read_fixture('stryker_report.json'))
+    # On Windows npm writes the project's copy as `stryker.cmd`, and that is
+    # the program started.
+    ending = '.cmd' if os.name == 'nt' else ''
+    assert stryker.binary(str(project)) == [str(own) + ending]
     stryker.run(str(project), {'calc': ['src/calc.js']})
     assert len(calls(own)) == 1
     assert calls(on_path) == []
@@ -542,6 +549,7 @@ def test_a_report_in_a_reports_folder_under_the_output_is_read(tools, project):
 
 
 # purlin: mutation PROOF-47
+# purlin: mutation PROOF-88
 def test_a_report_several_folders_down_is_read(tools, project):
     answer = login_run(tools, project, read_fixture('stryker_net_report.json'),
                        folder=['StrykerOutput', '2026-09-28', 'reports'])
@@ -585,6 +593,7 @@ def test_dotnet_without_stryker_net_says_how_to_install_it(tools, project):
 
 
 # purlin: mutation PROOF-50
+# purlin: mutation PROOF-89
 def test_stryker_net_answering_its_version_is_installed(tools, project):
     program = install_dotnet(tools)
     answer = stryker_net.run(str(project), {'login': ['src/Login/Session.cs']})
@@ -848,11 +857,16 @@ def test_no_mutmut_on_the_path_leaves_mutmut_not_installed(tools, project):
 
 
 # purlin: mutation PROOF-79
+# purlin: mutation PROOF-90
 def test_on_windows_mutmut_is_no_engine(tools, project):
     with_block(project)
     program = install_mutmut(tools, listing=read_fixture('mutmut_results.txt'))
+    assert shutil.which('mutmut') is not None
+    # Elsewhere the system is given as Windows; on Windows the run asks the
+    # real one.
+    system = {} if os.name == 'nt' else {'os_name': 'windows'}
     answer = mutmut.run(str(project), {'login': ['src/login/session.py']},
-                        os_name='windows')
+                        **system)
     assert calls(program) == []
     assert (answer['engine'], answer['available']) == ('none', False)
     assert answer['reason'] == (
@@ -996,11 +1010,17 @@ def slow_stryker_run(project, monkeypatch):
 
 
 # purlin: mutation PROOF-65
+# purlin: mutation PROOF-91
 def test_a_stryker_feature_that_timed_out_measures_nothing(project,
                                                            monkeypatch):
+    began = time.time()
     answer = slow_stryker_run(project, monkeypatch)
+    # `slow` sleeps 60 s: a run that waited for it, rather than stopping it
+    # and what it started, would take that long.
+    assert time.time() - began < 30
     assert answer['features']['calc']['scope_score']['score'] == 64
     assert_unmeasured(answer['features']['slow'])
+    assert 'timed out after 3 s' in answer['features']['slow']['missing']
     for text in (answer['reason'], answer['log']):
         assert 'timed out after 3 s' in text
         assert '--arm-timeout' in text
