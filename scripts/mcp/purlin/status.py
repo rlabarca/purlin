@@ -12,6 +12,10 @@ table scales with the gate: a `passed` project is never shown a strength, a
 level or a signature it did not ask for, and is shown a proof count only
 where it writes a proof line.
 
+The report ends on the summary sentence and `Left to do`, which
+`scripts/mcp/purlin/summary.py` writes for every surface, with `→ Run:
+purlin:init --update` above them while an upgrade is pending.
+
 Copy follows `references/writing_style.md`: sentence case, second person for what you
 do, third person for what Purlin does, exact numbers, and the only glyphs are
 `->`, `>` and `v` in their unicode forms. No emoji, anywhere.
@@ -26,9 +30,8 @@ if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 from purlin import (board as board_module, drift as drift_module,
-                    evidence as evidence_module, gate as gate_module,
                     payload as payload_module, report_data,
-                    specs as specs_module, states)
+                    specs as specs_module, summary as summary_module)
 
 ARROW = '→'
 DOT = board_module.DOT
@@ -57,8 +60,10 @@ def sync_status(project_root):
                  % (data['project'], data['version'], data['gate']['gate']))
     lines.append('')
     lines.extend(_table(data))
-    lines.append('')
-    lines.extend(_summary(data))
+    names = incomplete_names(data)
+    if names:
+        lines.append('')
+        lines.append(incomplete_line(names))
 
     pin_lines = _pin_lines(project_root)
     if pin_lines:
@@ -76,7 +81,7 @@ def sync_status(project_root):
         lines.extend(data['warnings'])
 
     lines.append('')
-    lines.extend(_directives(data, project_root))
+    lines.extend(_ending(data, project_root))
     return '\n'.join(lines)
 
 
@@ -145,46 +150,8 @@ def _line(cells, widths, columns):
 
 
 # ---------------------------------------------------------------------------
-# The summary and the directives
+# The specs that name no files, and the ending
 # ---------------------------------------------------------------------------
-
-def _summary(data):
-    summary = data['summary']
-    cfg = data['gate']
-    gate = cfg['gate']
-    lines = [board_module.headline(summary, gate),
-             board_module.bucket_line(summary, gate) + '.']
-    second = [board_module.count_of(summary['features'], 'feature')]
-    if board_module.shows_proofs(gate, _proof_lines(data)):
-        second.append(board_module.proofs_summary(summary))
-    out_of_date = _blocking(data)['passed'].get(states.OUT_OF_DATE, 0)
-    if out_of_date:
-        second.append('%s out of date'
-                      % board_module.count_of(out_of_date, 'rule'))
-    if gate != 'passed':
-        if cfg.get('min_strength') is not None:
-            second.append('minimum test strength %d%%' % cfg['min_strength'])
-        if summary.get('manual'):
-            second.append('%s with a manual test'
-                          % board_module.count_of(summary['manual'], 'rule'))
-        if summary.get('not_audited'):
-            second.append('%s not audited'
-                          % board_module.count_of(summary['not_audited'],
-                                                  'rule'))
-    if gate == 'signed' and summary.get('stale'):
-        second.append('%s stale'
-                      % board_module.count_of(summary['stale'], 'signature'))
-    lines.append(', '.join(second) + '.')
-    if gate != 'passed':
-        lines.append(board_module.queue_line(summary))
-    above = marked_above_the_gate(data)
-    if above:
-        lines.append(above_the_gate_line(above, gate))
-    names = incomplete_names(data)
-    if names:
-        lines.append(incomplete_line(names))
-    return lines
-
 
 def incomplete_names(data):
     """The feature specs that name no files, sorted. Anchors are never one."""
@@ -201,179 +168,13 @@ def incomplete_line(names):
             % (len(names), ', '.join(names)))
 
 
-def marked_above_the_gate(data):
-    """How many rules carry a `[level: ...]` tag above the project's gate.
-
-    The gate is the ceiling, so such a rule is read as the gate. Each rule is
-    counted once, under the feature that owns it.
-    """
-    gate = data['gate']['gate']
-    ceiling = gate_module.GATES.index(gate)
-    count = 0
-    for feature in data['features']:
-        for rule in feature.get('rules') or ():
-            if rule.get('label') != 'own':
-                continue
-            marked = rule.get('level_marked')
-            if marked in gate_module.GATES and (
-                    gate_module.GATES.index(marked) > ceiling):
-                count += 1
-    return count
-
-
-def above_the_gate_line(count, gate):
-    """`<n> rules are marked above the gate and are read as <gate>.`"""
-    if count == 1:
-        return '1 rule is marked above the gate and is read as %s.' % gate
-    return ('%d rules are marked above the gate and are read as %s.'
-            % (count, gate))
-
-
-def _blocking(data):
-    """`{cell_name: {word: count}}` over the rules that do not meet the gate.
-
-    Only a rule's own entry is counted, so a global anchor's rule is counted
-    once however many features have to prove it.
-    """
-    found = {'no_proof': 0, 'elsewhere': 0, 'systems': set()}
-    for name in states.CELLS:
-        found[name] = {}
-    here = evidence_module.host_os()
-    for feature in data['features']:
-        for rule in feature.get('rules') or ():
-            if rule.get('label') != 'own' or rule.get('meets_gate'):
-                continue
-            blocked = rule.get('blocked_by')
-            cells = rule.get('cells') or {}
-            waits_for_a_proof = (
-                ((cells.get('passed') or {}).get('reasons') or ())
-                == [states.NO_PROOF_WRITTEN]
-                or (cells.get('strong') or {}).get('word') == states.NO_PROOF)
-            if (rule.get('flags') or {}).get('no_proof') and waits_for_a_proof:
-                # A rule with neither a proof nor a test marked with its id
-                # reads `no test`, and one whose test passes above the gate
-                # `passed` reads `no proof`: what either waits for is a
-                # proof, not a build. A rule whose own marked test fails is
-                # build work like any other.
-                found['no_proof'] += 1
-            elif blocked in found:
-                cell = (rule.get('cells') or {}).get(blocked) or {}
-                word = cell.get('word')
-                missing = cell.get('missing_env') or ()
-                if (blocked == 'passed' and word == 'not run' and missing
-                        and here not in missing):
-                    # Its proofs are tagged for an operating system this
-                    # machine is not: no run here can clear it.
-                    found['elsewhere'] += 1
-                    found['systems'].update(missing)
-                    continue
-                found[blocked][word] = found[blocked].get(word, 0) + 1
-    return found
-
-
-def _unaudited(data):
-    """How many rules no audit has measured yet."""
-    return (data.get('summary') or {}).get('not_audited') or 0
-
-
-def _said(count, one, many):
-    """`1 rule <one>` or `<n> rules <many>`."""
-    return ('1 rule %s' % one) if count == 1 else ('%d rules %s'
-                                                   % (count, many))
-
-
-def next_step(data):
-    """`→ Next: run <command>. <reason>`: the first step that applies.
-
-    One step and one reason that is true of it, in the order the work runs:
-    a proof or a test to write, a failing or partial test to fix, a test run
-    to take, here or on the remote runner, the audit, a weak rule, a person,
-    and a spec to tie to its files. A rule waiting on a test run is never
-    sent to the audit: the audit is the step only when no rule waits on one.
-    """
-    gate = data['gate']['gate']
-    trust = data['gate'].get('trust')
-    blocked = _blocking(data)
-    passed = blocked['passed']
-    strong = blocked['strong']
-
-    no_test = passed.get('no test', 0)
-    failing = passed.get('failed', 0)
-    partial = passed.get('partial', 0)
-    not_run = passed.get('not run', 0)
-    out_of_date = passed.get(states.OUT_OF_DATE, 0)
-    elsewhere = blocked['elsewhere']
-    weak = strong.get('weak', 0)
-    unaudited = _unaudited(data)
-    person = len(data.get('queue') or ())
-
-    def step(command, reason):
-        return '%s Next: run %s. %s' % (ARROW, command, reason)
-
-    if blocked['no_proof'] and gate == 'passed':
-        # Proofs are optional at `passed`, so what such a rule waits for
-        # there is a test marked with its own id.
-        return step('purlin:build', _said(blocked['no_proof'], 'has no test.',
-                                          'have no test.'))
-    if blocked['no_proof']:
-        return step('purlin:spec', _said(
-            blocked['no_proof'], 'has no proof line naming it.',
-            'have no proof line naming them.'))
-    if failing:
-        return step('purlin:build', _said(failing, 'has a failing test.',
-                                          'have a failing test.'))
-    if partial:
-        return step('purlin:build', _said(
-            partial, 'passes on one operating system and fails on another.',
-            'pass on one operating system and fail on another.'))
-    if no_test:
-        return step('purlin:build', _said(
-            no_test, 'has a proof and no passing test.',
-            'have a proof and no passing test.'))
-    if trust == 'remote' and (not_run or out_of_date or elsewhere):
-        # This project runs the tests its rules wait on through the runner.
-        return step('purlin:test --remote', _said(
-            not_run + out_of_date + elsewhere, 'has no current run.',
-            'have no current run.'))
-    if out_of_date:
-        return step('purlin:test', _said(out_of_date, 'is out of date.',
-                                         'are out of date.'))
-    if not_run:
-        return step('purlin:test', _said(not_run, 'has no run to read.',
-                                         'have no run to read.'))
-    if elsewhere:
-        systems = ' or '.join(sorted(blocked['systems']))
-        return step('purlin:test --remote', _said(
-            elsewhere, 'needs %s, which this machine is not.' % systems,
-            'need %s, which this machine is not.' % systems))
-    if unaudited:
-        return step('purlin:audit', _said(unaudited, 'is not audited.',
-                                          'are not audited.'))
-    if weak:
-        return step('purlin:build', _said(weak, 'is weak.', 'are weak.'))
-    if person:
-        return step('purlin:sign', _said(person, 'is waiting for a person.',
-                                         'are waiting for a person.'))
-    if gate == 'signed' and incomplete_names(data):
-        # A signature needs a spec tied to its files, so what the rest of
-        # the gate waits on is the `> Scope:` line.
-        return ('%s Next: run purlin:spec %s. It names no files in > Scope:, '
-                'so its rules cannot be signed.'
-                % (ARROW, incomplete_names(data)[0]))
-    return '%s Next: nothing is outstanding at gate %s.' % (ARROW, gate)
-
-
-def _directives(data, project_root):
-    """The next step, computed from the blocking cell, plus anything to fix first."""
+def _ending(data, project_root):
+    """`→ Run: purlin:init --update` where an upgrade is pending, then the summary."""
     lines = []
     if (any('purlin:init --update' in warning for warning in data['warnings'])
             or _update_pending(project_root)):
         lines.append('%s Run: purlin:init --update' % ARROW)
-    lines.append(next_step(data))
-    person = len(data.get('queue') or ())
-    if person:
-        lines.append('%s Queue: %s. Run purlin:sign.'
-                     % (ARROW, board_module.needs_a_person(person)))
+    lines.append(summary_module.ending(data))
     return lines
 
 

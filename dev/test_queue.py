@@ -22,7 +22,6 @@ ROOT = os.path.dirname(DEV)
 sys.path.insert(0, DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 
-from purlin import status as purlin_status  # noqa: E402
 from mcp_project import Project, _git  # noqa: E402
 
 SPEC = (
@@ -230,12 +229,3 @@ def test_the_rollup_and_the_summary_count_the_queue(queued):
     summary = queued.payload()['summary']
     assert (summary['queue'], summary['hand_checks']) == (1, 1), summary
 
-
-# purlin: states PROOF-64
-def test_the_status_report_counts_the_queue_in_one_line(queued):
-    lines = purlin_status.sync_status(queued.root).splitlines()
-    assert 'Queue: 3 rules. 1 hand check, 2 signatures.' in lines, lines
-    assert '→ Queue: 3 rules need a person. Run purlin:sign.' in lines, lines
-    queued.config_value('gate', 'passed')
-    text = purlin_status.sync_status(queued.root)
-    assert 'Queue:' not in text, text

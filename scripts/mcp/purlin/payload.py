@@ -1,4 +1,4 @@
-"""The structured project payload, schema 9.
+"""The structured project payload, schema 10.
 
 One reader assembles specs, evidence and signatures into the level and the
 cells of every rule, and every surface renders that: the
@@ -7,7 +7,7 @@ that parsed the rendered table would be coupled to a layout; this is the shape
 they all read instead.
 
     {
-      "schema_version": 9,
+      "schema_version": 10,
       "generated_at": "2026-09-13T12:00:00Z",
       "generated_by": "sync_status",
       "project": "purlin",
@@ -18,7 +18,9 @@ they all read instead.
       "summary": {"rules": 8, "features": 4, "met": 1, "failing": 0,
                   "partial": 1, "untested": 2, "passed": 4, "strong": 1,
                   "signed": 1, "stale": 1, "manual": 0, "not_audited": 0,
-                  "queue": 2, "hand_checks": 1, "incomplete": 0},
+                  "queue": 2, "hand_checks": 1, "incomplete": 0,
+                  "steps": {"passed": 4, "strong": 2, "signed": 1},
+                  "sentence": "8 rules. 4 pass their tests. 2 are strong. 1 is signed."},
       "features": [
         {"name": "login", "category": "auth", "spec_path": "specs/auth/login.md",
          "is_anchor": false, "requires": [], "source": null, "pinned": null,
@@ -36,10 +38,14 @@ they all read instead.
                       "ci": null},
          "signatures": [...],
          "rules": [
-           {"id": "RULE-1", "feature": "login", "label": "own",
+           {"id": "RULE-1", "feature": "login", "applies_to": "login",
+            "label": "own",
             "text": "...", "level": "signed", "level_marked": null,
-            "audit_hash": "<sha256>",
-            "audit": {"verdict": "strong", "findings": [], "strength": 86,
+            "audit_hash": "<sha256>", "code_hash": "<sha256>",
+            "machines": {"macos": "jane-laptop"},
+            "left": "to_sign", "hand_checked": false,
+            "audit": {"verdict": "strong", "findings": [], "notes": [],
+                      "strength": 86,
                       "model": "<model>", "at": "...", "commit": "<sha>",
                       "path": ".purlin/evidence/local/login.json"},
             "bucket": "signed", "meets_gate": true,
@@ -57,6 +63,15 @@ they all read instead.
                  "text": "...", "level": "signed", "need": "hand check",
                  "word": "manual test", "reasons": ["manual proof"],
                  "command": "purlin:sign login RULE-3 --note \"<what you saw>\""}],
+      "left": [{"kind": "to_audit", "count": 2,
+                "text": "2 rules to audit", "command": "purlin:audit"},
+               {"kind": "to_sign", "count": 1,
+                "text": "1 rule to sign", "command": "purlin:sign"}],
+      "finished": false,
+      "last_line": null,
+      "os_words": {"windows": {"word": "Windows", "short": "Win"},
+                   "macos": {"word": "macOS", "short": "Mac"},
+                   "linux": {"word": "Linux/Unix", "short": "Lin"}},
       "evidence": {"login": {"local": {"macos": {"commit": ..., "at": ...,
                                                  "result": "pass",
                                                  "current": true,
@@ -97,6 +112,19 @@ carries `incomplete: true`, and `summary.incomplete` counts such specs. An
 anchor is never incomplete. Every cell reads as usual, except that at the
 gate `signed` such a spec's rules read `unsigned` in the signed cell.
 
+`summary.steps` counts the rules that reached each step up to the gate, each
+step containing the next, and `summary.sentence` says it in one line.
+`left` is the work left, one entry per kind in the order it is done, each
+with its count, its text and the command that clears it; `finished` is true
+when `left` is empty, and `last_line` is then the line said in its place.
+Each rule carries its own `left`, the one kind it is counted under, or null.
+`scripts/mcp/purlin/summary.py` is the one place those words are written.
+
+A rule carries `applies_to`, the feature it is listed under, `code_hash`,
+`fingerprint.code_hash` over that feature's `> Scope:`, `machines`, `{os:
+machine}` over the current sections that speak for it, and `hand_checked`,
+true when a signature that counts and still binds it carries a note.
+
 `write_report_data` writes the payload to `.purlin/report-data.js` as
 `const PURLIN_DATA = {...};`, which is gitignored and is what the local
 dashboard page loads.
@@ -120,9 +148,10 @@ from purlin import (PURLIN_VERSION,
                     gate as gate_module,
                     markers as markers_module,
                     signatures as signatures_module,
-                    specs as specs_module, states)
+                    specs as specs_module, states,
+                    summary as summary_module)
 
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 REPORT_DATA_PATH = os.path.join('.purlin', 'report-data.js')
 _PREFIX = 'const PURLIN_DATA = '
 
@@ -162,6 +191,11 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     could_not_run = evidence_module.could_not_run(project_root)
     all_signatures = signatures_module.load_signatures(project_root, features)
     head = head_sha(project_root)
+    here_os = evidence_module.host_os()
+    # Only a project at `signed` is ever tagged, so below it the payload
+    # names no tag, even one left from when the gate was higher.
+    tag = (signed_tag(project_root, head)
+           if cfg.gate == gate_module.GATES[-1] else None)
 
     blob_cache = {}
     counted_cache = {}
@@ -182,7 +216,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         entry, rollup = _feature_entry(
             project_root, name, info, features, evidence, all_signatures,
             cfg, blob_cache, queue, own_results, counted_cache, could_not_run,
-            incomplete, tied)
+            incomplete, tied, here_os)
         feature_entries.append(entry)
         rollups[name] = rollup
 
@@ -193,9 +227,12 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     # The project's proofs are each feature's own, counted once: a rule an
     # anchor declares is proved by every feature that requires it, and its
     # proofs belong to the anchor.
-    summary.update(proof_counts(
-        [rule for entry in feature_entries for rule in entry['rules']
-         if rule.get('label') == 'own'], tied))
+    own_rules = [rule for entry in feature_entries for rule in entry['rules']
+                 if rule.get('label') == 'own']
+    summary.update(proof_counts(own_rules, tied))
+    summary['steps'] = summary_module.steps(own_rules, cfg.gate)
+    summary['sentence'] = summary_module.sentence(summary, cfg.gate)
+    left = summary_module.left(feature_entries, cfg.gate, here_os, tag)
 
     payload = {
         'schema_version': SCHEMA_VERSION,
@@ -210,11 +247,14 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         'summary': summary,
         'features': feature_entries,
         'queue': _sorted_queue(queue),
+        'left': left,
+        'finished': not left,
+        'last_line': summary_module.last_line(left, cfg.gate, tag),
+        'os_words': {name: {'word': evidence_module.os_word(name),
+                            'short': evidence_module.os_short(name)}
+                     for name in evidence_module.PLATFORMS},
         'evidence': _evidence_map(evidence),
-        # Only a project at `signed` is ever tagged, so below it the
-        # payload names no tag, even one left from when the gate was higher.
-        'tag': (signed_tag(project_root, head)
-                if cfg.gate == gate_module.GATES[-1] else None),
+        'tag': tag,
         'remote_url': _remote_url(project_root),
         'warnings': warnings,
     }
@@ -268,11 +308,15 @@ def _rule_number(rule_id):
 def _feature_entry(project_root, name, info, features, evidence,
                    all_signatures, cfg, blob_cache, queue,
                    own_results=None, counted_cache=None, could_not_run=None,
-                   incomplete=None, tied=None):
+                   incomplete=None, tied=None, here_os=None):
     incomplete = incomplete or {}
     own = evidence.get(name) or _no_evidence(name)
     mutation = evidence_module.mutation(own['loaded'])
     test_strength = mutation.get('score') if mutation else None
+    # The code every rule listed under this feature is signed over: the
+    # files its own `> Scope:` names, whoever owns the rule.
+    code_hash = fingerprint_module.code_hash(project_root,
+                                             info.get('scope') or [])
 
     rule_entries = []
     rule_results = {}
@@ -287,7 +331,8 @@ def _feature_entry(project_root, name, info, features, evidence,
             all_signatures, cfg, blob_cache,
             owner_mutation.get('score') if owner_mutation else None,
             counted_cache, could_not_run, incomplete.get(owner),
-            {marked for feature, marked in (tied or ()) if feature == owner})
+            {marked for feature, marked in (tied or ()) if feature == owner},
+            name, code_hash, here_os)
         need = result.pop('need')
         rule_entries.append(result)
         summary = {'bucket': result['bucket'], 'flags': result['flags'],
@@ -466,7 +511,8 @@ def queue_row(feature, owner, rule, need):
 def _rule_entry(project_root, owner, owner_info, rule_id, label,
                 owner_evidence, all_signatures, cfg, blob_cache,
                 test_strength=None, counted_cache=None, could_not_run=None,
-                incomplete=None, marked=None):
+                incomplete=None, marked=None, applies_to=None, code_hash=None,
+                here_os=None):
     text = owner_info['rules'].get(rule_id, '')
     meta = owner_info.get('rule_meta', {}).get(rule_id, {})
     proof_ids = owner_info.get('proofs_by_rule', {}).get(rule_id, [])
@@ -536,9 +582,12 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         'marked': marked or set(),
     }, cfg)
 
-    return {
+    hashes = {'rule_hash': rule_hash, 'proof_hash': proof_hash,
+              'test_hash': test_hash, 'audit_hash': audit_hash}
+    entry = {
         'id': rule_id,
         'feature': owner,
+        'applies_to': applies_to or owner,
         'label': label,
         'text': text,
         'level': result['level'],
@@ -547,7 +596,9 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         'proof_hash': proof_hash,
         'test_hash': test_hash,
         'test_hash_kind': test_hash_kind,
+        'code_hash': code_hash,
         'audit_hash': audit_hash,
+        'machines': _machines(sections, proof_dicts, rule_id),
         'audit': audit_summary(audit, test_strength),
         'cells': result['cells'],
         'bucket': result['bucket'],
@@ -555,9 +606,48 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         'need': result['need'],
         'blocked_by': result['blocked_by'],
         'flags': result['flags'],
+        # A person checked a `@manual` proof by hand: a signature that
+        # counts and still binds the rule carries what they saw.
+        'hand_checked': any(
+            signature.get('counts') and signature.get('note')
+            and signatures_module.is_current(signature, hashes)
+            for signature in signatures),
         'proofs': proof_dicts,
         'tests': _rule_tests(sections, rule_id),
     }
+    entry['left'] = summary_module.rule_kind(entry, cfg.gate, here_os,
+                                             incomplete)
+    return entry
+
+
+def _machines(sections, proofs, rule_id):
+    """`{os: machine}` over the current sections that speak for the rule.
+
+    A section speaks for the rule when it lists a result for one of the
+    rule's proofs, read from its own system only where the proof names one,
+    or for the rule's own id where it has no proof. Each section's `machine`
+    names where it ran; a section that names none is left out, and where
+    both sources hold one for a system the newer answers.
+    """
+    wanted = [(proof['id'], proof.get('env')) for proof in proofs
+              if not proof.get('manual')] or [(rule_id, None)]
+    found = {}
+    for entry in sections or ():
+        if not entry.get('current'):
+            continue
+        section = entry['section']
+        machine = section.get('machine')
+        if not machine:
+            continue
+        results = evidence_module.proof_results(section)
+        if not any(results.get(proof_id) and (not env or env == entry['os'])
+                   for proof_id, env in wanted):
+            continue
+        at = str(section.get('at') or '')
+        known = found.get(entry['os'])
+        if known is None or at > known[0]:
+            found[entry['os']] = (at, machine)
+    return {name: found[name][1] for name in sorted(found)}
 
 
 def audit_summary(audit, strength):
@@ -572,6 +662,7 @@ def audit_summary(audit, strength):
         return None
     return {'verdict': audit.get('verdict'),
             'findings': [str(line) for line in audit.get('findings') or ()],
+            'notes': [str(line) for line in audit.get('notes') or ()],
             'strength': strength,
             'model': audit.get('model') or 'unknown',
             'at': audit.get('at'),
@@ -587,10 +678,9 @@ def _counted(project_root, signature, cfg, cache):
     cached on the path.
     """
     cache = cache if cache is not None else {}
-    key = (signature.get('path'), cfg.gate)
+    key = signature.get('path')
     if key not in cache:
-        ok, reason = signatures_module.counts(project_root, signature,
-                                              cfg.gate)
+        ok, reason = signatures_module.counts(project_root, signature)
         cache[key] = (ok, reason, signatures_module.commit_date(
             project_root, signature.get('path')))
     ok, reason, committed_at = cache[key]

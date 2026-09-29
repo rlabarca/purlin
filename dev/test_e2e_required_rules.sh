@@ -207,9 +207,7 @@ print(status.sync_status('$TMPDIR_E2E'))
 ")"
 
 for wanted in 'login' 'api_conventions (anchor)' 'security_no_eval (anchor)' \
-              'Untested 0 · Failing 0 · Partial 0 · Passing 5' \
-              '3 features, 5 proof lines' \
-              '5 of 5 rules meet the gate passed'; do
+              '5 rules. 5 pass their tests.'; do
   if printf '%s' "$STATUS" | grep -qF -- "$wanted"; then
     echo "    ok: the table shows '$wanted'"
   else
@@ -219,10 +217,10 @@ for wanted in 'login' 'api_conventions (anchor)' 'security_no_eval (anchor)' \
   fi
 done
 
-if printf '%s' "$STATUS" | tail -1 | grep -q '^→'; then
-  echo "    ok: the table ends with a next step"
+if [ "$(printf '%s' "$STATUS" | tail -1)" = 'Nothing left to do.' ]; then
+  echo "    ok: the table ends with nothing left to do"
 else
-  echo "    FAIL: the table does not end with a next step"
+  echo "    FAIL: the table does not end with nothing left to do"
   printf '%s\n' "$STATUS" | tail -3
   FAILED=1
 fi

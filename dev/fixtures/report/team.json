@@ -95,6 +95,7 @@
       },
       "rules": [
         {
+          "applies_to": "login",
           "audit": {
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
@@ -102,6 +103,7 @@
               "The test reads the status code and the cookie name; the proof also names a session cookie, and no assertion reads its expiry."
             ],
             "model": "example-model-1",
+            "notes": [],
             "path": ".purlin/evidence/ci/login.json",
             "strength": 71,
             "verdict": "undecided"
@@ -137,6 +139,7 @@
               "word": "weak"
             }
           },
+          "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "feature": "login",
           "flags": {
             "failing": false,
@@ -147,10 +150,13 @@
             "partial": false,
             "stale": false
           },
+          "hand_checked": false,
           "id": "RULE-1",
           "label": "own",
+          "left": "to_strengthen",
           "level": "strong",
           "level_marked": "strong",
+          "machines": {},
           "meets_gate": false,
           "proof_hash": "prule1log",
           "proofs": [
@@ -176,11 +182,13 @@
           "text": "A person signs in with an email address and a password."
         },
         {
+          "applies_to": "login",
           "audit": {
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
             "findings": [],
             "model": "example-model-1",
+            "notes": [],
             "path": ".purlin/evidence/ci/login.json",
             "strength": 71,
             "verdict": "strong"
@@ -212,6 +220,7 @@
               "word": "strong"
             }
           },
+          "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "feature": "login",
           "flags": {
             "failing": false,
@@ -222,10 +231,13 @@
             "partial": false,
             "stale": false
           },
+          "hand_checked": false,
           "id": "RULE-2",
           "label": "own",
+          "left": null,
           "level": "strong",
           "level_marked": null,
+          "machines": {},
           "meets_gate": true,
           "proof_hash": "prule2log",
           "proofs": [
@@ -251,11 +263,13 @@
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
+          "applies_to": "login",
           "audit": {
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
             "findings": [],
             "model": "example-model-1",
+            "notes": [],
             "path": ".purlin/evidence/ci/login.json",
             "strength": 71,
             "verdict": "strong"
@@ -280,6 +294,7 @@
               "word": "passed"
             }
           },
+          "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "feature": "login",
           "flags": {
             "failing": false,
@@ -290,10 +305,13 @@
             "partial": false,
             "stale": false
           },
+          "hand_checked": false,
           "id": "RULE-3",
           "label": "own",
+          "left": null,
           "level": "passed",
           "level_marked": "passed",
+          "machines": {},
           "meets_gate": true,
           "proof_hash": "prule3log",
           "proofs": [
@@ -377,11 +395,13 @@
       },
       "rules": [
         {
+          "applies_to": "invoice",
           "audit": {
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
             "findings": [],
             "model": "example-model-1",
+            "notes": [],
             "path": ".purlin/evidence/ci/invoice.json",
             "strength": 48,
             "verdict": "strong"
@@ -415,6 +435,7 @@
               "word": "weak"
             }
           },
+          "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -425,10 +446,13 @@
             "partial": false,
             "stale": false
           },
+          "hand_checked": false,
           "id": "RULE-1",
           "label": "own",
+          "left": "to_strengthen",
           "level": "strong",
           "level_marked": null,
+          "machines": {},
           "meets_gate": false,
           "proof_hash": "prule1inv",
           "proofs": [
@@ -454,6 +478,7 @@
           "text": "An invoice totals its lines to the cent."
         },
         {
+          "applies_to": "invoice",
           "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "blocked_by": "passed",
@@ -478,6 +503,7 @@
               "word": "waiting"
             }
           },
+          "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -488,10 +514,13 @@
             "partial": false,
             "stale": false
           },
+          "hand_checked": false,
           "id": "RULE-2",
           "label": "own",
+          "left": "no_test",
           "level": "strong",
           "level_marked": null,
+          "machines": {},
           "meets_gate": false,
           "proof_hash": "prule2inv",
           "proofs": [
@@ -567,11 +596,13 @@
       },
       "rules": [
         {
+          "applies_to": "receipt",
           "audit": {
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
             "findings": [],
             "model": "example-model-1",
+            "notes": [],
             "path": ".purlin/evidence/ci/receipt.json",
             "strength": 75,
             "verdict": "strong"
@@ -603,6 +634,7 @@
               "word": "strong"
             }
           },
+          "code_hash": "3af3c353c2169a3b9fbbba791d289f8c1baf8d8fe906be3ff597c89bf1b55c33",
           "feature": "receipt",
           "flags": {
             "failing": false,
@@ -613,10 +645,13 @@
             "partial": false,
             "stale": false
           },
+          "hand_checked": false,
           "id": "RULE-1",
           "label": "own",
+          "left": null,
           "level": "strong",
           "level_marked": null,
+          "machines": {},
           "meets_gate": true,
           "proof_hash": "prule1rec",
           "proofs": [
@@ -642,11 +677,13 @@
           "text": "A receipt names the order number and the total paid."
         },
         {
+          "applies_to": "receipt",
           "audit": {
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
             "findings": [],
             "model": "example-model-1",
+            "notes": [],
             "path": ".purlin/evidence/local/checkout_design.json",
             "strength": 90,
             "verdict": "strong"
@@ -678,6 +715,7 @@
               "word": "strong"
             }
           },
+          "code_hash": "3af3c353c2169a3b9fbbba791d289f8c1baf8d8fe906be3ff597c89bf1b55c33",
           "feature": "checkout_design",
           "flags": {
             "failing": false,
@@ -688,10 +726,13 @@
             "partial": false,
             "stale": false
           },
+          "hand_checked": false,
           "id": "RULE-1",
           "label": "required",
+          "left": null,
           "level": "strong",
           "level_marked": null,
+          "machines": {},
           "meets_gate": true,
           "proof_hash": "prule1che",
           "proofs": [
@@ -773,11 +814,13 @@
       },
       "rules": [
         {
+          "applies_to": "checkout_design",
           "audit": {
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
             "findings": [],
             "model": "example-model-1",
+            "notes": [],
             "path": ".purlin/evidence/local/checkout_design.json",
             "strength": 90,
             "verdict": "strong"
@@ -809,6 +852,7 @@
               "word": "strong"
             }
           },
+          "code_hash": "72d886c64599e86aaf3eb91d560ff85ae429a831f4ac5eb2f19958a3558bb72d",
           "feature": "checkout_design",
           "flags": {
             "failing": false,
@@ -819,10 +863,13 @@
             "partial": false,
             "stale": false
           },
+          "hand_checked": false,
           "id": "RULE-1",
           "label": "own",
+          "left": null,
           "level": "strong",
           "level_marked": null,
+          "machines": {},
           "meets_gate": true,
           "proof_hash": "prule1che",
           "proofs": [
@@ -856,6 +903,7 @@
       "test_strength": 90
     }
   ],
+  "finished": false,
   "gate": {
     "audit_parallel": 4,
     "ci": "github",
@@ -866,10 +914,39 @@
   },
   "generated_at": "2026-09-13T08:30:00Z",
   "generated_by": "sync_status",
+  "last_line": null,
+  "left": [
+    {
+      "command": "purlin:build",
+      "count": 1,
+      "kind": "no_test",
+      "text": "1 rule to write a test for"
+    },
+    {
+      "command": "purlin:build",
+      "count": 2,
+      "kind": "to_strengthen",
+      "text": "2 rules to strengthen"
+    }
+  ],
+  "os_words": {
+    "linux": {
+      "short": "Lin",
+      "word": "Linux/Unix"
+    },
+    "macos": {
+      "short": "Mac",
+      "word": "macOS"
+    },
+    "windows": {
+      "short": "Win",
+      "word": "Windows"
+    }
+  },
   "project": "ledger",
   "queue": [],
   "remote_url": "https://github.com/acme/ledger.git",
-  "schema_version": 9,
+  "schema_version": 10,
   "summary": {
     "asks_strong": 6,
     "failing": 0,
@@ -888,7 +965,12 @@
     ],
     "queue": 0,
     "rules": 7,
+    "sentence": "7 rules. 6 pass their tests. 4 are strong.",
     "stale": 0,
+    "steps": {
+      "passed": 6,
+      "strong": 4
+    },
     "strong": 3,
     "untested": 1
   },

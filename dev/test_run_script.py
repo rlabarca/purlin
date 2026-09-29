@@ -262,8 +262,8 @@ class TestTheTestArmRunsEachSuite:
         code, output = _run(root, '--all', '--test')
         assert code == 1, output
         assert 'Evidence is missing' not in output, output
-        assert ('→ Next: run purlin:build. 1 rule has a failing test.'
-                in output), output
+        assert output.strip().splitlines()[-1] == (
+            '  1 rule to fix: purlin:build'), output
         assert _proofs(root, 'feat')[0]['result'] == 'fail'
 
 
@@ -282,10 +282,11 @@ class TestAProjectWithNoMarker:
         # says the rule has no evidence yet.
         assert '1 · 1 no test' in output, output
         assert 'Evidence is missing' not in output, output
-        # The rule has no test, so the last two lines say it does not pass
-        # and the gate is not met; no test failed, so the run exits 0.
-        assert output.strip().splitlines()[-2:] == [
-            'Tests: 0 of 1 rule passes.', 'gate passed not met: 0 of 1 rule meets it'], output
+        # The rule has no test, so the summary says it does not pass and
+        # what to do; no test failed, so the run exits 0.
+        assert output.strip().splitlines()[-3:] == [
+            '1 rule. 0 pass their tests.', 'Left to do:',
+            '  1 rule to write a test for: purlin:build'], output
         assert code == 0, output
 
 
@@ -370,11 +371,12 @@ class TestLoudFailureB:
         code, output = _run(root, '--feature', 'feat', '--test')
         assert 'other PROOF-1' not in output
         assert 'Evidence is missing' not in output, output
-        # `other` was not run, so the project's gate is not met and the gate
-        # line says so; nothing about it was reported as missing, and the
-        # test the run did run passed, so it exits 0.
-        assert output.strip().splitlines()[-1] == 'gate passed not met: 1 of 2 rules meet it', \
-            output
+        # `other` was not run, so the summary leaves it to test; nothing
+        # about it was reported as missing, and the test the run did run
+        # passed, so it exits 0.
+        assert output.strip().splitlines()[-3:] == [
+            '2 rules. 1 passes its tests.', 'Left to do:',
+            '  1 rule to test: purlin:test'], output
         assert code == 0, output
 
 
@@ -447,60 +449,66 @@ class TestEnvScopedProofs:
 # The state table and the next step
 # ---------------------------------------------------------------------------
 
-class TestEveryRunEndsWithTheNextStep:
+class TestEveryRunEndsOnTheSummary:
 
     # purlin: run_script PROOF-11
-    def test_the_table_and_one_next_step_are_printed(self, tmp_path):
+    def test_the_table_and_the_summary_are_printed(self, tmp_path):
         root = _pytest_project(tmp_path)
         _spec(root, 'feat')
-        _code, output = _run(root, '--all', '--test')
+        code, output = _run(root, '--all', '--test')
         assert 'Purlin status:' in output
         assert 'Tests' in output
-        lines = [line for line in output.strip().splitlines() if line.strip()]
-        assert any(line.startswith('→ ') for line in lines), output
-        # A `--test` run ends with the answer a person came for.
-        assert lines[-1].startswith('gate '), output
-        # A run over one feature answers for the project, and exits on the
-        # tests it ran.
+        assert output.strip().splitlines()[-2:] == [
+            '1 rule. 1 passes its tests.', 'Nothing left to do.'], output
+        assert code == 0, output
+
+    # purlin: run_script PROOF-103
+    def test_a_run_over_one_feature_answers_for_the_project(self, tmp_path):
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat')
         _spec(root, 'other')
         code, output = _run(root, '--feature', 'feat', '--test')
-        assert output.strip().splitlines()[-1] == 'gate passed not met: 1 of 2 rules meet it', \
-            output
+        assert output.strip().splitlines()[-3:] == [
+            '2 rules. 1 passes its tests.', 'Left to do:',
+            '  1 rule to write a test for: purlin:build'], output
         assert code == 0, output
 
     # purlin: run_script PROOF-101
-    def test_the_tests_line_and_the_gate_line_count_two_things(
-            self, tmp_path):
-        # At `strong` the test passes and no audit has read the rule: the
-        # tests line counts it, the gate line does not, and the run exits on
-        # the tests.
+    def test_at_strong_a_passing_rule_is_left_to_audit(self, tmp_path):
         root = _pytest_project(tmp_path, gate='strong')
         _spec(root, 'feat')
         code, output = _run(root, '--all', '--test')
-        assert output.strip().splitlines()[-2:] == [
-            'Tests: 1 of 1 rule passes.', 'gate strong not met: 0 of 1 rule meets it'], output
+        assert output.strip().splitlines()[-3:] == [
+            '1 rule. 1 passes its tests. 0 are strong.', 'Left to do:',
+            '  1 rule to audit: purlin:audit'], output
         assert code == 0, output
-        # A test that fails makes the same run exit 1.
-        (root / 'tests' / 'test_feat.py').write_text(
+
+    # purlin: run_script PROOF-105
+    def test_at_strong_a_failing_rule_is_left_to_fix(self, tmp_path):
+        root = _pytest_project(tmp_path, gate='strong', body=(
             '# purlin: feat PROOF-1\n'
             'def test_ok():\n'
-            '    assert 1 == 2\n', encoding='utf-8')
+            '    assert 1 == 2\n'))
+        _spec(root, 'feat')
         code, output = _run(root, '--all', '--test')
-        assert output.strip().splitlines()[-2:] == [
-            'Tests: 0 of 1 rule passes.', 'gate strong not met: 0 of 1 rule meets it'], output
+        assert output.strip().splitlines()[-3:] == [
+            '1 rule. 0 pass their tests. 0 are strong.', 'Left to do:',
+            '  1 rule to fix: purlin:build'], output
         assert code == 1, output
 
-    # purlin: run_script PROOF-101
-    def test_at_passed_both_lines_carry_the_same_number(self, tmp_path):
+    # purlin: run_script PROOF-106
+    def test_at_passed_a_rule_with_no_test_is_left_to_write_one(
+            self, tmp_path):
         root = _pytest_project(tmp_path)
         _spec(root, 'feat', rules=2,
               proofs=(('PROOF-1', 'RULE-1', ''),))
         code, output = _run(root, '--all', '--test')
-        assert output.strip().splitlines()[-2:] == [
-            'Tests: 1 of 2 rules pass.', 'gate passed not met: 1 of 2 rules meet it'], output
+        assert output.strip().splitlines()[-3:] == [
+            '2 rules. 1 passes its tests.', 'Left to do:',
+            '  1 rule to write a test for: purlin:build'], output
         assert code == 0, output
 
-    # purlin: run_script PROOF-11
+    # purlin: run_script PROOF-104
     def test_a_project_with_no_specs_says_so(self, tmp_path):
         root = _project(tmp_path)
         code, output = _run(root, '--all', '--test')
@@ -757,11 +765,9 @@ class TestTheGateDecidesTheBreaks:
         _config(root, mutation_engine='auto')
         _spec(root, 'feat')
         _code, calls = evidence_run(root, '--all', '--audit')
-        output = capsys.readouterr().out
+        capsys.readouterr()
 
         assert calls['breaks'] == [], 'the breaks ran under the passed gate'
-        assert 'Test strength: not measured; the gate is passed.' in output, \
-            output
         assert _evidence(root)['audit']['mutation'] is None
 
     # purlin: run_script PROOF-66
@@ -771,17 +777,16 @@ class TestTheGateDecidesTheBreaks:
         _config(root, mutation_engine='auto')
         _spec(root, 'feat')
         _code, calls = evidence_run(root, '--all', '--audit')
-        output = capsys.readouterr().out
+        capsys.readouterr()
 
         assert len(calls['breaks']) == 1, 'the breaks did not run under strong'
-        assert 'Test strength: feat 80% (minimum 70%).' in output, output
         mutation = _evidence(root)['audit']['mutation']
         assert (mutation['engine'], mutation['score']) == ('mutmut', 80)
         cell = _rule(root, 'feat', 'RULE-1')['cells']['strong']
         assert (cell['word'], cell['reasons']) == ('strong', []), cell
 
     @pytest.mark.parametrize('gate', ['passed', 'strong', 'signed'])
-    # purlin: run_script PROOF-66
+    # purlin: run_script PROOF-102
     def test_a_ci_run_measures_nothing_and_audits_nothing(
             self, tmp_path, evidence_run, claude, capsys, gate):
         _install, directory = claude
@@ -804,8 +809,6 @@ class TestTheGateDecidesTheBreaks:
         output = capsys.readouterr().out
 
         assert calls['breaks'] == [], output
-        assert 'Test strength: not measured; mutation testing is off.' in \
-            output, output
         cell = _rule(root, 'feat', 'RULE-1')['cells']['strong']
         assert (cell['word'], cell['reasons']) == (
             'strong', ['no mutation score measured']), cell
@@ -822,7 +825,6 @@ class TestTheGateDecidesTheBreaks:
         cell = _rule(root, 'feat', 'RULE-1')['cells']['strong']
         assert (cell['word'], cell['reasons']) == (
             'weak', ['strength 80% under 90%']), cell
-        assert 'Test strength: feat 80% (minimum 90%).' in output, output
         assert code == 1, output
 
     # purlin: run_script PROOF-81
@@ -1271,6 +1273,11 @@ class TestAFreshAuditStalesASignature:
             'stale'
 
 
+def _before_the_table(output):
+    """The lines a run printed before the status table, the last one last."""
+    return output.split('Purlin status:')[0].strip().splitlines()
+
+
 class TestTheLastLines:
 
     # purlin: run_script PROOF-86
@@ -1283,19 +1290,21 @@ class TestTheLastLines:
         _config(root, audit_parallel=1, mutation_engine='auto')
         _git_repo(root)
         code, _calls = evidence_run(root, '--all', '--audit', '--commit')
-        lines = capsys.readouterr().out.strip().splitlines()
-        order = ['AI audit: 1 rule read, 0 strong, 1 weak.',
-                 'Test strength: feat 80% (minimum 70%).',
-                 '1 rule could not be audited: claude answered without a '
-                 'settled line. Run purlin:audit again.',
-                 'Evidence written to .purlin/evidence/local/feat.json.',
+        output = capsys.readouterr().out
+        order = ['Evidence written to .purlin/evidence/local/feat.json.',
                  'Evidence committed.',
-                 'Audit: 0 strong, 1 weak.',
-                 'gate strong not met: 0 of 2 rules meet it']
+                 'AI audit: 1 rule read, 0 strong, 1 weak.',
+                 '1 rule could not be audited: claude answered without a '
+                 'settled line. Run purlin:audit again.']
+        lines = _before_the_table(output)
         assert lines[-len(order):] == order, lines
+        assert output.strip().splitlines()[-4:] == [
+            '2 rules. 2 pass their tests. 0 are strong.', 'Left to do:',
+            '  1 rule to audit: purlin:audit',
+            '  1 rule to strengthen: purlin:build'], output
         assert code == 1
 
-    # purlin: run_script PROOF-86
+    # purlin: run_script PROOF-107
     def test_the_skipped_rules_and_the_stale_line_take_their_places(
             self, tmp_path, evidence_run, claude, capsys):
         install, _directory = claude
@@ -1314,26 +1323,30 @@ class TestTheLastLines:
         install(answers=['settled: yes\n- PROOF-1 reads the value alone.',
                          loose])
         code, _calls = evidence_run(root, '--audit', '--commit')
-        lines = capsys.readouterr().out.strip().splitlines()
-        order = ['AI audit: 1 rule read, 0 strong, 1 weak. 1 rule skipped; '
-                 'its text, proof and test match its last audit. '
-                 'purlin:audit --all reads them again.',
-                 'Test strength: feat 80% (minimum 80%).',
-                 '1 rule could not be audited: claude answered without a '
-                 'settled line. Run purlin:audit again.',
-                 '1 signature went stale: its audit findings changed.',
+        output = capsys.readouterr().out
+        order = ['1 signature went stale: its audit findings changed.',
                  'Evidence written to .purlin/evidence/local/feat.json.',
                  'Evidence committed.',
-                 'Audit: 1 strong, 1 weak.',
-                 'gate signed not met: 0 of 3 rules meet it']
+                 'AI audit: 1 rule read, 0 strong, 1 weak. 1 rule skipped; '
+                 'its text, proof and test match its last audit. '
+                 'purlin:audit --all reads them again.',
+                 '1 rule could not be audited: claude answered without a '
+                 'settled line. Run purlin:audit again.']
+        lines = _before_the_table(output)
         assert lines[-len(order):] == order, lines
+        assert output.strip().splitlines()[-5:] == [
+            '3 rules. 3 pass their tests. 1 is strong. 0 are signed.',
+            'Left to do:', '  1 rule to audit: purlin:audit',
+            '  1 rule to strengthen: purlin:build',
+            '  1 rule to tie to its files: purlin:spec'], output
         assert code == 1
 
 
-class TestTheAuditGateLine:
-    """Above `passed` the audit answers level 2; at `passed` it blocks nothing."""
+class TestTheAuditExitCode:
+    """Above `passed` a finding makes the audit exit 1; at `passed` nothing does."""
 
     # purlin: run_script PROOF-69
+    # purlin: run_script PROOF-108
     def test_a_finding_blocks_at_strong(self, tmp_path, evidence_run, claude,
                                         capsys):
         install, _directory = claude
@@ -1341,18 +1354,19 @@ class TestTheAuditGateLine:
         root = _many(tmp_path, 1)
         code, _calls = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
-        assert output.strip().splitlines()[-2:] == [
-            'Audit: 0 strong, 1 weak.',
-            'gate strong not met: 0 of 1 rule meets it'], output
+        assert output.strip().splitlines()[-3:] == [
+            '1 rule. 1 passes its tests. 0 are strong.', 'Left to do:',
+            '  1 rule to strengthen: purlin:build'], output
         assert code == 1, output
         install()
         code, _calls = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
         assert output.strip().splitlines()[-2:] == [
-            'Audit: 1 strong, 0 weak.', 'gate strong met: 1 of 1 rule'], output
+            '1 rule. 1 passes its tests. 1 is strong.',
+            'Nothing left to do.'], output
         assert code == 0, output
 
-    # purlin: run_script PROOF-69
+    # purlin: run_script PROOF-109
     def test_a_failing_test_blocks_at_strong(self, tmp_path, evidence_run,
                                              claude, capsys):
         _install, directory = claude
@@ -1365,12 +1379,12 @@ class TestTheAuditGateLine:
         code, _calls = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
         assert fake_claude.calls(directory) == []
-        assert output.strip().splitlines()[-2:] == [
-            'Audit: 0 strong, 0 weak.',
-            'gate strong not met: 0 of 1 rule meets it'], output
+        assert output.strip().splitlines()[-3:] == [
+            '1 rule. 0 pass their tests. 0 are strong.', 'Left to do:',
+            '  1 rule to fix: purlin:build'], output
         assert code == 1, output
 
-    # purlin: run_script PROOF-69
+    # purlin: run_script PROOF-110
     def test_a_passed_level_meets_the_strong_line_on_its_tests(
             self, tmp_path, evidence_run, claude, capsys):
         _install, directory = claude
@@ -1378,8 +1392,9 @@ class TestTheAuditGateLine:
         code, _calls = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
         assert fake_claude.calls(directory) == []
-        assert output.strip().splitlines()[-1] == 'gate strong met: 1 of 1 rule', \
-            output
+        assert output.strip().splitlines()[-2:] == [
+            '1 rule. 1 passes its tests. 1 is strong.',
+            'Nothing left to do.'], output
         assert code == 0, output
 
     # purlin: run_script PROOF-87
@@ -1391,27 +1406,31 @@ class TestTheAuditGateLine:
         code, _calls = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
         assert output.strip().splitlines()[-2:] == [
-            'Audit: 0 strong, 1 weak. Nothing blocks at the gate passed.',
-            'gate passed met: 1 of 1 rule'], output
+            '1 rule. 1 passes its tests.', 'Nothing left to do.'], output
         assert _audited(root)['RULE-1']['findings'] == [
             'PROOF-1 reads the value alone.']
         assert code == 0, output
 
     # purlin: run_script PROOF-100
-    def test_at_signed_the_line_counts_the_gate_and_the_exit_the_audit(
+    def test_at_signed_the_audit_exits_on_what_it_answers_for(
             self, tmp_path, evidence_run, claude, capsys):
         install, _directory = claude
         install()
         root = _many(tmp_path, 1, gate='signed')
+        # The spec's scope names a tracked file, so a signature can be tied.
+        (root / 'src').mkdir()
+        (root / 'src' / 'app.py').write_text('VALUE = 1\n', encoding='utf-8')
+        _git_repo(root)
         code, _calls = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
-        # The audit found the rule strong; no one has signed it, so the gate
-        # is not met, and an audit cannot write a signature, so it exits 0.
-        assert output.strip().splitlines()[-2:] == [
-            'Audit: 1 strong, 0 weak.', 'gate signed not met: 0 of 1 rule meets it'], output
+        # The audit found the rule strong; no one has signed it, and an
+        # audit cannot write a signature, so it exits 0.
+        assert output.strip().splitlines()[-3:] == [
+            '1 rule. 1 passes its tests. 1 is strong. 0 are signed.',
+            'Left to do:', '  1 rule to sign: purlin:sign'], output
         assert code == 0, output
 
-    # purlin: run_script PROOF-87
+    # purlin: run_script PROOF-111
     def test_a_failing_test_still_exits_one_at_passed(self, tmp_path):
         root = _pytest_project(tmp_path, body=(
             'import pytest\n\n'
@@ -1420,7 +1439,8 @@ class TestTheAuditGateLine:
             '    assert False\n'))
         _spec(root, 'feat')
         code, out = _run(root, '--all', '--audit')
-        assert 'Nothing blocks at the gate passed.' in out, out
+        assert out.strip().splitlines()[-1] == (
+            '  1 rule to fix: purlin:build'), out
         assert code == 1, out
 
 
@@ -1882,17 +1902,16 @@ class TestARunCoversWhatTheChangeTouched:
         assert {name: _file(root, '.purlin/evidence/local/%s.json' % name)
                 for name in ('login', 'export')} == before
         assert [line for line in output.splitlines() if line.strip()][-2:] == [
-            'Tests: 2 of 2 rules pass.', 'gate passed met: 2 of 2 rules'], \
-            output
+            '2 rules. 2 pass their tests.', 'Nothing left to do.'], output
 
-    # purlin: run_script PROOF-95
+    # purlin: run_script PROOF-112
     def test_nothing_changed_over_a_failing_test_exits_one(self, tmp_path):
         root, _sha = _touched_project(tmp_path, failing=('export',))
         code, output = _run(root, '--test')
         assert 'Nothing to run' in output, output
-        assert [line for line in output.splitlines() if line.strip()][-2:] == [
-            'Tests: 1 of 2 rules pass.',
-            'gate passed not met: 1 of 2 rules meet it'], output
+        assert [line for line in output.splitlines() if line.strip()][-3:] == [
+            '2 rules. 1 passes its tests.', 'Left to do:',
+            '  1 rule to fix: purlin:build'], output
         assert code == 1, output
 
     # purlin: run_script PROOF-96

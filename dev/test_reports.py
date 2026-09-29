@@ -670,9 +670,14 @@ class TestThroughARun:
         assert lines[lines.index(wrong) + 1] == (
             'Remove the comment, or write the proof it names.'), out
         assert 'Evidence is missing' not in out
-        assert 'gate passed met: 3 of 3 rules' in out, out
+        assert out.strip().splitlines()[-1] == 'Nothing left to do.', out
         assert code == 1
 
+    # purlin: reports PROOF-25
+    def test_two_markers_naming_no_spec_are_each_named(self, tmp_path):
+        root = _project(tmp_path, [suites.pytest_suite()])
+        wrong = ('purlin: nosuch PROOF-1 at tests/test_login.py:13 names a '
+                 'feature no spec has')
         _write(root, 'tests/test_login.py', _WELL_FORMED + (
             '# purlin: nosuch PROOF-1\ndef test_x():\n    pass\n\n'
             '# purlin: other PROOF-2\ndef test_y():\n    pass\n'))

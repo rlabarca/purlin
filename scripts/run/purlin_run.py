@@ -28,12 +28,10 @@ marker of a feature it runs, and starts no suite that has none.
 `--test` is what `purlin:test` runs: the suites run, and the run writes this
 operating system's section of `.purlin/evidence/local/<feature>.json` for
 every feature it covered, re-renders `.purlin/tests.md` from every evidence
-file, prints the table and ends on two lines: `Tests: <p> of <rules> rules
-pass.`, what the tests found, then `gate <gate> met: <rules> of <rules> rules`
-or `gate <gate> not met: <n> of <rules> rules meet it`, where the project
-stands against its gate. It exits on
-the tests, whatever the gate line says: 1 where a test failed, evidence is
-missing or a marker names nothing a spec has, else 0. It writes and does not
+file, and ends on the status table, the summary sentence and `Left to do`,
+which count every rule under `specs/`. It exits on the tests alone: 1 where
+a test failed, evidence is missing or a marker names nothing a spec has,
+else 0. It writes and does not
 commit. `--commit` commits the evidence and the table under the person's
 own identity as `purlin: evidence at <sha7>`; nothing here ever pushes. `--remote` hands the
 commit to the git host's runner instead and brings back what that runner
@@ -53,10 +51,10 @@ Before the first call the run prints `AI audit: <n> rules to read, <k> at a
 time.` and carries on without asking. What the audit found lands in the same
 evidence file, under `audit`, and `--commit` commits it the same way. A rule
 the model could not be reached for gets nothing written and reads `not
-audited`; at `strong` and above that exits 1. The run ends on two lines:
-`Audit: <n> strong, <n> weak.`, what the audit found, then the gate line
-`purlin:test` ends on. At the gate `passed` the first reads `Audit: <n>
-strong, <n> weak. Nothing blocks at the gate passed.` and nothing the audit
+audited`; at `strong` and above that exits 1. After the evidence lines the
+audit prints one line, `AI audit: <n> rules read, <s> strong, <w> weak.`,
+then one line per reason a rule could not be audited, then the status table,
+the summary sentence and `Left to do`. At the gate `passed` nothing the audit
 found makes the run exit 1; above it the run exits 1 when a rule is short of
 its passed cell or, where its level asks for one, its strong cell.
 
@@ -117,7 +115,7 @@ from purlin import (console as console_module,                # noqa: E402
                     frameworks as frameworks_module,
                     gate as gate_module, markers as markers_module,
                     payload as payload_module,
-                    specs as specs_module, states as states_module,
+                    specs as specs_module,
                     status as status_module)
 import evidence as evidence_writer                             # noqa: E402
 import reports as reports_module                               # noqa: E402
@@ -629,77 +627,28 @@ def _prune(project_root, features):
     return removed
 
 
-def tests_line(passing, rules):
-    """`Tests: <p> of <m> rules pass.`: what the tests found, over the project."""
-    if rules == 1:
-        return 'Tests: %d of 1 rule passes.' % passing
-    return 'Tests: %d of %d rules pass.' % (passing, rules)
-
-
-def gate_line(met, rules, gate):
-    """`gate <gate> met: <m> of <m> rules`, or `gate <gate> not met: <n> of <m> rules meet it`.
-
-    The number is how many rules meet the project's gate, the one the status
-    headline and every other surface count, not how many pass their tests.
-    The line names the gate and says in words what the number counts, so
-    `91 of 562` cannot be read as 91 rules short of it.
-    """
-    noun = 'rule' if rules == 1 else 'rules'
-    if rules and met == rules:
-        return 'gate %s met: %d of %d %s' % (gate, met, rules, noun)
-    return 'gate %s not met: %d of %d %s %s it' % (
-        gate, met, rules, noun, 'meets' if rules == 1 else 'meet')
-
-
 def project_counts(project_root):
-    """What a run's last lines count, over every rule under specs/.
+    """What a run's exit code reads, over every rule under specs/.
 
     Each rule is counted once, under the feature that owns it, and the
     project is counted rather than the run, so a `--feature` run answers for
-    every rule and not only for the features it ran. The answer carries the
-    gate, the rules, how many pass their tests, how many meet the gate, how
-    many read `failed`, how many the audit found strong and weak, and how
-    many are short of what the audit answers for: the passed cell, and the
-    strong cell where the rule's level asks for one.
+    every rule and not only for the features it ran. `failed` counts the
+    rules whose passed cell reads `failed`; `short_of_audit` those short of
+    what the audit answers for: the passed cell, and the strong cell where
+    the rule's level asks for one.
     """
     payload = payload_module.build_payload(project_root, generated_by='run')
-    counts = {'gate': (payload.get('gate') or {}).get('gate') or 'passed',
-              'rules': 0, 'passing': 0, 'met': 0, 'failed': 0, 'strong': 0,
-              'weak': 0, 'short_of_audit': 0}
+    counts = {'failed': 0, 'short_of_audit': 0}
     for feature in payload.get('features') or ():
         for rule in feature.get('rules') or ():
             if rule.get('feature') != feature.get('name'):
                 continue
-            counts['rules'] += 1
-            cells = rule.get('cells') or {}
-            passed = cells.get('passed')
-            if states_module.cell_is_met('passed', passed):
-                counts['passing'] += 1
+            passed = (rule.get('cells') or {}).get('passed')
             if (passed or {}).get('word') == 'failed':
                 counts['failed'] += 1
-            if rule.get('meets_gate'):
-                counts['met'] += 1
             if rule.get('blocked_by') in ('passed', 'strong'):
                 counts['short_of_audit'] += 1
-            answered = (rule.get('audit') or {}).get('verdict')
-            if answered == 'strong':
-                counts['strong'] += 1
-            elif answered:
-                counts['weak'] += 1
     return counts
-
-
-def last_lines(project_root):
-    """`purlin:test`'s last two lines, and the counts they were read from.
-
-    The first says what the tests found; the second says where the project
-    stands against its gate. The exit code is not read from either: a test
-    run cannot make an audit or a signature appear.
-    """
-    counts = project_counts(project_root)
-    return ([tests_line(counts['passing'], counts['rules']),
-             gate_line(counts['met'], counts['rules'], counts['gate'])],
-            counts)
 
 
 # ---------------------------------------------------------------------------
@@ -882,10 +831,6 @@ def main(argv=None):
 
     print('')
     print(status_module.sync_status(project_root))
-    lines, _counts = last_lines(project_root)
-    print('')
-    for line in lines:
-        print(line)
     return exit_code
 
 
@@ -979,13 +924,9 @@ def _nothing_to_run(project_root, args, features, cfg):
                                            head_commit(project_root)))
     print('')
     print(status_module.sync_status(project_root))
-    lines, counts = last_lines(project_root)
-    print('')
-    for line in lines:
-        print(line)
     # No test ran, so the tests this run answers with are the ones the
     # evidence already holds: a rule whose tests fail there fails the run.
-    return 1 if counts['failed'] else 0
+    return 1 if project_counts(project_root)['failed'] else 0
 
 
 def _write_log(project_root, log):
@@ -1012,13 +953,9 @@ NOTHING_TO_READ = ('AI audit: nothing to read; every rule matches its last '
 # What it says when it is done.
 SKIPPED = ('%d %s skipped; %s text, proof and test match %s last audit. '
            'purlin:audit --all reads them again.')
-NOT_MEASURED_OFF = 'Test strength: not measured; mutation testing is off.'
-NOT_MEASURED_PASSED = 'Test strength: not measured; the gate is passed.'
 NOT_ON_PATH_LINE = 'Install Claude Code, then run purlin:audit again.'
 TRY_AGAIN_LINE = 'Run purlin:audit again.'
 WENT_STALE = '%d %s went stale: %s audit findings changed.'
-AUDIT_LINE = 'Audit: %d strong, %d weak.'
-NOTHING_BLOCKS = AUDIT_LINE + ' Nothing blocks at the gate passed.'
 
 
 def _plural(count, one, many):
@@ -1064,11 +1001,8 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
         print(NOTHING_TO_READ)
 
     measured = sorted({feature for feature, _rule in to_read})
-    strength_line = (NOT_MEASURED_PASSED if gate == 'passed'
-                     else NOT_MEASURED_OFF)
     if cfg.breaks and measured:
         breaks = _run_breaks(project_root, args, features, measured)
-        strength_line = _strength_line(breaks, measured, cfg)
         commit = head_commit(project_root)
         for name in measured:
             score = (((breaks.get('features') or {}).get(name) or {})
@@ -1081,9 +1015,6 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
                                         mutation, True)
         payload = payload_module.build_payload(project_root,
                                                generated_by='audit')
-    elif cfg.breaks:
-        strength_line = ('Test strength: not measured; no rule was read, so '
-                         'no feature was measured.')
 
     readings = [ai_audit.reading_for(project_root, payload, feature, rule)
                 for feature, rule in to_read]
@@ -1115,10 +1046,7 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
                                              reading.get('test_strength'))
         if after != before:
             for signature in signatures.get((feature, rule_id)) or ():
-                if signatures_module.is_current(
-                        signature, entry.get('rule_hash'),
-                        entry.get('proof_hash'), entry.get('test_hash'),
-                        before):
+                if signatures_module.is_current(signature, entry):
                     went_stale += 1
     for feature, entries in sorted(entries_by_feature.items()):
         evidence_writer.write_audit(project_root, 'local', feature,
@@ -1128,15 +1056,6 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
     evidence_writer.write_table(project_root)
 
     print('')
-    print(status_module.sync_status(project_root))
-    print('')
-    print(_summary_line(counts, skipped))
-    print(strength_line)
-    for why in sorted(causes):
-        print('%d %s could not be audited: %s. %s'
-              % (causes[why], _plural(causes[why], 'rule', 'rules'), why,
-                 NOT_ON_PATH_LINE if why == ai_audit.NOT_ON_PATH
-                 else TRY_AGAIN_LINE))
     if went_stale:
         print(WENT_STALE % (went_stale,
                             _plural(went_stale, 'signature', 'signatures'),
@@ -1153,12 +1072,19 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
     if args.commit:
         print(evidence_writer.commit_local(project_root,
                                            head_commit(project_root), removed))
-    counts = project_counts(project_root)
-    verdicts = (counts['strong'], counts['weak'])
-    print((NOTHING_BLOCKS if gate == 'passed' else AUDIT_LINE) % verdicts)
-    print(gate_line(counts['met'], counts['rules'], counts['gate']))
+    # The one line the audit keeps before the ending: what it read and found,
+    # then why any rule could not be read.
+    print(_summary_line(counts, skipped))
+    for why in sorted(causes):
+        print('%d %s could not be audited: %s. %s'
+              % (causes[why], _plural(causes[why], 'rule', 'rules'), why,
+                 NOT_ON_PATH_LINE if why == ai_audit.NOT_ON_PATH
+                 else TRY_AGAIN_LINE))
+    print('')
+    print(status_module.sync_status(project_root))
     if gate == 'passed':
         return exit_code
+    counts = project_counts(project_root)
     # A finding blocks: the audit answers for the passed cell and, where a
     # rule's level asks for one, the strong cell. It cannot make a signature
     # appear, so a rule waiting on one does not fail the audit.
@@ -1179,24 +1105,6 @@ def _summary_line(counts, skipped):
                                  _plural(skipped, 'its', 'their'),
                                  _plural(skipped, 'its', 'their'))
     return line
-
-
-def _strength_line(breaks, measured, cfg):
-    """`Test strength: <feature> <n>%, ... (minimum <m>).`, or why it is not."""
-    scores = []
-    for name in measured:
-        score = (((breaks.get('features') or {}).get(name) or {})
-                 .get('scope_score') or {}).get('score')
-        scores.append((name, score))
-    if not breaks.get('available') or all(score is None
-                                          for _name, score in scores):
-        reason = breaks.get('reason') or ('no mutation engine covers this '
-                                          "project's tests")
-        return 'Test strength: not measured; %s.' % str(reason).rstrip('.')
-    return 'Test strength: %s (minimum %s).' % (
-        ', '.join('%s %s' % (name, 'n/a' if score is None else '%d%%' % score)
-                  for name, score in scores),
-        'n/a' if cfg.min_strength is None else '%d%%' % cfg.min_strength)
 
 
 def _rule_number(rule_id):

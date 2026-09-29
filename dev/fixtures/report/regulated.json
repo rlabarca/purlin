@@ -116,11 +116,13 @@
       },
       "rules": [
         {
+          "applies_to": "login",
           "audit": {
             "at": "2026-09-12T09:15:40Z",
             "commit": "a1b2c3d",
             "findings": [],
             "model": "example-model-1",
+            "notes": [],
             "path": ".purlin/evidence/ci/login.json",
             "strength": 86,
             "verdict": "strong"
@@ -168,6 +170,7 @@
               "word": "strong"
             }
           },
+          "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "feature": "login",
           "flags": {
             "failing": false,
@@ -178,10 +181,13 @@
             "partial": false,
             "stale": false
           },
+          "hand_checked": false,
           "id": "RULE-1",
           "label": "own",
+          "left": null,
           "level": "signed",
           "level_marked": null,
+          "machines": {},
           "meets_gate": true,
           "proof_hash": "prule1log",
           "proofs": [
@@ -207,11 +213,13 @@
           "text": "A person signs in with an email address and a password."
         },
         {
+          "applies_to": "login",
           "audit": {
             "at": "2026-09-12T09:15:40Z",
             "commit": "a1b2c3d",
             "findings": [],
             "model": "example-model-1",
+            "notes": [],
             "path": ".purlin/evidence/ci/login.json",
             "strength": 86,
             "verdict": "strong"
@@ -259,6 +267,7 @@
               "word": "strong"
             }
           },
+          "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "feature": "login",
           "flags": {
             "failing": false,
@@ -269,10 +278,13 @@
             "partial": false,
             "stale": true
           },
+          "hand_checked": false,
           "id": "RULE-2",
           "label": "own",
+          "left": "to_sign",
           "level": "signed",
           "level_marked": null,
+          "machines": {},
           "meets_gate": false,
           "proof_hash": "prule2log",
           "proofs": [
@@ -298,6 +310,7 @@
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
+          "applies_to": "login",
           "audit": {
             "at": "2026-09-12T09:15:40Z",
             "commit": "a1b2c3d",
@@ -305,6 +318,7 @@
               "PROOF-3 reads the status code alone; no test reads when the lock expires."
             ],
             "model": "example-model-1",
+            "notes": [],
             "path": ".purlin/evidence/ci/login.json",
             "strength": 86,
             "verdict": "weak"
@@ -334,6 +348,7 @@
               "word": "passed"
             }
           },
+          "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "feature": "login",
           "flags": {
             "failing": false,
@@ -344,10 +359,13 @@
             "partial": false,
             "stale": false
           },
+          "hand_checked": false,
           "id": "RULE-3",
           "label": "own",
+          "left": null,
           "level": "passed",
           "level_marked": "passed",
+          "machines": {},
           "meets_gate": true,
           "proof_hash": "prule3log",
           "proofs": [
@@ -373,6 +391,7 @@
           "text": "A locked account sends one notification email."
         },
         {
+          "applies_to": "login",
           "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "blocked_by": "passed",
@@ -422,6 +441,7 @@
               "word": "waiting"
             }
           },
+          "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "feature": "login",
           "flags": {
             "failing": false,
@@ -432,10 +452,13 @@
             "partial": true,
             "stale": false
           },
+          "hand_checked": false,
           "id": "RULE-4",
           "label": "own",
+          "left": "to_fix",
           "level": "signed",
           "level_marked": null,
+          "machines": {},
           "meets_gate": false,
           "proof_hash": "prule4log",
           "proofs": [
@@ -541,11 +564,13 @@
       },
       "rules": [
         {
+          "applies_to": "invoice",
           "audit": {
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
             "findings": [],
             "model": "example-model-1",
+            "notes": [],
             "path": ".purlin/evidence/ci/invoice.json",
             "strength": 64,
             "verdict": "strong"
@@ -575,6 +600,7 @@
               "word": "passed"
             }
           },
+          "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -585,10 +611,13 @@
             "partial": false,
             "stale": false
           },
+          "hand_checked": false,
           "id": "RULE-1",
           "label": "own",
+          "left": null,
           "level": "passed",
           "level_marked": "passed",
+          "machines": {},
           "meets_gate": true,
           "proof_hash": "prule1inv",
           "proofs": [
@@ -614,6 +643,7 @@
           "text": "An invoice totals its lines to the cent."
         },
         {
+          "applies_to": "invoice",
           "audit": {
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
@@ -621,6 +651,7 @@
               "No proof of this rule names a rejection, an error or a boundary, so the test reads only the total it expects."
             ],
             "model": "example-model-1",
+            "notes": [],
             "path": ".purlin/evidence/ci/invoice.json",
             "strength": 64,
             "verdict": "weak"
@@ -673,6 +704,7 @@
               "word": "weak"
             }
           },
+          "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -683,10 +715,13 @@
             "partial": false,
             "stale": false
           },
+          "hand_checked": false,
           "id": "RULE-2",
           "label": "own",
+          "left": "to_strengthen",
           "level": "signed",
           "level_marked": null,
+          "machines": {},
           "meets_gate": false,
           "proof_hash": "prule2inv",
           "proofs": [
@@ -712,6 +747,7 @@
           "text": "An invoice with no lines totals zero."
         },
         {
+          "applies_to": "invoice",
           "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "blocked_by": "strong",
@@ -746,6 +782,7 @@
               "word": "manual test"
             }
           },
+          "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -756,10 +793,13 @@
             "partial": false,
             "stale": false
           },
+          "hand_checked": false,
           "id": "RULE-3",
           "label": "own",
+          "left": "to_test_by_hand",
           "level": "signed",
           "level_marked": null,
+          "machines": {},
           "meets_gate": false,
           "proof_hash": "d4e5f6a7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           "proofs": [
@@ -837,6 +877,7 @@
       },
       "rules": [
         {
+          "applies_to": "checkout_design",
           "audit": {
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
@@ -844,6 +885,7 @@
               "The test reads the text \"Total\" and the button \"Pay\" on the page; the proof names their order, and no assertion compares their positions."
             ],
             "model": "example-model-1",
+            "notes": [],
             "path": ".purlin/evidence/ci/checkout_design.json",
             "strength": 90,
             "verdict": "undecided"
@@ -890,6 +932,7 @@
               "word": "weak"
             }
           },
+          "code_hash": "72d886c64599e86aaf3eb91d560ff85ae429a831f4ac5eb2f19958a3558bb72d",
           "feature": "checkout_design",
           "flags": {
             "failing": false,
@@ -900,10 +943,13 @@
             "partial": false,
             "stale": false
           },
+          "hand_checked": false,
           "id": "RULE-1",
           "label": "own",
+          "left": "to_strengthen",
           "level": "signed",
           "level_marked": null,
+          "machines": {},
           "meets_gate": false,
           "proof_hash": "prule1che",
           "proofs": [
@@ -985,6 +1031,7 @@
       },
       "rules": [
         {
+          "applies_to": "export",
           "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "blocked_by": "passed",
@@ -1022,6 +1069,7 @@
               "word": "waiting"
             }
           },
+          "code_hash": "3e5c6ee720afe2c5032fcfbd87d637c0068d2155f85a1aea430d30bede475af0",
           "feature": "export",
           "flags": {
             "failing": false,
@@ -1032,10 +1080,13 @@
             "partial": false,
             "stale": false
           },
+          "hand_checked": false,
           "id": "RULE-1",
           "label": "own",
+          "left": "to_test",
           "level": "signed",
           "level_marked": null,
+          "machines": {},
           "meets_gate": false,
           "proof_hash": "prule1exp",
           "proofs": [
@@ -1061,6 +1112,7 @@
           "text": "A statement export lists every invoice of the month in date order."
         },
         {
+          "applies_to": "export",
           "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "blocked_by": "strong",
@@ -1102,6 +1154,7 @@
               "word": "not audited"
             }
           },
+          "code_hash": "3e5c6ee720afe2c5032fcfbd87d637c0068d2155f85a1aea430d30bede475af0",
           "feature": "export",
           "flags": {
             "failing": false,
@@ -1112,10 +1165,13 @@
             "partial": false,
             "stale": false
           },
+          "hand_checked": false,
           "id": "RULE-2",
           "label": "own",
+          "left": "to_audit",
           "level": "signed",
           "level_marked": null,
+          "machines": {},
           "meets_gate": false,
           "proof_hash": "prule2exp",
           "proofs": [
@@ -1151,6 +1207,7 @@
       "test_strength": 82
     }
   ],
+  "finished": false,
   "gate": {
     "audit_parallel": 4,
     "ci": "github",
@@ -1161,6 +1218,59 @@
   },
   "generated_at": "2026-09-13T08:30:00Z",
   "generated_by": "sync_status",
+  "last_line": null,
+  "left": [
+    {
+      "command": "purlin:build",
+      "count": 1,
+      "kind": "to_fix",
+      "text": "1 rule to fix"
+    },
+    {
+      "command": "purlin:test",
+      "count": 1,
+      "kind": "to_test",
+      "text": "1 rule to test"
+    },
+    {
+      "command": "purlin:sign",
+      "count": 1,
+      "kind": "to_test_by_hand",
+      "text": "1 rule to test by hand"
+    },
+    {
+      "command": "purlin:audit",
+      "count": 1,
+      "kind": "to_audit",
+      "text": "1 rule to audit"
+    },
+    {
+      "command": "purlin:build",
+      "count": 2,
+      "kind": "to_strengthen",
+      "text": "2 rules to strengthen"
+    },
+    {
+      "command": "purlin:sign",
+      "count": 1,
+      "kind": "to_sign",
+      "text": "1 rule to sign"
+    }
+  ],
+  "os_words": {
+    "linux": {
+      "short": "Lin",
+      "word": "Linux/Unix"
+    },
+    "macos": {
+      "short": "Mac",
+      "word": "macOS"
+    },
+    "windows": {
+      "short": "Win",
+      "word": "Windows"
+    }
+  },
   "project": "ledger",
   "queue": [
     {
@@ -1192,7 +1302,7 @@
     }
   ],
   "remote_url": "https://github.com/acme/ledger.git",
-  "schema_version": 9,
+  "schema_version": 10,
   "summary": {
     "asks_signed": 8,
     "asks_strong": 8,
@@ -1210,8 +1320,14 @@
     "proofs_without_test_ids": [],
     "queue": 2,
     "rules": 10,
+    "sentence": "10 rules. 7 pass their tests. 4 are strong. 3 are signed.",
     "signed": 1,
     "stale": 1,
+    "steps": {
+      "passed": 7,
+      "signed": 3,
+      "strong": 4
+    },
     "strong": 1,
     "untested": 1
   },

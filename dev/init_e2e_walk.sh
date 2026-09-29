@@ -260,7 +260,7 @@ test_walk() {  # dir language
   python3 "$RUN" --feature greeting --test --project-root "$dir" \
     > "$dir/.purlin-test.log" 2>&1
   expect_in "$language: the marked test runs through purlin_run.py --test" \
-    'gate passed met: 1 of 1 rule' "$dir/.purlin-test.log"
+    '1 rule. 1 passes its tests.' "$dir/.purlin-test.log"
   expect_in "$language: its marker is tied to its test" \
     'Markers: 1 tied to a test, 0 not tied.' "$dir/.purlin-test.log"
 }
@@ -304,8 +304,8 @@ gate_walk() {  # dir language
   fi
   expect_in "$language: the audit committed the evidence" \
     'Evidence committed.' "$dir/.purlin-audit.log"
-  expect_in "$language: the audit ends on the strong gate line" \
-    'gate strong met: 1 of 1 rule' "$dir/.purlin-audit.log"
+  expect_in "$language: the audit ends on the summary at strong" \
+    '1 rule. 1 passes its tests. 1 is strong.' "$dir/.purlin-audit.log"
   expect_exit "$language: strong is met by an audit anyone ran" 0 \
     python3 "$GATE" --check --project-root "$dir"
 
