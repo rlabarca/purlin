@@ -17,8 +17,8 @@ beside itself first as `<name>.local-<sha8>.bak`. `--yes` answers yes to every
 question. A file this release deletes rather than rewrites is left in git
 history instead of copied.
 
-Exit codes: 0 nothing pending or the run applied what was, 2 no Purlin project
-at that root.
+Exit codes: 0 nothing pending or the run applied what was, 1 the settings
+file cannot be read, 2 no Purlin project at that root.
 """
 
 import argparse
@@ -31,7 +31,7 @@ import shutil
 import subprocess
 import sys
 
-EXIT_OK, EXIT_BAD_INVOCATION = 0, 2
+EXIT_OK, EXIT_UNREADABLE, EXIT_BAD_INVOCATION = 0, 1, 2
 
 PLUGIN_ROOT = os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))))
@@ -40,6 +40,7 @@ if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 from purlin import console as console_module                  # noqa: E402
+import config_engine                                          # noqa: E402
 # --- what 0.9.5 wrote, which the upgrade finds and rewrites --------------
 # A line naming a spelling this release removed ends with a `# retired`
 # comment, so the check that keeps removed spellings out of the tree steps
@@ -49,9 +50,9 @@ PROOF_FILE_GLOB = '*.proofs-*.json'
 RUN_FILE_GLOB = '*.receipt.json'
 DASHBOARD_DATA = '.purlin/report-data.js'
 CACHE_DIR = '.purlin/cache'
-WINDOWS_TAG_RE = re.compile(r'(?m)[ \t]*@windows[ \t]*$')
+WINDOWS_TAG_RE = re.compile(r'(?m)[ \t]*@windows[ \t]*(?=\r?$)')
 KIND_TAG_RE = re.compile(r'(?m)^(- PROOF-.*?)[ \t]+@(?:unit|integration|e2e)'
-                         r'(?=(?:[ \t]+@env\([a-z]+\))?[ \t]*$)')
+                         r'(?=(?:[ \t]+@env\([a-z]+\))?[ \t]*\r?$)')
 WORKFLOW_MARKER = '.proofs-'
 PRE_PUSH_HOOK = '.git/hooks/pre-push'
 PRE_PUSH_KEY = 'pre_push'
@@ -115,15 +116,17 @@ CI_VALUES = ('github', 'azure', 'none')
 MUTATION_GATES = ('strong', 'signed')
 
 # --- helpers ---------------------------------------------------------------
+# Both open with `newline=''`: a file the project owns keeps each line's own
+# ending, byte for byte, through a rewrite.
 def _read(path):
-    with open(path, 'r', encoding='utf-8') as handle:
+    with open(path, 'r', encoding='utf-8', newline='') as handle:
         return handle.read()
 
 def _write(path, text):
     parent = os.path.dirname(path)
     if parent and not os.path.isdir(parent):
         os.makedirs(parent)
-    with open(path, 'w', encoding='utf-8') as handle:
+    with open(path, 'w', encoding='utf-8', newline='') as handle:
         handle.write(text)
 
 def _git(root, *args):
@@ -162,10 +165,18 @@ def _files_under(root, subdir, patterns):
     return sorted(hits)
 
 def _config(root):
-    try:
-        return json.loads(_read(os.path.join(root, '.purlin', 'config.json')))
-    except (IOError, OSError, ValueError):
+    """The settings as a dict, `{}` with no file; one that cannot be read raises.
+
+    The run stops on `config_problem` before it reads them, and `pending()`
+    lists no config step for a file it cannot read.
+    """
+    path = os.path.join(root, '.purlin', 'config.json')
+    if not os.path.lexists(path):
         return {}
+    config = json.loads(_read(path))
+    if not isinstance(config, dict):
+        raise ValueError('.purlin/config.json holds no object')
+    return config
 
 def _version():
     try:
@@ -188,6 +199,9 @@ def _frameworks():
 
 def _flow():
     return _plugin_module('run', 'workflow')
+
+def _mutation():
+    return _plugin_module('run', 'mutation')
 
 def _init():
     """scaffold.py, the one home of the questions init asks and what they write."""
@@ -375,6 +389,10 @@ def _ask_mutation(root, framework, assume_yes, out):
     if engine is None:
         out.say(init.NO_ENGINE % (', '.join(named) or "this project's"))
         return 'none'
+    # An engine that cannot run on this operating system counts as none.
+    if not _mutation().runs_here(engine):
+        out.say(init.NO_ENGINE_HERE)
+        return 'none'
     if assume_yes:
         return 'none'
     try:
@@ -398,10 +416,15 @@ def _ask_gate(default, assume_yes):
     for line in init.GATE_CHOICES:
         print('  ' + line)
     try:
-        answer = input('Gate [%s]: ' % default).strip().lower()
+        typed = input('Gate [%s]: ' % default).strip()
     except (EOFError, KeyboardInterrupt):
         return default
-    return answer if answer in _gate().GATES else default
+    if not typed:
+        return default
+    if typed.lower() in _gate().GATES:
+        return typed.lower()
+    print(init.NOT_A_GATE % (typed, default))
+    return default
 
 def _tests_setting(root, old):
     """`(the tests setting, the names dropped)` from the config v0.9.5 wrote.
@@ -526,8 +549,10 @@ def _apply_workflows(root, files, args, out):
     flow = _flow()
     from purlin import evidence as evidence_module
     tags = flow.env_tags_in_specs(root)
-    write_one, reasons = flow.wanted(tags, evidence_module.host_os(),
-                                     _config(root).get('gate'))
+    here = evidence_module.host_os()
+    write_one, reasons = flow.wanted(tags, here, _config(root).get('gate'))
+    # One job per system some proof is tagged for that this machine is not.
+    foreign = flow.foreign_tags(tags, here)
     if not write_one:
         out.say('wrote no workflow: %s'
                 % flow.no_reason(_config(root).get('gate')))
@@ -544,17 +569,17 @@ def _apply_workflows(root, files, args, out):
         out.say('left the workflow unwritten; a prerequisite is missing')
         return
     rel = flow.workflow_path(host)
-    if not _confirm('Write %s, one job per operating system your specs name?'
-                    % rel, args.yes):
+    if not _confirm('Write %s, one job per operating system your specs name '
+                    'that this machine is not?' % rel, args.yes):
         out.say('left %s unwritten; run purlin:init again to add it later'
                 % rel)
         return
     _write(os.path.join(root, rel),
-           flow.render_workflow(host, tags, 'v' + _version()))
+           flow.render_workflow(host, foreign, 'v' + _version()))
     out.done(rel)
     out.say('wrote %s for %s, covering %s'
             % (rel, host, ', '.join(evidence_module.os_word(tag)
-                                    for tag in (tags or ['linux']))))
+                                    for tag in foreign)))
     out.say('it runs on a push to a run/* branch and on a push of a signed/* '
             'tag')
 
@@ -777,12 +802,16 @@ def rewrite_markers(text, ext):
     and leaves as it was.
     """
     rewrite = _REWRITERS.get(ext, _rewrite_js)
-    ending = '\n' if text.endswith('\n') else ''
-    lines = text.split('\n')
+    # A file whose every line ends `\r\n` keeps that ending, the comments
+    # written into it included.
+    eol = ('\r\n' if '\r\n' in text
+           and text.count('\r\n') == text.count('\n') else '\n')
+    ending = eol if text.endswith(eol) else ''
+    lines = text.split(eol)
     if ending:
         lines = lines[:-1]
     out, count, left = rewrite(lines, ext)
-    return '\n'.join(out) + ending, count, left
+    return eol.join(out) + ending, count, left
 
 
 def _marked_old(root):
@@ -849,8 +878,8 @@ def _wiring(root):
         if not CONFTEST_PLUGIN_RE.search(text):
             continue
         new = CONFTEST_PLUGIN_RE.sub('', text)
-        new = re.sub(r'(?m)^[ \t]*pytest_plugins\s*=\s*\[\s*\][ \t]*\n?', '',
-                     new)
+        new = re.sub(r'(?m)^[ \t]*pytest_plugins\s*=\s*\[\s*\][ \t]*\r?\n?',
+                     '', new)
         edits.append((rel, new if new.strip() else None))
     names = [name for name in sorted(os.listdir(root))
              if re.match(r'^(?:jest|vitest)\.config\.[cm]?[jt]s$|^jest\.'
@@ -972,33 +1001,6 @@ def pending(project_root):
                           'files': files})
     return found
 
-# The settings keys only 0.9.5 wrote. A settings file carrying any of them was
-# written by that release and has not been through `purlin:init --update`.
-SET_UP_BY_095_KEYS = ('test_framework', 'spec_dir', 'pre_push', 'report',
-                      'digest')
-
-
-def set_up_by_095(project_root):
-    """True when 0.9.5 set this project up and it was not upgraded since.
-
-    Read from what 0.9.5 left and this release never writes: a settings
-    file with no `tests`, or with one of the keys only 0.9.5 wrote, or a
-    proof or receipt file under `specs/`. A project with no settings file
-    is not one: that is a missing settings file, which a run names on its
-    own. The dashboard page and the version stamp are not read, so a
-    plugin update alone never makes this true.
-    """
-    root = os.path.abspath(project_root)
-    if not os.path.isfile(os.path.join(root, '.purlin', 'config.json')):
-        return False
-    config = _config(root)
-    if 'tests' not in config:
-        return True
-    if any(key in config for key in SET_UP_BY_095_KEYS):
-        return True
-    return bool(_files_under(root, 'specs', (PROOF_FILE_GLOB, RUN_FILE_GLOB)))
-
-
 def scope_advice(project_root):
     """The line naming every feature spec with no `> Scope:` line, or None.
 
@@ -1064,6 +1066,10 @@ def main(argv=None):
         print('There is no .purlin/ under %s, so there is nothing to update. '
               'Run purlin:init first.' % root, file=sys.stderr)
         return EXIT_BAD_INVOCATION
+    problem = config_engine.config_problem(root)
+    if problem:
+        print(problem, file=sys.stderr)
+        return EXIT_UNREADABLE
     items = pending(root)
     advice = scope_advice(root)
     if not items:

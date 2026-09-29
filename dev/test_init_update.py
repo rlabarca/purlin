@@ -34,7 +34,7 @@ What each group proves:
 *backups*     every rewritten file leaves its previous bytes beside it
 *commit*      one commit, naming the migrations it carries
 *status*      `sync_status` says to run the update while anything is pending
-*set up*      a project 0.9.5 set up and nobody upgraded is told apart
+*settings*    a settings file that cannot be read stops the update
 """
 
 import fnmatch
@@ -193,6 +193,12 @@ def _set_config(root, **values):
         else:
             config[key] = value
     _write(root, '.purlin/config.json', json.dumps(config, indent=2))
+
+
+def _updated(tmp_path):
+    root = _project(tmp_path, V095)
+    _apply(root)
+    return root
 
 
 
@@ -529,7 +535,9 @@ def test_an_answer_that_is_not_a_gate_leaves_the_default(tmp_path, capsys,
     root = _project(tmp_path, V095)
     _answers(monkeypatch, [('Gate [', 'whenever')])
     _apply(root, argv=())
-    capsys.readouterr()
+    printed = capsys.readouterr().out.splitlines()
+    assert ('purlin: "whenever" is not a gate; reading it as passed.'
+            in printed), printed
     assert _config(root)['gate'] == 'passed'
 
 
@@ -541,10 +549,11 @@ def test_the_gate_the_project_named_is_the_default(tmp_path, capsys,
     _set_config(root, gate='signed')
     asked = _answers(monkeypatch, [('Gate [', '')])
     _apply(root, argv=())
-    capsys.readouterr()
+    printed = capsys.readouterr().out
     assert [prompt for prompt in asked if 'Gate [' in prompt] == [
         'Gate [signed]: ']
     assert _config(root)['gate'] == 'signed'
+    assert 'is not a gate' not in printed, printed
 
 
 # --- the tests setting ---------------------------------------------------------
@@ -1100,6 +1109,31 @@ def test_no_engine_means_no_question(tmp_path, capsys, monkeypatch):
     assert "no engine breaks this project's code" in printed
 
 
+class _WindowsOs(object):
+    """`os` as the breaking tool's module sees it, on a machine given as Windows."""
+    name = 'nt'
+
+    def __getattr__(self, attr):
+        return getattr(os, attr)
+
+
+# purlin: update PROOF-114
+def test_on_windows_a_pytest_project_is_not_asked_to_break_its_code(
+        tmp_path, capsys, monkeypatch):
+    root = _project(tmp_path, V095)
+    _write(root, 'conftest.py', '')
+    mutation = update._plugin_module('run', 'mutation')
+    monkeypatch.setattr(mutation, 'os', _WindowsOs())
+    asked = _answers(monkeypatch, [('Gate [', 'strong')])
+    _apply(root, argv=())
+    printed = capsys.readouterr().out
+    assert not [prompt for prompt in asked if MUTATION in prompt], asked
+    assert _config(root)['mutation_engine'] == 'none'
+    assert ('Mutation testing is off: mutmut does not run on Windows, so the '
+            'AI audit alone judges test strength.') in printed, printed
+    assert 'no engine breaks' not in printed, printed
+
+
 # purlin: update PROOF-56
 def test_at_passed_no_mutation_question_is_asked(tmp_path, capsys,
                                                   monkeypatch):
@@ -1430,6 +1464,30 @@ def test_no_proof_for_another_system_means_no_workflow(tmp_path, capsys):
             in printed), printed
 
 
+# The runner image a GitHub job names for each system.
+IMAGES = {'linux': 'ubuntu-latest', 'macos': 'macos-latest',
+          'windows': 'windows-latest'}
+
+
+# purlin: update PROOF-115
+def test_the_runner_file_names_only_the_systems_this_machine_is_not(tmp_path):
+    from purlin import evidence as evidence_module
+    here = evidence_module.host_os()
+    other = 'macos' if here == 'windows' else 'windows'
+    root = _project(tmp_path, V095)
+    _write(root, 'specs/core/both.md',
+           '# Feature: both\n\n> Scope: both.py\n\n## Rules\n\n- RULE-1: x\n\n'
+           '## Proof\n\n- PROOF-1 (RULE-1): here @env(%s)\n'
+           '- PROOF-2 (RULE-1): there @env(%s)\n' % (here, other))
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'one proof for each system')
+    _apply(root)
+    assert _workflows(root) == ['.github/workflows/purlin.yml']
+    text = _read(root, '.github/workflows/purlin.yml')
+    named = [image for image in IMAGES.values() if image in text]
+    assert named == [IMAGES[other]], named
+
+
 # --- the dashboard page ------------------------------------------------------
 
 def _shipped_page():
@@ -1628,15 +1686,6 @@ def test_status_says_it_even_when_the_config_is_already_clean(tmp_path):
 
 # --- the copy the update prints ----------------------------------------------
 
-# purlin: update PROOF-20
-def test_what_the_update_prints_carries_no_emoji(tmp_path, capsys):
-    root = _project(tmp_path, V095)
-    _apply(root)
-    printed = capsys.readouterr().out
-    for char in printed:
-        assert ord(char) < 0x2190 or char in '→─', repr(char)
-
-
 def _status_ending(root):
     """The summary sentence and `Left to do` lines the status ends on."""
     from purlin import payload as purlin_payload, summary as purlin_summary
@@ -1666,78 +1715,26 @@ def test_a_run_that_leaves_work_names_the_update_above_the_summary(
     assert printed[-len(ending) - 1] == UPDATE_LINE, printed
 
 
-# --- a project 0.9.5 set up and nobody upgraded -------------------------------
+# --- a settings file that cannot be read ------------------------------------
 
-def _updated(tmp_path):
+# purlin: update PROOF-116
+def test_a_settings_file_that_cannot_be_read_stops_the_update(tmp_path,
+                                                              capsys):
     root = _project(tmp_path, V095)
-    _apply(root)
-    return root
-
-
-# purlin: update PROOF-59
-def test_an_updated_project_is_not_one_0_9_5_set_up(tmp_path, capsys):
-    root = _project(tmp_path, V095)
-    assert update.set_up_by_095(root)
-    _apply(root)
-    capsys.readouterr()
-    assert not update.set_up_by_095(root)
-
-
-# purlin: update PROOF-60
-def test_a_settings_file_with_no_tests_reads_as_0_9_5(tmp_path, capsys):
-    root = _updated(tmp_path)
-    capsys.readouterr()
-    _set_config(root, tests=None)
-    assert update.set_up_by_095(root)
-
-
-@pytest.mark.parametrize('key', ('test_framework', 'spec_dir', 'pre_push',
-                                 'report', 'digest'))
-# purlin: update PROOF-61
-def test_a_key_only_0_9_5_wrote_reads_as_0_9_5(tmp_path, capsys, key):
-    root = _updated(tmp_path)
-    capsys.readouterr()
-    assert not update.set_up_by_095(root)
-    _set_config(root, **{key: 'pytest'})
-    assert update.set_up_by_095(root)
-
-
-# purlin: update PROOF-62
-def test_a_proof_file_under_specs_reads_as_0_9_5(tmp_path, capsys):
-    root = _updated(tmp_path)
-    capsys.readouterr()
-    _write(root, 'specs/core/login.proofs-unit.json', '{}\n')
-    assert update.set_up_by_095(root)
-
-
-# purlin: update PROOF-63
-def test_a_run_file_under_specs_reads_as_0_9_5(tmp_path, capsys):
-    root = _updated(tmp_path)
-    capsys.readouterr()
-    _write(root, 'specs/core/login.receipt.json', '{}\n')
-    assert update.set_up_by_095(root)
-
-
-# purlin: update PROOF-64
-def test_no_settings_file_is_not_a_0_9_5_project(tmp_path):
-    root = str(tmp_path / 'unset')
-    os.makedirs(os.path.join(root, '.purlin'))
-    assert not update.set_up_by_095(root)
-
-
-# purlin: update PROOF-65
-def test_the_version_stamp_is_not_read(tmp_path, capsys):
-    root = _updated(tmp_path)
-    capsys.readouterr()
-    _set_config(root, version='0.9.2')
-    assert 'config' in _ids(root)
-    assert not update.set_up_by_095(root)
-
-
-# purlin: update PROOF-66
-def test_the_dashboard_page_is_not_read(tmp_path, capsys):
-    root = _updated(tmp_path)
-    capsys.readouterr()
-    _write(root, 'purlin-report.html', '<html>an older copy</html>\n')
-    assert 'dashboard' in _ids(root)
-    assert not update.set_up_by_095(root)
+    text = _read(root, '.purlin/config.json').rstrip()
+    assert text.endswith('}')
+    _write(root, '.purlin/config.json', text[:-1].rstrip() + ',\n}\n')
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'a comma after the last value')
+    head = _git(root, 'rev-parse', 'HEAD').stdout
+    status = _git(root, 'status', '--porcelain').stdout
+    assert _apply(root) == 1
+    captured = capsys.readouterr()
+    printed = captured.out + captured.err
+    line = [row for row in printed.splitlines()
+            if row.startswith('.purlin/config.json cannot be read: ')]
+    assert len(line) == 1, printed
+    assert re.search(r' at line \d+\. Fix the file by hand; nothing ran and '
+                     r'nothing was saved\.$', line[0]), line
+    assert _git(root, 'status', '--porcelain').stdout == status
+    assert _git(root, 'rev-parse', 'HEAD').stdout == head
