@@ -70,8 +70,8 @@ class TestTheScript:
              '%s gives the script on no line as the subcommand sync' % REL),
             (REL, replace('sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" '
                           '"${CLAUDE_PLUGIN_ROOT}/scripts/anchor/upstream.py" '
-                          'add', 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/'
-                          'anchor/upstream.py" add'),
+                          'add', '"${CLAUDE_PLUGIN_ROOT}/scripts/anchor/'
+                          'upstream.py" add'),
              '%s gives the script on no line as the subcommand add' % REL),
         ]) == []
 

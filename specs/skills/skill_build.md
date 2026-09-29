@@ -19,7 +19,7 @@
 - RULE-9: The skill tells the agent that `purlin:test` suggests a test command for each test tool it recognises and writes them where none is set, and that the agent writes no test command itself
 - RULE-10: The skill tells the agent never to leave the Changeset section out of a build commit, as `references/commit_conventions.md` says
 - RULE-11: The skill tells the agent to leave Decisions out when every rule had one obvious implementation and Review out when nothing needs a second pass, as `references/commit_conventions.md` says
-- RULE-12: The skill tells the agent that a test's marker is one comment on the line directly above it, `purlin: <feature> PROOF-<n>`
+- RULE-12: The skill tells the agent that a test's marker is one comment on the line above it, `purlin: <feature> PROOF-<n>`
 - RULE-13: The skill tells the agent that where a rule has no proof the marker names the rule's own id
 
 ## Proof

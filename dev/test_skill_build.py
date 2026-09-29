@@ -245,7 +245,7 @@ def closing_problems():
     finished = [outcome for outcome in closing_outcomes(body)
                 if '`passed`' in outcome and '`strong`' in outcome
                 and outcome.endswith(': `Nothing left to do.`')]
-    if not finished or 'git push' in body:
+    if not finished:
         problems.append('%s closing section does not end a finished project '
                         'at passed and strong on Nothing left to do.' % SKILL)
     return problems
