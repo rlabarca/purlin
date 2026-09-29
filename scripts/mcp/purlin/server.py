@@ -287,6 +287,12 @@ def handle_request(request, project_root):
 def main():
     """Run the server on stdio until stdin closes."""
     console_module.force_utf8_stdio()
+    # One answer is one line ending in a line feed on every system: Windows
+    # would otherwise end each line on stdout with a carriage return too.
+    try:
+        sys.stdout.reconfigure(newline='\n')
+    except (AttributeError, ValueError, OSError):
+        pass
     project_root, root_source = resolve_project_root()
     print('Purlin MCP server v%s started (root: %s, from %s)'
           % (PURLIN_VERSION, project_root,

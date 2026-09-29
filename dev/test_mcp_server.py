@@ -60,7 +60,15 @@ def _child(root, lines, command=None, env=None):
     """Start the server as its own process, as a client does; raw stdout and stderr."""
     result = subprocess.run(command or [sys.executable, SERVER_PY],
                             input=lines, capture_output=True, text=True,
-                            cwd=root, env=env, timeout=180)
+                            encoding='utf-8', cwd=root, env=env, timeout=180)
+    return result.stdout, result.stderr
+
+
+def _child_bytes(root, lines):
+    """The server started as its own process; its stdout and stderr as bytes."""
+    result = subprocess.run([sys.executable, SERVER_PY],
+                            input=lines.encode('utf-8'), capture_output=True,
+                            cwd=root, timeout=180)
     return result.stdout, result.stderr
 
 
@@ -82,9 +90,15 @@ class TestTransport:
         assert 'tools' in result['capabilities'], result['capabilities']
 
     # purlin: server PROOF-5
+    # purlin: server PROOF-159
     def test_stdout_holds_the_answer_alone_and_the_startup_line_is_on_stderr(
             self, project):
-        stdout, stderr = _child(project.root, json.dumps(_initialize()) + '\n')
+        raw_out, raw_err = _child_bytes(project.root,
+                                        json.dumps(_initialize()) + '\n')
+        # The bytes, so a carriage return Windows adds to a line is seen.
+        assert raw_out.count(b'\n') == 1 and raw_out.endswith(b'\n'), raw_out
+        assert b'\r' not in raw_out, raw_out
+        stdout, stderr = raw_out.decode('utf-8'), raw_err.decode('utf-8')
         lines = stdout.splitlines()
         assert len(lines) == 1, stdout
         answer = json.loads(lines[0])
@@ -207,6 +221,7 @@ class TestWhichWorkspace:
             str(tmp_path))), unnamed
 
     # purlin: server PROOF-129
+    # purlin: server PROOF-160
     def test_a_workspace_named_from_the_home_folder_is_found(self, project,
                                                              tmp_path,
                                                              monkeypatch):
@@ -550,8 +565,12 @@ class TestThePluginManifest:
         assert args[-1].endswith('scripts/mcp/purlin/server.py'), args
 
     # purlin: server PROOF-137
+    # purlin: server PROOF-161
     def test_the_manifest_command_starts_a_server_that_answers(self, project):
         entry = _manifest_entry()
+        # On Windows `sh` is the one Git for Windows puts on the search path.
+        assert shutil.which(entry['command']), (
+            '%s is not on the search path' % entry['command'])
         command = [entry['command']] + [
             arg.replace('${CLAUDE_PLUGIN_ROOT}', PROJECT_ROOT)
             for arg in entry['args']]
