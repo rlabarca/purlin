@@ -89,6 +89,7 @@
 - PROOF-26 (RULE-17): One spec is edited and not committed; every view ends with `1 spec file has changes that are not committed.`
 - PROOF-47 (RULE-17): One spec is edited and a second spec is added and not tracked; every view ends with `2 spec files have changes that are not committed.`
 - PROOF-48 (RULE-17): An edited spec and a new one are both committed; no view prints a line about spec files not committed, and each view's count of them reads 0
+- PROOF-60 (RULE-17): On Windows, with `core.autocrlf` set to `true`, an edited spec and a new one are both committed; no view prints a line about spec files not committed, and each view's count of them reads 0 @env(windows)
 - PROOF-27 (RULE-18): After a pull, the report carries exactly `since` and `roles`; `since` carries exactly `action`, `commits`, `from`, `line`, `to` and `when`, and `roles` exactly `eng`, `pm` and `qa`
 - PROOF-49 (RULE-23): After a pull, the PM view carries exactly `lines`, `rules_added`, `rules_changed`, `rules_removed` and `specs_uncommitted`; the engineer view exactly `anchors_behind`, `code_changed`, `lines`, `out_of_date`, `rules_without_test`, `specs_uncommitted` and `unscoped`; the QA view exactly `left`, `lines`, `specs_uncommitted` and `tests_changed`
 - PROOF-50 (RULE-25): After a pull, drift is asked for the `qa` role; the answer carries exactly `since`, `role` and `view`, its role reads `qa`, and its `since` and `view` are those of the whole report

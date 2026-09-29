@@ -72,14 +72,20 @@ def _commit(root, message, env=None):
     return _sha(root)
 
 
-def _repo(root, files=None, gate=None):
-    """A git repository made in place, its first commit holding `files`."""
+def _repo(root, files=None, gate=None, settings=None):
+    """A git repository made in place, its first commit holding `files`.
+
+    `settings` is `{git key: value}`, set in the repository before its first
+    commit.
+    """
     os.makedirs(root, exist_ok=True)
     _write(os.path.join(root, '.purlin', 'config.json'), _config(gate))
     for path, text in (files or {}).items():
         _write(os.path.join(root, *path.split('/')), text)
     _git(['-c', 'init.defaultBranch=main', 'init', '-q'], root)
     _identity(root)
+    for key, value in (settings or {}).items():
+        _git(['config', key, value], root)
     _commit(root, 'chore: start')
     return root
 
@@ -1156,16 +1162,44 @@ class TestSpecsNotCommitted:
             assert report['roles'][role]['specs_uncommitted'] == 2
 
     # purlin: drift PROOF-48
+    # purlin: drift PROOF-60
     def test_specs_all_committed_print_no_such_line(self, tmp_path):
-        root = _edited_spec(tmp_path)
-        _write(os.path.join(root, 'specs', 'shop', 'cart.md'),
-               _spec('cart', {'RULE-1': 'Holds items'}))
+        # A Windows checkout: git turns line feeds into carriage return and
+        # line feed on disk and back on commit. Both specs are written with
+        # carriage returns on every system, so the working files differ from
+        # the committed ones by their line endings alone.
+        root = _repo(str(tmp_path / 'proj'), LOGIN_FILES,
+                     settings={'core.autocrlf': 'true'})
+        _change(root, {'a.txt': '1\n'})
+        login = os.path.join(root, 'specs', 'auth', 'login.md')
+        cart = os.path.join(root, 'specs', 'shop', 'cart.md')
+        _write_crlf(login, LOGIN + '\n')
+        _write_crlf(cart, _spec('cart', {'RULE-1': 'Holds items'}))
         _commit(root, 'feat: both specs')
+        for path, name in ((login, 'auth/login.md'), (cart, 'shop/cart.md')):
+            with open(path, 'rb') as fh:
+                assert b'\r\n' in fh.read(), path
+            blob = subprocess.run(
+                ['git', 'show', 'HEAD:specs/' + name], cwd=root,
+                capture_output=True, check=True).stdout
+            assert b'\n' in blob and b'\r' not in blob, name
+            # A later time on the file makes git read it again instead of
+            # trusting what its index recorded at the commit.
+            later = os.stat(path).st_mtime + 5
+            os.utime(path, (later, later))
         report = _report(root, since='1')
         for role in ('pm', 'eng', 'qa'):
             assert not [line for line in report['roles'][role]['lines']
                         if 'not committed' in line], role
             assert report['roles'][role]['specs_uncommitted'] == 0
+
+
+def _write_crlf(path, text):
+    """Write `text` to `path` with a carriage return before every line feed,
+    the bytes a Windows checkout holds."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'wb') as fh:
+        fh.write(text.replace('\n', '\r\n').encode('utf-8'))
 
 
 def _edited_spec(tmp_path):
