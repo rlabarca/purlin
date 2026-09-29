@@ -4,6 +4,7 @@ Ensures the Purlin version string is defined in exactly one place (the VERSION
 file) and all references to it read from that file or match its value.
 """
 
+import glob
 import json
 import os
 import re
@@ -11,21 +12,18 @@ import shutil
 import subprocess
 import sys
 
-import pytest
-
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 VERSION_FILE = os.path.join(PROJECT_ROOT, 'VERSION')
 CONFIG_TEMPLATE = os.path.join(PROJECT_ROOT, 'templates', 'config.json')
 PLUGIN_MANIFEST = os.path.join(PROJECT_ROOT, '.claude-plugin', 'plugin.json')
-PACKAGE_INIT = os.path.join(PROJECT_ROOT, 'scripts', 'mcp', 'purlin',
-                            '__init__.py')
+PACKAGE_DIR = os.path.join(PROJECT_ROOT, 'scripts', 'mcp', 'purlin')
 PROJECT_CONFIG = os.path.join(PROJECT_ROOT, '.purlin', 'config.json')
 BUMP_SCRIPT = os.path.join(PROJECT_ROOT, 'dev', 'bump_version.sh')
+SCAFFOLD = os.path.join(PROJECT_ROOT, 'scripts', 'init', 'scaffold.py')
 
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'run'))
 import purlin as purlin_package
-from purlin import server as purlin_srv
 from purlin_run import bash_command
 
 # The bash a shell test runs under. `bash` on PATH is the Windows
@@ -43,10 +41,121 @@ def bash_path(path):
     return str(path).replace(os.sep, '/')
 
 
+def version_file_text():
+    """The checkout's VERSION file, whitespace at either end set aside."""
+    with open(VERSION_FILE, encoding='utf-8') as f:
+        return f.read().strip()
+
+
+# --- RULE-1: the VERSION file holds one version --------------------------
+
 def version_text_is_semver(text):
     """True when `text`, whitespace at either end aside, is X.Y.Z alone."""
     return re.fullmatch(r'\d+\.\d+\.\d+', text.strip()) is not None
 
+
+# purlin: purlin_version PROOF-1
+def test_the_version_file_holds_one_version():
+    assert os.path.isfile(VERSION_FILE), \
+        f"VERSION file not found at {VERSION_FILE}"
+    with open(VERSION_FILE, encoding='utf-8') as f:
+        content = f.read()
+    assert version_text_is_semver(content), \
+        f"VERSION file contains {content!r}, expected a version like '1.2.3'"
+
+
+# purlin: purlin_version PROOF-11
+def test_a_version_with_whitespace_at_either_end_passes():
+    assert version_text_is_semver('  0.10.0\n')
+
+
+# purlin: purlin_version PROOF-12
+def test_an_empty_version_file_fails():
+    assert not version_text_is_semver('')
+
+
+# purlin: purlin_version PROOF-13
+def test_two_numbers_are_not_a_version():
+    assert not version_text_is_semver('0.10')
+
+
+# purlin: purlin_version PROOF-14
+def test_a_letter_before_the_numbers_fails():
+    assert not version_text_is_semver('v0.10.0')
+
+
+# purlin: purlin_version PROOF-15
+def test_two_versions_on_two_lines_fail():
+    assert not version_text_is_semver('0.10.0\n0.11.0\n')
+
+
+# --- RULE-2: the package and its server read the VERSION file ------------
+
+# What a copied package and its server report, printed as one JSON list.
+REPORT_PROBE = ('import json, sys\n'
+                'sys.path.insert(0, sys.argv[1])\n'
+                'import purlin\n'
+                'from purlin import server\n'
+                'print(json.dumps([purlin.PURLIN_VERSION,'
+                ' server.SERVER_INFO["version"]]))\n')
+
+
+def copied_package(tmp_path, version):
+    """A temporary project holding a copy of `scripts/mcp`, with a VERSION
+    file reading `version`, or none when `version` is None."""
+    shutil.copytree(os.path.join(PROJECT_ROOT, 'scripts', 'mcp'),
+                    str(tmp_path / 'scripts' / 'mcp'),
+                    ignore=shutil.ignore_patterns('__pycache__'))
+    if version is not None:
+        (tmp_path / 'VERSION').write_text(version + '\n', encoding='utf-8')
+    return tmp_path / 'scripts' / 'mcp'
+
+
+def reported_versions(tmp_path, mcp_dir):
+    """[package version, server version], loaded in a fresh process."""
+    answer = subprocess.run(
+        [sys.executable, '-c', REPORT_PROBE, str(mcp_dir)],
+        capture_output=True, text=True, cwd=str(tmp_path), timeout=60)
+    assert answer.returncode == 0, answer.stderr
+    return json.loads(answer.stdout.strip().splitlines()[-1])
+
+
+# purlin: purlin_version PROOF-2
+def test_a_copied_package_reports_the_version_file_beside_it(tmp_path):
+    mcp_dir = copied_package(tmp_path, '9.8.7')
+    reported = reported_versions(tmp_path, mcp_dir)
+    assert reported == ['9.8.7', '9.8.7'], reported
+
+
+# purlin: purlin_version PROOF-16
+def test_the_copied_server_names_that_version_on_the_handshake(tmp_path):
+    mcp_dir = copied_package(tmp_path, '9.8.7')
+    hello = subprocess.run(
+        [sys.executable, str(mcp_dir / 'purlin' / 'server.py')],
+        input=json.dumps({'jsonrpc': '2.0', 'id': 1,
+                          'method': 'initialize', 'params': {}}) + '\n',
+        capture_output=True, text=True, cwd=str(tmp_path), timeout=60)
+    assert hello.returncode == 0, hello.stderr
+    server_info = json.loads(hello.stdout.splitlines()[0])['result'][
+        'serverInfo']
+    assert server_info == {'name': 'purlin', 'version': '9.8.7'}, server_info
+
+
+# purlin: purlin_version PROOF-17
+def test_with_no_version_file_the_package_and_server_report_zero(tmp_path):
+    mcp_dir = copied_package(tmp_path, None)
+    reported = reported_versions(tmp_path, mcp_dir)
+    assert reported == ['0.0.0', '0.0.0'], reported
+
+
+# purlin: purlin_version PROOF-18
+def test_this_checkout_reports_its_own_version_file():
+    assert purlin_package.PURLIN_VERSION == version_file_text(), \
+        (f"the package reports '{purlin_package.PURLIN_VERSION}' but the "
+         f"VERSION file reads '{version_file_text()}'")
+
+
+# --- RULE-3, RULE-5, RULE-6: the JSON files that carry the version -------
 
 def version_field_problem(path, file_version, name):
     """What is wrong with the `version` key of the JSON file at `path`,
@@ -61,396 +170,384 @@ def version_field_problem(path, file_version, name):
     return None
 
 
-def assert_version_field_refusals(live_path, name, tmp_path):
-    """A copy of `live_path` with no `version` key, and one left at 0.9.2
-    against a VERSION of 0.10.0, are each refused, the second naming both."""
+def copy_without_version(live_path, tmp_path):
+    """A copy of the JSON file at `live_path` with its `version` key gone."""
     with open(live_path, encoding='utf-8') as f:
         data = json.load(f)
     copy = tmp_path / 'copy.json'
     copy.write_text(json.dumps({k: v for k, v in data.items()
                                 if k != 'version'}), encoding='utf-8')
-    assert version_field_problem(str(copy), '0.10.0', name) == \
+    return str(copy)
+
+
+def copy_at_version(live_path, tmp_path, version):
+    """A copy of the JSON file at `live_path` with `version` set."""
+    with open(live_path, encoding='utf-8') as f:
+        data = json.load(f)
+    copy = tmp_path / 'copy.json'
+    copy.write_text(json.dumps(dict(data, version=version)), encoding='utf-8')
+    return str(copy)
+
+
+def assert_matches_version_file(path, name):
+    assert os.path.isfile(path), f"{name} not found at {path}"
+    problem = version_field_problem(path, version_file_text(), name)
+    assert problem is None, problem
+
+
+def assert_missing_key_fails(live_path, name, tmp_path):
+    copy = copy_without_version(live_path, tmp_path)
+    assert version_field_problem(copy, '0.10.0', name) == \
         f"{name} has no 'version' field"
-    copy.write_text(json.dumps(dict(data, version='0.9.2')), encoding='utf-8')
-    problem = version_field_problem(str(copy), '0.10.0', name)
+
+
+def assert_stale_version_fails(live_path, name, tmp_path):
+    copy = copy_at_version(live_path, tmp_path, '0.9.2')
+    problem = version_field_problem(copy, '0.10.0', name)
     assert problem and '0.9.2' in problem and '0.10.0' in problem, problem
 
 
+# purlin: purlin_version PROOF-3
+def test_the_settings_template_carries_the_version_file():
+    assert_matches_version_file(CONFIG_TEMPLATE, 'templates/config.json')
+
+
+# purlin: purlin_version PROOF-19
+def test_a_template_with_no_version_key_fails(tmp_path):
+    assert_missing_key_fails(CONFIG_TEMPLATE, 'templates/config.json',
+                             tmp_path)
+
+
+# purlin: purlin_version PROOF-20
+def test_a_template_left_at_an_old_version_fails(tmp_path):
+    assert_stale_version_fails(CONFIG_TEMPLATE, 'templates/config.json',
+                               tmp_path)
+
+
+def _git(root, *args):
+    subprocess.run(['git', *args], cwd=str(root), check=True,
+                   capture_output=True, text=True)
+
+
+# purlin: purlin_version PROOF-21
+def test_a_project_init_sets_up_is_stamped_with_the_version_file(tmp_path):
+    root = tmp_path / 'fresh'
+    root.mkdir()
+    _git(root, '-c', 'init.defaultBranch=main', 'init', '-q', '.')
+    env = dict(os.environ)
+    env.pop('CLAUDE_PLUGIN_ROOT', None)
+    env.pop('PURLIN_PROJECT_ROOT', None)
+    done = subprocess.run(
+        [sys.executable, SCAFFOLD, '--project-root', str(root), '--yes',
+         '--gate', 'passed'],
+        capture_output=True, encoding='utf-8', env=env,
+        stdin=subprocess.DEVNULL, timeout=120)
+    assert done.returncode == 0, done.stdout + done.stderr
+    config_path = root / '.purlin' / 'config.json'
+    config = json.loads(config_path.read_text(encoding='utf-8'))
+    assert config.get('version') == version_file_text(), config
+
+
+# purlin: purlin_version PROOF-5
+def test_the_plugin_manifest_carries_the_version_file():
+    assert_matches_version_file(PLUGIN_MANIFEST, '.claude-plugin/plugin.json')
+
+
+# purlin: purlin_version PROOF-24
+def test_a_manifest_with_no_version_key_fails(tmp_path):
+    assert_missing_key_fails(PLUGIN_MANIFEST, '.claude-plugin/plugin.json',
+                             tmp_path)
+
+
+# purlin: purlin_version PROOF-25
+def test_a_manifest_left_at_an_old_version_fails(tmp_path):
+    assert_stale_version_fails(PLUGIN_MANIFEST, '.claude-plugin/plugin.json',
+                               tmp_path)
+
+
+# purlin: purlin_version PROOF-6
+def test_this_repositorys_settings_carry_the_version_file():
+    assert_matches_version_file(PROJECT_CONFIG, '.purlin/config.json')
+
+
+# purlin: purlin_version PROOF-26
+def test_settings_with_no_version_key_fail(tmp_path):
+    assert_missing_key_fails(PROJECT_CONFIG, '.purlin/config.json', tmp_path)
+
+
+# purlin: purlin_version PROOF-27
+def test_settings_left_at_an_old_version_fail(tmp_path):
+    assert_stale_version_fails(PROJECT_CONFIG, '.purlin/config.json',
+                               tmp_path)
+
+
+# --- RULE-4: no version literal in the package ---------------------------
+
+def release_literals(package_dir):
+    """(module, literal) for each quoted X.Y.Z outside whole-line comments
+    in the package's modules, the 0.0.0 placeholder aside."""
+    semver_pattern = re.compile(r'["\'](\d+\.\d+\.\d+)["\']')
+    found = []
+    for path in sorted(glob.glob(os.path.join(package_dir, '*.py'))):
+        with open(path, encoding='utf-8') as f:
+            for line in f.read().splitlines():
+                if line.lstrip().startswith('#'):
+                    continue
+                found += [(os.path.basename(path), v)
+                          for v in semver_pattern.findall(line)
+                          if v != '0.0.0']
+    return found
+
+
+def package_copy_with(tmp_path, added):
+    """A copy of the package with `added` appended to its server module."""
+    copy = tmp_path / 'purlin'
+    shutil.copytree(PACKAGE_DIR, str(copy),
+                    ignore=shutil.ignore_patterns('__pycache__'))
+    with open(copy / 'server.py', 'a', encoding='utf-8') as f:
+        f.write('\n' + added + '\n')
+    return str(copy)
+
+
+# purlin: purlin_version PROOF-4
+def test_the_package_carries_no_version_literal():
+    found = release_literals(PACKAGE_DIR)
+    assert found == [], (
+        f"Found release version string(s) in the package outside "
+        f"comments: {found}. The version is read from the VERSION file.")
+
+
+# purlin: purlin_version PROOF-22
+def test_a_version_literal_added_to_a_module_is_found(tmp_path):
+    copy = package_copy_with(tmp_path, "RELEASE = '0.10.0'")
+    assert release_literals(copy) == [('server.py', '0.10.0')]
+
+
+# purlin: purlin_version PROOF-23
+def test_a_version_on_a_whole_line_comment_is_not_found(tmp_path):
+    copy = package_copy_with(tmp_path, "# the release was '0.9.0'")
+    assert release_literals(copy) == []
+
+
+# --- RULE-7: the bump script and its check --------------------------------
+
+DERIVED = [
+    os.path.join('templates', 'config.json'),
+    os.path.join('.claude-plugin', 'plugin.json'),
+    os.path.join('.purlin', 'config.json'),
+]
+
+
+def fake_project(tmp_path, version, with_settings=True):
+    """A tree holding a copy of the bump script, VERSION and the derived
+    files at `version`; `.purlin/config.json` is left out when asked.
+
+    The script resolves the root as its own parent, so it runs from a
+    dev/ directory inside the tree under test. Returns (root, script)."""
+    root = tmp_path / 'proj'
+    root.mkdir()
+    (root / 'VERSION').write_text(version + '\n', encoding='utf-8')
+    for rel in DERIVED:
+        if rel.startswith('.purlin') and not with_settings:
+            continue
+        write_version(root, rel, version)
+    (root / 'dev').mkdir()
+    script = root / 'dev' / 'bump_version.sh'
+    shutil.copy2(BUMP_SCRIPT, str(script))
+    return root, script
+
+
+def write_version(root, rel, version):
+    """Set the `version` key of the JSON file `rel`, or drop it for None."""
+    path = root / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    data = {} if version is None else {'version': version}
+    path.write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
+
+
+def read_version(root, rel):
+    return json.loads((root / rel).read_text(encoding='utf-8'))['version']
+
+
+def read_version_file(root):
+    return (root / 'VERSION').read_text(encoding='utf-8').strip()
+
+
+def run_script(script, arg):
+    return subprocess.run([BASH, bash_path(script), arg],
+                          capture_output=True, text=True, timeout=60)
+
+
 def check_line(output, rel):
-    """The one line of a --check `output` that reports location `rel`."""
+    """The words after the location on the one --check line for `rel`."""
     lines = [ln.split() for ln in output.splitlines()
              if ln.split()[:1] == [rel]]
     assert len(lines) == 1, f"expected one line for {rel}:\n{output}"
-    return lines[0]
+    return lines[0][1:]
 
 
-class TestVersionFileSemver:
-
-    # purlin: purlin_version PROOF-1
-    def test_version_file_exists_and_is_valid_semver(self):
-        """VERSION file must exist and contain a valid semver string (X.Y.Z)."""
-        assert os.path.isfile(VERSION_FILE), \
-            f"VERSION file not found at {VERSION_FILE}"
-        with open(VERSION_FILE) as f:
-            content = f.read()
-        assert version_text_is_semver(content), \
-            f"VERSION file contains '{content}', expected a semver string like '1.2.3'"
-
-        # The same check accepts a padded version and refuses every other shape
-        assert version_text_is_semver('  0.10.0\n')
-        for refused in ('', '0.10', 'v0.10.0', '0.10.0\n0.11.0\n'):
-            assert not version_text_is_semver(refused), \
-                f"{refused!r} was accepted as a VERSION file"
+TEMPLATE_REL = 'templates/config.json'
+MANIFEST_REL = '.claude-plugin/plugin.json'
+SETTINGS_REL = '.purlin/config.json'
 
 
-class TestServerReadsVersionFromFile:
-
-    # purlin: purlin_version PROOF-2
-    def test_the_package_reads_the_version_from_the_file(self, tmp_path):
-        """A copy of the package beside a VERSION of 9.8.7 reports 9.8.7.
-
-        A literal in the package or in the server would still report the
-        checkout's number, so only a value read from the file passes.
-        """
-        shutil.copytree(os.path.join(PROJECT_ROOT, 'scripts', 'mcp'),
-                        str(tmp_path / 'scripts' / 'mcp'),
-                        ignore=shutil.ignore_patterns('__pycache__'))
-        (tmp_path / 'VERSION').write_text('9.8.7\n', encoding='utf-8')
-        probe = ('import json, sys\n'
-                 'sys.path.insert(0, sys.argv[1])\n'
-                 'import purlin\n'
-                 'from purlin import server\n'
-                 'print(json.dumps([purlin.PURLIN_VERSION,'
-                 ' server.SERVER_INFO["version"]]))\n')
-        answer = subprocess.run(
-            [sys.executable, '-c', probe,
-             str(tmp_path / 'scripts' / 'mcp')],
-            capture_output=True, text=True, cwd=str(tmp_path), timeout=60)
-        assert answer.returncode == 0, answer.stderr
-        reported = json.loads(answer.stdout.strip().splitlines()[-1])
-        assert reported == ['9.8.7', '9.8.7'], reported
-
-        # A client connecting to the copied server is told 9.8.7 on the handshake
-        hello = subprocess.run(
-            [sys.executable,
-             str(tmp_path / 'scripts' / 'mcp' / 'purlin' / 'server.py')],
-            input=json.dumps({'jsonrpc': '2.0', 'id': 1,
-                              'method': 'initialize', 'params': {}}) + '\n',
-            capture_output=True, text=True, cwd=str(tmp_path), timeout=60)
-        assert hello.returncode == 0, hello.stderr
-        server_info = json.loads(hello.stdout.splitlines()[0])['result'][
-            'serverInfo']
-        assert server_info == {'name': 'purlin', 'version': '9.8.7'}, \
-            server_info
-
-        # With no VERSION file the package and the server report 0.0.0
-        (tmp_path / 'VERSION').unlink()
-        answer = subprocess.run(
-            [sys.executable, '-c', probe,
-             str(tmp_path / 'scripts' / 'mcp')],
-            capture_output=True, text=True, cwd=str(tmp_path), timeout=60)
-        assert answer.returncode == 0, answer.stderr
-        reported = json.loads(answer.stdout.strip().splitlines()[-1])
-        assert reported == ['0.0.0', '0.0.0'], reported
-
-        # The package in this checkout reports the checkout's VERSION file
-        with open(VERSION_FILE) as f:
-            expected = f.read().strip()
-        assert purlin_package.PURLIN_VERSION == expected, \
-            (f"PURLIN_VERSION is '{purlin_package.PURLIN_VERSION}' at runtime "
-             f"but VERSION file contains '{expected}'")
+# purlin: purlin_version PROOF-7
+def test_the_bump_writes_the_version_everywhere(tmp_path):
+    root, script = fake_project(tmp_path, '1.2.3')
+    bump = run_script(script, '9.8.7')
+    assert bump.returncode == 0, \
+        f"bump exited {bump.returncode}\n{bump.stdout}\n{bump.stderr}"
+    assert read_version_file(root) == '9.8.7'
+    for rel in DERIVED:
+        assert read_version(root, rel) == '9.8.7', rel
 
 
-class TestTemplateVersionMatchesVersionFile:
-
-    # purlin: purlin_version PROOF-3
-    def test_template_config_version_matches_version_file(self, tmp_path):
-        """templates/config.json version field must match VERSION file content."""
-        with open(VERSION_FILE) as f:
-            file_version = f.read().strip()
-
-        assert os.path.isfile(CONFIG_TEMPLATE), \
-            f"templates/config.json not found at {CONFIG_TEMPLATE}"
-        problem = version_field_problem(CONFIG_TEMPLATE, file_version,
-                                        'templates/config.json')
-        assert problem is None, problem
-        assert_version_field_refusals(CONFIG_TEMPLATE,
-                                      'templates/config.json', tmp_path)
+# purlin: purlin_version PROOF-28
+def test_the_check_passes_a_project_that_agrees(tmp_path):
+    root, script = fake_project(tmp_path, '9.8.7')
+    ok = run_script(script, '--check')
+    assert ok.returncode == 0, f"{ok.stdout}\n{ok.stderr}"
+    for rel in (TEMPLATE_REL, MANIFEST_REL, SETTINGS_REL):
+        assert check_line(ok.stdout, rel) == ['ok', '9.8.7'], ok.stdout
 
 
-class TestPluginManifestVersionMatchesVersionFile:
-
-    # purlin: purlin_version PROOF-5
-    def test_plugin_manifest_version_matches_version_file(self, tmp_path):
-        """.claude-plugin/plugin.json version field must match VERSION file content.
-
-        The plugin manifest is the version consumers install against via the Claude
-        plugin marketplace. It is a separate version source from VERSION and
-        templates/config.json, so it must be kept in lockstep with the release.
-        """
-        with open(VERSION_FILE) as f:
-            file_version = f.read().strip()
-
-        assert os.path.isfile(PLUGIN_MANIFEST), \
-            f".claude-plugin/plugin.json not found at {PLUGIN_MANIFEST}"
-        problem = version_field_problem(PLUGIN_MANIFEST, file_version,
-                                        '.claude-plugin/plugin.json')
-        assert problem is None, problem
-        assert_version_field_refusals(PLUGIN_MANIFEST,
-                                      '.claude-plugin/plugin.json', tmp_path)
+# purlin: purlin_version PROOF-29
+def test_the_check_names_the_location_that_drifted(tmp_path):
+    root, script = fake_project(tmp_path, '9.8.7')
+    write_version(root, SETTINGS_REL, '1.2.3')
+    bad = run_script(script, '--check')
+    assert bad.returncode == 1, \
+        f"--check exited {bad.returncode} on a drifted tree, expected 1"
+    assert check_line(bad.stdout, SETTINGS_REL) == \
+        ['DRIFT', '1.2.3', '(expected', '9.8.7)'], bad.stdout
+    for rel in (TEMPLATE_REL, MANIFEST_REL):
+        assert check_line(bad.stdout, rel) == ['ok', '9.8.7'], bad.stdout
 
 
-class TestNoHardcodedVersionInServer:
-
-    @staticmethod
-    def _release_literals(package_dir):
-        """(module, literal) for each quoted X.Y.Z outside whole-line
-        comments in the package's modules, the 0.0.0 placeholder aside."""
-        import glob as _glob
-        # Exclude '0.0.0': that is the documented sentinel returned by
-        # _read_version() when the VERSION file cannot be read, not a release.
-        semver_pattern = re.compile(r'["\'](\d+\.\d+\.\d+)["\']')
-        found = []
-        for path in sorted(_glob.glob(os.path.join(package_dir, '*.py'))):
-            with open(path, encoding='utf-8') as f:
-                for line in f.read().splitlines():
-                    if line.lstrip().startswith('#'):
-                        continue
-                    found += [(os.path.basename(path), v)
-                              for v in semver_pattern.findall(line)
-                              if v != '0.0.0']
-        return found
-
-    # purlin: purlin_version PROOF-4
-    def test_no_hardcoded_version_strings_in_the_package(self, tmp_path):
-        """No module of the package may carry a version literal like
-        '0.9.0' or any X.Y.Z pattern outside its comments."""
-        package_dir = os.path.dirname(PACKAGE_INIT)
-        release_matches = self._release_literals(package_dir)
-
-        assert release_matches == [], (
-            f"Found hardcoded release version string(s) in scripts/mcp/purlin/ "
-            f"(outside comments): {release_matches}. "
-            f"Version must be read from the VERSION file via _read_version()."
-        )
-
-        # A '0.10.0' planted in a copy's server module is found and named with
-        # its module; the same number on a whole-line comment is not
-        copy = tmp_path / 'purlin'
-        shutil.copytree(package_dir, str(copy),
-                        ignore=shutil.ignore_patterns('__pycache__'))
-        with open(copy / 'server.py', 'a', encoding='utf-8') as f:
-            f.write("\n# the release was '0.9.0'\nRELEASE = '0.10.0'\n")
-        assert self._release_literals(str(copy)) == [('server.py', '0.10.0')]
+# purlin: purlin_version PROOF-30
+def test_the_check_names_a_location_with_no_version_key(tmp_path):
+    root, script = fake_project(tmp_path, '9.8.7')
+    write_version(root, TEMPLATE_REL, None)
+    bad = run_script(script, '--check')
+    assert bad.returncode == 1, \
+        f"--check exited {bad.returncode} with a key missing, expected 1"
+    assert check_line(bad.stdout, TEMPLATE_REL) == \
+        ['FAIL', 'no', '"version"', 'key'], bad.stdout
 
 
-class TestProjectConfigVersionMatchesVersionFile:
-
-    # purlin: purlin_version PROOF-6
-    def test_project_config_version_matches_version_file(self):
-        """This repo's own .purlin/config.json version must match VERSION.
-
-        Purlin develops itself, so the repo is also a Purlin project. Its
-        config.json carries the framework version that initialized it, and the
-        dashboard reports that field, so it is held to the VERSION file like
-        the other derived locations.
-        """
-        with open(VERSION_FILE, encoding='utf-8') as f:
-            file_version = f.read().strip()
-
-        assert os.path.isfile(PROJECT_CONFIG), \
-            f".purlin/config.json not found at {PROJECT_CONFIG}"
-        with open(PROJECT_CONFIG, encoding='utf-8') as f:
-            config = json.load(f)
-
-        assert 'version' in config, \
-            ".purlin/config.json has no 'version' field"
-        assert config['version'] == file_version, \
-            (f".purlin/config.json version is '{config['version']}' "
-             f"but VERSION file contains '{file_version}'. "
-             f"Fix with: bash dev/bump_version.sh {file_version}")
+# purlin: purlin_version PROOF-31
+def test_the_bump_refuses_a_non_version_and_writes_nothing(tmp_path):
+    root, script = fake_project(tmp_path, '1.2.3')
+    bad = run_script(script, 'not-a-version')
+    assert bad.returncode == 2, f"expected exit 2, got {bad.returncode}"
+    assert read_version_file(root) == '1.2.3', \
+        "VERSION was modified despite an invalid argument"
+    for rel in DERIVED:
+        assert read_version(root, rel) == '1.2.3', \
+            f"{rel} was modified despite an invalid argument"
 
 
-class TestBumpVersionScriptPropagatesAndDetectsDrift:
-
-    DERIVED = [
-        os.path.join('templates', 'config.json'),
-        os.path.join('.claude-plugin', 'plugin.json'),
-        os.path.join('.purlin', 'config.json'),
-    ]
-
-    def _fake_project(self, root, version):
-        """Build a minimal tree with VERSION and all three derived files."""
-        with open(os.path.join(root, 'VERSION'), 'w', encoding='utf-8') as f:
-            f.write(version + '\n')
-        for rel in self.DERIVED:
-            path = os.path.join(root, rel)
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, 'w', encoding='utf-8') as f:
-                json.dump({'version': version}, f, indent=2)
-                f.write('\n')
-        # The script resolves the root as its own parent, so it must be invoked
-        # from a dev/ directory inside the tree under test.
-        dev_dir = os.path.join(root, 'dev')
-        os.makedirs(dev_dir, exist_ok=True)
-        shutil.copy2(BUMP_SCRIPT, os.path.join(dev_dir, 'bump_version.sh'))
-        return os.path.join(dev_dir, 'bump_version.sh')
-
-    def _read(self, root, rel):
-        with open(os.path.join(root, rel), encoding='utf-8') as f:
-            return json.load(f)['version']
-
-    # purlin: purlin_version PROOF-7
-    def test_bump_propagates_everywhere_and_check_reports_drift(self, tmp_path):
-        """bump_version.sh <semver> writes VERSION and every derived location;
-        --check exits 1 naming the drifted file, and 0 on a matching tree."""
-        root = str(tmp_path / 'proj')
-        os.makedirs(root)
-        script = self._fake_project(root, '1.2.3')
-
-        # ── Propagation ────────────────────────────────────────────────
-        bump = subprocess.run(
-            [BASH, bash_path(script), '9.8.7'],
-            capture_output=True, text=True,
-        )
-        assert bump.returncode == 0, \
-            f"bump exited {bump.returncode}\nstdout:{bump.stdout}\nstderr:{bump.stderr}"
-
-        with open(os.path.join(root, 'VERSION'), encoding='utf-8') as f:
-            assert f.read().strip() == '9.8.7', "VERSION file was not rewritten"
-        for rel in self.DERIVED:
-            assert self._read(root, rel) == '9.8.7', \
-                f"{rel} still reports {self._read(root, rel)}, expected 9.8.7"
-
-        # ── --check passes on the propagated tree ─────────────────────
-        ok = subprocess.run(
-            [BASH, bash_path(script), '--check'], capture_output=True, text=True,
-        )
-        assert ok.returncode == 0, \
-            f"--check failed on a matching tree:\n{ok.stdout}\n{ok.stderr}"
-
-        # ── --check fails, naming the drifted file ────────────────────
-        drifted = os.path.join(root, '.purlin', 'config.json')
-        with open(drifted, encoding='utf-8') as f:
-            data = json.load(f)
-        data['version'] = '1.2.3'
-        with open(drifted, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2)
-            f.write('\n')
-
-        bad = subprocess.run(
-            [BASH, bash_path(script), '--check'], capture_output=True, text=True,
-        )
-        assert bad.returncode == 1, \
-            f"--check exited {bad.returncode} on a drifted tree, expected 1"
-        assert '.purlin/config.json' in bad.stdout, \
-            f"--check did not name the drifted file:\n{bad.stdout}"
-        assert 'DRIFT' in bad.stdout, \
-            f"--check did not mark the drift:\n{bad.stdout}"
-        # The other two must still be reported as matching, so the operator can
-        # see the check is scoped rather than blanket-failing.
-        assert 'templates/config.json' in bad.stdout
-        assert '.claude-plugin/plugin.json' in bad.stdout
-        # Each location's own line: DRIFT with both numbers on the drifted
-        # one, ok with the current number on the two that match
-        assert check_line(bad.stdout, '.purlin/config.json')[1:] == \
-            ['DRIFT', '1.2.3', '(expected', '9.8.7)'], bad.stdout
-        for rel in ('templates/config.json', '.claude-plugin/plugin.json'):
-            assert check_line(bad.stdout, rel)[1:] == ['ok', '9.8.7'], \
-                bad.stdout
-
-    # purlin: purlin_version PROOF-7
-    def test_bump_rejects_non_semver_and_tolerates_absent_optional_file(self, tmp_path):
-        """A non-semver argument is refused before anything is written, and an
-        absent .purlin/config.json is skipped rather than failing the run."""
-        root = str(tmp_path / 'proj')
-        os.makedirs(root)
-        script = self._fake_project(root, '1.2.3')
-
-        bad = subprocess.run(
-            [BASH, bash_path(script), 'not-a-version'], capture_output=True, text=True,
-        )
-        assert bad.returncode == 2, f"expected exit 2, got {bad.returncode}"
-        with open(os.path.join(root, 'VERSION'), encoding='utf-8') as f:
-            assert f.read().strip() == '1.2.3', \
-                "VERSION was modified despite an invalid argument"
-        for rel in self.DERIVED:
-            assert self._read(root, rel) == '1.2.3', \
-                f"{rel} was modified despite an invalid argument"
-
-        # A consumer checkout of the framework has no .purlin/config.json.
-        os.remove(os.path.join(root, '.purlin', 'config.json'))
-        run = subprocess.run(
-            [BASH, bash_path(script), '2.0.0'], capture_output=True, text=True,
-        )
-        assert run.returncode == 0, \
-            f"bump failed with the optional file absent:\n{run.stdout}\n{run.stderr}"
-        assert self._read(root, os.path.join('templates', 'config.json')) == '2.0.0'
-        assert self._read(root, os.path.join('.claude-plugin', 'plugin.json')) \
-            == '2.0.0'
-        with open(os.path.join(root, 'VERSION'), encoding='utf-8') as f:
-            assert f.read().strip() == '2.0.0'
-        assert not os.path.exists(os.path.join(root, '.purlin', 'config.json')), \
-            "the bump created the absent .purlin/config.json"
-
-        check = subprocess.run(
-            [BASH, bash_path(script), '--check'], capture_output=True, text=True,
-        )
-        assert check.returncode == 0, \
-            f"--check failed with the optional file absent:\n{check.stdout}"
-        assert 'absent' in check.stdout, \
-            f"--check did not report the absent optional file:\n{check.stdout}"
-        assert check_line(check.stdout, '.purlin/config.json')[1] == 'absent', \
-            check.stdout
-        for rel in ('templates/config.json', '.claude-plugin/plugin.json'):
-            assert check_line(check.stdout, rel)[1:] == ['ok', '2.0.0'], \
-                check.stdout
+# purlin: purlin_version PROOF-32
+def test_the_bump_skips_absent_settings_without_creating_them(tmp_path):
+    root, script = fake_project(tmp_path, '1.2.3', with_settings=False)
+    run = run_script(script, '2.0.0')
+    assert run.returncode == 0, \
+        f"bump failed with the settings file absent:\n{run.stdout}\n{run.stderr}"
+    assert read_version_file(root) == '2.0.0'
+    assert read_version(root, TEMPLATE_REL) == '2.0.0'
+    assert read_version(root, MANIFEST_REL) == '2.0.0'
+    assert not (root / SETTINGS_REL).exists(), \
+        "the bump created the absent .purlin/config.json"
 
 
-class TestDocsCiteVersionFileInsteadOfALiteral:
+# purlin: purlin_version PROOF-33
+def test_the_check_reports_absent_settings_and_passes(tmp_path):
+    root, script = fake_project(tmp_path, '2.0.0', with_settings=False)
+    check = run_script(script, '--check')
+    assert check.returncode == 0, \
+        f"--check failed with the settings file absent:\n{check.stdout}"
+    assert check_line(check.stdout, SETTINGS_REL)[0] == 'absent', \
+        check.stdout
+    for rel in (TEMPLATE_REL, MANIFEST_REL):
+        assert check_line(check.stdout, rel) == ['ok', '2.0.0'], check.stdout
 
-    OWNER = os.path.join('references', 'drift_criteria.md')
-    MARKER = '| `version` |'
 
-    # purlin: purlin_version PROOF-8
-    def test_config_version_field_docs_carry_no_semver_literal(self):
-        """The one config-field table must name the VERSION file, not a
-        number, and no second copy of the row may exist.
+# --- RULE-8: the one table row that describes the version field ----------
 
-        A literal in prose has nothing keeping it current.
-        """
-        semver_literal = re.compile(r'`?"?\d+\.\d+\.\d+"?`?')
-        path = os.path.join(PROJECT_ROOT, self.OWNER)
-        assert os.path.isfile(path), f"{self.OWNER} not found"
-        with open(path, encoding='utf-8') as f:
-            lines = [ln for ln in f.read().splitlines()
-                     if ln.strip().startswith(self.MARKER)]
-        assert lines, f"no `version` field row found in {self.OWNER}"
-        for ln in lines:
-            assert not semver_literal.search(ln), \
-                (f"{self.OWNER} restates a version literal in its `version` "
-                 f"row: {ln.strip()!r}: cite the VERSION file instead")
-            assert 'VERSION' in ln, \
-                (f"{self.OWNER} `version` row does not reference the VERSION "
-                 f"file: {ln.strip()!r}")
+OWNER = 'references/drift_criteria.md'
+ROW_START = '| `version` |'
+SEMVER_LITERAL = re.compile(r'\d+\.\d+\.\d+')
 
-        copies = []
-        for base in ('skills', 'references'):
-            for dirpath, _dirs, files in os.walk(
-                    os.path.join(PROJECT_ROOT, base)):
-                for name in files:
-                    if not name.endswith('.md'):
-                        continue
-                    rel = os.path.relpath(
-                        os.path.join(dirpath, name), PROJECT_ROOT)
-                    if rel == self.OWNER:
-                        continue
-                    with open(os.path.join(dirpath, name),
-                              encoding='utf-8') as f:
-                        if any(ln.strip().startswith(self.MARKER)
-                               for ln in f.read().splitlines()):
-                            copies.append(rel)
-        assert not copies, (
-            f"a second `version` field row lives in {sorted(copies)}; "
-            f"{self.OWNER} is the field's one documented home")
 
+def version_rows(path):
+    """The table rows of the Markdown file at `path` whose first cell is
+    `version`."""
+    with open(path, encoding='utf-8') as f:
+        return [ln.strip() for ln in f.read().splitlines()
+                if ln.strip().startswith(ROW_START)]
+
+
+def owner_row_problems(rows):
+    """What each of the owner's `version` rows gets wrong: a restated
+    number, or no mention of the VERSION file."""
+    problems = []
+    for row in rows:
+        for literal in SEMVER_LITERAL.findall(row):
+            problems.append(f"restates {literal}: {row}")
+        if 'VERSION' not in row:
+            problems.append(f"does not name the VERSION file: {row}")
+    return problems
+
+
+def second_copies(root):
+    """Every Markdown file under skills/ and references/ of `root`, other
+    than the owner, holding a `version` row, as a sorted list of paths."""
+    copies = []
+    for base in ('skills', 'references'):
+        for dirpath, _dirs, files in os.walk(os.path.join(root, base)):
+            for name in files:
+                if not name.endswith('.md'):
+                    continue
+                path = os.path.join(dirpath, name)
+                rel = os.path.relpath(path, root).replace(os.sep, '/')
+                if rel != OWNER and version_rows(path):
+                    copies.append(rel)
+    return sorted(copies)
+
+
+# purlin: purlin_version PROOF-8
+def test_the_one_version_row_names_the_version_file():
+    rows = version_rows(os.path.join(PROJECT_ROOT, OWNER))
+    assert rows, f"no `version` field row found in {OWNER}"
+    assert owner_row_problems(rows) == []
+
+
+# purlin: purlin_version PROOF-34
+def test_no_second_copy_of_the_version_row_exists():
+    copies = second_copies(PROJECT_ROOT)
+    assert copies == [], (
+        f"a second `version` field row lives in {copies}; "
+        f"{OWNER} is the field's one documented home")
+
+
+# purlin: purlin_version PROOF-35
+def test_a_version_row_added_to_a_skill_is_found(tmp_path):
+    for base in ('skills', 'references'):
+        shutil.copytree(os.path.join(PROJECT_ROOT, base),
+                        str(tmp_path / base))
+    with open(tmp_path / 'skills' / 'init' / 'SKILL.md', 'a',
+              encoding='utf-8') as f:
+        f.write('\n| `version` | `"0.9.0"` |\n')
+    assert second_copies(str(tmp_path)) == ['skills/init/SKILL.md']
+
+
+# purlin: purlin_version PROOF-36
+def test_the_version_row_restating_a_number_is_found(tmp_path):
+    rows = version_rows(os.path.join(PROJECT_ROOT, OWNER))
+    assert rows, f"no `version` field row found in {OWNER}"
+    restated = [row.replace('`VERSION`', '`0.9.0`') for row in rows]
+    assert all('VERSION' not in row for row in restated), restated
+    problems = owner_row_problems(restated)
+    for row in restated:
+        assert f"restates 0.9.0: {row}" in problems, problems
+        assert f"does not name the VERSION file: {row}" in problems, problems
