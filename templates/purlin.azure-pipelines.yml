@@ -12,11 +12,12 @@
 # and a push of a `signed/*` tag, which purlin:sign writes at the gate signed
 # when nothing is left to do. A pull request starts nothing.
 #
-# A run branch run runs the marked tests, writes its own operating system's
-# section of .purlin/evidence/ci/<feature>.json for every feature, and commits
-# it on that branch. The build service writes it with $(System.AccessToken),
-# and nothing on the host has to be configured for that. A tag run runs the
-# marked tests and writes nothing.
+# A run branch run runs the marked tests a runner runs (references/hard_gates.md
+# in the Purlin plugin, "Where a runner runs"), writes its own operating
+# system's section of .purlin/evidence/ci/<feature>.json for every feature,
+# and commits it on that branch. The build service writes it with
+# $(System.AccessToken), and nothing on the host has to be configured for
+# that. A tag run runs the same tests and writes nothing.
 #
 # The test step is the last step. It ends by printing the summary and Left to
 # do, and its exit code is the job's: the job fails only when a test fails or

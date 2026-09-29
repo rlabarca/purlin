@@ -2,10 +2,11 @@
 
 > Scope: greeting.py, tests/test_greeting.py
 > Stack: python/stdlib
-> Description: The one feature of the consumer-CI fixture project. RULE-1 is a claim any host can
->   prove, so its proof carries no `@env` tag. RULE-2 is a claim only a Linux host can prove, so
->   its proof carries `@env(linux)` and reaches `strong` only when a Linux job's evidence says
->   it passed. The fixture is therefore the smallest project that needs a matrix.
+> Description: The one feature of the consumer-CI fixture project. A runner runs the tests of
+>   the proofs tagged `@env` for its own operating system. RULE-1 is a claim any host can prove,
+>   so its proof carries no `@env` tag and is proven on the person's own machine. RULE-2 is a
+>   claim only a Linux host can prove, so its proof carries `@env(linux)` and is proven on a
+>   Linux runner. The fixture is therefore the smallest project that needs a matrix.
 
 ## Rules
 
