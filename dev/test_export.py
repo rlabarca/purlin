@@ -79,9 +79,11 @@ PACKAGE_REL = '.purlin/evidence/package/2.1.0.json'
 
 def export(root, *args):
     """Run the package command in `root`. `(exit code, printed lines)`."""
+    # The command prints UTF-8 on every system; read it so, not in the
+    # console's own encoding, which on Windows is a code page.
     done = subprocess.run([sys.executable, PACKAGE_PY, '--project-root', root]
                           + list(args), capture_output=True, text=True,
-                          cwd=root)
+                          encoding='utf-8', errors='replace', cwd=root)
     return done.returncode, (done.stdout + done.stderr).splitlines()
 
 
@@ -186,6 +188,7 @@ def tagged():
 class TestTheFile:
 
     # purlin: package PROOF-1
+    # purlin: package PROOF-38
     def test_it_writes_the_version_file_prints_the_state_and_commits_nothing(
             self, unsigned):
         head = unsigned.head()
@@ -540,12 +543,27 @@ class TestWhatGitHolds:
 # ---------------------------------------------------------------------------
 
 def _clone_at_the_tag(made):
-    """A second clone of the project, checked out at the tag."""
+    """A second clone of the project, checked out at the tag.
+
+    The clone sets `core.autocrlf` to `true`, as Git for Windows does by
+    default, so git writes a carriage return before every line feed of the
+    files it checks out there, the committed package included.
+    """
     parent = tempfile.mkdtemp()
     clone = os.path.join(parent, 'second')
-    git(parent, 'clone', '-q', made.root, clone)
-    git(clone, 'checkout', '-q', 'signed/2.1.0')
+    cloned = git(parent, 'clone', '-q', '-c', 'core.autocrlf=true',
+                 made.root, clone)
+    assert cloned.returncode == 0, cloned.stderr
+    checked_out = git(clone, 'checkout', '-q', 'signed/2.1.0')
+    assert checked_out.returncode == 0, checked_out.stderr
     return parent, clone
+
+
+def git_bytes(root, *args):
+    """What a git command prints, as bytes, with no line ends translated."""
+    done = subprocess.run(['git'] + list(args), cwd=root, capture_output=True)
+    assert done.returncode == 0, done.stderr
+    return done.stdout
 
 
 class TestTheBytes:
@@ -562,19 +580,24 @@ class TestTheBytes:
         assert first.endswith(b'}\n') and b'\r' not in first
 
     # purlin: package PROOF-14
+    # purlin: package PROOF-39
     def test_a_second_clone_at_the_tag_gives_the_committed_bytes(self, tagged):
-        committed = git(tagged.root, 'show',
-                        'signed/2.1.0:.purlin/evidence/package/2.1.0.json')
+        committed = git_bytes(tagged.root, 'show',
+                              'signed/2.1.0:' + PACKAGE_REL)
+        assert b'\r' not in committed
         parent, clone = _clone_at_the_tag(tagged)
         try:
+            # The checkout gave the committed package carriage returns.
+            assert read_bytes(clone, PACKAGE_REL) == \
+                committed.replace(b'\n', b'\r\n')
             code, lines = export(clone)
             assert code == 0, lines
             assert lines == ['Evidence package written to '
                              '.purlin/evidence/package/2.1.0.json. '
                              'State: finished.'], lines
-            assert read_bytes(
-                clone, '.purlin/evidence/package/2.1.0.json').decode() == \
-                committed.stdout
+            written = read_bytes(clone, PACKAGE_REL)
+            assert written == committed
+            assert b'\r' not in written
         finally:
             shutil.rmtree(parent, ignore_errors=True)
 
@@ -612,6 +635,7 @@ def _exported(made):
 class TestTheFingerprint:
 
     # purlin: package PROOF-16
+    # purlin: package PROOF-40
     def test_check_passes_a_package_as_written(self, unsigned):
         path, _ = _exported(unsigned)
         code, lines = export(unsigned.root, '--check', path)
