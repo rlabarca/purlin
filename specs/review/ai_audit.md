@@ -20,16 +20,20 @@
 - RULE-4: One call is made per rule, and as many calls run at once as the number the caller names, or as there are rules when there are fewer
 - RULE-5: An answer that settled with no finding is `strong`, one that settled with findings is `weak` with each line a finding, and one that did not settle is `undecided` with its lines as the reason; an answer that says neither is no answer
 - RULE-6: Each answer names the model the command's JSON reports, the one that wrote the most where several are named, or `unknown` where none is, and carries the sha256 of the criteria as they were sent
-- RULE-7: The model cannot be reached when `claude` is not on the path, when it exits with an error, when it runs past its limit, or when its answer has no settled line after one retry; the answer is then only the reason, `claude is not on PATH`, `claude exited with an error`, `claude timed out after <n> s` or `claude answered without a settled line`, and with no `claude` on the path no call is made
+- RULE-7: With no `claude` on the path the model cannot be reached: no call is made and the answer is only the reason `claude is not on PATH`
 - RULE-8: What the audit reads for a rule names each marked test's file, its name and its source, and the feature's test strength beside the project minimum
 - RULE-9: A `@manual` proof's test entry reads `manual` true and names no test file and no source
 - RULE-10: When several tests back one proof, each test shows its own source; a test whose source cannot be found shows none rather than another test's
 - RULE-11: The test source is read out of JavaScript and TypeScript by balancing the brackets of the test's call, with strings, comments and regex literals stepped over, so a nested options object, an apostrophe in a title, a regex literal, a comment or a division never cuts a body short or drops a test
 - RULE-12: Reading a rule, asking the model and printing the result write no file anywhere under `.purlin/`
-- RULE-13: `ai_audit.py --help` exits 0, an unknown option or a missing `--feature` exits 2, a feature with no rule in the project, or a rule the project does not hold, exits 1, and the command calls no model
-- RULE-14: `ai_audit.py --feature <name>` prints what the audit reads for one rule named with `--rule`, or for every rule of the feature without it: the rule, its proofs, each test, the test strength beside the minimum where one was measured and nothing of strength where none was, and what the last audit found, its verdict, model, time and each finding, and no emoji
-- RULE-15: Reading a rule the project does not hold returns nothing rather than an empty reading
+- RULE-13: `ai_audit.py --help` exits 0, an unknown option or a missing `--feature` exits 2, a feature with no rule in the project exits 1, a rule the project does not hold prints only `<feature> <RULE-N> is not a rule any spec has. Run purlin:status <feature> to see its rules.` and exits 1, and the command calls no model
+- RULE-14: `ai_audit.py --feature <name>` prints what the audit reads for one rule named with `--rule`, or for every rule of the feature without it
 - RULE-16: The lines an answer holds under `notes:` are its notes, where the prompt asks for a proof longer than 60 words or holding more than one case, and a note never makes the answer `weak`
+- RULE-17: For each rule `ai_audit.py` prints, it shows the rule, its proofs, each test, the test strength beside the minimum where one was measured and nothing of strength where none was, and what the last audit found, its verdict, model, time and each finding, and after the findings each note, starting `Note:`
+- RULE-18: When `claude` exits with an error the model cannot be reached, and the answer is only the reason `claude exited with an error`
+- RULE-19: When `claude` runs past its limit the model cannot be reached, and the answer is only the reason `claude timed out after <n> s`
+- RULE-20: An answer with no settled line is asked for once more, and when the second has none either the model cannot be reached and the answer is only the reason `claude answered without a settled line`
+- RULE-21: When `.purlin/config.json` cannot be read, `ai_audit.py` prints the sentence saying why, prints no rule, writes nothing and exits 1
 
 ## Proof
 
@@ -65,10 +69,10 @@
 - PROOF-60 (RULE-6): `claude` answers with JSON naming `claude-opus-4-1` with 12 output tokens and then `claude-haiku-3-5` with 900; the audit's answer names `claude-haiku-3-5`
 - PROOF-61 (RULE-6): `claude` answers with JSON whose top-level `model` is `claude-x-1`; the audit's answer names `claude-x-1`
 - PROOF-23 (RULE-7): With the path set to an empty folder, so that no `claude` can be found, the audit is handed two rules; each answer is only the reason `claude is not on PATH`, with no verdict, and no `claude` is started
-- PROOF-24 (RULE-7): `claude` exits with the code 1 when asked about `RULE-2`; the audit's answer is only the reason `claude exited with an error`, with no verdict and no finding
-- PROOF-25 (RULE-7): With the limit lowered to 1 second and a `claude` that takes 3 seconds to answer, the audit's answer about `RULE-2` is only the reason `claude timed out after 1 s`
-- PROOF-26 (RULE-7): `claude` answers every question about `RULE-2` with `It looks fine to me.`; it is asked exactly 2 times, and the audit's answer is only the reason `claude answered without a settled line`
-- PROOF-62 (RULE-7): `claude` answers the first question about `RULE-2` with `It looks fine to me.` and the second with `settled: yes`; it is asked exactly 2 times, and the audit's answer reads `strong`
+- PROOF-24 (RULE-18): `claude` exits with the code 1 when asked about `RULE-2`; the audit's answer is only the reason `claude exited with an error`, with no verdict and no finding
+- PROOF-25 (RULE-19): With the limit lowered to 1 second and a `claude` that takes 3 seconds to answer, the audit's answer about `RULE-2` is only the reason `claude timed out after 1 s`
+- PROOF-26 (RULE-20): `claude` answers every question about `RULE-2` with `It looks fine to me.`; it is asked exactly 2 times, and the audit's answer is only the reason `claude answered without a settled line`
+- PROOF-62 (RULE-20): `claude` answers the first question about `RULE-2` with `It looks fine to me.` and the second with `settled: yes`; it is asked exactly 2 times, and the audit's answer reads `strong`
 - PROOF-5 (RULE-8): In a project whose evidence names the test `test_valid_credentials_return_200` for `RULE-1`, what the audit reads for `RULE-1` names the file `tests/test_login.py`, that test, and carries its line `assert login("ada", "secret") == 200`
 - PROOF-8 (RULE-8): Under the gate `strong`, with evidence that measured the feature's test strength at 90 and a project minimum of 70, what the audit reads for `RULE-2` carries the strength 90 beside the minimum 70
 - PROOF-6 (RULE-9): The proof of `RULE-1` is tagged `@manual` while the project's test file still holds a test marked for that proof; what the audit reads for `RULE-1` has a test entry reading `manual` true, with no test file and no source
@@ -92,14 +96,16 @@
 - PROOF-74 (RULE-13): The command run with `--nope` exits 2 and prints `ai_audit.py: unexpected argument --nope`
 - PROOF-75 (RULE-13): The command run with no argument exits 2 and prints `ai_audit.py: --feature is required.`
 - PROOF-31 (RULE-13): The command run for the feature `nothing`, which no spec declares, exits 1 and prints `audit: no rule of nothing is in this project.`
-- PROOF-76 (RULE-13): The command run for `--feature login --rule RULE-99`, a rule the spec of `login` does not declare, exits 1 and prints no reading of any rule
+- PROOF-76 (RULE-13): The command run for `--feature login --rule RULE-99`, a rule the spec of `login` does not declare, exits 1 and prints only `login RULE-99 is not a rule any spec has. Run purlin:status login to see its rules.`
 - PROOF-33 (RULE-13): The command run as its own process for `--feature login --rule RULE-1` exits 0 and prints `login RULE-1`, and no `claude` is started
-- PROOF-29 (RULE-14): Under the gate `strong`, with an audit entry for `RULE-2` finding `PROOF-2 asserts the status but never the body the rule names.`, the command run for that rule prints `login RULE-2`, its text, its proof, its test's line, `Test strength: 90 percent   minimum 70`, `What the audit found`, `Weak, by unknown at 2026-09-13T12:05:00Z.` and the finding, with no emoji
-- PROOF-77 (RULE-14): Under the gate `strong`, with no audit entry for `RULE-2`, the command run for that rule prints, under `What the audit found`, `Nothing yet: no audit has read this rule's text, proof and test.`
-- PROOF-63 (RULE-14): Under the gate `strong`, with evidence that measured no test strength, the command run for `RULE-2` prints `login RULE-2` and no line naming test strength
+- PROOF-7 (RULE-13): What the audit reads for `RULE-99`, which the spec of `login` does not declare, is nothing at all, not a reading with an empty rule
 - PROOF-32 (RULE-14): The command run for `--feature login --rule RULE-1` exits 0 and prints `login RULE-1` and not `login RULE-2`
 - PROOF-78 (RULE-14): The command run for `--feature login` alone exits 0 and prints both `login RULE-1` and `login RULE-2`
-- PROOF-7 (RULE-15): What the audit reads for `RULE-99`, which the spec of `login` does not declare, is nothing at all, not a reading with an empty rule
+- PROOF-29 (RULE-17): Under the gate `strong`, with an audit entry for `RULE-2` finding `PROOF-2 asserts the status but never the body the rule names.`, the command for that rule prints `login RULE-2`, its text, its proof, its test's line, `Test strength: 90 percent   minimum 70`, `What the audit found`, `Weak, by unknown at 2026-09-13T12:05:00Z.` and the finding, and no `Note:` line
+- PROOF-77 (RULE-17): Under the gate `strong`, with no audit entry for `RULE-2`, the command run for that rule prints, under `What the audit found`, `Nothing yet: no audit has read this rule's text, proof and test.`
+- PROOF-80 (RULE-17): Under the gate `strong`, with an audit entry for `RULE-2` holding the finding `PROOF-2 asserts the status but never the body the rule names.` and the note `PROOF-2 holds two cases.`, the command run for that rule prints the finding's line and, on the line straight after it, `  Note: PROOF-2 holds two cases.`
+- PROOF-63 (RULE-17): Under the gate `strong`, with evidence that measured no test strength, the command run for `RULE-2` prints `login RULE-2` and no line naming test strength
 - PROOF-37 (RULE-16): `claude` answers the question about `RULE-2` with `settled: yes`, then `notes:` and the line `- PROOF-2 holds two cases.`; the audit's answer reads `strong`, with no finding and the one note `PROOF-2 holds two cases.`
 - PROOF-38 (RULE-16): `claude` answers the question about `RULE-2` with `settled: yes`, the line `- PROOF-2 asserts the status but never the body the rule names.`, then `notes:` and `- PROOF-2 holds two cases.`; the answer reads `weak`, with that one finding and that one note
 - PROOF-39 (RULE-16): Under the gate `strong`, the prompt for `RULE-2` shows a `notes:` line in the shape of the answer, and holds the words `a note, under notes:, for a proof longer than 60 words or one holding more than one case`
+- PROOF-81 (RULE-21): In a project whose `.purlin/config.json` holds a comma after its last setting, the command run for `--feature login` exits 1, prints only `.purlin/config.json cannot be read: <the JSON reader's message> at line <n>. Fix the file by hand; nothing ran and nothing was saved.`, and every file under `.purlin/` keeps its bytes

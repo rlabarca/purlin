@@ -34,10 +34,12 @@ back for that rule but the reason, so nothing is written and the next audit
 tries again.
 
 The command line prints what the audit reads for a rule and what the last
-audit found, from the payload. It calls no model and writes no file.
+audit found, from the payload, with each note after the findings. It calls no
+model and writes no file. A rule no spec has is named on one line, and a
+settings file that cannot be read stops it before the payload is built.
 
-Exit codes: 0 a rule was printed, 1 the rule is not in the project, 2 the
-command line was wrong.
+Exit codes: 0 a rule was printed, 1 the rule is not in the project or the
+settings file cannot be read, 2 the command line was wrong.
 """
 
 import concurrent.futures
@@ -56,9 +58,11 @@ for _path in (_MCP_DIR, _HERE):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
+import config_engine                                          # noqa: E402
 import marked_tests                                           # noqa: E402
 from purlin import (console as console_module,                 # noqa: E402
                     payload as payload_module)
+from sign import not_a_rule                                   # noqa: E402
 
 USAGE = ('Usage: ai_audit.py --feature <f> [--rule RULE-N] '
          '[--project-root DIR]')
@@ -476,6 +480,8 @@ def render(reading):
             lines.append('  %s' % finding)
         if not audit.get('findings'):
             lines.append('  It found nothing.')
+        for note in audit.get('notes') or ():
+            lines.append('  Note: %s' % note)
     lines.append('')
     return '\n'.join(lines)
 
@@ -533,6 +539,10 @@ def main(argv=None):
         print('ai_audit.py: not a directory: %r' % args.project_root,
               file=sys.stderr)
         return EXIT_BAD_INVOCATION
+    problem = config_engine.config_problem(args.project_root)
+    if problem:
+        print(problem)
+        return EXIT_NOTHING
 
     payload = load_payload(args.project_root)
     rules = ([args.rule] if args.rule
@@ -545,6 +555,8 @@ def main(argv=None):
     for rule in rules:
         reading = reading_for(args.project_root, payload, args.feature, rule)
         if reading is None:
+            if args.rule:
+                print(not_a_rule(args.feature, rule))
             continue
         print(render(reading))
         shown += 1

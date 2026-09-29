@@ -50,6 +50,7 @@ CRITERIA = os.path.join(ROOT, 'references', 'review_criteria.md')
 
 FINDING = 'PROOF-2 asserts the status but never the body the rule names.'
 NO_SETTLED_LINE = 'claude answered without a settled line'
+TRAILING_COMMA = '{\n  "gate": "strong",\n}\n'
 
 
 @contextlib.contextmanager
@@ -734,14 +735,6 @@ class TestWriting:
 # The command line
 # ---------------------------------------------------------------------------
 
-def _emoji(text):
-    """The characters of `text` that are emoji or pictographs."""
-    return [char for char in text
-            if 0x1F000 <= ord(char) <= 0x1FAFF
-            or 0x2600 <= ord(char) <= 0x27BF
-            or ord(char) in (0x2705, 0x274C, 0xFE0F)]
-
-
 class TestTheCommandLine:
 
     # purlin: ai_audit PROOF-30
@@ -773,8 +766,8 @@ class TestTheCommandLine:
         code, printed = command(proved, capsys, '--feature', 'login',
                                 '--rule', 'RULE-99')
         assert code == 1
-        assert 'RULE-99' not in printed, printed
-        assert 'What the audit found' not in printed, printed
+        assert printed == ('login RULE-99 is not a rule any spec has. Run '
+                           'purlin:status login to see its rules.\n'), printed
 
     # purlin: ai_audit PROOF-33
     def test_the_script_runs_as_a_command_and_calls_no_model(self, proved,
@@ -804,7 +797,24 @@ class TestTheCommandLine:
                      'Weak, by unknown at 2026-09-13T12:05:00Z.',
                      FINDING):
             assert line in printed, (line, printed)
-        assert _emoji(printed) == [], printed
+        assert not [line for line in printed.splitlines()
+                    if line.strip().startswith('Note:')], printed
+
+    # purlin: ai_audit PROOF-80
+    def test_each_note_follows_the_findings(self, at_strong, capsys):
+        rel = at_strong.audit('RULE-2', findings=[FINDING])
+        path = os.path.join(at_strong.root, *rel.split('/'))
+        with open(path, encoding='utf-8') as handle:
+            data = json.load(handle)
+        data['audit']['rules']['RULE-2']['notes'] = ['PROOF-2 holds two cases.']
+        with open(path, 'w', encoding='utf-8') as handle:
+            json.dump(data, handle, indent=2, sort_keys=True)
+        code, printed = command(at_strong, capsys, '--feature', 'login',
+                                '--rule', 'RULE-2')
+        assert code == 0
+        lines = printed.splitlines()
+        at = lines.index('  %s' % FINDING)
+        assert lines[at + 1] == '  Note: PROOF-2 holds two cases.', printed
 
     # purlin: ai_audit PROOF-77
     def test_a_rule_no_audit_has_read_says_so(self, at_strong, capsys):
@@ -828,3 +838,21 @@ class TestTheCommandLine:
         code, printed = command(proved, capsys, '--feature', 'login')
         assert code == 0
         assert 'login RULE-1' in printed and 'login RULE-2' in printed
+
+    # purlin: ai_audit PROOF-81
+    def test_a_settings_file_that_cannot_be_read_stops_it(self, proved,
+                                                          capsys):
+        config = os.path.join(proved.root, '.purlin', 'config.json')
+        with open(config, 'w', encoding='utf-8') as handle:
+            handle.write(TRAILING_COMMA)
+        before = TestWriting._files(proved.root)
+        code, printed = command(proved, capsys, '--feature', 'login')
+        assert code == 1
+        # The JSON reader's own words and line, which differ by Python version.
+        with pytest.raises(ValueError) as reader:
+            json.loads(TRAILING_COMMA)
+        assert printed == (
+            '.purlin/config.json cannot be read: %s at line %d. Fix the file '
+            'by hand; nothing ran and nothing was saved.\n'
+            % (reader.value.msg, reader.value.lineno)), printed
+        assert TestWriting._files(proved.root) == before
