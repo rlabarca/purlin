@@ -1982,7 +1982,7 @@ class TestStatusTable:
             lines = _status_lines(made.root)
             assert _header(lines).split() == [
                 'Spec', 'Rules', 'Proofs', 'Tests', 'Strong'], lines
-            assert _cell_under(lines, 'login', 'Strong') == '0 of 2 · n/a'
+            assert _cell_under(lines, 'login', 'Strong') == '0 of 2'
         finally:
             made.close()
 
@@ -1993,7 +1993,7 @@ class TestStatusTable:
             lines = _status_lines(made.root)
             assert _header(lines).split() == [
                 'Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'], lines
-            assert _cell_under(lines, 'login', 'Strong') == '0 of 2 · n/a'
+            assert _cell_under(lines, 'login', 'Strong') == '0 of 2'
             assert _cell_under(lines, 'login', 'Signed') == '0 of 2'
         finally:
             made.close()
