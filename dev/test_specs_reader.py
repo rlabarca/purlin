@@ -21,7 +21,42 @@ from purlin import specs as purlin_specs
 # Parsing
 # ---------------------------------------------------------------------------
 
-class TestSpecParsing:
+def _one_proof(project, line, name='login'):
+    """Read a spec whose one rule has the one proof `line`.
+
+    Returns the proof as the scan reads it and the spec's unknown tags.
+    """
+    project.spec('# Feature: %s\n\n## Rules\n\n- RULE-1: Files lock\n\n'
+                 '## Proof\n\n- PROOF-1 (RULE-1): %s\n' % (name, line),
+                 name=name)
+    info = purlin_specs.scan_specs(project.root)[name]
+    return info['proofs']['PROOF-1'], info['unknown_tags']
+
+
+def _anchor(project, *fields, **where):
+    """Read the anchor `policy` carrying the metadata lines `fields`."""
+    project.spec('# Anchor: policy\n\n%s\n\n'
+                 '## Rules\n\n- RULE-1: No eval in source files\n\n'
+                 '## Proof\n\n- PROOF-1 (RULE-1): Grep src/ for eval(; verify '
+                 'zero matches\n' % '\n'.join(fields),
+                 name='policy', category=where.get('category', '_anchors'))
+    return purlin_specs.scan_specs(project.root)['policy']
+
+
+def _feature(name, rules, requires=None, heading='Feature', extra=''):
+    """A spec's text: its heading, its `> Requires:` and `rules` numbered."""
+    lines = ['# %s: %s\n' % (heading, name)]
+    if requires:
+        lines.append('> Requires: %s\n' % requires)
+    if extra:
+        lines.append(extra + '\n')
+    lines.append('## Rules\n')
+    lines.extend('- RULE-%d: %s' % (n, text)
+                 for n, text in enumerate(rules, 1))
+    return '\n'.join(lines) + '\n'
+
+
+class TestRuleText:
 
     # purlin: specs PROOF-1
     def test_a_bracket_at_the_end_of_a_rule_is_part_of_its_text(self, project):
@@ -43,10 +78,14 @@ class TestSpecParsing:
             'Wait  24\n hours;   verify 401') == proof
 
     # purlin: specs PROOF-4
-    def test_reflowing_a_rule_keeps_its_hash(self):
+    def test_extra_spaces_in_a_rule_keep_its_hash(self):
         plain = purlin_specs.rule_text_hash('Tokens expire after 24 hours')
         assert purlin_specs.rule_text_hash(
             'Tokens  expire   after 24 hours') == plain
+
+    # purlin: specs PROOF-19
+    def test_a_line_break_in_a_rule_keeps_its_hash(self):
+        plain = purlin_specs.rule_text_hash('Tokens expire after 24 hours')
         assert purlin_specs.rule_text_hash(
             'Tokens expire\n  after 24 hours') == plain
 
@@ -60,201 +99,295 @@ class TestSpecParsing:
         assert purlin_specs.proof_text_hash('Wait 12 hours; verify 401') != (
             purlin_specs.proof_text_hash('Wait 24 hours; verify 401'))
 
+
+class TestProofTags:
+
     # purlin: specs PROOF-5
+    def test_manual_and_an_operating_system_are_both_read(self, project):
+        proof, _unknown = _one_proof(
+            project, 'Lock a file; verify a second open fails '
+                     '@manual @env(windows)')
+        assert proof['manual'] is True, proof
+        assert proof['env'] == 'windows', proof
+        assert proof['text'] == 'Lock a file; verify a second open fails', proof
+        info = purlin_specs.scan_specs(project.root)['login']
+        assert info['proof_env'] == {'PROOF-1': 'windows'}
+
+    # purlin: specs PROOF-20
+    def test_a_proof_with_no_tag_is_whole_and_not_manual(self, project):
+        proof, _unknown = _one_proof(project, 'Call login and verify 200')
+        assert proof['text'] == 'Call login and verify 200', proof
+        assert proof['manual'] is False, proof
+
+    # purlin: specs PROOF-21
+    def test_a_word_that_is_not_a_tag_stays_in_the_text(self, project):
+        proof, unknown = _one_proof(project,
+                                    'Call login and verify 200 @smoke')
+        assert proof['text'] == 'Call login and verify 200 @smoke', proof
+        assert proof['manual'] is False, proof
+        assert unknown == [], unknown
+
+    # purlin: specs PROOF-22
+    def test_reading_stops_at_a_word_that_is_not_a_tag(self, project):
+        proof, _unknown = _one_proof(project, 'Check it by hand @manual @smoke')
+        assert proof['text'] == 'Check it by hand @manual @smoke', proof
+        assert proof['manual'] is False, proof
+
     # purlin: specs PROOF-6
-    def test_env_is_parsed_and_bounded_to_three_values(self, project):
-        # Reading stops at a word that is not a tag, so a tag before it is
-        # not read either.
-        assert purlin_specs.split_proof_tags('x @manual @smoke') == (
-            'x @manual @smoke', False, None, [])
-        project.spec(
-            '# Feature: bsd_lock\n\n## Rules\n\n- RULE-1: Files lock\n\n'
-            '## Proof\n\n'
-            '- PROOF-1 (RULE-1): Lock a file; verify a second open fails '
-            '@env(bsd)\n', name='bsd_lock')
-        bsd = purlin_specs.scan_specs(project.root)['bsd_lock']
-        assert bsd['proofs']['PROOF-1']['env'] is None, bsd['proofs']
-        assert bsd['unknown_tags'] == ['@env(bsd)'], bsd['unknown_tags']
+    def test_each_of_the_three_systems_is_read(self, project):
         project.spec(
             '# Feature: login\n\n## Rules\n\n- RULE-1: Files lock\n\n'
             '## Proof\n\n'
-            '- PROOF-1 (RULE-1): Lock a file; verify a second open fails '
-            '@manual @env(windows)\n')
+            '- PROOF-1 (RULE-1): Lock a file @env(windows)\n'
+            '- PROOF-2 (RULE-1): Lock a file @env(macos)\n'
+            '- PROOF-3 (RULE-1): Lock a file @env(linux)\n')
         info = purlin_specs.scan_specs(project.root)['login']
-        assert info['proofs']['PROOF-1']['env'] == 'windows'
-        assert info['proofs']['PROOF-1']['manual'] is True
-        assert info['proof_env'] == {'PROOF-1': 'windows'}
-        for value in ('windows', 'macos', 'linux'):
-            assert purlin_specs.split_proof_tags('x @env(%s)' % value)[2] == value
-        assert purlin_specs.split_proof_tags('x @env(bsd)')[2] is None
-        assert purlin_specs.split_proof_tags('x @env(bsd)')[3] == ['@env(bsd)']
-        # A proof line with no tag at all is not manual, and a trailing
-        # word that is not a tag stays in the text.
-        assert purlin_specs.split_proof_tags(
-            'Call login and verify 200')[:2] == ('Call login and verify 200',
-                                                 False)
-        assert purlin_specs.split_proof_tags(
-            'Call login and verify 200 @smoke')[:2] == (
-                'Call login and verify 200 @smoke', False)
+        assert {pid: proof['env'] for pid, proof in info['proofs'].items()} == {
+            'PROOF-1': 'windows', 'PROOF-2': 'macos', 'PROOF-3': 'linux'}
+        assert info['unknown_tags'] == [], info['unknown_tags']
+
+    # purlin: specs PROOF-23
+    def test_any_other_system_is_no_system_and_an_unknown_tag(self, project):
+        proof, unknown = _one_proof(project, 'Lock a file @env(bsd)')
+        assert proof['text'] == 'Lock a file', proof
+        assert proof['env'] is None, proof
+        assert unknown == ['@env(bsd)'], unknown
 
     # purlin: specs PROOF-7
-    def test_a_second_env_tag_is_refused_not_merged(self):
-        _clean, _manual, env, unknown = purlin_specs.split_proof_tags(
-            'Lock it @env(macos) @env(windows)')
-        assert env == 'windows', 'the trailing tag is the one that is read'
+    def test_a_second_system_is_listed_not_merged(self, project):
+        proof, unknown = _one_proof(project,
+                                    'Lock it @env(macos) @env(windows)')
+        assert proof['env'] == 'windows', 'the trailing tag is the one read'
+        assert proof['text'] == 'Lock it', proof
         assert unknown == ['@env(macos)'], unknown
 
+
+class TestOldTagsAndFields:
+
     # purlin: specs PROOF-8
-    # purlin: specs PROOF-9
-    def test_unknown_tags_are_ignored_with_one_warning_naming_the_files(self,
-                                                                       project):
-        project.spec(
-            '# Feature: login\n\n## Rules\n\n- RULE-1: Files lock\n\n'
-            '## Proof\n\n'
-            '- PROOF-1 (RULE-1): Lock a file; verify 1 open fails '
-            '@windows\n')
+    def test_a_bare_windows_tag_is_ignored_and_listed(self, project):
+        proof, unknown = _one_proof(project,
+                                    'Lock a file; verify 1 open fails @windows')
+        assert proof['text'] == 'Lock a file; verify 1 open fails', proof
+        assert proof['env'] is None, proof
+        assert unknown == ['@windows'], unknown
+
+    # purlin: specs PROOF-24
+    def test_a_stamped_manual_still_reads_manual_and_is_listed(self, project):
+        proof, unknown = _one_proof(
+            project, 'Look at it @manual(a@b.c, 2026-03-31, abc1234)')
+        assert proof['text'] == 'Look at it', proof
+        assert proof['manual'] is True, proof
+        assert unknown == ['@manual(...)'], unknown
+
+    # purlin: specs PROOF-25
+    def test_a_visual_reference_field_is_ignored_and_listed(self, project):
         project.spec(
             '# Feature: mockup\n\n> Visual-Reference: ./mock.png\n\n'
-            '## Rules\n\n- RULE-1: It renders\n\n'
-            '## Proof\n\n- PROOF-1 (RULE-1): Look at it @manual(a@b.c, '
-            '2026-03-31, abc1234)\n', name='mockup')
-        features = purlin_specs.scan_specs(project.root)
-        assert features['login']['proofs']['PROOF-1']['env'] is None
-        assert features['login']['unknown_tags'] == ['@windows']
-        assert features['mockup']['proofs']['PROOF-1']['manual'] is True
-        assert set(features['mockup']['unknown_tags']) == {
-            '@manual(...)', '> Visual-Reference:'}
-        warning = purlin_specs.unknown_tag_warning(features)
-        assert warning and 'specs/auth/login.md' in warning, warning
-        assert 'specs/auth/mockup.md' in warning, warning
-        # One line, naming the files: not one warning per proof line.
-        assert warning.count('\n') == 0, warning
-        # A scan whose specs carry no such tag warns about nothing at all.
-        clean = {name: dict(info, unknown_tags=[])
-                 for name, info in features.items()}
-        assert purlin_specs.unknown_tag_warning(clean) is None
-        # The other retired field, `> Visual-Hash:`, is ignored the same way.
+            '## Rules\n\n- RULE-1: It renders\n', name='mockup')
+        mockup = purlin_specs.scan_specs(project.root)['mockup']
+        assert mockup['rules'] == {'RULE-1': 'It renders'}, mockup['rules']
+        assert mockup['unknown_tags'] == ['> Visual-Reference:'], mockup
+
+    # purlin: specs PROOF-26
+    def test_a_visual_hash_field_is_ignored_and_listed(self, project):
         project.spec(
             '# Feature: swatch\n\n> Visual-Hash: 9f86d081\n\n'
-            '## Rules\n\n- RULE-1: It renders\n\n'
-            '## Proof\n\n- PROOF-1 (RULE-1): Open it; verify 1 swatch\n',
-            name='swatch')
+            '## Rules\n\n- RULE-1: It renders\n', name='swatch')
         swatch = purlin_specs.scan_specs(project.root)['swatch']
         assert swatch['rules'] == {'RULE-1': 'It renders'}, swatch['rules']
         assert swatch['unknown_tags'] == ['> Visual-Hash:'], swatch
 
+
+def _tag_spec(project, name):
+    project.spec('# Feature: %s\n\n## Rules\n\n- RULE-1: Files lock\n\n'
+                 '## Proof\n\n- PROOF-1 (RULE-1): Lock a file @windows\n'
+                 % name, name=name)
+
+
+class TestTheWarning:
+
+    # purlin: specs PROOF-9
+    def test_one_warning_names_both_files(self, project):
+        _one_proof(project, 'Lock a file @windows')
+        _one_proof(project, 'Look at it @manual(a@b.c, 2026-03-31, abc1234)',
+                   name='mockup')
+        assert project.payload()['warnings'] == [
+            '2 spec files carry tags this release does not read '
+            '(@manual(...), @windows); they are ignored: '
+            'specs/auth/login.md, specs/auth/mockup.md']
+
+    # purlin: specs PROOF-27
+    def test_the_warning_names_five_files_and_counts_the_rest(self, project):
+        for name in 'abcdefg':
+            _tag_spec(project, name)
+        assert project.payload()['warnings'] == [
+            '7 spec files carry tags this release does not read (@windows); '
+            'they are ignored: specs/auth/a.md, specs/auth/b.md, '
+            'specs/auth/c.md, specs/auth/d.md, specs/auth/e.md, and 2 more']
+
+    # purlin: specs PROOF-28
+    def test_no_carrier_means_no_warning(self, project):
+        assert project.payload()['warnings'] == []
+
+
+class TestSource:
+
     # purlin: specs PROOF-10
-    def test_a_source_is_a_git_url_plus_a_path_or_whole(self):
-        assert purlin_specs.parse_source(
-            'https://github.com/acme/p.git specs/no_eval.md') == (
-                'https://github.com/acme/p.git', 'specs/no_eval.md')
-        assert purlin_specs.parse_source('./policies') == ('./policies', None)
-        # Not a URL followed by a path: the whole line is the source, so a
-        # value that has to be refused is refused whole.
-        assert purlin_specs.parse_source('--upload-pack=/bin/echo') == (
-            '--upload-pack=/bin/echo', None)
-        # A value with a space whose first word is not a git URL is not split.
-        assert purlin_specs.parse_source('./policies specs/no_eval.md') == (
+    def test_a_git_url_and_a_path_are_read_apart(self, project):
+        info = _anchor(project,
+                       '> Source: https://github.com/acme/p.git '
+                       'specs/no_eval.md')
+        assert (info['source'], info['source_path']) == (
+            'https://github.com/acme/p.git', 'specs/no_eval.md')
+
+    # purlin: specs PROOF-29
+    def test_a_local_path_is_the_whole_source(self, project):
+        info = _anchor(project, '> Source: ./policies')
+        assert (info['source'], info['source_path']) == ('./policies', None)
+
+    # purlin: specs PROOF-30
+    def test_a_local_path_and_a_path_are_not_split(self, project):
+        info = _anchor(project, '> Source: ./policies specs/no_eval.md')
+        assert (info['source'], info['source_path']) == (
             './policies specs/no_eval.md', None)
-        assert purlin_specs.parse_source('--upload-pack=touch x specs/a.md') == (
+
+    # purlin: specs PROOF-31
+    def test_an_option_shaped_source_is_not_split(self, project):
+        info = _anchor(project, '> Source: --upload-pack=touch x specs/a.md')
+        assert (info['source'], info['source_path']) == (
             '--upload-pack=touch x specs/a.md', None)
 
     # purlin: specs PROOF-11
-    def test_a_path_field_supplies_the_path_for_a_bare_source_url(self, project):
-        project.spec(
-            '# Anchor: policy\n\n'
-            '> Source: https://github.com/acme/p.git\n'
-            '> Path: specs/no_eval.md\n'
-            '> Pinned: abc1234\n\n'
-            '## Rules\n\n- RULE-1: No eval in source files\n\n'
-            '## Proof\n\n- PROOF-1 (RULE-1): Grep src/ for eval(; verify zero '
-            'matches\n', name='policy', category='_anchors')
-        info = purlin_specs.scan_specs(project.root)['policy']
-        assert info['source'] == 'https://github.com/acme/p.git'
+    def test_a_path_field_supplies_the_path_for_a_bare_url(self, project):
+        info = _anchor(project, '> Source: https://github.com/acme/p.git',
+                       '> Path: specs/no_eval.md')
+        assert info['source'] == 'https://github.com/acme/p.git', info
         assert info['source_path'] == 'specs/no_eval.md', info
+
+    # purlin: specs PROOF-32
+    def test_the_source_lines_path_wins_over_a_path_field(self, project):
+        info = _anchor(project,
+                       '> Source: https://github.com/acme/p.git specs/a.md',
+                       '> Path: specs/b.md')
+        assert info['source_path'] == 'specs/a.md', info
+
+
+class TestAnchors:
 
     # purlin: specs PROOF-12
     def test_an_anchor_carries_its_source_and_its_pin(self, project):
-        project.spec(
-            '# Anchor: policy\n\n'
-            '> Source: https://github.com/acme/p.git specs/no_eval.md\n'
-            '> Pinned: abc1234def\n\n'
-            '## Rules\n\n- RULE-1: No eval in source files\n\n'
-            '## Proof\n\n- PROOF-1 (RULE-1): Grep src/ for eval(; verify zero '
-            'matches\n', name='policy', category='_anchors')
-        info = purlin_specs.scan_specs(project.root)['policy']
+        info = _anchor(project,
+                       '> Source: https://github.com/acme/p.git '
+                       'specs/no_eval.md',
+                       '> Pinned: abc1234def')
+        assert info['spec_path'] == 'specs/_anchors/policy.md', info
         assert info['is_anchor'] is True
         assert info['source'] == 'https://github.com/acme/p.git'
         assert info['source_path'] == 'specs/no_eval.md'
         assert info['pinned'] == 'abc1234def'
-        # Either condition alone makes an anchor; neither makes a feature.
+
+    # purlin: specs PROOF-33
+    def test_the_anchors_folder_alone_makes_an_anchor(self, project):
         project.spec('# Feature: ruleset\n\n## Rules\n\n- RULE-1: A\n',
                      name='ruleset', category='_anchors')
+        ruleset = purlin_specs.scan_specs(project.root)['ruleset']
+        assert ruleset['is_anchor'] is True, ruleset
+
+    # purlin: specs PROOF-34
+    def test_the_anchor_heading_alone_makes_an_anchor(self, project):
         project.spec('# Anchor: shared\n\n## Rules\n\n- RULE-1: A\n',
                      name='shared', category='schema')
-        features = purlin_specs.scan_specs(project.root)
-        assert features['ruleset']['is_anchor'] is True
-        assert features['shared']['is_anchor'] is True
-        assert features['login']['is_anchor'] is False
+        shared = purlin_specs.scan_specs(project.root)['shared']
+        assert shared['is_anchor'] is True, shared
+
+    # purlin: specs PROOF-35
+    def test_a_feature_outside_the_anchors_folder_is_no_anchor(self, project):
+        login = purlin_specs.scan_specs(project.root)['login']
+        assert login['spec_path'] == 'specs/auth/login.md'
+        assert login['is_anchor'] is False, login
+
+
+def _global_security(project):
+    project.spec(_feature('security', ['No eval anywhere'], heading='Anchor',
+                          extra='> Global: true\n'),
+                 name='security', category='_anchors')
+
+
+def _api_requiring_base(project):
+    project.spec(_feature('api', ['Responses carry a type'], heading='Anchor',
+                          requires='base'), name='api', category='schema')
+    project.spec(_feature('base', ['Requests carry an id']),
+                 name='base', category='core')
+
+
+class TestWhatAFeatureProves:
 
     # purlin: specs PROOF-14
     def test_requires_and_global_pull_rules_into_a_feature(self, project):
-        project.spec(
-            '# Anchor: api\n\n## Rules\n\n- RULE-1: Responses carry a type\n\n'
-            '## Proof\n\n- PROOF-1 (RULE-1): GET /x; verify the header\n',
-            name='api', category='schema')
-        project.spec(
-            '# Anchor: security\n\n> Global: true\n\n'
-            '## Rules\n\n- RULE-1: No eval anywhere\n\n'
-            '## Proof\n\n- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\n',
-            name='security', category='_anchors')
+        project.spec(_feature('api', ['Responses carry a type'],
+                              heading='Anchor'), name='api', category='schema')
+        _global_security(project)
         project.spec(SPEC.replace('# Feature: login\n',
                                   '# Feature: login\n\n> Requires: api\n'))
         features = purlin_specs.scan_specs(project.root)
-        refs = purlin_specs.rule_refs('login', features)
-        assert refs == [
+        assert purlin_specs.rule_refs('login', features) == [
             ('login', 'RULE-1', 'own'), ('login', 'RULE-2', 'own'),
             ('api', 'RULE-1', 'required'),
-            ('security', 'RULE-1', 'global')], refs
-        # An anchor proves its own rules and nothing else.
+            ('security', 'RULE-1', 'global')]
+
+    # purlin: specs PROOF-36
+    def test_a_global_anchor_proves_its_own_rule_alone(self, project):
+        _global_security(project)
+        features = purlin_specs.scan_specs(project.root)
         assert purlin_specs.rule_refs('security', features) == [
             ('security', 'RULE-1', 'own')]
-        # Two levels down: `api` now requires `base`, so `login` owes `base`
-        # too, while `api`, an anchor, still owes only its own rule.
-        project.spec(
-            '# Feature: base\n\n## Rules\n\n- RULE-1: Requests carry an id\n',
-            name='base', category='core')
-        project.spec(
-            '# Anchor: api\n\n> Requires: base\n\n'
-            '## Rules\n\n- RULE-1: Responses carry a type\n',
-            name='api', category='schema')
+
+    # purlin: specs PROOF-37
+    def test_what_a_required_spec_requires_is_proved_too(self, project):
+        _api_requiring_base(project)
+        project.spec(SPEC.replace('# Feature: login\n',
+                                  '# Feature: login\n\n> Requires: api\n'))
         features = purlin_specs.scan_specs(project.root)
         assert purlin_specs.rule_refs('login', features) == [
             ('login', 'RULE-1', 'own'), ('login', 'RULE-2', 'own'),
-            ('api', 'RULE-1', 'required'), ('base', 'RULE-1', 'required'),
-            ('security', 'RULE-1', 'global')]
+            ('api', 'RULE-1', 'required'), ('base', 'RULE-1', 'required')]
+
+    # purlin: specs PROOF-38
+    def test_an_anchor_that_requires_a_spec_proves_its_own_rule_alone(
+            self, project):
+        _api_requiring_base(project)
+        features = purlin_specs.scan_specs(project.root)
         assert purlin_specs.rule_refs('api', features) == [
             ('api', 'RULE-1', 'own')]
+
+
+class TestTheScan:
 
     # purlin: specs PROOF-15
     def test_every_spec_is_keyed_by_its_filename_stem(self, project):
         project.spec(SPEC, name='sign_up')
+        features = purlin_specs.scan_specs(project.root)
+        assert sorted(features) == ['login', 'sign_up'], sorted(features)
+        assert features['sign_up']['spec_path'] == 'specs/auth/sign_up.md'
+
+    # purlin: specs PROOF-39
+    def test_a_spec_that_cannot_be_decoded_is_skipped(self, project):
         undecodable = os.path.join(project.root, 'specs', 'auth', 'broken.md')
         with open(undecodable, 'wb') as handle:
             handle.write(b'# Feature: broken\n\xff\xfe not utf-8\n')
         features = purlin_specs.scan_specs(project.root)
-        assert 'login' in features and 'sign_up' in features, sorted(features)
-        assert 'broken' not in features, (
-            'a file that cannot be decoded must be skipped, not parsed')
-        assert features['sign_up']['spec_path'] == 'specs/auth/sign_up.md'
-        # A project with no specs/ directory is an empty scan, not an error.
+        assert sorted(features) == ['login'], sorted(features)
+
+    # purlin: specs PROOF-40
+    def test_a_project_with_no_specs_folder_has_no_specs(self):
         empty = tempfile.mkdtemp()
         try:
             assert purlin_specs.scan_specs(empty) == {}
         finally:
             shutil.rmtree(empty, ignore_errors=True)
 
-    # purlin: specs PROOF-15
+    # purlin: specs PROOF-41
     @pytest.mark.skipif(not hasattr(os, 'geteuid') or os.geteuid() == 0,
                         reason='file modes do not refuse a read here')
     def test_a_spec_that_cannot_be_read_is_skipped(self, project):
