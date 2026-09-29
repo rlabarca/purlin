@@ -1,8 +1,8 @@
 """The one project setting, and what it derives.
 
 A project sets `gate` in `.purlin/config.json` and nothing else has to be
-decided. The gate names the deepest evidence level a version has to reach
-before it is proven, and every level above it is not asked for at all:
+decided. The gate names the deepest step every rule has to reach before a
+version is finished, and no step above it is asked for at all:
 
 `passed`  every rule's passed cell is met: the marked tests pass, from any
           source
@@ -65,9 +65,6 @@ DEFAULT_MUTATION_ENGINE = 'none'
 # How many model calls the audit makes at once, and the range it may take.
 DEFAULT_AUDIT_PARALLEL = 4
 AUDIT_PARALLEL_RANGE = (1, 16)
-
-TRUST_VALUES = ('local', 'remote')
-DEFAULT_TRUST = 'local'
 
 RETIRED_KEYS = (
     'spec_dir', 'audit_criteria',
@@ -162,16 +159,3 @@ def _audit_parallel(config, warnings):
                     '%d to %d; reading it as %d'
                     % (value, low, high, DEFAULT_AUDIT_PARALLEL))
     return DEFAULT_AUDIT_PARALLEL
-
-
-def level_of(marked, gate):
-    """A rule's level: the lower of its `[level: ...]` tag and the gate.
-
-    A rule with no tag, or with a value that is not one of the three words,
-    takes the gate. The gate is the ceiling, so a tag above it is read as
-    the gate.
-    """
-    gate = gate if gate in GATES else DEFAULT_GATE
-    if marked not in GATES:
-        return gate
-    return GATES[min(GATES.index(marked), GATES.index(gate))]

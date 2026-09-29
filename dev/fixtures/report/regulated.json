@@ -93,23 +93,17 @@
       "pinned": null,
       "requires": [],
       "rollup": {
-        "asks_signed": 4,
-        "asks_strong": 4,
         "failing": 0,
-        "hand_checks": 0,
         "incomplete": false,
         "manual": 0,
-        "met": 1,
         "not_audited": 0,
         "partial": 1,
         "passed": 1,
         "proofs": 5,
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
-        "queue": 1,
         "rules": 4,
         "signed": 1,
-        "stale": 0,
         "strong": 1,
         "test_strength": 86,
         "untested": 0
@@ -128,7 +122,6 @@
             "verdict": "strong"
           },
           "audit_hash": "c7d5dc84330ceea2da7f4136129f0347e5ee65984c9e55505c094de4dddc3189",
-          "blocked_by": null,
           "bucket": "signed",
           "cells": {
             "passed": {
@@ -178,20 +171,16 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false,
-            "stale": false
+            "partial": false
           },
           "hand_checked": false,
           "id": "RULE-1",
           "label": "own",
           "left": null,
-          "level": "signed",
-          "level_marked": null,
           "machines": {
             "linux": "remote runner, Linux/Unix",
             "windows": "remote runner, Windows"
           },
-          "meets_gate": true,
           "proof_hash": "prule1log",
           "proofs": [
             {
@@ -228,7 +217,6 @@
             "verdict": "strong"
           },
           "audit_hash": "c7d5dc84330ceea2da7f4136129f0347e5ee65984c9e55505c094de4dddc3189",
-          "blocked_by": "signed",
           "bucket": "strong",
           "cells": {
             "passed": {
@@ -276,20 +264,16 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false,
-            "stale": false
+            "partial": false
           },
           "hand_checked": false,
           "id": "RULE-2",
           "label": "own",
           "left": "to_sign",
-          "level": "signed",
-          "level_marked": null,
           "machines": {
             "linux": "remote runner, Linux/Unix",
             "windows": "remote runner, Windows"
           },
-          "meets_gate": false,
           "proof_hash": "prule2log",
           "proofs": [
             {
@@ -328,7 +312,6 @@
             "verdict": "weak"
           },
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "blocked_by": null,
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -382,20 +365,16 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false,
-            "stale": false
+            "partial": false
           },
           "hand_checked": false,
           "id": "RULE-3",
           "label": "own",
           "left": "to_strengthen",
-          "level": "signed",
-          "level_marked": null,
           "machines": {
             "linux": "remote runner, Linux/Unix",
             "windows": "remote runner, Windows"
           },
-          "meets_gate": false,
           "proof_hash": "prule3log",
           "proofs": [
             {
@@ -423,7 +402,6 @@
           "applies_to": "login",
           "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "blocked_by": "passed",
           "bucket": "partial",
           "cells": {
             "passed": {
@@ -478,20 +456,16 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": true,
-            "stale": false
+            "partial": true
           },
           "hand_checked": false,
           "id": "RULE-4",
           "label": "own",
           "left": "to_fix",
-          "level": "signed",
-          "level_marked": null,
           "machines": {
             "linux": "remote runner, Linux/Unix",
             "windows": "remote runner, Windows"
           },
-          "meets_gate": false,
           "proof_hash": "prule4log",
           "proofs": [
             {
@@ -573,23 +547,17 @@
       "pinned": null,
       "requires": [],
       "rollup": {
-        "asks_signed": 3,
-        "asks_strong": 3,
         "failing": 0,
-        "hand_checks": 1,
         "incomplete": false,
         "manual": 1,
-        "met": 0,
         "not_audited": 0,
         "partial": 0,
         "passed": 3,
         "proofs": 3,
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
-        "queue": 1,
         "rules": 3,
         "signed": 0,
-        "stale": 0,
         "strong": 0,
         "test_strength": 64,
         "untested": 0
@@ -608,7 +576,6 @@
             "verdict": "strong"
           },
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "blocked_by": null,
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -660,20 +627,16 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false,
-            "stale": false
+            "partial": false
           },
           "hand_checked": false,
           "id": "RULE-1",
           "label": "own",
           "left": "to_strengthen",
-          "level": "signed",
-          "level_marked": null,
           "machines": {
             "linux": "remote runner, Linux/Unix",
             "macos": "remote runner, macOS"
           },
-          "meets_gate": false,
           "proof_hash": "prule1inv",
           "proofs": [
             {
@@ -712,7 +675,6 @@
             "verdict": "weak"
           },
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "blocked_by": "strong",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -767,20 +729,16 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false,
-            "stale": false
+            "partial": false
           },
           "hand_checked": false,
           "id": "RULE-2",
           "label": "own",
           "left": "to_strengthen",
-          "level": "signed",
-          "level_marked": null,
           "machines": {
             "linux": "remote runner, Linux/Unix",
             "macos": "remote runner, macOS"
           },
-          "meets_gate": false,
           "proof_hash": "prule2inv",
           "proofs": [
             {
@@ -808,7 +766,6 @@
           "applies_to": "invoice",
           "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "blocked_by": "strong",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -848,17 +805,13 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false,
-            "stale": false
+            "partial": false
           },
           "hand_checked": false,
           "id": "RULE-3",
           "label": "own",
           "left": "to_test_by_hand",
-          "level": "signed",
-          "level_marked": null,
           "machines": {},
-          "meets_gate": false,
           "proof_hash": "d4e5f6a7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           "proofs": [
             {
@@ -912,23 +865,17 @@
       "pinned": null,
       "requires": [],
       "rollup": {
-        "asks_signed": 1,
-        "asks_strong": 1,
         "failing": 0,
-        "hand_checks": 0,
         "incomplete": false,
         "manual": 0,
-        "met": 0,
         "not_audited": 0,
         "partial": 0,
         "passed": 1,
         "proofs": 1,
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
-        "queue": 0,
         "rules": 1,
         "signed": 0,
-        "stale": 0,
         "strong": 0,
         "test_strength": 90,
         "untested": 0
@@ -949,7 +896,6 @@
             "verdict": "undecided"
           },
           "audit_hash": "9e0234b91cb67b7cc732ed426155abfcd337d8b475526678af23259ba26330d9",
-          "blocked_by": "strong",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -998,19 +944,15 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false,
-            "stale": false
+            "partial": false
           },
           "hand_checked": false,
           "id": "RULE-1",
           "label": "own",
           "left": "to_strengthen",
-          "level": "signed",
-          "level_marked": null,
           "machines": {
             "linux": "remote runner, Linux/Unix"
           },
-          "meets_gate": false,
           "proof_hash": "prule1che",
           "proofs": [
             {
@@ -1068,23 +1010,17 @@
       "pinned": null,
       "requires": [],
       "rollup": {
-        "asks_signed": 2,
-        "asks_strong": 2,
         "failing": 0,
-        "hand_checks": 0,
         "incomplete": false,
         "manual": 0,
-        "met": 0,
         "not_audited": 1,
         "partial": 0,
         "passed": 1,
         "proofs": 2,
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
-        "queue": 0,
         "rules": 2,
         "signed": 0,
-        "stale": 0,
         "strong": 0,
         "test_strength": 82,
         "untested": 1
@@ -1094,7 +1030,6 @@
           "applies_to": "export",
           "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "blocked_by": "passed",
           "bucket": "untested",
           "cells": {
             "passed": {
@@ -1137,17 +1072,13 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": true,
-            "partial": false,
-            "stale": false
+            "partial": false
           },
           "hand_checked": false,
           "id": "RULE-1",
           "label": "own",
           "left": "to_test",
-          "level": "signed",
-          "level_marked": null,
           "machines": {},
-          "meets_gate": false,
           "proof_hash": "prule1exp",
           "proofs": [
             {
@@ -1175,7 +1106,6 @@
           "applies_to": "export",
           "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "blocked_by": "strong",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -1222,19 +1152,15 @@
             "no_proof": false,
             "not_audited": true,
             "out_of_date": false,
-            "partial": false,
-            "stale": false
+            "partial": false
           },
           "hand_checked": false,
           "id": "RULE-2",
           "label": "own",
           "left": "to_audit",
-          "level": "signed",
-          "level_marked": null,
           "machines": {
             "linux": "remote runner, Linux/Unix"
           },
-          "meets_gate": false,
           "proof_hash": "prule2exp",
           "proofs": [
             {
@@ -1333,55 +1259,22 @@
     }
   },
   "project": "ledger",
-  "queue": [
-    {
-      "command": "purlin:sign invoice RULE-3 --note \"<what you saw>\"",
-      "feature": "invoice",
-      "level": "signed",
-      "need": "hand check",
-      "owner": "invoice",
-      "reasons": [
-        "manual proof",
-        "strength 64% under 80%"
-      ],
-      "rule": "RULE-3",
-      "text": "A credit note prints the original invoice number and the reason the credit was raised",
-      "word": "manual test"
-    },
-    {
-      "command": "purlin:sign login RULE-2",
-      "feature": "login",
-      "level": "signed",
-      "need": "signature",
-      "owner": "login",
-      "reasons": [],
-      "rule": "RULE-2",
-      "text": "Five failed attempts lock the account for fifteen minutes.",
-      "word": "unsigned"
-    }
-  ],
   "remote_url": "https://github.com/acme/ledger.git",
   "schema_version": 10,
   "summary": {
-    "asks_signed": 10,
-    "asks_strong": 10,
     "failing": 0,
     "features": 4,
-    "hand_checks": 1,
     "incomplete": 0,
     "manual": 1,
-    "met": 1,
     "not_audited": 1,
     "partial": 1,
     "passed": 6,
     "proofs": 11,
     "proofs_without_test": 0,
     "proofs_without_test_ids": [],
-    "queue": 2,
     "rules": 10,
     "sentence": "10 rules. 7 pass their tests. 2 are strong. 1 is signed.",
     "signed": 1,
-    "stale": 0,
     "steps": {
       "passed": 7,
       "signed": 1,

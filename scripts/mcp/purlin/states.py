@@ -1,4 +1,4 @@
-"""The three evidence levels of a rule.
+"""The three steps of a rule.
 
 One rule, read top to bottom. Each row below is a cell, and the gate decides
 how many rows exist: every rule carries every cell up to the gate, and a
@@ -51,13 +51,10 @@ reads the way it does.
 returns:
 
     {'cells': {'passed': {...}, 'strong': {...}},
-     'level': 'strong',
      'bucket': 'strong',
-     'meets_gate': True,
-     'blocked_by': None,
      'hand_checked': False,
-     'flags': {'failing': False, 'partial': False, 'stale': False,
-               'manual': False, 'not_audited': False, 'out_of_date': False,
+     'flags': {'failing': False, 'partial': False, 'manual': False,
+               'not_audited': False, 'out_of_date': False,
                'no_proof': False}}
 
 A rule's **bucket** is the one tile it is counted in.
@@ -81,12 +78,11 @@ CELLS = ('passed', 'strong', 'signed')
 HAND_CHECK_WORDS = ('manual test',)
 NOT_AUDITED = 'not audited'
 
-# What a queue row says it needs, from the rule's kind of work left.
+# A `@manual` proof's own word: a person checks it by hand.
 HAND_CHECK = 'hand check'
-SIGNATURE = 'signature'
 
 # The flags a rollup counts, beside the buckets and never instead of them.
-COUNTED_FLAGS = ('stale', 'manual', 'not_audited')
+COUNTED_FLAGS = ('manual', 'not_audited')
 
 # The strong cell's reasons for what the audit said and could not say.
 NOT_AUDITED_REASON = 'no audit has run on this code'
@@ -94,8 +90,9 @@ COULD_NOT_RUN = 'the AI audit could not run: %s'
 COULD_NOT_DECIDE = 'the AI audit could not decide'
 NO_SCORE = 'no mutation score measured'
 
-# Where a pass came from, most trusted first. An evidence file's source is
-# the folder it sits in, `.purlin/evidence/ci/` or `.purlin/evidence/local/`.
+# Where a pass came from. An evidence file's source is the folder it sits
+# in, `.purlin/evidence/ci/` or `.purlin/evidence/local/`; a cell names
+# `local` whenever a person's own run is among its sources.
 SOURCES = ('ci', 'local')
 
 OUT_OF_DATE = 'out of date'
@@ -136,14 +133,6 @@ def bucket_keys(gate):
     if gate == 'signed':
         keys.append('signed')
     return keys
-
-
-def asked_keys(gate):
-    """`{rollup key: cell}` for the cells above `passed` the gate reaches.
-
-    Each key counts the rules that carry that cell, which is every rule.
-    """
-    return {'asks_' + name: name for name in cells_for(gate)[1:]}
 
 
 def rule_cells(inp, cfg):
@@ -215,19 +204,14 @@ def rule_cells(inp, cfg):
         'failing': passed['word'] == 'failed',
         'partial': passed['word'] == 'partial',
         'out_of_date': passed['word'] == OUT_OF_DATE,
-        'stale': bool(signatures) and not current,
         'manual': 'strong' in cells and strong['word'] == 'manual test',
         'not_audited': 'strong' in cells and strong['word'] == NOT_AUDITED,
         'no_proof': not proofs,
     }
 
-    blocked = _blocked_by(cells, gate)
     return {
-        'level': gate,
         'cells': cells,
         'bucket': _bucket(gate, passed, strong, signed),
-        'meets_gate': blocked is None,
-        'blocked_by': blocked,
         'hand_checked': bool(counting) and any(
             proof.get('manual') for proof in proofs),
         'flags': flags,
@@ -239,7 +223,7 @@ def rule_cells(inp, cfg):
 # ---------------------------------------------------------------------------
 
 def _passed_cell(inp, cfg):
-    """Level 1: every proof has a passing test in a current section.
+    """The passed cell: every proof has a passing test in a current section.
 
     Only a section whose fingerprint equals the one taken now decides the
     cell. Where the newest section that says anything about the rule is not
@@ -254,9 +238,10 @@ def _passed_cell(inp, cfg):
     blocks the gate exactly as a failure does.
 
     A `@manual` proof declares that no test is written for it and no proof
-    entry is ever produced, so level 1 has no question to ask of it: it is
-    read out here and the question moves to level 2, where `manual test` is
-    the honest word and a signature with a note is the evidence.
+    entry is ever produced, so the passed cell has no question to ask of it:
+    it is read out here and the question moves to the strong cell, where
+    `manual test` is the honest word and a person's signature is the
+    evidence.
     """
     written = inp.get('proofs') or []
     cell = {'word': 'no test', 'source': None, 'current': False,
@@ -319,14 +304,14 @@ def _passed_cell(inp, cfg):
     if failing:
         cell['word'] = 'failed'
         cell['reasons'] = ['failing: %s' % where for where in failing]
-        cell['source'] = _least_trusted(entry['source'] for entry in current)
+        cell['source'] = _named_source(entry['source'] for entry in current)
         cell['current'] = True
         cell['counts'] = True
         return cell
 
     passes, missing_env, used = _section_passes(proofs, ran)
     if passes or missing_env:
-        cell['source'] = _least_trusted(entry['source'] for entry in used)
+        cell['source'] = _named_source(entry['source'] for entry in used)
         cell['counts'] = True
         cell['current'] = True
         if missing_env:
@@ -430,8 +415,8 @@ def _word_from_statuses(proofs, statuses, os_name):
     return 'not run'
 
 
-def _least_trusted(sources):
-    """The least trusted of some sources, or None when there are none."""
+def _named_source(sources):
+    """The source a cell names: `local` when any is, else `ci`; None for none."""
     found = [name for name in sources if name]
     if not found:
         return None
@@ -440,8 +425,8 @@ def _least_trusted(sources):
 
 
 def _passing_source(platforms):
-    """The least trusted source among the platforms that passed."""
-    return _least_trusted(entry.get('source') for entry in platforms.values()
+    """The source a cell names among the platforms that passed."""
+    return _named_source(entry.get('source') for entry in platforms.values()
                           if entry.get('word') == 'passed')
 
 
@@ -522,7 +507,7 @@ def _section_passes(proofs, current):
 # ---------------------------------------------------------------------------
 
 def _strong_cell(inp, cfg, passed, counting_signatures):
-    """Level 2: whether the tests behind a met passed cell are worth trusting.
+    """The strong cell: whether the tests behind a met passed cell are worth trusting.
 
     The AI audit decides it. An entry for the rule's current text, proof and
     test whose `verdict` is `strong` meets the cell; `weak` carries each
@@ -612,7 +597,7 @@ def _signature_at(signature):
 
 
 def _signed_cell(current, counting):
-    """Level 3: what the signature files say, whatever the cells below read.
+    """The signed cell: what the signature files say, whatever the cells below read.
 
     A signature is a fact about committed files. This cell is computed from
     those files alone and reads `signed` or `unsigned`, and names the
@@ -652,7 +637,7 @@ def _binds(signature, inp, target=None):
 
 
 # ---------------------------------------------------------------------------
-# Meeting the gate
+# Whether a cell is met
 # ---------------------------------------------------------------------------
 
 def cell_is_met(name, cell):
@@ -660,14 +645,6 @@ def cell_is_met(name, cell):
     if not cell:
         return False
     return cell['word'] == name
-
-
-def _blocked_by(cells, gate):
-    """The lowest cell up to the gate that is not met, or None."""
-    for name in cells_for(gate):
-        if not cell_is_met(name, cells.get(name)):
-            return name
-    return None
 
 
 def _bucket(gate, passed, strong, signed):
@@ -692,59 +669,34 @@ def _bucket(gate, passed, strong, signed):
 def feature_rollup(rule_results, gate='passed', test_strength=None):
     """One feature's rollup over `{rule_ref: rule_cells result}`.
 
-    Carries how many rules the feature has, `met`, one count per bucket the
-    gate reaches, how many rules carry each cell above `passed` the gate
-    reaches (`asks_strong`, `asks_signed`), the stale, manual and
-    not-audited counts, `queue` and `hand_checks` from each rule's `need`,
-    and the test strength.
+    Carries how many rules the feature has, one count per bucket the gate
+    reaches, the manual and not-audited counts, and the test strength.
     """
     keys = bucket_keys(gate)
     counts = {key: 0 for key in keys}
-    asked = {key: 0 for key in asked_keys(gate)}
-    met = 0
     flagged = {name: 0 for name in COUNTED_FLAGS}
-    queue = hand_checks = 0
     for result in rule_results.values():
-        for key in asked:
-            asked[key] += 1
         bucket = result.get('bucket') or 'untested'
         if bucket not in counts:
             # A bucket above the gate cannot be reached, so it is not counted
             # under a name the rollup does not carry.
             bucket = keys[-1]
         counts[bucket] += 1
-        if result.get('meets_gate'):
-            met += 1
-        need = result.get('need')
-        if need:
-            queue += 1
-        if need == HAND_CHECK:
-            hand_checks += 1
         flags = result.get('flags') or {}
         for name in COUNTED_FLAGS:
             flagged[name] += 1 if flags.get(name) else 0
-    rollup = {'rules': len(rule_results), 'met': met}
+    rollup = {'rules': len(rule_results)}
     rollup.update(counts)
-    rollup.update(asked)
     rollup.update(flagged)
-    rollup.update({'queue': queue, 'hand_checks': hand_checks,
-                   'test_strength': test_strength})
+    rollup['test_strength'] = test_strength
     return rollup
 
 
 def project_rollup(feature_rollups, gate='passed'):
     """The project's summary: the same counts, plus how many features there are."""
-    keys = bucket_keys(gate)
-    summary = {'features': len(feature_rollups), 'rules': 0, 'met': 0,
-               'queue': 0, 'hand_checks': 0}
-    keys = keys + list(asked_keys(gate))
+    keys = ['rules'] + bucket_keys(gate) + list(COUNTED_FLAGS)
+    summary = {'features': len(feature_rollups)}
     for key in keys:
-        summary[key] = 0
-    for name in COUNTED_FLAGS:
-        summary[name] = 0
-    for rollup in feature_rollups.values():
-        for key in ('rules', 'met', 'queue', 'hand_checks') + COUNTED_FLAGS:
-            summary[key] += rollup.get(key, 0)
-        for key in keys:
-            summary[key] += rollup.get(key, 0)
+        summary[key] = sum(rollup.get(key, 0)
+                           for rollup in feature_rollups.values())
     return summary

@@ -14,7 +14,7 @@ import re
 import sys
 
 from mcp_project import (NO_PROOF_SPEC, ONE_RULE_SPEC, PROJECT_ROOT,
-                         Project, SPEC, _commit_tests, _entry, _git,
+                         Project, SPEC, _commit_tests, _entry, _git, _listed,
                          _marked_tests, _rpc, _write, project)
 # `mcp_project` puts `scripts/mcp` on the path.
 from purlin import board as purlin_board
@@ -25,47 +25,6 @@ from purlin import payload as purlin_payload
 from purlin import signatures as purlin_signatures
 from purlin import states as purlin_states
 from purlin import status as purlin_status
-
-
-def _listed(data, rule_id, feature='login', listed_under=None):
-    """A rule's entry in a payload, as the feature it is listed under lists it."""
-    under = next(f for f in data['features']
-                 if f['name'] == (listed_under or feature))
-    return next(r for r in under['rules']
-                if r['id'] == rule_id and r['feature'] == feature)
-
-
-def _sign(made, rule_id, feature='login', category='auth', listed_under=None,
-          signer='jane@acme.com', commit_it=True, **fields):
-    """Write one signature file over what the rule is now, as `purlin:sign` does.
-
-    It is made for the feature the rule is listed under, over that
-    feature's code and the machines its results came from, and names the
-    hash of all of them, so it binds the rule until any of them moves.
-    `fields` adds or overrides what the file records.
-    """
-    rule = _listed(made.payload(), rule_id, feature, listed_under)
-    data = {
-        'schema': 'purlin-signature/2', 'feature': feature, 'rule': rule_id,
-        'applies_to': rule['applies_to'],
-        'signed_hash': purlin_signatures.signed_hash(rule),
-        'rule_hash': rule['rule_hash'], 'proof_hash': rule['proof_hash'],
-        'test_hash': rule['test_hash'], 'code_hash': rule['code_hash'],
-        'audit_hash': rule['audit_hash'], 'machines': rule['machines'],
-        'test_hash_kind': rule['test_hash_kind'], 'signer': signer,
-        'key_fingerprint': None, 'timestamp': '2026-09-13T12:00:00Z',
-    }
-    data.update(fields)
-    name = '%s.%s.%s.json' % (rule_id, data['signed_hash'][:8],
-                              purlin_signatures.signer_slug(signer))
-    path = os.path.join(made.root, 'specs', category,
-                        feature + '.signatures', name)
-    _write(path, json.dumps(data))
-    if commit_it:
-        _git(made.root, 'add', '-A')
-        _git(made.root, 'commit', '-q', '-m', 'sign(%s): %s' % (feature,
-                                                               rule_id))
-    return path
 
 
 def _bound(inp, **fields):
@@ -579,7 +538,7 @@ class TestTheAuditOnTheRule:
             made.sign_commits()
             made.evidence(PASSING, ci=True, strength=90)
             made.audit('RULE-1')
-            _sign(made, 'RULE-1')
+            made.signature('RULE-1')
             assert made.cell('RULE-1', 'signed')['word'] == 'signed'
             made.evidence(PASSING, ci=True, strength=85)
             rule = made.rule('RULE-1')
@@ -660,7 +619,7 @@ class TestHoldsAndSignatures:
         try:
             made.sign_commits()
             assert made.rule('RULE-1')['left'] == 'to_test_by_hand'
-            _sign(made, 'RULE-1')
+            made.signature('RULE-1')
             rule = made.rule('RULE-1')
             assert rule['cells']['strong']['word'] == 'strong', rule
             assert rule['cells']['strong']['reasons'] == [
@@ -676,7 +635,7 @@ class TestHoldsAndSignatures:
             'and a token\n', 'and a token @manual\n'))
         try:
             made.sign_commits()
-            _sign(made, 'RULE-1')
+            made.signature('RULE-1')
             made.spec(SPEC.replace('and a token\n', 'and a token @manual\n')
                       .replace('return 200 with a session token',
                                'return 201 with a session token'))
@@ -705,7 +664,7 @@ class TestHoldsAndSignatures:
     def test_a_signature_over_the_current_hashes_signs_the_rule(self):
         made = self._signed_project()
         try:
-            _sign(made, 'RULE-1')
+            made.signature('RULE-1')
             cell = made.cell('RULE-1', 'signed')
             assert cell['word'] == 'signed', cell
             assert cell['reasons'] == ['by jane@acme.com'], cell
@@ -777,7 +736,7 @@ def _five_bucket_project():
     made.audit('RULE-4', feature='ledger')
     made.audit('RULE-5', feature='ledger')
     made.sign_commits()
-    _sign(made, 'RULE-5', feature='ledger', category='core')
+    made.signature('RULE-5', feature='ledger', category='core')
     return made
 
 
@@ -953,18 +912,6 @@ class TestBucketsAndTheGate:
         assert purlin_states.bucket_keys('passed') == [
             'untested', 'failing', 'partial', 'passed']
 
-    # purlin: states PROOF-28
-    def test_the_gate_is_met_by_one_of_them_and_blocked_by_name(self):
-        made = _five_bucket_project()
-        try:
-            rules = [made.rule('RULE-%d' % n, 'ledger') for n in range(1, 6)]
-            assert [r['meets_gate'] for r in rules] == [
-                False, False, False, False, True]
-            assert [r['blocked_by'] for r in rules] == [
-                'passed', 'passed', 'strong', 'signed', None]
-        finally:
-            made.close()
-
 
 class TestEveryRuleIsAskedWhatTheGateAsks:
 
@@ -976,27 +923,6 @@ class TestEveryRuleIsAskedWhatTheGateAsks:
         made.audit('RULE-1')
         made.audit('RULE-2')
         return made
-
-    # purlin: states PROOF-90
-    def test_the_rollup_counts_the_rules_carrying_each_cell(self):
-        made = self._audited('signed')
-        try:
-            data = made.payload()
-            for counted in (_feature(data)['rollup'], data['summary']):
-                assert (counted['asks_strong'], counted['asks_signed']) == (
-                    2, 2), counted
-        finally:
-            made.close()
-
-    # purlin: states PROOF-141
-    def test_at_strong_the_rollup_asks_no_signature(self):
-        made = self._audited('strong')
-        try:
-            rollup = _feature(made.payload())['rollup']
-            assert rollup['asks_strong'] == 2, rollup
-            assert 'asks_signed' not in rollup, rollup
-        finally:
-            made.close()
 
     # purlin: states PROOF-91
     def test_the_table_counts_strong_and_signed_over_every_rule(self):
@@ -1079,7 +1005,7 @@ class TestEveryRuleIsAskedWhatTheGateAsks:
             made.sign_commits()
             made.evidence([_entry('PROOF-1', 'RULE-1')], ci=True)
             made.audit('RULE-1')
-            _sign(made, 'RULE-1')
+            made.signature('RULE-1')
             assert made.cell('RULE-1', 'signed')['word'] == 'signed'
             made.spec(SPEC.replace('return 200 with a session token',
                                    'return 201 with a session token'))
@@ -1107,7 +1033,7 @@ class TestPayload:
         assert sorted(data) == sorted((
             'schema_version', 'generated_at', 'generated_by', 'project',
             'version', 'commit', 'dirty', 'gate', 'summary', 'features',
-            'queue', 'left', 'finished', 'last_line', 'os_words', 'evidence',
+            'left', 'finished', 'last_line', 'os_words', 'evidence',
             'tag', 'remote_url', 'warnings')), sorted(data)
         assert data['gate']['gate'] == 'passed'
         assert data['generated_at'].endswith('Z')
@@ -1179,12 +1105,11 @@ class TestPayload:
         feature = next(f for f in data['features'] if f['name'] == 'login')
         rollup = feature['rollup']
         assert sorted(rollup) == sorted([
-            'rules', 'met', 'untested', 'failing', 'partial', 'passed',
-            'stale', 'manual', 'not_audited',
-            'queue', 'hand_checks', 'test_strength', 'proofs',
+            'rules', 'untested', 'failing', 'partial', 'passed',
+            'manual', 'not_audited', 'test_strength', 'proofs',
             'proofs_without_test', 'proofs_without_test_ids',
             'incomplete']), rollup
-        assert (rollup['rules'], rollup['met']) == (2, 1)
+        assert rollup['rules'] == 2, rollup
         assert (rollup['passed'], rollup['untested']) == (1, 1), rollup
         assert (rollup['partial'], rollup['failing']) == (0, 0), rollup
         assert rollup['proofs'] == 2, rollup
@@ -1239,7 +1164,7 @@ class TestPayload:
         made = Project(gate='signed')
         try:
             made.sign_commits()
-            _sign(made, 'RULE-2')
+            made.signature('RULE-2')
             cell = made.cell('RULE-2', 'signed')
             assert cell['signer'] == 'jane@acme.com'
             # `at` is when the commit that added the signature was made, in
@@ -1258,12 +1183,12 @@ class TestPayload:
         made = Project(gate='signed')
         try:
             made.sign_commits()
-            _sign(made, 'RULE-2', signer_name='Jane Doe',
+            made.signature('RULE-2', signer_name='Jane Doe',
                   key_fingerprint='SHA256:q4Xy')
             cell = made.cell('RULE-2', 'signed')
             assert (cell['signer_name'], cell['key_fingerprint']) == (
                 'Jane Doe', 'SHA256:q4Xy'), cell
-            _sign(made, 'RULE-1')
+            made.signature('RULE-1')
             other = made.cell('RULE-1', 'signed')
             assert (other['signer_name'], other['key_fingerprint']) == (
                 None, None), other
@@ -1274,7 +1199,7 @@ class TestPayload:
     def test_a_signature_no_commit_carries_reads_the_files_own_time(self):
         made = Project(gate='signed')
         try:
-            _sign(made, 'RULE-2', commit_it=False)
+            made.signature('RULE-2', commit_it=False)
             cell = made.cell('RULE-2', 'signed')
             assert cell['signer'] == 'jane@acme.com', cell
             assert cell['at'] == '2026-09-13T12:00:00Z', cell
@@ -1390,7 +1315,12 @@ class TestPayload:
 
     # purlin: states PROOF-113
     def test_a_section_that_names_no_machine_names_none(self, project):
-        project.evidence(PASSING, os_name='linux')
+        rel = project.evidence(PASSING, os_name='linux')
+        path = os.path.join(project.root, *rel.split('/'))
+        with open(path, encoding='utf-8') as handle:
+            data = json.load(handle)
+        del data['platforms']['linux']['machine']
+        _write(path, json.dumps(data))
         for rule_id in ('RULE-1', 'RULE-2'):
             assert project.rule(rule_id)['machines'] == {}
 
@@ -1401,7 +1331,7 @@ class TestPayload:
         try:
             made.sign_commits()
             made.evidence([_entry('PROOF-1', 'RULE-1')])
-            _sign(made, 'RULE-2', note='saw 110.00')
+            made.signature('RULE-2', note='saw 110.00')
             assert made.rule('RULE-2')['hand_checked'] is True
         finally:
             made.close()
@@ -1413,7 +1343,7 @@ class TestPayload:
         try:
             made.sign_commits()
             made.evidence([_entry('PROOF-1', 'RULE-1')])
-            _sign(made, 'RULE-2')
+            made.signature('RULE-2')
             assert made.rule('RULE-2')['hand_checked'] is True
         finally:
             made.close()
@@ -1425,7 +1355,7 @@ class TestPayload:
             made.sign_commits()
             made.evidence(PASSING)
             made.audit('RULE-2')
-            _sign(made, 'RULE-2')
+            made.signature('RULE-2')
             assert made.rule('RULE-2')['hand_checked'] is False
         finally:
             made.close()
@@ -1442,7 +1372,7 @@ class TestPayload:
             assert _listed(data, 'RULE-2')['left'] == 'to_test_by_hand'
             assert data['summary']['sentence'] == (
                 '2 rules. 1 passes its tests.'), data['summary']
-            _sign(made, 'RULE-2')
+            made.signature('RULE-2')
             data = made.payload()
             assert _listed(data, 'RULE-2')['left'] is None
             assert data['summary']['sentence'] == (
@@ -1469,7 +1399,7 @@ class TestPayload:
             made.evidence([_entry('PROOF-1', 'RULE-1', feature='security')],
                           feature='security')
             made.audit('RULE-1', feature='security')
-            _sign(made, 'RULE-1', feature='security', category='_anchors',
+            made.signature('RULE-1', feature='security', category='_anchors',
                   listed_under='login')
             data = made.payload()
 
@@ -1478,7 +1408,7 @@ class TestPayload:
                     'signed']['word']
             assert (word('login'), word('billing'), word('security')) == (
                 'signed', 'unsigned', 'unsigned')
-            _sign(made, 'RULE-1', feature='security', category='_anchors',
+            made.signature('RULE-1', feature='security', category='_anchors',
                   listed_under='billing')
             data = made.payload()
             assert word('security') == 'signed'
@@ -1539,7 +1469,7 @@ class TestTheFixturesAreTheContract:
     @staticmethod
     def _full_payload(gate):
         """A payload that fills every part a fixture fills: evidence from both
-        sources, audit entries, a hand check in the queue, a signature and
+        sources, audit entries, a hand check left to do, a signature and
         the signed tag on HEAD."""
         made = Project(gate=gate, spec=SPEC.replace(
             'body "denied"\n', 'body "denied" @manual\n'),
@@ -2039,7 +1969,7 @@ class TestASpecThatNamesNoFiles:
             made.audit('RULE-2')
             _git(made.root, 'add', '-A')
             _git(made.root, 'commit', '-q', '-m', 'purlin: evidence at x')
-            _sign(made, 'RULE-2')
+            made.signature('RULE-2')
             rule = made.rule('RULE-2')
             assert rule['cells']['signed']['word'] == 'unsigned', rule
         finally:
@@ -2094,7 +2024,7 @@ class TestASpecThatNamesNoFiles:
 
     # purlin: summary PROOF-26
     def test_at_signed_its_rules_are_left_to_tie_to_their_files(self):
-        made = Project(spec=NO_SCOPE_SPEC.replace(' [level: signed]', ''),
+        made = Project(spec=NO_SCOPE_SPEC,
                        gate='signed')
         try:
             made.evidence(PASSING)

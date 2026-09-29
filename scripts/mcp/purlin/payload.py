@@ -2,7 +2,7 @@
 
 One reader assembles specs, evidence and signatures into the cells of every
 rule, and every surface renders that: the
-status table, the dashboard, the gate check and the drift report. A surface
+status table, the dashboard, the evidence package and the drift report. A surface
 that parsed the rendered table would be coupled to a layout; this is the shape
 they all read instead.
 
@@ -15,10 +15,10 @@ they all read instead.
       "commit": "<sha>",
       "dirty": false,
       "gate": {"gate": "strong", "min_strength": 70, ...},
-      "summary": {"rules": 8, "features": 4, "met": 1, "failing": 0,
+      "summary": {"rules": 8, "features": 4, "failing": 0,
                   "partial": 1, "untested": 2, "passed": 4, "strong": 1,
-                  "signed": 1, "stale": 1, "manual": 0, "not_audited": 0,
-                  "queue": 2, "hand_checks": 1, "incomplete": 0,
+                  "signed": 1, "manual": 0, "not_audited": 0,
+                  "incomplete": 0,
                   "steps": {"passed": 4, "strong": 2, "signed": 1},
                   "sentence": "8 rules. 4 pass their tests. 2 are strong. 1 is signed."},
       "features": [
@@ -40,7 +40,7 @@ they all read instead.
          "rules": [
            {"id": "RULE-1", "feature": "login", "applies_to": "login",
             "label": "own",
-            "text": "...", "level": "signed", "level_marked": null,
+            "text": "...",
             "audit_hash": "<sha256>", "code_hash": "<sha256>",
             "machines": {"macos": "jane-laptop"},
             "left": "to_sign", "hand_checked": false,
@@ -48,8 +48,7 @@ they all read instead.
                       "strength": 86,
                       "model": "<model>", "at": "...", "commit": "<sha>",
                       "path": ".purlin/evidence/local/login.json"},
-            "bucket": "signed", "meets_gate": true,
-            "blocked_by": null, "flags": {...},
+            "bucket": "signed", "flags": {...},
             "cells": {"passed": {...}, "strong": {...}, "signed": {...}},
             "proofs": [{"id": "PROOF-1", "manual": false, "env": null,
                         "text": "...", "result": "passed",
@@ -59,10 +58,6 @@ they all read instead.
             "tests": []}
          ]}
       ],
-      "queue": [{"feature": "login", "owner": "login", "rule": "RULE-3",
-                 "text": "...", "level": "signed", "need": "hand check",
-                 "word": "manual test", "reasons": ["manual proof"],
-                 "command": "purlin:sign login RULE-3 --note \"<what you saw>\""}],
       "left": [{"kind": "to_audit", "count": 2,
                 "text": "2 rules to audit", "command": "purlin:audit"},
                {"kind": "to_sign", "count": 1,
@@ -100,10 +95,7 @@ two rules.
 
 Every rule carries every cell up to the gate: `passed` always, `strong` at the
 gate `strong` and above, `signed` at `signed`. A cell above the gate is
-absent, not empty, so a `passed` project carries one cell per rule. A rule's
-`level` is the gate. A rollup at `strong` and above carries `asks_strong`, how
-many of its rules have a strong cell, and at `signed` `asks_signed`, how many
-have a signed cell.
+absent, not empty, so a `passed` project carries one cell per rule.
 
 A feature spec that names no files, with no `> Scope:` line or a scope that
 reaches no tracked file, carries `incomplete: true` and `incomplete_reason`
@@ -209,7 +201,6 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         for name in sorted(features)}
     consumers = _consumers(features)
     feature_entries = []
-    queue = []
     rollups = {}
     # The project summary counts each rule once, under the feature that owns
     # it. A feature's own rollup counts what that feature must prove, which
@@ -224,7 +215,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         info = features[name]
         entry, rollup = _feature_entry(
             project_root, name, info, features, evidence, all_signatures,
-            cfg, blob_cache, queue, own_results, counted_cache, could_not_run,
+            cfg, blob_cache, own_results, counted_cache, could_not_run,
             incomplete, tied, here_os, code_hashes, consumers)
         feature_entries.append(entry)
         rollups[name] = rollup
@@ -255,7 +246,6 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         'gate': cfg.as_dict(),
         'summary': summary,
         'features': feature_entries,
-        'queue': _sorted_queue(queue),
         'left': left,
         'finished': not left,
         'last_line': summary_module.last_line(left, cfg.gate, tag),
@@ -318,20 +308,8 @@ def _consumers(features):
     return found
 
 
-def _sorted_queue(rows):
-    """The queue in the one order it is read in: by feature, then rule number."""
-    return sorted(rows, key=lambda row: (row['owner'],
-                                         _rule_number(row['rule'])))
-
-
-def _rule_number(rule_id):
-    digits = str(rule_id).rsplit('-', 1)[-1]
-    return int(digits) if digits.isdigit() else 0
-
-
 def _feature_entry(project_root, name, info, features, evidence,
-                   all_signatures, cfg, blob_cache, queue,
-                   own_results=None, counted_cache=None, could_not_run=None,
+                   all_signatures, cfg, blob_cache, own_results=None, counted_cache=None, could_not_run=None,
                    incomplete=None, tied=None, here_os=None, code_hashes=None,
                    consumers=None):
     incomplete = incomplete or {}
@@ -356,19 +334,11 @@ def _feature_entry(project_root, name, info, features, evidence,
             {marked for feature, marked in (tied or ()) if feature == owner},
             name, code_hashes, here_os,
             (consumers or {}).get((owner, rule_id)) if owner == name else None)
-        need = result.pop('need')
         rule_entries.append(result)
-        summary = {'bucket': result['bucket'], 'flags': result['flags'],
-                   'meets_gate': result['meets_gate'], 'need': need,
-                   'level': result['level']}
+        summary = {'bucket': result['bucket'], 'flags': result['flags']}
         rule_results[(owner, rule_id)] = summary
         if label == 'own' and own_results is not None:
             own_results[(owner, rule_id)] = summary
-        # The queue names a rule once, under its owner, as the summary counts
-        # it; a required or global rule is read where it is written, not once
-        # per feature that proves it.
-        if label == 'own' and need:
-            queue.append(queue_row(name, owner, result, need))
 
     rollup = states.feature_rollup(rule_results, cfg.gate,
                                    test_strength=test_strength)
@@ -513,24 +483,6 @@ def _evidence_map(evidence):
     return out
 
 
-def queue_row(feature, owner, rule, need):
-    """One queue row: the rule, what it needs, and the command that answers it.
-
-    A hand check reads the strong cell's word and reasons, and its command
-    asks for the note a person writes about what they saw; a signature reads
-    the signed cell's, and its command names the rule alone.
-    """
-    cell_name = 'strong' if need == states.HAND_CHECK else 'signed'
-    cell = (rule.get('cells') or {}).get(cell_name) or {}
-    command = 'purlin:sign %s %s' % (owner, rule['id'])
-    if need == states.HAND_CHECK:
-        command += ' --note "<what you saw>"'
-    return {'feature': feature, 'owner': owner, 'rule': rule['id'],
-            'text': rule.get('text') or '', 'level': rule['level'],
-            'need': need, 'word': cell.get('word'),
-            'reasons': list(cell.get('reasons') or ()), 'command': command}
-
-
 def _rule_entry(project_root, owner, owner_info, rule_id, label,
                 owner_evidence, all_signatures, cfg, blob_cache,
                 test_strength=None, counted_cache=None, could_not_run=None,
@@ -618,8 +570,6 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         'applies_to': applies_to,
         'label': label,
         'text': text,
-        'level': result['level'],
-        'level_marked': None,
         'rule_hash': rule_hash,
         'proof_hash': proof_hash,
         'test_hash': test_hash,
@@ -630,8 +580,6 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         'audit': audit_summary(audit, test_strength),
         'cells': result['cells'],
         'bucket': result['bucket'],
-        'meets_gate': result['meets_gate'],
-        'blocked_by': result['blocked_by'],
         'flags': result['flags'],
         # A person checked a `@manual` proof by hand: a signature that
         # counts still binds the rule.
@@ -641,20 +589,15 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
     }
     entry['left'] = summary_module.rule_kind(entry, cfg.gate, here_os,
                                              incomplete)
-    # The queue, until it goes, holds the two kinds that wait on a person.
-    entry['need'] = _NEEDS.get(entry['left'])
     return entry
-
-
-_NEEDS = {'to_test_by_hand': states.HAND_CHECK, 'to_sign': states.SIGNATURE}
 
 
 def _machines(sections, proofs, rule_id):
     """`{os: machine}` over the current sections that speak for the rule.
 
-    A section speaks for the rule when it lists a result for one of the
-    rule's proofs, read from its own system only where the proof names one,
-    or for the rule's own id where it has no proof. Each section's `machine`
+    A section speaks for the rule when one of the rule's proofs ran there,
+    passing or failing, read from its own system only where the proof names
+    one, or for the rule's own id where it has no proof. Each section's `machine`
     names where it ran; a section that names none is left out, and where
     both sources hold one for a system the newer answers.
     """
@@ -669,7 +612,8 @@ def _machines(sections, proofs, rule_id):
         if not machine:
             continue
         results = evidence_module.proof_results(section)
-        if not any(results.get(proof_id) and (not env or env == entry['os'])
+        if not any(results.get(proof_id) in ('pass', 'fail')
+                   and (not env or env == entry['os'])
                    for proof_id, env in wanted):
             continue
         at = str(section.get('at') or '')

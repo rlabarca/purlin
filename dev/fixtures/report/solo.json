@@ -53,10 +53,8 @@
       "requires": [],
       "rollup": {
         "failing": 0,
-        "hand_checks": 0,
         "incomplete": false,
         "manual": 0,
-        "met": 1,
         "not_audited": 0,
         "partial": 0,
         "passed": 1,
@@ -65,9 +63,7 @@
         "proofs_without_test_ids": [
           "PROOF-2"
         ],
-        "queue": 0,
         "rules": 3,
-        "stale": 0,
         "test_strength": null,
         "untested": 2
       },
@@ -76,7 +72,6 @@
           "applies_to": "login",
           "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "blocked_by": null,
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -103,19 +98,15 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false,
-            "stale": false
+            "partial": false
           },
           "hand_checked": false,
           "id": "RULE-1",
           "label": "own",
           "left": null,
-          "level": "passed",
-          "level_marked": null,
           "machines": {
             "macos": "jane-laptop"
           },
-          "meets_gate": true,
           "proof_hash": "prule1log",
           "proofs": [
             {
@@ -143,7 +134,6 @@
           "applies_to": "login",
           "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "blocked_by": "passed",
           "bucket": "untested",
           "cells": {
             "passed": {
@@ -164,17 +154,13 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false,
-            "stale": false
+            "partial": false
           },
           "hand_checked": false,
           "id": "RULE-2",
           "label": "own",
           "left": "no_test",
-          "level": "passed",
-          "level_marked": null,
           "machines": {},
-          "meets_gate": false,
           "proof_hash": "prule2log",
           "proofs": [
             {
@@ -196,7 +182,6 @@
           "applies_to": "login",
           "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "blocked_by": "passed",
           "bucket": "untested",
           "cells": {
             "passed": {
@@ -219,17 +204,13 @@
             "no_proof": true,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false,
-            "stale": false
+            "partial": false
           },
           "hand_checked": false,
           "id": "RULE-3",
           "label": "own",
           "left": "no_test",
-          "level": "passed",
-          "level_marked": null,
           "machines": {},
-          "meets_gate": false,
           "proof_hash": "prule3log",
           "proofs": [],
           "rule_hash": "rrule3log",
@@ -275,19 +256,15 @@
       "requires": [],
       "rollup": {
         "failing": 0,
-        "hand_checks": 0,
         "incomplete": false,
         "manual": 0,
-        "met": 2,
         "not_audited": 0,
         "partial": 0,
         "passed": 2,
         "proofs": 2,
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
-        "queue": 0,
         "rules": 2,
-        "stale": 0,
         "test_strength": null,
         "untested": 0
       },
@@ -296,7 +273,6 @@
           "applies_to": "invoice",
           "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "blocked_by": null,
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -323,19 +299,15 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false,
-            "stale": false
+            "partial": false
           },
           "hand_checked": false,
           "id": "RULE-1",
           "label": "own",
           "left": null,
-          "level": "passed",
-          "level_marked": null,
           "machines": {
             "macos": "jane-laptop"
           },
-          "meets_gate": true,
           "proof_hash": "prule1inv",
           "proofs": [
             {
@@ -363,7 +335,6 @@
           "applies_to": "invoice",
           "audit": null,
           "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "blocked_by": null,
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -390,19 +361,15 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false,
-            "stale": false
+            "partial": false
           },
           "hand_checked": false,
           "id": "RULE-2",
           "label": "own",
           "left": null,
-          "level": "passed",
-          "level_marked": null,
           "machines": {
             "macos": "jane-laptop"
           },
-          "meets_gate": true,
           "proof_hash": "prule2inv",
           "proofs": [
             {
@@ -471,16 +438,13 @@
     }
   },
   "project": "ledger",
-  "queue": [],
   "remote_url": null,
   "schema_version": 10,
   "summary": {
     "failing": 0,
     "features": 2,
-    "hand_checks": 0,
     "incomplete": 0,
     "manual": 0,
-    "met": 3,
     "not_audited": 0,
     "partial": 0,
     "passed": 3,
@@ -489,10 +453,8 @@
     "proofs_without_test_ids": [
       "PROOF-2"
     ],
-    "queue": 0,
     "rules": 5,
     "sentence": "5 rules. 3 pass their tests.",
-    "stale": 0,
     "steps": {
       "passed": 3
     },

@@ -1,4 +1,4 @@
-"""The status table: one row per spec, one cell per evidence level.
+"""The status table: one row per spec, one cell per step.
 
 The table is the dashboard's board, rendered as text. Its columns are the
 board's columns and its cells are the board's cells, character for character,
@@ -81,7 +81,7 @@ def sync_status(project_root):
         lines.extend(data['warnings'])
 
     lines.append('')
-    lines.extend(_ending(data, project_root))
+    lines.extend(ending_lines(data, project_root))
     return '\n'.join(lines)
 
 
@@ -172,8 +172,11 @@ def incomplete_line(names):
             % (len(names), ', '.join(names)))
 
 
-def _ending(data, project_root):
-    """`→ Run: purlin:init --update` where an upgrade is pending, then the summary."""
+def ending_lines(data, project_root):
+    """`→ Run: purlin:init --update` where an upgrade is pending, then the summary.
+
+    The lines every command that ends as the status ends prints last.
+    """
     lines = []
     if (any('purlin:init --update' in warning for warning in data['warnings'])
             or _update_pending(project_root)):

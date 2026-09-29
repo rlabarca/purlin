@@ -196,17 +196,12 @@ def incomplete_reason(project_root, feature, features=None):
 # spec
 # ---------------------------------------------------------------------------
 
-def rule_line(spec_path, rule_id, text, meta):
-    """The line one rule contributes to the `spec` part.
+def rule_line(spec_path, rule_id, text):
+    """The line one rule contributes to the `spec` part: `<spec> <RULE-N> <text>`.
 
-    `<spec> <RULE-N> <text>`, then the rule's tag as the parser reports it.
     This is the one place that decides what of a rule the fingerprint reads.
     """
-    line = '%s %s %s' % (spec_path, rule_id, _normalise(text))
-    level = (meta or {}).get('level')
-    if level:
-        line += ' [level: %s]' % level
-    return line
+    return '%s %s %s' % (spec_path, rule_id, _normalise(text))
 
 
 def proof_line(spec_path, proof_id, proof):
@@ -237,8 +232,7 @@ def spec_lines(feature, features):
         info = features[name]
         path = info['spec_path']
         for rule_id in info.get('rule_order', ()):
-            lines.append(rule_line(path, rule_id, info['rules'][rule_id],
-                                   info.get('rule_meta', {}).get(rule_id)))
+            lines.append(rule_line(path, rule_id, info['rules'][rule_id]))
         for proof_id, proof in sorted(info.get('proofs', {}).items()):
             lines.append(proof_line(path, proof_id, proof))
     return sorted(lines)

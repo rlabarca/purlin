@@ -3,7 +3,7 @@
 The dashboard's board and the `purlin:status` table both answer the same
 questions about one spec, and they have to answer them in the same
 words: a reader who learns the board reads the table without learning it
-again. So the columns, the cell text and the bucket names live here, and
+again. So the columns and the cell text live here, and
 each surface renders what this module returns rather than composing its own
 string. `scripts/report/src/board.js` mirrors these
 strings on the dashboard's side; changing one here changes the table.
@@ -31,15 +31,6 @@ COLUMNS = ('Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed')
 STRONG_COLUMNS = ('Strong',)
 SIGNED_COLUMNS = ('Signed',)
 
-# The one tile a rule is counted in, and the word every surface prints for it.
-# The bucket key `passed` reads `Passing` on a tile, because the tile counts
-# rules whose tests pass now.
-BUCKET_LABELS = (('untested', 'Untested'), ('failing', 'Failing'),
-                 ('partial', 'Partial'), ('passed', 'Passing'),
-                 ('strong', 'Strong'), ('signed', 'Signed'))
-
-
-
 def shows_proofs(gate, proofs):
     """Whether the Proofs column and the proof count are shown.
 
@@ -61,14 +52,6 @@ def columns_for(gate, proofs=1):
     if gate == 'signed':
         columns.extend(SIGNED_COLUMNS)
     return tuple(columns)
-
-
-def bucket_label(bucket):
-    """The word a tile and a summary line print for one bucket key."""
-    for key, label in BUCKET_LABELS:
-        if key == bucket:
-            return label
-    return str(bucket)
 
 
 def passing(rollup):
@@ -189,75 +172,3 @@ def row_cells(name, rollup, gate, proofs=1, shared=()):
     if gate == 'signed':
         cells.append(signed_cell(rollup))
     return tuple(cells)
-
-
-def proofs_summary(summary):
-    """`<n> proof lines`, and `· <k> no test` when a proof has none.
-
-    The cell's own words, read as a sentence rather than as a column, for the
-    summary line under the table.
-    """
-    total = summary.get('proofs') or 0
-    text = '%d proof line%s' % (total, '' if total == 1 else 's')
-    without = summary.get('proofs_without_test') or 0
-    if without:
-        text += '%s%d no test' % (DOT, without)
-    return text
-
-
-def bucket_counts(summary, gate):
-    """`[(label, count)]` for every bucket the gate reaches, weakest first."""
-    from purlin import states
-
-    keys = states.bucket_keys(gate)
-    return [(bucket_label(key), summary.get(key) or 0) for key in keys]
-
-
-def bucket_line(summary, gate):
-    """The six counts on one line, in the order the tiles read."""
-    return DOT.join('%s %d' % pair for pair in bucket_counts(summary, gate))
-
-
-def headline(summary, gate):
-    """What the board leads with, and the one line a table's summary opens on."""
-    return '%d of %d rules meet the gate %s.' % (
-        summary.get('met') or 0, summary.get('rules') or 0, gate)
-
-
-def count_of(count, word, plural=None):
-    """`<n> <word>`, with the plural only where the count asks for one.
-
-    One feature is a feature and one signature is a signature, and a table a
-    person reads on their first day should not say `1 features`.
-    """
-    if count == 1:
-        return '1 %s' % word
-    return '%d %s' % (count, plural or word + 's')
-
-
-def queue_line(summary):
-    """`Queue: <n> rules. <h> hand checks, <s> signatures.`
-
-    The one line that counts the queue, which `purlin:status` prints and
-    `purlin:sign` opens its walk on.
-    """
-    total = summary.get('queue') or 0
-    hand = summary.get('hand_checks') or 0
-    return 'Queue: %s. %s, %s.' % (
-        count_of(total, 'rule'), count_of(hand, 'hand check'),
-        count_of(total - hand, 'signature'))
-
-
-def needs_a_person(count):
-    """`<n> rules need a person`: the one sentence that says a person is owed.
-
-    The queue is the one place a person is named, and this is the sentence
-    every surface says it in, so the table and the
-    dashboard's heading never disagree about the wording or about how one
-    rule reads.
-    """
-    if not count:
-        return 'no rule needs a person'
-    if count == 1:
-        return '1 rule needs a person'
-    return '%d rules need a person' % count
