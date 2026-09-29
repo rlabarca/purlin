@@ -2647,6 +2647,59 @@ class TestTheSettingsFile:
             os.path.join('.purlin', 'config.json')], output
         assert code == 1, output
 
+    @staticmethod
+    def _stops(root):
+        """`--all --test` stops on the upgrade line and writes nothing."""
+        code, output = _run(root, '--all', '--test')
+        assert output.strip().splitlines() == [
+            'This project was set up by an older Purlin and not upgraded, so '
+            'nothing ran. Run purlin:init --update.'], output
+        assert _purlin_files(root) == [
+            os.path.join('.purlin', 'config.json')], output
+        assert code == 1, output
+
+    @classmethod
+    def _key_only_095_wrote(cls, tmp_path, key):
+        root = _project(tmp_path)
+        _spec(root, 'feat')
+        _config(root, **{key: 'pytest'})
+        cls._stops(root)
+
+    # purlin: run_script PROOF-214
+    def test_the_key_test_framework_stops_the_run(self, tmp_path):
+        self._key_only_095_wrote(tmp_path, 'test_framework')
+
+    # purlin: run_script PROOF-215
+    def test_the_key_spec_dir_stops_the_run(self, tmp_path):
+        self._key_only_095_wrote(tmp_path, 'spec_dir')
+
+    # purlin: run_script PROOF-216
+    def test_the_key_pre_push_stops_the_run(self, tmp_path):
+        self._key_only_095_wrote(tmp_path, 'pre_push')
+
+    # purlin: run_script PROOF-217
+    def test_the_key_report_stops_the_run(self, tmp_path):
+        self._key_only_095_wrote(tmp_path, 'report')
+
+    # purlin: run_script PROOF-218
+    def test_the_key_digest_stops_the_run(self, tmp_path):
+        self._key_only_095_wrote(tmp_path, 'digest')
+
+    @classmethod
+    def _file_only_095_wrote(cls, tmp_path, name):
+        root = _project(tmp_path)
+        _spec(root, 'feat')
+        (root / 'specs' / 'a' / name).write_text('{}\n', encoding='utf-8')
+        cls._stops(root)
+
+    # purlin: run_script PROOF-219
+    def test_a_proof_file_under_specs_stops_the_run(self, tmp_path):
+        self._file_only_095_wrote(tmp_path, 'feat.proofs-unit.json')
+
+    # purlin: run_script PROOF-220
+    def test_a_receipt_file_under_specs_stops_the_run(self, tmp_path):
+        self._file_only_095_wrote(tmp_path, 'feat.receipt.json')
+
 
 class TestEachRuleThatFailsOrHasNoTest:
 

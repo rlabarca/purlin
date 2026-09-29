@@ -7,9 +7,9 @@
                   [--arm-timeout SECONDS] [--project-root DIR]
 
 **Before anything runs.** With no `.purlin/config.json` the run says so,
-names `purlin:init`, writes nothing and exits 1. In a project an older Purlin
-set up and nobody upgraded (`update.set_up_by_095`) it names
-`purlin:init --update` the same way. With the `tests` setting empty it
+names `purlin:init`, writes nothing and exits 1. In a project Purlin 0.9.5
+set up and nobody upgraded (`set_up_by_095`) it names `purlin:init --update`
+the same way. With the `tests` setting empty it
 writes nothing and exits 1: where it detects a test tool it knows, it prints
 that tool's entry to add (`frameworks.suggest`), and otherwise it asks for
 `purlin:test`, which reads the project and proposes one.
@@ -109,6 +109,7 @@ printed by file and line and fails the run.
 writes.
 """
 
+import fnmatch
 import json
 import os
 import platform
@@ -119,8 +120,7 @@ import sys
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _MCP_DIR = os.path.join(os.path.dirname(_HERE), 'mcp')
 _REVIEW_DIR = os.path.join(os.path.dirname(_HERE), 'review')
-_INIT_DIR = os.path.join(os.path.dirname(_HERE), 'init')
-for _path in (_MCP_DIR, _REVIEW_DIR, _INIT_DIR, _HERE):
+for _path in (_MCP_DIR, _REVIEW_DIR, _HERE):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
@@ -1008,12 +1008,51 @@ def settings_stop(project_root):
     No settings file, or a project an older Purlin set up that was not
     upgraded: each names the command that puts it right.
     """
-    import update as update_module
     if not os.path.isfile(os.path.join(project_root, SETTINGS_PATH)):
         return NO_SETTINGS
-    if update_module.set_up_by_095(project_root):
+    if set_up_by_095(project_root):
         return SET_UP_BY_AN_OLDER_PURLIN
     return None
+
+
+# The settings keys only Purlin 0.9.5 wrote, and the files it left under
+# `specs/`. This is the one piece of 0.9.5 the code keeps: a run in a project
+# that release set up, never upgraded, has to say so rather than misread it.
+SET_UP_BY_095_KEYS = ('test_framework', 'spec_dir', 'pre_push', 'report',
+                      'digest')
+SET_UP_BY_095_FILES = ('*.proofs-*.json', '*.receipt.json')
+
+
+def set_up_by_095(project_root):
+    """True when Purlin 0.9.5 set this project up and it was not upgraded.
+
+    Read from what 0.9.5 left and this release never writes: a settings
+    file with no `tests`, or with one of the keys only 0.9.5 wrote, or a
+    proof or receipt file under `specs/`. A project with no settings file
+    is not one: that is a missing settings file, named on its own. The
+    version stamp is not read, so a plugin update alone never makes this
+    true.
+    """
+    root = os.path.abspath(project_root)
+    path = os.path.join(root, SETTINGS_PATH)
+    if not os.path.isfile(path):
+        return False
+    try:
+        with open(path, 'r', encoding='utf-8') as handle:
+            config = json.load(handle)
+    except (IOError, OSError, ValueError):
+        config = {}
+    if not isinstance(config, dict):
+        config = {}
+    if 'tests' not in config:
+        return True
+    if any(key in config for key in SET_UP_BY_095_KEYS):
+        return True
+    for _folder, _dirs, names in os.walk(os.path.join(root, 'specs')):
+        if any(fnmatch.fnmatch(name, pattern) for name in names
+               for pattern in SET_UP_BY_095_FILES):
+            return True
+    return False
 
 
 def no_test_command_lines(project_root):
