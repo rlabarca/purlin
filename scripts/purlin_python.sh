@@ -17,9 +17,11 @@
 #      own path, so $PURLIN_PY is always a single word
 #
 # When none of them runs, this writes one line to stderr naming all four and
-# exits 0: the MCP launcher is a server whose stderr the client shows, so the
-# client decides what a missing interpreter means rather than inheriting a
-# status from here.
+# exits 1, so a skill that starts a script through it fails loudly. With
+# PURLIN_PYTHON_SOFT set to 1 it exits 0 after the same line: the plugin
+# manifest sets it for the MCP server, whose stderr the client shows, so the
+# client decides what a missing interpreter means there. The usage line, for
+# a call that names no script, exits 0 either way.
 #
 # POSIX sh only. This file runs before anything has established that bash is
 # present, on the operating system least likely to have it.
@@ -62,5 +64,8 @@ if [ "$#" -eq 0 ]; then
     echo "purlin: usage: sh purlin_python.sh <script> [args...]" >&2
     exit 0
 fi
-purlin_python || exit 0
+if ! purlin_python; then
+    [ "${PURLIN_PYTHON_SOFT:-}" = "1" ] && exit 0
+    exit 1
+fi
 exec "$PURLIN_PY" "$@"

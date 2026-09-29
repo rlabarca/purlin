@@ -14,7 +14,10 @@
       "args": [
         "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh",
         "${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin/server.py"
-      ]
+      ],
+      "env": {
+        "PURLIN_PYTHON_SOFT": "1"
+      }
     }
   },
   "keywords": [

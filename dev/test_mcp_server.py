@@ -563,6 +563,43 @@ class TestThePluginManifest:
         assert json.loads(lines[0])['result']['serverInfo']['name'] == \
             'purlin', stdout
 
+    # purlin: server PROOF-158
+    def test_the_plugin_entry_asks_the_resolver_for_a_soft_exit(self):
+        entry = _manifest_entry()
+        assert entry['env'] == {'PURLIN_PYTHON_SOFT': '1'}, entry
+        assert entry['command'] == 'sh' and entry['args'], entry
+
+
+LOOKUP = os.path.join(PROJECT_ROOT, 'scripts', 'purlin_python.sh')
+NO_PYTHON = ('purlin: no Python 3 interpreter found; tried $PURLIN_PYTHON, '
+             'python3, python and py -3. Set PURLIN_PYTHON to the one to use.\n')
+
+
+def _lookup_with_no_python(tmp_path, soft=None):
+    """Start the resolver on the server with a search path holding nothing."""
+    empty = tmp_path / 'no-python'
+    empty.mkdir()
+    env = {'PATH': str(empty)}
+    if soft is not None:
+        env['PURLIN_PYTHON_SOFT'] = soft
+    return subprocess.run(['/bin/sh', LOOKUP, SERVER_PY], capture_output=True,
+                          text=True, env=env, cwd=str(tmp_path), timeout=60)
+
+
+class TestTheInterpreterResolver:
+
+    # purlin: server PROOF-156
+    def test_no_python_fails_loudly(self, tmp_path):
+        result = _lookup_with_no_python(tmp_path)
+        assert (result.returncode, result.stdout, result.stderr) == (
+            1, '', NO_PYTHON)
+
+    # purlin: server PROOF-157
+    def test_no_python_with_the_soft_variable_exits_0(self, tmp_path):
+        result = _lookup_with_no_python(tmp_path, soft='1')
+        assert (result.returncode, result.stdout, result.stderr) == (
+            0, '', NO_PYTHON)
+
 
 class TestPackageHygiene:
     """What the package may not do, whatever else it does."""

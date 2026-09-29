@@ -4,7 +4,7 @@
 >   tools: the status table, the drift report and the configuration reader and
 >   writer. Claude Code starts it when the plugin is enabled, and it answers only
 >   what it is asked.
-> Scope: scripts/mcp/purlin/server.py, .claude-plugin/plugin.json
+> Scope: scripts/mcp/purlin/server.py, .claude-plugin/plugin.json, scripts/purlin_python.sh
 > Stack: python/stdlib, json
 
 ## Rules
@@ -19,7 +19,7 @@
 - RULE-8: A tool that raises answers the text `Error running <tool>: <message>`, so one bad call never ends the session
 - RULE-9: The configuration tool reads the whole of `.purlin/config.json` or one named key, a key that is absent or stored as null answering `{"<key>": null}` in the shape a found key answers; a write sets that key in `.purlin/config.json`, and a save that fails answers `The setting was not saved: <cause>.`
 - RULE-10: A write naming no key answers that a key is required, leaving the config as it was
-- RULE-22: The plugin manifest starts the server through `sh` and the interpreter resolver, and the last argument it passes names `scripts/mcp/purlin/server.py`
+- RULE-22: The plugin manifest starts the server through `sh` and the interpreter resolver, with `PURLIN_PYTHON_SOFT` set to `1`, and the last argument it passes names `scripts/mcp/purlin/server.py`
 - RULE-23: Input that is not JSON answers error code `-32700`
 - RULE-24: An unknown method answers error code `-32601`
 - RULE-25: A call naming no `project_root` uses the root the server resolved at startup, whatever an earlier call named
@@ -28,6 +28,7 @@
 - RULE-28: A write of a setting Purlin knows, `gate`, `mutation_engine`, `min_strength`, `audit_parallel`, `tests` or `ci`, that gives no value answers `A change needs a value; nothing was saved.` and leaves the file byte for byte as it was
 - RULE-29: A write of a value a known setting does not take answers `"<value>" is not accepted for <key>; it takes <accepted>. Nothing was saved.` and leaves the file byte for byte as it was: `gate` takes `passed, strong or signed`, `mutation_engine` `none, auto, mutmut, stryker or stryker_net`, `min_strength` `a whole number from 0 to 100, or null`, `audit_parallel` `a whole number from 1 to 16`, `tests` `a list` and `ci` `github, azure or none`
 - RULE-30: A write of `version` answers `version is written by purlin:init from Purlin's own version; nothing was saved.` and leaves the file byte for byte as it was
+- RULE-31: With no Python 3 found, the interpreter resolver writes its one line to standard error and exits 1, or exits 0 when `PURLIN_PYTHON_SOFT` is `1`
 
 ## Proof
 
@@ -56,6 +57,7 @@
 - PROOF-10 (RULE-10): A client asks the configuration tool to write the value `x` and names no key; the answer reads exactly `Error: 'key' is required for write action.`, and `.purlin/config.json` is byte for byte as it was
 - PROOF-22 (RULE-22): The plugin manifest `.claude-plugin/plugin.json` starts the `purlin` server with the command `sh`; the first argument it passes ends in `scripts/purlin_python.sh` and the last ends in `scripts/mcp/purlin/server.py`
 - PROOF-137 (RULE-22): The command the plugin manifest gives for the `purlin` server, with the plugin's folder in place of `${CLAUDE_PLUGIN_ROOT}`, is run in a workspace and sent `initialize`; exactly 1 line comes back, an answer carrying the server name `purlin`
+- PROOF-158 (RULE-22): The plugin manifest's entry for the `purlin` server sets the environment variable `PURLIN_PYTHON_SOFT` to `1`, beside its command `sh` and its arguments
 - PROOF-125 (RULE-23): A client sends the line `not json`; exactly 1 response comes back, an error with the code `-32700`
 - PROOF-127 (RULE-24): A client sends a request for the method `nope/at/all`, which the server does not know; the answer is an error with the code `-32601` and the message `Unknown method: nope/at/all`
 - PROOF-128 (RULE-25): The server is started in an empty folder; a client calls `sync_status` naming a workspace with `project_root`, then calls it again naming none; the second answer is for the empty startup folder and opens `No Purlin workspace at` followed by that folder's path
@@ -73,3 +75,5 @@
 - PROOF-153 (RULE-29): A client asks the configuration tool to write `min_strength` as null; the answer reads `Set 'min_strength' = null`, and `.purlin/config.json` then holds `min_strength` as null
 - PROOF-154 (RULE-29): A client asks the configuration tool to write `gate` as null; the answer reads exactly `"null" is not accepted for gate; it takes passed, strong or signed. Nothing was saved.`, and `.purlin/config.json` is byte for byte as it was
 - PROOF-155 (RULE-30): A client asks the configuration tool to write `version` as `9.9.9`; the answer reads exactly `version is written by purlin:init from Purlin's own version; nothing was saved.`, and `.purlin/config.json` is byte for byte as it was
+- PROOF-156 (RULE-31): The interpreter resolver is started by `/bin/sh` on the server's script with a search path holding no Python and no `py`, and `PURLIN_PYTHON` unset; it exits 1, prints nothing to standard output, and writes to standard error only `purlin: no Python 3 interpreter found; tried $PURLIN_PYTHON, python3, python and py -3. Set PURLIN_PYTHON to the one to use.`
+- PROOF-157 (RULE-31): The interpreter resolver is started by `/bin/sh` on the server's script with a search path holding no Python and no `py`, `PURLIN_PYTHON` unset and `PURLIN_PYTHON_SOFT` set to `1`; it exits 0 and writes to standard error only `purlin: no Python 3 interpreter found; tried $PURLIN_PYTHON, python3, python and py -3. Set PURLIN_PYTHON to the one to use.`
