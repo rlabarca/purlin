@@ -15,6 +15,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import platform
 import re
 import shutil
 import subprocess
@@ -71,6 +72,16 @@ def _head(root):
     return _git(root, 'rev-parse', 'HEAD').strip()
 
 
+def _script(path, text):
+    """Write a shell script whose lines end in `\\n` alone.
+
+    A file written as text on Windows ends each line in `\\r\\n`, which bash
+    reads as part of the command: `sleep 5\\r` is refused and
+    `echo x >> ran.txt\\r` names another file.
+    """
+    path.write_bytes(text.encode('utf-8'))
+
+
 def _gate(root, gate):
     """Set the project's gate, so one checkout can be read at two of them."""
     path = root / '.purlin' / 'config.json'
@@ -125,6 +136,7 @@ class TestTheMutmutCopy:
     """mutmut leaves `mutants/` behind, a copy of the project, tests included."""
 
     # purlin: run_script PROOF-62
+    # purlin: run_script PROOF-231
     def test_the_copy_mutmut_leaves_is_never_collected(self, tmp_path):
         root = _pytest_project(tmp_path)
         _config(root, tests=[suites.pytest_suite(files=('**/test_*.py',),
@@ -282,6 +294,7 @@ class TestTheTestArmRunsEachSuite:
     @pytest.mark.skipif(shutil.which('sqlite3') is None,
                         reason='sqlite3 is not installed')
     # purlin: run_script PROOF-4
+    # purlin: run_script PROOF-225
     def test_a_sql_script_whose_statements_succeed_passes(self, tmp_path):
         code, results, output = self._sql(tmp_path, 'a@test.com')
         assert results == ['pass'], output
@@ -445,7 +458,8 @@ class TestEnvScopedProofs:
     """`@env` for another operating system is listed, never run, never missing."""
 
     def _other_os(self):
-        return 'windows' if not sys.platform.startswith('win') else 'linux'
+        """Windows here, and macOS on Windows, the system its proof names."""
+        return 'windows' if not sys.platform.startswith('win') else 'macos'
 
     SKIPPED_HERE = (
         'import pytest\n\n'
@@ -458,6 +472,7 @@ class TestEnvScopedProofs:
         '    assert True\n')
 
     # purlin: run_script PROOF-10
+    # purlin: run_script PROOF-226
     def test_a_foreign_env_proof_is_listed_as_needing_its_os(self, tmp_path):
         other = self._other_os()
         root = _pytest_project(tmp_path, body=self.SKIPPED_HERE)
@@ -705,6 +720,7 @@ class TestTheCiArmCommitsItsSection:
         return root, code, calls, capsys.readouterr().out
 
     # purlin: run_script PROOF-12
+    # purlin: run_script PROOF-227
     def test_the_ci_arm_writes_its_section_and_commits(
             self, tmp_path, evidence_run, capsys):
         root, code, _calls, output = self._ci(tmp_path, evidence_run, capsys)
@@ -1810,6 +1826,14 @@ class TestHostOs:
     def test_any_other_system_reads_linux(self, monkeypatch):
         assert self._on(monkeypatch, 'freebsd14') == 'linux'
 
+    # The system is asked through `platform`, not `sys.platform`, which is
+    # what the run reads, so the check is not the answer asked twice.
+    @pytest.mark.skipif(platform.system() != 'Windows',
+                        reason='the real system is asked on Windows alone')
+    # purlin: run_script PROOF-228
+    def test_this_windows_machine_reads_windows(self):
+        assert _load_run_script().host_os() == 'windows'
+
 
 class TestTheConsoleCodecNeverEndsTheRun:
     """A Windows console hands Python cp1252, which encodes none of the glyphs.
@@ -1821,15 +1845,24 @@ class TestTheConsoleCodecNeverEndsTheRun:
     """
 
     # purlin: run_script PROOF-57
+    # purlin: run_script PROOF-229
     def test_a_cp1252_console_gets_the_glyphs_and_no_traceback(self, tmp_path):
         root = _pytest_project(tmp_path)
         _spec(root, 'feat')
-        environment = dict(os.environ, PYTHONIOENCODING='cp1252')
+        # On Windows the default is the real one: Python writes to a pipe in
+        # the system's own code page, cp1252 on a Western install, unless
+        # it is told otherwise. Elsewhere cp1252 is forced.
+        environment = dict(os.environ)
+        if os.name == 'nt':
+            for name in ('PYTHONIOENCODING', 'PYTHONUTF8'):
+                environment.pop(name, None)
+        else:
+            environment['PYTHONIOENCODING'] = 'cp1252'
         result = subprocess.run(
             [sys.executable, RUN_SCRIPT, '--project-root', str(root),
              '--all', '--test'],
-            capture_output=True, encoding='utf-8', cwd=str(root),
-            env=environment)
+            capture_output=True, encoding='utf-8', errors='replace',
+            cwd=str(root), env=environment)
         output = result.stdout + result.stderr
         assert 'Traceback' not in output, output
         assert 'UnicodeEncodeError' not in output, output
@@ -1849,10 +1882,9 @@ def _hundred_lines(tmp_path, gate='passed', proofs=(('PROOF-1', 'RULE-1', ''),))
     root = _project(tmp_path, tests=[suites.shell_suite()], gate=gate)
     _spec(root, 'feat', proofs=proofs)
     (root / 'tests').mkdir()
-    (root / 'tests' / 'long.test.sh').write_text(
-        '# purlin: feat PROOF-1\n'
-        'for n in $(seq 1 100); do echo "line $n"; done\nexit 1\n',
-        encoding='utf-8')
+    _script(root / 'tests' / 'long.test.sh',
+            '# purlin: feat PROOF-1\n'
+            'for n in $(seq 1 100); do echo "line $n"; done\nexit 1\n')
     return root
 
 
@@ -1894,13 +1926,13 @@ class TestAFailingSuiteStatesItsReason:
                 < output.index('Purlin status:')), output
 
     # purlin: run_script PROOF-169
+    # purlin: run_script PROOF-230
     def test_a_killed_suite_prints_its_tail(self, tmp_path):
         root = _project(tmp_path, tests=[suites.shell_suite()])
         _spec(root, 'feat')
         (root / 'tests').mkdir()
-        (root / 'tests' / 'slow.test.sh').write_text(
-            '# purlin: feat PROOF-1\necho started\nsleep 5\n',
-            encoding='utf-8')
+        _script(root / 'tests' / 'slow.test.sh',
+                '# purlin: feat PROOF-1\necho started\nsleep 5\n')
         code, output = _run(root, '--all', '--test', '--arm-timeout', '1')
         assert code == 1, output
         assert 'started' in _tail(output, 'shell'), output
@@ -2189,6 +2221,7 @@ class TestARunCoversWhatTheChangeTouched:
         return root, sha
 
     # purlin: run_script PROOF-93
+    # purlin: run_script PROOF-232
     def test_an_untracked_file_selects_the_feature_and_is_named(
             self, tmp_path):
         root, _sha = self._untracked_under_login(tmp_path)
@@ -2300,12 +2333,12 @@ class TestARunCoversWhatTheChangeTouched:
         root = _project(tmp_path, tests=[suites.shell_suite()])
         for name in ('login', 'export'):
             _spec(root, name)
-            (root / ('%s.test.sh' % name)).write_text(
-                '# purlin: %s PROOF-1\necho %s >> ran.txt\n' % (name, name),
-                encoding='utf-8')
+            _script(root / ('%s.test.sh' % name),
+                    '# purlin: %s PROOF-1\necho %s >> ran.txt\n' % (name, name))
         return root
 
     # purlin: run_script PROOF-191
+    # purlin: run_script PROOF-233
     def test_a_named_feature_runs_only_its_test_files(self, tmp_path):
         root = self._two_shell_scripts(tmp_path)
         code, output = _run(root, '--feature', 'login', '--test')
@@ -2330,9 +2363,8 @@ class TestARunCoversWhatTheChangeTouched:
         for name in ('login', 'export'):
             _spec(root, name)
             (root / name).mkdir()
-            (root / name / ('%s.test.sh' % name)).write_text(
-                '# purlin: %s PROOF-1\necho %s >> ran.txt\n' % (name, name),
-                encoding='utf-8')
+            _script(root / name / ('%s.test.sh' % name),
+                    '# purlin: %s PROOF-1\necho %s >> ran.txt\n' % (name, name))
         _code, output = _run(root, '--feature', 'login', '--test')
         assert 'Running the logins suite.' in output.splitlines(), output
         assert 'Running the exports suite.' not in output, output
@@ -2533,6 +2565,7 @@ class TestNoTestCommand:
         return entries[0]
 
     # purlin: run_script PROOF-128
+    # purlin: run_script PROOF-234
     def test_pytest_is_suggested_its_own_entry(self, tmp_path):
         assert self._suggested_for(tmp_path, 'pytest')['name'] == 'pytest'
 
