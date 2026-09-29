@@ -2,9 +2,9 @@
 
 `dev/test_specs_reader.py`, `dev/test_states.py` and `dev/test_mcp_server.py`
 import the `project` fixture and the helpers from here by name. Every
-fixture is written by the test: a spec, a runtime proof file, the evidence
-under `.purlin/evidence/`, a signature beside the spec. This file holds no
-test and no marker, and pytest does not collect it.
+fixture is written by the test: a spec, the evidence under
+`.purlin/evidence/`, a signature beside the spec. This file holds no test and
+no marker, and pytest does not collect it.
 """
 
 import contextlib

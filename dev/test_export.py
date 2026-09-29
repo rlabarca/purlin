@@ -124,7 +124,6 @@ def made_project(gate=SIGNING_GATE, spec=SPEC, version='2.1.0',
     signer's key is set up last.
     """
     made = Project(spec=spec, gate=gate, config={'min_strength': 50})
-    made.proofs()
     made.tests_ran_at = made.head()
     made.evidence(strength=90, runner='ci', commit_it=False, source='ci')
     if audited:
@@ -463,7 +462,6 @@ class TestTheContent:
                 '\n\n# purlin: login RULE-3\n'
                 'def test_a_locked_account_returns_423():\n'
                 '    assert True\n'))
-            made.proofs()
             rel = made.evidence(commit_it=False)
             path = os.path.join(made.root, *rel.split('/'))
             with open(path, encoding='utf-8') as handle:

@@ -150,24 +150,10 @@ class Project(object):
         settings.update(fields)
         write(path, json.dumps(settings))
 
-    def proofs(self, statuses=None):
-        statuses = statuses or {'PROOF-1': 'pass', 'PROOF-2': 'pass'}
-        entries = []
-        for proof_id, status in sorted(statuses.items()):
-            entries.append({
-                'feature': 'login', 'id': proof_id,
-                'rule': 'RULE-1' if proof_id == 'PROOF-1' else 'RULE-2',
-                'status': status,
-                'test_file': 'tests/test_login.py',
-                'test_name': TEST_NAMES[proof_id]})
-        write(os.path.join(self.root, '.purlin', 'runtime', 'proofs',
-                           'login.json'),
-              json.dumps({'proofs': entries}))
-
     def evidence(self, statuses=None, runner='ada', strength=90,
                  commit_it=True, at='2026-09-13T12:00:00Z', tests=None,
                  source='local', os_name=None, audited=True):
-        """Write a section naming the tests the runtime proofs name. Its path.
+        """Write a section naming the tests `statuses` names. Its path.
 
         The section carries the fingerprint taken now, so it is current until
         the spec, the scoped code or the test changes. `tests` maps a proof to
@@ -288,7 +274,6 @@ def signing_project(signer='jane@acme.com'):
     only thing left is a person. The signer's key is set up last.
     """
     made = Project(gate=SIGNING_GATE)
-    made.proofs()
     made.evidence(runner='ci', commit_it=False, source='ci')
     made.audit('RULE-1')
     made.audit('RULE-2')
