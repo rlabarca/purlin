@@ -95,7 +95,7 @@ LOCKED = ('signed_hash', 'rule_hash', 'proof_hash', 'test_hash',
 WRITTEN = 'Evidence package written to %s. State: %s.'
 NO_VERSION = ('No version: nothing in this project states one. '
               'Name it with --release <version>.')
-SHORT = 'the committed evidence reads %d of %d rules short of the gate'
+WORK_LEFT = 'the committed evidence still has work left to do'
 NOT_COMMITTED = '%s is written and not committed; the package leaves it out.'
 MATCHES = 'The package matches its fingerprint.'
 COMMITTED = 'Package committed.'
@@ -374,7 +374,9 @@ def _results(rule_id, proofs, sections):
                     evidence_module.proof_results(section).items()
                     if proof_id in proof_ids]
             word = ('failed' if 'fail' in seen
-                    else 'passed' if seen else 'no test')
+                    else 'no test' if not seen
+                    else 'passed' if all(r == 'pass' for r in seen)
+                    else 'not run')
         out.append({'os': entry['os'], 'source': entry['source'],
                     'result': word, 'at': section.get('at'),
                     'commit': section.get('commit'),
@@ -573,10 +575,7 @@ def write_for_tag(project_root, release=None):
     except PackageError as error:
         return None, str(error)
     if package['state'] != FINISHED:
-        rules = [rule for feature in package['features']
-                 for rule in feature['rules']]
-        return None, SHORT % (sum(1 for rule in rules if rule['left']),
-                              len(rules))
+        return None, WORK_LEFT
     try:
         rel = write(project_root, package)
         commit(project_root, rel, package, signed=True)
