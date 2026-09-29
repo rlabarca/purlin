@@ -120,27 +120,42 @@ EXTRA_RULE = ('- RULE-3: A locked account reads 423 until fifteen minutes '
               'pass\n')
 
 
+def _status_then_an_edit_by_hand(made):
+    """`purlin:status`, then a third rule and a code change committed with no
+    Purlin command. Returns the data file's stamp from before the edit."""
+    purlin_status.sync_status(made.root)
+    before = _stamp(made.root)
+    spec = os.path.join(made.root, 'specs', 'auth', 'login.md')
+    with open(spec, encoding='utf-8') as handle:
+        text = handle.read()
+    with open(spec, 'w', encoding='utf-8') as handle:
+        handle.write(text.replace('\n\n## Proof', '\n' + EXTRA_RULE
+                                  + '\n## Proof'))
+    with open(os.path.join(made.root, 'src', 'login.py'), 'a',
+              encoding='utf-8') as handle:
+        handle.write('# edited\n')
+    subprocess.run(['git', 'add', '-A'], cwd=made.root, check=True)
+    subprocess.run(['git', 'commit', '-q', '-m', 'an edit by hand'],
+                   cwd=made.root, check=True)
+    return before
+
+
 # purlin: purlin_report PROOF-60
 def test_an_edit_with_no_command_leaves_the_data_file_alone():
     made = Project(gate='passed')
     try:
-        purlin_status.sync_status(made.root)
-        before = _stamp(made.root)
-        spec = os.path.join(made.root, 'specs', 'auth', 'login.md')
-        with open(spec, encoding='utf-8') as handle:
-            text = handle.read()
-        with open(spec, 'w', encoding='utf-8') as handle:
-            handle.write(text.replace('\n\n## Proof', '\n' + EXTRA_RULE
-                                      + '\n## Proof'))
-        with open(os.path.join(made.root, 'src', 'login.py'), 'a',
-                  encoding='utf-8') as handle:
-            handle.write('# edited\n')
-        subprocess.run(['git', 'add', '-A'], cwd=made.root, check=True)
-        subprocess.run(['git', 'commit', '-q', '-m', 'an edit by hand'],
-                       cwd=made.root, check=True)
+        before = _status_then_an_edit_by_hand(made)
         assert _stamp(made.root) == before
         assert len(_rule_ids(_data(made.root))) == 2
+    finally:
+        made.close()
 
+
+# purlin: purlin_report PROOF-151
+def test_status_after_an_edit_by_hand_writes_the_new_rule():
+    made = Project(gate='passed')
+    try:
+        _status_then_an_edit_by_hand(made)
         purlin_status.sync_status(made.root)
         assert len(_rule_ids(_data(made.root))) == 3
     finally:

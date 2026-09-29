@@ -96,29 +96,54 @@ RIGHT_ALIGNED = """() => Array.from(document.querySelectorAll('.tbl *')).filter(
   el => getComputedStyle(el).textAlign === 'right').length"""
 
 
-# purlin: purlin_report PROOF-42
-def test_every_column_fits_from_1024_up_and_no_value_breaks(browser,  # noqa: F811
-                                                            tmp_path):
-    """`SIGNED` sat off the right of a 1024-wide window with eight columns."""
+def _at_every_width(browser, tmp_path, name, look):
+    """`{width: look(page)}` for the board of one sample at each width."""
+    found = {}
     for width in WIDTHS:
-        page = open_board(browser, tmp_path / str(width),
-                          payload_named('regulated'),
+        page = open_board(browser, tmp_path / ('%s%d' % (name, width)),
+                          payload_named(name),
                           viewport={'width': width, 'height': 1000})
-        assert [h for h in page.evaluate(HEADINGS) if h['over'] > 0] == []
-        assert page.eval_on_selector(
-            '.tbl', 'el => el.scrollWidth - el.clientWidth') == 0
-        assert page.evaluate(LAST_HEADING) <= width
-        assert page.evaluate(RIGHT_ALIGNED) == 0
-        assert page.evaluate(WRAPPED) == 0, width
+        found[width] = look(page)
         page.close()
-        # A spec that proves an anchor's rules reads `1 (+1 shared)`, and
-        # that value is one line too.
-        team = open_board(browser, tmp_path / ('team%d' % width),
-                          payload_named('team'),
-                          viewport={'width': width, 'height': 1000})
-        assert '1 (+1 shared)' in team.inner_text('.tbl')
-        assert team.evaluate(WRAPPED) == 0, width
-        team.close()
+    return found
+
+
+# purlin: purlin_report PROOF-42
+def test_every_column_fits_from_1024_up(browser, tmp_path):  # noqa: F811
+    """`SIGNED` sat off the right of a 1024-wide window with eight columns."""
+    found = _at_every_width(browser, tmp_path, 'regulated', lambda page: (
+        page.evaluate(SIDEWAYS), page.evaluate(LAST_HEADING)))
+    for width, (sideways, last) in found.items():
+        assert sideways == 0, (width, sideways)
+        assert last <= width, (width, last)
+
+
+# purlin: purlin_report PROOF-140
+def test_no_heading_overflows_and_no_count_breaks(browser,  # noqa: F811
+                                                  tmp_path):
+    found = _at_every_width(browser, tmp_path, 'regulated', lambda page: (
+        [h for h in page.evaluate(HEADINGS) if h['over'] > 0],
+        page.evaluate(WRAPPED)))
+    assert found == {width: ([], 0) for width in WIDTHS}, found
+
+
+# purlin: purlin_report PROOF-141
+def test_nothing_on_the_table_is_aligned_right(browser,  # noqa: F811
+                                               tmp_path):
+    found = _at_every_width(browser, tmp_path, 'regulated',
+                            lambda page: page.evaluate(RIGHT_ALIGNED))
+    assert found == {width: 0 for width in WIDTHS}, found
+
+
+# purlin: purlin_report PROOF-142
+def test_a_shared_count_is_one_line_from_1024_up(browser,  # noqa: F811
+                                                 tmp_path):
+    """A spec that proves an anchor's rules reads `1 (+1 shared)`, and that
+    value is one line too."""
+    found = _at_every_width(browser, tmp_path, 'team', lambda page: (
+        '1 (+1 shared)' in page.inner_text('.tr[data-feature="receipt"]'),
+        page.evaluate(WRAPPED)))
+    assert found == {width: (True, 0) for width in WIDTHS}, found
 
 
 # The five widths a person opens the board at, from a wide screen to a phone.
@@ -228,25 +253,45 @@ def test_a_shared_count_is_one_line_at_every_width(browser, tmp_path):  # noqa: 
         team.close()
 
 
+def _board_at(browser, tmp_path, name, width):
+    return open_board(browser, tmp_path / ('%s%d' % (name, width)),
+                      payload_named(name),
+                      viewport={'width': width, 'height': 900})
+
+
 # purlin: purlin_report PROOF-76
+def test_four_boxes_to_a_row_at_768(browser, tmp_path):  # noqa: F811
+    page = _board_at(browser, tmp_path, 'regulated', 768)
+    assert len(page.query_selector_all('.tile')) == 4
+    assert page.evaluate(FIRST_ROW) == 4
+    page.close()
+
+
+# purlin: purlin_report PROOF-161
+def test_every_box_on_one_row_at_1024(browser, tmp_path):  # noqa: F811
+    page = _board_at(browser, tmp_path, 'regulated', 1024)
+    assert len(page.query_selector_all('.tile')) == 4
+    assert page.evaluate(FIRST_ROW) == 4
+    page.close()
+
+
+# purlin: purlin_report PROOF-162
+def test_two_boxes_to_a_row_at_390(browser, tmp_path):  # noqa: F811
+    page = _board_at(browser, tmp_path, 'team', 390)
+    assert len(page.query_selector_all('.tile')) == 3
+    assert page.evaluate(FIRST_ROW) == 2
+    page.close()
+
+
+# purlin: purlin_report PROOF-163
 def test_a_narrow_board_is_blocks_of_labelled_pairs(browser, tmp_path):  # noqa: F811
-    rows = {}
-    for width in (1024, 768, 390):
-        page = open_board(browser, tmp_path / str(width),
-                          payload_named('team' if width == 390 else 'regulated'),
-                          viewport={'width': width, 'height': 900})
-        rows[width] = page.evaluate(FIRST_ROW)
-        rows['boxes%d' % width] = len(page.query_selector_all('.tile'))
-        if width == 390:
-            receipt = page.inner_text('.tr[data-feature="receipt"]')
-            rows['receipt'] = ' '.join(receipt.split())
-            rows['label'] = page.eval_on_selector(
-                '.tr[data-feature="receipt"] > div:nth-child(2)',
-                "el => getComputedStyle(el, '::before').content")
-            rows['heads'] = page.is_visible('.th')
-        page.close()
-    assert (rows[768], rows[390]) == (4, 2), rows
-    assert rows[1024] == rows['boxes1024'] == 4, rows
-    assert rows['heads'] is False, rows
-    assert rows['receipt'].startswith('▶ receipt 1 (+1 shared)'), rows
-    assert rows['label'] == '"Rules"', rows
+    page = _board_at(browser, tmp_path, 'team', 390)
+    heads = page.is_visible('.th')
+    receipt = ' '.join(page.inner_text('.tr[data-feature="receipt"]').split())
+    label = page.eval_on_selector(
+        '.tr[data-feature="receipt"] > div:nth-child(2)',
+        "el => getComputedStyle(el, '::before').content")
+    page.close()
+    assert heads is False
+    assert receipt.startswith('▶ receipt 1 (+1 shared)'), receipt
+    assert label == '"Rules"', label
