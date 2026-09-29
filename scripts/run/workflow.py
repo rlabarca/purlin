@@ -131,6 +131,14 @@ def foreign_reason(gate):
     return FOREIGN_OS_REASON_AT_PASSED if gate == 'passed' else FOREIGN_OS_REASON
 
 
+def foreign_tags(env_tags, host_os):
+    """The `@env` tags, lower-cased and sorted, that name a system other than
+    `host_os`, the machine running setup or the upgrade."""
+    return sorted({str(tag).strip().lower() for tag in (env_tags or ())
+                   if str(tag).strip().lower()
+                   and str(tag).strip().lower() != str(host_os or '')})
+
+
 def wanted(env_tags, host_os, gate=None):
     """`(write one, the reasons)` for a project's workflow, in the gate's words.
 
@@ -139,9 +147,7 @@ def wanted(env_tags, host_os, gate=None):
     all.
     """
     reasons = []
-    foreign = sorted({str(tag).strip().lower() for tag in (env_tags or ())
-                      if str(tag).strip().lower()
-                      and str(tag).strip().lower() != str(host_os or '')})
+    foreign = foreign_tags(env_tags, host_os)
     if foreign:
         reasons.append(foreign_reason(gate) % ', '.join(foreign))
     return bool(reasons), reasons
