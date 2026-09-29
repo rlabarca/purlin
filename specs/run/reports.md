@@ -57,6 +57,7 @@
 - PROOF-46 (RULE-3): The glob `dev/**/test_*.py` matches `dev/test_a.py`, with no folder between `dev` and the file
 - PROOF-47 (RULE-3): With a suite `first` on `tests/*.py` and then a suite `second` on `**/*.py`, `tests/test_a.py`, which both match, belongs to `first`, and `other/test_b.py`, which only `second` matches, belongs to `second`
 - PROOF-48 (RULE-3): With one suite, on `tests/*.py`, markers are read from `tests/test_a.py` and not from `other/test_b.py`, which carries a marker too
+- PROOF-99 (RULE-3): On Windows, with one suite on `tests/*.py`, markers are read from `tests\test_a.py` and not from `other\test_b.py`, which carries a marker too @env(windows)
 - PROOF-4 (RULE-4): A Python test file holds the marker `login PROOF-1` above a decorator above the passing test `test_decorated`; the run's evidence holds exactly one result, `PROOF-1` `pass` under `tests/test_login.py::test_decorated`
 - PROOF-49 (RULE-4): A Python test file holds the markers `login PROOF-1` and `login PROOF-2`, one above the other, over the passing test `test_two`; the evidence holds exactly two results, each proof `pass` under `tests/test_login.py::test_two`
 - PROOF-50 (RULE-4): A Python test file holds `login PROOF-1`, then a blank line, an ordinary comment and a decorator, then the passing test `test_decorated`; the evidence holds exactly one result, `PROOF-1` `pass` under `tests/test_login.py::test_decorated`
@@ -86,6 +87,7 @@
 - PROOF-65 (RULE-10): A failing Python case of the class `tests.test_elsewhere`, a file that does not exist, is tied to no test: every other result stays as it was, and no problem is reported
 - PROOF-66 (RULE-10): A failing TRX case of the class `Nowhere.Tests.MissingTests`, which no marked file declares, is tied to no test: every other result stays as it was, and no problem is reported
 - PROOF-67 (RULE-10): A failing Go case of the package `example.com/shop/nowhere`, which no folder of the module holds, is tied to no test: every other result stays as it was
+- PROOF-100 (RULE-10): On Windows, in a Jest report whose case `accepts` names its file `tests\login.test.js`, the passing case gives `pass` to the marker `login PROOF-1` in that file @env(windows)
 - PROOF-11 (RULE-11): A marked Python test run over the two values 1 and 2, both passing, reads `pass`
 - PROOF-68 (RULE-11): A marked Python test run over the two values 1 and -2, where -2 fails, reads `fail`
 - PROOF-69 (RULE-11): A marked C# theory of two rows, one passing and one failing, reads `fail`
@@ -104,13 +106,16 @@
 - PROOF-79 (RULE-14): A suite's command writes a report holding a passing case for `test_a` and none for `test_b`, both marked; the evidence holds `test_a`'s proof `pass` and `test_b`'s `missing`
 - PROOF-15 (RULE-15): An `exit` suite covers `tests/good.sh`, which carries two markers and exits 0, and `tests/bad.sh`, which carries one and exits 3; the evidence reads `pass` for both markers of the first, under `tests/good.sh::good.sh`, and `fail` for the second's, under `tests/bad.sh::bad.sh`; the run exits 1 and never says `Evidence is missing`
 - PROOF-80 (RULE-15): With the same two scripts, the suite's command, which also writes down the files it is given, ran exactly twice: once given `tests/bad.sh` alone and once given `tests/good.sh` alone
+- PROOF-101 (RULE-15): On Windows, a suite judged by its ending covers `tests/good.sh`, which exits 0, and `tests/bad.sh`, which exits 3; the evidence reads `pass` for the first's markers and `fail` for the second's, and the run exits 1 @env(windows)
 - PROOF-16 (RULE-16): `login` and `signup` each have one marked test file, and the suite's command writes down its arguments; a run over `login` alone gives it exactly `tests/test_login.py` and the report path `.purlin/runtime/reports/pytest.xml`
 - PROOF-81 (RULE-16): `login` and `signup` each have one marked test file, and the suite's command writes down its arguments; a run over every feature gives it the report path alone, with no test file
 - PROOF-82 (RULE-16): The marked test file of `signup` is `tests/test_sign up.py`, whose name holds a space; a run over `signup` alone gives the command that path as one argument, then the report path
+- PROOF-102 (RULE-16): On Windows, the marked test file of `signup` is `tests/test_sign up.py`, whose name holds a space; a run over `signup` alone gives the command that path as one argument, then the report path @env(windows)
 - PROOF-83 (RULE-25): A suite's command, asked which shell runs it, answers bash
 - PROOF-84 (RULE-26): A run started from a folder outside the project runs the suite's command in the project root: the command, asked the folder it runs in, answers the project root
 - PROOF-17 (RULE-17): A report left from an earlier run, holding one passing case, sits at the suite's report path, and the suite's command writes nothing; the run exits 1 saying `wrote no report`, and the old report is gone
 - PROOF-85 (RULE-17): The suite's report path is a folder holding an old report of one passing case, and the command writes nothing; the run exits 1 saying `wrote no report at .purlin/runtime/reports/out`, and the folder is gone
+- PROOF-103 (RULE-17): On Windows, the suite's report path is a folder holding an old report of one passing case, and the command writes nothing; the run exits 1 saying `wrote no report at .purlin/runtime/reports/out`, and the folder is gone @env(windows)
 - PROOF-86 (RULE-27): A suite's report path is a folder, and its command writes two TRX reports into it, one passing the test `A` and one failing the test `B`; the evidence holds `A`'s proof `pass` and `B`'s `fail`
 - PROOF-87 (RULE-28): A suite whose report path is `-` and whose command prints the stream of a Go run gives every Go test in the evidence its result from that stream: `TestTotal` `pass`, `TestLookupPanics` `fail` and `TestDiscount` `missing`
 - PROOF-18 (RULE-18): A suite whose command exits 0 and writes no report ends the run with `Evidence is missing: the pytest suite wrote no report at .purlin/runtime/reports/pytest.xml.` and exit code 1
@@ -127,6 +132,7 @@
 - PROOF-28 (RULE-21): In a project whose pytest suite reads `tests/test_login.py`, where line 1 reads `# purln: login PROOF-1`, `--near-misses` prints one JSON array holding one entry: file `tests/test_login.py`, line 1, that text, the fix `# purlin: login PROOF-1`, and a `why` naming `purln`; it exits 0
 - PROOF-29 (RULE-21): `markers.py --near-misses --nonsense` prints the line `Usage: markers.py --near-misses [--project-root DIR]` and exits 2
 - PROOF-30 (RULE-21): A misspelled comment in a file no suite's globs match is not listed, and the array is empty
+- PROOF-104 (RULE-21): On Windows, in a project whose pytest suite reads `tests/test_login.py`, where line 1 reads `# purln: login PROOF-1`, `--near-misses` prints one entry with the file `tests/test_login.py`, spelled with `/`, and exits 0 @env(windows)
 - PROOF-31 (RULE-22): A test file carrying `# PURLIN: login PROOF-1` is listed with the fix `# purlin: login PROOF-1`, and its why is the one sentence saying `PURLIN` is `purlin` in capitals
 - PROOF-32 (RULE-22): A test file carrying `# purlin:login PROOF-1` is listed with the fix `# purlin: login PROOF-1`, and its why reads `There is no space after the colon.`
 - PROOF-90 (RULE-22): A test file carrying `# purlim: login PROOF-1` is listed with the fix `# purlin: login PROOF-1`, and its why is the one sentence saying `purlim` is one letter from `purlin`

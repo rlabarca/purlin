@@ -261,6 +261,7 @@ class TestTheMarker:
             'tests/test_a.py': 'first', 'other/test_b.py': 'second'}
 
     # purlin: reports PROOF-48
+    # purlin: reports PROOF-99
     def test_a_file_no_suite_matches_is_not_read(self, tmp_path):
         root = self._two_files(tmp_path)
         first = markers.Suite('first', 'x', None, 'junit', ['tests/*.py'])
@@ -466,10 +467,22 @@ class TestTheTie:
             == 'pass'
 
     # purlin: reports PROOF-62
+    # purlin: reports PROOF-100
     def test_a_jest_case_names_its_file(self, tmp_path):
-        root, suite, cases = _captured(tmp_path, 'jest', 'jest.xml',
-                                       'junit', ['tests/*.test.*'])
-        assert {c.file for c in cases} == {'tests/login.test.js'}
+        # The capture was written on a Mac. Jest on Windows names each file
+        # with this system's separator, `tests\login.test.js`, so the
+        # report is given the spelling the running system writes.
+        native = os.path.join('tests', 'login.test.js')
+        report = _fixture(tmp_path, 'jest') / 'jest.xml'
+        report.write_bytes(report.read_bytes().replace(
+            b'file="tests/login.test.js"',
+            b'file="%s"' % native.encode('utf-8')))
+        root = report.parent
+        suite = markers.Suite('jest', 'x', 'jest.xml', 'junit',
+                              ['tests/*.test.*'])
+        cases, problem = reports.read_report('junit', str(root), 'jest.xml')
+        assert problem is None
+        assert {c.file for c in cases} == {native}
         (outcomes, _p), marked = _tie(root, suite, cases)
         assert list(marked) == ['tests/login.test.js']
         assert _marker_results(marked, outcomes)[('login', 'PROOF-1')] \
@@ -643,12 +656,25 @@ def exit_run(tmp_path_factory):
     suite = suites.shell_suite(('tests/*.sh',))
     suite['run'] = 'echo "call: {files}" >> calls.txt; ' + suite['run']
     root = _project(tmp_path_factory.mktemp('exit'), [suite])
-    _write(root, 'tests/good.sh', '#!/usr/bin/env bash\n'
-           '# purlin: login PROOF-1\n# purlin: login PROOF-2\nexit 0\n')
-    _write(root, 'tests/bad.sh', '#!/usr/bin/env bash\n'
-           '# purlin: login PROOF-3\nexit 3\n')
+    _write_lf(root, 'tests/good.sh', '#!/usr/bin/env bash\n'
+              '# purlin: login PROOF-1\n# purlin: login PROOF-2\nexit 0\n')
+    _write_lf(root, 'tests/bad.sh', '#!/usr/bin/env bash\n'
+              '# purlin: login PROOF-3\nexit 3\n')
     code, out = _run(root, '--all', '--test')
     return root, code, out
+
+
+def _write_lf(root, rel, text):
+    """`_write`, keeping each line's end a bare `\\n` on every system.
+
+    A file written as text on Windows gets `\\r\\n`, and bash reads
+    `exit 0\\r` as a word that is not a number: the script would fail
+    there for its line ends, not for what it checks.
+    """
+    path = root.joinpath(*rel.split('/'))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(text.encode('utf-8'))
+    return path
 
 
 def _arguments_run(tmp_path, *args):
@@ -795,6 +821,7 @@ class TestThroughARun:
                                            'PROOF-2': 'missing'}
 
     # purlin: reports PROOF-15
+    # purlin: reports PROOF-101
     def test_an_exit_suite_gives_each_file_its_exit_code(self, exit_run):
         root, code, out = exit_run
         assert code == 1
@@ -821,6 +848,7 @@ class TestThroughARun:
             'x', '.purlin/runtime/reports/pytest.xml']
 
     # purlin: reports PROOF-82
+    # purlin: reports PROOF-102
     def test_a_path_holding_a_space_is_one_argument(self, tmp_path):
         assert _arguments_run(tmp_path, '--feature', 'signup', '--test') == [
             'x', 'tests/test_sign up.py',
@@ -862,6 +890,7 @@ class TestThroughARun:
         assert not (root / report).exists()
 
     # purlin: reports PROOF-85
+    # purlin: reports PROOF-103
     def test_an_old_report_folder_is_deleted_before_the_suite_runs(
             self, tmp_path):
         report = '.purlin/runtime/reports/out'
@@ -1074,6 +1103,7 @@ def _fix_and_why(tmp_path, comment, spec=LOGIN_SPEC):
 class TestNearMisses:
 
     # purlin: reports PROOF-28
+    # purlin: reports PROOF-104
     def test_a_near_miss_is_listed_as_json(self, tmp_path):
         root = _project(tmp_path, [suites.pytest_suite()])
         _write(root, 'tests/test_login.py', '# purln: login PROOF-1\n'
