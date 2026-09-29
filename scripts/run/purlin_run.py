@@ -9,9 +9,8 @@
 **Before anything runs.** With no `.purlin/config.json` the run says so,
 names `purlin:init`, writes nothing and exits 1. A settings file that cannot
 be read is named with its cause the same way (`config_problem`). In a
-project Purlin 0.9.5
-set up and nobody upgraded (`set_up_by_095`) it names `purlin:init --update`
-the same way. With the `tests` setting empty it
+project Purlin 0.9.5 set up and nobody upgraded (`set_up_by_095`) it names
+`purlin:init --update` the same way. With the `tests` setting empty it
 writes nothing and exits 1: where it detects test tools it knows, it prints
 each tool's command and the whole `tests` setting to add
 (`frameworks.suggest`), and otherwise it asks for `purlin:test`, which
@@ -78,8 +77,9 @@ prove, and always commits it, through the git host's API, because the
 evidence exists nowhere else. No breaks run there and the AI audit is not
 called. On a tag run it runs the same tests and writes nothing.
 
-A proof the spec tags `@env` for another operating system is not run on a
-person's machine. The run says so and names `purlin:test --remote`.
+On a person's machine a proof the spec tags `@env` for another operating
+system reads `not run`, whatever its test did there. The run counts those
+proofs in one line per system and names `purlin:test --remote`.
 
 No arm and no engine ever reads this process's stdin, and none may ask git
 for a password: a runner is nobody's terminal, and a command that stops for
@@ -93,8 +93,8 @@ test failed or did not run, evidence is missing, a marker names nothing a
 spec has, there is no settings file or it cannot be read, an older Purlin
 set the project up and it was not upgraded, no test command is set, or, for
 `--audit` above the gate `passed`, a rule it read is weak or could not be
-audited; 2 the command line was wrong. `--ci` exits 1 only when a test tied to a proof tagged for
-its system failed or could not run.
+audited; 2 the command line was wrong. `--ci` exits 1 only when a test
+tied to a proof tagged for its system failed or could not run.
 
 The flow is one pass. Resolve the configuration and the suites, scan the
 specs and the markers, run each suite, then check two things no test
@@ -1445,9 +1445,10 @@ def _ci(project_root, features, sections, log, os_name):
 def _remote(project_root, args, cfg=None):
     """`--test --remote`: let the git host's runner do the run.
 
-    The runner runs the same tests this machine would, writes its own
-    operating system's section of each feature's `ci/` evidence, and commits
-    it on the run branch; the run pulls that commit back.
+    The runner runs the tests tied to the proofs tagged for its own
+    operating system, writes its section of each such feature's `ci/`
+    evidence, and commits it on the run branch; the run pulls that commit
+    back.
     """
     from remote import run_remote
     return run_remote(project_root, args, cfg)

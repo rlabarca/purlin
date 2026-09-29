@@ -2,14 +2,15 @@
 
 > Description: The one command that runs a project's tests and writes what they saw.
 >   `purlin:test` runs it as `--test`, `purlin:audit` as `--audit`, and the CI job as
->   `--ci`. It resolves the configuration and the suites the settings name, scans the specs
->   and the markers, runs each suite's own command, ties each result in its report to the
->   markers above its test, and then checks the two things no test framework reports on its
+>   `--ci`, which runs only the tests of the proofs tagged for the runner's own system. It
+>   resolves the configuration and the suites the settings name, scans the specs and the
+>   markers, runs each suite's own command, ties each result in its report to the markers
+>   above its test, and then checks the two things no test framework reports on its
 >   own: a suite that left no report, and a marker of a feature it covers that has no result.
 >   It hands what it saw to the evidence writer, whose own spec covers the file. How a report
 >   is read and a result tied to its marker is the `reports` spec. Before any test it checks that
->   the settings file is there, that no older Purlin set the project up without an upgrade, and
->   that a test command is set, suggesting one from the test tools it knows.
+>   the settings file is there and can be read, that no older Purlin set the project up without
+>   an upgrade, and that a test command is set, suggesting one for every test tool it knows.
 > Scope: scripts/run/purlin_run.py, scripts/mcp/purlin/frameworks.py, references/supported_frameworks.md
 > Stack: python/stdlib (subprocess, re, hashlib), bash, pytest, sqlite3
 
@@ -159,7 +160,7 @@
 - PROOF-80 (RULE-73): At the gate `strong`, with `mutation_engine` set to `auto`, `min_strength` set to 90 and the breaks scoring the feature 80, `--all --audit` over one rule the model finds nothing against leaves its strong cell `weak` with the one reason `strength 80% under 90%`, and the run exits 1
 - PROOF-81 (RULE-73): At the gate `strong`, with `mutation_engine` set to `auto`, `--all --audit` over the features `feat` and `other`, one passing rule each, asks the breaks once, for both features
 - PROOF-173 (RULE-73): After that audit, `feat`'s rule text is changed from `does thing 1` to `does thing one`; an audit with no feature named asks the breaks a second time, for `feat` alone and not for `other`
-- PROOF-213 (RULE-74): At the gate `strong`, with `mutation_engine` set to `auto` and an engine that answers `mutmut is not installed: run "pip install mutmut"` as its reason and as the feature's `missing`, `--all --audit` writes that sentence as `audit.mutation`'s `missing` and prints `purlin: mutmut is not installed: run "pip install mutmut"` once
+- PROOF-213 (RULE-74): At the gate `strong`, with `mutation_engine` set to `auto` and `mutmut` chosen and not installed, `--all --audit` writes `mutmut is not installed: run "pip install mutmut"` as `audit.mutation`'s `missing` and prints `purlin: mutmut is not installed: run "pip install mutmut"` once
 - PROOF-82 (RULE-52): At the gate `strong`, with no `claude` on the path, `--all --audit` over two rules exits 1, writes no audit entry, leaves their strong cells `not audited` for `the AI audit could not run: claude is not on PATH`, and prints `2 rules could not be audited: claude is not on PATH. Install Claude Code, then run purlin:audit again.`
 - PROOF-183 (RULE-52): At the gate `strong`, with a model that exits 1, `--all --audit` over two rules exits 1, writes no audit entry, leaves their strong cells `not audited` for `the AI audit could not run: claude exited with an error`, and prints `2 rules could not be audited: claude exited with an error. Run purlin:audit again.`
 - PROOF-184 (RULE-52): At the gate `strong`, with a model slower than its 1-second limit, `--all --audit` over two rules exits 1, writes no audit entry, leaves their strong cells `not audited` for `the AI audit could not run: claude timed out after 1 s`, and prints `2 rules could not be audited: claude timed out after 1 s. Run purlin:audit again.`
