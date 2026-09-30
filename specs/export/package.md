@@ -8,8 +8,8 @@
 >   evidence handed to a regulated system of record; Purlin makes no claim of compliance.
 > Scope: scripts/export/package.py
 > Stack: python/stdlib (json, hashlib, subprocess), git worktree
-> Highest-Rule: 27
-> Highest-Proof: 59
+> Highest-Rule: 28
+> Highest-Proof: 60
 
 ## Rules
 
@@ -40,6 +40,7 @@
 - RULE-25: The evidence package states the gate and whether the version is finished, and no field of it says that the software complies with a regulation
 - RULE-26: Each feature entry holds exactly `name`, `spec`, `scope`, `anchor` and `rules`, and an anchor's `scope` is `[]`
 - RULE-27: Each signature entry carries `does_not_apply`, the reason a pinned anchor's rule was signed as not applying or null, and a rule so signed reads `does not apply` in its statuses
+- RULE-28: A spec that writes a number twice or holds a line left from a merge conflict is named in `left` as the kind `to_repair`, counting specs, with the command `purlin:spec`
 
 ## Proof
 
@@ -102,3 +103,4 @@
 - PROOF-57 (RULE-26): Beside `login`, an anchor `secure` whose file carries `> Scope: src/login.py` is exported; its entry reads `anchor` `true` and `scope` `[]`
 - PROOF-58 (RULE-27): At the gate `signed`, `baseline RULE-1`, the one rule of an anchor pinned from `https://github.com/acme/policies.git`, is signed with `--does-not-apply "the project stores no card data"` and the project exported; the rule's one signature reads `does_not_apply` `the project stores no card data`
 - PROOF-59 (RULE-27): At the gate `signed`, `baseline RULE-1`, a pinned anchor's rule with no test, is signed as not applying and the project exported; its `statuses` read `does not apply` for `passed`, `strong` and `signed`
+- PROOF-60 (RULE-28): At the gate `signed`, `login` writes `PROOF-2` twice and the project is exported; the package's `left` holds `{"kind": "to_repair", "count": 1, "text": "1 spec to repair", "command": "purlin:spec"}`

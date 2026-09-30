@@ -400,6 +400,26 @@ class TestTheState:
             evidence_commit == package['commit']
 
 
+# `login` with `PROOF-2` written a second time, in the same words.
+DOUBLED_SPEC = SPEC + (
+    '- PROOF-2 (RULE-2): POST /login with a bad password; verify 401 and the '
+    'body "denied"\n')
+
+
+class TestABrokenSpec:
+
+    # purlin: package PROOF-60
+    def test_a_broken_spec_is_left_to_repair(self):
+        made = made_project(spec=DOUBLED_SPEC)
+        try:
+            code, lines = export(made.root)
+            assert code == 0, lines
+            assert line('to_repair', 1, '1 spec to repair', 'purlin:spec') \
+                in read_package(made.root)['left'], lines
+        finally:
+            made.close()
+
+
 # ---------------------------------------------------------------------------
 # The content
 # ---------------------------------------------------------------------------

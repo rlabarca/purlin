@@ -1,4 +1,4 @@
-> Format-Version: 5
+> Format-Version: 6
 
 # Package format
 
@@ -169,7 +169,7 @@ Each `signatures` entry:
 | `does_not_apply` | string or null | the reason a pinned anchor's rule does not apply to this project, where the signer signed it so; null otherwise |
 | `gate` | string or null | the gate in force when it was signed |
 | `path` | string | the signature file |
-| `signed_commit` | bool | whether the commit that carries it is signed, which is what makes a signature count |
+| `signed_commit` | bool | whether the commit that carries it is signed and that signature verifies, which is what makes a signature count |
 | `locked` | object | `signed_hash`, `rule_hash`, `proof_hash`, `test_hash`, `test_hash_kind`, `code_hash` and `audit_hash`, the hashes it binds (`signature_format.md`) |
 
 Nothing in the package names who last changed a test.
@@ -190,11 +190,14 @@ decide what the package may be used for.
 
 `rules`, `steps` and `left` are what `purlin:status` says of the commit the
 package reads. Each rule is counted under one kind, the first that applies,
-and a kind at zero has no line. `to_correct` counts test comments, not rules,
+and a kind at zero has no line. `to_repair` counts specs, not rules: a spec
+that writes a number twice or holds a line left from a merge conflict, whose
+every rule is counted there. `to_correct` counts test comments, not rules,
 and is carried by the project:
 
 | `kind` | `text`, for one rule and for more | `command` |
 |---|---|---|
+| `to_repair` | `1 spec to repair`, `<n> specs to repair` | `purlin:spec` |
 | `no_proof` | `1 rule to write a proof for`, `<n> rules to write a proof for` | `purlin:spec` |
 | `to_correct` | `1 test comment to correct`, `<n> test comments to correct` | `purlin:build` |
 | `to_fix` | `1 rule to fix`, `<n> rules to fix` | `purlin:build` |
