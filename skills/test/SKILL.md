@@ -7,11 +7,11 @@ Run the project's own test suites, tie each result to the marker comment above i
 write what they saw into `.purlin/evidence/local/` and `.purlin/tests.md`, and print the passed
 cell of every rule. This is the step `passed`: no breaks, no audit, no signature.
 
-**Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
-is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
-
-**Pending migrations:** when `sync_status` opens with a pending-migrations advisory, stop and
-follow `references/purlin_commands.md#pending-migrations` before doing this skill's work.
+**Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below is
+relative to the plugin root; see `references/purlin_commands.md#path-resolution`. **Pending
+migrations:** when `sync_status` with `project_root` set to the project root, the top folder of the
+git checkout, opens with a pending-migrations advisory, stop and follow
+`references/purlin_commands.md#pending-migrations` before doing this skill's work.
 
 ## Usage
 
@@ -21,6 +21,7 @@ purlin:test --all               Run every feature
 purlin:test <feature> [...]     Run one feature, or several
 purlin:test --commit            Commit the work and the evidence the run wrote
 purlin:test --remote            Let the git host's runner do the run
+purlin:test --arm-timeout <seconds>  Give each suite longer than an hour
 ```
 
 ## Step 1: run the tests
@@ -37,12 +38,12 @@ gets them as its `{files}`. It first prints `Selected <n> of <m> features: login
 a1b2c3d), ...`, the skipped ones ending `purlin:test --all runs them too.`, and a line per untracked
 file. With nothing selected it prints `Nothing to run: every feature's spec, code and tests match
 its evidence. purlin:test --all runs them anyway.` and exits 1 only where the evidence holds a
-failing test. `purlin:build` and `purlin:audit` call this script too. `--remote` hands the run to
-the git host's runner on a run branch it creates, waits on and deletes; the runner commits its
-section under `.purlin/evidence/ci/` and the run pulls it back. Use it when a proof is tagged `@env`
-for another operating system. It refuses a detached head and a tree with changes that are not
-committed, and pushes nothing then. It waits through `gh` on GitHub and `az` with `azure-devops`
-on Azure DevOps; a red run, no CLI, no run found or the wait over exits 1.
+failing test. Add `--arm-timeout <seconds>` when the person gave it. `--remote` hands the run to the
+git host's runner on a run branch it creates, waits on and deletes; the runner commits its section
+under `.purlin/evidence/ci/` and the run pulls it back. It refuses a detached head and a tree with
+changes that are not committed, and pushes nothing then. It waits through `gh` on GitHub and `az`
+with `azure-devops` on Azure DevOps. With no gh on GitHub or no az on Azure DevOps it pushes nothing
+and names the program to install; a failed run, no run found or the wait over exits 1.
 
 Exit codes: `0` everything asked happened, `1` a tied test failed or did not run, evidence is missing, a marker names nothing a spec has, there is no settings file, the settings file cannot be read, an older Purlin set the project up, or no test command is set, `2` the invocation was wrong. A test run cannot make an audit or a signature appear, so the gate does not set the code.
 
@@ -55,7 +56,7 @@ It writes nothing and names what is missing:
 | `No .purlin/config.json here, so nothing ran.` | Run `purlin:init`, then this skill again |
 | `This project was set up by an older Purlin and not upgraded` | Run `purlin:init --update`, then this skill again |
 | `.purlin/config.json cannot be read:` | `→ Fix the settings file by hand, then run: purlin:test` |
-| `Suggested tests setting: <the entries as one JSON array on one line>` | Show the person each suggested command, with the line after it that says what the tool needs added first, such as jest's `jest-junit`, and ask once. On yes, write that array as the `tests` setting with the `purlin_config` tool, then run Step 1 again |
+| `Suggested tests setting: <the entries as one JSON array on one line>` | Show the person each suggested command, with the line after it that says what the tool needs added first, such as jest's `jest-junit`. Compare each suggested command with how the project runs its tests itself, in its CI files, its manifest's scripts, `tox.ini` or `Makefile`: the interpreter, and options such as `--doctest-modules` or `--no-restore`; show the person each difference and offer the entry with the project's own. Run the line that says what a tool needs, as printed, once the person agrees. Ask once. On yes, write that array as the `tests` setting with the `purlin_config` tool, then run Step 1 again |
 | `no test tool Purlin knows was found` | Read the project, its manifest, its test folder and its CI files, and propose one entry in the shape `references/formats/marker_format.md` gives. Ask, write it the same way, and run Step 1 again |
 
 ## Step 3: the evidence, written and committed when asked
@@ -93,14 +94,13 @@ A marker naming nothing a spec has reads `<file>:<line> names <feature> <ID>, wh
 
 ## Step 5: operating systems
 
-A proof tagged `@env(windows)`, `@env(macos)` or `@env(linux)` runs only on that operating
-system. On a host that does not match, the run prints one line per system, `<n> proofs need
-<System>; this machine is <System>. Run purlin:test --remote.` (for one, `1 proof needs <System>;
-this machine is <System>. Run purlin:test --remote.`). An untagged proof runs anywhere
-(`references/hard_gates.md`, "Where a runner runs"). A system that is neither Windows nor macOS is
-`linux`, shown as `Linux/Unix`. Each system a counting run covered is one platform in the passed
-cell; a rule reads `partial` where two systems that each ran disagree. `--remote` pulls the
-runner's results home at every gate.
+A proof tagged `@env(windows)`, `@env(macos)` or `@env(linux)` runs only on that operating system.
+On a host that does not match, the run prints one line per system, `<n> proofs need <System>; this
+machine is <System>. Run purlin:test --remote.` (for one, `1 proof needs <System>; this machine is
+<System>. Run purlin:test --remote.`). An untagged proof runs anywhere (`references/hard_gates.md`,
+"Where a runner runs"). A system that is neither Windows nor macOS is `linux`, shown as
+`Linux/Unix`. Each system a counting run covered is one platform in the passed cell; a rule reads
+`partial` where two systems that each ran disagree.
 
 ## Step 6: name the next step
 

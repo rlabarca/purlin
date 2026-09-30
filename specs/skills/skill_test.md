@@ -5,6 +5,7 @@
 >   prints the passed cell of every rule and ends on the summary and `Left to do`.
 > Scope: skills/test/SKILL.md
 > Stack: markdown, Claude Code skill definition
+> Highest-Rule: 20
 
 ## Rules
 
@@ -24,6 +25,10 @@
 - RULE-14: The skill tells the agent the line the run prints when it selects nothing
 - RULE-15: Where the run found no test tool, the skill tells the agent to read the project, propose one entry, ask, write it the same way and run Step 1 again
 - RULE-16: `references/purlin_commands.md` carries a row for `purlin:test`
+- RULE-17: The skill tells the agent to compare each suggested command with the project's own, and to run the line saying what a tool needs once the person agrees
+- RULE-18: The skill tells the agent that `purlin:test --remote` with no `gh` on GitHub or no `az` on Azure DevOps pushes nothing and names the program to install
+- RULE-19: The skill tells the agent to pass `--arm-timeout <seconds>` on to the run when the person gives it
+- RULE-20: The skill tells the agent to call `sync_status` with `project_root` set to the project root, the top folder of the git checkout
 
 ## Proof
 
@@ -47,4 +52,9 @@
 - PROOF-39 (RULE-6): In the `purlin:test` skill file as shipped, the paragraph that says `With neither, the run selects` carries `runs only the test files` and `purlin:test --all runs them too.`
 - PROOF-40 (RULE-14): In the `purlin:test` skill file as shipped, the paragraph that says `With neither, the run selects` carries, whole, the line printed when nothing is selected: `Nothing to run: every feature's spec, code and tests match its evidence. purlin:test --all runs them anyway.`
 - PROOF-12 (RULE-7): In the `purlin:test` skill file as shipped, the row for a run that prints `Suggested tests setting: <the entries as one JSON array on one line>` says to show the person each suggested command, ask once, write that array as the `tests` setting with the `purlin_config` tool, and run Step 1 again
-- PROOF-44 (RULE-15): In the `purlin:test` skill file as shipped, the row for a run that prints `no test tool Purlin knows was found` says to read the project, propose one entry, ask, write it the same way and run Step 1 again
+- PROOF-44 (RULE-15): A test run in a project with an empty `tests` setting and no file of a test tool Purlin knows prints a line carrying `no test tool Purlin knows was found`; the `purlin:test` skill file's row for that phrase says to read the project, propose one entry, ask, write it the same way and run Step 1 again
+- PROOF-45 (RULE-17): In the `purlin:test` skill file as shipped, the row for `Suggested tests setting:` carries the comparison sentence whole, from `Compare each suggested command with how the project runs its tests itself` to `offer the entry with the project's own.`
+- PROOF-46 (RULE-17): In the `purlin:test` skill file as shipped, the row for `Suggested tests setting:` carries the sentence `Run the line that says what a tool needs, as printed, once the person agrees.`
+- PROOF-47 (RULE-18): In the `purlin:test` skill file as shipped, Step 1 carries, its line wrapping ignored, the sentence `With no gh on GitHub or no az on Azure DevOps it pushes nothing and names the program to install; a failed run, no run found or the wait over exits 1.`
+- PROOF-48 (RULE-19): In the `purlin:test` skill file as shipped, the usage block has the line `purlin:test --arm-timeout <seconds>  Give each suite longer than an hour`, and Step 1 carries, its line wrapping ignored, ``Add `--arm-timeout <seconds>` when the person gave it.``
+- PROOF-49 (RULE-20): In the `purlin:test` skill file as shipped, the first `sync_status` is followed, its line wrapping ignored, by ``with `project_root` set to the project root, the top folder of the git checkout``

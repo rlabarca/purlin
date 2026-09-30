@@ -9,6 +9,7 @@ skill needs are below the tests.
 
 import re
 
+from run_project import _project, _run, _spec
 from skill_checks import (COMMAND_REF, carries, flat, frontmatter,
                           frontmatter_problems, in_order, next_step_problems,
                           on_copy, read, refusals, replace, resub, same_line,
@@ -274,8 +275,82 @@ class TestNoToolFound:
     """RULE-15: what the skill does where the run found no test tool."""
 
     # purlin: skill_test PROOF-44
-    def test_the_shipped_row_for_no_tool_reads_proposes_and_runs_again(self):
+    def test_the_run_with_no_tool_prints_the_line_the_row_matches(
+            self, tmp_path):
+        root = _project(tmp_path, tests=[])
+        _spec(root, 'feat')
+        _code, output = _run(root, '--all', '--test')
+        assert any(NO_TOOL_ROW[0].strip('`') in line
+                   for line in output.splitlines()), output
         assert stop_row_problems(*NO_TOOL_ROW) == []
+
+
+class TestTheComparison:
+    """RULE-17: compare the suggestion with the project's own command, and
+    run the line saying what a tool needs once the person agrees."""
+
+    # purlin: skill_test PROOF-45
+    def test_the_shipped_row_carries_the_comparison(self, monkeypatch):
+        assert suggestion_problems(COMPARE) == []
+        assert refusals(monkeypatch, lambda: suggestion_problems(COMPARE), [
+            (REL, replace(COMPARE + ' '),
+             '%s row for %r does not carry %r'
+             % (REL, SUGGESTED_ROW[0], COMPARE)),
+        ]) == []
+
+    # purlin: skill_test PROOF-46
+    def test_the_shipped_row_runs_the_line_a_tool_needs_once_agreed(
+            self, monkeypatch):
+        assert suggestion_problems(RUN_NEEDS) == []
+        assert refusals(monkeypatch, lambda: suggestion_problems(RUN_NEEDS), [
+            (REL, replace(', as printed, once the person agrees', ''),
+             '%s row for %r does not carry %r'
+             % (REL, SUGGESTED_ROW[0], RUN_NEEDS)),
+        ]) == []
+
+
+class TestARemoteRunWithNoProgram:
+    """RULE-18: with no `gh` or no `az`, a remote run pushes nothing."""
+
+    # purlin: skill_test PROOF-47
+    def test_the_shipped_step_names_the_program_to_install(self, monkeypatch):
+        assert step_one_problems(NO_PROGRAM) == []
+        assert refusals(monkeypatch, lambda: step_one_problems(NO_PROGRAM), [
+            (REL, resub(r'With no gh on GitHub.*?exits 1\.',
+                        'A red run, no CLI, no run found or the wait over '
+                        'exits 1.'),
+             '%s Step 1 does not carry %r' % (REL, NO_PROGRAM)),
+        ]) == []
+
+
+class TestTheArmTimeout:
+    """RULE-19: `--arm-timeout <seconds>` is passed on to the run."""
+
+    # purlin: skill_test PROOF-48
+    def test_the_arm_timeout_is_in_the_usage_and_passed_on(
+            self, monkeypatch):
+        assert arm_timeout_problems() == []
+        assert refusals(monkeypatch, arm_timeout_problems, [
+            (REL, replace(ARM_TIMEOUT_USAGE + '\n'),
+             '%s usage block has no line %r' % (REL, ARM_TIMEOUT_USAGE)),
+            (REL, resub(r'Add\s+`--arm-timeout\s+<seconds>`\s+when\s+the\s+'
+                        r'person\s+gave\s+it\.\s+'),
+             '%s Step 1 does not carry %r' % (REL, ARM_TIMEOUT_PASSED)),
+        ]) == []
+
+
+class TestTheProjectRoot:
+    """RULE-20: `sync_status` is called with the project root."""
+
+    # purlin: skill_test PROOF-49
+    def test_the_first_sync_status_names_the_project_root(self, monkeypatch):
+        assert project_root_problems() == []
+        assert refusals(monkeypatch, project_root_problems, [
+            (REL, resub(r'`sync_status`\s+with\s+`project_root`.*?checkout,',
+                        '`sync_status`'),
+             '%s first `sync_status` is not followed by %r'
+             % (REL, PROJECT_ROOT)),
+        ]) == []
 
 
 # ---------------------------------------------------------------------------
@@ -424,7 +499,7 @@ def selection_paragraph_problems(needles):
 # prints, and what the row tells the agent to do.
 SUGGESTED_ROW = (
     '`Suggested tests setting: <the entries as one JSON array on one line>`', (
-        'Show the person each suggested command', 'ask once',
+        'Show the person each suggested command', 'Ask once',
         'write that array as the `tests` setting',
         'the `purlin_config` tool', 'run Step 1 again'))
 NO_TOOL_ROW = ('`no test tool Purlin knows was found`', (
@@ -443,3 +518,65 @@ def stop_row_problems(printed, needles):
         return ['%s has no row for %r' % (REL, printed)]
     return ['%s row for %r does not carry %r' % (REL, printed, needle)
             for needle in needles if needle not in row]
+
+
+# ---------------------------------------------------------------------------
+# RULE-17 to RULE-20
+# ---------------------------------------------------------------------------
+
+# The two sentences of the suggestion's row on the project's own command and
+# on the line saying what a tool needs.
+COMPARE = (
+    'Compare each suggested command with how the project runs its tests '
+    "itself, in its CI files, its manifest's scripts, `tox.ini` or "
+    '`Makefile`: the interpreter, and options such as `--doctest-modules` or '
+    '`--no-restore`; show the person each difference and offer the entry '
+    "with the project's own.")
+RUN_NEEDS = ('Run the line that says what a tool needs, as printed, once the '
+             'person agrees.')
+
+NO_PROGRAM = ('With no gh on GitHub or no az on Azure DevOps it pushes '
+              'nothing and names the program to install; a failed run, no run '
+              'found or the wait over exits 1.')
+
+ARM_TIMEOUT_USAGE = ('purlin:test --arm-timeout <seconds>  Give each suite '
+                     'longer than an hour')
+ARM_TIMEOUT_PASSED = 'Add `--arm-timeout <seconds>` when the person gave it.'
+
+PROJECT_ROOT = ('with `project_root` set to the project root, the top folder '
+                'of the git checkout')
+
+
+def suggestion_problems(needle):
+    return stop_row_problems(SUGGESTED_ROW[0], (needle,))
+
+
+def step_one(text):
+    return flat(next((body for heading, body in sections(text)
+                      if heading.startswith('Step 1')), ''))
+
+
+def step_one_problems(needle):
+    if needle in step_one(read(REL)):
+        return []
+    return ['%s Step 1 does not carry %r' % (REL, needle)]
+
+
+def arm_timeout_problems():
+    text = read(REL)
+    problems = []
+    usage = re.search(r'^## Usage\n+```\n(.*?)\n```', text, re.S | re.M)
+    if usage is None or ARM_TIMEOUT_USAGE not in usage.group(1).split('\n'):
+        problems.append('%s usage block has no line %r'
+                        % (REL, ARM_TIMEOUT_USAGE))
+    return problems + step_one_problems(ARM_TIMEOUT_PASSED)
+
+
+def project_root_problems():
+    text = flat(read(REL))
+    at = text.find('`sync_status`')
+    if at >= 0 and text[at + len('`sync_status`'):].startswith(
+            ' ' + PROJECT_ROOT):
+        return []
+    return ['%s first `sync_status` is not followed by %r'
+            % (REL, PROJECT_ROOT)]
