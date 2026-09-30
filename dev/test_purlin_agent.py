@@ -135,13 +135,17 @@ class TestState:
     def test_it_reads_the_state_before_it_answers(self, monkeypatch):
         assert state_problems() == []
         assert refusals(monkeypatch, state_problems, [
-            (AGENT, replace('Call `sync_status` before you answer',
-                            'Call `sync_status` when you answer'),
-             "%s does not carry 'Call `sync_status` before you "
-             "answer any question about state.'" % AGENT),
+            (AGENT, replace('before you answer any question',
+                            'when you answer any question'),
+             '%s carries no sentence opening %r and ending %r'
+             % (AGENT, STATE_OPENS, STATE_ENDS)),
+            (AGENT, replace('Call `sync_status` with', 'Read `sync_status` '
+                            'with'),
+             '%s carries no sentence opening %r and ending %r'
+             % (AGENT, STATE_OPENS, STATE_ENDS)),
             # `strong` stays in backticks elsewhere in the file.
-            (AGENT, replace('`passed`, `strong` and `signed` as far',
-                            '`passed` and `signed` as far'),
+            (AGENT, replace('`passed`, `strong`\nand `signed` as far',
+                            '`passed`\nand `signed` as far'),
              "%s sync_status paragraph does not carry '`passed`, "
              "`strong` and `signed`'" % AGENT),
             (AGENT, replace('`out of date` means the spec, the code or the '
@@ -150,6 +154,43 @@ class TestState:
              "%s sync_status paragraph does not carry '`out of "
              "date` means the spec, the code or the tests moved "
              "since the run'" % AGENT),
+        ]) == []
+
+
+# The words the first call of `sync_status` carries right after the tool's
+# name, so the tool reads the project and not the folder its server started in.
+PROJECT_ROOT_CLAUSE = ('with `project_root` set to the project root, the top '
+                       'folder of the git checkout')
+
+
+def project_root_problems():
+    text = flat(read(AGENT))
+    at = text.find('`sync_status`')
+    if at < 0:
+        return ['%s never names `sync_status`' % AGENT]
+    after = text[at + len('`sync_status`'):].lstrip()
+    if not after.startswith(PROJECT_ROOT_CLAUSE):
+        return ['%s first `sync_status` is not followed by %r'
+                % (AGENT, PROJECT_ROOT_CLAUSE)]
+    return []
+
+
+class TestProjectRoot:
+
+    # purlin: purlin_agent PROOF-47
+    def test_the_first_call_names_the_project_root(self, monkeypatch):
+        assert project_root_problems() == []
+        refused = ('%s first `sync_status` is not followed by %r'
+                   % (AGENT, PROJECT_ROOT_CLAUSE))
+        assert refusals(monkeypatch, project_root_problems, [
+            (AGENT, replace(' with `project_root` set to the project root, '
+                            'the top folder of the git checkout,'), refused),
+            (AGENT, replace('the top folder of the git checkout',
+                            'the folder the server started in'), refused),
+            # The clause moved to a later call leaves the first one bare.
+            (AGENT, lambda text: text.replace(
+                'Call `sync_status` with', 'Read the rules first. Call '
+                '`sync_status` and then `sync_status` with', 1), refused),
         ]) == []
 
 
@@ -253,15 +294,28 @@ def rename_problems():
     return problems
 
 
+# The sentence that says to read the state: how it opens and how it ends.
+STATE_OPENS = 'Call `sync_status`'
+STATE_ENDS = 'before you answer any question about state.'
+
+
+def state_sentence(paragraph):
+    """The sentence of a flattened paragraph that opens with STATE_OPENS
+    and ends with STATE_ENDS, or None."""
+    match = re.search(r'(?:^|(?<=\. ))%s[^.]*?%s' % (
+        re.escape(STATE_OPENS), re.escape(STATE_ENDS)), paragraph)
+    return match.group(0) if match else None
+
+
 def state_problems():
     """The sync_status sentence, and what the paragraph holding it names."""
-    sentence = 'Call `sync_status` before you answer any question about state.'
-    problems = carries(AGENT, [sentence, '`passed`', '`strong`', '`signed`',
+    problems = carries(AGENT, ['`passed`', '`strong`', '`signed`',
                                '`out of date`'])
     paragraph = next((flat(p) for p in re.split(r'\n\s*\n', read(AGENT))
-                      if sentence in flat(p)), None)
+                      if state_sentence(flat(p))), None)
     if paragraph is None:
-        return problems
+        return problems + ['%s carries no sentence opening %r and ending %r'
+                           % (AGENT, STATE_OPENS, STATE_ENDS)]
     return problems + [
         '%s sync_status paragraph does not carry %r' % (AGENT, needle)
         for needle in ('`passed`, `strong` and `signed`',

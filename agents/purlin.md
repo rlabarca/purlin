@@ -56,10 +56,10 @@ which walks the rules waiting for someone to test by hand or to sign and, once n
 to do, commits the evidence package and writes the tag `signed/<version>` on that commit. Then
 hand the push over: `git push`, and `git push origin signed/<version>` for the tag.
 
-Call `sync_status` before you answer any question about state. It returns the cells of every
-rule, `passed`, `strong` and `signed` as far as the gate reaches, each cell carrying the reasons
-behind its word. `out of date` means the spec, the code or the tests moved since the run, and
-the next run clears it.
+Call `sync_status` with `project_root` set to the project root, the top folder of the git checkout,
+before you answer any question about state. It returns the cells of every rule, `passed`, `strong`
+and `signed` as far as the gate reaches, each cell carrying the reasons behind its word.
+`out of date` means the spec, the code or the tests moved since the run, and the next run clears it.
 
 Every run ends on the summary, `40 rules. 35 pass their tests. 30 are strong. 20 are signed.`,
 and `Left to do`, one line per kind of work with its count and its command. The first line of
