@@ -60,11 +60,11 @@ and kept its rules changed nothing.
 
 | Key | From | Line |
 |-----|------|------|
-| `code_changed` | The changed files, `git diff --name-only`, matched to each spec's `> Scope:` expanded to the files git tracks; `src/api/` reaches every file under it | `4 files changed under login's scope: RULE-1, RULE-2, RULE-5 are behind them.` |
-| `unscoped` | The changed files no scope reaches, leaving out spec files, `.purlin/` and test files that carry a marker | `2 changed files are under no spec's scope: src/x.py, src/y.py.` |
-| `rules_without_test` | Rules whose passed cell reads `no test` | `5 rules have no test: login RULE-1, RULE-2.` |
-| `anchors_behind` | One `git ls-remote` per anchor source, below | `anchor proof_common is behind its source (now 3c4d5e6). Run: purlin:anchor sync proof_common.` |
-| `out_of_date` | Features that have evidence and whose evidence is not current | `3 features are out of date: login, export, cart.` |
+| `code_changed` | The changed files, `git diff --name-only`, matched to each spec's `> Scope:` expanded to the files git tracks; `src/api/` reaches every file under it | `4 files changed under login's scope: RULE-1, RULE-2, RULE-5 are behind them. Run purlin:test login.` |
+| `unscoped` | The changed files no scope reaches, leaving out spec files, `.purlin/` and test files that carry a marker | `2 changed files are under no spec's scope: src/x.py, src/y.py. Add each to a spec's > Scope: line with purlin:spec.` |
+| `rules_without_test` | Rules whose passed cell reads `no test` | `5 rules have no test: login RULE-1, RULE-2. Run purlin:build.` |
+| `anchors_behind` | One `git ls-remote` per anchor source, below | `anchor proof_common: the pin 1a2b3c4 is behind its source, now 3c4d5e6. Run purlin:anchor sync proof_common.` |
+| `out_of_date` | Features that have evidence and whose evidence is not current | `3 features are out of date: login, export, cart. Run purlin:test.` |
 
 A file deleted in the range counts as changed. It joins `code_changed` under every spec whose
 `> Scope:` entry covers it: a file entry equal to its path, a folder entry it lies under, or a
@@ -95,9 +95,9 @@ one: no process is handed it. An anchor with no `> Source:` is a local anchor an
 | Condition | Line |
 |-----------|------|
 | The pin equals the source head | Nothing |
-| The pin is behind | `anchor <name> is behind its source (now <sha7>). Run: purlin:anchor sync <name>.` |
-| A `> Source:` with no `> Pinned:` | `anchor <name> names a source and no pin. Run: purlin:anchor sync <name>.` |
-| The source cannot be read | `anchor <name>: its source could not be read (<reason>).` |
+| The pin is behind | `anchor <name>: the pin <old7> is behind its source, now <new7>. Run purlin:anchor sync <name>.` |
+| A `> Source:` with no `> Pinned:` | `anchor <name>: names a source and no pin. Run purlin:anchor sync <name>.` |
+| The source cannot be read | `anchor <name>: the source could not be read (<error>). Check its > Source: line, then run purlin:anchor sync <name>.` |
 | The source names no repository: words, or a file on disk | `anchor <name>: its source, <source>, is not a spec in Purlin's format kept in a git repository, so it cannot be checked. Run purlin:spec <name> to take out its > Source: and > Pinned: lines and keep it as this project's own anchor.` |
 
 Drift never advances a pin on its own. A change that came from somewhere else gets read before
@@ -130,6 +130,6 @@ directory it names that exists wins over the `.purlin/` marker a climb from the 
 directory would otherwise find. With the variable unset the climb answers, and with no marker
 anywhere above the working directory the working directory itself is returned, which is a guess
 and is reported as one. Set the variable in the project's `.claude/settings.json` under `env`
-when the workspace is not at the repository root; the tools also take a `project_root` argument
+when the project root is not at the repository root; the tools also take a `project_root` argument
 that overrides it for one call. A tool that finds no `.purlin/config.json` at the root it chose
 says which directory it looked at and which mechanism chose it, and names the fix.

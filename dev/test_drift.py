@@ -219,8 +219,9 @@ class TestSinceValidation:
         refused = _report(root, since='--output=/tmp/x')
 
         assert refused['error'] == 'rejected since', refused
-        assert 'digits only' in refused['reason'], refused['reason']
-        assert 'YYYY-MM-DD' in refused['reason'], refused['reason']
+        assert refused['reason'] == (
+            'since must be a number of commits (digits only) or a YYYY-MM-DD '
+            'date; refusing to pass "--output=/tmp/x" to git'), refused['reason']
         assert calls == [], calls
 
     # purlin: drift PROOF-2
@@ -398,6 +399,18 @@ class TestTheLastTwentyCommits:
             "names no pull, merge, rebase, checkout, clone or reset."
             % _sha(small)[:7]), since['line']
 
+    # purlin: drift PROOF-62
+    def test_a_repository_of_one_commit_names_the_last_commit(self,
+                                                              tmp_path):
+        one = _repo(str(tmp_path / 'one'), {'a.txt': '0\n'})
+        since = _report(one)['since']
+        assert since['from'] is None, since
+        assert since['commits'] == 1, since
+        assert since['line'] == (
+            "The last commit (up to %s, 1 commit). Git's log of HEAD "
+            "names no pull, merge, rebase, checkout, clone or reset."
+            % _sha(one)[:7]), since['line']
+
 
 # ---------------------------------------------------------------------------
 # RULE-4: `since` overrides the log
@@ -571,11 +584,23 @@ class TestEngView:
         report = _report(checkout)
 
         assert ("2 files changed under login's scope: RULE-1, RULE-2 are "
-                "behind them.") in _lines(report, 'eng'), _lines(report, 'eng')
+                "behind them. Run purlin:test login.") in _lines(report, 'eng'), _lines(report, 'eng')
         assert report['roles']['eng']['code_changed'] == [
             {'feature': 'login',
              'files': ['src/auth/login.py', 'src/auth/token.py'],
              'rules': ['RULE-1', 'RULE-2']}]
+
+    # purlin: drift PROOF-63
+    def test_a_scope_with_no_rule_behind_it(self, tmp_path):
+        notes = '# Feature: notes\n\n> Scope: src/notes.py\n\n## Rules\n\n## Proof\n'
+        _up, checkout, _before = _pulled(
+            tmp_path, {'specs/notes.md': notes, 'src/notes.py': 'n = 1\n'},
+            [{'src/notes.py': 'n = 2\n'}])
+        report = _report(checkout)
+
+        assert ("1 file changed under notes's scope: no rule is behind it. "
+                "Run purlin:test notes.") in _lines(report, 'eng'), \
+            _lines(report, 'eng')
 
     # purlin: drift PROOF-15
     def test_changed_files_under_no_scope(self, tmp_path):
@@ -588,7 +613,8 @@ class TestEngView:
         report = _report(checkout)
 
         assert ("2 changed files are under no spec's scope: src/x.py, "
-                "src/y.py.") in _lines(report, 'eng'), _lines(report, 'eng')
+                "src/y.py. Add each to a spec's > Scope: line with "
+                "purlin:spec.") in _lines(report, 'eng'), _lines(report, 'eng')
         assert report['roles']['eng']['unscoped'] == ['src/x.py', 'src/y.py']
 
     # purlin: drift PROOF-16
@@ -596,10 +622,21 @@ class TestEngView:
         _up, checkout, _before = _pulled(
             tmp_path, LOGIN_FILES, [{'README.md': 'login\n'}])
         report = _report(checkout)
-        assert '2 rules have no test: login RULE-1, RULE-2.' in \
-            _lines(report, 'eng'), _lines(report, 'eng')
+        assert '2 rules have no test: login RULE-1, RULE-2. Run purlin:build.' \
+            in _lines(report, 'eng'), _lines(report, 'eng')
         assert report['roles']['eng']['rules_without_test'] == {
             'login': ['RULE-1', 'RULE-2']}
+
+    # purlin: drift PROOF-64
+    def test_one_rule_no_test_has_run_for_is_named(self, tmp_path):
+        start = dict(LOGIN_FILES)
+        start['specs/auth/login.md'] = _spec(
+            'login', {'RULE-1': 'Signs a person in'}, scope='src/auth/')
+        _up, checkout, _before = _pulled(tmp_path, start,
+                                         [{'README.md': 'login\n'}])
+        report = _report(checkout)
+        assert '1 rule has no test: login RULE-1. Run purlin:build.' in \
+            _lines(report, 'eng'), _lines(report, 'eng')
 
     # purlin: drift PROOF-39
     def test_rules_with_a_passing_run_are_not_named(self, tmp_path):
@@ -627,16 +664,33 @@ class TestEngView:
         _git(['pull', '-q'], checkout)
         report = _report(checkout)
 
-        assert '1 feature is out of date: login.' in _lines(report, 'eng'), \
-            _lines(report, 'eng')
+        assert '1 feature is out of date: login. Run purlin:test.' in \
+            _lines(report, 'eng'), _lines(report, 'eng')
         assert report['roles']['eng']['out_of_date'] == ['login']
+
+    # purlin: drift PROOF-65
+    def test_two_features_out_of_date_are_named_together(self, tmp_path):
+        cart = _spec('cart', {'RULE-1': 'Holds items'}, scope='src/cart.py')
+        start = dict(LOGIN_FILES)
+        start.update({'specs/shop/cart.md': cart, 'src/cart.py': 'c = 1\n'})
+        upstream = _repo(str(tmp_path / 'upstream'), start)
+        checkout = _clone(upstream, str(tmp_path / 'checkout'))
+        _evidence_file(checkout, 'login', ['RULE-1', 'RULE-2'])
+        _evidence_file(checkout, 'cart', ['RULE-1'])
+        _change(upstream, {'src/auth/login.py': 'def login():\n    return 2\n',
+                           'src/cart.py': 'c = 2\n'})
+        _git(['pull', '-q'], checkout)
+        report = _report(checkout)
+
+        assert '2 features are out of date: cart, login. Run purlin:test.' in \
+            _lines(report, 'eng'), _lines(report, 'eng')
 
 
 # A file deleted in the range counts under every scope entry that covers it,
 # and a deleted file no entry covers joins the files no spec covers.
 
 ONE_DELETED = ("1 file changed under login's scope: RULE-1, RULE-2 are "
-               "behind it.")
+               "behind it. Run purlin:test login.")
 
 
 def _deleted_under(tmp_path, scope, path):
@@ -687,7 +741,8 @@ class TestDeletedFiles:
             tmp_path, start, [{'src/gone.py': None, 'src/x.py': 'x = 1\n'}])
         report = _report(checkout)
         assert ("2 changed files are under no spec's scope: src/gone.py, "
-                "src/x.py.") in _lines(report, 'eng'), _lines(report, 'eng')
+                "src/x.py. Add each to a spec's > Scope: line with "
+                "purlin:spec.") in _lines(report, 'eng'), _lines(report, 'eng')
         assert report['roles']['eng']['unscoped'] == ['src/gone.py',
                                                       'src/x.py']
         assert report['roles']['eng']['code_changed'] == []
@@ -796,7 +851,8 @@ def _refused(tmp_path, monkeypatch, source, reason):
         {'anchor': 'policy', 'source': source, 'pinned': 'abc1234',
          'status': 'error', 'error': 'rejected source url',
          'reason': reason}], report['roles']['eng']['anchors_behind']
-    assert ('anchor policy: its source could not be read (%s).' % reason) \
+    assert ('anchor policy: the source could not be read (%s). Check its '
+            '> Source: line, then run purlin:anchor sync policy.' % reason) \
         in _lines(report, 'eng'), _lines(report, 'eng')
     assert _handed(calls, source) == [], _handed(calls, source)
 
@@ -818,8 +874,9 @@ class TestAnchorsBehind:
         assert rows[0]['status'] == 'behind', rows
         assert len(rows[0]['remote_sha']) == 7, rows
         assert new_sha.startswith(rows[0]['remote_sha']), (rows, new_sha)
-        assert ('anchor external_anchor is behind its source (now %s). Run: '
-                'purlin:anchor sync external_anchor.' % new_sha[:7]) in \
+        assert ('anchor external_anchor: the pin %s is behind its source, now '
+                '%s. Run purlin:anchor sync external_anchor.'
+                % (first[:7], new_sha[:7])) in \
             _lines(report, 'eng'), _lines(report, 'eng')
 
     # purlin: drift PROOF-18
@@ -846,8 +903,8 @@ class TestAnchorsBehind:
         assert report['roles']['eng']['anchors_behind'] == [
             {'anchor': 'policy', 'source': source, 'pinned': None,
              'status': 'unpinned'}], report['roles']['eng']['anchors_behind']
-        assert ('anchor policy names a source and no pin. Run: '
-                'purlin:anchor sync policy.') in _lines(report, 'eng'), \
+        assert ('anchor policy: names a source and no pin. Run purlin:anchor '
+                'sync policy.') in _lines(report, 'eng'), \
             _lines(report, 'eng')
         assert _handed(calls, source) == [], _handed(calls, source)
 
@@ -863,7 +920,8 @@ class TestAnchorsBehind:
         assert rows[0]['status'] == 'error', rows
         assert 'remote_sha' not in rows[0], rows
         assert 'nope.git' in rows[0]['error'], rows
-        assert ('anchor policy: its source could not be read (%s).'
+        assert ('anchor policy: the source could not be read (%s). Check its '
+                '> Source: line, then run purlin:anchor sync policy.'
                 % rows[0]['error']) in _lines(report, 'eng'), \
             _lines(report, 'eng')
 
@@ -896,7 +954,8 @@ class TestAnchorsBehind:
         assert len(rows) == 1, rows
         assert rows[0]['status'] == 'error', rows
         assert 'remote_sha' not in rows[0], rows
-        assert ('anchor policy: its source could not be read (%s).'
+        assert ('anchor policy: the source could not be read (%s). Check its '
+                '> Source: line, then run purlin:anchor sync policy.'
                 % rows[0]['error']) in _lines(report, 'eng'), \
             _lines(report, 'eng')
 
@@ -1048,8 +1107,9 @@ class TestAnchorRows:
         anchor_lines = [line for line in _lines(report, 'eng')
                         if line.startswith('anchor ')]
         assert anchor_lines == [
-            'anchor local_security is behind its source (now %s). Run: '
-            'purlin:anchor sync local_security.' % new_sha[:7]], anchor_lines
+            'anchor local_security: the pin %s is behind its source, now %s. '
+            'Run purlin:anchor sync local_security.'
+            % (first[:7], new_sha[:7])], anchor_lines
 
 
 # ---------------------------------------------------------------------------
@@ -1310,3 +1370,22 @@ class TestSettingsCannotBeRead:
                         r'was saved\.$', answer), answer
         assert 'comma' in answer.lower() or 'property name' in answer, answer
         assert calls == [], calls
+
+
+# ---------------------------------------------------------------------------
+# RULE-26: a repository with no commit
+# ---------------------------------------------------------------------------
+
+class TestNoCommit:
+
+    # purlin: drift PROOF-61
+    def test_a_repository_with_no_commit_is_refused(self, tmp_path):
+        root = str(tmp_path / 'proj')
+        _write(os.path.join(root, '.purlin', 'config.json'), _config())
+        _git(['-c', 'init.defaultBranch=main', 'init', '-q'], root)
+
+        answer = _report(root)
+
+        assert answer == {'error': 'no commits',
+                          'reason': 'drift reads git, and HEAD names no commit '
+                                    'here'}, answer

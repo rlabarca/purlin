@@ -332,8 +332,8 @@ def resolve_range(project_root, since_arg=None):
             return {
                 'error': 'rejected since',
                 'reason': ('since must be a number of commits (digits only) or '
-                           'a YYYY-MM-DD date; refusing to pass %r to git'
-                           % since_arg),
+                           'a YYYY-MM-DD date; refusing to pass %s to git'
+                           % json.dumps(since_arg)),
                 'since': since_arg,
             }
 
@@ -345,8 +345,8 @@ def resolve_range(project_root, since_arg=None):
     if since_arg:
         if _SINCE_DAYS_RE.match(since_arg):
             from_sha, commits = _last_commits(project_root, int(since_arg))
-            phrase = 'in the last %d commits' % commits
-            opening = 'The last %d commits' % commits
+            phrase = 'in %s' % _last(commits)
+            opening = 'The %s' % _last(commits)
             action = 'commits'
         else:
             first = _git(project_root, ['log', '--reverse',
@@ -374,16 +374,20 @@ def resolve_range(project_root, since_arg=None):
                       found['action'], found['when'], phrase, opening)
 
     from_sha, commits = _last_commits(project_root, DEFAULT_WINDOW)
-    phrase = 'in the last %d commits' % commits
+    phrase = 'in %s' % _last(commits)
     if found:
-        opening = 'Since the clone, %s, the last %d commits' % (
-            found['when'], commits)
+        opening = 'Since the clone, %s, %s' % (found['when'], _last(commits))
         return _range(from_sha, head, commits, 'clone', found['when'],
                       phrase, opening)
     return _range(from_sha, head, commits, None, None, phrase,
-                  'The last %d commits' % commits,
+                  'The %s' % _last(commits),
                   ' Git\'s log of HEAD names no pull, merge, rebase, checkout, '
                   'clone or reset.')
+
+
+def _last(commits):
+    """`last commit` for one commit, `last <n> commits` for any other count."""
+    return 'last commit' if commits == 1 else 'last %d commits' % commits
 
 
 def _range(from_sha, head, commits, action, when, phrase, opening, tail=''):
@@ -547,22 +551,24 @@ def _eng_view(project_root, rng, changed, data, raw_features, markers,
                                         'it' if count == 1 else 'them')
                   if rules else 'no rule is behind %s'
                   % ('it' if count == 1 else 'them'))
-        lines.append('%s changed under %s\'s scope: %s.'
-                     % (_plural(count, 'file'), entry['feature'], behind))
+        lines.append('%s changed under %s\'s scope: %s. Run purlin:test %s.'
+                     % (_plural(count, 'file'), entry['feature'], behind,
+                        entry['feature']))
     if unscoped:
-        lines.append('%s under no spec\'s scope: %s.' % (
-            '1 changed file is' if len(unscoped) == 1
-            else '%d changed files are' % len(unscoped),
-            ', '.join(unscoped)))
+        lines.append('%s under no spec\'s scope: %s. Add each to a spec\'s '
+                     '> Scope: line with purlin:spec.' % (
+                         '1 changed file is' if len(unscoped) == 1
+                         else '%d changed files are' % len(unscoped),
+                         ', '.join(unscoped)))
     if no_test:
         count = _rule_count(no_test)
-        lines.append('%s %s no test: %s.' % (
+        lines.append('%s %s no test: %s. Run purlin:build.' % (
             _plural(count, 'rule'), 'has' if count == 1 else 'have',
             _rules_text(no_test)))
     for row in anchors:
         lines.append(_anchor_line(row))
     if out_of_date:
-        lines.append('%s: %s.' % (
+        lines.append('%s: %s. Run purlin:test.' % (
             '1 feature is out of date' if len(out_of_date) == 1
             else '%d features are out of date' % len(out_of_date),
             ', '.join(out_of_date)))
@@ -609,13 +615,15 @@ def _anchor_line(row):
     if row.get('not_a_spec'):
         return 'anchor %s: %s' % (name, row['error'])
     if row['status'] == 'behind':
-        return ('anchor %s is behind its source (now %s). Run: '
-                'purlin:anchor sync %s.' % (name, row.get('remote_sha'), name))
+        return ('anchor %s: the pin %s is behind its source, now %s. Run '
+                'purlin:anchor sync %s.' % (name, (row.get('pinned') or '')[:7],
+                                            row.get('remote_sha'), name))
     if row['status'] == 'unpinned':
-        return ('anchor %s names a source and no pin. Run: '
-                'purlin:anchor sync %s.' % (name, name))
-    return 'anchor %s: its source could not be read (%s).' % (
-        name, row.get('reason') or row.get('error'))
+        return ('anchor %s: names a source and no pin. Run purlin:anchor '
+                'sync %s.' % (name, name))
+    return ('anchor %s: the source could not be read (%s). Check its > Source: '
+            'line, then run purlin:anchor sync %s.'
+            % (name, row.get('reason') or row.get('error'), name))
 
 
 def _qa_view(data, changed, markers):
