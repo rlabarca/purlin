@@ -82,16 +82,19 @@ other page points here rather than defining it again.
 - **hand check**: the check of a rule with a `@manual` proof. A person carries the proof out
   and signs the rule with `purlin:sign`, at any gate, with a **note** saying what they saw when
   they give one. That one act stands for the test, the audit and the signature of the rule.
-  Until it is done the rule is left to do as `to test by hand`.
+  Until it is done the rule is left to do as `to test by hand`. Its signature is made over the
+  rule's and its proofs' wording alone, so a change to the code, a test or the machines does
+  not end it.
 - **signature**: a person's attestation, for one rule in one feature, that the rule, its proof,
   its test, the code the feature lists, what the audit found, and the machine the tests ran on
   for each system belong together. One file under `specs/<category>/<feature>.signatures/`, committed in a signed
   commit by `purlin:sign`. It records the signer's name and email as git holds them, the time
   and the key's fingerprint, and not the machine it was signed on. **audit hash**: the hash over
   what the audit found. **counting signature**: one whose commit carries a signature, made with
-  any key, and whose hashes still match. A change to anything it covers ends it, with no
-  message, and the rule is left to do as `to sign`; a result from a system it did not cover
-  ends nothing.
+  any key, that verifies over the commit, and whose hashes still match. A change to anything it
+  covers ends it, and the rule is left to do as `to sign`; the status and every test run print
+  one line naming the rule, the signer and why it ended. A result from a system it did not
+  cover ends nothing.
 - **does not apply**: the word a rule of a pinned anchor reads once a person in the project
   signs it as not applying, with the reason. It counts as met, and like every anchor signature
   it ends on any change to the project, so the person confirms it again.
@@ -102,6 +105,12 @@ other page points here rather than defining it again.
   nothing is left to do and every result came from committed work, on the commit that carries
   the evidence package. Below `signed` no tag is written. `references/hard_gates.md` gives it
   at length. A person pushes it.
+- **release branch**: the branch a version is signed and tagged on, cut from the default branch
+  once that version's specs are done.
+- **to repair**: the kind of `Left to do` for a spec that writes a rule or proof number twice or
+  holds a line left from a merge conflict, `<n> specs to repair: purlin:spec`. Every rule of such
+  a spec reads `failed` with the reason, and signing it and the tag are refused until it is
+  fixed.
 - **evidence package**: one data file describing one version,
   `.purlin/evidence/package/<version>.json`: every rule's words, proofs, tests, results, what
   the audit found and who signed, the count at each step, what is left, the state `finished`

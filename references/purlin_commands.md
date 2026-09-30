@@ -110,12 +110,12 @@ Purlin
 | `purlin:build` | Code, test files with a marker comment above each test, the repairs to marker comments it asked about, and the commit carrying the changeset |
 | `purlin:test` | Each suite's report under `.purlin/runtime/reports/`, which is not committed, and this system's section of `.purlin/evidence/local/<feature>.json` and `.purlin/tests.md`. `--commit` makes two commits: the specs of the features run, the test files carrying their markers and `.purlin/config.json` as `purlin: specs, tests and settings for <feature>, ...`, then the evidence as `purlin: evidence at <sha7>`; it never pushes. On the first run it writes the `tests` entry you confirm into `.purlin/config.json`. `--remote` pushes the run branch `run/<branch>-<sha7>`, waits for the git host's run through `gh` on GitHub or `az` on Azure DevOps, pulls the runner's own section home under `.purlin/evidence/ci/<feature>.json`, and deletes the branch; what the runner runs is in `references/hard_gates.md`, "Where a runner runs" |
 | `purlin:audit` | The same section, plus what the audit found under `audit`, in `.purlin/evidence/local/<feature>.json`, which `--commit` commits in the same two commits; it never pushes |
-| `purlin:sign` | `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, in a signed commit. Proof lines in a spec when the walk adds a case. `VERSION` when you name the version and agree to write it. At the gate `signed` alone, the signed tag `signed/<version>` when nothing is left to do and every result came from committed work, on a signed commit carrying the evidence package `.purlin/evidence/package/<version>.json`, which a person pushes |
+| `purlin:sign` | `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, in a signed commit. Proof lines in a spec when the walk adds a case. `VERSION` when you name the version and agree to write it. It refuses, and writes nothing, for a feature whose spec writes a number twice or holds a line left from a merge conflict. At the gate `signed` alone, the signed tag `signed/<version>` when nothing is left to do, every spec can be counted, every result came from committed work and the checked-out branch's copy on the host, as last fetched, holds no commit HEAD lacks, on a signed commit carrying the evidence package `.purlin/evidence/package/<version>.json`, which a person pushes |
 | `purlin:export` | `.purlin/evidence/package/<version>.json`, which `--commit` commits as `purlin: evidence at <sha7>`; it never pushes |
 | `purlin:init` | `.purlin/`, `specs/`, `.purlin/config.json` with an empty `tests` setting, a block in `.gitignore`, `.purlin/evidence/` with its README, `purlin-report.html` at the project root, mutmut's config block where mutation testing is on, and the workflow when a proof names another system and the git host is GitHub or Azure DevOps. It commits the files it wrote in one commit, `chore(init): set up Purlin at the gate <gate>`, once you agree or with `--yes`. `--update` commits what it applied as `chore(update): migrate to <VERSION> (<ids>)` |
 | `purlin:anchor` | `specs/_anchors/<name>.md`, creating `specs/_anchors/` with the first anchor |
 | `purlin:status` | `.purlin/report-data.js`, the data the dashboard reads, which git ignores |
-| `purlin:drift` | Nothing |
+| `purlin:drift` | Nothing. It reads only this checkout and never fetches |
 
 ## What each command shows at each gate
 
@@ -129,15 +129,17 @@ works at every gate: a hand check is signed at any of them. An audit `purlin:aud
 counts at every gate.
 
 `purlin:drift qa` prints the `to test by hand` and `to sign` lines of `Left to do` beside what
-changed.
+changed, and each signature that ended. Every view of `purlin:drift` names each number a spec
+writes twice and which line moves, and says how old this checkout's copy of the default branch
+is; it never fetches.
 
 ## Exit codes
 
 | Command | 0 | 1 | 2 |
 |---------|---|---|---|
-| `scripts/run/purlin_run.py --test`, `--audit` | everything asked happened | a tied test failed or did not run; evidence is missing; a marker names nothing a spec has; no settings file; the settings file cannot be read; a project set up by 0.9.5 and not upgraded; no test command; for `--audit` at `strong` and `signed`, a rule read is weak or could not be audited | a bad command line |
+| `scripts/run/purlin_run.py --test`, `--audit` | everything asked happened | a tied test failed or did not run; evidence is missing; a marker names nothing a spec has; a spec under `specs/` writes a number twice or holds a line left from a merge conflict, after every test ran; no settings file; the settings file cannot be read; a project set up by 0.9.5 and not upgraded; no test command; for `--audit` at `strong` and `signed`, a rule read is weak or could not be audited | a bad command line |
 | `scripts/run/purlin_run.py --ci` | the tests tied to the proofs tagged for this runner's system passed | one of those failed or could not run, and nothing else | a bad command line |
-| `scripts/review/sign.py` | written and committed, the walk closed, nothing to tag, or the tag already exists | no key; the commit was not made; a named rule no spec has; a rule named with `--does-not-apply` that is not a pinned anchor's; the tag refused for work or results not committed, no version, or a package not committed; git could not write the tag; the settings file cannot be read | a bad command line |
+| `scripts/review/sign.py` | written and committed, the walk closed, nothing to tag, or the tag already exists | no key; the commit was not made; a named rule no spec has; a rule named with `--does-not-apply` that is not a pinned anchor's; a feature whose spec writes a number twice or holds a line left from a merge conflict; the tag refused for such a spec, for work or results not committed, for the branch's copy on the host holding commits HEAD lacks, for no version, or for a package not committed; git could not write the tag; the settings file cannot be read | a bad command line |
 | `scripts/export/package.py` | written, or the check matched | the check did not match; the project states no version; the package could not be written; the settings file cannot be read | a bad command line |
 | `scripts/review/ai_audit.py` | a rule was printed | the rule is not in the project; the settings file cannot be read | a bad command line |
 | `scripts/init/scaffold.py` | set up | the settings file cannot be read | a bad command line, not a git repository, or no such project root |
@@ -167,6 +169,13 @@ A run names each rule where it reports the problem:
 
 `purlin:sign`, last and above the summary, and `scripts/review/ai_audit.py --rule` name a rule no
 spec has: `<feature> <RULE-N> is not a rule any spec has. Run purlin:status <feature> to see its rules.`
+
+`purlin:sign <feature>` refuses a feature whose spec writes a number twice or holds a line left
+from a merge conflict, writes nothing and exits 1:
+`<feature> is not signed: <reason>. Run purlin:spec <feature>, then purlin:sign again.`
+At the gate `signed` the tag is refused with
+`No tag: <feature> cannot be counted: <reason>. Run purlin:spec <feature>, then purlin:sign.`, or
+`No tag: <ref> holds <n> commit(s) that <sha7> does not, as this checkout last fetched it. Pull, run purlin:test --commit, then purlin:sign.`
 
 `purlin:sign --does-not-apply` refuses, and writes nothing, with one of three lines:
 

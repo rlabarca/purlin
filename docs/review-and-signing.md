@@ -45,7 +45,9 @@ The walk opens on the two lines it walks, or on
 `Nothing is waiting for someone to test by hand or to sign.` It stops at the rules in order of
 feature name, then rule number, so `RULE-2` comes before `RULE-10`. Each stop is headed with the
 feature, the rule and its work left, then shows the rule, each proof with its `@manual` or `@env`
-tag, and what the audit found, and asks for one answer. A walk at the gate `signed` over three
+tag and, under each proof that is not `@manual`, the test tied to it, or `tied to no test`, and
+what the audit found, and asks for one answer. The walk names each test; open the file to read
+its body. A walk at the gate `signed` over three
 rules, answered `sign`, `case` and `sign`:
 
 ```
@@ -57,6 +59,7 @@ Rule
   The right email and password sign the user in
 Proof
   PROOF-1: Signing in as `ada@example.com` with her password `secret` is answered with the status `200`
+    tied to tests/test_login.py::test_right_password_signs_in
 What the audit found
   Strong. It found nothing.
 login RULE-1   sign / case / skip: sign
@@ -66,6 +69,7 @@ Rule
   Five wrong passwords in a row lock the account
 Proof
   PROOF-2: After five wrong passwords for `ada@example.com`, signing in with the right one is answered with the status `423`
+    tied to tests/test_login.py::test_five_wrong_passwords_lock
 What the audit found
   Strong. It found nothing.
 login RULE-2   sign / case / skip: case
@@ -231,7 +235,13 @@ At every gate a signature counts when both of these hold:
 | The signature counts when | What the signed cell reads when it does not |
 |---|---|
 | The last commit that touched its file carries a signature, made with any key | `unsigned`, with the reason `the commit that added it is not signed` |
+| That signature verifies over the commit | `unsigned`, with the reason `the signature on the commit that added it does not verify` |
 | What it was made over still hashes to what it was made over | `unsigned`, and the rule is `to sign` again |
+
+A signature counts when the commit that added it is signed and that signature verifies over the
+commit. The key is not compared with the signer. An SSH signature is checked with
+`ssh-keygen -Y check-novalidate`, which needs no list of allowed signers, and an OpenPGP one with
+`git verify-commit`.
 
 Purlin records who signed and with which key, and does not decide who may sign: a signature counts
 whoever wrote it, and on whatever branch carries it.
@@ -240,9 +250,28 @@ whoever wrote it, and on whatever branch carries it.
 
 A change to the rule text, a proof's text, the test, or a file the feature's `> Scope:` lists ends
 every signature it covers. So does an audit that finds something different, and a run on another
-machine for a system the signature covers. A signature that ends says nothing: its rule returns to
-`to sign`, or, for a hand check, to `to test by hand`. After a change to `src/login.py`, the one
-file `login` lists, the next test run reads:
+machine for a system the signature covers. A signature covers the rule's test files whole and the
+machine each system's results came from, so editing another test in the same file, or running
+the same tests on another computer, ends it.
+
+A hand check's signature is made over the rule's and its proofs' wording alone: a change to the
+code, a test or the machines does not end it, and a change to that wording does. A hand check is
+a rule whose every proof is `@manual` or has no test.
+
+A signature that ends returns its rule to `to sign`, or, for a hand check, to
+`to test by hand`. The status and every test run print one line naming the rule, the signer and
+why it ended, and the signed cell carries the same reason:
+
+```
+login RULE-2: the signature by jane@acme.com ended because a test file behind it changed: tests/test_login.py.
+```
+
+The causes are `the rule's wording changed`, `a proof's wording changed`,
+`a test file behind it changed: <files>`, `a file its spec names changed`,
+`a file of the project changed`, `what the audit found changed`,
+`the results on macOS now come from quinn-laptop, not vm` and `Windows has no results any more`,
+joined `; ` where more than one holds. `purlin:drift qa` prints the same lines. After a change
+to `src/login.py`, the one file `login` lists, the next test run reads:
 
 ```
 Selected 1 of 1 feature: login (code changed since 1e7b7e4).
@@ -285,14 +314,26 @@ You push it; `purlin:sign` pushes nothing. It writes no tag, and says why, when:
 
 | What it prints | Why |
 |---|---|
+| `No tag: <feature> cannot be counted: <reason>. Run purlin:spec <feature>, then purlin:sign.` | the feature's spec writes a number twice or holds a line left from a merge conflict |
 | The summary and `Left to do` | work other than the tag is left |
 | `No tag: the working tree holds changes that are not committed, so the results do not describe a commit. Commit them, then run purlin:sign.` | `git status` lists a path outside `.purlin/` |
 | `No tag: <feature> has results that are not committed. Run purlin:test --commit.` | a feature's results are written and not committed |
+| `No tag: origin/main holds 1 commit that 8de0b6e does not, as this checkout last fetched it. Pull, run purlin:test --commit, then purlin:sign.` | the checked-out branch's copy on the host, as this checkout last fetched it, holds commits the checkout lacks; `purlin:sign` does not fetch |
 | `No version: nothing in this project states one. Run purlin:sign --release <version>, or write it to a VERSION file.` | no version is stated and no `--release` is given |
 | `No tag: signed/1.4.0 is already written. Run purlin:sign --release <name> to name another.` | the tag exists; a tag that exists is never moved |
 | `No tag: the committed evidence still has work left to do, so no evidence package was committed. Run purlin:test --commit, then purlin:sign.` | the package, read from the committed evidence, finds work left |
 | `No tag: the evidence package was not committed: <why>.` | the package could not be written or committed |
 | `No tag: git could not write signed/<version>: <git's own message>.` | git refused the tag |
+
+A feature whose spec writes a number twice or holds a line left from a merge conflict is not
+signed either: `purlin:sign <feature>` prints
+`<feature> is not signed: <reason>. Run purlin:spec <feature>, then purlin:sign again.`, writes
+nothing and exits 1.
+
+Sign a version on a release branch, such as `release/1.2.0`, cut from the default branch once
+its specs are done. New specs land on the default branch and wait for the next version; a fix
+lands on the release branch and is merged back. On `release/1.2.0` the tag keeps up with
+`origin/release/1.2.0`.
 
 With no version stated, `purlin:sign` asks you for one and offers to write it to a `VERSION` file.
 The command exits 0 when the tag already exists and 1 for every other refusal.

@@ -77,6 +77,7 @@ counts test comments, not rules, and is carried by the project.
 
 | Kind | When it applies | The line | Command |
 |------|-----------------|----------|---------|
+| `to_repair` | at every gate, the rule's spec writes a rule or proof number twice or holds a line left from a merge conflict, so every rule of it reads `failed`; the rule takes this kind before any other, and the line counts specs, not rules | `<n> specs to repair` | `purlin:spec` |
 | `no_proof` | at `strong` and `signed`, no proof line names the rule | `<n> rules to write a proof for` | `purlin:spec` |
 | `to_correct` | at every gate, a comment above a test names nothing a spec has, or names a rule that has proofs; each such comment counts once | `<n> test comments to correct` | `purlin:build` |
 | `to_fix` | the passed cell reads `failed` or `partial` | `<n> rules to fix` | `purlin:build` |
@@ -92,7 +93,7 @@ counts test comments, not rules, and is carried by the project.
 | `to_sign` | at `signed`, the signed cell does not read `signed` | `<n> rules to sign` | `purlin:sign` |
 | `to_tag` | at `signed`, every other kind is at zero and no `signed/*` tag points at HEAD | `the version to tag` | `purlin:sign` |
 
-A count of 1 reads `1 rule to fix`, `1 rule to tie to its files`,
+A count of 1 reads `1 spec to repair`, `1 rule to fix`, `1 rule to tie to its files`,
 `1 rule to confirm as not applying`, `1 test comment to correct`,
 and so on. The systems read `Linux/Unix`, `macOS` and `Windows`, in that order, joined by `, `
 and ` and `.
@@ -101,9 +102,13 @@ and ` and `.
 `Nothing left to do.` and names no command. At `signed` it names the release step:
 `Nothing left to do. Push the tag to release it: git push origin signed/<version>`.
 
-**Purlin refuses nothing a person does.** A person may sign, commit or push at any time. What
-Purlin will not do is state that a version is finished when it is not: the tag is the one
-statement it withholds, and the lines under "What `signed/<version>` means" say why.
+**Purlin refuses nothing a person does, with one exception.** A person may sign, commit or push
+at any time, except sign a feature whose spec writes a number twice or holds a line left from a
+merge conflict: `purlin:sign` prints
+`<feature> is not signed: <reason>. Run purlin:spec <feature>, then purlin:sign again.` and
+writes nothing. What Purlin will not do is state that a version is finished when it is not: the
+tag is the one statement it withholds, and the lines under "What `signed/<version>` means" say
+why.
 
 ## Which evidence counts
 
@@ -180,15 +185,28 @@ A signature is made over the rule, its proof, its test, the code the feature's `
 lists, what the audit found, and the machine the tests ran on for each system. At every gate
 it counts when two things are true:
 
-- The commit that added the signature file carries a signature. Purlin checks that it is
-  present and looks no further: any key will do.
+- The commit that added the signature file carries a signature, and that signature verifies.
+  A signature counts when the commit that added it is signed and that signature verifies over
+  the commit. The key is not compared with the signer. An SSH signature is checked with
+  `ssh-keygen -Y check-novalidate`, which needs no list of allowed signers, and an OpenPGP one
+  with `git verify-commit`. Otherwise the signed cell reads `unsigned`, with
+  `the commit that added it is not signed` or
+  `the signature on the commit that added it does not verify`.
 - What it was made over is unchanged. Run again on the same machine with nothing changed, the
   signature still counts. A result from a system the signature did not cover is added beside
   the others and ends nothing; a new machine for a system it covered ends it. A remote runner
   is named by its kind, so a second remote run ends nothing.
 
-A signature that no longer matches ends with no message: its cell reads `unsigned`, and the
-rule is left to do as `to sign`. A signature counts on whatever commit carries it, on any
+A hand check's signature is made over the rule's and its proofs' wording alone: a change to the
+code, a test or the machines does not end it, and a change to that wording does. Every other
+signature covers the rule's test files whole and the machine each system's results came from,
+so editing another test in the same file, or running the same tests on another computer, ends
+it. A hand check is a rule whose every proof is `@manual` or has no test.
+
+A signature that no longer matches ends: its cell reads `unsigned` with the reason
+`the signature by <signer> ended because <causes>`, and the rule is left to do as `to sign`. The
+status and every test run print one line naming the rule, the signer and why it ended:
+`login RULE-2: the signature by jane@acme.com ended because a test file behind it changed: tests/test_login.py.` A signature counts on whatever commit carries it, on any
 branch. An anchor's rule is signed once, over every file of the project but Purlin's own
 records, so any change to the project ends that signature.
 
@@ -212,7 +230,11 @@ files in `> Scope:` is signed and its signature does not count, because a signat
 tied to the code it governs.
 
 `purlin:sign` writes the tag only at the gate `signed`, as a signed tag (`git tag -s`), and
-never over a tag that is already there. It writes it only when both hold:
+never over a tag that is already there. It writes it only when all four hold:
+
+- **Every spec can be counted.** For each spec that writes a number twice or holds a line left
+  from a merge conflict it prints
+  `No tag: <feature> cannot be counted: <reason>. Run purlin:spec <feature>, then purlin:sign.`
 
 - **Nothing is left to do.** While anything is, the tag is not written and the summary and
   `Left to do` say what is left.
@@ -220,6 +242,12 @@ never over a tag that is already there. It writes it only when both hold:
   `.purlin/`, and no evidence file is uncommitted. Otherwise it prints one of these:
   - `No tag: the working tree holds changes that are not committed, so the results do not describe a commit. Commit them, then run purlin:sign.`
   - `No tag: <feature> has results that are not committed. Run purlin:test --commit.`
+- **The branch on the host holds nothing the checkout lacks.** Where the checked-out branch has
+  an upstream, or else an `origin/<branch>`, and that ref, as this checkout last fetched it,
+  holds commits HEAD does not, it prints
+  `No tag: origin/main holds 1 commit that 8de0b6e does not, as this checkout last fetched it. Pull, run purlin:test --commit, then purlin:sign.`
+  Nothing fetches. On a release branch the ref is that release branch's, so the default branch
+  moving on does not stop the tag.
 
 **The version** is read from the `VERSION` file at the project root, then the `version` of
 `package.json`, then `[project]` and then `[tool.poetry]` `version` in `pyproject.toml`, then

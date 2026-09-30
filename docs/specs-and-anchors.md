@@ -26,7 +26,7 @@ specs/<category>/<name>.md
 > Scope: src/auth.py, src/session.py
 > Stack: python/flask, bcrypt
 > Highest-Rule: 3
-> Highest-Proof: 2
+> Highest-Proof: 4
 
 ## Rules
 
@@ -179,9 +179,16 @@ system. Which run proves which proof is in
 `origin/main`'s copy, so a number already on `origin/main` is not taken again on a branch.
 
 When two branches took the same number before either fetched, the merge leaves one id twice.
-Keep both rules, give the incoming one the next free number, and move its test markers and its
-signature filenames with it. Two branches that advanced the same anchor pin resolve to the
-newer sha.
+When two branches take the same number, the number already on the default branch keeps it, and
+the rule or proof from the branch not yet merged moves to the next free number. A moved rule
+needs a new audit and a new signature; its old signature ends and stays on disk. Move the test
+comments that name the moved id with it. `purlin:drift` names every number written twice and
+which line moves.
+
+While a number is written twice, or a line git left from the conflict stays in the spec, every
+rule of that spec reads `failed` with the reason, signing it and the tag are refused, and
+`Left to do` reads `1 spec to repair: purlin:spec`. Two branches that advanced the same anchor
+pin resolve to the newer sha.
 
 ## Anchors
 

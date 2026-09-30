@@ -145,7 +145,8 @@ on every machine.
 
 ## Documentation
 
-[docs/index.md](docs/index.md) maps every guide by role.
+[docs/index.md](docs/index.md) maps every guide by role, and
+[docs/qa-guide.md](docs/qa-guide.md) takes a QA person from acceptance criteria to a signature.
 [docs/how-purlin-works.md](docs/how-purlin-works.md) is the model in one page, and
 [docs/regulated-workflow.md](docs/regulated-workflow.md) says what Purlin hands a regulated
 sign-off system and where its part ends.

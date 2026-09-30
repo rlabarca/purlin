@@ -36,6 +36,7 @@ The gate is the last step every rule must reach before a version is finished. Th
 
 | Guide | What it covers |
 |-------|----------------|
+| [From criteria to a signature](qa-guide.md) | Acceptance criteria to proofs, what the developer adds, the walk, the signature and what ends it, drift after a pull, where the risk is |
 | [Review and signing](review-and-signing.md) | What the audit found, `purlin:sign` and the rules it walks, a check by hand, the tag, and when a signature counts |
 | [Dashboard](dashboard.md) | The page that opens from disk, its screens, filters, both themes |
 

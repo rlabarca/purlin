@@ -61,14 +61,32 @@ anything in your test suite: a test is any test in your own suite with one comme
   its proof, its test, the code the feature lists, what the audit found and the machine the
   tests ran on for each system; a change to any of them ends it, and the rule is left to do as
   `to sign`. It records the signer's name and email as git holds them, the time and the key's
-  fingerprint. It counts when its commit carries a signature, made with any key: Purlin records
-  who signed and does not decide who may. With no key set up, `purlin:sign` shows the commands
+  fingerprint. It counts when its commit carries a signature, made with any key, that verifies
+  over the commit: Purlin records who signed and does not decide who may. With no key set up, `purlin:sign` shows the commands
   that set one up, offers to run them and carries on.
 - **The signed tag.** At the gate `signed`, when nothing is left to do and every result came
   from committed work, `purlin:sign` writes the evidence package, commits it, and writes the
   signed tag `signed/<version>` on that commit. You push it. Below `signed` it writes no tag and
   no package. `purlin:sign` exits 1 when it refused the tag for a reason to fix: work or results
   not committed, no version, a package not committed, or git could not write the tag.
+- **A number written twice or a line left from a merge conflict fails the spec.** Every rule of
+  that spec reads failed with the reason, signing it and the tag are refused, and Left to do
+  reads 1 spec to repair: purlin:spec.
+- **Drift reads your checkout after a merge.** It names each number written twice and which
+  line moves, each test comment whose proof's wording changed, and the proofs added, changed and
+  moved; it says how old your copy of the default branch is and never fetches.
+- **Every signature that ends says why**, one line naming the rule, the signer and the cause. A
+  hand check's signature is bound to the wording alone.
+- **A signature counts only when its commit's signature verifies.**
+- **The tag is refused while the branch's copy on the host holds commits the checkout lacks.**
+- **The signing walk shows each proof's tied test.**
+- **A plain tests/test_*.py project is suggested pytest.**
+- **A version is signed on a release branch**, cut from the default branch once its specs are
+  done; new specs land on the default branch and wait for the next version.
+- **When two branches take the same number**, the number already on the default branch keeps it,
+  and the rule or proof from the branch not yet merged moves to the next free number. A re-run
+  after a conflict in `.purlin/evidence/` keeps each audit result whose rule, proof and test are
+  unchanged.
 - **The evidence package.** `purlin:export` writes `.purlin/evidence/package/<version>.json`,
   one data file describing a version for a regulated document and sign-off system: every rule's
   words, proofs, tests, results, what the audit found, who signed, the count at each step, what
@@ -141,7 +159,7 @@ anything in your test suite: a test is any test in your own suite with one comme
 - **A feature's row counts its own rules.** The dashboard lists the anchors in a section of their own, `Anchors`, above the spec table; the counts `(+8)` and `(+8 shared)` are gone.
 - **Any change to the project ends an anchor's results and signatures**, but for the records Purlin writes: `.purlin/evidence/`, `.purlin/tests.md` and the signatures.
 - **No test strength for an anchor.** Its code is not broken on purpose; the AI audit alone judges its tests.
-- **The formats** stand at spec 21, anchor 11, evidence 7, signature 12, package 5 and marker 3, and the dashboard's data at schema 11.
+- **The formats** stand at spec 21, anchor 11, evidence 7, signature 13, package 6 and marker 3, and the dashboard's data at schema 12.
 - An anchor is copied only from a spec in Purlin's format kept in a git repository. `purlin:anchor add` refuses a text file, a description in words or a file with no rule, and `purlin:drift` and `purlin:anchor sync --check` report an anchor made from plain text as `error`.
 
 ### Windows

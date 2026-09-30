@@ -159,10 +159,26 @@ in one commit and none of them conflicts. The reports a run reads are under
 other.
 
 Two things can collide. Evidence is one file per feature per source, so two branches that both
-commit one feature's evidence conflict on that file: keep either side, and a test run over it
-writes that system's section again, which `purlin:test --commit` commits. And two branches can
-take the same `RULE-N` before either fetched: the incoming one takes the next free number, and
-its markers and signature filenames move with it.
+commit one feature's evidence conflict on that file. Whoever runs `purlin:test --commit` or
+`purlin:audit --commit` commits the evidence, on the branch they are on: it describes that
+branch's code. When a merge conflicts in `.purlin/evidence/`, take either side and run
+`purlin:test --commit`: the file is written again, keeping each audit result whose rule, proof
+and test are unchanged.
+
+And two branches can take the same number before either fetched. When two branches take the
+same number, the number already on the default branch keeps it, and the rule or proof from the
+branch not yet merged moves to the next free number. A moved rule needs a new audit and a new
+signature; its old signature ends and stays on disk. `purlin:drift` after the merge names every
+number written twice and which line moves; until it is fixed, every rule of that spec reads
+`failed`.
+
+## Releasing a version
+
+Sign a version on a release branch, such as `release/1.2.0`, cut from the default branch once
+its specs are done. New specs land on the default branch and wait for the next version; a fix
+lands on the release branch and is merged back. The evidence a version is signed on is committed
+on its release branch. The tag is refused while the release branch's copy on the host, as this
+checkout last fetched it, holds commits the checkout lacks.
 
 ## When to go further
 

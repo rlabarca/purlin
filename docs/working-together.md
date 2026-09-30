@@ -43,7 +43,8 @@ Adding a case is plain language. Say "it should also reject an expired token" an
 line is written into the spec with the next free proof id; the test arrives on the next
 `purlin:build`. At the gate `signed`, when nothing is left but the tag, `purlin:sign` writes
 the tag `signed/<version>` and you push it. [review-and-signing.md](review-and-signing.md) is
-the walk in full.
+the walk in full, and [qa-guide.md](qa-guide.md) takes you from acceptance criteria to a
+signature.
 
 ## The developer
 
@@ -100,9 +101,14 @@ writes nothing and judges nothing.
 
 | Role | What it reports |
 |------|-----------------|
-| `pm` | Rules added, rules changed, rules removed |
+| `pm` | Rules added, rules changed, rules removed, then proofs added, changed and moved |
 | `eng` | Code changed and the rules behind it, changed files under no spec's scope, rules with no test, anchors behind their source, features out of date |
-| `qa` | Test files changed and the features they cover, then the `to test by hand` and `to sign` lines of `Left to do` |
+| `qa` | Proofs added, changed and moved, test files changed and the features they cover, each signature that ended and why, then the `to test by hand` and `to sign` lines of `Left to do` |
+
+Every view then names each number a spec writes twice and which line moves, and each test
+comment whose proof's wording changed since the comment was written. Drift reads only this
+checkout and never fetches: where it names a number written twice, it says how old this
+checkout's copy of the default branch is, so you can run `git fetch` and drift again.
 
 The `qa` view prints those lines at every gate; at `passed` only a rule to test by hand waits
 for a person:

@@ -130,10 +130,13 @@ result.
 
 A signature counts, at every gate, while two things hold, each read from git or from the file:
 
-1. The last commit that touched it carries a signature, made with any key.
+1. The last commit that touched it carries a signature, made with any key, and that signature
+   verifies over the commit. The key is not compared with the signer.
 2. The hashes it was made over still match.
 
-A change to any of them ends it with no message, and its rule is `to sign` again. Purlin records
+A change to any of them ends it, and its rule is `to sign` again; the status and every test run
+print one line naming the rule, the signer and why it ended. A hand check's signature is made
+over the rule's and its proofs' wording alone. Purlin records
 who signed and the fingerprint of the key they signed with, and anyone with an SSH key can sign:
 which signers were entitled is the regulated system's to decide.
 
@@ -151,6 +154,12 @@ signature.
 
 ## The day to day
 
+Sign a version on a release branch, such as `release/1.2.0`, cut from the default branch once
+its specs are done. New specs land on the default branch and wait for the next version; a fix
+lands on the release branch and is merged back. The evidence a version is signed on is committed
+on its release branch, and the tag is refused while `origin/release/1.2.0`, as this checkout last
+fetched it, holds commits the checkout lacks.
+
 The loop is the one every gate runs, with signing at the end. It runs on one machine unless a
 proof is tagged `@env` for a system that machine is not; then `purlin:test --remote` has a remote
 runner prove it.
@@ -159,13 +168,17 @@ runner prove it.
 flowchart TD
     W["purlin:spec, purlin:build, purlin:test --commit"] --> A["purlin:audit --commit"]
     A --> S["purlin:sign<br>one signature file per rule,<br>in a signed commit"]
-    S --> G{"anything but<br>the tag left?"}
+    S --> B{"a spec to<br>repair?"}
+    B -->|yes| NB["No tag: a feature<br>cannot be counted"]
+    B -->|no| G{"anything but<br>the tag left?"}
     G -->|yes| L["No tag: the summary<br>and Left to do"]
     G -->|no| C{"work not<br>committed?"}
     C -->|yes| NC["No tag: the working tree<br>holds changes"]
     C -->|no| R{"results not<br>committed?"}
     R -->|yes| NR["No tag: a feature has<br>results not committed"]
-    R -->|no| V{"a version<br>stated?"}
+    R -->|no| H{"the branch on the host<br>holds commits you lack?"}
+    H -->|yes| NH["No tag: pull, then<br>purlin:test --commit"]
+    H -->|no| V{"a version<br>stated?"}
     V -->|no| NV["No version: nothing in<br>this project states one"]
     V -->|yes| P["commit .purlin/evidence/package/#lt;version#gt;.json"]
     P --> T["git tag -s signed/#lt;version#gt;"]

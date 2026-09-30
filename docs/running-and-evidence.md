@@ -43,7 +43,9 @@ Suggested tests setting: [{"name": "pytest", "run": "python3 -m pytest --ignore=
 you each difference, writes the entry into the `tests` setting once you confirm, and runs.
 Where the run finds no test tool it knows, it prints `No test command is set and no test tool
 Purlin knows was found, so nothing ran. The agent reads the project and proposes a command for
-you to confirm.` [supported_frameworks.md](../references/supported_frameworks.md) gives the
+you to confirm.` A project whose `tests/` folder holds a file named `test_*.py`, at any depth,
+is suggested pytest even with no `conftest.py`, `pytest.ini` or `[tool.pytest` section.
+[supported_frameworks.md](../references/supported_frameworks.md) gives the
 entry for each tool and what each needs added.
 
 ### Which features run
@@ -392,6 +394,14 @@ At the gate `signed`, when nothing but the tag is left to do and every result ca
 committed work, `purlin:sign` writes the evidence package,
 `.purlin/evidence/package/<version>.json`, commits it and tags that commit `signed/<version>`.
 [hard_gates.md](../references/hard_gates.md#what-signedversion-means) says what the tag means.
+
+### Who commits the evidence
+
+Whoever runs `purlin:test --commit` or `purlin:audit --commit` commits the evidence, on the branch
+they are on: it describes that branch's code. When a merge conflicts in `.purlin/evidence/`, take
+either side and run `purlin:test --commit`: the file is written again, keeping each audit result
+whose rule, proof and test are unchanged. The evidence a version is signed on is committed on
+its release branch.
 
 ## Who pushes
 
