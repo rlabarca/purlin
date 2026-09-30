@@ -1,4 +1,4 @@
-> Format-Version: 5
+> Format-Version: 6
 
 # Evidence format
 
@@ -270,6 +270,15 @@ purlin: specs, tests and settings for <feature>[, <feature>...]
 The run prints `Committed <sha7>, the work these results describe:` and then
 each file that commit changed, one per line, indented two spaces. Where none
 changed it makes no such commit and prints nothing.
+
+A run that selected nothing to run still makes the first commit, of every
+spec, every test file carrying a marker and `.purlin/config.json` that
+changed. Its subject names each feature whose spec or marked tests it holds;
+where it holds only the settings, the subject is:
+
+```
+purlin: specs, tests and settings
+```
 
 The second carries the files under `local/`, the table and any file the run
 removed:
