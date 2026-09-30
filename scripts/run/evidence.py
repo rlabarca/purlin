@@ -45,6 +45,7 @@ if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 from purlin import evidence as reader                           # noqa: E402
+from purlin import specs as spec_reader                          # noqa: E402
 
 SCHEMA = reader.SCHEMA
 EVIDENCE_DIR = reader.EVIDENCE_DIR
@@ -278,10 +279,6 @@ def read_file(project_root, source, feature):
     return parse(data, source)
 
 
-# A line git leaves where its merge of a file stopped on a conflict.
-_CONFLICT_LINE = re.compile(r'^(<{7}|\|{7}|={7}|>{7})(?:[ \t].*)?$')
-
-
 def conflict_sides(text):
     """The two sides of a file a merge left conflicted, as their two texts.
 
@@ -294,11 +291,10 @@ def conflict_sides(text):
     where = 'both'
     seen = False
     for line in text.splitlines():
-        found = _CONFLICT_LINE.match(line)
-        if found:
+        if spec_reader.CONFLICT_RE.match(line):
             seen = True
             where = {'<': 'ours', '|': 'base', '=': 'theirs',
-                     '>': 'both'}[found.group(1)[0]]
+                     '>': 'both'}[line[0]]
             continue
         if where in ('both', 'ours'):
             ours.append(line)

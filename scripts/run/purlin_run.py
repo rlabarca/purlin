@@ -925,13 +925,10 @@ def broken_specs(features):
     from a merge conflict: every rule of such a spec reads `failed`, so the
     run exits 1 on it and the audit reads none of its rules.
 
-    The reasons are the spec reader's `broken_reasons`; until the reader
-    gives it, no spec is broken.
+    The reasons are the spec reader's `broken_reasons`.
     """
-    reasons = getattr(specs_module, 'broken_reasons', None)
-    if reasons is None:
-        return set()
-    return {name for name, info in features.items() if reasons(info)}
+    return {name for name, info in features.items()
+            if specs_module.broken_reasons(info)}
 
 
 # ---------------------------------------------------------------------------

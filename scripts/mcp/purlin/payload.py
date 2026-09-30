@@ -376,13 +376,8 @@ def _feature_entry(project_root, name, info, features, evidence,
 
 
 def spec_broken(info):
-    """Why every rule of a spec reads `failed`, `specs.broken_reasons`' answer.
-
-    Where the reader in this checkout gives no such answer the spec is read
-    as sound.
-    """
-    reasons = getattr(specs_module, 'broken_reasons', None)
-    return list(reasons(info)) if reasons else []
+    """Why every rule of a spec reads `failed`, `specs.broken_reasons`' answer."""
+    return list(specs_module.broken_reasons(info))
 
 
 # ---------------------------------------------------------------------------

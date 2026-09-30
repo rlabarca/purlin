@@ -718,8 +718,7 @@ def _qa_view(data, changed, markers, proofs):
 
 def _ended_lines(data):
     """The status's line for each signature that ended, in its order."""
-    ended_lines = getattr(summary_module, 'ended_lines', None)
-    return list(ended_lines(data)) if ended_lines else []
+    return list(summary_module.ended_lines(data))
 
 
 # ---------------------------------------------------------------------------
