@@ -380,3 +380,9 @@ def padded_to(count):
         assert len(lines) < count, 'the skill is already %d lines' % len(lines)
         return '\n'.join(lines + ['More prose.'] * (count - len(lines))) + '\n'
     return edit
+
+
+# purlin: skill_export PROOF-35
+def test_the_package_is_read_where_the_authority_to_sign_off_is():
+    assert ('reads it in the system that holds the authority to sign the '
+            'version off') in ' '.join(read(SKILL).split())

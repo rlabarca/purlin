@@ -5,7 +5,7 @@
 >   against its fingerprint, and says that Purlin makes no claim of compliance.
 > Scope: skills/export/SKILL.md
 > Stack: markdown, Claude Code skill definition
-> Highest-Rule: 12
+> Highest-Rule: 13
 
 ## Rules
 
@@ -21,6 +21,7 @@
 - RULE-10: The skill tells the agent that a package that is not finished lists the lines of `Left to do` in `left`
 - RULE-11: The last section of the skill tells the agent a `→` directive for each outcome of an export: evidence not committed, no version, `not finished`, `finished` and a `--check` mismatch
 - RULE-12: The skill tells the agent the line the script prints when no version is stated, `No version: nothing in this project states one. Run purlin:export --release <version>, or write it to a VERSION file.`
+- RULE-13: The skill tells the agent that the package is read in the system that holds the authority to sign the version off
 
 ## Proof
 
@@ -38,3 +39,4 @@
 - PROOF-30 (RULE-11): The closing table of the export skill has 5 outcome rows, and the line each one gives begins with `→`
 - PROOF-34 (RULE-12): The export skill, its line breaks read as spaces, quotes `No version: nothing in this project states one. Run purlin:export --release <version>, or write it to a VERSION file.` word for word
 - PROOF-6 (RULE-6): The export skill, counted line by line, is at most 90 lines
+- PROOF-35 (RULE-13): The export skill, its line breaks read as spaces, carries the words `reads it in the system that holds the authority to sign the version off` word for word
