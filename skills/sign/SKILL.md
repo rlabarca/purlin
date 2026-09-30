@@ -53,13 +53,10 @@ offer to run them, and once they say yes and the commands ran, carry on with the
 
 ## Step 2: what waits, and what the audit found for each rule
 
-```
-sync_status()
-```
-
-Each rule's `left` in the payload is the one kind of work left on it. The walk reads the rules
-whose `left` is `to_test_by_hand`, a `@manual` proof a person checks, or `to_sign`, a rule whose
-tests and audit are done at the gate `signed`. `Left to do` carries one line for each:
+Call `sync_status` with `project_root` set to the project root, the top folder of the git
+checkout. Each rule's `left` in the payload is the one kind of work left on it. The walk reads
+the rules whose `left` is `to_test_by_hand`, a `@manual` proof a person checks, or `to_sign`, a
+rule whose tests and audit are done at the gate `signed`. `Left to do` carries one line for each:
 
 ```
 2 rules to test by hand: purlin:sign
@@ -126,6 +123,12 @@ subjects come from `references/commit_conventions.md`.
 Nothing else is read, at any gate: the signature counts whoever wrote it, whoever last committed
 to the test file, and on whatever branch carries it. A first run on a new system ends nothing.
 When it has signed, the script prints `Signed 3 rules as jane@acme.com with the key ending ...Xy4Q.`
+and a line for each rule it signed. At the gate `signed` a rule of a spec that names no files is
+signed all the same, and its line names the command that adds them:
+
+```
+  <feature> <RULE-N>   does not count until the spec names its files: purlin:spec <feature>
+```
 
 ## Step 6: the version and the tag
 
@@ -142,13 +145,15 @@ Nothing left to do. Push the tag to release it: git push origin signed/1.4.0
 ```
 
 While other work is left it prints the summary and `Left to do` instead. It writes no tag while
-the working tree or any feature's results are not committed, and none over a tag that exists.
+the working tree or any feature's results are not committed, and none over a tag that exists,
+where it prints `No tag: <tag> is already written. Run purlin:sign --release <name> to name another.`
 It exits 1 when the tag was refused for a reason to fix, uncommitted work or results, no version,
 a package not committed or git failing to write the tag, and 0 when the tag already exists.
-With no version stated it prints `No version: nothing in this project states one.`: ask the
-person for the version, offer to write it to a `VERSION` file at the root, and run the walk
-again, or pass `--release <version>`. Below `signed` it writes no tag and no package. Pushing the
-tag is a person's act; this skill never pushes.
+With no version stated it prints
+`No version: nothing in this project states one. Run purlin:sign --release <version>, or write it to a VERSION file.`:
+ask the person for the version, offer to write it to a `VERSION` file at the root, and run the
+walk again, or pass `--release <version>`. Below `signed` it writes no tag and no package.
+Pushing the tag is a person's act; this skill never pushes.
 
 ## Step 7: close the walk and name the next step
 

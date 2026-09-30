@@ -58,9 +58,20 @@ class TestSkillSign:
     def test_what_waits_is_read_from_sync_status(self, monkeypatch):
         assert sign_waiting_problems() == []
         assert refusals(monkeypatch, sign_waiting_problems, [
-            (SKILL, replace('```\nsync_status()\n```\n'),
+            (SKILL, replace('Call `sync_status`', 'Call it'),
              '%s does not read left, to_test_by_hand and to_sign from '
              'sync_status' % SKILL)]) == []
+
+    # RULE-18: the project root, passed to sync_status.
+
+    # purlin: skill_sign PROOF-46
+    def test_sync_status_is_given_the_project_root(self, monkeypatch):
+        assert sign_root_problems() == []
+        assert refusals(monkeypatch, sign_root_problems, [
+            (SKILL, replace('`sync_status` with `project_root` set to',
+                            '`sync_status` with'),
+             '%s section on what waits does not say %r'
+             % (SKILL, ROOT_CALL))]) == []
 
     # RULE-12: what the audit found, read before anything is written.
 
@@ -130,6 +141,21 @@ class TestSkillSign:
                             'whoever committed last'),
              '%s does not say the signature counts' % SKILL)]) == []
 
+    # RULE-19: a rule of a spec that names no files.
+
+    # purlin: skill_sign PROOF-47
+    def test_a_rule_of_a_spec_naming_no_files_is_signed_and_says_so(
+            self, monkeypatch):
+        assert sign_no_files_problems() == []
+        assert refusals(monkeypatch, sign_no_files_problems, [
+            (SKILL, replace(NO_FILES_LINE + '\n', '  <feature> <RULE-N>\n'),
+             '%s section on when a signature counts does not show %r'
+             % (SKILL, NO_FILES_LINE)),
+            (SKILL, replace('At the gate `signed` a rule of a spec',
+                            'A rule of a spec'),
+             '%s section on when a signature counts does not say %r'
+             % (SKILL, NO_FILES_SIGNED))]) == []
+
     # RULE-6: the walk's three answers.
 
     # purlin: skill_sign PROOF-6
@@ -198,6 +224,28 @@ class TestSkillSign:
              '%s tag section does not offer to write the version'
              % SKILL)]) == []
 
+    # RULE-20: the line with no version.
+
+    # purlin: skill_sign PROOF-48
+    def test_it_quotes_the_no_version_line(self, monkeypatch):
+        assert tag_section_says(NO_VERSION) == []
+        assert refusals(monkeypatch, lambda: tag_section_says(NO_VERSION), [
+            (SKILL, replace('Run purlin:sign --release <version>, or',
+                            'Name it with --release <version>, or'),
+             '%s tag section does not carry %r'
+             % (SKILL, NO_VERSION))]) == []
+
+    # RULE-21: the line over a tag already written.
+
+    # purlin: skill_sign PROOF-49
+    def test_it_quotes_the_tag_already_written_line(self, monkeypatch):
+        assert tag_section_says(TAG_WRITTEN) == []
+        assert refusals(monkeypatch, lambda: tag_section_says(TAG_WRITTEN), [
+            (SKILL, replace('Run purlin:sign --release <name> to name another.',
+                            'Name another with --release <name>.'),
+             '%s tag section does not carry %r'
+             % (SKILL, TAG_WRITTEN))]) == []
+
     # RULE-10: the key.
 
     # purlin: skill_sign PROOF-21
@@ -263,13 +311,24 @@ def waiting_section():
     return section(read(SKILL), r'what waits') or ''
 
 
+# The words every first call of sync_status carries.
+ROOT_CALL = ('`sync_status` with `project_root` set to the project root, the '
+             'top folder of the git checkout')
+
+
 def sign_waiting_problems():
     # The kinds are read off what the sync_status call returns.
-    if re.search(r'sync_status\(\).*`left`.*`to_test_by_hand`.*`to_sign`',
+    if re.search(r'`sync_status`.*`left`.*`to_test_by_hand`.*`to_sign`',
                  waiting_section(), re.S):
         return []
     return ['%s does not read left, to_test_by_hand and to_sign from '
             'sync_status in its section on what waits' % SKILL]
+
+
+def sign_root_problems():
+    if 'Call ' + ROOT_CALL in flat(waiting_section()):
+        return []
+    return ['%s section on what waits does not say %r' % (SKILL, ROOT_CALL)]
 
 
 def sign_read_first_problems():
@@ -339,6 +398,25 @@ def sign_count_problems():
     return problems
 
 
+# A rule of a spec that names no files, signed at the gate signed.
+NO_FILES_SIGNED = ('At the gate `signed` a rule of a spec that names no files '
+                   'is signed')
+NO_FILES_LINE = ('  <feature> <RULE-N>   does not count until the spec names '
+                 'its files: purlin:spec <feature>')
+
+
+def sign_no_files_problems():
+    body = section(read(SKILL), r'when a signature counts') or ''
+    problems = []
+    if NO_FILES_SIGNED not in flat(body):
+        problems.append('%s section on when a signature counts does not say '
+                        '%r' % (SKILL, NO_FILES_SIGNED))
+    if NO_FILES_LINE not in body.splitlines():
+        problems.append('%s section on when a signature counts does not show '
+                        '%r' % (SKILL, NO_FILES_LINE))
+    return problems
+
+
 def sign_whose_problems():
     body = section(read(SKILL), r'when a signature counts') or ''
     if WHOSE in flat(body):
@@ -395,6 +473,11 @@ SIGN_PACKAGE_LINE = ('Evidence package committed: '
 SIGN_TAG_LINE = 'Tagged signed/1.4.0 at a1b2c3d.'
 BELOW_SIGNED = 'Below `signed` it writes no tag and no package'
 NEVER_PUSHES = 'this skill never pushes'
+NO_VERSION = ('No version: nothing in this project states one. Run '
+              'purlin:sign --release <version>, or write it to a VERSION '
+              'file.')
+TAG_WRITTEN = ('No tag: <tag> is already written. Run purlin:sign --release '
+               '<name> to name another.')
 TAG_EXITS = ('It exits 1 when the tag was refused for a reason to fix, '
              'uncommitted work or results, no version, a package not '
              'committed or git failing to write the tag, and 0 when the tag '
