@@ -29,7 +29,8 @@ checks each of these against the test the proof names:
   blocks or expires anything has been proved in one direction only.
 - A person who cannot read code could not judge the proof: it names a source or test file
   path, a function, a class, a selector or a test framework, where it should name what a
-  user or a caller of the system would see. A path the software itself writes, reads or
+  user or a caller of the system would see, as `references/spec_quality_guide.md`, "Written
+  for a person who cannot read code", says. A path the software itself writes, reads or
   prints is output a caller sees, and naming it is not a finding.
 - The proof describes the test's mechanics, a call, an assertion, a mock, a fixture or a spy,
   instead of what is shown.
@@ -100,8 +101,8 @@ is written, and the cell reads `not audited` until an audit reaches the rule. At
 The audit reports. It recommends nothing, and it never names a next action. Four things:
 
 - **The feature's test strength, beside the minimum, where it was measured.** `Test
-  strength: 71 percent (minimum 80)`. Where nothing was measured the report says nothing of
-  strength, and the model reading the rule is shown `Test strength: not measured`.
+  strength 71%, against a minimum of 80%.` Where nothing was measured the report says
+  nothing of strength, and the model reading the rule is shown `Test strength: not measured`.
 - **The observations.** What the AI audit saw the test observe, against what the proof
   names, one sentence each. The audit is asked to state what it saw and to say when it
   cannot tell. It is never asked what to do.
