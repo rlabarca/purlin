@@ -648,14 +648,21 @@ def _commit(project_root, paths, message):
 
     `why` is git's own message, read as the tag's refusal reads it.
     """
-    for command in (['git', 'add', '--'] + list(paths),
-                    ['git', 'commit', '-S', '-m', message],
-                    ['git', 'rev-parse', 'HEAD']):
-        result = subprocess.run(command, capture_output=True, text=True,
-                                cwd=project_root, timeout=60)
-        if result.returncode != 0:
-            return None, _first_line(result)
-    return result.stdout.strip(), None
+    add = subprocess.run(['git', 'add', '--'] + list(paths),
+                         capture_output=True, text=True, cwd=project_root,
+                         timeout=30)
+    if add.returncode != 0:
+        return None, _first_line(add)
+    commit = subprocess.run(['git', 'commit', '-S', '-m', message],
+                            capture_output=True, text=True, cwd=project_root,
+                            timeout=60)
+    if commit.returncode != 0:
+        return None, _first_line(commit)
+    head = subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True,
+                          text=True, cwd=project_root, timeout=10)
+    if head.returncode != 0:
+        return None, _first_line(head)
+    return head.stdout.strip(), None
 
 
 def not_made(why):
