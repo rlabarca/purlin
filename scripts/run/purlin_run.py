@@ -821,7 +821,8 @@ def main(argv=None):
 
     features = specs_module.scan_specs(project_root)
     if not features:
-        print(status_module.NO_SPECS)
+        for line in status_module.no_spec_lines(project_root):
+            print(line)
         return 1
     suites, suite_problems = markers_module.read_suites(project_root, config)
     for problem in suite_problems:

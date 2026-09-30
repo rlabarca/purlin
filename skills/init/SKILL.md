@@ -182,7 +182,7 @@ prints `→ Run: purlin:init --update` above its summary, and a test run stops a
 
 Say what was written. The script ends on the lines `purlin:status` ends on, the summary and
 `Left to do`, whose first line is the next step, or, with no spec yet, on
-`→ Run: purlin:spec to write the first spec.` Name the next step from what the tree shows:
+`No specs found under specs/.` and `→ Run: purlin:spec-from-code to write the specs this code already implies.` or `→ Run: purlin:spec <name> to write the first spec.` Name the next step from what the tree shows:
 
 - No specs and no code: `→ Run: purlin:spec "<one sentence about what the software must do>"`.
 - Code but no specs: `→ Run: purlin:spec-from-code`.

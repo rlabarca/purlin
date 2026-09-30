@@ -1107,7 +1107,8 @@ def _print_ending(root):
     data = payload.build_payload(root)
     print('')
     if not data['features']:
-        print(status.NO_SPECS)
+        for line in status.no_spec_lines(root):
+            print(line)
         return
     for line in status.ending_lines(data, root):
         print(line)

@@ -37,9 +37,48 @@ from purlin import (board as board_module, drift as drift_module,
 ARROW = '→'
 DOT = board_module.DOT
 
-NO_SPECS = ('No specs found under specs/.\n'
-            '%s Run: purlin:init to set this project up, or purlin:spec to '
-            'write the first one.' % ARROW)
+# What a tree holds that counts as code, for a project with no spec yet: a
+# file git lists, tracked or not ignored, outside these folders, with one of
+# these extensions.
+_NOT_CODE_FOLDERS = ('specs/', '.purlin/', '.github/', 'docs/')
+_CODE_EXTENSIONS = frozenset(
+    '.py .pyi .js .jsx .mjs .cjs .ts .tsx .cs .fs .vb .go .java .kt .rb .php '
+    '.rs .swift .c .h .cc .cpp .hpp .m .scala .sql .sh .ps1'.split())
+
+
+def _holds_code(project_root):
+    """True when the tree holds a file of code outside the folders above."""
+    try:
+        listed = subprocess.run(
+            ['git', 'ls-files', '--cached', '--others', '--exclude-standard',
+             '-z'], cwd=project_root, capture_output=True, check=False)
+    except OSError:
+        return False
+    if listed.returncode != 0:
+        return False
+    for raw in listed.stdout.split(b'\0'):
+        path = raw.decode('utf-8', 'replace')
+        if not path or path.startswith(_NOT_CODE_FOLDERS):
+            continue
+        if os.path.splitext(path)[1] in _CODE_EXTENSIONS:
+            return True
+    return False
+
+
+def no_spec_lines(project_root):
+    """The two lines every surface prints for a project with no spec.
+
+    The second names the next step by the state of the project: not set up,
+    set up over code, or set up over no code.
+    """
+    if not os.path.isfile(os.path.join(project_root, '.purlin', 'config.json')):
+        second = '%s Run: purlin:init to set this project up.' % ARROW
+    elif _holds_code(project_root):
+        second = ('%s Run: purlin:spec-from-code to write the specs this code '
+                  'already implies.' % ARROW)
+    else:
+        second = '%s Run: purlin:spec <name> to write the first spec.' % ARROW
+    return ['No specs found under specs/.', second]
 
 
 def columns_for(gate, proofs=1):
@@ -61,7 +100,7 @@ def sync_status(project_root):
     # this table refreshes the page's data file with the same payload.
     report_data.refresh(project_root, data)
     if not data['features']:
-        return NO_SPECS
+        return '\n'.join(no_spec_lines(project_root))
 
     lines = []
     lines.append('Purlin status: %s, plugin %s, gate %s'

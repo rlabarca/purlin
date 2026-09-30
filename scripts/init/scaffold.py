@@ -483,15 +483,16 @@ def next_step(root):
     """How the project stands now: the lines `purlin:status` ends on.
 
     That is the summary and `Left to do`, whose first line is the next step.
-    A project with no spec yet has neither, and is sent to write one.
+    A project with no spec yet has neither, and ends on the two lines every
+    surface prints for it.
     """
-    first = '%s Run: purlin:spec to write the first spec.' % ARROW
     try:
         report = status_module.sync_status(root)
     except Exception:                                          # noqa: BLE001
-        return [first]
-    if report == status_module.NO_SPECS:
-        return [first]
+        return status_module.no_spec_lines(root)
+    no_spec = status_module.no_spec_lines(root)
+    if report == '\n'.join(no_spec):
+        return no_spec
     # The report ends on its last block, after the one blank line before it.
     return report.rsplit('\n\n', 1)[-1].splitlines()
 

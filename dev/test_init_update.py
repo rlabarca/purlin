@@ -1820,6 +1820,18 @@ def test_a_run_that_leaves_work_names_the_update_above_the_summary(
     assert printed[-len(ending) - 1] == UPDATE_LINE, printed
 
 
+# purlin: update PROOF-128
+def test_a_run_over_no_spec_ends_on_the_two_no_spec_lines(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    _git(root, 'rm', '-r', '-q', '--', 'specs')
+    _git(root, 'commit', '-qm', 'no specs')
+    _apply(root)
+    printed = capsys.readouterr().out.rstrip().splitlines()
+    assert printed[-2:] == [
+        'No specs found under specs/.',
+        '→ Run: purlin:spec <name> to write the first spec.'], printed
+
+
 # --- a settings file that cannot be read ------------------------------------
 
 # purlin: update PROOF-116

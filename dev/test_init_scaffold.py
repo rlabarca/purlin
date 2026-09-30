@@ -1178,9 +1178,23 @@ class TestWhatInitWrites:
         assert lines.count('mutants/') == 1
 
     # purlin: scaffold PROOF-34
-    def test_with_no_spec_the_last_line_sends_you_to_write_one(self, project):
+    def test_with_no_spec_over_code_it_ends_on_spec_from_code(self, project):
         lines = project.run('--gate', 'passed').strip().splitlines()
-        assert lines[-1] == '→ Run: purlin:spec to write the first spec.'
+        assert lines[-2:] == [
+            'No specs found under specs/.',
+            '→ Run: purlin:spec-from-code to write the specs this code '
+            'already implies.'], lines
+
+    # purlin: scaffold PROOF-137
+    def test_with_no_spec_and_no_code_it_sends_you_to_write_one(self):
+        made = Project(language=None)
+        try:
+            lines = made.run('--gate', 'passed').strip().splitlines()
+        finally:
+            made.close()
+        assert lines[-2:] == [
+            'No specs found under specs/.',
+            '→ Run: purlin:spec <name> to write the first spec.'], lines
 
     # purlin: scaffold PROOF-80
     def test_with_a_spec_it_ends_on_what_is_left_to_do(self, project):

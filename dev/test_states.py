@@ -2275,13 +2275,37 @@ class TestStatusTable:
             made.close()
 
     # purlin: states PROOF-46
-    def test_an_empty_project_says_what_to_run(self):
+    def test_a_set_up_project_over_code_is_sent_to_spec_from_code(self):
         made = Project(spec=None)
         try:
             assert _status_lines(made.root) == [
                 'No specs found under specs/.',
-                '→ Run: purlin:init to set this project up, or purlin:spec '
-                'to write the first one.']
+                '→ Run: purlin:spec-from-code to write the specs this code '
+                'already implies.']
+        finally:
+            made.close()
+
+    # purlin: states PROOF-219
+    def test_a_set_up_project_over_no_code_is_sent_to_write_a_spec(self):
+        made = Project(spec=None)
+        try:
+            _git(made.root, 'rm', '-q', '--', 'src/login.py')
+            _git(made.root, 'commit', '-q', '-m', 'chore: no code')
+            assert _status_lines(made.root) == [
+                'No specs found under specs/.',
+                '→ Run: purlin:spec <name> to write the first spec.']
+        finally:
+            made.close()
+
+    # purlin: states PROOF-220
+    def test_a_project_not_set_up_is_sent_to_set_it_up(self):
+        made = Project(spec=None)
+        try:
+            _git(made.root, 'rm', '-q', '--', '.purlin/config.json')
+            _git(made.root, 'commit', '-q', '-m', 'chore: not set up')
+            assert _status_lines(made.root) == [
+                'No specs found under specs/.',
+                '→ Run: purlin:init to set this project up.']
         finally:
             made.close()
 
