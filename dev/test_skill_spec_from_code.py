@@ -681,3 +681,35 @@ class TestHighestRule:
              '%s example spec puts > Highest-Rule: before another > line'
              % SKILL),
         ]) == []
+
+
+def step_two(text):
+    """Step 2 of the procedure, from its bold title to step 3, line breaks
+    read as spaces."""
+    match = re.search(r'2\. \*\*Propose a taxonomy\.\*\*(.*?)\n3\. ', text,
+                      re.S)
+    return flat(match.group(1)) if match else ''
+
+
+def where_the_proofs_come_from():
+    return flat(section(read(SKILL), r'^Where the proofs come from$') or '')
+
+
+# purlin: skill_spec_from_code PROOF-163
+def test_the_taxonomy_step_says_how_many_features_is_normal():
+    assert ('Twenty to forty features is normal for a mid-sized service; two '
+            'hundred means the grouping is too fine.') in step_two(read(SKILL))
+
+
+# purlin: skill_spec_from_code PROOF-164
+def test_a_proof_a_test_already_shows_never_names_the_test():
+    body = where_the_proofs_come_from()
+    assert ('When a test already shows what a proof asks, the proof says what '
+            'that test shows') in body, body
+    assert 'and never names the test.' in body, body
+
+
+# purlin: skill_spec_from_code PROOF-165
+def test_the_suites_own_helpers_are_code_no_caller_reaches():
+    assert ("A test of the test suite's own helpers tests code no caller can "
+            'reach.') in where_the_proofs_come_from()

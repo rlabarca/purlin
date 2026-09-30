@@ -5,7 +5,7 @@
 >   enters the project without a person asking for it.
 > Scope: skills/spec-from-code/SKILL.md
 > Stack: markdown, Claude Code skill definition
-> Highest-Rule: 48
+> Highest-Rule: 51
 
 ## Rules
 
@@ -35,6 +35,9 @@
 - RULE-46: The skill tells the agent not to write evidence or signatures
 - RULE-47: The skill tells the agent to drop a rule it could not state as an observable and note the behaviour in `> Description:`
 - RULE-48: The skill tells the agent what a caller reaches: in Python the names `__all__` lists, or with none the names with no leading underscore; in JavaScript what `package.json`'s `main` or `exports` reaches; in C# the `public` types of a project that is not a test project
+- RULE-49: The skill tells the agent that twenty to forty features is normal for a mid-sized service and that two hundred means the grouping is too fine
+- RULE-50: The skill tells the agent that a proof an existing test already shows says what that test shows and never names the test
+- RULE-51: The skill tells the agent that a test of the test suite's own helpers tests code no caller can reach
 
 ## Proof
 
@@ -66,3 +69,6 @@
 - PROOF-160 (RULE-45): The skill's section `What not to do` says `Do not copy an implementation into a rule.`
 - PROOF-161 (RULE-46): The skill's section `What not to do` says `Do not write evidence or signatures.`
 - PROOF-162 (RULE-47): The skill says ``Drop the rule instead and note the behaviour in `> Description:` `` for a rule it could not state as an observable
+- PROOF-163 (RULE-49): The skill's step `Propose a taxonomy`, read across its line breaks, says `Twenty to forty features is normal for a mid-sized service; two hundred means the grouping is too fine.`
+- PROOF-164 (RULE-50): The skill's section `Where the proofs come from`, read across its line breaks, says that when a test already shows what a proof asks, the proof says what that test shows and `never names the test`
+- PROOF-165 (RULE-51): The skill's section `Where the proofs come from`, read across its line breaks, carries the sentence `A test of the test suite's own helpers tests code no caller can reach.`
