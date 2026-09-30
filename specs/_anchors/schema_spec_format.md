@@ -9,7 +9,8 @@
 > Type: schema
 > Scope: scripts/mcp/purlin/specs.py, references/formats/spec_format.md, references/formats/anchor_format.md
 > Stack: python/stdlib, one regex parser in scripts/mcp/purlin/specs.py
-> Highest-Rule: 28
+> Highest-Rule: 29
+> Highest-Proof: 70
 
 ## Rules
 
@@ -41,6 +42,7 @@
 - RULE-26: `> Highest-Rule: <n>` records the highest rule number the spec has ever held; it changes no fingerprint and no rule count
 - RULE-27: The spec format page opens with the line `> Format-Version: <n>`, `<n>` a whole number
 - RULE-28: `> Stack:` is read as one line and changes no fingerprint
+- RULE-29: `> Highest-Proof: <n>` records the highest proof number the spec has ever held; a new proof takes one more than the highest of it and every proof number the spec holds, so a deleted proof's number is never used again; it changes no fingerprint and no proof count
 
 ## Proof
 
@@ -108,3 +110,7 @@
 - PROOF-64 (RULE-27): The first line of the spec format page reads `> Format-Version: ` followed by a whole number and nothing else
 - PROOF-65 (RULE-28): A spec carrying `> Stack: python/stdlib, re, hashlib` above `> Scope: src/` is read with the stack `python/stdlib, re, hashlib`
 - PROOF-66 (RULE-28): The `> Stack:` of a spec is rewritten from `python/stdlib` to `node/express`; all three parts of its fingerprint equal the ones taken before
+- PROOF-67 (RULE-29): A spec holding `PROOF-1`, `PROOF-2` and `PROOF-3` and the line `> Highest-Proof: 12` is read with exactly three proofs, `PROOF-1`, `PROOF-2` and `PROOF-3`
+- PROOF-68 (RULE-29): A spec carrying `> Highest-Proof: 12` has the same fingerprint, all three parts, as the same spec with that line taken out
+- PROOF-69 (RULE-29): The spec format page says a spec whose `> Highest-Proof:` reads `12`, and whose `PROOF-10` to `PROOF-12` were deleted, gives its next proof `PROOF-13`
+- PROOF-70 (RULE-29): The spec format page says a spec with no `> Highest-Proof:` line, whose proofs run to `PROOF-9`, gives its next proof `PROOF-10`

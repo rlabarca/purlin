@@ -6,12 +6,13 @@
 >   over to the build.
 > Scope: skills/spec/SKILL.md, references/spec_quality_guide.md, references/purlin_commands.md
 > Stack: markdown, Claude Code skill definition
-> Highest-Rule: 22
+> Highest-Rule: 23
+> Highest-Proof: 53
 
 ## Rules
 
 - RULE-1: `skills/spec/SKILL.md` opens with a frontmatter block whose `name` is `spec` and whose `description` is one non-empty line
-- RULE-2: The skill tells the agent that a new rule takes one more than the highest of `> Highest-Rule:` and every rule number in the working copy and in `origin/main`'s copy, read with `git show origin/main:<spec>`, and that proof ids are allocated the same way
+- RULE-2: The skill tells the agent that a new rule takes one more than the highest of `> Highest-Rule:` and every rule number in the working copy and in `origin/main`'s copy, read with `git show origin/main:<spec>`
 - RULE-3: The skill tells the agent to close on one fixed line, `Spec saved: <name>. Next: purlin:build <name>`, with nothing printed after it, and never to start building itself
 - RULE-4: The whole of `skills/spec/SKILL.md` is at most 210 lines
 - RULE-5: The skill tells the agent to write `> Scope:` on every spec it creates, naming the files the requirement touches or the paths `purlin:build` will create
@@ -31,12 +32,13 @@
 - RULE-20: The guide's section `One proof, one case` says one proof may name a list of like inputs that share one action and one kind of result
 - RULE-21: The guide's table `When a rule is stuck` gives, for a proof tagged for a system that has not run, the word `not run` with `<System>: no run yet`, and names `purlin:test --remote` and the runner file
 - RULE-22: The skill tells the agent to commit the spec it writes, with the `spec(<name>):` prefix, before it ends on its closing line
+- RULE-23: The skill tells the agent that a new proof takes one more than the highest of `> Highest-Proof:` and every proof number in either copy of the spec, and to write that number into `> Highest-Proof:`, adding the line after `> Highest-Rule:` where it is missing
 
 ## Proof
 
 - PROOF-1 (RULE-1): The spec skill opens with a block between two `---` lines in which `name` reads `spec` and `description` holds its value on its own line: not empty, not a `>` or `|` block, and not continued on the next line
 - PROOF-14 (RULE-8): The command reference has a row, in a table headed `Command` and `Purpose`, whose first cell reads `purlin:spec <name>` and whose second cell is not empty
-- PROOF-2 (RULE-2): The spec skill's section `Ids` says a new rule takes "one more than the highest of `> Highest-Rule:` and every rule number in either copy of the spec", names `git show origin/main:<spec>`, and says proof ids are allocated the same way; procedure step 5 points at `Ids`
+- PROOF-2 (RULE-2): The spec skill's section `Ids` says a new rule takes "one more than the highest of `> Highest-Rule:` and every rule number in either copy of the spec" and names `git show origin/main:<spec>`; procedure step 5 points at `Ids`
 - PROOF-3 (RULE-3): The spec skill's last section, headed `When you are done`, sets the line `Spec saved: <name>. Next: purlin:build <name>` alone inside a fenced block, says to "end with exactly this and nothing after it", says "Never start the build yourself", and has an edited spec's changes said "before the offer"
 - PROOF-4 (RULE-4): The spec skill, counted line by line, is at most 210 lines
 - PROOF-28 (RULE-4): A copy of the spec skill lengthened with prose to exactly 210 lines is accepted, with nothing reported
@@ -56,3 +58,5 @@
 - PROOF-49 (RULE-20): The guide's section `One proof, one case` says `One proof may name a list of like inputs that share one action and one kind of result`, with the example of `0`, `-1` and `-0.5` refused with `Amount must be positive`
 - PROOF-50 (RULE-21): The guide's `When a rule is stuck` table has a row whose word cell holds `not run` and `<System>: no run yet`, and whose fix says ``Run `purlin:test --remote`, whose runner file names that system``
 - PROOF-51 (RULE-22): The spec skill's section `When you are done`, read across its line breaks, says to commit the file with the `spec(<name>):` prefix and then to end with the closing line `Spec saved: <name>. Next: purlin:build <name>`
+- PROOF-52 (RULE-23): The spec skill's section `Ids`, read across its line breaks, says a new proof takes "one more than the highest of `> Highest-Proof:` and every proof number in either copy"
+- PROOF-53 (RULE-23): The spec skill's section `Ids`, read across its line breaks, says to write that number into `> Highest-Proof:`, "adding the line after `> Highest-Rule:` where it is missing"

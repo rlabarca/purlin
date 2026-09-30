@@ -125,8 +125,9 @@ that system passes it.
 A new rule takes one more than the highest of `> Highest-Rule:` and every rule number in either
 copy of the spec, the working copy and `origin/main`'s, read with `git show origin/main:<spec>`.
 Write that number into `> Highest-Rule:`, adding the line after the spec's other `>` lines where
-it is missing, so a deleted number is never used again. Proof ids are allocated the same way
-against the proof numbers of both copies.
+it is missing, so a deleted number is never used again. A new proof takes one more than the
+highest of `> Highest-Proof:` and every proof number in either copy; write that number into
+`> Highest-Proof:`, adding the line after `> Highest-Rule:` where it is missing.
 
 Ids are never reused. A deleted rule leaves its number vacant and every other rule keeps the
 number it had. Renumbering would silently repoint every test marker and every signature that

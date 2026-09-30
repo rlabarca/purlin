@@ -69,9 +69,6 @@ class TestSkillSpec:
             (SKILL, replace('read with `git show origin/main:<spec>`',
                             'as fetched'),
              '%s Ids section does not carry %r' % (SKILL, ALLOCATION[1])),
-            (SKILL, resub(r' Proof ids are allocated the same way\s+against '
-                          r'the proof numbers of both copies\.'),
-             '%s Ids section does not carry %r' % (SKILL, ALLOCATION[2])),
             (SKILL, replace('5. Allocate ids as "Ids" below says',
                             '5. Allocate ids'),
              '%s procedure step 5 does not point at Ids' % SKILL),
@@ -321,9 +318,7 @@ ALLOCATION = (
     'A new rule takes one more than the highest of `> Highest-Rule:` and '
     'every rule number in either copy of the spec',
     "the working copy and `origin/main`'s, read with "
-    '`git show origin/main:<spec>`.',
-    'Proof ids are allocated the same way against the proof numbers of both '
-    'copies.')
+    '`git show origin/main:<spec>`.')
 WRITES_HIGHEST = ('Write that number into `> Highest-Rule:`, adding the line '
                   "after the spec's other `>` lines where it is missing")
 ROOT_CALL = ('Call `sync_status` with `project_root` set to the project root, '
@@ -526,6 +521,21 @@ def guide_one_case_problems():
                            'at most 60 words',
                            'A refusal or a boundary is a case of its own')
             if needle not in flat(body.group(1))]
+
+
+# purlin: skill_spec PROOF-52
+def test_a_new_proof_counts_from_the_highest_ever_held():
+    ids = ids_body()
+    assert ('A new proof takes one more than the highest of '
+            '`> Highest-Proof:` and every proof number in either copy') \
+        in ids, ids
+
+
+# purlin: skill_spec PROOF-53
+def test_it_writes_the_highest_proof_into_the_spec():
+    ids = ids_body()
+    assert ('write that number into `> Highest-Proof:`, adding the line '
+            'after `> Highest-Rule:` where it is missing') in ids, ids
 
 
 # purlin: skill_spec PROOF-51

@@ -941,3 +941,64 @@ def test_a_rewritten_stack_changes_no_fingerprint(tmp_path):
     before = purlin_fingerprint.fingerprint(str(root), 'login')
     _three_rules(root, '> Scope: src/app.py\n> Stack: node/express\n')
     assert purlin_fingerprint.fingerprint(str(root), 'login') == before
+
+
+# ---------------------------------------------------------------------------
+# RULE-29: `> Highest-Proof:`
+# ---------------------------------------------------------------------------
+
+def _three_proofs(root, meta):
+    """`specs/test/login.md` with `meta` above one rule and proofs 1 to 3."""
+    _write(root, 'specs/test/login.md',
+           '# Feature: login\n\n' + meta + '\n## Rules\n- RULE-1: One\n\n'
+           '## Proof\n- PROOF-1 (RULE-1): Test one\n'
+           '- PROOF-2 (RULE-1): Test two\n- PROOF-3 (RULE-1): Test three\n')
+
+
+def _proof_format_sentences():
+    """The sentences of the spec format page's `## Proof format` section,
+    each read across its line breaks."""
+    with open(os.path.join(PROJECT_ROOT, 'references', 'formats',
+                           'spec_format.md'), encoding='utf-8') as f:
+        page = f.read()
+    section = re.search(r'^## Proof format\n(.*?)(?=^## )', page,
+                        re.S | re.M)
+    assert section, 'the spec format page has no section Proof format'
+    return [' '.join(s.split()) for s in
+            re.split(r'(?<=\.)\s+', section.group(1))]
+
+
+# purlin: schema_spec_format PROOF-67
+def test_a_highest_proof_line_adds_no_proof(tmp_path):
+    root = _project(tmp_path)
+    _three_proofs(root, '> Highest-Proof: 12\n')
+    info = purlin_specs.scan_specs(str(root))['login']
+    assert sorted(info['proofs']) == ['PROOF-1', 'PROOF-2', 'PROOF-3'], info
+
+
+# purlin: schema_spec_format PROOF-68
+def test_a_highest_proof_line_changes_no_fingerprint(tmp_path):
+    root = _project(tmp_path)
+    _write(root, 'src/app.py', 'x = 1\n')
+    _three_proofs(root, '> Scope: src/app.py\n')
+    _git_project(root, 'src/app.py')
+    without = purlin_fingerprint.fingerprint(str(root), 'login')
+    _three_proofs(root, '> Scope: src/app.py\n> Highest-Proof: 12\n')
+    assert purlin_fingerprint.fingerprint(str(root), 'login') == without
+
+
+# purlin: schema_spec_format PROOF-69
+def test_a_new_proof_after_the_highest_is_deleted_takes_the_next_number():
+    sentences = _proof_format_sentences()
+    assert any('`> Highest-Proof:` reads `12`' in s
+               and '`PROOF-10` to `PROOF-12` were deleted' in s
+               and s.endswith('gives its next proof `PROOF-13`.')
+               for s in sentences), sentences
+
+
+# purlin: schema_spec_format PROOF-70
+def test_a_spec_with_no_highest_proof_line_counts_from_its_proofs():
+    sentences = _proof_format_sentences()
+    assert ('A spec with no `> Highest-Proof:` line whose proofs run to '
+            '`PROOF-9` gives its next proof `PROOF-10`.') in sentences, \
+        sentences

@@ -1,4 +1,4 @@
-> Format-Version: 19
+> Format-Version: 20
 
 # Spec format
 
@@ -29,6 +29,7 @@ the `git mv` that renames the other.
 > Scope: <comma-separated file paths this feature touches>
 > Stack: <language>/<framework>, <key libraries>, <patterns>
 > Highest-Rule: <the highest rule number the spec has held>
+> Highest-Proof: <the highest proof number the spec has held>
 
 ## Rules
 
@@ -61,6 +62,7 @@ belongs in `> Description:`, which the dashboard displays.
 | `> Scope:` | At the gate `signed` | Comma-separated paths this feature touches: a file, a directory, or a glob holding `*`, `?` or `[`. The evidence carries a fingerprint of the tracked files they reach, which is what tells a code change from a rule change. Below `signed` it is optional: a feature spec with none, or one that reaches no tracked file, is reported as naming no files (`incomplete` in the payload), its tests run on every `purlin:test`, and nothing blocks. At `signed` such a spec's rules are signed and their signatures do not count, so no tag is written. An entry that finds no file git tracks, where the others reach files, is warned of. An anchor never needs one |
 | `> Stack:` | No | Technology choices: `language/framework, key libraries, patterns` |
 | `> Highest-Rule:` | No | The highest rule number the spec has ever held, as a whole number. A new rule takes the next number above it, so a deleted number is never used again. It changes no fingerprint and no count |
+| `> Highest-Proof:` | No | The highest proof number the spec has ever held, as a whole number. A new proof takes the next number above it, so a deleted number is never used again. It changes no fingerprint and no count |
 | `> Source:` | No | Anchors only. A git URL plus a path in that repo. See the anchor format |
 | `> Pinned:` | No | Anchors only. The commit sha of the source |
 | `> Path:` | No | Anchors only. The path in the source repo, when `> Source:` carries the URL alone |
@@ -131,6 +133,10 @@ has a test and no proof`, and counts under `Left to do` as a rule to write a
 proof for. Several proofs can name the same rule, and one proof can name
 several rules when it drives a flow through all of them. A list item under
 `## Proof` of any other form is not read as a proof and is warned of.
+
+Proof ids are never reused either. A new proof takes one more than the highest of `> Highest-Proof:` and every proof number the spec holds, and `> Highest-Proof:` is raised to it, so a number is never used again.
+A spec whose `> Highest-Proof:` reads `12` and whose `PROOF-10` to `PROOF-12` were deleted, leaving `PROOF-9` its highest, gives its next proof `PROOF-13`.
+A spec with no `> Highest-Proof:` line whose proofs run to `PROOF-9` gives its next proof `PROOF-10`.
 
 ### The manual tag
 

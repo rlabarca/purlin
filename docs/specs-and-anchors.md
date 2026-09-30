@@ -27,6 +27,7 @@ specs/<category>/<name>.md
 > Scope: src/auth.py, src/session.py
 > Stack: python/flask, bcrypt
 > Highest-Rule: 3
+> Highest-Proof: 2
 
 ## Rules
 
@@ -68,6 +69,7 @@ line is optional.
 | `> Scope:` | The files this feature's code lives in: a file, a folder, or a glob holding `*`, `?` or `[` |
 | `> Stack:` | Language, framework and the libraries that matter, read as one line |
 | `> Highest-Rule:` | The highest rule number the spec has ever held |
+| `> Highest-Proof:` | The highest proof number the spec has ever held |
 
 `> Scope:` earns its place. The evidence carries a fingerprint of the files it names, so a
 change to one of them is told from a change to a rule. When the code changes, the rule's passed
@@ -102,10 +104,11 @@ bracketed text at the end included, and every rule is asked what the project's g
 
 Rule numbers are never reused. A new rule takes one more than the highest of `> Highest-Rule:`
 and every rule number in the spec, and `> Highest-Rule:` is raised to it, so a deleted number is
-never used again. `purlin:spec` reads both copies of the spec, the working copy and
-`origin/main`'s, and takes proof ids one past the highest proof number in either. A deleted rule leaves its
-number vacant and every other rule keeps the number it had; a gap in the sequence is legal and
-nothing reports it. Renumbering would repoint every test marker and every signature that
+never used again. Proof numbers are never reused either: a new proof takes one more than the
+highest of `> Highest-Proof:` and every proof number in the spec, and `> Highest-Proof:` is raised
+to it. `purlin:spec` reads both copies of the spec, the working copy and `origin/main`'s, for
+both numbers. A deleted rule leaves its number vacant and every other rule keeps the number it
+had; a gap in the sequence is legal and nothing reports it. Renumbering would repoint every test marker and every signature that
 already names the old id.
 
 A rule number written twice is warned of, and the rule is read once, with the text of its
