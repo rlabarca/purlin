@@ -213,8 +213,8 @@ def summary_paths(output):
         if len(parts) == 2 and parts[0] in ('wrote', 'kept', 'copied',
                                             'skipped'):
             rest = parts[1]
-            if parts[0] == 'copied' and ' -> ' in rest:
-                rest = rest.split(' -> ', 1)[1]
+            if parts[0] == 'copied' and ' to ' in rest:
+                rest = rest.split(' to ', 1)[1]
             paths[rest.split(' (')[0].rstrip('/')] = parts[0]
     return paths
 
@@ -234,10 +234,38 @@ def tree(root):
     return found
 
 
+# Where setup waits for an answer: `[<default>]: ` under the gate question,
+# and ` [y/N] ` at the end of a yes-or-no question's own line.
+PROMPT = r'\[[^\]\n]*\]: | \[y/N\] '
+
+
 def asked(output):
-    """The first line of each question a run with answers on stdin asked."""
-    return [part.split('\n', 1)[0]
-            for part in re.split(r'\[[^\]\n]*\]: ', output)[:-1]]
+    """Each question a run with answers on stdin asked: the first line of
+    the question above a `[<default>]: ` prompt, and the words before
+    `[y/N]` on a yes-or-no question's own line."""
+    questions, start = [], 0
+    for prompt in re.finditer(PROMPT, output):
+        before = output[start:prompt.start()]
+        if prompt.group(0).endswith(': '):
+            questions.append(before.split('\n', 1)[0])
+        else:
+            questions.append(before.rsplit('\n', 1)[-1])
+        start = prompt.end()
+    return questions
+
+
+def unprompted(output):
+    """The output's lines, each prompt a piped answer left unended set aside."""
+    return re.sub(PROMPT, '\n', output).splitlines()
+
+
+COMMIT = scaffold_module.COMMIT_QUESTION
+
+
+def masked(output, root):
+    """The output with the project's path and the commit's sha set aside."""
+    return re.sub(r'^Committed [0-9a-f]{7},', 'Committed <sha7>,',
+                  output.replace(root, '<root>'), flags=re.M)
 
 
 def foreign_system():
@@ -255,6 +283,12 @@ def tag_foreign(made, *systems):
           SPEC.split('## Proof\n')[0] + '## Proof\n\n' + '\n'.join(lines)
           + '\n')
     return systems[0]
+
+
+def system_word(name):
+    """How a person reads a stored system word: `Windows`, `macOS`,
+    `Linux/Unix`."""
+    return {'windows': 'Windows', 'macos': 'macOS', 'linux': 'Linux/Unix'}[name]
 
 
 def reasons_under_heading(output):
@@ -301,7 +335,9 @@ class TestTheQuestions:
         try:
             out = _answering(made, 'strong\n')
             mutation = scaffold_module.MUTATION_QUESTION % 'mutmut'
-            assert asked(out) == [scaffold_module.GATE_QUESTION, mutation], out
+            assert asked(out) == [
+                'What must be true of every rule before a version is '
+                'finished?', mutation, 'Commit the files setup wrote?'], out
             assert made.config()['gate'] == 'strong'
             assert made.config()['mutation_engine'] == 'none'
         finally:
@@ -312,7 +348,9 @@ class TestTheQuestions:
         made = Project('pytest')
         try:
             out = _answering(made, 'passed\n')
-            assert asked(out) == [scaffold_module.GATE_QUESTION], out
+            assert asked(out) == [
+                'What must be true of every rule before a version is '
+                'finished?', COMMIT], out
             assert made.config()['gate'] == 'passed'
             assert made.config()['mutation_engine'] == 'none'
         finally:
@@ -325,7 +363,11 @@ class TestTheQuestions:
             made.run('--gate', 'passed')
             # Answers wait on stdin, so any question would be seen asked.
             out = _answering(made, 'n\n' * 20, '--gate', 'signed')
-            assert asked(out) == [], out
+            assert asked(out) == [COMMIT], out
+            # It is asked once the lines naming each file are printed.
+            lines = unprompted(out)
+            assert lines.index(COMMIT) > lines.index(
+                'wrote .purlin/config.json'), out
             assert made.config()['gate'] == 'signed'
         finally:
             made.close()
@@ -357,7 +399,8 @@ class TestTheQuestions:
     # purlin: scaffold PROOF-3
     def test_the_gate_flag_answers_the_question_without_asking(self, project):
         output = project.run('--gate', 'passed')
-        assert scaffold_module.GATE_QUESTION not in output
+        assert ('What must be true of every rule before a version is '
+                'finished?') not in output
         assert project.config()['gate'] == 'passed'
 
     # purlin: scaffold PROOF-104
@@ -376,14 +419,40 @@ class TestTheQuestions:
                 input='whenever\n', capture_output=True, encoding='utf-8',
                 timeout=300)
             assert made.config()['gate'] == 'passed'
-            assert 'is not a gate' in done.stdout
             assert done.returncode == 0, done.stdout + done.stderr
             # A piped answer ends no line, so the prompt is set aside first.
-            lines = re.sub(r'\[[^\]\n]*\]: ', '', done.stdout).splitlines()
-            assert ('purlin: "whenever" is not a gate; reading it as passed.'
-                    in lines), done.stdout
+            assert ('"whenever" is not accepted for gate; it takes passed, '
+                    'strong or signed. Reading it as passed.'
+                    in unprompted(done.stdout)), done.stdout
         finally:
             made.close()
+
+    # purlin: scaffold PROOF-138
+    def test_a_gate_flag_that_is_no_gate_is_refused(self):
+        made = Project('pytest')
+        try:
+            before = tree(made.root)
+            done = subprocess.run(
+                [sys.executable, SCAFFOLD, '--project-root', made.root,
+                 '--gate', 'gold'], capture_output=True, encoding='utf-8',
+                timeout=300, stdin=subprocess.DEVNULL)
+            assert done.returncode == 2, done.stdout + done.stderr
+            assert done.stderr == (
+                '"gold" is not accepted for gate; it takes passed, strong or '
+                'signed. Nothing was written.\n'), done.stderr
+            assert tree(made.root) == before
+        finally:
+            made.close()
+
+    # purlin: scaffold PROOF-152
+    def test_the_gate_question_offers_three_choices(self, project):
+        lines = project.run().splitlines()
+        at = lines.index('What must be true of every rule before a version '
+                         'is finished?')
+        assert lines[at + 1:at + 4] == [
+            "  passed  every rule's tests pass",
+            '  strong  tests pass and the audit finds them sound',
+            '  signed  strong, and a person signs each rule'], lines
 
 
 # ---------------------------------------------------------------------------
@@ -441,8 +510,8 @@ class TestTheSettings:
             inline_out = inline.run('--gate', 'strong')
             assert sorted(child.config()) == CONFIG_KEYS
             assert child.config() == inline.config()
-            assert (child_out.replace(child.root, '<root>')
-                    == inline_out.replace(inline.root, '<root>'))
+            assert (masked(child_out, child.root)
+                    == masked(inline_out, inline.root))
         finally:
             child.close()
             inline.close()
@@ -472,7 +541,7 @@ class TestTheSettings:
                  '--gate', 'passed'], capture_output=True, encoding='utf-8',
                 timeout=300, stdin=subprocess.DEVNULL)
             assert done.returncode == 0, done.stdout + done.stderr
-            assert asked(done.stdout) == [], done.stdout
+            assert asked(done.stdout) == [COMMIT], done.stdout
             assert made.config()['tests'] == []
         finally:
             made.close()
@@ -511,7 +580,8 @@ class TestMutationTesting:
         made = Project('pytest')
         try:
             out = _answering(made, 'y\n', '--gate', 'strong')
-            assert scaffold_module.MUTATION_QUESTION % 'mutmut' in out, out
+            assert (scaffold_module.MUTATION_QUESTION % 'mutmut' + ' [y/N] '
+                    in out), out
             assert made.config()['mutation_engine'] == 'auto'
             assert made.config()['min_strength'] == 70
             assert '[mutmut]' in read(made.path('setup.cfg'))
@@ -539,7 +609,7 @@ class TestMutationTesting:
             assert made.config()['mutation_engine'] == 'none'
             assert ('Mutation testing is off: no engine breaks shell code, so '
                     'the AI audit alone judges test strength.'
-                    in re.sub(r'\[[^\]\n]*\]: ', '', out).splitlines()), out
+                    in unprompted(out)), out
         finally:
             made.close()
 
@@ -582,8 +652,9 @@ class TestMutationTesting:
     # purlin: scaffold PROOF-46
     def test_yes_leaves_it_off(self, project):
         output = project.run('--gate', 'strong')
-        question = scaffold_module.MUTATION_QUESTION % 'mutmut'
-        assert '%s\n[n]: n' % question in output, output
+        assert ('Measure test strength by breaking the code on purpose? It '
+                'needs mutmut and takes minutes to hours per run. [y/N] n'
+                in output.splitlines()), output
         assert project.config()['mutation_engine'] == 'none'
         assert project.config()['min_strength'] is None
         assert not project.has('setup.cfg')
@@ -633,6 +704,21 @@ class TestTheEvidenceFolder:
         third = project.run('--gate', 'passed')
         assert summary_paths(third)[README] == 'kept', third
         assert tree(project.root)[README] == edited
+
+    # purlin: scaffold PROOF-150
+    def test_at_passed_the_readme_names_no_audit(self, project):
+        project.run('--gate', 'passed')
+        text = read(project.path(README))
+        assert not re.search(r'\baudit', text, re.I), text
+
+    # purlin: scaffold PROOF-151
+    def test_the_readme_opens_on_what_a_run_leaves(self, project):
+        project.run('--gate', 'passed')
+        heading, body = read(project.path(README)).split('\n\n', 2)[:2]
+        assert heading == '# Evidence'
+        assert ' '.join(body.split()).startswith(
+            "What a run leaves behind for each feature: each proof's result "
+            'on each operating system, the commit and the time.'), body
 
 
 README = '.purlin/evidence/README.md'
@@ -720,16 +806,35 @@ class TestNothingInTheTests:
             made.close()
 
     # purlin: scaffold PROOF-9
-    def test_a_vitest_project_is_told_about_stryker(self):
-        _told_about_stryker('vitest', 'passed')
+    def test_a_vitest_project_is_told_how_to_install_stryker(self):
+        assert _stryker_lines('vitest', 'passed') == [
+            'vitest: stryker is not installed: run "npm install --save-dev '
+            '@stryker-mutator/core"']
 
     # purlin: scaffold PROOF-105
-    def test_a_jest_project_is_told_about_stryker(self):
-        _told_about_stryker('jest', 'strong')
+    def test_a_jest_project_is_told_how_to_install_stryker(self):
+        assert _stryker_lines('jest', 'strong') == [
+            'jest: stryker is not installed: run "npm install --save-dev '
+            '@stryker-mutator/core"']
 
     # purlin: scaffold PROOF-106
-    def test_a_csharp_project_is_told_about_stryker(self):
-        _told_about_stryker('dotnet', 'strong')
+    def test_a_csharp_project_with_no_dotnet_is_told_to_install_it(self):
+        assert _stryker_lines('dotnet', 'strong') == [
+            'dotnet: dotnet is not installed: install the .NET SDK, then run '
+            '"dotnet tool install -g dotnet-stryker"']
+
+    # purlin: scaffold PROOF-139
+    def test_a_csharp_project_with_no_stryker_tool_is_told_to_add_it(self):
+        # A `dotnet` that answers `dotnet stryker --version` with a failure,
+        # as one with no Stryker tool installed does.
+        assert _stryker_lines('dotnet', 'strong', stand_in='dotnet') == [
+            'dotnet: dotnet stryker is not installed: run "dotnet tool install '
+            '-g dotnet-stryker"']
+
+    # purlin: scaffold PROOF-140
+    def test_an_installed_stryker_prints_no_line(self):
+        name = 'stryker.cmd' if os.name == 'nt' else 'stryker'
+        assert _stryker_lines('jest', 'strong', local=name) == []
 
 
 def _nothing_in_the_node_suite(language, wiring):
@@ -743,14 +848,43 @@ def _nothing_in_the_node_suite(language, wiring):
         made.close()
 
 
-def _told_about_stryker(language, gate):
-    """The one line a project whose engine is Stryker is told."""
+def _stand_in(folder, name, body_posix, body_windows):
+    """A program on the search path that does what `body` says: on POSIX a
+    file with the exec bit, on Windows `<name>.cmd`."""
+    if os.name == 'nt':
+        with open(os.path.join(folder, name + '.cmd'), 'wb') as handle:
+            handle.write(body_windows)
+    else:
+        path = os.path.join(folder, name)
+        write(path, body_posix)
+        os.chmod(path, 0o755)
+
+
+def _stryker_lines(language, gate, stand_in=None, local=None):
+    """The lines naming `language` that a set-up with the breaks on prints.
+
+    The search path holds git's own folder and nothing else of Stryker's,
+    plus a `stand_in` program that fails whatever it is asked; `local` puts
+    a Stryker into the project's own `node_modules/.bin/`.
+    """
+    git_dir = os.path.dirname(shutil.which('git'))
+    for program in ('stryker', 'dotnet'):
+        assert shutil.which(program, path=git_dir) is None, (git_dir, program)
     made = Project(language)
+    bin_dir = os.path.realpath(tempfile.mkdtemp(prefix='purlin-bin-'))
     try:
-        output = made.run('--gate', gate, '--mutation')
-        assert ('%s: Stryker measures the breaks. Without it test strength '
-                'is not measured.' % language in output.splitlines()), output
+        if stand_in:
+            _stand_in(bin_dir, stand_in, '#!/bin/sh\nexit 1\n',
+                      b'@exit /b 1\r\n')
+        if local:
+            write(made.path('node_modules/.bin/' + local), '')
+            os.chmod(made.path('node_modules/.bin/' + local), 0o755)
+        output = made.run('--gate', gate, '--mutation',
+                          env={'PATH': bin_dir + os.pathsep + git_dir})
+        return [line for line in output.splitlines()
+                if line.startswith(language + ':')]
     finally:
+        shutil.rmtree(bin_dir, ignore_errors=True)
         made.close()
 
 
@@ -817,13 +951,22 @@ class TestTheWorkflow:
     def test_a_project_with_no_foreign_proof_gets_no_workflow(self, project):
         output = project.run('--gate', 'strong')
         assert not project.has('.github/workflows/purlin.yml')
-        assert ('No remote runner: every proof runs on this operating system, '
-                'so nothing has to run remotely.') in output.splitlines(), output
+        assert ('skipped the runner file (every proof runs on this operating '
+                'system, so nothing has to run remotely)'
+                in output.splitlines()), output
+
+    # purlin: scaffold PROOF-141
+    def test_at_passed_the_skip_line_says_every_test(self, project):
+        output = project.run('--gate', 'passed')
+        assert not project.has('.github/workflows/purlin.yml')
+        assert ('skipped the runner file (every test runs on this operating '
+                'system, so nothing has to run remotely)'
+                in output.splitlines()), output
 
     # purlin: scaffold PROOF-64
     # purlin: scaffold PROOF-129
     def test_at_passed_the_reason_names_the_test(self, project):
-        named = tag_foreign(project)
+        named = system_word(tag_foreign(project))
         output = project.run('--gate', 'passed')
         assert project.has('.github/workflows/purlin.yml'), output
         assert reasons_under_heading(output) == [
@@ -832,7 +975,7 @@ class TestTheWorkflow:
 
     # purlin: scaffold PROOF-65
     def test_at_strong_the_reason_names_the_proof(self, project):
-        named = tag_foreign(project)
+        named = system_word(tag_foreign(project))
         output = project.run('--gate', 'strong')
         assert project.has('.github/workflows/purlin.yml'), output
         assert reasons_under_heading(output) == [
@@ -846,8 +989,10 @@ class TestTheWorkflow:
                   if name != here]
         tag_foreign(project, *others)
         output = project.run('--gate', 'strong')
-        (reason,) = reasons_under_heading(output)
-        assert all(name in reason for name in others), reason
+        assert reasons_under_heading(output) == [
+            '  Proofs in specs/ are tagged @env for %s and %s, which this '
+            'machine is not, so only a runner can prove them.'
+            % tuple(system_word(name) for name in others)], output
 
     # purlin: scaffold PROOF-66
     def test_with_no_remote_nothing_is_written(self):
@@ -856,7 +1001,32 @@ class TestTheWorkflow:
             tag_foreign(made)
             output = made.run('--gate', 'strong')
             assert not made.has('.github/workflows/purlin.yml')
-            assert 'there is no git remote' in output
+            assert ('skipped the runner file (there is no git remote, so '
+                    'there is no runner to read it)'
+                    in output.splitlines()), output
+        finally:
+            made.close()
+
+    # purlin: scaffold PROOF-142
+    def test_with_no_remote_no_heading_is_printed(self):
+        made = Project('pytest', host=None)
+        try:
+            tag_foreign(made)
+            output = made.run('--gate', 'strong')
+            assert ('A remote runner is written because:'
+                    not in output.splitlines()), output
+        finally:
+            made.close()
+
+    # purlin: scaffold PROOF-143
+    def test_with_a_prerequisite_missing_no_heading_is_printed(self):
+        made = Project('pytest', remote='https://git.example.com/acme/x.git')
+        try:
+            tag_foreign(made)
+            output = made.run('--gate', 'strong')
+            assert not made.has('.github/workflows/purlin.yml'), output
+            assert ('A remote runner is written because:'
+                    not in output.splitlines()), output
         finally:
             made.close()
 
@@ -867,11 +1037,29 @@ class TestTheWorkflow:
             tag_foreign(made)
             output = made.run('--gate', 'strong')
             assert not made.has('.github/workflows/purlin.yml')
-            assert output.splitlines().count(UNKNOWN_HOST) == 1, output
-            assert ('skipped the CI workflow (a prerequisite is missing)'
-                    in output.splitlines()), output
+            lines = output.splitlines()
+            assert lines.count(UNKNOWN_HOST) == 1, output
+            assert lines.index(
+                'skipped the runner file (a prerequisite is missing)') > (
+                lines.index(UNKNOWN_HOST)), output
         finally:
             made.close()
+
+    # purlin: scaffold PROOF-144
+    def test_under_the_runner_file_it_names_where_it_runs(self, project):
+        named = tag_foreign(project)
+        lines = project.run('--gate', 'strong').splitlines()
+        at = lines.index('wrote .github/workflows/purlin.yml')
+        assert lines[at + 1] == (
+            '  it runs on %s-latest, the systems a proof in specs/ is tagged '
+            '@env for that this machine is not.' % named), lines
+
+    # purlin: scaffold PROOF-145
+    def test_under_the_runner_file_it_names_its_triggers(self, project):
+        tag_foreign(project)
+        lines = project.run('--gate', 'strong').splitlines()
+        assert ('  it runs on a push to a run/* branch and on a push of a '
+                'signed/* tag.' in lines), lines
 
     # purlin: scaffold PROOF-77
     def test_a_remote_with_no_branch_yet_still_gets_the_workflow(self):
@@ -1131,6 +1319,49 @@ class TestWhatInitWrites:
         assert read(project.path('purlin-report.html')) == read(source)
         assert summary_paths(output)['purlin-report.html'] == 'copied', output
 
+    # purlin: scaffold PROOF-146
+    def test_the_gitignore_is_named_once(self, project):
+        output = project.run('--gate', 'strong', '--mutation')
+        assert 'mutants/' in read(project.path('.gitignore'))
+        # The lines naming each file end where the commit's list begins.
+        summary = output.split('\nCommitted ', 1)[0].splitlines()
+        named = [line for line in summary
+                 if re.search(r'(^|\s)\.gitignore\b', line)]
+        assert named == ['wrote .gitignore'], output
+
+    # purlin: scaffold PROOF-153
+    def test_the_gitignore_names_the_dashboard_page(self, project):
+        project.run('--gate', 'passed')
+        assert '/purlin-report.html' in read(
+            project.path('.gitignore')).splitlines()
+
+    # purlin: scaffold PROOF-154
+    def test_the_gitignore_names_the_runtime_folder(self, project):
+        project.run('--gate', 'passed')
+        assert '.purlin/runtime/' in read(
+            project.path('.gitignore')).splitlines()
+
+    # purlin: scaffold PROOF-155
+    def test_each_ignored_entry_has_its_comment_above_it(self, project):
+        project.run('--gate', 'passed')
+        lines = read(project.path('.gitignore')).splitlines()
+        for comment, entry in (
+                ('# Purlin runtime: the test reports and the run log, never '
+                 'committed', '.purlin/runtime/'),
+                ('# Dashboard HTML (copied by purlin:init and refreshed by '
+                 'purlin:init --update)', '/purlin-report.html'),
+                ('# Dashboard data, regenerated locally, never committed',
+                 '.purlin/report-data.js')):
+            assert lines[lines.index(entry) - 1] == comment, lines
+
+    # purlin: scaffold PROOF-156
+    def test_the_gitignore_says_the_evidence_is_tracked(self, project):
+        project.run('--gate', 'passed')
+        text = read(project.path('.gitignore'))
+        assert ('# .purlin/evidence/ and .purlin/tests.md are tracked on '
+                'purpose: they are\n# the evidence of each run, for somebody '
+                'who did not make it to read.\n' in text), text
+
     # purlin: scaffold PROOF-19
     # purlin: scaffold PROOF-130
     def test_the_gitignore_block_is_added_once(self, project):
@@ -1226,6 +1457,98 @@ class TestNoHookIsInstalled:
 
 
 # ---------------------------------------------------------------------------
+# The commit setup asks for
+# ---------------------------------------------------------------------------
+
+def head(root):
+    return git(root, 'rev-parse', 'HEAD').stdout.strip()
+
+
+class TestTheCommit:
+
+    # purlin: scaffold PROOF-157
+    def test_with_no_answer_nothing_is_committed(self, project):
+        before = head(project.root)
+        done = subprocess.run(
+            [sys.executable, SCAFFOLD, '--project-root', project.root,
+             '--gate', 'passed'], capture_output=True, encoding='utf-8',
+            timeout=300, stdin=subprocess.DEVNULL)
+        assert done.returncode == 0, done.stdout + done.stderr
+        lines = done.stdout.splitlines()
+        at = lines.index('Commit the files setup wrote? [y/N] ')
+        assert lines[at - 1].startswith('skipped the runner file ('), lines
+        assert not [line for line in lines if line.startswith('Committed')]
+        assert head(project.root) == before
+
+    # purlin: scaffold PROOF-158
+    def test_yes_commits_the_files_and_names_them(self, project):
+        output = project.run('--gate', 'passed')
+        assert COMMIT not in output, output
+        assert git(project.root, 'log', '-1', '--format=%s').stdout.strip() \
+            == 'chore(init): set up Purlin at the gate passed'
+        lines = output.splitlines()
+        at = lines.index('Committed %s, the files setup wrote:'
+                         % head(project.root)[:7])
+        assert lines[at + 1:at + 4] == [
+            '  .purlin/config.json', '  .gitignore',
+            '  .purlin/evidence/README.md'], lines
+
+    # purlin: scaffold PROOF-159
+    def test_a_file_already_staged_stays_out_of_the_commit(self, project):
+        write(project.path('notes.txt'), 'ours\n')
+        git(project.root, 'add', 'notes.txt')
+        project.run('--gate', 'passed')
+        committed = git(project.root, 'show', '--name-only', '--format=',
+                        'HEAD').stdout.split()
+        assert sorted(committed) == ['.gitignore', '.purlin/config.json',
+                                     '.purlin/evidence/README.md'], committed
+        assert git(project.root, 'diff', '--cached',
+                   '--name-only').stdout.split() == ['notes.txt']
+
+    # purlin: scaffold PROOF-160
+    def test_a_project_with_no_commit_gets_setup_s_as_its_first(self):
+        made = Project('pytest', host=None)
+        try:
+            assert git(made.root, 'rev-parse', 'HEAD').returncode != 0
+            made.run('--gate', 'passed')
+            assert git(made.root, 'log', '--format=%s').stdout.splitlines() \
+                == ['chore(init): set up Purlin at the gate passed']
+        finally:
+            made.close()
+
+    # purlin: scaffold PROOF-161
+    def test_git_refusing_leaves_the_files_staged_and_says_so(self):
+        made = Project('pytest', host=None)
+        empty = os.path.realpath(tempfile.mkdtemp(prefix='purlin-gitcfg-'))
+        try:
+            # No author git can find: none in the project, none in a global
+            # or system file, none in the environment, and no guessing.
+            git(made.root, 'config', '--unset', 'user.email')
+            git(made.root, 'config', '--unset', 'user.name')
+            git(made.root, 'config', 'user.useConfigOnly', 'true')
+            global_config = os.path.join(empty, 'gitconfig')
+            write(global_config, '')
+            env = {key: value for key, value in os.environ.items()
+                   if key not in ('CLAUDE_PLUGIN_ROOT', 'EMAIL')
+                   and not key.startswith(('GIT_AUTHOR_', 'GIT_COMMITTER_'))}
+            env.update(GIT_CONFIG_GLOBAL=global_config, GIT_CONFIG_NOSYSTEM='1')
+            done = subprocess.run(
+                [sys.executable, SCAFFOLD, '--project-root', made.root,
+                 '--gate', 'passed', '--yes'], capture_output=True,
+                encoding='utf-8', timeout=300, env=env,
+                stdin=subprocess.DEVNULL)
+            assert done.returncode == 0, done.stdout + done.stderr
+            assert ('The files setup wrote are staged and not committed: no '
+                    'email was given and auto-detection is disabled.'
+                    in done.stdout.splitlines()), done.stdout
+            assert '.purlin/config.json' in git(
+                made.root, 'diff', '--cached', '--name-only').stdout.split()
+        finally:
+            shutil.rmtree(empty, ignore_errors=True)
+            made.close()
+
+
+# ---------------------------------------------------------------------------
 # The flags
 # ---------------------------------------------------------------------------
 
@@ -1240,7 +1563,8 @@ class TestTheFlags:
                  '--gate', 'passed', '--yes'], capture_output=True, encoding='utf-8',
                 timeout=300, stdin=subprocess.DEVNULL)
             assert done.returncode == 2
-            assert 'git init' in done.stderr
+            assert done.stderr == ('This is not a git repository. Run git '
+                                   'init, then purlin:init.\n'), done.stderr
             assert os.listdir(directory) == []
         finally:
             shutil.rmtree(directory, ignore_errors=True)
@@ -1327,8 +1651,7 @@ class TestTheMarketplacePath:
                 for files in (theirs, mine):
                     files.pop(REPORT_DATA, None)
                 assert theirs == mine
-                assert (output.replace(made.root, '<root>')
-                        == ours.replace(here.root, '<root>'))
+                assert masked(output, made.root) == masked(ours, here.root)
             finally:
                 here.close()
         finally:
@@ -1386,6 +1709,21 @@ class TestTheMarketplacePath:
             made.close()
             shutil.rmtree(cache, ignore_errors=True)
 
+    # purlin: scaffold PROOF-147
+    def test_a_project_set_up_from_this_checkout_does_not_name_it(self):
+        """This checkout is what `claude --plugin-dir` loads."""
+        made = Project('pytest')
+        try:
+            made.run('--gate', 'strong', subprocess=True)
+            spellings = {ROOT, ROOT.replace('\\', '/'),
+                         ROOT.replace('\\', '\\\\')}
+            files = tree(made.root)
+            assert [rel for rel, body in files.items() if body is not None
+                    and any(spelled.encode('utf-8') in body
+                            for spelled in spellings)] == [], ROOT
+        finally:
+            made.close()
+
     # purlin: scaffold PROOF-23
     # purlin: scaffold PROOF-134
     def test_no_project_file_points_at_the_repository_s_own_dev_folder(self):
@@ -1440,6 +1778,22 @@ class TestTheEngineBlock:
         write(project.path('dev/build.py'), '')
         write(project.path('docs/guide.md'), '# Guide\n')
         assert _mutmut_block(project) == _block_naming('scripts', 'dev')
+
+    # purlin: scaffold PROOF-148
+    def test_a_nested_tests_folder_is_the_selection_and_bench_is_not(
+            self, project):
+        shutil.rmtree(project.path('tests'), ignore_errors=True)
+        write(project.path('pkg/core.py'), 'def go():\n    return 1\n')
+        write(project.path('pkg/tests/test_a.py'), 'def test_a():\n    pass\n')
+        write(project.path('bench/test_b.py'), 'def test_b():\n    pass\n')
+        assert _mutmut_block(project) == _block_naming('pkg', 'pkg/tests')
+
+    # purlin: scaffold PROOF-149
+    def test_docs_and_examples_are_not_source(self, project):
+        write(project.path('demo/__init__.py'), '')
+        write(project.path('doc/conf.py'), 'project = "demo"\n')
+        write(project.path('examples/x.py'), 'print(1)\n')
+        assert _mutmut_block(project) == _block_naming('demo', 'tests')
 
     # purlin: scaffold PROOF-120
     def test_src_and_tests_still_win_over_other_directories(self, project):

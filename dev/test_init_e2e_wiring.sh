@@ -37,12 +37,15 @@ cs_bad() { CS_FAIL=1; echo "  FAIL xunit: $1"; [ -n "${2:-}" ] && echo "$2" | se
 ) > "$CS_DIR/setup.log" 2>&1 || cs_bad "the fixture could not be made" "$(cat "$CS_DIR/setup.log")"
 P="$CS_DIR/proj"
 if [ "$CS_FAIL" -eq 0 ]; then
+  # `--yes` commits what setup wrote, so git answers from the commit before it.
+  before="$(git -C "$P" rev-parse HEAD)"
   python3 "$ROOT/scripts/init/scaffold.py" --project-root "$P" --gate passed --yes \
     > "$CS_DIR/init.log" 2>&1 || cs_bad "init exited non-zero" "$(tail -5 "$CS_DIR/init.log")"
   grep -q '"tests": \[\]' "$P/.purlin/config.json" 2>/dev/null \
     || cs_bad "the tests setting is not empty"
-  touched="$(git -C "$P" status --porcelain --untracked-files=all \
-    | cut -c4- | grep -E '^(App|App\.Tests)/|\.(cs|csproj|props|targets|sln|runsettings)$')"
+  touched="$( { git -C "$P" diff --name-only "$before"; \
+    git -C "$P" ls-files --others --exclude-standard; } \
+    | grep -E '^(App|App\.Tests)/|\.(cs|csproj|props|targets|sln|runsettings)$')"
   [ -z "$touched" ] || cs_bad "init changed or added to the tests" "$touched"
   [ "$CS_FAIL" -eq 0 ] && echo "  ok   xunit: init adds nothing to the tests; App.Tests.csproj and GreetingTests.cs read as before"
 fi
