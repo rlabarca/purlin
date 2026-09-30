@@ -160,11 +160,16 @@ function logoSrc() {
   return currentTheme() === 'light' ? PURLIN_LOGO.light : PURLIN_LOGO.dark;
 }
 function themeButton() {
-  var next = currentTheme() === 'light' ? 'Dark theme' : 'Light theme';
-  return '<button class="btn" data-act="theme">' + next + '</button>';
+  var light = currentTheme() === 'light';
+  var next = light ? 'Dark theme' : 'Light theme';
+  return '<button class="btn" data-act="theme" title="' + next
+    + '" aria-label="' + next + '">' + (light ? '◑' : '◐')
+    + '</button>';
 }
 var VERSION_KINDS = ['to_tag', 'to_correct'];
+var SHORT_LABELS = {to_confirm: 'To confirm'};
 function leftLabel(item) {
+  if (SHORT_LABELS[item.kind]) { return SHORT_LABELS[item.kind]; }
   var text = String(item.text || '');
   var at = text.indexOf(' to ');
   var words = at >= 0 ? text.slice(at + 1) : text;
@@ -179,11 +184,12 @@ function chosenItem() {
   return found;
 }
 function visibleRules(feature) {
+  var rules = feature.rules || [];
   var item = chosenItem();
   if (!item || VERSION_KINDS.indexOf(item.kind) >= 0) {
-    return ownRules(feature);
+    return rules;
   }
-  return ownRules(feature).filter(function (rule) {
+  return rules.filter(function (rule) {
     return rule.left === item.kind;
   });
 }
@@ -274,15 +280,7 @@ function proofsCell(feature) {
       [rollup.proofs_without_test || 0, WORDS.no_test, 'warn']]) + '</span>';
 }
 function rulesCell(feature) {
-  var shared = sharedBy(feature);
-  var own = ownRules(feature).length;
-  if (!shared.length) { return '<span class="mono">' + own + '</span>'; }
-  var more = shared.reduce(function (sum, pair) { return sum + pair[1]; }, 0);
-  return '<span' + hover([own + (own === 1 ? ' rule' : ' rules') + ' of its own, and '
-      + more + ' more it must also meet, from shared rules:']
-    .concat(shared.map(function (pair) { return pair[0] + DOT + pair[1]; })))
-    + '>' + counts([[own + ' (+' + more + ')', '', '']])
-    + '</span>';
+  return '<span class="mono">' + (feature.rules || []).length + '</span>';
 }
 function testsCell(feature) {
   var found = {};
@@ -291,8 +289,10 @@ function testsCell(feature) {
     var word = cellWord(rule, 'passed');
     found[word] = (found[word] || 0) + 1;
   });
+  var dna = found[WORDS.does_not_apply] || 0;
   return '<span' + hover(platformLines(feature)) + '>'
-    + counts([share(found.passed || 0, rules.length),
+    + counts([share((found.passed || 0) + dna, rules.length),
+      [dna, WORDS.does_not_apply, 'neutral'],
       [found.partial || 0, WORDS.partial, 'warn'],
       [found.failed || 0, WORDS.failing, 'fail']]) + '</span>';
 }
@@ -304,7 +304,7 @@ function strongCell(feature) {
   var rollup = feature.rollup || {};
   var rules = feature.rules || [];
   if (!rules.length) { return ''; }
-  var value = rollup.test_strength == null
+  var value = feature.is_anchor ? null : rollup.test_strength == null
     ? feature.test_strength : rollup.test_strength;
   var parts = [share(reading(rules, 'strong'), rules.length)];
   if (value != null) {
@@ -324,7 +324,8 @@ function signedCell(feature) {
 }
 function reading(rules, name) {
   return rules.filter(function (rule) {
-    return cellWord(rule, name) === name;
+    var word = cellWord(rule, name);
+    return word === name || word === WORDS.does_not_apply;
   }).length;
 }
 function noScope(feature) {
@@ -404,7 +405,9 @@ function proofsUnder(rule) {
 }
 function groupBand(name, features, columns) {
   var open = VIEW.groups[name] !== false;
-  var rules = [].concat.apply([], features.map(ownRules));
+  var rules = [].concat.apply([], features.map(function (feature) {
+    return feature.rules || [];
+  }));
   var total = rules.length;
   var passing = rules.filter(function (rule) {
     return cellWord(rule, 'passed') === 'passed'; }).length;
@@ -424,31 +427,39 @@ function groupBand(name, features, columns) {
       return featureRow(feature, columns);
     }).join('') : '');
 }
+function specTable(label, columns, body) {
+  return '<section data-table="' + label.toLowerCase() + '"><p class="eyebrow">'
+    + label + '</p><div class="tbl specs" style="--cols:'
+    + columns.map(function (c) {
+      return 'minmax(' + (c.floor ? c.floor + 'px' : 'max-content') + ','
+        + c.width + ')';
+    }).join(' ') + '"><div class="th">' + columns.map(function (c) {
+      return '<div>' + esc(c.label) + '</div>';
+    }).join('') + '</div>' + body + '</div></section>';
+}
 function renderBoard() {
   var columns = boardColumns();
   var shown = (DATA.features || []).filter(function (feature) {
     return visibleRules(feature).length > 0;
   });
+  var anchors = shown.filter(function (f) { return f.is_anchor; });
   var order = [];
   var groups = {};
   shown.forEach(function (feature) {
+    if (feature.is_anchor) { return; }
     var name = feature.category || 'specs';
     if (!groups[name]) { groups[name] = []; order.push(name); }
     groups[name].push(feature);
   });
-  var head = '<section>' + statStrip() + '</section>';
-  var table = order.length
-    ? '<div class="tbl specs" style="--cols:' + columns.map(function (c) {
-        return 'minmax(' + (c.floor ? c.floor + 'px' : 'max-content') + ','
-          + c.width + ')';
-      }).join(' ') + '"><div class="th">' + columns.map(function (c) {
-        return '<div>' + esc(c.label) + '</div>';
-      }).join('') + '</div>' + order.map(function (name) {
-        return groupBand(name, groups[name], columns);
-      }).join('') + '</div>'
-    : '<div class="panel empty">No rule is left of this kind.</div>';
-  return head + '<section><p class="eyebrow">Specs</p>' + filtersMarkup()
-    + table + '</section>';
+  return '<section>' + statStrip() + '</section>' + filtersMarkup()
+    + (anchors.length ? specTable('Anchors', columns, anchors.map(
+      function (feature) { return featureRow(feature, columns); }).join(''))
+      : '')
+    + (order.length ? specTable('Specs', columns, order.map(function (name) {
+      return groupBand(name, groups[name], columns);
+    }).join('')) : anchors.length ? '' : '<section><p class="eyebrow">Specs'
+      + '</p><div class="panel empty">No rule is left of this kind.</div>'
+      + '</section>');
 }
 function ruleInView() {
   var feature = featureNamed(VIEW.feature);
@@ -474,7 +485,8 @@ function cellRow(rule, name) {
       && (showsProofs() || text !== 'no proof written');
   }).join('; ');
   var beside = name === 'passed' ? platformBoxes(cell)
-    : name === 'signed' && cell.signer ? '<span class="mono sec">'
+    : name === 'signed' && cell.signer && cell.word === 'signed'
+      ? '<span class="mono sec">'
       + unbroken(cell.signer) + ' \u00b7 ' + unbroken(when(cell.at))
       + '</span>' : '';
   return '<dt>' + esc(CELL_LABELS[name]) + '</dt><dd>' + pill(cell.word)
@@ -527,6 +539,15 @@ function signaturesFor(feature, rule) {
 function signPanel(feature, rule) {
   var cell = cellOf(rule, 'signed');
   if (!level('signed') || !cell) { return ''; }
+  var dna = rule.does_not_apply;
+  if (dna && cell.word === WORDS.does_not_apply) {
+    var signer = dna.signer || cell.signer;
+    var name = cell.signer_name ? cell.signer_name + ' (' + signer + ')'
+      : signer;
+    return '<div class="panel"><h2>Signed</h2><p class="sec">'
+      + esc('Does not apply to this project: ' + dna.why + '. Signed by '
+        + name + ' at ') + unbroken(moment(dna.at || cell.at)) + '.</p></div>';
+  }
   if (cell.word === 'signed') {
     var who = [cell.signer_name, cell.signer].filter(Boolean).join(', ')
       || 'a person';
@@ -648,7 +669,7 @@ function renderRule() {
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null,
             features: {}, groups: {}, filter: null, proofs: {}};
-var SCHEMA = 10;
+var SCHEMA = 11;
 var REFRESH_AFTER = 60;
 var GATE_LEVELS = ['passed', 'strong', 'signed'];
 var STEP_LABELS = {passed: 'Passing', strong: 'Strong', signed: 'Signed'};
@@ -657,11 +678,11 @@ var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'];
 var DOT = ' \u00b7 ';
 var WORDS = {of: 'of', no_test: 'no test', partial: 'partial',
              failing: 'failing', passed: 'passed', failed: 'failed',
-             not_run: 'not run'};
+             not_run: 'not run', does_not_apply: 'does not apply'};
 var CELL_TONES = {'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
   'out of date': 'warn', 'strong': 'pass', 'weak': 'warn',
-  'waiting': 'neutral',
+  'waiting': 'neutral', 'does not apply': 'neutral',
   'manual test': 'warn', 'not audited': 'idle', 'no proof': 'warn',
   'signed': 'pass', 'unsigned': 'warn'};
 var CELL_LABELS = {passed: 'Passed', strong: 'Strong', signed: 'Signed'};
@@ -726,7 +747,7 @@ function tag(text, plain) {
 function everyRule() {
   var out = [];
   (DATA.features || []).forEach(function (feature) {
-    ownRules(feature).forEach(function (rule) {
+    (feature.rules || []).forEach(function (rule) {
       out.push({feature: feature, rule: rule});
     });
   });
@@ -736,7 +757,7 @@ function ruleNamed(owner, id) {
   var feature = featureNamed(owner);
   var found = null;
   (feature ? feature.rules || [] : []).forEach(function (r) {
-    if (r.feature === owner && r.id === id) { found = r; }
+    if (r.id === id) { found = r; }
   });
   return found;
 }
@@ -752,19 +773,6 @@ function counts(items) {
   }).join('') + '</span>';
 }
 function hover(lines) { return ' title="' + esc(lines.join('\n')) + '"'; }
-function ownRules(feature) {
-  return (feature.rules || []).filter(function (r) { return r.label === 'own'; });
-}
-function sharedBy(feature) {
-  var counts = {};
-  var order = [];
-  (feature.rules || []).forEach(function (r) {
-    if (r.label === 'own') { return; }
-    if (!(r.feature in counts)) { counts[r.feature] = 0; order.push(r.feature); }
-    counts[r.feature] += 1;
-  });
-  return order.map(function (name) { return [name, counts[name]]; });
-}
 function wholeProject() {
   var rules = [];
   var rollup = {};
@@ -773,7 +781,7 @@ function wholeProject() {
     rollup[key] = DATA.summary[key];
   });
   (DATA.features || []).forEach(function (feature) {
-    ownRules(feature).forEach(function (rule) { rules.push(rule); });
+    (feature.rules || []).forEach(function (rule) { rules.push(rule); });
     var found = newestRun(feature);
     if (found && (!latest || newer(found.at, latest.at))) { latest = found; }
   });
@@ -798,7 +806,7 @@ function newer(one, two) { return (one || '') > (two || ''); }
 function platformLines(feature) {
   var byOs = {};
   var names = [];
-  ownRules(feature).forEach(function (rule) {
+  (feature.rules || []).forEach(function (rule) {
     var platforms = ((rule.cells || {}).passed || {}).platforms || {};
     Object.keys(platforms).forEach(function (os) {
       var entry = platforms[os];
@@ -822,7 +830,7 @@ function platformLines(feature) {
 }
 function auditLines(feature) {
   var newest = null;
-  ownRules(feature).forEach(function (rule) {
+  (feature.rules || []).forEach(function (rule) {
     var audit = rule.audit;
     if (audit && audit.at && (!newest || newer(audit.at, newest.at))) {
       newest = audit;
@@ -841,9 +849,10 @@ function sourceOf(path) {
 function signerLines(feature) {
   var byWho = {};
   var names = [];
-  ownRules(feature).forEach(function (rule) {
+  (feature.rules || []).forEach(function (rule) {
     var cell = (rule.cells || {}).signed || {};
-    if (cell.word !== 'signed' || !cell.signer) { return; }
+    if ((cell.word !== 'signed' && cell.word !== WORDS.does_not_apply)
+        || !cell.signer) { return; }
     if (!byWho[cell.signer]) { byWho[cell.signer] = ''; names.push(cell.signer); }
     if (newer(cell.at, byWho[cell.signer])) { byWho[cell.signer] = cell.at; }
   });
@@ -917,6 +926,9 @@ function testFailed(rule) {
   });
 }
 function badges(rule) {
+  if (cellWord(rule, 'passed') === WORDS.does_not_apply) {
+    return pill(WORDS.does_not_apply);
+  }
   return reachedSteps(rule).map(pill).join('')
     + (testFailed(rule) ? pill('failed') : '');
 }
