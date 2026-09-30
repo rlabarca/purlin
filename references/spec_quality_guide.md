@@ -146,6 +146,13 @@ When the file is itself the product, such as a configuration template a project 
 checking its text is the honest proof; word it as what a reader of that file finds: "A new
 project's settings file carries `gate` set to `passed`", not "search the template for `gate`".
 
+Where the product is a library, its public names are what a caller sees: a proof may name a
+function or class the library exports and an error type a caller gets back. A name from inside
+the code, a private helper or a module the package does not export, stays out.
+
+- Poor: "`_split_fields` returns three parts for a line with two commas."
+- Good: "`parse_line` given `a,b` raises `LineTooShort`, and its message names the line."
+
 ### Written before the test, and not about the test
 
 The proof comes first and the test implements it. The proof does not describe the test's
@@ -170,6 +177,10 @@ case, and does not find the rule weak for it.
   `Wrong email or password`.", "After the password is changed, the new password signs in and
   the home page greets the user by name." and "Changing the password adds one entry to the
   account's activity page reading `Password changed`."
+
+One proof may name a list of like inputs that share one action and one kind of result: "Each of
+`0`, `-1` and `-0.5` is refused with `Amount must be positive`." Inputs that differ in what is
+done, or in the kind of result seen, are cases of their own.
 
 ### Written by AI, read by a person
 
@@ -256,7 +267,7 @@ below it is, and its row says what moves both.
 | passed | `no test`, with `no test for <PROOF-N>` | One of the rule's proofs has no test carrying its marker comment; the reason names each such proof. | `purlin:build` writes the test, then `purlin:test`. |
 | passed | `failed` | A test for the rule failed. The reason names the file and the test. | Fix the code, or the test. See the next section. |
 | passed | `not run` | The rule's tests have no result in a current section. | Run `purlin:test`, which counts at every gate. |
-| passed | `not run`, with `<os>: no run yet` | A proof carries `@env` for an operating system that has not run the rule's tests: no current section comes from it. | Run `purlin:test --remote`, whose matrix covers it, or drop the `@env` tag if any operating system could show it. |
+| passed | `not run`, with `<System>: no run yet` | A proof carries `@env` for an operating system that has not run the rule's tests: no current section comes from it. | Run `purlin:test --remote`, whose runner file names that system, or drop the `@env` tag if any operating system could show it. |
 | passed | `partial` | The rule's tests passed on one operating system and failed on another. `partial` is not met. | Fix the code or the test for the system that failed, then run the tests there again. |
 | passed | `out of date` | A pass exists but the spec, the code or the tests moved since; the reason names which. | Run the tests again; the next run clears it. |
 | strong | `weak`, `strength N% under M%` | The tests did not notice when the behaviour was broken. | Add the case that tells the correct behaviour from the broken one. `purlin:build`, then `purlin:audit`. |

@@ -18,11 +18,12 @@ read `references/spec_quality_guide.md`. Neither is restated here.
 
 ## Procedure
 
-1. Call `sync_status` and read the state of the feature, if it already has one.
+1. Call `sync_status` with `project_root` set to the project root, the top folder of the git
+   checkout, and read the state of the feature, if it already has one.
 2. Read the input whole before writing anything.
 3. Decide the feature name and the category folder: `specs/<category>/<name>.md`.
 4. Write the metadata, `> Scope:` included, then the rules, then one proof for every rule.
-5. Allocate ids against `origin/main`, never against the working tree.
+5. Allocate ids as "Ids" below says, never against the working tree alone.
 6. Print each rule with its proofs under it and ask whether to change any. Change what the
    person asks and print them again.
 7. Save the spec when the person is satisfied, commit it on its own, and name `purlin:build`
@@ -121,13 +122,11 @@ that system passes it.
 
 ## Ids
 
-Rule and proof ids are allocated against `origin/main`, not against the working tree, so two
-branches cut from the same commit do not both take RULE-9. The next id is one past the highest
-in either copy of the spec:
-
-```bash
-git show origin/main:specs/auth/login.md | grep -o 'RULE-[0-9]*' | sort -t- -k2 -n | tail -1
-```
+A new rule takes one more than the highest of `> Highest-Rule:` and every rule number in either
+copy of the spec, the working copy and `origin/main`'s, read with `git show origin/main:<spec>`.
+Write that number into `> Highest-Rule:`, adding the line after the spec's other `>` lines where
+it is missing, so a deleted number is never used again. Proof ids are allocated the same way
+against the proof numbers of both copies.
 
 Ids are never reused. A deleted rule leaves its number vacant and every other rule keeps the
 number it had. Renumbering would silently repoint every test marker and every signature that

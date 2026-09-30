@@ -12,8 +12,9 @@ import re
 
 from skill_checks import (COMMAND_REF, carries, field, flat, frontmatter,
                           frontmatter_problems, on_copy, read, refusals,
-                          replace, resub, sections, sentence_with,
-                          skill_ceiling_problems, skill_path, swap_first)
+                          replace, resub, section, sections, sentence_with,
+                          skill_ceiling_problems, skill_path, swap_first,
+                          table_rows)
 
 SKILL = skill_path('spec')
 GUIDE = 'references/spec_quality_guide.md'
@@ -59,11 +60,131 @@ class TestSkillSpec:
         ]) == []
 
     # purlin: skill_spec PROOF-2
-    def test_it_allocates_ids_against_the_default_branch(self, monkeypatch):
+    def test_a_new_rule_counts_from_the_highest_ever_held(self, monkeypatch):
         assert id_problems() == []
         assert refusals(monkeypatch, id_problems, [
-            (SKILL, resub(r'^```bash\ngit show origin/main:.*?^```\n'),
-             "%s does not carry 'git show origin/main:'" % SKILL),
+            (SKILL, replace('the highest of `> Highest-Rule:` and every rule '
+                            'number', 'the highest rule number'),
+             '%s Ids section does not carry %r' % (SKILL, ALLOCATION[0])),
+            (SKILL, replace('read with `git show origin/main:<spec>`',
+                            'as fetched'),
+             '%s Ids section does not carry %r' % (SKILL, ALLOCATION[1])),
+            (SKILL, resub(r' Proof ids are allocated the same way\s+against '
+                          r'the proof numbers of both copies\.'),
+             '%s Ids section does not carry %r' % (SKILL, ALLOCATION[2])),
+            (SKILL, replace('5. Allocate ids as "Ids" below says',
+                            '5. Allocate ids'),
+             '%s procedure step 5 does not point at Ids' % SKILL),
+        ]) == []
+
+    # purlin: skill_spec PROOF-42
+    def test_it_writes_the_highest_rule_into_the_spec(self, monkeypatch):
+        assert highest_rule_problems() == []
+        assert refusals(monkeypatch, highest_rule_problems, [
+            (SKILL, resub(r'Write that number into `> Highest-Rule:`, adding '
+                          r'the line after\s+the spec\'s other `>` lines '
+                          r'where\s+it is missing,', 'Keep it,'),
+             '%s Ids section does not carry %r' % (SKILL, WRITES_HIGHEST)),
+        ]) == []
+
+    # purlin: skill_spec PROOF-43
+    def test_it_reads_the_state_at_the_project_root(self, monkeypatch):
+        assert root_problems() == []
+        assert refusals(monkeypatch, root_problems, [
+            (SKILL, resub(r' with `project_root` set to the project root, '
+                          r'the top folder of the git\s+checkout,'),
+             '%s procedure step 1 does not carry %r' % (SKILL, ROOT_CALL)),
+        ]) == []
+
+    # purlin: skill_spec PROOF-44
+    def test_the_intake_table_says_what_to_do_with_each_input(
+            self, monkeypatch):
+        assert intake_problems() == []
+        assert refusals(monkeypatch, intake_problems, [
+            (SKILL, resub(r'^\| A screenshot \|.*?\n'),
+             "%s intake table has no row for 'A screenshot'" % SKILL),
+            (SKILL, replace('| Pasted acceptance criteria | One rule per '
+                            'criterion |', '| Pasted acceptance criteria | |'),
+             "%s intake table has no row for 'Pasted acceptance criteria'"
+             % SKILL),
+        ]) == []
+
+    # purlin: skill_spec PROOF-45
+    def test_a_change_is_made_in_place_and_nothing_is_renumbered(
+            self, monkeypatch):
+        assert in_place_problems() == []
+        assert refusals(monkeypatch, in_place_problems, [
+            (SKILL, replace('Edit in place. Never renumber',
+                            'Write it again from the top'),
+             '%s intake table does not give an existing spec plus a change '
+             "'Edit in place. Never renumber'" % SKILL),
+        ]) == []
+
+    # purlin: skill_spec PROOF-46
+    def test_after_a_merge_the_incoming_id_takes_the_next_number(
+            self, monkeypatch):
+        check = lambda: merge_problems(MERGE_IDS)  # noqa: E731
+        assert check() == []
+        assert refusals(monkeypatch, check, [
+            (SKILL, replace('give the incoming one the next free number',
+                            'renumber both'),
+             '%s After a merge conflict does not carry %r'
+             % (SKILL, MERGE_IDS[0])),
+            (SKILL, resub(r'and move its test markers\s+and its signature '
+                          r'filenames with it', 'and stop'),
+             '%s After a merge conflict does not carry %r'
+             % (SKILL, MERGE_IDS[1])),
+        ]) == []
+
+    # purlin: skill_spec PROOF-47
+    def test_two_pins_resolve_to_the_newer(self, monkeypatch):
+        check = lambda: merge_problems(MERGE_PINS)  # noqa: E731
+        assert check() == []
+        assert refusals(monkeypatch, check, [
+            (SKILL, replace('resolve to the newer sha', 'resolve to the older '
+                            'sha'),
+             '%s After a merge conflict does not carry %r'
+             % (SKILL, MERGE_PINS[0])),
+        ]) == []
+
+    # purlin: skill_spec PROOF-48
+    def test_the_guide_lets_a_proof_name_a_library_s_public_names(
+            self, monkeypatch):
+        check = lambda: guide_section_problems(  # noqa: E731
+            'Written for a person who cannot read code', LIBRARY)
+        assert check() == []
+        assert refusals(monkeypatch, check, [
+            (GUIDE, resub(r'^Where the product is a library.*?names the '
+                          r'line\."\n'),
+             "%s section 'Written for a person who cannot read code' does "
+             'not state %r' % (GUIDE, LIBRARY[0])),
+            (GUIDE, replace('stays out.', 'may appear too.'),
+             "%s section 'Written for a person who cannot read code' does "
+             'not state %r' % (GUIDE, LIBRARY[1])),
+        ]) == []
+
+    # purlin: skill_spec PROOF-49
+    def test_the_guide_lets_one_proof_name_a_list_of_like_inputs(
+            self, monkeypatch):
+        check = lambda: guide_section_problems(  # noqa: E731
+            'One proof, one case', LIKE_INPUTS)
+        assert check() == []
+        assert refusals(monkeypatch, check, [
+            (GUIDE, resub(r'^One proof may name a list.*?cases of their '
+                          r'own\.\n'),
+             "%s section 'One proof, one case' does not state %r"
+             % (GUIDE, LIKE_INPUTS[0])),
+        ]) == []
+
+    # purlin: skill_spec PROOF-50
+    def test_the_guide_s_stuck_row_names_the_runner_file(self, monkeypatch):
+        assert stuck_row_problems() == []
+        assert refusals(monkeypatch, stuck_row_problems, [
+            (GUIDE, replace('whose runner file names that system',
+                            'whose matrix covers it'),
+             '%s has no stuck row for a system with no run' % GUIDE),
+            (GUIDE, replace('`<System>: no run yet`', '`<os>: no run yet`'),
+             '%s has no stuck row for a system with no run' % GUIDE),
         ]) == []
 
     # purlin: skill_spec PROOF-3
@@ -196,11 +317,118 @@ def command_row_problems():
             if p.startswith(COMMAND_REF)]
 
 
+ALLOCATION = (
+    'A new rule takes one more than the highest of `> Highest-Rule:` and '
+    'every rule number in either copy of the spec',
+    "the working copy and `origin/main`'s, read with "
+    '`git show origin/main:<spec>`.',
+    'Proof ids are allocated the same way against the proof numbers of both '
+    'copies.')
+WRITES_HIGHEST = ('Write that number into `> Highest-Rule:`, adding the line '
+                  "after the spec's other `>` lines where it is missing")
+ROOT_CALL = ('Call `sync_status` with `project_root` set to the project root, '
+             'the top folder of the git checkout')
+
+
+def ids_body():
+    return flat(section(read(SKILL), r'^ids$') or '')
+
+
 def id_problems():
-    return carries(SKILL, [
-        'git show origin/main:',
-        'allocated against `origin/main`, not against the working tree',
-        'one past the highest in either copy of the spec'])
+    problems = ['%s Ids section does not carry %r' % (SKILL, needle)
+                for needle in ALLOCATION if needle not in ids_body()]
+    if not re.search(r'^5\. Allocate ids as "Ids" below says, never against '
+                     r'the working tree alone\.$', read(SKILL), re.M):
+        problems.append('%s procedure step 5 does not point at Ids' % SKILL)
+    return problems
+
+
+def highest_rule_problems():
+    if WRITES_HIGHEST in ids_body():
+        return []
+    return ['%s Ids section does not carry %r' % (SKILL, WRITES_HIGHEST)]
+
+
+def root_problems():
+    step = re.search(r'^1\. (.*?)(?=^2\. )', read(SKILL), re.S | re.M)
+    if step and ROOT_CALL in flat(step.group(1)):
+        return []
+    return ['%s procedure step 1 does not carry %r' % (SKILL, ROOT_CALL)]
+
+
+INPUTS = ('One sentence', 'A product description or a ticket',
+          'Pasted acceptance criteria', 'A screenshot')
+
+
+def intake_rows():
+    return {cells[0]: cells[1] for cells in
+            table_rows(read(SKILL), '| What you are given | What you do |')
+            if len(cells) > 1}
+
+
+def intake_problems():
+    rows = intake_rows()
+    return ['%s intake table has no row for %r' % (SKILL, name)
+            for name in INPUTS if not rows.get(name)]
+
+
+def in_place_problems():
+    if intake_rows().get('An existing spec plus a change') == \
+            'Edit in place. Never renumber':
+        return []
+    return ['%s intake table does not give an existing spec plus a change '
+            "'Edit in place. Never renumber'" % SKILL]
+
+
+MERGE_IDS = ('Keep both rules, give the incoming one the next free number',
+             'and move its test markers and its signature filenames with it.')
+MERGE_PINS = ('Two branches that advanced the same anchor pin resolve to the '
+              'newer sha.',)
+
+
+def merge_problems(needles):
+    body = flat(section(read(SKILL), r'^after a merge conflict$') or '')
+    return ['%s After a merge conflict does not carry %r' % (SKILL, needle)
+            for needle in needles if needle not in body]
+
+
+LIBRARY = (
+    'Where the product is a library, its public names are what a caller '
+    'sees: a proof may name a function or class the library exports and an '
+    'error type a caller gets back.',
+    'A name from inside the code, a private helper or a module the package '
+    'does not export, stays out.',
+    '- Poor: "`_split_fields` returns three parts for a line with two '
+    'commas."',
+    '- Good: "`parse_line` given `a,b` raises `LineTooShort`, and its message '
+    'names the line."')
+LIKE_INPUTS = (
+    'One proof may name a list of like inputs that share one action and one '
+    'kind of result: "Each of `0`, `-1` and `-0.5` is refused with `Amount '
+    'must be positive`."',
+    'Inputs that differ in what is done, or in the kind of result seen, are '
+    'cases of their own.')
+
+
+def guide_section_problems(heading, needles):
+    body = re.search(r'^### %s\n(.*?)(?=^#)' % re.escape(heading),
+                     read(GUIDE), re.S | re.M)
+    text = flat(body.group(1)) if body else ''
+    return ['%s section %r does not state %r' % (GUIDE, heading, needle)
+            for needle in needles if needle not in text]
+
+
+STUCK_ROW = ('| passed | `not run`, with `<System>: no run yet` |',
+             '| Run `purlin:test --remote`, whose runner file names that '
+             'system, or drop the `@env` tag if any operating system could '
+             'show it. |')
+
+
+def stuck_row_problems():
+    if any(line.startswith(STUCK_ROW[0]) and line.endswith(STUCK_ROW[1])
+           for line in read(GUIDE).splitlines()):
+        return []
+    return ['%s has no stuck row for a system with no run' % GUIDE]
 
 
 def offer_problems():
