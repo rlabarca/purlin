@@ -26,7 +26,7 @@ Call `sync_status` with `project_root` set to the project root, the top folder o
 
 The tool opens with `Purlin status: <project>, plugin <version>, gate <gate>`, then the table: a
 row per spec, most work left first, the anchors under `Anchors` above the rest under `Specs`, and
-a column only where the gate creates its cell. It is the dashboard's board as text, cell for cell.
+`Strong` only where the audit found a rule strong or weak. It is the dashboard's board as text.
 
 ```
   Spec                            Rules  Proofs          Tests
@@ -41,30 +41,31 @@ a column only where the gate creates its cell. It is the dashboard's board as te
 
 `Rules` counts the spec's rules. `Proofs` counts every proof line, then `· <k> no test` where no
 test carries a proof's marker; at `passed` it shows only where a proof line is written. `Tests` is
-`<passed> of <rules>`, then `· <k> does not apply`, `· <k> partial` and `· <k> failing` where not
-zero; `partial` means the tests pass on one operating system and not another. `Strong` reads
-`<n> of <rules>`, then `· <strength>%` where measured; `Signed` reads `<n> of <rules>`.
+`<passed> of <rules>`, then `· <k> partial` and `· <k> failing` where not zero; `partial` means
+the tests pass on one operating system and not another. `Strong` reads `<n> of <rules>` the audit
+found strong, then `· <strength>%` where measured.
 
 ## Step 3: print the summary and `Left to do`
 
 The tool ends on one sentence and `Left to do`, the words every command ends on in the terminal:
 
 ```
-40 rules. 35 pass their tests. 30 are strong. 20 are signed.
+40 rules. 35 pass their tests. The audit found 30 strong and 2 weak.
 Left to do:
-  5 rules to audit: purlin:audit
-  10 rules to sign: purlin:sign
+  3 rules to write a test for: purlin:build
+  2 rules to strengthen: purlin:build
 ```
 
-The sentence names the steps up to the gate, each containing the next. `Left to do` holds one line
-per kind of work, in the order it is done, with its count and its command. When nothing is left,
-`Nothing left to do.` follows the sentence instead, at `signed` with the tag's push.
+The sentence counts the rules that pass their tests, then what the audit found where it read any.
+`Left to do` holds one line per kind of work, in the order it is done, with its count and its
+command. When nothing is left, one line naming the release step follows the sentence instead.
 Print the sentence and the `Left to do` lines `sync_status` returned. Never recount them: the
 command line and the dashboard must show one answer from one computation.
 
 Anything the tool prints between the table and the sentence is its own: the specs that name
 no files, an anchor whose pin is behind, uncommitted spec changes, its warnings and
 `→ Run: purlin:init --update`. Print them verbatim, or nothing when the tool returned nothing.
+Where a warning says a number is written twice, follow `Renumbering` in `skills/spec/SKILL.md`.
 
 ## With a name
 
@@ -75,7 +76,7 @@ header, and one line per rule with the cells the gate creates and the proof line
 
 ```
 specs/auth/login.md: 8 rules
-  RULE-1  passed  strong  signed      PROOF-1  tests/test_login.py::test_rejects_bad_password
+  RULE-1  passed  strong              PROOF-1  tests/test_login.py::test_rejects_bad_password
   RULE-3  no test                     PROOF-3  no test carries this marker
 ```
 
@@ -88,13 +89,11 @@ The next step is the first line of `Left to do`. Add no line of your own; a
 
 | The first line after the sentence | Next step |
 |-----------------------------------|-----------|
-| `<n> specs to repair`, `<n> rules to write a proof for`, or `to tie to their files` | `→ Run: purlin:spec` |
+| `<n> specs to repair` or `<n> rules to write a proof for` | `→ Run: purlin:spec` |
 | `<n> test comments to correct` | `→ Run: purlin:build` |
 | `<n> rules to fix`, `to write a test for` or `to strengthen` | `→ Run: purlin:build` |
 | `<n> rules to test` | `→ Run: purlin:test` |
 | `<n> rules to test on <systems>` | `→ Run: purlin:test --remote` |
-| `<n> rules to audit` | `→ Run: purlin:audit` |
-| `<n> rules to measure` | `→ Run: purlin:audit` |
-| `<n> rules to test by hand`, `to confirm as not applying`, `to sign`, or `the version to tag` | `→ Run: purlin:sign` |
-| `Nothing left to do. Push the tag to release it: ...` | `→ Run: git push origin signed/<version>` |
-| `Nothing left to do.` | None: every rule reached every step the gate asks. |
+| `Nothing left to do. To release a version: purlin:test --release` | `→ Run: purlin:test --release` |
+| `... purlin:test --release, then purlin:sign` | `→ Run: purlin:test --release`, then `purlin:sign` |
+| `Nothing left to do. Push the tag to release it: ...` | `→ Run: git push origin <tag>` |

@@ -136,6 +136,22 @@ def first_call_problems():
     return problems
 
 
+class TestRenumbering:
+
+    # purlin: skill_status PROOF-36
+    def test_a_number_written_twice_is_sent_to_the_renumbering(
+            self, monkeypatch):
+        assert renumbering_problems() == []
+        assert refusals(monkeypatch, renumbering_problems, [
+            (REL, replace(RENUMBERING, 'Fix the number by hand.'),
+             'does not carry %r' % RENUMBERING),
+        ]) == []
+
+
+def renumbering_problems():
+    return carries(REL, [RENUMBERING])
+
+
 def status_number_problems():
     return carries(REL, [
         PRINTS + ' Never recount them: the command line and the dashboard '
@@ -174,9 +190,8 @@ class TestNextStep:
         rows = closing_outcomes(body)
         assert len(rows) >= 2, rows
         undirected = [row for row in rows if ARROW not in row]
-        assert undirected == [
-            '| `Nothing left to do.` | None: every rule reached every step '
-            'the gate asks. |'], undirected
+        assert undirected == [], undirected
+        assert RELEASE_ROW in rows, rows
         assert (next_step_problems('status')
                 + undirected_outcome_problems('status')) == []
         last = read(REL).rindex('\n## ')
@@ -189,26 +204,30 @@ class TestNextStep:
             '%s closing section names 1 outcomes, expected at least 2'
             % REL) == []
         assert closing_refused(
-            monkeypatch, replace(AUDIT_ROW, AUDIT_ROW.replace(ARROW + ' ', '')),
+            monkeypatch, replace(TEST_ROW, TEST_ROW.replace(ARROW + ' ', '')),
             '%s closing outcome gives no %s directive: %s'
-            % (REL, ARROW, AUDIT_ROW.replace(ARROW + ' ', ''))) == []
+            % (REL, ARROW, TEST_ROW.replace(ARROW + ' ', ''))) == []
 
     # purlin: skill_status PROOF-24
     def test_every_kind_of_left_to_do_line_has_a_row_running_its_command(
             self, monkeypatch):
         assert kind_row_problems() == []
         assert refusals(monkeypatch, kind_row_problems, [
-            (REL, replace(AUDIT_ROW, AUDIT_ROW.replace('purlin:audit',
-                                                       'purlin:test')),
-             "%s closing table row for 'rules to audit' runs 'purlin:test', "
-             "but the line names 'purlin:audit'" % REL),
+            (REL, replace(TEST_ROW, TEST_ROW.replace('purlin:test',
+                                                     'purlin:build')),
+             "%s closing table row for 'rules to test' runs 'purlin:build', "
+             "but the line names 'purlin:test'" % REL),
             (REL, replace(' or `to strengthen`'),
              "%s closing table names no row for the line 'rules to "
              "strengthen'" % REL),
         ]) == []
 
 
-AUDIT_ROW = '| `<n> rules to audit` | `%s Run: purlin:audit` |' % ARROW
+TEST_ROW = '| `<n> rules to test` | `%s Run: purlin:test` |' % ARROW
+RELEASE_ROW = ('| `Nothing left to do. To release a version: purlin:test '
+               '--release` | `%s Run: purlin:test --release` |' % ARROW)
+RENUMBERING = ('Where a warning says a number is written twice, follow '
+               '`Renumbering` in `skills/spec/SKILL.md`.')
 
 
 def closing_refused(monkeypatch, edit, expected):
