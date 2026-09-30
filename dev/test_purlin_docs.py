@@ -391,6 +391,76 @@ class TestQuotedLines:
             ('text', None), ('', None)]
 
 
+# --- The links --------------------------------------------------------------
+
+LINK = re.compile(r'\[[^\]]*\]\(([^)\s]+)\)')
+
+
+def anchor_of(heading):
+    """A heading's anchor as the git host spells it: lower case, every
+    character but a letter, a digit, a space, `-` and `_` dropped, and each
+    space a `-`."""
+    kept = re.sub(r'[^\w\- ]', '', heading.strip().lower())
+    return kept.replace(' ', '-')
+
+
+def anchors_in(text):
+    """Every anchor a Markdown file's headings give, a repeat numbered as the
+    git host numbers it, `-1`, `-2`. Headings inside a fenced block are not
+    headings."""
+    seen, found, fenced = {}, set(), False
+    for line in text.splitlines():
+        if line.startswith('```'):
+            fenced = not fenced
+            continue
+        match = re.match(r'#{1,6} (.+)$', line)
+        if fenced or not match:
+            continue
+        slug = anchor_of(match.group(1))
+        count = seen.get(slug, 0)
+        seen[slug] = count + 1
+        found.add(slug if count == 0 else '%s-%d' % (slug, count))
+    return found
+
+
+def broken_links(page, text):
+    """`<page>: <target>` for each relative link of `text` that names no file
+    in the repository, or whose `#` part is no heading of that file."""
+    broken = []
+    folder = os.path.dirname(os.path.join(ROOT, page))
+    for target in LINK.findall(text):
+        if re.match(r'[a-z]+:', target):
+            continue
+        path, _, part = target.partition('#')
+        full = (os.path.normpath(os.path.join(folder, *path.split('/')))
+                if path else os.path.join(ROOT, page))
+        if not os.path.isfile(full):
+            broken.append('%s: %s' % (page, target))
+        elif part and part not in anchors_in(read(full)):
+            broken.append('%s: %s' % (page, target))
+    return broken
+
+
+class TestLinks:
+
+    # purlin: purlin_docs PROOF-17
+    def test_every_relative_link_names_a_file_and_a_heading(self):
+        followed = [target for page in PAGES
+                    for target in LINK.findall(read(os.path.join(ROOT, page)))
+                    if not re.match(r'[a-z]+:', target)]
+        assert len(followed) >= 10, followed
+        assert [line for page in PAGES
+                for line in broken_links(page, read(os.path.join(ROOT, page)))
+                ] == []
+        # A link to a file the repository does not hold, and one to a heading
+        # its file does not have, are found.
+        text = ('[a](how-purlin-works.md#no-such-heading) '
+                '[b](no-such-page.md)')
+        assert broken_links('docs/index.md', text) == [
+            'docs/index.md: how-purlin-works.md#no-such-heading',
+            'docs/index.md: no-such-page.md']
+
+
 if __name__ == '__main__':
     for name, output in build_sample(os.path.realpath(sys.argv[1])).items():
         print('==== %s' % name)
