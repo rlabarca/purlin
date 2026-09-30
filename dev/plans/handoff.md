@@ -33,14 +33,16 @@ decisions 31 to 58 (together they are the product as the owner settled it), then
 
 A rule says what must be true. A proof says in plain language how that is shown. A test is
 any test in the project's own suite with one comment above it, `purlin: <feature> PROOF-<n>`.
-Three levels: `passed` (`purlin:test`), `strong` (`purlin:audit`, a model reading each test
-against its proof, with optional mutation testing), `signed` (`purlin:sign`). The gate is how
-far every rule is asked to go; a rule may be marked lower with `[level: ...]`, and a column a
-rule is not asked shows nothing. Evidence is one file per feature, written by a run and
-committed with `--commit`; it goes out of date when the spec, the covered code or the tests
-change, and a run with no feature named runs only what changed. `purlin:sign` walks one queue
-and, at the gate `signed`, writes the evidence package and the signed tag. Purlin makes no
-claim of compliance: it hands evidence to a system of record.
+Three steps: `passed` (`purlin:test`), `strong` (`purlin:audit`, a model reading each test
+against its proof, with optional mutation testing), `signed` (`purlin:sign`). The gate is the
+last step every rule must reach, and every rule is asked what the gate asks. Evidence is one
+file per feature, written by a run and committed with `--commit`; it goes out of date when the
+spec, the covered code or the tests change, and a run with no feature named runs only what
+changed. Every run ends on the summary and `Left to do`, one line per kind of work with its
+command. `purlin:sign` walks the rules left `to test by hand` or `to sign` and, at the gate
+`signed`, when nothing else is left and every result came from committed work, writes the
+evidence package and the signed tag. Purlin makes no claim of compliance: it hands evidence to
+a system of record.
 
 ## What is left, in order
 
