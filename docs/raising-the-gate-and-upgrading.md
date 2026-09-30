@@ -154,6 +154,7 @@ is written from them:
 | Migration | What it changes |
 |-----------|-----------------|
 | `design-refs` | removes each spec's Figma `> Source:` with its `> Pinned:`, and its `> Visual-Reference:` and `> Visual-Hash:` lines |
+| `anchor-lines` | removes `> Requires:` and `> Global:` from every spec and `> Scope:` from every anchor, and names each anchor that specs named, with the specs and the command that moves a rule into them |
 | `os-tags` | rewrites the Windows tag 0.9.5 wrote at the end of a proof line to `@env(windows)` |
 | `kind-tags` | drops the tag naming the kind of test from every proof line |
 | `untracked-files` | deletes the proof files 0.9.5 committed beside the specs and its cache folder, and untracks the dashboard data |
