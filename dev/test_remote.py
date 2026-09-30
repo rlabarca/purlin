@@ -47,6 +47,8 @@ LIST = ['pipelines', 'runs', 'list',
         '--project', 'My Widgets',
         '--branch', 'refs/heads/%s' % RUN_BRANCH,
         '--top', '1', '--query', '[0].id', '--output', 'tsv']
+FAILED_ON_HOST = ('The run failed on the git host. The table below is what '
+                  'came back.')
 SHOW = ['pipelines', 'runs', 'show', '--id', '42',
         '--organization', 'https://dev.azure.com/acme',
         '--project', 'My Widgets',
@@ -251,6 +253,19 @@ def test_the_lookup_names_the_organisation_the_project_and_the_run_branch(
     assert fake.az_calls()[0] == LIST
 
 
+# purlin: host PROOF-130
+def test_the_wait_on_azure_devops_is_announced_after_the_push(azure_run,
+                                                             capsys):
+    azure_run()
+
+    assert remote_module.run_remote('/project') == 0
+    printed = capsys.readouterr().out.splitlines()
+    pushing = 'Pushing feature-x as %s.' % RUN_BRANCH
+    waiting = 'Waiting for the Azure DevOps pipeline on %s.' % RUN_BRANCH
+    assert pushing in printed and waiting in printed, printed
+    assert printed.index(pushing) < printed.index(waiting)
+
+
 # purlin: host PROOF-76
 def test_the_poll_names_the_run_the_organisation_and_the_project(azure_run):
     fake, _clock = azure_run()
@@ -283,7 +298,7 @@ def test_a_succeeded_run_is_brought_home_green(azure_run, capsys):
     assert fake.not_az() == [PUSH, PULL, DELETE]
     printed = capsys.readouterr().out
     assert 'Run 42 completed: succeeded.' in printed.splitlines()
-    assert 'The run finished red.' not in printed
+    assert FAILED_ON_HOST not in printed
     assert printed.rstrip().endswith('the status table')
 
 
@@ -296,7 +311,7 @@ def _brought_home_red(azure_run, capsys, result):
     printed = capsys.readouterr().out
     lines = printed.splitlines()
     assert 'Run 42 completed: %s.' % result in lines
-    assert 'The run finished red. The table below is what came back.' in lines
+    assert FAILED_ON_HOST in lines
     assert printed.rstrip().endswith('the status table')
 
 
@@ -324,9 +339,11 @@ def test_no_run_within_a_minute_deletes_the_branch_and_fails(azure_run,
     assert fake.az_calls() == [LIST] * 21
     assert clock.slept == [3] * 20
     assert fake.not_az() == [PUSH, DELETE]
-    printed = capsys.readouterr().out
-    assert 'No run registered for %s within 60 seconds' % RUN_BRANCH in printed
-    assert 'git pull --ff-only origin %s' % RUN_BRANCH in printed
+    printed = capsys.readouterr().out.splitlines()
+    assert ('No run registered for %s within 60 seconds, so the run branch '
+            'was deleted and nothing came back. Check that az has the '
+            'azure-devops extension and is signed in, then run purlin:test '
+            '--remote again.' % RUN_BRANCH) in printed, printed
     assert 'the status table' not in printed
 
 
@@ -348,15 +365,15 @@ def test_a_run_past_ninety_minutes_is_left_for_the_person(azure_run, capsys):
 
 # purlin: host PROOF-82
 def test_without_az_the_run_is_neither_found_nor_pulled(azure_run, capsys):
+    """Checked before the push, so nothing is left on the git host."""
     fake, _clock = azure_run(az=False)
 
     assert remote_module.run_remote('/project') == 1
-    assert fake.started == [PUSH]
-    printed = capsys.readouterr().out
-    assert 'The Azure CLI `az` is not on PATH' in printed
-    assert 'https://dev.azure.com/acme/My%20Widgets/_build' in printed
-    assert 'git pull --ff-only origin %s' % RUN_BRANCH in printed
-    assert 'the status table' not in printed
+    assert fake.started == []
+    assert capsys.readouterr().out.splitlines() == [
+        'purlin:test --remote waits for the run with the Azure CLI, az, which '
+        'is not installed, so nothing was pushed. Install az with its '
+        'azure-devops extension, then run purlin:test --remote again.']
 
 
 # purlin: host PROOF-83

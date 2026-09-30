@@ -109,17 +109,18 @@ def deleted_files(project_root):
 def _commit_through_api(project_root, paths, message, merge=None):
     """One commit carrying `paths`, made through the git host's REST API.
 
-    A project that is not the workspace the job checked out commits nothing.
+    A project that is not the project root the job checked out commits
+    nothing.
     A test suite driving a run over a fixture project inherits the runner's
     token and repository name, and the API commit those name is the real
     repository's, not the fixture's: the fixture's evidence would land on the
     branch under review.
     """
-    from ci import is_the_workspace
+    from ci import is_the_checkout
 
-    if not is_the_workspace(project_root):
-        print('%s is not the workspace this job checked out, so no evidence '
-              'was committed.' % project_root)
+    if not is_the_checkout(project_root):
+        print('%s is not the project root this job checked out, so no '
+              'evidence was committed.' % project_root)
         return ''
     host = detect_host()
     if host == 'azure':

@@ -156,8 +156,28 @@ def test_a_proof_tagged_for_another_system_gets_a_workflow_for_that_reason():
     wanted, reasons = workflow_module.wanted(['windows'], 'macos')
     assert wanted is True
     assert reasons == [
-        'A proof in specs/ is tagged @env for windows, which this machine is '
+        'A proof in specs/ is tagged @env for Windows, which this machine is '
         'not, so only a runner can prove it.'], reasons
+
+
+# purlin: host PROOF-128
+def test_proofs_tagged_for_two_other_systems_are_named_together():
+    wanted, reasons = workflow_module.wanted(['windows', 'linux'], 'macos',
+                                             'strong')
+    assert wanted is True
+    assert reasons == [
+        'Proofs in specs/ are tagged @env for Linux/Unix and Windows, which '
+        'this machine is not, so only a runner can prove them.'], reasons
+
+
+# purlin: host PROOF-129
+def test_tests_tagged_for_two_other_systems_are_named_together_at_passed():
+    wanted, reasons = workflow_module.wanted(['windows', 'linux'], 'macos',
+                                             'passed')
+    assert wanted is True
+    assert reasons == [
+        'Tests are tagged @env for Linux/Unix and Windows, which this machine '
+        'is not, so only a runner can run them.'], reasons
 
 
 # purlin: host PROOF-43
@@ -516,3 +536,83 @@ def test_an_azure_windows_agent_gets_sqlite3_on_its_search_path(tmp_path):
     assert code == 0, output
     assert calls == [CHOCO_ARGS], calls
     assert '##vso[task.prependpath]%s' % folder in output.splitlines(), output
+
+
+# ---------------------------------------------------------------------------
+# What the runner file's comments say
+# ---------------------------------------------------------------------------
+
+def _rendered_for_windows():
+    """`{host: the runner file}` for a proof tagged `@env(windows)`."""
+    return {host: workflow_module.render_workflow(host, ['windows'],
+                                                  PURLIN_REF)
+            for host in ('github', 'azure')}
+
+
+def _comment_text(text):
+    """Every comment line of `text`, its `#` taken off, joined into one line."""
+    words = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith('#'):
+            words.extend(stripped.lstrip('#').split())
+    return ' '.join(words)
+
+
+# purlin: host PROOF-133
+def test_the_runner_file_opens_on_why_it_exists():
+    for host, text in _rendered_for_windows().items():
+        first = []
+        for line in text.splitlines():
+            if line.strip() in ('', '#'):
+                break
+            first.append(line.lstrip('#').strip())
+        assert ' '.join(first) == (
+            'Purlin runs here, on a clean machine, for one reason: a rule '
+            'that must hold on an operating system your machine is not.'), host
+
+
+# purlin: host PROOF-134
+def test_the_runner_file_says_whom_the_matrix_holds():
+    for host, text in _rendered_for_windows().items():
+        assert ('The matrix holds one job for each operating system a proof '
+                'in specs/ is tagged @env for that the machine running setup '
+                'is not, and no other.') in _comment_text(text), host
+
+
+# purlin: host PROOF-135
+def test_the_runner_file_says_what_starts_a_run():
+    for host, text in _rendered_for_windows().items():
+        said = _comment_text(text)
+        start = said.index('Two things start a run and nothing else does:')
+        sentence = said[start:said.index('.', start)]
+        assert 'a push to a `run/*` branch' in sentence, (host, sentence)
+        assert 'a push of a `signed/*` tag' in sentence, (host, sentence)
+
+
+# purlin: host PROOF-136
+def test_the_runner_file_says_the_job_is_capped_at_ninety_minutes():
+    limits = {'github': 'timeout-minutes: 90', 'azure': 'timeoutInMinutes: 90'}
+    for host, text in _rendered_for_windows().items():
+        assert 'The job is capped at 90 minutes' in _comment_text(text), host
+        settings = [line.strip() for line in text.splitlines()
+                    if not line.strip().startswith('#')
+                    and 'imeout' in line]
+        assert settings == [limits[host]], (host, settings)
+
+
+# purlin: host PROOF-137
+def test_the_runner_file_says_no_breaks_and_no_audit_run_there():
+    for host, text in _rendered_for_windows().items():
+        assert 'No breaks and no AI audit run here.' in _comment_text(text), \
+            host
+        named = [line for line in text.splitlines()
+                 if '--audit' in line or 'mutation' in line]
+        assert named == [], (host, named)
+
+
+# purlin: host PROOF-138
+def test_the_runner_file_says_each_test_command_has_an_hour():
+    for host, text in _rendered_for_windows().items():
+        assert ('The run caps each test command at an hour of its own.'
+                in _comment_text(text)), host

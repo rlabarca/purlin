@@ -3,9 +3,9 @@
 #
 # purlin:init writes this file for a project whose git host is Azure DevOps,
 # and only when a proof in specs/ is tagged @env for such a system. The
-# matrix holds one job for each operating system the @env tags in specs/
-# name, and no other. A project whose tags name only the system it is
-# developed on gets no pipeline at all.
+# matrix holds one job for each operating system a proof in specs/ is tagged
+# @env for that the machine running setup is not, and no other. A project
+# whose tags name only the system it is developed on gets no pipeline at all.
 #
 # Two things start a run and nothing else does: a push to a `run/*` branch,
 # which is the branch purlin:test --remote creates and deletes around one run,
@@ -28,7 +28,7 @@
 #
 # The job is capped at 90 minutes, which is longer than any suite this
 # runs and short enough to leave a log worth reading when a run stops for
-# something. The run caps each arm at an hour of its own.
+# something. The run caps each test command at an hour of its own.
 trigger:
   branches:
     include:
@@ -78,7 +78,7 @@ jobs:
       # What each framework needs before its tests run. A project with none of
       # these files installs nothing and the step is a no-op. A project whose
       # tests drive a browser through playwright also needs the browser:
-      # `--with-deps` installs the libraries a Linux runner lacks and does
+      # `--with-deps` installs the libraries a Linux/Unix runner lacks and does
       # nothing on Windows and macOS.
       - bash: |
           if [ -f requirements.txt ]; then

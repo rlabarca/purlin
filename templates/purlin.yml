@@ -2,10 +2,11 @@
 # on an operating system your machine is not.
 #
 # purlin:init writes this file only when a proof in specs/ is tagged @env for
-# such a system. The matrix holds one job for each operating system the @env
-# tags in specs/ name, and no other. A project whose tags name only the
-# system it is developed on gets no workflow at all: at the gate signed
-# purlin:sign writes the tag, you push it, and nothing runs remotely.
+# such a system. The matrix holds one job for each operating system a proof in
+# specs/ is tagged @env for that the machine running setup is not, and no
+# other. A project whose tags name only the system it is developed on gets no
+# workflow at all: at the gate signed purlin:sign writes the tag, you push it,
+# and nothing runs remotely.
 #
 # Two things start a run and nothing else does: a push to a `run/*` branch,
 # which is the branch purlin:test --remote creates and deletes around one run,
@@ -31,7 +32,7 @@
 # The job is capped at 90 minutes. GitHub cancels a job at 6 hours and
 # keeps nothing, so a run that stops for something cannot be read; 90 minutes
 # is longer than any suite this runs and short enough to leave a log worth
-# reading. The run caps each arm at an hour of its own.
+# reading. The run caps each test command at an hour of its own.
 name: purlin
 
 on:
@@ -81,7 +82,7 @@ jobs:
       # What each framework needs before its tests run. A project with none of
       # these files installs nothing and the step is a no-op. A project whose
       # tests drive a browser through playwright also needs the browser:
-      # `--with-deps` installs the libraries a Linux runner lacks and does
+      # `--with-deps` installs the libraries a Linux/Unix runner lacks and does
       # nothing on Windows and macOS.
       - name: Set up the test framework
         shell: bash

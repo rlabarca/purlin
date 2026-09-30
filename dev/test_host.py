@@ -634,6 +634,24 @@ def test_no_token_writes_no_commit(project, monkeypatch, capsys):
     assert printed == [NO_GITHUB_VARIABLES], printed
 
 
+# purlin: host PROOF-127
+def test_no_azure_token_writes_no_commit(project, azure_env, monkeypatch,
+                                        capsys):
+    monkeypatch.delenv('SYSTEM_ACCESSTOKEN', raising=False)
+    host = FakeHost(azure=True)
+    monkeypatch.setattr(urllib.request, 'urlopen', host)
+    path = write_ci(project)
+    capsys.readouterr()
+
+    sha = host_module.commit_files(project, [path],
+                                   'purlin: evidence at 4f1c2ab')
+
+    assert sha == ''
+    assert host.calls == [], 'a run with no token sent a request'
+    assert capsys.readouterr().out.splitlines() == [
+        'No Azure DevOps build variables, so no evidence was committed.']
+
+
 # purlin: host PROOF-60
 def test_no_repository_name_writes_no_commit(project, monkeypatch, capsys):
     sha, calls, printed = _commit_with_one_variable(
@@ -835,7 +853,7 @@ def test_a_rule_the_spec_does_not_carry_is_dropped_in_the_merge(
 # The workspace check
 # ---------------------------------------------------------------------------
 
-NOT_THE_WORKSPACE = ('%s is not the workspace this job checked out, so no '
+NOT_THE_WORKSPACE = ('%s is not the project root this job checked out, so no '
                      'evidence was committed.')
 
 
@@ -930,7 +948,8 @@ def test_the_azure_project_that_is_the_workspace_pushes(project, azure_env,
 # ---------------------------------------------------------------------------
 
 NOT_ON_A_BRANCH = ('This checkout is not on a branch, so there is nothing to '
-                   'push.')
+                   'push. Make one with git switch -c <name>, then run '
+                   'purlin:test --remote again.')
 NOT_COMMITTED = ('This checkout has changes that are not committed, so a run '
                  'would prove something other than what is here. Commit them, '
                  'then run purlin:test --remote again.')
@@ -989,6 +1008,12 @@ def test_the_run_branch_names_the_branch_and_the_commit(project, with_remote,
     head = git(project, 'rev-parse', 'HEAD').stdout.strip()
     run_branch = 'run/feature-x-%s' % head[:7]
     started = _record_commands(monkeypatch, code=1)
+    # A stand-in `gh` ahead of the rest of the search path, which still finds
+    # git; it is looked up and never started.
+    folder = os.path.join(os.path.dirname(project), 'with-gh')
+    os.makedirs(folder)
+    stand_in(folder, 'gh')
+    monkeypatch.setenv('PATH', folder + os.pathsep + os.environ['PATH'])
 
     assert remote_module.run_remote(project) == 1
     printed = capsys.readouterr().out.splitlines()
@@ -1093,12 +1118,15 @@ LIST = ['gh', 'run', 'list', '--branch', RUN_BRANCH, '--limit', '1',
         '--json', 'databaseId']
 PULL = ['git', 'pull', '--ff-only', 'origin', RUN_BRANCH]
 DELETE = ['git', 'push', 'origin', '--delete', RUN_BRANCH]
-NO_GH = ('GitHub CLI `gh` is not installed, so the run cannot be watched. '
-         'Open the run on %s instead, then run: git pull --ff-only origin %s'
-         % (RUN_BRANCH, RUN_BRANCH))
-NO_RUN = ('No run registered for %s within 60 seconds. Open it on the git '
-          'host, then run: git pull --ff-only origin %s'
-          % (RUN_BRANCH, RUN_BRANCH))
+NO_GH = ('purlin:test --remote waits for the run with the GitHub CLI, gh, '
+         'which is not installed, so nothing was pushed. Install gh, then run '
+         'purlin:test --remote again.')
+NO_RUN = ('No run registered for %s within 60 seconds, so the run branch was '
+          'deleted and nothing came back. Check that the git host runs '
+          '.github/workflows/purlin.yml on a push to run/*, then run '
+          'purlin:test --remote again.' % RUN_BRANCH)
+FAILED_ON_HOST = ('The run failed on the git host. The table below is what '
+                  'came back.')
 
 
 # purlin: host PROOF-24
@@ -1113,7 +1141,7 @@ def test_a_green_run_pushes_watches_pulls_and_deletes(project, remote_run,
     assert fake.started == [PUSH, WATCH, PULL, DELETE]
     assert fake.cwds == [project] * 4
     printed = capsys.readouterr().out
-    assert 'finished red' not in printed
+    assert FAILED_ON_HOST not in printed
     assert printed.rstrip().endswith('the status table')
 
 
@@ -1184,8 +1212,7 @@ def test_a_red_run_still_pulls_and_prints_the_table(project, remote_run,
     assert remote_module.run_remote(project) == 1
     assert fake.started == [PUSH, WATCH, PULL, DELETE]
     printed = capsys.readouterr().out
-    assert 'The run finished red. The table below is what came back.' in \
-        printed.splitlines()
+    assert FAILED_ON_HOST in printed.splitlines()
     assert printed.rstrip().endswith('the status table')
 
 
@@ -1218,13 +1245,12 @@ def test_a_run_that_never_registers_is_reported_and_the_branch_deleted(
 # purlin: host PROOF-71
 def test_without_gh_the_run_is_neither_watched_nor_pulled(project, remote_run,
                                                           capsys):
+    """Checked before the push, so nothing is left on the git host."""
     fake = remote_run(gh=False)
 
     assert remote_module.run_remote(project) == 1
-    assert fake.started == [PUSH]
-    printed = capsys.readouterr().out.splitlines()
-    assert NO_GH in printed, printed
-    assert 'the status table' not in printed
+    assert fake.started == []
+    assert capsys.readouterr().out.splitlines() == [NO_GH]
 
 
 # purlin: host PROOF-72
@@ -1235,8 +1261,56 @@ def test_a_failed_push_starts_no_run(project, remote_run, capsys):
     assert fake.started == [PUSH]
     assert fake.listed == []
     printed = capsys.readouterr().out
-    assert 'The push failed, so no run was started.' in printed.splitlines()
+    assert ('The push failed, so no run was started. Check that git push '
+            'origin works from this checkout, then run purlin:test --remote '
+            'again.') in printed.splitlines()
     assert 'Waiting for' not in printed
+
+
+# purlin: host PROOF-131
+def test_a_run_branch_that_cannot_be_deleted_is_named_with_its_command(
+        project, remote_run, capsys):
+    """The run is brought home; only the delete of the run branch fails."""
+    fake = remote_run()
+    answer = fake.__call__
+
+    def delete_refused(argv, **kwargs):
+        done = answer(argv, **kwargs)
+        if list(argv) == DELETE:
+            return subprocess.CompletedProcess(argv, 1, '', '')
+        return done
+    remote_module.subprocess.run = delete_refused
+
+    assert remote_module.run_remote(project) == 0
+    assert fake.started == [PUSH, WATCH, PULL, DELETE]
+    assert ('The run branch %s is still on origin. Delete it with: git push '
+            'origin --delete %s' % (RUN_BRANCH, RUN_BRANCH)) in \
+        capsys.readouterr().out.splitlines()
+
+
+# purlin: host PROOF-132
+def test_a_command_that_cannot_be_started_is_named_with_the_error(
+        project, remote_run, capsys):
+    """The push's program is not found, so the operating system's error is shown."""
+    fake = remote_run()
+    missing = FileNotFoundError(2, 'No such file or directory', 'git')
+
+    def push_not_found(argv, **kwargs):
+        if list(argv) == PUSH:
+            raise missing
+        return fake(argv, **kwargs)
+    remote_module.subprocess.run = push_not_found
+
+    assert remote_module.run_remote(project) == 1
+    printed = capsys.readouterr().out.splitlines()
+    failed = "git failed: [Errno 2] No such file or directory: 'git'"
+    assert failed == 'git failed: %s' % missing
+    assert printed[-2:] == [
+        failed,
+        'The push failed, so no run was started. Check that git push origin '
+        'works from this checkout, then run purlin:test --remote again.'], \
+        printed
+    assert fake.started == []
 
 
 # purlin: host PROOF-53
@@ -1259,7 +1333,8 @@ def test_a_project_whose_settings_say_ci_none_pushes_nothing(project,
     printed = capsys.readouterr().out
     assert printed.splitlines() == [
         'purlin:test --remote needs a GitHub or Azure DevOps remote, and '
-        '.purlin/config.json says ci: none.'], printed
+        '.purlin/config.json says ci: none. Add one with git remote add '
+        'origin <url>, then run purlin:init.'], printed
     assert started == [], 'a project with ci: none started %r' % started
 
 

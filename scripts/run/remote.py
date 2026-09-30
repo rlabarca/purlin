@@ -57,7 +57,28 @@ RUN_BRANCH_PREFIX = 'run/'
 # `--remote` prints there.
 NO_CI = 'none'
 CI_NONE = ('purlin:test --remote needs a GitHub or Azure DevOps remote, and '
-           '.purlin/config.json says ci: none.')
+           '.purlin/config.json says ci: none. Add one with git remote add '
+           'origin <url>, then run purlin:init.')
+NOT_ON_A_BRANCH = ('This checkout is not on a branch, so there is nothing to '
+                   'push. Make one with git switch -c <name>, then run '
+                   'purlin:test --remote again.')
+PUSH_FAILED = ('The push failed, so no run was started. Check that git push '
+               'origin works from this checkout, then run purlin:test --remote '
+               'again.')
+
+# The program each git host's run is waited on with, and the line printed
+# before any push where it is missing: without it the run branch would be
+# left on the git host with nobody waiting for it.
+PROGRAM = {'github': 'gh', 'azure': 'az'}
+NO_PROGRAM = {
+    'github': ('purlin:test --remote waits for the run with the GitHub CLI, '
+               'gh, which is not installed, so nothing was pushed. Install gh, '
+               'then run purlin:test --remote again.'),
+    'azure': ('purlin:test --remote waits for the run with the Azure CLI, az, '
+              'which is not installed, so nothing was pushed. Install az with '
+              'its azure-devops extension, then run purlin:test --remote '
+              'again.'),
+}
 
 # How long to keep asking the git host which run this push started. A run
 # takes a few seconds to register, and asking once would miss it; a minute is
@@ -65,8 +86,10 @@ CI_NONE = ('purlin:test --remote needs a GitHub or Azure DevOps remote, and '
 # still watching.
 FIND_SECONDS = 60
 FIND_EVERY = 3
-NO_RUN_FOUND = ('No run registered for %s within %d seconds. Open it on the '
-                'git host, then run: git pull --ff-only %s %s')
+NO_RUN_FOUND = ('No run registered for %s within %d seconds, so the run '
+                'branch was deleted and nothing came back. Check that the git '
+                'host runs %s on a push to run/*, then run purlin:test '
+                '--remote again.')
 
 # How long to wait for an Azure DevOps run once it is found, and how often to
 # ask. A run of the whole suite on a hosted agent takes minutes; ninety of
@@ -80,17 +103,15 @@ GREEN = 'succeeded'
 # How long one git or az command may take before it is abandoned.
 COMMAND_SECONDS = 300
 
-NO_AZ = ('The Azure CLI `az` is not on PATH, so the run on %s cannot be '
-         'watched: install it with its azure-devops extension and run '
-         'purlin:test --remote again, or open the run at %s and when it '
-         'finishes run: git pull --ff-only %s %s')
 NO_AZURE_REMOTE = ('The remote %s is not an Azure DevOps repository URL, so '
                    'nothing was pushed: set %s to the URL Azure DevOps shows '
                    'under Clone and run purlin:test --remote again.')
-NO_AZURE_RUN = ('No run registered for %s within %d seconds: check that `az` '
-                'has the azure-devops extension and is signed in, then open '
-                'the run at %s and when it finishes run: git pull --ff-only '
-                '%s %s')
+NO_AZURE_RUN = ('No run registered for %s within %d seconds, so the run '
+                'branch was deleted and nothing came back. Check that az has '
+                'the azure-devops extension and is signed in, then run '
+                'purlin:test --remote again.')
+FAILED_ON_HOST = ('The run failed on the git host. The table below is what '
+                  'came back.')
 AZURE_TIMEOUT = ('Run %s on %s has not completed after %d minutes: open it at '
                  '%s and when it finishes run: git pull --ff-only %s %s, then '
                  'git push %s --delete %s')
@@ -111,7 +132,9 @@ def run_remote(project_root, args=None, cfg=None):
 
     A project whose settings file cannot be read, or whose settings say
     `ci: none`, pushes nothing: the first prints why the file cannot be read,
-    the second that no git host here runs a workflow.
+    the second that no git host here runs a workflow. Neither does a project
+    whose git host's program, `gh` or `az`, is not on the search path: the
+    run could not be waited on, so the check comes before the push.
     """
     from config_engine import config_problem, resolve_config
     problem = config_problem(project_root)
@@ -124,7 +147,7 @@ def run_remote(project_root, args=None, cfg=None):
     host = _host(project_root)
     branch = _branch(project_root)
     if not branch or branch == 'HEAD':
-        print('This checkout is not on a branch, so there is nothing to push.')
+        print(NOT_ON_A_BRANCH)
         return 1
     if _dirty(project_root):
         print('This checkout has changes that are not committed, so a run '
@@ -142,9 +165,12 @@ def run_remote(project_root, args=None, cfg=None):
         if where is None:
             print(NO_AZURE_REMOTE % (remote or '(none)', REMOTE))
             return 1
+    if not _have(PROGRAM[host]):
+        print(NO_PROGRAM[host])
+        return 1
     print('Pushing %s as %s.' % (branch, run_branch))
     if _push(project_root, run_branch) != 0:
-        print('The push failed, so no run was started.')
+        print(PUSH_FAILED)
         return 1
 
     if host == 'azure':
@@ -153,15 +179,12 @@ def run_remote(project_root, args=None, cfg=None):
 
 
 def _github(project_root, run_branch):
-    if not _have('gh'):
-        print('GitHub CLI `gh` is not installed, so the run cannot be '
-              'watched. Open the run on %s instead, then run: git pull '
-              '--ff-only %s %s' % (run_branch, REMOTE, run_branch))
-        return 1
+    from workflow import workflow_path
     print('Waiting for the %s workflow on %s.' % (WORKFLOW, run_branch))
     run_id = find_run(project_root, run_branch)
     if not run_id:
-        print(NO_RUN_FOUND % (run_branch, FIND_SECONDS, REMOTE, run_branch))
+        print(NO_RUN_FOUND % (run_branch, FIND_SECONDS,
+                              workflow_path('github')))
         _delete(project_root, run_branch)
         return 1
     watched = _run(project_root,
@@ -177,7 +200,7 @@ def _bring_back(project_root, run_branch, code):
     results are evidence too. Answers `code`, the run's own exit code.
     """
     if code != 0:
-        print('The run finished red. The table below is what came back.')
+        print(FAILED_ON_HOST)
     # The run branch is this branch plus the one commit the runner made, so a
     # fast-forward is the whole of it: that commit is the evidence under
     # `.purlin/evidence/ci/`.
@@ -219,16 +242,14 @@ def _azure(project_root, run_branch, where):
     """
     organization, project, _repository = where
     runs_url = _runs_url(organization, project)
-    az = shutil.which('az')
-    if not az:
-        print(NO_AZ % (run_branch, runs_url, REMOTE, run_branch))
-        return 1
+    # Found before the push; the path is what is started, so `az.cmd` runs
+    # on Windows.
+    az = shutil.which('az') or 'az'
     print('Waiting for the Azure DevOps pipeline on %s.' % run_branch)
     run_id = find_azure_run(project_root, az, organization, project,
                             run_branch)
     if not run_id:
-        print(NO_AZURE_RUN % (run_branch, FIND_SECONDS, runs_url, REMOTE,
-                              run_branch))
+        print(NO_AZURE_RUN % (run_branch, FIND_SECONDS))
         _delete(project_root, run_branch)
         return 1
     result = wait_azure_run(project_root, az, organization, project, run_id)

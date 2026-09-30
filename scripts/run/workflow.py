@@ -1,4 +1,4 @@
-"""Render the CI workflow a project's git host runs.
+"""Render the runner file a project's git host runs.
 
 One template per git host lives under `templates/`, and this fills in the
 two things a project decides: which operating systems the matrix covers, and
@@ -110,12 +110,18 @@ def render_workflow(host, env_tags, purlin_ref):
     return text.replace('<<PURLIN_REF>>', str(purlin_ref or 'main'))
 
 
-# The one reason a project has a workflow, in the words init prints it.
+# The one reason a project has a workflow, in the words init prints it: one
+# system, then two or more. `<System>` is `Windows`, `macOS` or `Linux/Unix`.
 FOREIGN_OS_REASON = ('A proof in specs/ is tagged @env for %s, which this '
                      'machine is not, so only a runner can prove it.')
+FOREIGN_OS_REASONS = ('Proofs in specs/ are tagged @env for %s, which this '
+                      'machine is not, so only a runner can prove them.')
 # The same at the gate `passed`, whose words are rules and tests.
 FOREIGN_OS_REASON_AT_PASSED = ('A test is tagged @env for %s, which this '
                                'machine is not, so only a runner can run it.')
+FOREIGN_OS_REASONS_AT_PASSED = ('Tests are tagged @env for %s, which this '
+                                'machine is not, so only a runner can run '
+                                'them.')
 NO_REASON = ('every proof runs on this operating system, so nothing has to '
              'run remotely')
 # The same at the gate `passed`, whose words are rules and tests.
@@ -128,9 +134,37 @@ def no_reason(gate):
     return NO_REASON_AT_PASSED if gate == 'passed' else NO_REASON
 
 
-def foreign_reason(gate):
-    """The operating-system reason in the words the gate uses."""
-    return FOREIGN_OS_REASON_AT_PASSED if gate == 'passed' else FOREIGN_OS_REASON
+def foreign_reason(gate, count=1):
+    """The operating-system reason in the words the gate uses, for `count`
+    systems: the singular for one, the plural for two or more."""
+    if gate == 'passed':
+        return (FOREIGN_OS_REASON_AT_PASSED if count == 1
+                else FOREIGN_OS_REASONS_AT_PASSED)
+    return FOREIGN_OS_REASON if count == 1 else FOREIGN_OS_REASONS
+
+
+def systems_words(tags):
+    """The systems `tags` name, as a person reads them.
+
+    `Linux/Unix`, `macOS`, `Windows`, in that order, the last joined with
+    ` and ` and the others with `, `: `macOS and Windows`. A tag that names
+    none of the three is kept as it is written.
+    """
+    named = {str(tag).strip().lower() for tag in (tags or ()) if tag}
+    words = [_os_word(name) for name in ORDER if name in named]
+    words += sorted(name for name in named if name not in ORDER)
+    if len(words) < 2:
+        return ''.join(words)
+    return '%s and %s' % (', '.join(words[:-1]), words[-1])
+
+
+def _os_word(name):
+    import sys
+    mcp = os.path.join(PLUGIN_ROOT, 'scripts', 'mcp')
+    if mcp not in sys.path:
+        sys.path.insert(0, mcp)
+    from purlin import evidence as evidence_reader
+    return evidence_reader.os_word(name)
 
 
 def foreign_tags(env_tags, host_os):
@@ -151,7 +185,8 @@ def wanted(env_tags, host_os, gate=None):
     reasons = []
     foreign = foreign_tags(env_tags, host_os)
     if foreign:
-        reasons.append(foreign_reason(gate) % ', '.join(foreign))
+        reasons.append(foreign_reason(gate, len(foreign))
+                       % systems_words(foreign))
     return bool(reasons), reasons
 
 
