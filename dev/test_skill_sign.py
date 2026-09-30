@@ -377,7 +377,8 @@ def lengthen_to(count):
 
 # The two things that make a signature count.
 SIGN_COUNTS = (
-    'The last commit that touched the file is signed, with any key',
+    'The last commit that touched the file is signed, with any key, and '
+    'that signature verifies',
     'It is still made over the rule, the proof, the test, the code its '
     'feature lists, what the audit found and the machine each system\'s '
     'tests ran on')
@@ -637,4 +638,88 @@ def test_the_walk_stops_at_a_rule_to_confirm(monkeypatch):
         (SKILL, replace('sign it as applying\nafter all',
                         'delete it'),
          'walk section does not carry %r' % CONFIRM_ANSWERS[1]),
+    ]) == []
+
+
+TIED = ('`    tied to tests/test_login.py::test_valid_credentials_return_200`',
+        '`    tied to no test`',
+        'Under each proof that is not `@manual`')
+SPEC_REFUSED = ('`login is not signed: PROOF-2 is written twice in the spec. '
+                'Run purlin:spec login, then purlin:sign again.`',
+                'writes nothing and exits 1')
+HAND_CHECK = ("A hand check's signature is made over the rule's and its "
+              "proofs' wording alone: a change to the code, a test or the "
+              'machines does not end it, and a change to that wording does.')
+NO_TAG_SPEC = ('`No tag: login cannot be counted: PROOF-2 is written twice in '
+               'the spec. Run purlin:spec login, then purlin:sign.`')
+NO_TAG_BEHIND = ('`No tag: origin/main holds 1 commit that 8de0b6e does not, '
+                 'as this checkout last fetched it. Pull, run purlin:test '
+                 '--commit, then purlin:sign.`')
+RELEASE = ('Sign a version on a release branch, such as `release/1.2.0`, cut '
+           'from the default branch once its specs are done.')
+
+
+def section_says(pattern, needles, whole=flat):
+    body = whole(section(read(SKILL), pattern) or '')
+    return ['%s section %r does not carry %r' % (SKILL, pattern, needle)
+            for needle in needles if needle not in body]
+
+
+# purlin: skill_sign PROOF-54
+def test_the_walk_shows_each_proofs_tied_test(monkeypatch):
+    # The spaces that indent a tied line are its own, so they are read as
+    # written, the line breaks around them as spaces.
+    check = lambda: section_says(  # noqa: E731
+        r'walk it', TIED, lambda text: text.replace('\n', ' '))
+    assert check() == []
+    assert refusals(monkeypatch, check, [
+        (SKILL, replace('tied to no test', 'no test'),
+         'does not carry %r' % TIED[1]),
+    ]) == []
+
+
+# purlin: skill_sign PROOF-55
+def test_a_broken_spec_is_not_signed(monkeypatch):
+    check = lambda: section_says(r'three answers', SPEC_REFUSED)  # noqa: E731
+    assert check() == []
+    assert refusals(monkeypatch, check, [
+        (SKILL, replace('login is not signed:', 'login is signed:'),
+         'does not carry %r' % SPEC_REFUSED[0]),
+        (SKILL, replace('writes nothing and exits 1', 'signs it'),
+         'does not carry %r' % SPEC_REFUSED[1]),
+    ]) == []
+
+
+# purlin: skill_sign PROOF-56
+def test_a_hand_check_ends_only_on_a_change_of_wording(monkeypatch):
+    check = lambda: section_says(r'when a signature counts',  # noqa: E731
+                                 (HAND_CHECK,))
+    assert check() == []
+    assert refusals(monkeypatch, check, [
+        (SKILL, replace('does not end it, and', 'ends it, and'),
+         'does not carry %r' % HAND_CHECK),
+    ]) == []
+
+
+# purlin: skill_sign PROOF-57
+def test_the_tag_is_refused_on_a_broken_spec_or_a_host_ahead(monkeypatch):
+    check = lambda: tag_section_says(NO_TAG_SPEC, NO_TAG_BEHIND)  # noqa: E731
+    assert check() == []
+    assert refusals(monkeypatch, check, [
+        (SKILL, replace('as this checkout last fetched it. Pull',
+                        'as fetched. Pull'),
+         'tag section does not carry %r' % NO_TAG_BEHIND),
+        (SKILL, replace('No tag: login cannot be counted',
+                        'No tag: login is broken'),
+         'tag section does not carry %r' % NO_TAG_SPEC),
+    ]) == []
+
+
+# purlin: skill_sign PROOF-58
+def test_a_version_is_signed_on_a_release_branch(monkeypatch):
+    check = lambda: tag_section_says(RELEASE)  # noqa: E731
+    assert check() == []
+    assert refusals(monkeypatch, check, [
+        (SKILL, replace('on a release branch', 'on the default branch'),
+         'tag section does not carry %r' % RELEASE),
     ]) == []

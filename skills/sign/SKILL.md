@@ -55,16 +55,9 @@ Call `sync_status` with `project_root` set to the project root, the top folder o
 Each rule's `left` in the payload is the one kind of work left on it. The walk reads the rules
 whose `left` is `to_test_by_hand`, a `@manual` proof a person checks, `to_confirm`, a pinned
 anchor's rule whose signature as not applying ended, or `to_sign`, a rule whose tests and audit are
-done at the gate `signed`. `Left to do` carries one line for each:
-
-```
-2 rules to test by hand: purlin:sign
-1 rule to confirm as not applying: purlin:sign
-3 rules to sign: purlin:sign
-```
-
-Every other kind is work for another command, named on its own line of `Left to do`. Read what
-the audit read and found for a rule before anything is written:
+done at the gate `signed`, each on a line of `Left to do` such as `3 rules to sign: purlin:sign`.
+Every other kind is work for another command, named on its own line of `Left to do`. Read what the
+audit read and found for a rule before anything is written:
 
 ```bash
 sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/review/ai_audit.py" --feature <feature> --rule RULE-N
@@ -81,7 +74,9 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scrip
 ```
 
 With no argument the script opens on those lines, then shows each rule, its proofs and what the
-audit found, and asks for one answer, `sign / case / skip`; with nothing waiting it prints
+audit found, and asks for one answer, `sign / case / skip`. Under each proof that is not
+`@manual` it shows the test tied to it, `    tied to tests/test_login.py::test_valid_credentials_return_200`,
+or `    tied to no test`: read that test before you answer. With nothing waiting it prints
 `Nothing is waiting for someone to test by hand or to sign.` Signing a hand check asks
 `What did you see, in one line:`; the person's line becomes the signature's note, and an empty line
 signs it with none. It writes nothing until the walk closes; then one signed commit carries the
@@ -101,7 +96,10 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scrip
 
 The second line signs a pinned anchor's rule that does not apply here, with the person's reason, at
 any gate; it then reads `does not apply` and counts as met until any change to the project ends it.
-Any other rule is refused, since a rule of this project that does not apply is deleted.
+Any other rule is refused, since a rule of this project that does not apply is deleted. A feature
+whose spec writes a number twice or holds a line left from a merge conflict is refused too: the
+script prints `login is not signed: PROOF-2 is written twice in the spec. Run purlin:spec login, then purlin:sign again.`,
+writes nothing and exits 1. The walk and `--all` never reach its rules.
 
 **Add a case.** The person says in plain language what is missing: "it should also reject an expired
 token". Write it into the spec as a new proof line with the next free proof id, leave the test for
@@ -120,11 +118,13 @@ and the key's fingerprint. The commit subjects come from `references/commit_conv
 
 | A signature counts when | What ends it |
 |-------------------------|--------------|
-| The last commit that touched the file is signed, with any key | An unsigned commit: `the commit that added it is not signed` |
+| The last commit that touched the file is signed, with any key, and that signature verifies | `the commit that added it is not signed`; `the signature on the commit that added it does not verify` |
 | It is still made over the rule, the proof, the test, the code its feature lists, what the audit found and the machine each system's tests ran on | A change to any of them; the rule is `to sign` again |
 
 Nothing else is read, at any gate: the signature counts whoever wrote it, whoever last committed
-to the test file, and on whatever branch carries it. A first run on a new system ends nothing.
+to the test file, and on whatever branch carries it. A first run on a new system ends nothing. A
+hand check's signature is made over the rule's and its proofs' wording alone: a change to the
+code, a test or the machines does not end it, and a change to that wording does.
 When it has signed, the script prints `Signed 3 rules as jane@acme.com with the key ending ...Xy4Q.`
 and a line for each rule it signed. At the gate `signed` a rule of a spec that names no files is
 signed all the same, and its line names the command that adds them:
@@ -150,8 +150,12 @@ While other work is left it prints the summary and `Left to do` instead. It writ
 working tree or any feature's results are not committed, and none over a tag that exists, where it
 prints `No tag: <tag> is already written. Run purlin:sign --release <name> to name another.` It
 exits 1 when the tag was refused for a reason to fix, uncommitted work or results, no version, a
-package not committed or git failing to write the tag, and 0 when the tag already exists.
-Below `signed` it writes no tag and no package. With no version stated it prints
+package not committed or git failing to write the tag, and 0 when the tag already exists. It
+exits 1 too on a broken spec, `No tag: login cannot be counted: PROOF-2 is written twice in the spec. Run purlin:spec login, then purlin:sign.`,
+and while the branch's copy on the host, as last fetched, holds commits this checkout lacks:
+`No tag: origin/main holds 1 commit that 8de0b6e does not, as this checkout last fetched it. Pull, run purlin:test --commit, then purlin:sign.`
+It never fetches. Sign a version on a release branch, such as `release/1.2.0`, cut from the default
+branch once its specs are done. Below `signed` it writes no tag and no package. With no version stated it prints
 `No version: nothing in this project states one. Run purlin:sign --release <version>, or write it to a VERSION file.`:
 ask the person for the version, offer to write it to a `VERSION` file at the root, and run the walk
 again. Pushing the tag is a person's act; this skill never pushes.
@@ -163,7 +167,6 @@ The walk closes with what happened, then ends on the summary or on what the tag 
 ```
 Walked 12 rules: 8 signed, 1 case added, 3 skipped.
   billing RULE-2   add this proof line: reject an expired token
-Signed 8 rules as jane@acme.com with the key ending ...Xy4Q.
 ```
 
 | What it ended on | The line to print |
@@ -173,6 +176,8 @@ Signed 8 rules as jane@acme.com with the key ending ...Xy4Q.
 | `Nothing left to do. Push the tag to release it: git push origin signed/<version>` | `→ Run: git push origin signed/<version>` |
 | `No tag: <feature> has results that are not committed.` | `→ Run: purlin:test --commit` |
 | `No tag: the working tree holds changes that are not committed` | `→ Commit them, then run: purlin:sign` |
+| `No tag: <feature> cannot be counted:` or `<feature> is not signed:` | `→ Run: purlin:spec <feature>` |
+| `No tag: <ref> holds <n> commit(s) that <sha> does not` | `→ Pull, then run: purlin:test --commit` |
 | `No version:` | `→ Write the version the person gives to VERSION, then run: purlin:sign` |
 | `No key to sign with.` | `→ Run the commands it printed, then run: purlin:sign` |
 | `<feature> <RULE-N> is not a rule any spec has. Run purlin:status <feature> to see its rules.` | `→ Run: purlin:status <feature>` |

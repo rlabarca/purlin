@@ -6,8 +6,8 @@
 >   when the signature counts, and where the version for the tag comes from.
 > Scope: skills/sign/SKILL.md
 > Stack: markdown, Claude Code skill definition
-> Highest-Rule: 24
-> Highest-Proof: 53
+> Highest-Rule: 28
+> Highest-Proof: 58
 
 ## Rules
 
@@ -15,7 +15,7 @@
 - RULE-2: The skill tells the agent to read what waits for a person from `sync_status`, as each rule's `left`, `to_test_by_hand` or `to_sign`
 - RULE-3: The last section of the skill tells the agent the next step for each way the walk can end, pairing what it ended on with a `→` directive, except `Nothing left to do.`, which at the gates `passed` and `strong` names no command
 - RULE-4: The skill gives the agent its instructions in at most 185 lines, the whole of `skills/sign/SKILL.md`
-- RULE-5: The skill tells the agent the two things that make a signature count: a last commit signed with any key, and a signature still made over the rule, the proof, the test, the code, what the audit found and the machine each system's tests ran on
+- RULE-5: The skill tells the agent the two things that make a signature count: a last commit signed with any key whose signature verifies, and a signature still made over the rule, the proof, the test, the code, what the audit found and the machine each system's tests ran on
 - RULE-6: The skill tells the agent the walk's three answers, sign, add a case and skip, and that a skipped rule waits again next time
 - RULE-7: The skill tells the agent what each of the three gates leaves it able to do: under `passed` and `strong` the walk and `--note` work on the hand checks, and under `signed` every rule waits for a signature once its tests pass and its audit is strong
 - RULE-8: The skill tells the agent that at the gate `signed`, when nothing is left but the tag, the script writes the evidence package `.purlin/evidence/package/<version>.json`, commits it as a signed commit and writes the signed tag `signed/<version>` on that commit
@@ -35,6 +35,10 @@
 - RULE-22: The skill tells the agent to write a case the person gives in the walk into the spec as a new proof line with the next free proof id, to leave its test for the next `purlin:build`, and to write no code
 - RULE-23: The skill tells the agent never to narrow a rule or a proof to make an observation disappear
 - RULE-24: The skill tells the agent that `--does-not-apply "<why>"` signs only a rule of a pinned anchor, as not applying to this project, and that the walk stops at a rule to confirm with three answers: confirm it, sign it as applying after all, or skip
+- RULE-25: The skill tells the agent that the walk shows, under each proof that is not `@manual`, the test tied to it, or that no test is
+- RULE-26: The skill tells the agent that a feature whose spec writes a number twice or holds a line left from a merge conflict is refused, with nothing written
+- RULE-27: The skill tells the agent that a hand check's signature is made over the wording of its rule and proofs alone, so a change to the code, a test or the machines does not end it
+- RULE-28: The skill tells the agent that the tag is refused while a spec is broken or while the branch's copy on the host holds commits this checkout lacks, and to sign a version on a release branch
 
 ## Proof
 
@@ -47,7 +51,7 @@
 - PROOF-3 (RULE-3): The sign skill's last section has a heading naming the `next step` and a table of at least 2 outcomes below its header and divider, and every outcome but `Nothing left to do.` carries its own `→` directive
 - PROOF-44 (RULE-3): The sign skill's closing table gives the outcome `<feature> <RULE-N> is not a rule any spec has. Run purlin:status <feature> to see its rules.` the line `→ Run: purlin:status <feature>`
 - PROOF-4 (RULE-4): The sign skill, counted line by line, is at most 185 lines long
-- PROOF-5 (RULE-5): The sign skill's table headed `A signature counts when` has exactly two rows: `The last commit that touched the file is signed, with any key` and `It is still made over the rule, the proof, the test, the code its feature lists, what the audit found and the machine each system's tests ran on`
+- PROOF-5 (RULE-5): The sign skill's table headed `A signature counts when` has exactly two rows: `The last commit that touched the file is signed, with any key, and that signature verifies` and `It is still made over the rule, the proof, the test, the code its feature lists, what the audit found and the machine each system's tests ran on`
 - PROOF-38 (RULE-13): The sign skill's section on when a signature counts says `the signature counts whoever wrote it, whoever last committed to the test file, and on whatever branch carries it`
 - PROOF-47 (RULE-19): The sign skill's section on when a signature counts says that at the gate `signed` a rule of a spec that names no files is signed, and shows, on a line of its own, `  <feature> <RULE-N>   does not count until the spec names its files: purlin:spec <feature>`
 - PROOF-6 (RULE-6): The sign skill has a section whose heading names the `three answers`, and in it `**Sign.**`, `**Add a case.**`, `**Skip.**` and the sentence `A skipped rule waits again next time`
@@ -66,3 +70,8 @@
 - PROOF-51 (RULE-23): The sign skill, read across its line breaks, carries the sentence `Never narrow a rule or a proof to make an observation disappear.`
 - PROOF-52 (RULE-24): The sign skill's usage block carries the line `purlin:sign <anchor> RULE-N --does-not-apply "<why>"  Sign a pinned anchor's rule as not applying to this project`, and its section on the answers says `Any other rule is refused`
 - PROOF-53 (RULE-24): The sign skill's section on the walk shows the stop `security_baseline RULE-4 was signed as not applying by jane@acme.com: the project stores no card data. Confirm it still does not apply?` and gives three answers: confirm with the earlier reason, sign it as applying after all, or skip
+- PROOF-54 (RULE-25): The sign skill's section on the walk shows, in code, `    tied to tests/test_login.py::test_valid_credentials_return_200` and `    tied to no test`, and names a proof that is not `@manual`
+- PROOF-55 (RULE-26): The sign skill's section on the answers quotes `login is not signed: PROOF-2 is written twice in the spec. Run purlin:spec login, then purlin:sign again.` word for word and says the script writes nothing and exits 1
+- PROOF-56 (RULE-27): The sign skill's section on when a signature counts, read across its line breaks, says `A hand check's signature is made over the rule's and its proofs' wording alone: a change to the code, a test or the machines does not end it, and a change to that wording does.`
+- PROOF-57 (RULE-28): The sign skill's section on the tag quotes, word for word, `No tag: login cannot be counted: PROOF-2 is written twice in the spec. Run purlin:spec login, then purlin:sign.` and `No tag: origin/main holds 1 commit that 8de0b6e does not, as this checkout last fetched it. Pull, run purlin:test --commit, then purlin:sign.`
+- PROOF-58 (RULE-28): The sign skill's section on the tag, read across its line breaks, says ``Sign a version on a release branch, such as `release/1.2.0`, cut from the default branch once its specs are done.``
