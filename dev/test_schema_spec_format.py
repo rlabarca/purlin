@@ -126,7 +126,8 @@ def test_a_spec_with_a_heading_the_format_does_not_name_is_read_and_nothing_is_r
     result = purlin_status.sync_status(str(root))
     assert 'extra_heading' in result, (
         f"a spec carrying `## What it does` was not read at all:\n{result}")
-    assert 'WARNING' not in result, (
+    assert not [line for line in result.splitlines()
+                if 'is not numbered' in line], (
         f"an ignored heading must not be reported as a defect:\n{result}")
     assert 'What it does' not in result, (
         f"the report mentions the extra heading:\n{result}")
@@ -148,7 +149,7 @@ def test_a_rule_line_with_no_id_is_reported_as_not_numbered(tmp_path):
            '- RULE-1: A proper rule\n\n'
            '## Proof\n- PROOF-1 (RULE-1): Test\n')
     result = purlin_status.sync_status(str(root))
-    assert ('WARNING: 1 line under ## Rules in specs/test/test_feat.md '
+    assert ('test_feat: 1 line under ## Rules '
             'is not numbered; a rule is `- RULE-N: <text>`. '
             'Run purlin:spec test_feat.') in result.splitlines(), (
         f"the warning must name the spec, count its one line, give the "
@@ -166,7 +167,7 @@ def test_two_rule_lines_with_no_id_are_counted_in_the_plural(tmp_path):
            '- the second constraint without an id\n\n'
            '## Proof\n- PROOF-1 (RULE-1): Test\n')
     result = purlin_status.sync_status(str(root))
-    assert ('WARNING: 2 lines under ## Rules in specs/test/test_feat.md '
+    assert ('test_feat: 2 lines under ## Rules '
             'are not numbered; a rule is `- RULE-N: <text>`. '
             'Run purlin:spec test_feat.') in result.splitlines(), result
 
@@ -185,7 +186,8 @@ def test_a_gap_in_the_rule_numbers_is_reported_as_nothing(tmp_path):
            '- PROOF-3 (RULE-3): Test three\n'
            '- PROOF-20 (RULE-20): Test twenty\n')
     result = purlin_status.sync_status(str(root))
-    assert 'WARNING' not in result, (
+    assert not [line for line in result.splitlines()
+                if 'is not numbered' in line], (
         "a gap in the rule numbers is legal: a retired rule leaves its "
         f"number vacant and the rest are never renumbered:\n{result}")
     ids = [r['id'] for r in _feature(root, 'gapped_feat')['rules']]

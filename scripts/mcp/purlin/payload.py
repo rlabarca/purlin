@@ -178,9 +178,9 @@ def build_payload(project_root, generated_by='sync_status', config=None):
                      else '%d lines' % len(unnumbered))
             verb = 'is' if len(unnumbered) == 1 else 'are'
             warnings.append(
-                'WARNING: %s under ## Rules in %s %s not numbered; a rule is '
+                '%s: %s under ## Rules %s not numbered; a rule is '
                 '`- RULE-N: <text>`. Run purlin:spec %s.'
-                % (lines, features[name]['spec_path'], verb, name))
+                % (name, lines, verb, name))
     for line in specs_module.spec_mistakes(project_root, features):
         warnings.append(line)
 

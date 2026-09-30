@@ -40,10 +40,10 @@
 ## Proof
 
 - PROOF-1 (RULE-1): The spec format reference, under its heading `## Required sections`, names exactly two sections, `## Rules` and `## Proof`, and no third
-- PROOF-13 (RULE-15): A spec carrying a heading `## What it does` above its `## Rules` is read: the status report names the spec, carries no `WARNING` and never mentions `What it does`, and the spec's rules read exactly `RULE-1`
-- PROOF-2 (RULE-16): A spec at `specs/test/test_feat.md` whose rules hold `RULE-1` and the line `- some constraint without RULE-N prefix` is reported with the warning `WARNING: 1 line under ## Rules in specs/test/test_feat.md is not numbered`, which then gives the form `- RULE-N: <text>` and ends `Run purlin:spec test_feat.`
-- PROOF-14 (RULE-2): A spec whose rules are `RULE-1`, `RULE-3` and `RULE-20`, each with a proof, is reported with no `WARNING`, and its rules read exactly `RULE-1`, `RULE-3` and `RULE-20`, in that order
-- PROOF-45 (RULE-16): A spec at `specs/test/test_feat.md` whose rules hold `RULE-1` and two lines with no id is reported with the warning `WARNING: 2 lines under ## Rules in specs/test/test_feat.md are not numbered`
+- PROOF-13 (RULE-15): A spec carrying a heading `## What it does` above its `## Rules` is read: the status report names the spec, carries no line containing `is not numbered` and never mentions `What it does`, and the spec's rules read exactly `RULE-1`
+- PROOF-2 (RULE-16): A spec at `specs/test/test_feat.md` whose rules hold `RULE-1` and the line `- some constraint without RULE-N prefix` is reported with the warning line ``test_feat: 1 line under ## Rules is not numbered; a rule is `- RULE-N: <text>`. Run purlin:spec test_feat.``
+- PROOF-14 (RULE-2): A spec whose rules are `RULE-1`, `RULE-3` and `RULE-20`, each with a proof, is reported with no line containing `is not numbered`, and its rules read exactly `RULE-1`, `RULE-3` and `RULE-20`, in that order
+- PROOF-45 (RULE-16): A spec at `specs/test/test_feat.md` whose rules hold `RULE-1` and two lines with no id is reported with the warning line ``test_feat: 2 lines under ## Rules are not numbered; a rule is `- RULE-N: <text>`. Run purlin:spec test_feat.``
 - PROOF-46 (RULE-17): A spec at `specs/test/login.md` whose rules read `RULE-1`, `RULE-2: Old text` and `RULE-2: New text` is reported with `login: RULE-2 is written twice; the second is read. Run purlin:spec login.`, and its rules read exactly `RULE-1` and `RULE-2`, with `RULE-2` reading `New text`
 - PROOF-15 (RULE-3): In a spec holding `RULE-1`, `RULE-2` and `RULE-3`, the line `PROOF-1 (RULE-1): One rule` is read as a proof of `RULE-1` alone, and `PROOF-1` is the one proof of `RULE-1`
 - PROOF-16 (RULE-3): In a spec holding `RULE-1`, `RULE-2` and `RULE-3`, the line `PROOF-2 (RULE-2, RULE-3): One flow drives both` is read as a proof of `RULE-2` and `RULE-3`, and `PROOF-2` is the one proof of each
