@@ -13,7 +13,9 @@ table scales with the gate: a `passed` project is never shown a strength or a
 signature it did not ask for, and is shown a proof count only where it writes
 a proof line.
 
-The report ends on the summary sentence and `Left to do`, which
+Below the table come the specs that name no files, the anchors whose pin is
+not current, and one line per signature that ended, naming the rule, the
+signer and why. The report ends on the summary sentence and `Left to do`, which
 `scripts/mcp/purlin/summary.py` writes for every surface, with `→ Run:
 purlin:init --update` above them while an upgrade is pending.
 
@@ -32,6 +34,7 @@ if _MCP_DIR not in sys.path:
 
 from config_engine import config_problem
 from purlin import (board as board_module, drift as drift_module,
+                    fingerprint as fingerprint_module,
                     payload as payload_module, report_data,
                     specs as specs_module, summary as summary_module)
 
@@ -109,14 +112,23 @@ def sync_status(project_root):
     lines.append('')
     lines.extend(_table(data))
     names = incomplete_names(data)
-    if names:
+    unfound = unfound_names(data)
+    if names or unfound:
         lines.append('')
+    if names:
         lines.append(incomplete_line(names))
+    if unfound:
+        lines.append(unfound_line(unfound))
 
     pin_lines = _pin_lines(project_root)
     if pin_lines:
         lines.append('')
         lines.extend(pin_lines)
+
+    ended = summary_module.ended_lines(data)
+    if ended:
+        lines.append('')
+        lines.extend(ended)
 
     uncommitted = _uncommitted_specs(project_root)
     if uncommitted:
@@ -222,9 +234,19 @@ def _line(cells, widths, columns):
 # ---------------------------------------------------------------------------
 
 def incomplete_names(data):
-    """The feature specs that name no files, sorted. Anchors are never one."""
+    """The feature specs with no `> Scope:` line, sorted. Anchors are never one."""
     return sorted(feature['name'] for feature in data['features']
-                  if feature.get('incomplete'))
+                  if feature.get('incomplete')
+                  and feature.get('incomplete_reason')
+                  == fingerprint_module.NO_SCOPE_LINE)
+
+
+def unfound_names(data):
+    """The feature specs whose `> Scope:` finds no file in git, sorted."""
+    return sorted(feature['name'] for feature in data['features']
+                  if feature.get('incomplete')
+                  and feature.get('incomplete_reason')
+                  != fingerprint_module.NO_SCOPE_LINE)
 
 
 def incomplete_line(names):
@@ -238,6 +260,22 @@ def incomplete_line(names):
                 % (names[0], names[0]))
     return ('%d specs name no files, so their tests run every time: %s. Run '
             'purlin:spec with each name to add its > Scope: line.'
+            % (len(names), ', '.join(names)))
+
+
+def unfound_line(names):
+    """The one line for the feature specs whose `> Scope:` finds no file yet.
+
+    The files it names may be written and not yet committed, so the line
+    names both steps.
+    """
+    if len(names) == 1:
+        return ("1 spec's > Scope: finds no file in git yet, so its tests run "
+                'every time: %s. Commit the files it names, or run '
+                'purlin:spec %s to correct it.' % (names[0], names[0]))
+    return ("%d specs' > Scope: lines find no file in git yet, so their tests "
+            'run every time: %s. Commit the files they name, or run '
+            'purlin:spec with each name to correct them.'
             % (len(names), ', '.join(names)))
 
 

@@ -56,8 +56,9 @@ def done(gate):
                 signed='signed' if gate == 'signed' else None)
 
 
-def feature(rules, name='login', incomplete=None):
-    return {'name': name, 'incomplete': incomplete, 'rules': rules}
+def feature(rules, name='login', incomplete=None, broken=()):
+    return {'name': name, 'incomplete': incomplete, 'rules': rules,
+            'broken': list(broken)}
 
 
 def payload(features, gate, tag=None, here=HERE, corrections=0):
@@ -464,3 +465,32 @@ class TestTheTag:
         lines = ending([done('strong')] * 2, 'strong', tag=None)
         assert lines[-1] == 'Nothing left to do.'
         assert not any('tag' in line for line in lines), lines
+
+
+# ---------------------------------------------------------------------------
+# A spec to repair
+# ---------------------------------------------------------------------------
+
+TWICE = ['PROOF-2 is written twice in the spec']
+
+
+class TestASpecToRepair:
+
+    # purlin: summary PROOF-40
+    def test_one_broken_spec_is_the_first_line(self):
+        made = payload([feature([rule(passed='failed')] * 3, broken=TWICE),
+                        feature([rule(passed='failed')], name='export')],
+                       'passed')
+        lines = summary.ending(made).splitlines()
+        assert lines[1:] == ['Left to do:',
+                             '  1 spec to repair: purlin:spec',
+                             '  1 rule to fix: purlin:build'], lines
+
+    # purlin: summary PROOF-41
+    def test_two_broken_specs_read_plural(self):
+        made = payload([feature([rule(passed='failed')] * 2, broken=TWICE),
+                        feature([rule(passed='failed')], name='export',
+                                broken=TWICE)], 'passed')
+        lines = summary.ending(made).splitlines()
+        assert lines[1:] == ['Left to do:',
+                             '  2 specs to repair: purlin:spec'], lines

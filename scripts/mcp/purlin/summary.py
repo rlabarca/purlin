@@ -15,7 +15,8 @@ rule that does not apply counts as reaching every step:
 `Left to do` follows it: one line per kind of work, in the order the work is
 done, each with its count and the command that clears it. A kind at zero is
 left out, and each rule is counted under one kind, the first that applies;
-`test comments to correct` counts comments above tests, not rules:
+`specs to repair` counts specs and `test comments to correct` comments above
+tests, not rules:
 
     Left to do:
       5 rules to audit: purlin:audit
@@ -43,10 +44,13 @@ from purlin import states                                      # noqa: E402
 # The kinds of work left, in the order the work is done and the lines read.
 # Each is `(kind, one, many, command)`: the words after the count for one
 # and for any other count, and the command that clears it. `%s` in the
-# words of `to_test_remote` is the systems it waits for. `to_correct` counts
-# the comments above tests that name something no spec has or a rule that
-# has proofs, and `to_tag` the version; every other kind counts rules.
+# words of `to_test_remote` is the systems it waits for. `to_repair` counts
+# the specs that write a number twice or hold a line left from a merge
+# conflict, `to_correct` the comments above tests that name something no
+# spec has or a rule that has proofs, and `to_tag` the version; every other
+# kind counts rules.
 KINDS = (
+    ('to_repair', 'spec to repair', 'specs to repair', 'purlin:spec'),
     ('no_proof', 'rule to write a proof for', 'rules to write a proof for',
      'purlin:spec'),
     ('to_correct', 'test comment to correct', 'test comments to correct',
@@ -91,7 +95,8 @@ def _words(one, many, count):
     return one if count == 1 else many
 
 
-def rule_kind(rule, gate, here_os, incomplete=None, to_confirm=False):
+def rule_kind(rule, gate, here_os, incomplete=None, to_confirm=False,
+              broken=None):
     """The one kind of work a rule waits for under `gate`, or None.
 
     `rule` is a payload rule entry, read for its `cells`, its `proofs`, its
@@ -99,11 +104,14 @@ def rule_kind(rule, gate, here_os, incomplete=None, to_confirm=False):
     system, `windows`, `macos` or `linux`. `incomplete` is true, or the
     reason, when the spec that owns the rule names no files. `to_confirm` is
     true when the last signature for the rule said it does not apply and no
-    counting signature binds it; that kind comes before any other. A rule
-    signed as not applying waits for nothing. Otherwise the first kind that
-    applies wins, in the order of `KINDS`. Every rule carries every cell up
-    to the gate.
+    counting signature binds it; that kind comes before any other but
+    `to_repair`, which `broken`, the reasons the rule's own spec is broken,
+    gives first. A rule signed as not applying waits for nothing. Otherwise
+    the first kind that applies wins, in the order of `KINDS`. Every rule
+    carries every cell up to the gate.
     """
+    if broken:
+        return 'to_repair'
     if to_confirm:
         return 'to_confirm'
     if rule.get('does_not_apply'):
@@ -246,11 +254,18 @@ def left(features, gate, here_os, tag=None, corrections=0):
     if corrections:
         counts['to_correct'] = corrections
     systems = set()
+    to_repair = set()
     for feature in features or ():
         for rule in feature.get('rules') or ():
             kind = rule_kind(rule, gate, here_os, feature.get('incomplete'),
-                             rule.get('left') == 'to_confirm')
+                             rule.get('left') == 'to_confirm',
+                             feature.get('broken'))
             if kind is None:
+                continue
+            if kind == 'to_repair':
+                # A broken spec is repaired once, whatever its rules count.
+                to_repair.add(feature.get('name'))
+                counts[kind] = len(to_repair)
                 continue
             counts[kind] = counts.get(kind, 0) + 1
             if kind == 'to_test_remote':
@@ -286,6 +301,30 @@ def last_line(left_items, gate, tag=None):
     if gate == 'signed' and tag and tag.get('name'):
         return RELEASE % tag['name']
     return NOTHING_LEFT
+
+
+def ended_lines(payload):
+    """One line per rule whose signature ended, by feature, then rule number.
+
+    Each is the rule's `ended.line`, at every gate: the status prints them as
+    a block of their own, and so does drift's view for QA.
+    """
+    found = []
+    for feature in payload.get('features') or ():
+        for rule in feature.get('rules') or ():
+            line = (rule.get('ended') or {}).get('line')
+            if line:
+                found.append((str(feature.get('name') or ''),
+                              _number(rule.get('id')), line))
+    return [line for _name, _number_of, line in sorted(found)]
+
+
+def _number(rule_id):
+    """The number of `RULE-N`, so `RULE-10` sorts after `RULE-9`."""
+    try:
+        return int(str(rule_id).rsplit('-', 1)[-1])
+    except ValueError:
+        return 0
 
 
 def left_lines(payload, kinds=None):

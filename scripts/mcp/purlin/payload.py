@@ -1,4 +1,4 @@
-"""The structured project payload, schema 11.
+"""The structured project payload, schema 12.
 
 One reader assembles specs, evidence and signatures into the cells of every
 rule, and every surface renders that: the
@@ -7,7 +7,7 @@ that parsed the rendered table would be coupled to a layout; this is the shape
 they all read instead.
 
     {
-      "schema_version": 11,
+      "schema_version": 12,
       "generated_at": "2026-09-13T12:00:00Z",
       "generated_by": "sync_status",
       "project": "purlin",
@@ -25,7 +25,7 @@ they all read instead.
         {"name": "login", "category": "auth", "spec_path": "specs/auth/login.md",
          "is_anchor": false, "source": null, "pinned": null,
          "scope": ["src/auth/"], "incomplete": false,
-         "incomplete_reason": null,
+         "incomplete_reason": null, "broken": [],
          "rollup": {..., "proofs": 6, "proofs_without_test": 1,
                     "proofs_without_test_ids": ["PROOF-4"],
                     "incomplete": false},
@@ -43,7 +43,7 @@ they all read instead.
             "audit_hash": "<sha256>", "code_hash": "<sha256>",
             "machines": {"macos": "jane-laptop"},
             "left": "to_sign", "hand_checked": false,
-            "does_not_apply": null,
+            "does_not_apply": null, "ended": null,
             "audit": {"verdict": "strong", "findings": [], "notes": [],
                       "strength": 86,
                       "model": "<model>", "at": "...", "commit": "<sha>",
@@ -126,6 +126,18 @@ at}` where a counting signature that says the rule does not apply to the
 project binds it, and null otherwise; its `left` is then null, and once
 that signature ends it is `to_confirm`.
 
+A feature carries `broken`, the reasons every rule of its spec reads
+`failed`, as `specs.broken_reasons` gives them: a rule or proof number
+written twice, a line left from a merge conflict; `[]` for a sound spec.
+Each rule of a broken spec has the `left` `to_repair`, and `Left to do`
+counts such specs, not their rules.
+
+A rule carries `ended`, `{signer, causes, line}`, where its newest counting
+signature no longer binds it and no other counting one does, or null:
+`causes` names each field that differs, and `line` is what the status
+prints, `<feature> RULE-N: the signature by <signer> ended because
+<causes>.`
+
 `write_report_data` writes the payload to `.purlin/report-data.js` as
 `const PURLIN_DATA = {...};`, which is gitignored and is what the local
 dashboard page loads.
@@ -152,7 +164,7 @@ from purlin import (PURLIN_VERSION,
                     specs as specs_module, states,
                     summary as summary_module)
 
-SCHEMA_VERSION = 11
+SCHEMA_VERSION = 12
 REPORT_DATA_PATH = os.path.join('.purlin', 'report-data.js')
 _PREFIX = 'const PURLIN_DATA = '
 
@@ -319,11 +331,13 @@ def _feature_entry(project_root, name, info, features, evidence,
     rule_entries = []
     rule_results = {}
     marked = {rule for feature, rule in (tied or ()) if feature == name}
+    broken = spec_broken(info)
     for rule_id in info.get('rule_order') or ():
         result = _rule_entry(
             project_root, name, info, rule_id, own, all_signatures, cfg,
             blob_cache, mutation, counted_cache, could_not_run,
-            incomplete.get(name), marked, code_hashes.get(name), here_os)
+            incomplete.get(name), marked, code_hashes.get(name), here_os,
+            broken)
         rule_entries.append(result)
         summary = {'bucket': result['bucket'], 'flags': result['flags']}
         rule_results[(name, rule_id)] = summary
@@ -344,6 +358,7 @@ def _feature_entry(project_root, name, info, features, evidence,
         'scope': [] if anchor else info.get('scope', []),
         'incomplete': bool(incomplete.get(name)),
         'incomplete_reason': incomplete.get(name),
+        'broken': broken,
         'source': info.get('source'),
         'source_path': info.get('source_path'),
         'pinned': info.get('pinned'),
@@ -358,6 +373,16 @@ def _feature_entry(project_root, name, info, features, evidence,
         'rules': rule_entries,
     }
     return entry, rollup
+
+
+def spec_broken(info):
+    """Why every rule of a spec reads `failed`, `specs.broken_reasons`' answer.
+
+    Where the reader in this checkout gives no such answer the spec is read
+    as sound.
+    """
+    reasons = getattr(specs_module, 'broken_reasons', None)
+    return list(reasons(info)) if reasons else []
 
 
 # ---------------------------------------------------------------------------
@@ -474,7 +499,7 @@ def _evidence_map(evidence):
 def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
                 all_signatures, cfg, blob_cache, mutation=None,
                 counted_cache=None, could_not_run=None, incomplete=None,
-                marked=None, code_hash=None, here_os=None):
+                marked=None, code_hash=None, here_os=None, broken=None):
     text = owner_info['rules'].get(rule_id, '')
     anchor = bool(owner_info.get('is_anchor'))
     test_strength = None if anchor else (mutation or {}).get('score')
@@ -551,6 +576,10 @@ def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
         # The owner's proof and rule ids a marker ties to a test declaration,
         # so a marked test that has not run reads `not run`, not `no test`.
         'marked': marked or set(),
+        # Why the rule's own spec is broken, which fails it before any
+        # signature is read.
+        'spec_broken': list(broken or ()),
+        'test_hash_kind': test_hash_kind,
     }, cfg)
 
     entry = {
@@ -574,12 +603,17 @@ def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
         'hand_checked': result['hand_checked'],
         # A person signed that the rule does not apply to the project.
         'does_not_apply': result['does_not_apply'],
+        # The signature that ended, its signer, its causes and the line the
+        # status prints for it.
+        'ended': ({key: result['ended'][key]
+                   for key in ('signer', 'causes', 'line')}
+                  if result.get('ended') else None),
         'proofs': proof_dicts,
         'tests': _rule_tests(sections, rule_id),
     }
     entry['left'] = summary_module.rule_kind(entry, cfg.gate, here_os,
                                              incomplete,
-                                             result['to_confirm'])
+                                             result['to_confirm'], broken)
     return entry
 
 

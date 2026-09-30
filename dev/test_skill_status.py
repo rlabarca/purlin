@@ -235,7 +235,7 @@ def kind_row_problems():
     rows = []
     for row in closing_outcomes(sections(read(REL))[-1][1]):
         cells = [cell.strip() for cell in row.strip().strip('|').split('|')]
-        named = [re.sub(r'^<n> (rules|test comments) ', '', phrase)
+        named = [re.sub(r'^<n> ((rules|test comments) )?', '', phrase)
                  for phrase in re.findall(r'`([^`]*)`', cells[0])]
         command = re.search(r'%s Run: ([^`]+)`' % ARROW, cells[-1])
         rows.append((named, command.group(1) if command else None))

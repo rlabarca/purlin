@@ -88,7 +88,7 @@ The next step is the first line of `Left to do`. Add no line of your own; a
 
 | The first line after the sentence | Next step |
 |-----------------------------------|-----------|
-| `<n> rules to write a proof for`, or `to tie to their files` | `→ Run: purlin:spec` |
+| `<n> specs to repair`, `<n> rules to write a proof for`, or `to tie to their files` | `→ Run: purlin:spec` |
 | `<n> test comments to correct` | `→ Run: purlin:build` |
 | `<n> rules to fix`, `to write a test for` or `to strengthen` | `→ Run: purlin:build` |
 | `<n> rules to test` | `→ Run: purlin:test` |

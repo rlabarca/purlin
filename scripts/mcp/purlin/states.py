@@ -32,7 +32,9 @@ cell above the gate is absent, not empty.
             the machines its tests ran on. `signed` or `unsigned`, and
             `waiting` where no signature binds the rule and the strong cell
             is not met, other than by a hand check, which a person signs. A
-            signature that no longer binds the rule is read as none. At the
+            signature that no longer binds the rule is read as none, and
+            where it was the newest that counted the cell reads `unsigned`
+            with `ENDED`, naming the signer and each cause. At the
             gate `signed` a rule whose spec names no files in `> Scope:`
             reads `unsigned` whatever was signed, because a signature cannot
             be tied to the code it governs; while it reads `waiting` it
@@ -47,6 +49,10 @@ Every rule is listed once, under the spec that owns it, and an anchor's
 rule is signed once, over the whole project. No code is broken on purpose
 for an anchor, so where its strong cell is met the one reason says the AI
 audit alone judges its tests, at every mutation setting.
+
+Every rule of a spec that writes a rule or proof number twice, or holds a
+line left from a merge conflict, reads `failed` with the reasons
+`spec_broken` names, before any signature is read; the cells above wait.
 
 A rule that a counting signature carrying `does_not_apply` binds reads
 `does not apply` in every cell up to the gate, each met, each with the one
@@ -156,6 +162,23 @@ NO_PROOF_REASON = 'the rule has a test and no proof'
 NAMES_NO_FILES = ('the spec names no files in > Scope:, so a signature cannot '
                   'be tied to the code it governs')
 
+# A signature that ended: the rule's newest counting signature, which no
+# longer binds it while no other counting signature does. The signed cell's
+# one reason, the line the status prints, and each cause, one per field that
+# differs, joined `; `.
+ENDED = 'the signature by %s ended because %s'
+ENDED_LINE = '%s %s: the signature by %s ended because %s.'
+CAUSE_RULE = "the rule's wording changed"
+CAUSE_PROOF = "a proof's wording changed"
+CAUSE_TEST = 'a test file behind it changed: %s'
+CAUSE_CODE = 'a file its spec names changed'
+CAUSE_PROJECT = 'a file of the project changed'
+CAUSE_AUDIT = 'what the audit found changed'
+CAUSE_MACHINE = 'the results on %s now come from %s, not %s'
+CAUSE_GONE = '%s has no results any more'
+# The cause of a test file change for a rule that names no test file now.
+NO_TEST_FILE = 'none'
+
 
 def cells_for(gate):
     """The cells that exist under `gate`, `passed` first."""
@@ -208,6 +231,13 @@ def rule_cells(inp, cfg):
                     gate `signed` the signed cell then reads `unsigned` with
                     `NAMES_NO_FILES`, because a signature cannot be tied to
                     the code it governs, unless it reads `waiting`
+    `spec_broken`   why every rule of the rule's own spec reads `failed`, as
+                    `specs.broken_reasons` gives it: a number written twice,
+                    a line left from a merge conflict; [] for a sound spec
+    `test_hash_kind` what the rule's test hash is taken from now
+
+    The result also carries `ended`: `{signer, causes, reason, line}` for
+    the signature that ended, or None.
     """
     gate = cfg.gate if cfg and cfg.gate in CELLS else CELLS[0]
     proofs = inp.get('proofs') or []
@@ -215,6 +245,9 @@ def rule_cells(inp, cfg):
     signatures = list(inp.get('signatures') or ())
     current = [sig for sig in signatures if _binds(sig, inp)]
     counting = [sig for sig in current if sig.get('counts')]
+    ended = _ended(inp, signatures, counting)
+    if inp.get('spec_broken'):
+        return _broken(inp, cfg, gate, ended)
     newest = _newest(counting)
     if newest is not None and newest.get('does_not_apply'):
         return _does_not_apply(inp, cfg, gate, newest)
@@ -230,6 +263,11 @@ def rule_cells(inp, cfg):
         # not cleared has nothing to sign yet. A hand check is signed by a
         # person, so it waits on a person and not on the audit.
         signed = dict(signed, word=WAITING, reasons=[WAITING_FOR_AUDIT])
+    if ended is not None and not current and signed['word'] == 'unsigned':
+        # A signature that ended says why. While the cell waits for the
+        # audit it keeps saying so; a newer signature that binds and does
+        # not count gives its own reason.
+        signed = dict(signed, reasons=[ended['reason']])
     if (inp.get('incomplete') and gate == CELLS[-1]
             and signed['word'] != WAITING):
         # The override stands once the strong cell is met, or a person
@@ -262,7 +300,101 @@ def rule_cells(inp, cfg):
         # binds: a person confirms it again.
         'to_confirm': bool(last is not None and last.get('does_not_apply')
                            and not counting),
+        'ended': ended,
     }
+
+
+def _broken(inp, cfg, gate, ended):
+    """The cells of a rule whose own spec writes a number twice or holds a
+    line left from a merge conflict.
+
+    No signature is read: the passed cell reads `failed` with the reasons
+    `spec_broken` gives, the cells above it wait as for any failed rule, and
+    the rule is counted `failing`. The tests still run, so the source is the
+    one the evidence gives.
+    """
+    passed = dict(_passed_cell(inp, cfg), word='failed', current=True,
+                  counts=True, reasons=list(inp.get('spec_broken')))
+    strong = _strong_cell(inp, cfg, passed, [])
+    signed = dict(_signed_cell([], []), word=WAITING,
+                  reasons=[WAITING_FOR_AUDIT])
+    made = {'passed': passed, 'strong': strong, 'signed': signed}
+    return {
+        'cells': {name: made[name] for name in cells_for(gate)},
+        'bucket': 'failing',
+        'hand_checked': False,
+        'flags': {'failing': True, 'partial': False, 'out_of_date': False,
+                  'manual': False, 'not_audited': False,
+                  'no_proof': not inp.get('proofs')},
+        'does_not_apply': None,
+        'to_confirm': False,
+        'ended': ended,
+    }
+
+
+def _ended(inp, signatures, counting):
+    """`{signer, causes, reason, line}` for the signature that ended, or None.
+
+    A signature ended when it is the rule's newest counting signature by its
+    `timestamp`, it no longer binds, no counting signature binds the rule,
+    and it carries no `does_not_apply`, which is `to_confirm`'s. One cause
+    per field that differs from the rule's own, in the order a signature is
+    made over them; a hand check compares the wording alone.
+    """
+    if counting:
+        return None
+    newest = None
+    for signature in signatures or ():
+        if not signature.get('counts'):
+            continue
+        if newest is None or str(signature.get('timestamp') or '') > str(
+                newest.get('timestamp') or ''):
+            newest = signature
+    if (newest is None or newest.get('does_not_apply')
+            or _binds(newest, inp)):
+        return None
+    causes = _causes(newest, inp)
+    if not causes:
+        return None
+    signer = newest.get('signer')
+    joined = '; '.join(causes)
+    return {'signer': signer, 'causes': causes,
+            'reason': ENDED % (signer, joined),
+            'line': ENDED_LINE % (inp.get('feature'), inp.get('rule_id'),
+                                  signer, joined)}
+
+
+def _causes(signature, inp):
+    """Why a signature no longer binds the rule, one cause per field that differs."""
+    def differs(key):
+        return str(signature.get(key) or '') != str(inp.get(key) or '')
+
+    causes = []
+    if differs('rule_hash'):
+        causes.append(CAUSE_RULE)
+    if differs('proof_hash'):
+        causes.append(CAUSE_PROOF)
+    if (inp.get('test_hash_kind') or signature.get('test_hash_kind')) == 'manual':
+        # A hand check is bound to the wording of its rule and proofs alone.
+        return causes
+    if differs('test_hash'):
+        files = sorted({test.get('file') for proof in inp.get('proofs') or ()
+                        for test in proof.get('tests') or ()
+                        if isinstance(test, dict) and test.get('file')})
+        causes.append(CAUSE_TEST % (', '.join(files) or NO_TEST_FILE))
+    if differs('code_hash'):
+        causes.append(CAUSE_PROJECT if inp.get('anchor') else CAUSE_CODE)
+    if differs('audit_hash'):
+        causes.append(CAUSE_AUDIT)
+    signed_on = signature.get('machines') or {}
+    now = inp.get('machines') or {}
+    for name in sorted(signed_on):
+        if name not in now:
+            causes.append(CAUSE_GONE % system_word(name))
+        elif now[name] != signed_on[name]:
+            causes.append(CAUSE_MACHINE % (system_word(name), now[name],
+                                           signed_on[name]))
+    return causes
 
 
 def _newest(signatures):
@@ -301,6 +433,7 @@ def _does_not_apply(inp, cfg, gate, signature):
         'does_not_apply': {'why': why, 'signer': signature.get('signer'),
                            'at': _signature_at(signature)},
         'to_confirm': False,
+        'ended': None,
     }
 
 
@@ -770,7 +903,7 @@ def _signed_cell(current, counting):
     those files alone and reads `signed` or `unsigned`, and names the
     signer, their name, the key's fingerprint and when. A signature that no
     longer binds the rule is read as none: the rule is back to `unsigned`,
-    and nothing says why.
+    and `rule_cells` gives the reason where that signature ended.
     """
     cell = {'word': 'unsigned', 'signer': None, 'signer_name': None,
             'key_fingerprint': None, 'at': None, 'path': None, 'reasons': []}

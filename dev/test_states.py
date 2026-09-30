@@ -786,7 +786,7 @@ class TestTheAuditOnTheRule:
             made.close()
 
     # purlin: states PROOF-72
-    def test_a_new_strength_ends_the_signature_and_says_nothing(self):
+    def test_a_new_strength_ends_the_signature_and_says_why(self):
         made = Project(gate='signed')
         try:
             made.sign_commits()
@@ -799,7 +799,8 @@ class TestTheAuditOnTheRule:
             assert rule['cells']['strong']['word'] == 'strong', rule
             cell = rule['cells']['signed']
             assert (cell['word'], cell['signer'], cell['reasons']) == (
-                'unsigned', None, []), cell
+                'unsigned', None, ['the signature by jane@acme.com ended '
+                                   'because what the audit found changed']), cell
             assert rule['left'] == 'to_sign', rule['left']
         finally:
             made.close()
@@ -1371,9 +1372,9 @@ class TestEveryRuleIsAskedWhatTheGateAsks:
 class TestPayload:
 
     # purlin: states PROOF-31
-    def test_schema_eleven_carries_the_documented_top_level(self, project):
+    def test_schema_twelve_carries_the_documented_top_level(self, project):
         data = project.payload()
-        assert data["schema_version"] == 11
+        assert data["schema_version"] == 12
         # Those keys and `schema_version`, and no other.
         assert sorted(data) == sorted((
             'schema_version', 'generated_at', 'generated_by', 'project',
@@ -2988,3 +2989,222 @@ class TestAnchors:
                     in purlin_summary.left_lines(data)), data['left']
         finally:
             made.close()
+
+
+# ---------------------------------------------------------------------------
+# A spec that writes a number twice or holds a line left from a merge conflict
+# ---------------------------------------------------------------------------
+
+# `login` writing `PROOF-2` twice, and the line git leaves at a conflict.
+PROOF_TWICE_SPEC = SPEC + (
+    '- PROOF-2 (RULE-2): POST /login with a bad password; verify 401 and the '
+    'body "denied"\n')
+CONFLICT_SPEC = SPEC.replace('## Proof\n', '>>>>>>> main\n\n## Proof\n')
+EXPORT_SPEC = SPEC.replace('login', 'export')
+
+
+def _broken_project(spec, gate='passed'):
+    """`login` holding `spec`, whose two rules' tests pass, still open."""
+    made = Project(spec=spec, gate=gate)
+    made.evidence(PASSING)
+    return made
+
+
+class TestABrokenSpecFails:
+
+    # purlin: states PROOF-248
+    def test_a_proof_written_twice_fails_every_rule_of_its_spec(self):
+        made = _broken_project(PROOF_TWICE_SPEC)
+        try:
+            data = made.payload()
+        finally:
+            made.close()
+        for rule_id in ('RULE-1', 'RULE-2'):
+            cell = _listed(data, rule_id)['cells']['passed']
+            assert (cell['word'], cell['reasons']) == (
+                'failed', ['PROOF-2 is written twice in the spec']), (
+                    rule_id, cell)
+
+    # purlin: states PROOF-249
+    def test_a_line_left_from_a_conflict_fails_the_spec(self):
+        made = _broken_project(CONFLICT_SPEC)
+        try:
+            cell = made.cell('RULE-1', 'passed')
+        finally:
+            made.close()
+        assert (cell['word'], cell['reasons']) == (
+            'failed', ['the spec holds a line left from a merge conflict']), (
+                cell)
+
+    # purlin: states PROOF-250
+    def test_a_sound_spec_beside_a_broken_one_passes(self):
+        made = _broken_project(PROOF_TWICE_SPEC)
+        try:
+            made.spec(EXPORT_SPEC, name='export')
+            made.evidence([_entry('PROOF-1', 'RULE-1', feature='export'),
+                           _entry('PROOF-2', 'RULE-2', feature='export')],
+                          feature='export')
+            data = made.payload()
+        finally:
+            made.close()
+        for rule_id in ('RULE-1', 'RULE-2'):
+            cell = _listed(data, rule_id, 'export')['cells']['passed']
+            assert cell['word'] == 'passed', (rule_id, cell)
+
+    # purlin: states PROOF-251
+    def test_a_signed_rule_of_a_broken_spec_fails_and_is_not_signed(self):
+        made = Project(gate='signed')
+        try:
+            made.sign_commits()
+            made.evidence(PASSING, ci=True)
+            made.audit('RULE-1')
+            made.signature('RULE-1')
+            assert made.cell('RULE-1', 'signed')['word'] == 'signed'
+            made.spec(PROOF_TWICE_SPEC)
+            made.evidence(PASSING, ci=True)
+            rule = made.rule('RULE-1')
+        finally:
+            made.close()
+        assert rule['cells']['passed']['word'] == 'failed', rule['cells']
+        assert not purlin_states.cell_is_met('signed',
+                                             rule['cells']['signed']), rule
+
+
+# ---------------------------------------------------------------------------
+# A signature that ended says why
+# ---------------------------------------------------------------------------
+
+def _signed_then(change):
+    """At `signed`, `RULE-1` signed over passing, audited tests; `change`
+    edits the project, then the tests run and the audit reads it again.
+
+    The payload's `RULE-1` entry, and the status report."""
+    made = Project(gate='signed')
+    try:
+        made.sign_commits()
+        _commit_tests(made, 'PROOF-1', 'PROOF-2')
+        made.evidence(PASSING, ci=True)
+        made.audit('RULE-1')
+        made.signature('RULE-1')
+        assert made.cell('RULE-1', 'signed')['word'] == 'signed'
+        change(made)
+        _git(made.root, 'add', '-A')
+        _git(made.root, 'commit', '-q', '-m', 'chore: change')
+        made.evidence(PASSING, ci=True)
+        made.audit('RULE-1')
+        return made.rule('RULE-1'), purlin_status.sync_status(made.root)
+    finally:
+        made.close()
+
+
+def _edit_the_tests(made):
+    _write(os.path.join(made.root, 'tests', 'test_login.py'),
+           _marked_tests('PROOF-1', 'PROOF-2') + '# another test\n')
+
+
+def _edit_the_rule(made):
+    made.spec(SPEC.replace('return 200 with a session token',
+                           'return 200 and a session token'))
+
+
+class TestAnEndedSignatureSaysWhy:
+
+    # purlin: states PROOF-252
+    def test_a_test_file_edit_names_the_file(self):
+        cell = _signed_then(_edit_the_tests)[0]['cells']['signed']
+        assert (cell['word'], cell['reasons']) == ('unsigned', [
+            'the signature by jane@acme.com ended because a test file '
+            'behind it changed: tests/test_login.py']), cell
+
+    # purlin: states PROOF-253
+    def test_a_rule_edit_names_the_wording(self):
+        cell = _signed_then(_edit_the_rule)[0]['cells']['signed']
+        assert (cell['word'], cell['reasons']) == ('unsigned', [
+            "the signature by jane@acme.com ended because the rule's "
+            'wording changed']), cell
+
+    # purlin: states PROOF-254
+    def test_results_from_another_machine_name_both(self):
+        cfg = purlin_gate.resolve_gate({'gate': 'signed'})
+        inp = dict(STRONG_INPUT, applies_to='login', rule_hash='r' * 64,
+                   proof_hash='p' * 64, test_hash='t' * 64,
+                   code_hash='c' * 64, audit_hash='a' * 64, audit=_audit(),
+                   machines={'macos': 'quinn-laptop'}, feature='login',
+                   rule_id='RULE-1')
+        signed_over = dict(inp, machines={'macos': 'jane-laptop'})
+        cell = purlin_states.rule_cells(
+            dict(inp, signatures=[_bound(signed_over)]), cfg)['cells'][
+                'signed']
+        assert (cell['word'], cell['reasons']) == ('unsigned', [
+            'the signature by jane@acme.com ended because the results on '
+            'macOS now come from quinn-laptop, not jane-laptop']), cell
+
+    # purlin: states PROOF-255
+    def test_the_status_prints_one_line_for_it(self):
+        lines = _signed_then(_edit_the_rule)[1].splitlines()
+        assert ("login RULE-1: the signature by jane@acme.com ended because "
+                "the rule's wording changed.") in lines, lines
+
+    # purlin: states PROOF-256
+    def test_a_newer_signature_that_binds_prints_no_line(self):
+        def resign(made):
+            _edit_the_rule(made)
+            _git(made.root, 'add', '-A')
+            _git(made.root, 'commit', '-q', '-m', 'spec(login): reword')
+            made.evidence(PASSING, ci=True)
+            made.audit('RULE-1')
+            made.signature('RULE-1', timestamp='2026-09-14T12:00:00Z')
+
+        rule, text = _signed_then(resign)
+        assert rule['cells']['signed']['word'] == 'signed', rule['cells']
+        assert 'ended because' not in text, text
+
+
+# ---------------------------------------------------------------------------
+# A spec whose > Scope: finds no file yet
+# ---------------------------------------------------------------------------
+
+AGE_SPEC = SPEC.replace('login', 'sample_age').replace(
+    '> Scope: src/login.py', '> Scope: src/age.py')
+
+
+class TestAScopeThatFindsNoFileYet:
+
+    # purlin: states PROOF-257
+    def test_one_spec_is_named_with_its_cause(self):
+        made = Project(spec=None)
+        try:
+            made.spec(AGE_SPEC, name='sample_age')
+            lines = purlin_status.sync_status(made.root).splitlines()
+        finally:
+            made.close()
+        assert ("1 spec's > Scope: finds no file in git yet, so its tests "
+                'run every time: sample_age. Commit the files it names, or '
+                'run purlin:spec sample_age to correct it.') in lines, lines
+
+    # purlin: states PROOF-258
+    def test_two_specs_read_plural(self):
+        made = Project(spec=None)
+        try:
+            made.spec(AGE_SPEC, name='sample_age')
+            made.spec(AGE_SPEC.replace('sample_age', 'stability').replace(
+                'src/age.py', 'src/stability.py'), name='stability')
+            lines = purlin_status.sync_status(made.root).splitlines()
+        finally:
+            made.close()
+        assert ("2 specs' > Scope: lines find no file in git yet, so their "
+                'tests run every time: sample_age, stability. Commit the '
+                'files they name, or run purlin:spec with each name to '
+                'correct them.') in lines, lines
+
+    # purlin: states PROOF-259
+    def test_a_spec_with_no_scope_line_keeps_its_own_line(self):
+        made = Project(spec=NO_SCOPE_SPEC)
+        try:
+            made.spec(AGE_SPEC, name='sample_age')
+            lines = purlin_status.sync_status(made.root).splitlines()
+        finally:
+            made.close()
+        assert ('1 spec names no files, so its tests run every time: '
+                'login. Run purlin:spec login to add its > Scope: line.'
+                ) in lines, lines
