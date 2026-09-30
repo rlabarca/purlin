@@ -1,8 +1,7 @@
 {
   "version": "0.10.0",
-  "gate": "strong",
+  "gate": "passed",
   "mutation_engine": "auto",
-  "min_strength": 70,
   "audit_parallel": 4,
   "tests": [
     {

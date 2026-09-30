@@ -15,6 +15,7 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp'))
 import config_engine
+from purlin import gate as gate_module
 from config_engine import (PROJECT_ROOT_SOURCES, ConfigUnreadable,
                            config_problem, find_project_root,
                            resolve_config, resolve_project_root,
@@ -218,9 +219,9 @@ class TestWriting:
     # purlin: config_engine PROOF-12
     def test_the_written_value_is_what_the_settings_read(self, project):
         _write(project, {"gate": "passed", "version": "0.9.0"})
-        update_config(project, "gate", "strong")
+        update_config(project, "gate", "signed")
         assert resolve_config(project) == {
-            "gate": "strong", "version": "0.9.0"}
+            "gate": "signed", "version": "0.9.0"}
 
     # purlin: config_engine PROOF-9
     def test_adding_a_key_keeps_every_other_key_as_it_was(self, project):
@@ -381,8 +382,47 @@ class TestASettingsFileThatCannotBeRead:
         before = _read_bytes(project)
         message, _line = _readers_message(TRAILING_COMMA)
         with pytest.raises(ConfigUnreadable) as refused:
-            update_config(project, 'gate', 'strong')
+            update_config(project, 'gate', 'signed')
         assert str(refused.value) == _cannot_be_read(
             '%s at line 2' % message)
         assert _read_bytes(project) == before
         assert _purlin_files(project) == ['config.json']
+
+
+def _gate_read(project, settings):
+    """The settings file as the gate reads it, from the file on disk."""
+    _write(project, settings)
+    return gate_module.resolve_gate(resolve_config(project))
+
+
+class TestTheGate:
+
+    # purlin: config_engine PROOF-41
+    def test_a_gate_of_strong_reads_as_passed_with_one_warning(self, project):
+        read = _gate_read(project, {"gate": "strong"})
+        assert read.gate == 'passed'
+        assert read.warnings == [
+            '"strong" is no longer a gate: it reads as passed, and the audit '
+            'stays a tool you run. Run purlin:init --update.']
+
+    # purlin: config_engine PROOF-42
+    def test_the_breaks_are_on_at_the_gate_passed(self, project):
+        read = _gate_read(project, {"gate": "passed",
+                                    "mutation_engine": "auto"})
+        assert read.gate == 'passed'
+        assert read.breaks is True
+
+    # purlin: config_engine PROOF-43
+    def test_the_breaks_are_on_at_the_gate_signed(self, project):
+        read = _gate_read(project, {"gate": "signed",
+                                    "mutation_engine": "mutmut"})
+        assert read.gate == 'signed'
+        assert read.breaks is True
+
+    # purlin: config_engine PROOF-44
+    def test_min_strength_is_named_as_a_key_not_read(self, project):
+        read = _gate_read(project, {"gate": "signed", "min_strength": 80})
+        assert read.gate == 'signed'
+        assert read.warnings == [
+            '.purlin/config.json still carries min_strength, which this '
+            'release does not read. Run purlin:init --update.']

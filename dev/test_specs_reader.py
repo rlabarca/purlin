@@ -384,18 +384,14 @@ class TestFrameworks:
 
 class TestGate:
 
-    def test_each_gate_derives_its_own_defaults(self):
-        for gate, strength, breaks in (
-                ('passed', None, False),
-                ('strong', 70, True),
-                ('signed', 80, True)):
+    def test_a_named_engine_runs_the_breaks_at_either_gate(self):
+        for gate in ('passed', 'signed'):
             cfg = purlin_gate.resolve_gate({'gate': gate,
                                             'mutation_engine': 'auto'})
-            assert (cfg.gate, cfg.min_strength, cfg.breaks) == (
-                gate, strength, breaks)
+            assert (cfg.gate, cfg.breaks) == (gate, True)
 
     def test_a_config_that_names_no_engine_runs_no_breaks(self):
-        for gate in ('passed', 'strong', 'signed'):
+        for gate in ('passed', 'signed'):
             cfg = purlin_gate.resolve_gate({'gate': gate})
             assert cfg.mutation_engine == 'none', gate
             assert cfg.breaks is False, gate
@@ -403,21 +399,7 @@ class TestGate:
     def test_the_settings_written_out_are_the_ones_a_project_can_name(self):
         written = purlin_gate.resolve_gate({'gate': 'signed'}).as_dict()
         assert sorted(written) == [
-            'audit_parallel', 'ci', 'gate', 'min_strength', 'mutation_engine']
-
-    def test_a_named_key_overrides_the_derived_default(self):
-        cfg = purlin_gate.resolve_gate({'gate': 'strong', 'min_strength': 95})
-        assert cfg.min_strength == 95
-
-    def test_an_empty_minimum_is_read_as_none_and_warns_of_nothing(self):
-        cfg = purlin_gate.resolve_gate({'gate': 'strong', 'min_strength': None})
-        assert cfg.min_strength is None
-        assert cfg.warnings == []
-        named = purlin_gate.resolve_gate({'gate': 'strong',
-                                          'min_strength': 'high'})
-        assert named.min_strength == 70
-        assert any('"min_strength" is not a number' in line
-                   for line in named.warnings)
+            'audit_parallel', 'ci', 'gate', 'mutation_engine']
 
     def test_an_unreadable_gate_falls_back_loudly(self):
         cfg = purlin_gate.resolve_gate({'gate': 'stronng'})

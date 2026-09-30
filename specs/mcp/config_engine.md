@@ -3,11 +3,11 @@
 > Description: One settings file, `.purlin/config.json`, committed with the
 >   project. The resolver reads it whole and the settings tool writes one key
 >   into it. The same module decides where the project root is and names how
->   it found it.
-> Scope: scripts/mcp/config_engine.py
+>   it found it. The gate and the settings beside it are read from that file.
+> Scope: scripts/mcp/config_engine.py, scripts/mcp/purlin/gate.py
 > Stack: python/stdlib, json
-> Highest-Rule: 15
-> Highest-Proof: 40
+> Highest-Rule: 18
+> Highest-Proof: 44
 
 ## Rules
 
@@ -22,6 +22,9 @@
 - RULE-13: The project root comes with the name of how it was found, `env`, `climb` or `cwd`, by the precedence RULE-1 to RULE-3 describe, each name with the sentence a report prints for it, so a root that is only the working directory is named as that guess and not handed back as if a marker were found. Asked for alone, without the name, the root is the same answer
 - RULE-14: A `.purlin/config.json` that cannot be read is named by the sentence `.purlin/config.json cannot be read: <cause>. Fix the file by hand; nothing ran and nothing was saved.`, the cause being `it is not UTF-8 text`, the JSON reader's own message followed by `at line <n>`, `it holds a <list | string | number> where an object belongs`, or the system's own message for an open that failed
 - RULE-15: A write while `.purlin/config.json` cannot be read is refused with that sentence, and the file is left byte for byte as it was
+- RULE-16: A `gate` of `strong` in `.purlin/config.json` reads as `passed`, with the one warning `"strong" is no longer a gate: it reads as passed, and the audit stays a tool you run. Run purlin:init --update.`
+- RULE-17: The breaks of mutation testing are on wherever `mutation_engine` names anything but `none`, at either gate
+- RULE-18: A `min_strength` key in `.purlin/config.json` is named in the one warning for the keys this release does not read, `.purlin/config.json still carries <keys>, which this release does not read. Run purlin:init --update.`
 
 ## Proof
 
@@ -37,7 +40,7 @@
 - PROOF-7 (RULE-7): With `.purlin/` holding no settings file, the config reads as exactly `{}`
 - PROOF-8 (RULE-8): With the settings file holding `{"team": "v1"}`, setting `user_pref` to `dark` leaves it holding exactly `{"team": "v1", "user_pref": "dark"}`, and `.purlin/` holds no other file
 - PROOF-24 (RULE-8): With `.purlin/` holding no settings file, setting `new` to true creates `.purlin/config.json` holding exactly `{"new": true}`
-- PROOF-12 (RULE-8): With the settings file holding `{"gate": "passed", "version": "0.9.0"}`, setting `gate` to `strong` makes the config read as exactly `{"gate": "strong", "version": "0.9.0"}`
+- PROOF-12 (RULE-8): With the settings file holding `{"gate": "passed", "version": "0.9.0"}`, setting `gate` to `signed` makes the config read as exactly `{"gate": "signed", "version": "0.9.0"}`
 - PROOF-38 (RULE-8): On Windows, with the settings file holding `{"team": "v1"}`, setting `user_pref` to `dark` leaves it holding exactly `{"team": "v1", "user_pref": "dark"}`, its lines ending with no carriage return, and `.purlin/` holds no other file @env(windows)
 - PROOF-9 (RULE-9): With the settings file holding `{"existing": "keep", "nested": {"list": [1, 2]}}`, setting `added` to `new` leaves it holding exactly `{"existing": "keep", "nested": {"list": [1, 2]}, "added": "new"}`
 - PROOF-25 (RULE-9): With the settings file holding `{"existing": "keep", "shade": "old"}`, setting `shade` to `new` leaves it holding exactly `{"existing": "keep", "shade": "new"}`
@@ -54,4 +57,8 @@
 - PROOF-32 (RULE-14): With the settings file holding `{` on one line and `  "gate": "passed",}` on the next, the settings are named as `.purlin/config.json cannot be read: <the JSON reader's message> at line 2. Fix the file by hand; nothing ran and nothing was saved.`
 - PROOF-33 (RULE-14): With the settings file holding `{"gate": "` then the byte 0xFF then `"}`, which is not UTF-8, the settings are named as `.purlin/config.json cannot be read: it is not UTF-8 text. Fix the file by hand; nothing ran and nothing was saved.`
 - PROOF-34 (RULE-14): With the settings file holding `["gate", "passed"]`, a list, the settings are named as `.purlin/config.json cannot be read: it holds a list where an object belongs. Fix the file by hand; nothing ran and nothing was saved.`
-- PROOF-35 (RULE-15): With the settings file holding `{` on one line and `  "gate": "passed",}` on the next, a write of `gate` as `strong` stops with the sentence naming that file as unreadable at line 2, the file is byte for byte as it was, and `.purlin/` holds only `config.json`
+- PROOF-35 (RULE-15): With the settings file holding `{` on one line and `  "gate": "passed",}` on the next, a write of `gate` as `signed` stops with the sentence naming that file as unreadable at line 2, the file is byte for byte as it was, and `.purlin/` holds only `config.json`
+- PROOF-41 (RULE-16): A settings file holding `{"gate": "strong"}` is read at the gate `passed`, with exactly the one warning `"strong" is no longer a gate: it reads as passed, and the audit stays a tool you run. Run purlin:init --update.`
+- PROOF-42 (RULE-17): A settings file holding `{"gate": "passed", "mutation_engine": "auto"}` is read with the breaks on
+- PROOF-43 (RULE-17): A settings file holding `{"gate": "signed", "mutation_engine": "mutmut"}` is read with the breaks on
+- PROOF-44 (RULE-18): A settings file holding `{"gate": "signed", "min_strength": 80}` is read at the gate `signed`, with exactly the one warning `.purlin/config.json still carries min_strength, which this release does not read. Run purlin:init --update.`

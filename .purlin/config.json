@@ -2,7 +2,6 @@
   "version": "0.10.0",
   "gate": "signed",
   "mutation_engine": "auto",
-  "min_strength": 80,
   "audit_parallel": 4,
   "tests": [
     {

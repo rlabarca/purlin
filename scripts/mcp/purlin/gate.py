@@ -1,41 +1,35 @@
 """The one project setting, and what it derives.
 
 A project sets `gate` in `.purlin/config.json` and nothing else has to be
-decided. The gate names the deepest step every rule has to reach before a
-version is finished, and no step above it is asked for at all:
+decided. The gate says what a release asks for:
 
-`passed`  every rule's passed cell is met: the marked tests pass, from any
-          source
-`strong`  every rule's strong cell is met too: the AI audit read the
-          rule's current text, proof and test and found nothing, and where
-          mutation testing is on, the test strength reaches the minimum
-`signed`  every rule has a counting signature too: a person signed the
-          rule, its proof, its test, its feature's code, what the audit
-          found and the machines the tests ran on, in a signed commit. Who
-          signed is logged, not policed
+`passed`  every rule's tests pass on the evidence committed at the release
+          commit
+`signed`  the same, and at least one person signs the evidence package.
+          Who signed is logged, not policed
 
 Every rule is asked what the gate asks.
 
 Everything else has a default, and every default can be overridden by naming
 the key:
 
-    {"gate": "strong", "min_strength": 70, "mutation_engine": "none",
-     "audit_parallel": 4, "ci": "github"}
+    {"gate": "signed", "mutation_engine": "none", "audit_parallel": 4,
+     "ci": "github"}
 
 The test suites, under `tests`, are read where the tests run, by
 `markers.read_suites`, and are not part of the gate.
 
-Mutation testing is optional. `mutation_engine` set to `none` turns it off:
-no breaks run and `min_strength` is not applied, so the AI audit alone
-decides the strong cell. `auto` or an engine's name turns it on, and a key
-that is absent reads as `none`, since mutation testing is off until a
-project turns it on. Under the gate `passed` nothing compares a
-strength, so no breaks run there either.
+The AI audit and mutation testing are tools a person runs with
+`purlin:audit`, at either gate, and nothing waits on them.
+`mutation_engine` set to `none` turns the breaks off; `auto` or an engine's
+name turns them on, and a key that is absent reads as `none`, since mutation
+testing is off until a project turns it on.
 `audit_parallel` is how many model calls `purlin:audit` makes at once, an
 integer from 1 to 16; any other value is read as 4 with one warning.
 
-The keys v0.9.5 wrote that this release does not read are ignored with one
-warning naming `purlin:init --update`.
+The keys an earlier release wrote that this release does not read are
+ignored with one warning naming `purlin:init --update`, and a `gate` of
+`strong` reads as `passed` with one warning naming the same command.
 """
 
 import json
@@ -46,18 +40,9 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-GATES = ('passed', 'strong', 'signed')
+GATES = ('passed', 'signed')
 DEFAULT_GATE = 'passed'
-
-# gate -> min_strength
-#
-# `min_strength` is None under `passed`: nothing compares test strength there,
-# so there is no number to compare and the audit states no minimum.
-_DERIVED = {
-    'passed': None,
-    'strong': 70,
-    'signed': 80,
-}
+RETIRED_KEYS = ('spec_dir', 'audit_criteria', 'pre_push', 'min_strength')
 
 # What an absent `mutation_engine` reads as: mutation testing is off until a
 # project turns it on.
@@ -70,23 +55,22 @@ AUDIT_PARALLEL_RANGE = (1, 16)
 # The lines a value the settings file holds and this release does not accept
 # prints beside the status table. The value is written as JSON writes it.
 NOT_A_GATE = ('%s is not accepted for gate in .purlin/config.json; it takes '
-              'passed, strong or signed. Reading it as passed; set it with '
+              'passed or signed. Reading it as passed; set it with '
               'purlin:init --gate <gate>.')
+STRONG_RETIRED = ('"strong" is no longer a gate: it reads as passed, and the '
+                  'audit stays a tool you run. Run purlin:init --update.')
 NOT_A_PARALLEL = ('%s is not accepted for audit_parallel in '
                   '.purlin/config.json; it takes a whole number from %d to '
                   '%d. Reading it as %d; fix the file by hand.')
-
-RETIRED_KEYS = (
-    'spec_dir', 'audit_criteria',
-    'pre_push',
-)
+RETIRED_LINE = ('.purlin/config.json still carries %s, which this release '
+                'does not read. Run purlin:init --update.')
 
 
 class GateConfig(object):
     """The resolved settings one run reads, plus the warnings resolving raised."""
 
-    __slots__ = ('gate', 'min_strength', 'breaks',
-                 'mutation_engine', 'audit_parallel', 'ci', 'warnings')
+    __slots__ = ('gate', 'breaks', 'mutation_engine', 'audit_parallel', 'ci',
+                 'warnings')
 
     # What a surface reads is the settings a project can name. `breaks` is
     # derived from `mutation_engine` and `warnings` from resolving, so
@@ -116,44 +100,27 @@ def resolve_gate(config):
 
     gate = config.get('gate', DEFAULT_GATE)
     if gate not in GATES:
-        if 'gate' in config:
+        if gate == 'strong':
+            warnings.append(STRONG_RETIRED)
+        elif 'gate' in config:
             warnings.append(NOT_A_GATE % json.dumps(gate))
         gate = DEFAULT_GATE
-
-    min_strength = _DERIVED[gate]
-
-    if config.get('min_strength') is None and 'min_strength' in config:
-        # Written as null where mutation testing is off: no mark applies.
-        min_strength = None
-    elif 'min_strength' in config:
-        try:
-            min_strength = int(config['min_strength'])
-        except (TypeError, ValueError):
-            warnings.append(
-                '"min_strength" is not a number; no minimum applies'
-                if min_strength is None else
-                '"min_strength" is not a number; using %s' % min_strength)
 
     mutation_engine = config.get('mutation_engine') or DEFAULT_MUTATION_ENGINE
     audit_parallel = _audit_parallel(config, warnings)
 
     retired = sorted(key for key in RETIRED_KEYS if key in config)
     if retired:
-        warnings.append(
-            '.purlin/config.json still carries %s, which this release does not '
-            'read. Run purlin:init --update.' % ', '.join(retired))
+        warnings.append(RETIRED_LINE % ', '.join(retired))
 
-    resolved = GateConfig(
+    return GateConfig(
         gate=gate,
-        min_strength=min_strength,
-        breaks=(gate != 'passed'
-                and str(mutation_engine).strip().lower() != 'none'),
+        breaks=str(mutation_engine).strip().lower() != 'none',
         mutation_engine=mutation_engine,
         audit_parallel=audit_parallel,
         ci=config.get('ci'),
         warnings=warnings,
     )
-    return resolved
 
 
 def _audit_parallel(config, warnings):

@@ -28,6 +28,7 @@ from config_engine import (PROJECT_ROOT_SOURCES, config_problem,
 from purlin import PURLIN_VERSION
 from purlin import console as console_module
 from purlin import drift as drift_module
+from purlin import gate as gate_module
 from purlin import status as status_module
 
 SERVER_INFO = {"name": "purlin", "version": PURLIN_VERSION}
@@ -114,16 +115,15 @@ NO_VALUE = 'A change needs a value; nothing was saved.'
 NOT_ACCEPTED = '"%s" is not accepted for %s; it takes %s. Nothing was saved.'
 VERSION_NOT_WRITTEN = ("version is written by purlin:init from Purlin's own "
                        "version; nothing was saved.")
+RETIRED_NOT_WRITTEN = '%s is not read by this release; nothing was saved.'
 
 
 def _one_of(*words):
     return lambda value: isinstance(value, str) and value in words
 
 
-def _whole_number(low, high, null=False):
+def _whole_number(low, high):
     def accepts(value):
-        if value is None:
-            return null
         return (isinstance(value, int) and not isinstance(value, bool)
                 and low <= value <= high)
     return accepts
@@ -132,13 +132,10 @@ def _whole_number(low, high, null=False):
 # Each setting Purlin reads, with what it accepts and the words a refusal
 # names it by. A key not listed here is written as given.
 KNOWN_SETTINGS = {
-    'gate': (_one_of('passed', 'strong', 'signed'),
-             'passed, strong or signed'),
+    'gate': (_one_of(*gate_module.GATES), 'passed or signed'),
     'mutation_engine': (_one_of('none', 'auto', 'mutmut', 'stryker',
                                 'stryker_net'),
                         'none, auto, mutmut, stryker or stryker_net'),
-    'min_strength': (_whole_number(0, 100, null=True),
-                     'a whole number from 0 to 100, or null'),
     'audit_parallel': (_whole_number(1, 16), 'a whole number from 1 to 16'),
     'tests': (lambda value: isinstance(value, list), 'a list'),
     'ci': (_one_of('github', 'azure', 'none'), 'github, azure or none'),
@@ -149,6 +146,8 @@ def _write_refusal(key, arguments):
     """Why a write of `key` is refused, in the tool's words, or None."""
     if key == 'version':
         return VERSION_NOT_WRITTEN
+    if key in gate_module.RETIRED_KEYS:
+        return RETIRED_NOT_WRITTEN % key
     if key not in KNOWN_SETTINGS:
         return None
     if 'value' not in arguments:
