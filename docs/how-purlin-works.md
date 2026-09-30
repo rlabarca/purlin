@@ -76,8 +76,9 @@ strength where mutation testing is on. `purlin:audit` writes it into
 feature lists, what the audit found and the machine the tests ran on for each operating system
 belong together. It records the signer's name and email as git holds them, the time and the
 fingerprint of the key, and not the machine it was signed on. `purlin:sign` writes it in a
-signed commit. A change to any of the six ends it, with no message: its cell reads `unsigned`
-and the rule is left to do as `to sign`.
+signed commit. A change to any of the six ends it: the status prints one line naming the rule,
+the signer and why it ended, its cell reads `unsigned`, and the rule is left to do as `to sign`.
+A hand check's signature is made over the rule's and its proofs' wording alone.
 
 | File | Written by | Where it lands |
 |------|-----------|----------------|

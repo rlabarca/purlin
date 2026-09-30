@@ -133,7 +133,8 @@ Nothing left to do.
 ```
 
 Where the first run recognises no test tool, which for pytest means no `conftest.py`, no
-`pytest.ini` and no `[tool.pytest` section in `pyproject.toml`, it prints:
+`pytest.ini`, no `[tool.pytest` section in `pyproject.toml` and no file named `test_*.py` under
+`tests/`, it prints:
 
 <!-- sample: no-tool -->
 ```text
