@@ -6,11 +6,12 @@ gradient, no request to anything outside the file. The second opens
 it in a headless browser over `file://` with a fixture payload beside it, one
 fixture per process, and reads what a person would see.
 
-The fixtures under `dev/fixtures/report/` are payloads at schema 11, one for
+The fixtures under `dev/fixtures/report/` are payloads at schema 12, one for
 each of the three processes: solo at the `passed` gate, team at `strong` with
-strength, one rule the AI audit could not decide and one rule of a pinned
-anchor to confirm as not applying, regulated at `signed` with a signed rule,
-a signature that no longer matches, a rule whose audit found a gap, a rule no
+strength, one rule the AI audit could not decide, one rule of a pinned
+anchor to confirm as not applying and one spec to repair, which writes a
+proof number twice, regulated at `signed` with a signed rule, a signature
+that ended because its test file changed, a rule whose audit found a gap, a rule no
 audit has run on, a rule to test by hand, a rule that passed on one system
 and failed on another, and a rule of a pinned anchor signed as not applying.
 
@@ -88,16 +89,16 @@ def with_invoice_rule_2_unproved(payload):
     """The team payload with invoice `RULE-2`'s one proof taken out.
 
     From `strong` up every rule needs a proof, so the payload gives the rule
-    the kind `no_proof`, the first kind of what is left to do, and its line
-    of what is left moves from `to write a test for` to that kind.
+    the kind `no_proof`, and its line of what is left moves from `to write a
+    test for` to that kind.
     """
     invoice = next(f for f in payload['features'] if f['name'] == 'invoice')
     rule = next(r for r in invoice['rules'] if r['id'] == 'RULE-2')
     assert rule['left'] == 'no_test'
     rule['proofs'] = []
     rule['left'] = 'no_proof'
-    assert payload['left'][0]['kind'] == 'no_test'
-    payload['left'][0] = {'kind': 'no_proof', 'count': 1,
+    at = [item['kind'] for item in payload['left']].index('no_test')
+    payload['left'][at] = {'kind': 'no_proof', 'count': 1,
                           'text': '1 rule to write a proof for',
                           'command': 'purlin:spec'}
     return payload
@@ -913,9 +914,9 @@ def test_the_bands_and_the_anchors_add_up_to_the_rules(browser, tmp_path):
     ends = page.eval_on_selector_all('.group', BAND_ENDS)
     anchored = anchor_rule_count(page, payload)
     page.close()
-    assert payload['summary']['rules'] == 8
+    assert payload['summary']['rules'] == 10
     assert anchored == 2
-    assert sum(end['count'] for end in ends) + anchored == 8, ends
+    assert sum(end['count'] for end in ends) + anchored == 10, ends
 
 
 # purlin: purlin_report PROOF-95
@@ -1272,7 +1273,7 @@ def test_an_older_payload_shows_one_notice_and_nothing_else(browser,
     notices = page.query_selector_all('.notice')
     assert len(notices) == 1
     assert notices[0].inner_text() == (
-        'This data was written for schema 3 and this page reads schema 11. '
+        'This data was written for schema 3 and this page reads schema 12. '
         'Run purlin:status to write it again.')
     assert page.query_selector_all('.tile') == []
     assert page.query_selector_all('.tbl') == []
@@ -2866,5 +2867,49 @@ def test_a_rule_to_confirm_has_its_filter_button(browser, tmp_path):
     found = chip_counts(page)
     labels = chip_labels(page)
     page.close()
-    assert labels == ['To write a test for', 'To confirm', 'To strengthen']
+    assert labels == ['To repair', 'To write a test for', 'To confirm',
+                      'To strengthen']
     assert found['To confirm'] == 1
+
+
+# purlin: purlin_report PROOF-215
+def test_a_spec_to_repair_has_its_filter_button(browser, tmp_path):
+    page = open_board(browser, tmp_path, payload_named('team'))
+    page.click('.chip[data-filter="to_repair"]')
+    labels, specs = section_labels(page), listed_in(page, 'specs')
+    page.click('[data-act="feature"][data-feature="refund"]')
+    ids = rule_ids(page)
+    page.close()
+    assert 'ANCHORS' not in labels, labels
+    assert specs == ['refund'], specs
+    assert ids == ['RULE-1', 'RULE-2'], ids
+
+
+# The word and the reasons of one row of the open rule's cells, by its label.
+CELL_ROW = """name => {
+  const dt = Array.from(document.querySelectorAll('.kv dt'))
+    .find(e => e.textContent.trim() === name);
+  const dd = dt.nextElementSibling;
+  return [dd.querySelector('.pill').innerText.trim(),
+          Array.from(dd.querySelectorAll(':scope > .sec'))
+            .map(e => e.innerText.trim()).join(' ')];
+}"""
+
+
+# purlin: purlin_report PROOF-216
+def test_a_rule_whose_signature_ended_says_why(browser, tmp_path):
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    open_rule(page, 'login', 'RULE-2')
+    row = page.evaluate(CELL_ROW, 'Signed')
+    page.close()
+    assert row == ['UNSIGNED', 'the signature by sam@acme.com ended because '
+                   'a test file behind it changed: tests/test_login.py'], row
+
+
+# purlin: purlin_report PROOF-217
+def test_a_rule_of_a_spec_to_repair_says_why(browser, tmp_path):
+    page = open_board(browser, tmp_path, payload_named('team'))
+    open_rule(page, 'refund', 'RULE-2')
+    row = page.evaluate(CELL_ROW, 'Passed')
+    page.close()
+    assert row == ['FAILED', 'PROOF-2 is written twice in the spec'], row

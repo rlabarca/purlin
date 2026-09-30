@@ -27,6 +27,7 @@
   },
   "features": [
     {
+      "broken": [],
       "category": "auth",
       "current": true,
       "description": "Signing in with an email address and a password, and locking an account after repeated failures.",
@@ -90,6 +91,7 @@
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "does_not_apply": null,
+          "ended": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -146,6 +148,7 @@
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "does_not_apply": null,
+          "ended": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -196,6 +199,7 @@
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "does_not_apply": null,
+          "ended": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -228,6 +232,7 @@
       "test_strength": null
     },
     {
+      "broken": [],
       "category": "billing",
       "current": true,
       "description": "Invoices and credit notes: their lines, their totals and what they print.",
@@ -289,6 +294,7 @@
           },
           "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
           "does_not_apply": null,
+          "ended": null,
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -351,6 +357,7 @@
           },
           "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
           "does_not_apply": null,
+          "ended": null,
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -435,7 +442,7 @@
   },
   "project": "ledger",
   "remote_url": null,
-  "schema_version": 11,
+  "schema_version": 12,
   "summary": {
     "failing": 0,
     "features": 2,

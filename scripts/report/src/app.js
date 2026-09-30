@@ -10,7 +10,7 @@
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null,
             features: {}, groups: {}, filter: null, proofs: {}};
-var SCHEMA = 11;
+var SCHEMA = 12;
 /* The data file is rewritten when `purlin:status`, `purlin:test`,
    `purlin:audit` or `purlin:sign` finishes, and a tab left open would never
    notice. Coming back to the tab reloads it when what it holds is older than

@@ -45,10 +45,22 @@
           "result": "pass"
         }
       }
+    },
+    "refund": {
+      "ci": {
+        "linux": {
+          "at": "2026-09-12T09:14:02Z",
+          "commit": "a1b2c3d",
+          "current": true,
+          "path": ".purlin/evidence/ci/refund.json",
+          "result": "pass"
+        }
+      }
     }
   },
   "features": [
     {
+      "broken": [],
       "category": "auth",
       "current": true,
       "description": "Signing in with an email address and a password, and locking an account after repeated failures.",
@@ -133,6 +145,7 @@
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "does_not_apply": null,
+          "ended": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -211,6 +224,7 @@
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "does_not_apply": null,
+          "ended": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -289,6 +303,7 @@
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "does_not_apply": null,
+          "ended": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -338,6 +353,7 @@
       "test_strength": 71
     },
     {
+      "broken": [],
       "category": "billing",
       "current": true,
       "description": "Invoices and credit notes: their lines, their totals and what they print.",
@@ -420,6 +436,7 @@
           },
           "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
           "does_not_apply": null,
+          "ended": null,
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -485,6 +502,7 @@
           },
           "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
           "does_not_apply": null,
+          "ended": null,
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -524,6 +542,7 @@
       "test_strength": 48
     },
     {
+      "broken": [],
       "category": "billing",
       "current": true,
       "description": null,
@@ -602,6 +621,7 @@
           },
           "code_hash": "3af3c353c2169a3b9fbbba791d289f8c1baf8d8fe906be3ff597c89bf1b55c33",
           "does_not_apply": null,
+          "ended": null,
           "feature": "receipt",
           "flags": {
             "failing": false,
@@ -651,6 +671,207 @@
       "test_strength": 75
     },
     {
+      "broken": [
+        "PROOF-2 is written twice in the spec"
+      ],
+      "category": "billing",
+      "current": true,
+      "description": null,
+      "evidence": {
+        "ci": {
+          "committed": true,
+          "path": ".purlin/evidence/ci/refund.json",
+          "platforms": {
+            "linux": {
+              "at": "2026-09-12T09:14:02Z",
+              "commit": "a1b2c3d",
+              "current": true
+            }
+          }
+        },
+        "local": null
+      },
+      "incomplete": false,
+      "incomplete_reason": null,
+      "is_anchor": false,
+      "name": "refund",
+      "pinned": null,
+      "rollup": {
+        "failing": 2,
+        "incomplete": false,
+        "manual": 0,
+        "not_audited": 0,
+        "partial": 0,
+        "passed": 0,
+        "proofs": 2,
+        "proofs_without_test": 0,
+        "proofs_without_test_ids": [],
+        "rules": 2,
+        "strong": 0,
+        "test_strength": null,
+        "untested": 0
+      },
+      "rules": [
+        {
+          "applies_to": "refund",
+          "audit": null,
+          "audit_hash": null,
+          "bucket": "failed",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "platforms": {
+                "linux": {
+                  "at": "2026-09-12T09:14:02Z",
+                  "source": "ci",
+                  "word": "passed"
+                }
+              },
+              "reasons": [
+                "PROOF-2 is written twice in the spec"
+              ],
+              "source": "ci",
+              "word": "failed"
+            },
+            "strong": {
+              "evidence": null,
+              "findings": [],
+              "reasons": [
+                "waiting for its tests to pass"
+              ],
+              "strength": null,
+              "word": "waiting"
+            }
+          },
+          "code_hash": "3af3c353c2169a3b9fbbba791d289f8c1baf8d8fe906be3ff597c89bf1b55c33",
+          "does_not_apply": null,
+          "ended": null,
+          "feature": "refund",
+          "flags": {
+            "failing": true,
+            "manual": false,
+            "no_proof": false,
+            "not_audited": false,
+            "out_of_date": false,
+            "partial": false
+          },
+          "hand_checked": false,
+          "id": "RULE-1",
+          "left": "to_repair",
+          "machines": {
+            "linux": "remote runner, Linux/Unix"
+          },
+          "proof_hash": "prule1ref",
+          "proofs": [
+            {
+              "env": null,
+              "id": "PROOF-1",
+              "manual": false,
+              "result": "passed",
+              "tests": [
+                {
+                  "file": "tests/test_refund.py",
+                  "name": "test_refund_amount",
+                  "result": "pass"
+                }
+              ],
+              "text": "Refund order 1042 of 59.97 and read `59.97` credited to the card ending 4242."
+            }
+          ],
+          "rule_hash": "rrule1ref",
+          "test_hash": "trule1ref",
+          "test_hash_kind": "file",
+          "tests": [],
+          "text": "A refund returns the amount paid to the card it came from."
+        },
+        {
+          "applies_to": "refund",
+          "audit": null,
+          "audit_hash": null,
+          "bucket": "failed",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "platforms": {
+                "linux": {
+                  "at": "2026-09-12T09:14:02Z",
+                  "source": "ci",
+                  "word": "passed"
+                }
+              },
+              "reasons": [
+                "PROOF-2 is written twice in the spec"
+              ],
+              "source": "ci",
+              "word": "failed"
+            },
+            "strong": {
+              "evidence": null,
+              "findings": [],
+              "reasons": [
+                "waiting for its tests to pass"
+              ],
+              "strength": null,
+              "word": "waiting"
+            }
+          },
+          "code_hash": "3af3c353c2169a3b9fbbba791d289f8c1baf8d8fe906be3ff597c89bf1b55c33",
+          "does_not_apply": null,
+          "ended": null,
+          "feature": "refund",
+          "flags": {
+            "failing": true,
+            "manual": false,
+            "no_proof": false,
+            "not_audited": false,
+            "out_of_date": false,
+            "partial": false
+          },
+          "hand_checked": false,
+          "id": "RULE-2",
+          "left": "to_repair",
+          "machines": {
+            "linux": "remote runner, Linux/Unix"
+          },
+          "proof_hash": "prule2ref",
+          "proofs": [
+            {
+              "env": null,
+              "id": "PROOF-2",
+              "manual": false,
+              "result": "passed",
+              "tests": [
+                {
+                  "file": "tests/test_refund.py",
+                  "name": "test_refund_twice",
+                  "result": "pass"
+                }
+              ],
+              "text": "Refund order 1042 twice and read `409` and `already refunded` on the second."
+            }
+          ],
+          "rule_hash": "rrule2ref",
+          "test_hash": "trule2ref",
+          "test_hash_kind": "file",
+          "tests": [],
+          "text": "A refund of an order already refunded is refused."
+        }
+      ],
+      "scope": [
+        "src/refund/"
+      ],
+      "signatures": [],
+      "source": null,
+      "source_path": null,
+      "spec_path": "specs/billing/refund.md",
+      "test_strength": null
+    },
+    {
+      "broken": [],
       "category": "_anchors",
       "current": true,
       "description": null,
@@ -731,6 +952,7 @@
           },
           "code_hash": "72d886c64599e86aaf3eb91d560ff85ae429a831f4ac5eb2f19958a3558bb72d",
           "does_not_apply": null,
+          "ended": null,
           "feature": "checkout_design",
           "flags": {
             "failing": false,
@@ -778,6 +1000,7 @@
       "test_strength": null
     },
     {
+      "broken": [],
       "category": "_anchors",
       "current": true,
       "description": "The security rules every project of the company keeps.",
@@ -837,6 +1060,7 @@
           },
           "code_hash": "5b1e0c7a9d3f2e8b4a6c1d0e9f7a3b5c2d4e6f8a0b1c3d5e7f9a2b4c6d8e0f1a",
           "does_not_apply": null,
+          "ended": null,
           "feature": "security_baseline",
           "flags": {
             "failing": false,
@@ -889,6 +1113,12 @@
   "last_line": null,
   "left": [
     {
+      "command": "purlin:spec",
+      "count": 1,
+      "kind": "to_repair",
+      "text": "1 spec to repair"
+    },
+    {
       "command": "purlin:build",
       "count": 1,
       "kind": "no_test",
@@ -923,23 +1153,23 @@
   },
   "project": "ledger",
   "remote_url": "https://github.com/acme/ledger.git",
-  "schema_version": 11,
+  "schema_version": 12,
   "summary": {
-    "failing": 0,
-    "features": 5,
+    "failing": 2,
+    "features": 6,
     "incomplete": 1,
     "manual": 0,
     "not_audited": 0,
     "partial": 0,
     "passed": 2,
-    "proofs": 8,
+    "proofs": 10,
     "proofs_without_test": 2,
     "proofs_without_test_ids": [
       "PROOF-2",
       "PROOF-1"
     ],
-    "rules": 8,
-    "sentence": "8 rules. 6 pass their tests. 4 are strong.",
+    "rules": 10,
+    "sentence": "10 rules. 6 pass their tests. 4 are strong.",
     "steps": {
       "passed": 6,
       "strong": 4
@@ -949,5 +1179,7 @@
   },
   "tag": null,
   "version": "0.10.0",
-  "warnings": []
+  "warnings": [
+    "refund: PROOF-2 is written twice; the second is read. Run purlin:spec refund."
+  ]
 }

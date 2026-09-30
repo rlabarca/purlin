@@ -15,8 +15,9 @@ var VERSION_KINDS = ['to_tag', 'to_correct'];
 
 /* The buttons whose name is shorter than their line: a rule to confirm as
    not applying is one a person already signed so, and the button says what
-   is asked of them again. */
-var SHORT_LABELS = {to_confirm: 'To confirm'};
+   is asked of them again; a spec to repair counts specs, not rules, and its
+   button chooses the rules of each one. */
+var SHORT_LABELS = {to_confirm: 'To confirm', to_repair: 'To repair'};
 
 /* The words of one line of what is left, without its count and noun, in
    sentence case: `1 rule to fix` reads `To fix`, `2 rules to test on

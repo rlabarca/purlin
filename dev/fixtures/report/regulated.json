@@ -63,6 +63,7 @@
   },
   "features": [
     {
+      "broken": [],
       "category": "auth",
       "current": true,
       "description": "Signing in with an email address and a password, and locking an account after repeated failures.",
@@ -163,6 +164,7 @@
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "does_not_apply": null,
+          "ended": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -241,7 +243,9 @@
               "at": null,
               "key_fingerprint": null,
               "path": null,
-              "reasons": [],
+              "reasons": [
+                "the signature by sam@acme.com ended because a test file behind it changed: tests/test_login.py"
+              ],
               "signer": null,
               "signer_name": null,
               "word": "unsigned"
@@ -256,6 +260,13 @@
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "does_not_apply": null,
+          "ended": {
+            "causes": [
+              "a test file behind it changed: tests/test_login.py"
+            ],
+            "line": "login RULE-2: the signature by sam@acme.com ended because a test file behind it changed: tests/test_login.py.",
+            "signer": "sam@acme.com"
+          },
           "feature": "login",
           "flags": {
             "failing": false,
@@ -357,6 +368,7 @@
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "does_not_apply": null,
+          "ended": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -448,6 +460,7 @@
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "does_not_apply": null,
+          "ended": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -515,6 +528,7 @@
       "test_strength": 86
     },
     {
+      "broken": [],
       "category": "billing",
       "current": true,
       "description": "Invoices and credit notes: their lines, their totals and what they print.",
@@ -617,6 +631,7 @@
           },
           "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
           "does_not_apply": null,
+          "ended": null,
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -719,6 +734,7 @@
           },
           "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
           "does_not_apply": null,
+          "ended": null,
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -795,6 +811,7 @@
           },
           "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
           "does_not_apply": null,
+          "ended": null,
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -836,6 +853,7 @@
       "test_strength": 64
     },
     {
+      "broken": [],
       "category": "_anchors",
       "current": true,
       "description": null,
@@ -932,6 +950,7 @@
           },
           "code_hash": "72d886c64599e86aaf3eb91d560ff85ae429a831f4ac5eb2f19958a3558bb72d",
           "does_not_apply": null,
+          "ended": null,
           "feature": "checkout_design",
           "flags": {
             "failing": false,
@@ -979,6 +998,7 @@
       "test_strength": null
     },
     {
+      "broken": [],
       "category": "_anchors",
       "current": true,
       "description": "The security rules every project of the company keeps.",
@@ -1054,6 +1074,7 @@
             "signer": "jane@acme.com",
             "why": "the project stores no card data"
           },
+          "ended": null,
           "feature": "security_baseline",
           "flags": {
             "failing": false,
@@ -1095,6 +1116,7 @@
       "test_strength": null
     },
     {
+      "broken": [],
       "category": "billing",
       "current": false,
       "description": null,
@@ -1174,6 +1196,7 @@
           },
           "code_hash": "3e5c6ee720afe2c5032fcfbd87d637c0068d2155f85a1aea430d30bede475af0",
           "does_not_apply": null,
+          "ended": null,
           "feature": "export",
           "flags": {
             "failing": false,
@@ -1254,6 +1277,7 @@
           },
           "code_hash": "3e5c6ee720afe2c5032fcfbd87d637c0068d2155f85a1aea430d30bede475af0",
           "does_not_apply": null,
+          "ended": null,
           "feature": "export",
           "flags": {
             "failing": false,
@@ -1368,7 +1392,7 @@
   },
   "project": "ledger",
   "remote_url": "https://github.com/acme/ledger.git",
-  "schema_version": 11,
+  "schema_version": 12,
   "summary": {
     "failing": 0,
     "features": 5,
