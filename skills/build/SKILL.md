@@ -29,10 +29,8 @@ the git checkout, and read the state:
 
 ## Loading the rules
 
-Read the feature spec, then follow `> Requires:` through every anchor it names and every
-anchor those name in turn. Add any anchor with `> Global: true`, which applies without being
-named. The rules you must satisfy are the union of all of them, and a rule from an anchor
-binds exactly as tightly as one written in the feature.
+Read the feature spec. Every anchor's rules hold across the whole project, so code you write
+keeps them too; their tests are the anchors' own and `purlin:test` runs them after any change.
 
 Read `> Scope:` and `> Stack:` before you write a line. `> Scope:` is where the code belongs;
 the evidence carries a fingerprint of those files, so code that lands outside them is code no

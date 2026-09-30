@@ -161,6 +161,22 @@ class TestSkillBuild:
              % (SKILL, ROOT_CALL)),
         ]) == []
 
+    # purlin: skill_build PROOF-47
+    def test_every_anchor_holds_across_the_project(self, monkeypatch):
+        assert loading_problems() == []
+        assert refusals(monkeypatch, loading_problems, [
+            (SKILL, replace("Every anchor's rules hold across the whole "
+                            "project, so", "The anchors it names hold, so"),
+             '%s Loading the rules does not carry %r' % (SKILL, LOADING[0])),
+            (SKILL, replace("`purlin:test` runs them after any change",
+                            'you run them by hand'),
+             '%s Loading the rules does not carry %r' % (SKILL, LOADING[1])),
+            (SKILL, replace('Read the feature spec.', 'Read the feature spec '
+                            'and its `> Type:`.'),
+             "%s Loading the rules names the metadata line '> Type:'"
+             % SKILL),
+        ]) == []
+
     # purlin: skill_build PROOF-9
     def test_it_repairs_the_comments_that_are_nearly_markers(
             self, monkeypatch):
@@ -431,4 +447,25 @@ def near_miss_problems():
                         'the tests' % (SKILL, found[0]))
     problems.extend(sentence_with(SKILL, [
         'Show each `fix` beside its `why`, ask, and make the edits accepted.']))
+    return problems
+
+
+# ---------------------------------------------------------------------------
+# Loading the rules
+# ---------------------------------------------------------------------------
+
+LOADING = ("Every anchor's rules hold across the whole project, so code you "
+           'write keeps them too',
+           "their tests are the anchors' own and `purlin:test` runs them "
+           'after any change')
+
+
+def loading_problems():
+    body = flat(section(read(SKILL), r'^Loading the rules$') or '')
+    problems = ['%s Loading the rules does not carry %r' % (SKILL, needle)
+                for needle in LOADING if needle not in body]
+    named = set(re.findall(r'`(> [A-Z][A-Za-z-]*:)', body))
+    problems.extend('%s Loading the rules names the metadata line %r'
+                    % (SKILL, line)
+                    for line in sorted(named - {'> Scope:', '> Stack:'}))
     return problems
