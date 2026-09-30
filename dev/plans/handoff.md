@@ -6,8 +6,15 @@ decisions 60 to 100 (together with this file they are the product as the owner s
 
 ## Where the tree is
 
-- `main` is local only, at the commit of this file, after `b46c93f01 purlin: evidence at
-  5f002e0`. Nothing on it is pushed, nothing is tagged, and no audit or signing has been run
+- **Decisions 100 and 101 are built** (anchors are global; a pinned anchor's rule signed as not
+  applying), by ten lanes merged into `main` by fast-forward and one integration
+  (`d100-interfaces.md`: what differs from the plan, the ids, the words chosen). Full sweep at
+  `35ddcc29d`: 2345 passed, 3 skipped, `Suites: 5 passed, 0 failed`. `purlin_run.py --test
+  --all --commit`: `Markers: 2387 tied to a test, 0 not tied.`, `918 rules. 831 pass their
+  tests.`, 87 rules waiting for Windows, committed as `35ddcc29d purlin: evidence at 30c97d2`.
+  **Windows has not been run since**: the 87 wait for `purlin:test --remote`.
+- `main` is local only, at the commit of this file, after `35ddcc29d purlin: evidence at
+  30c97d2`. Nothing on it is pushed, nothing is tagged, and no audit or signing has been run
   against this repository. The only pushes any agent made were the
   temporary run branches of the remote runs on Windows. The owner pushes `main`; no agent does.
 - Decision 99 is built: the five answers to the open questions, by five lanes merged into
@@ -32,7 +39,6 @@ decisions 60 to 100 (together with this file they are the product as the owner s
   repository's other workflow, the version check, registered first, it waited on that, pulled
   nothing and deleted the run branch while the Windows job still ran. The lookup now names the
   workflow file too (`03005dd8a`; host RULE-12, PROOF-66).
-- Decision 100 (anchors are global) is closed and not built: "What is left", item 1.
 - The runner file, `.github/workflows/purlin.yml`, was written by setup from the templates of
   phase 4 and committed by setup (`8008d9de6 chore(init): set up Purlin at the gate signed`).
   It runs on `windows-latest` alone: 86 proofs are tagged `@env(windows)`, and the 13 tagged
@@ -69,8 +75,8 @@ proven where its tag says: this machine proves every untagged proof and every pr
 its own system, and a remote runner proves only the proofs tagged `@env` for its system, which
 this machine is not. Every run ends on the summary and `Left to do`, one line per kind of work
 with its command; there is no queue, and `to test by hand` and `to sign` are two of its lines.
-A spec's `> Requires:` names anchors only, the project's own or pinned ones, whose rules then
-apply to it. `purlin:sign` walks the rules left `to test by hand` or `to sign` and, at the gate
+An anchor is a set of rules for the whole project, counted, audited and signed once; no spec
+names one. `purlin:sign` walks the rules left `to test by hand` or `to sign` and, at the gate
 `signed`, when nothing else is left and every result came from committed work, writes the
 evidence package and the signed tag. Purlin makes no claim of compliance: it hands evidence to
 a system of record, which decides who was entitled to sign.
@@ -79,16 +85,20 @@ a system of record, which decides who was entitled to sign.
 
 The prompt for the next session is `dev/plans/next-agent-prompt.md`.
 
-1. **Decision 100 is built**: an anchor is a set of rules for the whole project. It is closed
-   and nothing of it is built. It changes how rules are counted, what an anchor's signature
-   covers, the spec and anchor formats, the evidence package, the dashboard, the terminal,
-   signing, the upgrade from 0.9.5, the instructions, the docs and one slide. The owner asked
-   for a plan first: a planning agent writes the lanes and every line a person would read, the
-   owner reads it and answers what it raises, and then it is built. The branch
-   `lane/anchors-section` (worktree `purlin-wt/anchors-section`, two commits, not merged, its
-   sweep not confirmed) holds a first build of the dashboard's `Anchors` section, made before
-   decision 100: it keeps the per-feature counts, so it is a start and not the answer. A
-   remote run on Windows follows the build.
+1. **After decisions 100 and 101**, in this order: the remote run on Windows
+   (`purlin:test --remote`, pushing only its run branch); the slide on anchors, taken into
+   `dev/plans/deck/build_deck.py` with these words and published: title `Anchors: rules the
+   whole project must follow`; subtitle `An anchor is a set of rules for the whole project,
+   proven by tests that run across all of it.`; card 1 `Written in this project`: `Write a rule
+   once, such as no secret in the code. Tests across the whole project prove it, and no feature
+   names it. A rule only some features need goes in each of those features' own specs.`; cards
+   2 and 3 unchanged; card 4 `Design standards too`: `Design publishes its standards as an
+   anchor. Tests across every screen prove them; a standard no test here can show is signed as
+   not applying, or checked by the team that owns it.`; footer `Each anchor rule is counted,
+   audited and signed once. Any change to the project ends its results and signatures, so
+   anchors are signed last.`; a full reading of the docs pages against the code; then the QA
+   sanity check, which the owner runs in a cloud session. The two docs screenshots were
+   retaken at `30c97d29b`.
 2. **The further sanity checks**, each its own fresh agent, in the order the owner picks. The
    next one runs `purlin:spec-from-code` on project copies of which one carries a test that
    fails before the run, so decision 66's clause about failing tests is tried, and the agents
