@@ -271,15 +271,14 @@ def runs_doctests(project_root):
         return False
     if listed.returncode != 0:
         return False
-    wanted = DOCTEST_OPTION.encode('ascii')
     for raw in listed.stdout.split(b'\0'):
         rel = raw.decode('utf-8', 'replace')
         if not rel or rel.startswith(_DOCTEST_SKIP):
             continue
+        path = os.path.join(project_root, *rel.split('/'))
         try:
-            with open(os.path.join(project_root, *rel.split('/')),
-                      'rb') as handle:
-                if wanted in handle.read():
+            with open(path, encoding='utf-8', errors='replace') as handle:
+                if DOCTEST_OPTION in handle.read():
                     return True
         except (IOError, OSError):
             continue
