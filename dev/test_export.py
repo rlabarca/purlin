@@ -536,6 +536,76 @@ class TestTheContent:
 
 
 # ---------------------------------------------------------------------------
+# Anchors, and a rule that does not apply
+# ---------------------------------------------------------------------------
+
+NO_CARD_DATA = 'the project stores no card data'
+
+
+def anchor_beside(made, name, header=''):
+    """An anchor of one hand-checked rule beside `login`, committed."""
+    write(os.path.join(made.root, 'specs', '_anchors', name + '.md'),
+          '# Anchor: %s\n\n'
+          '> Description: What every feature does with a password.\n%s\n'
+          '## Rules\n\n'
+          '- RULE-1: A password is never written to a log\n\n'
+          '## Proof\n\n'
+          '- PROOF-1 (RULE-1): A sign-in with the password "secret" leaves '
+          'no line holding "secret" in the log @manual\n' % (name, header))
+    commit_all(made.root, 'spec(%s): the anchor' % name)
+
+
+def signed_as_not_applying(made):
+    """`baseline`, pinned from elsewhere, its rule signed as not applying."""
+    anchor_beside(made, 'baseline',
+                  '> Source: https://github.com/acme/policies.git\n'
+                  '> Pinned: %s\n' % ('a' * 40))
+    assert sign_module.main(['baseline', 'RULE-1', '--does-not-apply',
+                             NO_CARD_DATA, '--project-root', made.root]) == 0
+    code, lines = export(made.root)
+    assert code == 0, lines
+    return rule_of(read_package(made.root), 'RULE-1', 'baseline')
+
+
+class TestAnchors:
+
+    # purlin: package PROOF-56
+    def test_a_feature_entry_holds_five_fields(self, tagged):
+        entry = next(feature for feature in read_package(tagged.root)[
+            'features'] if feature['name'] == 'login')
+        assert sorted(entry) == ['anchor', 'name', 'rules', 'scope', 'spec']
+        assert (entry['name'], entry['spec'], entry['scope'],
+                entry['anchor']) == ('login', 'specs/auth/login.md',
+                                     ['src/login.py'], False)
+
+    # purlin: package PROOF-57
+    def test_an_anchors_scope_is_empty(self, unsigned):
+        anchor_beside(unsigned, 'secure', '> Scope: src/login.py\n')
+        code, lines = export(unsigned.root)
+        assert code == 0, lines
+        entry = next(feature for feature in read_package(unsigned.root)[
+            'features'] if feature['name'] == 'secure')
+        assert (entry['anchor'], entry['scope']) == (True, [])
+
+    # purlin: package PROOF-58
+    def test_a_signature_carries_the_reason_it_does_not_apply(
+            self, unsigned, capsys):
+        rule = signed_as_not_applying(unsigned)
+        capsys.readouterr()
+        assert [signature['does_not_apply']
+                for signature in rule['signatures']] == [NO_CARD_DATA]
+
+    # purlin: package PROOF-59
+    def test_a_rule_that_does_not_apply_reads_so(self, unsigned, capsys):
+        rule = signed_as_not_applying(unsigned)
+        capsys.readouterr()
+        assert {name: status['word'] for name, status in
+                rule['statuses'].items()} == {
+            'passed': 'does not apply', 'strong': 'does not apply',
+            'signed': 'does not apply'}
+
+
+# ---------------------------------------------------------------------------
 # What git holds
 # ---------------------------------------------------------------------------
 

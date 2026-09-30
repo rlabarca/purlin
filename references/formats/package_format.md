@@ -1,4 +1,4 @@
-> Format-Version: 4
+> Format-Version: 5
 
 # Package format
 
@@ -107,10 +107,11 @@ The state is the first thing a reader sees after the schema.
 |---|---|---|
 | `name` | string | the spec's name |
 | `spec` | string | the spec's path, `/` separated |
-| `scope` | array of strings | the spec's `> Scope:` entries, as written |
-| `requires` | array of strings | the names its `> Requires:` line holds |
+| `scope` | array of strings | the spec's `> Scope:` entries, as written; `[]` for an anchor, whose rules cover the whole project |
 | `anchor` | bool | whether the spec is an anchor |
 | `rules` | array | the spec's own rules, ordered by rule number |
+
+A feature entry holds exactly these five fields.
 
 ### A rule
 
@@ -123,8 +124,8 @@ The state is the first thing a reader sees after the schema.
 | `tests` | array | `{proof, file, name}` per test backing a proof, then per test marked with the rule's own id, whose `proof` is then the `RULE-N` |
 | `results` | array | one entry per evidence section, ordered by operating system then source. See below |
 | `audit` | object or null | what the audit found for the rule's current words, proof and test. Null where no audit has |
-| `signatures` | array | every signature whose hashes still match the rule in the feature it applies to, ordered by `at`. A signature that no longer matches is not listed |
-| `statuses` | object | one `{word, reasons}` per step up to the gate: `passed` always, `strong` at the gates `strong` and `signed`, `signed` at `signed`. A status above the gate is absent, not null |
+| `signatures` | array | every signature whose hashes still match the rule as it now stands, ordered by `at`. A signature that no longer matches is not listed |
+| `statuses` | object | one `{word, reasons}` per step up to the gate: `passed` always, `strong` at the gates `strong` and `signed`, `signed` at `signed`. A status above the gate is absent, not null. A pinned anchor's rule a person signed as not applying reads `does not apply` in each, with the reason `by <signer>: <why>` |
 
 Each `results` entry:
 
@@ -160,11 +161,12 @@ Each `signatures` entry:
 | `signer` | string | the signer's email, as git holds it |
 | `signer_name` | string or null | the signer's name, as git holds it |
 | `key_fingerprint` | string or null | `SHA256:` and the fingerprint of the key the signer signs with |
-| `applies_to` | string or null | the feature the signature was made in: the owner, or for an anchor's rule each feature it applies to |
+| `applies_to` | string or null | the spec that holds the rule |
 | `machines` | object | `{os: machine}`, the machine each operating system's results came from when it was signed |
 | `at` | string | the time the signature file records |
 | `committed_at` | string or null | when the commit carrying it was made |
 | `note` | string or null | what the signer wrote about a hand check |
+| `does_not_apply` | string or null | the reason a pinned anchor's rule does not apply to this project, where the signer signed it so; null otherwise |
 | `gate` | string or null | the gate in force when it was signed |
 | `path` | string | the signature file |
 | `signed_commit` | bool | whether the commit that carries it is signed, which is what makes a signature count |
@@ -200,6 +202,7 @@ and is carried by the project:
 | `to_test` | `1 rule to test`, `<n> rules to test` | `purlin:test` |
 | `to_test_remote` | `1 rule to test on <systems>`, `<n> rules to test on <systems>` | `purlin:test --remote` |
 | `to_test_by_hand` | `1 rule to test by hand`, `<n> rules to test by hand` | `purlin:sign` |
+| `to_confirm` | `1 rule to confirm as not applying`, `<n> rules to confirm as not applying` | `purlin:sign` |
 | `to_audit` | `1 rule to audit`, `<n> rules to audit` | `purlin:audit` |
 | `to_measure` | `1 rule to measure`, `<n> rules to measure` | `purlin:audit` |
 | `to_strengthen` | `1 rule to strengthen`, `<n> rules to strengthen` | `purlin:build` |

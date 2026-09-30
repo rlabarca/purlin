@@ -8,8 +8,8 @@
 >   evidence handed to a regulated system of record; Purlin makes no claim of compliance.
 > Scope: scripts/export/package.py
 > Stack: python/stdlib (json, hashlib, subprocess), git worktree
-> Highest-Rule: 25
-> Highest-Proof: 55
+> Highest-Rule: 27
+> Highest-Proof: 59
 
 ## Rules
 
@@ -38,6 +38,8 @@
 - RULE-23: Where the package cannot be built or written, the command prints `export: the package was not written: <why>.` and exits 1
 - RULE-24: Where `--commit` cannot commit the package, the command prints `export: the package was not committed: <why>.` after the line naming the file it wrote, and exits 1
 - RULE-25: The evidence package states the gate and whether the version is finished, and no field of it says that the software complies with a regulation
+- RULE-26: Each feature entry holds exactly `name`, `spec`, `scope`, `anchor` and `rules`, and an anchor's `scope` is `[]`
+- RULE-27: Each signature entry carries `does_not_apply`, the reason a pinned anchor's rule was signed as not applying or null, and a rule so signed reads `does not apply` in its statuses
 
 ## Proof
 
@@ -96,3 +98,7 @@
 - PROOF-53 (RULE-24): In a project whose commit hook refuses every commit, printing `no commits today`, the command is run with `--commit`; it exits 1, its last line reads `export: the package was not committed: git commit failed: no commits today.`, and `HEAD` has not moved
 - PROOF-54 (RULE-24): In a project whose index another git process holds locked, the command is run with `--commit`; it exits 1, and the line after the one naming the file it wrote begins `export: the package was not committed: git add failed: `, followed by git's own message
 - PROOF-55 (RULE-25): At the gate `signed`, with both rules signed, the package written for the tag holds exactly the top-level keys the format lists, its `gate` reads `signed` and its `state` `finished`, and no key or value in it holds the word `compliant` or `compliance`
+- PROOF-56 (RULE-26): In a signed and tagged project's package, the `login` entry holds exactly the five fields `name`, `spec`, `scope`, `anchor` and `rules`, reading `login`, `specs/auth/login.md`, `["src/login.py"]` and `false`
+- PROOF-57 (RULE-26): Beside `login`, an anchor `secure` whose file carries `> Scope: src/login.py` is exported; its entry reads `anchor` `true` and `scope` `[]`
+- PROOF-58 (RULE-27): At the gate `signed`, `baseline RULE-1`, the one rule of an anchor pinned from `https://github.com/acme/policies.git`, is signed with `--does-not-apply "the project stores no card data"` and the project exported; the rule's one signature reads `does_not_apply` `the project stores no card data`
+- PROOF-59 (RULE-27): At the gate `signed`, `baseline RULE-1`, a pinned anchor's rule with no test, is signed as not applying and the project exported; its `statuses` read `does not apply` for `passed`, `strong` and `signed`

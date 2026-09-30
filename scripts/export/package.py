@@ -304,17 +304,14 @@ def _rule_number(rule_id):
 
 
 def _features(tree, payload, features):
-    """`features[]`, by name, each carrying its own rules by number."""
+    """`features[]`, by name, each carrying its own rules by number.
+
+    A feature entry holds `name`, `spec`, `scope`, `anchor` and `rules`, and
+    nothing else; an anchor's `scope` is `[]`, since its rules cover the
+    whole project.
+    """
     all_signatures = signatures_module.load_signatures(tree, features)
     markers = fingerprint_module.marker_index(tree)
-    # Every payload entry of a rule, by its owner, its id and the feature it
-    # is listed under: an anchor's rule is signed once in each feature it
-    # applies to, and each signature is compared with that feature's entry.
-    listed = {}
-    for feature in payload.get('features') or ():
-        for rule in feature.get('rules') or ():
-            listed[(rule.get('feature'), rule.get('id'),
-                    rule.get('applies_to') or feature.get('name'))] = rule
     out = []
     for feature in sorted(payload.get('features') or (),
                           key=lambda entry: entry.get('name') or ''):
@@ -327,20 +324,20 @@ def _features(tree, payload, features):
         own = [rule for rule in feature.get('rules') or ()
                if rule.get('feature') == name]
         own.sort(key=lambda rule: _rule_number(rule.get('id')))
+        anchor = bool(feature.get('is_anchor'))
         out.append({
             'name': name,
             'spec': feature.get('spec_path'),
-            'scope': list(feature.get('scope') or ()),
-            'requires': list(feature.get('requires') or ()),
-            'anchor': bool(feature.get('is_anchor')),
-            'rules': [_rule(tree, rule, loaded, sections, listed,
+            'scope': [] if anchor else list(feature.get('scope') or ()),
+            'anchor': anchor,
+            'rules': [_rule(tree, rule, loaded, sections,
                             all_signatures.get((name, rule.get('id')), []))
                       for rule in own],
         })
     return out
 
 
-def _rule(tree, rule, loaded, sections, listed, signatures):
+def _rule(tree, rule, loaded, sections, signatures):
     rule_id = rule.get('id')
     proofs = rule.get('proofs') or ()
     return {
@@ -358,7 +355,7 @@ def _rule(tree, rule, loaded, sections, listed, signatures):
                     for test in rule.get('tests') or ()],
         'results': _results(rule_id, proofs, sections),
         'audit': _audit(rule, loaded),
-        'signatures': _signatures(tree, rule, listed, signatures),
+        'signatures': _signatures(tree, rule, signatures),
         'statuses': {name: _status(rule, name) for name in CELLS
                      if name in (rule.get('cells') or {})},
     }
@@ -408,18 +405,11 @@ def _audit(rule, loaded):
             'source': entry.get('source')}
 
 
-def _signatures(tree, rule, listed, signatures):
-    """Every signature that still binds the rule where it applies.
-
-    Each signature is compared with the entry of the feature it applies to,
-    the rule's owner where the signature names none.
-    """
-    owner = rule.get('feature')
+def _signatures(tree, rule, signatures):
+    """Every signature that still binds the rule, as its own spec lists it."""
     out = []
     for signature in signatures:
-        entry = listed.get((owner, rule.get('id'),
-                            signature.get('applies_to') or owner))
-        if not signatures_module.is_current(signature, entry):
+        if not signatures_module.is_current(signature, rule):
             continue
         path = signature.get('path')
         out.append({
@@ -431,6 +421,7 @@ def _signatures(tree, rule, listed, signatures):
             'at': signature.get('timestamp'),
             'committed_at': signatures_module.commit_date(tree, path),
             'note': signature.get('note'),
+            'does_not_apply': signature.get('does_not_apply') or None,
             'gate': signature.get('gate'),
             'path': path,
             'signed_commit': signatures_module.counts(tree, signature)[0],
