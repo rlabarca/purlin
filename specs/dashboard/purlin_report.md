@@ -12,8 +12,8 @@
 >   tests render.
 > Scope: scripts/report/src/page.html, scripts/report/src/styles.css, scripts/report/src/theme.js, scripts/report/src/filters.js, scripts/report/src/board.js, scripts/report/src/rule.js, scripts/report/src/app.js, scripts/report/purlin-report.html, scripts/mcp/purlin/report_data.py, dev/build_report.py, dev/capture_doc_screenshots.py
 > Stack: html/css/javascript, no framework and no build-time dependency, design tokens inlined by a python assembler
-> Highest-Rule: 65
-> Highest-Proof: 214
+> Highest-Rule: 68
+> Highest-Proof: 217
 
 ## Rules
 
@@ -75,6 +75,9 @@
 - RULE-63: The anchors stand in a section of their own between the filter buttons and the spec table, headed `Anchors` in the small capitals of the section labels, one row per anchor in the spec table's columns, row format, hovers and unfolding, with no band and no mark after the name; the spec table holds no anchor. A chosen filter applies to both tables, and where no anchor's rule is showing the section is absent
 - RULE-64: An anchor's `Strong` cell shows no test strength, whatever its record holds, because no code is broken on purpose for an anchor
 - RULE-65: A rule a person signed as not applying reads `DOES NOT APPLY` in the neutral teal in every cell of its screen, each cell with its reason, and at the gate `signed` its `Signed` panel reads `Does not apply to this project: <why>. Signed by <signer name> (<signer>) at <at>.`; its spec's `Tests` cell reads `<passed> of <rules> · <k> does not apply`, counting it among the passed; and `To confirm` is a filter button where the payload lists the kind `to_confirm`
+- RULE-66: A spec that writes a number twice or holds a line left from a merge conflict is a spec to repair, and `To repair` is a filter button where the payload lists the kind `to_repair`; choosing it leaves that spec's rules alone
+- RULE-67: A rule whose signature ended says on its screen who signed it and why the signature ended
+- RULE-68: A rule of a spec to repair says on its screen why its tests' result does not count
 
 ## Proof
 
@@ -128,7 +131,7 @@
 - PROOF-16 (RULE-16): Open the regulated sample, whose payload names a GitHub remote, and its login `RULE-1`; the spec path is a link whose address begins `https://github.com/acme/ledger/blob/`, and the signature file `RULE-1.1a2b3c4d.jane-doe.json` is a link too
 - PROOF-136 (RULE-16): Open the solo sample, whose payload names no remote, and its login `RULE-1`; the screen holds 0 links and still shows the text `specs/auth/login.md`
 - PROOF-17 (RULE-17): Open the regulated sample with login `RULE-4`'s proof asking for Windows and no run from Windows yet; `RULE-4`'s screen reads `NOT RUN` and `Windows: no run yet`
-- PROOF-20 (RULE-20): Open the board with the team sample's data marked as schema 3; exactly 1 notice is on screen, reading `This data was written for schema 3 and this page reads schema 11. Run purlin:status to write it again.`, and no box, no table and no tabs are drawn
+- PROOF-20 (RULE-20): Open the board with the team sample's data marked as schema 3; exactly 1 notice is on screen, reading `This data was written for schema 3 and this page reads schema 12. Run purlin:status to write it again.`, and no box, no table and no tabs are drawn
 - PROOF-21 (RULE-21): Open the page with no data file beside it; the empty screen reads `No board data yet. Run purlin:status to write .purlin/report-data.js, then reload this page.`
 - PROOF-22 (RULE-22): Open the regulated sample, whose payload reports an uncommitted working tree, and its login `RULE-1`; 0 notices are on the rule's screen
 - PROOF-88 (RULE-22): Open the board with the regulated sample, whose payload reports an uncommitted working tree and one warning; 2 notices are on the board
@@ -160,7 +163,7 @@
 - PROOF-142 (RULE-35): Open the board with the regulated sample at 1920, 1440, 1280 and 1024 pixels wide; at each width security_baseline's `Tests` cell reads `1 of 1 · 1 does not apply` on one line
 - PROOF-43 (RULE-36): Open the board with the regulated sample; the two bands read `▼ AUTH 1 spec 3 of 4 rules pass` and `▼ BILLING 2 specs 4 of 5 rules pass`, with no `·` in either
 - PROOF-77 (RULE-36): Open the regulated sample at 1500 pixels wide; each band's count and bar sit on its name's line, ending within 40 pixels of the band's right edge, the name and spec count at least 16 pixels apart, every bar one width ending at one point, and the bands' totals and the anchors' 2 rules add up to 11 rules
-- PROOF-94 (RULE-36): Open the team sample at 1500 pixels wide; the bands' rule totals and the 2 rules of its anchors, checkout_design and security_baseline, add up to the sample's 8 rules
+- PROOF-94 (RULE-36): Open the team sample at 1500 pixels wide; the bands' rule totals and the 2 rules of its anchors, checkout_design and security_baseline, add up to the sample's 10 rules
 - PROOF-95 (RULE-36): Open the regulated sample at 390 pixels wide; each band's count sits on a line beneath its name, starting at the same left edge
 - PROOF-96 (RULE-36): Open the regulated sample at 390 pixels wide, focus the auth band and press Enter; it reads as closed to a screen reader, keeps the focus, and login is hidden
 - PROOF-143 (RULE-36): With the auth band closed from the keyboard at 390 pixels wide, press Space; it reads as open to a screen reader
@@ -270,4 +273,7 @@
 - PROOF-214 (RULE-65): Open the regulated sample's board and open security_baseline; its `RULE-1` row carries one badge, `DOES NOT APPLY`, and no `PASSED`
 - PROOF-211 (RULE-65): Open the regulated sample's security_baseline `RULE-1`; its `Signed` panel reads `Does not apply to this project: the project stores no card data. Signed by Jane Doe (jane@acme.com) at 2026-09-12 10:05 UTC.`
 - PROOF-212 (RULE-65): Open the board with the regulated sample; security_baseline's `Tests` cell reads `1 of 1 · 1 does not apply`, and its `Strong` and `Signed` cells each read `1 of 1`
-- PROOF-213 (RULE-65): Open the board with the team sample, whose payload lists `1 rule to confirm as not applying`; the filter buttons read `To write a test for`, `To confirm` and `To strengthen`, in that order, `To confirm` carrying 1
+- PROOF-213 (RULE-65): Open the board with the team sample, whose payload lists `1 rule to confirm as not applying`; the filter buttons read `To repair`, `To write a test for`, `To confirm` and `To strengthen`, in that order, `To confirm` carrying 1
+- PROOF-215 (RULE-66): Open the board with the team sample, whose refund spec writes `PROOF-2` twice, and choose `To repair`; the spec table lists refund alone, and unfolding it lists `RULE-1` and `RULE-2`
+- PROOF-216 (RULE-67): Open the regulated sample's login `RULE-2`, whose signature by sam@acme.com ended after its test file changed; its `Signed` row reads `UNSIGNED` and `the signature by sam@acme.com ended because a test file behind it changed: tests/test_login.py`
+- PROOF-217 (RULE-68): Open the team sample's refund `RULE-2`, whose spec writes `PROOF-2` twice and whose tests pass; its `Passed` row reads `FAILED` and `PROOF-2 is written twice in the spec`
