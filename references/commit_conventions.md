@@ -6,7 +6,7 @@ Every commit Purlin makes, or asks you to make, uses one of these. There is no o
 
 | Prefix | When | Who commits it |
 |--------|------|----------------|
-| `spec(<name>):` | Creating or editing a spec or an anchor's local rules | `purlin:spec` |
+| `spec(<name>):` | Creating or editing a spec or an anchor's local rules; from `purlin:spec-from-code`, with the comments it adds above the project's existing tests | `purlin:spec` |
 | `feat(<name>):` | Implementing a feature, with the changeset in the body | `purlin:build` |
 | `fix(<name>):` | Fixing a bug | `purlin:build` |
 | `test(<name>):` | Writing or changing tests without changing behaviour | `purlin:build` |
@@ -17,6 +17,7 @@ Every commit Purlin makes, or asks you to make, uses one of these. There is no o
 | `anchor(<name>): create` | A new local anchor | `purlin:anchor create` |
 | `anchor(<name>): sync (<sha>)` | Advancing a pin to that commit | `purlin:anchor sync` |
 | `chore(update): migrate to <VERSION> (<ids>)` | Migrating a project to the installed plugin | `purlin:init --update` |
+| `chore(init): set up Purlin at the gate <gate>` | The files setup wrote, once a person agrees or `--yes` is passed | `purlin:init` |
 | `chore:` | Project setup, config changes, renames, cleanup | Anyone |
 | `docs:` | Documentation | Anyone |
 
