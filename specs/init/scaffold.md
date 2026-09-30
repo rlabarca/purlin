@@ -15,8 +15,8 @@
 >   project it set up.
 > Scope: scripts/init/scaffold.py, templates/config.json, templates/gitignore.purlin, templates/evidence-readme.md
 > Stack: python3 (stdlib only, 3.9 floor)
-> Highest-Rule: 74
-> Highest-Proof: 162
+> Highest-Rule: 75
+> Highest-Proof: 166
 
 ## Rules
 
@@ -76,6 +76,7 @@
 - RULE-72: Where git refuses the commit, setup prints `The files setup wrote are staged and not committed: <git's own message>.`
 - RULE-73: The block setup adds to `.gitignore` carries a comment above each entry saying what it holds, and a comment saying that `.purlin/evidence/` and `.purlin/tests.md` are tracked on purpose
 - RULE-74: Setting up a project that already holds `purlin-report.html` at its root leaves that file as it is, and the summary names it `kept purlin-report.html`
+- RULE-75: Deciding which test tools a project uses, setup leaves out every file under a folder named `fixtures`, `fixture`, `samples`, `sample`, `testdata`, `test_data` or `test-data`, at any depth, so it names only the tools the project itself uses
 
 ## Proof
 
@@ -220,3 +221,7 @@
 - PROOF-160 (RULE-71): A git project with no commit yet is set up with `--gate passed --yes`; afterwards it has one commit, `chore(init): set up Purlin at the gate passed`
 - PROOF-161 (RULE-72): A project whose git has no author email, with guessing it turned off, is set up with `--gate passed --yes`; it prints `The files setup wrote are staged and not committed: no email was given and auto-detection is disabled.`, and `.purlin/config.json` is staged
 - PROOF-162 (RULE-74): A project set up at the gate `passed` has its `purlin-report.html` changed by hand, then is set up again at `passed`; the page holds the changed bytes, and the summary reads `kept purlin-report.html`
+- PROOF-163 (RULE-75): A pytest project holding a C# test project that references xunit under `dev/fixtures/app/` is set up at `--gate strong` with `--mutation` and no `dotnet` on the search path; no line holds `dotnet` or `stryker`, in any case, and `setup.cfg` holds `[mutmut]`, or on Windows the output says mutmut does not run there
+- PROOF-164 (RULE-75): A pytest project holding that C# test project at its root is set up at `--gate strong` with `--mutation` and no `dotnet` on the search path; it prints the line `dotnet: dotnet is not installed: install the .NET SDK, then run "dotnet tool install -g dotnet-stryker"`
+- PROOF-165 (RULE-75): A pytest project holding, under `samples/web/`, a `package.json` naming jest, a `jest.config.js` and a `sum.test.js` is set up at `--gate strong` with `--mutation`; no line holds `jest`, `vitest` or `stryker`, in any case
+- PROOF-166 (RULE-75): A pytest project holding a C# test project that references xunit under `src/<name>/app/`, the name being in turn `fixtures`, `fixture`, `samples`, `sample`, `testdata`, `test_data` and `test-data`, is set up at `--gate strong` with `--mutation` and no `dotnet` on the search path; no line holds `dotnet` or `stryker`, in any case

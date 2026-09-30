@@ -41,8 +41,11 @@ On Windows the pytest entry's command starts `py -3 -m pytest` in place of
 | shell | a `*.test.sh` file | nothing |
 
 Detection descends the tree, skipping dot directories, `node_modules`, `bin`, `obj` and
-`mutants/`. A project that carries several frameworks is suggested an entry for each, one
-suite per entry under `tests`.
+`mutants/`. It also skips every folder named `fixtures`, `fixture`, `samples`, `sample`,
+`testdata`, `test_data` or `test-data`, at any depth: a project kept there to test against is
+not a tool this project uses, so setup and the first test run name only the project's own. A
+project that carries several frameworks is suggested an entry for each, one suite per entry
+under `tests`.
 
 ## The entry suggested
 

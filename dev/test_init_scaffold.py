@@ -902,6 +902,75 @@ def _stryker_lines(language, gate, stand_in=None, local=None):
 
 
 # ---------------------------------------------------------------------------
+# Test fixtures are not the project's tools
+# ---------------------------------------------------------------------------
+
+CSHARP_TESTS = ('<Project><ItemGroup><PackageReference Include="xunit" '
+                'Version="2.6.0" /></ItemGroup></Project>')
+
+
+def _python_setup_with(files):
+    """A pytest project that also holds `files`, set up at `strong` with the
+    breaks on and nothing but git's own folder on the search path: `(the
+    output, setup.cfg as written or '')`."""
+    git_dir = os.path.dirname(shutil.which('git'))
+    made = Project('pytest')
+    try:
+        for rel, body in files.items():
+            write(made.path(rel), body)
+        output = made.run('--gate', 'strong', '--mutation',
+                          env={'PATH': git_dir})
+        cfg = read(made.path('setup.cfg')) if made.has('setup.cfg') else ''
+        return output, cfg
+    finally:
+        made.close()
+
+
+def _naming(output, *words):
+    """The lines of `output` that hold any of `words`, in any case."""
+    return [line for line in output.splitlines()
+            if any(word in line.lower() for word in words)]
+
+
+class TestFixturesAreNotTheProjectsTools:
+
+    # purlin: scaffold PROOF-163
+    def test_a_csharp_project_under_dev_fixtures_is_left_out(self):
+        output, cfg = _python_setup_with(
+            {'dev/fixtures/app/App.Tests.csproj': CSHARP_TESTS})
+        assert _naming(output, 'dotnet', 'stryker') == [], output
+        if scaffold_module.mutation_module.runs_here('mutmut'):
+            assert '[mutmut]' in cfg, output
+        else:
+            assert scaffold_module.NO_ENGINE_HERE in output.splitlines()
+
+    # purlin: scaffold PROOF-164
+    def test_a_csharp_project_at_the_root_keeps_its_dotnet_line(self):
+        output, _cfg = _python_setup_with({'App.Tests.csproj': CSHARP_TESTS})
+        assert ('dotnet: dotnet is not installed: install the .NET SDK, then '
+                'run "dotnet tool install -g dotnet-stryker"'
+                in output.splitlines()), output
+
+    # purlin: scaffold PROOF-165
+    def test_a_javascript_sample_is_left_out(self):
+        output, _cfg = _python_setup_with({
+            'samples/web/package.json':
+                '{"devDependencies": {"jest": "^29.0.0"}}',
+            'samples/web/jest.config.js': 'module.exports = {};\n',
+            'samples/web/sum.test.js': 'test("sum", () => {});\n'})
+        assert _naming(output, 'jest', 'vitest', 'stryker') == [], output
+
+    # purlin: scaffold PROOF-166
+    @pytest.mark.parametrize('folder', ['fixtures', 'fixture', 'samples',
+                                        'sample', 'testdata', 'test_data',
+                                        'test-data'])
+    def test_each_fixture_folder_name_is_left_out_at_any_depth(self, folder):
+        output, _cfg = _python_setup_with(
+            {'src/%s/app/App.Tests.csproj' % folder: CSHARP_TESTS})
+        assert _naming(output, 'dotnet', 'stryker') == [], output
+
+
+# ---------------------------------------------------------------------------
 # The gate moves
 # ---------------------------------------------------------------------------
 

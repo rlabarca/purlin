@@ -104,6 +104,11 @@ NEEDS = {
 # own fixtures are not this project's frameworks.
 _SKIP_DIRS = ('node_modules', 'bin', 'obj', 'mutants')
 
+# Folders of test fixtures, samples and test data, at any depth: a project
+# kept there to test against is not a tool this project uses.
+FIXTURE_DIRS = ('fixtures', 'fixture', 'samples', 'sample', 'testdata',
+                'test_data', 'test-data')
+
 # A SQL file counts as a test only when its name says so. `tests/fixtures.sql`
 # is seed data, not a test.
 _SQL_TEST_NAME = re.compile(r'^(?:test_.+\.sql|.+_test\.sql|.+\.test\.sql)$')
@@ -155,7 +160,8 @@ def _npm_package(root, name):
 def _walk(root):
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = sorted(d for d in dirnames
-                             if not d.startswith('.') and d not in _SKIP_DIRS)
+                             if not d.startswith('.') and d not in _SKIP_DIRS
+                             and d not in FIXTURE_DIRS)
         yield dirpath, filenames
 
 
