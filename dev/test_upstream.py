@@ -525,6 +525,22 @@ def test_sync_from_the_command_line_prints_the_delta(workspace):
         % (workspace.first_sha[:7], new_sha[:7], new_sha[:7])]
 
 
+# purlin: upstream PROOF-59
+def test_sync_makes_no_commit(workspace):
+    _add(workspace)
+    _git(['add', '-A'], workspace.root)
+    _git(['commit', '-q', '-m', 'anchor(no_eval): add'], workspace.root)
+    before = _git(['rev-parse', 'HEAD'], workspace.root)
+    _advance(workspace)
+
+    assert upstream.sync(workspace.root,
+                         names=['no_eval'])['anchors'][0]['status'] == 'synced'
+    assert _git(['rev-parse', 'HEAD'], workspace.root) == before
+    # Changed in the working tree and not staged: ` M`, its space cut.
+    assert _git(['status', '--porcelain', '--', 'specs'],
+                workspace.root) == 'M specs/_anchors/no_eval.md'
+
+
 # purlin: upstream PROOF-39
 def test_a_source_with_crlf_endings_syncs_to_a_copy_with_no_carriage_return(
         workspace):

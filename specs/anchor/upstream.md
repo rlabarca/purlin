@@ -9,7 +9,7 @@
 >   Purlin's format kept in a git repository.
 > Scope: scripts/anchor/upstream.py
 > Stack: python/stdlib, git plumbing over subprocess, no third-party package
-> Highest-Rule: 34
+> Highest-Rule: 35
 
 ## Rules
 
@@ -39,6 +39,7 @@
 - RULE-32: Without `--json`, `sync --check` gives an anchor that names a source and no pin the line `<name>: names a source and no pin. Run purlin:anchor sync <name>.`
 - RULE-33: `sync` in a project where no anchor names a git source exits 0 and prints `No anchors name a git source.`
 - RULE-34: A `--project-root` that names no folder exits 2 and prints `No Purlin project root found. Pass --project-root <dir>.`
+- RULE-35: `sync <name>` makes no commit: the anchor copy whose pin it advances is left changed and not committed
 
 ## Proof
 
@@ -89,3 +90,4 @@
 - PROOF-55 (RULE-32): The anchor `loose` carries a `> Source:` naming the published repository and no `> Pinned:` line; `sync --check` prints the one line `loose: names a source and no pin. Run purlin:anchor sync loose.`
 - PROOF-56 (RULE-33): `sync` runs in a project with no anchor; it exits 0 and prints the one line `No anchors name a git source.`
 - PROOF-58 (RULE-34): `sync` runs with `--project-root` naming a folder that does not exist; it exits 2 and prints `No Purlin project root found. Pass --project-root <dir>.` on its error output
+- PROOF-59 (RULE-35): An added `no_eval` is committed, a new version is published, and `sync no_eval` advances the pin; HEAD is the commit it was before, and git reads the anchor copy as changed and not committed
