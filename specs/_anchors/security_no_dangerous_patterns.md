@@ -3,12 +3,12 @@
 > Type: security
 > Global: true
 > Description: The dangerous patterns no executable file under `scripts/` may carry, in
->   the form each of the six file types the scope names spells them, plus the argv
->   hardening that keeps a repository-supplied string out of git's option position. The
->   scope names file types `scripts/` does not hold today, so a file in one of them is
->   watched from the day it arrives. The anchor is global: every feature's code lives
->   under `scripts/`, so every feature counts these rules.
-> Scope: scripts/**/*.py, scripts/**/*.sh, scripts/**/*.js, scripts/**/*.ts, scripts/**/*.php, scripts/**/*.cs
+>   the form each file type the scope names spells them, plus the argv hardening that
+>   keeps a repository-supplied string out of git's option position. The anchor is
+>   global: every feature's code lives under `scripts/`, so every feature counts these
+>   rules.
+> Scope: scripts/**/*.py, scripts/**/*.sh, scripts/**/*.js
+> Highest-Rule: 8
 
 ## Rules
 

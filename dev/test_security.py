@@ -21,8 +21,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp
 from purlin import drift as purlin_drift  # noqa: E402
 from purlin import status as purlin_status  # noqa: E402
 
-# Every executable language that ships under scripts/. The anchor's > Scope:
-# names exactly these six extensions; keep the two in step.
+# Every executable language the anchor's rules name. Its > Scope: names the
+# three that scripts/ holds; the other three are read wherever they appear.
 SCRIPT_EXTENSIONS = ('.py', '.sh', '.js', '.ts', '.php', '.cs')
 
 
