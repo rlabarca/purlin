@@ -5,25 +5,28 @@
 # Purlin
 
 Purlin is a Claude Code plugin for spec-driven development. You write the rules your software
-must follow, put one comment above each test that shows a rule, and Purlin runs your own test
-command and tells you which rules pass over the code as it is now. A team can ask for more: an
-AI audit of whether the tests are sound, and a person's signature on each rule, locked with a
-signed git tag. Its intended use is to produce that evidence, in the repository, for the people
-who build the software and for whoever must sign it off; where sign-off happens in a regulated
-system, Purlin's evidence package is an input to it. Purlin cannot prove your code is correct,
-and it makes no claim of compliance.
+must follow, one comment above a test ties it to a rule, and Purlin runs your own test command
+and tells you which rules pass over the code as it is now. A team can ask for more: an AI audit
+of whether the tests are sound, and a person's signature on each rule, with a signed git tag on
+a finished version. Purlin keeps that evidence in the repository, for the people who build the
+software and for whoever signs it off; where sign-off happens in a regulated system, Purlin's
+evidence package is an input to it. Purlin cannot prove your code is correct, and it makes no
+claim of compliance.
 
 ## What it touches
 
-- A settings file and the specs you write: `.purlin/config.json`, `.purlin/evidence/`,
-  `specs/`, a block in `.gitignore`, and an ignored copy of the dashboard page.
-- One comment above a test: `# purlin: cart RULE-1`.
-- Your own test command, in your own framework, with the flag that makes it write a report.
-- Nothing committed unless you ask: a run commits its results only with `--commit`.
-- Nothing running unless you ran it: no git hook, no background job, and no CI workflow unless
-  a rule needs another operating system or you do not trust this machine.
-- Nothing installed in your test suite.
-- If you leave, the markers are comments.
+- A settings file, the specs and the evidence: `.purlin/config.json`, `specs/`,
+  `.purlin/evidence/`, a block in `.gitignore`, and a copy of the dashboard page,
+  `purlin-report.html`, which that block keeps out of git.
+- One comment above a test: `# purlin: cart PROOF-1`.
+- Your own test command, in your own framework, with the flag that makes it write a report. The
+  first test run suggests it, and you confirm it.
+- A commit when you agree to one: setup asks before it commits the files it wrote, and a test
+  run commits its results only with `--commit`.
+- Nothing running unless you ran it: no git hook, and no Purlin process left running after a
+  command ends. A runner file for the git host is written only where a proof is tagged for an
+  operating system this machine is not.
+- Nothing added to your test suite.
 
 ## Ten minutes
 
@@ -35,55 +38,68 @@ and it makes no claim of compliance.
    claude plugin marketplace add https://github.com/rlabarca/purlin.git --scope project
    ```
 
-   Inside Claude Code: `/plugin install purlin@purlin`, `/reload-plugins`, then `purlin:init`,
-   answering `passed` to the gate question.
+   Inside Claude Code: `/plugin install purlin@purlin`, then `/reload-plugins`.
 
-2. **Write three rules** in `specs/shop/cart.md`:
+2. **Set up.** Type `purlin:init`. Answer `passed` to the gate question and yes to committing
+   the files it wrote. In a project with no code yet it ends:
 
-   ```markdown
-   # Feature: cart
-
-   > Scope: src/cart.py
-
-   ## Rules
-
-   - RULE-1: An empty cart totals 0
-   - RULE-2: The total is the sum of price times quantity
-   - RULE-3: A negative quantity is refused
+   <!-- sample: setup -->
+   ```text
+   No specs found under specs/.
+   → Run: purlin:spec <name> to write the first spec.
    ```
 
-3. **Add one comment above each of three tests:**
+3. **Write the rules.** Type `purlin:spec cart` and say what the feature does. It shows you the
+   rules and the proofs it drafted, commits the spec once you agree, and ends on
+   `Spec saved: cart. Next: purlin:build cart`.
 
-   ```python
-   # purlin: cart RULE-1
-   def test_empty():
-       assert total([]) == 0
+4. **Build.** Type `purlin:build cart`. It writes the code and a test for each proof, with one
+   comment above each test naming the proof, commits them, and runs `purlin:test cart`. The
+   first test run in a project has no test command to run, so it suggests one:
+
+   <!-- sample: first-run -->
+   ```text
+   No test command is set in .purlin/config.json, so nothing ran.
+   Suggested for pytest: python3 -m pytest --ignore=mutants {files} --junitxml={report}
    ```
 
-4. **Run one command:** `purlin:test`. It ends:
+   Say yes. The command is written into `.purlin/config.json`, the tests run, and the run ends:
 
+   <!-- sample: confirmed-run -->
+   ```text
+   Spec  Rules  Proofs  Tests
+   ───────────────────────────
+   cart  3      3       3 of 3
+   ───────────────────────────
+
+   3 rules. 3 pass their tests.
+   Nothing left to do.
    ```
-   3 of 3 rules meet the gate passed.
-   Untested 0 · Failing 0 · Partial 0 · Passing 3.
-   1 feature.
 
-   → Next: nothing is outstanding at gate passed.
+5. **Read it.** Where a test fails, here the test of `RULE-2`, the run names the rule and the
+   test, ends on what is left to do, and exits 1:
 
-   Tests: 3 of 3 rules pass.
-   gate passed met: 3 of 3 rules
+   <!-- sample: failing-run -->
+   ```text
+   cart RULE-2 fails: tests/test_cart.py::test_sum. Run purlin:build cart.
    ```
 
-5. **Read it.** A failing rule is counted under `Failing`, the last two lines read
-   `Tests: 2 of 3 rules pass.` and `gate passed not met: 2 of 3 rules meet it`, and the run exits 1. Change
-   `src/cart.py` and the rules of `cart` are out of date until the next run, which says why it
-   picked them:
-   `Selected 1 of 1 feature: cart (code changed since bf3709e).`
+   <!-- sample: failing-run -->
+   ```text
+   3 rules. 2 pass their tests.
+   Left to do:
+     1 rule to fix: purlin:build
+   ```
+
+   Change the code the spec covers and its rules are out of date; the next `purlin:test` runs
+   them again and names what changed.
 
 [docs/getting-started.md](docs/getting-started.md) walks the same path in full.
 
 ## When a team wants more
 
-The **gate** is how far the project asks every rule to go, and each step up has one command:
+The **gate** is the last step every rule must reach before a version is finished, and each
+step has one command:
 
 | Gate | What every rule must have | The command |
 |------|---------------------------|-------------|
@@ -91,12 +107,12 @@ The **gate** is how far the project asks every rule to go, and each step up has 
 | `strong` | that, and an AI audit that found the tests sound | `purlin:audit` |
 | `signed` | that, and a person's signature | `purlin:sign` |
 
-From `strong` up, each rule carries a **proof**, a plain sentence saying how the rule is shown,
-and the marker names it: `# purlin: cart PROOF-2`. `purlin:sign` walks the rules that wait on
-a person and, at the gate `signed` once every rule meets it, writes the evidence package and the
-signed tag `signed/<version>`. The whole loop runs on one machine at every gate. A single rule
-can ask for less with `[level: passed]`; the gate is the ceiling.
-[references/hard_gates.md](references/hard_gates.md) is the one definition.
+From `strong` up, every rule needs a **proof**, a plain sentence saying how the rule is shown,
+and the comment above its test names the proof. `purlin:sign` walks the rules waiting for a
+person and, at the gate `signed`, once nothing is left to do and every result came from
+committed work, writes the evidence package and the signed tag `signed/<version>`. The whole
+loop runs on one machine at every gate. [references/hard_gates.md](references/hard_gates.md) is
+the one definition.
 
 ## Commands
 
@@ -106,17 +122,15 @@ can ask for less with `[level: passed]`; the gate is the ceiling.
 | `purlin:spec <name>` | Turn a requirement in any form into rules and proofs |
 | `purlin:spec-from-code [dir]` | Read an existing codebase and write the specs it already implies |
 | `purlin:build [name]` | Load a spec's rules, write the code and the marked tests, commit the changeset |
-| `purlin:test [feature]` | Run the marked tests and print each rule's passed cell |
-| `purlin:audit [feature]` | Run the tests, the breaks where mutation testing is on, and the AI audit, then write what it found into the evidence |
-| `purlin:sign [feature] [RULE-N]` | Walk the queue, or sign a rule, a feature or a batch as a signed commit |
+| `purlin:test [feature ...] [--all] [--arm-timeout <seconds>]` | Run the marked tests and print each rule's passed cell |
+| `purlin:audit [feature ...] [--all] [--arm-timeout <seconds>]` | Run the tests, the breaks where mutation testing is on, and the AI audit, then write what it found into the evidence |
+| `purlin:sign [feature] [RULE-N ...] [--all]` | Sign a rule, a feature or every rule that waits for a person, as a signed commit |
 | `purlin:export` | Write the evidence package for a version, the data file a regulated system of record reviews |
 | `purlin:status [name]` | Show every rule's cells and what blocks the gate |
 | `purlin:drift [role]` | Report what changed since your last pull, by role |
 | `purlin:anchor <cmd>` | Create anchors, pull them from another repository, and keep the pins current |
 
-Plain language reaches every one of them: "run the tests" reaches `purlin:test`. The syntax
-above is canonical, never required. [references/purlin_commands.md](references/purlin_commands.md)
-has every flag.
+[references/purlin_commands.md](references/purlin_commands.md) has every flag.
 
 ## Install from a checkout
 
@@ -126,9 +140,8 @@ To work on Purlin itself, or to try a version before installing it:
 claude --plugin-dir /path/to/purlin
 ```
 
-A project never carries a copy of Purlin. `--scope project` records the marketplace in the
-project's `.claude/settings.json`, so a teammate who clones the repository resolves the same
-source and runs the install and the reload once.
+No file setup writes into a project names the folder Purlin ran from, so a project is the same
+on every machine.
 
 ## Documentation
 

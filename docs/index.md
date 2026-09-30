@@ -1,16 +1,16 @@
 # Purlin documentation
 
-For anyone looking for the guide that fits their role. Every entry is one sitting's read.
+For anyone looking for the guide that fits their role.
 
 ## Everyone
 
 | Guide | What it covers |
 |-------|----------------|
 | [Getting started](getting-started.md) | What Purlin touches in your project, the ten-minute path from install to a first run, and the day to day at the gate `passed` |
-| [How Purlin works](how-purlin-works.md) | The chain in one diagram, the loop, who writes each file, and the questions every developer asks: where tests run, what red means, which operating system |
+| [How Purlin works](how-purlin-works.md) | The three steps in one diagram, the loop, who writes each file, and the questions every developer asks: where tests run, when a run exits 1, which operating system |
 | [Working together](working-together.md) | What product, developers and QA each run and read, and drift per role |
 
-The gate decides how far every rule must go. The whole loop runs on one machine at every gate.
+The gate is the last step every rule must reach before a version is finished. The whole loop runs on one machine at every gate.
 
 | Gate | What every rule must have | The command that answers it |
 |------|---------------------------|-----------------------------|
@@ -23,7 +23,7 @@ The gate decides how far every rule must go. The whole loop runs on one machine 
 | Guide | What it covers |
 |-------|----------------|
 | [Specs and anchors](specs-and-anchors.md) | The spec format, local anchors, the anchor repo option, pins, id allocation |
-| [Running the tests](running-and-evidence.md) | `purlin:test` and the evidence it writes, `purlin:audit` and what it adds, test strength, and the two reasons a project has a remote runner |
+| [Running the tests](running-and-evidence.md) | `purlin:test` and the evidence it writes, `purlin:audit` and what it adds, test strength, and the one reason a project has a remote runner |
 | [Specs from existing code](spec-from-code.md) | `purlin:spec-from-code` once on a codebase that predates Purlin |
 
 ## Product
@@ -36,7 +36,7 @@ The gate decides how far every rule must go. The whole loop runs on one machine 
 
 | Guide | What it covers |
 |-------|----------------|
-| [Review and signing](review-and-signing.md) | The level, the queue, what the audit found, `purlin:sign`, the tag, what stales a signature |
+| [Review and signing](review-and-signing.md) | What the audit found, `purlin:sign` and the rules it walks, a check by hand, the tag, and when a signature counts |
 | [Dashboard](dashboard.md) | The page that opens from disk, its screens, filters, both themes |
 
 ## Raising the gate
@@ -58,5 +58,5 @@ The gate decides how far every rule must go. The whole loop runs on one machine 
 | [Evidence format](../references/formats/evidence_format.md) | The file per feature per source a run writes, and its fingerprint |
 | [Signature format](../references/formats/signature_format.md) | The signature file and what it binds |
 | [Package format](../references/formats/package_format.md) | The evidence package `purlin:export` and `purlin:sign` write |
-| [Spec quality](../references/spec_quality_guide.md) | Writing a rule and a proof worth having, and choosing a level |
-| [Supported frameworks](../references/supported_frameworks.md) | How each test framework is detected, and the test command init writes for it |
+| [Spec quality](../references/spec_quality_guide.md) | Writing a rule and a proof worth having, and reading the cell that blocks a rule |
+| [Supported frameworks](../references/supported_frameworks.md) | The test tools the first test run recognises, and the `tests` entry it suggests for each |
