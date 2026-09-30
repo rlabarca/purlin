@@ -550,3 +550,568 @@ of the spec-from-code skill given there, the five reasons, what a caller reaches
 tests and benchmarks, the position file's fields, the ending); K5.5 (the spec skill's "Ids");
 K5.7 (the test skill's comparison); K5.8; K5.9 (the command reference's sentences); K5.10 (the
 release notes); K9 (the handoff paragraph).
+
+## The pages
+
+Written by the second integration agent on 2026-09-30, after the four lanes of fan-out 2
+(`phase4-plan.md` section 9) merged. Nothing was pushed or tagged, and no audit or signing was
+run. The lanes' scratch folders, which the samples came from, are in the session scratchpad and
+do not outlive it; what later work needs from them is below.
+
+### The merges
+
+Each lane was rebased on `main` in its worktree, `dev/test_vocabulary.py` and
+`dev/test_purlin_docs.py` were run (12 passed each time), and `main` was fast-forwarded to it,
+in the order `pages-start`, `pages-running`, `pages-signing`, `pages-specs`. No rebase met a
+conflict.
+
+| Lane | Commits on `main` | Files |
+|---|---|---|
+| `pages-start` | `51fef156f`, `2a748168b`, `eb2a49998` | `README.md`, `docs/index.md`, `docs/getting-started.md`, `docs/how-purlin-works.md`, `specs/instructions/purlin_docs.md` (new), `dev/test_purlin_docs.py` (new) |
+| `pages-running` | `125c0403d` | `docs/running-and-evidence.md`, `docs/dashboard.md` |
+| `pages-signing` | `128b517da` | `docs/review-and-signing.md`, `docs/regulated-workflow.md`, `docs/raising-the-gate-and-upgrading.md` |
+| `pages-specs` | `cb1c3070d` | `docs/specs-and-anchors.md`, `docs/spec-from-code.md`, `docs/working-together.md`, `docs/team-workflow.md` |
+
+### The rules the lanes handed over, as written
+
+Each is one rule, one proof of one case in at most 60 words and a marked test of its own, in
+the spec the lane named. Ids are one past the highest the spec has held (`git log -p --follow`).
+
+| Page statement | Spec, rule, proof | Commit |
+|---|---|---|
+| `README.md`: Purlin makes no claim of compliance | `package` RULE-25, PROOF-55 (43 words) | `7213660d1` |
+| `README.md`, `docs/getting-started.md`: the install commands | `purlin_version` RULE-16, PROOF-38 (22); `.claude-plugin/marketplace.json` joins the scope | `b651734e3` |
+| `docs/index.md` and every link on the four start pages | `purlin_docs` RULE-12, PROOF-17 (38) | `0e8e970aa` |
+| `docs/dashboard.md`: a notice for each warning | `purlin_report` RULE-60, PROOF-198 (38) | `d0ae8d720` |
+| `docs/dashboard.md`: a second setup keeps the page | `scaffold` RULE-74, PROOF-162 (33) | `d5bd0bc2e` |
+| `docs/running-and-evidence.md`: no process prompts | `host` RULE-45, PROOF-139 (36), GitHub; host RULE-38 holds Azure DevOps | `bfe6d64ca` |
+| `docs/review-and-signing.md`, `docs/working-together.md`: a case is a new proof line | `skill_sign` RULE-22, PROOF-50 (49) | `fc4696b34` |
+| `docs/review-and-signing.md`: never narrow a rule | `skill_sign` RULE-23, PROOF-51 (23) | `fc4696b34` |
+| `docs/regulated-workflow.md`: the regulated system holds the authority to sign off | `skill_export` RULE-13, PROOF-35 (29); the rest of the sentence is a question for the owner | `a8f8e90b2` |
+| `docs/specs-and-anchors.md`: `purlin:spec` commits the spec | `skill_spec` RULE-22, PROOF-51 (36) | `cdd1e01ba` |
+| `docs/specs-and-anchors.md`: `create` commits as `anchor(<name>): create` | `skill_anchor` RULE-14, PROOF-35 (22) | `ea50a2a15` |
+| `docs/specs-and-anchors.md`: `sync` commits nothing | `upstream` RULE-35, PROOF-59 (34) | `91adcd858` |
+| `docs/spec-from-code.md`: the status reads specs before setup | `states` RULE-96, PROOF-236 (32) | `41cad3c10` |
+| `docs/spec-from-code.md`: twenty to forty features | `skill_spec_from_code` RULE-49, PROOF-163 (30) | `ffbc157ba` |
+| `docs/spec-from-code.md`: a proof never names the test | `skill_spec_from_code` RULE-50, PROOF-164 (36) | `ffbc157ba` |
+| `docs/spec-from-code.md`: the suite's own helpers | `skill_spec_from_code` RULE-51, PROOF-165 (30) | `ffbc157ba` |
+| `docs/working-together.md`: drift writes nothing | `drift` RULE-27, PROOF-66 (42) | `1361395a9` |
+
+`purlin_docs` holds RULE-1, RULE-2 and PROOF-1 to PROOF-9, numbers an earlier spec of the same
+name held before it was deleted in `f7bbdbe36` (its highest were RULE-11 and PROOF-16). The lane
+left them as they are and set `> Highest-Rule: 2`; integration took RULE-12 and PROOF-17 for the
+new rule and raised `> Highest-Rule:` to 12, as K4.2 reads the history.
+
+### What integration also changed
+
+- `c0f3a5d66`, `e8f9602a5`: at the gate `signed` a rule of a spec that names no files is signed
+  and its signature does not count (A9), in `skills/spec/SKILL.md` (skill_spec RULE-9, PROOF-30
+  and its test), `references/hard_gates.md`, `references/formats/spec_format.md` (the `> Scope:`
+  row, wording only, no bump) and `RELEASE_NOTES.md`; the glossary's runner file on Azure DevOps
+  reads `purlin.azure-pipelines.yml`, the file setup writes.
+- `6634878fd`: the strength reason `strength <n>% under <m>%` shows the whole-number part
+  (technical call 14), where it rounded; states PROOF-237 is the boundary, 69.6 under 70.
+- `b54a9def4`: the two screenshots retaken from the rebuilt page (unchanged by the build) and
+  the fixture `regulated`.
+
+### The links and the diagrams
+
+Every relative link on `README.md` and the 12 pages under `docs/` was followed, 113 in all:
+none is broken, each `#` part matching a heading as the git host spells its anchor. The 5
+mermaid blocks (`how-purlin-works.md` 11, `regulated-workflow.md` 158,
+`running-and-evidence.md` 278 and 427, `team-workflow.md` 38) each parse with mermaid in
+headless Chromium from the `.venv`; a broken block is refused.
+
+### Lane `pages-start`, as it reported
+
+#### Per page
+
+##### `README.md`
+
+False statements of `sanity-3.md` section 3 corrected (7 of 7): 23-24 the trust reason (one
+reason now); 63 the first run (the suggestion and your confirmation are steps 4); 65-73 the
+sample ending (now `3 rules. 3 pass their tests.` / `Nothing left to do.` from a run); 76-77 the
+failing run (the `fails` line and `Left to do` from a run); 95-97 the tag (when nothing is left
+to do and every result came from committed work); 97-98 `[level: passed]` (cut); 111
+`purlin:sign` row (syntax and purpose from `references/purlin_commands.md`, and every other row
+the same). Section 4 items 1 and 3: the path uses `purlin:spec` and `purlin:build`; `If you
+leave, the markers are comments.` is gone.
+
+Cut: the six sample lines; `A single rule can ask for less with [level: passed]`; `Plain
+language reaches every one of them ... The syntax above is canonical, never required.` (no rule;
+the command reference says it); `--scope project records the marketplace in the project's
+.claude/settings.json, so a teammate ... runs the install and the reload once.` (Claude Code's
+behaviour; no rule).
+
+Statements: 31. Covered by a named rule: 26 (scaffold RULE-1, 8, 13, 18, 21, 22, 24, 34, 36, 47,
+51, 67, 68, 69; purlin_output RULE-2, 3; run_script RULE-3, 5, 11, 20, 55, 61, 63, 67, 68;
+skill_spec RULE-3, 6; skill_build RULE-2, 5, 12; skill_test RULE-7; states RULE-39; signatures
+tag rules; purlin_docs RULE-1, 2). Framing or navigation with no behaviour: 3 (the first
+sentence, the package as an input to a regulated system, the Documentation links). Handed to
+integration: 2 (below).
+
+##### `docs/index.md`
+
+Corrected (4 of 4): 26 `the two reasons` to `the one reason`; 39 `The level, the queue, ... what
+stales a signature` to `What the audit found, purlin:sign and the rules it walks, a check by
+hand, the tag, and when a signature counts`; 61 `choosing a level` to `reading the cell that
+blocks a rule`; 62 `the test command init writes for it` to `the tests entry it suggests for
+each`. Also: how-purlin-works' cell `The chain in one diagram ... what red means` reads `The three
+steps in one diagram ... when a run exits 1`; `The gate decides how far every rule must go.`
+reads `The gate is the last step every rule must reach before a version is finished.`
+
+Cut: `Every entry is one sitting's read.`
+
+Statements: 27 (the intro, the gate paragraph, the gate table, 24 table rows). Covered: the gate
+paragraph and table (hard_gates, scaffold RULE-1, 36). The table rows describe other pages; they
+are navigation, held true by reading those pages, and every link resolves. Handed: 1 (links).
+
+##### `docs/getting-started.md`
+
+Corrected (13 of 13): 14-15 the `tests` setting (setup leaves it empty; the first run suggests);
+19-20 the trust reason; 42-44 the trust question (the three questions, from K3.9 and scaffold
+RULE-1); 44 setup reads the framework (cut; the first run does); 45 the old next step (now the
+run's two lines, quoted); 88 the first run (quoted with its suggestion, and the confirmation as a
+step); 92-94 the blank line (quoted from the run); 106-113 the sample ending; 116-117 the
+failing run; 149-151 `--commit` (two commits, the work then the evidence); 154-155 `→ Next:` (the
+first line of `Left to do`, or `Nothing left to do.`); 175 the tag condition; 178
+`[level: passed]` (cut). Section 4 items 1 and 2: the path uses `purlin:spec` and
+`purlin:build`; the steps to remove Purlin are gone.
+
+Cut: `If you leave, the markers are comments. Delete .purlin/, specs/, ... exactly as they
+did.`; `Init reads your test framework from the tree`; the typed spec and the typed tests;
+`purlin:audit calls a model on each rule and a finding blocks.` (reworded to the glossary);
+`purlin:init --gate strong raises the gate and writes what the new gate needs; it changes no
+rule.` (reworded to scaffold RULE-12).
+
+Statements: 52. Covered by a named rule: 50 (as for the README, plus run_script RULE-62, 64;
+skill_test RULE-15, 17; skill_build RULE-7; skill_spec RULE-5, 15; states RULE-92; drift rules
+for `purlin:drift eng`; evidence RULE-29 and run_script RULE-55 for the selection;
+evidence_writer RULE-19 for the two commits; summary rules for the summary; reports rules for the
+comment syntax per language). Handed: 1 (the install commands, shared with the README).
+Navigation: the "Where to go next" links.
+
+##### `docs/how-purlin-works.md`
+
+Corrected (22 of 22): 8-9 and 32-39 levels (cut; every rule is asked what the gate asks); 11-26
+the diagram (redrawn: no levels, no `meets the gate`; a rule ends on nothing left, or on left to
+do with its command); 30 queue and signature at `passed` (a hand check is signed at any gate);
+50-52 the walk (at every gate) and the tag condition; 60 `proven` (`finished`); 62-63 the tag
+line (`Tagged signed/<version> at <sha7>.` then the push line); 63-64 the conditions for no tag;
+80-81 what a signature binds (six things); 81-82 what it records (name, email, time, key
+fingerprint, not the machine); 82-84 `stale` (ends with no message, `unsigned`, `to sign`);
+94-96 two reasons and `trust: remote` (one reason); 96-97 the Linux job (one job per tagged
+system this machine is not, and no other); 104-106 the tag run (runs the tests, writes nothing);
+112-114 and 123-125 the endings (summary and `Left to do`); 125 exit 1 (the full list); 131 and
+132-133 the signature and the tag conditions; 135-140 "What does a level do?" (replaced by "What
+keeps a rule from the gate?"); 148-149 `not audited` (gate `strong` and up, no audit entry for the
+current hashes); 151-152 build work and the queue (`to audit`; `to strengthen` or `to measure`).
+Also `<os>: no run yet` reads `Windows: no run yet`, with `to test on Windows`.
+
+Statements: 58. Covered by a named rule: 56 (states RULE-15, 36, 39 and the cell rules;
+signatures rules on what a signature binds and records, the walk, RULE-70 and the tag
+conditions; scaffold RULE-13, 15, 42, 57; run_script RULE-11, 12, 47, 61, 62, 65, 66; host rules
+for `--remote`; evidence_writer RULE-19; states RULE-92; hard_gates' `Left to do` kinds through
+the summary rules). Framing: 2 (the page's opening sentence; `A tag holds the whole tree at that
+commit`, which is git's own).
+
+#### The scratch runs the samples came from
+
+Scratch folder `<scratchpad>/p4-pages-start`:
+
+- `sample1/`: `python3 dev/test_purlin_docs.py <scratch>/sample1`, which builds the sample the
+  test builds and prints each run (`sample1.out`). Every `text` block on the pages is taken from
+  it: `setup` (setup at `--gate passed --yes`), `first-run`, `confirmed-run`, `commit-run`,
+  `failing-run`, `no-tool`.
+- `run2/`: setup with no `--gate`, answering `passed` then `y`: the gate question
+  `What must be true of every rule before a version is finished?` and its three choices.
+- `walk2/`: the path followed again from the page in a fresh project with the plugin's own
+  launcher, `scripts/purlin_python.sh`: setup's last lines and the first run's two lines match.
+- `wtcopy/`: a copy of the tree with the new spec, run with `--feature purlin_docs` for the
+  marker count.
+
+Lines in prose that are forms, not quotes of one run: `Selected 1 of 1 feature: cart (code
+changed since <sha7>).` (sample1 printed `0632354`); `Suggested tests setting: [...]` (abridged);
+`chore(init): set up Purlin at the gate <gate>`, `purlin: specs, tests and settings for
+<feature>`, `purlin: evidence at <sha7>`, `Tagged signed/<version> at <sha7>.`, `Nothing left to
+do. Push the tag to release it: git push origin signed/<version>` (the contracts and
+`references/hard_gates.md`; the signed flow needs an audit, which needs a model, so it was not
+run); `Spec saved: cart. Next: purlin:build cart` (the spec skill's closing line).
+
+#### Failures and differences in files I do not own
+
+- `purlin_run.py --test --commit` with nothing selected and only `.purlin/config.json` changed
+  commits the work as `purlin: specs, tests and settings for`, with no feature after `for`
+  (sample1 `commit-run`, commit `04c74dd`; also `run2`). The pages give the subject as
+  `purlin: specs, tests and settings for <feature>`.
+- `skills/spec/SKILL.md` and skill_spec RULE-9 still say that at the gate `signed` the rules of a
+  spec naming no files "cannot be signed" (false after A9), beside `references/hard_gates.md`
+  and `RELEASE_NOTES.md`, which the interfaces already list.
+- `references/glossary.md` names `azure-pipelines.yml`; my page names
+  `purlin.azure-pipelines.yml`, the file setup writes (scaffold RULE-57).
+- None failed in the fast sweep.
+
+#### Words I chose
+
+Every sentence below is mine; no code, glossary entry or decision gives it word for word.
+
+README.md:
+- `Purlin is a Claude Code plugin for spec-driven development. You write the rules your software must follow, one comment above a test ties it to a rule, and Purlin runs your own test command and tells you which rules pass over the code as it is now.`
+- `A team can ask for more: an AI audit of whether the tests are sound, and a person's signature on each rule, with a signed git tag on a finished version.`
+- `Purlin keeps that evidence in the repository, for the people who build the software and for whoever signs it off; where sign-off happens in a regulated system, Purlin's evidence package is an input to it.`
+- `A settings file, the specs and the evidence: ..., and a copy of the dashboard page, purlin-report.html, which that block keeps out of git.`
+- `Your own test command, in your own framework, with the flag that makes it write a report. The first test run suggests it, and you confirm it.`
+- `A commit when you agree to one: setup asks before it commits the files it wrote, and a test run commits its results only with --commit.`
+- `Nothing running unless you ran it: no git hook, and no Purlin process left running after a command ends. A runner file for the git host is written only where a proof is tagged for an operating system this machine is not.`
+- `Nothing added to your test suite.`
+- `Set up. Type purlin:init. Answer passed to the gate question and yes to committing the files it wrote. In a project with no code yet it ends:`
+- `Write the rules. Type purlin:spec cart and say what the feature does. It shows you the rules and the proofs it drafted, commits the spec once you agree, and ends on ...`
+- `Build. Type purlin:build cart. It writes the code and a test for each proof, with one comment above each test naming the proof, commits them, and runs purlin:test cart. The first test run in a project has no test command to run, so it suggests one:`
+- `Say yes. The command is written into .purlin/config.json, the tests run, and the run ends:`
+- `Read it. Where a test fails, here the test of RULE-2, the run names the rule and the test, ends on what is left to do, and exits 1:`
+- `Change the code the spec covers and its rules are out of date; the next purlin:test runs them again and names what changed.`
+- `The gate is the last step every rule must reach before a version is finished, and each step has one command:`
+- `From strong up, every rule needs a proof, a plain sentence saying how the rule is shown, and the comment above its test names the proof. purlin:sign walks the rules waiting for a person and, at the gate signed, once nothing is left to do and every result came from committed work, writes the evidence package and the signed tag signed/<version>.`
+- `No file setup writes into a project names the folder Purlin ran from, so a project is the same on every machine.`
+
+docs/getting-started.md (beyond the README's):
+- `A settings file, the specs and the evidence. ... It prints every file it wrote, then asks whether it may commit them. On a yes it commits them in one commit, chore(init): set up Purlin at the gate <gate>.`
+- `The comment ties the test to a proof, and the proof names its rule. Where a rule has no proof, the comment names the rule: # purlin: cart RULE-1.`
+- `Your own test command, in your own framework. Setup leaves the tests setting empty. The first purlin:test suggests an entry for each test tool it recognises, with the flag that makes the tool write a report Purlin reads, and the entries are written once you confirm them. For pytest the command is ..., starting py -3 on Windows.`
+- `A commit when you ask for one. A test run writes its results and commits them only with --commit.`
+- `Nothing running unless you ran it. No git hook, and no Purlin process left running after a command ends. A runner file for the git host is written for one reason: a proof tagged @env for an operating system this machine is not.`
+- `Nothing added to your test suite. No plugin, no import, no fixture. The one exception is the test tool's own: jest needs jest-junit to write its report, and the first test run prints the command that installs it.`
+- `The path below starts in a Python project whose pyproject.toml configures pytest and that holds no code yet. Each step shows what you type and the lines the step ends on. The rules and tests the model writes are your own and differ from run to run, so this page shows none of them.`
+- `Set up. Type purlin:init. It asks up to three things:` / `the gate, ..., with the choices passed, strong and signed. Answer passed.` / `at strong and signed only, and only where a tool that can do it exists for your test framework, whether to break the code on purpose to measure test strength.` / `whether it may commit the files it wrote. Answer yes.`
+- `It names each file it wrote, copied or skipped:` / `Then it commits them, names the commit and each file in it, and ends on the next step:`
+- `In a project that already holds code, the last line names purlin:spec-from-code, which writes the specs that code already implies:`
+- `Write the rules. Type purlin:spec cart and say what the cart must do: a sentence, a ticket or a list of criteria. A rule is one line saying what the software must do, and a proof says how that is shown, in words a person who cannot read code can judge. It prints the rules and proofs it drafted for you to read, writes them to specs/<category>/cart.md with a > Scope: line naming the files the code lives in, commits the spec once you agree, and ends on:`
+- `Build. Type purlin:build cart. It writes the code into the files > Scope: names and a test for each proof, with one comment above each test naming the proof, where no existing test already shows it. It commits them, with a body saying which rule each change serves, and runs purlin:test cart.`
+- `The first test run in a project has no test command to run. It runs nothing, suggests an entry for each test tool it recognises, then prints the whole setting on one line, Suggested tests setting: [...]:`
+- `Where your project runs its tests in another way, with another interpreter or other options, the agent shows you the difference. Say yes to the entry you want: the agent writes it into .purlin/config.json and runs the tests again. The run prints:` / `and then the status of every rule, which is what it ends on:`
+- `Where the first run recognises no test tool, which for pytest means no conftest.py, no pytest.ini and no [tool.pytest section in pyproject.toml, it prints:`
+- `supported_frameworks.md lists the test tools it recognises and the entry it suggests for each.`
+- `Read it. 3 rules. 3 pass their tests. is the summary: how many rules there are and how many passed their tests. Nothing left to do. means no rule has anything left at the gate passed. Open purlin-report.html in a browser to see each rule on its own line; it reads the results of the last run.`
+- `Where a test fails, here the test of RULE-2, the run names the rule and the test:` / `It ends on what is left to do, and exits 1:`
+- `... and the run's first line says why it picked the feature, Selected 1 of 1 feature: cart (code changed since <sha7>)., naming the commit the last run saw. Run it once more with nothing changed and it runs nothing:`
+- `purlin:spec <name> turns a requirement into rules and proofs.` / `purlin:test runs the features the change touched: those whose spec, code or tests changed since their last run, and those with no run on this operating system.`
+- `purlin:test --commit makes two commits under your own git identity: first the specs, the marked tests and the settings the results describe, as purlin: specs, tests and settings for <feature>, then the evidence, as purlin: evidence at <sha7>, naming the first.`
+- `Every run ends on the summary and Left to do. The first line of Left to do is the next step and names its command; a project with nothing left at the gate passed or strong ends on Nothing left to do.`
+- `running-and-evidence.md covers a run in full, including the one reason a project has a remote runner: a proof tagged for an operating system this machine is not.`
+- `The gate is the last step every rule must reach before a version is finished. There are three:`
+- `From strong up every rule needs a proof, which QA writes or reads and the audit checks the test against. purlin:audit has a model read each rule, its proofs and its tests; a finding makes the rule weak, and it is left to do as to strengthen. At signed a person signs each rule, and purlin:sign writes the signed tag signed/<version> once nothing is left to do and every result came from committed work.`
+- `purlin:init --gate strong raises the gate. The specs, the tests and the evidence stay as they are, and the summary gains a step.`
+
+docs/how-purlin-works.md:
+- `It is the shortest description of the whole thing: one rule, three steps, and who takes each one.`
+- `A rule goes through up to three steps, in this order, each containing the one before: passed, strong and signed.`
+- the diagram's labels `nothing left to do for this rule`, `left to do,<br>with the command that does it`, `yes, gate passed`, `yes, gate strong or signed`, `yes, gate strong`, `yes, gate signed`
+- `The answer to each step is a cell, and a cell exists only at or below the gate, so a project at passed shows no test strength and no Strong or Signed column. A proof marked @manual is checked by a person, who signs the rule with purlin:sign, at any gate.`
+- `purlin:sign with no argument walks the rules waiting for someone to test by hand or to sign, at every gate; at signed, once nothing is left to do and every result came from committed work, it writes the evidence package and the tag.`
+- `purlin:test --remote is the one command that pushes, and it pushes a run branch of its own, never the branch you are on.`
+- `The tag marks a finished version.` and `It writes no tag while anything is left to do, while the working tree or a feature's results are not committed, or over a tag that already exists, and none below the gate signed.`
+- `purlin:test --commit commits the specs, the marked tests and the settings the results describe, then the evidence as purlin: evidence at <sha7>, ...`
+- `A signature is a person's attestation that a rule, its proof, its test, the code its feature lists, what the audit found and the machine the tests ran on for each operating system belong together. ... A change to any of the six ends it, with no message: its cell reads unsigned and the rule is left to do as to sign.`
+- `purlin:init writes a runner file, .github/workflows/purlin.yml on GitHub or purlin.azure-pipelines.yml on Azure DevOps, for one reason: a proof in specs/ is tagged @env for an operating system the machine running setup is not. It holds one job for each such system, and no other.`
+- `The runner file runs on a push to a run/* branch and on a push of a signed/* tag. purlin:test --remote creates the run branch, waits for the run through gh on GitHub or az on Azure DevOps, ... A runner runs only the tests tied to proofs tagged @env for its own system, and no audit. A pushed tag starts a run that runs those tests on a clean machine and writes nothing.`
+- `What does a run end on? The summary, one count per step up to the gate, such as 3 rules. 2 pass their tests., then Left to do, one line per kind of work left with its count and its command. The first line of Left to do is the next step. A project with nothing left ends on Nothing left to do. at passed and strong, and at signed on the line naming the push of the tag. getting-started.md shows both endings from a real run.`
+- `purlin:test runs the marked tests the change touched and writes what they saw, and the dashboard shows that run's results the next time you open it;`
+- `When does purlin:test exit 1? When a tied test failed or did not run, evidence is missing, a comment above a test names nothing a spec has, the settings file is missing or cannot be read, the project was set up by Purlin 0.9.5 and not upgraded, or no test command is set. A test run cannot make an audit or a signature appear, so a rule waiting for one never makes it exit 1. purlin_commands.md lists every command's exit codes.`
+- `What keeps a rule from the gate? At passed: a failed test, a rule with no test, a result that is out of date, a rule whose tests passed on one operating system and failed on another, or a system that has not run its tests. At strong: a rule with no proof, no audit of the current rule, proof and test, a finding or a test strength under the minimum, or a @manual proof no person has checked. At signed: no signature that still counts. Each is a line of Left to do, with the command that clears it.`
+- `... and is left to do as to write a proof for, with purlin:spec.`
+- the rewritten `not audited` / `weak` paragraph, and `..., until that system runs it, and the rule is left to do as to test on Windows, with purlin:test --remote.`
+
+docs/index.md: the five cells and the sentence quoted under "Per page" above.
+
+### Lane `pages-running`, as it reported
+
+#### docs/running-and-evidence.md
+
+Corrected, every row of sanity-3 section 3 for this page: 9 (the remote push named), 51-76 (sample taken from a
+run: Proofs column, `3 rules. 3 pass their tests.`, `Nothing left to do.`), 89-91 (two commits), 94-98 (ends on
+the summary and `Left to do`), 130 (the same rules at every gate), 143-145 (two commits; no strength line), 146-147
+(stale line gone), 149-150 (the one `AI audit: ... read` line, then the table, summary, `Left to do`), 151-152
+(exit 1 above `passed` when a rule read is weak or not audited), 159-168 (diagram: work committed before the
+evidence is written), 191-196 (the one-line marker message, from a run), 203 (exit codes: the test run exits on
+the tests alone, plus the four stop causes, link to purlin_commands), 270-273 (a code change ends a signature;
+`unsigned`, `to sign`), 288 (package and tag when nothing but the tag is left and results are committed), 380-381
+(delete command only where the delete fails, and after the Azure 90 minutes), 241-244 (mutmut advice replaced by
+a link to supported_frameworks.md#pytest), 308-310 (setup's `skipped the runner file (...)` line, from a run).
+Also found and corrected: the first-run step (empty `tests`, suggestion, confirmation), the Selected/Skipped
+lines, the Stryker.NET row (`dotnet test`, not xUnit only), `min_strength` null while off, the no-engine reason,
+`strength not measured` and `to measure`, the gh/az check before the push, the runner-file lines setup prints.
+
+Cut: "Takes: seconds / one model call per rule, plus the breaks" row; "Most have none. At every gate a rule
+reaches passed, strong and signed on your machine."; the exit-code table; "the matrix" wording.
+
+Rules named, by section: intro and table: run_script RULE-3, 45, 49, 51, 73, 75, host RULE-12. First run:
+run_script RULE-61, 62, 63; skill_test RULE-7, 17; scaffold RULE-52. Which features run: run_script RULE-55, 56,
+78, 57, 58; evidence RULE-29. What a run prints: run_script RULE-82, 68; reports RULE-1, 16; evidence_writer
+RULE-1, 8, 9, 10, 19, 21, 4; scaffold RULE-67 (runtime ignored). How a run ends: run_script RULE-11, 65, 66, 70,
+61, 62, RULE-1; hard_gates (summary, Left to do). A failing test: run_script RULE-5, 40, 67. Other OS: run_script
+RULE-10; states RULE-6, 43, 44, 57; evidence_writer RULE-3. Loud failures: reports RULE-17, 18, 31; run_script
+RULE-8, 79, 80. A comment that names nothing: reports RULE-19; run_script RULE-11; hard_gates `to_correct`.
+purlin:audit: ai_audit RULE-1, 2, 3, 4, 5, 6, 16; run_script RULE-48, 49, 50, 51, 52, 54, 76; states RULE-89;
+evidence_writer RULE-12, 18. Flow: run_script RULE-68; evidence_writer RULE-19, 10. Test strength: mutation
+RULE-1, 3, 8, 18, 19, 23, 27, 29, 14, 32, 22; scaffold RULE-2, 45, 46 (PROOF-45, 86 read `auto`); run_script
+RULE-45, 72, 73, 74, 75; states RULE-12, 13, 77. Evidence: evidence RULE-11, 13, 14, 15; evidence_writer RULE-1,
+4, 6, 8, 12, 20, 24; states RULE-7; hard_gates "When a signature counts". Runner: scaffold RULE-13, 53, 57, 65,
+15; host RULE-18, 19, 28, 32, 39, 12, 36, 33, 42, 43, 31; run_script RULE-12, 47, 75; evidence_writer RULE-16.
+About 180 sentences and 16 table rows; each is under one of the rules above, cut, or handed over below.
+
+#### docs/dashboard.md
+
+Corrected, every row of section 3 for this page: 12-13 (re-run keeps the page; `--update` replaces it), 28-30
+(count gone), 30-31 (`signed/1.4.0`, commit in the hover), 31-32 (no commit box), 32-33 (`Data: <age>`, hover
+text quoted), 35-36 (tabs), 44-46 (no levels), 40 and 147 (the two captions describe the retaken images: the board
+with login open and RULE-4 unfolded, and login RULE-1's page), 49-55 (boxes `No proof`, `Passing` with
+`<n> RULES TOTAL`, `Strong`, `Signed`), 64/71/77/80 (`16 (+6)` and decision 90's hover), 66 (`Windows`/`Linux/Unix`),
+68 (signed over every rule, no stale), 72 (top bar counts nothing), 83 (no Queue tab), 95-96 (badges per step
+reached and `FAILED`), 102, 104-106, 108 (waiting on the rule screen), 125-126 (one button at a time), 128-138 (the
+filter buttons are the `Left to do` lines, with the `Type <command> in Claude Code.` line), 138-139 (`No rule is
+left of this kind.`), 150-153 (no Level row), 157-158 (`Lin`, `Mac`, `Win`), 161 (Audit panel at the gate
+`strong` and above), 163-164 (nothing of strength where none was measured), 170-172 (hand check panel names
+`Type purlin:sign <feature> <RULE-N> in Claude Code.`, at `signed` only), 177 (`Back to the board`), 179-198 (the
+Queue section gone). Also: `last_line` in place of the buttons when nothing is left; links only to a GitHub remote.
+
+Cut: "the tiles, the filters and the top bar count each rule once" (top bar counts none); "at signed none of its
+rules can be signed" (A9); "The data file is generated and never committed" (no rule names report-data.js in
+`.gitignore`).
+
+Rules named: purlin_report RULE-2, 5, 7, 8, 9, 10, 12, 13, 14, 15, 16, 21, 22, 24, 25, 26, 27, 28, 29, 31, 35, 36,
+37, 39, 40, 41, 42, 43, 44, 46, 47, 49, 50, 51, 52, 53, 55, 56, 57, 58, 59; scaffold RULE-67, 18; update RULE-31, 6.
+About 120 sentences and 7 table rows; each under one of these, cut, or handed over.
+
+#### Scratch runs the samples came from
+
+Scratch folder `/private/tmp/claude-501/-Users-richlabarca-LocalCode-purlin/faec174d-b9c7-49bb-b61f-60ffdfcb84eb/scratchpad/p4-pages-running`.
+`samples.sh` builds three projects with `make_demo.sh` (setup through `scripts/init/scaffold.py --yes`, the spec
+and the marked tests written by hand as `purlin:spec`/`purlin:build` would) and writes each output to
+`samples/<name>.txt`; `samples.final/` is the run the page copies. Git dates are pinned, so shas repeat.
+
+- `demo` (gate `passed`): `first-run` (the suggestion block), `commit-run` (the full sample and `Committed
+  373225b`), `tests-md` (the table), `nothing-to-run`, `failing` (the fails line and the ending), `wrong-marker`
+  (the comment line and `Left to do`), `windows-proof` (`1 proof needs Windows ...`), `proof-no-test` (`cart
+  RULE-2 has no test for PROOF-5 ...`).
+- `team` (gate `strong`): `audit`, with `dev/fake_claude.py` installed first on the search path (checked before
+  the run); the real `claude` program was never started.
+- `remote` (gate `strong`, `@env(windows)` proof, origin `/nonexistent/github.com/example/demo.git`, which no
+  network reaches): `setup-runner` (the runner-file lines), `remote-no-gh` (PATH without `gh`: the refusal line).
+  A second run with `gh` present failed its push against the local path and printed `Pushing main as
+  run/main-274713c.`; nothing reached a git host.
+- `g1` (gate `signed`, key made with `ssh-keygen` in the scratch folder, `gpg.format ssh`): audit with the stand-in,
+  `sign.py cart RULE-1`, then the page looked at headless with playwright (`look.py`). `fin`: a finished project's
+  board (`Nothing left to do.` in place of the buttons).
+- The two screenshots staged in scratch from `dev/capture_doc_screenshots.py`'s own `SHOTS` and fixture
+  (`shots.py`, `dashboard-board.png`, `dashboard-rule.png` in the scratch folder); captions written from them.
+  The built page (`dev/build_report.py`'s `build()` into scratch) is byte-identical to the committed
+  `scripts/report/purlin-report.html`.
+
+#### Sentences I wrote that no code, glossary entry or decision gives
+
+- "For the developer who runs Purlin, and for anyone who reads the evidence afterwards." (kept from the page)
+- "Both call one run script, `scripts/run/purlin_run.py`, so there is one answer to how a test is run." (kept)
+- Table header "The step it answers" and row "Reads each rule with a model | no | yes, one call per rule".
+- "Setup leaves the `tests` setting in `.purlin/config.json` empty. The first run finds the test tools the project
+  uses, runs nothing, and suggests an entry for each:"
+- "A run of a project with one feature and three marked tests, with `--commit`, reads:"
+- "A failing test is a result: the evidence records it as `fail`." / "The run ends on the table and:" / "A rule some
+  of whose proofs have no test is named the same way:"
+- "A test framework that runs nothing says nothing about it, so the run script checks two things the frameworks
+  cannot check themselves." (kept) and "Each prints a line starting `Evidence is missing:` and makes the run exit 1."
+- "An audit of a project at the gate `strong` in which the model found one gap reads, after the tests:"
+- "Both commands take the same steps on your machine, and the audit adds one:" and the diagram node "with
+  --commit, commit the specs,<br>the marked tests and the settings".
+- "It is what a teammate reads on the git host without running anything:"
+- "Use it for the reason above. It pushes a branch of its own, never the branch you are on:" (kept)
+- Dashboard: "The page has two screens: the board, and one rule."; "Every screen carries the same top bar:";
+  "The board then opens on the boxes."; "A column above the gate is absent, not empty."; "A step not reached draws
+  nothing: why it was not reached is on the rule's screen."; "The page opens dark until you choose."; "The panel
+  reports and recommends nothing." (kept); the two image descriptions, whole; the Next line "signing the rules
+  the page names".
+
+#### Faults found in files this lane does not own (left as they are)
+
+1. `scripts/run/purlin_run.py` `_nothing_to_run`: `--test --commit` with nothing selected makes a first commit with
+   the subject `purlin: specs, tests and settings for ` (no feature named) holding `.purlin/config.json` alone,
+   and leaves the changed spec and marked tests uncommitted (`work_paths({}, features, [])`). Seen in a scratch
+   run: `e57dbd2 purlin: specs, tests and settings for`.
+2. `scripts/report/src/app.js` `auditLines`: with mutation testing off (`min_strength` null) the `Strong` box and
+   column hover read `minimum strength 0%`.
+3. `scripts/report/src/rule.js` `proofDetail`: a `@manual` proof reads `No test yet. Type purlin:build <feature> in
+   Claude Code.` although a hand check needs no test.
+4. `scripts/mcp/purlin/states.py` line 668: `strength %d%% under %d%%` rounds the strength; technical call 14 says
+   the whole-number part (floor) on every surface.
+5. `purlin_run.py --audit --commit` prints two blank lines between the committed paths and
+   `AI audit: <n> rules to read, <k> at a time.`
+
+### Lane `pages-signing`, as it reported
+
+#### Per page
+
+##### docs/review-and-signing.md (about 90 statements: 76 sentences, 16 table rows)
+Section 3 corrected: the queue became the two `Left to do` lines the walk reads (signatures RULE-11); the tag condition is "nothing but the tag left and every result committed" (RULE-45, 46, 49, 55); hand checks at every gate (RULE-12, PROOF-92); levels gone; broken `hard_gates.md#the-level` link gone; opening line and stop heading from a real run (RULE-11, 82, 83, 84); signed-cell words `signed`/`unsigned`/`waiting`; ended signature reads `unsigned` with no message (RULE-6, 7); other work named by its own command; the `passed` refusal lines removed; the close from a real run (RULE-58, 68, 87); version order (RULE-56); tag lines (RULE-70); refusal table (RULE-46, 49, 55, 57, 66, 73, 74, 80, 65); tag run writes nothing (run_script RULE-47, host RULE-28); `--all` not `--batch` (RULE-12); by-name output (RULE-58, 62, 64); no `strong` warning line; no-scope rule signed with the A9 line (RULE-78); no trust setting; no-key lines (RULE-17), no `commit.gpgsign`, no key upload; six things bound, fields (RULE-9, 42, 50); counting (RULE-20, 21, 23), every gate; a code change ends it (RULE-6, PROOF-84), sample from a real run.
+Cut: the level section, the queue header, `stale` rows, "Changing the code alone stales nothing", the upload sentence, the `${CLAUDE_PLUGIN_ROOT}` ai_audit command line (replaced by what the skill does, skill_sign RULE-12, ai_audit RULE-17), "a rule from an anchor is changed in the anchor's own repository".
+
+##### docs/regulated-workflow.md (about 61 statements)
+Corrected: signature records no signing machine and no level, six things, a change ends it (signatures RULE-6, 9, 50, 61); tag when nothing but the tag is left (RULE-45, 46); version order (RULE-56); tag lines from a real run (RULE-70); package state `finished`/`not finished`, no `not_for_approval` (package RULE-3, 4, 5); settings `gate`, `mutation_engine`, `min_strength` (RULE-3); no level field; signature fields per package RULE-13; nothing verified, any key (RULE-20); loop on one machine unless an `@env` proof for another system; diagram now asks "anything but the tag left?" then work not committed, results not committed, a version stated; setup prints no signing setup, `purlin:sign` prints it (RULE-17); signing is not refused over uncommitted evidence, only the tag (RULE-49); no-scope rule signed with its line (RULE-78); `@manual` waits as `to test by hand`, note optional (RULE-68).
+Cut: "What your git host must protect" (A11), the `commit.gpgsign` block, "Three things Purlin does not do" list (kept as one sentence), "`purlin:sign` refuses to sign over evidence".
+Package statements: package RULE-1, 3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 15, 17.
+
+##### docs/raising-the-gate-and-upgrading.md (about 80 statements: 65 sentences, 15 table rows)
+Corrected: one reason for a runner (scaffold RULE-13); no `--dry-run` anywhere; settings have seven keys, `tests` empty, no `specs/_anchors/` (RULE-5, 50, 51); no levels, no queue, hand checks at every gate; setup prints no signing setup; runner jobs one per tagged system this machine is not (RULE-15); an unaudited rule is `to audit`; tag needs nothing but the tag left; upgrade asks gate then mutation only at strong/signed, no trust question (update RULE-12, 26, 37, 38); last step is the test run (scaffold RULE-58); pending list printed first (update RULE-41); ending as status (RULE-20); exit codes (RULE-4, 40). Gate question now reads `finished` (scaffold-2), from a real run. The commit question (A10, scaffold RULE-68, 69) shown from a real run.
+Cut: the plugin cache path and `--plugin-dir`, "The proof files ... deleted without a copy", "Nothing under specs/ loses a rule or a proof".
+
+#### Scratch runs (under p4-pages-signing/)
+
+Key `keys/jane` made with ssh-keygen; HOME `home/`; PATH with the fake `claude` first and no real one; `mkproj.sh` builds a login project (pytest, 3 rules, one `@manual`), `mkold.sh` the 0.9.5 fixture with a local bare remote.
+- `shop` (signed, set up with `--yes`, tests setting written, test --commit, audit --commit with the fake model): `walk1.txt` (walk), `tag.txt` (tag), `refuse-work.txt`, `tag-exists.txt`, `check.txt`.
+- `shop-a`: `note.txt`, `norule.txt`, `all.txt`. `shop-k` (no key): `nokey.txt`. `shop-noscope`: `nofiles.txt`. `shop-c` (code change): `codechange.txt`. `shop-v`: `refuse-version.txt`. `shop-x`: `export.txt`, `package-notfinished.json`.
+- `shop-gate`: `gate-passed.txt`, `raise-strong.txt`, `raise-signed.txt`, `lower-passed.txt`; `shop-gate-m`: `mutation-on.txt`; `shop-runner` (Windows proof, remote `remotes/github-shop.git`): `runner.txt`.
+- `old` (0.9.5 fixture): `upgrade.txt`, `old-run.txt`.
+`check_samples.py` checks every output block on the pages against these; `check_links.py` checks every link.
+Lines quoted from the code or a rule rather than a run: `No tag: <feature> has results that are not committed. Run purlin:test --commit.` (RULE-49; no real flow left results uncommitted while signatures still counted), the package and git refusals (RULE-73, 80, 66), `skipped the runner file (there is no git remote, ...)` (scaffold RULE-54), the update commit and "Nothing is pending" lines with `<VERSION>` (update RULE-43, PROOF-33), kept as placeholders so no release number sits on the page.
+
+#### Sentences I wrote that no code, glossary entry or decision gives
+
+- "`purlin:sign` is how a person signs."
+- "A rule is on one line of `Left to do` at a time, the first that applies, and every other line names another command"
+- "at the gate `signed`, every other kind of work on the rule is done and no signature counts for it as it stands"
+- signed-cell table: "a signature that counts matches the rule as it stands"; "none does: none was made, or what one was made over changed"
+- "A walk at the gate `signed` over three rules, answered `sign`, `case` and `sign`:"
+- "The walk is what writes the tag."
+- "A signature that ends says nothing"
+- "the package, read from the committed evidence, finds work left"
+- "An export while two kinds of work are left:" / "and the file it wrote begins:"
+- "Its `state` comes second, after the schema, so an export of work in progress reads `not finished` before anything else."
+- "which signers were entitled is the regulated system's to decide"
+- "It runs on one machine unless a proof is tagged `@env` for a system that machine is not; then `purlin:test --remote` has a remote runner prove it."
+- Diagram node words: "anything but the tag left?", "work not committed?", "results not committed?", "a version stated?", "No tag: the summary and Left to do".
+- "Raised from `strong` to `signed`, with the commit question answered `y`:"
+- "A project on GitHub with one proof tagged `@env(windows)`, set up on a Mac:"
+
+#### Calls left, and failures in files I do not own
+
+- `references/hard_gates.md` lines 200-202 still say a rule whose spec names no files "cannot be signed"; after A9 it is signed and does not count (noted by integration 1 too).
+- Running the status (`status.sync_status`) on the 0.9.5 fixture reached the network: its Figma-sourced anchor made git ask `https://www.figma.com/...` and print `remote: Not Found`. I ran it once, by mistake, to read the pending advisory; nothing else in this lane reached a network service. A status on a project with an https `> Source:` makes a network call; the fixture carries such a source.
+- `purlin:sign --all` that signs the last rule leaves `the version to tag`; only a second `purlin:sign` writes the tag. The page says so as it is.
+- A result that is uncommitted while every signature still counts proved hard to reach in a real flow (a rerun with no change writes identical evidence), so the RULE-49 line is quoted from the rule.
+- No test failed in a file I do not own.
+
+### Lane `pages-specs`, as it reported
+
+#### Per page
+
+##### docs/specs-and-anchors.md (86 sentences, 5 table rows)
+
+False statements of sanity-3 section 3 corrected: 47 (headings matched without regard to case,
+schema_spec_format RULE-12); 53 (`> Scope:` required at `signed`); 63-65 (code change: the
+signature ends, the cell reads `out of date`); 65 (rule text change ends the signature, `to sign`);
+78-89 (no tag on a rule line; bracketed text is rule text, specs RULE-3); 91 (`> Highest-Rule:`,
+never reused, schema RULE-26, skill_spec RULE-2, 13); 118 (proof optional only at `passed`);
+129-130 (note optional, `--note` when given); 196 (`sync` commits nothing; the line quoted whole
+with its commit step); 197-198 (the signature ends). Also: example proofs 38-40 and 102 rewritten
+to the quality guide (PROOF-1..3 from the spec skill's shape, a new PROOF-4 for the 15-minute
+boundary, PROOF-3 absence proof from `spec_format.md`); the `@env` example from `spec_format.md`;
+the reason `Windows: no run yet`; `> Requires:` names anchors only with the anchors-1 warning;
+the no-files case at `signed` said as the code does it (signed, does not count, `to tie to its
+files`); the `(+2 shared)` count.
+Cut: "There is no separate syntax for it" (description by denial); "A signature logs the level";
+the level table; "a spec with no scope ... its rules cannot be signed".
+Rules named for the rest: schema_spec_format RULE-1, 12, 14, 15, 17, 19, 25, 26, 27, 28, 9, 10;
+specs RULE-3, 11, 13, 14; evidence RULE-25; states RULE-6, 16, 26, 62, 63, 64, 72, 75, 1;
+signatures RULE-6, 7, 13, 78; run_script RULE-20, 55; purlin_report RULE-52; skill_spec RULE-2,
+3, 6, 13, 15, 16, 17, 18; skill_anchor RULE-5, 6, 7, 9, 10, 11, 12, 13; upstream RULE-1, 2, 8,
+11, 24, 26, 28, 30 (PROOF-25, PROOF-36 quote the add and sync lines); drift RULE-10, 12.
+
+##### docs/spec-from-code.md (42 sentences, 3 table rows)
+
+Corrected: 13-14 (status reads specs before setup; a test run stops, line quoted); 18-19 (rules
+from what the test expects, passing or not; skill_spec_from_code RULE-9); 36-37 (the report's
+contents, RULE-36, 8, 7); 41, 51-52 (no level in the example; `> Highest-Rule: 2`, RULE-39);
+60-61, 81 (level paragraphs cut); 96-97 (a failing rule stays failing until the code is fixed).
+Added from the skill: the branch check (RULE-35), shared rules in an anchor first (RULE-37), the
+commit with the comments (RULE-34), the position file's shape (RULE-33), the five reasons
+(RULE-8), commented-out tests and benchmarks (RULE-38), what a caller reaches (RULE-10, 48), the
+ending in order (RULE-3). Cut: "No rule for a private helper", "No level above passed", the
+re-mark paragraph. Other rules named: RULE-2, 6, 40, 41, 42, 43, 44, 45, 46, 47; run_script
+RULE-65, 61; scaffold RULE-34; reports RULE-3 (markers read with no suite).
+
+##### docs/working-together.md (34 sentences, 3 table rows)
+
+Corrected: 17-18 (the boxes `No proof`, `Passing`, `Strong`, `Signed`, purlin_report RULE-8);
+18-19 (`.purlin/tests.md` from every evidence file on disk, evidence_writer RULE-8); 32, 36
+(no queue; the walk reads `to test by hand` and `to sign`, signatures RULE-11, 16); 36 (hand
+checks at every gate, states RULE-75); 37-39 (the two kinds); 69 (eng sample from a real run,
+every rule the feature owns, drift RULE-7); 87-88 (after a clone the last 20 commits, drift
+RULE-3); 95 (qa view: changed test files, then the two lines, at every gate, drift RULE-15, 22).
+Cut: "loaded from the marketplace or with `claude --plugin-dir <checkout>`" (no rule; setup
+names no plugin folder, scaffold RULE-21, but where Claude Code loads a plugin from is not
+Purlin's). Other rules named: skill_spec RULE-3, 6; signatures RULE-21, 50, 68, 72; skill_anchor
+RULE-11; drift RULE-2, 4, 5, 6, 8, 9, 10, 14, 17; skill_drift RULE-10.
+
+##### docs/team-workflow.md (59 sentences, 8 table rows)
+
+Corrected: 6-8 (with mutation on and nothing measured the cell is `weak` with
+`strength not measured: <reason>`, states RULE-77, 78); 22, 27-28 (no levels; the audit reads
+each rule with a proof, a passing test and no audit for its current hashes, run_script RULE-49);
+29 (`purlin:sign <feature>` signs its rules waiting for a person, signatures RULE-12); 30
+(`--all`); 36-47 (diagram: a case goes to `purlin:build`; paths for `no proof`, strength not
+measured and no code files); 57-58 (order: `AI audit: <n> rules to read`, evidence lines, then
+`AI audit: <n> rules read ...`, run_script RULE-50, 54, quoted from a run); 58-59 (no
+test-strength line); 60-61 (ends on the summary and `Left to do`, RULE-11); 61 (exit 1 when a
+test failed or did not run, or a rule read is weak or could not be audited, RULE-48); 65-67
+(one reason for a runner file); 80 (`weak` also `to measure` and `to tie to its files`); 86-87
+(`no mutation score measured` only with mutation off or an engine that cannot run here, states
+RULE-13); 89-90 (`to test by hand`; the walk opens on the `Left to do` line or `Nothing is
+waiting ...`, signatures RULE-11); 113 (the walk closes with `Walked ...` however much is left,
+RULE-68, quoted from a run); 123-125 (signature over rule, proof, test, code, audit, machines,
+signatures RULE-6, 61); 125-126 (`unsigned`, states RULE-20). Cut: "Level 1 ... level 2" wording;
+"trust this machine"; the queue header. Other rules named: scaffold RULE-2 (70), RULE-67
+(`.purlin/runtime/` ignored); states RULE-4, 11, 12, 14, 16, 18, 89; run_script RULE-51, 57, 60;
+evidence_writer RULE-10, 23; signatures RULE-8, 58, 87; skill_spec RULE-17.
+
+#### Scratch runs (under `<scratchpad>/p4-pages-specs/`)
+
+- `run1/shop` (gate `strong`, pytest): setup, the first run's suggestion, `--test --commit`,
+  `--audit` against the stand-in model (`fakebin/claude`, `dev/fake_claude.py install`, never the
+  real program): the audit block and ending on team-workflow. `run1/policies(.git)` the anchor
+  repository; `add` from it: the add lines. `run1/dev` a teammate clone of `run1/origin.git`
+  reset to `b9f91d5` and pulled: drift `pm`, `eng`, then `--test` and `qa`; `sync --check`
+  and `sync security_baseline`: the pin lines.
+- `run2/shop`: a doubled `RULE-2` and `> Requires: security_baseline, export`: the two warnings.
+- `run3/shop` (gate `signed`, SSH key `key/id` made with `ssh-keygen`): `export` with no
+  `> Scope:`: the no-files line; `sign.py export RULE-1` printed
+  `  export RULE-1   does not count until the spec names its files: purlin:spec export` and the
+  rule stayed `to tie to its files`.
+- `run4/shop` (gate `strong`): the walk over one hand check: the closing three lines.
+- `run5/api` (gate `passed`): status and run before setup, setup's ending, the status once the
+  spec and marker are written; `run5/nosetup/api` the status with specs and no setup.
+- `samples.sh` rebuilds every state above under `check/` and writes `check/out/*.txt`;
+  `compare.py` checks each quoted block line for line (relative times and the `Commits:` sha
+  normalised): `15 samples, 0 lines differ`. `links.py` checks every link and anchor.
+  `mparse.py` parses the mermaid block with mermaid in headless Chromium from the `.venv`.
+
+#### Sentences written that no code, glossary entry or decision gives
+
+specs-and-anchors: "A spec with no `> Scope:`, or one whose entries reach no file git tracks, names no files."; "At the gate `signed` a rule of such a spec can be signed, but the signature does not count: the rule is left to do as `to tie to its files`, and no tag is written until the spec names them."; "`purlin:spec` takes the next rule and proof ids against both the working copy and `origin/main`'s copy, so a number already on `origin/main` is not taken again on a branch."; "In the status table a feature's `Rules` cell counts the rules it owns and then the anchor rules it proves, as `4 (+2 shared)`; the summary counts each rule once, under the spec that owns it."; "It commits nothing: you commit the copy in one commit with that subject, so the diff shows which rules moved."; the example proof "PROOF-4 (RULE-3): 15 minutes after the fifth wrong password, the right password is answered with `200`".
+spec-from-code: "Set the project up first."; "`purlin:status` reads the specs either way."; "The skill commits as it goes, so it checks that the checkout is on a branch first."; "Before the first test run the status already counts the marked tests as work to run:"; "A rule that reads `failed` stays: it says what its test expects, and it reads `failed` until the code is fixed."; the headings "A proposed list of features", "Shared rules first", "The tests it leaves untied"; the example `{"features": ["rate_limit", "export"], "written": ["rate_limit"]}`.
+working-together: "The dashboard's boxes count the rules that reached each step the gate asks for, `Passing`, then `Strong` from the gate `strong` up and `Signed` at `signed`, with a `No proof` box first from `strong` up."; "`.purlin/tests.md` is the table of the newest run of each feature, written from every evidence file on disk, committed or not."; "A rule is `to test by hand` at every gate while a `@manual` proof of it is not checked, and `to sign` at the gate `signed` once its tests pass and its audit is strong."; "After a pull, `purlin:drift eng` names what moved and the command for each:"; "the signature records your name and email as git holds them and the fingerprint of your key, and Purlin does not decide who may sign."; "The `qa` view prints those lines at every gate; at `passed` only a rule to test by hand waits for a person:".
+team-workflow: "The passed cell asks whether the marked tests passed; the strong cell asks whether the AI audit found those tests sound."; "A run over tests that already match their evidence runs none of them and still reads every rule the audit has not read:"; "The strong cell reads one of six words, and each names who moves it next. `weak` has three causes, each with its own fix."; "The walk closes on what it did, however much is left:"; the diagram labels "the strong cell", "weak: a finding, or strength under the minimum", "no proof, or no code files in the spec", "weak: strength not measured", "the command the reason names", "a case: a new proof line".
+
+#### Calls left, and failures in files not owned
+
+- The page's `> Source:` example names `https://github.com/acme/policies.git` beside the real
+  pin of the run (`71abd36...`), whose source was a local bare repository: it is file content in
+  the anchor format's own example form, not a printed line.
+- `upstream.py add <local path without .git>` writes a `> Source:` line that `sync --check` and
+  drift then read as "not a spec in Purlin's format kept in a git repository" (exit 2):
+  `specs.parse_source` splits the path off only after a value ending `.git` or a URL scheme.
+  The runs used `policies.git`.
+- `skills/spec/SKILL.md` ("its rules cannot be signed and no tag is written"),
+  skill_spec RULE-9, and `references/formats/spec_format.md`'s `> Scope:` row say a no-files
+  rule cannot be signed at `signed`; the code signs it and the signature does not count
+  (signatures RULE-78). The page follows the code.
+- Relative times (`0 seconds ago`) and `Commits: bc0f607` are quoted as printed; the comparison
+  normalises them.
+

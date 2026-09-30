@@ -1,108 +1,194 @@
-# Handoff, 2026-09-29, evening
+# Handoff, 2026-09-30
 
 For the session that continues Purlin 0.10.0. Read this, then `dev/plans/three-levels.md`
-decisions 31 to 58 (together they are the product as the owner settled it), then
-`dev/plans/morning-list.md` (every choice made on the owner's behalf, one line each).
+decisions 60 to 98 (together with this file they are the product as the owner settled it), then
+`dev/plans/next-agent-prompt.md`, the prompt that session is given.
 
 ## Where the tree is
 
-- `main` is local only. Nothing has been pushed, tagged, audited or signed. The owner pushes;
-  no agent does.
-- Full sweep on `main`: **2112 passed across 7 suites, 0 failed.** `bash dev/run_tests.sh`.
-- This repository through its own tool: 2057 of 2057 markers tied to a test, **564 of 564
-  rules pass their tests**, 0 are strong, 0 are signed. It prints `564 rules. 564 pass their
-  tests. 0 are strong. 0 are signed.` and `Left to do: 564 rules to audit: purlin:audit`.
-  2056 proofs, each one case of at most 60 words with a test of its own. The
-  audit and the signing are the owner's to run.
-- The evidence of that run is committed (`purlin: evidence at 28c049a`).
-- `.purlin/config.json` here: gate `signed`, mutation testing on. No runner file: no rule names
-  another operating system yet (decision 82).
-- No branch but `main` is left on this machine, and no worktree.
+- `main` is local only, at the commit of this file, after `e8bc04a71 purlin: evidence at
+  b54a9de`. Nothing on it is pushed, nothing is tagged, and no audit or signing has been run
+  against this repository. The only pushes any agent made were the
+  temporary run branches of the remote runs on Windows. The owner pushes `main`; no agent does.
+- Full sweep on `main` at `b54a9def4`, `bash dev/run_tests.sh`: **2268 passed, 3 skipped in
+  717.66s**, `>>> All Pytest Tests: PASSED`, `Suites: 5 passed, 0 failed`; the four shell suites
+  passed. The 3 skips are the Windows-only tests.
+- This repository through its own tool, `python3 scripts/run/purlin_run.py --test --all`, exit
+  0: `Markers: 2316 tied to a test, 0 not tied.`, `Ran pytest, shell on 36 features.`,
+  `86 proofs need Windows; this machine is macOS. Run purlin:test --remote.`, then
+  `885 rules. 804 pass their tests. 0 are strong. 0 are signed.` and `Left to do:` /
+  `  81 rules to test on Windows: purlin:test --remote` / `  804 rules to audit: purlin:audit`.
+  No rule reads `partial`, `failed` or `no test`, and no warning prints. With `--commit` the
+  same lines, `Evidence committed.` after the evidence line, and one commit,
+  `e8bc04a71 purlin: evidence at b54a9de`. 2316 proofs, each one case of at most 60 words with
+  a test of its own. The audit and the signing are the owner's to run.
+- The runner file, `.github/workflows/purlin.yml`, was written by setup from the templates of
+  phase 4 and committed by setup (`8008d9de6 chore(init): set up Purlin at the gate signed`).
+  It runs on `windows-latest` alone: 86 proofs are tagged `@env(windows)`, and the 13 tagged
+  `@env(macos)` are proven on this Mac, which wrote the file.
+- The first real remote run on Windows passed 84 of the 86 rules that wait for Windows, and
+  the second passed all 86. A diagnostic run of the whole suite on the same runner showed 78 of
+  1979 tests failing on Windows that no rule is tagged for: `75 failed, 1901 passed, 2 skipped,
+  3 errors`. The runner's log names 16 of them;
+  `dev/plans/windows-untagged-failures.txt` holds them and says how to name the rest. Decision
+  95 runs on Windows only the tests of tagged proofs, so none of the 78 fails a remote run.
+- `.purlin/config.json` here: gate `signed`, mutation testing on.
+- Phase 4 applied sanity check 3 (`sanity-3.md`) and decision 98: `phase4-plan.md` is the plan,
+  `phase4-contracts.md` the contracts, `phase4-interfaces.md` what was built, with "The pages"
+  at its end for the docs. Every page under `docs/` and `README.md` was read again against the
+  code; the two screenshots were retaken from the rebuilt page (`b54a9def4`).
+- The lane branches and worktrees of phases 3 and 4 are still on this machine, 28 worktrees
+  under `/Users/richlabarca/LocalCode/purlin-wt/` with their `lane/*` branches, every one
+  merged into `main`. None was deleted; they can go once the owner says so.
 - The slides: https://claude.ai/artifact/Rifxf2KXfH4CTzfQ9pZ9is, ten of them, built by
   `dev/plans/deck/build_deck.py`. The owner edits them in place: read each slide from the deck
   before publishing it, and take the owner's words into the builder.
-- Decisions 85 to 93 were made on 2026-09-29; the proofs were split and the dashboard
-  changed to them, and `phase2-report.md` is what the lanes brought back: 79 questions for the
-  owner, the product faults left for the owner, and the list of 90 rules for Windows.
-- Decisions 60 to 84 were made on 2026-09-28 and are in `three-levels.md`. The product changes
-  they ask for are done: `phase1-plan.md` is the plan, `phase1-interfaces.md` and
-  `phase1-lanes-report.md` what was built. Sanity check 2 is `sanity-2-new-user.md`; the first
-  rewrite of the proofs is `proofs-rewritten.md`.
 
 ## The model in one paragraph
 
-A rule says what must be true. A proof says in plain language how that is shown. A test is
-any test in the project's own suite with one comment above it, `purlin: <feature> PROOF-<n>`.
-Three steps: `passed` (`purlin:test`), `strong` (`purlin:audit`, a model reading each test
-against its proof, with optional mutation testing), `signed` (`purlin:sign`). The gate is the
-last step every rule must reach, and every rule is asked what the gate asks. Evidence is one
-file per feature, written by a run and committed with `--commit`; it goes out of date when the
-spec, the covered code or the tests change, and a run with no feature named runs only what
-changed. Every run ends on the summary and `Left to do`, one line per kind of work with its
-command. `purlin:sign` walks the rules left `to test by hand` or `to sign` and, at the gate
+A rule says what must be true. A proof says in plain language how that is shown: one case, in at
+most 60 words. A test is any test in the project's own suite with one comment above it,
+`purlin: <feature> PROOF-<n>`. Three steps: `passed` (`purlin:test`), `strong` (`purlin:audit`,
+a model reading each test against its proof, with optional mutation testing), `signed`
+(`purlin:sign`). The gate is the last step every rule must reach, and every rule is asked what
+the gate asks: no rule carries a level of its own. Evidence is one file per feature per source,
+written by a run and committed with `--commit`; it goes out of date when the spec, the covered
+code or the tests change, and a run with no feature named runs only what changed. Each proof is
+proven where its tag says: this machine proves every untagged proof and every proof tagged for
+its own system, and a remote runner proves only the proofs tagged `@env` for its system, which
+this machine is not. Every run ends on the summary and `Left to do`, one line per kind of work
+with its command; there is no queue, and `to test by hand` and `to sign` are two of its lines.
+A spec's `> Requires:` names anchors only, the project's own or pinned ones, whose rules then
+apply to it. `purlin:sign` walks the rules left `to test by hand` or `to sign` and, at the gate
 `signed`, when nothing else is left and every result came from committed work, writes the
 evidence package and the signed tag. Purlin makes no claim of compliance: it hands evidence to
-a system of record.
+a system of record, which decides who was entitled to sign.
 
 ## What is left, in order
 
 The prompt for the next session is `dev/plans/next-agent-prompt.md`.
 
-1. **Decisions 94 and 95 are built**: the answers to the second fan-out's questions, the 55
-   readings of `phase2-questions.md`, and Windows. The owner sees the final Windows list before
-   any rule is marked (decision 82).
-2. **Windows is run for real**: setup writes the runner file, and `purlin:test --remote` is
-   run once, which also proves the remote run against GitHub for the first time. The owner is
-   asked before the first remote run.
-3. **Sanity check 3** (decision 64): the docs against the rules, and `purlin:spec-from-code`
-   run for real on three small projects at each gate, held to decisions 66 and 81.
-4. **More sanity checks**, each its own fresh agent, in the order the owner picks: a QA person
-   writes proofs; an upgrade from a real 0.9.5 project; a hostile reviewer who tries to make an
-   unproven rule read as proven.
-5. **Every page is read again against the code** (decision 63), with the screenshots retaken
-   last. Three pages still say `n/a`; the ten-minute path still types its rules by hand.
-6. **The owner's review**: `RELEASE_NOTES.md` 0.10.0, `README.md`, `docs/`, the slides.
-7. **The handover to the work machine**: delete `dev/plans/` (it is history, and it ships);
+1. **A last remote run on Windows**, by the orchestrator, on the tree as phase 4 left it:
+   `purlin:test --remote` once, one temporary run branch pushed.
+2. **The further sanity checks**, each its own fresh agent, in the order the owner picks. The
+   next one runs `purlin:spec-from-code` on project copies of which one carries a test that
+   fails before the run, so decision 66's clause about failing tests is tried, and the agents
+   count existing tests one way (`sanity-3.md` section 9). Then: a QA person writes proofs; an
+   upgrade from a real 0.9.5 project; a hostile reviewer who tries to make an unproven rule
+   read as proven. Decision 64 repeats the docs-against-rules reading by a fresh agent before
+   every release.
+3. **The owner's review**: `RELEASE_NOTES.md` 0.10.0, `README.md`, `docs/`, the slides, the
+   words below, the open questions below and the 55 readings of `phase2-questions.md`.
+4. **The handover to the work machine**: delete `dev/plans/` (it is history, and it ships);
    push the work as a branch; on the work machine run `dev/manual/check_azure_remote.py`
    against a real Azure DevOps project, then `purlin:audit`, `purlin:sign`, the push of the
    tag, the release.
 
 ## Words for the owner to read
 
-Chosen by an agent where no decision gave them. The owner accepted them on 2026-09-29
-(decision 96), changed the line for the git host, which is still to be built, and left the
-rest to sanity check 3.
+Chosen by an agent where no decision gave them, gathered from `phase3-interfaces.md` ("Words
+chosen for the owner to read") and `phase4-interfaces.md` ("Words chosen for the owner to read",
+"Words chosen by a lane, word for word", and "The pages"). `<...>` is filled in. Words the
+owner already accepted in decision 96 are not repeated.
 
 | Where | What it says |
 |---|---|
-| The signed panel on a rule's page | `Signed by <name>, <email>, on <date> <time> UTC with the key ending ...<last 4>.` then, per system, `On <System> the tests ran on <machine>.` |
-| A hand check, explained on the dashboard | `A hand check is you checking the rule and signing it in one act; purlin:sign asks what you saw and records it.` |
-| Under the filter buttons | `Type <command> in Claude Code.` |
-| Signing with nothing waiting | `Nothing is waiting for someone to test by hand or to sign.` |
-| Signing a name that is not a rule | `<feature> <RULE-N> is not a rule any spec has.` |
-| A run started by a pushed signed tag | `Tag run: nothing is written. This run reruns the tests on <ref>.` |
-| Setup, when no remote runner is needed | `every proof runs on this operating system, so nothing has to run remotely` |
-| Setup, with no git host | `No git host found.` (decision 96, to be built) |
-| Setup, with a git host Purlin cannot use | `This git host cannot run tests remotely. Everything on this machine works.` (decision 96, to be built) |
-| Setup, with no tool for breaking code | `Without it test strength is not measured.` |
-| A comment that is nearly right | `` `purln` is one letter from `purlin`. `` |
-| The evidence package refusing a tag | `the committed evidence still has work left to do` |
-| The warning for a minimum that is not a number | `no minimum applies` |
-
-Two small things seen and not changed: the warning `1 spec files carry tags` has its plural
-wrong, and at 1500 pixels the board shortens `security_no_dangerous_patterns` with an ellipsis.
+| Setup, the commit question | `Commit the files setup wrote? [y/N] ` |
+| Setup, after the commit | `Committed <sha7>, the files setup wrote:` then each path, indented two spaces |
+| Setup, when git refuses the commit | `The files setup wrote are staged and not committed: <git's own message>.` |
+| Setup's commit | `chore(init): set up Purlin at the gate <gate>` |
+| A project with no spec, not set up | `No specs found under specs/.` then `→ Run: purlin:init to set this project up.` |
+| A project with no spec, set up over code | `→ Run: purlin:spec-from-code to write the specs this code already implies.` |
+| A project with no spec, set up over no code | `→ Run: purlin:spec <name> to write the first spec.` |
+| Setup outside git | `This is not a git repository. Run git init, then purlin:init.` |
+| Setup, a typed gate it does not take | `<value> is not accepted for gate; it takes passed, strong or signed. Reading it as <gate>.` |
+| Setup, `--gate` it does not take | `<value> is not accepted for gate; it takes passed, strong or signed. Nothing was written.` |
+| Setup, the gate question | `What must be true of every rule before a version is finished?` |
+| Setup, the breaking question | `Measure test strength by breaking the code on purpose? It needs <engine> and takes minutes to hours per run. [y/N] ` |
+| Setup, no runner file | `skipped the runner file (<reason>)` |
+| Setup, a runner file written | `  it runs on <images>, the systems a proof in specs/ is tagged @env for that this machine is not.` |
+| Setup, a file copied | `copied <source> to <rel>` |
+| The evidence README | `What a run leaves behind for each feature: each proof's result on each operating system, the commit and the time.` and `` A run on your own machine writes `local/`, and `--commit` commits it under your own git identity. `` |
+| The status, a gate it does not take | `<value> is not accepted for gate in .purlin/config.json; it takes passed, strong or signed. Reading it as passed; set it with purlin:init --gate <gate>.` |
+| The status, `audit_parallel` it does not take | `<value> is not accepted for audit_parallel in .purlin/config.json; it takes a whole number from 1 to 16. Reading it as 4; fix the file by hand.` |
+| The status, a spec naming no files | `1 spec names no files, so its tests run every time: <name>. Run purlin:spec <name> to add its > Scope: line.` and `<n> specs name no files, so their tests run every time: <names>. Run purlin:spec with each name to add its > Scope: line.` |
+| The status, a source it cannot read | `<name>: the source could not be read (<error>). Check its > Source: line, then run purlin:anchor sync <name>.` |
+| A cell's reasons | `<System>: no run yet`, `passed on <Systems>`, `failing: <System>, <source>` |
+| The settings tool | `A change needs a key; nothing was saved.`, `<key> is now <value>; saved to .purlin/config.json.`, `No Purlin project root at <root>: .purlin/config.json is not there. That root came from <source>.` |
+| A spec's warnings | `` <feature>: 1 line under ## Rules is not numbered; a rule is `- RULE-N: <text>`. Run purlin:spec <feature>. `` and `<feature>: > Requires: names <other>, which is not an anchor, so its rules do not apply. Run purlin:spec <feature>.` |
+| Evidence ignored | ` Run purlin:test <feature> to write it again.` and ` Run purlin:test --remote to write it again.` after the reason |
+| A run's refusals | `purlin: --commit belongs to --test and --audit; a remote run commits on the runner. Run purlin:test --remote without --commit.` and `purlin: no spec named <name> under specs/. Run purlin:status to see the specs this project has.` |
+| A run, evidence missing | ` Run purlin:<action> --arm-timeout <seconds> to give it longer.`, ` Check its command and report in the tests setting of .purlin/config.json, then run purlin:test.`, ` Check that its test ran and was not skipped, then run purlin:test.` |
+| A run, a suite problem | ` Fix the tests setting in .purlin/config.json, then run purlin:test.` |
+| The tests table | `# Tests at <sha7>, with changes that are not committed` |
+| Test comments | `<file>:<line> names <feature> <ID> and no test follows it. Put the comment directly above a test, or run purlin:build to repair it.`; `The report's <case> matches <n> tests in <files>, so its result is not counted. Give the tests different names, then run purlin:test.`; `<file>:<line> names <feature> <RULE-N>, which has proofs; a comment names one of its proofs. Correct the comment, or run purlin:build to repair it.` |
+| A remote run with no program to wait with | `purlin:test --remote waits for the run with the GitHub CLI, gh, which is not installed, so nothing was pushed. Install gh, then run purlin:test --remote again.` (and the Azure CLI form) |
+| A remote run no runner picked up | `No run registered for <branch> within 60 seconds, so the run branch was deleted and nothing came back. Check that the git host runs <workflow path> on a push to run/*, then run purlin:test --remote again.` (and the Azure form) |
+| A remote run that failed | `The run failed on the git host. The table below is what came back.` |
+| A remote run's refusals | ` Add one with git remote add origin <url>, then run purlin:init.`, ` Make one with git switch -c <name>, then run purlin:test --remote again.`, ` Check that git push origin works from this checkout, then run purlin:test --remote again.` |
+| A runner outside its checkout | `<path> is not the project root this job checked out, so no evidence was committed.` |
+| Proofs for another system | `Proofs in specs/ are tagged @env for <Systems>, which this machine is not, so only a runner can prove them.` |
+| The runner templates | `The matrix holds one job for each operating system a proof in specs/ is tagged @env for that the machine running setup is not, and no other.` and `The run caps each test command at an hour of its own.` |
+| The breaking tool | `mutation_engine names "<x>", which is not an engine: set it to none, auto, mutmut, stryker or stryker_net` |
+| Drift | ` Run purlin:test <feature>.`, ` Add each to a spec's > Scope: line with purlin:spec.`, ` Run purlin:build.`, ` Run purlin:test.` after its lines |
+| Signing | `The signature commit was not made: <git's own message>. Nothing was signed; run purlin:sign again once git can make a signed commit.`; `No tag: <tag> is already written. Run purlin:sign --release <name> to name another.`; `No tag: the committed evidence still has work left to do, so no evidence package was committed. Run purlin:test --commit, then purlin:sign.`; `  <feature> <RULE-N>   does not count until the spec names its files: purlin:spec <feature>` |
+| No version | `No version: nothing in this project states one. Run purlin:sign --release <version>, or write it to a VERSION file.` (and the `purlin:export` form) |
+| What the audit found | `No audit has read this rule's text, proof and test yet.`, `Strong. It found nothing.`, `Strong.`, `Weak.`, `Undecided. The AI audit could not decide, so the rule reads weak until its proof or test changes.`, `  Read by <model> at <at>.` |
+| Test strength | `Test strength <p>%, against a minimum of <m>%.` |
+| No test, terminal and page | `  No test yet. Run purlin:build <feature>.` and `No test yet. Type purlin:build <feature> in Claude Code.` |
+| Anchors | `<name>: no anchor named <name> carries a git source. Run purlin:status to see the anchors this project has.`; `  1 rule. Run purlin:status to see it.`; ` Run purlin:status <name> to see its rules.`; ` Commit it as anchor(<name>): sync (<new7>), then run purlin:test.`; `No Purlin project root found. Pass --project-root <dir>.` |
+| The dashboard | `Type purlin:sign <feature> <RULE-N> in Claude Code.`, `Back to the board`, the theme button `Dark theme` or `Light theme`, `The working tree has uncommitted changes, so what is on this board is not what a commit would carry.` |
+| The references | the glossary's `runner file`, `scope` and `anchor` sentences; the writing style's sentence on capitals; the quality guide's paragraphs on a library's public names and a list of like inputs; the spec-from-code skill's five reasons and what a caller reaches; the spec skill's "Ids"; the test skill's comparison; the command reference's `purlin:init` sentences; the release notes of K5.10 (`phase4-contracts.md` K5) |
+| Phase 3's reference prose | the exit-code table of `references/purlin_commands.md`, the `no_scope` row of `hard_gates.md`, the git-host sentence, the package's kinds sentence, the anchor source paragraphs (`phase3-interfaces.md`, "Words chosen for the owner to read", items 1 to 11) |
+| The upgrade | `Write <path>, one job per operating system your specs name that this machine is not?` |
+| The pages | every sentence the four page lanes wrote, listed per lane in `phase4-interfaces.md`, "The pages" |
+| Integration 2 | the rule and proof texts of "The pages", the table of rules handed over; `is signed and its signature does not count` in `hard_gates.md`, `spec_format.md`, the spec skill and the release notes; the comment `The whole-number part, as every surface shows a share: 69.6 under 70 reads 69%, never the minimum itself.` in `states.py` |
 
 ## Small things known and not fixed
 
-- `purlin:init` without `--yes`, run with its output piped, hung once in a scratch Go project.
-  Not looked into. With `--yes` it is fine.
-- The rule's own screen still shows the `purlin:sign` panel for a rule whose signed column
-  reads `waiting`.
-- Proofs outside `drift`, `upstream` and `config_engine` are still written in the test's own
-  words. Part 2 of the next session rewrites the required ones.
-- Vitest 4 would not install on this machine; version 3 is proven.
-- Text on a solid coloured badge measures under 7 to 1. The owner chose to leave it.
-- A hand check may be signed without a note. The owner chose to leave it.
+- `purlin:test --commit` with nothing selected and only `.purlin/config.json` changed commits it
+  alone with the subject `purlin: specs, tests and settings for ` and no feature after `for`,
+  and leaves a changed spec and marked tests uncommitted. What it should commit is a call.
+- On the dashboard, with mutation testing off, the hover of the `Strong` box and column reads
+  `minimum strength 0%`.
+- On the dashboard, a proof marked `@manual` reads `No test yet. Type purlin:build <feature> in
+  Claude Code.`, though a check by hand needs no test.
+- `purlin:audit --commit` prints two blank lines between the committed paths and
+  `AI audit: <n> rules to read, <k> at a time.`
+- `purlin:anchor add` given a local path that does not end in `.git` writes a `> Source:` line
+  that `sync --check` and drift then read as not a spec kept in a git repository.
+- A status of a project whose anchor names an `https` source reaches the network; the 0.9.5
+  fixture's Figma anchor does, and printed `remote: Not Found` once in phase 4.
+- `purlin:sign --all` that signs the last rule leaves `the version to tag`; a second bare
+  `purlin:sign` writes the tag.
+- The sign skill says `observation` where the audit's lines and the docs say `finding`.
+- `specs/instructions/purlin_docs.md` uses RULE-1, RULE-2 and PROOF-1 to PROOF-9, numbers an
+  earlier spec of that name held before it was deleted; the new rule took RULE-12.
+- The calls each lane of phase 4 left: `phase4-interfaces.md`, "Calls left" and "The pages".
+- Carried from the earlier handoff, not checked again: `purlin:init` without `--yes`, with its
+  output piped, hung once in a scratch Go project; Vitest 4 would not install on this machine,
+  version 3 is proven; text on a solid coloured badge measures under 7 to 1 (the owner chose to
+  leave it); a hand check may be signed without a note (the owner chose to leave it).
+
+## Open questions for the owner
+
+1. **Is a proof number, like a rule number, never reused?** A spec records the highest rule
+   number it has held, so a deleted rule's number is never handed out again. Proof numbers have
+   no such record: deleting the highest proof on `main` frees its number for the next proof.
+2. **Are the 78 tests that fail on Windows, and that no rule is tagged for, to be sorted?**
+   Windows runs only the tests of tagged proofs, so none of them fails a remote run today.
+   Sorting them would find which are product faults on Windows, which are faults of the test,
+   and which check nothing Windows could change.
+3. **What the export instructions say about the regulated system.** The page on the regulated
+   workflow says the regulated system holds "the controlled document, the authority to sign it
+   off and the signature that counts under the regulation". The instructions of
+   `purlin:export` say only the authority to sign off. Either they gain the other two, or the
+   page says only what they say.
+4. **What `purlin:test --commit` commits when nothing was selected** and only the settings
+   changed (the first small thing above): the settings with the specs and marked tests that
+   changed, the settings alone under a subject that names no feature, or nothing.
+5. **What the dashboard says of a check by hand, and of a minimum when mutation testing is
+   off** (the second and third small things): each line either gets words of its own or goes.
 
 ## How to work, as the owner settled it
 
@@ -114,15 +200,17 @@ wrong, and at 1500 pixels the board shortens `security_no_dangerous_patterns` wi
 - **Maximum parallelization, cut by ownership of files.** Each agent is Opus, has its own
   worktree and its own scratch folder, and owns files no other agent writes. What one produces
   and another consumes is fixed word for word before they start. Merges are fast-forward.
-- **No push, no pull request, no tag, no audit and no signing by any agent.**
+- **No push, no pull request, no tag, no audit and no signing by any agent**, but the one
+  temporary run branch a remote run pushes.
 - **Acceptance is the full sweep**, `bash dev/run_tests.sh`, plus this repository run through
   its own tool with every marker tied. Never edit a number to make a sweep green.
 - **Look at anything visual** with playwright from the `.venv`, at 1500, 1280, 1024, 768 and
-  390 pixels, dark theme, before telling the owner it is done. A value never breaks inside
+  390 pixels, both themes, before telling the owner it is done. A value never breaks inside
   itself; neutral text measures at least 7 to 1.
 - **A clean release.** Nothing that represents earlier functionality stays: no compatibility
   reader, no test that a removed thing is absent, no table of removed words.
   `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5 needs is
   the one exception in code.
 - **A page says what is**, checked against the code, in the words of
-  `references/writing_style.md`.
+  `references/writing_style.md`, and every statement on it is held by a rule, a proof and a
+  test (decision 64).
