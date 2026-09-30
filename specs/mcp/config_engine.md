@@ -6,6 +6,7 @@
 >   it found it.
 > Scope: scripts/mcp/config_engine.py
 > Stack: python/stdlib, json
+> Highest-Rule: 15
 
 ## Rules
 
