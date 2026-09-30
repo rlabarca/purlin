@@ -5,6 +5,7 @@
 >   against its fingerprint, and says that Purlin makes no claim of compliance.
 > Scope: skills/export/SKILL.md
 > Stack: markdown, Claude Code skill definition
+> Highest-Rule: 12
 
 ## Rules
 
@@ -19,6 +20,7 @@
 - RULE-9: The skill tells the agent that the package is evidence for review in a regulated document and sign-off system
 - RULE-10: The skill tells the agent that a package that is not finished lists the lines of `Left to do` in `left`
 - RULE-11: The last section of the skill tells the agent a `→` directive for each outcome of an export: evidence not committed, no version, `not finished`, `finished` and a `--check` mismatch
+- RULE-12: The skill tells the agent the line the script prints when no version is stated, `No version: nothing in this project states one. Run purlin:export --release <version>, or write it to a VERSION file.`
 
 ## Proof
 
@@ -34,4 +36,5 @@
 - PROOF-29 (RULE-11): The closing table of the export skill gives `Evidence not committed` the line `→ Run: purlin:test --commit`, `No version` the line `→ Run: purlin:export --release <version>`, and a `--check` mismatch the line `→ Run: git show signed/<version>:.purlin/evidence/package/<version>.json`
 - PROOF-13 (RULE-11): The closing table of the export skill gives `not finished` the line `→ Run: <the command of the first line of left>`, and `finished` the line `→ Hand .purlin/evidence/package/<version>.json to the system of record.`
 - PROOF-30 (RULE-11): The closing table of the export skill has 5 outcome rows, and the line each one gives begins with `→`
+- PROOF-34 (RULE-12): The export skill, its line breaks read as spaces, quotes `No version: nothing in this project states one. Run purlin:export --release <version>, or write it to a VERSION file.` word for word
 - PROOF-6 (RULE-6): The export skill, counted line by line, is at most 90 lines

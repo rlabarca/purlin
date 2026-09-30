@@ -39,12 +39,11 @@ Evidence package written to .purlin/evidence/package/1.4.0.json. State: not fini
 ```
 
 The version is the one `purlin:sign` names its tag for: the `VERSION` file, else the version the
-project's package description states. With neither, the script prints `No version: nothing in
-this project states one. Name it with --release <version>.` and writes nothing.
-
-Print its lines verbatim. It works at every gate and at any time. It reads only what git holds:
-evidence or a signature that is written and not committed is left out, and each such file is
-named on a line of its own and in the package's `warnings`.
+project's package description states. With neither, the script prints
+`No version: nothing in this project states one. Run purlin:export --release <version>, or write it to a VERSION file.`
+and writes nothing. Print its lines verbatim. It works at every gate and at any time. It reads
+only what git holds: evidence or a signature that is written and not committed is left out, and
+each such file is named on a line of its own and in the package's `warnings`.
 
 ## Step 2: read the state
 

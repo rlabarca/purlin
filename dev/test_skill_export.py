@@ -172,6 +172,18 @@ class TestSkillExport:
              % (SKILL, row.replace('→ ', ''))),
         ]) == []
 
+    # --------------------------------------------------------------- RULE-12
+
+    # purlin: skill_export PROOF-34
+    def test_it_quotes_the_no_version_line(self, monkeypatch):
+        assert no_version_problems() == []
+        assert refusals(monkeypatch, no_version_problems, [
+            (SKILL, replace('Run purlin:export --release <version>, or write '
+                            'it to a VERSION file.',
+                            'Name it with --release <version>.'),
+             'does not carry %r' % NO_VERSION),
+        ]) == []
+
     # ---------------------------------------------------------------- RULE-6
 
     # purlin: skill_export PROOF-6
@@ -248,6 +260,19 @@ NO_CLAIM = 'Purlin makes no claim that the software is compliant.'
 
 def no_claim_problems():
     return carries(SKILL, [NO_CLAIM])
+
+
+# ---------------------------------------------------------------------------
+# RULE-12: the line with no version
+# ---------------------------------------------------------------------------
+
+NO_VERSION = ('No version: nothing in this project states one. Run '
+              'purlin:export --release <version>, or write it to a VERSION '
+              'file.')
+
+
+def no_version_problems():
+    return carries(SKILL, [NO_VERSION])
 
 
 # ---------------------------------------------------------------------------
