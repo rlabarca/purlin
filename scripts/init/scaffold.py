@@ -8,18 +8,17 @@ Init asks these, in this order, and nothing else:
 
     What must be true of every rule before a version is finished?
     Measure test strength by breaking the code on purpose? [y/N], only at
-      the gates `strong` and `signed`, and only where an engine that runs on
-      this operating system exists for a framework the tree carries
+      the gate `signed`, and only where an engine that runs on this
+      operating system exists for a framework the tree carries
     Commit the files setup wrote? [y/N], only once it wrote or changed a
       file git does not ignore
 
 Everything else is derived from those answers or read from the tree: the git
-host from the remote URL, and the minimum test strength from the gate when
-mutation testing is on. Nothing is asked about how the tests run: a project
+host from the remote URL. Nothing is asked about how the tests run: a project
 with no `tests` setting gets an empty one, and the first test run suggests
 the command. `--yes` takes every default, so mutation testing stays off, and
 answers yes to the commit; `--mutation` turns mutation testing on without the
-question. `audit_parallel` is written as 4 and is not asked.
+question, at either gate. `audit_parallel` is written as 4 and is not asked.
 
 It then writes, in this order and naming every one in the summary: the config,
 the engine's config block where mutation testing is on, the `.gitignore`
@@ -31,8 +30,9 @@ on the summary and `Left to do` of the project as it now is.
 
 A runner file is written for one reason and no other: a proof in `specs/` is
 tagged `@env` for an operating system this machine is not. A project with no
-such proof gets no runner file: at the gate `signed` `purlin:sign` writes the
-tag, you push it, and nothing runs remotely. Where one is wanted the
+such proof gets no runner file: `purlin:test --release` or, at the gate
+`signed`, `purlin:sign` writes the tag, you push it, and nothing runs
+remotely. Where one is wanted the
 prerequisites are checked first, and a missing one is named with the command
 that fixes it; nothing is written then.
 
@@ -80,15 +80,14 @@ NOT_A_REPOSITORY = ('This is not a git repository. Run git init, then '
 GATE_QUESTION = 'What must be true of every rule before a version is finished?'
 GATE_CHOICES = (
     "passed  every rule's tests pass",
-    'strong  tests pass and the audit finds them sound',
-    'signed  strong, and a person signs each rule',
+    "signed  every rule's tests pass, and a person signs each release",
 )
 # A typed answer that names no gate, and the same value given to `--gate`.
 # Each takes the value as JSON writes it, `"gold"`, then the gate read.
-NOT_A_GATE = ('%s is not accepted for gate; it takes passed, strong or '
-              'signed. Reading it as %s.')
-NOT_A_GATE_FLAG = ('%s is not accepted for gate; it takes passed, strong or '
-                   'signed. Nothing was written.')
+NOT_A_GATE = ('%s is not accepted for gate; it takes passed or signed. '
+              'Reading it as %s.')
+NOT_A_GATE_FLAG = ('%s is not accepted for gate; it takes passed or signed. '
+                   'Nothing was written.')
 
 REMOTE_INTRO = 'A remote runner is written because:'
 NO_GIT_HOST = 'No git host found.'
@@ -106,9 +105,9 @@ COMMITTED = 'Committed %s, the files setup wrote:'
 NOT_COMMITTED = ('The files setup wrote are staged and not committed: %s.')
 
 # Mutation testing is optional and off by default. The question is asked only
-# at the gates `strong` and `signed`, and only where an engine exists for a
-# framework the tree carries; a yes writes `mutation_engine: auto` and the
-# gate's minimum strength, a no writes `none`.
+# at the gate `signed`, where a person reads the audit at the sign-off, and
+# only where an engine exists for a framework the tree carries; a yes writes
+# `mutation_engine: auto`, a no writes `none`.
 MUTATION_QUESTION = ('Measure test strength by breaking the code on purpose? '
                      'It needs %s and takes minutes to hours per run.')
 NO_ENGINE = ('Mutation testing is off: no engine breaks %s code, so the AI '
@@ -418,13 +417,6 @@ def audit_parallel(existing):
     return AUDIT_PARALLEL
 
 
-def min_strength_for(gate, mutation):
-    """The minimum score: the gate's where mutation testing is on, else null."""
-    if mutation == 'none':
-        return None
-    return gate_module.resolve_gate({'gate': gate}).min_strength
-
-
 def write_config(plan, plugin_root, existing, gate, host, tests,
                  mutation='none'):
     """`.purlin/config.json`: `version`, then the template's keys, and no other.
@@ -441,7 +433,6 @@ def write_config(plan, plugin_root, existing, gate, host, tests,
                   if key in template)
     config.update({'version': _read(plugin_root, 'VERSION').strip(),
                    'gate': gate, 'mutation_engine': mutation,
-                   'min_strength': min_strength_for(gate, mutation),
                    'audit_parallel': audit_parallel(existing),
                    'tests': tests, 'ci': host or 'none'})
     plan.write('.purlin/config.json', json.dumps(config, indent=2) + '\n',
@@ -518,13 +509,13 @@ def resolve_mutation(console, existing, selected, turn_on, gate):
     A value the project already wrote is kept and nothing is asked. With no
     engine for any framework the tree carries that can run on this operating
     system, nothing is asked either: mutation testing stays off, and at
-    `strong` and `signed` one line says why. Otherwise `--mutation` turns it
-    on, and at those two gates the question decides, defaulting to no; at
+    `signed` one line says why. Otherwise `--mutation` turns it on at either
+    gate, and at `signed` the question decides, defaulting to no; at
     `passed` it stays off unasked.
     """
     engine = engine_for(selected)
     if engine is None:
-        if gate == 'passed':
+        if gate != 'signed':
             return 'none', None
         return 'none', _no_engine_line(selected)
     written = str((existing or {}).get('mutation_engine') or '').strip()
@@ -532,7 +523,7 @@ def resolve_mutation(console, existing, selected, turn_on, gate):
         return written, None
     if turn_on:
         return 'auto', None
-    if gate == 'passed':
+    if gate != 'signed':
         return 'none', None
     answer = console.yes_or_no(
         MUTATION_QUESTION % ENGINE_NAMES.get(engine, engine))

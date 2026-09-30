@@ -213,7 +213,7 @@ def mutation_condition_problems():
     if len(items) < 2:
         return ['%s has no second question' % SKILL]
     return ['%s mutation question does not carry %r' % (SKILL, needle)
-            for needle in ('only at', '`strong`', '`signed`',
+            for needle in ('only at', '`signed`',
                            'only where an engine exists', 'The default is no')
             if needle not in flat(items[1])]
 
@@ -221,13 +221,13 @@ def mutation_condition_problems():
 def gate_table_problems():
     body = section(read(SKILL), r'^The questions$') or ''
     problems = []
-    if 'The first answer is the **gate**, one of three' not in flat(body):
+    if 'The first answer is the **gate**, one of two' not in flat(body):
         problems.append('%s does not give the gate as the first answer'
                         % SKILL)
     gates = [cells[0] for cells in table_rows(body, '| Gate |')]
-    if gates != ['`passed`', '`strong`', '`signed`']:
+    if gates != ['`passed`', '`signed`']:
         problems.append('%s gives the gates %s as the first answer, expected '
-                        '`passed`, `strong` and `signed`' % (SKILL, gates))
+                        '`passed` and `signed`' % (SKILL, gates))
     return problems
 
 
@@ -284,16 +284,16 @@ def yes_row_problems():
 # RULE-6: the settings
 # ---------------------------------------------------------------------------
 
-# The seven keys of the settings file init writes, as RULE-6 names them.
-INIT_KEYS = ('version', 'gate', 'mutation_engine', 'min_strength',
-             'audit_parallel', 'tests', 'ci')
+# The six keys of the settings file init writes, as RULE-6 names them.
+INIT_KEYS = ('version', 'gate', 'mutation_engine', 'audit_parallel', 'tests',
+             'ci')
 
 
 def settings_key_problems():
     shown = skill_settings()
     if shown is None:
         return ['%s shows no settings file' % SKILL]
-    return (['%s shows the key %r, which is not one of the seven'
+    return (['%s shows the key %r, which is not one of the six'
              % (SKILL, key) for key in sorted(set(shown) - set(INIT_KEYS))]
             + ['%s does not show the key %r' % (SKILL, key)
                for key in sorted(set(INIT_KEYS) - set(shown))])
@@ -475,20 +475,19 @@ class TestQuestions:
         ]) == []
 
     # purlin: skill_init PROOF-31
-    def test_the_gate_table_lists_the_three_answers_in_order(
+    def test_the_gate_table_lists_the_two_answers_in_order(
             self, monkeypatch):
         assert gate_table_problems() == []
         row = next(line for line in read(SKILL).splitlines()
-                   if line.startswith('| `strong` |'))
+                   if line.startswith('| `signed` |'))
         assert refusals(monkeypatch, gate_table_problems, [
             (SKILL, replace(row + '\n'),
-             "%s gives the gates ['`passed`', '`signed`'] as the first "
-             "answer" % SKILL),
+             "%s gives the gates ['`passed`'] as the first answer" % SKILL),
         ]) == []
 
     # purlin: skill_init PROOF-32
-    def test_setup_at_strong_asks_the_three_questions_the_skill_quotes(self):
-        code, output, _ = first_setup('strong\n\n')
+    def test_setup_at_signed_asks_the_three_questions_the_skill_quotes(self):
+        code, output, _ = first_setup('signed\n\n')
         assert code == 0, output
         quoted = skill_questions()
         assert len(quoted) == 3
@@ -514,29 +513,29 @@ class TestQuestions:
         ]) == []
 
     # purlin: skill_init PROOF-34
-    def test_the_gate_question_offers_the_three_gates_in_order(self):
-        code, output, _ = first_setup('strong\n\n')
+    def test_the_gate_question_offers_the_two_gates_in_order(self):
+        code, output, _ = first_setup('signed\n\n')
         assert code == 0, output
-        assert asked(output)[0][1] == ['passed', 'strong', 'signed']
+        assert asked(output)[0][1] == ['passed', 'signed']
 
     # purlin: skill_init PROOF-35
     def test_no_answer_to_the_second_question_leaves_mutation_off(self):
-        code, output, config = first_setup('strong\n\n')
+        code, output, config = first_setup('signed\n\n')
         assert code == 0, output
-        assert config['gate'] == 'strong'
-        assert (config['mutation_engine'], config['min_strength']) == (
-            'none', None)
+        assert config['gate'] == 'signed'
+        assert config['mutation_engine'] == 'none'
+        assert 'min_strength' not in config, config
 
 
 class TestSettings:
 
     # purlin: skill_init PROOF-6
-    def test_it_shows_the_seven_settings(self, monkeypatch):
+    def test_it_shows_the_six_settings(self, monkeypatch):
         assert settings_key_problems() == []
         assert refusals(monkeypatch, settings_key_problems, [
             (SKILL, replace('  "ci": "github"\n', '  "ci": "github",\n'
                             '  "colour": "blue"\n'),
-             "%s shows the key 'colour', which is not one of the seven"
+             "%s shows the key 'colour', which is not one of the six"
              % SKILL),
         ]) == []
 

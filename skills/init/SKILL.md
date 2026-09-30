@@ -17,32 +17,30 @@ test frameworks from detection, the git host from the remote URL. A question the
 `.purlin/config.json` or a flag already answers is not asked.
 
 1. **The gate**, on every first run: `What must be true of every rule before a version is
-   finished?`, with the three answers below. The default is `passed`.
-2. **Mutation testing**, only at `strong` and `signed`, and only where an engine exists for a
-   framework the tree carries: `Measure test strength by breaking the code on purpose? It needs
+   finished?`, with the two answers below. The default is `passed`.
+2. **Mutation testing**, only at `signed`, and only where an engine exists for a framework the
+   tree carries: `Measure test strength by breaking the code on purpose? It needs
    <engine> and takes minutes to hours per run. [y/N]`. The default is no.
 3. **Committing**, whenever setup writes a file: `Commit the files setup wrote? [y/N]`. The default is no; a yes commits them in one commit, `chore(init): set up Purlin at the gate <gate>`.
 
-The first answer is the **gate**, one of three:
+The first answer is the **gate**, one of two:
 
-| Gate | What every rule must have | Signatures |
-|------|---------------------------|------------|
-| `passed` | its marked tests pass, from any source | none |
-| `strong` | that, and an audit of its text, proof and test that found nothing outstanding, and, with mutation testing on, test strength at or above `min_strength` | none required |
-| `signed` | everything `strong` requires, plus a current signature, in a signed commit | the signature names who signed |
+| Gate | What a release asks | The tag |
+|------|---------------------|---------|
+| `passed` | every rule's tests pass | `purlin:test --release` writes `passed/<version>`, unsigned |
+| `signed` | every rule's tests pass, and a person signs each release | the first `purlin:sign` over the evidence package writes `signed/<version>` |
 
-At `signed`, `purlin:sign` writes the signed tag `signed/<version>` once nothing is left to do,
-and a person pushes it. `references/hard_gates.md` defines what the tag means.
+A person pushes the tag. `references/hard_gates.md` defines what it means. At either gate the AI
+audit and mutation testing are tools a person runs with `purlin:audit`; nothing waits on them.
 
-A yes to the mutation question writes `mutation_engine: auto` and `min_strength` (70 at
-`strong`, 80 at `signed`) and wires the engine: `[tool.mutmut]` into `pyproject.toml` when that
+A yes to the mutation question writes `mutation_engine: auto` and wires the engine: `[tool.mutmut]` into `pyproject.toml` when that
 file exists and `[mutmut]` into `setup.cfg` otherwise, plus a `mutants/` line in `.gitignore`; a
 jest, vitest or .NET project whose Stryker is not installed gets a line naming the command that
-installs it. A no writes `mutation_engine: none` and `min_strength: null` and wires nothing; the
-AI audit alone judges test strength. A config with no `mutation_engine` is read as `none`, which
+installs it. A no writes `mutation_engine: none` and wires nothing; the AI audit alone judges
+test strength. A config with no `mutation_engine` is read as `none`, which
 is off. Where no engine exists, or it cannot run on this operating system (mutmut on Windows),
-init asks nothing, writes `none` and, at `strong` and `signed`, prints one line saying so.
-`--mutation` turns it on without the question, at any gate.
+init asks nothing, writes `none` and, at `signed`, prints one line saying so. `--mutation` turns
+it on without the question, at either gate.
 
 ## Run it
 
@@ -59,9 +57,8 @@ Ask the person each question yourself. Pass `--mutation` when they say yes to br
 | `--yes` | Takes the default answer to every question and commits the files setup wrote |
 | `--update` | Brings a project Purlin 0.9.5 set up to the installed release. See below |
 
-A later run asks nothing before it writes. Raising the gate writes the setting, and the gate's
-`min_strength` where mutation testing is on. Lowering the gate rewrites the setting and deletes
-nothing: the runner file, the evidence and the signatures stay where they are.
+A later run asks nothing before it writes. Raising or lowering the gate rewrites the setting and
+deletes nothing: the runner file and the evidence stay where they are.
 
 ## What init writes
 
@@ -84,16 +81,15 @@ tag, and a push to a `run/*` branch, the branch `purlin:test --remote` creates a
 around one run. The job is named `purlin`, and its last step is the test run: the job fails only
 when a test fails or could not run. No breaks and no AI audit run on the runner.
 
-The config it writes carries these seven keys and no other; `version` is the plugin's `VERSION`
+The config it writes carries these six keys and no other; `version` is the plugin's `VERSION`
 file. `audit_parallel`, how many AI audit calls run at once, is 4 and is not asked; change it in
 the file, from 1 to 16.
 
 ```json
 {
   "version": "<the plugin's VERSION file>",
-  "gate": "strong",
+  "gate": "signed",
   "mutation_engine": "none",
-  "min_strength": null,
   "audit_parallel": 4,
   "tests": [],
   "ci": "github"
@@ -131,8 +127,8 @@ Mutation testing is the answer to its own question, not the gate's. Where a runn
 called for, it gets one job per operating system a proof is tagged `@env` for that this machine
 is not, each writing its own section (`references/hard_gates.md`, "Where a runner runs").
 
-Under `signed`, every rule needs a signature, and init asks nothing about it and names nobody:
-anyone can sign, and a signature names its signer. Init prints no signing setup. `purlin:sign`
+Under `signed`, a release needs a sign-off over its evidence package, and init asks nothing
+about it and names nobody: anyone can sign, and a sign-off names its signer. Init prints no signing setup. `purlin:sign`
 checks for a key to sign with and, when there is none, shows the commands that set one up.
 
 ## What the runner runs
@@ -162,8 +158,9 @@ and in this order it: removes a spec's Figma `> Source:`, its `> Pinned:`, its
 `@env(windows)`; drops the kind of test from every proof line; deletes the per-run files 0.9.5
 committed beside the specs and `.purlin/cache/`, and untracks `.purlin/report-data.js`; removes
 the `pre-commit` and `pre-push` scripts 0.9.5 put in `.git/hooks/`; rewrites
-`.purlin/config.json` to the seven keys, asking the gate question, and the mutation question at
-`strong` and `signed` where the old config names no engine, writing the `tests` setting from the
+`.purlin/config.json` to the six keys, asking the gate question, reading a gate of `strong` as
+`passed` and taking out `min_strength`, and the mutation question at `signed` where the old
+config names no engine, writing the `tests` setting from the
 frameworks the old config named and the tree carries, and naming every key it drops; creates
 `.purlin/evidence/` with its README; replaces `purlin-report.html` at the project root, the link
 0.9.5 left or a copy that differs, with the page init copies; replaces a workflow that committed

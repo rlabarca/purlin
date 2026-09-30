@@ -122,7 +122,11 @@ _COMMIT = 'chore(update): migrate to %s (%s)'
 # What `ci` may say: the git host a remote runner reads, or `none`.
 CI_VALUES = ('github', 'azure', 'none')
 # The gates at which the mutation question is asked, as init asks it.
-MUTATION_GATES = ('strong', 'signed')
+MUTATION_GATES = ('signed',)
+# The lines the config migration prints for what this release retired.
+STRONG_NOW_PASSED = ('The gate strong is now passed; the audit stays a tool '
+                     'you run with purlin:audit.')
+REMOVED_KEY = 'removed from .purlin/config.json: %s'
 
 # --- helpers ---------------------------------------------------------------
 # Both open with `newline=''`: a file the project owns keeps each line's own
@@ -441,6 +445,7 @@ def _detect_config(root):
         return []
     gate = _gate()
     stale = ('gate' not in config
+             or config.get('gate') not in gate.GATES
              or 'tests' not in config
              or 'mutation_engine' not in config
              or 'audit_parallel' not in config
@@ -451,15 +456,16 @@ def _detect_config(root):
 def _gate_default(old):
     """The gate to offer: the one the project named, when it named one.
 
-    A project that named none is offered `strong` when the hook setting
-    v0.9.5 wrote was the blocking one, because that project asked for
-    something to stop a change, and `passed` otherwise.
+    A project that named none is offered `passed`, the hook setting v0.9.5
+    wrote included, whether or not it was the blocking one: a release is
+    refused while a rule's tests do not pass, at either gate. A gate of
+    `strong` is offered as `passed`.
     """
-    gates = _gate().GATES
+    gate = _gate()
     named = str(old.get('gate') or '').strip().lower()
-    if named in gates:
+    if named in gate.GATES:
         return named
-    return 'strong' if str(old.get(PRE_PUSH_KEY)).strip() == 'strict' else 'passed'
+    return gate.DEFAULT_GATE
 
 
 def _ask_mutation(root, framework, assume_yes, out):
@@ -467,8 +473,8 @@ def _ask_mutation(root, framework, assume_yes, out):
     """`none` or `auto`: the mutation question init asks, asked on an update.
 
     Released 0.9.5 had no such setting, so the question is new to a project
-    it set up. It is asked only at the gates where it runs, `strong` and
-    `signed`, and only where an engine that runs on this operating system
+    it set up. It is asked only at the gate `signed`, where a person reads the
+    audit at the sign-off, and only where an engine that runs on this operating system
     exists for a framework the project carries, and the default is no.
     """
     init = _init()
@@ -559,7 +565,6 @@ def _apply_config(root, files, args, out):
         mutation = 'none'
     config = {
         'version': _version(), 'gate': chosen, 'mutation_engine': mutation,
-        'min_strength': init.min_strength_for(chosen, mutation),
         'audit_parallel': init.audit_parallel(old),
         'tests': tests,
         'ci': _ci(root, old),
@@ -568,9 +573,14 @@ def _apply_config(root, files, args, out):
     # ones, and the ones 0.9.5 wrote that nothing here reads. The framework
     # list is not dropped: it became the tests setting, which says so.
     dropped = sorted(key for key in old if key not in config
-                     and key != 'test_framework')
+                     and key not in ('test_framework', 'min_strength'))
     _write(path, json.dumps(config, indent=2) + '\n')
     out.done('.purlin/config.json')
+    if str(old.get('gate') or '').strip().lower() == 'strong' \
+            and chosen == 'passed':
+        out.say(STRONG_NOW_PASSED)
+    if 'min_strength' in old:
+        out.say(REMOVED_KEY % 'min_strength')
     out.say('set the gate to %s%s' % (chosen, '' if not dropped else
             ' and dropped %d key%s this release does not read: %s'
             % (len(dropped), _s(dropped), ', '.join(dropped))))

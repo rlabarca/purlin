@@ -77,8 +77,8 @@ OLD_PRE_PUSH = ('#!/usr/bin/env bash\n'
 VERSION = open(os.path.join(ROOT, 'VERSION'), encoding='utf-8').read().strip()
 
 # The keys of the config this release writes, sorted.
-SEVEN_KEYS = ['audit_parallel', 'ci', 'gate', 'min_strength',
-              'mutation_engine', 'tests', 'version']
+SIX_KEYS = ['audit_parallel', 'ci', 'gate', 'mutation_engine', 'tests',
+            'version']
 
 
 # --- building a project to run against --------------------------------------
@@ -336,9 +336,8 @@ def test_yes_takes_the_default_of_the_gate_and_mutation_questions(
     capsys.readouterr()
     assert asked == []
     written = _config(root)
-    assert written['gate'] == 'strong'
+    assert written['gate'] == 'passed'
     assert written['mutation_engine'] == 'none'
-    assert written['min_strength'] is None
 
 
 # purlin: update PROOF-6
@@ -455,11 +454,10 @@ def test_the_config_is_the_gate_shape(tmp_path):
     root = _project(tmp_path, V095)
     _apply(root)
     config = _config(root)
-    assert sorted(config) == SEVEN_KEYS
+    assert sorted(config) == SIX_KEYS
     assert config['version'] == VERSION
     assert config['gate'] == 'passed'
     assert config['mutation_engine'] == 'none'
-    assert config['min_strength'] is None
     assert config['audit_parallel'] == 4
     assert config['ci'] == 'github'
 
@@ -472,22 +470,13 @@ def _config_at(tmp_path, monkeypatch, gate):
     return _config(root)
 
 
-# purlin: update PROOF-37
-def test_the_config_is_the_gate_shape_at_strong(tmp_path, capsys, monkeypatch):
-    config = _config_at(tmp_path, monkeypatch, 'strong')
-    capsys.readouterr()
-    assert config['gate'] == 'strong'
-    assert config['audit_parallel'] == 4
-    assert sorted(config) == SEVEN_KEYS
-
-
 # purlin: update PROOF-38
 def test_the_config_is_the_gate_shape_at_signed(tmp_path, capsys, monkeypatch):
     config = _config_at(tmp_path, monkeypatch, 'signed')
     capsys.readouterr()
     assert config['gate'] == 'signed'
     assert config['audit_parallel'] == 4
-    assert sorted(config) == SEVEN_KEYS
+    assert sorted(config) == SIX_KEYS
 
 
 # purlin: update PROOF-39
@@ -567,14 +556,6 @@ def test_the_gate_defaults_to_passed(tmp_path):
     assert _config(root)['gate'] == 'passed'
 
 
-# purlin: update PROOF-45
-def test_the_gate_defaults_to_strong_when_the_hook_was_strict(tmp_path):
-    root = _project(tmp_path, V095)
-    _set_config(root, pre_push='strict')
-    _apply(root)
-    assert _config(root)['gate'] == 'strong'
-
-
 # purlin: update PROOF-46
 def test_the_gate_question_takes_the_answer_you_type(tmp_path, capsys,
                                                      monkeypatch):
@@ -598,7 +579,7 @@ def test_an_answer_that_is_not_a_gate_leaves_the_default(tmp_path, capsys,
     # Setup's line, the answer in it quoted once, as JSON writes it.
     refusal = [line for line in printed if 'whenever' in line]
     assert refusal == ['"whenever" is not accepted for gate; it takes '
-                       'passed, strong or signed. Reading it as passed.'], printed
+                       'passed or signed. Reading it as passed.'], printed
     assert _config(root)['gate'] == 'passed'
 
 
@@ -617,18 +598,52 @@ def test_the_gate_the_project_named_is_the_default(tmp_path, capsys,
     assert 'reading it as' not in printed.lower(), printed
 
 
+# purlin: update PROOF-159
+def test_the_gate_strong_is_now_passed(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    _set_config(root, gate='strong', mutation_engine='auto')
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    written = _config(root)
+    assert written['gate'] == 'passed'
+    assert written['mutation_engine'] == 'auto'
+    assert ('  The gate strong is now passed; the audit stays a tool you run '
+            'with purlin:audit.') in printed, printed
+
+
+# purlin: update PROOF-160
+def test_min_strength_is_taken_out(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    _set_config(root, min_strength=70)
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    assert 'min_strength' not in _config(root)
+    assert '  removed from .purlin/config.json: min_strength' in printed, \
+        printed
+
+
+# purlin: update PROOF-161
+def test_the_gate_offered_where_the_hook_was_strict_is_passed(tmp_path):
+    root = _project(tmp_path, V095)
+    _set_config(root, pre_push='strict')
+    assert 'gate' not in _config(root)
+    _apply(root)
+    assert _config(root)['gate'] == 'passed'
+
+
 # purlin: update PROOF-130
-def test_the_gate_question_prints_its_three_choices(tmp_path, capsys,
+def test_the_gate_question_prints_its_two_choices(tmp_path, capsys,
                                                     monkeypatch):
     root = _project(tmp_path, V095)
     _answers(monkeypatch, [('Gate [', '')])
     _apply(root, argv=())
     printed = capsys.readouterr().out.splitlines()
     at = printed.index(scaffold.GATE_QUESTION)
-    assert printed[at + 1:at + 4] == [
+    assert printed[at + 1:at + 3] == [
         "  passed  every rule's tests pass",
-        '  strong  tests pass and the audit finds them sound',
-        '  signed  strong, and a person signs each rule'], printed
+        "  signed  every rule's tests pass, and a person signs each release",
+    ], printed
+    assert not printed[at + 3].startswith('  '), printed
 
 
 # --- the tests setting ---------------------------------------------------------
@@ -1183,7 +1198,7 @@ def _asked_at(asked, needle):
 def test_the_mutation_question_defaults_to_no(tmp_path, capsys, monkeypatch):
     root = _project(tmp_path, V095)
     _write(root, 'conftest.py', '')
-    asked = _answers(monkeypatch, [('Gate [', 'strong'), (MUTATION, '')])
+    asked = _answers(monkeypatch, [('Gate [', 'signed'), (MUTATION, '')])
     _apply(root, argv=())
     capsys.readouterr()
     assert asked[_asked_at(asked, MUTATION)].startswith(
@@ -1191,19 +1206,17 @@ def test_the_mutation_question_defaults_to_no(tmp_path, capsys, monkeypatch):
     assert _asked_at(asked, 'Gate [') < _asked_at(asked, MUTATION)
     written = _config(root)
     assert written['mutation_engine'] == 'none'
-    assert written['min_strength'] is None
 
 
 # purlin: update PROOF-54
-def test_yes_turns_it_on_at_the_gate_s_minimum(tmp_path, capsys, monkeypatch):
+def test_yes_turns_it_on(tmp_path, capsys, monkeypatch):
     root = _project(tmp_path, V095)
     _write(root, 'conftest.py', '')
-    _answers(monkeypatch, [('Gate [', 'strong'), (MUTATION, 'y')])
+    _answers(monkeypatch, [('Gate [', 'signed'), (MUTATION, 'y')])
     _apply(root, argv=())
     printed = capsys.readouterr().out
     written = _config(root)
     assert written['mutation_engine'] == 'auto'
-    assert written['min_strength'] == 70
     assert ('  turned mutation testing on; run purlin:init to wire mutmut into '
             'the project') in printed.splitlines(), printed
 
@@ -1211,7 +1224,7 @@ def test_yes_turns_it_on_at_the_gate_s_minimum(tmp_path, capsys, monkeypatch):
 # purlin: update PROOF-55
 def test_no_engine_means_no_question(tmp_path, capsys, monkeypatch):
     root = _project(tmp_path, V095)
-    asked = _answers(monkeypatch, [('Gate [', 'strong')])
+    asked = _answers(monkeypatch, [('Gate [', 'signed')])
     _apply(root, argv=())
     printed = capsys.readouterr().out
     assert not [prompt for prompt in asked if MUTATION in prompt], asked
@@ -1236,7 +1249,7 @@ def test_on_windows_a_pytest_project_is_not_asked_to_break_its_code(
     _write(root, 'conftest.py', '')
     mutation = update._plugin_module('run', 'mutation')
     monkeypatch.setattr(mutation, 'os', _WindowsOs())
-    asked = _answers(monkeypatch, [('Gate [', 'strong')])
+    asked = _answers(monkeypatch, [('Gate [', 'signed')])
     _apply(root, argv=())
     printed = capsys.readouterr().out
     assert not [prompt for prompt in asked if MUTATION in prompt], asked
@@ -1257,7 +1270,6 @@ def test_at_passed_no_mutation_question_is_asked(tmp_path, capsys,
     assert not [prompt for prompt in asked if MUTATION in prompt], asked
     written = _config(root)
     assert written['mutation_engine'] == 'none'
-    assert written['min_strength'] is None
 
 
 # purlin: update PROOF-57
@@ -1276,7 +1288,7 @@ def test_a_mutation_setting_already_written_is_kept(tmp_path, capsys,
     root = _project(tmp_path, V095)
     _write(root, 'conftest.py', '')
     _set_config(root, mutation_engine='auto')
-    asked = _answers(monkeypatch, [('Gate [', 'strong')])
+    asked = _answers(monkeypatch, [('Gate [', 'signed')])
     _apply(root, argv=())
     capsys.readouterr()
     assert not [prompt for prompt in asked if MUTATION in prompt], asked
@@ -2010,14 +2022,14 @@ def test_the_runner_reason_at_passed(tmp_path, capsys, monkeypatch):
 
 
 # purlin: update PROOF-142
-def test_the_runner_reason_at_strong(tmp_path, capsys, monkeypatch):
+def test_the_runner_reason_at_signed(tmp_path, capsys, monkeypatch):
     from purlin import evidence as evidence_module
     monkeypatch.setattr(evidence_module, 'host_os', lambda: 'macos')
     root = _project(tmp_path, V095)
-    _answers(monkeypatch, [('Gate [', 'strong')])
+    _answers(monkeypatch, [('Gate [', 'signed')])
     _apply(root, argv=())
     printed = capsys.readouterr().out.splitlines()
-    (reason,) = _reason(['windows'], 'strong')
+    (reason,) = _reason(['windows'], 'signed')
     assert reason.lower().startswith(
         'a proof in specs/ is tagged @env for windows, '), reason
     assert '  ' + reason in printed, printed
