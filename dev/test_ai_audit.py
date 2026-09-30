@@ -94,6 +94,15 @@ def claude(tmp_path, monkeypatch):
     return install, directory
 
 
+def as_anchor(project):
+    """Move `login` under `specs/_anchors/`, then take its evidence again,
+    measuring a test strength of 90."""
+    os.makedirs(os.path.join(project.root, 'specs', '_anchors'))
+    git(project.root, 'mv', 'specs/auth/login.md', 'specs/_anchors/login.md')
+    git(project.root, 'commit', '-q', '-m', 'spec(login): an anchor')
+    project.evidence()
+
+
 def read(project, rule='RULE-1'):
     return audit_module.reading_for(project.root, None, 'login', rule)
 
@@ -147,34 +156,23 @@ class TestWhichRulesAreRead:
             assert audit_module.is_read(rule) is False
 
     # purlin: ai_audit PROOF-49
-    def test_a_required_rule_is_read_only_where_its_feature_lists_it(
+    def test_an_anchors_rules_are_read_once_each_as_the_anchors(
             self, at_strong):
-        os.makedirs(os.path.join(at_strong.root, 'specs', '_anchors'))
-        git(at_strong.root, 'mv', 'specs/auth/login.md',
-            'specs/_anchors/login.md')
-        git(at_strong.root, 'commit', '-q', '-m', 'spec(login): an anchor')
-        at_strong.evidence()
+        as_anchor(at_strong)
         at_strong.spec('# Feature: portal\n\n'
                        '> Description: The portal a person signs in to.\n'
-                       '> Scope: src/login.py\n'
-                       '> Requires: login\n\n'
+                       '> Scope: src/login.py\n\n'
                        '## Rules\n\n'
                        '- RULE-1: The portal opens\n\n'
                        '## Proof\n\n'
                        '- PROOF-1 (RULE-1): Open the portal; it opens\n',
                        name='portal')
-        features = {entry['name']: entry
-                    for entry in at_strong.payload()['features']}
-        required = [rule for rule in features['portal']['rules']
-                    if rule['feature'] == 'login']
-        own = features['login']['rules']
-        assert sorted(rule['id'] for rule in required) == ['RULE-1',
-                                                           'RULE-2']
-        assert [rule['cells']['passed']['word'] for rule in own] == [
-            'passed', 'passed']
-        assert [audit_module.is_read(rule) for rule in required] == [
-            False, False]
-        assert [audit_module.is_read(rule) for rule in own] == [True, True]
+        read_as = [(entry['name'], rule['feature'], rule['id'])
+                   for entry in at_strong.payload()['features']
+                   for rule in entry.get('rules') or ()
+                   if audit_module.is_read(rule)]
+        assert read_as == [('login', 'login', 'RULE-1'),
+                           ('login', 'login', 'RULE-2')], read_as
 
     # purlin: ai_audit PROOF-3
     def test_a_passing_rule_is_read_at_the_gate_passed(self, proved):
@@ -397,6 +395,25 @@ class TestThePrompt:
         told = [line for line in prompt.splitlines()
                 if line.startswith('Test strength:')]
         assert told == ['Test strength: not measured'], told
+
+    # purlin: ai_audit PROOF-91
+    def test_an_anchors_prompt_ends_on_the_anchor_line(self, at_strong):
+        as_anchor(at_strong)
+        prompt = audit_module.model_prompt(at_strong.root,
+                                           read(at_strong, 'RULE-2'))
+        assert prompt.splitlines()[-1] == (
+            'Anchor: its rules cover the whole project, so its tests must '
+            'check the whole project. No test strength is measured for an '
+            'anchor.'), prompt[-400:]
+
+    # purlin: ai_audit PROOF-92
+    def test_an_anchors_prompt_names_no_strength(self, at_strong):
+        as_anchor(at_strong)
+        prompt = audit_module.model_prompt(at_strong.root,
+                                           read(at_strong, 'RULE-2'))
+        assert 'login RULE-2' in prompt
+        assert not [line for line in prompt.splitlines()
+                    if line.startswith('Test strength:')], prompt[-400:]
 
     # purlin: ai_audit PROOF-12
     def test_the_prompt_asks_for_observations_and_bars_a_recommendation(

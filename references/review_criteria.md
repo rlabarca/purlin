@@ -61,6 +61,10 @@ note never makes the rule `weak`: the rule is read against its test as it stands
   claims to prove. A test mocks the network, the clock and the filesystem, never the code
   under test.
 
+An anchor's rule covers the whole project. Its test is strong only when it checks every file of
+the project the rule speaks of, not a sample of them and not one feature's files. No code is
+broken on purpose for an anchor, so the audit alone judges its tests.
+
 A rule no proof line names, and no test marked with the rule's own id answers, reads
 `no test` with the reason `no proof written`. A rule whose test passes and that has no proof
 reads `no proof` in its strong cell, because there is no proof to read the test against.
@@ -73,8 +77,9 @@ The model is shown the test strength of the feature the rule belongs to: of the 
 breaks made to that feature's code, the share its tests caught, as an integer percent beside
 `min_strength` from `.purlin/config.json`, as `Test strength: 71 percent (minimum 80)`. Where
 nothing was measured, or the engine cannot run on this system, the model is shown
-`Test strength: not measured`. `references/hard_gates.md`, "The three steps", says what test
-strength is and when it leaves a rule `weak`.
+`Test strength: not measured`. No strength is measured for an anchor.
+`references/hard_gates.md`, "The three steps", says what test strength is and when it leaves a
+rule `weak`.
 
 It says one thing: the feature's tests noticed when its behaviour changed. It does not say
 the tests prove the right rule, that the proof text matches the test, or that the rule is

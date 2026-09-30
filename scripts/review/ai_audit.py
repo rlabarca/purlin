@@ -96,6 +96,10 @@ VERDICT_WORDS = {
 }
 NO_TEST_YET = '  No test yet. Run purlin:build %s.'
 STRENGTH_LINE = 'Test strength %d%%, against a minimum of %s%%.'
+# What the prompt of an anchor's rule ends on, in place of its strength.
+ANCHOR_LINE = ('Anchor: its rules cover the whole project, so its tests must '
+               'check the whole project. No test strength is measured for an '
+               'anchor.')
 
 
 # ---------------------------------------------------------------------------
@@ -110,11 +114,7 @@ def load_payload(project_root, payload=None):
 
 
 def rule_entry(payload, feature, rule):
-    """The rule dict for `<feature> <rule>`, or None.
-
-    A required rule belongs to the feature its own `feature` field names, so a
-    rule is read where it lives and not once per consumer.
-    """
+    """The rule dict for `<feature> <rule>`, or None."""
     for entry in (payload or {}).get('features') or ():
         for item in entry.get('rules') or ():
             if item.get('feature') == feature and item.get('id') == rule:
@@ -125,15 +125,13 @@ def rule_entry(payload, feature, rule):
 def is_read(entry, again=False):
     """True when the audit reads this rule.
 
-    A rule is read when it is its feature's own, at least one of its proofs
-    has a test, its passed cell reads `passed`, and it has no audit entry for
-    its current rule, proof and test hashes. The same rules are read at every
-    gate. `again` drops the condition about an existing entry, which is what
-    `--all` asks for.
+    A rule is read when at least one of its proofs has a test, its passed
+    cell reads `passed`, and it has no audit entry for its current rule,
+    proof and test hashes. The same rules are read at every gate. `again`
+    drops the condition about an existing entry, which is what `--all` asks
+    for.
     """
     entry = entry or {}
-    if entry.get('label', 'own') != 'own':
-        return False
     passed = ((entry.get('cells') or {}).get('passed') or {}).get('word')
     if passed != 'passed':
         return False
@@ -150,6 +148,9 @@ def reading_for(project_root, payload, feature, rule):
     if entry is None:
         return None
     gate = payload.get('gate') or {}
+    # An anchor's rules cover the whole project, and no strength is measured
+    # for one: the audit reads its tests alone.
+    anchor = bool(_feature_entry(payload, feature).get('is_anchor'))
     proofs = [{'id': proof.get('id'), 'manual': bool(proof.get('manual')),
                'env': proof.get('env'), 'text': proof.get('text')}
               for proof in entry.get('proofs') or ()]
@@ -162,7 +163,9 @@ def reading_for(project_root, payload, feature, rule):
         'proof_hash': entry.get('proof_hash'),
         'test_hash': entry.get('test_hash'),
         'tests': _test_layer(project_root, feature, entry),
-        'test_strength': _feature_entry(payload, feature).get('test_strength'),
+        'anchor': anchor,
+        'test_strength': (None if anchor else _feature_entry(
+            payload, feature).get('test_strength')),
         'min_strength': gate.get('min_strength'),
         'audit': entry.get('audit'),
     }
@@ -261,7 +264,11 @@ INSTRUCTION = (
 
 
 def model_prompt(project_root, reading, criteria=None):
-    """The criteria verbatim, then this rule's rule, proof, test and numbers."""
+    """The criteria verbatim, then this rule's rule, proof, test and numbers.
+
+    An anchor's rule ends on `ANCHOR_LINE` where any other ends on its
+    strength.
+    """
     text = criteria_text(project_root) if criteria is None else criteria
     parts = [text, '', '---', '']
     parts.extend(INSTRUCTION)
@@ -279,8 +286,11 @@ def model_prompt(project_root, reading, criteria=None):
         if test.get('body'):
             parts.append(test['body'])
     parts.append('')
-    parts.append('Test strength: %s'
-                 % _strength_words(reading, '(minimum %s)'))
+    if reading.get('anchor'):
+        parts.append(ANCHOR_LINE)
+    else:
+        parts.append('Test strength: %s'
+                     % _strength_words(reading, '(minimum %s)'))
     return '\n'.join(parts)
 
 
@@ -475,7 +485,8 @@ def render(reading):
             lines.append('  %s  manual' % test.get('proof'))
         for line in (test.get('body') or '').splitlines():
             lines.append('    %s' % line)
-    # A person is told nothing of strength where none was measured.
+    # A person is told nothing of strength where none was measured, which
+    # is always so for an anchor.
     if reading.get('test_strength') is not None:
         lines.extend(['', _strength_line(reading)])
     lines.extend(['', 'What the audit found'])
@@ -591,8 +602,7 @@ def main(argv=None):
 
 def _rules_of(payload, feature):
     entry = _feature_entry(payload, feature)
-    return [rule['id'] for rule in entry.get('rules') or ()
-            if rule.get('feature') == feature]
+    return [rule['id'] for rule in entry.get('rules') or ()]
 
 
 if __name__ == '__main__':

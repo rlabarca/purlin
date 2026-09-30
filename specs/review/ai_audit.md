@@ -11,8 +11,8 @@
 >   audit tries again. It writes no file; the run writes what it found into the evidence.
 > Scope: scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
-> Highest-Rule: 29
-> Highest-Proof: 90
+> Highest-Rule: 30
+> Highest-Proof: 92
 
 ## Rules
 
@@ -37,13 +37,14 @@
 - RULE-20: An answer with no settled line is asked for once more, and when the second has none either the model cannot be reached and the answer is only the reason `claude answered without a settled line`
 - RULE-21: When `.purlin/config.json` cannot be read, `ai_audit.py` prints the sentence saying why, prints no rule, writes nothing and exits 1
 - RULE-29: `ai_audit.py` run with a `--project-root` that is not a directory prints `ai_audit.py: <path> is not a directory.` and exits 2
+- RULE-30: The prompt of an anchor's rule ends on `Anchor: its rules cover the whole project, so its tests must check the whole project. No test strength is measured for an anchor.` in place of the test strength
 
 ## Proof
 
 - PROOF-1 (RULE-1): In a project under the gate `strong`, `RULE-2` has one proof, its test passed, so its passed cell reads `passed`, and it has no audit entry; the audit reads it
 - PROOF-2 (RULE-1): In a project under the gate `strong`, the test of `RULE-2` failed, so its passed cell reads `failed`; the audit does not read it
 - PROOF-48 (RULE-1): In a project under the gate `strong`, the one proof of `RULE-2` is tagged `@manual`, its passed cell reads `passed` and it has no audit entry; the audit does not read it
-- PROOF-49 (RULE-1): In a project under the gate `strong`, `login` is an anchor under `specs/_anchors/` whose two rules pass with no audit entry, and the feature `portal` requires it; each rule is read where `login` lists it, and not where `portal` lists it as a required rule
+- PROOF-49 (RULE-1): In a project under the gate `strong`, `login` is an anchor under `specs/_anchors/` whose two rules pass with no audit entry, beside the feature `portal`; the audit reads each of the two once, as a rule of `login`
 - PROOF-3 (RULE-1): In a project under the gate `passed`, `RULE-2` has one proof, its test passed and it has no audit entry; the audit reads it
 - PROOF-50 (RULE-1): In a project under the gate `signed`, `RULE-2` has one proof, its test passed and it has no audit entry; the audit reads it
 - PROOF-4 (RULE-1): In a project under the gate `strong`, `RULE-2` passes and carries an audit entry reading `strong`, recorded for its current text, proof and test; the audit does not read it
@@ -121,3 +122,5 @@
 - PROOF-39 (RULE-16): Under the gate `strong`, the prompt for `RULE-2` shows a `notes:` line in the shape of the answer, and holds the words `a note, under notes:, for a proof longer than 60 words or one holding more than one case`
 - PROOF-81 (RULE-21): In a project whose `.purlin/config.json` holds a comma after its last setting, the command run for `--feature login` exits 1, prints only `.purlin/config.json cannot be read: <the JSON reader's message> at line <n>. Fix the file by hand; nothing ran and nothing was saved.`, and every file under `.purlin/` keeps its bytes
 - PROOF-90 (RULE-29): The command run with a `--project-root` that names no folder on disk exits 2 and prints `ai_audit.py: <that path> is not a directory.`, with the path as it was given
+- PROOF-91 (RULE-30): Under the gate `strong`, `login` is an anchor under `specs/_anchors/` whose evidence measured a test strength of 90; the last line of the prompt for `RULE-2` reads `Anchor: its rules cover the whole project, so its tests must check the whole project. No test strength is measured for an anchor.`
+- PROOF-92 (RULE-30): Under the gate `strong`, with `login` that anchor, its evidence measuring a test strength of 90, the prompt for `RULE-2` holds no line beginning `Test strength:`
