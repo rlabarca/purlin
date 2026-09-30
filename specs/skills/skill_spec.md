@@ -6,7 +6,7 @@
 >   over to the build.
 > Scope: skills/spec/SKILL.md, references/spec_quality_guide.md, references/purlin_commands.md
 > Stack: markdown, Claude Code skill definition
-> Highest-Rule: 21
+> Highest-Rule: 22
 
 ## Rules
 
@@ -30,6 +30,7 @@
 - RULE-19: The guide's section `Written for a person who cannot read code` says that for a library a proof may name a function or class the library exports and an error type a caller gets back, and that a name from inside the code stays out
 - RULE-20: The guide's section `One proof, one case` says one proof may name a list of like inputs that share one action and one kind of result
 - RULE-21: The guide's table `When a rule is stuck` gives, for a proof tagged for a system that has not run, the word `not run` with `<System>: no run yet`, and names `purlin:test --remote` and the runner file
+- RULE-22: The skill tells the agent to commit the spec it writes, with the `spec(<name>):` prefix, before it ends on its closing line
 
 ## Proof
 
@@ -54,3 +55,4 @@
 - PROOF-48 (RULE-19): The guide's section `Written for a person who cannot read code` says a proof may name a function or class the library exports and an error type a caller gets back, with the poor example `_split_fields` and the good example `parse_line` raising `LineTooShort`
 - PROOF-49 (RULE-20): The guide's section `One proof, one case` says `One proof may name a list of like inputs that share one action and one kind of result`, with the example of `0`, `-1` and `-0.5` refused with `Amount must be positive`
 - PROOF-50 (RULE-21): The guide's `When a rule is stuck` table has a row whose word cell holds `not run` and `<System>: no run yet`, and whose fix says ``Run `purlin:test --remote`, whose runner file names that system``
+- PROOF-51 (RULE-22): The spec skill's section `When you are done`, read across its line breaks, says to commit the file with the `spec(<name>):` prefix and then to end with the closing line `Spec saved: <name>. Next: purlin:build <name>`

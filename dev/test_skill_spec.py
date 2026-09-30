@@ -526,3 +526,11 @@ def guide_one_case_problems():
                            'at most 60 words',
                            'A refusal or a boundary is a case of its own')
             if needle not in flat(body.group(1))]
+
+
+# purlin: skill_spec PROOF-51
+def test_the_spec_is_committed_before_the_closing_line():
+    done = flat(section(read(SKILL), r'^When you are done$') or '')
+    commit = done.find('commit it with the `spec(<name>):` prefix')
+    closing = done.find('Spec saved: <name>. Next: purlin:build <name>')
+    assert 0 <= commit < closing, done
