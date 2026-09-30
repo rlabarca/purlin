@@ -1058,6 +1058,36 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **Setup leaves test fixtures out** when it decides which test tools a project uses:
       files under a folder named for fixtures, samples or test data do not count, so setup
       names only the tools the project itself uses.
+100. **An anchor is a set of rules for the whole project** (added 2026-09-30). Closed, and not
+    yet built. This reverses decision 76's signing of an anchor's rule in each feature, and the
+    part of decision 98 that kept a line in a spec naming the anchors it requires.
+    - **Every anchor is global.** Each of its rules is proven by tests that run across the
+      whole project, tied to no feature. A project's own anchor and one pinned from another
+      repository are alike in this.
+    - **A rule that cannot be checked across the project is not an anchor rule.** It is written
+      as an ordinary rule in the spec of each feature that needs it, in that feature's own
+      words. In the owner's words: "Global or not an anchor".
+    - **A spec names no anchor.** The line `> Requires:` goes, and so does `> Global: true`,
+      since every anchor is global. A spec that still carries either is warned of, with its
+      fix, in the shape of decision 97's spec mistakes.
+    - **Each anchor rule is counted, audited and signed once.** A feature's row counts its own
+      rules only, so the counts `(+8)` and `(+8 shared)` go from the dashboard and the
+      terminal, and a feature whose 11 rules pass reads `11 of 11`.
+    - **Anchors stand in a section of their own on the dashboard**, above the spec table, headed
+      `Anchors`, with the same columns and under the same filters; the word `(anchor)` after a
+      name goes.
+    - **Any change to the project ends an anchor's results and its signatures.** The project is
+      every tracked file but the records Purlin itself writes: the results of a run, the
+      signatures and the evidence package. An anchor names no covered files. At the gate
+      `signed`, anchors are in practice signed last.
+    - **A rule of a pinned anchor that no project-wide test can show is checked by hand**: a
+      person checks the project against it and signs, as for any rule proven by hand, and again
+      each time the signature ends.
+    - **An anchor's tests are judged by the AI audit alone.** No code is broken on purpose for
+      an anchor, and no test strength is shown for one.
+    - **Still to be asked when it is planned:** the words of every line a person reads that this
+      changes, and what becomes of this repository's anchor about the spec format, which one
+      feature required and whose rules are about one piece of code.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5

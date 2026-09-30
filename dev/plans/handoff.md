@@ -19,15 +19,20 @@ decisions 60 to 99 (together with this file they are the product as the owner se
 - This repository through its own tool, `python3 scripts/run/purlin_run.py --test --all` at
   `5f002e00e`, exit 0: `Markers: 2333 tied to a test, 0 not tied.`, `Ran pytest, shell on 36
   features.`, `86 proofs need Windows; this machine is macOS. Run purlin:test --remote.`, then
-  `891 rules. 867 pass their tests. 0 are strong. 0 are signed.` and `Left to do:` /
-  `  24 rules to test on Windows: purlin:test --remote` / `  867 rules to audit: purlin:audit`.
+  `891 rules. 891 pass their tests. 0 are strong. 0 are signed.` and `Left to do:` /
+  `  891 rules to audit: purlin:audit` (at `6ea879147 purlin: evidence at e38956f`, after the
+  remote run below).
   No rule reads `partial`, `failed` or `no test`, and no warning prints. With `--commit` the
   same lines, `Evidence committed.` after the evidence line, and one commit,
   `b46c93f01 purlin: evidence at 5f002e0`. 2333 proofs, each one case of at most 60 words with
   a test of its own. The audit and the signing are the owner's to run.
-- The remote run on Windows at `babd6ae` came home as `665f4dbb8 purlin: evidence at babd6ae`,
-  before decision 99. The 24 rules left to test on Windows are the rules with a Windows proof in
-  the features decision 99 changed, whose remote evidence is now out of date.
+- The remote run on Windows after decision 99 came home as `e38956f11 purlin: evidence at
+  c98fe7b`: every rule tagged for Windows passes there. The run before it found a fault in
+  `purlin:test --remote`: it looked up the run to wait on by its branch alone, so when this
+  repository's other workflow, the version check, registered first, it waited on that, pulled
+  nothing and deleted the run branch while the Windows job still ran. The lookup now names the
+  workflow file too (`03005dd8a`; host RULE-12, PROOF-66).
+- Decision 100 (anchors are global) is closed and not built: "What is left", item 1.
 - The runner file, `.github/workflows/purlin.yml`, was written by setup from the templates of
   phase 4 and committed by setup (`8008d9de6 chore(init): set up Purlin at the gate signed`).
   It runs on `windows-latest` alone: 86 proofs are tagged `@env(windows)`, and the 13 tagged
@@ -74,9 +79,16 @@ a system of record, which decides who was entitled to sign.
 
 The prompt for the next session is `dev/plans/next-agent-prompt.md`.
 
-1. **A last remote run on Windows**, by the orchestrator, on the tree as decision 99 left it:
-   `purlin:test --remote` once, one temporary run branch pushed, for the 24 rules whose remote
-   evidence decision 99 put out of date.
+1. **Decision 100 is built**: an anchor is a set of rules for the whole project. It is closed
+   and nothing of it is built. It changes how rules are counted, what an anchor's signature
+   covers, the spec and anchor formats, the evidence package, the dashboard, the terminal,
+   signing, the upgrade from 0.9.5, the instructions, the docs and one slide. The owner asked
+   for a plan first: a planning agent writes the lanes and every line a person would read, the
+   owner reads it and answers what it raises, and then it is built. The branch
+   `lane/anchors-section` (worktree `purlin-wt/anchors-section`, two commits, not merged, its
+   sweep not confirmed) holds a first build of the dashboard's `Anchors` section, made before
+   decision 100: it keeps the per-feature counts, so it is a start and not the answer. A
+   remote run on Windows follows the build.
 2. **The further sanity checks**, each its own fresh agent, in the order the owner picks. The
    next one runs `purlin:spec-from-code` on project copies of which one carries a test that
    fails before the run, so decision 66's clause about failing tests is tried, and the agents

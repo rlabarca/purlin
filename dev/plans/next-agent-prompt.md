@@ -1,4 +1,4 @@
-# Prompt for the next session: the last Windows run, the sanity checks, the owner's review
+# Prompt for the next session: decision 100, the sanity checks, the owner's review
 
 Paste everything below the line into a new session opened in
 `/Users/richlabarca/LocalCode/purlin`.
@@ -9,8 +9,10 @@ You are continuing Purlin 0.10.0, a Claude Code plugin for spec-driven developme
 itself. The owner has closed decisions 60 to 99, and all of them are built and proven on `main`:
 the product work of decisions 94 to 97, Windows (86 proofs tagged `@env(windows)`, 13 tagged
 `@env(macos)`), sanity check 3 applied in phase 4, every page of the docs read again against
-the code with the screenshots retaken, and the five answers of decision 99. Your job is what is left before the handover: the last
-remote run on Windows, the further sanity checks, and getting the owner's review done.
+the code with the screenshots retaken, and the five answers of decision 99. Every rule
+passes on the Mac and, where tagged, on Windows. Decision 100 is closed and not built. Your job
+is what is left before the handover: decision 100, the further sanity checks, and getting the
+owner's review done.
 
 ## Read first, in this order, in full
 
@@ -74,11 +76,16 @@ remote run on Windows, the further sanity checks, and getting the owner's review
 
 ## The work, in order
 
-1. **The last remote run on Windows.** `purlin:test --remote` once on the tree as it then is.
-   It pushes one temporary run branch and nothing else. The run at `babd6ae` came before
-   decision 99; this one proves the 24 rules whose remote evidence decision 99 put out of date.
-   Report its table. The 78 tests that fail on Windows and that no rule is tagged for stay as
-   they are (decision 99).
+1. **Decision 100: an anchor is a set of rules for the whole project.** Read it in
+   `three-levels.md` and `handoff.md`, "What is left", item 1. The owner asked for a plan
+   first. Have a planning agent cut the work into lanes by ownership of files, as phases 3 and
+   4 were cut (`phase3-plan.md` section 4 is the ownership), and write word for word every line
+   a person would read that this changes: the warning for a spec that still names an anchor,
+   the terminal's counts, the dashboard's section, the formats, the release notes, the slide on
+   anchors. Put those words and the two things decision 100 leaves open to the owner with the
+   question UI, and wait. Then build it, integrate, prove, and run `purlin:test --remote` once:
+   it pushes one temporary run branch and nothing else. The 78 tests that fail on Windows and
+   that no rule is tagged for stay as they are (decision 99).
 2. **The further sanity checks**, each its own fresh agent, in the order the owner picks:
    - `purlin:spec-from-code` run for real on small real projects, one of which carries a test
      that fails before the run, so decision 66's clause about failing tests is tried; the
