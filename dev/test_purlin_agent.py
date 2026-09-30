@@ -41,9 +41,11 @@ class TestCoreLoop:
     def test_the_core_loop_is_stated_once_in_order(self, monkeypatch):
         assert core_loop_problems() == []
         assert refusals(monkeypatch, core_loop_problems, [
-            (AGENT, replace('purlin:test → purlin:audit',
-                            'purlin:audit → purlin:test'),
+            (AGENT, replace('purlin:build → purlin:test →',
+                            'purlin:test → purlin:build →'),
              '%s core loop runs out of order' % AGENT),
+            (AGENT, replace(' → purlin:test --release'),
+             '%s core loop does not name purlin:test --release' % AGENT),
             (AGENT, replace(' → purlin:sign\n```', '\n```'),
              '%s core loop does not name purlin:sign' % AGENT),
             (AGENT, replace('## Four NEVERs', '```\npurlin:drift → '
@@ -75,15 +77,15 @@ class TestNevers:
             (AGENT, replace('4. **Never call', '4. **Never guess.**\n'
                             '5. **Never call'),
              '%s carries 5 NEVERs, expected 4' % AGENT),
-            (AGENT, resub(r"^2\. \*\*Never sign on.*?(?=^3\. )"),
+            (AGENT, resub(r"^2\. \*\*Never sign off.*?(?=^3\. )"),
              '%s carries 3 NEVERs, expected 4' % AGENT),
-            (AGENT, replace('Never write evidence or a signature by hand',
+            (AGENT, replace('Never write evidence or a sign-off by hand',
                             'Never write evidence carelessly'),
              "%s NEVER 1 does not carry 'Never write evidence or a "
-             "signature by hand'" % AGENT),
-            (AGENT, replace("**Never sign on a person's behalf.**",
+             "sign-off by hand'" % AGENT),
+            (AGENT, replace("**Never sign off on a person's behalf.**",
                             '**Never guess.**'),
-             "%s NEVER 2 does not carry \"Never sign on a person's "
+             "%s NEVER 2 does not carry \"Never sign off on a person's "
              "behalf\"" % AGENT),
             (AGENT, replace('never write a tag yourself, '),
              "%s NEVER 3 does not carry 'Never push, never write a "
@@ -143,10 +145,10 @@ class TestState:
              '%s carries no sentence opening %r and ending %r'
              % (AGENT, STATE_OPENS, STATE_ENDS)),
             # `strong` stays in backticks elsewhere in the file.
-            (AGENT, replace('`passed`, `strong`\nand `signed` as far',
-                            '`passed`\nand `signed` as far'),
-             "%s sync_status paragraph does not carry '`passed`, "
-             "`strong` and `signed`'" % AGENT),
+            (AGENT, replace('`passed` and\n`strong`, each cell',
+                            '`passed`, each cell'),
+             "%s sync_status paragraph does not carry '`passed` and "
+             "`strong`'" % AGENT),
             (AGENT, replace('`out of date` means the spec, the code or the '
                             'tests moved since the run',
                             '`out of date` means the run is old'),
@@ -224,9 +226,9 @@ class TestRename:
     def test_it_says_what_a_rename_moves(self, monkeypatch):
         assert rename_problems() == []
         assert refusals(monkeypatch, rename_problems, [
-            (AGENT, replace('carried in four places', 'carried in several '
+            (AGENT, replace('carried in three places', 'carried in several '
                             'places'),
-             "%s rename section does not carry 'carried in four places'"
+             "%s rename section does not carry 'carried in three places'"
              % AGENT),
             (AGENT, replace('`specs/<category>/<name>.md` and its', 'and its'),
              "%s rename section does not carry "
@@ -249,27 +251,62 @@ class TestLeftToDo:
     def test_it_says_every_run_ends_on_left_to_do(self, monkeypatch):
         assert left_to_do_problems() == []
         assert refusals(monkeypatch, left_to_do_problems, [
-            (AGENT, replace('The first line of\n`Left to do` is the next '
+            (AGENT, replace('The first line of `Left to do` is the next\n'
                             'step', 'The next step\nis yours to choose'),
              "%s does not carry 'The first line of `Left to do` is "
              "the next step'" % AGENT),
             (AGENT, replace('Nothing left to do.', 'Nothing more to do.'),
              "%s does not carry 'Nothing left to do.'" % AGENT),
-            (AGENT, replace(' 30 are strong.'),
-             "%s does not carry '40 rules. 35 pass their tests. 30 "
-             "are strong. 20 are signed.'" % AGENT),
+            # The old summary's clause put back is refused.
+            (AGENT, replace('pass their tests. The audit',
+                            'pass their tests. 30 are strong. The audit'),
+             "%s does not carry '40 rules. 35 pass their tests. The "
+             "audit found 30 strong and 2 weak.'" % AGENT),
         ]) == []
 
 
+class TestRelease:
+
+    # purlin: purlin_agent PROOF-48
+    def test_it_says_how_a_release_is_made(self, monkeypatch):
+        assert release_problems() == []
+        assert refusals(monkeypatch, release_problems, [
+            (AGENT, replace('Nothing is signed while the specs change. '),
+             "%s does not carry 'Nothing is signed while the specs "
+             "change.'" % AGENT),
+            (AGENT, replace('tags `passed/<version>`', 'tags the commit'),
+             "%s does not carry 'tags `passed/<version>`'" % AGENT),
+            (AGENT, replace('the first sign-off writes `signed/<version>`',
+                            'each sign-off moves the tag'),
+             "%s does not carry 'the first sign-off writes "
+             "`signed/<version>`'" % AGENT),
+        ]) == []
+
+
+# What the agent says of a release, all in one paragraph.
+RELEASE = ('Nothing is signed while the specs change.', 'purlin:test --release',
+           'tags `passed/<version>`',
+           'the first sign-off writes `signed/<version>`')
+
+
+def release_problems():
+    paragraphs = [flat(p) for p in re.split(r'\n\s*\n', read(AGENT))]
+    paragraph = next((p for p in paragraphs if RELEASE[1] in p and
+                      '```' not in p), '')
+    return ['%s does not carry %r' % (AGENT, needle)
+            for needle in RELEASE if needle not in paragraph]
+
+
 # What the agent says every run ends on, all in one paragraph.
-LEFT_TO_DO = ('40 rules. 35 pass their tests. 30 are strong. 20 are signed.',
+LEFT_TO_DO = ('40 rules. 35 pass their tests. The audit found 30 strong and '
+              '2 weak.',
               'The first line of `Left to do` is the next step',
               'Nothing left to do.')
 
 
 def left_to_do_problems():
     paragraphs = [flat(p) for p in re.split(r'\n\s*\n', read(AGENT))]
-    paragraph = next((p for p in paragraphs if LEFT_TO_DO[0] in p), '')
+    paragraph = next((p for p in paragraphs if LEFT_TO_DO[2] in p), '')
     return ['%s does not carry %r' % (AGENT, needle)
             for needle in LEFT_TO_DO if needle not in paragraph]
 
@@ -280,8 +317,8 @@ def rename_problems():
         return ['%s has no Renaming a feature section' % AGENT]
     text = flat(body)
     problems = ['%s rename section does not carry %r' % (AGENT, needle)
-                for needle in ('# Feature:', 'carried in four places',
-                               'purlin: <name> PROOF-<n>', '.signatures/',
+                for needle in ('# Feature:', 'carried in three places',
+                               'purlin: <name> PROOF-<n>',
                                '.purlin/evidence/<source>/<name>.json',
                                'git mv', 'sync_status',
                                'specs/<category>/<name>.md',
@@ -310,8 +347,7 @@ def state_sentence(paragraph):
 
 def state_problems():
     """The sync_status sentence, and what the paragraph holding it names."""
-    problems = carries(AGENT, ['`passed`', '`strong`', '`signed`',
-                               '`out of date`'])
+    problems = carries(AGENT, ['`passed`', '`strong`', '`out of date`'])
     paragraph = next((flat(p) for p in re.split(r'\n\s*\n', read(AGENT))
                       if state_sentence(flat(p))), None)
     if paragraph is None:
@@ -319,7 +355,7 @@ def state_problems():
                            % (AGENT, STATE_OPENS, STATE_ENDS)]
     return problems + [
         '%s sync_status paragraph does not carry %r' % (AGENT, needle)
-        for needle in ('`passed`, `strong` and `signed`',
+        for needle in ('`passed` and `strong`',
                        '`out of date` means the spec, the code or the tests '
                        'moved since the run')
         if needle not in paragraph]
@@ -345,12 +381,13 @@ def core_loop_problems():
     loop = [fence for fence in fences if 'purlin:drift' in fence]
     if not loop:
         return ['%s has no fenced block naming purlin:drift' % AGENT]
-    steps = ['purlin:drift', 'purlin:spec', 'purlin:build', 'purlin:test',
-             'purlin:audit', 'purlin:sign']
+    steps = ['purlin:drift', 'purlin:spec', 'purlin:build', 'purlin:test ',
+             'purlin:test --release', 'purlin:sign']
     text = loop[0]
-    missing = [step for step in steps if step not in text]
+    missing = [step.strip() for step in steps if step not in text]
     if missing:
         return ['%s core loop does not name %s' % (AGENT, ', '.join(missing))]
+    # `purlin:test ` is the plain run: the first one, before the release.
     offsets = [text.index(step) for step in steps]
     if offsets != sorted(offsets):
         return ['%s core loop runs out of order, at offsets %s'
@@ -369,8 +406,8 @@ def core_loop_problems():
 
 # What each NEVER forbids, in order, in the words of its own item.
 NEVERS = (
-    ('Never write evidence or a signature by hand',),
-    ("Never sign on a person's behalf",),
+    ('Never write evidence or a sign-off by hand',),
+    ("Never sign off on a person's behalf",),
     ('Never push, never write a tag yourself, never open a pull request, '
      'never delete or rewrite a remote branch',
      'The one exception is `purlin:test --remote`, which pushes a run branch '
@@ -389,8 +426,8 @@ def never_problems():
     if len(items) != 4:
         problems.append('%s carries %d NEVERs, expected 4' % (AGENT, len(items)))
     flattened = flat(body)
-    for needle in ('evidence', 'signature',
-                   "sign on a person's behalf", 'Never push',
+    for needle in ('evidence', 'sign-off',
+                   "sign off on a person's behalf", 'Never push',
                    'pull request', 'remote branch', 'purlin:test --remote',
                    'references/glossary.md'):
         if needle not in flattened:
