@@ -2,15 +2,15 @@
   "feature": "drift",
   "platforms": {
     "windows": {
-      "at": "2026-09-29T23:37:51Z",
-      "commit": "f17c92d391ea71379c8537f7305ac5e634d133c9",
+      "at": "2026-09-30T05:20:24Z",
+      "commit": "babd6aeeca3c60254b51d4b26e3d6361d0aeb2b9",
       "dirty": false,
       "fingerprint": {
-        "code": "b67b30b12adb7e02567031ad878184c4bcf4ea0578a4064974ae25b4cab4dc3d",
-        "spec": "d7c4f9142bbb40aac80936300689d3813b1463c73186ca1d60fcd958bc646b2d",
-        "tests": "53f486e3483654c09a52c47050817b54c02054000f36dee8240c03dade41680a"
+        "code": "6c94763e7b0ab19cc1f364e3a66c4e184753245a31d776265a6c3dfe20f96392",
+        "spec": "833a3cf4ed1d2a046161b9fa6628e952b3b5080c510761bb185d6bb51ed49932",
+        "tests": "41ae2a9d2966bcaac1486de85425b5af15123d6905c5f7653dd5cb3801b64d54"
       },
-      "hostname": "runnervm99s1a",
+      "hostname": "runnervmfi6oq",
       "machine": "remote runner, Windows",
       "proofs": [
         {

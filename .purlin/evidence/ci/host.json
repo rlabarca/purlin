@@ -2,13 +2,13 @@
   "feature": "host",
   "platforms": {
     "windows": {
-      "at": "2026-09-30T00:38:20Z",
-      "commit": "d8216d8e91544ea3395083eb19ccd9efaf8c0deb",
+      "at": "2026-09-30T05:20:25Z",
+      "commit": "babd6aeeca3c60254b51d4b26e3d6361d0aeb2b9",
       "dirty": false,
       "fingerprint": {
-        "code": "0f0b02dc0eea967d2b09a1e4914b0e7325d7603ff4ad3e86e3274ef4e43fbdfa",
-        "spec": "b0f10120dfe259108b9c2a19c54533cfa6c929d53e6b9b4c2bc93e48d94e44e6",
-        "tests": "66aa69063df9c88ad3207dbb90014dd001e2ddb4cab324e1c4fa954cf0fd1b07"
+        "code": "74588b572d762cf12c4ed1efd7637e30b78cb404b61fcd92a65983271ae50503",
+        "spec": "ee60696bc8326acf1e888a4d1e155b32978bc352cbef83810650ff8bf33349b0",
+        "tests": "6a4faa1e4290591dee88a55c3cc8a9294e32273b94fd924c13b82450bc3d490b"
       },
       "hostname": "runnervmfi6oq",
       "machine": "remote runner, Windows",

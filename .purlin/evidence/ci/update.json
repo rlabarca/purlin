@@ -2,13 +2,13 @@
   "feature": "update",
   "platforms": {
     "windows": {
-      "at": "2026-09-30T00:38:21Z",
-      "commit": "d8216d8e91544ea3395083eb19ccd9efaf8c0deb",
+      "at": "2026-09-30T05:20:26Z",
+      "commit": "babd6aeeca3c60254b51d4b26e3d6361d0aeb2b9",
       "dirty": false,
       "fingerprint": {
-        "code": "4f7b411615431184e0c2b23c2626794ce05894274d29e4b10e4975d9d21a7845",
-        "spec": "8fb104619b5695eff020f29ec3bc1279da5b5149d84c4e7326fbb329bb068a8a",
-        "tests": "9c4beceef5817cae324bdd92de130536f0032f1f5485a80757b0ee4055acaad5"
+        "code": "694dcbb409c7d9e12af959db9d7a3215fd10c130fe3a8d79bc47e688b573899f",
+        "spec": "4588bca7edfc4a932afc2d7a5a1ca3552a72d6fff5b5e882e36ab1038a239c95",
+        "tests": "31cddbcb8c70ea9ebc87590368b02cdbabe6c261df2972fe5f0befa186dd720c"
       },
       "hostname": "runnervmfi6oq",
       "machine": "remote runner, Windows",

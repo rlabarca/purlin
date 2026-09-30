@@ -2,15 +2,15 @@
   "feature": "ai_audit",
   "platforms": {
     "windows": {
-      "at": "2026-09-29T23:37:51Z",
-      "commit": "f17c92d391ea71379c8537f7305ac5e634d133c9",
+      "at": "2026-09-30T05:20:24Z",
+      "commit": "babd6aeeca3c60254b51d4b26e3d6361d0aeb2b9",
       "dirty": false,
       "fingerprint": {
-        "code": "f0b9864ea4f7763dc257025173db9770faeb69dd725b24c1e29d33a1784f3c1d",
-        "spec": "024abf865075e5a6c437084441bd6142a1a14ae19801e20261c9919f7d7127fa",
-        "tests": "8a330f04f20f8c2e6b3a115653e6f4e6d98aac4fd5296dfdbe9428146bc7b736"
+        "code": "20037cf21bf323041fdb9915d06f1f033bdf631e6ada3b506b60691b1010d685",
+        "spec": "d09dff6bb4a26ecf07166f5d2231f8d5ca4540dad3e494ef62e9ea672d7c34a6",
+        "tests": "35ea94b49209e6a2e8fdeadcee7f4498398558725bf24327754f565f27023f43"
       },
-      "hostname": "runnervm99s1a",
+      "hostname": "runnervmfi6oq",
       "machine": "remote runner, Windows",
       "proofs": [
         {

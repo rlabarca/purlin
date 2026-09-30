@@ -2,15 +2,15 @@
   "feature": "scaffold",
   "platforms": {
     "windows": {
-      "at": "2026-09-29T23:37:52Z",
-      "commit": "f17c92d391ea71379c8537f7305ac5e634d133c9",
+      "at": "2026-09-30T05:20:25Z",
+      "commit": "babd6aeeca3c60254b51d4b26e3d6361d0aeb2b9",
       "dirty": false,
       "fingerprint": {
-        "code": "068ba23d8bd96cf094a65a2d844bdc658464ee62563956aad8a4e0de16788f43",
-        "spec": "06f75ed99017c978746329bb2447867e8f14f4fef4323ad5787da14c02de7b21",
-        "tests": "46e25d68802b3e277ebd71a00d6839444510088b6a6141ea6c99b74b3aa36f19"
+        "code": "a268af0b63bec7492f208834a619f0c1a8e1b61e6943c3b0b2ec9e9ea807cdde",
+        "spec": "15ef4c70cb50379875eadda42faa80ce08164120aa42bc59c7aa669406372831",
+        "tests": "8ce3e9cfd626a79522c7cc8ae30b2b0fc75aaaa1935a29ff7d20223c2d220409"
       },
-      "hostname": "runnervm99s1a",
+      "hostname": "runnervmfi6oq",
       "machine": "remote runner, Windows",
       "proofs": [
         {

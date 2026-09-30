@@ -2,15 +2,15 @@
   "feature": "signatures",
   "platforms": {
     "windows": {
-      "at": "2026-09-29T23:37:52Z",
-      "commit": "f17c92d391ea71379c8537f7305ac5e634d133c9",
+      "at": "2026-09-30T05:20:25Z",
+      "commit": "babd6aeeca3c60254b51d4b26e3d6361d0aeb2b9",
       "dirty": false,
       "fingerprint": {
-        "code": "40a9942914af60d09ca5814d3364277800ebfdaf8c9c1440b1b84307d00d470e",
-        "spec": "05f18857281c236c7fd558a4cd5b3a7e535071ab26732f69d20e30723a66a5a7",
-        "tests": "2e83764cbed036b6a1fff1f51e08bc49354196fbd6dbe80b526a5667b864426c"
+        "code": "e611ad6faaf03307e930d2e25cd8063a59dee02ea811262a40ad8efbe79435f8",
+        "spec": "9c1d6803c6fc7328f1d7938dc11296e9090dc2ec690cfb0d5659d1a3aacf0c23",
+        "tests": "ebadc47d00a2d9a9918932a79715a000e9616a3e1fcf635072d313adfe6ca302"
       },
-      "hostname": "runnervm99s1a",
+      "hostname": "runnervmfi6oq",
       "machine": "remote runner, Windows",
       "proofs": [
         {
