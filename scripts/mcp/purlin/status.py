@@ -162,8 +162,8 @@ SPECS = 'Specs'
 def _row(feature, gate, proofs=1):
     """One spec's row, rendered by the module the board renders from.
 
-    The `Tests` cell names how many of the spec's rules do not apply, read
-    from its rules, as the board reads them.
+    The `Tests` cell names how many of the spec's rules do not apply, as
+    the board reads them off the rules themselves.
     """
     rollup = dict(feature['rollup'], does_not_apply=sum(
         1 for rule in feature.get('rules') or () if rule.get('does_not_apply')))
