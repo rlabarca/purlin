@@ -68,7 +68,7 @@ against every ground it is drawn on.
 
 ## Icons
 
-Purlin ships no icon set. The interface uses the unicode glyphs `▶ ▼ ▲ →`, which inherit
+Purlin ships no icon set. The interface uses the unicode glyphs `▶ ▼ ▲ → ◐ ◑`, which inherit
 `currentColor`, and status dots drawn in CSS. No emoji.
 
 ## The logo

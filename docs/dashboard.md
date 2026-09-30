@@ -37,13 +37,14 @@ Every screen carries the same top bar:
 - the gate, `gate: signed`;
 - at the gate `signed` only, the signed tag this commit carries, as `signed/1.4.0`, with the
   commit in its hover, or `no signed tag`;
-- the theme button, which reads the theme it turns to, `Light theme` or `Dark theme`.
+- the theme button, which shows the glyph of the theme it turns to, `◐` in the dark theme and
+  `◑` in the light, its hover naming that theme, `Light theme` or `Dark theme`.
 
 Below it are the tabs: `Board`, then the open rule, such as `login RULE-1`, when there is one.
 
 ## Board
 
-![The board at the gate signed: the notice that the working tree has uncommitted changes and one spec warning, the No proof, Passing, Strong and Signed boxes, the six buttons To fix, To test, To test by hand, To audit, To strengthen and To sign, the anchor checkout_design in the Anchors section, and the specs under their categories, both tables with all six columns; login is open under its description, and RULE-4 is unfolded beneath its row, PROOF-4 failed on Windows and PROOF-5 passed](images/dashboard-board.png)
+![The board at the gate signed: the notice that the working tree has uncommitted changes and one spec warning, the No proof, Passing, Strong and Signed boxes, the six buttons To fix, To test, To test by hand, To audit, To strengthen and To sign, the anchors checkout_design and security_baseline in the Anchors section, and the specs under their categories, both tables with all six columns; login is open under its description, and RULE-4 is unfolded beneath its row, PROOF-4 failed on Windows and PROOF-5 passed](images/dashboard-board.png)
 
 A notice sits above the boxes, one per line, when the working tree has uncommitted changes, `The
 working tree has uncommitted changes, so what is on this board is not what a commit would
@@ -55,12 +56,12 @@ on the boxes.
 contains the next, so a signed rule is counted in all three. From `strong` up a `No proof` box
 comes first, counting the rules no proof line names. A step box is green once every rule has
 reached the step and amber until then. Under `Passing` a second line gives the project's total,
-`10 RULES TOTAL`. The boxes carry their column's hover, read over every spec; the `No proof` box
+`11 RULES TOTAL`. The boxes carry their column's hover, read over every spec; the `No proof` box
 names each spec with how many of its rules have no proof.
 
 **Filter buttons.** One button per line of `Left to do`, in the same order, named as the line
 without its count and noun and carrying the count: `4 rules to strengthen` is `To strengthen 4`,
-and `the version to tag` is `To tag`. One button is chosen at a time. Choosing one shows only
+`the version to tag` is `To tag`, and `1 rule to confirm as not applying` is `To confirm`. One button is chosen at a time. Choosing one shows only
 the rules left to do of that kind, and the line under the buttons names the command that clears
 them, such as `Type purlin:sign in Claude Code.`; choosing it again shows every rule. `To tag`
 and `To correct` count no rule, so choosing either leaves every rule showing. With nothing left
@@ -75,23 +76,19 @@ column above the gate is absent, not empty.
 | Column | What it reads | What its hover says |
 |---|---|---|
 | `Spec` | the feature name, under the band that names its category; an anchor's name, in the `Anchors` section | the spec's path |
-| `Rules` | how many rules the spec owns, then, where it proves rules from an anchor it requires or from a global anchor, how many more, as `16 (+6)` | `16 rules of its own, and 6 more it must also meet, from shared rules:`, then each anchor with its count, as `security_no_dangerous_patterns · 6` |
+| `Rules` | how many rules the spec has, as `16` | — |
 | `Proofs` | `5 · 1 no test`: how many proof lines the spec holds and how many no test runs. A `@manual` proof counts as no gap | which proofs have no test |
-| `Tests` | `3 of 4 · 1 partial`: how many rules passed everywhere they ran, then `partial` and `failing` where they did not | one line per operating system a current run covered, newest first, as `Windows · ci · 18 days old · 3 passed · 1 failed` |
-| `Strong` | `2 of 4 · 86%`: how many rules reached `strong`, then the test strength where one was measured; `0 of 26` alone where none was | where the newest audit came from and how old it is, and the minimum strength; the percentage's own hover reads `Test strength: the tests caught 86 of every 100 deliberate breaks of the code.` |
+| `Tests` | `3 of 4 · 1 partial`: how many rules passed everywhere they ran, a rule signed as not applying among them, then `does not apply`, `partial` and `failing` | one line per operating system a current run covered, newest first, as `Windows · ci · 18 days old · 3 passed · 1 failed` |
+| `Strong` | `2 of 4 · 86%`: how many rules reached `strong`, then the test strength where one was measured; `0 of 26` alone where none was, and always for an anchor | where the newest audit came from and how old it is, and the minimum strength; the percentage's own hover reads `Test strength: the tests caught 86 of every 100 deliberate breaks of the code.` |
 | `Signed` | `1 of 4`: how many rules carry a signature that counts | each signer with the date of their newest signature |
-
-Shared rules count toward every feature that proves them, in `Proofs`, `Tests`, `Strong` and
-`Signed`. The boxes, the filter buttons and the bands count each rule once, under the spec that
-owns it.
 
 Every count names the word it counts. The first part is always drawn; a later part is drawn
 only above zero, so a spec with nothing partial and nothing failing reads `3 of 3`. Every
 when, who and platform detail is in a hover, a plain `title` attribute, so it works on a page
-opened from disk. A value never breaks inside itself: `16 (+6)` and `5 · 1 no test` stay on one
+opened from disk. A value never breaks inside itself: `1 of 1 · 1 does not apply` and `5 · 1 no test` stay on one
 line. Every column the gate reaches fits a 1024-pixel window. Under 1024 pixels neither table has
 a heading row: each spec is a block, its name first and its values beneath as labelled pairs
-that wrap whole, `Rules 16 (+6)`, `Tests 3 of 4`, and a rule in an open spec reads its id and
+that wrap whole, `Rules 16`, `Tests 3 of 4`, and a rule in an open spec reads its id and
 badges, then its words, then its proofs control. The boxes wrap four to a row, and two to a row
 under 600 pixels; the filter buttons and the top bar's chips wrap whole. The page never scrolls
 sideways and its text keeps its size, on the board and on a rule's screen.
@@ -103,18 +100,20 @@ named always runs such a spec.
 **Anchors.** The anchors stand in a section of their own, headed `ANCHORS`, between the filter
 buttons and the spec table, in the same columns and rows, with no band. A chosen filter applies
 to both tables. A project with no anchor, or a filter that leaves no anchor's rule, shows no
-such section.
+such section. An anchor's rules cover the whole project, and no code is broken on purpose for an
+anchor, so its `Strong` cell shows no test strength.
 
 **Bands and rows.** The other specs are grouped by category. The band above each group has two ends: the
 category's name and `2 specs` at the left, `4 of 5 rules pass` and a bar at the right, every bar
-one width so they line up down the page. A band counts each rule once, under the spec that owns
-it; under 1024 pixels its count sits beneath its name. Pressing a band, or Enter or Space on it,
-folds it. Pressing a spec opens it: its `> Description:` first, then the rules it owns. A rule a
-feature proves from an anchor is listed once, under that anchor.
+one width so they line up down the page. A band counts the rules of the specs it holds; under
+1024 pixels its count sits beneath its name. Pressing a band, or Enter or Space on it, folds it.
+Pressing a spec opens it: its `> Description:` first, then its rules.
 
 Each rule row carries the rule id, the rule text, one badge per step the rule has reached,
 `PASSED`, `STRONG` and `SIGNED`, and `FAILED` where a test of the rule failed on any operating
-system. A step not reached draws nothing: why it was not reached is on the rule's screen.
+system. A step not reached draws nothing: why it was not reached is on the rule's screen. A rule
+of a pinned anchor that a person signed as not applying carries the one badge `DOES NOT APPLY`,
+in teal.
 
 **Proofs under a rule.** The last control on a rule's row reads `▶ 2 proofs` while closed, in
 the warn tone when one of the proofs reads `failed` or `no test`, and `no proof` where the rule
@@ -147,7 +146,8 @@ proof`. The passed row adds one box per operating system a current run covered, 
 `Win`, green where the rule passed and red where it failed, with the system, the word, the
 source and the age in its hover. The signed row adds the signer and the date. A cell reads
 `waiting`, in the neutral colour, while the cell below it is not met: the strong cell `waiting
-for its tests to pass`, the signed cell `waiting for the audit`.
+for its tests to pass`, the signed cell `waiting for the audit`. A rule signed as not applying
+reads `does not apply` in every cell, in teal, each with the reason `by <signer>: <why>`.
 
 At the gate `strong` and above the **Audit** panel follows, one line each: `Strong. It found
 nothing.`; or `Strong.`, `Weak.` or `Undecided. The AI audit could not decide, so the rule reads
@@ -159,7 +159,9 @@ rule's text, proof and test yet.` The panel reports and recommends nothing.
 At the gate `signed` the signature panel comes next. A signed rule's panel is headed `Signed`
 and names who signed it, by name and email, the date and minute in UTC and the key it was made
 with, as `the key ending ...Xy4Q`, then the machine the tests ran on for each system, then what
-the signature covers. Otherwise the panel is headed `Hand check`, where a proof of the rule is
+the signature covers. A rule signed as not applying reads, under `Signed`, `Does not apply to
+this project: <why>. Signed by <signer name> (<signer>) at <date> <time> UTC.` Otherwise the
+panel is headed `Hand check`, where a proof of the rule is
 `@manual` and nobody has checked it, or `Signature`, and names the command, `Type purlin:sign
 login RULE-2 in Claude Code.` Below the gate `signed` there is no signature panel.
 
@@ -173,9 +175,9 @@ are links to that file on the git host, at the commit the data was built from.
 
 ## Both themes
 
-The page opens dark until you choose. The theme button switches between dark and light, and
-the page opens in the theme you chose the next time it loads. Every colour on the page is a
-token the theme redefines, and the logo swaps to the colourway that reads on the new ground.
+The page opens dark until you choose. The theme button, `◐` or `◑`, switches between dark and
+light, and the page opens in the theme you chose the next time it loads. Every colour on the page
+is a token the theme redefines, and the logo swaps to the colourway that reads on the new ground.
 
 ## Next
 

@@ -12,7 +12,7 @@ is the authority for its half. They bind the dashboard, the CLI output, the docs
 - **Two surfaces, one system.** Warm navy, cream, blush and copper for the brand, the docs and
   the dashboard, which sets no surface; `data-surface="product"` for the slate product ground.
   Green, amber, red and teal mean pass, warn, fail and neutral on both. No other accent, no gradient, no shadow, no icon set beyond the unicode
-  glyphs `▶ ▼ ▲ →`, and no emoji anywhere, CLI output included.
+  glyphs `▶ ▼ ▲ → ◐ ◑`, and no emoji anywhere, CLI output included.
 - **Machine text is monospace, human text is sans.** Commands, rule ids, paths, shas and gates in
   Courier New; prose in Arial. Sentence case; command names lowercase with the colon.
 - **Tokens only.** Reference the semantic aliases in `design/tokens/theme-dark.css` and
