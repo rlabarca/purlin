@@ -6,9 +6,9 @@
 
 Purlin is a Claude Code plugin for spec-driven development. You write the rules your software
 must follow, one comment above a test ties it to a rule, and Purlin runs your own test command
-and tells you which rules pass over the code as it is now. A team can ask for more: an AI audit
-of whether the tests are sound, and a person's signature on each rule, with a signed git tag on
-a finished version. Purlin keeps that evidence in the repository, for the people who build the
+and tells you which rules pass over the code as it is now. A release is a commit, its evidence
+package and a tag. A team can ask for more: a person's sign-off on each release, with a signed
+git tag, and an AI audit of whether the tests are sound, a tool nothing waits on. Purlin keeps that evidence in the repository, for the people who build the
 software and for whoever signs it off; where sign-off happens in a regulated system, Purlin's
 evidence package is an input to it. Purlin cannot prove your code is correct, and it makes no
 claim of compliance.
@@ -73,7 +73,7 @@ claim of compliance.
    ───────────────────────────
 
    3 rules. 3 pass their tests.
-   Nothing left to do.
+   Nothing left to do. To release a version: purlin:test --release
    ```
 
 5. **Read it.** Where a test fails, here the test of `RULE-2`, the run names the rule and the
@@ -96,23 +96,23 @@ claim of compliance.
 
 [docs/getting-started.md](docs/getting-started.md) walks the same path in full.
 
-## When a team wants more
+## Releasing, and when a team wants more
 
-The **gate** is the last step every rule must reach before a version is finished, and each
-step has one command:
+The **gate** is the one project setting: what a release needs.
 
-| Gate | What every rule must have | The command |
-|------|---------------------------|-------------|
-| `passed` | its tests pass over the current code | `purlin:test` |
-| `strong` | that, and an AI audit that found the tests sound | `purlin:audit` |
-| `signed` | that, and a person's signature | `purlin:sign` |
+| Gate | What a release needs | The commands |
+|------|----------------------|--------------|
+| `passed` | every rule's tests pass on the evidence committed at the release commit | `purlin:test --release`, which tags `passed/<version>` |
+| `signed` | the same, and at least one person signs the evidence package | `purlin:test --release`, then `purlin:sign`, whose first sign-off writes `signed/<version>` |
 
-From `strong` up, every rule needs a **proof**, a plain sentence saying how the rule is shown,
-and the comment above its test names the proof. `purlin:sign` walks the rules waiting for a
-person and, at the gate `signed`, once nothing is left to do and every result came from
-committed work, writes the evidence package and the signed tag `signed/<version>`. The whole
-loop runs on one machine at every gate. [references/hard_gates.md](references/hard_gates.md) is
-the one definition.
+Nothing is signed while the specs change: product, QA and developers improve the rules, the
+**proofs**, plain sentences saying how each rule is shown, and the tests together. On a release
+branch, `purlin:test --release` runs every test, commits the evidence and the package, and at
+`passed` tags the release. At `signed`, `purlin:sign` walks each hand check, each weak rule and
+each rule the audit has not read, then signs the package; several people may sign. `purlin:audit`
+reads each rule, its proofs and its tests, and nothing waits on it. The whole loop runs on one
+machine at either gate. [references/hard_gates.md](references/hard_gates.md) is the one
+definition.
 
 ## Commands
 
@@ -122,9 +122,9 @@ the one definition.
 | `purlin:spec <name>` | Turn a requirement in any form into rules and proofs |
 | `purlin:spec-from-code [dir]` | Read an existing codebase and write the specs it already implies |
 | `purlin:build [name]` | Load a spec's rules, write the code and the marked tests, commit the changeset |
-| `purlin:test [feature ...] [--all] [--arm-timeout <seconds>]` | Run the marked tests and print each rule's passed cell |
+| `purlin:test [feature ...] [--all] [--release [<version>]] [--arm-timeout <seconds>]` | Run the marked tests and print each rule's passed cell |
 | `purlin:audit [feature ...] [--all] [--arm-timeout <seconds>]` | Run the tests, the breaks where mutation testing is on, and the AI audit, then write what it found into the evidence |
-| `purlin:sign [feature] [RULE-N ...] [--all]` | Sign a rule, a feature or every rule that waits for a person, as a signed commit |
+| `purlin:sign [--release <version>]` | Walk what a person has to look at in a release, then sign its evidence package in a signed commit |
 | `purlin:export` | Write the evidence package for a version, the data file a regulated system of record reviews |
 | `purlin:status [name]` | Show every rule's cells and what blocks the gate |
 | `purlin:drift [role]` | Report what changed since your last pull, by role |
@@ -146,7 +146,7 @@ on every machine.
 ## Documentation
 
 [docs/index.md](docs/index.md) maps every guide by role, and
-[docs/qa-guide.md](docs/qa-guide.md) takes a QA person from acceptance criteria to a signature.
+[docs/qa-guide.md](docs/qa-guide.md) takes a QA person from acceptance criteria to the sign-off.
 [docs/how-purlin-works.md](docs/how-purlin-works.md) is the model in one page, and
 [docs/regulated-workflow.md](docs/regulated-workflow.md) says what Purlin hands a regulated
 sign-off system and where its part ends.
