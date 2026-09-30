@@ -8,6 +8,7 @@
 >   file rather than restating a number, so no table can go stale.
 > Scope: VERSION, .claude-plugin/plugin.json, .purlin/config.json, scripts/mcp/purlin/__init__.py, scripts/mcp/purlin/server.py, dev/bump_version.sh, references/drift_criteria.md, skills/init/SKILL.md, scripts/init/scaffold.py, scripts/init/update.py
 > Stack: python/stdlib for the reader, bash for the propagation script, json for the derived locations
+> Highest-Rule: 15
 
 ## Rules
 

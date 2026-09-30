@@ -217,6 +217,11 @@ def test_a_project_init_sets_up_is_stamped_with_the_version_file(tmp_path):
     root = tmp_path / 'fresh'
     root.mkdir()
     _git(root, '-c', 'init.defaultBranch=main', 'init', '-q', '.')
+    # `--yes` commits the files setup wrote, so the repository carries an
+    # identity of its own and signs nothing, whatever this machine's git says.
+    _git(root, 'config', 'user.name', 'Purlin Test')
+    _git(root, 'config', 'user.email', 'test@example.com')
+    _git(root, 'config', 'commit.gpgsign', 'false')
     env = dict(os.environ)
     env.pop('CLAUDE_PLUGIN_ROOT', None)
     env.pop('PURLIN_PROJECT_ROOT', None)
