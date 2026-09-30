@@ -1078,10 +1078,7 @@ class TestThroughARun:
         _write(root, 'tests/test_login.py', _WELL_FORMED)
         code, out = _run(root, '--all', '--test')
         lines = out.splitlines()
-        # The run's step after each problem is its own (run-11); these
-        # read the line up to the problem's full stop.
-        return (code, out, [line.split('. ')[0].rstrip('.') + '.'
-                            for line in lines
+        return (code, out, [line for line in lines
                             if line.startswith('purlin: the ')],
                 [line for line in lines if line.startswith('Running')])
 
@@ -1089,7 +1086,9 @@ class TestThroughARun:
     def test_a_suite_with_no_run_is_left_out(self, tmp_path):
         code, out, said, started = self._beside_a_complete_suite(
             tmp_path, {'name': 'a', 'format': 'junit', 'files': ['x']})
-        assert said == ['purlin: the a suite names no run command.'], out
+        assert said == ['purlin: the a suite names no run command. '
+                        'Fix the tests setting in .purlin/config.json, then '
+                        'run purlin:test.'], out
         assert started == ['Running the pytest suite.'], out
         assert code == 0, out
 
@@ -1099,7 +1098,9 @@ class TestThroughARun:
             tmp_path, {'name': 'b', 'run': 'x', 'format': 'tap',
                        'files': ['x']})
         assert said == ['purlin: the b suite names the format "tap", which '
-                        'is not one of junit, trx, gotest, exit.'], out
+                        'is not one of junit, trx, gotest, exit. Fix the tests '
+                        'setting in .purlin/config.json, then run '
+                        'purlin:test.'], out
         assert started == ['Running the pytest suite.'], out
         assert code == 0, out
 
@@ -1107,7 +1108,9 @@ class TestThroughARun:
     def test_a_suite_with_no_files_is_left_out(self, tmp_path):
         code, out, said, started = self._beside_a_complete_suite(
             tmp_path, {'name': 'c', 'run': 'x', 'format': 'junit'})
-        assert said == ['purlin: the c suite names no files.'], out
+        assert said == ['purlin: the c suite names no files. '
+                        'Fix the tests setting in .purlin/config.json, then '
+                        'run purlin:test.'], out
         assert started == ['Running the pytest suite.'], out
         assert code == 0, out
 
