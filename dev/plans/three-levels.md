@@ -1146,6 +1146,9 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       cause when a spec's files do not exist yet; the first test run recognises a plain
       `tests/test_*.py` project; the docs example of `> Highest-Proof:` is corrected; a QA page
       walks a person from criteria to proof to signature.
+    - **A tag keeps up with the branch being tagged** (answered on the plan's Q1): it is refused
+      when that branch's copy on the host, as last fetched, holds commits the checkout lacks. On
+      the default branch that is the default branch; on a release branch, the release branch.
     - **Not changed, as settled before:** who may sign (logged, not policed, decisions 48 and
       52) and the walk writing the tag when nothing is left.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no

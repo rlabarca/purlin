@@ -761,6 +761,8 @@ version), so read literally the second would refuse every tag on a release branc
   Consequence: the F9 case is refused on main, but two people tagging the same release branch
   are not warned.
 
+**Answered by the owner, 2026-09-30: (a), the branch being tagged.** Every lane builds to (a).
+
 ## 9. Calls this plan makes
 
 Not questions: each follows from decision 102 or the findings, and the owner may reverse any.
