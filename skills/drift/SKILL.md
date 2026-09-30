@@ -19,7 +19,7 @@ follow `references/purlin_commands.md#pending-migrations` before doing this skil
 purlin:drift                    The view for your role, inferred from what you touched
 purlin:drift pm                 Rules added, changed and removed
 purlin:drift eng                Code changed, rules with no test, anchors behind, out of date
-purlin:drift qa                 Tests changed, rules to test by hand and to sign
+purlin:drift qa                 Proofs and tests changed, and what stops a release
 purlin:drift --since <N>        The last N commits instead of since your last pull
 purlin:drift --since <date>     Every commit since a date, YYYY-MM-DD
 ```
@@ -42,8 +42,10 @@ copy is old, run `git fetch`, then run drift again.
 ## A number written twice
 
 The line already on the default branch keeps the number; the other line moves to the number
-drift names. Renumber that line with `purlin:spec <feature>`, move the test comments that name it,
-and tell the person whose line moved so the comments on their branch move with it.
+drift names. To renumber it and move the test comments that name it, follow `Renumbering` in
+`purlin:spec`: it shows the plan and asks before anything changes.
+A test comment whose proof's wording changed moves the same way: follow `Renumbering` in
+`purlin:spec`.
 
 ## Step 1: get the data
 
@@ -63,7 +65,7 @@ not drop one, and do not add a judgement of whether a change is right: drift rep
 
 ## Step 3: what drift never does
 
-It never edits a spec, a test or a signature, never advances an anchor pin, and never counts
+It never edits a spec or a test, never advances an anchor pin, and never counts
 `out of date` as work for a person: the code moved, and the next run clears the cell.
 
 ## Step 4: name the next step
@@ -81,10 +83,9 @@ One line per kind of thing the view showed, in the order below, then stop.
 | A feature out of date | `→ Run: purlin:test <feature>; the next run clears it.` |
 | A test file changed | `→ Run: purlin:test <feature>` |
 | A proof added, changed or moved | `→ Run: purlin:build <feature>` |
-| A signature that ended | `→ Run: purlin:sign` |
-| A rule to test by hand or to sign | `→ Run: purlin:sign` |
+| A line of `Left to do` | `→ Run:` the command that line names |
 | A number written twice | `→ Run: purlin:spec <feature>` |
-| A test comment whose proof's wording changed | `→ Run: purlin:build <feature>` |
+| A test comment whose proof's wording changed | `→ Run: purlin:spec <feature>` where its old wording is now another id, else `→ Run: purlin:build <feature>` |
 | How old the copy of the default branch is | `→ Run git fetch, then purlin:drift again.` |
 | Spec files not committed | `→ Commit the spec files, then run purlin:drift again.` |
-| Only the first line, or only `No rule was added, ...` | `→ Nothing changed that the specs, the tests or the signatures need. Run: purlin:status` |
+| Only the first line, or only `No rule was added, ...` | `→ Nothing changed that the specs or the tests need. Run: purlin:status` |

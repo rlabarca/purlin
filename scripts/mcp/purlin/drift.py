@@ -14,8 +14,8 @@ Three role views come out of the same range:
           scope, rules with no test, anchors behind their source, features
           whose evidence is out of date
 `qa`      proofs added, changed and moved, test files changed and the
-          features they cover, the signatures that ended, and the lines of
-          `Left to do` that wait for a person: to test by hand and to sign
+          features they cover, and the lines of `Left to do` that stop a
+          release
 
 Every view then names each number a spec of this checkout writes twice, with
 the line that keeps it, and each test comment whose proof's wording changed
@@ -695,14 +695,12 @@ def _qa_view(data, changed, markers, proofs):
             covering.setdefault(path, set()).add(feature)
     test_files = [path for path in changed if path in covering]
     covered = sorted({name for path in test_files for name in covering[path]})
-    ended = _ended_lines(data)
 
     proofs_view, lines = proofs
     view = {
         'tests_changed': {'files': test_files, 'features': covered},
         'left': [item for item in data.get('left') or ()
-                 if item.get('kind') in summary_module.FOR_A_PERSON],
-        'signatures_ended': ended,
+                 if item.get('kind') in summary_module.BLOCKING],
     }
     view.update(proofs_view)
 
@@ -710,15 +708,10 @@ def _qa_view(data, changed, markers, proofs):
     if test_files:
         lines.append('%s changed, covering %s.' % (
             _plural(len(test_files), 'test file'), ', '.join(covered)))
-    lines.extend(ended)
-    # The rules that wait for a person, in the words the status prints them.
-    lines.extend(summary_module.left_lines(data, summary_module.FOR_A_PERSON))
+    # The lines of `Left to do` that stop a release, in the words the status
+    # prints them.
+    lines.extend(summary_module.left_lines(data, summary_module.BLOCKING))
     return view, lines
-
-
-def _ended_lines(data):
-    """The status's line for each signature that ended, in its order."""
-    return list(summary_module.ended_lines(data))
 
 
 # ---------------------------------------------------------------------------
@@ -807,7 +800,7 @@ def _age_line(ref, age):
     return AGE_KNOWN % (ref, _age_words(age))
 
 
-def _text_of(parsed, item_id):
+def text_of(parsed, item_id):
     """The text `parsed` holds for a rule or proof id, or None."""
     if item_id.startswith('RULE-'):
         return parsed.get('rules', {}).get(item_id)
@@ -844,39 +837,43 @@ def numbers_twice(project_root, features, ref):
 
     `features` is `specs.scan_specs`'s answer. The line whose text equals the
     id's text on `ref`, the default branch, keeps the number; the other
-    moves to the next free number of its kind.
+    moves to the next free number of its kind. Where neither line is on
+    `ref`, `ref` writes the id twice too, or there is no `ref`, the later
+    line in the file moves. `case` names which of the four it was, and
+    `moves` is the line that moves, `{'line', 'text'}`.
     """
     found = []
     for name in sorted(features):
         info = features[name]
         taken = {}
-        default = None
-        if ref:
-            content = _git(project_root, ['show', '--end-of-options',
-                                          '%s:%s' % (ref, info['spec_path'])])
-            default = (specs_module._parse_spec(name, info['spec_path'],
-                                                content) if content else {})
+        default = default_spec(project_root, ref, info)
         for item in _written_twice(info):
             written = info['doubled_lines'][item]
             to = _next_free(info, item.split('-')[0], taken)
-            entry = {'feature': name, 'id': item, 'to': to, 'text': None}
+            entry = {'feature': name, 'id': item, 'to': to, 'text': None,
+                     'moves': written[-1]}
             if default is None:
+                entry['case'] = 'no_default'
                 entry['line'] = NUMBER_NO_DEFAULT % (name, item, to)
             elif item in (default.get('doubled_lines') or {}):
+                entry['case'] = 'on_default'
                 entry['text'] = written[-1]['text']
                 entry['line'] = NUMBER_ON_DEFAULT % (name, item, ref, to,
                                                      entry['text'])
             else:
-                kept = _text_of(default, item)
+                kept = text_of(default, item)
                 keeper = next((index for index, line in enumerate(written)
                                if kept is not None and line['text'] == kept),
                               None)
                 if keeper is None:
+                    entry['case'] = 'neither'
                     entry['line'] = NUMBER_NEITHER % (name, item, ref, ref,
                                                       item, to)
                 else:
                     other = next(line for index, line in enumerate(written)
                                  if index != keeper)
+                    entry['case'] = 'kept'
+                    entry['moves'] = other
                     entry['text'] = other['text']
                     entry['line'] = NUMBER_KEPT % (name, item, ref, item, to,
                                                    entry['text'])
@@ -884,12 +881,35 @@ def numbers_twice(project_root, features, ref):
     return found
 
 
-def _blamed_commit(project_root, path, line):
-    """The commit that last wrote one line of a file, or None where the line
-    is not committed. The path follows `--`, so it is never read as an
-    option."""
-    out = _git(project_root, ['blame', '--porcelain', '-L', '%d,%d' % (line, line),
-                              '--', path])
+def default_spec(project_root, ref, info):
+    """The spec `info` as `ref` holds it, parsed; `{}` where `ref` holds no
+    such file, and None where there is no `ref`."""
+    if not ref:
+        return None
+    content = _git(project_root, ['show', '--end-of-options',
+                                  '%s:%s' % (ref, info['spec_path'])])
+    return (specs_module._parse_spec(info['name'], info['spec_path'], content)
+            if content else {})
+
+
+def spec_at(project_root, sha, feature, spec_path, cache):
+    """The spec at `spec_path` as the commit `sha` holds it, parsed, or `{}`.
+    `cache` keeps each commit's reading for the next comment."""
+    key = (sha, spec_path)
+    if key not in cache:
+        content = _git(project_root, ['show', '--end-of-options',
+                                      '%s:%s' % key])
+        cache[key] = (specs_module._parse_spec(feature, spec_path, content)
+                      if content else {})
+    return cache[key]
+
+
+def _blamed_commit(project_root, path, line, rev=None):
+    """The commit that last wrote one line of a file, at `rev` where given,
+    or None where the line is not committed. The path follows `--`, so it is
+    never read as an option."""
+    out = _git(project_root, ['blame', '--porcelain', '-L', '%d,%d' % (line, line)]
+               + ([rev] if rev else []) + ['--', path])
     sha = out.split(' ', 1)[0] if out else ''
     return sha if sha and sha.strip('0') else None
 
@@ -899,9 +919,7 @@ def comments_changed(project_root, rng, changed, features, before, after):
     written.
 
     The comments read are those naming a proof whose text differs between
-    the range's two ends, and those in a test file the range changed. The
-    proof's text in the spec at the commit that last wrote the comment's
-    line is compared with its text now.
+    the range's two ends, and those in a test file the range changed.
     """
     differs = set()
     for name in set(before) | set(after):
@@ -910,42 +928,49 @@ def comments_changed(project_root, rng, changed, features, before, after):
         differs.update((name, item) for item in new if old.get(item) != new[item])
     changed = set(changed)
     found = []
-    specs_at = {}
+    cache = {}
     scanned = markers_module.scan(project_root, tracked_only=True)
     for path in sorted(scanned):
         for marker in scanned[path].markers:
-            key = (marker.feature, marker.id)
-            info = features.get(marker.feature)
-            if (not marker.id.startswith('PROOF-') or info is None
-                    or (path not in changed and key not in differs)):
+            if path not in changed and marker.key() not in differs:
                 continue
-            now = _text_of(info, marker.id)
-            sha = _blamed_commit(project_root, path, marker.line)
-            if now is None or sha is None:
-                continue
-            spec_key = (sha, info['spec_path'])
-            if spec_key not in specs_at:
-                content = _git(project_root, ['show', '--end-of-options',
-                                              '%s:%s' % spec_key])
-                specs_at[spec_key] = (specs_module._parse_spec(
-                    marker.feature, info['spec_path'], content)
-                    if content else {})
-            then = _text_of(specs_at[spec_key], marker.id)
-            if then is None or then == now:
-                continue
-            now_under = next((item for item in sorted(info.get('proofs', {}),
-                                                      key=_rule_number)
-                              if item != marker.id
-                              and _text_of(info, item) == then), None)
-            line = COMMENT_CHANGED % (path, marker.line, marker.feature,
-                                      marker.id, sha[:7], then, now)
-            line += (COMMENT_MOVE % now_under if now_under
-                     else COMMENT_CHECK % marker.feature)
-            found.append({'file': path, 'line': marker.line,
-                          'feature': marker.feature, 'id': marker.id,
-                          'commit': sha[:7], 'old': then, 'new': now,
-                          'now_under': now_under, 'text': line})
+            entry = comment_reworded(project_root, path, marker, features,
+                                     cache)
+            if entry:
+                found.append(entry)
     return found
+
+
+def comment_reworded(project_root, path, marker, features, cache):
+    """The entry for one test comment naming a proof whose text, at the
+    commit that last wrote the comment's line, differs from its text now;
+    None for any other comment, and for one not committed.
+
+    `now_under` is the other proof of the same spec that holds the old text
+    exactly, or None.
+    """
+    info = features.get(marker.feature)
+    if not marker.id.startswith('PROOF-') or info is None:
+        return None
+    now = text_of(info, marker.id)
+    sha = _blamed_commit(project_root, path, marker.line)
+    if now is None or sha is None:
+        return None
+    then = text_of(spec_at(project_root, sha, marker.feature,
+                            info['spec_path'], cache), marker.id)
+    if then is None or then == now:
+        return None
+    now_under = next((item for item in sorted(info.get('proofs', {}),
+                                              key=_rule_number)
+                      if item != marker.id and text_of(info, item) == then),
+                     None)
+    line = COMMENT_CHANGED % (path, marker.line, marker.feature, marker.id,
+                              sha[:7], then, now)
+    line += (COMMENT_MOVE % now_under if now_under
+             else COMMENT_CHECK % marker.feature)
+    return {'file': path, 'line': marker.line, 'feature': marker.feature,
+            'id': marker.id, 'commit': sha[:7], 'old': then, 'new': now,
+            'now_under': now_under, 'text': line}
 
 
 def _specs_uncommitted(project_root):

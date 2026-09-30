@@ -5,7 +5,7 @@
 >   what changed between where HEAD stood before it and HEAD: rules added,
 >   changed and removed for the PM; code changed, rules with no test, anchors
 >   behind and evidence out of date for the engineer; tests changed, and the
->   rules waiting for someone to test by hand or to sign, for QA; proofs added,
+>   lines of `Left to do` that stop a release, for QA; proofs added,
 >   changed and moved for the PM and QA. Every view names a number a spec
 >   writes twice and a test comment whose proof's wording changed. It reads
 >   only this checkout, reports facts and judges nothing.
@@ -36,9 +36,9 @@
 - RULE-19: The report is serialized with no indentation and no space after a separator, because its only reader is a model paying by the token
 - RULE-20: The engineer view reports an anchor whose `> Source:` names no repository, words or a file on disk, as `error` with the line that names `purlin:spec`, and no process is handed the source
 - RULE-21: When `.purlin/config.json` exists and cannot be read, drift's answer is the sentence `.purlin/config.json cannot be read: <cause>. Fix the file by hand; nothing ran and nothing was saved.` alone, in place of the report, and it reads nothing else
-- RULE-22: The QA view prints the `to test by hand` and `to sign` lines of `Left to do` in the words the status prints them, as `1 rule to test by hand: purlin:sign`, and no other line of `Left to do`
+- RULE-22: The QA view prints the lines of `Left to do` whose kinds stop a release, in the words the status prints them, as `2 rules to fix: purlin:build`, and no other line of `Left to do`
 - RULE-23: Each view carries its lines and the facts they were built from under fixed keys
-- RULE-24: The QA view's `left` holds the status's own items of `Left to do` of the kinds `to_test_by_hand` and `to_sign`, the items its lines of `Left to do` are built from
+- RULE-24: The QA view's `left` holds the status's own items of `Left to do` whose kinds stop a release, the items its lines of `Left to do` are built from
 - RULE-25: A role argument narrows the answer to exactly `since`, `role` and `view`
 - RULE-26: In a repository whose HEAD names no commit, drift's answer is the error `no commits` with the reason `drift reads git, and HEAD names no commit here`, in place of the report
 - RULE-27: A drift call writes no file and leaves HEAD and the working tree as they were
@@ -48,7 +48,6 @@
 - RULE-31: Every view names each number a spec of this checkout writes twice: the line whose text is the one on the default branch keeps it, and the other is renumbered to the next free number
 - RULE-32: Where a view names a number written twice, it says how long ago this checkout last fetched the default branch, and drift itself fetches nothing
 - RULE-33: Every view names each test comment whose proof's wording changed since the commit that last wrote the comment's line, quoting both wordings
-- RULE-34: The QA view prints the status's line for each signature that ended
 
 ## Proof
 
@@ -99,10 +98,10 @@
 - PROOF-22 (RULE-13): The anchor `local_security`, copied from the file `constraints.md` in another repository, falls behind its source; its row is named `local_security`, and its one line reads `anchor local_security: the pin <first sha7> is behind its source, now <new sha7>. Run purlin:anchor sync local_security.`
 - PROOF-23 (RULE-14): The spec `login` has a passing run written and `cart` has none, and a pull then changes a file in each one's scope; the engineer view reads `1 feature is out of date: login. Run purlin:test.` and does not name `cart`
 - PROOF-65 (RULE-14): The specs `login` and `cart` each have a passing run written, and a pull then changes a file in each one's scope; the engineer view reads `2 features are out of date: cart, login. Run purlin:test.`
-- PROOF-24 (RULE-15): A pull changes one test file carrying markers for `login` and `export`, one carrying a marker for `login` and one carrying no marker; after its first line the QA view reads exactly `2 test files changed, covering export, login.`
-- PROOF-31 (RULE-22): Under the gate `passed`, the spec `login` has one rule with an ordinary proof and one whose only proof is checked by hand, and nothing has been run or signed; after its first line the QA view reads exactly `1 rule to test by hand: purlin:sign`
-- PROOF-32 (RULE-22): The status leaves `3 rules to audit` and `2 rules to sign`; after its first line the QA view reads exactly `2 rules to sign: purlin:sign`
-- PROOF-33 (RULE-22): The status leaves only `3 rules to audit`; the QA view prints nothing after its first line
+- PROOF-24 (RULE-15): A pull changes one test file carrying markers for `login` and `export`, one carrying a marker for `login` and one carrying no marker; the QA view's line after its first reads `2 test files changed, covering export, login.`, and no other line names a test file changed
+- PROOF-31 (RULE-22): Under the gate `passed`, the spec `login` has one rule with an ordinary proof and one whose only proof is checked by hand, and no test exists; after its first line the QA view reads exactly `1 rule to write a test for: purlin:build`
+- PROOF-32 (RULE-22): The status leaves `3 rules to strengthen` and `2 rules to fix`; after its first line the QA view reads exactly `2 rules to fix: purlin:build`
+- PROOF-33 (RULE-22): The status leaves only `3 rules to strengthen`; the QA view prints nothing after its first line
 - PROOF-26 (RULE-17): One spec is edited and not committed; every view ends with `1 spec file has changes that are not committed.`
 - PROOF-47 (RULE-17): One spec is edited and a second spec is added and not tracked; every view ends with `2 spec files have changes that are not committed.`
 - PROOF-48 (RULE-17): An edited spec and a new one are both committed; no view prints a line about spec files not committed, and each view's count of them reads 0
@@ -110,9 +109,9 @@
 - PROOF-27 (RULE-18): After a pull, the report carries exactly `since` and `roles`; `since` carries exactly `action`, `commits`, `from`, `line`, `to` and `when`, and `roles` exactly `eng`, `pm` and `qa`
 - PROOF-49 (RULE-23): After a pull, the PM view carries exactly `comments_changed`, `default_branch`, `lines`, `numbers_twice`, `proofs_added`, `proofs_changed`, `proofs_moved`, `rules_added`, `rules_changed`, `rules_removed` and `specs_uncommitted`
 - PROOF-79 (RULE-23): After a pull, the engineer view carries exactly `anchors_behind`, `code_changed`, `comments_changed`, `default_branch`, `lines`, `numbers_twice`, `out_of_date`, `rules_without_test`, `specs_uncommitted` and `unscoped`
-- PROOF-80 (RULE-23): After a pull, the QA view carries exactly `comments_changed`, `default_branch`, `left`, `lines`, `numbers_twice`, `proofs_added`, `proofs_changed`, `proofs_moved`, `signatures_ended`, `specs_uncommitted` and `tests_changed`
+- PROOF-80 (RULE-23): After a pull, the QA view carries exactly `comments_changed`, `default_branch`, `left`, `lines`, `numbers_twice`, `proofs_added`, `proofs_changed`, `proofs_moved`, `specs_uncommitted` and `tests_changed`
 - PROOF-50 (RULE-25): After a pull, drift is asked for the `qa` role; the answer carries exactly `since`, `role` and `view`, its role reads `qa`, and its `since` and `view` are those of the whole report
-- PROOF-34 (RULE-24): The status leaves `3 rules to audit` and `2 rules to sign`; the QA view's `left` holds exactly the one item `{"kind": "to_sign", "count": 2, "text": "2 rules to sign", "command": "purlin:sign"}`
+- PROOF-34 (RULE-24): The status leaves `3 rules to strengthen` and `2 rules to fix`; the QA view's `left` holds exactly the one item `{"kind": "to_fix", "count": 2, "text": "2 rules to fix", "command": "purlin:build"}`
 - PROOF-28 (RULE-19): After one committed change, the report text is indented nowhere, puts no space after the `:` and `,` that separate its keys and values, reads back as a report carrying exactly `since` and `roles`, and is shorter than the same report laid out with an indent of 2
 - PROOF-56 (RULE-20): The anchor `refunds` is pinned to the source `policy.txt`, a text file in the project; its row reads `error`, its line begins `anchor refunds: its source, policy.txt, is not a spec in Purlin's format kept in a git repository` and names `purlin:spec refunds`, and no process is handed `policy.txt`
 - PROOF-57 (RULE-20): The anchor `refunds` is pinned to the source `the finance team's refund policy`, a description in words; its row reads `error`, its line begins `anchor refunds: its source, the finance team's refund policy, is not a spec in Purlin's format` and names `purlin:spec refunds`, and no process is handed that source
@@ -130,4 +129,3 @@
 - PROOF-75 (RULE-33): A test comment naming `login PROOF-4` is committed while `PROOF-4` reads `A`, and a pull rewords it `B`; every view holds `tests/test_login.py:1 names login PROOF-4, whose wording changed since the comment was written in <sha7>: it read "A" and now reads "B". Check the test still shows it, or run purlin:build login.`
 - PROOF-76 (RULE-33): A test comment naming `login PROOF-4` is committed while `PROOF-4` reads `A`, and a pull rewords it `B` and puts `A` under `PROOF-6`; the comment's line ends `it read "A" and now reads "B". Its old wording is now PROOF-6: move the comment there.`
 - PROOF-77 (RULE-33): A pull edits a test file whose comment names `login PROOF-1`, whose wording has not changed; no view holds a line naming that comment
-- PROOF-78 (RULE-34): Under the gate `signed`, `login RULE-1` is signed by `jane@acme.com`, then its test file is edited and committed; the QA view holds the status's line `login RULE-1: the signature by jane@acme.com ended because a test file behind it changed: tests/test_login.py.`

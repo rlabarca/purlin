@@ -4,8 +4,8 @@
 >   pull, in one view per role, `pm`, `eng` and `qa`, and it writes nothing.
 > Scope: skills/drift/SKILL.md
 > Stack: markdown, Claude Code skill definition
-> Highest-Rule: 12
-> Highest-Proof: 38
+> Highest-Rule: 13
+> Highest-Proof: 39
 
 ## Rules
 
@@ -17,6 +17,7 @@
 - RULE-10: The skill tells the agent to infer the role from the files the session touched and to say which it chose
 - RULE-11: The skill says drift reads only this checkout and names how old its copy of the default branch is
 - RULE-12: The skill says what to do with a number written twice: the line on the default branch keeps it and the other is renumbered
+- RULE-13: The skill sends a number written twice, and a test comment whose proof's wording changed, to the renumbering in `purlin:spec`
 
 ## Proof
 
@@ -35,3 +36,4 @@
 - PROOF-36 (RULE-10): The drift skill, read across its line breaks, says `With no role, infer one from the files the session has touched` and `Say which you chose before the view`
 - PROOF-37 (RULE-11): The drift skill, read across its line breaks, says `Drift reads only this checkout: it never fetches, pulls or reaches the host` and `says how old this checkout's copy of the default branch is`
 - PROOF-38 (RULE-12): The drift skill, read across its line breaks, says `The line already on the default branch keeps the number; the other line moves to the number drift names` and `move the test comments that name it`
+- PROOF-39 (RULE-13): The drift skill, read across its line breaks, says ``To renumber it and move the test comments that name it, follow `Renumbering` in `purlin:spec` `` and ``A test comment whose proof's wording changed moves the same way: follow `Renumbering` in `purlin:spec` ``

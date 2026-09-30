@@ -86,6 +86,16 @@ class TestSkillDrift:
             'other line moves to the number drift names',
             'move the test comments that name it']) == []
 
+    # RULE-13: the renumbering, in purlin:spec.
+
+    # purlin: skill_drift PROOF-39
+    def test_it_sends_a_number_written_twice_to_the_renumbering(self):
+        assert carries(SKILL, [
+            'To renumber it and move the test comments that name it, follow '
+            '`Renumbering` in `purlin:spec`',
+            "A test comment whose proof's wording changed moves the same way: "
+            'follow `Renumbering` in `purlin:spec`']) == []
+
     # RULE-2: the tool, the lines as they come, and the criteria.
 
     # purlin: skill_drift PROOF-2
@@ -275,11 +285,10 @@ OUTCOME_ROWS = {
     'anchors_behind': 'An anchor behind its source',
     'out_of_date': 'A feature out of date',
     'tests_changed': 'A test file changed',
-    'left': 'A rule to test by hand or to sign',
+    'left': 'A line of `Left to do`',
     'proofs_added': 'A proof added, changed or moved',
     'proofs_changed': 'A proof added, changed or moved',
     'proofs_moved': 'A proof added, changed or moved',
-    'signatures_ended': 'A signature that ended',
     'numbers_twice': 'A number written twice',
     'comments_changed': "A test comment whose proof's wording changed",
     'default_branch': 'How old the copy of the default branch is',

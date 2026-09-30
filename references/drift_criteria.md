@@ -1,4 +1,4 @@
-> Criteria-Version: 11
+> Criteria-Version: 12
 
 # Drift criteria
 
@@ -89,14 +89,12 @@ exclusions.
 | `proofs_changed` | The proofs changed, as in `pm` | As in `pm` |
 | `proofs_moved` | The proofs moved, as in `pm` | As in `pm` |
 | `tests_changed` | The changed test files that carry a marker, and the features those markers name | `6 test files changed, covering export, login.` |
-| `signatures_ended` | The status's own line for each signature that ended, in its order | `sample_age RULE-2: the signature by quinn.qa@labconnect.example ended because a test file behind it changed: tests/test_age.py.` |
-| `left` | The status's own items of `Left to do` of the kinds `to_test_by_hand` and `to_sign` | The lines below |
+| `left` | The status's own items of `Left to do` whose kinds stop a release | The lines below |
 
-After those lines the view prints the two lines of `Left to do` that wait for a person, in the
-words the status prints them:
-`2 rules to test by hand: purlin:sign` and `5 rules to sign: purlin:sign`. Either is left out at
-zero, and no other line of `Left to do` is printed. At the gate `passed` only a rule to test by
-hand can wait for a person.
+After those lines the view prints the lines of `Left to do` that stop a release, in the words
+the status prints them, such as `2 rules to fix: purlin:build` and
+`1 spec to repair: purlin:spec`. Each is left out at zero, and no other line of `Left to do` is
+printed: a rule to strengthen or to write a proof for stops no release.
 
 ### Every view
 
@@ -122,6 +120,7 @@ written, else unknown. It reads
 keeps the number; the other moves to the next free number, one above the spec's
 `> Highest-Rule:` or `> Highest-Proof:` and above every number of that kind the spec holds.
 Where one spec writes several numbers twice, each takes the next number after the one before.
+`purlin:spec` makes the edit, and moves the test comments, when you say yes to its plan.
 
 | Case | Line |
 |------|------|
@@ -161,8 +160,7 @@ it is adopted.
 |-------|-----------|---------|---------|
 | `version` | `purlin:init`, `purlin:init --update` | `purlin:init --update`, which compares it with the plugin's `VERSION` file to find an upgrade | From the plugin's `VERSION` file |
 | `gate` | `purlin:init`, `purlin:init --gate` | `sync_status`, every skill that names a next step | `passed` |
-| `mutation_engine` | `purlin:init`, which asks at the gates `strong` and `signed` whether to break the code on purpose | `scripts/run/purlin_run.py`, `sync_status` | `none` from init, and a yes writes `auto`; `none` where the key is absent. `none` turns mutation testing off, so no breaks run and `min_strength` is not applied |
-| `min_strength` | `purlin:init` | `purlin:audit` | `null` while mutation testing is off; with it on, `null` under `passed`, 70 under `strong`, 80 under `signed` |
+| `mutation_engine` | `purlin:init`, which asks at the gate `signed` whether to break the code on purpose, and `purlin:init --mutation` at either gate | `scripts/run/purlin_run.py`, `sync_status` | `none` from init, and a yes writes `auto`; `none` where the key is absent. `none` turns mutation testing off, so no breaks run; any other value runs them when `purlin:audit` runs, and nothing waits on them |
 | `audit_parallel` | `purlin:init`, with no question | `scripts/run/purlin_run.py`, which makes that many AI audit calls at once | `4`; any value that is not a whole number from 1 to 16 is read as 4 with one warning |
 | `tests` | `purlin:test`, at the first run, once you confirm the command it suggests | `scripts/run/purlin_run.py`, which runs each suite's own command and reads its report; the fingerprint, which reads markers only from the files a suite names | `[]` in the template; see `references/formats/marker_format.md` |
 | `ci` | `purlin:init`, from the remote URL | `purlin:test --remote`, the workflow `purlin:init` writes | Detected: `github` or `azure`, and `none` with no remote or another host |

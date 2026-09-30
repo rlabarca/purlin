@@ -1160,15 +1160,17 @@ class TestQaView:
               'tests/test_plain.py': 'def test_plain():\n    pass\n'}])
         report = _report(checkout)
 
-        assert _lines(report, 'qa') == [
-            '2 test files changed, covering export, login.'], \
-            _lines(report, 'qa')
+        lines = _lines(report, 'qa')
+        assert lines[0] == '2 test files changed, covering export, login.', \
+            lines
+        assert [line for line in lines if 'test file' in line
+                and 'changed' in line] == [lines[0]], lines
         assert report['roles']['qa']['tests_changed'] == {
             'files': ['tests/test_both.py', 'tests/test_login.py'],
             'features': ['export', 'login']}
 
     # purlin: drift PROOF-31
-    def test_a_rule_to_test_by_hand(self, tmp_path):
+    def test_a_rule_to_write_a_test_for(self, tmp_path):
         root = _repo(str(tmp_path / 'proj'), {
             'specs/auth/login.md': _spec(
                 'login', {'RULE-1': 'Signs a person in',
@@ -1181,27 +1183,28 @@ class TestQaView:
         _change(root, {'src/auth/login.py': 'x = 2\n'})
 
         assert _lines(_report(root, since='1'), 'qa') == [
-            '1 rule to test by hand: purlin:sign']
+            '1 rule to write a test for: purlin:build']
 
     # purlin: drift PROOF-32
-    def test_the_rules_to_sign_and_not_the_rest(self, tmp_path):
+    def test_the_rules_to_fix_and_not_the_rest(self, tmp_path):
         assert _qa_lines_left(tmp_path, [
-            _left('to_audit', 3, '3 rules to audit', 'purlin:audit'),
-            _left('to_sign', 2, '2 rules to sign', 'purlin:sign')]) == [
-            '2 rules to sign: purlin:sign']
+            _left('to_strengthen', 3, '3 rules to strengthen', 'purlin:build'),
+            _left('to_fix', 2, '2 rules to fix', 'purlin:build')]) == [
+            '2 rules to fix: purlin:build']
 
     # purlin: drift PROOF-33
-    def test_nothing_waiting_for_a_person_prints_nothing(self, tmp_path):
+    def test_nothing_that_stops_a_release_prints_nothing(self, tmp_path):
         assert _qa_lines_left(tmp_path, [
-            _left('to_audit', 3, '3 rules to audit', 'purlin:audit')]) == []
+            _left('to_strengthen', 3, '3 rules to strengthen',
+                  'purlin:build')]) == []
 
     # purlin: drift PROOF-34
     def test_the_qa_view_carries_the_items_it_printed(self, tmp_path):
         view = _qa_view_left(tmp_path, [
-            _left('to_audit', 3, '3 rules to audit', 'purlin:audit'),
-            _left('to_sign', 2, '2 rules to sign', 'purlin:sign')])
+            _left('to_strengthen', 3, '3 rules to strengthen', 'purlin:build'),
+            _left('to_fix', 2, '2 rules to fix', 'purlin:build')])
         assert view['left'] == [
-            _left('to_sign', 2, '2 rules to sign', 'purlin:sign')]
+            _left('to_fix', 2, '2 rules to fix', 'purlin:build')]
 
 
 def _left(kind, count, text, command):
@@ -1352,7 +1355,7 @@ class TestReportShape:
         assert sorted(report['roles']['qa']) == [
             'comments_changed', 'default_branch', 'left', 'lines',
             'numbers_twice', 'proofs_added', 'proofs_changed', 'proofs_moved',
-            'signatures_ended', 'specs_uncommitted', 'tests_changed']
+            'specs_uncommitted', 'tests_changed']
 
     # purlin: drift PROOF-50
     def test_the_qa_role_narrows_the_answer_to_its_view(self, tmp_path,
@@ -1674,42 +1677,3 @@ class TestCommentsChanged:
             assert not [line for line in report['roles'][role]['lines']
                         if line.startswith('tests/test_login.py:')], role
             assert report['roles'][role]['comments_changed'] == []
-
-
-# ---------------------------------------------------------------------------
-# RULE-34: the signatures that ended
-# ---------------------------------------------------------------------------
-
-class TestSignaturesEnded:
-
-    # purlin: drift PROOF-78
-    def test_the_qa_view_prints_an_ended_signature(self):
-        from mcp_project import Project
-        made = Project(gate='signed')
-        try:
-            made.sign_commits()
-            test_file = os.path.join(made.root, 'tests', 'test_login.py')
-            _write(test_file, '# purlin: login PROOF-1\ndef test_one():\n'
-                              '    pass\n')
-            _commit(made.root, 'test: login')
-            made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
-                            'status': 'pass'}], ci=True, strength=90)
-            made.audit('RULE-1')
-            made.signature('RULE-1')
-            assert made.cell('RULE-1', 'signed')['word'] == 'signed'
-            _write(test_file, '# purlin: login PROOF-1\ndef test_one():\n'
-                              '    assert True\n')
-            _commit(made.root, 'test: login again')
-            made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
-                            'status': 'pass'}], ci=True, strength=90)
-            made.audit('RULE-1')
-
-            qa = _report(made.root, since='1')['roles']['qa']
-
-            line = ('login RULE-1: the signature by jane@acme.com ended '
-                    'because a test file behind it changed: '
-                    'tests/test_login.py.')
-            assert line in qa['lines'], qa['lines']
-            assert line in qa['signatures_ended'], qa['signatures_ended']
-        finally:
-            made.close()
