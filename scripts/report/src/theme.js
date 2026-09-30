@@ -25,8 +25,13 @@ function logoSrc() {
   return currentTheme() === 'light' ? PURLIN_LOGO.light : PURLIN_LOGO.dark;
 }
 
-/* The button reads the theme it turns to, so its text is its label. */
+/* The button shows the glyph of the theme a click turns to, `◐` for the
+   light and `◑` for the dark, and its hover and its name for a screen
+   reader say that theme in words. */
 function themeButton() {
-  var next = currentTheme() === 'light' ? 'Dark theme' : 'Light theme';
-  return '<button class="btn" data-act="theme">' + next + '</button>';
+  var light = currentTheme() === 'light';
+  var next = light ? 'Dark theme' : 'Light theme';
+  return '<button class="btn" data-act="theme" title="' + next
+    + '" aria-label="' + next + '">' + (light ? '◑' : '◐')
+    + '</button>';
 }

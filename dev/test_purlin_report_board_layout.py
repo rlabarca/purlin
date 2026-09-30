@@ -136,14 +136,23 @@ def test_nothing_on_the_table_is_aligned_right(browser,  # noqa: F811
 
 
 # purlin: purlin_report PROOF-142
-def test_a_shared_count_is_one_line_from_1024_up(browser,  # noqa: F811
-                                                 tmp_path):
-    """A spec that proves an anchor's rules reads `1 (+1)`, and that value
-    is one line too."""
-    found = _at_every_width(browser, tmp_path, 'team', lambda page: (
-        '1 (+1)' in page.inner_text('.tr[data-feature="receipt"]'),
-        page.evaluate(WRAPPED)))
+def test_a_long_tests_value_is_one_line_from_1024_up(browser,  # noqa: F811
+                                                     tmp_path):
+    """The widest value in the sample, `1 of 1 · 1 does not apply`, is one
+    line like every other."""
+    found = _at_every_width(browser, tmp_path, 'regulated', lambda page: (
+        DOES_NOT_APPLY in _tests_value(page), page.evaluate(WRAPPED)))
     assert found == {width: (True, 0) for width in WIDTHS}, found
+
+
+DOES_NOT_APPLY = '1 of 1 · 1 does not apply'
+
+
+def _tests_value(page):
+    """security_baseline's `Tests` value, as its one line reads."""
+    return ' '.join(page.inner_text(
+        '.tr[data-feature="security_baseline"] > div[data-label="Tests"]'
+        ' .trio').split())
 
 
 # The five widths a person opens the board at, from a wide screen to a phone.
@@ -242,15 +251,15 @@ def test_every_screen_fits_every_width_in_the_light_theme(browser, tmp_path):  #
 
 
 # purlin: purlin_report PROOF-113
-def test_a_shared_count_is_one_line_at_every_width(browser, tmp_path):  # noqa: F811
+def test_a_long_tests_value_is_one_line_at_every_width(browser, tmp_path):  # noqa: F811
     for width in EVERY_WIDTH:
-        team = open_board(browser, tmp_path / ('team%d' % width),
-                          payload_named('team'),
+        page = open_board(browser, tmp_path / ('regulated%d' % width),
+                          payload_named('regulated'),
                           viewport={'width': width, 'height': 900})
-        assert '1 (+1)' in team.inner_text('.tr[data-feature="receipt"]')
-        assert team.evaluate(SIDEWAYS) == 0, width
-        assert team.evaluate(BROKEN_VALUES) == [], width
-        team.close()
+        assert _tests_value(page) == DOES_NOT_APPLY, width
+        assert page.evaluate(SIDEWAYS) == 0, width
+        assert page.evaluate(BROKEN_VALUES) == [], width
+        page.close()
 
 
 def _board_at(browser, tmp_path, name, width):
@@ -293,7 +302,7 @@ def test_a_narrow_board_is_blocks_of_labelled_pairs(browser, tmp_path):  # noqa:
         "el => getComputedStyle(el, '::before').content")
     page.close()
     assert heads is False
-    assert receipt.startswith('▶ receipt 1 (+1) '), receipt
+    assert receipt.startswith('▶ receipt 1 '), receipt
     assert label == '"Rules"', label
 
 

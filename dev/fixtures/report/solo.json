@@ -47,10 +47,8 @@
       "incomplete": false,
       "incomplete_reason": null,
       "is_anchor": false,
-      "is_global": false,
       "name": "login",
       "pinned": null,
-      "requires": [],
       "rollup": {
         "failing": 0,
         "incomplete": false,
@@ -91,6 +89,7 @@
             }
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
+          "does_not_apply": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -102,7 +101,6 @@
           },
           "hand_checked": false,
           "id": "RULE-1",
-          "label": "own",
           "left": null,
           "machines": {
             "macos": "jane-laptop"
@@ -147,6 +145,7 @@
             }
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
+          "does_not_apply": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -158,7 +157,6 @@
           },
           "hand_checked": false,
           "id": "RULE-2",
-          "label": "own",
           "left": "no_test",
           "machines": {},
           "proof_hash": "prule2log",
@@ -197,6 +195,7 @@
             }
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
+          "does_not_apply": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -208,7 +207,6 @@
           },
           "hand_checked": false,
           "id": "RULE-3",
-          "label": "own",
           "left": "no_test",
           "machines": {},
           "proof_hash": "prule3log",
@@ -250,10 +248,8 @@
       "incomplete": false,
       "incomplete_reason": null,
       "is_anchor": false,
-      "is_global": false,
       "name": "invoice",
       "pinned": null,
-      "requires": [],
       "rollup": {
         "failing": 0,
         "incomplete": false,
@@ -292,6 +288,7 @@
             }
           },
           "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
+          "does_not_apply": null,
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -303,7 +300,6 @@
           },
           "hand_checked": false,
           "id": "RULE-1",
-          "label": "own",
           "left": null,
           "machines": {
             "macos": "jane-laptop"
@@ -354,6 +350,7 @@
             }
           },
           "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
+          "does_not_apply": null,
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -365,7 +362,6 @@
           },
           "hand_checked": false,
           "id": "RULE-2",
-          "label": "own",
           "left": null,
           "machines": {
             "macos": "jane-laptop"
@@ -439,7 +435,7 @@
   },
   "project": "ledger",
   "remote_url": null,
-  "schema_version": 10,
+  "schema_version": 11,
   "summary": {
     "failing": 0,
     "features": 2,

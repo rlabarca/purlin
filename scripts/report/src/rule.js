@@ -40,7 +40,8 @@ function cellRow(rule, name) {
       && (showsProofs() || text !== 'no proof written');
   }).join('; ');
   var beside = name === 'passed' ? platformBoxes(cell)
-    : name === 'signed' && cell.signer ? '<span class="mono sec">'
+    : name === 'signed' && cell.signer && cell.word === 'signed'
+      ? '<span class="mono sec">'
       + unbroken(cell.signer) + ' \u00b7 ' + unbroken(when(cell.at))
       + '</span>' : '';
   return '<dt>' + esc(CELL_LABELS[name]) + '</dt><dd>' + pill(cell.word)
@@ -114,10 +115,21 @@ function signaturesFor(feature, rule) {
    signed, by name and email as git holds them, when, the key it was made
    with, and the machine the tests ran on in each system. The panel is drawn
    at the gate `signed` only, headed `Hand check` where a proof of the rule
-   is `@manual` and nobody has checked it, and `Signature` otherwise. */
+   is `@manual` and nobody has checked it, and `Signature` otherwise. A rule
+   of a pinned anchor that a person signed as not applying says so, with
+   the reason they gave, who they are and when. */
 function signPanel(feature, rule) {
   var cell = cellOf(rule, 'signed');
   if (!level('signed') || !cell) { return ''; }
+  var dna = rule.does_not_apply;
+  if (dna && cell.word === WORDS.does_not_apply) {
+    var signer = dna.signer || cell.signer;
+    var name = cell.signer_name ? cell.signer_name + ' (' + signer + ')'
+      : signer;
+    return '<div class="panel"><h2>Signed</h2><p class="sec">'
+      + esc('Does not apply to this project: ' + dna.why + '. Signed by '
+        + name + ' at ') + unbroken(moment(dna.at || cell.at)) + '.</p></div>';
+  }
   if (cell.word === 'signed') {
     var who = [cell.signer_name, cell.signer].filter(Boolean).join(', ')
       || 'a person';

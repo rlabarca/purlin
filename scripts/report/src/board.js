@@ -74,8 +74,8 @@ function noProofLines() {
 
    `width` is the share of the table the column asks for once every column
    holds its content. A value never breaks inside itself, `42 · 2 no test`
-   and `15 (+6)` alike, so each value column is at least as wide as
-   its widest value: the rows share the table's own tracks, so that width is
+   and `7 of 8 · 1 does not apply` alike, so each value column is at least
+   as wide as its widest value: the rows share the table's own tracks, so that width is
    the same in every row. The spec's name is the one text that gives way,
    cut with an ellipsis at `floor` pixels, its full path in the hover. Under
    1024 pixels the table is no table: each spec is a block of labelled
@@ -111,28 +111,17 @@ function proofsCell(feature) {
       [rollup.proofs_without_test || 0, WORDS.no_test, 'warn']]) + '</span>';
 }
 
-/* How many rules the spec owns, then how many it proves from an anchor it
-   requires or from a global anchor, as `15 (+6)`, one value that never
-   breaks, with the hover saying what the second number is and naming each
-   anchor and how many rules come from it. Shared rules count toward the spec everywhere, and are listed
-   once, under their anchor. A spec with none reads its own count alone, as
-   `board.rules_cell` does. */
+/* How many rules the spec has, the count alone, as `board.rules_cell`
+   reads it: every rule a spec lists is its own. */
 function rulesCell(feature) {
-  var shared = sharedBy(feature);
-  var own = ownRules(feature).length;
-  if (!shared.length) { return '<span class="mono">' + own + '</span>'; }
-  var more = shared.reduce(function (sum, pair) { return sum + pair[1]; }, 0);
-  return '<span' + hover([own + (own === 1 ? ' rule' : ' rules') + ' of its own, and '
-      + more + ' more it must also meet, from shared rules:']
-    .concat(shared.map(function (pair) { return pair[0] + DOT + pair[1]; })))
-    + '>' + counts([[own + ' (+' + more + ')', '', '']])
-    + '</span>';
+  return '<span class="mono">' + (feature.rules || []).length + '</span>';
 }
 
 /* What the marked tests found, as the passed cells read it: how many of the
-   rules the spec proves passed everywhere they ran, its own and the shared
-   ones alike, then the two words that say they did not. The hover says
-   which platforms ran and what each found. */
+   spec's rules passed everywhere they ran, a rule a person signed as not
+   applying counted among them, then how many of those do not apply, then
+   the two words that say a test did not pass. The hover says which
+   platforms ran and what each found. */
 function testsCell(feature) {
   var found = {};
   var rules = feature.rules || [];
@@ -140,8 +129,10 @@ function testsCell(feature) {
     var word = cellWord(rule, 'passed');
     found[word] = (found[word] || 0) + 1;
   });
+  var dna = found[WORDS.does_not_apply] || 0;
   return '<span' + hover(platformLines(feature)) + '>'
-    + counts([share(found.passed || 0, rules.length),
+    + counts([share((found.passed || 0) + dna, rules.length),
+      [dna, WORDS.does_not_apply, 'neutral'],
       [found.partial || 0, WORDS.partial, 'warn'],
       [found.failed || 0, WORDS.failing, 'fail']]) + '</span>';
 }
@@ -153,16 +144,18 @@ function share(count, total) {
           total && count === total ? 'pass' : count ? 'warn' : 'idle'];
 }
 
-/* How many of the rules the spec proves the audit found strong, its own and
-   the shared ones alike, and beside it the test strength of the newest
-   record, where one was measured; where none was, the cell says nothing of
-   strength. A signed rule is still strong, so its strong cell reads `strong`
-   too. The percentage carries its own hover saying what it is. */
+/* How many of the spec's rules the audit found strong, a rule signed as not
+   applying counted among them, and beside it the test strength of the
+   newest record, where one was measured; where none was, the cell says
+   nothing of strength. No code is broken on purpose for an anchor, so an
+   anchor's cell says nothing of strength whatever its record holds. A
+   signed rule is still strong, so its strong cell reads `strong` too. The
+   percentage carries its own hover saying what it is. */
 function strongCell(feature) {
   var rollup = feature.rollup || {};
   var rules = feature.rules || [];
   if (!rules.length) { return ''; }
-  var value = rollup.test_strength == null
+  var value = feature.is_anchor ? null : rollup.test_strength == null
     ? feature.test_strength : rollup.test_strength;
   var parts = [share(reading(rules, 'strong'), rules.length)];
   if (value != null) {
@@ -175,8 +168,8 @@ function strongCell(feature) {
   return '<span' + hover(auditLines(feature)) + '>' + cell + '</span>';
 }
 
-/* How many of the rules the spec proves carry a signature that counts. Who
-   signed them is in the hover. */
+/* How many of the spec's rules carry a signature that counts, one that signs
+   a rule as not applying among them. Who signed them is in the hover. */
 function signedCell(feature) {
   var rules = feature.rules || [];
   if (!rules.length) { return ''; }
@@ -184,10 +177,12 @@ function signedCell(feature) {
     + counts([share(reading(rules, 'signed'), rules.length)]) + '</span>';
 }
 
-/* How many of these rules have this cell reading its own name. */
+/* How many of these rules have this cell met: reading its own name, or
+   `does not apply`, which a person signed and which counts as met. */
 function reading(rules, name) {
   return rules.filter(function (rule) {
-    return cellWord(rule, name) === name;
+    var word = cellWord(rule, name);
+    return word === name || word === WORDS.does_not_apply;
   }).length;
 }
 
@@ -292,15 +287,16 @@ function proofsUnder(rule) {
    glyph, the category's name, which is the strongest thing in the band, and
    how many specs it holds; at the right how many of their rules pass their
    tests, `187 of 187 rules pass`, and a bar of one fixed width, so the bars
-   line up down the page. A band counts each rule once, under the spec that
-   owns it, as the summary does: a shared rule is counted with its anchor,
-   which stands in the anchors' section above and in no band. The whole band
+   line up down the page. A band counts the rules of the specs it holds; an
+   anchor stands in the anchors' section above and in no band. The whole band
    is the control that folds the group, from the keyboard too, and says
    whether it is open.
    Under 1024 pixels the right end drops beneath the left. */
 function groupBand(name, features, columns) {
   var open = VIEW.groups[name] !== false;
-  var rules = [].concat.apply([], features.map(ownRules));
+  var rules = [].concat.apply([], features.map(function (feature) {
+    return feature.rules || [];
+  }));
   var total = rules.length;
   var passing = rules.filter(function (rule) {
     return cellWord(rule, 'passed') === 'passed'; }).length;

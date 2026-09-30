@@ -10,7 +10,7 @@
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null,
             features: {}, groups: {}, filter: null, proofs: {}};
-var SCHEMA = 10;
+var SCHEMA = 11;
 /* The data file is rewritten when `purlin:status`, `purlin:test`,
    `purlin:audit` or `purlin:sign` finishes, and a tab left open would never
    notice. Coming back to the tab reloads it when what it holds is older than
@@ -37,9 +37,7 @@ var NO_PROOF = 'No proof';
    `purlin:status`, so these are its
    `COLUMNS` and its cell words: a string changed there is changed here in
    the same commit. `Proofs` is drawn where `showsProofs` says, as
-   `board.shows_proofs` decides it for the status table. The one difference
-   is the `Rules` cell: the terminal reads `16 (+6 shared)` and the page
-   `16 (+6)`, the page's hover saying what the second number is. */
+   `board.shows_proofs` decides it for the status table. */
 var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'];
 
 /* The one separator every cell, hover and line puts between two parts, which
@@ -47,7 +45,7 @@ var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'];
 var DOT = ' \u00b7 ';
 var WORDS = {of: 'of', no_test: 'no test', partial: 'partial',
              failing: 'failing', passed: 'passed', failed: 'failed',
-             not_run: 'not run'};
+             not_run: 'not run', does_not_apply: 'does not apply'};
 
 /* Every word a cell can read, and the tone it reads in. A word carries the
    same hue wherever it is drawn, so a pill on the board, a row on the rule
@@ -55,7 +53,7 @@ var WORDS = {of: 'of', no_test: 'no test', partial: 'partial',
 var CELL_TONES = {'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
   'out of date': 'warn', 'strong': 'pass', 'weak': 'warn',
-  'waiting': 'neutral',
+  'waiting': 'neutral', 'does not apply': 'neutral',
   'manual test': 'warn', 'not audited': 'idle', 'no proof': 'warn',
   'signed': 'pass', 'unsigned': 'warn'};
 
@@ -148,11 +146,11 @@ function tag(text, plain) {
   return '<span class="tag' + (plain ? ' plain' : '') + '">' + esc(text) + '</span>';
 }
 
-/* Every rule the project holds, each paired with the feature that owns it. */
+/* Every rule the project holds, each paired with the spec that owns it. */
 function everyRule() {
   var out = [];
   (DATA.features || []).forEach(function (feature) {
-    ownRules(feature).forEach(function (rule) {
+    (feature.rules || []).forEach(function (rule) {
       out.push({feature: feature, rule: rule});
     });
   });
@@ -160,13 +158,13 @@ function everyRule() {
 }
 
 /* The rule one owner and one id name. A rule is always addressed by the
-   spec that owns it and its id together: a feature that proves an anchor's
-   rules lists them beside its own, and both carry a `RULE-1`. */
+   spec that owns it and its id together, since every spec numbers its rules
+   from `RULE-1`. */
 function ruleNamed(owner, id) {
   var feature = featureNamed(owner);
   var found = null;
   (feature ? feature.rules || [] : []).forEach(function (r) {
-    if (r.feature === owner && r.id === id) { found = r; }
+    if (r.id === id) { found = r; }
   });
   return found;
 }
@@ -199,27 +197,6 @@ function counts(items) {
    from disk, printed, or read by a screen reader can still show. */
 function hover(lines) { return ' title="' + esc(lines.join('\n')) + '"'; }
 
-/* Every rule a spec owns. An anchor's rule appears under every feature that
-   requires it, so counting every entry would count that rule once per
-   feature. */
-function ownRules(feature) {
-  return (feature.rules || []).filter(function (r) { return r.label === 'own'; });
-}
-
-/* The rules a feature proves and does not own, by the anchor that owns
-   them: `[[anchor, count]]` in the order the payload lists them. They count
-   toward the feature and are listed once, under their anchor. */
-function sharedBy(feature) {
-  var counts = {};
-  var order = [];
-  (feature.rules || []).forEach(function (r) {
-    if (r.label === 'own') { return; }
-    if (!(r.feature in counts)) { counts[r.feature] = 0; order.push(r.feature); }
-    counts[r.feature] += 1;
-  });
-  return order.map(function (name) { return [name, counts[name]]; });
-}
-
 /* The whole project as one feature, so a tile's hover is its column's hover
    read over every spec rather than a second set of sums. */
 function wholeProject() {
@@ -230,7 +207,7 @@ function wholeProject() {
     rollup[key] = DATA.summary[key];
   });
   (DATA.features || []).forEach(function (feature) {
-    ownRules(feature).forEach(function (rule) { rules.push(rule); });
+    (feature.rules || []).forEach(function (rule) { rules.push(rule); });
     var found = newestRun(feature);
     if (found && (!latest || newer(found.at, latest.at))) { latest = found; }
   });
@@ -265,7 +242,7 @@ function newer(one, two) { return (one || '') > (two || ''); }
 function platformLines(feature) {
   var byOs = {};
   var names = [];
-  ownRules(feature).forEach(function (rule) {
+  (feature.rules || []).forEach(function (rule) {
     var platforms = ((rule.cells || {}).passed || {}).platforms || {};
     Object.keys(platforms).forEach(function (os) {
       var entry = platforms[os];
@@ -294,7 +271,7 @@ function platformLines(feature) {
    carries its own audit, so the newest of them answers for the spec. */
 function auditLines(feature) {
   var newest = null;
-  ownRules(feature).forEach(function (rule) {
+  (feature.rules || []).forEach(function (rule) {
     var audit = rule.audit;
     if (audit && audit.at && (!newest || newer(audit.at, newest.at))) {
       newest = audit;
@@ -317,9 +294,10 @@ function sourceOf(path) {
 function signerLines(feature) {
   var byWho = {};
   var names = [];
-  ownRules(feature).forEach(function (rule) {
+  (feature.rules || []).forEach(function (rule) {
     var cell = (rule.cells || {}).signed || {};
-    if (cell.word !== 'signed' || !cell.signer) { return; }
+    if ((cell.word !== 'signed' && cell.word !== WORDS.does_not_apply)
+        || !cell.signer) { return; }
     if (!byWho[cell.signer]) { byWho[cell.signer] = ''; names.push(cell.signer); }
     if (newer(cell.at, byWho[cell.signer])) { byWho[cell.signer] = cell.at; }
   });
@@ -421,8 +399,13 @@ function testFailed(rule) {
 
 /* The badges a rule's row carries: one per step it has reached, and
    `FAILED` where a test fails. A step not reached draws nothing; why it was
-   not reached is read on the rule's own screen. */
+   not reached is read on the rule's own screen. A rule a person signed as
+   not applying reads that word in every cell, so its row carries the one
+   badge `DOES NOT APPLY`. */
 function badges(rule) {
+  if (cellWord(rule, 'passed') === WORDS.does_not_apply) {
+    return pill(WORDS.does_not_apply);
+  }
   return reachedSteps(rule).map(pill).join('')
     + (testFailed(rule) ? pill('failed') : '');
 }

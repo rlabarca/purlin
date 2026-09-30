@@ -13,10 +13,17 @@
    showing, because no rule carries it. */
 var VERSION_KINDS = ['to_tag', 'to_correct'];
 
+/* The buttons whose name is shorter than their line: a rule to confirm as
+   not applying is one a person already signed so, and the button says what
+   is asked of them again. */
+var SHORT_LABELS = {to_confirm: 'To confirm'};
+
 /* The words of one line of what is left, without its count and noun, in
    sentence case: `1 rule to fix` reads `To fix`, `2 rules to test on
-   Windows` reads `To test on Windows`, `the version to tag` reads `To tag`. */
+   Windows` reads `To test on Windows`, `the version to tag` reads `To tag`,
+   and `1 rule to confirm as not applying` reads `To confirm`. */
 function leftLabel(item) {
+  if (SHORT_LABELS[item.kind]) { return SHORT_LABELS[item.kind]; }
   var text = String(item.text || '');
   var at = text.indexOf(' to ');
   var words = at >= 0 ? text.slice(at + 1) : text;
@@ -36,15 +43,15 @@ function chosenItem() {
   return found;
 }
 
-/* The rules of one feature the chosen line accepts. A feature lists the
-   rules it owns; a rule it proves from an anchor is listed once, under that
-   anchor. */
+/* The rules of one spec the chosen line accepts. A spec lists its own
+   rules and no other. */
 function visibleRules(feature) {
+  var rules = feature.rules || [];
   var item = chosenItem();
   if (!item || VERSION_KINDS.indexOf(item.kind) >= 0) {
-    return ownRules(feature);
+    return rules;
   }
-  return ownRules(feature).filter(function (rule) {
+  return rules.filter(function (rule) {
     return rule.left === item.kind;
   });
 }

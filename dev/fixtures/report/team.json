@@ -69,10 +69,8 @@
       "incomplete": false,
       "incomplete_reason": null,
       "is_anchor": false,
-      "is_global": false,
       "name": "login",
       "pinned": null,
-      "requires": [],
       "rollup": {
         "failing": 0,
         "incomplete": false,
@@ -134,6 +132,7 @@
             }
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
+          "does_not_apply": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -145,7 +144,6 @@
           },
           "hand_checked": false,
           "id": "RULE-1",
-          "label": "own",
           "left": "to_strengthen",
           "machines": {
             "linux": "remote runner, Linux/Unix"
@@ -212,6 +210,7 @@
             }
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
+          "does_not_apply": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -223,7 +222,6 @@
           },
           "hand_checked": false,
           "id": "RULE-2",
-          "label": "own",
           "left": null,
           "machines": {
             "linux": "remote runner, Linux/Unix"
@@ -290,6 +288,7 @@
             }
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
+          "does_not_apply": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -301,7 +300,6 @@
           },
           "hand_checked": false,
           "id": "RULE-3",
-          "label": "own",
           "left": null,
           "machines": {
             "linux": "remote runner, Linux/Unix"
@@ -360,10 +358,8 @@
       "incomplete": true,
       "incomplete_reason": "no > Scope: line",
       "is_anchor": false,
-      "is_global": false,
       "name": "invoice",
       "pinned": null,
-      "requires": [],
       "rollup": {
         "failing": 0,
         "incomplete": true,
@@ -423,6 +419,7 @@
             }
           },
           "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
+          "does_not_apply": null,
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -434,7 +431,6 @@
           },
           "hand_checked": false,
           "id": "RULE-1",
-          "label": "own",
           "left": "to_strengthen",
           "machines": {
             "linux": "remote runner, Linux/Unix"
@@ -488,6 +484,7 @@
             }
           },
           "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
+          "does_not_apply": null,
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -499,7 +496,6 @@
           },
           "hand_checked": false,
           "id": "RULE-2",
-          "label": "own",
           "left": "no_test",
           "machines": {},
           "proof_hash": "prule2inv",
@@ -548,12 +544,8 @@
       "incomplete": false,
       "incomplete_reason": null,
       "is_anchor": false,
-      "is_global": false,
       "name": "receipt",
       "pinned": null,
-      "requires": [
-        "checkout_design"
-      ],
       "rollup": {
         "failing": 0,
         "incomplete": false,
@@ -561,11 +553,11 @@
         "not_audited": 0,
         "partial": 0,
         "passed": 0,
-        "proofs": 2,
+        "proofs": 1,
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
-        "rules": 2,
-        "strong": 2,
+        "rules": 1,
+        "strong": 1,
         "test_strength": 75,
         "untested": 0
       },
@@ -609,6 +601,7 @@
             }
           },
           "code_hash": "3af3c353c2169a3b9fbbba791d289f8c1baf8d8fe906be3ff597c89bf1b55c33",
+          "does_not_apply": null,
           "feature": "receipt",
           "flags": {
             "failing": false,
@@ -620,7 +613,6 @@
           },
           "hand_checked": false,
           "id": "RULE-1",
-          "label": "own",
           "left": null,
           "machines": {
             "linux": "remote runner, Linux/Unix"
@@ -647,84 +639,6 @@
           "test_hash_kind": "file",
           "tests": [],
           "text": "A receipt names the order number and the total paid."
-        },
-        {
-          "applies_to": "receipt",
-          "audit": {
-            "at": "2026-09-12T09:14:02Z",
-            "commit": "a1b2c3d",
-            "findings": [],
-            "model": "example-model-1",
-            "notes": [],
-            "path": ".purlin/evidence/local/checkout_design.json",
-            "strength": 90,
-            "verdict": "strong"
-          },
-          "audit_hash": "f0771b5320b78e2385b46a63525e71a6e30975d1adfb8712011dc997da5493c4",
-          "bucket": "strong",
-          "cells": {
-            "passed": {
-              "counts": true,
-              "current": true,
-              "missing_env": [],
-              "platforms": {
-                "linux": {
-                  "at": "2026-09-12T09:14:02Z",
-                  "source": "local",
-                  "word": "passed"
-                }
-              },
-              "reasons": [],
-              "source": "local",
-              "word": "passed"
-            },
-            "strong": {
-              "evidence": ".purlin/evidence/local/checkout_design.json",
-              "findings": [],
-              "reasons": [],
-              "strength": 90,
-              "word": "strong"
-            }
-          },
-          "code_hash": "3af3c353c2169a3b9fbbba791d289f8c1baf8d8fe906be3ff597c89bf1b55c33",
-          "feature": "checkout_design",
-          "flags": {
-            "failing": false,
-            "manual": false,
-            "no_proof": false,
-            "not_audited": false,
-            "out_of_date": false,
-            "partial": false
-          },
-          "hand_checked": false,
-          "id": "RULE-1",
-          "label": "required",
-          "left": null,
-          "machines": {
-            "linux": "sam-desktop"
-          },
-          "proof_hash": "prule1che",
-          "proofs": [
-            {
-              "env": null,
-              "id": "PROOF-1",
-              "manual": false,
-              "result": "passed",
-              "tests": [
-                {
-                  "file": "tests/test_cart.py",
-                  "name": "test_total_above",
-                  "result": "pass"
-                }
-              ],
-              "text": "Open /cart with 2 items and read the text \"Total\" above the button labelled \"Pay\"."
-            }
-          ],
-          "rule_hash": "rrule1che",
-          "test_hash": "trule1che",
-          "test_hash_kind": "file",
-          "tests": [],
-          "text": "The cart page shows the order total above the pay button."
         }
       ],
       "scope": [
@@ -757,10 +671,8 @@
       "incomplete": false,
       "incomplete_reason": null,
       "is_anchor": true,
-      "is_global": false,
       "name": "checkout_design",
       "pinned": null,
-      "requires": [],
       "rollup": {
         "failing": 0,
         "incomplete": false,
@@ -773,7 +685,7 @@
         "proofs_without_test_ids": [],
         "rules": 1,
         "strong": 1,
-        "test_strength": 90,
+        "test_strength": null,
         "untested": 0
       },
       "rules": [
@@ -786,7 +698,7 @@
             "model": "example-model-1",
             "notes": [],
             "path": ".purlin/evidence/local/checkout_design.json",
-            "strength": 90,
+            "strength": null,
             "verdict": "strong"
           },
           "audit_hash": "f0771b5320b78e2385b46a63525e71a6e30975d1adfb8712011dc997da5493c4",
@@ -810,12 +722,15 @@
             "strong": {
               "evidence": ".purlin/evidence/local/checkout_design.json",
               "findings": [],
-              "reasons": [],
-              "strength": 90,
+              "reasons": [
+                "the AI audit alone judges an anchor's tests"
+              ],
+              "strength": null,
               "word": "strong"
             }
           },
           "code_hash": "72d886c64599e86aaf3eb91d560ff85ae429a831f4ac5eb2f19958a3558bb72d",
+          "does_not_apply": null,
           "feature": "checkout_design",
           "flags": {
             "failing": false,
@@ -827,7 +742,6 @@
           },
           "hand_checked": false,
           "id": "RULE-1",
-          "label": "own",
           "left": null,
           "machines": {
             "linux": "sam-desktop"
@@ -861,7 +775,105 @@
       "source": null,
       "source_path": null,
       "spec_path": "specs/_anchors/checkout_design.md",
-      "test_strength": 90
+      "test_strength": null
+    },
+    {
+      "category": "_anchors",
+      "current": true,
+      "description": "The security rules every project of the company keeps.",
+      "evidence": {
+        "ci": null,
+        "local": null
+      },
+      "incomplete": false,
+      "incomplete_reason": null,
+      "is_anchor": true,
+      "name": "security_baseline",
+      "pinned": "4c1d9e2",
+      "rollup": {
+        "failing": 0,
+        "incomplete": false,
+        "manual": 0,
+        "not_audited": 0,
+        "partial": 0,
+        "passed": 0,
+        "proofs": 1,
+        "proofs_without_test": 1,
+        "proofs_without_test_ids": [
+          "PROOF-1"
+        ],
+        "rules": 1,
+        "strong": 0,
+        "test_strength": null,
+        "untested": 0
+      },
+      "rules": [
+        {
+          "applies_to": "security_baseline",
+          "audit": null,
+          "audit_hash": null,
+          "bucket": "untested",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": false,
+              "missing_env": [],
+              "platforms": {},
+              "reasons": [
+                "no test for PROOF-1"
+              ],
+              "source": null,
+              "word": "no test"
+            },
+            "strong": {
+              "evidence": null,
+              "findings": [],
+              "reasons": [
+                "waiting for its tests to pass"
+              ],
+              "strength": null,
+              "word": "waiting"
+            }
+          },
+          "code_hash": "5b1e0c7a9d3f2e8b4a6c1d0e9f7a3b5c2d4e6f8a0b1c3d5e7f9a2b4c6d8e0f1a",
+          "does_not_apply": null,
+          "feature": "security_baseline",
+          "flags": {
+            "failing": false,
+            "manual": false,
+            "no_proof": false,
+            "not_audited": false,
+            "out_of_date": false,
+            "partial": false
+          },
+          "hand_checked": false,
+          "id": "RULE-1",
+          "left": "to_confirm",
+          "machines": {},
+          "proof_hash": "prule1sec",
+          "proofs": [
+            {
+              "env": null,
+              "id": "PROOF-1",
+              "manual": false,
+              "result": "no test",
+              "tests": [],
+              "text": "Pay with the card number 4111 1111 1111 1111, then read every file the app wrote; the number is in none of them."
+            }
+          ],
+          "rule_hash": "rrule1sec",
+          "test_hash": null,
+          "test_hash_kind": null,
+          "tests": [],
+          "text": "A card number is never written to a file."
+        }
+      ],
+      "scope": [],
+      "signatures": [],
+      "source": "https://github.com/acme/policies.git",
+      "source_path": "specs/_anchors/security_baseline.md",
+      "spec_path": "specs/_anchors/security_baseline.md",
+      "test_strength": null
     }
   ],
   "finished": false,
@@ -881,6 +893,12 @@
       "count": 1,
       "kind": "no_test",
       "text": "1 rule to write a test for"
+    },
+    {
+      "command": "purlin:sign",
+      "count": 1,
+      "kind": "to_confirm",
+      "text": "1 rule to confirm as not applying"
     },
     {
       "command": "purlin:build",
@@ -905,28 +923,29 @@
   },
   "project": "ledger",
   "remote_url": "https://github.com/acme/ledger.git",
-  "schema_version": 10,
+  "schema_version": 11,
   "summary": {
     "failing": 0,
-    "features": 4,
+    "features": 5,
     "incomplete": 1,
     "manual": 0,
     "not_audited": 0,
     "partial": 0,
     "passed": 2,
-    "proofs": 7,
-    "proofs_without_test": 1,
+    "proofs": 8,
+    "proofs_without_test": 2,
     "proofs_without_test_ids": [
-      "PROOF-2"
+      "PROOF-2",
+      "PROOF-1"
     ],
-    "rules": 7,
-    "sentence": "7 rules. 6 pass their tests. 4 are strong.",
+    "rules": 8,
+    "sentence": "8 rules. 6 pass their tests. 4 are strong.",
     "steps": {
       "passed": 6,
       "strong": 4
     },
     "strong": 4,
-    "untested": 1
+    "untested": 2
   },
   "tag": null,
   "version": "0.10.0",
