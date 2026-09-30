@@ -75,7 +75,8 @@ weaken the test. Stop and fix the rule.
 
 A rule that contradicts another, or that no test could settle as written, is a spec problem
 and not a build problem. Call `purlin:spec <name>`, fix the rule text in place, keep the id,
-and come back. Any signature on the rule then ends, which is correct: a person has to look again.
+and come back. A number written twice in a spec, or a test comment whose proof's wording
+changed, moves as `purlin:spec`'s "Renumbering" says, after the person answers `Do it? [y/N]`.
 
 ## Repairing a comment that is nearly a marker
 
@@ -99,8 +100,8 @@ once the person confirms, so write no entry yourself. It names every marker it c
 exactly one test, by file and line; fix each before going on. Iterate until every rule the
 feature owns has a passing test. A proof tagged `@env` for another operating system is not run
 here: the run counts such proofs in one line per system that names `purlin:test --remote`. Never
-write evidence or a signature by hand. `purlin:test` and `purlin:audit` write the evidence,
-`purlin:sign` writes signatures and the tag.
+write evidence or a sign-off by hand. `purlin:test` and `purlin:audit` write the evidence,
+`purlin:test --release` the evidence package, and `purlin:sign` a sign-off.
 
 ## Committing
 
@@ -120,9 +121,8 @@ rewrite the line in the same commit as the code. Commit the code and the tests t
 
 `purlin:test` ended on the summary and `Left to do`. Name the next step from them:
 
-- `Left to do` is empty, at the gate `passed` or `strong`: `Nothing left to do.`
-- Every rule has a passing test, gate `strong` or `signed`: `→ Run: purlin:audit`, which has a
-  model read each rule, proof and test, and breaks the code where mutation testing is on.
+- `Left to do` is empty: `Nothing left to do.`, and to release a version
+  `→ Run: purlin:test --release`, then at the gate `signed` `purlin:sign`
 - Some rules still have no test: name them and what is missing, `→ Run: purlin:build <feature>`
-- A `@manual` proof: a person checks it and signs, `→ Run: purlin:sign <feature> RULE-<n>`
+- A rule to strengthen: add the case the audit's finding names, `→ Run: purlin:build <feature>`
 - A proof needs another operating system: name it, `→ Run: purlin:test --remote`

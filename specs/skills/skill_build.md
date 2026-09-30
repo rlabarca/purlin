@@ -5,14 +5,14 @@
 >   text decides what a commit says about which rule each change serves.
 > Scope: skills/build/SKILL.md
 > Stack: markdown, Claude Code skill definition
-> Highest-Rule: 18
-> Highest-Proof: 47
+> Highest-Rule: 19
+> Highest-Proof: 48
 
 ## Rules
 
 - RULE-1: `skills/build/SKILL.md` opens with a frontmatter block whose `name` is `build` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:build`
 - RULE-2: The skill tells the agent to choose what to build from `sync_status` and to run the tests through `purlin:test`, never through the test framework directly
-- RULE-3: The last section of `skills/build/SKILL.md` tells the agent to name the next step from the summary and `Left to do` that `purlin:test` ended on, and lists the outcomes, each with its own `→` directive except `Nothing left to do.`
+- RULE-3: The last section of `skills/build/SKILL.md` tells the agent to name the next step from the summary and `Left to do` that `purlin:test` ended on, and lists the outcomes, each with its own `→` directive, a finished project's naming the release run
 - RULE-4: The whole of `skills/build/SKILL.md` is at most 130 lines
 - RULE-5: The skill tells the agent to make one commit per build with the `feat(<name>):` subject prefix and a body whose sections open with `Changeset:`, `Decisions:` and `Review:`, the changeset mapping every rule the build addressed as `RULE-N → file:line`, as `references/commit_conventions.md` renders it
 - RULE-6: Before it commits, the skill tells the agent to compare the files it created, changed or deleted for the feature with the spec's `> Scope:`, add each new file no entry covers, remove each entry whose file was deleted, and rewrite the line in the same commit as the code
@@ -25,12 +25,13 @@
 - RULE-13: The skill tells the agent that where a rule has no proof the marker names the rule's own id
 - RULE-17: The skill tells the agent to call `sync_status` with `project_root` set to the project root, the top folder of the git checkout
 - RULE-18: The skill's section `Loading the rules` tells the agent that every anchor's rules hold across the whole project, so the code it writes keeps them, and that their tests are the anchors' own, which `purlin:test` runs; the only metadata lines it names are `> Scope:` and `> Stack:`
+- RULE-19: The skill sends a number written twice in a spec, or a test comment whose proof's wording changed, to the section `Renumbering` of `purlin:spec`
 
 ## Proof
 
 - PROOF-1 (RULE-1): The build skill's file opens with a frontmatter block between two `---` lines that reads `name: build` and carries a `description:` whose text sits whole on that line; the command reference carries a table row whose first cell is `purlin:build` and whose second cell gives its purpose
 - PROOF-2 (RULE-2): The build skill's section on choosing what to build names `sync_status`; its section on running the tests gives `purlin:test <name>` alone on a line in a fenced block and says `Never run the test framework directly.`; and no fenced block in the skill runs a test framework itself, such as `pytest`, `jest`, `go test` or `dotnet test`
-- PROOF-3 (RULE-3): The last section of the build skill is headed `When you are done` and says to name the next step from the summary and `Left to do` that `purlin:test` ended on; every outcome it lists gives its own `→` directive, except a finished project at the gate `passed` or `strong`, which reads `Nothing left to do.` and names no command
+- PROOF-3 (RULE-3): The build skill's last section, `When you are done`, says to name the next step from the summary and `Left to do` that `purlin:test` ended on; every outcome it lists gives its own `→` directive, and the empty `Left to do` reads `Nothing left to do.` with `→ Run: purlin:test --release`
 - PROOF-4 (RULE-4): The build skill's file is at most 130 lines long
 - PROOF-5 (RULE-5): The build skill's section on committing says `One commit per build`, names the `feat(<name>):` prefix, says the body's three sections open with `Changeset:`, `Decisions:` and `Review:`, gives the line form `RULE-N → file:line`, and names `references/commit_conventions.md` as the rendering to follow
 - PROOF-35 (RULE-10): The build skill says `Changeset is never omitted.`, and the commit conventions' table of the build commit's sections gives `Never` as when Changeset is left out
@@ -44,3 +45,4 @@
 - PROOF-11 (RULE-9): The build skill's section on running the tests says that where no test command is set `purlin:test` suggests one for each test tool it recognises and writes them once the person confirms, and says `write no entry yourself`; nowhere does the skill name the `purlin_config` tool
 - PROOF-46 (RULE-17): The build skill's section on choosing what to build says ``call `sync_status` with `project_root` set to the project root, the top folder of the git checkout``
 - PROOF-47 (RULE-18): The build skill's section `Loading the rules`, read across its line breaks, says `Every anchor's rules hold across the whole project, so code you write keeps them too` and that `purlin:test` runs their tests; the only metadata lines it names are `> Scope:` and `> Stack:`
+- PROOF-48 (RULE-19): The build skill's section `When a rule is wrong`, read across its line breaks, says a number written twice or a test comment whose proof's wording changed moves as `purlin:spec`'s "Renumbering" says

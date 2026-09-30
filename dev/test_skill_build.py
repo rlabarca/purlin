@@ -60,10 +60,10 @@ class TestSkillBuild:
             (SKILL, replace(NEXT_STEP_SOURCE, 'Name the next step:'),
              '%s closing section does not say to name the next step from '
              "purlin:test's summary and Left to do" % SKILL),
-            (SKILL, replace('`Nothing left to do.`',
+            (SKILL, replace('`\u2192 Run: purlin:test --release`',
                             '`\u2192 Run: git push`'),
-             '%s closing section does not end a finished project at passed '
-             'and strong on Nothing left to do.' % SKILL),
+             '%s closing section does not end a finished project on Nothing '
+             'left to do. and the release run' % SKILL),
         ]) == []
 
     # purlin: skill_build PROOF-4
@@ -282,11 +282,11 @@ def closing_problems():
         problems.append('%s closing section does not say to name the next step '
                         "from purlin:test's summary and Left to do" % SKILL)
     finished = [outcome for outcome in closing_outcomes(body)
-                if '`passed`' in outcome and '`strong`' in outcome
-                and outcome.endswith(': `Nothing left to do.`')]
+                if '`Nothing left to do.`' in outcome
+                and '`\u2192 Run: purlin:test --release`' in outcome]
     if not finished:
         problems.append('%s closing section does not end a finished project '
-                        'at passed and strong on Nothing left to do.' % SKILL)
+                        'on Nothing left to do. and the release run' % SKILL)
     return problems
 
 
@@ -469,3 +469,27 @@ def loading_problems():
                     % (SKILL, line)
                     for line in sorted(named - {'> Scope:', '> Stack:'}))
     return problems
+
+
+# ---------------------------------------------------------------------------
+# Renumbering
+# ---------------------------------------------------------------------------
+
+RENUMBER = ("A number written twice in a spec, or a test comment whose proof's "
+            "wording changed, moves as `purlin:spec`'s \"Renumbering\" says")
+
+
+def renumber_problems():
+    body = flat(section(read(SKILL), r'^when a rule is wrong$') or '')
+    if RENUMBER in body:
+        return []
+    return ['%s When a rule is wrong does not carry %r' % (SKILL, RENUMBER)]
+
+
+# purlin: skill_build PROOF-48
+def test_a_number_written_twice_goes_to_renumbering(monkeypatch):
+    assert renumber_problems() == []
+    assert refusals(monkeypatch, renumber_problems, [
+        (SKILL, replace('"Renumbering" says', 'Ids section says'),
+         '%s When a rule is wrong does not carry %r' % (SKILL, RENUMBER)),
+    ]) == []
