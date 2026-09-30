@@ -5,7 +5,6 @@
 >   operating system, the anchor source and pin, and the two text hashes a
 >   signature binds are all read. Every other surface reads what this module
 >   returns rather than the markdown.
-> Requires: schema_spec_format
 > Scope: scripts/mcp/purlin/specs.py
 > Stack: python/stdlib, re, hashlib
 > Highest-Rule: 21
@@ -19,11 +18,9 @@
 - RULE-9: A `> Source:` value is read two ways: a git URL followed by a path in that repository gives the two separately, and anything else comes back whole as the source rather than split on its first word
 - RULE-10: A `> Path:` line supplies the path in the source repository when `> Source:` carries the URL alone
 - RULE-11: A spec is an anchor when its path lies under an `_anchors/` directory or its first line opens `# Anchor:`, and an anchor carries its `> Source:` and its `> Pinned:` sha
-- RULE-13: A feature must prove its own rules, the rules of every anchor it requires and of every anchor those require in turn, and the rules of every anchor carrying `> Global: true`, labelled `own`, `required` and `global`
 - RULE-14: Every spec is keyed by its filename stem
 - RULE-17: The rule and proof text hashes normalise runs of whitespace to one space, so reflowing a line returns the hash it already had
 - RULE-18: The fields 0.9.5 wrote that the format does not carry, `> Visual-Reference:` and `> Visual-Hash:`, are ignored rather than refused, and every spec carrying one lists it under `unknown_tags`
-- RULE-19: An anchor proves its own rules and nothing else
 - RULE-20: A spec file that cannot be read or decoded is skipped while the rest of the scan still answers
 - RULE-21: A project with no `specs/` folder has no specs
 
@@ -54,10 +51,6 @@
 - PROOF-42 (RULE-11): On Windows, the spec `specs\_anchors\ruleset.md`, opening `# Feature: ruleset`, is read as an anchor, by its folder alone @env(windows)
 - PROOF-34 (RULE-11): The spec `specs/schema/shared.md`, opening `# Anchor: shared`, is read as an anchor, by its first line alone
 - PROOF-35 (RULE-11): The spec `specs/auth/login.md`, opening `# Feature: login` and lying under no `_anchors/` folder, is read as a feature and not an anchor
-- PROOF-14 (RULE-13): The anchor `api` has one rule, the anchor `security` carries `> Global: true` and one rule, and the feature `login` has two rules and `> Requires: api`; `login` must prove exactly `login` RULE-1 and RULE-2 `own`, `api` RULE-1 `required` and `security` RULE-1 `global`, in that order
-- PROOF-36 (RULE-19): The anchor `security` carries `> Global: true` and one rule, beside the feature `login` with two rules; `security` must prove exactly its own RULE-1, labelled `own`
-- PROOF-37 (RULE-13): The feature `login` has two rules and `> Requires: api`, the anchor `api` has one rule and `> Requires: base`, and the anchor `base` has one rule; `login` must prove exactly its RULE-1 and RULE-2 `own`, `api` RULE-1 `required` and `base` RULE-1 `required`, in that order
-- PROOF-38 (RULE-19): The anchor `api` has one rule and `> Requires: base`, and the anchor `base` has one rule; `api` must prove exactly its own RULE-1, labelled `own`, and nothing of `base`
 - PROOF-15 (RULE-14): A project holds `specs/auth/login.md` and `specs/auth/sign_up.md`, both opening `# Feature: login`; it reads as the two specs `login` and `sign_up`, keyed by file name rather than title, with `sign_up` at `specs/auth/sign_up.md`
 - PROOF-39 (RULE-20): A project holds `specs/auth/login.md` and `specs/auth/broken.md`, whose bytes are not valid UTF-8; it reads as the one spec `login`, with no `broken`
 - PROOF-40 (RULE-21): A project with no `specs/` folder reads as no specs at all, rather than an error

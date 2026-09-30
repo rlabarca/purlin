@@ -1,11 +1,11 @@
-> Format-Version: 10
+> Format-Version: 11
 
 # Anchor format
 
-An anchor is a spec for something shared across features. Features reference
-it with `> Requires:`, or it applies to all of them with `> Global: true`. An
-anchor uses the same two sections every spec uses, `## Rules` and `## Proof`,
-and the same rule and proof grammar (`spec_format.md`).
+An anchor is a set of rules for the whole project, kept under
+`specs/_anchors/` or opening `# Anchor:`. No spec names an anchor. An anchor
+uses the same two sections every spec uses, `## Rules` and `## Proof`, and the
+same rule and proof grammar (`spec_format.md`).
 
 This document has two parts:
 
@@ -22,12 +22,11 @@ This document has two parts:
 # Anchor: <name>
 
 > Description: <what cross-cutting concern this anchor defines>
-> Scope: <file paths this anchor governs>
 > Type: <optional: api, security, brand, schema, legal, prodbrief>
 
 ## Rules
 
-- RULE-1: <constraint that applies to every feature requiring this anchor>
+- RULE-1: <constraint that holds across the whole project>
 - RULE-2: <another constraint>
 
 ## Proof
@@ -53,11 +52,25 @@ it by repo URL plus path.
 | Field | Description |
 |-------|-------------|
 | `> Description:` | Plain-language description. Continuation lines start with `>`. Displayed in the dashboard |
-| `> Scope:` | File paths this anchor governs |
 | `> Stack:` | Language and framework |
 | `> Type:` | A suggestion to the reader: `api`, `security`, `brand`, `schema`, `legal`, `prodbrief`. Not enforced |
-| `> Global:` | `true` applies the anchor's rules to every feature spec without `> Requires:` |
 | `> Note:` | Free text for the reader: setup a checkout needs, why a source points where it does. Repeatable, and every parser ignores it |
+
+### What an anchor covers
+
+Every rule of an anchor holds across the whole project, and its tests check the
+whole project. The project is every file git tracks but the records Purlin
+writes: the results of a run and the evidence package under `.purlin/evidence/`,
+the table `.purlin/tests.md`, and the signatures. Any change to the project ends
+an anchor's results and its signatures, so at the gate `signed` an anchor is in
+practice signed last. No code is broken on purpose for an anchor: the AI audit
+alone judges its tests. A rule that cannot be checked across the whole project
+is not an anchor's; write it in the spec of each feature that needs it, in that
+feature's words.
+
+An anchor carries no `> Scope:`, and no spec carries `> Requires:` or
+`> Global:`. Each such line is not read, and every status and test run warns of
+it with its fix.
 
 ## Part 2: consumer tracking fields
 
@@ -119,30 +132,19 @@ transport is refused before any process starts, and the status line says
 The `> Source:` and `> Pinned:` lines were added by Purlin; the author's file
 in `acme/security-policies` does not carry them.
 
-## Requires
-
-A feature spec names an anchor:
-
-```markdown
-# Feature: checkout
-
-> Requires: security_no_eval
-```
-
-Its rules are counted with the feature's own, and its tests must prove both.
-
 ## Editing a pinned anchor
 
 A consumer never edits a pinned rule in place: the next sync would overwrite
 it. A change to the rule is a pull request against the anchor repo, which the
-next sync brings back, and a rule that belongs only to this project goes in a
-separate local anchor that `> Requires:` the pinned one.
+next sync brings back. A rule that belongs only to this project goes in a local
+anchor of its own when it holds across the whole project, and in the spec of
+each feature it holds for when it does not.
 
-## Global anchors
+A pinned copy is written as its source holds it; a `> Requires:`, `> Global:` or `> Scope:` line in it is warned of, naming the source's owners as the ones to take it out.
 
-An anchor with `> Global: true` applies its rules to every non-anchor feature
-spec. Features do not name it; its rules appear in each feature's count with
-the label `global`.
+A rule of a pinned anchor that no test in this project can show, because it
+does not apply here, is signed by a person in the project as not applying, with
+the reason. A rule of the project's own anchor that does not apply is deleted.
 
 ## Fields 0.9.5 wrote
 

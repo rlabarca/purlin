@@ -47,9 +47,7 @@ _PROOF_TAG_RE = re.compile(r'(?<!\band)(?<!\bor)(?<!,)\s+@(\w+)(?:\(([^)]*)\))?\
 
 ENVIRONMENTS = ('windows', 'macos', 'linux')
 
-_REQUIRES_RE = re.compile(r'^>\s*Requires:\s*(.+)', re.MULTILINE)
 _SCOPE_RE = re.compile(r'^>\s*Scope:\s*(.+)', re.MULTILINE)
-_GLOBAL_RE = re.compile(r'^>\s*Global:\s*true\s*$', re.MULTILINE | re.IGNORECASE)
 _SOURCE_RE = re.compile(r'^>\s*Source:\s*(.+)', re.MULTILINE)
 _PINNED_RE = re.compile(r'^>\s*Pinned:\s*(.+)', re.MULTILINE)
 _PATH_RE = re.compile(r'^>\s*Path:\s*(.+)', re.MULTILINE)
@@ -64,6 +62,13 @@ _HEADING_RE = re.compile(r'^#\s+(?:Feature|Anchor):\s*(.*?)\s*$')
 _RETIRED_FIELDS = ('Visual-Reference', 'Visual-Hash')
 _RETIRED_FIELD_RE = re.compile(
     r'^>\s*(' + '|'.join(_RETIRED_FIELDS) + r'):', re.MULTILINE)
+
+# The fields a spec may carry that Purlin does not read, because every anchor
+# covers the whole project: a line opening `> Requires:` or `> Global:` on any
+# spec, whatever its value, and `> Scope:` on an anchor. Each is warned of.
+_REQUIRES_RE = re.compile(r'^>[ \t]*Requires:', re.MULTILINE)
+_GLOBAL_RE = re.compile(r'^>[ \t]*Global:', re.MULTILINE)
+_SCOPE_LINE_RE = re.compile(r'^>[ \t]*Scope:', re.MULTILINE)
 
 
 # ---------------------------------------------------------------------------
@@ -229,8 +234,11 @@ def scan_specs(project_root):
     Each `info` carries:
 
     `spec_path` (relative, `/` separated), `category` (the directory under
-    `specs/`), `name`, `is_anchor`, `is_global`, `description`, `stack`,
-    `requires`, `scope`, `rules` (`{RULE-N: text}`), `rule_order`,
+    `specs/`), `name`, `is_anchor`, `description`, `stack`, `scope` (always
+    `[]` for an anchor, which covers the whole project), `unread_fields`
+    (`'Requires'`, `'Global'` and `'Scope'`, in that order, for each field
+    the spec carries and Purlin does not read), `rules` (`{RULE-N: text}`),
+    `rule_order`,
     `proofs` (`{PROOF-N: {rules, text, manual, env}}`), `proof_env`,
     `proofs_by_rule`, `source`, `source_path`, `pinned`,
     `has_rules_section`, `unnumbered_lines`, `unknown_tags`, and the three
@@ -315,8 +323,14 @@ def _parse_spec(name, rel_path, content):
         source_path = path_match.group(1).strip()
     pinned_match = _PINNED_RE.search(content)
 
-    requires_match = _REQUIRES_RE.search(content)
     scope_match = _SCOPE_RE.search(content)
+    unread_fields = []
+    if _REQUIRES_RE.search(content):
+        unread_fields.append('Requires')
+    if _GLOBAL_RE.search(content):
+        unread_fields.append('Global')
+    if is_anchor and _SCOPE_LINE_RE.search(content):
+        unread_fields.append('Scope')
     stack_match = _STACK_RE.search(content)
 
     parts = rel_path.split('/')
@@ -331,11 +345,11 @@ def _parse_spec(name, rel_path, content):
         'spec_path': rel_path,
         'category': category,
         'is_anchor': is_anchor,
-        'is_global': is_anchor and bool(_GLOBAL_RE.search(content)),
         'description': parse_description(content),
         'stack': stack_match.group(1).strip() if stack_match else None,
-        'requires': _split_list(requires_match.group(1)) if requires_match else [],
-        'scope': _split_list(scope_match.group(1)) if scope_match else [],
+        'scope': (_split_list(scope_match.group(1))
+                  if scope_match and not is_anchor else []),
+        'unread_fields': unread_fields,
         'rules': rules,
         'rule_order': rule_order,
         'proofs': proofs,
@@ -385,8 +399,15 @@ PROOF_LINE_UNREAD = ('%s: a line under ## Proof cannot be read: %s. '
                      'Run purlin:spec %s.')
 HEADING_NAMES_OTHER = ('%s: the first line names %s, but the file is %s.md, so '
                        'it is read as %s. Run purlin:spec %s.')
-REQUIRES_NOT_ANCHOR = ('%s: > Requires: names %s, which is not an anchor, so '
-                       'its rules do not apply. Run purlin:spec %s.')
+UNREAD_REQUIRES = ('%s: > Requires: is not read, because every anchor covers '
+                   'the whole project. Run purlin:spec %s.')
+UNREAD_GLOBAL = ('%s: > Global: is not read, because every anchor covers the '
+                 'whole project. Run purlin:spec %s.')
+UNREAD_SCOPE = ('%s: > Scope: is not read on an anchor, because an anchor '
+                'covers the whole project. Run purlin:spec %s.')
+PINNED_UNREAD = ('%s: its source, %s, carries %s, which Purlin does not read '
+                 'on an anchor, so %s read as nothing. Ask the owners of %s to '
+                 'take %s out, then run purlin:anchor sync %s.')
 
 # How much of a proof line that cannot be read its warning quotes.
 PROOF_LINE_SHOWN = 60
@@ -396,14 +417,15 @@ def spec_mistakes(project_root, features):
     """One line per mistake Purlin can see in a spec, each naming its fix.
 
     `features` is `scan_specs`' answer. The lines are warned of and nothing
-    is refused. They come in the order of the six mistakes, each sorted by
+    is refused. They come in the order of the mistakes, each sorted by
     feature: a `> Scope:` entry that finds no tracked file, two specs with
     one name, a rule id written twice, a line under `## Proof` that is not a
-    proof line, a first line naming another feature, and a `> Requires:`
-    name that is a spec and not an anchor, sorted then by that name. A spec
-    whose every scope entry finds nothing has the one line
-    `incomplete_reason` gives and none here. A `> Requires:` name no spec
-    carries is not warned of.
+    proof line, a first line naming another feature, then the fields Purlin
+    does not read: every `> Requires:`, then every `> Global:`, then every
+    anchor's `> Scope:`. A pinned anchor carrying any of the three has one
+    line naming them all and its source, sorted with the `> Scope:` lines.
+    A spec whose every scope entry finds nothing has the one line
+    `incomplete_reason` gives and none here.
     """
     # Imported here: `fingerprint` imports this module.
     from purlin import fingerprint as fingerprint_module
@@ -445,50 +467,36 @@ def spec_mistakes(project_root, features):
         other = features[name].get('heading_name')
         if other and other != name:
             lines.append(HEADING_NAMES_OTHER % (name, other, name, name, name))
+    for field, line in (('Requires', UNREAD_REQUIRES), ('Global', UNREAD_GLOBAL)):
+        for name in sorted(features):
+            info = features[name]
+            if field in (info.get('unread_fields') or ()) and not _pinned(info):
+                lines.append(line % (name, name))
     for name in sorted(features):
-        for other in sorted(set(features[name].get('requires') or ())):
-            if other in features and not features[other].get('is_anchor'):
-                lines.append(REQUIRES_NOT_ANCHOR % (name, other, name))
+        info = features[name]
+        fields = info.get('unread_fields') or ()
+        if not fields:
+            continue
+        if _pinned(info):
+            lines.append(PINNED_UNREAD % (
+                name, info['source'], _join_fields(fields),
+                'the line is' if len(fields) == 1 else 'the lines are',
+                info['source'], 'it' if len(fields) == 1 else 'them', name))
+        elif 'Scope' in fields:
+            lines.append(UNREAD_SCOPE % (name, name))
     return lines
 
 
-def global_anchors(features):
-    """The anchors whose rules apply to every feature without `> Requires:`."""
-    return {name: info for name, info in features.items()
-            if info.get('is_anchor') and info.get('is_global')}
+def _pinned(info):
+    """True for an anchor pulled from another repository: one carrying
+    `> Source:`."""
+    return bool(info.get('is_anchor') and info.get('source'))
 
 
-def rule_refs(feature_name, features):
-    """Every `(feature, rule_id, label)` a feature must prove.
-
-    `label` is `own`, `required` (an anchor named in `> Requires:`, and the
-    anchors those name in turn) or `global` (an anchor with `> Global:
-    true`). `> Requires:` names anchors only: a name that is a feature's
-    spec, or that no spec carries, adds no rule, and `spec_mistakes` warns
-    of the first. An anchor proves its own rules and nothing else.
-    """
-    info = features.get(feature_name)
-    if not info:
-        return []
-    refs = [(feature_name, rule_id, 'own') for rule_id in info['rule_order']]
-    if info.get('is_anchor'):
-        return refs
-    seen = {feature_name}
-    pending = list(info.get('requires', []))
-    while pending:
-        required = pending.pop(0)
-        if (required in seen or required not in features
-                or not features[required].get('is_anchor')):
-            seen.add(required)
-            continue
-        seen.add(required)
-        other = features[required]
-        for rule_id in other['rule_order']:
-            refs.append((required, rule_id, 'required'))
-        pending.extend(other.get('requires', []))
-    for anchor_name, anchor in sorted(global_anchors(features).items()):
-        if anchor_name in seen:
-            continue
-        for rule_id in anchor['rule_order']:
-            refs.append((anchor_name, rule_id, 'global'))
-    return refs
+def _join_fields(fields):
+    """`> Global: and > Scope:`: each field as its line opens, joined `, `
+    with ` and ` before the last."""
+    shown = ['> %s:' % field for field in fields]
+    if len(shown) == 1:
+        return shown[0]
+    return ', '.join(shown[:-1]) + ' and ' + shown[-1]

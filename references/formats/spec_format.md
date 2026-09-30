@@ -1,4 +1,4 @@
-> Format-Version: 20
+> Format-Version: 21
 
 # Spec format
 
@@ -25,7 +25,6 @@ the `git mv` that renames the other.
 
 > Description: Plain-language summary of what this feature does
 >   and why it exists. It can span continuation lines.
-> Requires: <comma-separated anchor names>
 > Scope: <comma-separated file paths this feature touches>
 > Stack: <language>/<framework>, <key libraries>, <patterns>
 > Highest-Rule: <the highest rule number the spec has held>
@@ -58,8 +57,7 @@ belongs in `> Description:`, which the dashboard displays.
 | Field | Required | Description |
 |-------|----------|-------------|
 | `> Description:` | No | Plain-language description. Continuation lines start with `>` and are not themselves `> Field:` lines. Displayed in the dashboard. |
-| `> Requires:` | No | Comma-separated list of anchor names, the project's own or pinned, whose rules also apply. A name that is a feature's spec and not an anchor is warned of, and its rules do not apply |
-| `> Scope:` | At the gate `signed` | Comma-separated paths this feature touches: a file, a directory, or a glob holding `*`, `?` or `[`. The evidence carries a fingerprint of the tracked files they reach, which is what tells a code change from a rule change. Below `signed` it is optional: a feature spec with none, or one that reaches no tracked file, is reported as naming no files (`incomplete` in the payload), its tests run on every `purlin:test`, and nothing blocks. At `signed` such a spec's rules are signed and their signatures do not count, so no tag is written. An entry that finds no file git tracks, where the others reach files, is warned of. An anchor never needs one |
+| `> Scope:` | At the gate `signed` | Comma-separated paths this feature touches: a file, a directory, or a glob holding `*`, `?` or `[`. The evidence carries a fingerprint of the tracked files they reach, which is what tells a code change from a rule change. Below `signed` it is optional: a feature spec with none, or one that reaches no tracked file, is reported as naming no files (`incomplete` in the payload), its tests run on every `purlin:test`, and nothing blocks. At `signed` such a spec's rules are signed and their signatures do not count, so no tag is written. An entry that finds no file git tracks, where the others reach files, is warned of. An anchor carries none: its rules cover the whole project, and a `> Scope:` line on an anchor is warned of and not read. |
 | `> Stack:` | No | Technology choices: `language/framework, key libraries, patterns` |
 | `> Highest-Rule:` | No | The highest rule number the spec has ever held, as a whole number. A new rule takes the next number above it, so a deleted number is never used again. It changes no fingerprint and no count |
 | `> Highest-Proof:` | No | The highest proof number the spec has ever held, as a whole number. A new proof takes the next number above it, so a deleted number is never used again. It changes no fingerprint and no count |
@@ -81,6 +79,12 @@ belongs in `> Description:`, which the dashboard displays.
 `> Visual-Reference:` and `> Visual-Hash:` are not part of the format. A spec
 that still carries one parses; the field is ignored and the file is named once
 in the run's warnings, and `purlin:init --update` removes it.
+
+`> Requires:` and `> Global:` are not part of the format either, because every
+anchor covers the whole project. A spec that still carries one parses; the line
+is not read, and every status and test run warns of it with its fix:
+`login: > Requires: is not read, because every anchor covers the whole project. Run purlin:spec login.`
+`purlin:init --update` removes both.
 
 ## Rules format
 
@@ -209,12 +213,3 @@ def test_no_eval():
                             capture_output=True, text=True)
     assert result.stdout == "", "Found eval() in:\n" + result.stdout
 ```
-
-## Requires behaviour
-
-When a spec declares `> Requires: design_tokens, api_contracts`, the rules of
-those anchors are counted with its own, labelled `required`, and its tests
-must prove them. An anchor's own `> Requires:` brings in the anchors it names
-in turn. A name in `> Requires:` that is a feature's spec and not an anchor is
-warned of, and its rules do not apply. An anchor with `> Global: true` applies
-to every feature spec without being named.

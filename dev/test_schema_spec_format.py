@@ -340,62 +340,6 @@ def test_a_rule_with_no_proof_line_is_answered_by_a_passing_test_marked_with_its
 
 
 # ---------------------------------------------------------------------------
-# RULE-5: `> Requires:`
-# ---------------------------------------------------------------------------
-
-def _anchors(root):
-    _write(root, 'specs/_anchors/base.md',
-           '# Anchor: base\n\n'
-           '## Rules\n- RULE-1: Base rule\n\n'
-           '## Proof\n- PROOF-1 (RULE-1): Test\n')
-    _write(root, 'specs/_anchors/other.md',
-           '# Anchor: other\n\n## Rules\n- RULE-1: Other rule\n'
-           '- RULE-2: Second other rule\n\n'
-           '## Proof\n- PROOF-1 (RULE-1): Test\n'
-           '- PROOF-2 (RULE-2): Test\n')
-
-
-def _requiring(root, requires):
-    _write(root, 'specs/test/test_feat.md',
-           '# Feature: test_feat\n\n'
-           '> Requires: %s\n\n'
-           '## Rules\n- RULE-1: Own rule\n\n'
-           '## Proof\n- PROOF-1 (RULE-1): Test\n' % requires)
-    return [(r['feature'], r['id'], r['label'])
-            for r in _feature(root, 'test_feat')['rules']]
-
-
-# purlin: schema_spec_format PROOF-5
-def test_the_rules_of_a_required_anchor_are_labelled_required(tmp_path):
-    root = _project(tmp_path)
-    _anchors(root)
-    rules = _requiring(root, 'base')
-    required = [(f, r) for f, r, label in rules if label == 'required']
-    assert required == [('base', 'RULE-1')], (
-        f"the required spec's rules are not counted with the feature's own: "
-        f"{rules}")
-
-
-# purlin: schema_spec_format PROOF-20
-def test_two_required_names_are_read_in_the_order_written_after_the_own_rules(
-        tmp_path):
-    root = _project(tmp_path)
-    _anchors(root)
-    assert _requiring(root, 'other, base') == [
-        ('test_feat', 'RULE-1', 'own'),
-        ('other', 'RULE-1', 'required'), ('other', 'RULE-2', 'required'),
-        ('base', 'RULE-1', 'required')]
-
-
-# purlin: schema_spec_format PROOF-21
-def test_a_required_name_no_spec_carries_adds_no_rule(tmp_path):
-    root = _project(tmp_path)
-    _anchors(root)
-    assert _requiring(root, 'base, ghost') == [
-        ('test_feat', 'RULE-1', 'own'), ('base', 'RULE-1', 'required')]
-
-
-# ---------------------------------------------------------------------------
 # RULE-6 and RULE-19: `> Scope:` and the fingerprint
 # ---------------------------------------------------------------------------
 
@@ -823,51 +767,6 @@ def test_a_scope_whose_every_entry_finds_nothing_gets_only_the_existing_line(
 
 
 # ---------------------------------------------------------------------------
-# RULE-25: a `> Requires:` name that is a feature's spec
-# ---------------------------------------------------------------------------
-
-def _checkout(root):
-    """The feature `checkout`, with two rules of its own."""
-    _write(root, 'specs/shop/checkout.md',
-           '# Feature: checkout\n\n## Rules\n- RULE-1: Pay\n- RULE-2: Ship\n\n'
-           '## Proof\n- PROOF-1 (RULE-1): Test\n- PROOF-2 (RULE-2): Test\n')
-
-
-# purlin: schema_spec_format PROOF-58
-def test_a_feature_requiring_a_feature_spec_is_warned_of(tmp_path):
-    root = _project(tmp_path)
-    _checkout(root)
-    _write(root, 'specs/test/login.md',
-           '# Feature: login\n\n> Requires: checkout\n\n'
-           '## Rules\n- RULE-1: One\n\n## Proof\n- PROOF-1 (RULE-1): Test\n')
-    result = purlin_status.sync_status(str(root))
-    assert ('login: > Requires: names checkout, which is not an anchor, so '
-            'its rules do not apply. Run purlin:spec login.') \
-        in result.splitlines(), result
-
-
-# purlin: schema_spec_format PROOF-59
-def test_a_feature_requiring_a_feature_spec_proves_none_of_its_rules(tmp_path):
-    root = _project(tmp_path)
-    _checkout(root)
-    assert _requiring(root, 'checkout') == [('test_feat', 'RULE-1', 'own')]
-
-
-# purlin: schema_spec_format PROOF-60
-def test_an_anchor_requiring_a_feature_spec_is_warned_of_by_its_own_name(
-        tmp_path):
-    root = _project(tmp_path)
-    _checkout(root)
-    _write(root, 'specs/_anchors/api.md',
-           '# Anchor: api\n\n> Requires: checkout\n\n'
-           '## Rules\n- RULE-1: One\n\n## Proof\n- PROOF-1 (RULE-1): Test\n')
-    result = purlin_status.sync_status(str(root))
-    assert ('api: > Requires: names checkout, which is not an anchor, so '
-            'its rules do not apply. Run purlin:spec api.') \
-        in result.splitlines(), result
-
-
-# ---------------------------------------------------------------------------
 # RULE-26: `> Highest-Rule:`
 # ---------------------------------------------------------------------------
 
@@ -1002,3 +901,152 @@ def test_a_spec_with_no_highest_proof_line_counts_from_its_proofs():
     assert ('A spec with no `> Highest-Proof:` line whose proofs run to '
             '`PROOF-9` gives its next proof `PROOF-10`.') in sentences, \
         sentences
+
+
+# ---------------------------------------------------------------------------
+# RULE-30 to RULE-34: the fields Purlin does not read
+# ---------------------------------------------------------------------------
+
+def _anchor_spec(root, name, meta, source=None):
+    """The anchor `name` under `specs/_anchors/`, carrying `meta` and, for a
+    pinned copy, its `> Source:`."""
+    lines = '# Anchor: %s\n\n' % name
+    if source:
+        lines += '> Source: %s\n> Pinned: abc1234def\n' % source
+    lines += meta + '\n\n'
+    lines += ('## Rules\n- RULE-1: No eval anywhere\n\n'
+              '## Proof\n- PROOF-1 (RULE-1): Every file is searched\n')
+    _write(root, 'specs/_anchors/%s.md' % name, lines)
+
+
+def _login_carrying(root, meta):
+    """The feature `login` with two rules, carrying `meta`."""
+    _write(root, 'specs/test/login.md',
+           '# Feature: login\n\n%s\n\n'
+           '## Rules\n- RULE-1: One\n- RULE-2: Two\n\n'
+           '## Proof\n- PROOF-1 (RULE-1): Test\n- PROOF-2 (RULE-2): Test\n'
+           % meta)
+
+
+def _mistakes(root):
+    """Every spec warning of the project, as the status report prints them."""
+    return purlin_specs.spec_mistakes(
+        str(root), purlin_specs.scan_specs(str(root)))
+
+
+# purlin: schema_spec_format PROOF-71
+def test_a_requires_line_is_warned_of(tmp_path):
+    root = _project(tmp_path)
+    _anchor_spec(root, 'api', '> Description: The api.')
+    _login_carrying(root, '> Requires: api')
+    result = purlin_status.sync_status(str(root))
+    assert ('login: > Requires: is not read, because every anchor covers the '
+            'whole project. Run purlin:spec login.') \
+        in result.splitlines(), result
+
+
+# purlin: schema_spec_format PROOF-72
+def test_a_requires_line_adds_no_rule_of_the_anchor_it_names(tmp_path):
+    root = _project(tmp_path)
+    _anchor_spec(root, 'api', '> Description: The api.')
+    _login_carrying(root, '> Requires: api')
+    rules = [(r['feature'], r['id']) for r in _feature(root, 'login')['rules']]
+    assert rules == [('login', 'RULE-1'), ('login', 'RULE-2')], rules
+
+
+# purlin: schema_spec_format PROOF-73
+def test_a_global_line_on_an_anchor_is_warned_of(tmp_path):
+    root = _project(tmp_path)
+    _anchor_spec(root, 'security', '> Global: true')
+    assert ('security: > Global: is not read, because every anchor covers the '
+            'whole project. Run purlin:spec security.') in _mistakes(root)
+
+
+# purlin: schema_spec_format PROOF-74
+def test_a_global_line_on_a_feature_is_warned_of(tmp_path):
+    root = _project(tmp_path)
+    _login_carrying(root, '> Global: true')
+    assert ('login: > Global: is not read, because every anchor covers the '
+            'whole project. Run purlin:spec login.') in _mistakes(root)
+
+
+# purlin: schema_spec_format PROOF-75
+def test_a_scope_line_on_an_anchor_is_warned_of(tmp_path):
+    root = _project(tmp_path)
+    _anchor_spec(root, 'security', '> Scope: src/')
+    assert ('security: > Scope: is not read on an anchor, because an anchor '
+            'covers the whole project. Run purlin:spec security.') \
+        in _mistakes(root)
+
+
+# purlin: schema_spec_format PROOF-76
+def test_a_scope_line_on_an_anchor_is_not_read(tmp_path):
+    root = _project(tmp_path)
+    _anchor_spec(root, 'security', '> Scope: src/app.py, src/db.py')
+    scope = purlin_specs.scan_specs(str(root))['security']['scope']
+    assert scope == [], scope
+
+
+# purlin: schema_spec_format PROOF-77
+def test_an_anchor_scope_entry_is_never_warned_of_as_finding_no_file(
+        tmp_path):
+    root = _project(tmp_path)
+    _write(root, 'src/app.py', 'x = 1\n')
+    _anchor_spec(root, 'security', '> Scope: src/app.py, src/gone.py')
+    _git_project(root, 'src/app.py')
+    result = purlin_status.sync_status(str(root))
+    assert ('security: > Scope: is not read on an anchor, because an anchor '
+            'covers the whole project. Run purlin:spec security.') \
+        in result.splitlines(), result
+    assert 'which finds no file in git' not in result, result
+
+
+BASELINE_SOURCE = 'https://github.com/acme/policies.git'
+
+
+# purlin: schema_spec_format PROOF-78
+def test_a_pinned_anchor_carrying_a_scope_line_names_its_source(tmp_path):
+    root = _project(tmp_path)
+    _anchor_spec(root, 'security_baseline', '> Scope: src/',
+                 source=BASELINE_SOURCE + ' specs/baseline.md')
+    result = purlin_status.sync_status(str(root))
+    assert ('security_baseline: its source, '
+            'https://github.com/acme/policies.git, carries > Scope:, which '
+            'Purlin does not read on an anchor, so the line is read as '
+            'nothing. Ask the owners of https://github.com/acme/policies.git '
+            'to take it out, then run purlin:anchor sync security_baseline.') \
+        in result.splitlines(), result
+
+
+# purlin: schema_spec_format PROOF-79
+def test_a_pinned_anchor_carrying_two_lines_gets_the_one_plural_line(
+        tmp_path):
+    root = _project(tmp_path)
+    _anchor_spec(root, 'security_baseline', '> Global: true\n> Scope: src/',
+                 source=BASELINE_SOURCE)
+    lines = [line for line in _mistakes(root)
+             if line.startswith('security_baseline:')]
+    assert lines == [
+        'security_baseline: its source, https://github.com/acme/policies.git, '
+        'carries > Global: and > Scope:, which Purlin does not read on an '
+        'anchor, so the lines are read as nothing. Ask the owners of '
+        'https://github.com/acme/policies.git to take them out, then run '
+        'purlin:anchor sync security_baseline.'], lines
+
+
+# purlin: schema_spec_format PROOF-80
+def test_the_pinned_anchor_line_starts_no_process(tmp_path, monkeypatch):
+    root = _project(tmp_path)
+    _anchor_spec(root, 'security_baseline', '> Scope: src/',
+                 source=BASELINE_SOURCE)
+
+    def refused(*args, **kwargs):
+        raise AssertionError('a process was started: %r' % (args,))
+
+    monkeypatch.setattr(subprocess, 'Popen', refused)
+    monkeypatch.setattr(subprocess, 'run', refused)
+    monkeypatch.setattr(os, 'system', refused)
+    lines = _mistakes(root)
+    assert any(line.startswith('security_baseline: its source, '
+                               + BASELINE_SOURCE + ', carries > Scope:')
+               for line in lines), lines

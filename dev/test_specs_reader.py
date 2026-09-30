@@ -93,19 +93,6 @@ def _refused_to_readers(path):
         os.chmod(path, 0o644)
 
 
-def _feature(name, rules, requires=None, heading='Feature', extra=''):
-    """A spec's text: its heading, its `> Requires:` and `rules` numbered."""
-    lines = ['# %s: %s\n' % (heading, name)]
-    if requires:
-        lines.append('> Requires: %s\n' % requires)
-    if extra:
-        lines.append(extra + '\n')
-    lines.append('## Rules\n')
-    lines.extend('- RULE-%d: %s' % (n, text)
-                 for n, text in enumerate(rules, 1))
-    return '\n'.join(lines) + '\n'
-
-
 class TestRuleText:
 
     # purlin: specs PROOF-1
@@ -297,60 +284,6 @@ class TestAnchors:
         login = purlin_specs.scan_specs(project.root)['login']
         assert login['spec_path'] == 'specs/auth/login.md'
         assert login['is_anchor'] is False, login
-
-
-def _global_security(project):
-    project.spec(_feature('security', ['No eval anywhere'], heading='Anchor',
-                          extra='> Global: true\n'),
-                 name='security', category='_anchors')
-
-
-def _api_requiring_base(project):
-    project.spec(_feature('api', ['Responses carry a type'], heading='Anchor',
-                          requires='base'), name='api', category='schema')
-    project.spec(_feature('base', ['Requests carry an id'], heading='Anchor'),
-                 name='base', category='core')
-
-
-class TestWhatAFeatureProves:
-
-    # purlin: specs PROOF-14
-    def test_requires_and_global_pull_rules_into_a_feature(self, project):
-        project.spec(_feature('api', ['Responses carry a type'],
-                              heading='Anchor'), name='api', category='schema')
-        _global_security(project)
-        project.spec(SPEC.replace('# Feature: login\n',
-                                  '# Feature: login\n\n> Requires: api\n'))
-        features = purlin_specs.scan_specs(project.root)
-        assert purlin_specs.rule_refs('login', features) == [
-            ('login', 'RULE-1', 'own'), ('login', 'RULE-2', 'own'),
-            ('api', 'RULE-1', 'required'),
-            ('security', 'RULE-1', 'global')]
-
-    # purlin: specs PROOF-36
-    def test_a_global_anchor_proves_its_own_rule_alone(self, project):
-        _global_security(project)
-        features = purlin_specs.scan_specs(project.root)
-        assert purlin_specs.rule_refs('security', features) == [
-            ('security', 'RULE-1', 'own')]
-
-    # purlin: specs PROOF-37
-    def test_what_a_required_anchor_requires_is_proved_too(self, project):
-        _api_requiring_base(project)
-        project.spec(SPEC.replace('# Feature: login\n',
-                                  '# Feature: login\n\n> Requires: api\n'))
-        features = purlin_specs.scan_specs(project.root)
-        assert purlin_specs.rule_refs('login', features) == [
-            ('login', 'RULE-1', 'own'), ('login', 'RULE-2', 'own'),
-            ('api', 'RULE-1', 'required'), ('base', 'RULE-1', 'required')]
-
-    # purlin: specs PROOF-38
-    def test_an_anchor_that_requires_an_anchor_proves_its_own_rule_alone(
-            self, project):
-        _api_requiring_base(project)
-        features = purlin_specs.scan_specs(project.root)
-        assert purlin_specs.rule_refs('api', features) == [
-            ('api', 'RULE-1', 'own')]
 
 
 class TestTheScan:
