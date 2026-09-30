@@ -1690,6 +1690,9 @@ class TestSignaturesEnded:
             _write(test_file, '# purlin: login PROOF-1\ndef test_one():\n'
                               '    assert True\n')
             _commit(made.root, 'test: login again')
+            made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                            'status': 'pass'}], ci=True, strength=90)
+            made.audit('RULE-1')
 
             qa = _report(made.root, since='1')['roles']['qa']
 
