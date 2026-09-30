@@ -179,6 +179,25 @@ class TestThePin:
         ]) == []
 
 
+class TestTheAnchorRepository:
+    """RULE-13: an anchor repository is for rules two or more projects share."""
+
+    # purlin: skill_anchor PROOF-34
+    def test_an_anchor_repository_is_for_two_or_more_projects(
+            self, monkeypatch):
+        assert repository_problems() == []
+        assert refusals(monkeypatch, repository_problems, [
+            (REL, replace('only when two or more projects must share',
+                          'whenever a project wants'),
+             "One repository is the default section does not carry %r"
+             % SHARED_REPOSITORY[0]),
+            (REL, replace("Most projects need nothing but `specs/_anchors/`.",
+                          'Most projects need an anchor repository.'),
+             "One repository is the default section does not carry %r"
+             % SHARED_REPOSITORY[1]),
+        ]) == []
+
+
 class TestTheFolder:
     """RULE-6: the folder for anchors comes with the first anchor."""
 
@@ -317,4 +336,16 @@ def source_problems():
             for needle in (SOURCE, 'Any other source',
                            'is refused and nothing is written',
                            'the refusal names `purlin:anchor create <name>`')
+            if needle not in body]
+
+
+SHARED_REPOSITORY = ('Reach for an anchor repository only when two or more '
+                     'projects must share the same rules',
+                     'Most projects need nothing but `specs/_anchors/`.')
+
+
+def repository_problems():
+    body = flat(section(read(REL), r'^one repository is the default$') or '')
+    return ['%s One repository is the default section does not carry %r'
+            % (REL, needle) for needle in SHARED_REPOSITORY
             if needle not in body]

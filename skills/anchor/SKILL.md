@@ -71,10 +71,11 @@ cached lookup per source per run, so a developer sees a pin that is behind at th
 session without asking for it.
 
 Without `--check`, sync rewrites the local copy, advances the pin and prints what moved:
-`security_baseline: RULE-3 changed, RULE-6 added. Pin advanced from abc1234 to 9f8e7d6.` It
-commits nothing: commit the copy in one commit with the `anchor(<name>):` prefix, so the diff
-shows exactly which rules moved. A signature on a rule whose text moved ends, and the rule is
-back to `to sign`.
+`security_baseline: RULE-3 changed, RULE-6 added. Pin advanced from abc1234 to 9f8e7d6. Commit
+it as anchor(security_baseline): sync (9f8e7d6), then run purlin:test.` It commits nothing:
+commit the copy in one commit with the `anchor(<name>):` prefix, so the diff shows exactly
+which rules moved. A signature on a rule whose text moved ends, and the rule is back to
+`to sign`.
 
 ## Changing a pinned rule
 
@@ -84,7 +85,6 @@ checkout of it; once it merges, `sync` brings it here.
 
 A rule that belongs only to this project goes in a separate local anchor that says
 `> Requires: <the pinned one>`, and the pinned copy stays untouched.
-
 
 ## When you are done
 
