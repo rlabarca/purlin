@@ -2,13 +2,13 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:04Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T12:06:44Z",
+      "commit": "5f002e00eb62fa9b235ced3d025e308571464240",
       "dirty": false,
       "fingerprint": {
-        "code": "e26e2498841aff401aacf4648cbe6329f84399c79c6d6b22fa2f057036778d1e",
-        "spec": "d47e8e57f71892bedeef5ca8cbbd80bf33b805ea6ffe6c9797813ab43300a6a7",
-        "tests": "a44dcb96b8d6840423c55239144a3cea4e7028609f9be93688ada953cd0b849f"
+        "code": "614392c913c0394574070f066cbdb021a80d1556810378d6977591a04067e34d",
+        "spec": "eaf0463a889b50d3f683167d404733185a2caa8958b0d828d189efb666f8f198",
+        "tests": "6ad6017e2a15752bc654667e6be0e7b5033869f65db6f856586820418349f6e8"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -1150,6 +1150,30 @@
         },
         {
           "env": null,
+          "id": "PROOF-256",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-85",
+          "test": "dev/test_run_script.py::TestTheTwoCommits::test_nothing_to_run_commits_the_settings_alone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-257",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-85",
+          "test": "dev/test_run_script.py::TestTheTwoCommits::test_nothing_to_run_commits_the_spec_tests_and_settings"
+        },
+        {
+          "env": null,
+          "id": "PROOF-258",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-85",
+          "test": "dev/test_run_script.py::TestTheTwoCommits::test_nothing_to_run_with_nothing_changed_commits_nothing"
+        },
+        {
+          "env": null,
           "id": "PROOF-97",
           "manual": false,
           "result": "pass",
@@ -1727,6 +1751,7 @@
         "RULE-82": "passed",
         "RULE-83": "passed",
         "RULE-84": "passed",
+        "RULE-85": "passed",
         "RULE-9": "passed"
       },
       "runner": "rich-labarca"

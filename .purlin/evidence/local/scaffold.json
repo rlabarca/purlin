@@ -2,13 +2,13 @@
   "feature": "scaffold",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T04:29:39Z",
-      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
+      "at": "2026-09-30T12:06:45Z",
+      "commit": "5f002e00eb62fa9b235ced3d025e308571464240",
       "dirty": false,
       "fingerprint": {
         "code": "a268af0b63bec7492f208834a619f0c1a8e1b61e6943c3b0b2ec9e9ea807cdde",
-        "spec": "15ef4c70cb50379875eadda42faa80ce08164120aa42bc59c7aa669406372831",
-        "tests": "8ce3e9cfd626a79522c7cc8ae30b2b0fc75aaaa1935a29ff7d20223c2d220409"
+        "spec": "e1a789b9d6d2d0a807fa2cda9d765f6dabca89c96d935f7e28a37b301afa9036",
+        "tests": "9026679fb860dd31f15f69c1de336d07f997e90e64200ca11c3b23b253e2ad9d"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -1139,6 +1139,38 @@
           "result": "pass",
           "rule": "RULE-74",
           "test": "dev/test_init_scaffold.py::TestTheEvidenceFolder::test_a_second_setup_keeps_the_dashboard_page_as_it_is"
+        },
+        {
+          "env": null,
+          "id": "PROOF-163",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-75",
+          "test": "dev/test_init_scaffold.py::TestFixturesAreNotTheProjectsTools::test_a_csharp_project_under_dev_fixtures_is_left_out"
+        },
+        {
+          "env": null,
+          "id": "PROOF-164",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-75",
+          "test": "dev/test_init_scaffold.py::TestFixturesAreNotTheProjectsTools::test_a_csharp_project_at_the_root_keeps_its_dotnet_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-165",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-75",
+          "test": "dev/test_init_scaffold.py::TestFixturesAreNotTheProjectsTools::test_a_javascript_sample_is_left_out"
+        },
+        {
+          "env": null,
+          "id": "PROOF-166",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-75",
+          "test": "dev/test_init_scaffold.py::TestFixturesAreNotTheProjectsTools::test_each_fixture_folder_name_is_left_out_at_any_depth"
         }
       ],
       "rules": {
@@ -1196,6 +1228,7 @@
         "RULE-72": "passed",
         "RULE-73": "passed",
         "RULE-74": "passed",
+        "RULE-75": "passed",
         "RULE-8": "passed",
         "RULE-9": "passed"
       },

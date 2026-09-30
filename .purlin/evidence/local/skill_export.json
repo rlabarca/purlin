@@ -2,13 +2,13 @@
   "feature": "skill_export",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T04:29:40Z",
-      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
+      "at": "2026-09-30T12:06:45Z",
+      "commit": "5f002e00eb62fa9b235ced3d025e308571464240",
       "dirty": false,
       "fingerprint": {
-        "code": "762d303a36cbb66101ae6830cc76fb69dca550f82a5d2dd7710d8531f7bd92dd",
-        "spec": "5887bbf3386f98fd135c9346b9db17995c26e93291726eb81aa16a553e26d813",
-        "tests": "9855fa549560062e7ddfd142aba5a2442c1ed83b3d7f31b6b07d6399e8b59846"
+        "code": "cf73f6b72d3c33cb382ad657873fef7fceec1846089922c61b35b4ad2ef4da80",
+        "spec": "c28722daf197b5b2f879661d52477d6d85d62a3835781ada3ced1eb83e2729b1",
+        "tests": "c5b38fe3928087bf0dc0faf81f68d8980d71ec43ae11e6ef53ccefca9823d209"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -130,7 +130,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-13",
-          "test": "dev/test_skill_export.py::test_the_package_is_read_where_the_authority_to_sign_off_is"
+          "test": "dev/test_skill_export.py::test_the_system_of_record_holds_the_document_authority_and_signature"
         }
       ],
       "rules": {

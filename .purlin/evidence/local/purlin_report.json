@@ -2,13 +2,13 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T04:29:39Z",
-      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
+      "at": "2026-09-30T12:06:44Z",
+      "commit": "5f002e00eb62fa9b235ced3d025e308571464240",
       "dirty": false,
       "fingerprint": {
-        "code": "bbcad71cba062482a972a516ab5694bf044012fd3e78aa0cf27536874d289bc6",
-        "spec": "78f99a0c2c7c6bd9a635cffeedcfc4ee81635d4f12ea5dc299e549ec1603f403",
-        "tests": "941f02acf791171a6e52323ef2f95dc649f24a27600458540ec2263b669dab91"
+        "code": "d132087b66f73443841f9f085cc5558d0b37128c7910334c04430d27469e3cb0",
+        "spec": "3bd629e05d5a894f3717670888ba3341e04856ba06148f42ce6922ed78bf08dd",
+        "tests": "f4864c9051295f1292daad8d8d1b642efd3783ab29bbc8e46c1c0295081fc3d6"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -1427,6 +1427,38 @@
           "result": "pass",
           "rule": "RULE-60",
           "test": "dev/test_purlin_report.py::test_each_warning_is_a_notice_after_the_working_tree_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-199",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-61",
+          "test": "dev/test_purlin_report.py::test_with_mutation_testing_off_no_minimum_strength_applies"
+        },
+        {
+          "env": null,
+          "id": "PROOF-200",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-62",
+          "test": "dev/test_purlin_report.py::test_a_manual_proof_under_its_row_names_the_sign"
+        },
+        {
+          "env": null,
+          "id": "PROOF-201",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-62",
+          "test": "dev/test_purlin_report.py::test_a_manual_proof_on_the_rule_screen_names_the_sign"
+        },
+        {
+          "env": null,
+          "id": "PROOF-202",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-62",
+          "test": "dev/test_purlin_report.py::test_a_signed_manual_proof_reads_checked_by_hand"
         }
       ],
       "rules": {
@@ -1479,6 +1511,8 @@
         "RULE-59": "passed",
         "RULE-6": "passed",
         "RULE-60": "passed",
+        "RULE-61": "passed",
+        "RULE-62": "passed",
         "RULE-7": "passed",
         "RULE-8": "passed",
         "RULE-9": "passed"

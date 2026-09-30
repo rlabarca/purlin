@@ -2,13 +2,13 @@
   "feature": "schema_spec_format",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T04:29:39Z",
-      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
+      "at": "2026-09-30T12:06:45Z",
+      "commit": "5f002e00eb62fa9b235ced3d025e308571464240",
       "dirty": false,
       "fingerprint": {
-        "code": "d5622a0db5f707bfed1a4edb97cfce770901b528ebfb0ac7aefb3a1c5be7317f",
-        "spec": "3e8aba78e544190dd42c3ae7d71198097915629bc384ce707cb815224f847d53",
-        "tests": "b93be8b51a5ac4e98766bfb865bd1cee2a35f1188839df294a31e6c2cf8819fb"
+        "code": "8757465ff314b308e067540c8fe4136825dffc0555fb1796380d7764d1dfdeab",
+        "spec": "fb305356570328c95d83dbebdead1bb556ecf25abcc9a661ad640fbc98c89a78",
+        "tests": "5b4ee6eb69132a3da237dc3674a2d3682227dce4483927d141510aa716037ec4"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -523,6 +523,38 @@
           "result": "pass",
           "rule": "RULE-28",
           "test": "dev/test_schema_spec_format.py::test_a_rewritten_stack_changes_no_fingerprint"
+        },
+        {
+          "env": null,
+          "id": "PROOF-67",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-29",
+          "test": "dev/test_schema_spec_format.py::test_a_highest_proof_line_adds_no_proof"
+        },
+        {
+          "env": null,
+          "id": "PROOF-68",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-29",
+          "test": "dev/test_schema_spec_format.py::test_a_highest_proof_line_changes_no_fingerprint"
+        },
+        {
+          "env": null,
+          "id": "PROOF-69",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-29",
+          "test": "dev/test_schema_spec_format.py::test_a_new_proof_after_the_highest_is_deleted_takes_the_next_number"
+        },
+        {
+          "env": null,
+          "id": "PROOF-70",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-29",
+          "test": "dev/test_schema_spec_format.py::test_a_spec_with_no_highest_proof_line_counts_from_its_proofs"
         }
       ],
       "rules": {
@@ -547,6 +579,7 @@
         "RULE-26": "passed",
         "RULE-27": "passed",
         "RULE-28": "passed",
+        "RULE-29": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

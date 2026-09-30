@@ -2,11 +2,11 @@
   "feature": "evidence_writer",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:04Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T12:06:44Z",
+      "commit": "5f002e00eb62fa9b235ced3d025e308571464240",
       "dirty": false,
       "fingerprint": {
-        "code": "7ed39025c74a69de9210d6472f8ee15dacbb6c915df381c878ee349de073fd1a",
+        "code": "f0e5c71a60b9c46101f42fdad19d9972d1aa701f769fb011ae961608be95dae4",
         "spec": "673f695886a4345860c7cf7f098a70db51bcd49a51299832d4edbcd934ecd5aa",
         "tests": "d8a9cab035d11bde64dce7daf59d32c90408aa145445951025a00eb38b1bd971"
       },
