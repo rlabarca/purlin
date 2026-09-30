@@ -380,7 +380,9 @@ def test_check_exits_0_when_the_pin_is_current(workspace):
     _add(workspace)
     code, out = _cli(workspace, ['sync', '--check'])
     assert code == 0
-    assert out.splitlines() == ['no_eval: the pin is current.']
+    assert out.splitlines() == [
+        'no_eval: the pin is current. Run purlin:status no_eval to see its '
+        'rules.']
 
 
 # purlin: upstream PROOF-30
@@ -395,6 +397,12 @@ def test_check_exits_1_to_the_shell_when_a_pin_is_behind(workspace):
 # purlin: upstream PROOF-31
 def test_check_exits_2_for_an_anchor_that_does_not_exist(workspace):
     _add(workspace)
+    code, out = _cli(workspace, ['sync', 'absent', '--check'])
+    assert code == 2
+    assert out.splitlines() == [
+        'absent: no anchor named absent carries a git source. Run '
+        'purlin:status to see the anchors this project has.']
+
     code, out = _cli(workspace, ['sync', 'absent', '--check', '--json'])
     assert code == 2
     row = json.loads(out)['anchors'][0]
@@ -410,6 +418,19 @@ def test_check_exits_2_when_the_source_is_gone(workspace):
     code, out = _cli(workspace, ['sync', '--check', '--json'])
     assert code == 2
     assert json.loads(out)['anchors'][0]['status'] == 'error'
+
+
+# purlin: upstream PROOF-57
+def test_check_names_the_source_that_could_not_be_read_and_the_fix(workspace):
+    _add(workspace)
+    _rmtree(workspace.anchor_repo)
+    _head, error = upstream.remote_head(workspace.root, workspace.anchor_repo)
+    assert error
+    code, out = _cli(workspace, ['sync', '--check'])
+    assert code == 2
+    assert out.splitlines() == [
+        'no_eval: the source could not be read (%s). Check its > Source: '
+        'line, then run purlin:anchor sync no_eval.' % error]
 
 
 # purlin: upstream PROOF-10
@@ -499,8 +520,9 @@ def test_sync_from_the_command_line_prints_the_delta(workspace):
     code, out = _cli(workspace, ['sync', 'no_eval'])
     assert code == 0
     assert out.splitlines() == [
-        'no_eval: RULE-2 changed, RULE-3 added. Pin advanced from %s to %s.'
-        % (workspace.first_sha[:7], new_sha[:7])]
+        'no_eval: RULE-2 changed, RULE-3 added. Pin advanced from %s to %s. '
+        'Commit it as anchor(no_eval): sync (%s), then run purlin:test.'
+        % (workspace.first_sha[:7], new_sha[:7], new_sha[:7])]
 
 
 # purlin: upstream PROOF-39
@@ -578,16 +600,30 @@ def test_help_names_both_commands():
         assert command in result.stdout
 
 
+def _project_root_help(usage):
+    """The line of the usage that follows the `--project-root` option."""
+    lines = [line.strip() for line in usage.splitlines()]
+    at = next(i for i, line in enumerate(lines)
+              if line.startswith('--project-root'))
+    return lines[at + 1]
+
+
 # purlin: upstream PROOF-37
-def test_a_call_with_no_arguments_exits_2_naming_the_project_root(workspace):
+def test_a_call_with_no_arguments_exits_2_naming_the_project_root(
+        workspace, monkeypatch):
+    """The usage is wrapped at 80 columns, so the option's help stands on
+    the line after it whatever terminal runs the test."""
+    monkeypatch.setenv('COLUMNS', '80')
     code, out = _child([], cwd=workspace.root)
     assert code == 2
-    assert '--project-root' in out
+    assert _project_root_help(out) == (
+        'the project root holding .purlin/ and specs/')
 
     inline = io.StringIO()
     with contextlib.redirect_stdout(inline):
         assert upstream.main([]) == 2
-    assert '--project-root' in inline.getvalue()
+    assert _project_root_help(inline.getvalue()) == (
+        'the project root holding .purlin/ and specs/')
 
 
 # purlin: upstream PROOF-22
@@ -744,3 +780,63 @@ def test_sync_all_reports_the_text_file_anchor_and_syncs_the_others(
     assert not any('policy.txt' in ' '.join(args) for args in started), started
     with open(upstream.anchor_path(workspace.root, 'refunds'), 'rb') as handle:
         assert handle.read() == held
+
+
+# ---------------------------------------------------------------------------
+# The lines `add` and `sync` print
+# ---------------------------------------------------------------------------
+
+# purlin: upstream PROOF-52
+def test_add_counts_two_rules_in_the_plural(workspace):
+    code, out = _cli(workspace, ['add', workspace.anchor_repo, '--path',
+                                 'specs/no_eval.md', '--name', 'no_eval'])
+    assert code == 0
+    assert out.splitlines()[1] == '  2 rules. Run purlin:status to see them.'
+
+
+# purlin: upstream PROOF-53
+def test_add_counts_one_rule_in_the_singular(workspace):
+    code, out = _cli(workspace, ['add', workspace.anchor_repo, '--path',
+                                 'specs/no_secrets.md', '--name', 'no_secrets'])
+    assert code == 0
+    assert out.splitlines()[1] == '  1 rule. Run purlin:status to see it.'
+
+
+# purlin: upstream PROOF-54
+def test_add_with_no_path_names_the_flag_and_writes_nothing(workspace):
+    code, out = _cli(workspace, ['add', workspace.anchor_repo, '--name',
+                                 'no_eval'])
+    assert code == 2
+    assert out.splitlines() == ['no_eval: no path into the source; pass --path']
+    assert _anchors_held(workspace) == []
+
+
+# purlin: upstream PROOF-55
+def test_check_names_an_anchor_with_a_source_and_no_pin(workspace):
+    _write(upstream.anchor_path(workspace.root, 'loose'),
+           ANCHOR_V1.replace('# Anchor: no_eval', '# Anchor: loose').replace(
+               '> Type: security',
+               '> Type: security\n> Source: %s specs/no_eval.md'
+               % workspace.anchor_repo))
+    _code, out = _cli(workspace, ['sync', '--check'])
+    assert out.splitlines() == [
+        'loose: names a source and no pin. Run purlin:anchor sync loose.']
+
+
+# purlin: upstream PROOF-56
+def test_sync_in_a_project_with_no_anchor_says_so(workspace):
+    code, out = _cli(workspace, ['sync'])
+    assert code == 0
+    assert out.splitlines() == ['No anchors name a git source.']
+
+
+# purlin: upstream PROOF-58
+def test_a_project_root_that_is_no_folder_is_named_with_the_flag(tmp_path):
+    missing = str(tmp_path / 'absent')
+    err = io.StringIO()
+    with contextlib.redirect_stdout(io.StringIO()), \
+            contextlib.redirect_stderr(err):
+        code = upstream.main(['--project-root', missing, 'sync'])
+    assert code == 2
+    assert err.getvalue().splitlines() == [
+        'No Purlin project root found. Pass --project-root <dir>.']

@@ -416,14 +416,16 @@ def _render(result):
         lines.append('%s: written to %s, pinned %s'
                      % (result['anchor'], result['spec_path'],
                         result['pinned'][:7]))
-        lines.append('  %d rules. Run purlin:status to see them.'
-                     % len(result['rules']))
+        count = len(result['rules'])
+        lines.append('  1 rule. Run purlin:status to see it.' if count == 1
+                     else '  %d rules. Run purlin:status to see them.' % count)
         return lines
     for row in result['anchors']:
         name = row['anchor']
         status = row['status']
         if status == 'current':
-            lines.append('%s: the pin is current.' % name)
+            lines.append('%s: the pin is current. Run purlin:status %s to see '
+                         'its rules.' % (name, name))
         elif status == 'behind':
             lines.append('%s: the pin %s is behind its source, now %s. Run '
                          'purlin:anchor sync %s.'
@@ -433,14 +435,20 @@ def _render(result):
             lines.append('%s: names a source and no pin. Run purlin:anchor sync '
                          '%s.' % (name, name))
         elif status == 'synced':
-            lines.append('%s: %s. Pin advanced from %s to %s.'
+            lines.append('%s: %s. Pin advanced from %s to %s. Commit it as '
+                         'anchor(%s): sync (%s), then run purlin:test.'
                          % (name, row['summary'], (row.get('previous') or 'none')[:7],
-                            row['pinned'][:7]))
+                            row['pinned'][:7], name, row['pinned'][:7]))
         elif row.get('not_a_spec'):
             lines.append('%s: %s' % (name, row['error']))
+        elif 'source' not in row:
+            # A name no anchor carries: nothing was read, so no source is named.
+            lines.append('%s: %s. Run purlin:status to see the anchors this '
+                         'project has.' % (name, row['error']))
         else:
-            lines.append('%s: the source could not be read (%s).'
-                         % (name, row.get('error', 'unknown')))
+            lines.append('%s: the source could not be read (%s). Check its '
+                         '> Source: line, then run purlin:anchor sync %s.'
+                         % (name, row.get('error', 'unknown'), name))
     if not lines:
         lines.append('No anchors name a git source.')
     return lines
@@ -460,7 +468,7 @@ def build_parser():
         prog='upstream.py',
         description='Add and sync anchors held in an anchor repo.')
     parser.add_argument('--project-root', default=None,
-                        help='the workspace holding .purlin/ and specs/')
+                        help='the project root holding .purlin/ and specs/')
     sub = parser.add_subparsers(dest='command')
 
     add_parser = sub.add_parser('add', help='fetch an anchor and write the copy')
@@ -490,7 +498,7 @@ def main(argv=None):
         return 2
     root = args.project_root or find_project_root()
     if not root or not os.path.isdir(root):
-        sys.stderr.write('No Purlin workspace found. Pass --project-root DIR.\n')
+        sys.stderr.write('No Purlin project root found. Pass --project-root <dir>.\n')
         return 2
 
     if args.command == 'add':

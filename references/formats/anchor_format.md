@@ -86,8 +86,9 @@ what pinning exists to prevent.
 The file at the path is a spec in this format that holds at least one rule. `purlin:anchor add` refuses any other source, a file on disk, a description in words or a file with no rule, and writes nothing. A copy whose `> Source:` names no repository reads `error` in `purlin:drift` and in `purlin:anchor sync --check`. A local anchor carries no `> Source:` and is never checked.
 
 `purlin:drift` runs one cached `git ls-remote` per source per run and reports
-`anchor X is behind its source`. `purlin:anchor sync X` shows the delta, updates
-the local copy and advances the pin, all in one commit.
+`anchor X: the pin <old7> is behind its source, now <new7>. Run purlin:anchor sync X.`
+`purlin:anchor sync X` shows the delta, updates the local copy and advances the
+pin, all in one commit.
 
 A `> Source:` value is repository-supplied text, so it never reaches git in
 option position. A value that begins with `-` or names an `ext::` or `fd::`
@@ -111,8 +112,8 @@ transport is refused before any process starts, and the status line says
 
 ## Proof
 
-- PROOF-1 (RULE-1): Grep src/ for "eval("; verify zero matches
-- PROOF-2 (RULE-2): Grep src/ for "exec("; verify zero matches
+- PROOF-1 (RULE-1): The project's source files are searched for a call to `eval`; the search finds 0 calls
+- PROOF-2 (RULE-2): The project's source files are searched for a call to `exec`; the search finds 0 calls
 ```
 
 The `> Source:` and `> Pinned:` lines were added by Purlin; the author's file

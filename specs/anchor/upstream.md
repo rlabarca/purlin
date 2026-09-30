@@ -9,6 +9,7 @@
 >   Purlin's format kept in a git repository.
 > Scope: scripts/anchor/upstream.py
 > Stack: python/stdlib, git plumbing over subprocess, no third-party package
+> Highest-Rule: 34
 
 ## Rules
 
@@ -33,6 +34,11 @@
 - RULE-27: `sync --check` exits 2 when a named anchor does not exist or a source cannot be read
 - RULE-28: Without `--json`, each anchor behind gets a line naming it and the `purlin:anchor sync <name>` that fixes it
 - RULE-29: A call with no arguments exits 2 naming `--project-root`
+- RULE-30: `add` from the command line follows its first line with the count of the anchor's rules, `  <n> rules. Run purlin:status to see them.`, or `  1 rule. Run purlin:status to see it.` for an anchor of one rule
+- RULE-31: `add` with no `--path` writes no anchor copy, exits 2 and prints `<name>: no path into the source; pass --path`
+- RULE-32: Without `--json`, `sync --check` gives an anchor that names a source and no pin the line `<name>: names a source and no pin. Run purlin:anchor sync <name>.`
+- RULE-33: `sync` in a project where no anchor names a git source exits 0 and prints `No anchors name a git source.`
+- RULE-34: A `--project-root` that names no folder exits 2 and prints `No Purlin project root found. Pass --project-root <dir>.`
 
 ## Proof
 
@@ -49,24 +55,25 @@
 - PROOF-27 (RULE-6): The published anchor is added from its repository on disk; a `git` process is started, and `specs/_anchors/` then holds `no_eval.md`
 - PROOF-8 (RULE-8): An anchor is pinned and a new version of it is published; `sync --check` reports the row `behind`, with the first sha as `pinned` and the new one as `remote_sha`, counts 1 behind, and leaves every file in the project byte for byte as it was
 - PROOF-48 (RULE-8): On Windows, an anchor is pinned and a new version of it is published; `sync --check` reports the row `behind` with both shas, counts 1 behind, and leaves every file in the project byte for byte as it was @env(windows)
-- PROOF-9 (RULE-9): An anchor is pinned to its source's head; `sync --check` exits 0 and prints `no_eval: the pin is current.`
+- PROOF-9 (RULE-9): An anchor is pinned to its source's head; `sync --check` exits 0 and prints the one line `no_eval: the pin is current. Run purlin:status no_eval to see its rules.`
 - PROOF-30 (RULE-26): An anchor is pinned and a new version is published; the script run as `sync --check` exits 1
-- PROOF-31 (RULE-27): `sync absent --check --json` runs in a project with no anchor named `absent`; it exits 2, and the row reads `error` with the message `no anchor named absent carries a git source`
+- PROOF-31 (RULE-27): In a project with no anchor named `absent`, `sync absent --check` exits 2 and prints `absent: no anchor named absent carries a git source. Run purlin:status to see the anchors this project has.`; with `--json` its row reads `error` with the message `no anchor named absent carries a git source`
 - PROOF-32 (RULE-27): An anchor is pinned and its source repository is then deleted; `sync --check --json` exits 2, and the row reads `error`
 - PROOF-49 (RULE-27): On Windows, an anchor is pinned and its source repository is then deleted; `sync --check --json` exits 2, and the row reads `error` @env(windows)
+- PROOF-57 (RULE-27): An anchor is pinned and its source repository is then deleted; `sync --check` exits 2 and prints the one line `no_eval: the source could not be read (<git's message>). Check its > Source: line, then run purlin:anchor sync no_eval.`
 - PROOF-10 (RULE-10): An anchor is pinned to its source's head; `sync --check --json` exits 0 and prints one line, an object whose `checked` is true, `behind` is 0 and `anchors` holds one row reading `current`
 - PROOF-33 (RULE-10): An anchor is pinned and a new version is published; `sync --check --json` exits 1 and prints an object whose `checked` is true, `behind` is 1 and `anchors` holds one row with the first sha as `pinned` and the new one as `remote_sha`
 - PROOF-34 (RULE-28): An anchor is pinned and a new version is published; `sync --check` exits 1 and prints the one line `no_eval: the pin <first sha7> is behind its source, now <new sha7>. Run purlin:anchor sync no_eval.`
 - PROOF-11 (RULE-11): A new version of `no_eval` rewords `RULE-2` and adds `RULE-3`, and `sync no_eval` runs; the row reads `synced`, `previous` the old sha, `pinned` the new one, the rule changes added `RULE-3` and changed `RULE-2`, the summary `RULE-2 changed, RULE-3 added`, and the copy carries the new pin and `- RULE-3: No compile() in source files`
 - PROOF-35 (RULE-11): A new version of `no_eval` deletes `RULE-2`, and `sync no_eval` runs; the rule changes read removed `RULE-2` and nothing added or changed, the summary reads `RULE-2 removed`, and the copy holds no `RULE-2` line
-- PROOF-36 (RULE-11): A new version of `no_eval` rewords `RULE-2` and adds `RULE-3`, and `sync no_eval` runs from the command line; it exits 0 and prints `no_eval: RULE-2 changed, RULE-3 added. Pin advanced from <old sha7> to <new sha7>.`
+- PROOF-36 (RULE-11): A new version of `no_eval` rewords `RULE-2` and adds `RULE-3`, and `sync no_eval` runs from the command line; it exits 0 and prints the one line `no_eval: RULE-2 changed, RULE-3 added. Pin advanced from <old sha7> to <new sha7>. Commit it as anchor(no_eval): sync (<new sha7>), then run purlin:test.`
 - PROOF-39 (RULE-11): A new version of `no_eval` is published with every line ending in a carriage return and a line feed, and `sync no_eval` runs; the copy carries the new pin, and its bytes hold no carriage return
 - PROOF-50 (RULE-11): On Windows, a new version of `no_eval` rewords `RULE-2` and adds `RULE-3`, and `sync no_eval` runs; the row reads `synced`, the summary `RULE-2 changed, RULE-3 added`, and the copy carries the new pin with no carriage return @env(windows)
 - PROOF-12 (RULE-12): A new version of `no_eval` changes only a sentence of its description, and `sync no_eval` runs; the summary reads `no rule changes`, no rule is listed as added, removed or changed, and the copy's pin moves to the new sha
 - PROOF-15 (RULE-15): Two anchors are pinned from the same repository; `sync --check` returns two rows, and exactly one process it starts names that repository
 - PROOF-38 (RULE-15): Two anchors are pinned from the same repository and a new version is published, so both are behind; `sync` with no name returns two rows reading `synced`, and exactly one `git clone` it starts names that repository
 - PROOF-21 (RULE-21): `--help` exits 0 and its text names the commands `add` and `sync`
-- PROOF-37 (RULE-29): The script is run with no arguments at all from inside a project; it exits 2 and prints text naming `--project-root`
+- PROOF-37 (RULE-29): The script is run with no arguments at all from inside a project; it exits 2 and prints its usage, where the line after `--project-root` reads `the project root holding .purlin/ and specs/`
 - PROOF-22 (RULE-22): An anchor is added, a new version is published and the anchor is synced; the folder around the project still holds exactly its four entries, `policies.git`, `policies_work`, `project` and `project.git`
 - PROOF-51 (RULE-22): On Windows, an anchor is added, a new version is published and the anchor is synced; the folder around the project still holds exactly its four entries, `policies.git`, `policies_work`, `project` and `project.git` @env(windows)
 - PROOF-23 (RULE-23): An anchor's copy carries the notes `run the setup script first` and `the pin moves on each release` under its tracking lines; after a new version is published and the anchor is synced, the copy carries the new pin and both `> Note:` lines, each once and in that order
@@ -76,3 +83,9 @@
 - PROOF-43 (RULE-25): The anchor `refunds` carries `> Source: policy.txt`, a file in the project; `sync --check` exits 2 and prints the one line the rule names, with `refunds` as the name and `policy.txt` as the source, starts no process, and changes no file
 - PROOF-44 (RULE-25): The anchor `refunds` carries `> Source: Every refund is countersigned`, a description in words; `sync refunds` exits 2, its row reads `error` with `not_a_spec` true and the reason naming `Every refund is countersigned` and `purlin:spec refunds`, no process is started, and the copy is unchanged byte for byte
 - PROOF-45 (RULE-25): Two anchors are pinned from one repository, a third, `refunds`, carries `> Source: policy.txt`, a file in the project, and a new version is published; `sync` with no name exits 2, the two pinned anchors read `synced`, `refunds` reads `error`, no process it starts names `policy.txt`, and the copy of `refunds` is unchanged
+- PROOF-52 (RULE-30): The anchor `no_eval`, holding two rules, is added from the command line; it exits 0 and its second line reads `  2 rules. Run purlin:status to see them.`
+- PROOF-53 (RULE-30): The anchor `no_secrets`, holding one rule, is added from the command line; it exits 0 and its second line reads `  1 rule. Run purlin:status to see it.`
+- PROOF-54 (RULE-31): The published repository is added as the anchor `no_eval` with no `--path`; it exits 2, prints `no_eval: no path into the source; pass --path`, and `specs/_anchors/` stays empty
+- PROOF-55 (RULE-32): The anchor `loose` carries a `> Source:` naming the published repository and no `> Pinned:` line; `sync --check` prints the one line `loose: names a source and no pin. Run purlin:anchor sync loose.`
+- PROOF-56 (RULE-33): `sync` runs in a project with no anchor; it exits 0 and prints the one line `No anchors name a git source.`
+- PROOF-58 (RULE-34): `sync` runs with `--project-root` naming a folder that does not exist; it exits 2 and prints `No Purlin project root found. Pass --project-root <dir>.` on its error output
