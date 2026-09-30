@@ -1151,6 +1151,47 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       the default branch that is the default branch; on a release branch, the release branch.
     - **Not changed, as settled before:** who may sign (logged, not policed, decisions 48 and
       52) and the walk writing the tag when nothing is left.
+103. **Evidence is signed once, at the release** (added 2026-09-30). In the owner's words:
+    "we don't need to actually log the QA evaluation of the test. It's just a concurrent workflow
+    where they continually improve the specs together. Signing off is a final check when
+    everybody is done", and "we are just creating evidence, not enforcing policy". This reverses
+    per-rule signing (decisions 76, 101's signature as not applying, and 102's lines about
+    signatures that end) and the gate `strong`.
+    - **While specs are iterated, nothing is signed and nothing is recorded about anyone's
+      judgment.** Product, QA and dev improve rules, proofs and tests together on their branches.
+      The status and dashboard show the state; `Left to do` lists only work (proofs and tests to
+      write, tests to fix, the audit's findings where it ran). No `to sign` and no
+      `to test by hand` outside a release.
+    - **The gate is two answers.** `passed`: every rule's tests pass on committed evidence at the
+      release commit. `signed`: the same, and at least one person signs the evidence package. The
+      gate `strong` goes.
+    - **The AI audit and mutation testing are optional, informative tools under either gate.**
+      Their findings go into the evidence package where they ran; nothing blocks on them. The
+      settings that made them block lose their force.
+    - **A release is a commit, a package and a tag.** On a release branch, the release run
+      commits the evidence and the package. At `passed` it tags `passed/<version>`, unsigned. At
+      `signed` the first signature writes `signed/<version>`; later signatures are added over the
+      same package and listed, and the tag never moves.
+    - **One signature covers the whole package**, a signed commit over its hash. Any role may
+      sign, several people may; Purlin creates evidence and enforces no policy about who.
+    - **The sign-off walk** (`purlin:sign` on the release branch): it refuses and names the command
+      when a rule fails or the evidence is not committed at this commit; shows an overview
+      (rules, systems, the audit's strong, weak and not audited, hand checks to do); then stops,
+      one rule at a time, only where a person has something to look at: each hand check (the
+      person types what they saw, the note goes into the package), each weak rule and each rule
+      never audited (shown with its proofs, each test's name and body, the results and the
+      finding; the signer continues, adds a note, or stops to fix). Rules the audit found strong
+      are a list the signer can open, or walk in full on request. A weak or unaudited rule never
+      blocks the signature. Then one signature, then the tag.
+    - **The package records what the signer was shown**: which rules one by one and which only
+      in the list, and every note typed. It logs no judgment.
+    - **Numbers: the warnings stay, and a renumbering helper asks.** Where drift, the status,
+      `purlin:spec` or `purlin:build` finds a number written twice or a test comment whose
+      proof's wording changed since it was marked, the agent shows the plan (the spec lines and
+      the test comments in this checkout that would change, the side not already on the default
+      branch moving) and asks `Do it? [y/N]`; a script with a dry run does the edit on yes.
+      Comments on another person's branch are named, never touched. Nothing is renumbered
+      without asking.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
