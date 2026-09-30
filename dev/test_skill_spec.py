@@ -118,17 +118,17 @@ class TestSkillSpec:
         ]) == []
 
     # purlin: skill_spec PROOF-46
-    def test_after_a_merge_the_incoming_id_takes_the_next_number(
+    def test_after_a_merge_drift_names_the_line_that_moves(
             self, monkeypatch):
         check = lambda: merge_problems(MERGE_IDS)  # noqa: E731
         assert check() == []
         assert refusals(monkeypatch, check, [
-            (SKILL, replace('give the incoming one the next free number',
-                            'renumber both'),
+            (SKILL, replace('Run `purlin:drift` after the merge',
+                            'Run `purlin:status` after the merge'),
              '%s After a merge conflict does not carry %r'
              % (SKILL, MERGE_IDS[0])),
-            (SKILL, resub(r'and move its test markers\s+and its signature '
-                          r'filenames with it', 'and stop'),
+            (SKILL, replace('Tell the person whose line moved',
+                            'Tell nobody'),
              '%s After a merge conflict does not carry %r'
              % (SKILL, MERGE_IDS[1])),
         ]) == []
@@ -375,8 +375,10 @@ def in_place_problems():
             "'Edit in place. Never renumber'" % SKILL]
 
 
-MERGE_IDS = ('Keep both rules, give the incoming one the next free number',
-             'and move its test markers and its signature filenames with it.')
+MERGE_IDS = ('Run `purlin:drift` after the merge: it names every number '
+             'written twice and which line moves.',
+             'Tell the person whose line moved, so the test comments on their '
+             'branch move with it.')
 MERGE_PINS = ('Two branches that advanced the same anchor pin resolve to the '
               'newer sha.',)
 
@@ -566,4 +568,61 @@ def test_a_warned_field_is_taken_out(monkeypatch):
         (SKILL, replace('write it in each\nof their specs instead.',
                         'keep it in the anchor.'),
          '%s does not carry %r' % (SKILL, WARNED[1])),
+    ]) == []
+
+
+KEEPS = ('The number already on the default branch keeps it; the rule or '
+         'proof from the branch not yet merged moves to the next free number.')
+MOVED = 'A moved rule needs a new audit and a new signature.'
+CONFLICT_LINES = ('Take out every line git left from the conflict: while one '
+                  'stays, every rule of the spec reads `failed`.')
+RISK = ('A computation or a data flow a mistake would harm gets a proof per '
+        'boundary',
+        'Look and feel is not a rule')
+
+
+# purlin: skill_spec PROOF-55
+def test_the_number_on_the_default_branch_keeps_it(monkeypatch):
+    check = lambda: merge_problems((KEEPS,))  # noqa: E731
+    assert check() == []
+    assert refusals(monkeypatch, check, [
+        (SKILL, replace('The number already on the default\nbranch keeps it',
+                        'The incoming number\nkeeps it'),
+         '%s After a merge conflict does not carry %r' % (SKILL, KEEPS)),
+    ]) == []
+
+
+# purlin: skill_spec PROOF-56
+def test_a_moved_rule_needs_a_new_audit_and_signature(monkeypatch):
+    check = lambda: merge_problems((MOVED,))  # noqa: E731
+    assert check() == []
+    assert refusals(monkeypatch, check, [
+        (SKILL, replace('a new audit and a new signature',
+                        'nothing new'),
+         '%s After a merge conflict does not carry %r' % (SKILL, MOVED)),
+    ]) == []
+
+
+# purlin: skill_spec PROOF-57
+def test_every_conflict_line_is_taken_out(monkeypatch):
+    check = lambda: merge_problems((CONFLICT_LINES,))  # noqa: E731
+    assert check() == []
+    assert refusals(monkeypatch, check, [
+        (SKILL, replace('reads\n`failed`.', 'reads\n`passed`.'),
+         '%s After a merge conflict does not carry %r'
+         % (SKILL, CONFLICT_LINES)),
+    ]) == []
+
+
+# purlin: skill_spec PROOF-58
+def test_the_guide_puts_the_weight_of_a_risk_into_proofs(monkeypatch):
+    check = lambda: guide_section_problems('Where the risk is', RISK)  # noqa: E731,E501
+    assert check() == []
+    assert refusals(monkeypatch, check, [
+        (GUIDE, replace('Look\nand feel is not a rule', 'Look\nand feel is a rule'),
+         "%s section 'Where the risk is' does not state %r"
+         % (GUIDE, RISK[1])),
+        (GUIDE, replace('### Where the risk is\n'),
+         "%s section 'Where the risk is' does not state %r"
+         % (GUIDE, RISK[0])),
     ]) == []

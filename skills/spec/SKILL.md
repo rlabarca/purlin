@@ -145,10 +145,15 @@ ends any signature bound to it, which is the point: a person has to look again.
 
 ## After a merge conflict
 
-Two branches that allocated the same number before either fetched leave a spec with one id
-twice. Keep both rules, give the incoming one the next free number, and move its test markers
-and its signature filenames with it. When the conflict is two different texts on the same line,
-show both versions, ask which survives, and say which signatures that answer ends.
+Two branches that took the same number before either merged leave a spec with one id twice, and
+git may merge one of the two lines outside the conflict. The number already on the default
+branch keeps it; the rule or proof from the branch not yet merged moves to the next free number.
+Run `purlin:drift` after the merge: it names every number written twice and which line moves. A
+moved rule needs a new audit and a new signature. Tell the person whose line moved, so the test
+comments on their branch move with it. When the conflict is two different texts on the same
+line, show both versions, ask which survives, and say which signatures that answer ends. Take
+out every line git left from the conflict: while one stays, every rule of the spec reads
+`failed`.
 
 Two branches that advanced the same anchor pin resolve to the newer sha.
 

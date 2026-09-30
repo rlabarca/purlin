@@ -6,8 +6,8 @@
 >   over to the build.
 > Scope: skills/spec/SKILL.md, references/spec_quality_guide.md, references/purlin_commands.md
 > Stack: markdown, Claude Code skill definition
-> Highest-Rule: 24
-> Highest-Proof: 54
+> Highest-Rule: 28
+> Highest-Proof: 58
 
 ## Rules
 
@@ -26,7 +26,7 @@
 - RULE-14: The skill tells the agent to call `sync_status` with `project_root` set to the project root, the top folder of the git checkout
 - RULE-15: The skill's intake table says what to do with each kind of input: one sentence, a product description or a ticket, pasted acceptance criteria, and a screenshot
 - RULE-16: The skill tells the agent to edit an existing spec in place when given a change, and never to renumber
-- RULE-17: After a merge that leaves one id twice in a spec, the skill tells the agent to keep both rules and give the incoming one the next free number, moving its test markers and signature filenames with it
+- RULE-17: After a merge that leaves one id twice in a spec, the skill tells the agent to run `purlin:drift`, which names every number written twice and which line moves, and to tell the person whose line moved
 - RULE-18: The skill tells the agent that two branches that advanced the same anchor pin resolve to the newer sha
 - RULE-19: The guide's section `Written for a person who cannot read code` says that for a library a proof may name a function or class the library exports and an error type a caller gets back, and that a name from inside the code stays out
 - RULE-20: The guide's section `One proof, one case` says one proof may name a list of like inputs that share one action and one kind of result
@@ -34,6 +34,10 @@
 - RULE-22: The skill tells the agent to commit the spec it writes, with the `spec(<name>):` prefix, before it ends on its closing line
 - RULE-23: The skill tells the agent that a new proof takes one more than the highest of `> Highest-Proof:` and every proof number in either copy of the spec, and to write that number into `> Highest-Proof:`, adding the line after `> Highest-Rule:` where it is missing
 - RULE-24: The skill tells the agent that a spec carrying `> Requires:` or `> Global:`, or an anchor carrying `> Scope:`, is warned of and to take the line out, and that a rule of an anchor that holds only for some features is written in each of their specs
+- RULE-25: The skill tells the agent that when two branches take the same number, the number already on the default branch keeps it and the rule or proof from the branch not yet merged moves to the next free number
+- RULE-26: The skill tells the agent that a moved rule needs a new audit and a new signature
+- RULE-27: The skill tells the agent to take out every line git left from a merge conflict, since while one stays every rule of the spec reads `failed`
+- RULE-28: The guide's section `Where the risk is` says a computation or a data flow a mistake would harm gets a proof per boundary, and that look and feel is not a rule
 
 ## Proof
 
@@ -53,7 +57,7 @@
 - PROOF-43 (RULE-14): The spec skill's first procedure step says ``Call `sync_status` with `project_root` set to the project root, the top folder of the git checkout``
 - PROOF-44 (RULE-15): The spec skill's intake table has a row, each saying what to do, for each of `One sentence`, `A product description or a ticket`, `Pasted acceptance criteria` and `A screenshot`
 - PROOF-45 (RULE-16): The spec skill's intake table has the row `An existing spec plus a change`, whose second cell reads `Edit in place. Never renumber`
-- PROOF-46 (RULE-17): The spec skill's section `After a merge conflict` says to keep both rules, give the incoming one the next free number, and move its test markers and its signature filenames with it
+- PROOF-46 (RULE-17): The spec skill's section `After a merge conflict`, read across its line breaks, says ``Run `purlin:drift` after the merge: it names every number written twice and which line moves.`` and `Tell the person whose line moved`
 - PROOF-47 (RULE-18): The spec skill's section `After a merge conflict` says `Two branches that advanced the same anchor pin resolve to the newer sha.`
 - PROOF-48 (RULE-19): The guide's section `Written for a person who cannot read code` says a proof may name a function or class the library exports and an error type a caller gets back, with the poor example `_split_fields` and the good example `parse_line` raising `LineTooShort`
 - PROOF-49 (RULE-20): The guide's section `One proof, one case` says `One proof may name a list of like inputs that share one action and one kind of result`, with the example of `0`, `-1` and `-0.5` refused with `Amount must be positive`
@@ -62,3 +66,7 @@
 - PROOF-52 (RULE-23): The spec skill's section `Ids`, read across its line breaks, says a new proof takes "one more than the highest of `> Highest-Proof:` and every proof number in either copy"
 - PROOF-53 (RULE-23): The spec skill's section `Ids`, read across its line breaks, says to write that number into `> Highest-Proof:`, "adding the line after `> Highest-Rule:` where it is missing"
 - PROOF-54 (RULE-24): The spec skill, read across its line breaks, says ``A spec that carries `> Requires:` or `> Global:`, or an anchor that carries `> Scope:`, is warned of: take the line out.``, and that a rule of an anchor holding only for some features is written in each of their specs
+- PROOF-55 (RULE-25): The spec skill's section `After a merge conflict`, read across its line breaks, says `The number already on the default branch keeps it; the rule or proof from the branch not yet merged moves to the next free number.`
+- PROOF-56 (RULE-26): The spec skill's section `After a merge conflict`, read across its line breaks, says `A moved rule needs a new audit and a new signature.`
+- PROOF-57 (RULE-27): The spec skill's section `After a merge conflict`, read across its line breaks, says `Take out every line git left from the conflict: while one stays, every rule of the spec reads` followed by `failed` in code
+- PROOF-58 (RULE-28): The quality guide has a section headed `Where the risk is` that says `A computation or a data flow a mistake would harm gets a proof per boundary` and `Look and feel is not a rule`

@@ -137,6 +137,13 @@ direction only is half proved. Name the exact input at the edge, not only the ou
   header and 10,000 rows." and "An export of 10,001 rows is refused with the message `Exports
   are limited to 10,000 rows`, and no file is downloaded."
 
+### Where the risk is
+
+Every rule at the gate is asked the same things, so the weight of a risk goes into its proofs. A
+computation or a data flow a mistake would harm gets a proof per boundary: each edge of a range,
+each time zone and change of clock, each unit, each hand-off from one feature to the next. Look
+and feel is not a rule; a person judges it outside Purlin.
+
 ### Written for a person who cannot read code
 
 A proof names what a user, or a caller of the system, would see. It carries no source or test
@@ -264,8 +271,9 @@ or are `@manual`. Where no test could observe what the proof names, the proof is
 audit to read. The rule's strong cell reads `manual test` with the reason `manual proof`.
 A person checks it and signs, in one act, at any gate: `purlin:sign <feature> RULE-N`, with
 `--note "<what you saw>"` when they write what they saw. CI never writes that signature,
-under any gate. Use `@manual` where judgment is the only instrument, and keep the rule's
-`> Scope:` tight: when a scope file changes, the signature ends and someone must look again.
+under any gate. Use `@manual` where judgment is the only instrument. A hand check's signature is
+made over the rule's and its proofs' wording alone: a change to the code, a test or the machines
+does not end it, and a change to that wording does.
 
 ## When a rule is stuck
 
@@ -279,6 +287,7 @@ below it is, and its row says what moves both.
 | passed | `no test`, with `no proof written` | No proof line names the rule, and no test is marked with the rule's own id. | Write the proof under `## Proof` so it names what is done and an expected value a test can reach. `purlin:spec`. At the gate `passed` a test marked with the rule's id answers it too. |
 | passed | `no test`, with `no test for <PROOF-N>` | One of the rule's proofs has no test carrying its marker comment; the reason names each such proof. | `purlin:build` writes the test, then `purlin:test`. |
 | passed | `failed` | A test for the rule failed. The reason names the file and the test. | Fix the code, or the test. See the next section. |
+| passed | `failed`, with `<RULE-N or PROOF-N> is written twice in the spec` or `the spec holds a line left from a merge conflict` | The spec writes a number twice or holds a line git left from a merge conflict, so every rule of it reads `failed` whatever its tests show. | `purlin:spec`: renumber the line from the branch not yet merged, or take out the conflict lines. |
 | passed | `not run` | The rule's tests have no result in a current section. | Run `purlin:test`, which counts at every gate. |
 | passed | `not run`, with `<System>: no run yet` | A proof carries `@env` for an operating system that has not run the rule's tests: no current section comes from it. | Run `purlin:test --remote`, whose runner file names that system, or drop the `@env` tag if any operating system could show it. |
 | passed | `partial` | The rule's tests passed on one operating system and failed on another. `partial` is not met. | Fix the code or the test for the system that failed, then run the tests there again. |
@@ -290,7 +299,7 @@ below it is, and its row says what moves both.
 | strong | `manual test` | The proof is `@manual`, so no test can be written and a person runs it. | `purlin:sign <feature> RULE-N --note "<what you saw>"`. |
 | strong | `not audited` | No audit has read this rule, proof and test, so the evidence holds no audit entry for the current hashes. | `purlin:audit`, which writes the entry into the evidence. |
 | strong | `weak`, `the AI audit could not decide: ...` | The AI audit ran and could not tell whether the test observes what the proof names. | `purlin:build`: make the proof or the test say plainly what is observed; the next `purlin:audit` reads the rule again. |
-| signed | `unsigned` | No signature matches the rule as it stands: none was made, or the rule, its proof, its test, its feature's code, what the audit found or the machine its tests ran on changed after it. | `purlin:sign <feature> RULE-N`, which writes it in a signed commit. |
+| signed | `unsigned` | No signature matches the rule as it stands: none was made, or the rule, its proof, its test, its feature's code, what the audit found or the machine its tests ran on changed after it. A signature that ended says so: `the signature by <signer> ended because <cause>`. | `purlin:sign <feature> RULE-N`, which writes it in a signed commit. |
 
 ## When a test fails, fix the code
 
