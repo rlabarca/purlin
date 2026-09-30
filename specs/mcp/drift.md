@@ -9,7 +9,7 @@
 >   facts and judges nothing.
 > Scope: scripts/mcp/purlin/drift.py
 > Stack: python/stdlib, json, re, subprocess (list-only)
-> Highest-Rule: 26
+> Highest-Rule: 27
 
 ## Rules
 
@@ -38,6 +38,7 @@
 - RULE-24: The QA view's `left` holds the status's own items of `Left to do` of the kinds `to_test_by_hand` and `to_sign`, the items its lines of `Left to do` are built from
 - RULE-25: A role argument narrows the answer to exactly `since`, `role` and `view`
 - RULE-26: In a repository whose HEAD names no commit, drift's answer is the error `no commits` with the reason `drift reads git, and HEAD names no commit here`, in place of the report
+- RULE-27: A drift call writes no file and leaves HEAD and the working tree as they were
 
 ## Proof
 
@@ -105,3 +106,4 @@
 - PROOF-57 (RULE-20): The anchor `refunds` is pinned to the source `the finance team's refund policy`, a description in words; its row reads `error`, its line begins `anchor refunds: its source, the finance team's refund policy, is not a spec in Purlin's format` and names `purlin:spec refunds`, and no process is handed that source
 - PROOF-58 (RULE-21): A project's `.purlin/config.json` holds a comma after its last setting; drift's whole answer is `.purlin/config.json cannot be read: <the JSON reader's message> at line <n>. Fix the file by hand; nothing ran and nothing was saved.`, and no process starts
 - PROOF-61 (RULE-26): In a repository made with `git init` and no commit, drift is asked for its report; the answer is the error `no commits` with the reason `drift reads git, and HEAD names no commit here`
+- PROOF-66 (RULE-27): In a checkout that has just pulled a change to a scoped file, the `pm`, `eng` and `qa` views are asked for in turn; HEAD, `git status --porcelain` and the bytes of every file outside `.git` read the same after as before

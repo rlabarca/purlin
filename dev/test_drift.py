@@ -573,6 +573,35 @@ def _evidence_file(root, feature, rule_ids):
                        for rid in rule_ids]}}}))
 
 
+def _files_outside_git(root):
+    """`{path: bytes}` for every file of the checkout outside `.git`."""
+    found = {}
+    for folder, dirs, files in os.walk(root):
+        dirs[:] = [name for name in dirs if name != '.git']
+        for name in files:
+            path = os.path.join(folder, name)
+            with open(path, 'rb') as handle:
+                found[os.path.relpath(path, root)] = handle.read()
+    return found
+
+
+# purlin: drift PROOF-66
+def test_a_drift_call_writes_nothing(tmp_path):
+    _up, checkout, _before = _pulled(
+        tmp_path, LOGIN_FILES,
+        [{'src/auth/login.py': 'def login():\n    return 2\n'}])
+    head = _sha(checkout)
+    status = _git(['status', '--porcelain'], checkout).stdout
+    files = _files_outside_git(checkout)
+
+    for role in ('pm', 'eng', 'qa'):
+        assert json.loads(purlin_drift.drift(checkout, role=role))['view']
+
+    assert _sha(checkout) == head
+    assert _git(['status', '--porcelain'], checkout).stdout == status
+    assert _files_outside_git(checkout) == files
+
+
 class TestEngView:
 
     # purlin: drift PROOF-14
