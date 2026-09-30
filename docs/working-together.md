@@ -14,40 +14,40 @@ a ticket or a list of acceptance criteria, and `purlin:spec` turns it into rules
 with their proofs, and asks whether to change any before it saves the spec. It never starts
 building.
 
-**What you see.** The dashboard's **rollup** says how many rules meet the gate out of how many
-there are, plus one count per bucket, and `.purlin/tests.md` is the table of the latest committed
-evidence. After a pull, `purlin:drift pm` tells you
-which rules it added, changed or removed:
+**What you see.** The dashboard's boxes count the rules that reached each step the gate asks
+for, `Passing`, then `Strong` from the gate `strong` up and `Signed` at `signed`, with a
+`No proof` box first from `strong` up. `.purlin/tests.md` is the table of the newest run of
+each feature, written from every evidence file on disk, committed or not. After a pull,
+`purlin:drift pm` tells you which rules it added, changed or removed:
 
 ```
-Since your last pull, 14 hours ago (a1b2c3d..4f5e6a7, 9 commits).
-3 rules added: login RULE-7, RULE-8; export RULE-2.
-1 rule removed: cart RULE-4.
+Since your last pull, 0 seconds ago (b9f91d5..1af085f, 2 commits).
+2 rules added: export RULE-1; login RULE-4.
+1 rule changed: login RULE-2.
 ```
 
 ## QA
 
 **What you need.** A checkout and the plugin. You write and review the proofs: a proof says in
 plain language how a rule is shown, and `references/spec_quality_guide.md` is the guideline an
-AI draft is held to. `purlin:sign` walks the queue, the rules whose next step is a person, one
-rule at a time, showing what the audit found. At each stop you answer `sign`, `case` or `skip`.
-A signature is a signed commit `purlin:sign` makes.
+AI draft is held to.
 
-**What you work.** The queue, never the whole rule list. It exists at `strong` and above. A rule
-reaches it only when the cell that blocks it is one a person answers: a strong cell reading
-`manual test` (a `hand check`), or, at `signed`, a signed cell reading `unsigned` or `stale` (a
-`signature`). Everything else is work for the build or the audit and stays on the board.
+**What you work.** `purlin:sign` walks the rules left to do as `to test by hand` or `to sign`,
+one rule at a time, showing the rule, its proofs and what the audit found. A rule is
+`to test by hand` at every gate while a `@manual` proof of it is not checked, and `to sign` at
+the gate `signed` once its tests pass and its audit is strong. Everything else is work for the
+build or the audit, and `Left to do` names the command for it. At each stop you answer `sign`,
+`case` or `skip`. A signature is a signed commit `purlin:sign` makes.
 
-Adding a case is plain language. Say "it should also reject an expired token" and the proof line
-is written into the spec with the next free proof id; the test arrives on the next
-`purlin:build`. At the gate `signed`, when the queue is empty and every rule meets it,
-`purlin:sign` writes the tag `signed/<version>` and you push it. [review-and-signing.md](review-and-signing.md) is the
-walk in full.
+Adding a case is plain language. Say "it should also reject an expired token" and the proof
+line is written into the spec with the next free proof id; the test arrives on the next
+`purlin:build`. At the gate `signed`, when nothing is left but the tag, `purlin:sign` writes
+the tag `signed/<version>` and you push it. [review-and-signing.md](review-and-signing.md) is
+the walk in full.
 
 ## The developer
 
-**What you need.** A checkout and the plugin, loaded from the marketplace or with
-`claude --plugin-dir <checkout>`.
+**What you need.** A checkout and the plugin.
 
 **What you run**, in this order, at the start of a session:
 
@@ -56,25 +56,27 @@ purlin:drift eng            what changed since your last pull
 purlin:anchor sync <name>   when a pin is behind
 purlin:spec <name>          when a rule is missing or wrong
 purlin:build <name>         the code and its marked tests
-purlin:test                 the tests the change touched; --commit commits the evidence
-purlin:audit                the tests, then the AI audit; --commit commits what it found
+purlin:test                 the tests the change touched; --commit commits the work and the evidence
+purlin:audit                the tests, then the AI audit; --commit commits the work and what it found
 ```
 
 Then you push.
 
-**What you see.**
+**What you see.** After a pull, `purlin:drift eng` names what moved and the command for each:
 
 ```
-Since your last pull, 14 hours ago (a1b2c3d..4f5e6a7, 9 commits).
-2 files changed under login's scope: RULE-2, RULE-5 are behind them.
-1 changed file is under no spec's scope: src/auth/mfa.js.
-1 rule has no test: login RULE-7.
-anchor security_baseline is behind its source (now 3c4d5e6). Run: purlin:anchor sync security_baseline.
-1 feature is out of date: export.
+Since your last pull, 0 seconds ago (b9f91d5..1af085f, 2 commits).
+1 file changed under export's scope: RULE-1 is behind it. Run purlin:test export.
+1 file changed under login's scope: RULE-1, RULE-2, RULE-3, RULE-4 are behind it. Run purlin:test login.
+1 changed file is under no spec's scope: src/mfa.py. Add each to a spec's > Scope: line with purlin:spec.
+3 rules have no test: export RULE-1; security_baseline RULE-1, RULE-2. Run purlin:build.
+anchor security_baseline: the pin 71abd36 is behind its source, now b3a6387. Run purlin:anchor sync security_baseline.
+1 feature is out of date: login. Run purlin:test.
 ```
 
-You may also be the person who signs. Signing is logged, not policed: the signature names you,
-git names whoever wrote the test, and Purlin decides neither.
+You may also be the person who signs. Signing is logged, not policed: the signature records
+your name and email as git holds them and the fingerprint of your key, and Purlin does not
+decide who may sign.
 
 ## A rule from a pinned anchor
 
@@ -85,18 +87,30 @@ once it merges.
 ## Drift, one view per role
 
 `purlin:drift` reports what changed since the last git action that brought changes into your
-checkout: the newest pull, merge, rebase, checkout, clone or reset in git's log of HEAD. It
+checkout: the newest pull, merge, rebase, checkout or reset in git's log of HEAD. After a clone
+with nothing later, it reads the last 20 commits, or every commit when there are fewer. It
 writes nothing and judges nothing.
 
 | Role | What it reports |
 |------|-----------------|
 | `pm` | Rules added, rules changed, rules removed |
 | `eng` | Code changed and the rules behind it, changed files under no spec's scope, rules with no test, anchors behind their source, features out of date |
-| `qa` | Test files changed and the features they cover; at `strong` and above, signatures gone stale and why, and the size of the queue |
+| `qa` | Test files changed and the features they cover, then the `to test by hand` and `to sign` lines of `Left to do` |
 
-Run it right after you pull, merge, rebase or check out someone else's branch. With no role
-named, `purlin:drift` infers one from the files the session touched and says which it chose.
-`--since <N>` reads the last N commits and `--since <YYYY-MM-DD>` every commit since that date.
+The `qa` view prints those lines at every gate; at `passed` only a rule to test by hand waits
+for a person:
+
+```
+Since your last pull, 1 second ago (b9f91d5..1af085f, 2 commits).
+1 test file changed, covering login.
+1 rule to test by hand: purlin:sign
+```
+
+Every view ends with `<n> spec files have changes that are not committed.` when a spec file
+differs from the last commit or is not tracked. Run it right after you pull, merge, rebase or
+check out someone else's branch. With no role named, `purlin:drift` infers one from the files
+the session touched and says which it chose. `--since <N>` reads the last N commits and
+`--since <YYYY-MM-DD>` every commit since that date.
 
 ## Next
 
