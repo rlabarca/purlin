@@ -77,13 +77,15 @@ def first_setup(answers):
     return done.returncode, done.stdout + done.stderr, config
 
 
-# The prompt setup waits at after each question, `[<default>]: `.
-PROMPT = re.compile(r'\[[^\]\n]*\]: ')
+# The prompts setup waits at: `[<default>]: ` on a line under the question
+# and its answers, and ` [y/N] ` ending a yes-or-no question's own line.
+PROMPT = re.compile(r'\[[^\]\n]*\]: |(?<= \[y/N\]) ')
 
 
 def asked(output):
     """`[(question, [answers offered])]`, one per prompt setup waited at: the
-    last unindented line before the prompt, and the indented lines under it."""
+    last unindented line before the prompt, `[y/N]` kept where the question
+    ends on it, and the indented lines under it."""
     questions = []
     for chunk in PROMPT.split(output)[:-1]:
         lines = [line for line in chunk.splitlines() if line.strip()]
@@ -178,10 +180,11 @@ def closing_problems():
 # RULE-5: the questions
 # ---------------------------------------------------------------------------
 
-# The two questions init asks, in order, each by the words the skill uses.
+# The three questions init asks, in order, each by the words the skill uses.
 INIT_QUESTIONS = (
-    'What must be true of every rule before a version is proven?',
+    'What must be true of every rule before a version is finished?',
     'Measure test strength by breaking the code on purpose?',
+    'Commit the files setup wrote? [y/N]',
 )
 
 
@@ -229,12 +232,52 @@ def gate_table_problems():
 
 
 def swap_questions(text):
-    """The skill with its two numbered questions in each other's place."""
+    """The skill with its first two numbered questions in each other's
+    place."""
     first = text.index('1. **The gate**')
     second = text.index('2. **Mutation testing**')
-    end = text.index('\n\nThe first answer', second)
+    end = text.index('\n3. **Committing**', second)
     one, two = text[first:second].rstrip('\n'), text[second:end]
     return (text[:first] + '1.' + two[2:] + '\n2.' + one[2:] + text[end:])
+
+
+def commit_question_problems():
+    items = question_items() or []
+    if len(items) < 3:
+        return ['%s has no third question' % SKILL]
+    return ['%s commit question does not carry %r' % (SKILL, needle)
+            for needle in ('`Commit the files setup wrote? [y/N]`',
+                           'The default is no',
+                           '`chore(init): set up Purlin at the gate <gate>`')
+            if needle not in flat(items[2])]
+
+
+# The sentence of "Run it" that says how the answers reach the script.
+PASS_ANSWERS = (
+    'Ask the person each question yourself. Pass `--mutation` when they say '
+    'yes to breaking the code on purpose. Pass `--yes` when they say yes to '
+    'the commit; otherwise run the script with its input empty, '
+    '`< /dev/null`, so every question it would ask takes its default.')
+
+
+def pass_answers_problems():
+    body = section(read(SKILL), r'^Run it$') or ''
+    if PASS_ANSWERS in flat(body):
+        return []
+    return ['%s Run it does not say how the answers reach the script'
+            % SKILL]
+
+
+YES_ROW = ('Takes the default answer to every question and commits the files '
+           'setup wrote')
+
+
+def yes_row_problems():
+    rows = [cells for cells in table_rows(read(SKILL), '| Flag |')
+            if cells[0] == '`--yes`']
+    if [cells[1] for cells in rows] == [YES_ROW]:
+        return []
+    return ['%s flag table does not say --yes %r' % (SKILL, YES_ROW)]
 
 
 # ---------------------------------------------------------------------------
@@ -354,6 +397,24 @@ class TestRunLine:
              '%s does not hand a person --mutation' % SKILL),
         ]) == []
 
+    # purlin: skill_init PROOF-96
+    def test_the_yes_row_says_it_commits(self, monkeypatch):
+        assert yes_row_problems() == []
+        assert refusals(monkeypatch, yes_row_problems, [
+            (SKILL, replace(' and commits the files setup wrote |', ' |'),
+             '%s flag table does not say --yes' % SKILL),
+        ]) == []
+
+    # purlin: skill_init PROOF-95
+    def test_run_it_says_how_the_answers_reach_the_script(self, monkeypatch):
+        assert pass_answers_problems() == []
+        assert refusals(monkeypatch, pass_answers_problems, [
+            (SKILL, replace('Pass `--yes` when they say yes to the commit; ',
+                            ''),
+             '%s Run it does not say how the answers reach the script'
+             % SKILL),
+        ]) == []
+
     # purlin: skill_init PROOF-24
     def test_every_flag_handed_is_one_the_script_takes(self, monkeypatch):
         assert usage_problems() == []
@@ -392,13 +453,13 @@ class TestCeiling:
 class TestQuestions:
 
     # purlin: skill_init PROOF-5
-    def test_it_names_the_two_questions_in_order(self, monkeypatch):
+    def test_it_names_the_three_questions_in_order(self, monkeypatch):
         assert question_problems() == []
         assert refusals(monkeypatch, question_problems, [
             (SKILL, replace('2. **Mutation testing**', '2. **Colour**, on '
                             'every first run: which colour.\n'
                             '3. **Mutation testing**'),
-             '%s names 3 questions, expected 2' % SKILL),
+             '%s names 4 questions, expected 3' % SKILL),
             (SKILL, swap_questions,
              "does not carry %r" % INIT_QUESTIONS[0]),
         ]) == []
@@ -426,20 +487,31 @@ class TestQuestions:
         ]) == []
 
     # purlin: skill_init PROOF-32
-    def test_setup_at_strong_asks_the_two_questions_the_skill_quotes(self):
+    def test_setup_at_strong_asks_the_three_questions_the_skill_quotes(self):
         code, output, _ = first_setup('strong\n\n')
         assert code == 0, output
         quoted = skill_questions()
-        assert len(quoted) == 2
-        expected = [quoted[0], quoted[1].replace('<engine>', 'mutmut')]
+        assert len(quoted) == 3
+        expected = [quoted[0], quoted[1].replace('<engine>', 'mutmut'),
+                    quoted[2]]
         assert [question for question, _ in asked(output)] == expected
 
     # purlin: skill_init PROOF-33
-    def test_setup_at_passed_asks_only_the_gate(self):
+    def test_setup_at_passed_asks_the_gate_then_the_commit(self):
         code, output, _ = first_setup('passed\n')
         assert code == 0, output
         assert [question for question, _ in asked(output)] == [
-            INIT_QUESTIONS[0]]
+            INIT_QUESTIONS[0], INIT_QUESTIONS[2]]
+
+    # purlin: skill_init PROOF-94
+    def test_the_third_question_is_the_commit(self, monkeypatch):
+        assert commit_question_problems() == []
+        assert refusals(monkeypatch, commit_question_problems, [
+            (SKILL, replace(' The default is no; a yes commits', ' A yes '
+                            'commits'),
+             "%s commit question does not carry 'The default is no'"
+             % SKILL),
+        ]) == []
 
     # purlin: skill_init PROOF-34
     def test_the_gate_question_offers_the_three_gates_in_order(self):
