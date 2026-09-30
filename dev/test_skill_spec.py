@@ -247,7 +247,7 @@ class TestSkillSpec:
             (SKILL, replace('at the gate `signed` its rules', 'its rules'),
              "%s has no sentence carrying all of 'A spec that names no "
              "files'" % SKILL),
-            (SKILL, replace(' and no tag is written'),
+            (SKILL, replace(', so no tag is written'),
              "%s has no sentence carrying all of 'A spec that names no "
              "files'" % SKILL),
         ]) == []
@@ -483,8 +483,8 @@ def scope_problems():
 def no_files_problems():
     return sentence_with(SKILL, [
         'A spec that names no files', 'every run includes it',
-        'at the gate `signed` its rules cannot be signed and no tag is '
-        'written'])
+        'at the gate `signed` its rules are signed and their signatures do '
+        'not count, so no tag is written'])
 
 
 def review_order_problems():

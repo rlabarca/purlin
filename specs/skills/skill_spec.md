@@ -18,7 +18,7 @@
 - RULE-6: The skill tells the agent to print each rule with its proofs under it and ask whether to change any before it saves, and to save the spec only once the person is satisfied
 - RULE-7: The skill tells the agent to write each proof as one case, one starting situation and one action in at most 60 words, with a refusal or a boundary as a proof of its own, and points it at the guide's `One proof, one case`
 - RULE-8: `references/purlin_commands.md` carries a row for `purlin:spec`
-- RULE-9: The skill tells the agent that a spec naming no files has its tests run on every `purlin:test` and that, at the gate `signed`, its rules cannot be signed and no tag is written
+- RULE-9: The skill tells the agent that a spec naming no files has its tests run on every `purlin:test` and that, at the gate `signed`, its rules are signed and their signatures do not count, so no tag is written
 - RULE-10: The skill tells the agent to draft every proof against the guideline for a good proof in `references/spec_quality_guide.md`
 - RULE-11: The guide's section `One proof, one case` says a proof holds one starting situation and one action in at most 60 words, and that a refusal or a boundary is a case of its own
 - RULE-13: The skill tells the agent to write the number a new rule takes into `> Highest-Rule:`, adding the line after the spec's other `>` lines where it is missing
@@ -41,7 +41,7 @@
 - PROOF-4 (RULE-4): The spec skill, counted line by line, is at most 210 lines
 - PROOF-28 (RULE-4): A copy of the spec skill lengthened with prose to exactly 210 lines is accepted, with nothing reported
 - PROOF-5 (RULE-5): The spec skill says, in one sentence, "Write `> Scope:` on every spec you create", naming "the files the requirement touches" and "the paths `purlin:build` will create", and its numbered step that writes the metadata names `> Scope:`
-- PROOF-30 (RULE-9): The spec skill says, in one sentence, that of "A spec that names no files" "every run includes it", and "at the gate `signed` its rules cannot be signed and no tag is written"
+- PROOF-30 (RULE-9): The spec skill says, in one sentence, that of "A spec that names no files" "every run includes it", and "at the gate `signed` its rules are signed and their signatures do not count, so no tag is written"
 - PROOF-6 (RULE-6): In the spec skill's numbered procedure, the step "Print each rule with its proofs under it and ask whether to change any" comes before the step "Save the spec when the person is satisfied"
 - PROOF-36 (RULE-10): The spec skill says, in one sentence, to draft every proof against `references/spec_quality_guide.md`, "Writing proofs", and that a good proof holds "at least one failure case"
 - PROOF-7 (RULE-7): The spec skill says, in one sentence, "Write each proof as one case", "one starting situation and one action", "in at most 60 words", "a refusal or a boundary as a proof of its own" and the guide's "One proof, one case"

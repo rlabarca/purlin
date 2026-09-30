@@ -87,8 +87,8 @@ Write `> Scope:` on every spec you create: the files the requirement touches, or
 `purlin:build` will create for it. The evidence carries a fingerprint of those files, so a
 change to one of them reads `out of date` and selects the feature for the next `purlin:test`,
 and a signature is tied to the code it governs. A spec that names no files still has its tests
-run and its rules read, but every run includes it, and at the gate `signed` its rules cannot
-be signed and no tag is written.
+run and its rules read, but every run includes it, and at the gate `signed` its rules are
+signed and their signatures do not count, so no tag is written.
 
 ## Rules
 
