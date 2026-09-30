@@ -42,15 +42,12 @@ def _project(tmp_path, tests=None, gate='passed'):
 
 
 def _spec(root, feature, proofs=(('PROOF-1', 'RULE-1', ''),), rules=1,
-          scope='src/', requires=None):
+          scope='src/'):
     """A two-section spec. Each proof is `(id, rule, tag_suffix)`.
 
-    `scope` is the `> Scope:` line's value, None for no line at all, and
-    `requires` the `> Requires:` line's.
+    `scope` is the `> Scope:` line's value, None for no line at all.
     """
     lines = ['# %s' % feature, '']
-    if requires:
-        lines.append('> Requires: %s' % requires)
     if scope is not None:
         lines.append('> Scope: %s' % scope)
     lines.extend(['', '## Rules', ''])
