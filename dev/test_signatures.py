@@ -207,6 +207,23 @@ def sign_one(made, rule='RULE-1', email=EMAIL, note=None, gate='passed',
         made.root, entry or made.rule(rule), email, None, gate, note=note)
 
 
+def stops_of(made, answer='skip'):
+    """`{rule id: [lines]}`, each stop of the walk as it was shown."""
+    stops = {}
+
+    def seen(entry, rendered):
+        stops[entry['id']] = rendered.splitlines()
+        return answer
+
+    sign_module.walk(made.root, out=_Out(), answer=seen)
+    return stops
+
+
+def audit_shown(stop):
+    """The lines of one stop from `What the audit found` on."""
+    return stop[stop.index('What the audit found'):]
+
+
 def current(made, rule='RULE-1'):
     entry = made.rule(rule)
     return [signature for signature in made.load().get(('login', rule)) or ()
@@ -1066,8 +1083,74 @@ class TestTheWalk:
                 if entry['id'] == 'RULE-2' else 'skip'))
         output = capsys.readouterr().out.splitlines()
         assert len(given['cases']) == 1 and at_signed.signatures() == []
+        assert 'Walked 2 rules: 0 signed, 1 case added, 1 skipped.' in output
         assert ('  login RULE-2   add this proof line: it should also reject '
                 'an expired token') in output, output
+
+    # purlin: signatures PROOF-175
+    def test_a_case_with_no_line_says_the_reviewer_named_none(
+            self, at_signed, capsys):
+        given = sign_module.walk(
+            at_signed.root, answer=lambda entry, _text: (
+                ('case', '') if entry['id'] == 'RULE-2' else 'skip'))
+        output = capsys.readouterr().out.splitlines()
+        assert len(given['cases']) == 1 and at_signed.signatures() == []
+        assert ('  login RULE-2   add this proof line: the reviewer named no '
+                'case') in output, output
+
+    # purlin: signatures PROOF-176
+    def test_a_walk_that_signed_names_its_commit(self, at_signed, capsys):
+        given = sign_module.walk(at_signed.root,
+                                 answer=lambda _entry, _text: 'sign')
+        output = capsys.readouterr().out.splitlines()
+        sha, = given['commits']
+        signed_at = next(index for index, line in enumerate(output)
+                         if line.startswith('Signed 2 rules as '))
+        assert output[signed_at + 1] == 'Commits: %s' % sha[:7], output
+        assert git(at_signed.root, 'log', '-1', '--format=%s', sha).stdout \
+            .strip() == 'sign(login): RULE-1 RULE-2'
+
+    # purlin: signatures PROOF-177
+    def test_a_skipped_rule_is_still_to_sign_and_nothing_records_it(
+            self, at_signed, capsys):
+        sign_module.walk(at_signed.root, answer=lambda _entry, _text: 'skip')
+        capsys.readouterr()
+        assert [at_signed.rule(rule)['left'] for rule in ('RULE-1', 'RULE-2')] \
+            == ['to_sign', 'to_sign']
+        assert git(at_signed.root, 'status', '--porcelain',
+                   '--untracked-files=all', '--ignored').stdout == ''
+
+    # purlin: signatures PROOF-165
+    def test_rule_2_comes_before_rule_10(self, capsys):
+        made = ready(spec=SPEC.replace('- RULE-1:', '- RULE-10:')
+                     .replace('(RULE-1)', '(RULE-10)'),
+                     audited=('RULE-2', 'RULE-10'))
+        try:
+            shown = []
+            sign_module.walk(made.root, answer=lambda entry, _text: (
+                shown.append(entry['id']) or 'skip'))
+            capsys.readouterr()
+            assert shown == ['RULE-2', 'RULE-10'], shown
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-166
+    def test_a_proof_for_one_system_shows_its_tag(self, capsys):
+        made = ready(spec=SPEC.replace('verify 200 and a token\n',
+                                       'verify 200 and a token @env(windows)\n'),
+                     signer=False)
+        try:
+            record(made, source='ci', os_name='windows',
+                   machine='remote runner, Windows')
+            made.audit('RULE-1')
+            commit_all(made)
+            key(made.root)
+            stops = stops_of(made, 'skip')
+            assert ('  PROOF-1 (@env(windows)): POST /login with the password '
+                    '"secret"; verify 200 and a token') in stops['RULE-1'], \
+                stops
+        finally:
+            made.close()
 
     # purlin: signatures PROOF-89
     def test_a_walk_with_nothing_waiting_says_so(self, capsys):
@@ -1079,6 +1162,191 @@ class TestTheWalk:
                 'Nothing is waiting for someone to test by hand or to sign.')
         finally:
             made.close()
+
+
+# ---------------------------------------------------------------------------
+# What a stop shows, and what the walk asks
+# ---------------------------------------------------------------------------
+
+def set_findings(made, rule, findings):
+    """Give the audit entry `made` wrote for a rule these findings."""
+    rel = made.audit(rule)
+    path = os.path.join(made.root, *rel.split('/'))
+    data = read_json(made.root, rel)
+    data['audit']['rules'][rule]['findings'] = list(findings)
+    write(path, json.dumps(data, indent=2, sort_keys=True))
+
+
+class TestWhatTheAuditFound:
+
+    # purlin: signatures PROOF-167
+    def test_no_audit_yet(self):
+        made = ready(spec=MANUAL_SPEC, audited=('RULE-1',))
+        try:
+            assert made.rule('RULE-2')['audit'] is None
+            assert audit_shown(stops_of(made)['RULE-2']) == [
+                'What the audit found',
+                "  No audit has read this rule's text, proof and test yet."]
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-168
+    def test_strong_with_no_finding(self, at_signed):
+        assert audit_shown(stops_of(at_signed)['RULE-1']) == [
+            'What the audit found', '  Strong. It found nothing.']
+
+    # purlin: signatures PROOF-169
+    def test_strong_with_a_finding(self, at_signed):
+        set_findings(at_signed, 'RULE-1', ['PROOF-1 reads the status alone.'])
+        assert audit_shown(stops_of(at_signed)['RULE-1']) == [
+            'What the audit found', '  Strong.',
+            '  PROOF-1 reads the status alone.']
+
+    # purlin: signatures PROOF-170
+    def test_weak_with_a_finding(self):
+        made = ready(spec=MANUAL_SPEC, audited=('RULE-1',))
+        try:
+            made.audit('RULE-2', findings=['PROOF-2 reads the status alone.'])
+            assert audit_shown(stops_of(made)['RULE-2']) == [
+                'What the audit found', '  Weak.',
+                '  PROOF-2 reads the status alone.']
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-171
+    def test_undecided_with_a_finding(self):
+        made = ready(spec=MANUAL_SPEC, audited=('RULE-1',))
+        try:
+            made.audit('RULE-2', findings=['PROOF-2 names no status.'],
+                       settled=False)
+            assert audit_shown(stops_of(made)['RULE-2']) == [
+                'What the audit found',
+                '  Undecided. The AI audit could not decide, so the rule '
+                'reads weak until its proof or test changes.',
+                '  PROOF-2 names no status.']
+        finally:
+            made.close()
+
+
+def typed(monkeypatch, answers):
+    """Answer the walk's questions with `answers`, in order. The questions asked."""
+    asked = []
+    left = list(answers)
+
+    def answer(question=''):
+        asked.append(question)
+        if not left:
+            raise EOFError
+        return left.pop(0)
+
+    monkeypatch.setattr('builtins.input', answer)
+    return asked
+
+
+class TestWhatTheWalkAsks:
+
+    # purlin: signatures PROOF-172
+    def test_each_stop_asks_for_one_of_three(self, at_signed, monkeypatch):
+        asked = typed(monkeypatch, ['skip', 'skip'])
+        sign_module.walk(at_signed.root, out=_Out())
+        assert asked[0] == 'login RULE-1   sign / case / skip: ', asked
+
+    # purlin: signatures PROOF-173
+    def test_signing_a_hand_check_asks_what_was_seen(self, monkeypatch):
+        made = ready(spec=MANUAL_SPEC, audited=('RULE-1',))
+        try:
+            asked = typed(monkeypatch, ['skip', 'sign', 'It read 401.'])
+            sign_module.walk(made.root, out=_Out())
+            assert asked[1:] == ['login RULE-2   sign / case / skip: ',
+                                 'What did you see, in one line: '], asked
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-174
+    def test_a_case_asks_for_the_line(self, at_signed, monkeypatch):
+        asked = typed(monkeypatch, ['case', 'reject an empty password', 'skip'])
+        sign_module.walk(at_signed.root, out=_Out())
+        assert asked[:2] == ['login RULE-1   sign / case / skip: ',
+                             '  in one line: '], asked
+
+
+# ---------------------------------------------------------------------------
+# A spec that names no files
+# ---------------------------------------------------------------------------
+
+NO_SCOPE = SPEC.replace('> Scope: src/login.py\n', '')
+
+
+class TestNoFiles:
+
+    # purlin: signatures PROOF-159
+    def test_a_named_rule_says_its_signature_does_not_count(self, capsys):
+        made = ready(spec=NO_SCOPE)
+        try:
+            assert sign_module.main(['login', 'RULE-1', '--project-root',
+                                     made.root]) == 0
+            lines = capsys.readouterr().out.splitlines()
+            assert lines[0].startswith('Signed 1 rule as '), lines
+            assert lines[1] == ('  login RULE-1   does not count until the '
+                                'spec names its files: purlin:spec login'), lines
+            assert [name.split('.')[0] for name in made.signatures()] == [
+                'RULE-1']
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-160
+    def test_the_walk_says_so_for_each_such_rule_it_signed(self, capsys):
+        made = ready(spec=MANUAL_SPEC.replace('> Scope: src/login.py\n', ''),
+                     audited=('RULE-1',))
+        try:
+            assert made.rule('RULE-2')['left'] == 'to_test_by_hand'
+            out = _Out()
+            sign_module.walk(made.root, out=out, answer=lambda entry, _text: (
+                ('sign', 'It read 401.') if entry['id'] == 'RULE-2'
+                else 'skip'))
+            lines = out.text().splitlines()
+            signed_at = next(index for index, line in enumerate(lines)
+                             if line.startswith('Signed 1 rule as '))
+            assert lines[signed_at - 1] == (
+                '  login RULE-2   does not count until the spec names its '
+                'files: purlin:spec login'), lines
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-161
+    def test_below_signed_the_line_is_the_plain_one(self, capsys):
+        made = ready(gate=REVIEW_GATE, spec=NO_SCOPE)
+        try:
+            assert sign_module.main(['login', 'RULE-1', '--project-root',
+                                     made.root]) == 0
+            lines = capsys.readouterr().out.splitlines()
+            assert lines[0].startswith('Signed 1 rule as '), lines
+            assert lines[1] == '  login RULE-1', lines
+        finally:
+            made.close()
+
+
+# ---------------------------------------------------------------------------
+# The commit not made
+# ---------------------------------------------------------------------------
+
+class TestTheCommitNotMade:
+
+    # purlin: signatures PROOF-162
+    def test_gits_own_message_is_named(self, at_signed, capsys):
+        hook = os.path.join(at_signed.root, '.git', 'hooks', 'pre-commit')
+        with open(hook, 'w', encoding='utf-8', newline='\n') as handle:
+            handle.write('#!/bin/sh\n'
+                         'echo "error: the hook refused the commit." >&2\n'
+                         'exit 1\n')
+        os.chmod(hook, 0o755)
+        before = at_signed.head()
+        code = sign_module.main(['--all', '--project-root', at_signed.root])
+        assert capsys.readouterr().out.splitlines() == [
+            'The signature commit was not made: the hook refused the commit. '
+            'Nothing was signed; run purlin:sign again once git can make a '
+            'signed commit.']
+        assert (code, at_signed.head()) == (1, before)
 
 
 # ---------------------------------------------------------------------------
@@ -1224,6 +1492,12 @@ class TestTheCommandLine:
         assert sign_module.main(['--nope']) == 2
         assert capsys.readouterr().err.splitlines() == [
             sign_module.USAGE, 'sign.py: unknown option --nope']
+
+    # purlin: signatures PROOF-164
+    def test_a_root_that_is_not_a_directory_exits_two(self, capsys):
+        assert sign_module.main(['--project-root', 'no/such/folder']) == 2
+        assert capsys.readouterr().err.splitlines() == [
+            'sign.py: no/such/folder is not a directory.']
 
     # purlin: signatures PROOF-152
     def test_a_settings_file_that_cannot_be_read_stops_it(self, at_signed,

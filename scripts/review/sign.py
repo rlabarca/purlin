@@ -87,16 +87,21 @@ USAGE = ('Usage: sign.py [<feature> [RULE-N ...]] [--all] [--note TEXT] '
 # the tag itself.
 TAG_PREFIX = 'signed/'
 TAGGED = 'Tagged %s at %s.'
-NO_TAG_EXISTS = ('No tag: %s is already written. Name another with '
-                 '--release <name>.')
+NO_TAG_EXISTS = ('No tag: %s is already written. Run purlin:sign --release '
+                 '<name> to name another.')
 NO_TAG_WORK = ('No tag: the working tree holds changes that are not '
                'committed, so the results do not describe a commit. Commit '
                'them, then run purlin:sign.')
 NO_TAG_EVIDENCE = ('No tag: %s has results that are not committed. Run '
                    'purlin:test --commit.')
-NO_VERSION = ('No version: nothing in this project states one. Name it with '
+NO_VERSION = ('No version: nothing in this project states one. Run purlin:sign '
               '--release <version>, or write it to a VERSION file.')
 NO_TAG_PACKAGE = 'No tag: the evidence package was not committed: %s.'
+# The package's own refusal when the committed evidence still has work left,
+# said with its cause first and the commands that clear it.
+NO_TAG_WORK_LEFT = ('No tag: the committed evidence still has work left to '
+                    'do, so no evidence package was committed. Run '
+                    'purlin:test --commit, then purlin:sign.')
 NO_TAG_GIT = 'No tag: git could not write %s: %s.'
 PACKAGE_COMMITTED = 'Evidence package committed: %s.'
 
@@ -131,8 +136,25 @@ def not_a_rule(feature, rule):
     return NOT_A_RULE % (feature, rule, feature)
 
 
-NOT_MADE = ('sign: the signature commit was not made. Check that signing '
-            'works and that the files are not already committed.')
+NOT_MADE = ('The signature commit was not made: %s. Nothing was signed; run '
+            'purlin:sign again once git can make a signed commit.')
+NOT_A_DIRECTORY = 'sign.py: %s is not a directory.'
+
+# The line under `Signed <n> rules as ...` for one rule signed, and the one it
+# takes at the gate `signed` when the rule's own spec names no files, where
+# the signature is written and does not count.
+SIGNED_RULE = '  %s %s'
+NO_FILES = ('  %s %s   does not count until the spec names its files: '
+            'purlin:spec %s')
+
+# What the audit found, as the walk shows it under `What the audit found`:
+# the same words the audit printout and the dashboard give.
+NO_AUDIT = "No audit has read this rule's text, proof and test yet."
+STRONG_NOTHING = 'Strong. It found nothing.'
+STRONG = 'Strong.'
+WEAK = 'Weak.'
+UNDECIDED = ('Undecided. The AI audit could not decide, so the rule reads '
+             'weak until its proof or test changes.')
 
 EXIT_OK = 0
 EXIT_NOTHING = 1
@@ -491,9 +513,11 @@ def tag_if_met(project_root, out=None, release=None, payload=None):
     # carries the evidence that describes it. The commit below it is the one
     # the tag's message names.
     commit = payload.get('commit') or ''
-    rel, why = _package_module().write_for_tag(project_root, release)
+    package = _package_module()
+    rel, why = package.write_for_tag(project_root, release)
     if rel is None:
-        print(NO_TAG_PACKAGE % why, file=out)
+        print(NO_TAG_WORK_LEFT if why == package.WORK_LEFT
+              else NO_TAG_PACKAGE % why, file=out)
         return None, REFUSED_PACKAGE
     print(PACKAGE_COMMITTED % rel, file=out)
     written = subprocess.run(
@@ -592,8 +616,9 @@ def sign_and_commit(project_root, targets, signer_email, note=None,
     whether it carries one rule or forty, and an anchor's rule adds one file
     per feature it applies to. `note` is the one line every signature
     carries, and `notes` maps a `(feature, rule)` to a line of its own, which
-    is how the walk records what a person saw at each hand check. Returns the
-    commit sha, or None when nothing was written or committed.
+    is how the walk records what a person saw at each hand check. Returns
+    `(sha, None)`, or `(None, why)` when the commit was not made, `why` being
+    git's own message; `(None, None)` when no signature file was written.
     """
     notes = notes or {}
     payload = load_payload(project_root, payload)
@@ -614,24 +639,51 @@ def sign_and_commit(project_root, targets, signer_email, note=None,
                 if (feature, rule) not in written:
                     written.append((feature, rule))
     if not paths:
-        return None
+        return None, None
     return _commit(project_root, paths, commit_message(written))
 
 
 def _commit(project_root, paths, message):
-    add = subprocess.run(['git', 'add', '--'] + list(paths),
-                         capture_output=True, text=True, cwd=project_root,
-                         timeout=30)
-    if add.returncode != 0:
-        return None
-    commit = subprocess.run(['git', 'commit', '-S', '-m', message],
-                            capture_output=True, text=True, cwd=project_root,
-                            timeout=60)
-    if commit.returncode != 0:
-        return None
-    head = subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True,
-                          text=True, cwd=project_root, timeout=10)
-    return head.stdout.strip() if head.returncode == 0 else None
+    """Stage `paths` and commit them signed. `(sha, None)` or `(None, why)`.
+
+    `why` is git's own message, read as the tag's refusal reads it.
+    """
+    for command in (['git', 'add', '--'] + list(paths),
+                    ['git', 'commit', '-S', '-m', message],
+                    ['git', 'rev-parse', 'HEAD']):
+        result = subprocess.run(command, capture_output=True, text=True,
+                                cwd=project_root, timeout=60)
+        if result.returncode != 0:
+            return None, _first_line(result)
+    return result.stdout.strip(), None
+
+
+def not_made(why):
+    """The line saying the signature commit was not made, with git's reason."""
+    return NOT_MADE % why
+
+
+def signed_rule_line(payload, feature, rule):
+    """The line naming one rule signed, under `Signed <n> rules as ...`.
+
+    At the gate `signed` a rule whose own spec names no files is signed and
+    its signature does not count, so its line says so and names the command
+    that adds the files.
+    """
+    if does_not_count(payload, feature):
+        return NO_FILES % (feature, rule, feature)
+    return SIGNED_RULE % (feature, rule)
+
+
+def does_not_count(payload, feature):
+    """True at the gate `signed` when `feature`'s own spec names no files."""
+    gate = (payload.get('gate') or {}).get('gate') or gate_module.DEFAULT_GATE
+    if gate != gate_module.GATES[-1]:
+        return False
+    for entry in payload.get('features') or ():
+        if entry.get('name') == feature:
+            return bool(entry.get('incomplete'))
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -657,23 +709,26 @@ def _proof_tags(proof):
 def audit_lines(entry):
     """What the audit found for one rule, as the walk prints it.
 
-    Read off the rule's own `audit`, so the walk says what the board says:
-    `Strong. It found nothing.`, `Weak.` with each finding, `Undecided.` with
-    the audit's own sentence, or that no audit has read the rule yet.
+    Read off the rule's own `audit`, so the walk says what the audit printout
+    and the board say, one line each, indented two spaces: `Strong. It found
+    nothing.`, or `Strong.`, `Weak.` or the undecided sentence followed by
+    each finding on a line of its own, or that no audit has read the rule
+    yet. The walk prints no read-by line.
     """
     audit = entry.get('audit') or {}
     findings = [str(line) for line in audit.get('findings') or ()]
     answered = audit.get('verdict')
-    if answered == 'strong':
-        return ['  Strong. It found nothing.']
-    if answered == 'weak':
-        return ['  Weak. %s' % (findings[0] if findings else '')] + [
-            '  %s' % line for line in findings[1:]]
+    if not answered:
+        heads = [NO_AUDIT]
+    elif answered == 'strong':
+        heads = [STRONG if findings else STRONG_NOTHING]
+    elif answered == 'weak':
+        heads = [WEAK]
+    else:
+        heads = [UNDECIDED]
     if answered:
-        return ['  Undecided. %s' % (findings[0] if findings
-                                     else 'The AI audit could not decide.')] \
-            + ['  %s' % line for line in findings[1:]]
-    return ["  Nothing yet: no audit has read this rule's text, proof and test."]
+        heads.extend(findings)
+    return ['  %s' % line for line in heads]
 
 
 def render_row(entry):
@@ -711,8 +766,8 @@ def walk(project_root, payload=None, answer=None, out=None, signer_email=None,
 
     rows = waiting(payload)
     result = {'rules': len(rows), 'signed': [], 'cases': [], 'skipped': [],
-              'notes': {}, 'commits': [], 'not_made': False, 'tag': None,
-              'refused': None}
+              'notes': {}, 'commits': [], 'not_made': False, 'why': None,
+              'tag': None, 'refused': None}
     for line in opening_lines(payload):
         print(line, file=out)
     if not rows:
@@ -736,14 +791,14 @@ def walk(project_root, payload=None, answer=None, out=None, signer_email=None,
             result['skipped'].append(pair)
 
     if result['signed']:
-        sha = sign_and_commit(project_root, result['signed'], email,
-                              payload=payload, notes=result['notes'])
+        sha, why = sign_and_commit(project_root, result['signed'], email,
+                                   payload=payload, notes=result['notes'])
         if sha:
             result['commits'].append(sha)
         else:
-            result['not_made'] = True
+            result['not_made'], result['why'] = True, why
 
-    _close(project_root, out, result, email)
+    _close(project_root, out, result, email, payload)
     result['tag'], result['refused'] = _finish(project_root, out, release)
     return result
 
@@ -798,7 +853,7 @@ def _prompt(entry, _rendered):
         return 'skip', None
 
 
-def _close(project_root, out, result, email):
+def _close(project_root, out, result, email, payload):
     print('', file=out)
     print('Walked %d rule%s: %d signed, %d case%s added, %d skipped.'
           % (result['rules'], '' if result['rules'] == 1 else 's',
@@ -809,12 +864,15 @@ def _close(project_root, out, result, email):
         print('  %s %s   add this proof line: %s'
               % (feature, rule, text or 'the reviewer named no case'), file=out)
     if result['commits']:
+        for feature, rule in result['signed']:
+            if does_not_count(payload, feature):
+                print(NO_FILES % (feature, rule, feature), file=out)
         print(signed_line(project_root, len(result['signed']), email),
               file=out)
         print('Commits: %s' % ', '.join(sha[:7] for sha in result['commits']),
               file=out)
-    if result['not_made']:
-        print(NOT_MADE, file=out)
+    if result['why']:
+        print(not_made(result['why']), file=out)
 
 
 # ---------------------------------------------------------------------------
@@ -891,7 +949,7 @@ def main(argv=None):
         return EXIT_BAD_INVOCATION
     project_root = args.project_root
     if not os.path.isdir(project_root or '.'):
-        print('sign.py: not a directory: %r' % project_root, file=sys.stderr)
+        print(NOT_A_DIRECTORY % project_root, file=sys.stderr)
         return EXIT_BAD_INVOCATION
 
     # A settings file that cannot be read stops the command before anything
@@ -940,16 +998,17 @@ def main(argv=None):
         report_data.refresh(project_root)
         return EXIT_NOTHING if refused in MUST_FIX else EXIT_OK
 
-    sha = sign_and_commit(project_root, targets, email, note=args.note,
-                          payload=payload)
+    sha, why = sign_and_commit(project_root, targets, email, note=args.note,
+                               payload=payload)
     if not sha:
         for rule in unknown:
             print(not_a_rule(args.feature, rule))
-        print(NOT_MADE)
+        if why:
+            print(not_made(why))
         return EXIT_NOTHING
     print(signed_line(project_root, len(targets), email))
     for name, rule in targets:
-        print('  %s %s' % (name, rule))
+        print(signed_rule_line(payload, name, rule))
     for rule in unknown:
         print(not_a_rule(args.feature, rule))
     after = load_payload(project_root)

@@ -38,8 +38,8 @@ import sign as sign_module                                   # noqa: E402
 from purlin import signatures as purlin_signatures           # noqa: E402
 from purlin import summary as purlin_summary                 # noqa: E402
 from sign_project import REVIEW_GATE, _Out, git, write      # noqa: E402
-from test_signatures import (MANUAL_SPEC, ready, record,  # noqa: E402
-                             waiting_pairs)
+from test_signatures import (MANUAL_SPEC, fingerprint_of,  # noqa: E402
+                             ready, record, waiting_pairs)
 
 
 def sign_all(made):
@@ -47,8 +47,9 @@ def sign_all(made):
     payload = made.payload()
     targets = waiting_pairs(payload)
     assert targets, 'nothing waits to be signed'
-    assert sign_module.sign_and_commit(made.root, targets, 'jane@acme.com',
-                                       payload=payload)
+    sha, why = sign_module.sign_and_commit(made.root, targets,
+                                           'jane@acme.com', payload=payload)
+    assert sha, why
 
 
 def walked(made, release=None):
@@ -109,6 +110,20 @@ class TestTheTag:
             message
         assert 'Commit: %s' % tagged.walked_from in message, message
         assert 'Gate: signed' in message, message
+
+    # purlin: signatures PROOF-178
+    def test_the_tag_is_signed_with_the_key_the_settings_name(self, tagged):
+        public = git(tagged.root, 'config', 'user.signingkey').stdout.strip()
+        with open(public, encoding='utf-8') as handle:
+            key_line = handle.read().strip()
+        allowed = os.path.join(tagged.root, '.git', 'allowed_signers')
+        write(allowed, 'jane@acme.com %s\n' % key_line)
+        git(tagged.root, 'config', 'gpg.ssh.allowedSignersFile', allowed)
+        checked = git(tagged.root, 'tag', '-v', 'signed/2.1.0')
+        shown = checked.stdout + checked.stderr
+        assert checked.returncode == 0, shown
+        assert 'Good "git" signature for jane@acme.com' in shown, shown
+        assert fingerprint_of(public) in shown, shown
 
     # purlin: signatures PROOF-100
     def test_it_prints_the_tag_and_the_push(self, tagged):
@@ -184,8 +199,8 @@ class TestNoTag:
         assert tag is None
         assert lines == [
             NOTHING_WAITING,
-            'No tag: signed/beta is already written. Name another with '
-            '--release <name>.'], lines
+            'No tag: signed/beta is already written. Run purlin:sign '
+            '--release <name> to name another.'], lines
         assert git(finished.root, 'tag', '-l').stdout.split() == [
             'signed/beta']
 
@@ -221,8 +236,9 @@ class TestNoTag:
             assert tag is None
             assert lines == [
                 NOTHING_WAITING,
-                'No version: nothing in this project states one. Name it with '
-                '--release <version>, or write it to a VERSION file.'], lines
+                'No version: nothing in this project states one. Run '
+                'purlin:sign --release <version>, or write it to a VERSION '
+                'file.'], lines
             assert git(made.root, 'tag', '-l').stdout.strip() == ''
         finally:
             made.close()
@@ -266,8 +282,9 @@ class TestNoTag:
     def test_a_tag_already_written_exits_zero(self, finished, capsys):
         assert walked(finished, release='beta')[1] == 'signed/beta'
         code, lines = run_command(finished, capsys, '--release', 'beta')
-        assert lines[-1] == ('No tag: signed/beta is already written. Name '
-                             'another with --release <name>.'), lines
+        assert lines[-1] == ('No tag: signed/beta is already written. Run '
+                             'purlin:sign --release <name> to name '
+                             'another.'), lines
         assert (code, tags(finished)) == (0, ['signed/beta'])
 
     # purlin: signatures PROOF-151
@@ -381,6 +398,21 @@ class TestThePackage:
         assert lines[0] == NOTHING_WAITING, lines
         assert lines[1].startswith('No tag: the evidence package was not '
                                    'committed: '), lines
+        assert git(finished.root, 'tag', '-l').stdout.strip() == ''
+        assert finished.head() == head
+
+    # purlin: signatures PROOF-163
+    def test_no_tag_while_the_package_finds_work_left(self, finished,
+                                                      monkeypatch):
+        monkeypatch.setattr(package_module, 'build', lambda *_a, **_k: {
+            'state': package_module.NOT_FINISHED})
+        head = finished.head()
+        lines, tag = walked(finished)
+        assert tag is None
+        assert lines[-1] == (
+            'No tag: the committed evidence still has work left to do, so no '
+            'evidence package was committed. Run purlin:test --commit, then '
+            'purlin:sign.'), lines
         assert git(finished.root, 'tag', '-l').stdout.strip() == ''
         assert finished.head() == head
 
