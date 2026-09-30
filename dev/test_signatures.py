@@ -1377,6 +1377,10 @@ def an_anchor(made, name='secure', pinned=False):
     write(os.path.join(made.root, 'specs', '_anchors', name + '.md'),
           ANCHOR % (name, PINNED if pinned else ''))
     write(os.path.join(made.root, 'NOTES.txt'), 'Notes.\n')
+    # The dashboard's data is ignored, as setup writes `.gitignore`: it is
+    # rebuilt on every status and is not part of the project.
+    write(os.path.join(made.root, '.gitignore'),
+          '.purlin/runtime/\n.purlin/report-data.js\n')
     commit_all(made, 'spec(%s): the anchor' % name)
 
 
