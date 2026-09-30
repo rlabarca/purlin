@@ -2,13 +2,13 @@
   "feature": "summary",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T04:29:40Z",
-      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
+      "at": "2026-09-30T15:50:54Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
-        "code": "6686ae47c8142b85e1b892530cd29788cad2f26ea8b6a23ee4c72ed5ef0ae7e6",
-        "spec": "ec330cac2e0da413f1412bb5506ca8d9e6fbead182ab32726021730fd728fc52",
-        "tests": "2877d954a4d199d2d10cab71a413abedf0d22b9a5599762358190a791117cd2e"
+        "code": "7b97ea945be6494bacc055949efee6e816788dcefd2bb1df31363ebf8167b2b8",
+        "spec": "1268efbf806ed1aa33d6dd5e146a66b592627f778c7626ca483cccf00348648f",
+        "tests": "e79f670845c3ca2e17696af62e9e2f863d8a5ea7620da6635817e00fb88b8f87"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -278,6 +278,22 @@
         },
         {
           "env": null,
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_summary.py::TestTheLines::test_a_rule_to_confirm_stands_between_the_hand_and_the_signature"
+        },
+        {
+          "env": null,
+          "id": "PROOF-39",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_summary.py::TestTheLines::test_two_rules_to_confirm_read_plural"
+        },
+        {
+          "env": null,
           "id": "PROOF-24",
           "manual": false,
           "result": "pass",
@@ -308,6 +324,7 @@
         "RULE-12": "passed",
         "RULE-13": "passed",
         "RULE-14": "passed",
+        "RULE-15": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

@@ -2,13 +2,13 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T12:06:44Z",
-      "commit": "5f002e00eb62fa9b235ced3d025e308571464240",
+      "at": "2026-09-30T15:50:53Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
-        "code": "614392c913c0394574070f066cbdb021a80d1556810378d6977591a04067e34d",
-        "spec": "eaf0463a889b50d3f683167d404733185a2caa8958b0d828d189efb666f8f198",
-        "tests": "6ad6017e2a15752bc654667e6be0e7b5033869f65db6f856586820418349f6e8"
+        "code": "56b24164ea18fa33945a66f3cecbb10e4d28480987fa83fc3dfd05d2653c3054",
+        "spec": "336cbd307584035869d1398702ac1d2804072baa69f6b20382be3ee80ca77676",
+        "tests": "af49518eb26fde0bb48bff7d1f2d5de57e8a17e16ab1fd62fb2aed3b40229f58"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -874,7 +874,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-49",
-          "test": "dev/test_run_script.py::TestWhichRulesTheAuditReads::test_a_rule_taken_from_an_anchor_is_read_only_as_the_anchors"
+          "test": "dev/test_run_script.py::TestWhichRulesTheAuditReads::test_an_anchors_rule_is_read_as_the_anchors"
         },
         {
           "env": null,
@@ -1050,7 +1050,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-55",
-          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_an_anchor_edit_selects_every_feature_that_requires_it"
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_an_edit_anywhere_in_the_project_selects_the_anchor"
         },
         {
           "env": null,
@@ -1171,6 +1171,22 @@
           "result": "pass",
           "rule": "RULE-85",
           "test": "dev/test_run_script.py::TestTheTwoCommits::test_nothing_to_run_with_nothing_changed_commits_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-259",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-86",
+          "test": "dev/test_run_script.py::TestTheGateDecidesTheBreaks::test_the_breaks_are_asked_for_no_anchor"
+        },
+        {
+          "env": null,
+          "id": "PROOF-260",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-86",
+          "test": "dev/test_run_script.py::TestTheGateDecidesTheBreaks::test_an_anchors_evidence_holds_no_mutation_score"
         },
         {
           "env": null,
@@ -1752,6 +1768,7 @@
         "RULE-83": "passed",
         "RULE-84": "passed",
         "RULE-85": "passed",
+        "RULE-86": "passed",
         "RULE-9": "passed"
       },
       "runner": "rich-labarca"

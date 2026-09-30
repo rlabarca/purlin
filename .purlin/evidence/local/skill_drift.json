@@ -2,12 +2,12 @@
   "feature": "skill_drift",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:05Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T15:50:53Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
         "code": "f0fdf89412fdb8461d4fdf9c4a6ab1274325fb4b184178e75e9ccbfe7538e05a",
-        "spec": "856adc5e98bd40f12c52b8f250c3df96b34448186a97e4d7c5e52233a9afb4ab",
+        "spec": "814cbc3bd8c72de1745fd94e6ce8e3f2f4cc01a07037c5c0aac6a382717ba244",
         "tests": "3680160466d292fc34f918cff50c11e7edade6f25ad179e1c072b701c08fdee3"
       },
       "machine": "Richs-MacBook-Pro.local",

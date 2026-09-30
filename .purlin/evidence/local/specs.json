@@ -2,13 +2,13 @@
   "feature": "specs",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T12:06:45Z",
-      "commit": "5f002e00eb62fa9b235ced3d025e308571464240",
+      "at": "2026-09-30T15:50:53Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
-        "code": "35313cd99b8b657e02ecdc24ca60329654dc17c692fa6cd3b7b2f9608bc5fbb4",
-        "spec": "3ead2b8470c89ce3c6152a9878a5185d19f445e6f8cec5bb6c41f35d385d0356",
-        "tests": "7e440047c4832b9850416aad78a1e6bcdbeda0a7a7bff0079bfc5124385b415a"
+        "code": "7cd1ed28e261f351c8d4ef2df6820bfb94661883fa9d90d3894e4a30ee32fa9d",
+        "spec": "72a82d2b8e3cc7d75ec137135409a84bb56ace8114034170daa9f87cd75e3f8d",
+        "tests": "61e9257f0b71be1d8750d27d5a804ab3a56486673e4c7653e0343d1c3af34b14"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -158,22 +158,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-14",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_specs_reader.py::TestWhatAFeatureProves::test_requires_and_global_pull_rules_into_a_feature"
-        },
-        {
-          "env": null,
-          "id": "PROOF-37",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_specs_reader.py::TestWhatAFeatureProves::test_what_a_required_anchor_requires_is_proved_too"
-        },
-        {
-          "env": null,
           "id": "PROOF-15",
           "manual": false,
           "result": "pass",
@@ -238,22 +222,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-36",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-19",
-          "test": "dev/test_specs_reader.py::TestWhatAFeatureProves::test_a_global_anchor_proves_its_own_rule_alone"
-        },
-        {
-          "env": null,
-          "id": "PROOF-38",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-19",
-          "test": "dev/test_specs_reader.py::TestWhatAFeatureProves::test_an_anchor_that_requires_an_anchor_proves_its_own_rule_alone"
-        },
-        {
-          "env": null,
           "id": "PROOF-39",
           "manual": false,
           "result": "pass",
@@ -288,11 +256,9 @@
       "rules": {
         "RULE-10": "passed",
         "RULE-11": "not run",
-        "RULE-13": "passed",
         "RULE-14": "passed",
         "RULE-17": "passed",
         "RULE-18": "passed",
-        "RULE-19": "passed",
         "RULE-20": "not run",
         "RULE-21": "passed",
         "RULE-3": "passed",

@@ -2,13 +2,13 @@
   "feature": "schema_spec_format",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T12:06:45Z",
-      "commit": "5f002e00eb62fa9b235ced3d025e308571464240",
+      "at": "2026-09-30T15:50:53Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
-        "code": "8757465ff314b308e067540c8fe4136825dffc0555fb1796380d7764d1dfdeab",
-        "spec": "fb305356570328c95d83dbebdead1bb556ecf25abcc9a661ad640fbc98c89a78",
-        "tests": "5b4ee6eb69132a3da237dc3674a2d3682227dce4483927d141510aa716037ec4"
+        "code": "75f6b9bd0cfcb4829ba05bdbb35574ba77b74aebe9e64c9c12daea9396be3a18",
+        "spec": "0762d1f4c36d729ab18656a8bd4c461bd26281a7cba99afb1a9b4771a196d613",
+        "tests": "d7b204ea16969b4b3ff277e0622fd5e7a2d5c51f7d4b0b44bf0e947866f81e10"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -75,30 +75,6 @@
           "result": "pass",
           "rule": "RULE-4",
           "test": "dev/test_schema_spec_format.py::test_a_rule_with_no_proof_line_is_answered_by_a_passing_test_marked_with_its_id"
-        },
-        {
-          "env": null,
-          "id": "PROOF-5",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_schema_spec_format.py::test_the_rules_of_a_required_anchor_are_labelled_required"
-        },
-        {
-          "env": null,
-          "id": "PROOF-20",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_schema_spec_format.py::test_two_required_names_are_read_in_the_order_written_after_the_own_rules"
-        },
-        {
-          "env": null,
-          "id": "PROOF-21",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_schema_spec_format.py::test_a_required_name_no_spec_carries_adds_no_rule"
         },
         {
           "env": null,
@@ -454,30 +430,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-58",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-25",
-          "test": "dev/test_schema_spec_format.py::test_a_feature_requiring_a_feature_spec_is_warned_of"
-        },
-        {
-          "env": null,
-          "id": "PROOF-59",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-25",
-          "test": "dev/test_schema_spec_format.py::test_a_feature_requiring_a_feature_spec_proves_none_of_its_rules"
-        },
-        {
-          "env": null,
-          "id": "PROOF-60",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-25",
-          "test": "dev/test_schema_spec_format.py::test_an_anchor_requiring_a_feature_spec_is_warned_of_by_its_own_name"
-        },
-        {
-          "env": null,
           "id": "PROOF-61",
           "manual": false,
           "result": "pass",
@@ -555,6 +507,86 @@
           "result": "pass",
           "rule": "RULE-29",
           "test": "dev/test_schema_spec_format.py::test_a_spec_with_no_highest_proof_line_counts_from_its_proofs"
+        },
+        {
+          "env": null,
+          "id": "PROOF-71",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_schema_spec_format.py::test_a_requires_line_is_warned_of"
+        },
+        {
+          "env": null,
+          "id": "PROOF-72",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_schema_spec_format.py::test_a_requires_line_adds_no_rule_of_the_anchor_it_names"
+        },
+        {
+          "env": null,
+          "id": "PROOF-73",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_schema_spec_format.py::test_a_global_line_on_an_anchor_is_warned_of"
+        },
+        {
+          "env": null,
+          "id": "PROOF-74",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_schema_spec_format.py::test_a_global_line_on_a_feature_is_warned_of"
+        },
+        {
+          "env": null,
+          "id": "PROOF-75",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-32",
+          "test": "dev/test_schema_spec_format.py::test_a_scope_line_on_an_anchor_is_warned_of"
+        },
+        {
+          "env": null,
+          "id": "PROOF-76",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-32",
+          "test": "dev/test_schema_spec_format.py::test_a_scope_line_on_an_anchor_is_not_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-77",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_schema_spec_format.py::test_an_anchor_scope_entry_is_never_warned_of_as_finding_no_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-78",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_schema_spec_format.py::test_a_pinned_anchor_carrying_a_scope_line_names_its_source"
+        },
+        {
+          "env": null,
+          "id": "PROOF-79",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_schema_spec_format.py::test_a_pinned_anchor_carrying_two_lines_gets_the_one_plural_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-80",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_schema_spec_format.py::test_the_pinned_anchor_line_starts_no_process"
         }
       ],
       "rules": {
@@ -575,14 +607,17 @@
         "RULE-22": "passed",
         "RULE-23": "passed",
         "RULE-24": "passed",
-        "RULE-25": "passed",
         "RULE-26": "passed",
         "RULE-27": "passed",
         "RULE-28": "passed",
         "RULE-29": "passed",
         "RULE-3": "passed",
+        "RULE-30": "passed",
+        "RULE-31": "passed",
+        "RULE-32": "passed",
+        "RULE-33": "passed",
+        "RULE-34": "passed",
         "RULE-4": "passed",
-        "RULE-5": "passed",
         "RULE-6": "passed",
         "RULE-7": "passed",
         "RULE-8": "passed",
@@ -593,5 +628,5 @@
   },
   "schema": "purlin-evidence/2",
   "source": "local",
-  "spec": "specs/_anchors/schema_spec_format.md"
+  "spec": "specs/mcp/schema_spec_format.md"
 }

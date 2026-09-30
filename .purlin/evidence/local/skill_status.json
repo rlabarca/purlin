@@ -2,12 +2,12 @@
   "feature": "skill_status",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:05Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T15:50:53Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
-        "code": "f7442a5ea42dae1e14d67d98357aa670e76581767ce42798a5e44dd3dc94f384",
-        "spec": "d28281bc15c8bf36b56feeaf6cc9fc5f2da101e4c42442dfc35ee82cfa57e49c",
+        "code": "9158e9df498a4a690059ddfb443dcc3def99e7917d8805de7c9db24fde4b3bd1",
+        "spec": "ff8426b47733f6815030a1098216d9f839f75542a91e60e33507f1a9195507c4",
         "tests": "2984a686383ad8efc1bfbab7eb85e203a1022c3c25ea0fe3cdf77e6609af0d41"
       },
       "machine": "Richs-MacBook-Pro.local",

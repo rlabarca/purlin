@@ -2,12 +2,12 @@
   "feature": "skill_export",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T12:06:45Z",
-      "commit": "5f002e00eb62fa9b235ced3d025e308571464240",
+      "at": "2026-09-30T15:50:53Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
         "code": "cf73f6b72d3c33cb382ad657873fef7fceec1846089922c61b35b4ad2ef4da80",
-        "spec": "c28722daf197b5b2f879661d52477d6d85d62a3835781ada3ced1eb83e2729b1",
+        "spec": "34dda53286b668196f127feb8e32d21ede98f1642d2bf6faafba09098a2fd6b2",
         "tests": "c5b38fe3928087bf0dc0faf81f68d8980d71ec43ae11e6ef53ccefca9823d209"
       },
       "machine": "Richs-MacBook-Pro.local",

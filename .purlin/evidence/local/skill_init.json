@@ -2,12 +2,12 @@
   "feature": "skill_init",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:05Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T15:50:53Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
         "code": "b25d9ac8d1e12baed149cdae72fcf441eab7032656e9b768a723f683d7274b28",
-        "spec": "685247731ec0ab714db0fdb47fa854286c6b79961d55504ef62cb191390f00ff",
+        "spec": "20cbaf7244a47c6ef2ead2303d493cf35ba1f4eae7eb287b384df73648642529",
         "tests": "cc5601e81f673af3f6530bf1b39b385616abb4f2e0057d3a6b887729142674d2"
       },
       "machine": "Richs-MacBook-Pro.local",

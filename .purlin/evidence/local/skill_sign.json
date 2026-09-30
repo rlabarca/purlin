@@ -2,13 +2,13 @@
   "feature": "skill_sign",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T04:29:40Z",
-      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
+      "at": "2026-09-30T15:50:53Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
-        "code": "10aa024be527b9f71e127501e3a8816321d27d89a1d25289b723cca1484ffabd",
-        "spec": "e7a579bb858b1ee26f583f2c3d73af89109009c999ce2034bc989713983f2ecd",
-        "tests": "2780a14101d9bf93c7d6fa950c5bb64f17acbe77ae34885fb5606b09722e6c96"
+        "code": "12906b703faf4d59e9b5e534bd778e77a2329ca23ad2634f8ca4b7e417561b94",
+        "spec": "c16cac6ef4886d114313266221616c6337dc495bb3b5750988a3b4c27ecd6a1b",
+        "tests": "eeb8649b00e525abe48607c192c4763985f558812019b0eaf0c53bcbf72b14d6"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -219,6 +219,22 @@
           "result": "pass",
           "rule": "RULE-23",
           "test": "dev/test_skill_sign.py::test_a_rule_is_never_narrowed_to_lose_an_observation"
+        },
+        {
+          "env": null,
+          "id": "PROOF-52",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_skill_sign.py::test_does_not_apply_signs_a_pinned_anchors_rule_alone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-53",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_skill_sign.py::test_the_walk_stops_at_a_rule_to_confirm"
         }
       ],
       "rules": {
@@ -238,6 +254,7 @@
         "RULE-21": "passed",
         "RULE-22": "passed",
         "RULE-23": "passed",
+        "RULE-24": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

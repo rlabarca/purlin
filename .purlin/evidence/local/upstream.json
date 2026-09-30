@@ -2,12 +2,12 @@
   "feature": "upstream",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T04:29:40Z",
-      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
+      "at": "2026-09-30T15:50:54Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
         "code": "4e2f27b1d210bd71b21cbefb873b4923d00f33185612cc5ee5906615fd82536e",
-        "spec": "2b946057bcca672560522bfdbc09879a4d87c54f9dcafcf2d9c9eea1280b0ab6",
+        "spec": "a3d3d466173819686026a84c3a5d5cd819dcefa8871a7647f19ff3a47414ffcd",
         "tests": "ca0a5e0f01f263c07b9ada71a7055b7c378029824f6b75d22bcda40a253189e8"
       },
       "machine": "Richs-MacBook-Pro.local",

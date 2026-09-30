@@ -2,12 +2,12 @@
   "feature": "config_engine",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T23:03:56Z",
-      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "at": "2026-09-30T15:50:52Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
         "code": "3551ef9c3886ccd9c4fa053da404f80c3e29d09d79281cfd467489f59990c835",
-        "spec": "5b2d37ca0bcac36bc28224c027b9dea3b28e84bc741e6d6621f8352a4c50e11b",
+        "spec": "dcb39d5366a5765c3afbb474a7aa50d5e3e9531d9801de778a53519c0e232b45",
         "tests": "7302a354c7466f75dc8dfddad14caf54e24008d7938bb4fe4154c869aa7d2d1d"
       },
       "machine": "Richs-MacBook-Pro.local",

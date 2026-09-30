@@ -2,13 +2,13 @@
   "feature": "update",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:05Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T15:50:54Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
-        "code": "694dcbb409c7d9e12af959db9d7a3215fd10c130fe3a8d79bc47e688b573899f",
-        "spec": "4588bca7edfc4a932afc2d7a5a1ca3552a72d6fff5b5e882e36ab1038a239c95",
-        "tests": "31cddbcb8c70ea9ebc87590368b02cdbabe6c261df2972fe5f0befa186dd720c"
+        "code": "f18efe1eed28cc6290199d31e0eb3d3cb289e5e450b16553188ed4a82112f8c0",
+        "spec": "bdac26c166d418be313b1838af6c005bacf08d82d86f53364276d967e6c372fd",
+        "tests": "73d0912aabdbed60e0794b5f5fee05829fab55e56435f1349c1beb3f97fda4fd"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -1123,6 +1123,54 @@
           "result": "pass",
           "rule": "RULE-45",
           "test": "dev/test_init_update.py::test_each_backup_is_named_on_a_line_of_its_own"
+        },
+        {
+          "env": null,
+          "id": "PROOF-153",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-46",
+          "test": "dev/test_init_update.py::test_no_spec_names_an_anchor_after_the_update"
+        },
+        {
+          "env": null,
+          "id": "PROOF-154",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-46",
+          "test": "dev/test_init_update.py::test_each_file_rewritten_names_the_fields_it_lost"
+        },
+        {
+          "env": null,
+          "id": "PROOF-155",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-46",
+          "test": "dev/test_init_update.py::test_an_anchor_one_spec_named_is_named_with_that_spec"
+        },
+        {
+          "env": null,
+          "id": "PROOF-156",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-46",
+          "test": "dev/test_init_update.py::test_each_file_that_lost_a_line_is_backed_up"
+        },
+        {
+          "env": null,
+          "id": "PROOF-157",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-46",
+          "test": "dev/test_init_update.py::test_an_anchor_three_specs_named_is_named_with_all_three"
+        },
+        {
+          "env": null,
+          "id": "PROOF-158",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-46",
+          "test": "dev/test_init_update.py::test_a_global_anchor_named_by_a_spec_gets_no_line"
         }
       ],
       "rules": {
@@ -1160,6 +1208,7 @@
         "RULE-43": "passed",
         "RULE-44": "passed",
         "RULE-45": "passed",
+        "RULE-46": "passed",
         "RULE-5": "not run",
         "RULE-6": "passed",
         "RULE-7": "not run",

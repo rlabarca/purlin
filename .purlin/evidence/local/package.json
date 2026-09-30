@@ -2,13 +2,13 @@
   "feature": "package",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T04:29:39Z",
-      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
+      "at": "2026-09-30T15:50:52Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
-        "code": "bee1c6732c9e7ee1f27b8491c3c4364c8474a6b9d2bec0ff525ccb7fb73413c5",
-        "spec": "7cd80230f394880f695a1b4d4bdde487eb76955c8fe2564c6ab3d6e37479e281",
-        "tests": "723c341efa5b2957a6cdff2b62f52a75373ec827ddc22be96554f4af4be4ed1d"
+        "code": "3472b9d9fee3bbed227ba422f5225da3ecb69aa93cf64b69941c0de27c8ea295",
+        "spec": "af888d00dd106164eb140acb58a9eb62bf5623f12e934ceb3d285605806b83ee",
+        "tests": "24de19ef089e8cd8508179677b2049cb2d9594c08e18d9f368670e24dd57dba5"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -451,6 +451,38 @@
           "result": "pass",
           "rule": "RULE-25",
           "test": "dev/test_export.py::TestTheContent::test_the_package_states_the_gate_and_claims_no_compliance"
+        },
+        {
+          "env": null,
+          "id": "PROOF-56",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-26",
+          "test": "dev/test_export.py::TestAnchors::test_a_feature_entry_holds_five_fields"
+        },
+        {
+          "env": null,
+          "id": "PROOF-57",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-26",
+          "test": "dev/test_export.py::TestAnchors::test_an_anchors_scope_is_empty"
+        },
+        {
+          "env": null,
+          "id": "PROOF-58",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_export.py::TestAnchors::test_a_signature_carries_the_reason_it_does_not_apply"
+        },
+        {
+          "env": null,
+          "id": "PROOF-59",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_export.py::TestAnchors::test_a_rule_that_does_not_apply_reads_so"
         }
       ],
       "rules": {
@@ -472,6 +504,8 @@
         "RULE-23": "passed",
         "RULE-24": "passed",
         "RULE-25": "passed",
+        "RULE-26": "passed",
+        "RULE-27": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

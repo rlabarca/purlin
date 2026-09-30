@@ -2,13 +2,13 @@
   "feature": "skill_spec",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T12:06:45Z",
-      "commit": "5f002e00eb62fa9b235ced3d025e308571464240",
+      "at": "2026-09-30T15:50:53Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
-        "code": "69a62d2622162b745f32da259a1b927446d750f37ad482bcb6861ca7f87f9258",
-        "spec": "ecb297ffa4c84b0bf9e674bc81501215b1c538ec75d97ee46965371adff4a663",
-        "tests": "0d41652dcc41b16a2e5999786045a31f537bfb5dee83a7571c62b2b1fbf08682"
+        "code": "3c8c0c149dc888e8c88b4ed14999e91ecc125e6d5ba4d13debccffaae34f0db1",
+        "spec": "cd6b1b819a09e7fcf421f410b3a5c187b8ba994b43c3c63efb696d76ddde3a7a",
+        "tests": "d8891f35cb9edb67a2ca6a486afd7057d4be228abe7066e52f0070cb5cb667df"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -203,6 +203,14 @@
           "result": "pass",
           "rule": "RULE-23",
           "test": "dev/test_skill_spec.py::test_it_writes_the_highest_proof_into_the_spec"
+        },
+        {
+          "env": null,
+          "id": "PROOF-54",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_skill_spec.py::test_a_warned_field_is_taken_out"
         }
       ],
       "rules": {
@@ -221,6 +229,7 @@
         "RULE-21": "passed",
         "RULE-22": "passed",
         "RULE-23": "passed",
+        "RULE-24": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

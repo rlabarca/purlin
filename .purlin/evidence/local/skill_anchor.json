@@ -2,13 +2,13 @@
   "feature": "skill_anchor",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T04:29:40Z",
-      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
+      "at": "2026-09-30T15:50:53Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
-        "code": "7590d3936fbf3c2395403715784e03e86047518a16a4b9a0f498287f673f6c2d",
-        "spec": "d6f68d5177ae952f6c3bc30c650b6002ac4fd4d2d93690f0bab2e9beb6ccf22d",
-        "tests": "9933fa831f75024ca5a9e8ea883b65dc49419e504abcd7f27938e3b58d595028"
+        "code": "f41e7a1def27934d1cdea39c6ecf5f665ce01155e9e0716c1c2945d0473c06c3",
+        "spec": "4a92bbf127f3d98fec741589b24c87b9e05cf375c220b948aed5b7d8c33d7be1",
+        "tests": "e6b96acb107bf5aaef029792c199146aca405a138259f3327fb599f76ebbc2e9"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -114,7 +114,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-12",
-          "test": "dev/test_skill_anchor.py::TestThePin::test_a_local_rule_goes_in_an_anchor_that_requires_the_pin"
+          "test": "dev/test_skill_anchor.py::TestThePin::test_a_local_rule_goes_in_a_local_anchor_or_each_feature"
         },
         {
           "env": null,
@@ -131,6 +131,30 @@
           "result": "pass",
           "rule": "RULE-14",
           "test": "dev/test_skill_anchor.py::test_a_new_anchor_is_committed_with_the_create_prefix"
+        },
+        {
+          "env": null,
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_skill_anchor.py::TestTheWholeProject::test_an_anchor_carries_no_scope_and_names_no_spec"
+        },
+        {
+          "env": null,
+          "id": "PROOF-37",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_skill_anchor.py::TestTheWholeProject::test_a_rule_not_checkable_everywhere_goes_in_each_feature"
+        },
+        {
+          "env": null,
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_skill_anchor.py::TestThePin::test_a_pinned_rule_that_does_not_apply_is_signed_so"
         }
       ],
       "rules": {
@@ -140,6 +164,8 @@
         "RULE-12": "passed",
         "RULE-13": "passed",
         "RULE-14": "passed",
+        "RULE-15": "passed",
+        "RULE-16": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

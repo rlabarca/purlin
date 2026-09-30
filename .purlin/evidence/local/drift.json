@@ -2,12 +2,12 @@
   "feature": "drift",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T04:29:39Z",
-      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
+      "at": "2026-09-30T15:50:52Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
-        "code": "6c94763e7b0ab19cc1f364e3a66c4e184753245a31d776265a6c3dfe20f96392",
-        "spec": "833a3cf4ed1d2a046161b9fa6628e952b3b5080c510761bb185d6bb51ed49932",
+        "code": "e5ac45c1fe5a7bcb5306b74be2ddc6e41637367991f7392203023704a1697b27",
+        "spec": "049759bb28cb63de61b5396c02ec205e82297497df3a795e5a7552c89c3b6f39",
         "tests": "41ae2a9d2966bcaac1486de85425b5af15123d6905c5f7653dd5cb3801b64d54"
       },
       "machine": "Richs-MacBook-Pro.local",

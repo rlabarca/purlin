@@ -2,13 +2,13 @@
   "feature": "states",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T04:29:40Z",
-      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
+      "at": "2026-09-30T15:50:53Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
-        "code": "eaa1faa8f21802166bf6b1faef2f10f2be84a8ba6f7939495e051386870974aa",
-        "spec": "d22a54ca56c5d07f7ec23a58039e68747afe21055e54a9e1bbb945b514eb216f",
-        "tests": "ddf4182a2cd049dfab685129e02f779d2ee386503c16a9b8735d22f79f6c1071"
+        "code": "c13f4acc0f2491249a7a5a3dfe705b588722d0f88ff756538a5e1aa6b769e6cf",
+        "spec": "99255f6f33d2759bf6aaace5d6878469411055e7697c74037630e45ec8db797a",
+        "tests": "b456b4b6b10f844e9ac6b365f96c1a0af875cb75b6833a254aee1f514d24ef0b"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -730,7 +730,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-26",
-          "test": "dev/test_states.py::TestPayload::test_global_anchor_rules_are_counted_once_in_the_summary"
+          "test": "dev/test_states.py::TestPayload::test_an_anchors_rules_are_counted_once_in_the_summary"
         },
         {
           "env": null,
@@ -738,7 +738,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-27",
-          "test": "dev/test_states.py::TestPayload::test_schema_ten_carries_the_documented_top_level"
+          "test": "dev/test_states.py::TestPayload::test_schema_eleven_carries_the_documented_top_level"
         },
         {
           "env": null,
@@ -1430,35 +1430,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-86",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-72",
-          "test": "dev/test_states.py::TestStatusTable::test_the_rules_cell_names_the_shared_rules"
-        },
-        {
-          "env": null,
           "id": "PROOF-179",
           "manual": false,
           "result": "pass",
           "rule": "RULE-72",
-          "test": "dev/test_states.py::TestStatusTable::test_a_spec_proving_no_shared_rule_reads_its_own_count"
-        },
-        {
-          "env": null,
-          "id": "PROOF-180",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-72",
-          "test": "dev/test_states.py::TestStatusTable::test_a_required_anchor_that_is_not_global_is_shared_too"
-        },
-        {
-          "env": null,
-          "id": "PROOF-181",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-72",
-          "test": "dev/test_states.py::TestStatusTable::test_every_cell_starts_at_its_headings_left_edge"
+          "test": "dev/test_states.py::TestStatusTable::test_a_spec_reads_its_own_rule_count"
         },
         {
           "env": null,
@@ -1466,7 +1442,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-74",
-          "test": "dev/test_states.py::TestPayload::test_a_shared_rule_is_signed_over_the_feature_it_is_listed_under"
+          "test": "dev/test_states.py::TestPayload::test_an_anchors_rule_is_signed_over_the_project"
         },
         {
           "env": null,
@@ -1531,22 +1507,6 @@
           "result": "pass",
           "rule": "RULE-75",
           "test": "dev/test_states.py::TestPayload::test_at_passed_a_hand_check_is_the_rules_passing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-148",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-76",
-          "test": "dev/test_states.py::TestPayload::test_an_anchor_rule_is_signed_once_in_each_feature"
-        },
-        {
-          "env": null,
-          "id": "PROOF-149",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-76",
-          "test": "dev/test_states.py::TestPayload::test_an_anchor_rule_signed_in_every_feature_reads_signed"
         },
         {
           "env": null,
@@ -1651,10 +1611,92 @@
           "result": "pass",
           "rule": "RULE-96",
           "test": "dev/test_states.py::TestStatusTable::test_the_specs_of_a_project_not_set_up_are_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-238",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-97",
+          "test": "dev/test_states.py::TestAnchors::test_a_feature_counts_its_own_rules_only"
+        },
+        {
+          "env": null,
+          "id": "PROOF-239",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-97",
+          "test": "dev/test_states.py::TestAnchors::test_an_anchor_counts_its_rules_in_its_own_row"
+        },
+        {
+          "env": null,
+          "id": "PROOF-240",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-98",
+          "test": "dev/test_states.py::TestAnchors::test_the_audit_alone_judges_an_anchors_tests"
+        },
+        {
+          "env": null,
+          "id": "PROOF-241",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-98",
+          "test": "dev/test_states.py::TestAnchors::test_an_anchors_strong_cell_shows_no_strength"
+        },
+        {
+          "env": null,
+          "id": "PROOF-242",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-99",
+          "test": "dev/test_states.py::TestAnchors::test_the_anchors_are_listed_first_under_their_label"
+        },
+        {
+          "env": null,
+          "id": "PROOF-243",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-99",
+          "test": "dev/test_states.py::TestAnchors::test_a_project_with_no_anchor_has_no_label_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-244",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-100",
+          "test": "dev/test_states.py::TestAnchors::test_a_rule_signed_as_not_applying_reads_so_in_every_cell"
+        },
+        {
+          "env": null,
+          "id": "PROOF-245",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-100",
+          "test": "dev/test_states.py::TestAnchors::test_the_row_counts_the_rule_that_does_not_apply"
+        },
+        {
+          "env": null,
+          "id": "PROOF-246",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-100",
+          "test": "dev/test_states.py::TestAnchors::test_nothing_is_left_for_a_rule_that_does_not_apply"
+        },
+        {
+          "env": null,
+          "id": "PROOF-247",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-101",
+          "test": "dev/test_states.py::TestAnchors::test_a_change_to_the_project_leaves_it_to_confirm"
         }
       ],
       "rules": {
         "RULE-1": "passed",
+        "RULE-100": "passed",
+        "RULE-101": "passed",
         "RULE-11": "passed",
         "RULE-12": "passed",
         "RULE-13": "passed",
@@ -1702,7 +1744,6 @@
         "RULE-73": "passed",
         "RULE-74": "passed",
         "RULE-75": "passed",
-        "RULE-76": "passed",
         "RULE-77": "passed",
         "RULE-78": "passed",
         "RULE-79": "passed",
@@ -1724,7 +1765,10 @@
         "RULE-93": "passed",
         "RULE-94": "passed",
         "RULE-95": "passed",
-        "RULE-96": "passed"
+        "RULE-96": "passed",
+        "RULE-97": "passed",
+        "RULE-98": "passed",
+        "RULE-99": "passed"
       },
       "runner": "rich-labarca"
     }

@@ -2,13 +2,13 @@
   "feature": "evidence",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:04Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T15:50:52Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
-        "code": "b3fca56fb17f51c6097d8e59090feabaa8987ca78395232810580dd33742c810",
-        "spec": "fb3b2e78a38d65d769628b2e9e8efc5d4bd184b9579dc653d720889c80fad68c",
-        "tests": "42b5bb0c6fc7fe6f5b173ffc2dd7ca7176749b704369025c33fc3066c5c0d460"
+        "code": "a24f888e4eb20162b3ac096aa5b03d4ee0e075fef018a866c703640592bafd97",
+        "spec": "c6d8f267115a27863bdbdd3da8de9937295355ef9a2daf763e6048593575ebb5",
+        "tests": "c6394a6445b860da16e1afdbac0ada585badc34e3e572057fa3c8a8ef23da875"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -42,7 +42,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_fingerprint.py::test_a_changed_proof_of_a_required_anchor_changes_spec_alone"
+          "test": "dev/test_fingerprint.py::test_a_reworded_anchor_rule_leaves_a_feature_as_it_was"
         },
         {
           "env": null,
@@ -51,14 +51,6 @@
           "result": "pass",
           "rule": "RULE-2",
           "test": "dev/test_fingerprint.py::test_manual_added_to_a_proof_changes_spec_alone"
-        },
-        {
-          "env": null,
-          "id": "PROOF-4",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_fingerprint.py::test_an_anchor_rule_edit_reaches_every_feature_that_requires_it"
         },
         {
           "env": null,
@@ -462,22 +454,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-5",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-23",
-          "test": "dev/test_fingerprint.py::test_a_global_anchor_rule_edit_reaches_a_feature_that_does_not_name_it"
-        },
-        {
-          "env": null,
-          "id": "PROOF-35",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-23",
-          "test": "dev/test_fingerprint.py::test_an_anchor_that_is_not_global_leaves_a_feature_that_does_not_name_it"
-        },
-        {
-          "env": null,
           "id": "PROOF-7",
           "manual": false,
           "result": "pass",
@@ -627,6 +603,70 @@
           "result": "pass",
           "rule": "RULE-29",
           "test": "dev/test_fingerprint.py::test_a_feature_with_no_evidence_is_selected_as_never_run_here"
+        },
+        {
+          "env": null,
+          "id": "PROOF-78",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_fingerprint.py::test_an_edit_to_a_file_no_scope_names_changes_an_anchors_code"
+        },
+        {
+          "env": null,
+          "id": "PROOF-79",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_fingerprint.py::test_an_untracked_file_leaves_an_anchor_as_it_was"
+        },
+        {
+          "env": null,
+          "id": "PROOF-80",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_fingerprint.py::test_a_new_evidence_file_leaves_an_anchor_as_it_was"
+        },
+        {
+          "env": null,
+          "id": "PROOF-81",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_fingerprint.py::test_a_rewritten_tests_table_leaves_an_anchor_as_it_was"
+        },
+        {
+          "env": null,
+          "id": "PROOF-82",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_fingerprint.py::test_a_signature_file_leaves_an_anchor_as_it_was"
+        },
+        {
+          "env": null,
+          "id": "PROOF-83",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_fingerprint.py::test_an_evidence_package_leaves_an_anchor_as_it_was"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-84",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-32",
+          "test": "dev/test_fingerprint.py::test_an_anchors_code_part_is_the_blob_ids_the_commit_holds"
+        },
+        {
+          "env": null,
+          "id": "PROOF-85",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_fingerprint.py::test_a_run_with_no_feature_named_selects_an_anchor_after_an_edit"
         }
       ],
       "rules": {
@@ -645,14 +685,16 @@
         "RULE-20": "passed",
         "RULE-21": "passed",
         "RULE-22": "passed",
-        "RULE-23": "passed",
         "RULE-24": "not run",
         "RULE-25": "passed",
         "RULE-26": "passed",
         "RULE-27": "not run",
         "RULE-28": "passed",
         "RULE-29": "passed",
-        "RULE-3": "passed",
+        "RULE-30": "passed",
+        "RULE-31": "passed",
+        "RULE-32": "not run",
+        "RULE-33": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",

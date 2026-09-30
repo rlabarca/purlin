@@ -2,12 +2,12 @@
   "feature": "server",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:05Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T15:50:53Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
         "code": "20491ffe9297600ba5c17558531e0cacd5ed7f6f77104b7d8598aa9f7490a754",
-        "spec": "6a29206cbb394ec3114efbd55b378e3514d6141966a5b9ba21c9be59c6a0aa72",
+        "spec": "9bd46c0ec2b4a4332aa63f23717d3b34eb5e7dd232fad135fdcfd6cfc787b0d5",
         "tests": "38e446c2855ad4fd9170e3f5d3d2fd22c43404a48590583ec8fec4a48cf357ac"
       },
       "machine": "Richs-MacBook-Pro.local",

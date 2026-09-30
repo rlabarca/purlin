@@ -2,12 +2,12 @@
   "feature": "scaffold",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T12:06:45Z",
-      "commit": "5f002e00eb62fa9b235ced3d025e308571464240",
+      "at": "2026-09-30T15:50:53Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
         "code": "a268af0b63bec7492f208834a619f0c1a8e1b61e6943c3b0b2ec9e9ea807cdde",
-        "spec": "e1a789b9d6d2d0a807fa2cda9d765f6dabca89c96d935f7e28a37b301afa9036",
+        "spec": "1757386a7b41b0c33a24fd876cdc24d300d65ffe837719e63048afbb048081b6",
         "tests": "9026679fb860dd31f15f69c1de336d07f997e90e64200ca11c3b23b253e2ad9d"
       },
       "machine": "Richs-MacBook-Pro.local",

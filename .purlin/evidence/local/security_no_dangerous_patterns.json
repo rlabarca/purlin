@@ -2,13 +2,13 @@
   "feature": "security_no_dangerous_patterns",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T13:14:16Z",
-      "commit": "e38956f112ab52f068134e25d54fc02622cb2fc2",
+      "at": "2026-09-30T15:50:53Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
-        "code": "cd69eb48e738d9938de68bb1605c0852f6ff3ab954ac362d2d540b76c93abcfd",
+        "code": "b4dfebe1d93b156093a5648e5f2b18d6524cd9ee0b8b569d3f75ddf7a811ba78",
         "spec": "8553e083a091c1e71a9d6881c378514851f0a074fb5078a66fc6c0c727163e3f",
-        "tests": "b2131c3371eec05291164beaba98b931b46be73607f3ed2e28ce97b2771ed1c4"
+        "tests": "1415768101645aeea237cc03b5d6e5b4ab5a8f29c44930814ea2c399d949f8a2"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [

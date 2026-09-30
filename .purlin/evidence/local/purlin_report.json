@@ -2,13 +2,13 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T12:06:44Z",
-      "commit": "5f002e00eb62fa9b235ced3d025e308571464240",
+      "at": "2026-09-30T15:50:53Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
-        "code": "d132087b66f73443841f9f085cc5558d0b37128c7910334c04430d27469e3cb0",
-        "spec": "3bd629e05d5a894f3717670888ba3341e04856ba06148f42ce6922ed78bf08dd",
-        "tests": "f4864c9051295f1292daad8d8d1b642efd3783ab29bbc8e46c1c0295081fc3d6"
+        "code": "abfb462e2223d7f8da897711d618be26c796fb962e5a983c8987b32b59216d94",
+        "spec": "903aeee130787da73677b7493a22d827b0d95884b079a2ec06de58f816fa4633",
+        "tests": "775d41399c5a1344087152365669923bb70d2366067fba64c44afe4b0f981bf2"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -650,7 +650,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-35",
-          "test": "dev/test_purlin_report_board_layout.py::test_a_shared_count_is_one_line_from_1024_up"
+          "test": "dev/test_purlin_report_board_layout.py::test_a_long_tests_value_is_one_line_from_1024_up"
         },
         {
           "env": null,
@@ -674,7 +674,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-36",
-          "test": "dev/test_purlin_report.py::test_a_band_counts_a_shared_rule_once"
+          "test": "dev/test_purlin_report.py::test_the_bands_and_the_anchors_add_up_to_the_rules"
         },
         {
           "env": null,
@@ -1090,7 +1090,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-47",
-          "test": "dev/test_purlin_report.py::test_a_shared_rule_counts_toward_the_spec_that_proves_it"
+          "test": "dev/test_purlin_report.py::test_the_rules_cell_is_the_specs_own_count"
         },
         {
           "env": null,
@@ -1098,7 +1098,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-47",
-          "test": "dev/test_purlin_report.py::test_a_shared_rule_is_listed_once_under_its_owner"
+          "test": "dev/test_purlin_report.py::test_an_anchors_rule_is_listed_under_the_anchor_alone"
         },
         {
           "env": null,
@@ -1118,19 +1118,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-72",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-47",
-          "test": "dev/test_purlin_report.py::test_a_real_projects_shared_rules_count_toward_it"
-        },
-        {
-          "env": null,
           "id": "PROOF-110",
           "manual": false,
           "result": "pass",
           "rule": "RULE-47",
-          "test": "dev/test_purlin_report.py::test_a_real_projects_shared_rules_are_listed_once"
+          "test": "dev/test_purlin_report.py::test_a_real_projects_anchor_lists_its_rules_alone"
         },
         {
           "env": null,
@@ -1162,7 +1154,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-49",
-          "test": "dev/test_purlin_report_board_layout.py::test_a_shared_count_is_one_line_at_every_width"
+          "test": "dev/test_purlin_report_board_layout.py::test_a_long_tests_value_is_one_line_at_every_width"
         },
         {
           "env": null,
@@ -1195,6 +1187,14 @@
           "result": "pass",
           "rule": "RULE-49",
           "test": "dev/test_purlin_report_board_layout.py::test_a_narrow_board_is_blocks_of_labelled_pairs"
+        },
+        {
+          "env": null,
+          "id": "PROOF-208",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-49",
+          "test": "dev/test_purlin_report_board_layout.py::test_a_narrow_anchors_section_is_blocks_of_labelled_pairs"
         },
         {
           "env": null,
@@ -1459,6 +1459,94 @@
           "result": "pass",
           "rule": "RULE-62",
           "test": "dev/test_purlin_report.py::test_a_signed_manual_proof_reads_checked_by_hand"
+        },
+        {
+          "env": null,
+          "id": "PROOF-203",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-63",
+          "test": "dev/test_purlin_report.py::test_the_anchors_stand_in_a_section_of_their_own"
+        },
+        {
+          "env": null,
+          "id": "PROOF-204",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-63",
+          "test": "dev/test_purlin_report.py::test_a_project_with_no_anchor_has_no_anchors_section"
+        },
+        {
+          "env": null,
+          "id": "PROOF-205",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-63",
+          "test": "dev/test_purlin_report.py::test_a_filter_keeps_the_anchors_it_accepts"
+        },
+        {
+          "env": null,
+          "id": "PROOF-206",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-63",
+          "test": "dev/test_purlin_report.py::test_a_filter_that_leaves_no_anchor_hides_the_section"
+        },
+        {
+          "env": null,
+          "id": "PROOF-207",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-63",
+          "test": "dev/test_purlin_report.py::test_an_anchors_row_opens_and_closes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-209",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-64",
+          "test": "dev/test_purlin_report.py::test_an_anchors_strong_cell_shows_no_strength"
+        },
+        {
+          "env": null,
+          "id": "PROOF-210",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-65",
+          "test": "dev/test_purlin_report.py::test_every_cell_of_a_rule_that_does_not_apply_says_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-214",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-65",
+          "test": "dev/test_purlin_report.py::test_a_rule_that_does_not_apply_carries_one_badge"
+        },
+        {
+          "env": null,
+          "id": "PROOF-211",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-65",
+          "test": "dev/test_purlin_report.py::test_the_signed_panel_says_the_rule_does_not_apply"
+        },
+        {
+          "env": null,
+          "id": "PROOF-212",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-65",
+          "test": "dev/test_purlin_report.py::test_the_tests_cell_counts_the_rules_that_do_not_apply"
+        },
+        {
+          "env": null,
+          "id": "PROOF-213",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-65",
+          "test": "dev/test_purlin_report.py::test_a_rule_to_confirm_has_its_filter_button"
         }
       ],
       "rules": {
@@ -1513,6 +1601,9 @@
         "RULE-60": "passed",
         "RULE-61": "passed",
         "RULE-62": "passed",
+        "RULE-63": "passed",
+        "RULE-64": "passed",
+        "RULE-65": "passed",
         "RULE-7": "passed",
         "RULE-8": "passed",
         "RULE-9": "passed"

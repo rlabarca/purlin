@@ -2,13 +2,13 @@
   "feature": "skill_spec_from_code",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T04:29:40Z",
-      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
+      "at": "2026-09-30T15:50:53Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
-        "code": "9078fa68aa48a62f81a4160b9619ec2e8940f1f710ab5c30ef8516aeb1d1e718",
-        "spec": "a599843f19a3c7e76ac9540ae21df4ebb9bdd7ecb6791c053277929b0fdb8608",
-        "tests": "f453f28ea7341e9e974bee43988ef1d0da6d1d2ba0a53836bae8e5739cd5c64b"
+        "code": "a8e879e010b5659bd197b9fd56f998a04c2c601081ca8afab98122a02039bb49",
+        "spec": "68c9175683f24733517bd27b06847e064286a8ac95b0f56e54092419cecda2c0",
+        "tests": "2d4a289448ccdbca8b91aa8f96ce4fd3990ffeeabdab86b39ce34297f9284c92"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -146,7 +146,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-37",
-          "test": "dev/test_skill_spec_from_code.py::TestTheProcedure::test_shared_rules_go_once_into_an_anchor_that_features_require"
+          "test": "dev/test_skill_spec_from_code.py::TestTheProcedure::test_project_rules_go_once_into_an_anchor_the_rest_into_each_spec"
         },
         {
           "env": null,
@@ -194,7 +194,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-43",
-          "test": "dev/test_skill_spec_from_code.py::TestTheProcedure::test_it_writes_one_spec_at_a_time_in_the_dependency_order"
+          "test": "dev/test_skill_spec_from_code.py::TestTheProcedure::test_it_writes_one_spec_at_a_time_after_the_shared_rules"
         },
         {
           "env": null,

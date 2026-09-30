@@ -2,13 +2,13 @@
   "feature": "ai_audit",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:04Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T15:50:52Z",
+      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
       "dirty": false,
       "fingerprint": {
-        "code": "20037cf21bf323041fdb9915d06f1f033bdf631e6ada3b506b60691b1010d685",
-        "spec": "d09dff6bb4a26ecf07166f5d2231f8d5ca4540dad3e494ef62e9ea672d7c34a6",
-        "tests": "35ea94b49209e6a2e8fdeadcee7f4498398558725bf24327754f565f27023f43"
+        "code": "f1785852105bc39dbfad2c8e1efe007c2b8ce82150fe23d020a6dcd5f056a8a6",
+        "spec": "5ba19fedcd79d0db3974a3224c6f8544bbb03fff3519777b5a181270158365e0",
+        "tests": "4c1d32b9c10c3fcb78ff362dcb29925bb6001729cc179f8312694b64064f9ea8"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -42,7 +42,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_ai_audit.py::TestWhichRulesAreRead::test_a_required_rule_is_read_only_where_its_feature_lists_it"
+          "test": "dev/test_ai_audit.py::TestWhichRulesAreRead::test_an_anchors_rules_are_read_once_each_as_the_anchors"
         },
         {
           "env": null,
@@ -659,6 +659,22 @@
           "result": "pass",
           "rule": "RULE-29",
           "test": "dev/test_ai_audit.py::TestTheCommandLine::test_a_project_root_that_is_not_a_directory_exits_two"
+        },
+        {
+          "env": null,
+          "id": "PROOF-91",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_ai_audit.py::TestThePrompt::test_an_anchors_prompt_ends_on_the_anchor_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-92",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_ai_audit.py::TestThePrompt::test_an_anchors_prompt_names_no_strength"
         }
       ],
       "rules": {
@@ -677,6 +693,7 @@
         "RULE-21": "passed",
         "RULE-29": "passed",
         "RULE-3": "not run",
+        "RULE-30": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",
