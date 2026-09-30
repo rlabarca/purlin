@@ -61,7 +61,9 @@ names each spec with how many of its rules have no proof.
 
 **Filter buttons.** One button per line of `Left to do`, in the same order, named as the line
 without its count and noun and carrying the count: `4 rules to strengthen` is `To strengthen 4`,
-`the version to tag` is `To tag`, and `1 rule to confirm as not applying` is `To confirm`. One button is chosen at a time. Choosing one shows only
+`the version to tag` is `To tag`, `1 rule to confirm as not applying` is `To confirm`, and
+`1 spec to repair` is `To repair`, which shows the rules of each spec that writes a number twice
+or holds a line left from a merge conflict. One button is chosen at a time. Choosing one shows only
 the rules left to do of that kind, and the line under the buttons names the command that clears
 them, such as `Type purlin:sign in Claude Code.`; choosing it again shows every rule. `To tag`
 and `To correct` count no rule, so choosing either leaves every rule showing. With nothing left
@@ -148,6 +150,10 @@ source and the age in its hover. The signed row adds the signer and the date. A 
 `waiting`, in the neutral colour, while the cell below it is not met: the strong cell `waiting
 for its tests to pass`, the signed cell `waiting for the audit`. A rule signed as not applying
 reads `does not apply` in every cell, in teal, each with the reason `by <signer>: <why>`.
+Every rule of a spec to repair reads `failed` in its passed row with the reason, such as
+`PROOF-2 is written twice in the spec`, whatever its tests found. A rule whose signature ended
+reads `unsigned` in its signed row with the cause, such as `the signature by sam@acme.com ended
+because a test file behind it changed: tests/test_login.py`.
 
 At the gate `strong` and above the **Audit** panel follows, one line each: `Strong. It found
 nothing.`; or `Strong.`, `Weak.` or `Undecided. The AI audit could not decide, so the rule reads
