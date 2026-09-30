@@ -21,6 +21,7 @@ ROOT = os.path.dirname(DEV)
 sys.path.insert(0, DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
+sys.path.insert(0, os.path.join(ROOT, 'scripts', 'export'))
 
 import sign as sign_module  # noqa: E402
 from purlin import payload as purlin_payload  # noqa: E402
@@ -100,18 +101,27 @@ def test_an_audit_writes_the_data_file(tmp_path, claude):  # noqa: F811
 
 
 # purlin: purlin_report PROOF-59
-def test_a_signature_writes_the_data_file(capsys):
+def test_a_sign_off_writes_the_data_file(capsys):
+    import release as release_module
     made = signing_project()
     try:
+        # The release run commits the evidence package; at the gate
+        # `signed` it writes no tag.
+        assert release_module.run_release(made.root, '1.0.0') == (None, None)
         path = os.path.join(made.root, DATA)
         if os.path.exists(path):
             os.remove(path)
-        code = sign_module.main(['--all', '--project-root', made.root])
+        answers = os.path.join(made.root, '.purlin', 'runtime',
+                               'signoff-answers.json')
+        os.makedirs(os.path.dirname(answers), exist_ok=True)
+        with open(answers, 'w', encoding='utf-8') as handle:
+            json.dump({'strong': 'go on', 'stops': {}, 'sign': True}, handle)
+        code = sign_module.main(['--answers', answers,
+                                 '--project-root', made.root])
         assert code == 0, capsys.readouterr().out
         data = _data(made.root)
         assert data is not None, 'purlin:sign wrote no data file'
-        assert _rule(data, 'login', 'RULE-2')['cells']['signed']['word'] == (
-            'signed')
+        assert (data['tag'] or {}).get('name') == 'signed/1.0.0', data['tag']
     finally:
         made.close()
 

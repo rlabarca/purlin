@@ -41,9 +41,7 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .notice-text{min-width:0}
 .nowrap{white-space:nowrap}
 .pill{display:inline-flex;align-items:center;justify-content:center;font-size:var(--ui-sm);font-weight:var(--weight-bold);letter-spacing:.08em;padding:4px 12px;border-radius:var(--radius-pill);border:1.5px solid currentColor;white-space:nowrap}
-.pill.solid{background:currentColor}
 .pill b{font-weight:var(--weight-bold)}
-.pill.solid b{color:var(--canvas-deep)}
 pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-height:1.55;color:var(--text-primary);padding:var(--space-5);background:var(--surface-sunken);border:1px solid var(--border-default);border-radius:var(--radius-sm);overflow-x:auto;white-space:pre-wrap}
 
 /* --- step boxes ----------------------------------------------------- */
@@ -135,7 +133,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .topbar .spacer{flex-basis:100%;height:0}
 .tabs{flex-wrap:wrap;column-gap:var(--space-6);padding:0 var(--space-5)}
 .wrap{padding:var(--space-6) var(--space-5)}
-.strip{grid-template-columns:repeat(4,minmax(0,1fr))}
+.strip{grid-template-columns:repeat(3,minmax(0,1fr))}
 .tiles{display:contents}
 .tbl.specs{display:block}
 .specs .th{display:none}

@@ -97,15 +97,15 @@
         "manual": 0,
         "not_audited": 0,
         "partial": 1,
-        "passed": 1,
+        "passed": 3,
         "proofs": 5,
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
         "rules": 4,
-        "signed": 1,
-        "strong": 1,
+        "strong": 2,
         "test_strength": 86,
-        "untested": 0
+        "untested": 0,
+        "weak": 1
       },
       "rules": [
         {
@@ -121,7 +121,7 @@
             "verdict": "strong"
           },
           "audit_hash": "c7d5dc84330ceea2da7f4136129f0347e5ee65984c9e55505c094de4dddc3189",
-          "bucket": "signed",
+          "bucket": "passed",
           "cells": {
             "passed": {
               "counts": true,
@@ -143,28 +143,17 @@
               "source": "ci",
               "word": "passed"
             },
-            "signed": {
-              "at": "2026-09-12T10:02:11Z",
-              "key_fingerprint": "SHA256:q2Vx7Tn0cL4pWm8bRz1Kd9HfYs3JgAe6uNi5oXy4Q",
-              "path": "specs/auth/login.signatures/RULE-1.1a2b3c4d.jane-doe.json",
-              "reasons": [
-                "by jane@acme.com"
-              ],
-              "signer": "jane@acme.com",
-              "signer_name": "Jane Doe",
-              "word": "signed"
-            },
             "strong": {
               "evidence": ".purlin/evidence/ci/login.json",
               "findings": [],
-              "reasons": [],
+              "reasons": [
+                "strength 86%"
+              ],
               "strength": 86,
               "word": "strong"
             }
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
-          "does_not_apply": null,
-          "ended": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -172,9 +161,10 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false
+            "partial": false,
+            "strong": true,
+            "weak": false
           },
-          "hand_checked": false,
           "id": "RULE-1",
           "left": null,
           "machines": {
@@ -217,7 +207,7 @@
             "verdict": "strong"
           },
           "audit_hash": "c7d5dc84330ceea2da7f4136129f0347e5ee65984c9e55505c094de4dddc3189",
-          "bucket": "strong",
+          "bucket": "passed",
           "cells": {
             "passed": {
               "counts": true,
@@ -239,34 +229,17 @@
               "source": "ci",
               "word": "passed"
             },
-            "signed": {
-              "at": null,
-              "key_fingerprint": null,
-              "path": null,
-              "reasons": [
-                "the signature by sam@acme.com ended because a test file behind it changed: tests/test_login.py"
-              ],
-              "signer": null,
-              "signer_name": null,
-              "word": "unsigned"
-            },
             "strong": {
               "evidence": ".purlin/evidence/ci/login.json",
               "findings": [],
-              "reasons": [],
+              "reasons": [
+                "strength 86%"
+              ],
               "strength": 86,
               "word": "strong"
             }
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
-          "does_not_apply": null,
-          "ended": {
-            "causes": [
-              "a test file behind it changed: tests/test_login.py"
-            ],
-            "line": "login RULE-2: the signature by sam@acme.com ended because a test file behind it changed: tests/test_login.py.",
-            "signer": "sam@acme.com"
-          },
           "feature": "login",
           "flags": {
             "failing": false,
@@ -274,11 +247,12 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false
+            "partial": false,
+            "strong": true,
+            "weak": false
           },
-          "hand_checked": false,
           "id": "RULE-2",
-          "left": "to_sign",
+          "left": null,
           "machines": {
             "linux": "remote runner, Linux/Unix",
             "windows": "remote runner, Windows"
@@ -343,32 +317,20 @@
               "source": "ci",
               "word": "passed"
             },
-            "signed": {
-              "at": null,
-              "key_fingerprint": null,
-              "path": null,
-              "reasons": [
-                "waiting for the audit"
-              ],
-              "signer": null,
-              "signer_name": null,
-              "word": "waiting"
-            },
             "strong": {
               "evidence": ".purlin/evidence/ci/login.json",
               "findings": [
                 "PROOF-3 reads the status code alone; no test reads when the lock expires."
               ],
               "reasons": [
-                "PROOF-3 reads the status code alone; no test reads when the lock expires."
+                "PROOF-3 reads the status code alone; no test reads when the lock expires.",
+                "strength 86%"
               ],
               "strength": 86,
               "word": "weak"
             }
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
-          "does_not_apply": null,
-          "ended": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -376,9 +338,10 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false
+            "partial": false,
+            "strong": false,
+            "weak": true
           },
-          "hand_checked": false,
           "id": "RULE-3",
           "left": "to_strengthen",
           "machines": {
@@ -437,17 +400,6 @@
               "source": "ci",
               "word": "partial"
             },
-            "signed": {
-              "at": null,
-              "key_fingerprint": null,
-              "path": null,
-              "reasons": [
-                "waiting for the audit"
-              ],
-              "signer": null,
-              "signer_name": null,
-              "word": "waiting"
-            },
             "strong": {
               "evidence": null,
               "findings": [],
@@ -459,8 +411,6 @@
             }
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
-          "does_not_apply": null,
-          "ended": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -468,9 +418,10 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": true
+            "partial": true,
+            "strong": false,
+            "weak": false
           },
-          "hand_checked": false,
           "id": "RULE-4",
           "left": "to_fix",
           "machines": {
@@ -518,10 +469,6 @@
       "scope": [
         "src/login/"
       ],
-      "signatures": [
-        "specs/auth/login.signatures/RULE-1.1a2b3c4d.jane-doe.json",
-        "specs/auth/login.signatures/RULE-2.5e6f7a8b.sam-acme.json"
-      ],
       "source": null,
       "source_path": null,
       "spec_path": "specs/auth/login.md",
@@ -567,10 +514,10 @@
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
         "rules": 3,
-        "signed": 0,
-        "strong": 0,
+        "strong": 1,
         "test_strength": 64,
-        "untested": 0
+        "untested": 0,
+        "weak": 1
       },
       "rules": [
         {
@@ -608,30 +555,17 @@
               "source": "ci",
               "word": "passed"
             },
-            "signed": {
-              "at": null,
-              "key_fingerprint": null,
-              "path": null,
-              "reasons": [
-                "waiting for the audit"
-              ],
-              "signer": null,
-              "signer_name": null,
-              "word": "waiting"
-            },
             "strong": {
               "evidence": ".purlin/evidence/ci/invoice.json",
               "findings": [],
               "reasons": [
-                "strength 64% under 80%"
+                "strength 64%"
               ],
               "strength": 64,
-              "word": "weak"
+              "word": "strong"
             }
           },
           "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
-          "does_not_apply": null,
-          "ended": null,
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -639,11 +573,12 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false
+            "partial": false,
+            "strong": true,
+            "weak": false
           },
-          "hand_checked": false,
           "id": "RULE-1",
-          "left": "to_strengthen",
+          "left": null,
           "machines": {
             "linux": "remote runner, Linux/Unix",
             "macos": "remote runner, macOS"
@@ -708,33 +643,20 @@
               "source": "ci",
               "word": "passed"
             },
-            "signed": {
-              "at": null,
-              "key_fingerprint": null,
-              "path": null,
-              "reasons": [
-                "waiting for the audit"
-              ],
-              "signer": null,
-              "signer_name": null,
-              "word": "waiting"
-            },
             "strong": {
               "evidence": ".purlin/evidence/ci/invoice.json",
               "findings": [
                 "No proof of this rule names a rejection, an error or a boundary, so the test reads only the total it expects."
               ],
               "reasons": [
-                "strength 64% under 80%",
-                "No proof of this rule names a rejection, an error or a boundary, so the test reads only the total it expects."
+                "No proof of this rule names a rejection, an error or a boundary, so the test reads only the total it expects.",
+                "strength 64%"
               ],
               "strength": 64,
               "word": "weak"
             }
           },
           "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
-          "does_not_apply": null,
-          "ended": null,
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -742,9 +664,10 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false
+            "partial": false,
+            "strong": false,
+            "weak": true
           },
-          "hand_checked": false,
           "id": "RULE-2",
           "left": "to_strengthen",
           "machines": {
@@ -789,29 +712,17 @@
               "source": null,
               "word": "passed"
             },
-            "signed": {
-              "at": null,
-              "key_fingerprint": null,
-              "path": null,
-              "reasons": [],
-              "signer": null,
-              "signer_name": null,
-              "word": "unsigned"
-            },
             "strong": {
               "evidence": null,
               "findings": [],
               "reasons": [
-                "manual proof",
-                "strength 64% under 80%"
+                "manual proof"
               ],
               "strength": 64,
               "word": "manual test"
             }
           },
           "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
-          "does_not_apply": null,
-          "ended": null,
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -819,11 +730,12 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false
+            "partial": false,
+            "strong": false,
+            "weak": false
           },
-          "hand_checked": false,
           "id": "RULE-3",
-          "left": "to_test_by_hand",
+          "left": null,
           "machines": {},
           "proof_hash": "d4e5f6a7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           "proofs": [
@@ -846,7 +758,6 @@
       "scope": [
         "src/invoice/"
       ],
-      "signatures": [],
       "source": null,
       "source_path": null,
       "spec_path": "specs/billing/invoice.md",
@@ -887,10 +798,10 @@
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
         "rules": 1,
-        "signed": 0,
         "strong": 0,
         "test_strength": null,
-        "untested": 0
+        "untested": 0,
+        "weak": 1
       },
       "rules": [
         {
@@ -925,17 +836,6 @@
               "source": "ci",
               "word": "passed"
             },
-            "signed": {
-              "at": null,
-              "key_fingerprint": null,
-              "path": null,
-              "reasons": [
-                "waiting for the audit"
-              ],
-              "signer": null,
-              "signer_name": null,
-              "word": "waiting"
-            },
             "strong": {
               "evidence": ".purlin/evidence/ci/checkout_design.json",
               "findings": [
@@ -949,8 +849,6 @@
             }
           },
           "code_hash": "72d886c64599e86aaf3eb91d560ff85ae429a831f4ac5eb2f19958a3558bb72d",
-          "does_not_apply": null,
-          "ended": null,
           "feature": "checkout_design",
           "flags": {
             "failing": false,
@@ -958,9 +856,10 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false
+            "partial": false,
+            "strong": false,
+            "weak": true
           },
-          "hand_checked": false,
           "id": "RULE-1",
           "left": "to_strengthen",
           "machines": {
@@ -991,7 +890,6 @@
         }
       ],
       "scope": [],
-      "signatures": [],
       "source": null,
       "source_path": null,
       "spec_path": "specs/_anchors/checkout_design.md",
@@ -1024,17 +922,17 @@
           "PROOF-1"
         ],
         "rules": 1,
-        "signed": 1,
         "strong": 0,
         "test_strength": null,
-        "untested": 0
+        "untested": 1,
+        "weak": 0
       },
       "rules": [
         {
           "applies_to": "security_baseline",
           "audit": null,
           "audit_hash": null,
-          "bucket": "signed",
+          "bucket": "untested",
           "cells": {
             "passed": {
               "counts": true,
@@ -1042,39 +940,22 @@
               "missing_env": [],
               "platforms": {},
               "reasons": [
-                "by jane@acme.com: the project stores no card data"
+                "no test for PROOF-1"
               ],
               "source": null,
-              "word": "does not apply"
-            },
-            "signed": {
-              "at": "2026-09-12T10:05:31Z",
-              "key_fingerprint": "SHA256:q2Vx7Tn0cL4pWm8bRz1Kd9HfYs3JgAe6uNi5oXy4Q",
-              "path": "specs/_anchors/security_baseline.signatures/RULE-1.5e6f7a8b.jane-doe.json",
-              "reasons": [
-                "by jane@acme.com: the project stores no card data"
-              ],
-              "signer": "jane@acme.com",
-              "signer_name": "Jane Doe",
-              "word": "does not apply"
+              "word": "no test"
             },
             "strong": {
               "evidence": null,
               "findings": [],
               "reasons": [
-                "by jane@acme.com: the project stores no card data"
+                "waiting for its tests to pass"
               ],
               "strength": null,
-              "word": "does not apply"
+              "word": "waiting"
             }
           },
           "code_hash": "5b1e0c7a9d3f2e8b4a6c1d0e9f7a3b5c2d4e6f8a0b1c3d5e7f9a2b4c6d8e0f1a",
-          "does_not_apply": {
-            "at": "2026-09-12T10:05:31Z",
-            "signer": "jane@acme.com",
-            "why": "the project stores no card data"
-          },
-          "ended": null,
           "feature": "security_baseline",
           "flags": {
             "failing": false,
@@ -1082,11 +963,12 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false
+            "partial": false,
+            "strong": false,
+            "weak": false
           },
-          "hand_checked": false,
           "id": "RULE-1",
-          "left": null,
+          "left": "no_test",
           "machines": {},
           "proof_hash": "prule1sec",
           "proofs": [
@@ -1107,9 +989,6 @@
         }
       ],
       "scope": [],
-      "signatures": [
-        "specs/_anchors/security_baseline.signatures/RULE-1.5e6f7a8b.jane-doe.json"
-      ],
       "source": "https://github.com/acme/policies.git",
       "source_path": "specs/_anchors/security_baseline.md",
       "spec_path": "specs/_anchors/security_baseline.md",
@@ -1150,10 +1029,10 @@
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
         "rules": 2,
-        "signed": 0,
         "strong": 0,
         "test_strength": 82,
-        "untested": 1
+        "untested": 1,
+        "weak": 0
       },
       "rules": [
         {
@@ -1173,17 +1052,6 @@
               "source": "ci",
               "word": "out of date"
             },
-            "signed": {
-              "at": null,
-              "key_fingerprint": null,
-              "path": null,
-              "reasons": [
-                "waiting for the audit"
-              ],
-              "signer": null,
-              "signer_name": null,
-              "word": "waiting"
-            },
             "strong": {
               "evidence": null,
               "findings": [],
@@ -1195,8 +1063,6 @@
             }
           },
           "code_hash": "3e5c6ee720afe2c5032fcfbd87d637c0068d2155f85a1aea430d30bede475af0",
-          "does_not_apply": null,
-          "ended": null,
           "feature": "export",
           "flags": {
             "failing": false,
@@ -1204,9 +1070,10 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": true,
-            "partial": false
+            "partial": false,
+            "strong": false,
+            "weak": false
           },
-          "hand_checked": false,
           "id": "RULE-1",
           "left": "to_test",
           "machines": {},
@@ -1254,17 +1121,6 @@
               "source": "ci",
               "word": "passed"
             },
-            "signed": {
-              "at": null,
-              "key_fingerprint": null,
-              "path": null,
-              "reasons": [
-                "waiting for the audit"
-              ],
-              "signer": null,
-              "signer_name": null,
-              "word": "waiting"
-            },
             "strong": {
               "evidence": null,
               "findings": [],
@@ -1276,8 +1132,6 @@
             }
           },
           "code_hash": "3e5c6ee720afe2c5032fcfbd87d637c0068d2155f85a1aea430d30bede475af0",
-          "does_not_apply": null,
-          "ended": null,
           "feature": "export",
           "flags": {
             "failing": false,
@@ -1285,11 +1139,12 @@
             "no_proof": false,
             "not_audited": true,
             "out_of_date": false,
-            "partial": false
+            "partial": false,
+            "strong": false,
+            "weak": false
           },
-          "hand_checked": false,
           "id": "RULE-2",
-          "left": "to_audit",
+          "left": null,
           "machines": {
             "linux": "remote runner, Linux/Unix"
           },
@@ -1320,7 +1175,6 @@
       "scope": [
         "src/export/"
       ],
-      "signatures": [],
       "source": null,
       "source_path": null,
       "spec_path": "specs/billing/export.md",
@@ -1332,7 +1186,6 @@
     "audit_parallel": 4,
     "ci": "github",
     "gate": "signed",
-    "min_strength": 80,
     "mutation_engine": "auto"
   },
   "generated_at": "2026-09-13T08:30:00Z",
@@ -1346,34 +1199,22 @@
       "text": "1 rule to fix"
     },
     {
+      "command": "purlin:build",
+      "count": 1,
+      "kind": "no_test",
+      "text": "1 rule to write a test for"
+    },
+    {
       "command": "purlin:test",
       "count": 1,
       "kind": "to_test",
       "text": "1 rule to test"
     },
     {
-      "command": "purlin:sign",
-      "count": 1,
-      "kind": "to_test_by_hand",
-      "text": "1 rule to test by hand"
-    },
-    {
-      "command": "purlin:audit",
-      "count": 1,
-      "kind": "to_audit",
-      "text": "1 rule to audit"
-    },
-    {
       "command": "purlin:build",
-      "count": 4,
+      "count": 3,
       "kind": "to_strengthen",
-      "text": "4 rules to strengthen"
-    },
-    {
-      "command": "purlin:sign",
-      "count": 1,
-      "kind": "to_sign",
-      "text": "1 rule to sign"
+      "text": "3 rules to strengthen"
     }
   ],
   "os_words": {
@@ -1392,30 +1233,33 @@
   },
   "project": "ledger",
   "remote_url": "https://github.com/acme/ledger.git",
-  "schema_version": 12,
+  "schema_version": 13,
   "summary": {
+    "audit": {
+      "not_audited": 1,
+      "strong": 3,
+      "weak": 3
+    },
     "failing": 0,
     "features": 5,
     "incomplete": 0,
     "manual": 1,
     "not_audited": 1,
     "partial": 1,
-    "passed": 6,
+    "passed": 8,
     "proofs": 12,
     "proofs_without_test": 1,
     "proofs_without_test_ids": [
       "PROOF-1"
     ],
     "rules": 11,
-    "sentence": "11 rules. 8 pass their tests. 3 are strong. 2 are signed.",
-    "signed": 2,
+    "sentence": "11 rules. 8 pass their tests. The audit found 3 strong and 3 weak.",
     "steps": {
-      "passed": 8,
-      "signed": 2,
-      "strong": 3
+      "passed": 8
     },
-    "strong": 1,
-    "untested": 1
+    "strong": 3,
+    "untested": 2,
+    "weak": 3
   },
   "tag": {
     "commit": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",

@@ -1,6 +1,6 @@
-/* The Rule screen: one rule and the cells the gate reaches, what the audit
-   found, the signature, the proofs that stand for it with the tests that
-   carry them, and the tests marked with the rule's own id. */
+/* The Rule screen: one rule and its cells, what the audit found, the proofs
+   that stand for it with the tests that carry them, and the tests marked
+   with the rule's own id. */
 
 /* The open rule, by the spec that owns it and its id: opening
    `ai_audit RULE-1` and `security_no_dangerous_patterns RULE-1` opens two
@@ -28,41 +28,35 @@ function platformBoxes(cell) {
   }).join(' ');
 }
 
-/* One row per cell the gate reaches: the word it reads, what the payload
-   carries beside that word, then the reasons, each already a sentence
-   fragment the payload wrote. The passed cell's platforms and the signed
-   cell's signer and date are facts the word alone leaves out. */
+/* One row per cell the page draws, the strong cell only where the audit has
+   read the project: the word it reads, the passed cell's platforms, which
+   the word alone leaves out, then the reasons, each already a sentence
+   fragment the payload wrote. */
 function cellRow(rule, name) {
   var cell = cellOf(rule, name);
-  if (!cell) { return ''; }
+  if (!cell || (name === 'strong' && !audited())) { return ''; }
   var reasons = (cell.reasons || []).filter(function (text) {
-    return text !== 'by ' + cell.signer
-      && (showsProofs() || text !== 'no proof written');
+    return showsProofs() || text !== 'no proof written';
   }).join('; ');
-  var beside = name === 'passed' ? platformBoxes(cell)
-    : name === 'signed' && cell.signer && cell.word === 'signed'
-      ? '<span class="mono sec">'
-      + unbroken(cell.signer) + ' \u00b7 ' + unbroken(when(cell.at))
-      + '</span>' : '';
+  var beside = name === 'passed' ? platformBoxes(cell) : '';
   return '<dt>' + esc(CELL_LABELS[name]) + '</dt><dd>' + pill(cell.word)
     + (beside ? ' ' + beside : '')
     + (reasons ? ' <span class="sec">' + esc(reasons) + '</span>' : '')
     + '</dd>';
 }
 
-/* What the audit found, and nothing about what to do with it, drawn where
-   the gate asks for the audit, which is where the rule has a strong cell:
-   its answer,
-   each finding on its own line as the audit wrote it, the test strength
-   beside the minimum this gate asks for where one was measured and nothing
-   of strength where none was, then the model that read the rule and when.
+/* What the audit found, and nothing about what to do with it, drawn at
+   either gate once the audit has read the project: its answer, each finding
+   on its own line as the audit wrote it, the test strength where one was
+   measured and nothing of strength where none was, then the model that read
+   the rule and when.
    The answer is worded as the terminal words it, and the strength reads its
    whole-number part, as the board's cell does, so 85.7 reads 85 on both.
    The audit writes sentences, so there is no list of check names to render
    here. */
 function auditPanel(rule) {
   var cell = cellOf(rule, 'strong');
-  if (!cell) { return ''; }
+  if (!cell || !audited()) { return ''; }
   var audit = rule.audit;
   var lines = [];
   var findings = (audit && audit.findings) || [];
@@ -80,8 +74,7 @@ function auditPanel(rule) {
   }
   findings.forEach(function (text) { lines.push(line(text)); });
   if (cell.strength != null) {
-    lines.push(line('Test strength ' + Math.floor(cell.strength) + '%, against '
-      + 'a minimum of ' + minStrength() + '%.'));
+    lines.push(line('Test strength ' + Math.floor(cell.strength) + '%.'));
   }
   if (audit) {
     lines.push('<p class="sec">Read by <span class="mono">'
@@ -100,64 +93,6 @@ function line(text) { return '<p class="sec">' + esc(text) + '</p>'; }
    itself; the sentence around it still wraps. */
 function unbroken(text) {
   return '<span class="nowrap">' + esc(text) + '</span>';
-}
-
-/* The signature files that bind this rule. One is named
-   <RULE-N>.<hash8>.<signer-slug>.json, so the third part names who. */
-function signaturesFor(feature, rule) {
-  return (feature.signatures || []).filter(function (path) {
-    return path.split('/').pop().indexOf(rule.id + '.') === 0;
-  });
-}
-
-/* A signature is a signed commit, so this page cannot write one: it names the
-   command that does, and reads back the signature already committed: who
-   signed, by name and email as git holds them, when, the key it was made
-   with, and the machine the tests ran on in each system. The panel is drawn
-   at the gate `signed` only, headed `Hand check` where a proof of the rule
-   is `@manual` and nobody has checked it, and `Signature` otherwise. A rule
-   of a pinned anchor that a person signed as not applying says so, with
-   the reason they gave, who they are and when. */
-function signPanel(feature, rule) {
-  var cell = cellOf(rule, 'signed');
-  if (!level('signed') || !cell) { return ''; }
-  var dna = rule.does_not_apply;
-  if (dna && cell.word === WORDS.does_not_apply) {
-    var signer = dna.signer || cell.signer;
-    var name = cell.signer_name ? cell.signer_name + ' (' + signer + ')'
-      : signer;
-    return '<div class="panel"><h2>Signed</h2><p class="sec">'
-      + esc('Does not apply to this project: ' + dna.why + '. Signed by '
-        + name + ' at ') + unbroken(moment(dna.at || cell.at)) + '.</p></div>';
-  }
-  if (cell.word === 'signed') {
-    var who = [cell.signer_name, cell.signer].filter(Boolean).join(', ')
-      || 'a person';
-    var key = String(cell.key_fingerprint || '');
-    var first = '<p class="sec">' + esc('Signed by ' + who
-      + (cell.signer_name ? ',' : '') + ' on ') + unbroken(moment(cell.at))
-      + esc(key ? ' with the key ending ...' + key.slice(-4) + '.' : '.')
-      + '</p>';
-    var lines = [];
-    var machines = rule.machines || {};
-    Object.keys(machines).sort().forEach(function (os) {
-      lines.push('On ' + systemWords(os).word + ' the tests ran on '
-        + machines[os] + '.');
-    });
-    lines.push('The signature covers the rule, its proof, its test, the '
-      + 'code the spec lists, what the audit found and the machine the '
-      + 'tests ran on, as this screen shows them.');
-    return '<div class="panel"><h2>Signed</h2>' + first
-      + lines.map(line).join('') + '</div>';
-  }
-  var hand = rule.left === 'to_test_by_hand';
-  return '<div class="panel"><h2>' + (hand ? 'Hand check' : 'Signature')
-    + '</h2>' + typeLine('purlin:sign ' + feature.name + ' ' + rule.id, '')
-    + '<p class="sec">' + (hand ? 'A hand check is you checking the rule and '
-        + 'signing it in one act; purlin:sign asks what you saw and records '
-        + 'it. The page shows it once it is committed.'
-      : 'A signature is a signed commit that names its signer; the page '
-        + 'shows it once it is committed.') + '</p></div>';
 }
 
 /* A command the page cannot run, named as the line to type:
@@ -182,11 +117,21 @@ var TEST_WORDS = {pass: 'passed', fail: 'failed', missing: 'not run',
   'not run': 'not run'};
 
 /* A proof's own word, as the payload wrote it. At the gate `passed` a
-   `@manual` proof reads `manual`, because that project is shown no word of
-   a higher step. */
+   `@manual` proof reads `manual`, because nothing checks it by hand there. */
 function proofWord(proof) {
   var word = proof.result || 'not run';
-  return word === 'hand check' && !level('strong') ? 'manual' : word;
+  return word === 'hand check' && !level('signed') ? 'manual' : word;
+}
+
+/* What a `@manual` proof no test carries says under its tests. At the gate
+   `signed` a person checks it in the sign-off walk and types what they saw;
+   at `passed` nobody signs, and the release's evidence package lists it as
+   not checked. */
+function handCheckLine() {
+  return '<p class="sec">' + esc(level('signed')
+    ? 'Checked by hand when a release is signed, in the walk of purlin:sign.'
+    : 'Checked by hand. A release at the gate passed lists it as not '
+      + 'checked.') + '</p>';
 }
 
 /* Tests, one line each: a dot in the colour of the word its run gave it,
@@ -207,17 +152,15 @@ function testLines(tests) {
    tags, which name the operating system it asks for, and its tests with
    what each found. The board draws it under a rule and the rule screen in
    its Proofs section, from this one function, so the two never disagree.
-   A `@manual` proof no test carries is checked by hand, and names the
-   command that records the check until a signature does. `rule.feature` is
-   the spec that owns the rule, whose build writes a missing test. */
+   A `@manual` proof no test carries is checked by hand, and says when.
+   `rule.feature` is the spec that owns the rule, whose build writes a
+   missing test. */
 function proofDetail(proof, rule) {
   var owner = rule.feature;
   var tags = (proof.manual ? ['@manual'] : [])
     .concat(proof.env ? ['@env(' + proof.env + ')'] : []);
   var tests = testLines(proof.tests)
-    || (proof.manual ? (rule.hand_checked
-      ? '<p class="sec">Checked by hand.</p>'
-      : typeLine('purlin:sign ' + owner + ' ' + rule.id, 'Checked by hand. '))
+    || (proof.manual ? handCheckLine()
     : proofWord(proof) === 'not run'
       ? '<p class="sec">No run has listed its tests yet.</p>'
       : noTestLine(owner));
@@ -258,17 +201,10 @@ function renderRule() {
   }
   var feature = found.feature;
   var rule = found.rule;
-  var rows = [];
-  GATE_LEVELS.forEach(function (name) { rows.push(cellRow(rule, name)); });
+  var rows = [cellRow(rule, 'passed'), cellRow(rule, 'strong')];
   rows.push('<dt>Spec</dt><dd>' + hostLink(feature.spec_path, feature.spec_path)
     + '</dd>');
   rows.push('<dt>Last run</dt><dd>' + runLine(feature) + '</dd>');
-  var signatures = cellOf(rule, 'signed') ? signaturesFor(feature, rule) : [];
-  if (signatures.length) {
-    rows.push('<dt>Signatures</dt><dd>' + signatures.map(function (path) {
-      return hostLink(path, path.split('/').pop());
-    }).join('<br>') + '</dd>');
-  }
   return backLink()
     + '<section style="margin-top:var(--space-6)">'
     + '<p class="eyebrow">' + esc(feature.name) + '</p>'
@@ -276,7 +212,7 @@ function renderRule() {
     + '<p class="sec">' + esc(rule.text) + '</p></section>'
     + '<section class="stack"><div class="panel"><dl class="kv">'
     + rows.join('') + '</dl></div>'
-    + auditPanel(rule) + signPanel(feature, rule) + '</section>'
+    + auditPanel(rule) + '</section>'
     + (showsProofs() ? '<section><p class="eyebrow">Proofs</p>'
       + '<div class="stack">' + ((rule.proofs || []).length
         ? rule.proofs.map(function (proof) {

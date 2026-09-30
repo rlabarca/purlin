@@ -76,9 +76,9 @@ HEADINGS = """() => Array.from(document.querySelectorAll('.th > div'))
   }))"""
 
 
-# The right edge of the last column heading, which at the `signed` gate is
-# `Signed`: the column a reader on a laptop never saw while the floors added
-# up to more than a 1100-wide window gives the table. Seven columns fit it.
+# The right edge of the last column heading, which on the regulated sample is
+# `Strong`: a last column a reader on a laptop never saw while the floors
+# added up to more than a 1100-wide window gives the table.
 LAST_HEADING = """() => {
   const heads = document.querySelectorAll('.th > div');
   return heads[heads.length - 1].getBoundingClientRect().right;
@@ -110,7 +110,7 @@ def _at_every_width(browser, tmp_path, name, look):
 
 # purlin: purlin_report PROOF-42
 def test_every_column_fits_from_1024_up(browser, tmp_path):  # noqa: F811
-    """`SIGNED` sat off the right of a 1024-wide window with eight columns."""
+    """A last column once sat off the right of a 1024-wide window."""
     found = _at_every_width(browser, tmp_path, 'regulated', lambda page: (
         page.evaluate(SIDEWAYS), page.evaluate(LAST_HEADING)))
     for width, (sideways, last) in found.items():
@@ -138,20 +138,20 @@ def test_nothing_on_the_table_is_aligned_right(browser,  # noqa: F811
 # purlin: purlin_report PROOF-142
 def test_a_long_tests_value_is_one_line_from_1024_up(browser,  # noqa: F811
                                                      tmp_path):
-    """The widest value in the sample, `1 of 1 · 1 does not apply`, is one
+    """The widest `Tests` value in the sample, `3 of 4 · 1 partial`, is one
     line like every other."""
     found = _at_every_width(browser, tmp_path, 'regulated', lambda page: (
-        DOES_NOT_APPLY in _tests_value(page), page.evaluate(WRAPPED)))
-    assert found == {width: (True, 0) for width in WIDTHS}, found
+        _tests_value(page), page.evaluate(WRAPPED)))
+    assert found == {width: (LONG_TESTS, 0) for width in WIDTHS}, found
 
 
-DOES_NOT_APPLY = '1 of 1 · 1 does not apply'
+LONG_TESTS = '3 of 4 · 1 partial'
 
 
 def _tests_value(page):
-    """security_baseline's `Tests` value, as its one line reads."""
+    """login's `Tests` value, as its one line reads."""
     return ' '.join(page.inner_text(
-        '.tr[data-feature="security_baseline"] > div[data-label="Tests"]'
+        '.tr[data-feature="login"] > div[data-label="Tests"]'
         ' .trio').split())
 
 
@@ -256,7 +256,7 @@ def test_a_long_tests_value_is_one_line_at_every_width(browser, tmp_path):  # no
         page = open_board(browser, tmp_path / ('regulated%d' % width),
                           payload_named('regulated'),
                           viewport={'width': width, 'height': 900})
-        assert _tests_value(page) == DOES_NOT_APPLY, width
+        assert _tests_value(page) == LONG_TESTS, width
         assert page.evaluate(SIDEWAYS) == 0, width
         assert page.evaluate(BROKEN_VALUES) == [], width
         page.close()
@@ -269,24 +269,24 @@ def _board_at(browser, tmp_path, name, width):
 
 
 # purlin: purlin_report PROOF-76
-def test_four_boxes_to_a_row_at_768(browser, tmp_path):  # noqa: F811
+def test_three_boxes_to_a_row_at_768(browser, tmp_path):  # noqa: F811
     page = _board_at(browser, tmp_path, 'regulated', 768)
-    assert len(page.query_selector_all('.tile')) == 4
-    assert page.evaluate(FIRST_ROW) == 4
+    assert len(page.query_selector_all('.tile')) == 3
+    assert page.evaluate(FIRST_ROW) == 3
     page.close()
 
 
 # purlin: purlin_report PROOF-161
 def test_every_box_on_one_row_at_1024(browser, tmp_path):  # noqa: F811
     page = _board_at(browser, tmp_path, 'regulated', 1024)
-    assert len(page.query_selector_all('.tile')) == 4
-    assert page.evaluate(FIRST_ROW) == 4
+    assert len(page.query_selector_all('.tile')) == 3
+    assert page.evaluate(FIRST_ROW) == 3
     page.close()
 
 
 # purlin: purlin_report PROOF-162
 def test_two_boxes_to_a_row_at_390(browser, tmp_path):  # noqa: F811
-    page = _board_at(browser, tmp_path, 'team', 390)
+    page = _board_at(browser, tmp_path, 'regulated', 390)
     assert len(page.query_selector_all('.tile')) == 3
     assert page.evaluate(FIRST_ROW) == 2
     page.close()

@@ -10,42 +10,45 @@
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null,
             features: {}, groups: {}, filter: null, proofs: {}};
-var SCHEMA = 12;
+var SCHEMA = 13;
 /* The data file is rewritten when `purlin:status`, `purlin:test`,
    `purlin:audit` or `purlin:sign` finishes, and a tab left open would never
    notice. Coming back to the tab reloads it when what it holds is older than
    this. */
 var REFRESH_AFTER = 60;
 
-/* The three steps, lowest first. The project's gate names the
-   highest step that exists, and every cell, box and column above it
-   is absent rather than empty: a board that asks a question its project has
-   not opted into reads as a project falling short. */
-var GATE_LEVELS = ['passed', 'strong', 'signed'];
+/* The two gates, lowest first. `passed`: every rule's tests pass. `signed`:
+   the same, and a person signs each release's evidence package, which is
+   where every rule needs a proof. Nothing on the page is signed rule by rule:
+   a sign-off covers the whole package, and the top bar names the tag the
+   first one writes. */
+var GATE_LEVELS = ['passed', 'signed'];
 
-/* The step boxes, one per step the gate reaches, each counting the rules
-   that reached it: the payload's `summary.steps`, where each step contains
-   the next. The step `passed` reads `Passing` on a box, because it counts
-   rules whose tests pass now. From `strong` up, where every rule needs a
-   proof, one more box counts the rules that have none: the kind `no_proof`
-   the payload gives a rule. */
-var STEP_LABELS = {passed: 'Passing', strong: 'Strong', signed: 'Signed'};
+/* The boxes: `Passing` counts the rules whose tests pass now, the payload's
+   `summary.steps.passed`; `Strong` counts the rules the audit found strong,
+   the payload's `summary.audit.strong`, drawn only where the audit found a
+   rule strong or weak. At the gate `signed`, where every rule needs a proof,
+   one more box counts the rules that have none: the kind `no_proof` the
+   payload gives a rule. */
+var PASSING = 'Passing';
+var STRONG = 'Strong';
 var NO_PROOF = 'No proof';
 
-/* The board's six column headings and the words its cells append, in one
-   place. `scripts/mcp/purlin/board.py` renders the same six columns for
+/* The board's five column headings and the words its cells append, in one
+   place. `scripts/mcp/purlin/board.py` renders the same columns for
    `purlin:status`, so these are its
    `COLUMNS` and its cell words: a string changed there is changed here in
    the same commit. `Proofs` is drawn where `showsProofs` says, as
-   `board.shows_proofs` decides it for the status table. */
-var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'];
+   `board.shows_proofs` decides it for the status table, and `Strong` where
+   `audited` says. */
+var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong'];
 
 /* The one separator every cell, hover and line puts between two parts, which
    is `board.DOT`. */
 var DOT = ' \u00b7 ';
 var WORDS = {of: 'of', no_test: 'no test', partial: 'partial',
              failing: 'failing', passed: 'passed', failed: 'failed',
-             not_run: 'not run', does_not_apply: 'does not apply'};
+             not_run: 'not run'};
 
 /* Every word a cell can read, and the tone it reads in. A word carries the
    same hue wherever it is drawn, so a pill on the board, a row on the rule
@@ -53,11 +56,10 @@ var WORDS = {of: 'of', no_test: 'no test', partial: 'partial',
 var CELL_TONES = {'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
   'out of date': 'warn', 'strong': 'pass', 'weak': 'warn',
-  'waiting': 'neutral', 'does not apply': 'neutral',
-  'manual test': 'warn', 'not audited': 'idle', 'no proof': 'warn',
-  'signed': 'pass', 'unsigned': 'warn'};
+  'waiting': 'neutral', 'manual test': 'warn', 'not audited': 'idle',
+  'no proof': 'warn'};
 
-var CELL_LABELS = {passed: 'Passed', strong: 'Strong', signed: 'Signed'};
+var CELL_LABELS = {passed: 'Passed', strong: 'Strong'};
 
 
 function loadData(callback) {
@@ -94,28 +96,27 @@ function gateName() {
   return GATE_LEVELS.indexOf(gate) >= 0 ? gate : GATE_LEVELS[0];
 }
 
-/* True when the project's gate is at this step or above it, which is the
-   one question that decides whether a cell, a box or a column is drawn at
-   all. */
+/* True when the project's gate is this one or above it: the `No proof` box
+   and the signed tag are drawn at the gate `signed` alone. */
 function level(name) {
   return GATE_LEVELS.indexOf(gateName()) >= GATE_LEVELS.indexOf(name);
 }
 
 /* Whether the page names proofs at all. They are optional at `passed`, so a
    project there that writes no proof line is shown no `Proofs` column, no
-   proofs section and no reason naming them; from `strong` up every rule needs
+   proofs section and no reason naming them; at `signed` every rule needs
    one. `board.shows_proofs` answers the same for `purlin:status`. */
 function showsProofs() {
-  return level('strong') || ((DATA && DATA.summary) || {}).proofs > 0;
+  return level('signed') || ((DATA && DATA.summary) || {}).proofs > 0;
 }
 
-function minStrength() { return (DATA.gate && DATA.gate.min_strength) || 0; }
-
-/* Mutation testing is off where the settings name no engine, `none`: no
-   breaks run, so no minimum strength is compared. */
-function mutationOff() {
-  var engine = (DATA.gate || {}).mutation_engine;
-  return String(engine || 'none').trim().toLowerCase() === 'none';
+/* Whether the audit found any rule strong or weak. The audit is a tool a
+   person runs at either gate and nothing waits on it, so the `Strong` box,
+   column, badge, cell and panel are drawn only where it has read a rule: a
+   board that names a check nobody ran reads as a project falling short. */
+function audited() {
+  var found = ((DATA && DATA.summary) || {}).audit || {};
+  return (found.strong || 0) + (found.weak || 0) > 0;
 }
 
 /* --- marks the screens share ----------------------------------------- */
@@ -129,8 +130,7 @@ function esc(value) {
 function tone(word) { return CELL_TONES[word] || 'idle'; }
 
 function pill(word) {
-  return '<span class="pill' + (word === 'signed' ? ' solid' : '')
-    + '" style="color:var(--state-' + tone(word) + ')"><b>'
+  return '<span class="pill" style="color:var(--state-' + tone(word) + ')"><b>'
     + esc(String(word).toUpperCase()) + '</b></span>';
 }
 
@@ -265,10 +265,9 @@ function platformLines(feature) {
     });
 }
 
-/* Where the newest audit came from, how old it is, and the strength this
-   gate asks for, or with mutation testing off that none applies. The
-   strength itself is in the cell beside it. Each rule
-   carries its own audit, so the newest of them answers for the spec. */
+/* Where the newest audit came from and how old it is. The strength itself
+   is in the cell beside it. Each rule carries its own audit, so the newest
+   of them answers for the spec. */
 function auditLines(feature) {
   var newest = null;
   (feature.rules || []).forEach(function (rule) {
@@ -279,31 +278,13 @@ function auditLines(feature) {
   });
   return [newest ? 'audit' + DOT + sourceOf(newest.path) + DOT
       + ageText(newest.at).text
-    : 'No audit has read a rule here.',
-    mutationOff() ? 'no minimum strength applies: mutation testing is off'
-      : 'minimum strength ' + minStrength() + '%'];
+    : 'No audit has read a rule here.'];
 }
 
 /* The source an evidence file belongs to: the folder it sits in. */
 function sourceOf(path) {
   var parts = String(path || '').split('/');
   return parts.length > 1 ? parts[parts.length - 2] : 'local';
-}
-
-/* Who has signed a rule here and when their newest signature was written. */
-function signerLines(feature) {
-  var byWho = {};
-  var names = [];
-  (feature.rules || []).forEach(function (rule) {
-    var cell = (rule.cells || {}).signed || {};
-    if ((cell.word !== 'signed' && cell.word !== WORDS.does_not_apply)
-        || !cell.signer) { return; }
-    if (!byWho[cell.signer]) { byWho[cell.signer] = ''; names.push(cell.signer); }
-    if (newer(cell.at, byWho[cell.signer])) { byWho[cell.signer] = cell.at; }
-  });
-  var out = names.sort().map(function (who) { return who + DOT + when(byWho[who]); });
-  if (!out.length) { out.push('Nobody has signed a rule here.'); }
-  return out;
 }
 
 /* The evidence file of this spec's newest run, linked to the file on the
@@ -367,22 +348,18 @@ function cellWord(rule, name) {
   return (cellOf(rule, name) || {}).word || null;
 }
 
-/* The steps a rule has reached, lowest first, as the step boxes count
-   them: its tests passed, and where a proof is `@manual` a person has checked
-   it by hand; then the audit found it strong; then it is signed. Each step
-   contains the next, so a rule that has not reached one has reached none
-   above it. */
+/* What a rule has reached, as the boxes count it: its tests pass, a
+   `@manual` proof's hand check included, and then, where the audit read the
+   project, the audit found it strong. The audit reads only a rule whose
+   tests pass, so a rule that has not reached the first has not reached the
+   second. */
 function reachedSteps(rule) {
   var out = [];
   if (cellWord(rule, 'passed') !== 'passed') { return out; }
-  var manual = (rule.proofs || []).some(function (proof) {
-    return proof.manual;
-  });
-  if (manual && !rule.hand_checked) { return out; }
   out.push('passed');
-  if (cellWord(rule, 'strong') !== 'strong') { return out; }
-  out.push('strong');
-  if (cellWord(rule, 'signed') === 'signed') { out.push('signed'); }
+  if (audited() && cellWord(rule, 'strong') === 'strong') {
+    out.push('strong');
+  }
   return out;
 }
 
@@ -399,13 +376,8 @@ function testFailed(rule) {
 
 /* The badges a rule's row carries: one per step it has reached, and
    `FAILED` where a test fails. A step not reached draws nothing; why it was
-   not reached is read on the rule's own screen. A rule a person signed as
-   not applying reads that word in every cell, so its row carries the one
-   badge `DOES NOT APPLY`. */
+   not reached is read on the rule's own screen. */
 function badges(rule) {
-  if (cellWord(rule, 'passed') === WORDS.does_not_apply) {
-    return pill(WORDS.does_not_apply);
-  }
   return reachedSteps(rule).map(pill).join('')
     + (testFailed(rule) ? pill('failed') : '');
 }
@@ -433,11 +405,11 @@ function ageLine() {
 }
 
 /* The tag this commit carries, which is the marker that a version was signed
-   off: `purlin:sign` writes `signed/<version>` at the gate `signed` once
-   nothing is left to do, and a person pushes it. Below `signed` no tag is ever
-   written, so the top bar shows no tag chip at all. The payload's `tag`
-   carries the tag's name and the commit it points at, and is null where this
-   commit carries none. */
+   off: at the gate `signed`, `purlin:test --release` commits the evidence
+   package and the first `purlin:sign` over it writes `signed/<version>`, which
+   a person pushes. Below `signed` the top bar shows no tag chip at all. The
+   payload's `tag` carries the tag's name and the commit it points at, and is
+   null where this commit carries none. */
 function signedTag() {
   var found = DATA && DATA.tag;
   if (!found || !found.name) { return null; }
@@ -449,9 +421,9 @@ function tagChip() {
   var found = signedTag();
   if (!found) {
     return '<span class="tag plain"'
-      + hover(['This commit carries no signed tag. purlin:sign writes '
-        + 'signed/<version> once nothing is left to do at the gate signed, '
-        + 'and a person pushes it.']) + '>no signed tag</span>';
+      + hover(['This commit carries no signed tag. The first purlin:sign '
+        + 'after purlin:test --release writes signed/<version>, and a person '
+        + 'pushes it.']) + '>no signed tag</span>';
   }
   return '<span class="tag"' + hover(['The signed tag on this commit'
       + (found.at ? DOT + found.at : '')]) + '>'

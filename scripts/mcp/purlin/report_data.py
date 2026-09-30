@@ -4,7 +4,7 @@
 as they finish. The first three end on the status table, and
 `status.sync_status` calls `refresh` with the payload it has just built, so
 the table and the page read the same payload; `purlin:sign` calls it once its
-walk or its signature commit is done. Nothing runs in the background, so a
+sign-off commit is done, so the page names the tag the first sign-off writes. Nothing runs in the background, so a
 file edited with no Purlin command leaves the data file as it was, and the
 page shows what the last command saw.
 

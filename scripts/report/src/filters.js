@@ -8,21 +8,19 @@
    the payload gives that kind, and one line under the buttons names the
    command that clears them, typed in Claude Code. The page runs nothing. */
 
-/* The kinds of work that count no rule, the version to tag and the test
-   comments to correct: choosing one names the command and leaves every rule
-   showing, because no rule carries it. */
-var VERSION_KINDS = ['to_tag', 'to_correct'];
+/* The kind of work that counts no rule, the test comments to correct:
+   choosing it names the command and leaves every rule showing, because no
+   rule carries it. */
+var COMMENT_KINDS = ['to_correct'];
 
-/* The buttons whose name is shorter than their line: a rule to confirm as
-   not applying is one a person already signed so, and the button says what
-   is asked of them again; a spec to repair counts specs, not rules, and its
-   button chooses the rules of each one. */
-var SHORT_LABELS = {to_confirm: 'To confirm', to_repair: 'To repair'};
+/* The button whose name is shorter than its line: a spec to repair counts
+   specs, not rules, and its button chooses the rules of each one. */
+var SHORT_LABELS = {to_repair: 'To repair'};
 
 /* The words of one line of what is left, without its count and noun, in
    sentence case: `1 rule to fix` reads `To fix`, `2 rules to test on
-   Windows` reads `To test on Windows`, `the version to tag` reads `To tag`,
-   and `1 rule to confirm as not applying` reads `To confirm`. */
+   Windows` reads `To test on Windows`, and `1 test comment to correct` reads
+   `To correct`. */
 function leftLabel(item) {
   if (SHORT_LABELS[item.kind]) { return SHORT_LABELS[item.kind]; }
   var text = String(item.text || '');
@@ -49,7 +47,7 @@ function chosenItem() {
 function visibleRules(feature) {
   var rules = feature.rules || [];
   var item = chosenItem();
-  if (!item || VERSION_KINDS.indexOf(item.kind) >= 0) {
+  if (!item || COMMENT_KINDS.indexOf(item.kind) >= 0) {
     return rules;
   }
   return rules.filter(function (rule) {

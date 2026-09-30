@@ -54,7 +54,7 @@
         "failing": 0,
         "incomplete": false,
         "manual": 0,
-        "not_audited": 0,
+        "not_audited": 1,
         "partial": 0,
         "passed": 1,
         "proofs": 2,
@@ -63,8 +63,10 @@
           "PROOF-2"
         ],
         "rules": 3,
+        "strong": 0,
         "test_strength": null,
-        "untested": 2
+        "untested": 2,
+        "weak": 0
       },
       "rules": [
         {
@@ -87,21 +89,29 @@
               "reasons": [],
               "source": "local",
               "word": "passed"
+            },
+            "strong": {
+              "evidence": null,
+              "findings": [],
+              "reasons": [
+                "no audit has run on this code"
+              ],
+              "strength": null,
+              "word": "not audited"
             }
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
-          "does_not_apply": null,
-          "ended": null,
           "feature": "login",
           "flags": {
             "failing": false,
             "manual": false,
             "no_proof": false,
-            "not_audited": false,
+            "not_audited": true,
             "out_of_date": false,
-            "partial": false
+            "partial": false,
+            "strong": false,
+            "weak": false
           },
-          "hand_checked": false,
           "id": "RULE-1",
           "left": null,
           "machines": {
@@ -144,11 +154,18 @@
               "reasons": [],
               "source": null,
               "word": "no test"
+            },
+            "strong": {
+              "evidence": null,
+              "findings": [],
+              "reasons": [
+                "waiting for its tests to pass"
+              ],
+              "strength": null,
+              "word": "waiting"
             }
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
-          "does_not_apply": null,
-          "ended": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -156,9 +173,10 @@
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false
+            "partial": false,
+            "strong": false,
+            "weak": false
           },
-          "hand_checked": false,
           "id": "RULE-2",
           "left": "no_test",
           "machines": {},
@@ -195,11 +213,18 @@
               ],
               "source": null,
               "word": "no test"
+            },
+            "strong": {
+              "evidence": null,
+              "findings": [],
+              "reasons": [
+                "waiting for its tests to pass"
+              ],
+              "strength": null,
+              "word": "waiting"
             }
           },
           "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
-          "does_not_apply": null,
-          "ended": null,
           "feature": "login",
           "flags": {
             "failing": false,
@@ -207,9 +232,10 @@
             "no_proof": true,
             "not_audited": false,
             "out_of_date": false,
-            "partial": false
+            "partial": false,
+            "strong": false,
+            "weak": false
           },
-          "hand_checked": false,
           "id": "RULE-3",
           "left": "no_test",
           "machines": {},
@@ -225,7 +251,6 @@
       "scope": [
         "src/login/"
       ],
-      "signatures": [],
       "source": null,
       "source_path": null,
       "spec_path": "specs/auth/login.md",
@@ -259,15 +284,17 @@
         "failing": 0,
         "incomplete": false,
         "manual": 0,
-        "not_audited": 0,
+        "not_audited": 2,
         "partial": 0,
         "passed": 2,
         "proofs": 2,
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
         "rules": 2,
+        "strong": 0,
         "test_strength": null,
-        "untested": 0
+        "untested": 0,
+        "weak": 0
       },
       "rules": [
         {
@@ -290,21 +317,29 @@
               "reasons": [],
               "source": "local",
               "word": "passed"
+            },
+            "strong": {
+              "evidence": null,
+              "findings": [],
+              "reasons": [
+                "no audit has run on this code"
+              ],
+              "strength": null,
+              "word": "not audited"
             }
           },
           "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
-          "does_not_apply": null,
-          "ended": null,
           "feature": "invoice",
           "flags": {
             "failing": false,
             "manual": false,
             "no_proof": false,
-            "not_audited": false,
+            "not_audited": true,
             "out_of_date": false,
-            "partial": false
+            "partial": false,
+            "strong": false,
+            "weak": false
           },
-          "hand_checked": false,
           "id": "RULE-1",
           "left": null,
           "machines": {
@@ -353,21 +388,29 @@
               "reasons": [],
               "source": "local",
               "word": "passed"
+            },
+            "strong": {
+              "evidence": null,
+              "findings": [],
+              "reasons": [
+                "no audit has run on this code"
+              ],
+              "strength": null,
+              "word": "not audited"
             }
           },
           "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
-          "does_not_apply": null,
-          "ended": null,
           "feature": "invoice",
           "flags": {
             "failing": false,
             "manual": false,
             "no_proof": false,
-            "not_audited": false,
+            "not_audited": true,
             "out_of_date": false,
-            "partial": false
+            "partial": false,
+            "strong": false,
+            "weak": false
           },
-          "hand_checked": false,
           "id": "RULE-2",
           "left": null,
           "machines": {
@@ -400,7 +443,6 @@
       "scope": [
         "src/invoice/"
       ],
-      "signatures": [],
       "source": null,
       "source_path": null,
       "spec_path": "specs/billing/invoice.md",
@@ -412,7 +454,6 @@
     "audit_parallel": 4,
     "ci": "github",
     "gate": "passed",
-    "min_strength": null,
     "mutation_engine": "auto"
   },
   "generated_at": "2026-09-13T08:30:00Z",
@@ -442,13 +483,18 @@
   },
   "project": "ledger",
   "remote_url": null,
-  "schema_version": 12,
+  "schema_version": 13,
   "summary": {
+    "audit": {
+      "not_audited": 3,
+      "strong": 0,
+      "weak": 0
+    },
     "failing": 0,
     "features": 2,
     "incomplete": 0,
     "manual": 0,
-    "not_audited": 0,
+    "not_audited": 3,
     "partial": 0,
     "passed": 3,
     "proofs": 4,
@@ -461,7 +507,9 @@
     "steps": {
       "passed": 3
     },
-    "untested": 2
+    "strong": 0,
+    "untested": 2,
+    "weak": 0
   },
   "tag": null,
   "version": "0.10.0",

@@ -7,12 +7,13 @@ the data moves, and shows one project's names to every reader.
 
     python3 dev/build_report.py && python3 dev/capture_doc_screenshots.py
 
-    dashboard-board.png   the board at the signed gate: the step boxes, the
-                          `No proof` box, the filter buttons named as what
-                          is left to do, every column, and login open with
-                          its description and one rule unfolded beneath it
-    dashboard-rule.png    one signed rule: its cells, what the audit found,
-                          its signature and its proofs
+    dashboard-board.png   the board at the signed gate: the `No proof`,
+                          `Passing` and `Strong` boxes, the filter buttons
+                          named as what is left to do, every column, and
+                          login open with its description and one rule
+                          unfolded beneath it
+    dashboard-rule.png    one strong rule: its cells, what the audit found
+                          and its proofs
 
 Each is the dark theme at 1440 wide, captured at 2x so the type stays crisp.
 Uses dev/browser_launch.py, so it drives an installed Google Chrome when the
@@ -46,8 +47,8 @@ SHOTS = (
     ('dashboard-board.png', 'regulated',
      ('[data-act="feature"][data-feature="login"]',
       '[data-act="proofs"][data-feature="login"][data-rule="RULE-4"]')),
-    # RULE-1 is the signed one: its cells show a platform box, what the audit
-    # found and a signature, which is the whole chain on one screen.
+    # RULE-1 is a strong one: its cells show a platform box and what the
+    # audit found, which is the whole chain on one screen.
     ('dashboard-rule.png', 'regulated',
      ('[data-act="feature"][data-feature="login"]', '.rule[data-rule="RULE-1"]')),
 )

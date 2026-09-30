@@ -1,37 +1,37 @@
-/* The Board: how many rules reached each step the gate asks for, and which
-   specs hold the rules that have not got there yet, filtered by the work
-   left to do. */
+/* The Board: how many rules pass their tests and how many the audit found
+   strong, and which specs hold the rules that have not got there yet,
+   filtered by the work left to do. */
 
-/* The boxes, in the order the work is done. From `strong` up, where every
-   rule needs a proof, the `No proof` box comes first, counting the rules
-   that have none yet; then one box per step the gate reaches, each counting
-   the rules that reached it, as the payload's `summary.steps` counts them:
-   green once every rule has reached the step, amber until then. The
-   `Passing` box carries the project's total under its label, the payload's
-   count and not one the page makes. Each box carries the hover its column
-   carries, read over every spec. The terminal prints a summary sentence; the
-   boxes carry the same counts, so the page prints none. */
+/* The boxes, in the order the work is done. At the gate `signed`, where
+   every rule needs a proof, the `No proof` box comes first, counting the
+   rules that have none yet; then `Passing`, the payload's
+   `summary.steps.passed`, carrying the project's total under its label; then,
+   where the audit found any rule strong or weak, `Strong`, the payload's
+   `summary.audit.strong`. A count is green once every rule is in it and amber
+   until then. Each box carries the hover its column carries, read over every
+   spec. The terminal prints a summary sentence; the boxes carry the same
+   counts, so the page prints none. */
 function statStrip() {
   var summary = DATA.summary || {};
-  var steps = summary.steps || {};
   var total = summary.rules || 0;
   var project = wholeProject();
   var boxes = [];
-  if (level('strong')) {
+  if (level('signed')) {
     var missing = noProofLines();
     var count = missing.reduce(function (sum, pair) { return sum + pair[1]; },
                                0);
     boxes.push(box(NO_PROOF, count, count ? 'warn' : 'pass',
       missing.map(function (pair) { return pair[0] + DOT + pair[1]; })));
   }
-  GATE_LEVELS.filter(level).forEach(function (step) {
-    var reached = steps[step] || 0;
-    boxes.push(box(STEP_LABELS[step], reached,
-                   reached === total ? 'pass' : 'warn',
-                   stepHover(step, project),
-                   step === 'passed' ? total + (total === 1 ? ' rule total'
-                     : ' rules total') : null));
-  });
+  var passing = (summary.steps || {}).passed || 0;
+  boxes.push(box(PASSING, passing, passing === total ? 'pass' : 'warn',
+                 platformLines(project),
+                 total + (total === 1 ? ' rule total' : ' rules total')));
+  if (audited()) {
+    var strong = (summary.audit || {}).strong || 0;
+    boxes.push(box(STRONG, strong, strong === total ? 'pass' : 'warn',
+                   auditLines(project), null));
+  }
   return '<div class="strip"><div class="tiles">' + boxes.join('')
     + '</div></div>';
 }
@@ -44,14 +44,6 @@ function box(label, count, hue, lines, under) {
     + '</div><div class="tile-l">' + esc(label) + '</div>'
     + (under ? '<div class="tile-l tile-t">' + esc(under) + '</div>' : '')
     + '</div>';
-}
-
-/* What a step box says beyond its count, which is what its column says for
-   one spec: where the runs happened, where the audit came from, who signed. */
-function stepHover(step, project) {
-  if (step === 'passed') { return platformLines(project); }
-  if (step === 'strong') { return auditLines(project); }
-  return signerLines(project);
 }
 
 /* The specs that hold a rule with no proof, and how many each holds, as
@@ -68,13 +60,13 @@ function noProofLines() {
   return names.sort().map(function (name) { return [name, byFeature[name]]; });
 }
 
-/* The columns the gate reaches, and no others. Every when, who and platform
-   detail is in the cell's hover rather than a column of its own, which is
-   what lets six columns fit a 1024-wide window.
+/* The columns the project reaches, and no others. Every when, who and
+   platform detail is in the cell's hover rather than a column of its own,
+   which is what lets every column fit a 1024-wide window.
 
    `width` is the share of the table the column asks for once every column
    holds its content. A value never breaks inside itself, `42 · 2 no test`
-   and `7 of 8 · 1 does not apply` alike, so each value column is at least
+   and `2 of 4 · 1 partial · 1 failing` alike, so each value column is at least
    as wide as its widest value: the rows share the table's own tracks, so that width is
    the same in every row. The spec's name is the one text that gives way,
    cut with an ellipsis at `floor` pixels, its full path in the hover. Under
@@ -87,11 +79,8 @@ function boardColumns() {
     columns.push({label: COLUMNS[2], width: '2fr'});
   }
   columns.push({label: COLUMNS[3], width: '2fr'});
-  if (level('strong')) {
+  if (audited()) {
     columns.push({label: COLUMNS[4], width: '1.5fr'});
-  }
-  if (level('signed')) {
-    columns.push({label: COLUMNS[5], width: '1.1fr'});
   }
   return columns;
 }
@@ -118,10 +107,9 @@ function rulesCell(feature) {
 }
 
 /* What the marked tests found, as the passed cells read it: how many of the
-   spec's rules passed everywhere they ran, a rule a person signed as not
-   applying counted among them, then how many of those do not apply, then
-   the two words that say a test did not pass. The hover says which
-   platforms ran and what each found. */
+   spec's rules passed everywhere they ran, then the two words that say a
+   test did not pass. The hover says which platforms ran and what each
+   found. */
 function testsCell(feature) {
   var found = {};
   var rules = feature.rules || [];
@@ -129,10 +117,8 @@ function testsCell(feature) {
     var word = cellWord(rule, 'passed');
     found[word] = (found[word] || 0) + 1;
   });
-  var dna = found[WORDS.does_not_apply] || 0;
   return '<span' + hover(platformLines(feature)) + '>'
-    + counts([share((found.passed || 0) + dna, rules.length),
-      [dna, WORDS.does_not_apply, 'neutral'],
+    + counts([share(found.passed || 0, rules.length),
       [found.partial || 0, WORDS.partial, 'warn'],
       [found.failed || 0, WORDS.failing, 'fail']]) + '</span>';
 }
@@ -144,23 +130,25 @@ function share(count, total) {
           total && count === total ? 'pass' : count ? 'warn' : 'idle'];
 }
 
-/* How many of the spec's rules the audit found strong, a rule signed as not
-   applying counted among them, and beside it the test strength of the
-   newest record, where one was measured; where none was, the cell says
-   nothing of strength. No code is broken on purpose for an anchor, so an
-   anchor's cell says nothing of strength whatever its record holds. A
-   signed rule is still strong, so its strong cell reads `strong` too. The
-   percentage carries its own hover saying what it is. */
+/* How many of the spec's rules the audit found strong, and beside it the
+   test strength of the newest record, where one was measured; where none
+   was, the cell says nothing of strength. The strength is a number to read,
+   compared with nothing, so it carries no tone. No code is broken on purpose
+   for an anchor, so an anchor's cell says nothing of strength whatever its
+   record holds. The percentage carries its own hover saying what it is. */
 function strongCell(feature) {
   var rollup = feature.rollup || {};
   var rules = feature.rules || [];
   if (!rules.length) { return ''; }
   var value = feature.is_anchor ? null : rollup.test_strength == null
     ? feature.test_strength : rollup.test_strength;
-  var parts = [share(reading(rules, 'strong'), rules.length)];
+  var strong = rules.filter(function (rule) {
+    return cellWord(rule, 'strong') === 'strong';
+  }).length;
+  var parts = [share(strong, rules.length)];
   if (value != null) {
     var pct = Math.floor(value);
-    parts.push([pct + '%', '', value >= minStrength() ? 'pass' : 'fail',
+    parts.push([pct + '%', '', '',
       ['Test strength: the tests caught ' + pct + ' of every 100 deliberate '
         + 'breaks of the code.']]);
   }
@@ -168,27 +156,9 @@ function strongCell(feature) {
   return '<span' + hover(auditLines(feature)) + '>' + cell + '</span>';
 }
 
-/* How many of the spec's rules carry a signature that counts, one that signs
-   a rule as not applying among them. Who signed them is in the hover. */
-function signedCell(feature) {
-  var rules = feature.rules || [];
-  if (!rules.length) { return ''; }
-  return '<span' + hover(signerLines(feature)) + '>'
-    + counts([share(reading(rules, 'signed'), rules.length)]) + '</span>';
-}
-
-/* How many of these rules have this cell met: reading its own name, or
-   `does not apply`, which a person signed and which counts as met. */
-function reading(rules, name) {
-  return rules.filter(function (rule) {
-    var word = cellWord(rule, name);
-    return word === name || word === WORDS.does_not_apply;
-  }).length;
-}
-
 /* A spec that names no files: Purlin cannot tell which code it covers, so a
-   default `purlin:test` always runs it and, at `signed`, none of its rules
-   can be signed. The name says so, and the hover says why. */
+   default `purlin:test` always runs it. The name says so, and the hover says
+   why. */
 function noScope(feature) {
   if (!feature.incomplete) { return ''; }
   return '<span class="sec ns"' + hover([feature.incomplete_reason
@@ -206,8 +176,7 @@ function featureRow(feature, columns) {
   cells.push(rulesCell(feature));
   if (showsProofs()) { cells.push(proofsCell(feature)); }
   cells.push(testsCell(feature));
-  if (level('strong')) { cells.push(strongCell(feature)); }
-  if (level('signed')) { cells.push(signedCell(feature)); }
+  if (audited()) { cells.push(strongCell(feature)); }
   /* Each value cell carries its column's heading, which a narrow screen,
      with no heading row, draws beside the value as a labelled pair. */
   var row = '<div class="tr" data-act="feature" data-feature="'
