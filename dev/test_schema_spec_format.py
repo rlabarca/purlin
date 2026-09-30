@@ -1050,3 +1050,82 @@ def test_the_pinned_anchor_line_starts_no_process(tmp_path, monkeypatch):
     assert any(line.startswith('security_baseline: its source, '
                                + BASELINE_SOURCE + ', carries > Scope:')
                for line in lines), lines
+
+
+# ---------------------------------------------------------------------------
+# RULE-35 to RULE-37: a proof number written twice, a merge conflict line,
+# and the reasons a spec's rules fail
+# ---------------------------------------------------------------------------
+
+def _numbered(root, lines):
+    """`specs/test/login.md` holding exactly `lines`, line 1 first, so a
+    test can say on which line of the file each one stands."""
+    _write(root, 'specs/test/login.md', '\n'.join(lines) + '\n')
+
+
+# purlin: schema_spec_format PROOF-81
+def test_a_proof_number_written_twice_is_warned_of_and_read_once(tmp_path):
+    root = _project(tmp_path)
+    _login(root, rules='- RULE-1: One\n- RULE-2: Two\n',
+           proofs='- PROOF-4 (RULE-1): Old text\n'
+                  '- PROOF-4 (RULE-2): New text\n')
+    result = purlin_status.sync_status(str(root))
+    assert ('login: PROOF-4 is written twice; the second is read. '
+            'Run purlin:spec login.') in result.splitlines(), result
+    proofs = purlin_specs.scan_specs(str(root))['login']['proofs']
+    assert list(proofs) == ['PROOF-4'], proofs
+    assert proofs['PROOF-4']['text'] == 'New text', proofs
+
+
+# purlin: schema_spec_format PROOF-82
+def test_one_line_left_from_a_merge_conflict_is_warned_of_with_its_line(
+        tmp_path):
+    root = _project(tmp_path)
+    _numbered(root, ['# Feature: login', '', '## Rules', '',
+                     '- RULE-1: One', '', '## Proof', '',
+                     '- PROOF-1 (RULE-1): Test one', '', '',
+                     '=======', '- PROOF-2 (RULE-1): Test two'])
+    result = purlin_status.sync_status(str(root))
+    assert ('login: 1 line is left from a merge conflict, at line 12: '
+            '=======. Run purlin:spec login.') in result.splitlines(), result
+
+
+# purlin: schema_spec_format PROOF-83
+def test_a_conflict_hunk_is_warned_of_in_one_line_naming_its_first_line(
+        tmp_path):
+    root = _project(tmp_path)
+    _numbered(root, ['# Feature: login', '', '## Rules', '',
+                     '- RULE-1: One', '', '## Proof', '',
+                     '<<<<<<< HEAD', '- PROOF-1 (RULE-1): Test one',
+                     '=======', '- PROOF-1 (RULE-1): Test the first',
+                     '>>>>>>> main'])
+    result = purlin_status.sync_status(str(root))
+    lines = [line for line in result.splitlines()
+             if 'left from a merge conflict' in line]
+    assert lines == [
+        'login: 3 lines are left from a merge conflict, the first at line 9: '
+        '<<<<<<< HEAD. Run purlin:spec login.'], result
+
+
+# purlin: schema_spec_format PROOF-84
+def test_a_line_of_eight_equals_signs_is_not_a_conflict_line(tmp_path):
+    root = _project(tmp_path)
+    _numbered(root, ['# Feature: login', '', '## Rules', '',
+                     '- RULE-1: One', '', '========', '', '## Proof', '',
+                     '- PROOF-1 (RULE-1): Test one'])
+    result = purlin_status.sync_status(str(root))
+    assert 'left from a merge conflict' not in result, result
+
+
+# purlin: schema_spec_format PROOF-85
+def test_the_reasons_a_broken_spec_fails_are_named_in_order(tmp_path):
+    root = _project(tmp_path)
+    _numbered(root, ['# Feature: login', '', '## Rules', '',
+                     '- RULE-1: One', '- RULE-2: Two', '- RULE-2: Deux', '',
+                     '## Proof', '', '- PROOF-4 (RULE-1): Test one',
+                     '=======', '- PROOF-4 (RULE-2): Test two'])
+    info = purlin_specs.scan_specs(str(root))['login']
+    assert purlin_specs.broken_reasons(info) == [
+        'RULE-2 is written twice in the spec',
+        'PROOF-4 is written twice in the spec',
+        'the spec holds a line left from a merge conflict']

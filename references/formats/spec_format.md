@@ -98,8 +98,17 @@ so a gap in the sequence is legal and the parser reports nothing for it.
 Renumbering would silently repoint every test marker and every signature that
 already names the old id.
 A new rule takes one more than the highest of `> Highest-Rule:` and every rule number the spec holds, and `> Highest-Rule:` is raised to it, so a number is never used again.
+When two branches take the same number, the number already on the default branch keeps it, and the rule or proof from the branch not yet merged moves to the next free number. A moved rule needs a new audit and a new signature; its old signature ends and stays on disk.
 Unnumbered lines under `## Rules` are reported. A rule id written twice is
-warned of; the rule is read once, with the text of its second line.
+warned of; the rule is read once, with the text of its second line, and every
+rule of the spec reads `failed`, with the reason `RULE-N is written twice in the
+spec`, until one of the two lines is renumbered.
+
+A line left from a merge conflict, one opening with seven `<`, `=`, `>` or `|`
+followed by a space or the line's end, is warned of with its line number, and
+every rule of the spec reads `failed`, with the reason `the spec holds a line
+left from a merge conflict`, until it is taken out. A line of eight `=` is not
+one. The spec is otherwise read as written, both sides' lines included.
 
 A rule line carries no tag. Its text is everything after the id, bracketed
 text at the end included, and every rule is asked for what the project's gate
@@ -137,6 +146,12 @@ has a test and no proof`, and counts under `Left to do` as a rule to write a
 proof for. Several proofs can name the same rule, and one proof can name
 several rules when it drives a flow through all of them. A list item under
 `## Proof` of any other form is not read as a proof and is warned of.
+
+A proof id written twice is warned of; the proof is read once, with the text of
+its second line, and every rule of the spec reads `failed`, with the reason
+`PROOF-N is written twice in the spec`, until one of the two lines is
+renumbered. A line left from a merge conflict fails the spec wherever it stands
+in the file, as "Rules format" says.
 
 Proof ids are never reused either. A new proof takes one more than the highest of `> Highest-Proof:` and every proof number the spec holds, and `> Highest-Proof:` is raised to it, so a number is never used again.
 A spec whose `> Highest-Proof:` reads `12` and whose `PROOF-10` to `PROOF-12` were deleted, leaving `PROOF-9` its highest, gives its next proof `PROOF-13`.

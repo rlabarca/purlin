@@ -47,6 +47,13 @@ _PROOF_TAG_RE = re.compile(r'(?<!\band)(?<!\bor)(?<!,)\s+@(\w+)(?:\(([^)]*)\))?\
 
 ENVIRONMENTS = ('windows', 'macos', 'linux')
 
+# A line git leaves in a file whose merge stopped on a conflict: seven of one
+# marker character at the start of the line, then a space or the line's end.
+CONFLICT_RE = re.compile(r'^(?:<{7}|={7}|>{7}|\|{7})(?:[ \t].*)?$')
+
+_HIGHEST_RULE_RE = re.compile(r'^>[ \t]*Highest-Rule:[ \t]*(\d+)', re.MULTILINE)
+_HIGHEST_PROOF_RE = re.compile(r'^>[ \t]*Highest-Proof:[ \t]*(\d+)', re.MULTILINE)
+
 _SCOPE_RE = re.compile(r'^>\s*Scope:\s*(.+)', re.MULTILINE)
 _SOURCE_RE = re.compile(r'^>\s*Source:\s*(.+)', re.MULTILINE)
 _PINNED_RE = re.compile(r'^>\s*Pinned:\s*(.+)', re.MULTILINE)
@@ -155,6 +162,21 @@ def extract_section(content, heading):
     return m.group(1) if m else None
 
 
+def _section_first_line(content, heading):
+    """The 1-based line of the file on which `extract_section`'s body
+    starts, or None where the heading is absent."""
+    pattern = re.compile(
+        r'^' + re.escape(heading) + r'\s*\n(.*?)(?=^## |\Z)',
+        re.MULTILINE | re.DOTALL | re.IGNORECASE)
+    m = pattern.search(content)
+    return content.count('\n', 0, m.start(1)) + 1 if m else None
+
+
+def _highest(regex, content):
+    m = regex.search(content)
+    return int(m.group(1)) if m else None
+
+
 def parse_description(content):
     """The `> Description:` field, joined across its continuation lines.
 
@@ -241,15 +263,21 @@ def scan_specs(project_root):
     `rule_order`,
     `proofs` (`{PROOF-N: {rules, text, manual, env}}`), `proof_env`,
     `proofs_by_rule`, `source`, `source_path`, `pinned`,
-    `has_rules_section`, `unnumbered_lines`, `unknown_tags`, and the three
-    that `spec_mistakes` reads: `doubled_rules` (each rule id written more
-    than once, in the order first written), `unread_proof_lines` (each list
+    `has_rules_section`, `unnumbered_lines`, `unknown_tags`, `highest_rule`
+    and `highest_proof` (the number on `> Highest-Rule:` and
+    `> Highest-Proof:`, or None), and the ones that `spec_mistakes` and
+    `broken_reasons` read: `doubled_rules` and `doubled_proofs` (each rule
+    or proof id written more than once, in the order first written),
+    `doubled_lines` (`{id: [{'line', 'text'}]}` for each of those ids, one
+    entry per line, the line 1-based), `conflict_lines` (`[line, text]` for
+    each line left from a merge conflict), `unread_proof_lines` (each list
     item under `## Proof` that is not a proof line) and `heading_name` (the
     name the first line gives, or None).
 
     Where two specs share a file name the one reached last in the walk is
-    read. A rule id written twice is read once, in the place first written,
-    with the text of the last line that carries it.
+    read. A rule or proof id written twice is read once, in the place first
+    written, with the text of the last line that carries it. A spec holding
+    conflict lines is read as any other, both sides' lines included.
     """
     features = {}
     for spec_path in spec_files(project_root):
@@ -273,8 +301,13 @@ def _parse_spec(name, rel_path, content):
     rule_order = []
     doubled = []
     unnumbered = []
+    # Every line of each id, `{id: [{'line', 'text'}]}`; the ids written
+    # more than once are kept as `doubled_lines`.
+    rule_lines = {}
+    proof_lines = {}
     rules_section = extract_section(content, '## Rules')
     if rules_section is not None:
+        first = _section_first_line(content, '## Rules')
         for m in _RULE_RE.finditer(rules_section):
             rule_id = m.group(1)
             if rule_id in rules:
@@ -283,6 +316,9 @@ def _parse_spec(name, rel_path, content):
             else:
                 rule_order.append(rule_id)
             rules[rule_id] = m.group(2).strip()
+            rule_lines.setdefault(rule_id, []).append({
+                'line': first + rules_section.count('\n', 0, m.start()),
+                'text': rules[rule_id]})
         for line in rules_section.strip().splitlines():
             line = line.strip()
             if line.startswith('- ') and not _RULE_RE.match(line):
@@ -292,9 +328,11 @@ def _parse_spec(name, rel_path, content):
     proof_env = {}
     proofs_by_rule = {}
     unread_proof_lines = []
+    doubled_proofs = []
     proof_section = extract_section(content, '## Proof')
     if proof_section:
-        for line in proof_section.strip().splitlines():
+        first = _section_first_line(content, '## Proof')
+        for offset, line in enumerate(proof_section.splitlines()):
             m = _PROOF_LINE_RE.match(line.strip())
             if not m:
                 if line.strip().startswith('- '):
@@ -304,6 +342,10 @@ def _parse_spec(name, rel_path, content):
             rule_ids = _split_list(m.group(2))
             text, manual, env, unknown = split_proof_tags(m.group(3).strip())
             unknown_tags.extend(unknown)
+            if proof_id in proofs and proof_id not in doubled_proofs:
+                doubled_proofs.append(proof_id)
+            proof_lines.setdefault(proof_id, []).append(
+                {'line': first + offset, 'text': text})
             proofs[proof_id] = {'rules': rule_ids, 'text': text,
                                 'manual': manual, 'env': env}
             proof_env[proof_id] = env
@@ -362,6 +404,17 @@ def _parse_spec(name, rel_path, content):
         'unnumbered_lines': unnumbered,
         'unknown_tags': sorted(set(unknown_tags)),
         'doubled_rules': doubled,
+        'doubled_proofs': doubled_proofs,
+        'doubled_lines': dict(
+            [(rule_id, rule_lines[rule_id]) for rule_id in doubled]
+            + [(proof_id, proof_lines[proof_id])
+               for proof_id in doubled_proofs]),
+        'conflict_lines': [
+            [number, line.strip()]
+            for number, line in enumerate(content.splitlines(), 1)
+            if CONFLICT_RE.match(line)],
+        'highest_rule': _highest(_HIGHEST_RULE_RE, content),
+        'highest_proof': _highest(_HIGHEST_PROOF_RE, content),
         'unread_proof_lines': unread_proof_lines,
         'heading_name': heading_match.group(1) if heading_match else None,
     }
@@ -395,8 +448,18 @@ SAME_NAME = ('%s and %s are both named %s; only %s is read. Rename one: '
              'git mv %s %s/<new name>.md')
 RULE_WRITTEN_TWICE = ('%s: %s is written twice; the second is read. '
                       'Run purlin:spec %s.')
+PROOF_WRITTEN_TWICE = ('%s: %s is written twice; the second is read. '
+                       'Run purlin:spec %s.')
+CONFLICT_ONE = ('%s: 1 line is left from a merge conflict, at line %d: %s. '
+                'Run purlin:spec %s.')
+CONFLICT_MANY = ('%s: %d lines are left from a merge conflict, the first at '
+                 'line %d: %s. Run purlin:spec %s.')
 PROOF_LINE_UNREAD = ('%s: a line under ## Proof cannot be read: %s. '
                      'Run purlin:spec %s.')
+
+# Why every rule of a spec reads `failed`: `broken_reasons` gives them.
+DOUBLED_REASON = '%s is written twice in the spec'
+CONFLICT_REASON = 'the spec holds a line left from a merge conflict'
 HEADING_NAMES_OTHER = ('%s: the first line names %s, but the file is %s.md, so '
                        'it is read as %s. Run purlin:spec %s.')
 UNREAD_REQUIRES = ('%s: > Requires: is not read, because every anchor covers '
@@ -416,10 +479,13 @@ PROOF_LINE_SHOWN = 60
 def spec_mistakes(project_root, features):
     """One line per mistake Purlin can see in a spec, each naming its fix.
 
-    `features` is `scan_specs`' answer. The lines are warned of and nothing
-    is refused. They come in the order of the mistakes, each sorted by
-    feature: a `> Scope:` entry that finds no tracked file, two specs with
-    one name, a rule id written twice, a line under `## Proof` that is not a
+    `features` is `scan_specs`' answer. The lines are warned of; a number
+    written twice and a line left from a merge conflict also make every rule
+    of the spec read `failed` (`broken_reasons`). They come in the order of
+    the mistakes, each sorted by feature: a `> Scope:` entry that finds no
+    tracked file, two specs with one name, a rule id written twice, a proof
+    id written twice, the lines left from a merge conflict (one line per
+    spec), a line under `## Proof` that is not a
     proof line, a first line naming another feature, then the fields Purlin
     does not read: every `> Requires:`, then every `> Global:`, then every
     anchor's `> Scope:`. A pinned anchor carrying any of the three has one
@@ -460,6 +526,19 @@ def spec_mistakes(project_root, features):
         for rule_id in features[name].get('doubled_rules') or ():
             lines.append(RULE_WRITTEN_TWICE % (name, rule_id, name))
     for name in sorted(features):
+        for proof_id in features[name].get('doubled_proofs') or ():
+            lines.append(PROOF_WRITTEN_TWICE % (name, proof_id, name))
+    for name in sorted(features):
+        conflicts = features[name].get('conflict_lines') or ()
+        if not conflicts:
+            continue
+        number, shown = conflicts[0][0], conflicts[0][1][:PROOF_LINE_SHOWN]
+        if len(conflicts) == 1:
+            lines.append(CONFLICT_ONE % (name, number, shown, name))
+        else:
+            lines.append(CONFLICT_MANY % (name, len(conflicts), number, shown,
+                                          name))
+    for name in sorted(features):
         for line in features[name].get('unread_proof_lines') or ():
             lines.append(PROOF_LINE_UNREAD
                          % (name, line[:PROOF_LINE_SHOWN], name))
@@ -485,6 +564,21 @@ def spec_mistakes(project_root, features):
         elif 'Scope' in fields:
             lines.append(UNREAD_SCOPE % (name, name))
     return lines
+
+
+def broken_reasons(info):
+    """Why every rule of this spec reads `failed`, or [] when nothing does.
+
+    One `DOUBLED_REASON` per id of `doubled_rules`, then one per id of
+    `doubled_proofs`, each in the order first written, then `CONFLICT_REASON`
+    once where `conflict_lines` is not empty."""
+    reasons = [DOUBLED_REASON % rule_id
+               for rule_id in info.get('doubled_rules') or ()]
+    reasons += [DOUBLED_REASON % proof_id
+                for proof_id in info.get('doubled_proofs') or ()]
+    if info.get('conflict_lines'):
+        reasons.append(CONFLICT_REASON)
+    return reasons
 
 
 def _pinned(info):

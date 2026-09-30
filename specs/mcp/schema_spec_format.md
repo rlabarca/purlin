@@ -7,8 +7,8 @@
 >   dashboard and the evidence file.
 > Scope: scripts/mcp/purlin/specs.py, scripts/mcp/purlin/fingerprint.py, references/formats/spec_format.md, references/formats/anchor_format.md
 > Stack: python/stdlib, one regex parser in scripts/mcp/purlin/specs.py
-> Highest-Rule: 34
-> Highest-Proof: 80
+> Highest-Rule: 37
+> Highest-Proof: 85
 
 ## Rules
 
@@ -44,6 +44,9 @@
 - RULE-32: A `> Scope:` line on an anchor is warned of, naming the anchor and `purlin:spec`, and is not read: an anchor's scope is empty, because an anchor covers the whole project
 - RULE-33: An entry of an anchor's `> Scope:` line is never warned of as finding no file
 - RULE-34: A pinned anchor whose copy carries `> Requires:`, `> Global:` or `> Scope:` is warned of in one line naming every such field, its source, and the owners of the source as the ones to take the lines out, and gets none of the lines a spec of this project gets for them
+- RULE-35: A proof number written twice is warned of, and the proof is read once, with the text of its second line
+- RULE-36: A line left from a merge conflict is warned of with its line number
+- RULE-37: The reasons a spec's rules fail are named in order: each rule number written twice, then each proof number written twice, then a line left from a merge conflict
 
 ## Proof
 
@@ -119,3 +122,8 @@
 - PROOF-78 (RULE-34): The pinned anchor `security_baseline`, its `> Source:` `https://github.com/acme/policies.git specs/baseline.md`, carries `> Scope: src/`; the status report carries `security_baseline: its source, https://github.com/acme/policies.git, carries > Scope:, which Purlin does not read on an anchor, so the line is read as nothing. Ask the owners of https://github.com/acme/policies.git to take it out, then run purlin:anchor sync security_baseline.`
 - PROOF-79 (RULE-34): The pinned anchor `security_baseline`, its `> Source:` `https://github.com/acme/policies.git`, carries `> Global: true` and `> Scope: src/`; the status report carries the one line naming `> Global: and > Scope:`, reading `the lines are read as nothing` and `take them out`, and no line opening `security_baseline: > Global:` or `security_baseline: > Scope:`
 - PROOF-80 (RULE-34): With every process start refused, the pinned anchor `security_baseline` whose copy carries `> Scope: src/` is still warned of with the line naming its source: the source is not fetched to find the lines
+- PROOF-81 (RULE-35): A spec `login` whose `## Proof` holds `PROOF-4 (RULE-1): Old text` and `PROOF-4 (RULE-2): New text` is reported with `login: PROOF-4 is written twice; the second is read. Run purlin:spec login.`, and its one `PROOF-4` reads `New text`
+- PROOF-82 (RULE-36): A spec `login` holding one line `=======`, at line 12, is reported with `login: 1 line is left from a merge conflict, at line 12: =======. Run purlin:spec login.`
+- PROOF-83 (RULE-36): A spec `login` holding `<<<<<<< HEAD` at line 9, then `=======` and `>>>>>>> main`, is reported with `login: 3 lines are left from a merge conflict, the first at line 9: <<<<<<< HEAD. Run purlin:spec login.`
+- PROOF-84 (RULE-36): A spec `login` holding a line of eight `=` is reported with no line containing `left from a merge conflict`
+- PROOF-85 (RULE-37): A spec writing `RULE-2` twice, `PROOF-4` twice and holding `=======` has the reasons its rules fail named in this order: `RULE-2 is written twice in the spec`, `PROOF-4 is written twice in the spec` and `the spec holds a line left from a merge conflict`
