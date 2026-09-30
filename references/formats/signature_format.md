@@ -55,8 +55,7 @@ Every field is REQUIRED, in this order.
 | Field | Type | What it holds |
 |---|---|---|
 | `schema` | string | `purlin-signoff/1` for this format version |
-| `version` | string | the version signed |
-| `package` | string | the package file's path, `/` separated |
+| `version`, `package` | string, string | the version signed, and the package file's path, `/` separated |
 | `package_hash` | string | the package's own `fingerprint` field, as `package_format.md` gives it |
 | `commit` | string | the full sha the package describes, its own `commit` field |
 | `signer` | string | the signer's email as git holds it |

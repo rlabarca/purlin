@@ -86,9 +86,9 @@ def load_signoffs(project_root, version):
     for basename in sorted(os.listdir(directory)):
         if not basename.endswith('.json'):
             continue
+        path = os.path.join(directory, basename)
         try:
-            with open(os.path.join(directory, basename), 'r',
-                      encoding='utf-8') as handle:
+            with open(path, 'r', encoding='utf-8') as handle:
                 data = json.load(handle)
         except (IOError, OSError, UnicodeDecodeError, ValueError):
             continue

@@ -40,7 +40,7 @@ already signed this package; there is no key to sign with. The version is
 read as `purlin:test --release` reads it; `--release <name>` names another.
 Nothing is fetched and nothing is pushed.
 
-A `.purlin/config.json` that cannot be read stops the command before anything
+A settings file that cannot be read stops the command before anything
 else is read or written: it prints the sentence saying so and writes nothing.
 
 Exit codes: 0 signed, stopped, answered no, or the gate is `passed`; 1 a
