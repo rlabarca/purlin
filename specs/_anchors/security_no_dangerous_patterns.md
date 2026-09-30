@@ -1,13 +1,10 @@
 # Anchor: security_no_dangerous_patterns
 
 > Type: security
-> Global: true
 > Description: The dangerous patterns no executable file under `scripts/` may carry, in
 >   the form each file type the scope names spells them, plus the argv hardening that
->   keeps a repository-supplied string out of git's option position. The anchor is
->   global: every feature's code lives under `scripts/`, so every feature counts these
->   rules.
-> Scope: scripts/**/*.py, scripts/**/*.sh, scripts/**/*.js
+>   keeps a repository-supplied string out of git's option position. Its tests read
+>   every file under `scripts/`, where all of Purlin's executable code lives.
 > Highest-Rule: 8
 > Highest-Proof: 91
 
