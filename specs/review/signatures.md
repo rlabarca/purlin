@@ -11,6 +11,7 @@
 > Scope: scripts/mcp/purlin/signatures.py, scripts/review/sign.py
 > Stack: python/stdlib (json, subprocess), git signed commits, SSH keys
 > Highest-Rule: 89
+> Highest-Proof: 178
 
 ## Rules
 

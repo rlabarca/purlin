@@ -9,6 +9,7 @@
 > Scope: scripts/export/package.py
 > Stack: python/stdlib (json, hashlib, subprocess), git worktree
 > Highest-Rule: 25
+> Highest-Proof: 55
 
 ## Rules
 

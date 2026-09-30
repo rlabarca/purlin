@@ -7,6 +7,7 @@
 > Scope: scripts/mcp/config_engine.py
 > Stack: python/stdlib, json
 > Highest-Rule: 15
+> Highest-Proof: 40
 
 ## Rules
 

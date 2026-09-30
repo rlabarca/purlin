@@ -7,6 +7,7 @@
 > Scope: scripts/mcp/purlin/server.py, .claude-plugin/plugin.json, scripts/purlin_python.sh
 > Stack: python/stdlib, json
 > Highest-Rule: 31
+> Highest-Proof: 162
 
 ## Rules
 

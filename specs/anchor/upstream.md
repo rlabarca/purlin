@@ -10,6 +10,7 @@
 > Scope: scripts/anchor/upstream.py
 > Stack: python/stdlib, git plumbing over subprocess, no third-party package
 > Highest-Rule: 35
+> Highest-Proof: 59
 
 ## Rules
 

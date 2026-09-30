@@ -12,6 +12,7 @@
 > Scope: scripts/mcp/purlin/fingerprint.py, scripts/mcp/purlin/evidence.py
 > Stack: python/stdlib, hashlib, json, subprocess (list-only)
 > Highest-Rule: 29
+> Highest-Proof: 77
 
 ## Rules
 

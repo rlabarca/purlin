@@ -13,6 +13,7 @@
 > Scope: scripts/report/src/page.html, scripts/report/src/styles.css, scripts/report/src/theme.js, scripts/report/src/filters.js, scripts/report/src/board.js, scripts/report/src/rule.js, scripts/report/src/app.js, scripts/report/purlin-report.html, scripts/mcp/purlin/report_data.py, dev/build_report.py, dev/capture_doc_screenshots.py
 > Stack: html/css/javascript, no framework and no build-time dependency, design tokens inlined by a python assembler
 > Highest-Rule: 60
+> Highest-Proof: 198
 
 ## Rules
 

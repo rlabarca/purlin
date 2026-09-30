@@ -6,6 +6,7 @@
 > Scope: agents/purlin.md
 > Stack: markdown, Claude Code agent definition
 > Highest-Rule: 16
+> Highest-Proof: 47
 
 ## Rules
 

@@ -11,6 +11,7 @@
 >   with no test tool Purlin knows gives the line the first run prints for it.
 > Scope: README.md, docs/index.md, docs/getting-started.md, docs/how-purlin-works.md
 > Highest-Rule: 12
+> Highest-Proof: 17
 
 ## Rules
 

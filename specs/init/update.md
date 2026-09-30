@@ -11,6 +11,7 @@
 > Scope: scripts/init/update.py
 > Stack: python3 (stdlib only, 3.9 floor)
 > Highest-Rule: 45
+> Highest-Proof: 152
 
 ## Rules
 

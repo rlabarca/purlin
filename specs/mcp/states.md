@@ -9,6 +9,7 @@
 > Scope: scripts/mcp/purlin/states.py, scripts/mcp/purlin/payload.py, scripts/mcp/purlin/status.py, scripts/mcp/purlin/gate.py
 > Stack: python/stdlib, json, hashlib, subprocess (list-only)
 > Highest-Rule: 96
+> Highest-Proof: 237
 
 ## Rules
 

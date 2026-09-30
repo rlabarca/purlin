@@ -9,6 +9,7 @@
 > Scope: scripts/mcp/purlin/specs.py
 > Stack: python/stdlib, re, hashlib
 > Highest-Rule: 21
+> Highest-Proof: 43
 
 ## Rules
 

@@ -11,6 +11,7 @@
 > Scope: scripts/mcp/purlin/summary.py
 > Stack: python/stdlib
 > Highest-Rule: 14
+> Highest-Proof: 37
 
 ## Rules
 

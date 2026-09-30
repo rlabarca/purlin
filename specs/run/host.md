@@ -12,6 +12,7 @@
 > Scope: scripts/run/host.py, scripts/run/ci.py, scripts/run/remote.py, scripts/run/workflow.py, templates/purlin.yml, templates/purlin.azure-pipelines.yml, dev/fixtures/consumer-ci
 > Stack: python/stdlib (json, subprocess, urllib), git, GitHub and Azure DevOps REST APIs
 > Highest-Rule: 45
+> Highest-Proof: 139
 
 ## Rules
 

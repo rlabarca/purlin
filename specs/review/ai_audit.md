@@ -12,6 +12,7 @@
 > Scope: scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
 > Highest-Rule: 29
+> Highest-Proof: 90
 
 ## Rules
 

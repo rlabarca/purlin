@@ -12,6 +12,7 @@
 > Scope: scripts/run/evidence.py, references/formats/evidence_format.md, templates/gitignore.purlin
 > Stack: python/stdlib (json, subprocess, datetime, platform), git
 > Highest-Rule: 25
+> Highest-Proof: 87
 
 ## Rules
 

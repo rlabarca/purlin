@@ -6,6 +6,7 @@
 >   print or write.
 > Scope: scripts/**, templates/**
 > Highest-Rule: 3
+> Highest-Proof: 6
 
 ## Rules
 

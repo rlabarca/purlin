@@ -12,6 +12,7 @@
 > Scope: scripts/run/mutation/__init__.py, scripts/run/mutation/stryker.py, scripts/run/mutation/stryker_net.py, scripts/run/mutation/mutmut.py, scripts/run/mutation/none.py
 > Stack: python/stdlib (importlib, subprocess, json, tempfile), Stryker, Stryker.NET, mutmut
 > Highest-Rule: 37
+> Highest-Proof: 100
 
 ## Rules
 

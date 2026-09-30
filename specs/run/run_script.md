@@ -14,6 +14,7 @@
 > Scope: scripts/run/purlin_run.py, scripts/mcp/purlin/frameworks.py, references/supported_frameworks.md
 > Stack: python/stdlib (subprocess, re, hashlib), bash, pytest, sqlite3
 > Highest-Rule: 84
+> Highest-Proof: 255
 
 ## Rules
 

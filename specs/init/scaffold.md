@@ -16,6 +16,7 @@
 > Scope: scripts/init/scaffold.py, templates/config.json, templates/gitignore.purlin, templates/evidence-readme.md
 > Stack: python3 (stdlib only, 3.9 floor)
 > Highest-Rule: 74
+> Highest-Proof: 162
 
 ## Rules
 

@@ -10,6 +10,7 @@
 > Scope: scripts/mcp/purlin/drift.py
 > Stack: python/stdlib, json, re, subprocess (list-only)
 > Highest-Rule: 27
+> Highest-Proof: 66
 
 ## Rules
 

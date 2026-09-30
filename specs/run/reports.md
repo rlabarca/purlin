@@ -10,6 +10,7 @@
 > Scope: scripts/run/reports.py, scripts/mcp/purlin/markers.py, references/formats/marker_format.md
 > Stack: python/stdlib (xml.etree, json, tokenize, ast, re, shlex), pytest, jest, vitest, dotnet, go, bash, sqlite3
 > Highest-Rule: 31
+> Highest-Proof: 114
 
 ## Rules
 

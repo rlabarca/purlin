@@ -6,6 +6,7 @@
 > Scope: skills/anchor/SKILL.md
 > Stack: markdown, Claude Code skill definition
 > Highest-Rule: 14
+> Highest-Proof: 35
 
 ## Rules
 

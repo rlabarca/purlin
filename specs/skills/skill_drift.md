@@ -5,6 +5,7 @@
 > Scope: skills/drift/SKILL.md
 > Stack: markdown, Claude Code skill definition
 > Highest-Rule: 10
+> Highest-Proof: 36
 
 ## Rules
 

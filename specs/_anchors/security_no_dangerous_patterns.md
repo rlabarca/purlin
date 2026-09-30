@@ -9,6 +9,7 @@
 >   rules.
 > Scope: scripts/**/*.py, scripts/**/*.sh, scripts/**/*.js
 > Highest-Rule: 8
+> Highest-Proof: 91
 
 ## Rules
 
