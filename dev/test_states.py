@@ -2355,6 +2355,18 @@ class TestStatusTable:
         finally:
             made.close()
 
+    # purlin: states PROOF-236
+    def test_the_specs_of_a_project_not_set_up_are_read(self):
+        made = Project()
+        try:
+            _git(made.root, 'rm', '-q', '--', '.purlin/config.json')
+            _git(made.root, 'commit', '-q', '-m', 'chore: not set up')
+            lines = _status_lines(made.root)
+            assert _row_of(lines, 'login').split()[:2] == ['login', '2'], lines
+            assert '2 rules. 0 pass their tests.' in lines
+        finally:
+            made.close()
+
     # purlin: states PROOF-212
     def test_a_settings_file_that_cannot_be_read_is_the_whole_report(self):
         made = Project(gate='strong')

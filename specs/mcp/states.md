@@ -8,7 +8,7 @@
 >   parsing each other's output.
 > Scope: scripts/mcp/purlin/states.py, scripts/mcp/purlin/payload.py, scripts/mcp/purlin/status.py, scripts/mcp/purlin/gate.py
 > Stack: python/stdlib, json, hashlib, subprocess (list-only)
-> Highest-Rule: 95
+> Highest-Rule: 96
 
 ## Rules
 
@@ -82,6 +82,7 @@
 - RULE-93: Each problem found resolving `.purlin/config.json` prints one line beside the status table: a `gate` or `audit_parallel` value this release does not accept, written as JSON writes it, with the value read instead and the fix; a `min_strength` that is not a number; and the keys 0.9.5 wrote that this release does not read
 - RULE-94: Where a spec file under `specs/` is changed and not committed, the status report carries the line `Uncommitted spec changes:` and under it that file's `git status --porcelain` line, indented two spaces
 - RULE-95: Where an anchor's pin is not current, the status report carries `Anchors:` and under it one line per such anchor: `<name>: the pin <old7> is behind its source, now <new7>. Run purlin:anchor sync <name>.`, `<name>: names a source and no pin. Run purlin:anchor sync <name>.`, `<name>: the source could not be read (<error>). Check its > Source: line, then run purlin:anchor sync <name>.`, or `<name>: (source rejected: <reason>)`
+- RULE-96: The status reads the specs of a project that has no `.purlin/config.json`
 
 ## Proof
 
@@ -288,3 +289,4 @@
 - PROOF-232 (RULE-95): An anchor `policy` whose `> Source:` names a repository and that has no `> Pinned:` line makes the status report print `policy: names a source and no pin. Run purlin:anchor sync policy.`
 - PROOF-233 (RULE-95): An anchor `policy` pinned to a commit of a `> Source:` where no repository exists makes the status report print a line opening `policy: the source could not be read (` and ending `). Check its > Source: line, then run purlin:anchor sync policy.`
 - PROOF-234 (RULE-95): An anchor `policy` whose `> Source:` begins with `--upload-pack=` makes the status report print `policy: (source rejected: begins with "-")`
+- PROOF-236 (RULE-96): In a git checkout with no `.purlin/config.json` and one spec, `login`, of two rules, the status report lists `login` in its table and its summary reads `2 rules. 0 pass their tests.`
