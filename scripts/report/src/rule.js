@@ -55,6 +55,8 @@ function cellRow(rule, name) {
    each finding on its own line as the audit wrote it, the test strength
    beside the minimum this gate asks for where one was measured and nothing
    of strength where none was, then the model that read the rule and when.
+   The answer is worded as the terminal words it, and the strength reads its
+   whole-number part, as the board's cell does, so 85.7 reads 85 on both.
    The audit writes sentences, so there is no list of check names to render
    here. */
 function auditPanel(rule) {
@@ -65,7 +67,7 @@ function auditPanel(rule) {
   var findings = (audit && audit.findings) || [];
   var answer = audit ? audit['verdict'] : null;
   if (!audit) {
-    lines.push(line('No audit has read this rule\u2019s text, proof and '
+    lines.push(line("No audit has read this rule's text, proof and "
       + 'test yet.'));
   } else if (answer === 'strong' && !findings.length) {
     lines.push(line('Strong. It found nothing.'));
@@ -77,7 +79,7 @@ function auditPanel(rule) {
   }
   findings.forEach(function (text) { lines.push(line(text)); });
   if (cell.strength != null) {
-    lines.push(line('Test strength ' + Math.round(cell.strength) + '%, against '
+    lines.push(line('Test strength ' + Math.floor(cell.strength) + '%, against '
       + 'a minimum of ' + minStrength() + '%.'));
   }
   if (audit) {
@@ -138,13 +140,27 @@ function signPanel(feature, rule) {
   }
   var hand = rule.left === 'to_test_by_hand';
   return '<div class="panel"><h2>' + (hand ? 'Hand check' : 'Signature')
-    + '</h2><p><span class="cmd">' + esc('purlin:sign ' + feature.name + ' '
-      + rule.id) + '</span> <span class="sec">from Claude Code</span></p>'
+    + '</h2>' + typeLine('purlin:sign ' + feature.name + ' ' + rule.id, '')
     + '<p class="sec">' + (hand ? 'A hand check is you checking the rule and '
         + 'signing it in one act; purlin:sign asks what you saw and records '
         + 'it. The page shows it once it is committed.'
       : 'A signature is a signed commit that names its signer; the page '
         + 'shows it once it is committed.') + '</p></div>';
+}
+
+/* A command the page cannot run, named as the line to type:
+   `Type <command> in Claude Code.`, the command in the monospace face, after
+   whatever the line says first. The sentence is one span, so a line that
+   lays its parts out side by side, as a test's line does, keeps it whole. */
+function typeLine(command, before) {
+  return '<p class="sec"><span>' + esc(before) + 'Type <span class="cmd">'
+    + esc(command) + '</span> in Claude Code.</span></p>';
+}
+
+/* What a proof or a rule with no test says, and the command that writes
+   one for the spec that owns the rule. */
+function noTestLine(owner) {
+  return typeLine('purlin:build ' + owner, 'No test yet. ');
 }
 
 /* The word a test reads: the evidence writes `pass`, `fail`, `missing` or
@@ -178,13 +194,16 @@ function testLines(tests) {
 /* One proof: its id and words, its own result, its `@manual` and `@env`
    tags, which name the operating system it asks for, and its tests with
    what each found. The board draws it under a rule and the rule screen in
-   its Proofs section, from this one function, so the two never disagree. */
-function proofDetail(proof) {
+   its Proofs section, from this one function, so the two never disagree.
+   `owner` is the spec that owns the rule, whose build writes a missing
+   test. */
+function proofDetail(proof, owner) {
   var tags = (proof.manual ? ['@manual'] : [])
     .concat(proof.env ? ['@env(' + proof.env + ')'] : []);
-  var tests = testLines(proof.tests) || '<p class="sec">'
-    + (proofWord(proof) === 'not run' ? 'No run has listed its tests yet.'
-      : 'No test yet.') + '</p>';
+  var tests = testLines(proof.tests)
+    || (proofWord(proof) === 'not run'
+      ? '<p class="sec">No run has listed its tests yet.</p>'
+      : noTestLine(owner));
   return '<dl class="kv">'
     + '<dt>' + esc(proof.id) + '</dt><dd>' + esc(proof.text) + '</dd>'
     + '<dt>Result</dt><dd>' + pill(proofWord(proof)) + '</dd>'
@@ -193,8 +212,8 @@ function proofDetail(proof) {
     + '<dt>Tests</dt><dd class="ptests">' + tests + '</dd></dl>';
 }
 
-function proofPanel(proof) {
-  return '<div class="panel">' + proofDetail(proof) + '</div>';
+function proofPanel(proof, owner) {
+  return '<div class="panel">' + proofDetail(proof, owner) + '</div>';
 }
 
 /* The tests marked with the rule's own id, one line each with its result.
@@ -203,7 +222,7 @@ function proofPanel(proof) {
 function testsSection(rule) {
   var tests = rule.tests || [];
   if (!tests.length && showsProofs()) { return ''; }
-  var lines = testLines(tests) || '<p class="sec">No test yet.</p>';
+  var lines = testLines(tests) || noTestLine(rule.feature);
   return '<section><p class="eyebrow">Tests</p><div class="panel tests">'
     + lines + '</div></section>';
 }
@@ -211,7 +230,7 @@ function testsSection(rule) {
 /* The link back closes the rule rather than leaving it open behind the
    board. */
 function backLink() {
-  return '<button class="btn" data-act="close">← Board</button>';
+  return '<button class="btn" data-act="close">Back to the board</button>';
 }
 
 function renderRule() {
@@ -243,7 +262,9 @@ function renderRule() {
     + auditPanel(rule) + signPanel(feature, rule) + '</section>'
     + (showsProofs() ? '<section><p class="eyebrow">Proofs</p>'
       + '<div class="stack">' + ((rule.proofs || []).length
-        ? rule.proofs.map(proofPanel).join('')
+        ? rule.proofs.map(function (proof) {
+          return proofPanel(proof, rule.feature);
+        }).join('')
         : '<div class="panel sec">No proof written.</div>')
       + '</div></section>' : '')
     + testsSection(rule);

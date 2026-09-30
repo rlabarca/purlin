@@ -421,8 +421,8 @@
                 }
               },
               "reasons": [
-                "passed on linux",
-                "windows: failed"
+                "passed on Linux/Unix",
+                "Windows: failed"
               ],
               "source": "ci",
               "word": "partial"
@@ -1289,6 +1289,6 @@
   },
   "version": "0.10.0",
   "warnings": [
-    "WARNING: 2 lines under ## Rules in specs/billing/invoice.md are not numbered; a rule is - RULE-N: <text>."
+    "invoice: 2 lines under ## Rules are not numbered; a rule is `- RULE-N: <text>`. Run purlin:spec invoice."
   ]
 }

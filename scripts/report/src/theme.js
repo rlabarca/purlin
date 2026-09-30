@@ -25,8 +25,8 @@ function logoSrc() {
   return currentTheme() === 'light' ? PURLIN_LOGO.light : PURLIN_LOGO.dark;
 }
 
+/* The button reads the theme it turns to, so its text is its label. */
 function themeButton() {
   var next = currentTheme() === 'light' ? 'Dark theme' : 'Light theme';
-  return '<button class="btn glyph" data-act="theme" title="' + next
-    + '" aria-label="' + next + '">\u25d0</button>';
+  return '<button class="btn" data-act="theme">' + next + '</button>';
 }
