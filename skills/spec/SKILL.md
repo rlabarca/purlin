@@ -66,7 +66,6 @@ the first two here. The third is a person's decision, so name the rules and leav
 # Feature: login
 
 > Description: Email and password sign-in with a lockout after repeated failures.
-> Requires: security_baseline
 > Scope: src/auth.py, src/session.py
 > Stack: python/flask, bcrypt
 
@@ -89,6 +88,10 @@ change to one of them reads `out of date` and selects the feature for the next `
 and a signature is tied to the code it governs. A spec that names no files still has its tests
 run and its rules read, but every run includes it, and at the gate `signed` its rules are
 signed and their signatures do not count, so no tag is written.
+
+A spec that carries `> Requires:` or `> Global:`, or an anchor that carries `> Scope:`, is warned
+of: take the line out. Where a rule of an anchor holds only for some features, write it in each
+of their specs instead.
 
 ## Rules
 

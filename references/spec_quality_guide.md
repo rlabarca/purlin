@@ -78,6 +78,19 @@ Then the supporting dimensions: each distinct error response, boundary condition
 as maximum lengths and retry limits, performance constraints, and what happens when a
 dependency fails.
 
+### A rule for the whole project
+
+A rule that must hold across the whole project, such as no secret in the code, is written
+once in an anchor. Its tests check every file of the project the rule speaks of, and the rule
+is counted, audited and signed once. No spec names an anchor. A rule that several features
+share and that cannot be checked across the whole project is not an anchor's: write it in the
+spec of each feature that needs it, in that feature's words.
+
+A rule of a pinned anchor that no test in this project can show, because it does not apply
+here, is signed by a person in the project as not applying, with the reason:
+`purlin:sign <anchor> RULE-N --does-not-apply "<why>"`. A rule of the project's own anchor that
+does not apply is deleted.
+
 ## Writing proofs
 
 A proof is one line saying how a rule will be shown to hold: what is done, what is observed,
@@ -298,6 +311,6 @@ If you change **what** a test asserts rather than how, the proof text may be wro
 Re-read it. The rule, the proof text, the assertion and the code must all agree; when
 one disagrees, find out which before you go on. Narrowing the proof text to match a
 weaker test is not a fix: it lowers the claim instead of strengthening the evidence,
-and on a rule pinned from an anchor it is never allowed, because the anchor is an
+and on a rule of a pinned anchor it is never allowed, because the anchor is an
 upstream-owned contract. Silently changing an assertion to match actual behaviour is
 the most common way an agent introduces a correctness bug.

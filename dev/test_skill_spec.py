@@ -544,3 +544,26 @@ def test_the_spec_is_committed_before_the_closing_line():
     commit = done.find('commit it with the `spec(<name>):` prefix')
     closing = done.find('Spec saved: <name>. Next: purlin:build <name>')
     assert 0 <= commit < closing, done
+
+
+WARNED = ('A spec that carries `> Requires:` or `> Global:`, or an anchor that '
+          'carries `> Scope:`, is warned of: take the line out.',
+          'Where a rule of an anchor holds only for some features, write it in '
+          'each of their specs instead.')
+
+
+def warned_problems():
+    return carries(SKILL, WARNED)
+
+
+# purlin: skill_spec PROOF-54
+def test_a_warned_field_is_taken_out(monkeypatch):
+    assert warned_problems() == []
+    assert refusals(monkeypatch, warned_problems, [
+        (SKILL, replace('is warned\nof: take the line out.',
+                        'is warned\nof: leave it.'),
+         '%s does not carry %r' % (SKILL, WARNED[0])),
+        (SKILL, replace('write it in each\nof their specs instead.',
+                        'keep it in the anchor.'),
+         '%s does not carry %r' % (SKILL, WARNED[1])),
+    ]) == []

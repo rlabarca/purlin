@@ -6,8 +6,8 @@
 >   over to the build.
 > Scope: skills/spec/SKILL.md, references/spec_quality_guide.md, references/purlin_commands.md
 > Stack: markdown, Claude Code skill definition
-> Highest-Rule: 23
-> Highest-Proof: 53
+> Highest-Rule: 24
+> Highest-Proof: 54
 
 ## Rules
 
@@ -33,6 +33,7 @@
 - RULE-21: The guide's table `When a rule is stuck` gives, for a proof tagged for a system that has not run, the word `not run` with `<System>: no run yet`, and names `purlin:test --remote` and the runner file
 - RULE-22: The skill tells the agent to commit the spec it writes, with the `spec(<name>):` prefix, before it ends on its closing line
 - RULE-23: The skill tells the agent that a new proof takes one more than the highest of `> Highest-Proof:` and every proof number in either copy of the spec, and to write that number into `> Highest-Proof:`, adding the line after `> Highest-Rule:` where it is missing
+- RULE-24: The skill tells the agent that a spec carrying `> Requires:` or `> Global:`, or an anchor carrying `> Scope:`, is warned of and to take the line out, and that a rule of an anchor that holds only for some features is written in each of their specs
 
 ## Proof
 
@@ -60,3 +61,4 @@
 - PROOF-51 (RULE-22): The spec skill's section `When you are done`, read across its line breaks, says to commit the file with the `spec(<name>):` prefix and then to end with the closing line `Spec saved: <name>. Next: purlin:build <name>`
 - PROOF-52 (RULE-23): The spec skill's section `Ids`, read across its line breaks, says a new proof takes "one more than the highest of `> Highest-Proof:` and every proof number in either copy"
 - PROOF-53 (RULE-23): The spec skill's section `Ids`, read across its line breaks, says to write that number into `> Highest-Proof:`, "adding the line after `> Highest-Rule:` where it is missing"
+- PROOF-54 (RULE-24): The spec skill, read across its line breaks, says ``A spec that carries `> Requires:` or `> Global:`, or an anchor that carries `> Scope:`, is warned of: take the line out.``, and that a rule of an anchor holding only for some features is written in each of their specs
