@@ -816,7 +816,8 @@ def test_a_scope_whose_every_entry_finds_nothing_gets_only_the_existing_line(
     _login(root, scope='src/gone.py')
     _git_project(root, 'src/app.py')
     result = purlin_status.sync_status(str(root))
-    assert ('1 spec names no files, so its tests run every time: login.'
+    assert ('1 spec names no files, so its tests run every time: login. '
+            'Run purlin:spec login to add its > Scope: line.'
             in result.splitlines()), result
     assert 'which finds no file in git' not in result, result
 
