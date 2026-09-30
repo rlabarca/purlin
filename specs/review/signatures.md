@@ -10,6 +10,7 @@
 >   evidence package and the signed tag that marks the commit.
 > Scope: scripts/mcp/purlin/signatures.py, scripts/review/sign.py
 > Stack: python/stdlib (json, subprocess), git signed commits, SSH keys
+> Highest-Rule: 89
 
 ## Rules
 
@@ -43,7 +44,7 @@
 - RULE-54: Below the gate `signed` the command writes no tag and no evidence package, and the walk ends on the summary ending
 - RULE-55: No tag is written while `git status` lists a path outside `.purlin/`; the command prints `No tag: the working tree holds changes that are not committed, so the results do not describe a commit. Commit them, then run purlin:sign.`
 - RULE-56: The version a tag is named for is the first one stated by the `VERSION` file at the root, `package.json`'s `version`, `pyproject.toml`'s `[project]` then `[tool.poetry]` `version`, and the `<Version>` of a root `*.csproj`
-- RULE-57: With no version stated and no `--release`, no tag is written and the command prints `No version: nothing in this project states one. Name it with --release <version>, or write it to a VERSION file.`
+- RULE-57: With no version stated and no `--release`, no tag is written and the command prints `No version: nothing in this project states one. Run purlin:sign --release <version>, or write it to a VERSION file.`
 - RULE-58: When it has signed, the command prints `Signed <n> rules as <email> with the key ending ...<last 4>.`, reading `1 rule` for one
 - RULE-59: An anchor's rule is signed once in each feature it applies to: one file per feature, each made over that feature's code, so a change to one feature's files ends that one signature alone
 - RULE-60: The key fingerprint is read from `user.signingkey`, a public key path, a private key path with its `.pub` beside it, or a `key::` literal, and reads as `ssh-keygen -l` prints it; a key that is not an SSH key is no key
@@ -54,16 +55,28 @@
 - RULE-65: `purlin:sign` exits 1 when the tag is refused for a reason the person must fix, and 0 when the tag already exists
 - RULE-66: When git cannot write `signed/<version>`, the command prints `No tag: git could not write signed/<version>: <git's own message, first line>.` and exits 1
 - RULE-67: A `.purlin/config.json` that cannot be read stops the command before it reads or writes anything else: it prints `.purlin/config.json cannot be read: <cause>. Fix the file by hand; nothing ran and nothing was saved.`, writes nothing and exits 1
-- RULE-68: At each stop of the walk the command takes one of the three answers sign, case or skip, carries the line a person writes when signing a hand check as that signature's note and signs with no note when the line is empty, and closes with `Walked <n> rules: <s> signed, <c> cases added, <k> skipped.`
+- RULE-68: At each stop of the walk the command takes one of the three answers sign, case or skip, carries the line a person writes when signing a hand check as that signature's note and signs with no note when the line is empty, and closes with `Walked <n> rules: <s> signed, <c> cases added, <k> skipped.`, reading `1 rule` and `1 case added` for one
 - RULE-69: The walk writes nothing until it closes
 - RULE-70: Having written `signed/<version>`, the command prints `Tagged signed/<version> at <sha7>.` then `Nothing left to do. Push the tag to release it: git push origin signed/<version>`
 - RULE-71: Writing the tag pushes nothing
 - RULE-72: The walk that signs the last rules writes the tag
-- RULE-73: When the evidence package cannot be written or committed the command writes no tag and prints `No tag: the evidence package was not committed: <why>.`
-- RULE-74: No tag is written over one that already exists, which prints `No tag: <tag> is already written. Name another with --release <name>.`
+- RULE-73: When the evidence package cannot be written or committed, for any reason but work left in the committed evidence, the command writes no tag and prints `No tag: the evidence package was not committed: <why>.`
+- RULE-74: No tag is written over one that already exists, which prints `No tag: <tag> is already written. Run purlin:sign --release <name> to name another.`
 - RULE-75: `--release <name>` names another tag, `signed/<name>`
 - RULE-76: `--note` with no rule named, with `--all`, or with no line, exits 2
 - RULE-77: An unknown option exits 2 whether or not a feature is named
+- RULE-78: At the gate `signed`, a rule whose own spec names no files is signed all the same, and its line under `Signed <n> rules as ...` reads `  <feature> <RULE-N>   does not count until the spec names its files: purlin:spec <feature>`; the walk prints that line for each such rule it signed, just before `Signed <n> rules as ...`; below `signed` the line is `  <feature> <RULE-N>`
+- RULE-79: When git does not make the signature commit, the command prints `The signature commit was not made: <git's own message>. Nothing was signed; run purlin:sign again once git can make a signed commit.` and exits 1
+- RULE-80: When the evidence package the tag would carry finds work left in the committed evidence, no tag is written and the command prints `No tag: the committed evidence still has work left to do, so no evidence package was committed. Run purlin:test --commit, then purlin:sign.`
+- RULE-81: A `--project-root` that is not a directory exits 2 and prints `sign.py: <path> is not a directory.`
+- RULE-82: The walk stops at the rules in order of feature name, then rule number, so `RULE-2` comes before `RULE-10`
+- RULE-83: At a stop each proof tagged `@manual` or `@env(<system>)` shows that tag after its id, as `PROOF-2 (@manual)` or `PROOF-1 (@env(windows))`
+- RULE-84: Under `What the audit found` a stop prints, one line each and indented two spaces, `No audit has read this rule's text, proof and test yet.` where no audit has read the rule, `Strong. It found nothing.`, or `Strong.`, `Weak.` or `Undecided. The AI audit could not decide, so the rule reads weak until its proof or test changes.` followed by each finding; it names no reader
+- RULE-85: At each stop the walk asks `<feature> <RULE-N>   sign / case / skip: `; after `sign` at a hand check it asks `What did you see, in one line: `, and after `case` it asks `  in one line: `
+- RULE-86: A case given with an empty line is closed as `  <feature> <RULE-N>   add this proof line: the reviewer named no case`
+- RULE-87: A walk that signed prints `Commits: <sha7>`, the signature commit it made, just after `Signed <n> rules as ...`
+- RULE-88: A rule skipped in the walk is still `to sign` or `to test by hand` after it, and no file records the skip
+- RULE-89: `signed/<version>` carries an SSH signature made with the key `user.signingkey` names
 
 ## Proof
 
@@ -92,7 +105,7 @@
 - PROOF-88 (RULE-68): At the gate `signed`, with `login RULE-2` a hand check, the walk is answered `sign` with an empty line at `RULE-2`; the signature is written in 1 commit, and its note is null
 - PROOF-87 (RULE-69): At the gate `signed`, with both `login` rules to sign, the walk is answered `sign` at each of its 2 stops; at each stop no signature file exists and HEAD has not moved, and once it closes 2 signature files sit in one commit made on the commit the walk began at
 - PROOF-32 (RULE-68): At the gate `signed`, with both `login` rules to sign, the walk is answered `skip` at each stop; no signature file is written, it closes `Walked 2 rules: 0 signed, 0 cases added, 2 skipped.`, and its last line reads `  2 rules to sign: purlin:sign`
-- PROOF-33 (RULE-68): At the gate `signed`, the walk is answered `case` with `it should also reject an expired token` at `login RULE-2`; no signature file is written and the close carries `  login RULE-2   add this proof line: it should also reject an expired token`
+- PROOF-33 (RULE-68): At the gate `signed`, the walk is answered `case` with `it should also reject an expired token` at `login RULE-2`; no signature file is written and the close carries `Walked 2 rules: 0 signed, 1 case added, 1 skipped.` and `  login RULE-2   add this proof line: it should also reject an expired token`
 - PROOF-89 (RULE-11): At the gate `strong`, with both rules passing and audited strong, the walk is run; its first line reads `Nothing is waiting for someone to test by hand or to sign.`
 - PROOF-15 (RULE-12): At the gate `signed`, with both `login` rules to sign, `--all` is run; it exits 0, its output opens `Signed 2 rules as jane@acme.com with the key ending ...`, it writes a signature for `RULE-1` and one for `RULE-2`, and it adds 1 commit carrying an SSH signature
 - PROOF-90 (RULE-12): At the gate `signed`, with both `login` rules to sign and `billing RULE-1` a hand check, `--all` is run; it adds exactly 1 commit, carrying 1 signature file beside the billing spec and 2 beside the login spec
@@ -145,7 +158,7 @@
 - PROOF-81 (RULE-72): At the gate `signed`, with both `login` rules passing, audited strong and waiting to be signed, and `VERSION` reading `2.1.0`, the walk is answered `sign` at each stop; it signs both rules and writes `signed/2.1.0`, the one tag in the project
 - PROOF-68 (RULE-46): At the gate `signed`, with both `login` rules passing and not audited, the walk is run; it prints `Nothing is waiting for someone to test by hand or to sign.`, then the summary ending, whose last line is `  2 rules to audit: purlin:audit`, and writes no tag
 - PROOF-102 (RULE-75): At the gate `signed`, with every rule signed, the command is run with `--release beta`; it exits 0 and the one tag in the project is `signed/beta`
-- PROOF-103 (RULE-74): At the gate `signed`, with every rule signed and `signed/beta` already written, the walk is run again with `--release beta`; no tag is written, its last line is `No tag: signed/beta is already written. Name another with --release <name>.`, and `signed/beta` is the one tag
+- PROOF-103 (RULE-74): At the gate `signed`, with every rule signed and `signed/beta` already written, the walk is run again with `--release beta`; no tag is written, its last line is `No tag: signed/beta is already written. Run purlin:sign --release <name> to name another.`, and `signed/beta` is the one tag
 - PROOF-74 (RULE-49): At the gate `signed`, with every rule signed, the `login` results are recorded again and not committed; the walk is run, no tag is written, and its last line is `No tag: login has results that are not committed. Run purlin:test --commit.`
 - PROOF-75 (RULE-50): Jane, set up in git as `Jane.Doe@Acme.com` with the name `Jane Doe`, signs `login RULE-2`; the signature's `signer` reads `Jane.Doe@Acme.com`, its `signer_name` `Jane Doe`, and its `key_fingerprint` what `ssh-keygen -l` prints for her key
 - PROOF-157 (RULE-50): On Windows, Jane, set up in git as `Jane.Doe@Acme.com` with the name `Jane Doe`, signs `login RULE-2`; the signature reads `signer` `Jane.Doe@Acme.com`, `signer_name` `Jane Doe`, and `key_fingerprint` what `ssh-keygen -l` prints for her key @env(windows)
@@ -159,7 +172,7 @@
 - PROOF-108 (RULE-56): With only a `pyproject.toml` whose `[project]` table states `4.2.0` and whose `[tool.poetry]` table states `0.1.0`, the tag is named `signed/4.2.0`
 - PROOF-109 (RULE-56): With only a `pyproject.toml` whose `[project]` table states no version and whose `[tool.poetry]` table states `0.5.1`, the tag is named `signed/0.5.1`
 - PROOF-110 (RULE-56): With only a `Shop.csproj` at the root whose `<Version>` reads `1.4.0`, the tag is named `signed/1.4.0`
-- PROOF-111 (RULE-57): At the gate `signed`, in a project that states no version, with every rule signed, the walk is run; no tag is written, and its last line is `No version: nothing in this project states one. Name it with --release <version>, or write it to a VERSION file.`
+- PROOF-111 (RULE-57): At the gate `signed`, in a project that states no version, with every rule signed, the walk is run; no tag is written, and its last line is `No version: nothing in this project states one. Run purlin:sign --release <version>, or write it to a VERSION file.`
 - PROOF-112 (RULE-58): At the gate `signed`, `jane@acme.com` signs `login RULE-2` by name; the command prints `Signed 1 rule as jane@acme.com with the key ending ...` followed by the last 4 characters of her key's fingerprint and a full stop
 - PROOF-113 (RULE-59): With an anchor, `secure`, that `login` and `billing` both require, `secure RULE-1` is signed by name; 1 commit is added and `secure.signatures/` holds 2 files, one applying to `billing` and one to `login`
 - PROOF-114 (RULE-59): With `secure RULE-1` signed for `login` and `billing`, `src/billing.py`, the file `billing` lists, is changed; the signature applying to `login` is still current and the one applying to `billing` is not
@@ -184,3 +197,23 @@
 - PROOF-150 (RULE-65): At the gate `signed`, with every rule signed and `signed/beta` already written, the command is run with `--release beta`; it writes no tag, `signed/beta` is still the one tag, and it exits 0
 - PROOF-151 (RULE-66): At the gate `signed`, with every rule signed, `VERSION` reading `2.1.0` and a tag named `signed` already written, the command is run with no argument; its last line begins `No tag: git could not write signed/2.1.0: ` goes on with git's own reason, which names `refs/tags/signed`, and ends with one full stop; no `signed/2.1.0` exists, and it exits 1
 - PROOF-152 (RULE-67): At the gate `signed`, with both `login` rules to sign and a comma after the last setting of `.purlin/config.json`, `--all` is run; it prints one line, beginning `.purlin/config.json cannot be read: ` and ending `Fix the file by hand; nothing ran and nothing was saved.`, writes no signature, adds no commit and exits 1
+- PROOF-159 (RULE-78): At the gate `signed`, in a spec with no `> Scope:` line, `login RULE-1` is signed by name; its signature is written, and the line below `Signed 1 rule as ...` reads `  login RULE-1   does not count until the spec names its files: purlin:spec login`
+- PROOF-160 (RULE-78): At the gate `signed`, in a spec with no `> Scope:` line whose `RULE-2` is a hand check, the walk is answered `sign` at `login RULE-2`; the line just before `Signed 1 rule as ...` reads `  login RULE-2   does not count until the spec names its files: purlin:spec login`
+- PROOF-161 (RULE-78): At the gate `strong`, in a spec with no `> Scope:` line, `login RULE-1` is signed by name; the line below `Signed 1 rule as ...` reads `  login RULE-1`
+- PROOF-162 (RULE-79): At the gate `signed`, with a git hook that refuses every commit, printing `error: the hook refused the commit.`, `--all` is run; it adds no commit, exits 1, and prints the one line `The signature commit was not made: the hook refused the commit. Nothing was signed; run purlin:sign again once git can make a signed commit.`
+- PROOF-163 (RULE-80): At the gate `signed`, with every rule signed and the evidence package the tag would carry reading `not finished`, the walk is run; no tag is written, HEAD has not moved, and its last line is `No tag: the committed evidence still has work left to do, so no evidence package was committed. Run purlin:test --commit, then purlin:sign.`
+- PROOF-164 (RULE-81): The command is run with `--project-root no/such/folder`, which does not exist; it exits 2 and prints `sign.py: no/such/folder is not a directory.`
+- PROOF-165 (RULE-82): At the gate `signed`, with `login` holding `RULE-2` and `RULE-10`, both to sign, the walk is run; it stops at `login RULE-2`, then at `login RULE-10`
+- PROOF-166 (RULE-83): At the gate `signed`, with `PROOF-1` tagged `@env(windows)` and passing on a Windows runner, the walk's stop for `login RULE-1` lists `  PROOF-1 (@env(windows)): POST /login with the password "secret"; verify 200 and a token`
+- PROOF-167 (RULE-84): At the gate `signed`, with `login RULE-2` a hand check that no audit has read, the walk's stop for it shows under `What the audit found` the one line `  No audit has read this rule's text, proof and test yet.`
+- PROOF-168 (RULE-84): At the gate `signed`, with `login RULE-1` audited strong with no finding, the walk's stop for it shows under `What the audit found` the one line `  Strong. It found nothing.`
+- PROOF-169 (RULE-84): At the gate `signed`, with `login RULE-1` audited strong with the finding `PROOF-1 reads the status alone.`, the walk's stop for it ends on `What the audit found`, `  Strong.` and `  PROOF-1 reads the status alone.`
+- PROOF-170 (RULE-84): At the gate `signed`, with the hand check `login RULE-2` audited weak with the finding `PROOF-2 reads the status alone.`, the walk's stop for it ends on `What the audit found`, `  Weak.` and `  PROOF-2 reads the status alone.`
+- PROOF-171 (RULE-84): At the gate `signed`, with the hand check `login RULE-2` audited undecided with the finding `PROOF-2 names no status.`, the walk's stop for it ends on `What the audit found`, `  Undecided. The AI audit could not decide, so the rule reads weak until its proof or test changes.` and `  PROOF-2 names no status.`
+- PROOF-172 (RULE-85): At the gate `signed`, with both `login` rules to sign, the walk is run with a person typing the answers; its first question is `login RULE-1   sign / case / skip: `
+- PROOF-173 (RULE-85): At the gate `signed`, with `login RULE-2` a hand check, a person answers `sign` at its stop in the walk; the next question is `What did you see, in one line: `
+- PROOF-174 (RULE-85): At the gate `signed`, with both `login` rules to sign, a person answers `case` at `login RULE-1` in the walk; the next question is `  in one line: `
+- PROOF-175 (RULE-86): At the gate `signed`, the walk is answered `case` with an empty line at `login RULE-2`; no signature file is written and the close carries `  login RULE-2   add this proof line: the reviewer named no case`
+- PROOF-176 (RULE-87): At the gate `signed`, with both `login` rules to sign, the walk is answered `sign` at each stop; the line after `Signed 2 rules as ...` reads `Commits: ` and the first seven characters of the signature commit
+- PROOF-177 (RULE-88): At the gate `signed`, with both `login` rules to sign, the walk is answered `skip` at each stop; afterwards both rules' work left reads `to_sign`, and `git status` lists no file
+- PROOF-178 (RULE-89): At the gate `signed`, with every rule signed and `VERSION` reading `2.1.0`, the walk writes `signed/2.1.0`; `git tag -v`, with the signer's public key as the one allowed signer, reports a good signature by the key whose fingerprint `ssh-keygen -l` prints for the file `user.signingkey` names
