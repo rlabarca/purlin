@@ -43,7 +43,7 @@ Below it are the tabs: `Board`, then the open rule, such as `login RULE-1`, when
 
 ## Board
 
-![The board at the gate signed: the notice that the working tree has uncommitted changes and one spec warning, the No proof, Passing, Strong and Signed boxes, the six buttons To fix, To test, To test by hand, To audit, To strengthen and To sign, and the specs under their categories with all six columns; login is open under its description, and RULE-4 is unfolded beneath its row, PROOF-4 failed on Windows and PROOF-5 passed](images/dashboard-board.png)
+![The board at the gate signed: the notice that the working tree has uncommitted changes and one spec warning, the No proof, Passing, Strong and Signed boxes, the six buttons To fix, To test, To test by hand, To audit, To strengthen and To sign, the anchor checkout_design in the Anchors section, and the specs under their categories, both tables with all six columns; login is open under its description, and RULE-4 is unfolded beneath its row, PROOF-4 failed on Windows and PROOF-5 passed](images/dashboard-board.png)
 
 A notice sits above the boxes, one per line, when the working tree has uncommitted changes, `The
 working tree has uncommitted changes, so what is on this board is not what a commit would
@@ -74,7 +74,7 @@ column above the gate is absent, not empty.
 
 | Column | What it reads | What its hover says |
 |---|---|---|
-| `Spec` | the feature name, under the band that names its category | the spec's path |
+| `Spec` | the feature name, under the band that names its category; an anchor's name, in the `Anchors` section | the spec's path |
 | `Rules` | how many rules the spec owns, then, where it proves rules from an anchor it requires or from a global anchor, how many more, as `16 (+6)` | `16 rules of its own, and 6 more it must also meet, from shared rules:`, then each anchor with its count, as `security_no_dangerous_patterns · 6` |
 | `Proofs` | `5 · 1 no test`: how many proof lines the spec holds and how many no test runs. A `@manual` proof counts as no gap | which proofs have no test |
 | `Tests` | `3 of 4 · 1 partial`: how many rules passed everywhere they ran, then `partial` and `failing` where they did not | one line per operating system a current run covered, newest first, as `Windows · ci · 18 days old · 3 passed · 1 failed` |
@@ -89,8 +89,8 @@ Every count names the word it counts. The first part is always drawn; a later pa
 only above zero, so a spec with nothing partial and nothing failing reads `3 of 3`. Every
 when, who and platform detail is in a hover, a plain `title` attribute, so it works on a page
 opened from disk. A value never breaks inside itself: `16 (+6)` and `5 · 1 no test` stay on one
-line. Every column the gate reaches fits a 1024-pixel window. Under 1024 pixels the table has
-no heading row: each spec is a block, its name first and its values beneath as labelled pairs
+line. Every column the gate reaches fits a 1024-pixel window. Under 1024 pixels neither table has
+a heading row: each spec is a block, its name first and its values beneath as labelled pairs
 that wrap whole, `Rules 16 (+6)`, `Tests 3 of 4`, and a rule in an open spec reads its id and
 badges, then its words, then its proofs control. The boxes wrap four to a row, and two to a row
 under 600 pixels; the filter buttons and the top bar's chips wrap whole. The page never scrolls
@@ -100,7 +100,12 @@ A spec with no `> Scope:` line names no files, so Purlin cannot tell which code 
 row reads `<name> · no scope`, and the hover gives the reason. A `purlin:test` with no feature
 named always runs such a spec.
 
-**Bands and rows.** Specs are grouped by category. The band above each group has two ends: the
+**Anchors.** The anchors stand in a section of their own, headed `ANCHORS`, between the filter
+buttons and the spec table, in the same columns and rows, with no band. A chosen filter applies
+to both tables. A project with no anchor, or a filter that leaves no anchor's rule, shows no
+such section.
+
+**Bands and rows.** The other specs are grouped by category. The band above each group has two ends: the
 category's name and `2 specs` at the left, `4 of 5 rules pass` and a bar at the right, every bar
 one width so they line up down the page. A band counts each rule once, under the spec that owns
 it; under 1024 pixels its count sits beneath its name. Pressing a band, or Enter or Space on it,
