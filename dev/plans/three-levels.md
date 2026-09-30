@@ -1038,6 +1038,26 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       This amends decision 97.
     - **When the first test run finds no test tool it knows**, it prints
       `No test command is set and no test tool Purlin knows was found, so nothing ran. The agent reads the project and proposes a command for you to confirm.`
+99. **The answers after phase 4** (added 2026-09-30), to the questions the fourth phase left
+    open.
+    - **A proof number is never reused.** The spec records the highest proof number it has
+      held, beside the highest rule number, and new proofs count from there. The spec format
+      changes, so its `Format-Version` is raised.
+    - **The 78 tests that fail on Windows and that no rule is tagged for are left as they
+      are.** Windows is proven for the rules on the accepted list and nothing else is claimed.
+    - **The export command's instructions say what the regulated system of record holds:**
+      the controlled document, the authority to sign it off, and the signature that counts
+      under the regulation. The rule covers all three and the page keeps them.
+    - **A committing test run that selected nothing commits the settings together with any
+      changed spec and marked test**, in one commit, so nothing of Purlin's is left
+      uncommitted.
+    - **Two lines on the dashboard say what is true.** With mutation testing off, the `Strong`
+      box's hover reads `no minimum strength applies: mutation testing is off`. A proof
+      checked by hand reads `Checked by hand. Type purlin:sign <feature> RULE-N in Claude
+      Code.` in place of the line that sends a person to write a test.
+    - **Setup leaves test fixtures out** when it decides which test tools a project uses:
+      files under a folder named for fixtures, samples or test data do not count, so setup
+      names only the tools the project itself uses.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
