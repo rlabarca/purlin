@@ -1371,6 +1371,16 @@ class TestReportShape:
             return seen[root]
 
         monkeypatch.setattr(purlin_drift, '_reflog', read_once)
+        # The age of the default branch is read against the clock too.
+        age = purlin_drift.fetched_age
+        ages = {}
+
+        def age_once(root, ref):
+            if (root, ref) not in ages:
+                ages[root, ref] = age(root, ref)
+            return ages[root, ref]
+
+        monkeypatch.setattr(purlin_drift, 'fetched_age', age_once)
         report = _report(checkout)
         narrowed = json.loads(purlin_drift.drift(checkout, role='qa'))
         assert sorted(narrowed) == ['role', 'since', 'view'], sorted(narrowed)
