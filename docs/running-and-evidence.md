@@ -486,7 +486,8 @@ Use it for the reason above. It pushes a branch of its own, never the branch you
 3. It pushes this commit to `run/<branch>-<sha7>` on `origin`, creating that branch there and
    nothing locally, and prints `Pushing <branch> as run/<branch>-<sha7>.`
 4. The runner commits its section of `.purlin/evidence/ci/<feature>.json` onto that branch.
-5. On GitHub it finds the run with `gh run list --branch run/<branch>-<sha7>`, retrying for up
+5. On GitHub it finds the run with `gh run list --branch run/<branch>-<sha7> --workflow
+   purlin.yml`, so another workflow the push starts is never the one waited on, retrying for up
    to 60 seconds, and waits on it with `gh run watch --exit-status`. On Azure DevOps it finds
    the run with `az pipelines runs list`, asking every 3 seconds for up to 60, then asks `az
    pipelines runs show` every 15 seconds for up to 90 minutes; only `succeeded` passes. The

@@ -1114,8 +1114,8 @@ SHA = '4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1d9f4c2e7'
 RUN_BRANCH = 'run/feature-x-4f1c2ab'
 PUSH = ['git', 'push', 'origin', 'HEAD:refs/heads/%s' % RUN_BRANCH]
 WATCH = ['gh', 'run', 'watch', '987', '--exit-status']
-LIST = ['gh', 'run', 'list', '--branch', RUN_BRANCH, '--limit', '1',
-        '--json', 'databaseId']
+LIST = ['gh', 'run', 'list', '--branch', RUN_BRANCH, '--workflow',
+        'purlin.yml', '--limit', '1', '--json', 'databaseId']
 PULL = ['git', 'pull', '--ff-only', 'origin', RUN_BRANCH]
 DELETE = ['git', 'push', 'origin', '--delete', RUN_BRANCH]
 NO_GH = ('purlin:test --remote waits for the run with the GitHub CLI, gh, '

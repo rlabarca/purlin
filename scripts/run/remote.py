@@ -213,17 +213,20 @@ def _bring_back(project_root, run_branch, code):
 def find_run(project_root, run_branch, seconds=FIND_SECONDS):
     """The id of the run this push started, or `''` when none registered.
 
-    The run is looked up by the branch it was started for, because `gh run
-    watch` with no id prompts for one and errors where there is no terminal,
-    and where it does choose it takes the newest run on the repository, which
-    is not necessarily this one. A run takes a few seconds to appear, so the
+    The run is looked up by the branch it was started for and by the
+    workflow file, because `gh run watch` with no id prompts for one and
+    errors where there is no terminal, and where it does choose it takes the
+    newest run on the repository, which is not necessarily this one; and a
+    project's other workflows may run on the same push, so the branch alone
+    can name one of those. A run takes a few seconds to appear, so the
     lookup is retried until it does or `seconds` have passed.
     """
     deadline = time.time() + max(0, seconds)
     while True:
         listed = _capture(project_root,
                           ['gh', 'run', 'list', '--branch', run_branch,
-                           '--limit', '1', '--json', 'databaseId'])
+                           '--workflow', WORKFLOW, '--limit', '1',
+                           '--json', 'databaseId'])
         try:
             rows = json.loads(listed or '[]')
         except ValueError:
