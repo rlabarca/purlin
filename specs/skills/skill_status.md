@@ -28,7 +28,7 @@
 - PROOF-2 (RULE-2): The status skill, its line breaks ignored, carries these two sentences in a row: ``Print the sentence and the `Left to do` lines `sync_status` returned. Never recount them: the command line and the dashboard must show one answer from one computation.``
 - PROOF-3 (RULE-3): The last section of the status skill is headed `Step 4: name the next step`
 - PROOF-22 (RULE-3): The last section of the status skill says ``The next step is the first line of `Left to do`.``
-- PROOF-24 (RULE-7): Every kind of line `Left to do` can print, from `rules to write a proof for` to `the version to tag`, is named in a row of the status skill's closing table whose directive runs the command the line itself names, such as `to strengthen` with `→ Run: purlin:build`
+- PROOF-24 (RULE-7): Every kind of line `Left to do` can print, from `specs to repair` to `the version to tag`, is named in a row of the status skill's closing table whose directive runs the command the line itself names, such as `to strengthen` with `→ Run: purlin:build`
 - PROOF-23 (RULE-8): The table in the last section of the status skill has at least 2 rows, and every row gives a `→` directive except the one reading `Nothing left to do.`, whose next step reads `None: every rule reached every step the gate asks.`
 - PROOF-4 (RULE-4): The status skill as shipped is at most 100 lines long
 - PROOF-27 (RULE-4): A copy of the status skill made exactly 100 lines long passes the ceiling of 100

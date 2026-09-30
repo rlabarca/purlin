@@ -10,8 +10,8 @@
 >   names its filter buttons by the lines of `Left to do` and shows no sentence.
 > Scope: scripts/mcp/purlin/summary.py
 > Stack: python/stdlib
-> Highest-Rule: 15
-> Highest-Proof: 39
+> Highest-Rule: 16
+> Highest-Proof: 41
 
 ## Rules
 
@@ -29,6 +29,7 @@
 - RULE-10: The `to test on` line names the systems its rules wait for in the words `Linux/Unix`, `macOS` and `Windows`, in that order, joined by ` and `
 - RULE-14: This machine's own system is never among those the `to test on` line names, since a rule that waits for it is counted `to test`, so the line names one system or two
 - RULE-15: The kind `to_confirm` stands after `to_test_by_hand` and before `to_sign` in `Left to do`, reading `1 rule to confirm as not applying: purlin:sign` for one rule and `<n> rules to confirm as not applying: purlin:sign` for any other count
+- RULE-16: The kind `to_repair` is the first line of `Left to do` and counts specs, not rules: those that write a rule or proof number twice or hold a line left from a merge conflict, reading `1 spec to repair: purlin:spec` for one and `<n> specs to repair: purlin:spec` for any other count
 - RULE-11: At the gate `signed`, where no rule is counted under any kind, no test comment is left to correct and no `signed/*` tag points at HEAD, `Left to do` holds one line, `the version to tag: purlin:sign`; at `passed` and `strong` it never does
 
 ## Proof
@@ -71,3 +72,5 @@
 - PROOF-37 (RULE-8): A current section passes `PROOF-1`'s test and lists `PROOF-2`, of the same rule, as `missing` with no test named, and no marker names `PROOF-2`; the status ends on `  1 rule to write a test for: purlin:build`
 - PROOF-38 (RULE-15): At the gate `signed`, one rule to confirm as not applying beside one rule to test by hand and one rule to sign ends on `Left to do:`, `  1 rule to test by hand: purlin:sign`, `  1 rule to confirm as not applying: purlin:sign` and `  1 rule to sign: purlin:sign`, in that order
 - PROOF-39 (RULE-15): At the gate `signed`, two rules to confirm as not applying give the one line `  2 rules to confirm as not applying: purlin:sign`
+- PROOF-40 (RULE-16): At the gate `passed`, a broken spec of three failing rules beside another spec of one failing rule ends on `Left to do:`, `  1 spec to repair: purlin:spec` and `  1 rule to fix: purlin:build`, in that order
+- PROOF-41 (RULE-16): At the gate `passed`, two broken specs end on `Left to do:` and the one line `  2 specs to repair: purlin:spec`
