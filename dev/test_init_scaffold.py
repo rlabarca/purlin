@@ -705,6 +705,19 @@ class TestTheEvidenceFolder:
         assert summary_paths(third)[README] == 'kept', third
         assert tree(project.root)[README] == edited
 
+    # purlin: scaffold PROOF-162
+    def test_a_second_setup_keeps_the_dashboard_page_as_it_is(self, project):
+        project.run('--gate', 'passed')
+        page = project.path('purlin-report.html')
+        with open(page, 'ab') as handle:
+            handle.write(b'<!-- changed by hand -->\n')
+        with open(page, 'rb') as handle:
+            changed = handle.read()
+        again = project.run('--gate', 'passed')
+        with open(page, 'rb') as handle:
+            assert handle.read() == changed
+        assert 'kept purlin-report.html' in again.splitlines(), again
+
     # purlin: scaffold PROOF-150
     def test_at_passed_the_readme_names_no_audit(self, project):
         project.run('--gate', 'passed')

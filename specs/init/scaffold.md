@@ -15,7 +15,7 @@
 >   project it set up.
 > Scope: scripts/init/scaffold.py, templates/config.json, templates/gitignore.purlin, templates/evidence-readme.md
 > Stack: python3 (stdlib only, 3.9 floor)
-> Highest-Rule: 73
+> Highest-Rule: 74
 
 ## Rules
 
@@ -74,6 +74,7 @@
 - RULE-71: A project with no commit yet gets setup's commit as its first
 - RULE-72: Where git refuses the commit, setup prints `The files setup wrote are staged and not committed: <git's own message>.`
 - RULE-73: The block setup adds to `.gitignore` carries a comment above each entry saying what it holds, and a comment saying that `.purlin/evidence/` and `.purlin/tests.md` are tracked on purpose
+- RULE-74: Setting up a project that already holds `purlin-report.html` at its root leaves that file as it is, and the summary names it `kept purlin-report.html`
 
 ## Proof
 
@@ -217,3 +218,4 @@
 - PROOF-159 (RULE-70): A project with `notes.txt` staged is set up with `--gate passed --yes`; the commit setup makes holds exactly `.gitignore`, `.purlin/config.json` and `.purlin/evidence/README.md`, and `notes.txt` is still staged
 - PROOF-160 (RULE-71): A git project with no commit yet is set up with `--gate passed --yes`; afterwards it has one commit, `chore(init): set up Purlin at the gate passed`
 - PROOF-161 (RULE-72): A project whose git has no author email, with guessing it turned off, is set up with `--gate passed --yes`; it prints `The files setup wrote are staged and not committed: no email was given and auto-detection is disabled.`, and `.purlin/config.json` is staged
+- PROOF-162 (RULE-74): A project set up at the gate `passed` has its `purlin-report.html` changed by hand, then is set up again at `passed`; the page holds the changed bytes, and the summary reads `kept purlin-report.html`
