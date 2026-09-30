@@ -10,8 +10,8 @@
 >   evidence package and the signed tag that marks the commit.
 > Scope: scripts/mcp/purlin/signatures.py, scripts/review/sign.py
 > Stack: python/stdlib (json, subprocess), git signed commits, SSH keys
-> Highest-Rule: 95
-> Highest-Proof: 189
+> Highest-Rule: 101
+> Highest-Proof: 201
 
 ## Rules
 
@@ -19,10 +19,10 @@
 - RULE-3: Reflowing a rule's whitespace leaves the hash a signature is made over where it was
 - RULE-4: Editing the rule text, the proof text or the test body moves the hash a signature is made over
 - RULE-5: A rule proved only by a `@manual` proof records `manual` as the kind of its test hash instead of naming a test file
-- RULE-6: A signature stays current only while the rule text, the proof text, the test body, the code its feature lists and what the audit found still hash to what it was made over
+- RULE-6: A signature that is not a hand check's stays current only while the rule text, the proof text, the test body, the code its feature lists and what the audit found still hash to what it was made over
 - RULE-7: A signature that is no longer current still comes back from the reader with its signer, and at the gate `signed` its rule is `to sign` again
 - RULE-8: A signature file is named for the rule, the first eight characters of the hash it is made over and the signer's slug, the email local part lowercased with every character that is not a letter or a digit replaced by a hyphen
-- RULE-9: A signature carries schema `purlin-signature/2` and exactly the fields signature format 12 names, its `signed_hash` taken over the spec that holds the rule, the rule, proof, test, code and audit hashes, and the machines the tests ran on
+- RULE-9: A signature carries schema `purlin-signature/2` and exactly the fields signature format 13 names, its `signed_hash` taken over the spec that holds the rule, the rule, proof, test, code and audit hashes, and the machines the tests ran on
 - RULE-10: The signature reader finds a signature in the `<feature>.signatures/` directory beside its spec
 - RULE-11: With no feature named the command opens on the `to test by hand` and `to sign` lines of `Left to do`, or on `Nothing is waiting for someone to test by hand or to sign.` when both are zero, and walks those rules one at a time showing the rule, its proofs and what the audit found under a line naming the rule and its work left
 - RULE-12: `--all` signs, in one signed commit, every rule that waits for a person; a bare feature signs the waiting rules of that feature alone; both work at every gate
@@ -31,7 +31,7 @@
 - RULE-17: With no SSH key to sign with the command writes no signature, exits 1 and prints `No key to sign with. These commands set one up:`, then `ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""` only while that file does not exist, `git config gpg.format ssh` and `git config user.signingkey ~/.ssh/id_ed25519.pub`
 - RULE-18: One invocation is one signed commit, whatever number of rules it carries, and its subject names the feature and every rule signed
 - RULE-19: A batch spanning more than one feature names each feature with its own rules in the subject
-- RULE-20: A signature counts when the last commit that touched its file carries a signature, made with any key and whoever its author; otherwise it does not count, with the reason `the commit that added it is not signed`; the gate plays no part
+- RULE-20: A signature counts when the last commit that touched its file carries a signature that verifies, made with any key and whoever its author; otherwise it does not count, with the reason `the commit that added it is not signed`; the gate plays no part
 - RULE-21: The command signs for anyone with a key to sign with, whatever their name or email
 - RULE-22: The command exits 0 for `--help`
 - RULE-23: A signature counts on whatever commit carries it: one committed signed on a side branch counts at the gate `signed` on that branch, before any merge
@@ -49,7 +49,7 @@
 - RULE-58: When it has signed, the command prints `Signed <n> rules as <email> with the key ending ...<last 4>.`, reading `1 rule` for one
 - RULE-59: An anchor's rule is signed once, in one file applying to the anchor, over every file of the project but Purlin's own records
 - RULE-60: The key fingerprint is read from `user.signingkey`, a public key path, a private key path with its `.pub` beside it, or a `key::` literal, and reads as `ssh-keygen -l` prints it; a key that is not an SSH key is no key
-- RULE-61: A signature is made over the machine each system's tests ran on: another machine for a system it names ends it, a system it names that is gone ends it, and a system it does not name ends nothing
+- RULE-61: A signature that is not a hand check's is made over the machine each system's tests ran on: another machine for a system it names ends it, a system it names that is gone ends it, and a system it does not name ends nothing
 - RULE-62: A rule named by id is signed at every gate, whatever work it has left
 - RULE-63: `--all`, or a bare feature, with nothing waiting for a person prints `Nothing is waiting for someone to test by hand or to sign.`, then the summary ending, writes no signature and exits 0
 - RULE-64: A rule named by id that no spec has is named in the line `<feature> <RULE-N> is not a rule any spec has. Run purlin:status <feature> to see its rules.`, printed last, just above the summary ending, and gets no signature; the rules named beside it that a spec has are signed, and the command exits 1
@@ -78,12 +78,18 @@
 - RULE-87: A walk that signed prints `Commits: <sha7>`, the signature commit it made, just after `Signed <n> rules as ...`
 - RULE-88: A rule skipped in the walk is still `to sign` or `to test by hand` after it, and no file records the skip
 - RULE-89: `signed/<version>` carries an SSH signature made with the key `user.signingkey` names
-- RULE-90: An anchor's signature ends on an edit to any tracked file, one no spec's `> Scope:` names included, and stands across a signature commit and an evidence commit
+- RULE-90: An anchor's signature that is not a hand check's ends on an edit to any tracked file, one no spec's `> Scope:` names included, and stands across a signature commit and an evidence commit
 - RULE-91: The walk and `--all` visit every feature's rules before any anchor's
 - RULE-92: `<anchor> RULE-N --does-not-apply "<why>"` writes a signature carrying the reason in `does_not_apply`, in one signed commit under the usual subject
 - RULE-93: `--does-not-apply` signs only a rule of a pinned anchor; for any other rule it prints `<feature> <RULE-N> is not a rule of a pinned anchor, so it cannot be signed as not applying. A rule of this project that does not apply is deleted: run purlin:spec <feature>.`, writes nothing and exits 1
 - RULE-94: `--does-not-apply` with no reason exits 2 with `sign.py: --does-not-apply needs the reason the rule does not apply to this project.`, and with `--all`, `--note`, `--release` or no rule named exits 2 with `sign.py: --does-not-apply names a pinned anchor and the rules it carries.`; neither writes anything
 - RULE-95: The walk stops at a rule to confirm as not applying with `<anchor> <RULE-N> was signed as not applying by <signer>: <why>. Confirm it still does not apply?`, and confirming writes a new signature carrying the earlier reason; `--all` leaves such a rule
+- RULE-96: A hand check's signature, one whose rule has a `@manual` proof and no proof tied to a test, is bound to the wording of its rule and proofs alone
+- RULE-97: A signature counts only when the signature on its commit verifies over that commit; otherwise it does not count, with the reason `the signature on the commit that added it does not verify`
+- RULE-98: Naming a feature whose spec writes a number twice or holds a line left from a merge conflict signs nothing: the command prints `<feature> is not signed: <reasons>. Run purlin:spec <feature>, then purlin:sign again.`, writes no file, makes no commit and exits 1
+- RULE-99: At the gate `signed` no tag is written while a spec writes a number twice or holds a line left from a merge conflict; each such spec is named as `No tag: <feature> cannot be counted: <reasons>. Run purlin:spec <feature>, then purlin:sign.` and the command exits 1
+- RULE-100: No tag is written while the checked-out branch's copy on the host, as this checkout last fetched it, holds commits the checkout lacks; the command prints `No tag: <ref> holds <n> commit(s) that <sha7> does not, as this checkout last fetched it. Pull, run purlin:test --commit, then purlin:sign.` and fetches nothing
+- RULE-101: At each stop of the walk every proof that is not `@manual` is followed by one line per test it is tied to, `    tied to <file>::<test>`, or by `    tied to no test`
 
 ## Proof
 
@@ -103,7 +109,7 @@
 - PROOF-11 (RULE-7): `jane@acme.com` signs `login RULE-1`, then its rule text changes from `a session token` to `two session tokens`; the reader still returns exactly 1 signature for the rule, its signer reads `jane@acme.com`, and it is not current
 - PROOF-85 (RULE-7): At the gate `signed`, `login RULE-2` is signed with the command; its `401` is then changed to `403`, its results recorded again and its audit written again; the rule's work left reads `to_sign`
 - PROOF-12 (RULE-8): `Rich.LaBarca+purlin@example.com` signs `login RULE-1`; the one file in `login.signatures/` is named `RULE-1.<h>.rich-labarca-purlin.json`, where `<h>` is the first 8 characters of the rule's signed hash: the capitals are lowercased and the `.` and the `+` each become a hyphen
-- PROOF-13 (RULE-9): `jane@acme.com` signs `login RULE-1` under the gate `strong` with no note. The signature reads schema `purlin-signature/2` and carries exactly the 20 fields signature format 12 names; its `signed_hash` is the sha256 of the feature, the rule, proof, test, code and audit hashes and the machines, one per line; `note` is null and `timestamp` ends in `Z`
+- PROOF-13 (RULE-9): `jane@acme.com` signs `login RULE-1` under the gate `strong` with no note. The signature reads schema `purlin-signature/2` and carries exactly the 20 fields signature format 13 names; its `signed_hash` is the sha256 of the feature, the rule, proof, test, code and audit hashes and the machines, one per line; `note` is null and `timestamp` ends in `Z`
 - PROOF-14 (RULE-10): `jane@acme.com` signs `login RULE-1`, whose spec is `specs/auth/login.md`, and the project's signatures are read; exactly 1 comes back for the rule, its signer reads `jane@acme.com`, and its file lies in `specs/auth/login.signatures/`
 - PROOF-128 (RULE-10): `login RULE-1` is signed, and copies of its signature file are placed in `specs/login.signatures/`, `signatures/` and `specs/auth/signatures/`; the rule still has exactly 1 signature, the one in `specs/auth/login.signatures/`
 - PROOF-129 (RULE-10): `login RULE-1` is signed, its signature file is copied into `specs/login.signatures/`, `signatures/` and `specs/auth/signatures/`, and the file in `specs/auth/login.signatures/` is removed; the rule has no signature
@@ -222,7 +228,7 @@
 - PROOF-175 (RULE-86): At the gate `signed`, the walk is answered `case` with an empty line at `login RULE-2`; no signature file is written and the close carries `  login RULE-2   add this proof line: the reviewer named no case`
 - PROOF-176 (RULE-87): At the gate `signed`, with both `login` rules to sign, the walk is answered `sign` at each stop; the line after `Signed 2 rules as ...` reads `Commits: ` and the first seven characters of the signature commit
 - PROOF-177 (RULE-88): At the gate `signed`, with both `login` rules to sign, the walk is answered `skip` at each stop; afterwards both rules' work left reads `to_sign`, and `git status` lists no file
-- PROOF-179 (RULE-90): `secure RULE-1`, the one rule of the anchor `secure`, is signed by name; then `NOTES.txt`, a tracked file no spec's `> Scope:` names, is edited and committed; the signature is no longer current
+- PROOF-179 (RULE-90): `secure RULE-1`, the one rule of the anchor `secure`, whose one proof is neither `@manual` nor tied to a test, is signed by name; then `NOTES.txt`, a tracked file no spec's `> Scope:` names, is edited and committed; the signature is no longer current
 - PROOF-180 (RULE-90): `secure RULE-1` is signed by name; then `login RULE-1` is signed in a commit of its own, and new `login` results are recorded and committed; the `secure` signature is still current
 - PROOF-181 (RULE-91): At the gate `signed`, with both `login` rules to sign and the one rule of the anchor `aaa` a hand check, the walk is run; it stops at `login RULE-1`, `login RULE-2`, then `aaa RULE-1`
 - PROOF-182 (RULE-92): `baseline RULE-1`, the one rule of an anchor pinned from `https://github.com/acme/policies.git`, is signed with `--does-not-apply "the project stores no card data"`; the command exits 0, and its one signature's `does_not_apply` reads `the project stores no card data`
@@ -234,3 +240,15 @@
 - PROOF-188 (RULE-95): `jane@acme.com` signs `baseline RULE-1` as not applying, `the project stores no card data`, then a tracked file is edited and committed; the walk's stop for it ends `baseline RULE-1 was signed as not applying by jane@acme.com: the project stores no card data. Confirm it still does not apply?`; answered `confirm`, it signs with that reason
 - PROOF-189 (RULE-95): At the gate `signed`, `baseline RULE-1` is signed as not applying, then a tracked file is edited and committed; `--all` is run and writes no signature for `baseline RULE-1`, whose work left still reads `to_confirm`
 - PROOF-178 (RULE-89): At the gate `signed`, with every rule signed and `VERSION` reading `2.1.0`, the walk writes `signed/2.1.0`; `git tag -v`, with the signer's public key as the one allowed signer, reports a good signature by the key whose fingerprint `ssh-keygen -l` prints for the file `user.signingkey` names
+- PROOF-190 (RULE-96): In a project whose `login RULE-2` has one proof, tagged `@manual`, `RULE-2` is signed; then `src/login.py`, the file its spec names, is edited and committed; `RULE-2` still reads `signed`
+- PROOF-191 (RULE-96): In a project whose `login RULE-2` has one proof, tagged `@manual`, `RULE-2` is signed; then that proof's wording is edited; `RULE-2` reads `unsigned`
+- PROOF-192 (RULE-97): A signature for `login RULE-1` is committed signed, then that commit is rewritten with one byte of its signature block changed; the rule reads `unsigned` with the reason `the signature on the commit that added it does not verify`
+- PROOF-193 (RULE-97): A signature for `login RULE-1` is committed signed, then the key it was signed with is deleted from disk and from the settings; the signature still counts
+- PROOF-194 (RULE-98): `login` writes `PROOF-2` twice; `purlin:sign login RULE-1` prints `login is not signed: PROOF-2 is written twice in the spec. Run purlin:spec login, then purlin:sign again.`, writes no file, makes no commit and exits 1
+- PROOF-195 (RULE-98): `login` writes `PROOF-2` twice; `purlin:sign login` prints `login is not signed: PROOF-2 is written twice in the spec. Run purlin:spec login, then purlin:sign again.`, writes no file, makes no commit and exits 1
+- PROOF-196 (RULE-99): At the gate `signed`, `login` writes `PROOF-2` twice; `purlin:sign` prints `No tag: login cannot be counted: PROOF-2 is written twice in the spec. Run purlin:spec login, then purlin:sign.`, writes no tag and exits 1
+- PROOF-197 (RULE-100): At the gate `signed` with nothing left but the tag, a clone whose fetched `origin/main` holds one commit it lacks prints `No tag: origin/main holds 1 commit that <sha7> does not, as this checkout last fetched it. Pull, run purlin:test --commit, then purlin:sign.` and writes no tag
+- PROOF-198 (RULE-100): At the gate `signed` with nothing left but the tag, a clone one unpushed commit ahead of `origin/main` writes `signed/2.1.0`
+- PROOF-199 (RULE-100): At the gate `signed` with nothing left but the tag, another clone pushes a commit to the host this clone has not fetched; this clone writes `signed/2.1.0`
+- PROOF-200 (RULE-101): At the gate `signed`, the walk's stop at `login RULE-1` shows `    tied to tests/test_login.py::test_valid_credentials_return_200` on the line under `PROOF-1`
+- PROOF-201 (RULE-101): At the gate `signed`, `login RULE-2` is given a second proof, `PROOF-3`, that no test carries out; the stop the walk shows for `RULE-2` holds `    tied to no test` on the line under `PROOF-3`

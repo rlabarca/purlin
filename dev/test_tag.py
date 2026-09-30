@@ -38,8 +38,9 @@ import sign as sign_module                                   # noqa: E402
 from purlin import signatures as purlin_signatures           # noqa: E402
 from purlin import summary as purlin_summary                 # noqa: E402
 from sign_project import REVIEW_GATE, _Out, git, write      # noqa: E402
-from test_signatures import (MANUAL_SPEC, fingerprint_of,  # noqa: E402
-                             ready, record, waiting_pairs)
+from test_signatures import (DOUBLED_SPEC, MANUAL_SPEC,     # noqa: E402
+                             fingerprint_of, ready, record,
+                             waiting_pairs)
 
 
 def sign_all(made):
@@ -297,6 +298,75 @@ class TestNoTag:
         assert 'refs/tags/signed' in lines[-1], lines
         assert lines[-1].endswith('.') and not lines[-1].endswith('..'), lines
         assert (code, tags(finished)) == (1, ['signed'])
+
+
+class TestNoTagWhileBrokenOrBehind:
+
+    # purlin: signatures PROOF-196
+    def test_a_broken_spec_refuses_the_tag(self, finished, capsys):
+        write(os.path.join(finished.root, 'specs', 'auth', 'login.md'),
+              DOUBLED_SPEC)
+        git(finished.root, 'commit', '-q', '-am', 'spec(login): doubled')
+        code, lines = run_command(finished, capsys)
+        assert ('No tag: login cannot be counted: PROOF-2 is written twice '
+                'in the spec. Run purlin:spec login, then purlin:sign.'
+                ) in lines, lines
+        assert (code, tags(finished)) == (1, [])
+
+    # purlin: signatures PROOF-197
+    def test_a_host_copy_ahead_refuses_the_tag(self, finished, hosted):
+        other = clone_and_push(hosted)
+        try:
+            git(finished.root, 'fetch', '-q', 'origin')
+            lines, tag = walked(finished)
+            assert lines[-1] == (
+                'No tag: origin/main holds 1 commit that %s does not, as '
+                'this checkout last fetched it. Pull, run purlin:test '
+                '--commit, then purlin:sign.' % finished.head()[:7]), lines
+            assert (tag, tags(finished)) == (None, [])
+        finally:
+            shutil.rmtree(other, ignore_errors=True)
+
+    # purlin: signatures PROOF-198
+    def test_an_unpushed_commit_is_tagged(self, finished, hosted):
+        git(finished.root, 'commit', '-q', '--allow-empty', '-m',
+            'chore: not pushed')
+        lines, tag = walked(finished)
+        assert tag == 'signed/2.1.0', lines
+
+    # purlin: signatures PROOF-199
+    def test_a_push_not_fetched_does_not_stop_the_tag(self, finished,
+                                                      hosted):
+        other = clone_and_push(hosted)
+        try:
+            lines, tag = walked(finished)
+            assert tag == 'signed/2.1.0', lines
+        finally:
+            shutil.rmtree(other, ignore_errors=True)
+
+
+@pytest.fixture
+def hosted(finished):
+    """A bare repository on disk as `origin`, `main` pushed and tracked. Its path."""
+    remote = tempfile.mkdtemp()
+    git(remote, 'init', '-q', '--bare')
+    git(finished.root, 'remote', 'add', 'origin', remote)
+    assert git(finished.root, 'push', '-q', '-u', 'origin',
+               'main').returncode == 0
+    yield remote
+    shutil.rmtree(remote, ignore_errors=True)
+
+
+def clone_and_push(remote):
+    """Another clone of `remote` that pushes one commit to `main`. Its path."""
+    other = tempfile.mkdtemp()
+    git(other, 'clone', '-q', '-b', 'main', remote, '.')
+    git(other, 'config', 'user.email', 'ada@example.com')
+    git(other, 'config', 'user.name', 'Ada')
+    git(other, 'commit', '-q', '--allow-empty', '--no-gpg-sign', '-m',
+        'chore: from another clone')
+    assert git(other, 'push', '-q', 'origin', 'main').returncode == 0
+    return other
 
 
 def run_command(made, capsys, *argv):

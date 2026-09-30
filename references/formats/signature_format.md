@@ -1,4 +1,4 @@
-> Format-Version: 12
+> Format-Version: 13
 
 # Signature Format
 
@@ -38,7 +38,10 @@ forty adds forty files in one commit.
 | 6 | `audit_hash`: what the audit found, the feature's test strength from `audit.mutation`, the `verdict` of the audit entry for the rule's current hashes and its `findings` sorted; `sha256` of the empty string where no such entry exists |
 | 7 | `machines`, written as `os=machine` pairs, sorted and joined with `,` |
 
-A field with no value reads as the empty string. Nothing that moves on its
+A field with no value reads as the empty string. Where `test_hash_kind` is
+`manual`, a hand check, lines 4 to 7 are each the empty string, so the
+signature is made over lines 1 to 3 alone. The file still records every
+field. Nothing that moves on its
 own is in it: no timestamp, no commit id, no path, and not the model that
 audited, so running the same audit again over the same code changes nothing.
 
@@ -49,7 +52,15 @@ for a remote runner, so a second remote run names the same machine. The
 machine the signature itself was made on is not part of it.
 
 An anchor's rule is signed once, over every file of the project but Purlin's
-own records, so any change to the project ends that signature.
+own records, so any change to the project ends that signature, unless it is
+a hand check.
+
+A hand check's signature is made over the rule's and its proofs' wording
+alone: a change to the code, a test or the machines does not end it, and a
+change to that wording does. Every other signature covers the rule's test
+files whole and the machine each system's results came from, so editing
+another test in the same file, or running the same tests on another
+computer, ends it.
 
 A rule of a pinned anchor that does not apply to this project is signed with
 `purlin:sign <anchor> RULE-N --does-not-apply "<why>"`. The signature is made
@@ -59,7 +70,9 @@ commit is what holds it. No other rule is signed this way.
 
 `test_hash_kind` says what line 4 was taken from: `file` for a test file
 version control tracks, `manual` for a proof with no test at all, and `none`
-for a rule with nothing behind it yet.
+for a rule with nothing behind it yet. A rule with a `@manual` proof and no
+proof tied to a test reads `manual`; a rule mixing a hand check with a tested
+proof reads `file` and is signed over all seven lines.
 
 ## Fields
 
@@ -98,7 +111,7 @@ REQUIRED: `schema`, `feature`, `rule`, `applies_to`, `signed_hash`,
 | `feature` | string | the spec that holds the rule, which owns it |
 | `rule` | string | `RULE-N` |
 | `applies_to` | string | the spec that holds the rule, the same as `feature` |
-| `signed_hash` | string | the hash over the seven lines above, of which the file name carries eight characters |
+| `signed_hash` | string | the hash over the seven lines above, lines 4 to 7 empty for a hand check, of which the file name carries eight characters |
 | `rule_hash` | string | line 2 |
 | `proof_hash` | string | line 3 |
 | `test_hash` | string | line 4 |
@@ -118,9 +131,10 @@ REQUIRED: `schema`, `feature`, `rule`, `applies_to`, `signed_hash`,
 ## Current
 
 A signature is **current** while `signed_hash`, taken again from the rule as
-it now stands in the spec that holds it, equals the one stored. Line 7 is
-taken from the rule's machines restricted to the systems the signature's own
-`machines` names:
+it now stands in the spec that holds it, equals the one stored. Whether the
+rule is a hand check is read from the rule as it now stands, not from the
+signature. Line 7 is taken from the rule's machines restricted to the systems
+the signature's own `machines` names:
 
 | What changed | What happens |
 |---|---|
@@ -129,19 +143,32 @@ taken from the rule's machines restricted to the systems the signature's own
 | A system the signature names has no results any more | the signature is no longer current |
 | Results arrive from a system the signature does not name | the signature is still current |
 | The same machine runs the tests again, with nothing changed | the signature is still current |
+| A hand check's signature: its rule's or a proof's wording changed | no longer current |
+| A hand check's signature: the code, a test or the machines changed | still current |
 
 A signature that is no longer current stays on disk and is read back; its
-rule returns to `to sign`. No message is printed for it.
+rule returns to `to sign`. The status and every test run print one line
+naming the rule, the signer and why it ended.
 
 ## When a signature counts
 
-A current signature counts when the last commit that touched its file is
-signed: the commit carries a `gpgsig` or `gpgsig-sha256` header. The file is
-tracked, and nothing else is read. The key is not checked against any list,
-the commit's author is not compared with the signer, and the answer is the
-same at every gate. A signature counts on whatever commit carries it, on any
-branch. Where the commit is not signed the reason reads
-`the commit that added it is not signed`.
+A signature counts when the commit that added it is signed and that
+signature verifies over the commit. The key is not compared with the signer.
+
+The file is tracked, and the last commit that touched it carries a `gpgsig`
+header (`gpgsig-sha256` in a SHA-256 repository) among its headers. An SSH
+signature verifies when `ssh-keygen -Y check-novalidate -n git` accepts it
+over the commit object without that header; it reads the key the signature
+carries, so it needs no list of allowed signers, and a key deleted since
+still verifies. Any other signature verifies when `git verify-commit` exits
+0. The key is not checked against any list, the commit's author is not
+compared with the signer, and the answer is the same at every gate. A
+signature counts on whatever commit carries it, on any branch.
+
+| The last commit touching the file | The reason it does not count |
+|---|---|
+| carries no signature header, or the file is not tracked | `the commit that added it is not signed` |
+| carries a signature that does not verify | `the signature on the commit that added it does not verify` |
 
 `references/hard_gates.md` holds the gates and what the tag `signed/<version>`
 means.

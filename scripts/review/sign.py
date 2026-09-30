@@ -49,9 +49,17 @@ to do but the tag, it writes the evidence package, commits it signed, and
 writes the signed tag `signed/<version>` on that commit with `git tag -s`.
 The version is read from the `VERSION` file, then `package.json`, then
 `pyproject.toml`, then the first `*.csproj` at the root; `--release <name>`
-names another. No tag is written while work is left, while the working tree
-or any feature's results are not committed, over a tag that already exists,
-or with no version. Nothing is pushed.
+names another. No tag is written while a spec writes a number twice or holds
+a line left from a merge conflict, while work is left, while the working tree
+or any feature's results are not committed, while the branch's copy on the
+host, as this checkout last fetched it, holds commits this checkout lacks,
+over a tag that already exists, or with no version. Nothing is fetched and
+nothing is pushed.
+
+**A broken spec.** Naming a feature whose spec writes a number twice or holds
+a line left from a merge conflict signs nothing: the command prints why and
+exits 1. `--all` and the walk never reach such a rule, whose work left is
+`to_repair`.
 
 A `.purlin/config.json` that cannot be read stops the command before anything
 else is read or written: it prints the sentence saying so and writes nothing.
@@ -62,8 +70,10 @@ so a signature this script writes is current the moment it lands.
 
 Exit codes: 0 the signatures were written and committed, the walk closed,
 nothing was left to tag, or the tag already exists; 1 there is no key to sign
-with, the commit was not made, a rule named is not one any spec has or, with
-`--does-not-apply`, not a rule of a pinned anchor, the tag was refused for work or results not committed, no version or a package not
+with, the commit was not made, the feature named has a broken spec, a rule
+named is not one any spec has or, with `--does-not-apply`, not a rule of a
+pinned anchor, the tag was refused for a broken spec, work or results not
+committed, a branch behind its host copy, no version or a package not
 committed, git could not write the tag, or the settings file cannot be read;
 2 the command line was wrong.
 """
@@ -114,6 +124,16 @@ NO_TAG_WORK_LEFT = ('No tag: the committed evidence still has work left to '
                     'purlin:test --commit, then purlin:sign.')
 NO_TAG_GIT = 'No tag: git could not write %s: %s.'
 PACKAGE_COMMITTED = 'Evidence package committed: %s.'
+# A spec that writes a number twice or holds a line left from a merge
+# conflict: signing its feature and the tag are refused until it is fixed.
+SPEC_REFUSED = ('%s is not signed: %s. Run purlin:spec %s, then purlin:sign '
+                'again.')
+NO_TAG_SPEC = ('No tag: %s cannot be counted: %s. Run purlin:spec %s, then '
+               'purlin:sign.')
+# The branch's copy on the host, as this checkout last fetched it, holds
+# commits the checkout lacks.
+NO_TAG_BEHIND = ('No tag: %s holds %s that %s does not, as this checkout last '
+                 'fetched it. Pull, run purlin:test --commit, then purlin:sign.')
 
 # Why no tag was written, as `tag_if_met` answers it. Each but `exists` is
 # something the person must fix, so the command exits 1 on it.
@@ -123,8 +143,10 @@ REFUSED_VERSION = 'version'
 REFUSED_PACKAGE = 'package'
 REFUSED_GIT = 'git'
 REFUSED_EXISTS = 'exists'
+REFUSED_SPEC = 'spec'
+REFUSED_BEHIND = 'behind'
 MUST_FIX = (REFUSED_WORK, REFUSED_EVIDENCE, REFUSED_VERSION, REFUSED_PACKAGE,
-            REFUSED_GIT)
+            REFUSED_GIT, REFUSED_SPEC, REFUSED_BEHIND)
 
 # The key a signer signs with, and the commands that set one up.
 NO_KEY = 'No key to sign with. These commands set one up:'
@@ -232,6 +254,28 @@ def is_pinned_anchor(project_root, feature):
     """True when `feature` is an anchor carrying `> Source:`, pinned from elsewhere."""
     info = specs_module.scan_specs(project_root).get(feature) or {}
     return bool(info.get('is_anchor') and info.get('source'))
+
+
+def broken_specs(project_root, feature=None):
+    """`[(name, reasons), ...]`, by name, for every spec whose rules all read failed.
+
+    A spec is broken while it writes a number twice or holds a line left
+    from a merge conflict; `specs.broken_reasons` names why. `feature`
+    narrows the question to one spec.
+    """
+    found = []
+    for name, info in sorted(specs_module.scan_specs(project_root).items()):
+        if feature is not None and name != feature:
+            continue
+        reasons = specs_module.broken_reasons(info)
+        if reasons:
+            found.append((name, list(reasons)))
+    return found
+
+
+def spec_refused(name, reasons):
+    """The line refusing to sign a feature whose spec is broken."""
+    return SPEC_REFUSED % (name, '; '.join(reasons), name)
 
 
 def one_line(text):
@@ -504,24 +548,74 @@ def _package_module():
     return package
 
 
+def behind_host(project_root):
+    """`(ref, count)` when the branch's copy on the host holds commits HEAD lacks.
+
+    The ref is the checked-out branch's upstream, else `origin/<branch>`
+    where that exists; the count is `git rev-list --count HEAD..<ref>`, as
+    this checkout last fetched it. None when there is no such ref, when HEAD
+    names no branch, or when the copy holds nothing HEAD lacks. Nothing is
+    fetched.
+    """
+    ref = _git_out(project_root, 'rev-parse', '--abbrev-ref', '@{upstream}')
+    if not ref:
+        branch = _git_out(project_root, 'symbolic-ref', '--quiet', '--short',
+                          'HEAD')
+        if not branch:
+            return None
+        ref = 'origin/%s' % branch
+        if not _git_out(project_root, 'rev-parse', '--verify', '--quiet',
+                        'refs/remotes/%s' % ref):
+            return None
+    count = _git_out(project_root, 'rev-list', '--count', 'HEAD..%s' % ref)
+    if not count.isdigit() or int(count) == 0:
+        return None
+    return ref, int(count)
+
+
+def behind_line(project_root, ref, count):
+    """`No tag: <ref> holds <n> commit(s) that <sha> does not, ...`."""
+    head = payload_module.head_sha(project_root) or 'HEAD'
+    return NO_TAG_BEHIND % (ref, '%d commit%s' % (count, '' if count == 1
+                                                   else 's'), head[:7])
+
+
+def _git_out(project_root, *args):
+    """What a git command prints, stripped, or '' when it fails."""
+    try:
+        result = subprocess.run(['git'] + list(args), capture_output=True,
+                                text=True, cwd=project_root, timeout=10)
+    except (subprocess.SubprocessError, OSError):
+        return ''
+    return result.stdout.strip() if result.returncode == 0 else ''
+
+
 def tag_if_met(project_root, out=None, release=None, payload=None):
     """Write `signed/<version>` at the gate `signed` when nothing else is left.
 
     Returns `(name, refused)`: the tag's name, or None, and why no tag was
     written, one of the `REFUSED_*` kinds, or None when a tag was written or
     none was due. Below `signed` it writes nothing and prints nothing. At
-    `signed` it prints the summary ending while any work but the tag is left,
-    and one line saying why when the working tree or a feature's results are
-    not committed, when no version is stated, when the tag already exists, or
-    when git could not write it. Otherwise it commits the evidence package,
-    signed, writes a signed tag on that commit, and names the push. Nothing
-    is pushed.
+    `signed` it prints one line per broken spec, then the summary ending;
+    the summary ending while any work but the tag is left; one line saying
+    why when the working tree or a feature's results are not committed, when
+    the branch's copy on the host holds commits this checkout lacks, when no
+    version is stated, when the tag already exists, or when git could not
+    write it. Otherwise it commits the evidence package, signed, writes a
+    signed tag on that commit, and names the push. Nothing is fetched and
+    nothing is pushed.
     """
     out = sys.stdout if out is None else out
     payload = load_payload(project_root, payload)
     gate = (payload.get('gate') or {}).get('gate') or gate_module.DEFAULT_GATE
     if gate != gate_module.GATES[-1]:
         return None, None
+    broken = broken_specs(project_root)
+    if broken:
+        for name, reasons in broken:
+            print(NO_TAG_SPEC % (name, '; '.join(reasons), name), file=out)
+        print(summary_module.ending(payload), file=out)
+        return None, REFUSED_SPEC
     if any(item.get('kind') != 'to_tag' for item in payload.get('left') or ()):
         print(summary_module.ending(payload), file=out)
         return None, None
@@ -533,6 +627,10 @@ def tag_if_met(project_root, out=None, release=None, payload=None):
         for feature in refused:
             print(NO_TAG_EVIDENCE % feature, file=out)
         return None, REFUSED_EVIDENCE
+    behind = behind_host(project_root)
+    if behind:
+        print(behind_line(project_root, *behind), file=out)
+        return None, REFUSED_BEHIND
     name = tag_name(project_root, release)
     if name is None:
         print(NO_VERSION, file=out)
@@ -802,8 +900,31 @@ def audit_lines(entry):
     return ['  %s' % line for line in heads]
 
 
+TIED_TO = '    tied to %s'
+TIED_TO_NONE = '    tied to no test'
+
+
+def tied_lines(proof):
+    """The lines naming each test a proof is tied to, as `file::name`.
+
+    One line per test the rule entry lists for the proof, or one line saying
+    there is none. A `@manual` proof has no test to name, so it has none.
+    """
+    if proof.get('manual'):
+        return []
+    named = []
+    for test in proof.get('tests') or ():
+        if isinstance(test, dict):
+            test = '%s::%s' % (test.get('file'), test.get('name'))
+        named.append(TIED_TO % test)
+    return named or [TIED_TO_NONE]
+
+
 def render_row(entry):
-    """One stop of the walk: the rule, its proofs and what the audit found."""
+    """One stop of the walk: the rule, its proofs and what the audit found.
+
+    Under each proof that is not `@manual` go the tests it is tied to.
+    """
     head = '%s %s   %s' % (entry.get('feature'), entry.get('id'),
                            str(entry.get('left') or '').replace('_', ' '))
     lines = [head, 'Rule', '  %s' % (entry.get('text') or '')]
@@ -811,6 +932,7 @@ def render_row(entry):
     for proof in entry.get('proofs') or ():
         lines.append('  %s%s: %s' % (proof.get('id'), _proof_tags(proof),
                                      proof.get('text')))
+        lines.extend(tied_lines(proof))
     lines.append('What the audit found')
     lines.extend(audit_lines(entry))
     return '\n'.join(lines)
@@ -1058,6 +1180,14 @@ def main(argv=None):
     if problem:
         print(problem)
         return EXIT_NOTHING
+
+    # A feature whose spec is broken is signed by no invocation that names
+    # it, whatever the rules, the note or the reason.
+    if args.feature is not None:
+        broken = broken_specs(project_root, args.feature)
+        if broken:
+            print(spec_refused(*broken[0]))
+            return EXIT_NOTHING
 
     if not signing_configured(project_root):
         for line in no_key_lines():

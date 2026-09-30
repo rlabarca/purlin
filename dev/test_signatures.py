@@ -421,7 +421,7 @@ class TestTheMachines:
 # The file
 # ---------------------------------------------------------------------------
 
-# The fields signature format 12 names, required and optional.
+# The fields signature format 13 names, required and optional.
 FIELDS = {'schema', 'feature', 'rule', 'applies_to', 'signed_hash',
           'rule_hash', 'proof_hash', 'test_hash', 'code_hash', 'audit_hash',
           'machines', 'signer', 'key_fingerprint', 'timestamp',
@@ -1368,14 +1368,17 @@ PINNED = '> Source: %s\n> Pinned: %s\n' % (SOURCE, 'a' * 40)
 NO_CARD_DATA = 'the project stores no card data'
 
 
-def an_anchor(made, name='secure', pinned=False):
+def an_anchor(made, name='secure', pinned=False, manual=True):
     """An anchor of one hand-checked rule, and a tracked `NOTES.txt`, committed.
 
     With `pinned` the anchor carries `> Source:`, as a copy pulled from
-    another repository does.
+    another repository does. Without `manual` its one proof carries no
+    `@manual` and no test backs it, so its signature is not a hand check's.
     """
-    write(os.path.join(made.root, 'specs', '_anchors', name + '.md'),
-          ANCHOR % (name, PINNED if pinned else ''))
+    text = ANCHOR % (name, PINNED if pinned else '')
+    if not manual:
+        text = text.replace(' @manual\n', '\n')
+    write(os.path.join(made.root, 'specs', '_anchors', name + '.md'), text)
     write(os.path.join(made.root, 'NOTES.txt'), 'Notes.\n')
     # The dashboard's data is ignored, as setup writes `.gitignore`: it is
     # rebuilt on every status and is not part of the project.
@@ -1455,6 +1458,7 @@ class TestAnchors:
     # purlin: signatures PROOF-179
     def test_an_edit_anywhere_in_the_project_ends_it(self, beside_features,
                                                      capsys):
+        an_anchor(beside_features, manual=False)
         sign_module.main(['secure', 'RULE-1', '--project-root',
                           beside_features.root])
         capsys.readouterr()
@@ -1498,7 +1502,7 @@ def not_applying(made, rule='RULE-1', reason=NO_CARD_DATA, name='baseline'):
 def pinned():
     """At the gate `signed`, `login` beside the pinned anchor `baseline`."""
     made = ready()
-    an_anchor(made, name='baseline', pinned=True)
+    an_anchor(made, name='baseline', pinned=True, manual=False)
     yield made
     made.close()
 
@@ -1684,3 +1688,140 @@ class TestTheCommandLine:
                                  'nothing was saved.'), lines
         assert (code, at_signed.signatures(), at_signed.head()) == (
             1, [], before)
+
+
+# ---------------------------------------------------------------------------
+# A hand check, a verified commit, a broken spec, the tied test
+# ---------------------------------------------------------------------------
+
+# `login` with `PROOF-2` written a second time, in the same words.
+DOUBLED_SPEC = SPEC + (
+    '- PROOF-2 (RULE-2): POST /login with a bad password; verify 401 and the '
+    'body "denied"\n')
+
+
+def signed_word(made, rule):
+    """The word and the reasons of a rule's signed cell."""
+    cell = made.rule(rule)['cells']['signed']
+    return cell['word'], cell.get('reasons')
+
+
+class TestAHandCheck:
+
+    # purlin: signatures PROOF-190
+    def test_an_edit_to_the_code_leaves_it_signed(self, capsys):
+        made = ready(spec=MANUAL_SPEC)
+        try:
+            assert sign_module.main(['login', 'RULE-2', '--project-root',
+                                     made.root]) == 0
+            capsys.readouterr()
+            write(os.path.join(made.root, 'src', 'login.py'),
+                  'def login(user, password):\n    return 401\n')
+            commit_all(made, 'fix(login): always refuse')
+            assert signed_word(made, 'RULE-2')[0] == 'signed'
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-191
+    def test_an_edit_to_its_proof_ends_it(self, capsys):
+        made = ready(spec=MANUAL_SPEC)
+        try:
+            assert sign_module.main(['login', 'RULE-2', '--project-root',
+                                     made.root]) == 0
+            capsys.readouterr()
+            made.spec(MANUAL_SPEC.replace('a bad password', 'a wrong password'))
+            commit_all(made, 'spec(login): reword')
+            assert signed_word(made, 'RULE-2')[0] == 'unsigned'
+        finally:
+            made.close()
+
+
+def tamper_last_commit(root):
+    """Rewrite HEAD with one byte of its signature block changed."""
+    raw = subprocess.run(['git', 'cat-file', 'commit', 'HEAD'], cwd=root,
+                         capture_output=True, check=True).stdout
+    lines = raw.split(b'\n')
+    start = next(i for i, line in enumerate(lines)
+                 if line.startswith(b'gpgsig '))
+    target = start + 2
+    line = bytearray(lines[target])
+    line[10] = ord('B') if line[10] != ord('B') else ord('C')
+    lines[target] = bytes(line)
+    made = subprocess.run(['git', 'hash-object', '-t', 'commit', '-w',
+                           '--stdin'], cwd=root, input=b'\n'.join(lines),
+                          capture_output=True, check=True).stdout
+    git(root, 'update-ref', 'refs/heads/main', made.decode().strip())
+
+
+class TestAVerifiedCommit:
+
+    # purlin: signatures PROOF-192
+    def test_a_signature_block_changed_does_not_verify(self, at_signed,
+                                                       capsys):
+        assert sign_module.main(['login', 'RULE-1', '--project-root',
+                                 at_signed.root]) == 0
+        capsys.readouterr()
+        tamper_last_commit(at_signed.root)
+        assert signed_word(at_signed, 'RULE-1') == (
+            'unsigned',
+            ['the signature on the commit that added it does not verify'])
+
+    # purlin: signatures PROOF-193
+    def test_a_key_deleted_since_still_counts(self, at_signed, capsys):
+        assert sign_module.main(['login', 'RULE-1', '--project-root',
+                                 at_signed.root]) == 0
+        capsys.readouterr()
+        for name in ('signing-key', 'signing-key.pub'):
+            os.remove(os.path.join(at_signed.root, '.git', name))
+        git(at_signed.root, 'config', '--unset', 'user.signingkey')
+        assert signed_word(at_signed, 'RULE-1')[0] == 'signed'
+
+
+class TestABrokenSpec:
+
+    REFUSED = ('login is not signed: PROOF-2 is written twice in the spec. '
+               'Run purlin:spec login, then purlin:sign again.')
+
+    # purlin: signatures PROOF-194
+    def test_naming_a_rule_signs_nothing(self, capsys):
+        made = ready(spec=DOUBLED_SPEC)
+        try:
+            before = made.head()
+            code = sign_module.main(['login', 'RULE-1', '--project-root',
+                                     made.root])
+            lines = capsys.readouterr().out.splitlines()
+            assert (code, lines) == (1, [self.REFUSED])
+            assert (made.signatures(), made.head()) == ([], before)
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-195
+    def test_naming_the_feature_signs_nothing(self, capsys):
+        made = ready(spec=DOUBLED_SPEC)
+        try:
+            before = made.head()
+            code = sign_module.main(['login', '--project-root', made.root])
+            lines = capsys.readouterr().out.splitlines()
+            assert (code, lines) == (1, [self.REFUSED])
+            assert (made.signatures(), made.head()) == ([], before)
+        finally:
+            made.close()
+
+
+class TestTheTiedTest:
+
+    # purlin: signatures PROOF-200
+    def test_a_stop_names_the_test_under_its_proof(self, at_signed):
+        stop = stops_of(at_signed)['RULE-1']
+        at = stop.index('  PROOF-1: POST /login with the password "secret"; '
+                        'verify 200 and a token')
+        assert stop[at + 1] == ('    tied to tests/test_login.py::'
+                                'test_valid_credentials_return_200'), stop
+
+    # purlin: signatures PROOF-201
+    def test_a_proof_no_test_carries_out_says_so(self, at_signed):
+        at_signed.spec(SPEC + '- PROOF-3 (RULE-2): POST /login with no '
+                       'password; verify 401\n')
+        stop = sign_module.render_row(at_signed.rule('RULE-2')).splitlines()
+        at = stop.index('  PROOF-3: POST /login with no password; verify 401')
+        assert stop[at + 1] == '    tied to no test', stop

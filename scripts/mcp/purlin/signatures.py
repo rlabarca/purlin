@@ -39,7 +39,9 @@ entry equals the one stored: the spec that holds the rule, the rule, its
 proof, its test, the code that spec lists, what the audit found, and the
 machine each system's tests ran on. An anchor's rule is signed once, over
 every file of the project but Purlin's own records, so any change to the
-project ends that signature.
+project ends that signature. A hand check's signature, one whose
+`test_hash_kind` is `manual`, is made over the rule's and its proofs' wording
+alone: a change to the code, a test or the machines does not end it.
 
 `does_not_apply` is the reason a person gave for signing a pinned anchor's
 rule as not applying to this project, or null. Like `note` it is outside
@@ -52,8 +54,8 @@ hashed, so running the same audit again over the same code changes nothing. A
 rule with no audit entry carries the hash of the empty string.
 
 A signature **counts** when the last commit that touched its file carries a
-signature, made with any key. Purlin checks that the commit is signed and
-looks no further: who signed is recorded, not checked.
+signature and that signature verifies over the commit, made with any key. The
+key is not compared with the signer: who signed is recorded, not checked.
 """
 
 import base64
@@ -64,6 +66,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 
 _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
@@ -173,6 +176,11 @@ SIGNED_FIELDS = ('applies_to', 'rule_hash', 'proof_hash', 'test_hash',
                  'code_hash', 'audit_hash')
 
 
+# The test hash kind of a hand check, whose signature is made over the first
+# three lines alone.
+HAND_CHECK = 'manual'
+
+
 def signed_hash(entry):
     """sha256 over the seven lines a signature is made over.
 
@@ -180,12 +188,16 @@ def signed_hash(entry):
     `audit_hash`, and `machines` written as `os=machine` pairs, sorted and
     joined with `,`. `entry` is a payload rule entry, or a signature, which
     carries the same fields; a field it lacks reads as the empty string.
+    Where its `test_hash_kind` is `manual`, a hand check, lines 4 to 7 are
+    each the empty string: the signature is bound to the wording alone.
     """
     machines = entry.get('machines') or {}
     pairs = ','.join(sorted('%s=%s' % (name, machines[name] or '')
                             for name in machines))
     lines = [str(entry.get(key) or '') for key in SIGNED_FIELDS]
     lines.append(pairs)
+    if entry.get('test_hash_kind') == HAND_CHECK:
+        lines[3:] = [''] * 4
     digest = hashlib.sha256()
     digest.update('\n'.join(lines).encode('utf-8'))
     return digest.hexdigest()
@@ -200,16 +212,26 @@ def is_current(signature, entry):
     names: a system the signature names that the entry no longer has, or has
     under another machine, ends it, and a system the entry has and the
     signature does not name is left out of the comparison.
+
+    Whether the rule is a hand check is read from the entry, never from the
+    signature: its `test_hash_kind`, or, where it carries none, the kind its
+    `proofs` give. A hand check's signature compares the wording alone.
     """
     if not signature or entry is None:
         return False
+    kind = entry.get('test_hash_kind')
+    if kind is None and 'proofs' in entry:
+        kind = test_hash_kind(entry.get('proofs'))
+    if kind == HAND_CHECK:
+        return signature.get('signed_hash') == signed_hash(
+            dict(entry, test_hash_kind=kind))
     named = signature.get('machines') or {}
     machines = entry.get('machines') or {}
     if any(name not in machines for name in named):
         return False
     restricted = {name: machines[name] for name in named}
     return signature.get('signed_hash') == signed_hash(
-        dict(entry, machines=restricted))
+        dict(entry, machines=restricted, test_hash_kind=kind))
 
 
 # ---------------------------------------------------------------------------
@@ -236,26 +258,36 @@ def commit_date(project_root, rel_path):
     return result.stdout.strip() or None
 
 
-# The reason a signature does not count.
+# The reasons a signature does not count.
 NOT_SIGNED = 'the commit that added it is not signed'
+NOT_VERIFIED = 'the signature on the commit that added it does not verify'
 
-# The commit headers that carry a signature, SHA-1 and SHA-256 repositories.
-_SIGNATURE_HEADERS = ('gpgsig ', 'gpgsig-sha256 ')
+# The commit header that carries a signature, by the length of the commit id:
+# SHA-1 and SHA-256 repositories.
+_SIGNATURE_HEADER = {40: 'gpgsig', 64: 'gpgsig-sha256'}
+_SSH_SIGNATURE = '-----BEGIN SSH SIGNATURE-----'
 
 
 def counts(project_root, signature):
     """`(True, '')` when a signature counts, or `(False, reason)`.
 
     Whether it is still made over the rule is `is_current`; this answers how
-    the file was committed. The file is tracked, and the last commit touching
-    it carries a signature header, made with any key. Nothing about the key
-    or the author is read, and the answer is the same at every gate.
+    the file was committed. The file is tracked, the last commit touching it
+    carries a signature header, and that signature verifies over the commit.
+    Nothing about the key or the author is read, and the answer is the same
+    at every gate.
     """
     path = (signature or {}).get('path')
-    if path and _tracked(project_root, path) and _signed_commit(project_root,
-                                                                path):
-        return True, ''
-    return False, NOT_SIGNED
+    if not path or not _tracked(project_root, path):
+        return False, NOT_SIGNED
+    sha = _last_commit(project_root, path)
+    split = _split_signed(project_root, sha) if sha else None
+    if split is None:
+        return False, NOT_SIGNED
+    payload, block = split
+    if not _verifies(project_root, sha, payload, block):
+        return False, NOT_VERIFIED
+    return True, ''
 
 
 def _tracked(project_root, rel_path):
@@ -268,22 +300,85 @@ def _tracked(project_root, rel_path):
     return result.returncode == 0
 
 
-def _signed_commit(project_root, rel_path):
-    """True when the last commit touching a path carries a signature header."""
+def _last_commit(project_root, rel_path):
+    """The id of the last commit touching a path, or None."""
     try:
         result = subprocess.run(
-            ['git', 'log', '-1', '--pretty=raw', '--', rel_path],
+            ['git', 'log', '-1', '--format=%H', '--', rel_path],
             capture_output=True, text=True, cwd=project_root, timeout=10)
     except (subprocess.SubprocessError, OSError):
-        return False
+        return None
     if result.returncode != 0:
-        return False
-    for line in result.stdout.splitlines():
-        if not line:
+        return None
+    return result.stdout.strip() or None
+
+
+def _split_signed(project_root, sha):
+    """`(payload, signature)` of a signed commit as bytes, or None when unsigned.
+
+    The payload is the commit object without its signature header, which is
+    what the signature was made over; the header is read among the headers
+    alone, never in the message.
+    """
+    try:
+        result = subprocess.run(['git', 'cat-file', 'commit', sha],
+                                capture_output=True, cwd=project_root,
+                                timeout=10)
+    except (subprocess.SubprocessError, OSError):
+        return None
+    if result.returncode != 0:
+        return None
+    header = _SIGNATURE_HEADER.get(len(sha), 'gpgsig').encode('ascii')
+    payload, block = [], []
+    in_headers, in_block = True, False
+    for line in result.stdout.splitlines(True):
+        if in_headers and in_block and line.startswith(b' '):
+            block.append(line[1:])
+            continue
+        in_block = False
+        if in_headers and line in (b'\n', b'\r\n'):
+            in_headers = False
+        elif in_headers and line.startswith(header + b' '):
+            block.append(line[len(header) + 1:])
+            in_block = True
+            continue
+        payload.append(line)
+    if not block:
+        return None
+    return b''.join(payload), b''.join(block)
+
+
+def _verifies(project_root, sha, payload, block):
+    """True when a commit's signature verifies over its payload.
+
+    An SSH signature is checked by `ssh-keygen -Y check-novalidate`, which
+    reads the key the signature carries and needs no list of allowed
+    signers; any other kind by `git verify-commit`.
+    """
+    if not block.lstrip().startswith(_SSH_SIGNATURE.encode('ascii')):
+        try:
+            result = subprocess.run(['git', 'verify-commit', sha],
+                                    capture_output=True, cwd=project_root,
+                                    timeout=30)
+        except (subprocess.SubprocessError, OSError):
             return False
-        if line.startswith(_SIGNATURE_HEADERS):
-            return True
-    return False
+        return result.returncode == 0
+    handle, sig_path = tempfile.mkstemp(suffix='.sig')
+    try:
+        with os.fdopen(handle, 'wb') as out:
+            out.write(block)
+        result = subprocess.run(
+            ['ssh-keygen', '-Y', 'check-novalidate', '-n', 'git', '-s',
+             sig_path],
+            input=payload, capture_output=True, timeout=30)
+    except (subprocess.SubprocessError, OSError):
+        return False
+    finally:
+        try:
+            os.remove(sig_path)
+        except OSError:
+            pass
+    return result.returncode == 0
 
 
 # ---------------------------------------------------------------------------
