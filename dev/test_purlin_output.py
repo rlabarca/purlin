@@ -18,6 +18,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 import pytest
@@ -208,13 +209,19 @@ def run(command, root, stdin=None, new_session=False):
     """`command` from `root`, its input `stdin` or nothing. With
     `new_session` it starts a process group of its own, numbered as its own
     process id."""
-    process = subprocess.Popen(
-        command, cwd=str(root), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE, encoding='utf-8', env=clean_environment(),
-        start_new_session=new_session)
-    stdout, stderr = process.communicate(
-        stdin if stdin is not None else '', timeout=600)
-    return Done(process.pid, process.returncode, stdout, stderr)
+    # The output goes to files, not pipes: a process left running would hold
+    # a pipe open, and reading it to its end would wait for that process.
+    with tempfile.TemporaryFile('w+', encoding='utf-8') as stdout, \
+            tempfile.TemporaryFile('w+', encoding='utf-8') as stderr:
+        process = subprocess.Popen(
+            command, cwd=str(root), stdin=subprocess.PIPE, stdout=stdout,
+            stderr=stderr, encoding='utf-8', env=clean_environment(),
+            start_new_session=new_session)
+        process.communicate(stdin if stdin is not None else '', timeout=600)
+        stdout.seek(0)
+        stderr.seek(0)
+        return Done(process.pid, process.returncode, stdout.read(),
+                    stderr.read())
 
 
 def set_up(python, root, new_session=False):

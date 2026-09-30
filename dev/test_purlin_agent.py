@@ -139,8 +139,7 @@ class TestState:
                             'when you answer any question'),
              '%s carries no sentence opening %r and ending %r'
              % (AGENT, STATE_OPENS, STATE_ENDS)),
-            (AGENT, replace('Call `sync_status` with', 'Read `sync_status` '
-                            'with'),
+            (AGENT, replace('Call `sync_status`', 'Read `sync_status`'),
              '%s carries no sentence opening %r and ending %r'
              % (AGENT, STATE_OPENS, STATE_ENDS)),
             # `strong` stays in backticks elsewhere in the file.
