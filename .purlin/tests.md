@@ -1,4 +1,4 @@
-# Tests at 5f002e0
+# Tests at 03005dd
 
 | Feature | Rules | Passed | Failing | No test | Last run |
 |---|---|---|---|---|---|
@@ -7,7 +7,7 @@
 | drift | 1 | 1 | 0 | 0 | babd6ae · 2026-09-30T05:20:24Z · Windows · ci |
 | evidence | 5 | 5 | 0 | 0 | babd6ae · 2026-09-30T05:20:24Z · Windows · ci |
 | evidence_writer | 25 | 21 | 0 | 4 | 5f002e0 · 2026-09-30T12:06:44Z · macOS · local |
-| host | 5 | 5 | 0 | 0 | babd6ae · 2026-09-30T05:20:25Z · Windows · ci |
+| host | 29 | 24 | 0 | 5 | 03005dd · 2026-09-30T12:23:55Z · macOS · local |
 | mutation | 6 | 6 | 0 | 0 | babd6ae · 2026-09-30T05:20:25Z · Windows · ci |
 | package | 3 | 3 | 0 | 0 | babd6ae · 2026-09-30T05:20:25Z · Windows · ci |
 | purlin_agent | 9 | 9 | 0 | 0 | 7a3ef06 · 2026-09-30T03:13:04Z · macOS · local |
