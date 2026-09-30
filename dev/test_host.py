@@ -1145,6 +1145,23 @@ def test_a_green_run_pushes_watches_pulls_and_deletes(project, remote_run,
     assert printed.rstrip().endswith('the status table')
 
 
+# purlin: host PROOF-139
+def test_no_github_process_can_prompt(project, remote_run, monkeypatch):
+    fake = remote_run()
+    started = []
+
+    def recorded(argv, **kwargs):
+        started.append((list(argv), kwargs.get('stdin'),
+                        (kwargs.get('env') or {}).get('GIT_TERMINAL_PROMPT')))
+        return fake(argv, **kwargs)
+    monkeypatch.setattr(remote_module.subprocess, 'run', recorded)
+
+    assert remote_module.run_remote(project) == 0
+    assert {argv[0] for argv, _, _ in started} == {'git', 'gh'}
+    assert [argv for argv, stdin, prompt in started
+            if stdin is not subprocess.DEVNULL or prompt != '0'] == []
+
+
 # purlin: host PROOF-65
 def test_a_green_run_says_what_it_pushed_and_what_it_waits_for(project,
                                                                remote_run,

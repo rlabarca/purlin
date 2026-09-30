@@ -11,7 +11,7 @@
 >   speaking for the job it runs inside, and the `--remote` round trip.
 > Scope: scripts/run/host.py, scripts/run/ci.py, scripts/run/remote.py, scripts/run/workflow.py, templates/purlin.yml, templates/purlin.azure-pipelines.yml, dev/fixtures/consumer-ci
 > Stack: python/stdlib (json, subprocess, urllib), git, GitHub and Azure DevOps REST APIs
-> Highest-Rule: 44
+> Highest-Rule: 45
 
 ## Rules
 
@@ -43,6 +43,7 @@
 - RULE-42: `purlin:test --remote` looks for the program it waits on the run with, `gh` for a GitHub remote and `az` for an Azure DevOps one, after the checks of the settings, `ci: none`, the branch, the uncommitted tree and the Azure DevOps remote and before the push; where the program is not on the search path it names the program to install, pushes nothing and exits 1
 - RULE-43: `purlin:test --remote` says on a line of its own that it waits for the Azure DevOps pipeline on the run branch, that a run branch it could not delete is still on `origin`, with the command that deletes it, and that a command it could not start failed, with the operating system's error
 - RULE-44: The runner file's comments say why it exists, what starts a run and what a run does
+- RULE-45: On GitHub every `git` and `gh` process `purlin:test --remote` starts has its input closed and runs with `GIT_TERMINAL_PROMPT=0`, so none can prompt for a credential
 
 ## Proof
 
@@ -163,3 +164,4 @@
 - PROOF-136 (RULE-44): The runner file rendered for GitHub, and the one rendered for Azure DevOps, each for a proof tagged `@env(windows)`, has a comment reading `The job is capped at 90 minutes`, and its one job's limit is 90 minutes
 - PROOF-137 (RULE-44): The runner file rendered for GitHub, and the one rendered for Azure DevOps, each for a proof tagged `@env(windows)`, has a comment reading `No breaks and no AI audit run here.`, and no line of the file names `--audit` or `mutation`
 - PROOF-138 (RULE-44): The runner file rendered for GitHub, and the one rendered for Azure DevOps, each for a proof tagged `@env(windows)`, has a comment reading `The run caps each test command at an hour of its own.`
+- PROOF-139 (RULE-45): On the branch `feature-x` with a GitHub `origin` and `gh` on the search path, in a run that finishes green, every `git` and `gh` process `purlin:test --remote` starts has its input closed and runs with `GIT_TERMINAL_PROMPT=0`
