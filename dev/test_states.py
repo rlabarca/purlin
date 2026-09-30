@@ -1863,6 +1863,11 @@ class TestTheFixturesAreTheContract:
             made.audit('RULE-1')
             made.audit('RULE-2', observations=['PROOF-2 reads the status.'])
             made.signature('RULE-1')
+            # A signature that ended: RULE-2 signed over wording it no
+            # longer has.
+            earlier = dict(made.rule('RULE-2'), rule_hash='0' * 64)
+            made.signature('RULE-2', rule_hash=earlier['rule_hash'],
+                           signed_hash=purlin_signatures.signed_hash(earlier))
             made.spec(PINNED_ANCHOR, name='policy', category='_anchors')
             _git(made.root, 'add', '-A')
             _git(made.root, 'commit', '-q', '-m', 'anchor(policy): pin')
