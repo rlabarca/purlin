@@ -986,6 +986,58 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **The first remote run on Windows goes ahead without asking again.** After wave W, setup
       writes this repository's runner file and `purlin:test --remote` runs once. It pushes one
       temporary run branch and nothing else: no tag is pushed, and `main` stays on this machine.
+98. **The answers to sanity check 3** (added 2026-09-30), to the 15 questions of
+    `sanity-3.md` section 11, given on 2026-09-29 and 2026-09-30.
+    - **The README says nothing about leaving.** The line `If you leave, the markers are
+      comments.` is removed.
+    - **The ten-minute path shows what you type and the summary each step ends on.** The
+      rules and tests a model writes differ on every run, so the page shows none of them; the
+      summary each step ends on is the same on every run.
+    - **Examples inside a function's documentation keep running** under the command the first
+      test run suggests, wherever the project's own test command ran them. `purlin:spec-from-code`
+      lists them as tests left untied for a fourth reason, `cannot carry a comment`.
+    - **A part of the code no caller outside the project can reach gets no rules.** It is listed
+      among the files with no rule, and its tests are listed as left untied for a fifth reason,
+      because they test code no caller can reach. This amends decision 81.
+    - **A proof may name a library's public names and the error types a caller gets back.**
+      Names from inside the code stay barred. `references/spec_quality_guide.md` gains that
+      case.
+    - **One proof may name a list of like inputs** that share one action and one kind of
+      result. The quality guide says so. This amends decision 71.
+    - **A rule number is never reused.** The spec records the highest rule number it has ever
+      held, and new rules count from there. The spec format changes, so its `Format-Version` is
+      raised.
+    - **`> Requires:` names anchors only**, a project's own or pinned ones. In the owner's
+      words: "rules can reference internal and external anchors. That's it." A name that is a
+      feature's spec and not an anchor is warned of in the shape of decision 97's spec
+      mistakes, feature name first and command last, and its rules do not apply:
+      `login: > Requires: names checkout, which is not an anchor, so its rules do not apply. Run purlin:spec login.`
+      The count `(+6)` on the dashboard and `(+6 shared)` in the terminal always counts rules
+      of anchors, and rules from a required anchor keep the label `required`. Every rule,
+      proof, instruction, format line and doc line that lets a spec require another feature's
+      spec changes. This repository's `specs/mcp/specs.md` requires the anchor
+      `schema_spec_format`, which stays.
+    - **Signing a rule whose spec names no files says so.** At the gate `signed`, signing a
+      rule of a spec that names no covered files prints, on that rule's line, the command that
+      adds the files. Nothing is refused.
+    - **Setup asks whether it may commit what it wrote.** In the owner's words: "Setup asks if
+      it can commit". It writes the settings, the ignore list and, with the breaks on, the
+      breaking tool's configuration, then asks whether it may commit them, and on yes commits
+      them in one commit; with `--yes` it commits without asking. This amends decision 70,
+      "Setup asks one thing": setup asks the gate, at `strong` and `signed` whether to break
+      the code on purpose, and whether it may commit.
+    - **The signing pages carry no advice** to upload keys to the git host or to protect
+      branches and tags.
+    - **A remote run with no command-line program of the git host refuses before pushing
+      anything** and names the program to install. Nothing is left on the git host.
+    - **On the dashboard the design stands:** small labels are set in capitals.
+      `references/writing_style.md` gains one sentence saying so.
+    - **The warning for a rule line with no number loses its prefix** and takes the shape of
+      the other five:
+      ``login: 1 line under ## Rules is not numbered; a rule is `- RULE-N: <text>`. Run purlin:spec login.``
+      This amends decision 97.
+    - **When the first test run finds no test tool it knows**, it prints
+      `No test command is set and no test tool Purlin knows was found, so nothing ran. The agent reads the project and proposes a command for you to confirm.`
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
