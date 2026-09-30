@@ -1206,6 +1206,8 @@ The plan is written to (a): C13, lane `release` RULE-10, the dashboard line. Und
 `No release: 2 rules are checked by hand, and the gate passed records no hand check: <rules>. Run purlin:init --gate signed to check them in the sign-off.`;
 under (c) lane `run` adds the questions to `--release`.
 
+**Answered by the owner, 2026-09-30: (a), listed as not checked.** Every lane builds to (a).
+
 ## 9. Calls this plan makes
 
 Not questions: each follows from decision 103 or the accepted calls, and the owner may reverse any.
