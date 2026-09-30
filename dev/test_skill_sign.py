@@ -556,3 +556,28 @@ def sign_key_problems():
                     for words in ('offer to run them', 'carry on')
                     if words not in flat(body))
     return problems
+
+
+def add_a_case(text):
+    """The walk's `**Add a case.**` paragraph, its line breaks read as spaces."""
+    match = re.search(r'\*\*Add a case\.\*\*(.*?)(?:\n\n|\Z)', text, re.S)
+    return flat(match.group(1)) if match else ''
+
+
+# purlin: skill_sign PROOF-50
+def test_a_case_becomes_a_proof_line_and_waits_for_build():
+    paragraph = add_a_case(read(SKILL))
+    for words in ('Write it into the spec as a new proof line with the next '
+                  'free proof id',
+                  'leave the test for the next `purlin:build`',
+                  'This skill writes specs and signatures, never code.'):
+        assert words in paragraph, paragraph
+    # A paragraph that leaves the id to chance is found wanting.
+    assert 'next free proof id' not in add_a_case(read(SKILL).replace(
+        'with the next free proof id', 'with any id'))
+
+
+# purlin: skill_sign PROOF-51
+def test_a_rule_is_never_narrowed_to_lose_an_observation():
+    assert ('Never narrow a rule or a proof to make an observation '
+            'disappear.') in flat(read(SKILL))

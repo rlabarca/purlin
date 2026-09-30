@@ -6,7 +6,7 @@
 >   when the signature counts, and where the version for the tag comes from.
 > Scope: skills/sign/SKILL.md
 > Stack: markdown, Claude Code skill definition
-> Highest-Rule: 21
+> Highest-Rule: 23
 
 ## Rules
 
@@ -31,6 +31,8 @@
 - RULE-19: The skill tells the agent that at the gate `signed` a rule of a spec that names no files is signed, and that its line reads `  <feature> <RULE-N>   does not count until the spec names its files: purlin:spec <feature>`
 - RULE-20: The skill tells the agent the line the script prints when no version is stated, `No version: nothing in this project states one. Run purlin:sign --release <version>, or write it to a VERSION file.`
 - RULE-21: The skill tells the agent the line the script prints when the tag is already written, `No tag: <tag> is already written. Run purlin:sign --release <name> to name another.`
+- RULE-22: The skill tells the agent to write a case the person gives in the walk into the spec as a new proof line with the next free proof id, to leave its test for the next `purlin:build`, and to write no code
+- RULE-23: The skill tells the agent never to narrow a rule or a proof to make an observation disappear
 
 ## Proof
 
@@ -58,3 +60,5 @@
 - PROOF-49 (RULE-21): The sign skill's section on the tag, its line breaks read as spaces, quotes `No tag: <tag> is already written. Run purlin:sign --release <name> to name another.` word for word
 - PROOF-21 (RULE-10): The sign skill's section on the key shows the lines `No key to sign with. These commands set one up:`, `ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""`, `git config gpg.format ssh` and `git config user.signingkey ~/.ssh/id_ed25519.pub`, and says `offer to run them` and `carry on`
 - PROOF-45 (RULE-17): The sign skill's section on the tag says the script exits 1 when the tag was refused for a reason to fix, naming uncommitted work or results, no version, a package not committed and git failing to write the tag, and 0 when the tag already exists
+- PROOF-50 (RULE-22): The sign skill's `**Add a case.**` paragraph, read across its line breaks, says to write the case into the spec as a new proof line with the next free proof id, to leave the test for the next `purlin:build`, and that the skill writes specs and signatures, never code
+- PROOF-51 (RULE-23): The sign skill, read across its line breaks, carries the sentence `Never narrow a rule or a proof to make an observation disappear.`
