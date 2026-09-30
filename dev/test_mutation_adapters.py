@@ -683,7 +683,7 @@ def test_a_pyproject_without_the_block_is_not_broken(tools, project):
     assert answer['engine'] == 'none'
     assert answer['reason'] == (
         'pyproject.toml carries no [tool.mutmut] block, so mutmut would break '
-        'files no spec scopes: run "purlin:init" to write it')
+        'files no spec scopes: run purlin:init to write it')
 
 
 # purlin: mutation PROOF-55
@@ -696,7 +696,7 @@ def test_a_setup_cfg_without_the_block_is_not_broken(tools, project):
     assert answer['engine'] == 'none'
     assert answer['reason'] == (
         'setup.cfg carries no [mutmut] block, so mutmut would break files no '
-        'spec scopes: run "purlin:init" to write it')
+        'spec scopes: run purlin:init to write it')
 
 
 # purlin: mutation PROOF-16
@@ -934,8 +934,9 @@ def test_an_engine_nobody_ships_is_not_run(tools, project):
     assert [calls(program) for program in started] == [[], [], []]
     assert_answer_shape(answer, scope)
     assert answer['engine'] == 'none'
-    assert answer['reason'] == ('unknown engine "cosmic-ray": no breaks were '
-                                'made')
+    assert answer['reason'] == (
+        'mutation_engine names "cosmic-ray", which is not an engine: set it '
+        'to none, auto, mutmut, stryker or stryker_net')
 
 
 # purlin: mutation PROOF-62

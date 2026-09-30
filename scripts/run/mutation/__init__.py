@@ -234,8 +234,9 @@ def run_breaks(project_root, engine, scope_by_feature):
     module = importlib.import_module('.none', __name__)
     if name not in ENGINES:
         answer = module.run(project_root, scope_by_feature,
-                            reason='unknown engine "%s": no breaks were made'
-                                   % engine)
+                            reason='mutation_engine names "%s", which is not '
+                                   'an engine: set it to none, auto, mutmut, '
+                                   'stryker or stryker_net' % engine)
     elif name == 'none':
         answer = module.run(project_root, scope_by_feature)
     else:

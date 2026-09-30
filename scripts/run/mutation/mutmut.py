@@ -206,7 +206,7 @@ def run(project_root, scope_by_feature, os_name=None):
         return none.run(
             project_root, scope_by_feature,
             reason='%s carries no %s block, so mutmut would break files no '
-                   'spec scopes: run "purlin:init" to write it'
+                   'spec scopes: run purlin:init to write it'
                    % (path, section))
     lines = ['engine mutmut, config %s in %s' % (section, path)]
     code = execute(RUN_COMMAND, project_root)[0]
