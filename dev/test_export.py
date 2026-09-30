@@ -288,8 +288,7 @@ class TestTheState:
             assert (package['state'], package['rules'], package['steps'],
                     package['left']) == (
                 'not finished', 2, {'passed': 0},
-                [line('no_test', 2, '2 rules to write a test for',
-                      'purlin:build')])
+                [line('to_test', 2, '2 rules to test', 'purlin:test')])
         finally:
             made.close()
 
