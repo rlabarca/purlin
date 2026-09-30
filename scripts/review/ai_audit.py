@@ -45,6 +45,7 @@ settings file cannot be read, 2 the command line was wrong.
 import concurrent.futures
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -83,6 +84,18 @@ NOT_ON_PATH = 'claude is not on PATH'
 EXITED = 'claude exited with an error'
 TIMED_OUT = 'claude timed out after %d s'
 NO_ANSWER = 'claude answered without a settled line'
+
+# What a person reads of the last audit, the same on every surface.
+NO_AUDIT = "No audit has read this rule's text, proof and test yet."
+STRONG_NOTHING = 'Strong. It found nothing.'
+VERDICT_WORDS = {
+    'strong': 'Strong.',
+    'weak': 'Weak.',
+    'undecided': ('Undecided. The AI audit could not decide, so the rule '
+                  'reads weak until its proof or test changes.'),
+}
+NO_TEST_YET = '  No test yet. Run purlin:build %s.'
+STRENGTH_LINE = 'Test strength %d%%, against a minimum of %s%%.'
 
 
 # ---------------------------------------------------------------------------
@@ -453,7 +466,7 @@ def render(reading):
                                      proof.get('text')))
     lines.extend(['', 'Test'])
     if not reading.get('tests'):
-        lines.append('  Nothing backs this rule yet.')
+        lines.append(NO_TEST_YET % reading.get('feature'))
     for test in reading.get('tests') or ():
         if test.get('file'):
             lines.append('  %s  %s::%s' % (test.get('proof'), test['file'],
@@ -464,26 +477,39 @@ def render(reading):
             lines.append('    %s' % line)
     # A person is told nothing of strength where none was measured.
     if reading.get('test_strength') is not None:
-        lines.extend(['', 'Test strength: %s'
-                      % _strength_words(reading, '  minimum %s')])
+        lines.extend(['', _strength_line(reading)])
     lines.extend(['', 'What the audit found'])
     audit = reading.get('audit') or {}
     if not audit:
-        lines.append("  Nothing yet: no audit has read this rule's text, "
-                     "proof and test.")
+        lines.append('  ' + NO_AUDIT)
     else:
-        lines.append('  %s, by %s at %s.'
-                     % (str(audit.get('verdict') or '').capitalize(),
-                        audit.get('model') or 'unknown',
+        lines.extend('  %s' % line for line in verdict_lines(audit))
+        lines.append('  Read by %s at %s.'
+                     % (audit.get('model') or 'unknown',
                         audit.get('at') or 'an unknown time'))
-        for finding in audit.get('findings') or ():
-            lines.append('  %s' % finding)
-        if not audit.get('findings'):
-            lines.append('  It found nothing.')
         for note in audit.get('notes') or ():
             lines.append('  Note: %s' % note)
     lines.append('')
     return '\n'.join(lines)
+
+
+def _strength_line(reading):
+    """The test strength a person reads, its whole-number part beside the minimum."""
+    strength = reading['test_strength']
+    if reading.get('min_strength') is None:
+        return 'Test strength: %s' % _strength_words(reading, '')
+    return STRENGTH_LINE % (int(math.floor(strength)), reading['min_strength'])
+
+
+def verdict_lines(audit):
+    """What one audit entry found, one line each, as every surface words it."""
+    verdict = str(audit.get('verdict') or '')
+    findings = list(audit.get('findings') or ())
+    if verdict == 'strong' and not findings:
+        return [STRONG_NOTHING]
+    if verdict in VERDICT_WORDS:
+        return [VERDICT_WORDS[verdict]] + findings
+    return ['%s.' % verdict.capitalize()] + findings
 
 
 # ---------------------------------------------------------------------------
@@ -536,7 +562,7 @@ def main(argv=None):
         print('ai_audit.py: %s' % args.error, file=sys.stderr)
         return EXIT_BAD_INVOCATION
     if not os.path.isdir(args.project_root or '.'):
-        print('ai_audit.py: not a directory: %r' % args.project_root,
+        print('ai_audit.py: %s is not a directory.' % args.project_root,
               file=sys.stderr)
         return EXIT_BAD_INVOCATION
     problem = config_engine.config_problem(args.project_root)

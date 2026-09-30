@@ -43,7 +43,7 @@ import ai_audit as audit_module  # noqa: E402
 import fake_claude  # noqa: E402
 import marked_tests  # noqa: E402
 from sign_project import (FIRST_GATE, REVIEW_GATE, SIGNING_GATE,  # noqa: E402
-                          SPEC, TEST_FILE, Project)
+                          SPEC, TEST_FILE, Project, git)
 
 AI_AUDIT_PY = os.path.join(ROOT, 'scripts', 'review', 'ai_audit.py')
 CRITERIA = os.path.join(ROOT, 'references', 'review_criteria.md')
@@ -51,6 +51,7 @@ CRITERIA = os.path.join(ROOT, 'references', 'review_criteria.md')
 FINDING = 'PROOF-2 asserts the status but never the body the rule names.'
 NO_SETTLED_LINE = 'claude answered without a settled line'
 TRAILING_COMMA = '{\n  "gate": "strong",\n}\n'
+READ_BY = '  Read by unknown at 2026-09-13T12:05:00Z.'
 
 
 @contextlib.contextmanager
@@ -148,6 +149,11 @@ class TestWhichRulesAreRead:
     # purlin: ai_audit PROOF-49
     def test_a_required_rule_is_read_only_where_its_feature_lists_it(
             self, at_strong):
+        os.makedirs(os.path.join(at_strong.root, 'specs', '_anchors'))
+        git(at_strong.root, 'mv', 'specs/auth/login.md',
+            'specs/_anchors/login.md')
+        git(at_strong.root, 'commit', '-q', '-m', 'spec(login): an anchor')
+        at_strong.evidence()
         at_strong.spec('# Feature: portal\n\n'
                        '> Description: The portal a person signs in to.\n'
                        '> Scope: src/login.py\n'
@@ -164,6 +170,8 @@ class TestWhichRulesAreRead:
         own = features['login']['rules']
         assert sorted(rule['id'] for rule in required) == ['RULE-1',
                                                            'RULE-2']
+        assert [rule['cells']['passed']['word'] for rule in own] == [
+            'passed', 'passed']
         assert [audit_module.is_read(rule) for rule in required] == [
             False, False]
         assert [audit_module.is_read(rule) for rule in own] == [True, True]
@@ -802,11 +810,12 @@ class TestTheCommandLine:
                      'Invalid credentials return 401 and the body "denied"',
                      'PROOF-2: POST /login with a bad password',
                      'assert login("ada", "wrong") == 401',
-                     'Test strength: 90 percent   minimum 70',
-                     'What the audit found',
-                     'Weak, by unknown at 2026-09-13T12:05:00Z.',
-                     FINDING):
+                     'What the audit found'):
             assert line in printed, (line, printed)
+        lines = printed.splitlines()
+        assert 'Test strength 90%, against a minimum of 70%.' in lines, printed
+        found = lines[lines.index('What the audit found') + 1:]
+        assert found[:3] == ['  Weak.', '  %s' % FINDING, READ_BY], printed
         assert not [line for line in printed.splitlines()
                     if line.strip().startswith('Note:')], printed
 
@@ -824,7 +833,8 @@ class TestTheCommandLine:
         assert code == 0
         lines = printed.splitlines()
         at = lines.index('  %s' % FINDING)
-        assert lines[at + 1] == '  Note: PROOF-2 holds two cases.', printed
+        assert lines[at + 1:at + 3] == [
+            READ_BY, '  Note: PROOF-2 holds two cases.'], printed
 
     # purlin: ai_audit PROOF-77
     def test_a_rule_no_audit_has_read_says_so(self, at_strong, capsys):
@@ -833,8 +843,93 @@ class TestTheCommandLine:
         assert code == 0
         found = printed.split('What the audit found', 1)
         assert len(found) == 2, printed
-        assert ("Nothing yet: no audit has read this rule's text, proof and "
-                "test.") in found[1], printed
+        assert found[1].splitlines()[1] == (
+            "  No audit has read this rule's text, proof and test yet."), printed
+        assert 'Read by' not in found[1], printed
+
+    def _entry(self, project, verdict, findings):
+        """An audit entry for `RULE-2` reading `verdict` with `findings`."""
+        rel = project.audit('RULE-2', findings=findings)
+        path = os.path.join(project.root, *rel.split('/'))
+        with open(path, encoding='utf-8') as handle:
+            data = json.load(handle)
+        data['audit']['rules']['RULE-2']['verdict'] = verdict
+        with open(path, 'w', encoding='utf-8') as handle:
+            json.dump(data, handle, indent=2, sort_keys=True)
+
+    def _found(self, project, capsys):
+        """The lines printed under `What the audit found` for `RULE-2`."""
+        code, printed = command(project, capsys, '--feature', 'login',
+                                '--rule', 'RULE-2')
+        assert code == 0, printed
+        lines = printed.splitlines()
+        return lines[lines.index('What the audit found') + 1:]
+
+    # purlin: ai_audit PROOF-84
+    def test_a_strong_answer_with_nothing_found_says_so(self, at_strong,
+                                                        capsys):
+        at_strong.audit('RULE-2')
+        assert self._found(at_strong, capsys)[:2] == [
+            '  Strong. It found nothing.', READ_BY]
+
+    # purlin: ai_audit PROOF-85
+    def test_a_strong_answer_with_a_finding_prints_it(self, at_strong,
+                                                      capsys):
+        self._entry(at_strong, 'strong', ['PROOF-2 names no body.'])
+        assert self._found(at_strong, capsys)[:3] == [
+            '  Strong.', '  PROOF-2 names no body.', READ_BY]
+
+    # purlin: ai_audit PROOF-86
+    def test_an_undecided_answer_says_the_rule_reads_weak(self, at_strong,
+                                                          capsys):
+        at_strong.audit('RULE-2', findings=['The body of PROOF-2 is not shown.'],
+                        settled=False)
+        assert self._found(at_strong, capsys)[:3] == [
+            '  Undecided. The AI audit could not decide, so the rule reads '
+            'weak until its proof or test changes.',
+            '  The body of PROOF-2 is not shown.', READ_BY]
+
+    # purlin: ai_audit PROOF-87
+    def test_a_rule_with_no_test_names_the_command(self, capsys):
+        spec = SPEC.replace(
+            '- RULE-2:', '- RULE-3: A session ends after an hour\n- RULE-2:'
+        ) + '- PROOF-3 (RULE-3): A session an hour old is refused\n'
+        with passing_project(spec=spec) as made:
+            code, printed = command(made, capsys, '--feature', 'login',
+                                    '--rule', 'RULE-3')
+        assert code == 0, printed
+        lines = printed.splitlines()
+        assert lines[lines.index('Test') + 1] == (
+            '  No test yet. Run purlin:build login.'), printed
+
+    # purlin: ai_audit PROOF-88
+    def test_a_manual_proof_prints_manual_under_test(self, capsys):
+        spec = SPEC.replace('verify 401 and the body "denied"',
+                            'verify 401 and the body "denied" @manual')
+        with passing_project(spec=spec) as made:
+            code, printed = command(made, capsys, '--feature', 'login',
+                                    '--rule', 'RULE-2')
+        assert code == 0, printed
+        lines = printed.splitlines()
+        assert lines[lines.index('Test') + 1] == '  PROOF-2  manual', printed
+
+    # purlin: ai_audit PROOF-89
+    def test_the_strength_shows_its_whole_number_part(self, capsys):
+        with passing_project(strength=85.7) as made:
+            code, printed = command(made, capsys, '--feature', 'login',
+                                    '--rule', 'RULE-2')
+        assert code == 0, printed
+        assert 'Test strength 85%, against a minimum of 70%.' in \
+            printed.splitlines(), printed
+
+    # purlin: ai_audit PROOF-90
+    def test_a_project_root_that_is_not_a_directory_exits_two(self, tmp_path,
+                                                              capsys):
+        missing = str(tmp_path / 'no' / 'such' / 'folder')
+        assert audit_module.main(['--feature', 'login', '--project-root',
+                                  missing]) == 2
+        assert capsys.readouterr().err == (
+            'ai_audit.py: %s is not a directory.\n' % missing)
 
     # purlin: ai_audit PROOF-32
     def test_one_rule_named_prints_that_rule_alone(self, proved, capsys):
