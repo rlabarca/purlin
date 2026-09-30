@@ -2,11 +2,11 @@
   "feature": "purlin_output",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T12:06:44Z",
-      "commit": "5f002e00eb62fa9b235ced3d025e308571464240",
+      "at": "2026-09-30T13:14:16Z",
+      "commit": "e38956f112ab52f068134e25d54fc02622cb2fc2",
       "dirty": false,
       "fingerprint": {
-        "code": "fc289d9c5abc0f3333cdd69c252c060de883e224f18743ec187d0fbfd0242bd6",
+        "code": "56c57034996d130da5bf81bdd22757c77228853e61e47336e0c3de16ca50ad35",
         "spec": "67573f9ecc7ba726b3c2c3bdcebe90a40a2852b4a913bf269d0a2aefd40b940f",
         "tests": "c36ba63cc63ed28ee8c714d9607e1d6b3a6cdf924cef597303e5c17a16024378"
       },
