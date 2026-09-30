@@ -19,6 +19,7 @@ from skill_checks import (COMMAND_REF, carries, field, flat, frontmatter,
                           undirected_outcome_problems)
 
 SKILL = skill_path('audit')
+BREAKS = 'the breaks where `mutation_engine` is not `none`'
 
 LEFT_TO_DO = ('- `Left to do:` lists work: `→ Run:` the command its first line '
               'names')
@@ -139,8 +140,8 @@ class TestSkillAudit:
     def test_both_sources_count_under_every_gate(self, monkeypatch):
         assert source_table_problems() == []
         assert refusals(monkeypatch, source_table_problems, [
-            (SKILL, resub(r'(^\| local \|[^\n]*)`strong`, ', r'\1'),
-             "%s local row does not count under 'strong'" % SKILL),
+            (SKILL, resub(r'(^\| local \|[^\n]*)`passed`, ', r'\1'),
+             "%s local row does not count under 'passed'" % SKILL),
             (SKILL, resub(r'^\| ci \|[^\n]*\n'),
              "%s source table has no 'ci' row" % SKILL),
         ]) == []
@@ -163,30 +164,22 @@ class TestSkillAudit:
             self, monkeypatch):
         assert passed_row_problems() == []
         assert refusals(monkeypatch, passed_row_problems, [
-            (SKILL, replace('Runs the tests and the AI audit, and no breaks',
-                            'Runs the tests, and no breaks'),
+            (SKILL, replace('and the AI audit; what they find',
+                            'and no audit; what they find'),
              '%s passed row does not say the run reads the rules with the '
              'AI audit' % SKILL),
-            (SKILL, replace('test strength is not measured, and '),
-             "%s passed row does not name 'not measured'" % SKILL),
+            (SKILL, replace('the breaks where `mutation_engine` is not `none`, '
+                            'and the AI audit', 'and the AI audit'),
+             "%s passed row does not name %r" % (SKILL, BREAKS)),
         ]) == []
 
-    # purlin: skill_audit PROOF-37
-    def test_the_strong_row_runs_the_breaks_against_the_minimum(
-            self, monkeypatch):
-        assert strong_row_problems() == []
-        assert refused(monkeypatch, strong_row_problems,
-                       replace('Runs the breaks too where mutation testing is '
-                               'on; a rule', 'A rule'),
-                       "%s strong row does not name 'breaks'" % SKILL) == []
-
     # purlin: skill_audit PROOF-38
-    def test_the_signed_row_runs_what_strong_runs_and_counts_both(
+    def test_the_signed_row_runs_what_passed_runs_and_counts_both(
             self, monkeypatch):
         assert signed_row_problems() == []
         assert refusals(monkeypatch, signed_row_problems, [
-            (SKILL, replace('| The same as `strong`.', '| Runs the tests.'),
-             '%s signed row does not run what the strong row runs' % SKILL),
+            (SKILL, replace('| The same as `passed`.', '| Runs the tests.'),
+             '%s signed row does not run what the passed row runs' % SKILL),
             (SKILL, replace('Evidence either source wrote counts here too'),
              "%s signed row does not say 'counts here too'" % SKILL),
         ]) == []
@@ -215,13 +208,24 @@ class TestSkillAudit:
     # --- RULE-9: an audit cannot make a signature appear -----------------
 
     # purlin: skill_audit PROOF-39
-    def test_a_signature_does_not_set_the_exit_code(self, monkeypatch):
-        assert signature_sentence_problems() == []
-        assert refused(monkeypatch, signature_sentence_problems,
-                       resub(r', so a rule waiting on one does not set\s+the '
-                             r'code\.', '.'),
-                       "%s has no sentence carrying all of 'An audit cannot "
-                       "make a signature appear'" % SKILL) == []
+    def test_nothing_the_audit_found_sets_the_exit_code(self, monkeypatch):
+        assert exit_code_sentence_problems() == []
+        assert refused(monkeypatch, exit_code_sentence_problems,
+                       resub(r'What the audit found never sets\s+the code',
+                             'The code follows the audit'),
+                       "%s has no sentence carrying all of 'What the audit "
+                       "found never sets the code'" % SKILL) == []
+
+    # --- RULE-25: nothing waits on the audit -----------------------------
+
+    # purlin: skill_audit PROOF-52
+    def test_the_audit_is_a_tool_nothing_waits_on(self, monkeypatch):
+        assert tool_sentence_problems() == []
+        assert refused(monkeypatch, tool_sentence_problems,
+                       resub(r'nothing waits\s+on them', 'a release waits on '
+                             'them'),
+                       "%s has no sentence carrying all of 'The audit and the "
+                       "breaks are tools at either gate'" % SKILL) == []
 
     # --- RULE-10: the breaking tool's time limit -------------------------
 
@@ -360,7 +364,7 @@ def source_table_problems():
     if problems:
         return problems
     for source in ('ci', 'local'):
-        for gate in ('passed', 'strong', 'signed'):
+        for gate in ('passed', 'signed'):
             if gate not in rows[source]:
                 problems.append('%s %s row does not count under %r'
                                 % (SKILL, source, gate))
@@ -387,17 +391,9 @@ def passed_row_problems():
     if 'the AI audit' not in row:
         problems.append('%s passed row does not say the run reads the rules '
                         'with the AI audit' % SKILL)
-    if 'not measured' not in row:
-        problems.append("%s passed row does not name 'not measured'" % SKILL)
+    if BREAKS not in row:
+        problems.append("%s passed row does not name %r" % (SKILL, BREAKS))
     return problems
-
-
-def strong_row_problems():
-    row = gate_row('strong')
-    if row is None:
-        return ['%s gate table has no `strong` row' % SKILL]
-    return ['%s strong row does not name %r' % (SKILL, needle)
-            for needle in ('breaks', 'minimum') if needle not in row]
 
 
 def signed_row_problems():
@@ -405,8 +401,8 @@ def signed_row_problems():
     if row is None:
         return ['%s gate table has no `signed` row' % SKILL]
     problems = []
-    if 'The same as `strong`' not in row:
-        problems.append('%s signed row does not run what the strong row runs'
+    if 'The same as `passed`' not in row:
+        problems.append('%s signed row does not run what the passed row runs'
                         % SKILL)
     if 'counts here too' not in row:
         problems.append("%s signed row does not say 'counts here too'"
@@ -425,10 +421,14 @@ def commit_sentence_problems():
                                  'the subject `purlin: evidence at <sha7>`'])
 
 
-def signature_sentence_problems():
-    return sentence_with(SKILL, ['An audit cannot make a signature appear',
-                                 'a rule waiting on one does not set the '
-                                 'code'])
+def exit_code_sentence_problems():
+    return sentence_with(SKILL, ['What the audit found never sets the code'])
+
+
+def tool_sentence_problems():
+    return sentence_with(SKILL, [
+        'The audit and the breaks are tools at either gate',
+        'nothing waits on them'])
 
 
 def local_file_problems():

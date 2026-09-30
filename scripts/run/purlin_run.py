@@ -5,6 +5,8 @@
                   [--arm-timeout SECONDS] [--project-root DIR]
     purlin_run.py [--feature NAME ... | --all] --audit [--commit]
                   [--arm-timeout SECONDS] [--project-root DIR]
+    purlin_run.py --release [VERSION] [--arm-timeout SECONDS]
+                  [--project-root DIR]
     purlin_run.py --help | -h
 
 **Before anything runs.** With no `.purlin/config.json` the run says so,
@@ -49,8 +51,13 @@ the settings file, then the evidence and the table, which name the first;
 nothing here ever pushes. `--remote` hands the run to the git host's runner
 instead and brings back what that runner wrote.
 
+`--release [VERSION]` is what `purlin:test --release` runs: `--test --all
+--commit`, then the release (`scripts/export/release.py`), which checks the
+release commit, commits the evidence package and, at the gate `passed`, tags
+it `passed/<version>`. A refused release exits 1. Nothing is pushed.
+
 `--audit` is what `purlin:audit` runs: the tests, as `--test` runs them, then
-the breaks where mutation testing is on, then the AI audit, then the evidence
+the breaks where `mutation_engine` is not `none`, at either gate, then the AI audit, then the evidence
 write. The AI audit reads each own rule of the features run that has a proof
 with a test, whose passed cell reads `passed`, and that has no audit entry for
 its current rule, proof and test hashes. `--all` runs every feature and reads
@@ -93,8 +100,8 @@ Exit codes for `--test` and `--audit`: 0 everything asked happened; 1 a tied
 test failed or did not run, evidence is missing, a marker names nothing a
 spec has, there is no settings file or it cannot be read, an older Purlin
 set the project up and it was not upgraded, no test command is set, or, for
-`--audit` above the gate `passed`, a rule it read is weak or could not be
-audited; 2 the command line was wrong. `--help` and `-h` print the usage
+`--release`, the release was refused; 2 the command line was wrong. What the
+audit found never sets the code: it is a tool, and nothing waits on it. `--help` and `-h` print the usage
 to stdout and exit 0. `--ci` exits 1 only when a test tied to a proof
 tagged for its system failed or could not run.
 
@@ -148,7 +155,15 @@ USAGE = (
     '(--test [--remote] [--commit] | --ci) '
     '[--arm-timeout SECONDS] [--project-root DIR]\n'
     '       purlin_run.py [--feature NAME ... | --all] --audit [--commit] '
+    '[--arm-timeout SECONDS] [--project-root DIR]\n'
+    '       purlin_run.py --release [VERSION] '
     '[--arm-timeout SECONDS] [--project-root DIR]')
+
+# The line `purlin:test --release` gets beside anything that narrows or moves
+# the run: a release runs every test here and commits what they saw.
+RELEASE_RUNS_ALL = ('--release runs every test here and commits it, so it '
+                    'takes no --feature, --audit, --ci or --remote. Run '
+                    'purlin:test --release')
 
 # The one line `purlin:test --remote` gets. A remote runner runs the tests,
 # so the flag belongs to the test and nowhere else.
@@ -247,6 +262,8 @@ class Args(object):
         self.action = None          # 'test', 'audit' or 'ci'
         self.remote = False
         self.commit = False
+        self.release = False
+        self.version = None         # the version --release names, or None
         self.arm_timeout = ARM_TIMEOUT_DEFAULT
         self.project_root = '.'
         self.help = False
@@ -276,6 +293,14 @@ def parse_args(argv):
             args.remote = True
         elif token == '--commit':
             args.commit = True
+        elif token == '--release':
+            args.release = True
+            # The version is optional; a value beginning with `-` is the
+            # next option, not a version.
+            if index + 1 < len(argv) and argv[index + 1] \
+                    and not argv[index + 1].startswith('-'):
+                index += 1
+                args.version = argv[index]
         elif token == '--arm-timeout':
             index += 1
             value = argv[index] if index < len(argv) else ''
@@ -302,6 +327,16 @@ def parse_args(argv):
             return args
         index += 1
 
+    if args.release:
+        # `--release` is `--test --all --commit`, and nothing that narrows
+        # or moves the run.
+        if args.features or args.remote or [a for a in actions
+                                            if a != 'test']:
+            args.error = RELEASE_RUNS_ALL
+            return args
+        actions = ['test']
+        args.all = True
+        args.commit = True
     if len(actions) != 1:
         args.error = 'name exactly one of --test, --audit and --ci'
         return args
@@ -1152,7 +1187,25 @@ def main(argv=None):
 
     print('')
     print(status_module.sync_status(project_root))
+    if args.release:
+        return _release(project_root, args) or exit_code
     return exit_code
+
+
+def _release(project_root, args):
+    """`--release`, once the evidence is committed: the release. The exit code.
+
+    `scripts/export/release.py` checks the release commit, commits the
+    evidence package and, at the gate `passed`, tags it; each refusal prints
+    its own line. A refused release exits 1. Nothing is fetched or pushed.
+    """
+    _export = os.path.join(os.path.dirname(_HERE), 'export')
+    if _export not in sys.path:
+        sys.path.insert(0, _export)
+    import release as release_module
+    print('')
+    _tag, refused = release_module.run_release(project_root, args.version)
+    return 1 if refused is not None else 0
 
 
 def settings_stop(project_root):
@@ -1310,7 +1363,7 @@ def _nothing_to_run(project_root, args, features, cfg, suites):
 
     No test runs. `--commit` still commits every changed spec, marked test
     and the settings in one commit, then the evidence an earlier run wrote,
-    because that is the command a refused tag names.
+    because that is the command a refused release names.
     `--audit` goes on to the AI audit, which reads every rule that has no
     audit of its current text, proof and test. The tests this run answers
     with are the ones the evidence already holds: a rule whose tests fail
@@ -1369,19 +1422,18 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
            exit_code, work=None):
     """The `--audit` arm, after the tests: the breaks, the AI audit, the write.
 
-    Which rules are read is `ai_audit.is_read`'s answer. The breaks run only
-    where mutation testing is on, only for a feature with a rule being read,
+    Which rules are read is `ai_audit.is_read`'s answer. The breaks run
+    wherever `mutation_engine` is not `none`, at either gate, only for a feature with a rule being read,
     and never for an anchor. One model call per rule, `cfg.audit_parallel`
     at once. What each answer found goes under `audit.rules` in the
     feature's local evidence; a rule the model could not be reached for gets
     nothing, and the reason goes to `.purlin/runtime/` for the strong cell
     to name. `work` is the first commit `--commit` made, which the evidence
-    commit names. Returns the exit code.
+    commit names. Returns the exit code, which the tests alone set.
     """
     import ai_audit
 
     _write_log(project_root, log)
-    gate = cfg.gate
     payload = payload_module.build_payload(project_root, generated_by='audit')
     to_read, skipped = [], 0
     # A broken spec's rules all read `failed`: none is read until it is fixed.
@@ -1479,29 +1531,9 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
                  else TRY_AGAIN_LINE))
     print('')
     print(status_module.sync_status(project_root))
-    if gate == 'passed':
-        return exit_code
-    # Above `passed` a rule it read that is weak, or that it could not
-    # audit, fails it. It cannot make a signature appear, so a rule waiting
-    # on one does not fail the audit.
-    return exit_code or (1 if causes or weak_rules(project_root, answered)
-                         else 0)
-
-
-def weak_rules(project_root, read):
-    """How many of the rules `read` names have a strong cell reading `weak`.
-
-    What the model found and the strength the breaks measured both make the
-    cell weak, so the cell is what is read.
-    """
-    wanted = set(read)
-    payload = payload_module.build_payload(project_root, generated_by='audit')
-    return sum(1 for feature in payload.get('features') or ()
-               for rule in feature.get('rules') or ()
-               if rule.get('feature') == feature.get('name')
-               and (feature['name'], rule.get('id')) in wanted
-               and ((rule.get('cells') or {}).get('strong') or {}).get('word')
-               == 'weak')
+    # What the audit found is a tool's reading, at every gate: a weak rule or
+    # one it could not audit is listed, and only the tests set the code.
+    return exit_code
 
 
 def _summary_line(counts, skipped):

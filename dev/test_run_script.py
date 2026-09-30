@@ -645,25 +645,27 @@ class TestEveryRunEndsOnTheSummary:
         assert code == 0, output
 
     # purlin: run_script PROOF-101
-    def test_at_strong_a_passing_rule_is_left_to_audit(self, tmp_path):
-        root = _pytest_project(tmp_path, gate='strong')
+    def test_a_passing_rule_no_audit_read_leaves_nothing_to_do(
+            self, tmp_path):
+        root = _pytest_project(tmp_path, gate='passed')
         _spec(root, 'feat')
         code, output = _run(root, '--all', '--test')
-        assert output.strip().splitlines()[-3:] == [
-            '1 rule. 1 passes its tests. 0 are strong.', 'Left to do:',
-            '  1 rule to audit: purlin:audit'], output
+        assert output.strip().splitlines()[-2:] == [
+            '1 rule. 1 passes its tests.',
+            'Nothing left to do. To release a version: purlin:test --release'
+        ], output
         assert code == 0, output
 
     # purlin: run_script PROOF-105
-    def test_at_strong_a_failing_rule_is_left_to_fix(self, tmp_path):
-        root = _pytest_project(tmp_path, gate='strong', body=(
+    def test_at_signed_a_failing_rule_is_left_to_fix(self, tmp_path):
+        root = _pytest_project(tmp_path, gate='signed', body=(
             '# purlin: feat PROOF-1\n'
             'def test_ok():\n'
             '    assert 1 == 2\n'))
         _spec(root, 'feat')
         code, output = _run(root, '--all', '--test')
         assert output.strip().splitlines()[-3:] == [
-            '1 rule. 0 pass their tests. 0 are strong.', 'Left to do:',
+            '1 rule. 0 pass their tests.', 'Left to do:',
             '  1 rule to fix: purlin:build'], output
         assert code == 1, output
 
@@ -845,7 +847,7 @@ class TestTheCiArmCommitsItsSection:
     """A runner writes its own operating system's section and commits it."""
 
     @staticmethod
-    def _ci(tmp_path, evidence_run, capsys, gate='strong'):
+    def _ci(tmp_path, evidence_run, capsys, gate='passed'):
         root = _pytest_project(tmp_path, gate=gate)
         _spec(root, 'feat', proofs=TAGGED_HERE)
         _git_repo(root)
@@ -914,7 +916,7 @@ class TestTheCiArmCommitsItsSection:
     # purlin: run_script PROOF-119
     def test_a_failing_test_fails_the_ci_arm(
             self, tmp_path, evidence_run, capsys):
-        root = _pytest_project(tmp_path, gate='strong', body=(
+        root = _pytest_project(tmp_path, gate='signed', body=(
             '# purlin: feat PROOF-1\n'
             'def test_no():\n'
             '    assert 1 == 2\n'))
@@ -926,7 +928,7 @@ class TestTheCiArmCommitsItsSection:
     # purlin: run_script PROOF-120
     def test_a_marker_naming_no_spec_does_not_fail_the_ci_arm(
             self, tmp_path, evidence_run, capsys):
-        root = _pytest_project(tmp_path, gate='strong', body=(
+        root = _pytest_project(tmp_path, gate='signed', body=(
             '# purlin: feat PROOF-1\n'
             'def test_ok():\n'
             '    assert True\n\n'
@@ -944,7 +946,7 @@ class TestTheCiArmCommitsItsSection:
         """`feat`'s PROOF-1 (RULE-1) carries no tag and PROOF-2 (RULE-2) is
         tagged for this machine's system; one test file holds both tests,
         the untagged one asserting `untagged`. `(root, code, calls, output)`."""
-        root = _pytest_project(tmp_path, gate='strong', body=(
+        root = _pytest_project(tmp_path, gate='signed', body=(
             'import pytest\n\n'
             '# purlin: feat PROOF-1\n'
             'def test_untagged():\n'
@@ -974,7 +976,7 @@ class TestTheCiArmCommitsItsSection:
     # purlin: run_script PROOF-208
     def test_a_feature_with_no_proof_tagged_for_its_system_gets_no_file(
             self, tmp_path, evidence_run, capsys):
-        root = _pytest_project(tmp_path, gate='strong', body=(
+        root = _pytest_project(tmp_path, gate='signed', body=(
             'import pytest\n\n'
             '# purlin: feat PROOF-1\n'
             'def test_ok():\n'
@@ -1006,7 +1008,7 @@ class TestTheLog:
 
     # purlin: run_script PROOF-15
     def test_the_log_is_written(self, tmp_path, evidence_run, capsys):
-        root = _pytest_project(tmp_path, gate='strong')
+        root = _pytest_project(tmp_path, gate='signed')
         _spec(root, 'feat', proofs=TAGGED_HERE)
         evidence_run(root, '--all', '--ci')
         capsys.readouterr()
@@ -1016,7 +1018,7 @@ class TestTheLog:
     # purlin: run_script PROOF-159
     def test_the_audit_writes_the_log_too(self, tmp_path, evidence_run,
                                           claude, capsys):
-        root = _pytest_project(tmp_path, gate='strong')
+        root = _pytest_project(tmp_path, gate='signed')
         _spec(root, 'feat')
         evidence_run(root, '--all', '--audit')
         capsys.readouterr()
@@ -1029,7 +1031,7 @@ class TestTheBreaks:
     # purlin: run_script PROOF-16
     def test_the_breaks_are_asked_for_each_features_scope_files(
             self, tmp_path, evidence_run, capsys):
-        root = _pytest_project(tmp_path, gate='strong')
+        root = _pytest_project(tmp_path, gate='signed')
         _config(root, mutation_engine='auto')
         _spec(root, 'feat')
         _code, calls = evidence_run(root, '--all', '--audit')
@@ -1043,7 +1045,7 @@ class TestWhereEachArmCommits:
 
     @staticmethod
     def _commits_through_git(tmp_path, evidence_run, capsys, action):
-        root = _pytest_project(tmp_path, gate='strong')
+        root = _pytest_project(tmp_path, gate='signed')
         _spec(root, 'feat')
         _git_repo(root)
         _code, calls = evidence_run(root, '--all', action, '--commit')
@@ -1051,7 +1053,6 @@ class TestWhereEachArmCommits:
         assert calls['commit'] == [], (
             "a person's run commits through git, not the git host's API")
         assert 'Evidence committed.' in output.splitlines(), output
-        assert not list(root.glob('specs/**/*.signatures'))
         assert not (root / '.purlin' / 'evidence' / 'ci').exists()
 
     # purlin: run_script PROOF-17
@@ -1085,7 +1086,7 @@ class TestWhereEachArmCommits:
     def test_a_tag_run_writes_nothing_and_says_so(
             self, tmp_path, evidence_run, capsys, monkeypatch):
         """A tag run reruns the tests and adds no evidence."""
-        root = _pytest_project(tmp_path, gate='strong')
+        root = _pytest_project(tmp_path, gate='signed')
         _spec(root, 'feat', proofs=TAGGED_HERE)
         purlin_run = _load_run_script()
         evidence_run(root, '--all', '--test')
@@ -1104,7 +1105,7 @@ class TestWhereEachArmCommits:
     # purlin: run_script PROOF-121
     def test_a_run_on_the_branch_that_keeps_it_commits(
             self, tmp_path, evidence_run, capsys, monkeypatch):
-        root = _pytest_project(tmp_path, gate='strong')
+        root = _pytest_project(tmp_path, gate='signed')
         _spec(root, 'feat', proofs=TAGGED_HERE)
         self._on_ref(monkeypatch, 'refs/heads/run/main-4f1c2ab')
         _code, calls = evidence_run(root, '--all', '--ci')
@@ -1115,35 +1116,35 @@ class TestWhereEachArmCommits:
 
 
 class TestTheGateDecidesTheBreaks:
-    """The breaks run only where mutation testing is on and a strength is compared."""
-
-    # purlin: run_script PROOF-65
-    def test_under_passed_no_break_runs_and_the_strength_is_not_measured(
-            self, tmp_path, evidence_run, capsys):
-        root = _pytest_project(tmp_path, gate='passed')
-        # Mutation testing is on, so the gate alone keeps the breaks off.
-        _config(root, mutation_engine='auto')
-        _spec(root, 'feat')
-        _code, calls = evidence_run(root, '--all', '--audit')
-        capsys.readouterr()
-
-        assert calls['breaks'] == [], 'the breaks ran under the passed gate'
-        assert _evidence(root)['audit']['mutation'] is None
+    """The breaks run wherever `mutation_engine` is not `none`, at either gate."""
 
     # purlin: run_script PROOF-66
-    def test_under_strong_the_audit_measures_and_writes_the_score(
+    def test_with_mutation_on_the_audit_measures_and_writes_the_score(
             self, tmp_path, evidence_run, capsys):
-        root = _pytest_project(tmp_path, gate='strong')
+        root = _pytest_project(tmp_path, gate='signed')
         _config(root, mutation_engine='auto')
         _spec(root, 'feat')
         _code, calls = evidence_run(root, '--all', '--audit')
         capsys.readouterr()
 
-        assert len(calls['breaks']) == 1, 'the breaks did not run under strong'
+        assert len(calls['breaks']) == 1, 'the breaks did not run'
         mutation = _evidence(root)['audit']['mutation']
         assert (mutation['engine'], mutation['score']) == ('mutmut', 80)
         cell = _rule(root, 'feat', 'RULE-1')['cells']['strong']
-        assert (cell['word'], cell['reasons']) == ('strong', []), cell
+        assert (cell['word'], cell['reasons']) == (
+            'strong', ['strength 80%']), cell
+
+    # purlin: run_script PROOF-268
+    def test_at_passed_the_breaks_run_where_mutation_is_on(
+            self, tmp_path, evidence_run, capsys):
+        root = _pytest_project(tmp_path, gate='passed')
+        _config(root, mutation_engine='auto')
+        _spec(root, 'feat')
+        _code, calls = evidence_run(root, '--all', '--audit')
+        capsys.readouterr()
+
+        assert len(calls['breaks']) == 1, 'the breaks did not run at passed'
+        assert _evidence(root)['audit']['mutation']['score'] == 80
 
     @staticmethod
     def _ci_measures_nothing(tmp_path, evidence_run, claude, capsys, gate):
@@ -1163,12 +1164,6 @@ class TestTheGateDecidesTheBreaks:
         self._ci_measures_nothing(tmp_path, evidence_run, claude, capsys,
                                   'passed')
 
-    # purlin: run_script PROOF-174
-    def test_a_ci_run_at_strong_measures_nothing_and_audits_nothing(
-            self, tmp_path, evidence_run, claude, capsys):
-        self._ci_measures_nothing(tmp_path, evidence_run, claude, capsys,
-                                  'strong')
-
     # purlin: run_script PROOF-175
     def test_a_ci_run_at_signed_measures_nothing_and_audits_nothing(
             self, tmp_path, evidence_run, claude, capsys):
@@ -1178,7 +1173,7 @@ class TestTheGateDecidesTheBreaks:
     # purlin: run_script PROOF-79
     def test_with_mutation_off_the_audit_alone_decides(
             self, tmp_path, evidence_run, capsys):
-        root = _pytest_project(tmp_path, gate='strong')
+        root = _pytest_project(tmp_path, gate='signed')
         _config(root, mutation_engine='none')
         _spec(root, 'feat')
         code, calls = evidence_run(root, '--all', '--audit')
@@ -1189,19 +1184,6 @@ class TestTheGateDecidesTheBreaks:
         assert (cell['word'], cell['reasons']) == (
             'strong', ['no mutation score measured']), cell
         assert code == 0, output
-
-    # purlin: run_script PROOF-80
-    def test_with_mutation_on_a_score_under_the_minimum_is_weak(
-            self, tmp_path, evidence_run, capsys):
-        root = _pytest_project(tmp_path, gate='strong')
-        _config(root, min_strength=90, mutation_engine='auto')
-        _spec(root, 'feat')
-        code, _calls = evidence_run(root, '--all', '--audit')
-        output = capsys.readouterr().out
-        cell = _rule(root, 'feat', 'RULE-1')['cells']['strong']
-        assert (cell['word'], cell['reasons']) == (
-            'weak', ['strength 80% under 90%']), cell
-        assert code == 1, output
 
     # purlin: run_script PROOF-213
     def test_an_engine_that_measured_nothing_says_why(
@@ -1219,7 +1201,7 @@ class TestTheGateDecidesTheBreaks:
         monkeypatch.setitem(sys.modules, 'mutation', _FakeModule(
             select_engine=lambda config, frameworks: 'mutmut',
             run_breaks=run_breaks))
-        root = _pytest_project(tmp_path, gate='strong')
+        root = _pytest_project(tmp_path, gate='signed')
         _config(root, mutation_engine='auto')
         _spec(root, 'feat')
         evidence_run(root, '--all', '--audit')
@@ -1230,7 +1212,7 @@ class TestTheGateDecidesTheBreaks:
 
     @staticmethod
     def _two_features_audited(tmp_path, evidence_run):
-        root = _pytest_project(tmp_path, gate='strong', body=(
+        root = _pytest_project(tmp_path, gate='signed', body=(
             'import pytest\n\n'
             '# purlin: feat PROOF-1\n'
             'def test_ok():\n'
@@ -1266,7 +1248,7 @@ class TestTheGateDecidesTheBreaks:
 
     @staticmethod
     def _a_feature_and_an_anchor_audited(tmp_path, evidence_run, capsys):
-        root = _pytest_project(tmp_path, gate='strong', body=(
+        root = _pytest_project(tmp_path, gate='signed', body=(
             'import pytest\n\n'
             '# purlin: feat PROOF-1\n'
             'def test_ok():\n'
@@ -1308,7 +1290,7 @@ class TestTheGateDecidesTheBreaks:
 # The AI audit: which rules, how many calls, what is written
 # ---------------------------------------------------------------------------
 
-def _many(tmp_path, count, gate='strong'):
+def _many(tmp_path, count, gate='signed'):
     """A project with one feature of `count` rules, each with a passing test."""
     body = ['import pytest', '']
     for index in range(1, count + 1):
@@ -1517,7 +1499,7 @@ class TestWhichRulesTheAuditReads:
     def test_a_rule_whose_test_failed_is_not_read(
             self, tmp_path, evidence_run, claude, capsys):
         _install, directory = claude
-        root = _pytest_project(tmp_path, gate='strong', body=(
+        root = _pytest_project(tmp_path, gate='signed', body=(
             'import pytest\n\n'
             '# purlin: feat PROOF-1\n'
             'def test_bad():\n'
@@ -1536,7 +1518,7 @@ class TestWhichRulesTheAuditReads:
     def test_with_no_feature_named_every_feature_is_audited(
             self, tmp_path, evidence_run, claude, capsys):
         _install, directory = claude
-        root = _pytest_project(tmp_path, gate='strong', body=(
+        root = _pytest_project(tmp_path, gate='signed', body=(
             'import pytest\n\n'
             '# purlin: feat PROOF-1\n'
             'def test_ok():\n'
@@ -1557,7 +1539,7 @@ class TestWhichRulesTheAuditReads:
     def test_an_anchors_rule_is_read_as_the_anchors(
             self, tmp_path, evidence_run, claude, capsys):
         _install, directory = claude
-        root = _pytest_project(tmp_path, gate='strong', body=(
+        root = _pytest_project(tmp_path, gate='signed', body=(
             'import pytest\n\n'
             '# purlin: feat PROOF-1\n'
             'def test_ok():\n'
@@ -1607,7 +1589,7 @@ class TestWhenTheModelCannotBeReached:
             assert cell['reasons'] == ['the AI audit could not run: %s' % why]
         assert '2 rules could not be audited: %s. %s' % (why, then) in \
             output, output
-        assert code == 1, output
+        assert code == 0, output
 
     # purlin: run_script PROOF-82
     def test_no_claude_on_the_path(self, tmp_path, evidence_run, claude,
@@ -1668,7 +1650,7 @@ class TestWhenTheModelCannotBeReached:
             'line. Run purlin:audit again.',
             '1 rule could not be audited: claude exited with an error. Run '
             'purlin:audit again.'], output
-        assert code == 1, output
+        assert code == 0, output
 
     # purlin: run_script PROOF-206
     def test_two_causes_in_one_run_give_each_cell_its_own(
@@ -1736,11 +1718,11 @@ class TestTheLastLines:
                  'settled line. Run purlin:audit again.']
         lines = _before_the_table(output)
         assert lines[-len(order):] == order, lines
-        assert output.strip().splitlines()[-4:] == [
-            '2 rules. 2 pass their tests. 0 are strong.', 'Left to do:',
-            '  1 rule to audit: purlin:audit',
-            '  1 rule to strengthen: purlin:build'], output
-        assert code == 1
+        assert output.strip().splitlines()[-3:] == [
+            '2 rules. 2 pass their tests. The audit found 0 strong and 1 '
+            'weak.', 'Left to do:', '  1 rule to strengthen: purlin:build'
+        ], output
+        assert code == 0
 
     # purlin: run_script PROOF-107
     def test_the_skipped_rules_take_their_place(
@@ -1768,20 +1750,19 @@ class TestTheLastLines:
                  'settled line. Run purlin:audit again.']
         lines = _before_the_table(output)
         assert lines[-len(order):] == order, lines
-        assert output.strip().splitlines()[-5:] == [
-            '3 rules. 3 pass their tests. 1 is strong. 0 are signed.',
-            'Left to do:', '  1 rule to audit: purlin:audit',
-            '  1 rule to strengthen: purlin:build',
-            '  1 rule to tie to its files: purlin:spec'], output
-        assert code == 1
+        assert output.strip().splitlines()[-3:] == [
+            '3 rules. 3 pass their tests. The audit found 1 strong and 1 '
+            'weak.', 'Left to do:', '  1 rule to strengthen: purlin:build'
+        ], output
+        assert code == 0
 
 
 class TestTheAuditExitCode:
-    """Above `passed` a rule it read that is weak makes the audit exit 1."""
+    """Nothing the audit found makes it exit 1: only the tests set the code."""
 
     @staticmethod
     def _found_weak(tmp_path, evidence_run, claude, capsys):
-        """One rule at `strong` that an audit found `PROOF-1 reads the value
+        """One rule at `signed` that an audit found `PROOF-1 reads the value
         alone.` against. `(root, exit code, output)`."""
         install, _directory = claude
         install(answers=['settled: yes\n- PROOF-1 reads the value alone.'])
@@ -1789,35 +1770,37 @@ class TestTheAuditExitCode:
         code, _calls = evidence_run(root, '--all', '--audit')
         return root, code, capsys.readouterr().out
 
-    # purlin: run_script PROOF-69
-    def test_a_finding_blocks_at_strong(self, tmp_path, evidence_run, claude,
-                                        capsys):
+    # purlin: run_script PROOF-267
+    def test_a_finding_blocks_nothing_at_signed(self, tmp_path, evidence_run,
+                                                claude, capsys):
         _root, code, output = self._found_weak(tmp_path, evidence_run,
                                                claude, capsys)
-        assert output.strip().splitlines()[-3:] == [
-            '1 rule. 1 passes its tests. 0 are strong.', 'Left to do:',
-            '  1 rule to strengthen: purlin:build'], output
-        assert code == 1, output
+        assert output.strip().splitlines()[-1] == (
+            '  1 rule to strengthen: purlin:build'), output
+        assert code == 0, output
 
     # purlin: run_script PROOF-108
-    def test_a_rule_found_weak_then_found_strong_meets_strong(
+    def test_a_rule_found_weak_then_found_strong_is_left_to_release(
             self, tmp_path, evidence_run, claude, capsys):
         install, _directory = claude
-        root, _code, _output = self._found_weak(tmp_path, evidence_run,
-                                                claude, capsys)
+        install(answers=['settled: yes\n- PROOF-1 reads the value alone.'])
+        root = _many(tmp_path, 1, gate='passed')
+        evidence_run(root, '--all', '--audit')
+        capsys.readouterr()
         install()
         code, _calls = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
         assert output.strip().splitlines()[-2:] == [
-            '1 rule. 1 passes its tests. 1 is strong.',
-            'Nothing left to do.'], output
+            '1 rule. 1 passes its tests. The audit found 1 strong and 0 weak.',
+            'Nothing left to do. To release a version: purlin:test --release'
+        ], output
         assert code == 0, output
 
     # purlin: run_script PROOF-109
-    def test_a_failing_test_blocks_at_strong(self, tmp_path, evidence_run,
-                                             claude, capsys):
+    def test_a_failing_test_is_left_to_fix(self, tmp_path, evidence_run,
+                                           claude, capsys):
         _install, directory = claude
-        root = _pytest_project(tmp_path, gate='strong', body=(
+        root = _pytest_project(tmp_path, gate='signed', body=(
             'import pytest\n\n'
             '# purlin: feat PROOF-1\n'
             'def test_bad():\n'
@@ -1826,9 +1809,8 @@ class TestTheAuditExitCode:
         code, _calls = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
         assert fake_claude.calls(directory) == []
-        assert output.strip().splitlines()[-3:] == [
-            '1 rule. 0 pass their tests. 0 are strong.', 'Left to do:',
-            '  1 rule to fix: purlin:build'], output
+        assert output.strip().splitlines()[-1] == (
+            '  1 rule to fix: purlin:build'), output
         assert code == 1, output
 
     # purlin: run_script PROOF-87
@@ -1839,8 +1821,8 @@ class TestTheAuditExitCode:
         root = _many(tmp_path, 1, gate='passed')
         code, _calls = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
-        assert output.strip().splitlines()[-2:] == [
-            '1 rule. 1 passes its tests.', 'Nothing left to do.'], output
+        assert output.strip().splitlines()[-1] == (
+            '  1 rule to strengthen: purlin:build'), output
         assert _audited(root)['RULE-1']['findings'] == [
             'PROOF-1 reads the value alone.']
         assert code == 0, output
@@ -1851,17 +1833,14 @@ class TestTheAuditExitCode:
         install, _directory = claude
         install()
         root = _many(tmp_path, 1, gate='signed')
-        # The spec's scope names a tracked file, so a signature can be tied.
         (root / 'src').mkdir()
         (root / 'src' / 'app.py').write_text('VALUE = 1\n', encoding='utf-8')
         _git_repo(root)
         code, _calls = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
-        # The audit found the rule strong; no one has signed it, and an
-        # audit cannot write a signature, so it exits 0.
-        assert output.strip().splitlines()[-3:] == [
-            '1 rule. 1 passes its tests. 1 is strong. 0 are signed.',
-            'Left to do:', '  1 rule to sign: purlin:sign'], output
+        assert output.strip().splitlines()[-1] == (
+            'Nothing left to do. To release a version: purlin:test --release, '
+            'then purlin:sign'), output
         assert code == 0, output
 
     # purlin: run_script PROOF-111
@@ -2180,7 +2159,7 @@ class TestAFailingSuiteStatesItsReason:
     def test_ci_writes_the_whole_run_to_the_log_in_the_tree(
             self, tmp_path, evidence_run, capsys):
         """A run uploads nothing, so what it printed has to be in the tree."""
-        root = _pytest_project(tmp_path, gate='strong', body=(
+        root = _pytest_project(tmp_path, gate='signed', body=(
             'import pytest\n\n'
             '# purlin: feat PROOF-1\n'
             'def test_bad():\n'
@@ -2197,7 +2176,7 @@ class TestAFailingSuiteStatesItsReason:
     def _logged(tmp_path, evidence_run, capsys, action):
         """The lines `line N` the run log holds after `action` over a shell
         test that prints `line 1` to `line 100` and fails."""
-        root = _hundred_lines(tmp_path, gate='strong', proofs=(
+        root = _hundred_lines(tmp_path, gate='signed', proofs=(
             TAGGED_HERE if action == '--ci' else (('PROOF-1', 'RULE-1', ''),)))
         evidence_run(root, '--all', action)
         capsys.readouterr()
@@ -2628,7 +2607,7 @@ class TestARunCoversWhatTheChangeTouched:
     def _audited_once(tmp_path, evidence_run, capsys):
         """`login` and `export` at `strong`, committed and current evidence,
         then one `--audit` with no feature named. `(root, code, output)`."""
-        root, _sha = _touched_project(tmp_path, gate='strong')
+        root, _sha = _touched_project(tmp_path, gate='signed')
         code, _calls = evidence_run(root, '--audit')
         return root, code, capsys.readouterr().out
 
@@ -2682,8 +2661,8 @@ class TestAWeakRuleNotReadAgain:
         install, _directory = claude
         install(answers=['settled: yes\n- PROOF-1 reads the value alone.'])
         root = _many(tmp_path, 1)
-        code, _calls = evidence_run(root, '--all', '--audit')
-        assert code == 1, capsys.readouterr().out
+        evidence_run(root, '--all', '--audit')
+        capsys.readouterr()
         code, _calls = evidence_run(root, '--audit')
         output = capsys.readouterr().out
         assert 'AI audit: nothing to read' in output, output
@@ -3218,7 +3197,7 @@ class TestTheTwoCommits:
         test = root / 'tests' / 'test_feat.py'
         test.write_text(test.read_text(encoding='utf-8') + '# edited\n',
                         encoding='utf-8')
-        _config(root, min_strength=80)
+        _config(root, audit_parallel=3)
         code, output = _run(root, '--all', '--test', '--commit')
         assert code == 0, output
         return root, output
@@ -3278,7 +3257,7 @@ class TestTheTwoCommits:
     # purlin: run_script PROOF-256
     def test_nothing_to_run_commits_the_settings_alone(self, tmp_path):
         root = self._run_committed(tmp_path)
-        _config(root, min_strength=80)
+        _config(root, audit_parallel=3)
         code, output = _run(root, '--test', '--commit')
         assert code == 0, output
         assert 'Nothing to run' in output, output
@@ -3299,7 +3278,7 @@ class TestTheTwoCommits:
         test = root / 'tests' / 'test_feat.py'
         test.write_text(test.read_text(encoding='utf-8') + '# edited\n',
                         encoding='utf-8')
-        _config(root, min_strength=80)
+        _config(root, audit_parallel=3)
         _run(root, '--test')
         code, output = _run(root, '--test', '--commit')
         assert code == 0, output
@@ -3364,9 +3343,56 @@ class TestABrokenSpec:
     # purlin: run_script PROOF-264
     def test_the_audit_reads_no_rule_of_it(self, tmp_path, claude):
         _install, directory = claude
-        root = _broken_login(tmp_path, gate='strong')
+        root = _broken_login(tmp_path, gate='signed')
         _code, output = _run(root, '--audit', '--all')
         calls = fake_claude.calls(directory)
         assert calls, output
         assert not [call for call in calls if 'login' in call['prompt']], \
             output
+
+
+class TestTheReleaseRun:
+    """`--release` is `--test --all --commit`, then the release."""
+
+    @staticmethod
+    def _release_project(tmp_path, body=None):
+        """A git checkout at `passed` whose `VERSION` reads `1.2.0`."""
+        root = _pytest_project(tmp_path, gate='passed', body=body)
+        _spec(root, 'feat')
+        (root / 'VERSION').write_text('1.2.0\n', encoding='utf-8')
+        (root / '.gitignore').write_text(
+            '__pycache__/\n.pytest_cache/\n.purlin/runtime/\n'
+            '.purlin/report-data.js\n',
+            encoding='utf-8')
+        _git_repo(root)
+        return root
+
+    # purlin: run_script PROOF-265
+    def test_a_passing_release_is_tagged_at_passed(self, tmp_path):
+        root = self._release_project(tmp_path)
+        code, output = _run(root, '--release')
+        assert 'Evidence committed.' in output.splitlines(), output
+        assert ('Tagged passed/1.2.0 at %s.' % _head(root)[:7]
+                in output.splitlines()), output
+        assert _git(root, 'tag', '--list').split() == ['passed/1.2.0']
+        assert code == 0, output
+
+    # purlin: run_script PROOF-266
+    def test_a_refused_release_exits_1(self, tmp_path):
+        root = self._release_project(tmp_path, body=(
+            '# purlin: feat PROOF-1\n'
+            'def test_bad():\n'
+            '    assert 1 == 2\n'))
+        code, output = _run(root, '--release')
+        assert any(line.startswith('No release: 1 rule does not pass')
+                   for line in output.splitlines()), output
+        assert _git(root, 'tag', '--list').split() == []
+        assert code == 1, output
+
+    # purlin: run_script PROOF-269
+    def test_release_beside_a_feature_is_refused(self, tmp_path):
+        output = _refused(tmp_path, '--release', '--feature', 'feat')
+        assert ('purlin: --release runs every test here and commits it, so '
+                'it takes no --feature, --audit, --ci or --remote. Run '
+                'purlin:test --release.' in output.splitlines()), output
+        assert 'Running the' not in output, output

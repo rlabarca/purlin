@@ -328,14 +328,14 @@ def test_an_engine_name_nobody_ships_reads_as_none():
 
 # purlin: mutation PROOF-30
 def test_settings_with_other_keys_and_no_engine_read_as_none_for_pytest():
-    assert mutation.select_engine({'gate': 'strong'}, ['pytest']) == 'none'
+    assert mutation.select_engine({'gate': 'signed'}, ['pytest']) == 'none'
     # The same project turned on picks its engine, so the key decided.
     assert mutation.select_engine(AUTO, ['pytest']) == 'mutmut'
 
 
 # purlin: mutation PROOF-73
 def test_settings_with_other_keys_and_no_engine_read_as_none_for_jest():
-    assert mutation.select_engine({'gate': 'strong'}, ['jest']) == 'none'
+    assert mutation.select_engine({'gate': 'signed'}, ['jest']) == 'none'
     assert mutation.select_engine(AUTO, ['jest']) == 'stryker'
 
 
@@ -1050,14 +1050,14 @@ def test_a_dotnet_feature_that_timed_out_measures_nothing(tools, project,
 
 
 def audit_project(root):
-    """A project at the gate `strong`, breaks on through mutmut, one passing
+    """A project at the gate `signed`, breaks on through mutmut, one passing
     rule in the feature `login`, scoped to `src/login/session.py`."""
     (root / '.purlin').mkdir()
     (root / 'specs' / 'auth').mkdir(parents=True)
     (root / 'src' / 'login').mkdir(parents=True)
     (root / 'tests').mkdir()
     (root / '.purlin' / 'config.json').write_text(json.dumps({
-        'gate': 'strong', 'mutation_engine': 'mutmut',
+        'gate': 'signed', 'mutation_engine': 'mutmut',
         'tests': [{'name': 'pytest',
                    'run': '%s -m pytest -q -p no:cacheprovider {files} '
                           '--junitxml={report}' % sys.executable,

@@ -1,7 +1,7 @@
 """Tests for the committed consumer-CI fixture.
 
 `dev/fixtures/consumer-ci/` is a complete minimal consumer project: what
-`purlin:init` writes for a `strong` gate, plus one spec, one module and one
+`purlin:init` writes for the gate `passed`, plus one spec, one module and one
 test file. It carries no Purlin `scripts/` and no `dev/`, exactly as a project
 that installed Purlin from the marketplace does, so its workflow has to clone
 the tooling on the runner.
@@ -163,7 +163,7 @@ def test_a_proof_tagged_for_another_system_gets_a_workflow_for_that_reason():
 # purlin: host PROOF-128
 def test_proofs_tagged_for_two_other_systems_are_named_together():
     wanted, reasons = workflow_module.wanted(['windows', 'linux'], 'macos',
-                                             'strong')
+                                             'signed')
     assert wanted is True
     assert reasons == [
         'Proofs in specs/ are tagged @env for Linux/Unix and Windows, which '
@@ -313,7 +313,7 @@ def test_the_fixture_is_complete_and_every_file_is_tracked():
 # purlin: host PROOF-84
 def test_the_config_is_the_shape_this_release_reads():
     config = json.loads(read('.purlin/config.json'))
-    assert config['gate'] == 'strong'
+    assert config['gate'] == 'passed'
     assert [suite['name'] for suite in config['tests']] == ['pytest']
     assert config['version'] == PURLIN_REF[1:]
     template = json.loads(read(os.path.join('templates', 'config.json'),
@@ -334,8 +334,7 @@ def test_purlin_reads_the_fixture_as_one_feature_with_a_linux_proof():
     envs = {proof['id']: proof['env']
             for rule in greeting['rules'] for proof in rule['proofs']}
     assert envs == {'PROOF-1': None, 'PROOF-2': 'linux'}
-    assert data['gate']['gate'] == 'strong'
-    assert data['gate']['min_strength'] == 70
+    assert data['gate']['gate'] == 'passed'
     assert data['evidence'] == {}, 'no run has happened in the fixture'
 
 

@@ -42,7 +42,7 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 import ai_audit as audit_module  # noqa: E402
 import fake_claude  # noqa: E402
 import marked_tests  # noqa: E402
-from sign_project import (FIRST_GATE, REVIEW_GATE, SIGNING_GATE,  # noqa: E402
+from sign_project import (FIRST_GATE, SIGNING_GATE,  # noqa: E402
                           SPEC, TEST_FILE, Project, git)
 
 AI_AUDIT_PY = os.path.join(ROOT, 'scripts', 'review', 'ai_audit.py')
@@ -50,12 +50,12 @@ CRITERIA = os.path.join(ROOT, 'references', 'review_criteria.md')
 
 FINDING = 'PROOF-2 asserts the status but never the body the rule names.'
 NO_SETTLED_LINE = 'claude answered without a settled line'
-TRAILING_COMMA = '{\n  "gate": "strong",\n}\n'
+TRAILING_COMMA = '{\n  "gate": "passed",\n}\n'
 READ_BY = '  Read by unknown at 2026-09-13T12:05:00Z.'
 
 
 @contextlib.contextmanager
-def passing_project(gate=REVIEW_GATE, spec=SPEC, statuses=None,
+def passing_project(gate=SIGNING_GATE, spec=SPEC, statuses=None,
                     strength=90):
     """A project at `gate` whose tests ran with `statuses`, closed after."""
     made = Project(spec=spec, gate=gate)
@@ -73,8 +73,8 @@ def proved():
 
 
 @pytest.fixture
-def at_strong():
-    """The same project at `strong`, where an unmarked rule is read."""
+def at_signed():
+    """The same project at `signed`, where an unmarked rule is read."""
     with passing_project() as made:
         yield made
 
@@ -131,8 +131,8 @@ def command(project, capsys, *args):
 class TestWhichRulesAreRead:
 
     # purlin: ai_audit PROOF-1
-    def test_a_passing_rule_with_no_entry_is_read_at_strong(self, at_strong):
-        rule = at_strong.rule('RULE-2')
+    def test_a_passing_rule_with_no_entry_is_read(self, at_signed):
+        rule = at_signed.rule('RULE-2')
         assert rule['cells']['passed']['word'] == 'passed', rule
         assert not rule.get('audit'), rule
         assert audit_module.is_read(rule) is True
@@ -157,9 +157,9 @@ class TestWhichRulesAreRead:
 
     # purlin: ai_audit PROOF-49
     def test_an_anchors_rules_are_read_once_each_as_the_anchors(
-            self, at_strong):
-        as_anchor(at_strong)
-        at_strong.spec('# Feature: portal\n\n'
+            self, at_signed):
+        as_anchor(at_signed)
+        at_signed.spec('# Feature: portal\n\n'
                        '> Description: The portal a person signs in to.\n'
                        '> Scope: src/login.py\n\n'
                        '## Rules\n\n'
@@ -168,7 +168,7 @@ class TestWhichRulesAreRead:
                        '- PROOF-1 (RULE-1): Open the portal; it opens\n',
                        name='portal')
         read_as = [(entry['name'], rule['feature'], rule['id'])
-                   for entry in at_strong.payload()['features']
+                   for entry in at_signed.payload()['features']
                    for rule in entry.get('rules') or ()
                    if audit_module.is_read(rule)]
         assert read_as == [('login', 'login', 'RULE-1'),
@@ -184,17 +184,17 @@ class TestWhichRulesAreRead:
             assert audit_module.is_read(made.rule('RULE-2')) is True
 
     # purlin: ai_audit PROOF-4
-    def test_a_rule_with_a_current_entry_is_not_read(self, at_strong):
-        at_strong.audit('RULE-2')
-        rule = at_strong.rule('RULE-2')
+    def test_a_rule_with_a_current_entry_is_not_read(self, at_signed):
+        at_signed.audit('RULE-2')
+        rule = at_signed.rule('RULE-2')
         assert rule['audit']['verdict'] == 'strong', rule
         assert audit_module.is_read(rule) is False
 
     # purlin: ai_audit PROOF-51
     def test_a_rule_with_a_current_entry_is_read_when_asked_again(
-            self, at_strong):
-        at_strong.audit('RULE-2')
-        assert audit_module.is_read(at_strong.rule('RULE-2'),
+            self, at_signed):
+        at_signed.audit('RULE-2')
+        assert audit_module.is_read(at_signed.rule('RULE-2'),
                                     again=True) is True
 
     @staticmethod
@@ -207,8 +207,8 @@ class TestWhichRulesAreRead:
         return project.rule('RULE-2')
 
     # purlin: ai_audit PROOF-52
-    def test_a_rule_whose_text_changed_is_read_again(self, at_strong):
-        rule = self._changed_after_its_entry(at_strong, lambda made: made.spec(
+    def test_a_rule_whose_text_changed_is_read_again(self, at_signed):
+        rule = self._changed_after_its_entry(at_signed, lambda made: made.spec(
             SPEC.replace('return 401 and the body',
                          'return 401 with the body')))
         assert rule['cells']['passed']['word'] == 'passed', rule
@@ -216,8 +216,8 @@ class TestWhichRulesAreRead:
         assert audit_module.is_read(rule) is True
 
     # purlin: ai_audit PROOF-53
-    def test_a_rule_whose_proof_changed_is_read_again(self, at_strong):
-        rule = self._changed_after_its_entry(at_strong, lambda made: made.spec(
+    def test_a_rule_whose_proof_changed_is_read_again(self, at_signed):
+        rule = self._changed_after_its_entry(at_signed, lambda made: made.spec(
             SPEC.replace('verify 401 and the body "denied"',
                          'verify 401 and the body reads "denied"')))
         assert rule['cells']['passed']['word'] == 'passed', rule
@@ -225,9 +225,9 @@ class TestWhichRulesAreRead:
         assert audit_module.is_read(rule) is True
 
     # purlin: ai_audit PROOF-54
-    def test_a_rule_whose_test_changed_is_read_again(self, at_strong):
+    def test_a_rule_whose_test_changed_is_read_again(self, at_signed):
         rule = self._changed_after_its_entry(
-            at_strong, lambda made: made.edit_test(TEST_FILE.replace(
+            at_signed, lambda made: made.edit_test(TEST_FILE.replace(
                 'login("ada", "wrong")', 'login("ada", "bad")')))
         assert rule['cells']['passed']['word'] == 'passed', rule
         assert not rule.get('audit'), rule
@@ -265,9 +265,9 @@ class TestWhatOneRuleIsReadWith:
         assert read(proved, 'RULE-99') is None
 
     # purlin: ai_audit PROOF-8
-    def test_the_strength_is_read_beside_the_minimum(self, at_strong):
-        reading = read(at_strong, 'RULE-2')
-        assert (reading['test_strength'], reading['min_strength']) == (90, 70)
+    def test_the_strength_is_read(self, at_signed):
+        reading = read(at_signed, 'RULE-2')
+        assert reading['test_strength'] == 90, reading
 
     # purlin: ai_audit PROOF-63
     def test_no_measured_strength_prints_nothing_of_strength(self, capsys):
@@ -374,9 +374,9 @@ class TestTheJavaScriptReader:
 class TestThePrompt:
 
     # purlin: ai_audit PROOF-11
-    def test_the_prompt_is_the_criteria_then_the_rule(self, at_strong):
-        prompt = audit_module.model_prompt(at_strong.root,
-                                           read(at_strong, 'RULE-2'))
+    def test_the_prompt_is_the_criteria_then_the_rule(self, at_signed):
+        prompt = audit_module.model_prompt(at_signed.root,
+                                           read(at_signed, 'RULE-2'))
         assert prompt.startswith(criteria_text())
         after = prompt[len(criteria_text()):]
         assert 'login RULE-2' in after
@@ -385,7 +385,16 @@ class TestThePrompt:
                 '"denied"') in after
         assert 'test_a_bad_password_is_denied' in after
         assert 'assert login("ada", "wrong") == 401' in after
-        assert 'Test strength: 90 percent (minimum 70)' in after
+        assert 'Test strength 90%.' in after.splitlines(), after[-400:]
+
+    # purlin: ai_audit PROOF-93
+    def test_the_prompt_names_the_strength_and_no_minimum(self):
+        with passing_project(strength=84) as made:
+            prompt = audit_module.model_prompt(made.root,
+                                               read(made, 'RULE-2'))
+        after = prompt[len(criteria_text()):]
+        assert 'Test strength 84%.' in after.splitlines(), after[-400:]
+        assert 'minimum' not in after, after[-400:]
 
     # purlin: ai_audit PROOF-79
     def test_the_prompt_says_in_words_that_no_strength_was_measured(self):
@@ -397,29 +406,29 @@ class TestThePrompt:
         assert told == ['Test strength: not measured'], told
 
     # purlin: ai_audit PROOF-91
-    def test_an_anchors_prompt_ends_on_the_anchor_line(self, at_strong):
-        as_anchor(at_strong)
-        prompt = audit_module.model_prompt(at_strong.root,
-                                           read(at_strong, 'RULE-2'))
+    def test_an_anchors_prompt_ends_on_the_anchor_line(self, at_signed):
+        as_anchor(at_signed)
+        prompt = audit_module.model_prompt(at_signed.root,
+                                           read(at_signed, 'RULE-2'))
         assert prompt.splitlines()[-1] == (
             'Anchor: its rules cover the whole project, so its tests must '
             'check the whole project. No test strength is measured for an '
             'anchor.'), prompt[-400:]
 
     # purlin: ai_audit PROOF-92
-    def test_an_anchors_prompt_names_no_strength(self, at_strong):
-        as_anchor(at_strong)
-        prompt = audit_module.model_prompt(at_strong.root,
-                                           read(at_strong, 'RULE-2'))
+    def test_an_anchors_prompt_names_no_strength(self, at_signed):
+        as_anchor(at_signed)
+        prompt = audit_module.model_prompt(at_signed.root,
+                                           read(at_signed, 'RULE-2'))
         assert 'login RULE-2' in prompt
         assert not [line for line in prompt.splitlines()
-                    if line.startswith('Test strength:')], prompt[-400:]
+                    if line.startswith('Test strength')], prompt[-400:]
 
     # purlin: ai_audit PROOF-12
     def test_the_prompt_asks_for_observations_and_bars_a_recommendation(
-            self, at_strong):
-        prompt = audit_module.model_prompt(at_strong.root,
-                                           read(at_strong, 'RULE-2'))
+            self, at_signed):
+        prompt = audit_module.model_prompt(at_signed.root,
+                                           read(at_signed, 'RULE-2'))
         assert 'settled: yes' in prompt
         assert 'one line per observation' in prompt
         assert 'Do not recommend a change' in prompt
@@ -428,9 +437,9 @@ class TestThePrompt:
 
     # purlin: ai_audit PROOF-39
     def test_the_prompt_asks_for_notes_on_a_long_or_double_proof(
-            self, at_strong):
-        prompt = audit_module.model_prompt(at_strong.root,
-                                           read(at_strong, 'RULE-2'))
+            self, at_signed):
+        prompt = audit_module.model_prompt(at_signed.root,
+                                           read(at_signed, 'RULE-2'))
         after = prompt[len(criteria_text()):]
         assert '\n    notes:\n' in after
         assert ('a note, under notes:, for a proof longer than 60 words or '
@@ -446,7 +455,7 @@ class TestTheCall:
     # purlin: ai_audit PROOF-13
     # purlin: ai_audit PROOF-82
     def test_the_prompt_goes_on_stdin_and_never_in_the_arguments(
-            self, at_strong, claude, monkeypatch):
+            self, at_signed, claude, monkeypatch):
         _install, directory = claude
         # The fake is Python: it reads its input as UTF-8, as `claude` does,
         # and not in a Windows console's default character set.
@@ -456,15 +465,15 @@ class TestTheCall:
             found = audit_module.claude_path()
             assert os.path.normcase(found) == os.path.normcase(
                 os.path.join(str(directory), 'claude.cmd')), found
-        reading = read(at_strong, 'RULE-2')
-        found = audit_module.audit_one(at_strong.root, reading,
+        reading = read(at_signed, 'RULE-2')
+        found = audit_module.audit_one(at_signed.root, reading,
                                        criteria_text())
         calls = fake_claude.calls(directory)
         assert found.get('verdict') == 'strong', found
         assert len(calls) == 1, calls
         assert calls[0]['argv'] == ['-p', '--output-format', 'json']
         # The fake reads its standard input to the end before it answers.
-        prompt = audit_module.model_prompt(at_strong.root, reading,
+        prompt = audit_module.model_prompt(at_signed.root, reading,
                                            criteria_text())
         assert calls[0]['prompt'] == prompt
         assert not any('Invalid credentials' in part
@@ -472,7 +481,7 @@ class TestTheCall:
 
     # purlin: ai_audit PROOF-14
     def test_a_call_is_given_300_seconds_and_stdin_closes_after_the_prompt(
-            self, at_strong):
+            self, at_signed):
         seen = []
 
         class Done(object):
@@ -483,7 +492,7 @@ class TestTheCall:
             seen.append((command, kwargs))
             return Done()
 
-        audit_module.audit_one(at_strong.root, read(at_strong, 'RULE-2'),
+        audit_module.audit_one(at_signed.root, read(at_signed, 'RULE-2'),
                                'criteria', command='/bin/claude',
                                runner=runner)
         command, kwargs = seen[0]
@@ -494,20 +503,20 @@ class TestTheCall:
         assert 'stdin' not in kwargs
 
     # purlin: ai_audit PROOF-15
-    def test_one_call_per_rule_and_four_at_once(self, at_strong, claude):
+    def test_one_call_per_rule_and_four_at_once(self, at_signed, claude):
         install, directory = claude
         install(sleep=0.4)
-        reading = read(at_strong, 'RULE-2')
-        results = audit_module.audit_all(at_strong.root, [reading] * 6, 4)
+        reading = read(at_signed, 'RULE-2')
+        results = audit_module.audit_all(at_signed.root, [reading] * 6, 4)
         calls = fake_claude.calls(directory)
         assert len(calls) == 6, calls
         assert [found['verdict'] for found in results] == ['strong'] * 6
         assert fake_claude.most_at_once(calls) == 4, calls
 
     # purlin: ai_audit PROOF-55
-    def test_six_rules_six_calls_each_answer_beside_its_rule(self, at_strong,
+    def test_six_rules_six_calls_each_answer_beside_its_rule(self, at_signed,
                                                              claude):
-        base = read(at_strong, 'RULE-2')
+        base = read(at_signed, 'RULE-2')
         readings = [dict(base, rule='RULE-%d' % n,
                          rule_text='Rule number %d holds' % n)
                     for n in range(1, 7)]
@@ -527,29 +536,29 @@ class TestTheCall:
                                       % rule})
             return done
 
-        results = audit_module.audit_all(at_strong.root, readings, 4,
+        results = audit_module.audit_all(at_signed.root, readings, 4,
                                          runner=runner)
         assert sorted(asked) == ['RULE-%d' % n for n in range(1, 7)], asked
         assert [found['findings'] for found in results] == [
             ['saw RULE-%d' % n] for n in range(1, 7)], results
 
     # purlin: ai_audit PROOF-16
-    def test_the_number_at_once_is_what_it_is_given(self, at_strong, claude):
+    def test_the_number_at_once_is_what_it_is_given(self, at_signed, claude):
         install, directory = claude
         install(sleep=0.4)
-        reading = read(at_strong, 'RULE-2')
-        audit_module.audit_all(at_strong.root, [reading] * 4, 2)
+        reading = read(at_signed, 'RULE-2')
+        audit_module.audit_all(at_signed.root, [reading] * 4, 2)
         calls = fake_claude.calls(directory)
         assert len(calls) == 4, calls
         assert fake_claude.most_at_once(calls) == 2, calls
 
     # purlin: ai_audit PROOF-56
-    def test_fewer_rules_than_the_number_all_run_together(self, at_strong,
+    def test_fewer_rules_than_the_number_all_run_together(self, at_signed,
                                                           claude):
         install, directory = claude
         install(sleep=0.4)
-        reading = read(at_strong, 'RULE-2')
-        audit_module.audit_all(at_strong.root, [reading] * 2, 4)
+        reading = read(at_signed, 'RULE-2')
+        audit_module.audit_all(at_signed.root, [reading] * 2, 4)
         calls = fake_claude.calls(directory)
         assert len(calls) == 2, calls
         assert fake_claude.most_at_once(calls) == 2, calls
@@ -562,56 +571,56 @@ class TestTheCall:
 class TestTheAnswer:
 
     # purlin: ai_audit PROOF-17
-    def test_settled_with_nothing_found_is_strong(self, at_strong, claude):
+    def test_settled_with_nothing_found_is_strong(self, at_signed, claude):
         install, _directory = claude
         install(answers=['settled: yes'])
-        found = ask(at_strong)
+        found = ask(at_signed)
         assert (found['verdict'], found['findings']) == ('strong', [])
 
     # purlin: ai_audit PROOF-18
     def test_settled_with_a_line_is_weak_and_the_line_is_the_finding(
-            self, at_strong, claude):
+            self, at_signed, claude):
         install, _directory = claude
         install(answers=['settled: yes\n- %s\n' % FINDING])
-        found = ask(at_strong)
+        found = ask(at_signed)
         assert (found['verdict'], found['findings']) == ('weak', [FINDING])
 
     # purlin: ai_audit PROOF-19
-    def test_not_settled_is_undecided_with_its_reason(self, at_strong, claude):
+    def test_not_settled_is_undecided_with_its_reason(self, at_signed, claude):
         install, _directory = claude
         install(answers=['settled: no\n- The body of PROOF-2 is not shown.'])
-        found = ask(at_strong)
+        found = ask(at_signed)
         assert (found['verdict'], found['findings']) == (
             'undecided', ['The body of PROOF-2 is not shown.'])
 
     # purlin: ai_audit PROOF-22
-    def test_a_finding_with_no_settled_line_is_no_answer(self, at_strong,
+    def test_a_finding_with_no_settled_line_is_no_answer(self, at_signed,
                                                          claude):
         install, _directory = claude
         install(answers=['- %s' % FINDING])
-        assert ask(at_strong) == {'why': NO_SETTLED_LINE}
+        assert ask(at_signed) == {'why': NO_SETTLED_LINE}
 
     # purlin: ai_audit PROOF-57
-    def test_an_empty_answer_is_no_answer(self, at_strong, claude):
+    def test_an_empty_answer_is_no_answer(self, at_signed, claude):
         install, _directory = claude
         install(answers=[''])
-        assert ask(at_strong) == {'why': NO_SETTLED_LINE}
+        assert ask(at_signed) == {'why': NO_SETTLED_LINE}
 
     # purlin: ai_audit PROOF-20
     def test_the_answer_names_its_model_and_the_criteria_it_was_sent(
-            self, at_strong, claude):
+            self, at_signed, claude):
         install, _directory = claude
         install(model='claude-opus-4-1-20250805')
-        found = ask(at_strong)
+        found = ask(at_signed)
         assert found['model'] == 'claude-opus-4-1-20250805'
         assert found['criteria'] == hashlib.sha256(
             criteria_text().encode('utf-8')).hexdigest()
 
     # purlin: ai_audit PROOF-58
-    def test_an_answer_naming_no_model_names_unknown(self, at_strong, claude):
+    def test_an_answer_naming_no_model_names_unknown(self, at_signed, claude):
         install, _directory = claude
         install(model=None)
-        assert ask(at_strong)['model'] == 'unknown'
+        assert ask(at_signed)['model'] == 'unknown'
 
     @staticmethod
     def _model_named(project, install, **fields):
@@ -621,48 +630,48 @@ class TestTheAnswer:
 
     # purlin: ai_audit PROOF-21
     def test_the_model_that_wrote_most_is_named_when_listed_second(
-            self, at_strong, claude):
+            self, at_signed, claude):
         install, _directory = claude
-        assert self._model_named(at_strong, install, modelUsage={
+        assert self._model_named(at_signed, install, modelUsage={
             'claude-haiku-3-5': {'outputTokens': 12},
             'claude-opus-4-1': {'outputTokens': 900}}) == 'claude-opus-4-1'
 
     # purlin: ai_audit PROOF-59
     def test_the_model_that_wrote_most_is_named_when_listed_first(
-            self, at_strong, claude):
+            self, at_signed, claude):
         install, _directory = claude
-        assert self._model_named(at_strong, install, modelUsage={
+        assert self._model_named(at_signed, install, modelUsage={
             'claude-opus-4-1': {'outputTokens': 900},
             'claude-haiku-3-5': {'outputTokens': 12}}) == 'claude-opus-4-1'
 
     # purlin: ai_audit PROOF-60
-    def test_the_model_named_follows_the_counts_not_the_name(self, at_strong,
+    def test_the_model_named_follows_the_counts_not_the_name(self, at_signed,
                                                              claude):
         install, _directory = claude
-        assert self._model_named(at_strong, install, modelUsage={
+        assert self._model_named(at_signed, install, modelUsage={
             'claude-opus-4-1': {'outputTokens': 12},
             'claude-haiku-3-5': {'outputTokens': 900}}) == 'claude-haiku-3-5'
 
     # purlin: ai_audit PROOF-61
-    def test_a_top_level_model_is_named(self, at_strong, claude):
+    def test_a_top_level_model_is_named(self, at_signed, claude):
         install, _directory = claude
-        assert self._model_named(at_strong, install,
+        assert self._model_named(at_signed, install,
                                  model='claude-x-1') == 'claude-x-1'
 
     # purlin: ai_audit PROOF-37
-    def test_a_note_is_not_a_finding(self, at_strong, claude):
+    def test_a_note_is_not_a_finding(self, at_signed, claude):
         install, _directory = claude
         install(answers=['settled: yes\nnotes:\n- PROOF-2 holds two cases.'])
-        found = ask(at_strong)
+        found = ask(at_signed)
         assert (found['verdict'], found['findings'], found['notes']) == (
             'strong', [], ['PROOF-2 holds two cases.']), found
 
     # purlin: ai_audit PROOF-38
-    def test_a_finding_and_a_note_are_kept_apart(self, at_strong, claude):
+    def test_a_finding_and_a_note_are_kept_apart(self, at_signed, claude):
         install, _directory = claude
         install(answers=['settled: yes\n- %s\nnotes:\n- PROOF-2 holds two '
                          'cases.' % FINDING])
-        found = ask(at_strong)
+        found = ask(at_signed)
         assert (found['verdict'], found['findings'], found['notes']) == (
             'weak', [FINDING], ['PROOF-2 holds two cases.']), found
 
@@ -674,46 +683,46 @@ class TestTheAnswer:
 class TestWhenTheModelCannotBeReached:
 
     # purlin: ai_audit PROOF-23
-    def test_no_claude_on_the_path_calls_nothing(self, at_strong, claude,
+    def test_no_claude_on_the_path_calls_nothing(self, at_signed, claude,
                                                  monkeypatch, tmp_path):
         _install, directory = claude
         empty = tmp_path / 'empty'
         empty.mkdir()
         monkeypatch.setenv('PATH', str(empty))
-        results = audit_module.audit_all(at_strong.root,
-                                         [read(at_strong, 'RULE-2')] * 2, 4)
+        results = audit_module.audit_all(at_signed.root,
+                                         [read(at_signed, 'RULE-2')] * 2, 4)
         assert results == [{'why': 'claude is not on PATH'}] * 2
         assert fake_claude.calls(directory) == []
 
     # purlin: ai_audit PROOF-24
-    def test_a_non_zero_exit_is_named(self, at_strong, claude):
+    def test_a_non_zero_exit_is_named(self, at_signed, claude):
         install, _directory = claude
         install(exit_code=1)
-        assert ask(at_strong) == {'why': 'claude exited with an error'}
+        assert ask(at_signed) == {'why': 'claude exited with an error'}
 
     # purlin: ai_audit PROOF-25
     # purlin: ai_audit PROOF-83
-    def test_a_call_past_its_limit_is_named(self, at_strong, claude,
+    def test_a_call_past_its_limit_is_named(self, at_signed, claude,
                                             monkeypatch):
         install, _directory = claude
         install(sleep=3)
         monkeypatch.setattr(audit_module, 'MODEL_TIMEOUT', 1)
-        assert ask(at_strong) == {'why': 'claude timed out after 1 s'}
+        assert ask(at_signed) == {'why': 'claude timed out after 1 s'}
 
     # purlin: ai_audit PROOF-26
     def test_an_answer_with_no_settled_line_twice_is_no_answer(
-            self, at_strong, claude):
+            self, at_signed, claude):
         install, directory = claude
         install(answers=['It looks fine to me.'])
-        assert ask(at_strong) == {'why': NO_SETTLED_LINE}
+        assert ask(at_signed) == {'why': NO_SETTLED_LINE}
         assert len(fake_claude.calls(directory)) == 2
 
     # purlin: ai_audit PROOF-62
-    def test_a_second_answer_that_settles_is_the_answer(self, at_strong,
+    def test_a_second_answer_that_settles_is_the_answer(self, at_signed,
                                                         claude):
         install, directory = claude
         install(answers=['It looks fine to me.', 'settled: yes'])
-        found = ask(at_strong)
+        found = ask(at_signed)
         assert found.get('verdict') == 'strong', found
         assert len(fake_claude.calls(directory)) == 2
 
@@ -736,34 +745,34 @@ class TestWriting:
         return found
 
     # purlin: ai_audit PROOF-27
-    def test_reading_a_rule_writes_no_file(self, at_strong):
+    def test_reading_a_rule_writes_no_file(self, at_signed):
         # A run's log sits under `.purlin/runtime/`, so the walk reaches it.
-        log = os.path.join(at_strong.root, '.purlin', 'runtime', 'run.log')
+        log = os.path.join(at_signed.root, '.purlin', 'runtime', 'run.log')
         os.makedirs(os.path.dirname(log), exist_ok=True)
         with open(log, 'w', encoding='utf-8') as handle:
             handle.write('a run\n')
-        before = self._files(at_strong.root)
+        before = self._files(at_signed.root)
         assert any('runtime' in path for path in before), before
-        assert read(at_strong, 'RULE-2') is not None
-        assert self._files(at_strong.root) == before
+        assert read(at_signed, 'RULE-2') is not None
+        assert self._files(at_signed.root) == before
 
     # purlin: ai_audit PROOF-72
-    def test_asking_the_model_writes_no_file(self, at_strong, claude):
+    def test_asking_the_model_writes_no_file(self, at_signed, claude):
         _install, directory = claude
-        reading = read(at_strong, 'RULE-2')
-        before = self._files(at_strong.root)
-        found = audit_module.audit_all(at_strong.root, [reading], 4)
+        reading = read(at_signed, 'RULE-2')
+        before = self._files(at_signed.root)
+        found = audit_module.audit_all(at_signed.root, [reading], 4)
         assert found[0]['verdict'] == 'strong', found
         assert len(fake_claude.calls(directory)) == 1
-        assert self._files(at_strong.root) == before
+        assert self._files(at_signed.root) == before
 
     # purlin: ai_audit PROOF-73
-    def test_printing_the_feature_writes_no_file(self, at_strong, capsys):
-        before = self._files(at_strong.root)
-        code, printed = command(at_strong, capsys, '--feature', 'login')
+    def test_printing_the_feature_writes_no_file(self, at_signed, capsys):
+        before = self._files(at_signed.root)
+        code, printed = command(at_signed, capsys, '--feature', 'login')
         assert code == 0
         assert 'login RULE-1' in printed and 'login RULE-2' in printed
-        assert self._files(at_strong.root) == before
+        assert self._files(at_signed.root) == before
 
 
 # ---------------------------------------------------------------------------
@@ -817,10 +826,10 @@ class TestTheCommandLine:
         assert fake_claude.calls(directory) == []
 
     # purlin: ai_audit PROOF-29
-    def test_the_printed_rule_names_what_the_audit_found(self, at_strong,
+    def test_the_printed_rule_names_what_the_audit_found(self, at_signed,
                                                           capsys):
-        at_strong.audit('RULE-2', findings=[FINDING])
-        code, printed = command(at_strong, capsys, '--feature', 'login',
+        at_signed.audit('RULE-2', findings=[FINDING])
+        code, printed = command(at_signed, capsys, '--feature', 'login',
                                 '--rule', 'RULE-2')
         assert code == 0
         for line in ('login RULE-2',
@@ -830,22 +839,22 @@ class TestTheCommandLine:
                      'What the audit found'):
             assert line in printed, (line, printed)
         lines = printed.splitlines()
-        assert 'Test strength 90%, against a minimum of 70%.' in lines, printed
+        assert 'Test strength 90%.' in lines, printed
         found = lines[lines.index('What the audit found') + 1:]
         assert found[:3] == ['  Weak.', '  %s' % FINDING, READ_BY], printed
         assert not [line for line in printed.splitlines()
                     if line.strip().startswith('Note:')], printed
 
     # purlin: ai_audit PROOF-80
-    def test_each_note_follows_the_findings(self, at_strong, capsys):
-        rel = at_strong.audit('RULE-2', findings=[FINDING])
-        path = os.path.join(at_strong.root, *rel.split('/'))
+    def test_each_note_follows_the_findings(self, at_signed, capsys):
+        rel = at_signed.audit('RULE-2', findings=[FINDING])
+        path = os.path.join(at_signed.root, *rel.split('/'))
         with open(path, encoding='utf-8') as handle:
             data = json.load(handle)
         data['audit']['rules']['RULE-2']['notes'] = ['PROOF-2 holds two cases.']
         with open(path, 'w', encoding='utf-8') as handle:
             json.dump(data, handle, indent=2, sort_keys=True)
-        code, printed = command(at_strong, capsys, '--feature', 'login',
+        code, printed = command(at_signed, capsys, '--feature', 'login',
                                 '--rule', 'RULE-2')
         assert code == 0
         lines = printed.splitlines()
@@ -854,8 +863,8 @@ class TestTheCommandLine:
             READ_BY, '  Note: PROOF-2 holds two cases.'], printed
 
     # purlin: ai_audit PROOF-77
-    def test_a_rule_no_audit_has_read_says_so(self, at_strong, capsys):
-        code, printed = command(at_strong, capsys, '--feature', 'login',
+    def test_a_rule_no_audit_has_read_says_so(self, at_signed, capsys):
+        code, printed = command(at_signed, capsys, '--feature', 'login',
                                 '--rule', 'RULE-2')
         assert code == 0
         found = printed.split('What the audit found', 1)
@@ -883,25 +892,25 @@ class TestTheCommandLine:
         return lines[lines.index('What the audit found') + 1:]
 
     # purlin: ai_audit PROOF-84
-    def test_a_strong_answer_with_nothing_found_says_so(self, at_strong,
+    def test_a_strong_answer_with_nothing_found_says_so(self, at_signed,
                                                         capsys):
-        at_strong.audit('RULE-2')
-        assert self._found(at_strong, capsys)[:2] == [
+        at_signed.audit('RULE-2')
+        assert self._found(at_signed, capsys)[:2] == [
             '  Strong. It found nothing.', READ_BY]
 
     # purlin: ai_audit PROOF-85
-    def test_a_strong_answer_with_a_finding_prints_it(self, at_strong,
+    def test_a_strong_answer_with_a_finding_prints_it(self, at_signed,
                                                       capsys):
-        self._entry(at_strong, 'strong', ['PROOF-2 names no body.'])
-        assert self._found(at_strong, capsys)[:3] == [
+        self._entry(at_signed, 'strong', ['PROOF-2 names no body.'])
+        assert self._found(at_signed, capsys)[:3] == [
             '  Strong.', '  PROOF-2 names no body.', READ_BY]
 
     # purlin: ai_audit PROOF-86
-    def test_an_undecided_answer_says_the_rule_reads_weak(self, at_strong,
+    def test_an_undecided_answer_says_the_rule_reads_weak(self, at_signed,
                                                           capsys):
-        at_strong.audit('RULE-2', findings=['The body of PROOF-2 is not shown.'],
+        at_signed.audit('RULE-2', findings=['The body of PROOF-2 is not shown.'],
                         settled=False)
-        assert self._found(at_strong, capsys)[:3] == [
+        assert self._found(at_signed, capsys)[:3] == [
             '  Undecided. The AI audit could not decide, so the rule reads '
             'weak until its proof or test changes.',
             '  The body of PROOF-2 is not shown.', READ_BY]
@@ -936,7 +945,7 @@ class TestTheCommandLine:
             code, printed = command(made, capsys, '--feature', 'login',
                                     '--rule', 'RULE-2')
         assert code == 0, printed
-        assert 'Test strength 85%, against a minimum of 70%.' in \
+        assert 'Test strength 85%.' in \
             printed.splitlines(), printed
 
     # purlin: ai_audit PROOF-90

@@ -1209,12 +1209,6 @@ def test_the_evidence_comes_home_at_the_gate_passed(project, remote_run):
         PUSH, WATCH, PULL, DELETE]
 
 
-# purlin: host PROOF-109
-def test_the_evidence_comes_home_at_the_gate_strong(project, remote_run):
-    assert _green_at_gate(project, remote_run, 'strong') == [
-        PUSH, WATCH, PULL, DELETE]
-
-
 # purlin: host PROOF-110
 def test_the_evidence_comes_home_at_the_gate_signed(project, remote_run):
     assert _green_at_gate(project, remote_run, 'signed') == [

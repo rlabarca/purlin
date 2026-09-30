@@ -234,6 +234,18 @@ class TestEveryFeature:
         ]) == []
 
 
+class TestTheReleaseRun:
+    """RULE-21: the usage names the release run."""
+
+    # purlin: skill_test PROOF-50
+    def test_the_shipped_usage_names_the_release_run(self, monkeypatch):
+        assert release_usage_problems() == []
+        assert refusals(monkeypatch, release_usage_problems, [
+            (REL, replace(RELEASE_LINE, 'purlin:test --release  Release'),
+             '%s usage does not carry %r' % (REL, RELEASE_LINE)),
+        ]) == []
+
+
 class TestNothingSelected:
     """RULE-14: the line the run prints when it selects nothing."""
 
@@ -479,6 +491,18 @@ def usage_problems():
     if usage and 'purlin:test --all' in usage:
         return []
     return ['%s usage does not name purlin:test --all' % REL]
+
+
+RELEASE_LINE = ('purlin:test --release [<version>]  Run every test, commit the '
+                'evidence and the package, and tag the release at the gate '
+                'passed')
+
+
+def release_usage_problems():
+    usage = section(read(REL), r'^usage') or ''
+    if RELEASE_LINE in usage.splitlines():
+        return []
+    return ['%s usage does not carry %r' % (REL, RELEASE_LINE)]
 
 
 def selection_paragraph_problems(needles):

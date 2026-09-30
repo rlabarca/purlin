@@ -3,9 +3,8 @@ name: test
 description: Run the marked tests and print each rule's passed cell
 ---
 
-Run the project's own test suites, tie each result to the marker comment above its test,
-write what they saw into `.purlin/evidence/local/` and `.purlin/tests.md`, and print the passed
-cell of every rule. This is the step `passed`: no breaks, no audit, no signature.
+Run the project's own test suites, tie each result to the marker comment above its test, write what
+they saw into `.purlin/evidence/local/` and `.purlin/tests.md`, and print every rule's passed cell.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below is
 relative to the plugin root; see `references/purlin_commands.md#path-resolution`. **Pending
@@ -22,6 +21,7 @@ purlin:test <feature> [...]     Run one feature, or several
 purlin:test --commit            Commit the work and the evidence the run wrote
 purlin:test --remote            Let the git host's runner do the run
 purlin:test --arm-timeout <seconds>  Give each suite longer than an hour
+purlin:test --release [<version>]  Run every test, commit the evidence and the package, and tag the release at the gate passed
 ```
 
 ## Step 1: run the tests
@@ -45,7 +45,7 @@ changes that are not committed, and pushes nothing then. It waits through `gh` o
 with `azure-devops` on Azure DevOps. With no gh on GitHub or no az on Azure DevOps it pushes nothing
 and names the program to install; a failed run, no run found or the wait over exits 1.
 
-Exit codes: `0` everything asked happened, `1` a tied test failed or did not run, evidence is missing, a marker names nothing a spec has, there is no settings file, the settings file cannot be read, an older Purlin set the project up, or no test command is set, `2` the invocation was wrong. A test run cannot make an audit or a signature appear, so the gate does not set the code.
+Exit codes: `0` everything asked happened, `1` a tied test failed or did not run, evidence is missing, a marker names nothing a spec has, there is no settings file, the settings file cannot be read, an older Purlin set the project up, or no test command is set, `2` the invocation was wrong. A test run cannot make an audit or a signature appear, so the gate does not set the code. `purlin:test --release [<version>]` runs the script with `--release [<version>]`: every test, both commits of `--commit`, then the release, which commits `.purlin/evidence/package/<version>.json` and, at the gate `passed`, tags `passed/<version>`; at `signed` it prints `Run purlin:sign to sign it`. It never pushes. A refused release prints one line beginning `No release:` and exits 1.
 
 ## Step 2: when the run stops before any test
 
@@ -112,7 +112,8 @@ step:
 |----------------------|-------------------|
 | `Left to do:` and its lines | `→ Run: <the command on its first line>` |
 | A line `<feature> RULE-<n> fails: ...` above the status | `→ Run: purlin:build <feature>` (fix the code or the test) |
-| `Nothing left to do. Push the tag to release it: git push origin signed/<version>` | `→ Run: git push origin signed/<version>` |
-| `Nothing left to do.` | `Nothing left to do.` |
+| `Nothing left to do. To release a version: purlin:test --release` (at `signed`, `, then purlin:sign`) | `→ Run: purlin:test --release` |
+| A line beginning `No release:` | `→ Run: <the command it names>`, or say what git refused |
+| `Nothing left to do. Push the tag to release it: git push origin <tag>` | `→ Run: git push origin <tag>` |
 
 Diagnose a failure first: `references/spec_quality_guide.md` says which part is at fault.

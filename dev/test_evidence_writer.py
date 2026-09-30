@@ -650,7 +650,7 @@ def test_a_run_removes_the_evidence_of_a_feature_with_no_spec(tmp_path):
 def _removed_by(tmp_path, *args):
     """A `strong` project holding live `ci/` evidence and `local/gone.json`,
     run with `args`: what the run printed, and whether each file is there."""
-    root = _project(tmp_path, gate='strong')
+    root = _project(tmp_path, gate='signed')
     _spec(root)
     _test_file(root)
     live = _put(root, _file(source='ci', platforms={'linux': _section()}),
@@ -914,7 +914,7 @@ def test_a_run_writes_and_does_not_commit(tmp_path):
 
 # purlin: evidence_writer PROOF-37
 def test_an_audit_run_writes_and_does_not_commit(tmp_path):
-    root = _project(tmp_path, gate='strong')
+    root = _project(tmp_path, gate='signed')
     _spec(root)
     _test_file(root)
     _repo(root)
@@ -1331,7 +1331,7 @@ def test_a_score_that_differs_only_in_why_nothing_was_measured_replaces_it(
 
 # purlin: evidence_writer PROOF-54
 def test_an_audit_run_writes_the_entry_for_the_rule_it_read(tmp_path):
-    root = _project(tmp_path, gate='strong')
+    root = _project(tmp_path, gate='signed')
     _spec(root)
     _test_file(root)
     _repo(root)

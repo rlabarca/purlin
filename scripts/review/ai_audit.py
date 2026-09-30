@@ -95,7 +95,7 @@ VERDICT_WORDS = {
                   'reads weak until its proof or test changes.'),
 }
 NO_TEST_YET = '  No test yet. Run purlin:build %s.'
-STRENGTH_LINE = 'Test strength %d%%, against a minimum of %s%%.'
+STRENGTH_LINE = 'Test strength %d%%.'
 # What the prompt of an anchor's rule ends on, in place of its strength.
 ANCHOR_LINE = ('Anchor: its rules cover the whole project, so its tests must '
                'check the whole project. No test strength is measured for an '
@@ -147,7 +147,6 @@ def reading_for(project_root, payload, feature, rule):
     entry = rule_entry(payload, feature, rule)
     if entry is None:
         return None
-    gate = payload.get('gate') or {}
     # An anchor's rules cover the whole project, and no strength is measured
     # for one: the audit reads its tests alone.
     anchor = bool(_feature_entry(payload, feature).get('is_anchor'))
@@ -166,7 +165,6 @@ def reading_for(project_root, payload, feature, rule):
         'anchor': anchor,
         'test_strength': (None if anchor else _feature_entry(
             payload, feature).get('test_strength')),
-        'min_strength': gate.get('min_strength'),
         'audit': entry.get('audit'),
     }
 
@@ -289,20 +287,10 @@ def model_prompt(project_root, reading, criteria=None):
     if reading.get('anchor'):
         parts.append(ANCHOR_LINE)
     else:
-        parts.append('Test strength: %s'
-                     % _strength_words(reading, '(minimum %s)'))
+        parts.append('Test strength: not measured'
+                     if reading.get('test_strength') is None
+                     else _strength_line(reading))
     return '\n'.join(parts)
-
-
-def _strength_words(reading, minimum):
-    """The strength in words: `not measured`, or the percent and `minimum`."""
-    strength = reading.get('test_strength')
-    if strength is None:
-        return 'not measured'
-    words = '%d percent' % strength
-    if reading.get('min_strength') is not None:
-        words += ' ' + minimum % reading['min_strength']
-    return words
 
 
 # ---------------------------------------------------------------------------
@@ -505,11 +493,8 @@ def render(reading):
 
 
 def _strength_line(reading):
-    """The test strength a person reads, its whole-number part beside the minimum."""
-    strength = reading['test_strength']
-    if reading.get('min_strength') is None:
-        return 'Test strength: %s' % _strength_words(reading, '')
-    return STRENGTH_LINE % (int(math.floor(strength)), reading['min_strength'])
+    """The test strength a person and the model read, its whole-number part."""
+    return STRENGTH_LINE % int(math.floor(reading['test_strength']))
 
 
 def verdict_lines(audit):

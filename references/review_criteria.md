@@ -74,12 +74,11 @@ question, answered by a model that read the test beside it.
 ## What test strength says
 
 The model is shown the test strength of the feature the rule belongs to: of the deliberate
-breaks made to that feature's code, the share its tests caught, as an integer percent beside
-`min_strength` from `.purlin/config.json`, as `Test strength: 71 percent (minimum 80)`. Where
-nothing was measured, or the engine cannot run on this system, the model is shown
-`Test strength: not measured`. No strength is measured for an anchor.
-`references/hard_gates.md`, "The three steps", says what test strength is and when it leaves a
-rule `weak`.
+breaks made to that feature's code, the share its tests caught, as an integer percent, as
+`Test strength 71%.` Where nothing was measured, or the engine cannot run on this system, the
+model is shown `Test strength: not measured`. No strength is measured for an anchor. The
+breaks run wherever `mutation_engine` in `.purlin/config.json` is not `none`, at either gate,
+and the strength is a reason beside the strong cell's word, never the word itself.
 
 It says one thing: the feature's tests noticed when its behaviour changed. It does not say
 the tests prove the right rule, that the proof text matches the test, or that the rule is
@@ -87,27 +86,23 @@ worth having. A feature can reach 90 percent while one of its proofs observes th
 and a rule proved correctly can belong to a feature at 0 percent because nothing broke. Read
 it beside what the audit observed, never instead of it.
 
-## What each gate asks of the audit
+## What the audit holds back
 
-**`passed`.** The tests are the evidence. A passing run from either source is enough. The AI
-audit reads every rule whose tests pass, and what it finds holds nothing back.
-
-**`strong`** and **`signed`.** The strong cell is the evidence. The AI audit must have run on
-the current rule, proof and test, observed nothing and settled, and, where mutation testing is
-on, its feature's test strength must reach `min_strength`. Until it has run the strong cell
-reads `not audited`; where it ran and could not tell it reads `weak` with the reason
+Nothing. The AI audit and the breaks are tools at either gate: `purlin:audit` runs them when a
+person asks, and neither a gate nor a release waits on them. Where the audit ran, what it found
+is written into the evidence and the evidence package. Until it has run the strong cell reads
+`not audited`; where it ran and could not tell it reads `weak` with the reason
 `the AI audit could not decide: <its sentence>`; where it settled and still observed something
 the cell reads `weak` with that sentence as the reason. Where no model could be reached nothing
-is written, and the cell reads `not audited` until an audit reaches the rule. At the gate
-`signed` the rule also needs a current signature in a signed commit.
+is written, and the cell reads `not audited` until an audit reaches the rule.
 
 ## What the audit reports
 
 The audit reports. It recommends nothing, and it never names a next action. Four things:
 
-- **The feature's test strength, beside the minimum, where it was measured.** `Test
-  strength 71%, against a minimum of 80%.` Where nothing was measured the report says
-  nothing of strength, and the model reading the rule is shown `Test strength: not measured`.
+- **The feature's test strength, where it was measured.** `Test strength 71%.` Where
+  nothing was measured the report says nothing of strength, and the model reading the rule is
+  shown `Test strength: not measured`.
 - **The observations.** What the AI audit saw the test observe, against what the proof
   names, one sentence each. The audit is asked to state what it saw and to say when it
   cannot tell. It is never asked what to do.
@@ -128,12 +123,9 @@ the audit read.
 A `@manual` proof has no test, so there is no test body to read and no AI audit is asked
 for. Its strong cell reads `manual test`.
 
-A rule the audit found weak is build work: it shows under `Left to do` as a rule to
-strengthen, and `purlin:build` works on it. `purlin:sign` walks the rules left to test by hand
-and to sign, and takes one of three answers for each:
-
-- **Sign it.** The test proves the proof. `purlin:sign <feature> RULE-N`.
-- **Add a case.** The test is right as far as it goes and a case is missing, usually the
-  failure the rule's proofs never name. Write the proof line; the next `purlin:build` writes
-  the test for it.
-- **Skip it.** Come back to it later. Nothing is written.
+A rule the audit found weak is build work: it shows under `Left to do` as a rule to strengthen,
+and `purlin:build` works on it. A weak finding does not stop a release. At the gate `signed`
+the sign-off walk of `purlin:sign` stops at each weak rule and each rule no audit has read,
+shows its proofs, its tests and what the audit found, and the signer continues, adds a note,
+or stops to fix it. A case the test is missing is fixed by writing its proof line; the next
+`purlin:build` writes the test for it.
