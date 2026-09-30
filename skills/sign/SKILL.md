@@ -5,10 +5,10 @@ description: Sign a rule, a feature or every rule that waits for a person, as a 
 
 Attest that a rule, its proof, its test, the code its feature lists and what the audit found belong
 together. The attestation is a file, and the commit that adds it is signed, so who signed what and
-when is in git history. With no argument this skill walks the rules that wait for a person, one at
-a time; with a feature or a rule it goes straight there. It works at every gate. At the gate
-`signed`, when nothing is left but the tag, the walk ends by writing the signed tag
-`signed/<version>`, as `references/hard_gates.md` defines it.
+when is in git history. With no argument this skill walks the rules that wait for a person; with a
+feature or a rule it goes straight there. At the gate `signed`, when nothing is left but the tag,
+the walk ends by writing the signed tag `signed/<version>`, as `references/hard_gates.md` defines
+it.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
 is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
@@ -24,10 +24,8 @@ purlin:sign --release <name>                   The same walk, tagging <name> ins
 purlin:sign <feature> [RULE-N ...]             Named rules, or every waiting rule of a feature
 purlin:sign --all                              Every waiting rule, in one signed commit
 purlin:sign <feature> RULE-N --note "<text>"   Sign a hand check: what you saw, in one line
+purlin:sign <anchor> RULE-N --does-not-apply "<why>"  Sign a pinned anchor's rule as not applying to this project
 ```
-
-Plain language reaches the same place: "what needs my eyes", "sign off on billing". A rule named
-by id is signed whatever it waits on: the script refuses nothing a person asks for.
 
 ## What the gate decides
 
@@ -53,13 +51,15 @@ offer to run them, and once they say yes and the commands ran, carry on with the
 
 ## Step 2: what waits, and what the audit found for each rule
 
-Call `sync_status` with `project_root` set to the project root, the top folder of the git
-checkout. Each rule's `left` in the payload is the one kind of work left on it. The walk reads
-the rules whose `left` is `to_test_by_hand`, a `@manual` proof a person checks, or `to_sign`, a
-rule whose tests and audit are done at the gate `signed`. `Left to do` carries one line for each:
+Call `sync_status` with `project_root` set to the project root, the top folder of the git checkout.
+Each rule's `left` in the payload is the one kind of work left on it. The walk reads the rules
+whose `left` is `to_test_by_hand`, a `@manual` proof a person checks, `to_confirm`, a pinned
+anchor's rule whose signature as not applying ended, or `to_sign`, a rule whose tests and audit are
+done at the gate `signed`. `Left to do` carries one line for each:
 
 ```
 2 rules to test by hand: purlin:sign
+1 rule to confirm as not applying: purlin:sign
 3 rules to sign: purlin:sign
 ```
 
@@ -70,11 +70,9 @@ the audit read and found for a rule before anything is written:
 sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/review/ai_audit.py" --feature <feature> --rule RULE-N
 ```
 
-It carries the rule text, the proof text, the test body, the test strength beside
-`min_strength`, and what the last audit found, with the model that found it. It reports; it
-recommends nothing, so the judgment is yours. Judge it against `references/review_criteria.md`,
-which is the one place the criteria live. Signing a rule you have not read is the one thing
-this skill must not help with.
+It carries the rule text, the proof text, the test body, the test strength beside `min_strength`,
+and what the last audit found. Judge it against `references/review_criteria.md`. Signing a rule you
+have not read is the one thing this skill must not help with.
 
 ## Step 3: walk it
 
@@ -82,12 +80,15 @@ this skill must not help with.
 sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py"
 ```
 
-With no argument the script opens on those two lines, or on
-`Nothing is waiting for someone to test by hand or to sign.`, then shows each rule, its proofs
-and what the audit found, and asks for one answer, `sign / case / skip`. Signing a hand check
-asks `What did you see, in one line:`; ask the person, and the line becomes the signature's note.
-An empty line signs it with no note. It writes nothing until the walk closes; then one signed
-commit carries the signatures.
+With no argument the script opens on those lines, then shows each rule, its proofs and what the
+audit found, and asks for one answer, `sign / case / skip`; with nothing waiting it prints
+`Nothing is waiting for someone to test by hand or to sign.` Signing a hand check asks
+`What did you see, in one line:`; the person's line becomes the signature's note, and an empty line
+signs it with none. It writes nothing until the walk closes; then one signed commit carries the
+signatures. A rule to confirm stops the walk on
+`security_baseline RULE-4 was signed as not applying by jane@acme.com: the project stores no card data. Confirm it still does not apply?`
+with three answers: confirm, which signs it again with the earlier reason; sign it as applying
+after all, after which it waits as any rule does; or skip. `--all` confirms none.
 
 ## Step 4: the three answers
 
@@ -95,25 +96,27 @@ commit carries the signatures.
 
 ```bash
 sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py" <feature> RULE-N [RULE-M ...] [--note "<text>"]
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py" <anchor> RULE-N [RULE-M ...] --does-not-apply "<why>"
 ```
+
+The second line signs a pinned anchor's rule that does not apply here, with the person's reason, at
+any gate; it then reads `does not apply` and counts as met until any change to the project ends it.
+Any other rule is refused, since a rule of this project that does not apply is deleted.
 
 **Add a case.** The person says in plain language what is missing: "it should also reject an expired
 token". Write it into the spec as a new proof line with the next free proof id, leave the test for
 the next `purlin:build`, and move on. This skill writes specs and signatures, never code.
 
-**Skip.** Move to the next rule and leave it as it is. A skipped rule waits again next time:
-nothing is marked as seen by being seen.
+**Skip.** Move on and leave the rule as it is. A skipped rule waits again next time.
 
 Never narrow a rule or a proof to make an observation disappear. That lowers the claim instead of
-strengthening the evidence, and on a rule that comes from an anchor it is not yours to change:
-the change is a pull request against the anchor's source repository.
+strengthening the evidence.
 
 ## Step 5: when a signature counts
 
-The script writes one file per rule under `specs/<category>/<feature>.signatures/`, one per
-feature an anchor's rule applies to, and makes one signed commit for all of them. Each file
-records the signer's email and name as git holds them and the key's fingerprint. The commit
-subjects come from `references/commit_conventions.md`.
+The script writes one file per rule under `specs/<category>/<feature>.signatures/` and makes one
+signed commit for all of them. Each file records the signer's email and name as git holds them
+and the key's fingerprint. The commit subjects come from `references/commit_conventions.md`.
 
 | A signature counts when | What ends it |
 |-------------------------|--------------|
@@ -133,10 +136,9 @@ signed all the same, and its line names the command that adds them:
 ## Step 6: the version and the tag
 
 At the gate `signed`, when nothing is left but the tag, the script writes the evidence package
-`.purlin/evidence/package/<version>.json`, commits it as a signed commit, and writes a signed tag
-(`git tag -s`) on that commit. The version is read from the `VERSION` file, then `package.json`,
-then `pyproject.toml`, then the first `*.csproj` at the root; `--release <name>` names another.
-Then it prints:
+`.purlin/evidence/package/<version>.json`, commits it as a signed commit, and writes a signed tag on
+that commit. The version comes from the `VERSION` file, then `package.json`, then `pyproject.toml`,
+then the first `*.csproj` at the root; `--release <name>` names another. It prints:
 
 ```
 Evidence package committed: .purlin/evidence/package/1.4.0.json.
@@ -144,16 +146,15 @@ Tagged signed/1.4.0 at a1b2c3d.
 Nothing left to do. Push the tag to release it: git push origin signed/1.4.0
 ```
 
-While other work is left it prints the summary and `Left to do` instead. It writes no tag while
-the working tree or any feature's results are not committed, and none over a tag that exists,
-where it prints `No tag: <tag> is already written. Run purlin:sign --release <name> to name another.`
-It exits 1 when the tag was refused for a reason to fix, uncommitted work or results, no version,
-a package not committed or git failing to write the tag, and 0 when the tag already exists.
-With no version stated it prints
+While other work is left it prints the summary and `Left to do` instead. It writes no tag while the
+working tree or any feature's results are not committed, and none over a tag that exists, where it
+prints `No tag: <tag> is already written. Run purlin:sign --release <name> to name another.` It
+exits 1 when the tag was refused for a reason to fix, uncommitted work or results, no version, a
+package not committed or git failing to write the tag, and 0 when the tag already exists.
+Below `signed` it writes no tag and no package. With no version stated it prints
 `No version: nothing in this project states one. Run purlin:sign --release <version>, or write it to a VERSION file.`:
-ask the person for the version, offer to write it to a `VERSION` file at the root, and run the
-walk again, or pass `--release <version>`. Below `signed` it writes no tag and no package.
-Pushing the tag is a person's act; this skill never pushes.
+ask the person for the version, offer to write it to a `VERSION` file at the root, and run the walk
+again. Pushing the tag is a person's act; this skill never pushes.
 
 ## Step 7: close the walk and name the next step
 
@@ -163,7 +164,6 @@ The walk closes with what happened, then ends on the summary or on what the tag 
 Walked 12 rules: 8 signed, 1 case added, 3 skipped.
   billing RULE-2   add this proof line: reject an expired token
 Signed 8 rules as jane@acme.com with the key ending ...Xy4Q.
-Commits: a1b2c3d
 ```
 
 | What it ended on | The line to print |

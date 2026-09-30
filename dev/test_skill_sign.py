@@ -581,3 +581,60 @@ def test_a_case_becomes_a_proof_line_and_waits_for_build():
 def test_a_rule_is_never_narrowed_to_lose_an_observation():
     assert ('Never narrow a rule or a proof to make an observation '
             'disappear.') in flat(read(SKILL))
+
+
+DOES_NOT_APPLY_USAGE = ('purlin:sign <anchor> RULE-N --does-not-apply "<why>"  '
+                        "Sign a pinned anchor's rule as not applying to this "
+                        'project')
+CONFIRM_STOP = ('`security_baseline RULE-4 was signed as not applying by '
+                'jane@acme.com: the project stores no card data. Confirm it '
+                'still does not apply?`')
+CONFIRM_ANSWERS = ('confirm, which signs it again with the earlier reason',
+                   'sign it as applying after all',
+                   'or skip')
+
+
+def does_not_apply_problems():
+    text = read(SKILL)
+    usage = section(text, r'^Usage$') or ''
+    answers = flat(section(text, r'three answers') or '')
+    problems = []
+    if DOES_NOT_APPLY_USAGE not in usage.splitlines():
+        problems.append('%s usage carries no line %r'
+                        % (SKILL, DOES_NOT_APPLY_USAGE))
+    if 'Any other rule is refused' not in answers:
+        problems.append("%s answers section does not say 'Any other rule is "
+                        "refused'" % SKILL)
+    return problems
+
+
+def confirm_problems():
+    walk = flat(section(read(SKILL), r'walk it') or '')
+    return ['%s walk section does not carry %r' % (SKILL, needle)
+            for needle in (CONFIRM_STOP,) + CONFIRM_ANSWERS
+            if needle not in walk]
+
+
+# purlin: skill_sign PROOF-52
+def test_does_not_apply_signs_a_pinned_anchors_rule_alone(monkeypatch):
+    assert does_not_apply_problems() == []
+    assert refusals(monkeypatch, does_not_apply_problems, [
+        (SKILL, replace(DOES_NOT_APPLY_USAGE + '\n'),
+         '%s usage carries no line' % SKILL),
+        (SKILL, replace('Any other rule is refused', 'Any other rule is '
+                        'signed so too'),
+         "answers section does not say 'Any other rule is refused'"),
+    ]) == []
+
+
+# purlin: skill_sign PROOF-53
+def test_the_walk_stops_at_a_rule_to_confirm(monkeypatch):
+    assert confirm_problems() == []
+    assert refusals(monkeypatch, confirm_problems, [
+        (SKILL, replace('Confirm it still does not apply?',
+                        'Sign it again?'),
+         'walk section does not carry %r' % CONFIRM_STOP),
+        (SKILL, replace('sign it as applying\nafter all',
+                        'delete it'),
+         'walk section does not carry %r' % CONFIRM_ANSWERS[1]),
+    ]) == []

@@ -6,8 +6,8 @@
 >   when the signature counts, and where the version for the tag comes from.
 > Scope: skills/sign/SKILL.md
 > Stack: markdown, Claude Code skill definition
-> Highest-Rule: 23
-> Highest-Proof: 51
+> Highest-Rule: 24
+> Highest-Proof: 53
 
 ## Rules
 
@@ -34,6 +34,7 @@
 - RULE-21: The skill tells the agent the line the script prints when the tag is already written, `No tag: <tag> is already written. Run purlin:sign --release <name> to name another.`
 - RULE-22: The skill tells the agent to write a case the person gives in the walk into the spec as a new proof line with the next free proof id, to leave its test for the next `purlin:build`, and to write no code
 - RULE-23: The skill tells the agent never to narrow a rule or a proof to make an observation disappear
+- RULE-24: The skill tells the agent that `--does-not-apply "<why>"` signs only a rule of a pinned anchor, as not applying to this project, and that the walk stops at a rule to confirm with three answers: confirm it, sign it as applying after all, or skip
 
 ## Proof
 
@@ -63,3 +64,5 @@
 - PROOF-45 (RULE-17): The sign skill's section on the tag says the script exits 1 when the tag was refused for a reason to fix, naming uncommitted work or results, no version, a package not committed and git failing to write the tag, and 0 when the tag already exists
 - PROOF-50 (RULE-22): The sign skill's `**Add a case.**` paragraph, read across its line breaks, says to write the case into the spec as a new proof line with the next free proof id, to leave the test for the next `purlin:build`, and that the skill writes specs and signatures, never code
 - PROOF-51 (RULE-23): The sign skill, read across its line breaks, carries the sentence `Never narrow a rule or a proof to make an observation disappear.`
+- PROOF-52 (RULE-24): The sign skill's usage block carries the line `purlin:sign <anchor> RULE-N --does-not-apply "<why>"  Sign a pinned anchor's rule as not applying to this project`, and its section on the answers says `Any other rule is refused`
+- PROOF-53 (RULE-24): The sign skill's section on the walk shows the stop `security_baseline RULE-4 was signed as not applying by jane@acme.com: the project stores no card data. Confirm it still does not apply?` and gives three answers: confirm with the earlier reason, sign it as applying after all, or skip
