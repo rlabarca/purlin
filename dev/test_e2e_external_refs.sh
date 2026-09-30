@@ -125,12 +125,10 @@ init_project() {
 }
 
 create_feature() {
-  local tmpdir="$1" name="$2" requires="$3"
+  local tmpdir="$1" name="$2"
   mkdir -p "$tmpdir/specs/core"
   {
     echo "# Feature: $name"
-    echo ""
-    [[ -n "$requires" ]] && echo "> Requires: $requires"
     echo ""
     echo "## Rules"
     echo ""
@@ -262,7 +260,7 @@ PROJECT5="$TMP5/project"
 mkdir -p "$PROJECT5"
 init_project "$PROJECT5"
 run_upstream "$PROJECT5" add "$BARE5" --path specs/no_eval.md --name no_eval >/dev/null
-create_feature "$PROJECT5" "checkout" "no_eval"
+create_feature "$PROJECT5" "checkout"
 (cd "$PROJECT5" && git add -A && git commit -q -m "add the anchor and a feature")
 NEW5=$(advance_anchor_repo "$BARE5" "specs/no_eval.md" "$ANCHOR_V2")
 
@@ -273,9 +271,9 @@ echo "$status_out" | grep -q "purlin:anchor sync no_eval" || ok=false
 record "the status table names the anchor and the command to run" "$ok" "$status_out"
 
 # ==========================================================================
-# 6. a feature that requires the anchor counts its rules
+# 6. a feature beside the anchor counts its own rules, the anchor its own
 # ==========================================================================
-echo "--- 6: required anchor rules are counted ---"
+echo "--- 6: each spec counts its own rules ---"
 result=$(PURLIN_MCP_DIR="$MCP_DIR" PURLIN_ROOT="$PROJECT5" python3 -c '
 import os, sys
 sys.path.insert(0, os.environ["PURLIN_MCP_DIR"])
@@ -283,13 +281,17 @@ from purlin import payload
 data = payload.build_payload(os.environ["PURLIN_ROOT"])
 rows = {f["name"]: f for f in data["features"]}
 checkout = rows["checkout"]["rollup"]["rules"]
-labels = sorted({r["label"] for r in rows["checkout"]["rules"]})
-print("ok" if checkout == 3 and labels == ["own", "required"]
-      else "rules=%s labels=%s" % (checkout, labels))
+anchor = rows["no_eval"]["rollup"]["rules"]
+listed = sorted((r["feature"], r["id"]) for r in rows["checkout"]["rules"])
+total = data["summary"]["rules"]
+print("ok" if checkout == 1 and anchor == 2 and total == 3
+      and listed == [("checkout", "RULE-1")]
+      else "checkout=%s anchor=%s total=%s listed=%s"
+      % (checkout, anchor, total, listed))
 ')
 ok=true
 [[ "$result" == "ok" ]] || ok=false
-record "one own rule plus two anchor rules is three" "$ok" "$result"
+record "the feature counts its one rule, the anchor its two, the project three" "$ok" "$result"
 
 # ==========================================================================
 # 7. drift carries the pin, its status and the remote sha

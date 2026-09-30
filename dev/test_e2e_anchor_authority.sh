@@ -3,9 +3,11 @@
 # anchor repo.
 #
 # The anchor repo owns the rules in the pinned copy: a sync overwrites them.
-# The project owns the rules in a separate local anchor that `> Requires:` the
-# pinned one, and a sync never touches those. A rule a consumer does add to the
-# pinned copy does not survive the next sync.
+# The project owns the rules in a local anchor of its own beside it, and a sync
+# never touches those. A rule a consumer does add to the pinned copy does not
+# survive the next sync. A pinned copy is written as its source holds it, and a
+# field in it Purlin does not read on an anchor is warned of in the status,
+# naming the source's owners as the ones to take it out.
 #
 # Every source is a local bare repository on disk, so nothing reaches a
 # network, and every command runs against a temporary project with
@@ -76,10 +78,27 @@ PUBLISHED_V2='# Anchor: ext_security
 - PROOF-3 (RULE-3): Sign in with a wrong password; verify one log line
 '
 
+# The published anchor as a 0.9.5 anchor repo may still hold it, with a scope.
+PUBLISHED_SCOPED='# Anchor: ext_security
+
+> Description: The security rules the shared security team publishes.
+> Type: security
+> Scope: src/api.py
+
+## Rules
+
+- RULE-1: Every request carries an authenticated principal
+- RULE-2: Secrets are read from the environment, never from a file
+
+## Proof
+
+- PROOF-1 (RULE-1): Call the api with no credentials; verify 401
+- PROOF-2 (RULE-2): Grep the tree for secret literals; verify zero matches
+'
+
 LOCAL_ANCHOR='# Anchor: local_security
 
 > Description: The security rules this project adds to the published ones.
-> Requires: ext_security
 
 ## Rules
 
@@ -144,6 +163,15 @@ run_upstream() {
   local tmpdir="$1"
   shift
   python3 "$UPSTREAM" --project-root "$tmpdir" "$@"
+}
+
+run_status() {
+  PURLIN_MCP_DIR="$MCP_DIR" PURLIN_ROOT="$1" python3 -c '
+import os, sys
+sys.path.insert(0, os.environ["PURLIN_MCP_DIR"])
+from purlin import status
+print(status.sync_status(os.environ["PURLIN_ROOT"]))
+'
 }
 
 run_drift() {
@@ -345,6 +373,31 @@ print("ok" if published == 2 and local == 1
 ok=true
 [[ "$result" == "ok" ]] || ok=false
 record "the pinned anchor still counts the rules its copy holds" "$ok" "$result"
+
+# ==========================================================================
+# 7. A pinned source carrying > Scope: is copied as it is, and warned of
+# ==========================================================================
+echo "--- 7: a pinned source that carries > Scope: ---"
+TMP7=$(new_tmpdir)
+BARE7="$TMP7/published.git"
+create_anchor_repo "$BARE7" "specs/security.md" "$PUBLISHED_SCOPED" >/dev/null
+PROJECT7="$TMP7/project"
+mkdir -p "$PROJECT7"
+init_project "$PROJECT7"
+run_upstream "$PROJECT7" add "$BARE7" --path specs/security.md --name ext_security \
+  >/dev/null
+printf '%s' "$LOCAL_ANCHOR" > "$PROJECT7/specs/_anchors/local_security.md"
+commit_project "$PROJECT7" "pin a source that carries a scope"
+status_out=$(run_status "$PROJECT7")
+expected="ext_security: its source, $BARE7, carries > Scope:, which Purlin does not read on an anchor, so the line is read as nothing. Ask the owners of $BARE7 to take it out, then run purlin:anchor sync ext_security."
+ok=true
+detail="$status_out"
+grep -q '^> Scope: src/api.py$' "$PROJECT7/specs/_anchors/ext_security.md" || {
+  ok=false; detail="the copy did not keep its source's > Scope: line"; }
+[[ "$(grep -cF "$expected" <<<"$status_out")" == "1" ]] || ok=false
+grep -q 'is not read on an anchor, because' <<<"$status_out" && ok=false
+grep -q 'local_security: .*not read' <<<"$status_out" && ok=false
+record "the status names the source's owners once and warns of nothing else" "$ok" "$detail"
 
 echo ""
 echo "anchor authority: $PASS passed, $FAIL failed"
