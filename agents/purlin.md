@@ -117,11 +117,11 @@ build.
 
 ## Renaming a feature
 
-A feature's name is carried in five places, and a rename moves them together in one commit: the
-spec file `specs/<category>/<name>.md` and its `# Feature:` line; every `> Requires:` entry
-naming it, matched whole so `login` leaves `login_oauth` alone; every marker comment in test
+A feature's name is carried in four places, and a rename moves them together in one commit: the
+spec file `specs/<category>/<name>.md` and its `# Feature:` line; every marker comment in test
 code naming it, `purlin: <name> PROOF-<n>` or `purlin: <name> RULE-<n>`, as
-`references/formats/marker_format.md` spells it;
+`references/formats/marker_format.md` spells it, matched whole so `login` leaves `login_oauth`
+alone;
 the directory `specs/<category>/<name>.signatures/`; and the evidence files
 `.purlin/evidence/<source>/<name>.json`. Move files with `git mv`, then call `sync_status`:
 a reference it cannot resolve is one the rename missed.

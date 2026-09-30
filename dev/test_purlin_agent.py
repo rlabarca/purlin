@@ -224,8 +224,10 @@ class TestRename:
     def test_it_says_what_a_rename_moves(self, monkeypatch):
         assert rename_problems() == []
         assert refusals(monkeypatch, rename_problems, [
-            (AGENT, replace('every `> Requires:` entry', 'every entry'),
-             "%s rename section does not carry '> Requires:'" % AGENT),
+            (AGENT, replace('carried in four places', 'carried in several '
+                            'places'),
+             "%s rename section does not carry 'carried in four places'"
+             % AGENT),
             (AGENT, replace('`specs/<category>/<name>.md` and its', 'and its'),
              "%s rename section does not carry "
              "'specs/<category>/<name>.md'" % AGENT),
@@ -278,7 +280,7 @@ def rename_problems():
         return ['%s has no Renaming a feature section' % AGENT]
     text = flat(body)
     problems = ['%s rename section does not carry %r' % (AGENT, needle)
-                for needle in ('# Feature:', '> Requires:',
+                for needle in ('# Feature:', 'carried in four places',
                                'purlin: <name> PROOF-<n>', '.signatures/',
                                '.purlin/evidence/<source>/<name>.json',
                                'git mv', 'sync_status',
