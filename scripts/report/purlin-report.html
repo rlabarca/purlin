@@ -394,7 +394,7 @@ function proofsToggle(rule, shown) {
 function proofsUnder(rule) {
   var proofs = rule.proofs || [];
   var body = proofs.length ? proofs.map(function (proof) {
-    return '<div class="proof">' + proofDetail(proof, rule.feature) + '</div>';
+    return '<div class="proof">' + proofDetail(proof, rule) + '</div>';
   }).join('')
     : (rule.tests || []).length ? '<div class="proof"><dl class="kv">'
       + '<dt>Tests</dt><dd class="ptests">' + testLines(rule.tests)
@@ -578,11 +578,15 @@ function testLines(tests) {
       + esc(t.name).split('::').join('::<wbr>') + '</span></p>';
   }).join('');
 }
-function proofDetail(proof, owner) {
+function proofDetail(proof, rule) {
+  var owner = rule.feature;
   var tags = (proof.manual ? ['@manual'] : [])
     .concat(proof.env ? ['@env(' + proof.env + ')'] : []);
   var tests = testLines(proof.tests)
-    || (proofWord(proof) === 'not run'
+    || (proof.manual ? (rule.hand_checked
+      ? '<p class="sec">Checked by hand.</p>'
+      : typeLine('purlin:sign ' + owner + ' ' + rule.id, 'Checked by hand. '))
+    : proofWord(proof) === 'not run'
       ? '<p class="sec">No run has listed its tests yet.</p>'
       : noTestLine(owner));
   return '<dl class="kv">'
@@ -592,8 +596,8 @@ function proofDetail(proof, owner) {
       : '')
     + '<dt>Tests</dt><dd class="ptests">' + tests + '</dd></dl>';
 }
-function proofPanel(proof, owner) {
-  return '<div class="panel">' + proofDetail(proof, owner) + '</div>';
+function proofPanel(proof, rule) {
+  return '<div class="panel">' + proofDetail(proof, rule) + '</div>';
 }
 function testsSection(rule) {
   var tests = rule.tests || [];
@@ -635,7 +639,7 @@ function renderRule() {
     + (showsProofs() ? '<section><p class="eyebrow">Proofs</p>'
       + '<div class="stack">' + ((rule.proofs || []).length
         ? rule.proofs.map(function (proof) {
-          return proofPanel(proof, rule.feature);
+          return proofPanel(proof, rule);
         }).join('')
         : '<div class="panel sec">No proof written.</div>')
       + '</div></section>' : '')
@@ -697,6 +701,10 @@ function showsProofs() {
   return level('strong') || ((DATA && DATA.summary) || {}).proofs > 0;
 }
 function minStrength() { return (DATA.gate && DATA.gate.min_strength) || 0; }
+function mutationOff() {
+  var engine = (DATA.gate || {}).mutation_engine;
+  return String(engine || 'none').trim().toLowerCase() === 'none';
+}
 function esc(value) {
   return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
     return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
@@ -823,7 +831,8 @@ function auditLines(feature) {
   return [newest ? 'audit' + DOT + sourceOf(newest.path) + DOT
       + ageText(newest.at).text
     : 'No audit has read a rule here.',
-    'minimum strength ' + minStrength() + '%'];
+    mutationOff() ? 'no minimum strength applies: mutation testing is off'
+      : 'minimum strength ' + minStrength() + '%'];
 }
 function sourceOf(path) {
   var parts = String(path || '').split('/');
