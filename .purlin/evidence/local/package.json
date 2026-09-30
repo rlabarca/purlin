@@ -2,13 +2,13 @@
   "feature": "package",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:52Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-09-30T20:57:51Z",
+      "commit": "0bcb74f690d73a89c70961c9806e7c83b4203455",
       "dirty": false,
       "fingerprint": {
         "code": "3472b9d9fee3bbed227ba422f5225da3ecb69aa93cf64b69941c0de27c8ea295",
-        "spec": "af888d00dd106164eb140acb58a9eb62bf5623f12e934ceb3d285605806b83ee",
-        "tests": "24de19ef089e8cd8508179677b2049cb2d9594c08e18d9f368670e24dd57dba5"
+        "spec": "2e0bf84c5898c15cc089058f98cc551ff43d3527536471284b08019497b4e45e",
+        "tests": "a3685b864d1768f9c4a05889a611b7d5689c53a61b90172f2a9d66335a9d47ce"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -483,6 +483,14 @@
           "result": "pass",
           "rule": "RULE-27",
           "test": "dev/test_export.py::TestAnchors::test_a_rule_that_does_not_apply_reads_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-60",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-28",
+          "test": "dev/test_export.py::TestABrokenSpec::test_a_broken_spec_is_left_to_repair"
         }
       ],
       "rules": {
@@ -506,6 +514,7 @@
         "RULE-25": "passed",
         "RULE-26": "passed",
         "RULE-27": "passed",
+        "RULE-28": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

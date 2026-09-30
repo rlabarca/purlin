@@ -2,13 +2,13 @@
   "feature": "skill_spec",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:53Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-09-30T20:57:52Z",
+      "commit": "0bcb74f690d73a89c70961c9806e7c83b4203455",
       "dirty": false,
       "fingerprint": {
-        "code": "3c8c0c149dc888e8c88b4ed14999e91ecc125e6d5ba4d13debccffaae34f0db1",
-        "spec": "cd6b1b819a09e7fcf421f410b3a5c187b8ba994b43c3c63efb696d76ddde3a7a",
-        "tests": "d8891f35cb9edb67a2ca6a486afd7057d4be228abe7066e52f0070cb5cb667df"
+        "code": "afa5a869e9089751c5457f3005d445dc4ca78e035359c60a356f3ef4f258573f",
+        "spec": "c5af6f4b6c7e26b429e1433b2c6924066b5d72ca8b7b9c71e50dafcd05d07d44",
+        "tests": "2f0b9abb51ce81084adcf3fee1d7d37fc443a364242899a492fb33b5c9e2322b"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -146,7 +146,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-17",
-          "test": "dev/test_skill_spec.py::TestSkillSpec::test_after_a_merge_the_incoming_id_takes_the_next_number"
+          "test": "dev/test_skill_spec.py::TestSkillSpec::test_after_a_merge_drift_names_the_line_that_moves"
         },
         {
           "env": null,
@@ -211,6 +211,38 @@
           "result": "pass",
           "rule": "RULE-24",
           "test": "dev/test_skill_spec.py::test_a_warned_field_is_taken_out"
+        },
+        {
+          "env": null,
+          "id": "PROOF-55",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-25",
+          "test": "dev/test_skill_spec.py::test_the_number_on_the_default_branch_keeps_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-56",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-26",
+          "test": "dev/test_skill_spec.py::test_a_moved_rule_needs_a_new_audit_and_signature"
+        },
+        {
+          "env": null,
+          "id": "PROOF-57",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_skill_spec.py::test_every_conflict_line_is_taken_out"
+        },
+        {
+          "env": null,
+          "id": "PROOF-58",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-28",
+          "test": "dev/test_skill_spec.py::test_the_guide_puts_the_weight_of_a_risk_into_proofs"
         }
       ],
       "rules": {
@@ -230,6 +262,10 @@
         "RULE-22": "passed",
         "RULE-23": "passed",
         "RULE-24": "passed",
+        "RULE-25": "passed",
+        "RULE-26": "passed",
+        "RULE-27": "passed",
+        "RULE-28": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

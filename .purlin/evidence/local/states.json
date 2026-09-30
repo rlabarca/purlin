@@ -2,13 +2,13 @@
   "feature": "states",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:53Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-09-30T20:57:52Z",
+      "commit": "0bcb74f690d73a89c70961c9806e7c83b4203455",
       "dirty": false,
       "fingerprint": {
-        "code": "c13f4acc0f2491249a7a5a3dfe705b588722d0f88ff756538a5e1aa6b769e6cf",
-        "spec": "99255f6f33d2759bf6aaace5d6878469411055e7697c74037630e45ec8db797a",
-        "tests": "b456b4b6b10f844e9ac6b365f96c1a0af875cb75b6833a254aee1f514d24ef0b"
+        "code": "b37302b194e3c949861706a35e26abcb866f0f9a7490f421e00ffba973c34da7",
+        "spec": "db3d59d562c5bd52cef835c5e1a4445853aaecbfc381c4f2357614128c76ebe3",
+        "tests": "83341003acb381c380b89bf8118c01b184525c8844bbd306b96c731675b432c9"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -626,7 +626,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-20",
-          "test": "dev/test_states.py::TestTheAuditOnTheRule::test_a_new_strength_ends_the_signature_and_says_nothing"
+          "test": "dev/test_states.py::TestTheAuditOnTheRule::test_a_new_strength_ends_the_signature_and_says_why"
         },
         {
           "env": null,
@@ -738,7 +738,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-27",
-          "test": "dev/test_states.py::TestPayload::test_schema_eleven_carries_the_documented_top_level"
+          "test": "dev/test_states.py::TestPayload::test_schema_twelve_carries_the_documented_top_level"
         },
         {
           "env": null,
@@ -1686,6 +1686,102 @@
         },
         {
           "env": null,
+          "id": "PROOF-248",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-102",
+          "test": "dev/test_states.py::TestABrokenSpecFails::test_a_proof_written_twice_fails_every_rule_of_its_spec"
+        },
+        {
+          "env": null,
+          "id": "PROOF-249",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-102",
+          "test": "dev/test_states.py::TestABrokenSpecFails::test_a_line_left_from_a_conflict_fails_the_spec"
+        },
+        {
+          "env": null,
+          "id": "PROOF-250",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-102",
+          "test": "dev/test_states.py::TestABrokenSpecFails::test_a_sound_spec_beside_a_broken_one_passes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-251",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-102",
+          "test": "dev/test_states.py::TestABrokenSpecFails::test_a_signed_rule_of_a_broken_spec_fails_and_is_not_signed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-252",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-103",
+          "test": "dev/test_states.py::TestAnEndedSignatureSaysWhy::test_a_test_file_edit_names_the_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-253",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-103",
+          "test": "dev/test_states.py::TestAnEndedSignatureSaysWhy::test_a_rule_edit_names_the_wording"
+        },
+        {
+          "env": null,
+          "id": "PROOF-254",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-103",
+          "test": "dev/test_states.py::TestAnEndedSignatureSaysWhy::test_results_from_another_machine_name_both"
+        },
+        {
+          "env": null,
+          "id": "PROOF-255",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-104",
+          "test": "dev/test_states.py::TestAnEndedSignatureSaysWhy::test_the_status_prints_one_line_for_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-256",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-104",
+          "test": "dev/test_states.py::TestAnEndedSignatureSaysWhy::test_a_newer_signature_that_binds_prints_no_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-257",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-105",
+          "test": "dev/test_states.py::TestAScopeThatFindsNoFileYet::test_one_spec_is_named_with_its_cause"
+        },
+        {
+          "env": null,
+          "id": "PROOF-258",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-105",
+          "test": "dev/test_states.py::TestAScopeThatFindsNoFileYet::test_two_specs_read_plural"
+        },
+        {
+          "env": null,
+          "id": "PROOF-259",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-105",
+          "test": "dev/test_states.py::TestAScopeThatFindsNoFileYet::test_a_spec_with_no_scope_line_keeps_its_own_line"
+        },
+        {
+          "env": null,
           "id": "PROOF-247",
           "manual": false,
           "result": "pass",
@@ -1697,6 +1793,10 @@
         "RULE-1": "passed",
         "RULE-100": "passed",
         "RULE-101": "passed",
+        "RULE-102": "passed",
+        "RULE-103": "passed",
+        "RULE-104": "passed",
+        "RULE-105": "passed",
         "RULE-11": "passed",
         "RULE-12": "passed",
         "RULE-13": "passed",

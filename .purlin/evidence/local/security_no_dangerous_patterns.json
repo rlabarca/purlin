@@ -2,11 +2,11 @@
   "feature": "security_no_dangerous_patterns",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:53Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-09-30T20:57:51Z",
+      "commit": "0bcb74f690d73a89c70961c9806e7c83b4203455",
       "dirty": false,
       "fingerprint": {
-        "code": "b4dfebe1d93b156093a5648e5f2b18d6524cd9ee0b8b569d3f75ddf7a811ba78",
+        "code": "655a5084811d552dd6f5aea8401e6516908a2b29f2491ba561a19ec2f3a598f0",
         "spec": "8553e083a091c1e71a9d6881c378514851f0a074fb5078a66fc6c0c727163e3f",
         "tests": "1415768101645aeea237cc03b5d6e5b4ab5a8f29c44930814ea2c399d949f8a2"
       },

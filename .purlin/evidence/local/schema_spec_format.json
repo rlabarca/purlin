@@ -2,13 +2,13 @@
   "feature": "schema_spec_format",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:53Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-09-30T20:57:51Z",
+      "commit": "0bcb74f690d73a89c70961c9806e7c83b4203455",
       "dirty": false,
       "fingerprint": {
-        "code": "75f6b9bd0cfcb4829ba05bdbb35574ba77b74aebe9e64c9c12daea9396be3a18",
-        "spec": "0762d1f4c36d729ab18656a8bd4c461bd26281a7cba99afb1a9b4771a196d613",
-        "tests": "d7b204ea16969b4b3ff277e0622fd5e7a2d5c51f7d4b0b44bf0e947866f81e10"
+        "code": "071c34dc8bfff9f8eaefa39a0d4b97c20b0fd622c28b3ab3b8c04ce2b0443b86",
+        "spec": "c5a7ea638f330842e87ffd17a492d3516bd5967b862e35dd1df8fe439cef0c65",
+        "tests": "2e46e562c5df5f4c2dff20ae09bb02e3aedd271b038368544e962e59b2437de9"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -587,6 +587,46 @@
           "result": "pass",
           "rule": "RULE-34",
           "test": "dev/test_schema_spec_format.py::test_the_pinned_anchor_line_starts_no_process"
+        },
+        {
+          "env": null,
+          "id": "PROOF-81",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_schema_spec_format.py::test_a_proof_number_written_twice_is_warned_of_and_read_once"
+        },
+        {
+          "env": null,
+          "id": "PROOF-82",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_schema_spec_format.py::test_one_line_left_from_a_merge_conflict_is_warned_of_with_its_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-83",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_schema_spec_format.py::test_a_conflict_hunk_is_warned_of_in_one_line_naming_its_first_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-84",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_schema_spec_format.py::test_a_line_of_eight_equals_signs_is_not_a_conflict_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-85",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-37",
+          "test": "dev/test_schema_spec_format.py::test_the_reasons_a_broken_spec_fails_are_named_in_order"
         }
       ],
       "rules": {
@@ -617,6 +657,9 @@
         "RULE-32": "passed",
         "RULE-33": "passed",
         "RULE-34": "passed",
+        "RULE-35": "passed",
+        "RULE-36": "passed",
+        "RULE-37": "passed",
         "RULE-4": "passed",
         "RULE-6": "passed",
         "RULE-7": "passed",

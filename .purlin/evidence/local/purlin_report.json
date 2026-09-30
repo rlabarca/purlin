@@ -2,13 +2,13 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:53Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-09-30T20:57:51Z",
+      "commit": "0bcb74f690d73a89c70961c9806e7c83b4203455",
       "dirty": false,
       "fingerprint": {
-        "code": "abfb462e2223d7f8da897711d618be26c796fb962e5a983c8987b32b59216d94",
-        "spec": "903aeee130787da73677b7493a22d827b0d95884b079a2ec06de58f816fa4633",
-        "tests": "775d41399c5a1344087152365669923bb70d2366067fba64c44afe4b0f981bf2"
+        "code": "f47eefedfa63edac9943a89873d669d486c4f667f8196967885c5378ef05987e",
+        "spec": "e1a6c6f50f90ff463cce4c68ce90d89cc333fb37c33a759546742974cdd05d39",
+        "tests": "1380645e673f1e4263dcbab6d8de9cd7ba977cb05662139c89658fad045ab498"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -1547,6 +1547,30 @@
           "result": "pass",
           "rule": "RULE-65",
           "test": "dev/test_purlin_report.py::test_a_rule_to_confirm_has_its_filter_button"
+        },
+        {
+          "env": null,
+          "id": "PROOF-215",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-66",
+          "test": "dev/test_purlin_report.py::test_a_spec_to_repair_has_its_filter_button"
+        },
+        {
+          "env": null,
+          "id": "PROOF-216",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-67",
+          "test": "dev/test_purlin_report.py::test_a_rule_whose_signature_ended_says_why"
+        },
+        {
+          "env": null,
+          "id": "PROOF-217",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-68",
+          "test": "dev/test_purlin_report.py::test_a_rule_of_a_spec_to_repair_says_why"
         }
       ],
       "rules": {
@@ -1604,6 +1628,9 @@
         "RULE-63": "passed",
         "RULE-64": "passed",
         "RULE-65": "passed",
+        "RULE-66": "passed",
+        "RULE-67": "passed",
+        "RULE-68": "passed",
         "RULE-7": "passed",
         "RULE-8": "passed",
         "RULE-9": "passed"

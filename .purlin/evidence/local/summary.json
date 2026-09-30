@@ -2,13 +2,13 @@
   "feature": "summary",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:54Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-09-30T20:57:52Z",
+      "commit": "0bcb74f690d73a89c70961c9806e7c83b4203455",
       "dirty": false,
       "fingerprint": {
-        "code": "7b97ea945be6494bacc055949efee6e816788dcefd2bb1df31363ebf8167b2b8",
-        "spec": "1268efbf806ed1aa33d6dd5e146a66b592627f778c7626ca483cccf00348648f",
-        "tests": "e79f670845c3ca2e17696af62e9e2f863d8a5ea7620da6635817e00fb88b8f87"
+        "code": "2b67d405ec7bc65199f5668fd67cef277d27d469a789919659587bf462cb8d7a",
+        "spec": "fed285f37511a87f7b3c42bc8abb324f0155f6c8536f941b1209954a0e3afff2",
+        "tests": "65a55fee79e3777d2d8af82a895d7bb75f6b28665230b87d029054e9f1490793"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -294,6 +294,22 @@
         },
         {
           "env": null,
+          "id": "PROOF-40",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_summary.py::TestASpecToRepair::test_one_broken_spec_is_the_first_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-41",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_summary.py::TestASpecToRepair::test_two_broken_specs_read_plural"
+        },
+        {
+          "env": null,
           "id": "PROOF-24",
           "manual": false,
           "result": "pass",
@@ -325,6 +341,7 @@
         "RULE-13": "passed",
         "RULE-14": "passed",
         "RULE-15": "passed",
+        "RULE-16": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

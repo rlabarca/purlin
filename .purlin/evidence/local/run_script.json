@@ -2,13 +2,13 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:53Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-09-30T20:57:51Z",
+      "commit": "0bcb74f690d73a89c70961c9806e7c83b4203455",
       "dirty": false,
       "fingerprint": {
-        "code": "56b24164ea18fa33945a66f3cecbb10e4d28480987fa83fc3dfd05d2653c3054",
-        "spec": "336cbd307584035869d1398702ac1d2804072baa69f6b20382be3ee80ca77676",
-        "tests": "af49518eb26fde0bb48bff7d1f2d5de57e8a17e16ab1fd62fb2aed3b40229f58"
+        "code": "cf5ec49cc253c16f7c543c2dd74b980da7468d7df3dacf856770521158fe4ac2",
+        "spec": "c2970b223f1a62a35d38a1f739bdf51c43bf0822a2e110c4e5a59265410f7225",
+        "tests": "a74933b4893f66f1981aa81d8976eeb13d143aa6b9d5e997df53fdf30ee75715"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -339,6 +339,14 @@
           "result": "pass",
           "rule": "RULE-11",
           "test": "dev/test_run_script.py::TestEveryRunEndsOnTheSummary::test_at_passed_a_rule_with_no_test_is_left_to_write_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-261",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-87",
+          "test": "dev/test_run_script.py::TestABrokenSpec::test_a_test_run_writes_its_results_and_exits_1"
         },
         {
           "env": null,
@@ -878,6 +886,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-264",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-89",
+          "test": "dev/test_run_script.py::TestABrokenSpec::test_the_audit_reads_no_rule_of_it"
+        },
+        {
+          "env": null,
           "id": "PROOF-72",
           "manual": false,
           "result": "pass",
@@ -1414,6 +1430,22 @@
         },
         {
           "env": null,
+          "id": "PROOF-262",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-88",
+          "test": "dev/test_run_script.py::TestNoTestCommand::test_a_plain_tests_folder_is_suggested_pytest"
+        },
+        {
+          "env": null,
+          "id": "PROOF-263",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-88",
+          "test": "dev/test_run_script.py::TestNoTestCommand::test_a_tests_folder_with_no_test_file_is_not_pytest"
+        },
+        {
+          "env": null,
           "id": "PROOF-134",
           "manual": false,
           "result": "pass",
@@ -1769,6 +1801,9 @@
         "RULE-84": "passed",
         "RULE-85": "passed",
         "RULE-86": "passed",
+        "RULE-87": "passed",
+        "RULE-88": "passed",
+        "RULE-89": "passed",
         "RULE-9": "passed"
       },
       "runner": "rich-labarca"

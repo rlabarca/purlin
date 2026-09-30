@@ -2,13 +2,13 @@
   "feature": "drift",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:52Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-09-30T20:57:50Z",
+      "commit": "0bcb74f690d73a89c70961c9806e7c83b4203455",
       "dirty": false,
       "fingerprint": {
-        "code": "e5ac45c1fe5a7bcb5306b74be2ddc6e41637367991f7392203023704a1697b27",
-        "spec": "049759bb28cb63de61b5396c02ec205e82297497df3a795e5a7552c89c3b6f39",
-        "tests": "41ae2a9d2966bcaac1486de85425b5af15123d6905c5f7653dd5cb3801b64d54"
+        "code": "bf91f848af1ac33600da5c5f62b27090e62c51bce59d5a12df0a1fa0f827a197",
+        "spec": "6ba0ff69d5c15b0ff1920aafbcbe294e064265a74c32b585395f188f8694efbd",
+        "tests": "e8465e7d76286a0fcb8b582c961dbdcb9e33b87a71679a8d43c64e8cc99c657e"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -498,7 +498,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-23",
-          "test": "dev/test_drift.py::TestReportShape::test_each_view_carries_its_fixed_keys"
+          "test": "dev/test_drift.py::TestReportShape::test_the_pm_view_carries_its_fixed_keys"
+        },
+        {
+          "env": null,
+          "id": "PROOF-79",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-23",
+          "test": "dev/test_drift.py::TestReportShape::test_the_engineer_view_carries_its_fixed_keys"
+        },
+        {
+          "env": null,
+          "id": "PROOF-80",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-23",
+          "test": "dev/test_drift.py::TestReportShape::test_the_qa_view_carries_its_fixed_keys"
         },
         {
           "env": null,
@@ -531,6 +547,102 @@
           "result": "pass",
           "rule": "RULE-27",
           "test": "dev/test_drift.py::test_a_drift_call_writes_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-67",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-28",
+          "test": "dev/test_drift.py::TestProofsChanged::test_proofs_added"
+        },
+        {
+          "env": null,
+          "id": "PROOF-68",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-29",
+          "test": "dev/test_drift.py::TestProofsChanged::test_a_proof_changed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-69",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_drift.py::TestProofsChanged::test_a_proof_moved"
+        },
+        {
+          "env": null,
+          "id": "PROOF-70",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_the_line_on_the_default_branch_keeps_the_number"
+        },
+        {
+          "env": null,
+          "id": "PROOF-71",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_neither_line_on_the_default_branch"
+        },
+        {
+          "env": null,
+          "id": "PROOF-72",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_no_default_branch"
+        },
+        {
+          "env": null,
+          "id": "PROOF-73",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-32",
+          "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_the_age_of_the_default_branch"
+        },
+        {
+          "env": null,
+          "id": "PROOF-74",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-32",
+          "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_drift_does_not_fetch"
+        },
+        {
+          "env": null,
+          "id": "PROOF-75",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_drift.py::TestCommentsChanged::test_a_comment_whose_proof_was_reworded"
+        },
+        {
+          "env": null,
+          "id": "PROOF-76",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_drift.py::TestCommentsChanged::test_a_comment_whose_old_wording_moved"
+        },
+        {
+          "env": null,
+          "id": "PROOF-77",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_drift.py::TestCommentsChanged::test_a_comment_whose_proof_is_unchanged"
+        },
+        {
+          "env": null,
+          "id": "PROOF-78",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_drift.py::TestSignaturesEnded::test_the_qa_view_prints_an_ended_signature"
         }
       ],
       "rules": {
@@ -553,7 +665,14 @@
         "RULE-25": "passed",
         "RULE-26": "passed",
         "RULE-27": "passed",
+        "RULE-28": "passed",
+        "RULE-29": "passed",
         "RULE-3": "passed",
+        "RULE-30": "passed",
+        "RULE-31": "passed",
+        "RULE-32": "passed",
+        "RULE-33": "passed",
+        "RULE-34": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",

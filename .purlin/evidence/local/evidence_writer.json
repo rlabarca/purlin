@@ -2,13 +2,13 @@
   "feature": "evidence_writer",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:52Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-09-30T20:57:51Z",
+      "commit": "0bcb74f690d73a89c70961c9806e7c83b4203455",
       "dirty": false,
       "fingerprint": {
-        "code": "bf2daa528bc9b2eff9ff3c18cf343fe42ec35a64ef68c2cfdebaf405641ebd5f",
-        "spec": "7a75c551e5250c1f0868187e165acdcec3818332f1ed58a1854cadc2f4f28784",
-        "tests": "d8a9cab035d11bde64dce7daf59d32c90408aa145445951025a00eb38b1bd971"
+        "code": "e313545e9b44345f175aab64deba4ffe68ee4110ed8360998a445c057a67001c",
+        "spec": "4148b1b28528bf049bfa42103bd6e5777918faa079afd834333ce632a830655e",
+        "tests": "7eb28ae77bb14f33aa6dada400603c9f007b4cbd98694071527d6555542acd71"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -678,6 +678,22 @@
         },
         {
           "env": null,
+          "id": "PROOF-88",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-26",
+          "test": "dev/test_evidence_writer.py::test_a_run_over_a_conflicted_file_keeps_the_audit_that_still_matches"
+        },
+        {
+          "env": null,
+          "id": "PROOF-89",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-26",
+          "test": "dev/test_evidence_writer.py::test_a_run_over_a_conflicted_file_drops_an_audit_of_older_text"
+        },
+        {
+          "env": null,
           "id": "PROOF-47",
           "manual": false,
           "result": "pass",
@@ -728,6 +744,7 @@
         "RULE-23": "passed",
         "RULE-24": "passed",
         "RULE-25": "passed",
+        "RULE-26": "passed",
         "RULE-3": "passed",
         "RULE-4": "not run",
         "RULE-5": "passed",
