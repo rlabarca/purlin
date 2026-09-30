@@ -6,21 +6,21 @@ Paste everything below the line into a new session opened in
 ---
 
 You are continuing Purlin 0.10.0, a Claude Code plugin for spec-driven development that uses
-itself. The owner has closed decisions 60 to 98, and all of them are built and proven on `main`:
+itself. The owner has closed decisions 60 to 99, and all of them are built and proven on `main`:
 the product work of decisions 94 to 97, Windows (86 proofs tagged `@env(windows)`, 13 tagged
-`@env(macos)`), sanity check 3 applied in phase 4, and every page of the docs read again against
-the code with the screenshots retaken. Your job is what is left before the handover: the last
+`@env(macos)`), sanity check 3 applied in phase 4, every page of the docs read again against
+the code with the screenshots retaken, and the five answers of decision 99. Your job is what is left before the handover: the last
 remote run on Windows, the further sanity checks, and getting the owner's review done.
 
 ## Read first, in this order, in full
 
 1. `dev/plans/handoff.md`: where the tree is, what is left, the words for the owner to read,
-   the small things known and not fixed, the open questions, and how the owner wants work done.
-2. `dev/plans/three-levels.md`, decisions 60 to 98 (search `60. **`). Later decisions amend
+   the small things known and not fixed, and how the owner wants work done.
+2. `dev/plans/three-levels.md`, decisions 60 to 99 (search `60. **`). Later decisions amend
    earlier ones; the later holds.
 3. `dev/plans/phase4-interfaces.md`: what phase 4 built, where it differs from
-   `dev/plans/phase4-contracts.md`, the calls left, and "The pages", what fan-out 2 and its
-   integration did to `README.md` and `docs/`.
+   `dev/plans/phase4-contracts.md`, the calls left, "The pages", what fan-out 2 and its
+   integration did to `README.md` and `docs/`, and "Decision 99", what its lanes built and left.
 4. `dev/plans/sanity-3.md`, sections 1, 2 and 9 to 11: how sanity check 3 was run and what the
    next check must add.
 5. `dev/plans/windows-untagged-failures.txt`: the tests that fail on Windows and that no rule is
@@ -74,18 +74,12 @@ remote run on Windows, the further sanity checks, and getting the owner's review
 
 ## The work, in order
 
-1. **Ask the owner the open questions** in `handoff.md`, "Open questions for the owner", with
-   the question UI, before anything launches. Their answers become decision 99 in
-   `three-levels.md`; build what they change as product work, the code, the rule, the proof and
-   the marked test together.
-2. **The last remote run on Windows.** `purlin:test --remote` once on the tree as it then is.
-   It pushes one temporary run branch and nothing else. The earlier runs passed 84 of 86 rules,
-   then all of them; this one checks what phase 4 changed. Report its table.
-3. **The 78 tests that fail on Windows and that no rule is tagged for**, if the owner wants them
-   sorted: a diagnostic run that names them all, then each sorted into a fault of the product on
-   Windows (a rule, a Windows proof and a fix), a fault of the test (fixed), or a test that
-   checks nothing Windows could change (skipped there, with its reason).
-4. **The further sanity checks**, each its own fresh agent, in the order the owner picks:
+1. **The last remote run on Windows.** `purlin:test --remote` once on the tree as it then is.
+   It pushes one temporary run branch and nothing else. The run at `babd6ae` came before
+   decision 99; this one proves the 24 rules whose remote evidence decision 99 put out of date.
+   Report its table. The 78 tests that fail on Windows and that no rule is tagged for stay as
+   they are (decision 99).
+2. **The further sanity checks**, each its own fresh agent, in the order the owner picks:
    - `purlin:spec-from-code` run for real on small real projects, one of which carries a test
      that fails before the run, so decision 66's clause about failing tests is tried; the
      agents count existing tests one way (`sanity-3.md` section 9, last line).
@@ -94,7 +88,7 @@ remote run on Windows, the further sanity checks, and getting the owner's review
    - a hostile reviewer who tries to make an unproven rule read as proven.
    Decision 64 also asks that the docs be read against the rules by a fresh agent before every
    release; the last such reading is phase 4's.
-5. **Integrate and prove** whatever the checks and the answers changed, as "How to work" says,
+3. **Integrate and prove** whatever the checks and the answers changed, as "How to work" says,
    then bring `handoff.md` up to date and write the prompt for the session after you.
 
 ## What the owner still has to read
@@ -110,4 +104,4 @@ history, and it ships), the work is pushed as a branch, and on the work machine
 `purlin:audit`, `purlin:sign`, the push of the tag and the release.
 
 When you have read the files, tell the owner in a few lines what you understand the work to be,
-then ask the open questions.
+then ask which sanity check comes first.

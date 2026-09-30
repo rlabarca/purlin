@@ -1115,3 +1115,227 @@ team-workflow: "The passed cell asks whether the marked tests passed; the strong
 - Relative times (`0 seconds ago`) and `Commits: bc0f607` are quoted as printed; the comparison
   normalises them.
 
+
+## Decision 99
+
+Built on 2026-09-30 by five lanes and one integration agent, after the owner's answers to the
+five open questions of the handoff (`three-levels.md` decision 99). Each lane's report is in the
+session scratchpad, `reports-99/<lane>.md`. Nothing was pushed or tagged, and no audit or signing
+was run.
+
+### The merges
+
+Each lane was rebased on `main` in its worktree, its own test files were run, and `main` took it
+by fast-forward, in this order:
+
+| Lane | Commit on `main` | Own tests after the rebase |
+|---|---|---|
+| `d99-proofs` | `c8e0c2ebe`, `39363505e` | 152 passed |
+| `d99-run` | `7ce1aacae` | 268 passed, 1 skipped (with `test_schema_spec_format.py`) |
+| `d99-scaffold` | `4fea0d670` | 143 passed |
+| `d99-dashboard` | `73fa739e0` | 180 passed |
+| `d99-export` | `e834c1e39` | 15 passed |
+
+`d99-run`, `d99-scaffold` and `d99-dashboard` each conflicted on one place: the spec's header,
+where `d99-proofs` had added `> Highest-Proof:` beside the old `> Highest-Rule:`. Each was
+resolved in the lane's worktree during the rebase to the lane's `> Highest-Rule:` and the highest
+proof the lane took, the values the lanes reported: `run_script` 85 and 258, `scaffold` 75 and
+166, `purlin_report` 62 and 202. `skill_export` took `d99-proofs`' 13 and 35 with no conflict.
+Every one of the 36 specs was then checked by script: each carries both lines, and neither is
+below the highest id the spec holds.
+
+### What was built, and the ids
+
+- **A proof number is never reused.** The spec format is at version 20: the template and the
+  metadata table gain `> Highest-Proof:`, and "Proof format" says how a proof number is taken.
+  Every spec under `specs/` carries `> Highest-Proof: <n>` after `> Highest-Rule:`, `<n>` the
+  highest `- PROOF-<n>` line in the spec's `git log -p --follow` history; in every spec that
+  equals the highest proof it holds today. `schema_spec_format` RULE-29, PROOF-67 to PROOF-70;
+  `skill_spec` RULE-23, PROOF-52 and PROOF-53, with PROOF-2 losing its proof-id clause. The
+  spec skill's "Ids" and `docs/specs-and-anchors.md` say it. No code allocates ids: the agent
+  does, through the spec skill, so PROOF-69 and PROOF-70 check the worked examples on the format
+  page.
+- **The 78 tests that fail on Windows and that no rule is tagged for** are left as they are.
+  Nothing was built.
+- **The export instructions say what the system of record holds.** The export skill's sentence
+  gains the controlled document and the signature that counts under the regulation.
+  `skill_export` RULE-13 and PROOF-35 were rewritten in place under their own ids; the docs page
+  already carried the three things and is unchanged.
+- **A committing run that selected nothing** commits every changed spec, marked test and
+  `.purlin/config.json` in one commit. `run_script` RULE-85, PROOF-256 to PROOF-258. The subject
+  names each feature whose spec or marked tests it holds, and reads
+  `purlin: specs, tests and settings` where it holds only the settings.
+- **Two lines on the dashboard.** `purlin_report` RULE-61 with PROOF-199 (mutation testing off),
+  RULE-62 with PROOF-200 to PROOF-202 (a proof checked by hand).
+- **Setup leaves test fixtures out.** The one test-tool detection, used by setup, the upgrade
+  and the first test run, skips every folder named `fixtures`, `fixture`, `samples`, `sample`,
+  `testdata`, `test_data` or `test-data`, at any depth. `scaffold` RULE-75, PROOF-163 to
+  PROOF-166. On this repository the detection now reads `pytest` alone where it read `pytest`
+  and `dotnet`.
+
+### Integration's commits
+
+- `96d2e42dd docs: the evidence format names the subject of a run that selected nothing;
+  evidence format 6`. The run lane changed what a run emits and left
+  `references/formats/evidence_format.md` naming only the subject with features. Format-Version
+  5 to 6, since a reader of the history now meets a second subject.
+- `094f811d5 docs: the release notes name > Highest-Proof: and spec format 20`. The release
+  notes said the spec format was at version 19.
+- The dashboard page rebuilt and committed once. The two screenshots were not retaken: the
+  fixture they are taken from has mutation testing on and no `@manual` proof on either screen, so
+  neither changed line shows in them.
+
+### The sweep and the run
+
+- Full sweep, `bash dev/run_tests.sh`, at `094f811d5` (every lane merged and integration's two
+  docs commits in; `f0130e44b`, a slide builder change another session committed during the
+  sweep, touches no test): `2291 passed, 3 skipped in 729.29s (0:12:09)`,
+  `>>> All Pytest Tests: PASSED`, `Suites: 5 passed, 0 failed`; the four shell suites passed.
+- This repository through its own tool, `python3 scripts/run/purlin_run.py --test --all` at
+  `5f002e00e`, exit 0: `Markers: 2333 tied to a test, 0 not tied.`, `Ran pytest, shell on 36
+  features.`, `86 proofs need Windows; this machine is macOS. Run purlin:test --remote.`,
+  `Evidence written to .purlin/evidence/local/ for 36 features.`, then
+  `891 rules. 867 pass their tests. 0 are strong. 0 are signed.` and `Left to do:` /
+  `  24 rules to test on Windows: purlin:test --remote` / `  867 rules to audit: purlin:audit`.
+  No rule reads `partial`, `failed` or `no test`, and no warning prints. The 24 are the rules
+  with a Windows proof in the features decision 99 changed, whose remote evidence from
+  `665f4dbb8` is now out of date. With `--commit` the same lines, `Evidence committed.` after
+  the evidence line, and one commit, `b46c93f01 purlin: evidence at 5f002e0`. With `--commit`
+  two blank lines stand between the Windows line and the evidence line, where the run without
+  it prints one.
+
+### Words chosen, word for word
+
+Integration:
+
+- `references/formats/evidence_format.md`: "A run that selected nothing to run still makes the
+  first commit, of every spec, every test file carrying a marker and `.purlin/config.json` that
+  changed. Its subject names each feature whose spec or marked tests it holds; where it holds
+  only the settings, the subject is:" followed by `purlin: specs, tests and settings`.
+- `RELEASE_NOTES.md`: "A spec records the highest rule number it has held in `> Highest-Rule:`
+  and the highest proof number in `> Highest-Proof:`, so a deleted number is never used again.
+  The spec format is at version 20."
+- Commit subjects: `docs: the evidence format names the subject of a run that selected nothing;
+  evidence format 6`, `docs: the release notes name > Highest-Proof: and spec format 20`,
+  `chore(purlin_report): the dashboard page, built from the sources of decision 99`,
+  `chore(three-levels): decision 99 built`.
+
+`d99-proofs`:
+
+- Format template: `> Highest-Proof: <the highest proof number the spec has held>`
+- Format table: "The highest proof number the spec has ever held, as a whole number. A new proof
+  takes the next number above it, so a deleted number is never used again. It changes no
+  fingerprint and no count"
+- Format prose: "Proof ids are never reused either. A new proof takes one more than the highest
+  of `> Highest-Proof:` and every proof number the spec holds, and `> Highest-Proof:` is raised
+  to it, so a number is never used again." "A spec whose `> Highest-Proof:` reads `12` and whose
+  `PROOF-10` to `PROOF-12` were deleted, leaving `PROOF-9` its highest, gives its next proof
+  `PROOF-13`." "A spec with no `> Highest-Proof:` line whose proofs run to `PROOF-9` gives its
+  next proof `PROOF-10`."
+- Spec skill: "A new proof takes one more than the highest of `> Highest-Proof:` and every proof
+  number in either copy; write that number into `> Highest-Proof:`, adding the line after
+  `> Highest-Rule:` where it is missing."
+- Docs table: "The highest proof number the spec has ever held". Docs paragraph: "Proof numbers
+  are never reused either: a new proof takes one more than the highest of `> Highest-Proof:` and
+  every proof number in the spec, and `> Highest-Proof:` is raised to it. `purlin:spec` reads
+  both copies of the spec, the working copy and `origin/main`'s, for both numbers."
+- `schema_spec_format` RULE-29: "`> Highest-Proof: <n>` records the highest proof number the spec
+  has ever held; a new proof takes one more than the highest of it and every proof number the
+  spec holds, so a deleted proof's number is never used again; it changes no fingerprint and no
+  proof count"
+- `skill_spec` RULE-23: "The skill tells the agent that a new proof takes one more than the
+  highest of `> Highest-Proof:` and every proof number in either copy of the spec, and to write
+  that number into `> Highest-Proof:`, adding the line after `> Highest-Rule:` where it is
+  missing"
+- Proof texts: `schema_spec_format` PROOF-67 to PROOF-70 and `skill_spec` PROOF-52, PROOF-53, as
+  the specs hold them.
+
+`d99-run`:
+
+- Commit subject with no feature: `purlin: specs, tests and settings`
+- `run_script` RULE-85: "When such a run selects nothing, `--commit` first commits every spec,
+  every test file carrying a marker and `.purlin/config.json` that changed, in one commit whose
+  subject is `purlin: specs, tests and settings for <feature>[, <feature>…]`, naming each
+  feature whose spec or marked tests it holds, or `purlin: specs, tests and settings` where it
+  holds only the settings; where none changed it makes no such commit"
+- PROOF-256 to PROOF-258, as `specs/run/run_script.md` holds them.
+- `references/commit_conventions.md`: "A run that selected nothing to run still commits, in the
+  first commit, every spec, every test file carrying a marker and `.purlin/config.json` that
+  changed. Its subject names each feature whose spec or marked tests it holds, and reads
+  `purlin: specs, tests and settings` where it holds only the settings."
+- Docstring of `_nothing_to_run`: "No test runs. `--commit` still commits every changed spec,
+  marked test and the settings in one commit, then the evidence an earlier run wrote, because
+  that is the command a refused tag names."
+
+`d99-scaffold`:
+
+- `scaffold` RULE-75: "Deciding which test tools a project uses, setup leaves out every file
+  under a folder named `fixtures`, `fixture`, `samples`, `sample`, `testdata`, `test_data` or
+  `test-data`, at any depth, so it names only the tools the project itself uses"
+- PROOF-163 to PROOF-166, as `specs/init/scaffold.md` holds them.
+- `references/supported_frameworks.md`: "It also skips every folder named `fixtures`, `fixture`,
+  `samples`, `sample`, `testdata`, `test_data` or `test-data`, at any depth: a project kept there
+  to test against is not a tool this project uses, so setup and the first test run name only the
+  project's own."
+- Comment in `frameworks.py`: "Folders of test fixtures, samples and test data, at any depth: a
+  project kept there to test against is not a tool this project uses."
+
+`d99-dashboard`:
+
+- `purlin_report` RULE-61: "With mutation testing off, the `Strong` cell's hover and the
+  `Strong` box's hover read `no minimum strength applies: mutation testing is off` in place of
+  the minimum strength"
+- `purlin_report` RULE-62: "A `@manual` proof no test carries reads under its tests, on the
+  board's unfolded row and on the rule's screen alike, `Checked by hand. Type purlin:sign
+  <feature> <RULE-N> in Claude Code.`, the command in the monospace face, and `Checked by hand.`
+  alone once a signature records the rule's hand check"
+- The page line `Checked by hand.` alone, once the rule's hand check is signed. The other page
+  lines are decision 99's.
+- PROOF-199 to PROOF-202, as `specs/dashboard/purlin_report.md` holds them.
+
+`d99-export`:
+
+- Export skill: "A reviewer who cannot open the repository reads it in the system of record,
+  which holds the controlled document, the authority to sign it off and the signature that counts
+  under the regulation."
+- `skill_export` RULE-13: "The skill tells the agent that the package is read in the system of
+  record, and that the system of record holds the controlled document, the authority to sign it
+  off and the signature that counts under the regulation"
+- PROOF-35: "The export skill, its line breaks read as spaces, carries the words `reads it in the
+  system of record, which holds the controlled document, the authority to sign it off and the
+  signature that counts under the regulation` word for word"
+
+### Calls left
+
+- **No allocator and no proof of a doubled proof id.** No code allocates ids, so no function was
+  built; decision 97 warns of doubled rule ids only, so a proof number written twice is not
+  warned of.
+- **The spec-from-code skill's example spec and `docs/spec-from-code.md`** carry no
+  `> Highest-Proof:` line. They are still valid, since a spec with no line counts from its
+  highest proof. `docs/team-workflow.md` says two branches may take the same `RULE-N`, and does
+  not say the same of `PROOF-N`.
+- **The build skill** never says how an id is chosen and stands at its 130-line ceiling; it is
+  unchanged.
+- **The docs page on the regulated workflow** says "the regulated system" where the export skill
+  says "the system of record", and no proof holds the page to the three things. The row
+  `docs/regulated-workflow.md` in "The pages" above still calls the rest of the sentence a
+  question; decision 99 answered it. `references/purlin_commands.md`'s `purlin:export` row does
+  not say what the system of record holds.
+- **The subject with no feature** is a constant in `scripts/run/purlin_run.py`, not beside the
+  other subject in `scripts/run/evidence.py`, whose `commit_work` would still write
+  `purlin: specs, tests and settings for ` if it were handed no spec; nothing calls it that way.
+  `references/purlin_commands.md`'s `purlin:test` row and `evidence_writer` RULE-19 name only
+  the shape with features.
+- **A committing run that did select features** still commits only their specs and tests; a
+  changed spec or test of a feature it did not select stays uncommitted. Decision 99 names only
+  the run that selected nothing.
+- **Folder names match exactly, in lower case**: `Fixtures`, `Samples` and `TestData` still
+  count. PROOF-165, a JavaScript sample, passes with or without the change, since Jest and
+  Vitest are found at the root only; it stands as a guard. The upgrade's own walk for v0.9.5
+  xUnit logger lines and setup's walk that chooses mutmut's folders do not skip fixture folders;
+  neither chooses a test tool.
+- **The dashboard.** RULE-37 still says the `Strong` hover names the minimum strength; RULE-61
+  states its exception. With mutation testing on and no `min_strength`, the hover reads
+  `minimum strength 0%`, which only the gate `passed` could show, where no `Strong` column is
+  drawn. A `@manual` proof that lists tests shows its tests. "Already signed" is read from the
+  payload's `hand_checked`.

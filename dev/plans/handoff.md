@@ -1,27 +1,33 @@
 # Handoff, 2026-09-30
 
 For the session that continues Purlin 0.10.0. Read this, then `dev/plans/three-levels.md`
-decisions 60 to 98 (together with this file they are the product as the owner settled it), then
+decisions 60 to 99 (together with this file they are the product as the owner settled it), then
 `dev/plans/next-agent-prompt.md`, the prompt that session is given.
 
 ## Where the tree is
 
-- `main` is local only, at the commit of this file, after `e8bc04a71 purlin: evidence at
-  b54a9de`. Nothing on it is pushed, nothing is tagged, and no audit or signing has been run
+- `main` is local only, at the commit of this file, after `b46c93f01 purlin: evidence at
+  5f002e0`. Nothing on it is pushed, nothing is tagged, and no audit or signing has been run
   against this repository. The only pushes any agent made were the
   temporary run branches of the remote runs on Windows. The owner pushes `main`; no agent does.
-- Full sweep on `main` at `b54a9def4`, `bash dev/run_tests.sh`: **2268 passed, 3 skipped in
-  717.66s**, `>>> All Pytest Tests: PASSED`, `Suites: 5 passed, 0 failed`; the four shell suites
+- Decision 99 is built: the five answers to the open questions, by five lanes merged into
+  `main` and one integration (`phase4-interfaces.md`, "Decision 99": the ids, the words chosen
+  and the calls left).
+- Full sweep on `main` at `094f811d5`, `bash dev/run_tests.sh`: **2291 passed, 3 skipped in
+  729.29s**, `>>> All Pytest Tests: PASSED`, `Suites: 5 passed, 0 failed`; the four shell suites
   passed. The 3 skips are the Windows-only tests.
-- This repository through its own tool, `python3 scripts/run/purlin_run.py --test --all`, exit
-  0: `Markers: 2316 tied to a test, 0 not tied.`, `Ran pytest, shell on 36 features.`,
-  `86 proofs need Windows; this machine is macOS. Run purlin:test --remote.`, then
-  `885 rules. 804 pass their tests. 0 are strong. 0 are signed.` and `Left to do:` /
-  `  81 rules to test on Windows: purlin:test --remote` / `  804 rules to audit: purlin:audit`.
+- This repository through its own tool, `python3 scripts/run/purlin_run.py --test --all` at
+  `5f002e00e`, exit 0: `Markers: 2333 tied to a test, 0 not tied.`, `Ran pytest, shell on 36
+  features.`, `86 proofs need Windows; this machine is macOS. Run purlin:test --remote.`, then
+  `891 rules. 867 pass their tests. 0 are strong. 0 are signed.` and `Left to do:` /
+  `  24 rules to test on Windows: purlin:test --remote` / `  867 rules to audit: purlin:audit`.
   No rule reads `partial`, `failed` or `no test`, and no warning prints. With `--commit` the
   same lines, `Evidence committed.` after the evidence line, and one commit,
-  `e8bc04a71 purlin: evidence at b54a9de`. 2316 proofs, each one case of at most 60 words with
+  `b46c93f01 purlin: evidence at 5f002e0`. 2333 proofs, each one case of at most 60 words with
   a test of its own. The audit and the signing are the owner's to run.
+- The remote run on Windows at `babd6ae` came home as `665f4dbb8 purlin: evidence at babd6ae`,
+  before decision 99. The 24 rules left to test on Windows are the rules with a Windows proof in
+  the features decision 99 changed, whose remote evidence is now out of date.
 - The runner file, `.github/workflows/purlin.yml`, was written by setup from the templates of
   phase 4 and committed by setup (`8008d9de6 chore(init): set up Purlin at the gate signed`).
   It runs on `windows-latest` alone: 86 proofs are tagged `@env(windows)`, and the 13 tagged
@@ -68,8 +74,9 @@ a system of record, which decides who was entitled to sign.
 
 The prompt for the next session is `dev/plans/next-agent-prompt.md`.
 
-1. **A last remote run on Windows**, by the orchestrator, on the tree as phase 4 left it:
-   `purlin:test --remote` once, one temporary run branch pushed.
+1. **A last remote run on Windows**, by the orchestrator, on the tree as decision 99 left it:
+   `purlin:test --remote` once, one temporary run branch pushed, for the 24 rules whose remote
+   evidence decision 99 put out of date.
 2. **The further sanity checks**, each its own fresh agent, in the order the owner picks. The
    next one runs `purlin:spec-from-code` on project copies of which one carries a test that
    fails before the run, so decision 66's clause about failing tests is tried, and the agents
@@ -78,7 +85,7 @@ The prompt for the next session is `dev/plans/next-agent-prompt.md`.
    read as proven. Decision 64 repeats the docs-against-rules reading by a fresh agent before
    every release.
 3. **The owner's review**: `RELEASE_NOTES.md` 0.10.0, `README.md`, `docs/`, the slides, the
-   words below, the open questions below and the 55 readings of `phase2-questions.md`.
+   words below and the 55 readings of `phase2-questions.md`.
 4. **The handover to the work machine**: delete `dev/plans/` (it is history, and it ships);
    push the work as a branch; on the work machine run `dev/manual/check_azure_remote.py`
    against a real Azure DevOps project, then `purlin:audit`, `purlin:sign`, the push of the
@@ -142,17 +149,13 @@ owner already accepted in decision 96 are not repeated.
 | Phase 3's reference prose | the exit-code table of `references/purlin_commands.md`, the `no_scope` row of `hard_gates.md`, the git-host sentence, the package's kinds sentence, the anchor source paragraphs (`phase3-interfaces.md`, "Words chosen for the owner to read", items 1 to 11) |
 | The upgrade | `Write <path>, one job per operating system your specs name that this machine is not?` |
 | The pages | every sentence the four page lanes wrote, listed per lane in `phase4-interfaces.md`, "The pages" |
+| Decision 99 | every sentence, rule and proof listed in `phase4-interfaces.md`, "Decision 99", "Words chosen, word for word": `> Highest-Proof:` in the spec format, the spec skill and the docs; the subject `purlin: specs, tests and settings`; the fixture folders setup leaves out; `Checked by hand.` alone once signed; the export skill's sentence; the evidence format and release-notes sentences integration wrote |
 | Integration 2 | the rule and proof texts of "The pages", the table of rules handed over; `is signed and its signature does not count` in `hard_gates.md`, `spec_format.md`, the spec skill and the release notes; the comment `The whole-number part, as every surface shows a share: 69.6 under 70 reads 69%, never the minimum itself.` in `states.py` |
 
 ## Small things known and not fixed
 
-- `purlin:test --commit` with nothing selected and only `.purlin/config.json` changed commits it
-  alone with the subject `purlin: specs, tests and settings for ` and no feature after `for`,
-  and leaves a changed spec and marked tests uncommitted. What it should commit is a call.
-- On the dashboard, with mutation testing off, the hover of the `Strong` box and column reads
-  `minimum strength 0%`.
-- On the dashboard, a proof marked `@manual` reads `No test yet. Type purlin:build <feature> in
-  Claude Code.`, though a check by hand needs no test.
+- `purlin:test --all --commit` prints two blank lines between `86 proofs need Windows; ...`
+  and `Evidence written to ...`, where the same run without `--commit` prints one.
 - `purlin:audit --commit` prints two blank lines between the committed paths and
   `AI audit: <n> rules to read, <k> at a time.`
 - `purlin:anchor add` given a local path that does not end in `.git` writes a `> Source:` line
@@ -164,7 +167,8 @@ owner already accepted in decision 96 are not repeated.
 - The sign skill says `observation` where the audit's lines and the docs say `finding`.
 - `specs/instructions/purlin_docs.md` uses RULE-1, RULE-2 and PROOF-1 to PROOF-9, numbers an
   earlier spec of that name held before it was deleted; the new rule took RULE-12.
-- The calls each lane of phase 4 left: `phase4-interfaces.md`, "Calls left" and "The pages".
+- The calls each lane of phase 4 and of decision 99 left: `phase4-interfaces.md`, "Calls
+  left", "The pages" and "Decision 99".
 - Carried from the earlier handoff, not checked again: `purlin:init` without `--yes`, with its
   output piped, hung once in a scratch Go project; Vitest 4 would not install on this machine,
   version 3 is proven; text on a solid coloured badge measures under 7 to 1 (the owner chose to
@@ -172,23 +176,8 @@ owner already accepted in decision 96 are not repeated.
 
 ## Open questions for the owner
 
-1. **Is a proof number, like a rule number, never reused?** A spec records the highest rule
-   number it has held, so a deleted rule's number is never handed out again. Proof numbers have
-   no such record: deleting the highest proof on `main` frees its number for the next proof.
-2. **Are the 78 tests that fail on Windows, and that no rule is tagged for, to be sorted?**
-   Windows runs only the tests of tagged proofs, so none of them fails a remote run today.
-   Sorting them would find which are product faults on Windows, which are faults of the test,
-   and which check nothing Windows could change.
-3. **What the export instructions say about the regulated system.** The page on the regulated
-   workflow says the regulated system holds "the controlled document, the authority to sign it
-   off and the signature that counts under the regulation". The instructions of
-   `purlin:export` say only the authority to sign off. Either they gain the other two, or the
-   page says only what they say.
-4. **What `purlin:test --commit` commits when nothing was selected** and only the settings
-   changed (the first small thing above): the settings with the specs and marked tests that
-   changed, the settings alone under a subject that names no feature, or nothing.
-5. **What the dashboard says of a check by hand, and of a minimum when mutation testing is
-   off** (the second and third small things): each line either gets words of its own or goes.
+None. Decision 99 answered the five this section held; the calls its lanes left are in
+`phase4-interfaces.md`, "Decision 99", "Calls left".
 
 ## How to work, as the owner settled it
 
