@@ -2,13 +2,13 @@
   "feature": "skill_spec",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:05Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T04:29:40Z",
+      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
       "dirty": false,
       "fingerprint": {
-        "code": "66eb136aaff075c66611a2e447d7778a17778bb4ad29e3bef02b7aeea88035b7",
-        "spec": "9ba5f99f9de34f53b27ef180a02248b4220174dbcdad9f67363cdcdb947fa460",
-        "tests": "01ff1f9bd8531567806b5f785aa28e582627a915f5f73b313ad33754ef1a17c0"
+        "code": "31a9a58360dfd5dafefde14af6c980d4b65c35b4e2fbf1269ba52edca6b1d288",
+        "spec": "dc896dd994d19c205d4a64184d60dd44ef13803aeb476ec7223cdbb653cf0897",
+        "tests": "3ff8f2dd8040b7669fa170708526c5875e6ca6b07a6af9453cb115690d26020d"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -179,6 +179,14 @@
           "result": "pass",
           "rule": "RULE-21",
           "test": "dev/test_skill_spec.py::TestSkillSpec::test_the_guide_s_stuck_row_names_the_runner_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-51",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_skill_spec.py::test_the_spec_is_committed_before_the_closing_line"
         }
       ],
       "rules": {
@@ -195,6 +203,7 @@
         "RULE-2": "passed",
         "RULE-20": "passed",
         "RULE-21": "passed",
+        "RULE-22": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

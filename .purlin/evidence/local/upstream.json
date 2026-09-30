@@ -2,13 +2,13 @@
   "feature": "upstream",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:05Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T04:29:40Z",
+      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
       "dirty": false,
       "fingerprint": {
         "code": "4e2f27b1d210bd71b21cbefb873b4923d00f33185612cc5ee5906615fd82536e",
-        "spec": "a78343d0a1d903e07119ac0176d264cbd948e59bfbea0c9b47fadcbc98a3b571",
-        "tests": "20b7dc7f3ce29a13ee14efdcbb940e6d8147bcd093581e4d170db3166483873e"
+        "spec": "2b946057bcca672560522bfdbc09879a4d87c54f9dcafcf2d9c9eea1280b0ab6",
+        "tests": "ca0a5e0f01f263c07b9ada71a7055b7c378029824f6b75d22bcda40a253189e8"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -387,6 +387,14 @@
           "result": "pass",
           "rule": "RULE-34",
           "test": "dev/test_upstream.py::test_a_project_root_that_is_no_folder_is_named_with_the_flag"
+        },
+        {
+          "env": null,
+          "id": "PROOF-59",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_upstream.py::test_sync_makes_no_commit"
         }
       ],
       "rules": {
@@ -411,6 +419,7 @@
         "RULE-32": "passed",
         "RULE-33": "passed",
         "RULE-34": "passed",
+        "RULE-35": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",

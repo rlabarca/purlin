@@ -2,13 +2,13 @@
   "feature": "skill_sign",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:05Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T04:29:40Z",
+      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
       "dirty": false,
       "fingerprint": {
         "code": "10aa024be527b9f71e127501e3a8816321d27d89a1d25289b723cca1484ffabd",
-        "spec": "d4d2d1825591bd54c087190c8c46344ee0a01ded069b326b20906ae22f90d2be",
-        "tests": "7c3176835aa2415ee66a7a64f76c642fcef1190449fbb6543f895dfd4e0a819f"
+        "spec": "e7a579bb858b1ee26f583f2c3d73af89109009c999ce2034bc989713983f2ecd",
+        "tests": "2780a14101d9bf93c7d6fa950c5bb64f17acbe77ae34885fb5606b09722e6c96"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -203,6 +203,22 @@
           "result": "pass",
           "rule": "RULE-21",
           "test": "dev/test_skill_sign.py::TestSkillSign::test_it_quotes_the_tag_already_written_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-50",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_skill_sign.py::test_a_case_becomes_a_proof_line_and_waits_for_build"
+        },
+        {
+          "env": null,
+          "id": "PROOF-51",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-23",
+          "test": "dev/test_skill_sign.py::test_a_rule_is_never_narrowed_to_lose_an_observation"
         }
       ],
       "rules": {
@@ -220,6 +236,8 @@
         "RULE-2": "passed",
         "RULE-20": "passed",
         "RULE-21": "passed",
+        "RULE-22": "passed",
+        "RULE-23": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

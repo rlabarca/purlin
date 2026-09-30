@@ -2,13 +2,13 @@
   "feature": "states",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:05Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T04:29:40Z",
+      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
       "dirty": false,
       "fingerprint": {
-        "code": "1fff0ffd276f7635f36453d8e6b1df020521b6cae106f4c2cdacabf83e2a480b",
-        "spec": "a84620095c51139638101f6f6f5ea2de82dbc047e5d984ea488d5cf0385e17cc",
-        "tests": "cf989f45748b6425ff3a66b30f870d98e812b75448f7f1f3619b41c4b8ddb2fa"
+        "code": "eaa1faa8f21802166bf6b1faef2f10f2be84a8ba6f7939495e051386870974aa",
+        "spec": "d22a54ca56c5d07f7ec23a58039e68747afe21055e54a9e1bbb945b514eb216f",
+        "tests": "ddf4182a2cd049dfab685129e02f779d2ee386503c16a9b8735d22f79f6c1071"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -419,6 +419,14 @@
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_states.py::TestTheStrongCell::test_a_strength_of_exactly_the_minimum_is_not_under_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-237",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_states.py::TestTheStrongCell::test_a_strength_just_under_the_minimum_shows_its_whole_part"
         },
         {
           "env": null,
@@ -1635,6 +1643,14 @@
           "result": "pass",
           "rule": "RULE-95",
           "test": "dev/test_states.py::TestTheAnchorLines::test_a_source_refused_names_the_reason"
+        },
+        {
+          "env": null,
+          "id": "PROOF-236",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-96",
+          "test": "dev/test_states.py::TestStatusTable::test_the_specs_of_a_project_not_set_up_are_read"
         }
       ],
       "rules": {
@@ -1707,7 +1723,8 @@
         "RULE-92": "passed",
         "RULE-93": "passed",
         "RULE-94": "passed",
-        "RULE-95": "passed"
+        "RULE-95": "passed",
+        "RULE-96": "passed"
       },
       "runner": "rich-labarca"
     }

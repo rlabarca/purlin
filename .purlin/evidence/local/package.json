@@ -2,13 +2,13 @@
   "feature": "package",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:04Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T04:29:39Z",
+      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
       "dirty": false,
       "fingerprint": {
         "code": "bee1c6732c9e7ee1f27b8491c3c4364c8474a6b9d2bec0ff525ccb7fb73413c5",
-        "spec": "10d9d35a8e948a1b06edbd290adca52ead653e639046e780d03d3883709e217c",
-        "tests": "7966452f15d8918d9b09f960a2020a065c324ea73f9df31c136a47f0fe8627a8"
+        "spec": "7cd80230f394880f695a1b4d4bdde487eb76955c8fe2564c6ab3d6e37479e281",
+        "tests": "723c341efa5b2957a6cdff2b62f52a75373ec827ddc22be96554f4af4be4ed1d"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -443,6 +443,14 @@
           "result": "pass",
           "rule": "RULE-24",
           "test": "dev/test_export.py::TestTheRefusals::test_a_file_git_cannot_add_is_not_committed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-55",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-25",
+          "test": "dev/test_export.py::TestTheContent::test_the_package_states_the_gate_and_claims_no_compliance"
         }
       ],
       "rules": {
@@ -463,6 +471,7 @@
         "RULE-22": "passed",
         "RULE-23": "passed",
         "RULE-24": "passed",
+        "RULE-25": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

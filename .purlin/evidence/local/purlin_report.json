@@ -2,13 +2,13 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:04Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T04:29:39Z",
+      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
       "dirty": false,
       "fingerprint": {
         "code": "bbcad71cba062482a972a516ab5694bf044012fd3e78aa0cf27536874d289bc6",
-        "spec": "255620221f2949a7a6bd6234a5461c1fb805ec69d93ce1180d185e92b6a5bd64",
-        "tests": "fa36a0bb15d5c38303aef835072f7ce2e35de3733657de82472f803c30de835a"
+        "spec": "78f99a0c2c7c6bd9a635cffeedcfc4ee81635d4f12ea5dc299e549ec1603f403",
+        "tests": "941f02acf791171a6e52323ef2f95dc649f24a27600458540ec2263b669dab91"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -1419,6 +1419,14 @@
           "result": "pass",
           "rule": "RULE-59",
           "test": "dev/test_purlin_report.py::test_an_open_rule_gone_from_the_data_says_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-198",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-60",
+          "test": "dev/test_purlin_report.py::test_each_warning_is_a_notice_after_the_working_tree_one"
         }
       ],
       "rules": {
@@ -1470,6 +1478,7 @@
         "RULE-58": "passed",
         "RULE-59": "passed",
         "RULE-6": "passed",
+        "RULE-60": "passed",
         "RULE-7": "passed",
         "RULE-8": "passed",
         "RULE-9": "passed"

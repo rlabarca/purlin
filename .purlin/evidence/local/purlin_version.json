@@ -2,13 +2,13 @@
   "feature": "purlin_version",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:04Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T04:29:39Z",
+      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
       "dirty": false,
       "fingerprint": {
-        "code": "380cec12582bb6979211c5b994508eb2272f69dccd7a76c8c79d8fac17824ecc",
-        "spec": "b79ff772f7dc107a9b040c40b6ba6cdeecde3a76f316319d76724a2fd6b9e43f",
-        "tests": "2f4f78180eaeb9ec1b5fc9fc19ca3fd4a3621d40ebf7ea1a7d565a83d677261b"
+        "code": "71cdd251310d28c2d2c74575daf7328e88013d80041642e4abacb869077afcbc",
+        "spec": "cce94c975f2e38d3fac6cec724f99847acd0dd4ca0a19fb811af4ed94d5b78b5",
+        "tests": "08e630149189e42d3dcfbe1e293a981fe9e6a2ecb5473e4a043443dd076be007"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -211,6 +211,14 @@
           "result": "pass",
           "rule": "RULE-15",
           "test": "dev/test_purlin_version.py::test_no_second_copy_of_the_version_row_exists"
+        },
+        {
+          "env": null,
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_purlin_version.py::test_the_marketplace_lists_one_plugin_from_the_repository_root"
         }
       ],
       "rules": {
@@ -220,6 +228,7 @@
         "RULE-13": "passed",
         "RULE-14": "passed",
         "RULE-15": "passed",
+        "RULE-16": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

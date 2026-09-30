@@ -2,11 +2,11 @@
   "feature": "schema_spec_format",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:04Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T04:29:39Z",
+      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
       "dirty": false,
       "fingerprint": {
-        "code": "940bf79f6f2f4022474163efa779c1a1dd09dab8c1b0e8edcad66990c42854b6",
+        "code": "d5622a0db5f707bfed1a4edb97cfce770901b528ebfb0ac7aefb3a1c5be7317f",
         "spec": "3e8aba78e544190dd42c3ae7d71198097915629bc384ce707cb815224f847d53",
         "tests": "b93be8b51a5ac4e98766bfb865bd1cee2a35f1188839df294a31e6c2cf8819fb"
       },

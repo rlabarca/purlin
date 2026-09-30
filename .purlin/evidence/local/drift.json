@@ -2,13 +2,13 @@
   "feature": "drift",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:04Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T04:29:39Z",
+      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
       "dirty": false,
       "fingerprint": {
         "code": "6c94763e7b0ab19cc1f364e3a66c4e184753245a31d776265a6c3dfe20f96392",
-        "spec": "6ab2bf34a3a571f111d59bb5c8855a389c1094af8fb2c55345e5787786fe4b9f",
-        "tests": "cdc295729535d948f7fbe6a5d79e6b555ce3d75b6e65843b8a8357484b730019"
+        "spec": "833a3cf4ed1d2a046161b9fa6628e952b3b5080c510761bb185d6bb51ed49932",
+        "tests": "41ae2a9d2966bcaac1486de85425b5af15123d6905c5f7653dd5cb3801b64d54"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -523,6 +523,14 @@
           "result": "pass",
           "rule": "RULE-26",
           "test": "dev/test_drift.py::TestNoCommit::test_a_repository_with_no_commit_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-66",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_drift.py::test_a_drift_call_writes_nothing"
         }
       ],
       "rules": {
@@ -544,6 +552,7 @@
         "RULE-24": "passed",
         "RULE-25": "passed",
         "RULE-26": "passed",
+        "RULE-27": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

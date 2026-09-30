@@ -2,13 +2,13 @@
   "feature": "skill_export",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:05Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T04:29:40Z",
+      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
       "dirty": false,
       "fingerprint": {
         "code": "762d303a36cbb66101ae6830cc76fb69dca550f82a5d2dd7710d8531f7bd92dd",
-        "spec": "9f1e1082b2c8b907d6a70986df7101db3eea69561a08c8cf6a2556cf3d622bb7",
-        "tests": "3170eaafebf9d28983494f7653bf245ce28d6305b3709a7b5c5b3a8dce6ce765"
+        "spec": "5887bbf3386f98fd135c9346b9db17995c26e93291726eb81aa16a553e26d813",
+        "tests": "9855fa549560062e7ddfd142aba5a2442c1ed83b3d7f31b6b07d6399e8b59846"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -123,6 +123,14 @@
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_skill_export.py::TestSkillExport::test_it_quotes_the_no_version_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-35",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_skill_export.py::test_the_package_is_read_where_the_authority_to_sign_off_is"
         }
       ],
       "rules": {
@@ -130,6 +138,7 @@
         "RULE-10": "passed",
         "RULE-11": "passed",
         "RULE-12": "passed",
+        "RULE-13": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

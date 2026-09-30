@@ -2,13 +2,13 @@
   "feature": "host",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:04Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T04:29:39Z",
+      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
       "dirty": false,
       "fingerprint": {
         "code": "74588b572d762cf12c4ed1efd7637e30b78cb404b61fcd92a65983271ae50503",
-        "spec": "8e124f8f1831312fc26665399bc2de4228f845ef9e645b82c87c643972756a6f",
-        "tests": "cc03bcc47e9df99114d725cd99183821485a7dcc6f2a4c61563af3ab51589ef1"
+        "spec": "ee60696bc8326acf1e888a4d1e155b32978bc352cbef83810650ff8bf33349b0",
+        "tests": "6a4faa1e4290591dee88a55c3cc8a9294e32273b94fd924c13b82450bc3d490b"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -947,6 +947,14 @@
           "result": "pass",
           "rule": "RULE-44",
           "test": "dev/test_consumer_ci.py::test_the_runner_file_says_each_test_command_has_an_hour"
+        },
+        {
+          "env": null,
+          "id": "PROOF-139",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-45",
+          "test": "dev/test_host.py::test_no_github_process_can_prompt"
         }
       ],
       "rules": {
@@ -974,6 +982,7 @@
         "RULE-42": "passed",
         "RULE-43": "passed",
         "RULE-44": "passed",
+        "RULE-45": "passed",
         "RULE-5": "not run",
         "RULE-6": "passed",
         "RULE-7": "passed",

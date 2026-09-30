@@ -2,13 +2,13 @@
   "feature": "skill_anchor",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:05Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T04:29:40Z",
+      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
       "dirty": false,
       "fingerprint": {
         "code": "7590d3936fbf3c2395403715784e03e86047518a16a4b9a0f498287f673f6c2d",
-        "spec": "8153a7ee72b966295a9832fc6aa03de629cf45bdf6ccc713078476398f1db926",
-        "tests": "364745e302620399ea85beb2dafec7753495e1a6b946fdd2e81ed34c098a4cb7"
+        "spec": "d6f68d5177ae952f6c3bc30c650b6002ac4fd4d2d93690f0bab2e9beb6ccf22d",
+        "tests": "9933fa831f75024ca5a9e8ea883b65dc49419e504abcd7f27938e3b58d595028"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -123,6 +123,14 @@
           "result": "pass",
           "rule": "RULE-13",
           "test": "dev/test_skill_anchor.py::TestTheAnchorRepository::test_an_anchor_repository_is_for_two_or_more_projects"
+        },
+        {
+          "env": null,
+          "id": "PROOF-35",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_skill_anchor.py::test_a_new_anchor_is_committed_with_the_create_prefix"
         }
       ],
       "rules": {
@@ -131,6 +139,7 @@
         "RULE-11": "passed",
         "RULE-12": "passed",
         "RULE-13": "passed",
+        "RULE-14": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

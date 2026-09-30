@@ -2,13 +2,13 @@
   "feature": "scaffold",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:04Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T04:29:39Z",
+      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
       "dirty": false,
       "fingerprint": {
         "code": "a268af0b63bec7492f208834a619f0c1a8e1b61e6943c3b0b2ec9e9ea807cdde",
-        "spec": "161ca1c30caebd05d2edc54c87a49b9bd7741ae641fa4161bca9075170500ed9",
-        "tests": "db27a66a256529c1037e6b953caffbcec0febc56ff53ef8b36e431aa7b7182f3"
+        "spec": "15ef4c70cb50379875eadda42faa80ce08164120aa42bc59c7aa669406372831",
+        "tests": "8ce3e9cfd626a79522c7cc8ae30b2b0fc75aaaa1935a29ff7d20223c2d220409"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -1131,6 +1131,14 @@
           "result": "pass",
           "rule": "RULE-73",
           "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_the_gitignore_says_the_evidence_is_tracked"
+        },
+        {
+          "env": null,
+          "id": "PROOF-162",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-74",
+          "test": "dev/test_init_scaffold.py::TestTheEvidenceFolder::test_a_second_setup_keeps_the_dashboard_page_as_it_is"
         }
       ],
       "rules": {
@@ -1187,6 +1195,7 @@
         "RULE-71": "passed",
         "RULE-72": "passed",
         "RULE-73": "passed",
+        "RULE-74": "passed",
         "RULE-8": "passed",
         "RULE-9": "passed"
       },

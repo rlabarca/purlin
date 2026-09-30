@@ -2,13 +2,13 @@
   "feature": "skill_spec_from_code",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T03:13:05Z",
-      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "at": "2026-09-30T04:29:40Z",
+      "commit": "b54a9def4d75fe47a8d16ff544effae5080cdfe8",
       "dirty": false,
       "fingerprint": {
         "code": "9078fa68aa48a62f81a4160b9619ec2e8940f1f710ab5c30ef8516aeb1d1e718",
-        "spec": "184cd058b72678db947b1ba90f717eec3095fa737d6bd6c6ba4e2f1b1bde1bf8",
-        "tests": "8c54e4c9a07b3ebec00e3e84c4b90f253dc78076033401f0e90ee93d71768913"
+        "spec": "a599843f19a3c7e76ac9540ae21df4ebb9bdd7ecb6791c053277929b0fdb8608",
+        "tests": "f453f28ea7341e9e974bee43988ef1d0da6d1d2ba0a53836bae8e5739cd5c64b"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -235,6 +235,30 @@
           "result": "pass",
           "rule": "RULE-48",
           "test": "dev/test_skill_spec_from_code.py::TestWhatNotToDo::test_it_says_what_a_caller_reaches_in_each_language"
+        },
+        {
+          "env": null,
+          "id": "PROOF-163",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-49",
+          "test": "dev/test_skill_spec_from_code.py::test_the_taxonomy_step_says_how_many_features_is_normal"
+        },
+        {
+          "env": null,
+          "id": "PROOF-164",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-50",
+          "test": "dev/test_skill_spec_from_code.py::test_a_proof_a_test_already_shows_never_names_the_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-165",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-51",
+          "test": "dev/test_skill_spec_from_code.py::test_the_suites_own_helpers_are_code_no_caller_reaches"
         }
       ],
       "rules": {
@@ -260,6 +284,9 @@
         "RULE-46": "passed",
         "RULE-47": "passed",
         "RULE-48": "passed",
+        "RULE-49": "passed",
+        "RULE-50": "passed",
+        "RULE-51": "passed",
         "RULE-6": "passed",
         "RULE-7": "passed",
         "RULE-8": "passed",
