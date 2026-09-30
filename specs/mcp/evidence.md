@@ -11,12 +11,13 @@
 >   The reader never writes.
 > Scope: scripts/mcp/purlin/fingerprint.py, scripts/mcp/purlin/evidence.py
 > Stack: python/stdlib, hashlib, json, subprocess (list-only)
+> Highest-Rule: 29
 
 ## Rules
 
 - RULE-1: A fingerprint is three 64-character sha256 hex strings named `spec`, `code` and `tests`
-- RULE-2: The `spec` part covers the rule and proof lines of the feature, of every spec it requires transitively and of every global anchor; editing a rule's text changes `spec` and no other part
-- RULE-3: Editing a rule of an anchor changes the `spec` part of every feature that requires the anchor, directly or through another spec
+- RULE-2: The `spec` part covers the rule and proof lines of the feature, of every anchor it requires transitively and of every global anchor; editing a rule's text changes `spec` and no other part
+- RULE-3: Editing a rule of an anchor changes the `spec` part of every feature that requires the anchor, directly or through another anchor
 - RULE-4: The `code` part covers the tracked files the `> Scope:` entries reach, and an entry naming a file reaches that file; editing a file it reaches changes `code` and no other part
 - RULE-5: A scope entry that reaches no tracked file, because the path does not exist or the glob matches nothing, is listed as unmatched, and the fingerprint is still taken
 - RULE-6: A spec with no `> Scope:` line is reported incomplete with the reason `no > Scope: line`, and its fingerprint is still taken, with a `code` part that is the sha256 of the empty string
@@ -42,6 +43,7 @@
 - RULE-26: A test file under a folder whose name begins with `.` or is `node_modules`, `bin`, `obj` or `mutants` is not counted in the `tests` part
 - RULE-27: The machine the reader runs on is `windows` on Windows, `macos` on macOS, and `linux` on any other system
 - RULE-28: Where both sources hold a matching audit entry, the later `at` wins, and the entry names its source
+- RULE-29: A run with no feature named selects a feature that has no section for this machine's operating system in either source, with the reason `no run on <System> yet`, the system written as a person reads it
 
 ## Proof
 
@@ -52,7 +54,7 @@
 - PROOF-33 (RULE-22): The `> Description:` of `login` is rewritten from `What it does.` to `Something else entirely.`; all three parts of the fingerprint of `login` equal the ones taken before
 - PROOF-3 (RULE-2): `login` names `> Requires: api`, and the proof line of the anchor `api` is changed from `GET /x; verify the header` to `GET /y; verify the header`; the fingerprint of `login` differs from the one taken before in `spec` alone
 - PROOF-34 (RULE-2): `@manual` is added to the end of the one proof line of `login`; the fingerprint of `login` differs from the one taken before in `spec` alone
-- PROOF-4 (RULE-3): The anchor `api` is required by `orders`, `orders` is required by `login`, and `billing` requires nothing; `api` RULE-1 is reworded from `Carry a request id` to `Carry a trace id`; the fingerprints of `api`, `orders` and `login` each differ in `spec` alone, and the fingerprint of `billing` is the same as before
+- PROOF-4 (RULE-3): The anchor `api` is required by the anchor `orders`, `orders` is required by the feature `login`, and `billing` requires nothing; `api` RULE-1 is reworded from `Carry a request id` to `Carry a trace id`; the fingerprints of `api` and `login` each differ in `spec` alone, and the fingerprint of `billing` is the same as before
 - PROOF-5 (RULE-23): The anchor `security` carries `> Global: true`, and `login` does not name it in `> Requires:`; `security` RULE-1 is reworded from `No eval anywhere` to `No exec anywhere`, and the fingerprint of `login` differs from the one taken before in `spec` alone
 - PROOF-35 (RULE-23): The anchor `security` carries no `> Global:` line, and `login` does not name it in `> Requires:`; `security` RULE-1 is reworded from `No eval anywhere` to `No exec anywhere`, and the fingerprint of `login` is the same as before
 - PROOF-6 (RULE-4): `login` covers `src/login.py`, and that file is edited; the fingerprint of `login` differs from the one taken before in `code` alone
@@ -89,10 +91,11 @@
 - PROOF-49 (RULE-10): A stored fingerprint that is the text `abc` is compared with one taken now of `a`, `x` and `y`; the parts named are exactly `spec`, `code` and `tests`, in that order
 - PROOF-50 (RULE-10): A stored fingerprint of `a`, `x` and `y` is compared with one taken now of `a`, `x` and `y`; no part is named
 - PROOF-17 (RULE-11): Only `.purlin/evidence/ci/login.json` is written; loading the evidence of `login` reads the `ci` file, reads no `local` file, gives the paths `.purlin/evidence/local/login.json` and `.purlin/evidence/ci/login.json`, and gives no warning
-- PROOF-18 (RULE-12): `.purlin/evidence/local/login.json` holds `{not json`; loading the evidence of `login` reads no `local` file and gives exactly one warning, `.purlin/evidence/local/login.json is not valid JSON; it is ignored.`
-- PROOF-51 (RULE-12): `.purlin/evidence/local/login.json` holds `[1, 2]`; loading the evidence of `login` reads no `local` file and gives exactly one warning, `.purlin/evidence/local/login.json is not a JSON object; it is ignored.`
-- PROOF-52 (RULE-12): `.purlin/evidence/local/login.json` is well formed and its `schema` reads `purlin-evidence/1`; loading the evidence of `login` reads no `local` file and gives exactly one warning, `.purlin/evidence/local/login.json carries the schema "purlin-evidence/1", not purlin-evidence/2; it is ignored.`
-- PROOF-19 (RULE-13): `.purlin/evidence/ci/login.json` is written with its `source` reading `local`; loading the evidence of `login` reads no `ci` file and gives exactly one warning, `.purlin/evidence/ci/login.json names the source "local" but sits in ci/; it is ignored.`
+- PROOF-18 (RULE-12): `.purlin/evidence/local/login.json` holds `{not json`; loading the evidence of `login` reads no `local` file and gives exactly one warning, `.purlin/evidence/local/login.json is not valid JSON; it is ignored. Run purlin:test login to write it again.`
+- PROOF-51 (RULE-12): `.purlin/evidence/local/login.json` holds `[1, 2]`; loading the evidence of `login` reads no `local` file and gives exactly one warning, `.purlin/evidence/local/login.json is not a JSON object; it is ignored. Run purlin:test login to write it again.`
+- PROOF-52 (RULE-12): `.purlin/evidence/local/login.json` is well formed and its `schema` reads `purlin-evidence/1`; loading the evidence of `login` reads no `local` file and gives exactly one warning, `.purlin/evidence/local/login.json carries the schema "purlin-evidence/1", not purlin-evidence/2; it is ignored. Run purlin:test login to write it again.`
+- PROOF-19 (RULE-13): `.purlin/evidence/ci/login.json` is written with its `source` reading `local`; loading the evidence of `login` reads no `ci` file and gives exactly one warning, `.purlin/evidence/ci/login.json names the source "local" but sits in ci/; it is ignored. Run purlin:test --remote to write it again.`
+- PROOF-77 (RULE-12): `.purlin/evidence/ci/login.json` holds `{not json`; loading the evidence of `login` reads no `ci` file and gives exactly one warning, `.purlin/evidence/ci/login.json is not valid JSON; it is ignored. Run purlin:test --remote to write it again.`
 - PROOF-20 (RULE-14): The `local` file of `login` holds sections under `linux`, `macos` and `solaris`, and the `ci` file one under `windows`; the sections listed are exactly `local` `macos`, `local` `linux` and `ci` `windows`, in that order, and none is listed for `solaris`
 - PROOF-25 (RULE-27): On a system that names itself `freebsd14`, the reader gives the machine it runs on as `linux`
 - PROOF-53 (RULE-27): On a system that names itself `win32`, the reader gives the machine it runs on as `windows`
@@ -120,3 +123,4 @@
 - PROOF-29 (RULE-20): A section lists `PROOF-1` twice, `missing` with one test and `fail` with another; the reader gives `PROOF-1` the result `fail`
 - PROOF-30 (RULE-20): A section lists `PROOF-1` twice, `pass` with each of two tests; the reader gives `PROOF-1` the result `pass`
 - PROOF-31 (RULE-20): A section lists `PROOF-1` once, `not run` with no test named; the reader gives `PROOF-1` the result `not run`
+- PROOF-76 (RULE-29): In a project whose one feature `login` has no evidence file in either source, a run with no feature named selects `login` with the one reason `no run on <System> yet`, `<System>` the running machine's word: `macOS` on a Mac, `Windows` on Windows, `Linux/Unix` elsewhere

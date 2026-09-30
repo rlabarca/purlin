@@ -8,6 +8,7 @@
 > Requires: schema_spec_format
 > Scope: scripts/mcp/purlin/specs.py
 > Stack: python/stdlib, re, hashlib
+> Highest-Rule: 21
 
 ## Rules
 
@@ -17,7 +18,7 @@
 - RULE-9: A `> Source:` value is read two ways: a git URL followed by a path in that repository gives the two separately, and anything else comes back whole as the source rather than split on its first word
 - RULE-10: A `> Path:` line supplies the path in the source repository when `> Source:` carries the URL alone
 - RULE-11: A spec is an anchor when its path lies under an `_anchors/` directory or its first line opens `# Anchor:`, and an anchor carries its `> Source:` and its `> Pinned:` sha
-- RULE-13: A feature must prove its own rules, the rules of every spec it requires and of everything those require in turn, and the rules of every anchor carrying `> Global: true`, labelled `own`, `required` and `global`
+- RULE-13: A feature must prove its own rules, the rules of every anchor it requires and of every anchor those require in turn, and the rules of every anchor carrying `> Global: true`, labelled `own`, `required` and `global`
 - RULE-14: Every spec is keyed by its filename stem
 - RULE-17: The rule and proof text hashes normalise runs of whitespace to one space, so reflowing a line returns the hash it already had
 - RULE-18: The fields 0.9.5 wrote that the format does not carry, `> Visual-Reference:` and `> Visual-Hash:`, are ignored rather than refused, and every spec carrying one lists it under `unknown_tags`
@@ -38,8 +39,8 @@
 - PROOF-24 (RULE-7): A spec's proof line reads `Look at it @manual(a@b.c, 2026-03-31, abc1234)`; the spec is read rather than refused, the proof's text is `Look at it`, the proof is manual, and the spec's unknown tags are exactly `@manual(...)`
 - PROOF-25 (RULE-18): A spec carrying `> Visual-Reference: ./mock.png` and the one rule `It renders` is read rather than refused, with exactly that rule, and its unknown tags are exactly `> Visual-Reference:`
 - PROOF-26 (RULE-18): A spec carrying `> Visual-Hash: 9f86d081` and the one rule `It renders` is read rather than refused, with exactly that rule, and its unknown tags are exactly `> Visual-Hash:`
-- PROOF-9 (RULE-8): A project holds `specs/auth/login.md`, whose proof ends with a bare `@windows`, and `specs/auth/mockup.md`, whose proof ends `@manual(a@b.c, 2026-03-31, abc1234)`; the status report carries exactly one warning, `2 spec files carry tags this release does not read (@manual(...), @windows); they are ignored: specs/auth/login.md, specs/auth/mockup.md`
-- PROOF-27 (RULE-8): Seven specs, `specs/auth/a.md` to `specs/auth/g.md`, each end a proof with a bare `@windows`; the status report carries exactly one warning, `7 spec files carry tags this release does not read (@windows); they are ignored: specs/auth/a.md, specs/auth/b.md, specs/auth/c.md, specs/auth/d.md, specs/auth/e.md, and 2 more`
+- PROOF-9 (RULE-8): A project holds `specs/auth/login.md`, whose proof ends with a bare `@windows`, and `specs/auth/mockup.md`, whose proof ends `@manual(a@b.c, 2026-03-31, abc1234)`; the status report carries exactly one warning, `2 spec files carry tags this release does not read (@manual(...), @windows); they are ignored: specs/auth/login.md, specs/auth/mockup.md. Run purlin:init --update to remove them.`
+- PROOF-27 (RULE-8): Seven specs, `specs/auth/a.md` to `specs/auth/g.md`, each end a proof with a bare `@windows`; the status report carries exactly one warning, `7 spec files carry tags this release does not read (@windows); they are ignored: specs/auth/a.md, specs/auth/b.md, specs/auth/c.md, specs/auth/d.md, specs/auth/e.md, and 2 more. Run purlin:init --update to remove them.`
 - PROOF-28 (RULE-8): A project whose one spec carries no tag and no field the format does not carry is read; the status report carries no warning at all
 - PROOF-10 (RULE-9): An anchor carrying `> Source: https://github.com/acme/p.git specs/no_eval.md` is read with the source `https://github.com/acme/p.git` and the path `specs/no_eval.md`
 - PROOF-29 (RULE-9): An anchor carrying `> Source: ./policies` is read with the source `./policies` and no path
@@ -54,8 +55,8 @@
 - PROOF-35 (RULE-11): The spec `specs/auth/login.md`, opening `# Feature: login` and lying under no `_anchors/` folder, is read as a feature and not an anchor
 - PROOF-14 (RULE-13): The anchor `api` has one rule, the anchor `security` carries `> Global: true` and one rule, and the feature `login` has two rules and `> Requires: api`; `login` must prove exactly `login` RULE-1 and RULE-2 `own`, `api` RULE-1 `required` and `security` RULE-1 `global`, in that order
 - PROOF-36 (RULE-19): The anchor `security` carries `> Global: true` and one rule, beside the feature `login` with two rules; `security` must prove exactly its own RULE-1, labelled `own`
-- PROOF-37 (RULE-13): The feature `login` has two rules and `> Requires: api`, the anchor `api` has one rule and `> Requires: base`, and the feature `base` has one rule; `login` must prove exactly its RULE-1 and RULE-2 `own`, `api` RULE-1 `required` and `base` RULE-1 `required`, in that order
-- PROOF-38 (RULE-19): The anchor `api` has one rule and `> Requires: base`, and the feature `base` has one rule; `api` must prove exactly its own RULE-1, labelled `own`, and nothing of `base`
+- PROOF-37 (RULE-13): The feature `login` has two rules and `> Requires: api`, the anchor `api` has one rule and `> Requires: base`, and the anchor `base` has one rule; `login` must prove exactly its RULE-1 and RULE-2 `own`, `api` RULE-1 `required` and `base` RULE-1 `required`, in that order
+- PROOF-38 (RULE-19): The anchor `api` has one rule and `> Requires: base`, and the anchor `base` has one rule; `api` must prove exactly its own RULE-1, labelled `own`, and nothing of `base`
 - PROOF-15 (RULE-14): A project holds `specs/auth/login.md` and `specs/auth/sign_up.md`, both opening `# Feature: login`; it reads as the two specs `login` and `sign_up`, keyed by file name rather than title, with `sign_up` at `specs/auth/sign_up.md`
 - PROOF-39 (RULE-20): A project holds `specs/auth/login.md` and `specs/auth/broken.md`, whose bytes are not valid UTF-8; it reads as the one spec `login`, with no `broken`
 - PROOF-40 (RULE-21): A project with no `specs/` folder reads as no specs at all, rather than an error

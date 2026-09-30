@@ -203,7 +203,8 @@ class TestTheWarning:
         assert project.payload()['warnings'] == [
             '2 spec files carry tags this release does not read '
             '(@manual(...), @windows); they are ignored: '
-            'specs/auth/login.md, specs/auth/mockup.md']
+            'specs/auth/login.md, specs/auth/mockup.md. '
+            'Run purlin:init --update to remove them.']
 
     # purlin: specs PROOF-27
     def test_the_warning_names_five_files_and_counts_the_rest(self, project):
@@ -212,7 +213,8 @@ class TestTheWarning:
         assert project.payload()['warnings'] == [
             '7 spec files carry tags this release does not read (@windows); '
             'they are ignored: specs/auth/a.md, specs/auth/b.md, '
-            'specs/auth/c.md, specs/auth/d.md, specs/auth/e.md, and 2 more']
+            'specs/auth/c.md, specs/auth/d.md, specs/auth/e.md, and 2 more. '
+            'Run purlin:init --update to remove them.']
 
     # purlin: specs PROOF-28
     def test_no_carrier_means_no_warning(self, project):
@@ -306,7 +308,7 @@ def _global_security(project):
 def _api_requiring_base(project):
     project.spec(_feature('api', ['Responses carry a type'], heading='Anchor',
                           requires='base'), name='api', category='schema')
-    project.spec(_feature('base', ['Requests carry an id']),
+    project.spec(_feature('base', ['Requests carry an id'], heading='Anchor'),
                  name='base', category='core')
 
 
@@ -333,7 +335,7 @@ class TestWhatAFeatureProves:
             ('security', 'RULE-1', 'own')]
 
     # purlin: specs PROOF-37
-    def test_what_a_required_spec_requires_is_proved_too(self, project):
+    def test_what_a_required_anchor_requires_is_proved_too(self, project):
         _api_requiring_base(project)
         project.spec(SPEC.replace('# Feature: login\n',
                                   '# Feature: login\n\n> Requires: api\n'))
@@ -343,7 +345,7 @@ class TestWhatAFeatureProves:
             ('api', 'RULE-1', 'required'), ('base', 'RULE-1', 'required')]
 
     # purlin: specs PROOF-38
-    def test_an_anchor_that_requires_a_spec_proves_its_own_rule_alone(
+    def test_an_anchor_that_requires_an_anchor_proves_its_own_rule_alone(
             self, project):
         _api_requiring_base(project)
         features = purlin_specs.scan_specs(project.root)

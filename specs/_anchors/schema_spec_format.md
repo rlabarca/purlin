@@ -9,6 +9,7 @@
 > Type: schema
 > Scope: scripts/mcp/purlin/specs.py, references/formats/spec_format.md, references/formats/anchor_format.md
 > Stack: python/stdlib, one regex parser in scripts/mcp/purlin/specs.py
+> Highest-Rule: 28
 
 ## Rules
 
@@ -16,7 +17,7 @@
 - RULE-2: Rule ids read `RULE-N`; the author assigns them in increasing order and never reuses one, so a retired rule leaves its number vacant and a gap in the sequence is reported as nothing
 - RULE-3: A proof line reads `PROOF-N (RULE-N)`, and names several rules as `PROOF-N (RULE-A, RULE-B)` when one flow drives all of them; a list item under `## Proof` of any other form is not read as a proof
 - RULE-4: A rule that no proof line names carries an empty proof list, and while no test marked with the rule's own id answers it, its passed cell reads `no test` with the reason `no proof written`, so a spec cannot claim evidence it does not have
-- RULE-5: `> Requires:` is a comma-separated list of spec names whose rules are counted with this spec's own and carry the label `required`
+- RULE-5: `> Requires:` is a comma-separated list of anchor names, the project's own or pinned, whose rules are counted with this spec's own and carry the label `required`
 - RULE-6: `> Scope:` is a comma-separated list of file paths, parsed into a list in the order written
 - RULE-7: The file name is the spec's name, whatever its first line says; a first line `# Anchor: <name>` makes a spec an anchor wherever it is kept; a first line `# Feature: <other>` or `# Anchor: <other>` naming another feature is warned of
 - RULE-8: `> Description:` takes continuation lines that begin with `>` and are not themselves a `> Field:` line, so the next field's value never reaches the description
@@ -36,6 +37,10 @@
 - RULE-22: A trailing at-word that is not `@manual`, `@env` or a bare `@windows`, and carries no value in brackets, is not a tag and stops the reading
 - RULE-23: A tag that follows a list connector (a comma, `and`, `or`) is not a tag, so a description whose prose ends in an at-word is left whole
 - RULE-24: A bare `@windows` and any other at-word carrying a value in brackets are returned in the unknown list and set no environment; a `@manual` carrying a value still reads as `@manual`
+- RULE-25: A name in `> Requires:` that is a feature's spec and not an anchor is warned of, and its rules do not apply
+- RULE-26: `> Highest-Rule: <n>` records the highest rule number the spec has ever held; it changes no fingerprint and no rule count
+- RULE-27: The spec format page opens with the line `> Format-Version: <n>`, `<n>` a whole number
+- RULE-28: `> Stack:` is read as one line and changes no fingerprint
 
 ## Proof
 
@@ -54,7 +59,7 @@
 - PROOF-18 (RULE-4): A spec holding `RULE-1` and the line `PROOF-1 (RULE-1)`, with no test, is read: `RULE-1` carries the one proof `PROOF-1`, and its passed cell reads `no test` without the reason `no proof written`
 - PROOF-19 (RULE-4): At the gate `passed`, a spec holding `RULE-1` and no proof line, whose one test is marked `purlin: feat RULE-1` and passes in a test run, is read: `RULE-1` carries no proof, and its passed cell reads `passed` with no reason
 - PROOF-5 (RULE-5): A feature carrying `> Requires: base` and one rule of its own is read beside an anchor `base` that holds `RULE-1`; among the feature's rules, those labelled `required` are exactly `RULE-1` of `base`
-- PROOF-20 (RULE-5): A feature carrying `> Requires: other, base` and one rule of its own, where `other` holds `RULE-1` and `RULE-2` and `base` holds `RULE-1`, has its rules read in this order: its own `RULE-1` labelled `own`, then `RULE-1` and `RULE-2` of `other` and `RULE-1` of `base`, each labelled `required`
+- PROOF-20 (RULE-5): A feature carrying `> Requires: other, base` and one rule of its own, where the anchor `other` holds `RULE-1` and `RULE-2` and the anchor `base` holds `RULE-1`, has its rules read in this order: its own `RULE-1` labelled `own`, then `RULE-1` and `RULE-2` of `other` and `RULE-1` of `base`, each labelled `required`
 - PROOF-21 (RULE-5): A feature carrying `> Requires: base, ghost` and one rule of its own, where `base` holds `RULE-1` and no spec is named `ghost`, has exactly two rules, its own `RULE-1` and `RULE-1` of `base`; `ghost` adds none
 - PROOF-6 (RULE-6): A spec carrying `> Scope: src/alpha.py, src/zeta.py` is read with a scope of exactly two paths, `src/alpha.py` then `src/zeta.py`
 - PROOF-22 (RULE-6): A spec carrying `> Scope: src/zeta.py, src/alpha.py` is read with a scope of exactly two paths in the order written, `src/zeta.py` then `src/alpha.py`, not sorted
@@ -94,3 +99,12 @@
 - PROOF-53 (RULE-14): In a project whose git tracks `src/app.py`, a spec `login` scoped `src/app.py, src/gone.py` is reported with `login: > Scope: names src/gone.py, which finds no file in git. Run purlin:spec login.`
 - PROOF-54 (RULE-14): In a project whose git tracks `src/app.py` and not `src/new.py`, which is on the disk, a spec `login` scoped `src/app.py, src/new.py` is reported with `login: > Scope: names src/new.py, which finds no file in git. Run purlin:spec login.`
 - PROOF-55 (RULE-14): In a project whose git tracks `src/app.py`, a spec `login` scoped `src/gone.py` alone is reported with `1 spec names no files, so its tests run every time: login.` and with no line saying `which finds no file in git`
+- PROOF-58 (RULE-25): A feature `login` carrying `> Requires: checkout`, where `checkout` is a feature's spec, is reported with `login: > Requires: names checkout, which is not an anchor, so its rules do not apply. Run purlin:spec login.`
+- PROOF-59 (RULE-25): A feature `login` carrying `> Requires: checkout` and one rule of its own, where the feature `checkout` holds `RULE-1` and `RULE-2`, has exactly one rule, its own `RULE-1`; no rule of `checkout` is counted in it
+- PROOF-60 (RULE-25): An anchor `api` carrying `> Requires: checkout`, where `checkout` is a feature's spec, is reported with `api: > Requires: names checkout, which is not an anchor, so its rules do not apply. Run purlin:spec api.`
+- PROOF-61 (RULE-26): A spec holding `RULE-1`, `RULE-2` and `RULE-3` and the line `> Highest-Rule: 12` is read with exactly three rules, `RULE-1`, `RULE-2` and `RULE-3`
+- PROOF-62 (RULE-26): A spec carrying `> Highest-Rule: 12` has the same fingerprint, all three parts, as the same spec with that line taken out
+- PROOF-63 (RULE-26): A spec whose `> Description: Signing in.` stands directly above `> Highest-Rule: 12` is read with the description `Signing in.`, the same as with no such line
+- PROOF-64 (RULE-27): The first line of the spec format page reads `> Format-Version: ` followed by a whole number and nothing else
+- PROOF-65 (RULE-28): A spec carrying `> Stack: python/stdlib, re, hashlib` above `> Scope: src/` is read with the stack `python/stdlib, re, hashlib`
+- PROOF-66 (RULE-28): The `> Stack:` of a spec is rewritten from `python/stdlib` to `node/express`; all three parts of its fingerprint equal the ones taken before

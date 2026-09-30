@@ -194,8 +194,9 @@ def test_an_anchor_rule_edit_reaches_every_feature_that_requires_it(tmp_path):
     p = Project(tmp_path)
     p.write('specs/_anchors/api.md', _spec('api', ['Carry a request id'],
                                            ['GET /x; verify it'], anchor=True))
-    p.write('specs/shop/orders.md', _spec('orders', ['Orders list'],
-                                          ['GET; verify'], requires='api'))
+    p.write('specs/_anchors/orders.md', _spec('orders', ['Orders list'],
+                                              ['GET; verify'], requires='api',
+                                              anchor=True))
     p.write('specs/auth/login.md', _spec('login', ['Login works'],
                                          ['POST; verify'], requires='orders'))
     p.write('specs/pay/billing.md', _spec('billing', ['Bills add up'],
@@ -206,7 +207,7 @@ def test_an_anchor_rule_edit_reaches_every_feature_that_requires_it(tmp_path):
     p.write('specs/_anchors/api.md', _spec('api', ['Carry a trace id'],
                                            ['GET /x; verify it'], anchor=True))
     after = {name: p.fp(name) for name in names}
-    for name in ('api', 'orders', 'login'):
+    for name in ('api', 'login'):
         assert _changed(before[name], after[name]) == ['spec'], name
     assert after['billing'] == before['billing']
 
@@ -513,3 +514,18 @@ def test_a_stored_fingerprint_that_is_text_differs_on_all_three():
 # purlin: evidence PROOF-50
 def test_two_equal_fingerprints_differ_on_no_part():
     assert fingerprint.differing_parts(dict(NOW), NOW) == []
+
+
+# --- RULE-29 ----------------------------------------------------------------
+
+# How a person reads the machine this runs on, asked of the system itself.
+_SYSTEM_WORD = {'Darwin': 'macOS', 'Windows': 'Windows'}
+
+
+# purlin: evidence PROOF-76
+def test_a_feature_with_no_evidence_is_selected_as_never_run_here(project):
+    import platform
+    word = _SYSTEM_WORD.get(platform.system(), 'Linux/Unix')
+    (login,) = fingerprint.selection(project.root)
+    assert (login['feature'], login['selected'], login['reasons']) == (
+        'login', True, ['no run on %s yet' % word])

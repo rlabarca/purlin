@@ -18,7 +18,7 @@ reads for each operating system.
 
 A file that cannot be read, is not JSON, carries another schema, or names a
 source other than its folder is ignored, and the reader says so once per file
-in `warnings`.
+in `warnings`, naming the run that writes it again.
 
 One more file is read here and is not evidence: `.purlin/runtime/
 audit_could_not_run.json`, which `purlin:audit` leaves behind for the rules
@@ -102,13 +102,23 @@ def feature_names(project_root):
     return sorted(names)
 
 
+# The step that writes an ignored file again, by the folder it sits in.
+REWRITE_LOCAL = 'Run purlin:test %s to write it again.'
+REWRITE_CI = 'Run purlin:test --remote to write it again.'
+
+
+def rewrite_fix(source, feature):
+    """The sentence an ignored evidence file's warning ends on."""
+    return REWRITE_CI if source == 'ci' else REWRITE_LOCAL % feature
+
+
 def load(project_root, feature):
     """Both evidence files of one feature.
 
     Returns `{feature, files, paths, warnings}`: `files` maps each source to
     the parsed file, or `None` when there is none or it was ignored; `paths`
     maps each source to its project-relative path; `warnings` holds one
-    sentence per ignored file.
+    line per ignored file, ending on the step that writes it again.
     """
     files = {}
     paths = {}
@@ -120,23 +130,26 @@ def load(project_root, feature):
         full = os.path.join(project_root, *path.split('/'))
         if not os.path.isfile(full):
             continue
+        fix = rewrite_fix(source, feature)
         try:
             with open(full, 'r', encoding='utf-8') as handle:
                 data = json.load(handle)
         except (IOError, OSError, UnicodeDecodeError, ValueError):
-            warnings.append('%s is not valid JSON; it is ignored.' % path)
+            warnings.append('%s is not valid JSON; it is ignored. %s'
+                            % (path, fix))
             continue
         if not isinstance(data, dict):
-            warnings.append('%s is not a JSON object; it is ignored.' % path)
+            warnings.append('%s is not a JSON object; it is ignored. %s'
+                            % (path, fix))
             continue
         if data.get('schema') != SCHEMA:
-            warnings.append('%s carries the schema %s, not %s; it is ignored.'
-                            % (path, _shown(data.get('schema')), SCHEMA))
+            warnings.append('%s carries the schema %s, not %s; it is ignored. %s'
+                            % (path, _shown(data.get('schema')), SCHEMA, fix))
             continue
         if data.get('source') != source:
             warnings.append('%s names the source %s but sits in %s/; it is '
-                            'ignored.' % (path, _shown(data.get('source')),
-                                          source))
+                            'ignored. %s' % (path, _shown(data.get('source')),
+                                             source, fix))
             continue
         files[source] = data
     return {'feature': feature, 'files': files, 'paths': paths,

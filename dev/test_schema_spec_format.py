@@ -819,3 +819,124 @@ def test_a_scope_whose_every_entry_finds_nothing_gets_only_the_existing_line(
     assert ('1 spec names no files, so its tests run every time: login.'
             in result.splitlines()), result
     assert 'which finds no file in git' not in result, result
+
+
+# ---------------------------------------------------------------------------
+# RULE-25: a `> Requires:` name that is a feature's spec
+# ---------------------------------------------------------------------------
+
+def _checkout(root):
+    """The feature `checkout`, with two rules of its own."""
+    _write(root, 'specs/shop/checkout.md',
+           '# Feature: checkout\n\n## Rules\n- RULE-1: Pay\n- RULE-2: Ship\n\n'
+           '## Proof\n- PROOF-1 (RULE-1): Test\n- PROOF-2 (RULE-2): Test\n')
+
+
+# purlin: schema_spec_format PROOF-58
+def test_a_feature_requiring_a_feature_spec_is_warned_of(tmp_path):
+    root = _project(tmp_path)
+    _checkout(root)
+    _write(root, 'specs/test/login.md',
+           '# Feature: login\n\n> Requires: checkout\n\n'
+           '## Rules\n- RULE-1: One\n\n## Proof\n- PROOF-1 (RULE-1): Test\n')
+    result = purlin_status.sync_status(str(root))
+    assert ('login: > Requires: names checkout, which is not an anchor, so '
+            'its rules do not apply. Run purlin:spec login.') \
+        in result.splitlines(), result
+
+
+# purlin: schema_spec_format PROOF-59
+def test_a_feature_requiring_a_feature_spec_proves_none_of_its_rules(tmp_path):
+    root = _project(tmp_path)
+    _checkout(root)
+    assert _requiring(root, 'checkout') == [('test_feat', 'RULE-1', 'own')]
+
+
+# purlin: schema_spec_format PROOF-60
+def test_an_anchor_requiring_a_feature_spec_is_warned_of_by_its_own_name(
+        tmp_path):
+    root = _project(tmp_path)
+    _checkout(root)
+    _write(root, 'specs/_anchors/api.md',
+           '# Anchor: api\n\n> Requires: checkout\n\n'
+           '## Rules\n- RULE-1: One\n\n## Proof\n- PROOF-1 (RULE-1): Test\n')
+    result = purlin_status.sync_status(str(root))
+    assert ('api: > Requires: names checkout, which is not an anchor, so '
+            'its rules do not apply. Run purlin:spec api.') \
+        in result.splitlines(), result
+
+
+# ---------------------------------------------------------------------------
+# RULE-26: `> Highest-Rule:`
+# ---------------------------------------------------------------------------
+
+def _three_rules(root, meta):
+    """`specs/test/login.md` with `meta` above rules 1 to 3."""
+    _write(root, 'specs/test/login.md',
+           '# Feature: login\n\n' + meta + '\n## Rules\n- RULE-1: One\n'
+           '- RULE-2: Two\n- RULE-3: Three\n\n## Proof\n'
+           '- PROOF-1 (RULE-1): Test one\n')
+
+
+# purlin: schema_spec_format PROOF-61
+def test_a_highest_rule_line_adds_no_rule(tmp_path):
+    root = _project(tmp_path)
+    _three_rules(root, '> Highest-Rule: 12\n')
+    info = purlin_specs.scan_specs(str(root))['login']
+    assert info['rule_order'] == ['RULE-1', 'RULE-2', 'RULE-3'], info
+
+
+# purlin: schema_spec_format PROOF-62
+def test_a_highest_rule_line_changes_no_fingerprint(tmp_path):
+    root = _project(tmp_path)
+    _write(root, 'src/app.py', 'x = 1\n')
+    _three_rules(root, '> Scope: src/app.py\n')
+    _git_project(root, 'src/app.py')
+    without = purlin_fingerprint.fingerprint(str(root), 'login')
+    _three_rules(root, '> Scope: src/app.py\n> Highest-Rule: 12\n')
+    assert purlin_fingerprint.fingerprint(str(root), 'login') == without
+
+
+# purlin: schema_spec_format PROOF-63
+def test_a_highest_rule_line_leaves_the_description_above_it_whole(tmp_path):
+    root = _project(tmp_path)
+    _three_rules(root, '> Description: Signing in.\n')
+    without = purlin_specs.scan_specs(str(root))['login']['description']
+    _three_rules(root, '> Description: Signing in.\n> Highest-Rule: 12\n')
+    info = purlin_specs.scan_specs(str(root))['login']
+    assert (without, info['description']) == ('Signing in.', 'Signing in.')
+
+
+# ---------------------------------------------------------------------------
+# RULE-27: the format page's version line
+# ---------------------------------------------------------------------------
+
+# purlin: schema_spec_format PROOF-64
+def test_the_format_page_opens_with_its_version_line():
+    with open(os.path.join(PROJECT_ROOT, 'references', 'formats',
+                           'spec_format.md'), encoding='utf-8') as f:
+        first = f.readline().rstrip('\r\n')
+    assert re.fullmatch(r'> Format-Version: [0-9]+', first), first
+
+
+# ---------------------------------------------------------------------------
+# RULE-28: `> Stack:`
+# ---------------------------------------------------------------------------
+
+# purlin: schema_spec_format PROOF-65
+def test_the_stack_is_read_as_its_one_line(tmp_path):
+    root = _project(tmp_path)
+    _three_rules(root, '> Stack: python/stdlib, re, hashlib\n> Scope: src/\n')
+    info = purlin_specs.scan_specs(str(root))['login']
+    assert info['stack'] == 'python/stdlib, re, hashlib', info['stack']
+
+
+# purlin: schema_spec_format PROOF-66
+def test_a_rewritten_stack_changes_no_fingerprint(tmp_path):
+    root = _project(tmp_path)
+    _write(root, 'src/app.py', 'x = 1\n')
+    _three_rules(root, '> Scope: src/app.py\n> Stack: python/stdlib\n')
+    _git_project(root, 'src/app.py')
+    before = purlin_fingerprint.fingerprint(str(root), 'login')
+    _three_rules(root, '> Scope: src/app.py\n> Stack: node/express\n')
+    assert purlin_fingerprint.fingerprint(str(root), 'login') == before

@@ -1,4 +1,4 @@
-> Format-Version: 18
+> Format-Version: 19
 
 # Spec format
 
@@ -25,9 +25,10 @@ the `git mv` that renames the other.
 
 > Description: Plain-language summary of what this feature does
 >   and why it exists. It can span continuation lines.
-> Requires: <comma-separated spec or anchor names>
+> Requires: <comma-separated anchor names>
 > Scope: <comma-separated file paths this feature touches>
 > Stack: <language>/<framework>, <key libraries>, <patterns>
+> Highest-Rule: <the highest rule number the spec has held>
 
 ## Rules
 
@@ -56,9 +57,10 @@ belongs in `> Description:`, which the dashboard displays.
 | Field | Required | Description |
 |-------|----------|-------------|
 | `> Description:` | No | Plain-language description. Continuation lines start with `>` and are not themselves `> Field:` lines. Displayed in the dashboard. |
-| `> Requires:` | No | Comma-separated list of other spec or anchor names whose rules also apply |
+| `> Requires:` | No | Comma-separated list of anchor names, the project's own or pinned, whose rules also apply. A name that is a feature's spec and not an anchor is warned of, and its rules do not apply |
 | `> Scope:` | At the gate `signed` | Comma-separated paths this feature touches: a file, a directory, or a glob holding `*`, `?` or `[`. The evidence carries a fingerprint of the tracked files they reach, which is what tells a code change from a rule change. Below `signed` it is optional: a feature spec with none, or one that reaches no tracked file, is reported as naming no files (`incomplete` in the payload), its tests run on every `purlin:test`, and nothing blocks. At `signed` such a spec's rules cannot be signed and no tag is written. An entry that finds no file git tracks, where the others reach files, is warned of. An anchor never needs one |
 | `> Stack:` | No | Technology choices: `language/framework, key libraries, patterns` |
+| `> Highest-Rule:` | No | The highest rule number the spec has ever held, as a whole number. A new rule takes the next number above it, so a deleted number is never used again. It changes no fingerprint and no count |
 | `> Source:` | No | Anchors only. A git URL plus a path in that repo. See the anchor format |
 | `> Pinned:` | No | Anchors only. The commit sha of the source |
 | `> Path:` | No | Anchors only. The path in the source repo, when `> Source:` carries the URL alone |
@@ -89,7 +91,7 @@ leaves its number vacant and the rules that remain keep the numbers they had,
 so a gap in the sequence is legal and the parser reports nothing for it.
 Renumbering would silently repoint every test marker and every signature that
 already names the old id.
-A new id is one more than the highest the file has held since it was last written whole; a number deleted since then is never used again.
+A new rule takes one more than the highest of `> Highest-Rule:` and every rule number the spec holds, and `> Highest-Rule:` is raised to it, so a number is never used again.
 Unnumbered lines under `## Rules` are reported. A rule id written twice is
 warned of; the rule is read once, with the text of its second line.
 
@@ -135,8 +137,8 @@ several rules when it drives a flow through all of them. A list item under
 Append `@manual` to a proof that no test can settle:
 
 ```
-- PROOF-1 (RULE-1): Parse the config and verify the default values
-- PROOF-2 (RULE-2): POST /api/users against the database; verify 201
+- PROOF-1 (RULE-1): Started with no settings file, the app reports a request timeout of `30` seconds
+- PROOF-2 (RULE-2): A sign-up with an email no account uses is answered with the status `201`, and the email then appears in the list of users
 - PROOF-3 (RULE-3): Read the error messages against the brand voice guide @manual
 ```
 
@@ -154,8 +156,8 @@ marked test of the features it runs.
 `@env` says which operating system a proof must be proved on:
 
 ```
-- PROOF-53 (RULE-29): Lock a file and verify a second process cannot open it @env(windows)
-- PROOF-54 (RULE-30): Verify the default console codec round-trips a non-ASCII path @env(macos)
+- PROOF-53 (RULE-29): With a report open in one program, deleting it from another is refused with `The report is open in another program`, and the report is still there @env(windows)
+- PROOF-54 (RULE-30): A file named `café.txt`, listed in a console with no encoding set, is shown as `café.txt` @env(macos)
 ```
 
 At most one `@env` per proof, and the values are `windows`, `macos` and
@@ -163,7 +165,7 @@ At most one `@env` per proof, and the values are `windows`, `macos` and
 satisfied by a current section from any operating system. A proof with `@env`
 meets the passed cell only when a current section from that operating system
 passes it; a rule with proofs on two systems needs both, and the cell reads
-`not run` with the reason `windows: no run yet` rather than adding a word.
+`not run` with the reason `Windows: no run yet` rather than adding a word.
 
 On a machine that is not the named one, the run does not count the proof and
 says which operating system it needs.
@@ -190,8 +192,8 @@ asserts absence. No special syntax:
 - RULE-4: Every SQL query uses a parameterised statement
 
 ## Proof
-- PROOF-3 (RULE-3): Grep src/ for eval(); verify zero matches
-- PROOF-4 (RULE-4): Grep src/ for string concatenation in SQL; verify zero matches
+- PROOF-3 (RULE-3): Every source file of the app is searched for the call `eval(`, and 0 are found
+- PROOF-4 (RULE-4): Every source file of the app is searched for an SQL statement joined to other text with `+` or `%`, and 0 are found
 ```
 
 ```python
@@ -205,6 +207,8 @@ def test_no_eval():
 ## Requires behaviour
 
 When a spec declares `> Requires: design_tokens, api_contracts`, the rules of
-those specs are counted with its own: its tests must prove both, or the
-required specs must carry their own proofs. An anchor with `> Global: true`
-applies to every feature spec without being named.
+those anchors are counted with its own, labelled `required`, and its tests
+must prove them. An anchor's own `> Requires:` brings in the anchors it names
+in turn. A name in `> Requires:` that is a feature's spec and not an anchor is
+warned of, and its rules do not apply. An anchor with `> Global: true` applies
+to every feature spec without being named.

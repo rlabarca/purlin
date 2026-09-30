@@ -101,14 +101,25 @@ def _ignored_local(root, content):
 # purlin: evidence PROOF-18
 def test_a_file_that_is_not_json_is_ignored_with_one_warning(root):
     assert _ignored_local(root, '{not json') == (
-        '.purlin/evidence/local/login.json is not valid JSON; it is ignored.')
+        '.purlin/evidence/local/login.json is not valid JSON; it is ignored. '
+        'Run purlin:test login to write it again.')
+
+
+# purlin: evidence PROOF-77
+def test_a_file_under_ci_that_is_not_json_names_the_remote_run(root):
+    _put(root, 'ci', '{not json')
+    loaded = evidence.load(root, 'login')
+    assert loaded['files']['ci'] is None
+    assert loaded['warnings'] == [
+        '.purlin/evidence/ci/login.json is not valid JSON; it is ignored. '
+        'Run purlin:test --remote to write it again.']
 
 
 # purlin: evidence PROOF-51
 def test_a_file_that_is_not_an_object_is_ignored_with_one_warning(root):
     assert _ignored_local(root, '[1, 2]') == (
         '.purlin/evidence/local/login.json is not a JSON object; '
-        'it is ignored.')
+        'it is ignored. Run purlin:test login to write it again.')
 
 
 # purlin: evidence PROOF-52
@@ -116,7 +127,8 @@ def test_a_file_of_another_schema_is_ignored_with_one_warning(root):
     content = json.dumps(_file('local', schema='purlin-evidence/1'))
     assert _ignored_local(root, content) == (
         '.purlin/evidence/local/login.json carries the schema '
-        '"purlin-evidence/1", not purlin-evidence/2; it is ignored.')
+        '"purlin-evidence/1", not purlin-evidence/2; it is ignored. '
+        'Run purlin:test login to write it again.')
 
 
 # purlin: evidence PROOF-19
@@ -126,7 +138,7 @@ def test_a_source_that_disagrees_with_its_folder_is_ignored(root):
     assert loaded['files']['ci'] is None
     assert loaded['warnings'] == [
         '.purlin/evidence/ci/login.json names the source "local" but sits '
-        'in ci/; it is ignored.']
+        'in ci/; it is ignored. Run purlin:test --remote to write it again.']
 
 
 # purlin: evidence PROOF-20

@@ -2,8 +2,8 @@
 
 A fingerprint has three parts, each a sha256 hex string:
 
-    spec   the rule and proof lines of the feature, and of every spec whose
-           rules count inside it: the specs it requires, transitively, and
+    spec   the rule and proof lines of the feature, and of every anchor whose
+           rules count inside it: the anchors it requires, transitively, and
            every global anchor
     code   the files its `> Scope:` names
     tests  the test files that carry a marker for it
@@ -216,7 +216,7 @@ def proof_line(spec_path, proof_id, proof):
 
 
 def counted_specs(feature, features):
-    """The feature and every spec whose rules count inside it, in walk order."""
+    """The feature and every anchor whose rules count inside it, in walk order."""
     _info(feature, features)
     names = [feature]
     for name, _, _ in specs_module.rule_refs(feature, features):
@@ -364,7 +364,7 @@ def selection(project_root, features=None, os_name=None, index=None):
     one reason, in this order:
 
     - no section for this operating system exists in either source of its
-      evidence: `no run on <os> yet`;
+      evidence: `no run on <System> yet`, the system as a person reads it;
     - the newest such section's fingerprint differs from the one taken now:
       `<part> changed since <sha7>` for each part that differs;
     - an untracked, non-ignored file sits under its scope or beside one of
@@ -374,9 +374,9 @@ def selection(project_root, features=None, os_name=None, index=None):
       cannot be told: `names no files, so every run includes it`.
 
     No commit is compared, so the answer survives a rebase, a merge and a
-    tree with changes no commit holds. An anchor's rules are part of the
-    `spec` part of every feature that requires it, so an anchor edit selects
-    those features too.
+    tree with changes no commit holds. The `spec` part covers the anchors a
+    feature requires, transitively, and every global anchor, so an edit to
+    one of those anchors selects the feature too.
     """
     from purlin import evidence as evidence_module
 
@@ -392,7 +392,7 @@ def selection(project_root, features=None, os_name=None, index=None):
         mine = [entry for entry in evidence_module.sections(loaded)
                 if entry['os'] == os_name]
         if not mine:
-            reasons.append(NO_RUN_YET % os_name)
+            reasons.append(NO_RUN_YET % evidence_module.os_word(os_name))
         else:
             newest = mine[0]
             for entry in mine[1:]:
