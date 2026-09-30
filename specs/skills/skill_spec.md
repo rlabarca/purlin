@@ -6,8 +6,8 @@
 >   over to the build.
 > Scope: skills/spec/SKILL.md, references/spec_quality_guide.md, references/purlin_commands.md
 > Stack: markdown, Claude Code skill definition
-> Highest-Rule: 28
-> Highest-Proof: 58
+> Highest-Rule: 30
+> Highest-Proof: 60
 
 ## Rules
 
@@ -19,7 +19,6 @@
 - RULE-6: The skill tells the agent to print each rule with its proofs under it and ask whether to change any before it saves, and to save the spec only once the person is satisfied
 - RULE-7: The skill tells the agent to write each proof as one case, one starting situation and one action in at most 60 words, with a refusal or a boundary as a proof of its own, and points it at the guide's `One proof, one case`
 - RULE-8: `references/purlin_commands.md` carries a row for `purlin:spec`
-- RULE-9: The skill tells the agent that a spec naming no files has its tests run on every `purlin:test` and that, at the gate `signed`, its rules are signed and their signatures do not count, so no tag is written
 - RULE-10: The skill tells the agent to draft every proof against the guideline for a good proof in `references/spec_quality_guide.md`
 - RULE-11: The guide's section `One proof, one case` says a proof holds one starting situation and one action in at most 60 words, and that a refusal or a boundary is a case of its own
 - RULE-13: The skill tells the agent to write the number a new rule takes into `> Highest-Rule:`, adding the line after the spec's other `>` lines where it is missing
@@ -35,9 +34,11 @@
 - RULE-23: The skill tells the agent that a new proof takes one more than the highest of `> Highest-Proof:` and every proof number in either copy of the spec, and to write that number into `> Highest-Proof:`, adding the line after `> Highest-Rule:` where it is missing
 - RULE-24: The skill tells the agent that a spec carrying `> Requires:` or `> Global:`, or an anchor carrying `> Scope:`, is warned of and to take the line out, and that a rule of an anchor that holds only for some features is written in each of their specs
 - RULE-25: The skill tells the agent that when two branches take the same number, the number already on the default branch keeps it and the rule or proof from the branch not yet merged moves to the next free number
-- RULE-26: The skill tells the agent that a moved rule needs a new audit and a new signature
+- RULE-26: The skill tells the agent that a moved rule's audit is read again
 - RULE-27: The skill tells the agent to take out every line git left from a merge conflict, since while one stays every rule of the spec reads `failed`
 - RULE-28: The guide's section `Where the risk is` says a computation or a data flow a mistake would harm gets a proof per boundary, and that look and feel is not a rule
+- RULE-29: The skill's section `Renumbering` tells the agent to run the renumbering helper's dry run, show every line it prints, ask exactly `Do it? [y/N]`, and run the helper without `--dry-run` only on yes
+- RULE-30: The skill's section `Renumbering` tells the agent that a test comment on another branch is named and never touched
 
 ## Proof
 
@@ -48,7 +49,6 @@
 - PROOF-4 (RULE-4): The spec skill, counted line by line, is at most 210 lines
 - PROOF-28 (RULE-4): A copy of the spec skill lengthened with prose to exactly 210 lines is accepted, with nothing reported
 - PROOF-5 (RULE-5): The spec skill says, in one sentence, "Write `> Scope:` on every spec you create", naming "the files the requirement touches" and "the paths `purlin:build` will create", and its numbered step that writes the metadata names `> Scope:`
-- PROOF-30 (RULE-9): The spec skill says, in one sentence, that of "A spec that names no files" "every run includes it", and "at the gate `signed` its rules are signed and their signatures do not count, so no tag is written"
 - PROOF-6 (RULE-6): In the spec skill's numbered procedure, the step "Print each rule with its proofs under it and ask whether to change any" comes before the step "Save the spec when the person is satisfied"
 - PROOF-36 (RULE-10): The spec skill says, in one sentence, to draft every proof against `references/spec_quality_guide.md`, "Writing proofs", and that a good proof holds "at least one failure case"
 - PROOF-7 (RULE-7): The spec skill says, in one sentence, "Write each proof as one case", "one starting situation and one action", "in at most 60 words", "a refusal or a boundary as a proof of its own" and the guide's "One proof, one case"
@@ -67,6 +67,8 @@
 - PROOF-53 (RULE-23): The spec skill's section `Ids`, read across its line breaks, says to write that number into `> Highest-Proof:`, "adding the line after `> Highest-Rule:` where it is missing"
 - PROOF-54 (RULE-24): The spec skill, read across its line breaks, says ``A spec that carries `> Requires:` or `> Global:`, or an anchor that carries `> Scope:`, is warned of: take the line out.``, and that a rule of an anchor holding only for some features is written in each of their specs
 - PROOF-55 (RULE-25): The spec skill's section `After a merge conflict`, read across its line breaks, says `The number already on the default branch keeps it; the rule or proof from the branch not yet merged moves to the next free number.`
-- PROOF-56 (RULE-26): The spec skill's section `After a merge conflict`, read across its line breaks, says `A moved rule needs a new audit and a new signature.`
+- PROOF-56 (RULE-26): The spec skill's section `After a merge conflict`, read across its line breaks, says `A moved rule's audit is read again.`
 - PROOF-57 (RULE-27): The spec skill's section `After a merge conflict`, read across its line breaks, says `Take out every line git left from the conflict: while one stays, every rule of the spec reads` followed by `failed` in code
 - PROOF-58 (RULE-28): The quality guide has a section headed `Where the risk is` that says `A computation or a data flow a mistake would harm gets a proof per boundary` and `Look and feel is not a rule`
+- PROOF-59 (RULE-29): The spec skill's section `Renumbering` gives the helper's command ending `renumber.py" <name> --dry-run` in a fenced block, then `Do it? [y/N]` alone in a fenced block, then says to run the same command without `--dry-run` on yes and to renumber nothing on anything else
+- PROOF-60 (RULE-30): The spec skill's section `Renumbering`, read across its line breaks, says `A comment on another branch is named, never touched`

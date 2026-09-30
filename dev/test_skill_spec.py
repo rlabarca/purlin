@@ -237,18 +237,6 @@ class TestSkillSpec:
              % SKILL),
         ]) == []
 
-    # purlin: skill_spec PROOF-30
-    def test_it_says_what_a_spec_naming_no_files_costs(self, monkeypatch):
-        assert no_files_problems() == []
-        assert refusals(monkeypatch, no_files_problems, [
-            (SKILL, replace('at the gate `signed` its rules', 'its rules'),
-             "%s has no sentence carrying all of 'A spec that names no "
-             "files'" % SKILL),
-            (SKILL, replace(', so no tag is written'),
-             "%s has no sentence carrying all of 'A spec that names no "
-             "files'" % SKILL),
-        ]) == []
-
     # purlin: skill_spec PROOF-6
     def test_it_prints_the_rules_and_asks_before_it_saves(self, monkeypatch):
         assert review_order_problems() == []
@@ -477,13 +465,6 @@ def scope_problems():
     return problems
 
 
-def no_files_problems():
-    return sentence_with(SKILL, [
-        'A spec that names no files', 'every run includes it',
-        'at the gate `signed` its rules are signed and their signatures do '
-        'not count, so no tag is written'])
-
-
 def review_order_problems():
     problems = carries(SKILL, [PRINTING, SAVING])
     body = next((body for heading, body in sections(read(SKILL))
@@ -573,7 +554,7 @@ def test_a_warned_field_is_taken_out(monkeypatch):
 
 KEEPS = ('The number already on the default branch keeps it; the rule or '
          'proof from the branch not yet merged moves to the next free number.')
-MOVED = 'A moved rule needs a new audit and a new signature.'
+MOVED = "A moved rule's audit is read again."
 CONFLICT_LINES = ('Take out every line git left from the conflict: while one '
                   'stays, every rule of the spec reads `failed`.')
 RISK = ('A computation or a data flow a mistake would harm gets a proof per '
@@ -593,12 +574,12 @@ def test_the_number_on_the_default_branch_keeps_it(monkeypatch):
 
 
 # purlin: skill_spec PROOF-56
-def test_a_moved_rule_needs_a_new_audit_and_signature(monkeypatch):
+def test_a_moved_rule_has_its_audit_read_again(monkeypatch):
     check = lambda: merge_problems((MOVED,))  # noqa: E731
     assert check() == []
     assert refusals(monkeypatch, check, [
-        (SKILL, replace('a new audit and a new signature',
-                        'nothing new'),
+        (SKILL, replace("A moved rule's audit is read again.",
+                        "A moved rule keeps its audit."),
          '%s After a merge conflict does not carry %r' % (SKILL, MOVED)),
     ]) == []
 
@@ -625,4 +606,67 @@ def test_the_guide_puts_the_weight_of_a_risk_into_proofs(monkeypatch):
         (GUIDE, replace('### Where the risk is\n'),
          "%s section 'Where the risk is' does not state %r"
          % (GUIDE, RISK[0])),
+    ]) == []
+
+
+# ---------------------------------------------------------------------------
+# Renumbering
+# ---------------------------------------------------------------------------
+
+DRY_RUN = ('sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" '
+           '"${CLAUDE_PLUGIN_ROOT}/scripts/spec/renumber.py" <name> --dry-run')
+ASK = 'Do it? [y/N]'
+ON_YES = ('On yes, run the same command without `--dry-run`.',
+          'On anything else, renumber nothing.')
+OTHER_BRANCH = 'A comment on another branch is named, never touched'
+
+
+def renumbering():
+    return section(read(SKILL), r'^renumbering$') or ''
+
+
+def renumbering_problems():
+    body = renumbering()
+    fences = re.findall(r'^```[a-z]*\n(.*?)^```', body, re.S | re.M)
+    lines = [fence.strip() for fence in fences]
+    problems = []
+    if DRY_RUN not in lines:
+        problems.append('%s Renumbering gives no fenced dry run' % SKILL)
+    if ASK not in lines:
+        problems.append('%s Renumbering does not set %r alone in a fenced '
+                        'block' % (SKILL, ASK))
+    elif DRY_RUN in lines and lines.index(DRY_RUN) > lines.index(ASK):
+        problems.append('%s Renumbering asks before the dry run' % SKILL)
+    problems += ['%s Renumbering does not carry %r' % (SKILL, needle)
+                 for needle in ON_YES if needle not in flat(body)]
+    return problems
+
+
+# purlin: skill_spec PROOF-59
+def test_renumbering_shows_the_dry_run_and_asks(monkeypatch):
+    assert renumbering_problems() == []
+    assert refusals(monkeypatch, renumbering_problems, [
+        (SKILL, replace('```\nDo it? [y/N]\n```\n'),
+         "%s Renumbering does not set %r alone in a fenced block"
+         % (SKILL, ASK)),
+        (SKILL, replace(' <name> --dry-run\n```', ' <name>\n```'),
+         '%s Renumbering gives no fenced dry run' % SKILL),
+        (SKILL, replace('On yes, run the same command without `--dry-run`.',
+                        'Run the same command without `--dry-run`.'),
+         '%s Renumbering does not carry %r' % (SKILL, ON_YES[0])),
+    ]) == []
+
+
+def other_branch_problems():
+    if OTHER_BRANCH in flat(renumbering()):
+        return []
+    return ['%s Renumbering does not carry %r' % (SKILL, OTHER_BRANCH)]
+
+
+# purlin: skill_spec PROOF-60
+def test_a_comment_on_another_branch_is_named_not_touched(monkeypatch):
+    assert other_branch_problems() == []
+    assert refusals(monkeypatch, other_branch_problems, [
+        (SKILL, replace('is named, never\ntouched', 'is moved\ntoo'),
+         '%s Renumbering does not carry %r' % (SKILL, OTHER_BRANCH)),
     ]) == []

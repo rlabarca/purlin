@@ -56,9 +56,8 @@ rule covering all three would pass while two thirds of the behaviour was missing
 When rules arrive from more than one direction, run this skill on the feature with no new
 input. It reads the spec as it now stands, lists what changed since the last time it was
 written, and reports three things: rules that lost their proof, proofs that name a rule id
-that does not exist, and rules whose text changed since a signature was bound to them. Fix
-the first two here. The third is a person's decision, so name the rules and leave them for
-`purlin:sign`.
+that does not exist, and numbers written twice or test comments whose proof's wording changed
+since they were marked. Fix the first two here, and the third as "Renumbering" below says.
 
 ## The shape
 
@@ -84,10 +83,7 @@ the first two here. The third is a person's decision, so name the rules and leav
 
 Write `> Scope:` on every spec you create: the files the requirement touches, or the paths
 `purlin:build` will create for it. The evidence carries a fingerprint of those files, so a
-change to one of them reads `out of date` and selects the feature for the next `purlin:test`,
-and a signature is tied to the code it governs. A spec that names no files still has its tests
-run and its rules read, but every run includes it, and at the gate `signed` its rules are
-signed and their signatures do not count, so no tag is written.
+change to one of them reads `out of date` and selects the feature for the next `purlin:test`.
 
 A spec that carries `> Requires:` or `> Global:`, or an anchor that carries `> Scope:`, is warned
 of: take the line out. Where a rule of an anchor holds only for some features, write it in each
@@ -110,13 +106,13 @@ failure case, and no file path or function name, so a person who cannot read cod
 it. QA reads every proof you draft. Write each proof as one case, one starting situation and
 one action in at most 60 words, and a refusal or a boundary as a proof of its own, as the
 guide's "One proof, one case" says. Write at least one proof for every rule: the gate `passed`
-lets a rule go without one, and from `strong` up a rule without one reads `no proof`. Several
+lets a rule go without one, and at the gate `signed` a rule without one is left to write a
+proof for. Several
 proofs may name one rule, and one proof may name several rules when it drives a flow through
 all of them: `- PROOF-7 (RULE-2, RULE-3, RULE-4): ...`.
 
 Tag a proof `@manual` when only human judgment settles it. A `@manual` proof has no test: a
-person checks it and signs with `purlin:sign`, at any gate, writing what they saw when they
-choose to.
+person checks it in the sign-off walk of `purlin:sign` and types what they saw.
 
 Add `@env(windows)`, `@env(macos)` or `@env(linux)` when the claim can only be proved on one
 operating system. Those three are the whole vocabulary. A proof with no `@env` is satisfied by
@@ -133,29 +129,52 @@ highest of `> Highest-Proof:` and every proof number in either copy; write that 
 `> Highest-Proof:`, adding the line after `> Highest-Rule:` where it is missing.
 
 Ids are never reused. A deleted rule leaves its number vacant and every other rule keeps the
-number it had. Renumbering would silently repoint every test marker and every signature that
-already names the old id, so do not do it by hand.
+number it had. Renumbering by hand would silently repoint every test comment that already names
+the old id, so a number moves only as "Renumbering" below says.
 
 ## Editing a rule during a build
 
 `purlin:build` calls this skill when a rule turns out to be wrong while the code is being
 written: the claim contradicts another rule, or it cannot be observed as stated. Fix the rule
-text in place, keep the id, and say in the commit what changed and why. Changing rule text
-ends any signature bound to it, which is the point: a person has to look again.
+text in place, keep the id, and say in the commit what changed and why.
 
 ## After a merge conflict
 
 Two branches that took the same number before either merged leave a spec with one id twice, and
 git may merge one of the two lines outside the conflict. The number already on the default
 branch keeps it; the rule or proof from the branch not yet merged moves to the next free number.
-Run `purlin:drift` after the merge: it names every number written twice and which line moves. A
-moved rule needs a new audit and a new signature. Tell the person whose line moved, so the test
-comments on their branch move with it. When the conflict is two different texts on the same
-line, show both versions, ask which survives, and say which signatures that answer ends. Take
-out every line git left from the conflict: while one stays, every rule of the spec reads
+Run `purlin:drift` after the merge: it names every number written twice and which line moves.
+Move it as "Renumbering" says. A moved rule's audit is read again.
+Tell the person whose line moved, so the test comments on their branch move with it. When the
+conflict is two different texts on the same line, show both versions and ask which survives.
+Take out every line git left from the conflict: while one stays, every rule of the spec reads
 `failed`.
 
 Two branches that advanced the same anchor pin resolve to the newer sha.
+
+## Renumbering
+
+Where drift, the status, `purlin:build` or this skill finds a number written twice, or a test
+comment whose proof's wording changed since it was marked, run the dry run first:
+
+```bash
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/spec/renumber.py" <name> --dry-run
+```
+
+It reads this checkout alone, fetches nothing and changes nothing. Show every line it prints: the
+spec line that moves to the next free number, the side not already on the default branch; each
+proof line that follows a moved rule; each test comment in this checkout that moves; the raised
+`> Highest-` line; and each comment on another branch that names the moved id. Where it prints
+`<name>: nothing to renumber.`, say so and ask nothing. Otherwise ask exactly:
+
+```
+Do it? [y/N]
+```
+
+On yes, run the same command without `--dry-run`. It makes the edits, commits nothing, and ends
+on `Renumbered in <name>: ...`; commit the spec and the test files with the `spec(<name>):`
+prefix. On anything else, renumber nothing. A comment on another branch is named, never
+touched: tell the person whose branch it is which id to move it to there.
 
 ## When you are done
 
@@ -170,4 +189,4 @@ Spec saved: <name>. Next: purlin:build <name>
 Never start the build yourself: the person runs `purlin:build` when they choose to.
 
 When you edited an existing spec rather than creating one, say what moved before the offer:
-which rules were added, which text changed, and which signatures that ends.
+which rules were added and which text changed.
