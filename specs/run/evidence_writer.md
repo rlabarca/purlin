@@ -11,6 +11,7 @@
 >   a run removes, the table, the lines the run prints, the two commits, and the audit's entries.
 > Scope: scripts/run/evidence.py, references/formats/evidence_format.md, templates/gitignore.purlin
 > Stack: python/stdlib (json, subprocess, datetime, platform), git
+> Highest-Rule: 25
 
 ## Rules
 
@@ -22,7 +23,9 @@
 - RULE-6: Every run deletes the evidence files under `local/` and `ci/` whose feature no spec defines, and prints `Removed <path>: no spec defines <feature>.` for each
 - RULE-7: A run that sees the same thing over the same fingerprint as the section on disk leaves the file byte for byte as it was, `at` and `commit` included, so a second run finds nothing new to commit
 - RULE-8: `.purlin/tests.md` is rendered from every evidence file on disk rather than from the run, one row per feature from its newest section in either source, so a `--feature` run leaves every other row as it was; a row counts under `Passed` only the rules every tied test of which ran and passed, counts `No test` as every rule neither passed nor failed, and fills `Last run` with `<sha7> · <at> · <system> · <source>`, the system reading `Windows`, `macOS` or `Linux/Unix`
-- RULE-20: The table opens `# Tests at <sha7>`, naming the commit of the newest section across every feature, and carries the columns `Feature`, `Rules`, `Passed`, `Failing`, `No test` and `Last run`
+- RULE-20: The table opens `# Tests at <sha7>`, naming the commit of the newest section across every feature, or `# Tests at <sha7>, with changes that are not committed` where that section is dirty, and carries the columns `Feature`, `Rules`, `Passed`, `Failing`, `No test` and `Last run`
+- RULE-24: The table ends on the line `Each row is the newest run of that feature, whoever made it; the source in the last column says whose run it was.`
+- RULE-25: With no evidence file on disk the table holds `No feature has been run yet.` in place of its columns and rows
 - RULE-9: `--test` and `--audit` write the evidence and the table and commit nothing, and print `Evidence written to .purlin/evidence/local/<feature>.json.` when one feature ran and `Evidence written to .purlin/evidence/local/ for <n> features.` when several did
 - RULE-10: With `--commit` the run's second commit carries the files under `.purlin/evidence/local/`, the table and any file the run removed, under the person's own git identity, with the subject `purlin: evidence at <sha7>`, where `<sha7>` names the run's first commit, or HEAD when that made none, and prints `Evidence committed.`; it never pushes or prints a push command
 - RULE-21: A `--commit` run with nothing new prints `Evidence unchanged.` and makes no commit
@@ -35,6 +38,7 @@
 - RULE-16: Each section names where its tests ran: on a person's machine `machine` reads the host's name, or `unknown` where the host reports none, and a `ci` section carries `hostname` as well, the name the host lent the runner
 - RULE-17: A section that differs from the one on disk in its `machine` alone replaces it, and a `ci` section that differs in its `hostname` alone leaves the file byte for byte as it was
 - RULE-18: An audit entry carries `notes`, the audit's sentences about a proof longer than the standard or holding two cases, only when the audit gave some
+- RULE-23: A test run over a feature whose evidence file was resolved to either side of a merge rewrites that system's section
 - RULE-19: With `--commit`, before the results, the run commits the specs of the features it ran, the test files carrying their markers and `.purlin/config.json`, where any of them changed, under the person's own git identity with the subject `purlin: specs, tests and settings for <feature>[, <feature>…]`, and prints `Committed <sha7>, the work these results describe:` then each file that commit changed on a line of its own, indented two spaces; where none changed it makes no commit and prints no such line
 
 ## Proof
@@ -97,6 +101,9 @@
 - PROOF-75 (RULE-3): A `ci` section is written over a rule whose PROOF-1 carries no tag and whose PROOF-2 is tagged for the runner's system, both tests passing; its `proofs` list one entry, PROOF-2 reading `pass`, and its `rules` read the rule `passed`
 - PROOF-76 (RULE-3): One test carries the markers of PROOF-1, tagged `@env(macos)`, and PROOF-2, tagged `@env(windows)`, and passes on a Mac; the section the Mac writes lists PROOF-1 reading `pass` and PROOF-2 reading `not run`, each naming that test
 - PROOF-32 (RULE-20): The table rendered from evidence whose newest section, across every feature, was made on a commit starting `ddddddd` opens `# Tests at ddddddd`, and its header row reads `| Feature | Rules | Passed | Failing | No test | Last run |`
+- PROOF-84 (RULE-20): The table rendered from evidence whose newest section, made on a commit starting `ddddddd`, is dirty opens `# Tests at ddddddd, with changes that are not committed`
+- PROOF-86 (RULE-24): The table rendered from one feature's evidence ends on the line `Each row is the newest run of that feature, whoever made it; the source in the last column says whose run it was.`
+- PROOF-87 (RULE-25): The table rendered with no evidence file on disk reads `No feature has been run yet.` on the line after its heading's blank line, and holds no header row
 - PROOF-33 (RULE-8): The evidence of the feature `two` holds a `local` `macos` section made at `2026-09-02T00:00:00Z` on a commit starting `bbbbbbb`, and an older `ci` `linux` section; the table's row for `two` reads `| two | 1 | 1 | 0 | 0 | bbbbbbb · 2026-09-02T00:00:00Z · macOS · local |`
 - PROOF-34 (RULE-8): In a project with the features `one` and `two`, a `--feature one --test` run and then a `--feature two --test` run leave the row for `one` exactly as the first run wrote it, and the table then holds a row for `two`
 - PROOF-35 (RULE-8): A run in which the one rule of the feature `feat` has one proof tied to two tests, one that passed and one that was skipped, writes the table row `feat` counting that rule under `No test` and `0` under `Passed`
@@ -117,6 +124,7 @@
 - PROOF-48 (RULE-19): In a git checkout where the specs `one` and `two` were both edited and not committed, committing the work of a run over both makes one commit with the subject `purlin: specs, tests and settings for one, two`
 - PROOF-49 (RULE-19): In a git checkout where the specs, tests and settings of a run over `feat` are all committed, committing the run's work makes no commit and prints nothing, and the results' commit that follows names HEAD
 - PROOF-50 (RULE-19): In a git checkout where the spec `feat` was edited and not committed, a `--all --test --commit` run makes two commits, `purlin: specs, tests and settings for feat` and then `purlin: evidence at <sha7>` naming the first, and prints `Committed <sha7>, the work these results describe:` then `  specs/a/feat.md`
+- PROOF-85 (RULE-23): Two branches each commit a section for this system into `feat`'s evidence file, one naming the machine `build-8` and one `build-9`; their merge conflicts and is resolved to the `build-9` side; a `--all --test` run then rewrites that section, which names this machine
 - PROOF-51 (RULE-12): An evidence file's `audit.rules` holds an entry for `RULE-1` and a `weak` one for `RULE-2`, and an audit that read `RULE-2` again and found it `strong` is written into it; `audit.rules` holds the `strong` entry for `RULE-2` and the `RULE-1` entry exactly as it was
 - PROOF-52 (RULE-12): An evidence file whose `audit.mutation` reads the score `71` is written with an audit in which mutation testing did not run and a score of `5` was handed in; `audit.mutation` still reads `71`
 - PROOF-53 (RULE-12): An audit in which mutation testing did not run is written into an evidence file that had no `audit`; `audit.mutation` reads null

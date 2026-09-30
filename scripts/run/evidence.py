@@ -62,6 +62,7 @@ NO_REPOSITORY = ('Evidence written; there is no git repository to commit it '
 REMOVED = 'Removed %s: no spec defines %s.'
 
 TABLE_HEADING = '# Tests at %s'
+TABLE_HEADING_DIRTY = '# Tests at %s, with changes that are not committed'
 TABLE_COLUMNS = ('Feature', 'Rules', 'Passed', 'Failing', 'No test',
                  'Last run')
 TABLE_NOTE = ('Each row is the newest run of that feature, whoever made it; '
@@ -550,14 +551,20 @@ def newest_sections(project_root):
 
 
 def render_table(rows):
-    """`.purlin/tests.md` from `{feature: newest section entry}`."""
+    """`.purlin/tests.md` from `{feature: newest section entry}`.
+
+    The heading names the commit of the newest section, and says so where
+    that section was taken over changes that were not committed.
+    """
     newest = None
     for entry in rows.values():
         at = str(entry['section'].get('at') or '')
         if newest is None or at > str(newest['section'].get('at') or ''):
             newest = entry
-    commit = str(((newest or {}).get('section') or {}).get('commit') or '')
-    lines = [TABLE_HEADING % (commit[:7] or 'an unknown commit'), '']
+    section = (newest or {}).get('section') or {}
+    commit = str(section.get('commit') or '')
+    heading = TABLE_HEADING_DIRTY if section.get('dirty') else TABLE_HEADING
+    lines = [heading % (commit[:7] or 'an unknown commit'), '']
     if not rows:
         lines.extend([TABLE_EMPTY, '', TABLE_NOTE])
         return '\n'.join(lines) + '\n'

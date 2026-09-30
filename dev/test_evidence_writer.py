@@ -809,6 +809,40 @@ def test_the_table_opens_on_the_newest_commit_and_its_columns(tmp_path):
                         'Last run |')
 
 
+# purlin: evidence_writer PROOF-84
+def test_a_dirty_newest_section_is_named_in_the_heading(tmp_path):
+    root = tmp_path
+    dirty = _section(at='2026-09-04T00:00:00Z', commit='d' * 40)
+    dirty['dirty'] = True
+    _put(root, _file(feature='one', platforms={
+        'macos': _section(at='2026-09-02T00:00:00Z', commit='b' * 40)}),
+         feature='one')
+    _put(root, _file(feature='two', platforms={'linux': dirty}),
+         feature='two')
+
+    assert _table_lines(root)[0] == (
+        '# Tests at ddddddd, with changes that are not committed')
+
+
+# purlin: evidence_writer PROOF-86
+def test_the_table_ends_on_whose_run_each_row_is(tmp_path):
+    root = tmp_path
+    _put(root, _file(feature='one', platforms={'macos': _section()}),
+         feature='one')
+
+    assert _table_lines(root)[-1] == (
+        'Each row is the newest run of that feature, whoever made it; the '
+        'source in the last column says whose run it was.')
+
+
+# purlin: evidence_writer PROOF-87
+def test_a_table_with_no_evidence_says_no_feature_has_run(tmp_path):
+    lines = _table_lines(tmp_path)
+
+    assert lines[1:3] == ['', 'No feature has been run yet.'], lines
+    assert not [line for line in lines if line.startswith('| Feature')]
+
+
 # purlin: evidence_writer PROOF-33
 def test_an_older_section_in_the_other_source_does_not_answer(tmp_path):
     root = tmp_path
@@ -1076,6 +1110,43 @@ def test_a_commit_run_makes_the_two_commits(tmp_path):
     at = lines.index('Committed %s, the work these results describe:'
                      % work[:7])
     assert lines[at + 1] == '  specs/a/feat.md'
+
+
+def _name_the_machine(root, machine, message):
+    """Commit `feat`'s local evidence with this system's section naming
+    `machine`, as another machine's run would leave it."""
+    data = _evidence(root)
+    data['platforms'][HERE]['machine'] = machine
+    _put(root, data)
+    _git(root, 'commit', '-q', '-am', message)
+
+
+# purlin: evidence_writer PROOF-85
+def test_a_run_rewrites_a_section_resolved_to_either_side_of_a_merge(
+        tmp_path):
+    root = _project(tmp_path)
+    _spec(root)
+    _test_file(root)
+    _repo(root)
+    code, out = _run(root, '--all', '--test', '--commit')
+    assert code == 0, out
+    _git(root, 'checkout', '-q', '-b', 'other')
+    _name_the_machine(root, 'build-9', 'the run on build-9')
+    _git(root, 'checkout', '-q', 'main')
+    _name_the_machine(root, 'build-8', 'the run on build-8')
+    merged = subprocess.run(['git', 'merge', '-q', 'other'], cwd=str(root),
+                            capture_output=True, encoding='utf-8')
+    assert merged.returncode != 0, merged.stdout + merged.stderr
+    _git(root, 'checkout', '--theirs', '--', '.purlin/evidence/local/feat.json')
+    _git(root, 'add', '.purlin/evidence/local/feat.json')
+    _git(root, 'commit', '-q', '--no-edit')
+    assert _evidence(root)['platforms'][HERE]['machine'] == 'build-9'
+
+    code, out = _run(root, '--all', '--test')
+
+    assert code == 0, out
+    assert _evidence(root)['platforms'][HERE]['machine'] == (
+        writer.local_machine()), out
 
 
 # purlin: evidence_writer PROOF-11
@@ -1355,6 +1426,11 @@ def test_git_ignores_neither_file_after_init(tmp_path):
     root = tmp_path / 'fresh'
     root.mkdir()
     _git(root, '-c', 'init.defaultBranch=main', 'init', '-q', '.')
+    # With `--yes` setup commits what it wrote, so the checkout gets an
+    # identity of its own and no signing.
+    _git(root, 'config', 'user.email', 'dev@example.com')
+    _git(root, 'config', 'user.name', 'Dev')
+    _git(root, 'config', 'commit.gpgsign', 'false')
     env = dict(os.environ)
     env.pop('CLAUDE_PLUGIN_ROOT', None)
     done = subprocess.run(

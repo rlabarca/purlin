@@ -186,7 +186,7 @@ so an edit counts before it is committed.
 
 | Part | What it covers |
 |---|---|
-| `spec` | the rule and proof lines of the feature, of every spec it requires, transitively, and of every anchor carrying `> Global: true`. A rule line is `<spec> <RULE-N> <text> <tag>`; a proof line is `<spec> <PROOF-N> <rules> <text>`, then `@manual` and `@env(<os>)` where the proof carries them. `> Description:` and the other metadata fields are not covered |
+| `spec` | the rule and proof lines of the feature, of every anchor it requires, transitively, and of every anchor carrying `> Global: true`. A rule line is `<spec> <RULE-N> <text> <tag>`; a proof line is `<spec> <PROOF-N> <rules> <text>`, then `@manual` and `@env(<os>)` where the proof carries them. `> Description:` and the other metadata fields are not covered |
 | `code` | the tracked files the `> Scope:` entries reach, each as `<path> <blob>`. A file names itself, a directory names every tracked file under it, and an entry holding `*`, `?` or `[` is a git glob, so `scripts/**/*.py` reaches every Python file under `scripts/` |
 | `tests` | every tracked test file carrying a marker for the feature, each as `<path> <blob>`. A test file is one a suite of the `tests` setting names |
 
@@ -241,7 +241,9 @@ nothing new to commit.
 
 `.purlin/tests.md` is rendered again from every file under
 `.purlin/evidence/` on each run, one row per feature from its newest section
-in either source:
+in either source. It opens `# Tests at <sha7>`, the commit of the newest
+section across every feature, or `# Tests at <sha7>, with changes that are
+not committed` where that section's `dirty` is true, and its columns are:
 
 ```
 | Feature | Rules | Passed | Failing | No test | Last run |
