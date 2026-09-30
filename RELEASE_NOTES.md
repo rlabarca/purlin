@@ -86,7 +86,7 @@ anything in your test suite: a test is any test in your own suite with one comme
   that finds no file, two specs with one name, a rule number written twice, a proof line that
   cannot be read, and a first heading that names another feature.
 - `> Requires:` names anchors only. A name that is a feature's spec is warned of, and its rules do not apply.
-- A spec records the highest rule number it has held in `> Highest-Rule:`, so a deleted number is never used again. The spec format is at version 19.
+- A spec records the highest rule number it has held in `> Highest-Rule:` and the highest proof number in `> Highest-Proof:`, so a deleted number is never used again. The spec format is at version 20.
 - `purlin:init` asks whether it may commit the files it wrote, and with `--yes` commits them as `chore(init): set up Purlin at the gate <gate>`.
 - `purlin:test --remote` with no `gh` on GitHub or no `az` on Azure DevOps pushes nothing and names the program to install.
 - The first test run keeps running examples inside a function's documentation where the project's own test command ran them.
