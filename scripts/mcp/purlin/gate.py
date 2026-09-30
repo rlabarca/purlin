@@ -38,6 +38,7 @@ The keys v0.9.5 wrote that this release does not read are ignored with one
 warning naming `purlin:init --update`.
 """
 
+import json
 import os
 import sys
 
@@ -65,6 +66,15 @@ DEFAULT_MUTATION_ENGINE = 'none'
 # How many model calls the audit makes at once, and the range it may take.
 DEFAULT_AUDIT_PARALLEL = 4
 AUDIT_PARALLEL_RANGE = (1, 16)
+
+# The lines a value the settings file holds and this release does not accept
+# prints beside the status table. The value is written as JSON writes it.
+NOT_A_GATE = ('%s is not accepted for gate in .purlin/config.json; it takes '
+              'passed, strong or signed. Reading it as passed; set it with '
+              'purlin:init --gate <gate>.')
+NOT_A_PARALLEL = ('%s is not accepted for audit_parallel in '
+                  '.purlin/config.json; it takes a whole number from %d to '
+                  '%d. Reading it as %d; fix the file by hand.')
 
 RETIRED_KEYS = (
     'spec_dir', 'audit_criteria',
@@ -107,9 +117,7 @@ def resolve_gate(config):
     gate = config.get('gate', DEFAULT_GATE)
     if gate not in GATES:
         if 'gate' in config:
-            warnings.append(
-                '"gate" is %r, which is not one of %s; reading it as %r'
-                % (gate, ', '.join(GATES), DEFAULT_GATE))
+            warnings.append(NOT_A_GATE % json.dumps(gate))
         gate = DEFAULT_GATE
 
     min_strength = _DERIVED[gate]
@@ -157,7 +165,6 @@ def _audit_parallel(config, warnings):
     if isinstance(value, int) and not isinstance(value, bool) \
             and low <= value <= high:
         return value
-    warnings.append('"audit_parallel" is %r, which is not a whole number from '
-                    '%d to %d; reading it as %d'
-                    % (value, low, high, DEFAULT_AUDIT_PARALLEL))
+    warnings.append(NOT_A_PARALLEL % (json.dumps(value), low, high,
+                                      DEFAULT_AUDIT_PARALLEL))
     return DEFAULT_AUDIT_PARALLEL

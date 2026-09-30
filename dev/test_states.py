@@ -48,6 +48,23 @@ def _dashboard_data(root):
     return json.loads(text[len(prefix):-len(suffix)])
 
 
+def _listed_with_no_test(project, missing):
+    """A current local section passing `PROOF-1` of `RULE-1` and listing
+    `missing` of the same rule as `missing` with no test named, as a run
+    writes a proof it found no test for."""
+    rel = project.evidence([_entry('PROOF-1', 'RULE-1'),
+                            _entry(missing, 'RULE-1', status='missing')],
+                           commit_it=False)
+    path = os.path.join(project.root, *rel.split('/'))
+    with open(path, encoding='utf-8') as handle:
+        data = json.load(handle)
+    for section in data['platforms'].values():
+        for entry in section['proofs']:
+            if entry['id'] == missing:
+                entry['test'] = ''
+    _write(path, json.dumps(data, indent=2, sort_keys=True))
+
+
 def _bound(inp, **fields):
     """A signature dict that binds the rule `inp` describes, as a unit input."""
     entry = dict(inp)
@@ -119,7 +136,9 @@ def _section(source='ci', os_name='linux', statuses=None, current=True,
             'current': current, 'out_of_date': list(out_of_date),
             'section': {'commit': commit, 'at': at,
                         'proofs': [{'id': proof_id, 'rule': 'RULE-1',
-                                    'result': status}
+                                    'result': status,
+                                    'test': 'tests/test_login.py::test_%s'
+                                    % proof_id.lower().replace('-', '_')}
                                    for proof_id, status in statuses.items()]}}
 
 
@@ -324,7 +343,7 @@ class TestThePassedCell:
         cell = project.cell('RULE-1', 'passed')
         assert cell['word'] == 'not run'
         assert cell['missing_env'] == ['windows'], cell
-        assert 'windows: no run yet' in cell['reasons'], cell
+        assert 'Windows: no run yet' in cell['reasons'], cell
 
     # purlin: states PROOF-153
     def test_an_env_proof_passed_on_its_own_system_reads_passed(
@@ -420,6 +439,15 @@ class TestThePassedCell:
         assert (cell['source'], cell['current'], cell['counts']) == (
             None, False, False), cell
 
+    # purlin: states PROOF-221
+    def test_a_proof_listed_with_no_test_named_reads_no_test(self, project):
+        project.spec(TWO_PROOFS_SPEC)
+        _commit_tests(project, 'PROOF-1')
+        _listed_with_no_test(project, 'PROOF-2')
+        cell = project.cell('RULE-1', 'passed')
+        assert cell['word'] == 'no test', cell
+        assert cell['reasons'] == ['no test for PROOF-2'], cell
+
     # purlin: states PROOF-214
     def test_a_proof_with_no_test_comes_before_a_partial_run(self, project):
         project.spec(TWO_PROOFS_SPEC)
@@ -443,7 +471,7 @@ class TestThePassedCell:
                          os_name='macos', commit_it=False)
         cell = project.cell('RULE-1', 'passed')
         assert cell['word'] == 'not run', cell
-        assert cell['reasons'] == ['windows: no run yet'], cell
+        assert cell['reasons'] == ['Windows: no run yet'], cell
         assert cell['missing_env'] == ['windows'], cell
 
     # purlin: states PROOF-206
@@ -1080,14 +1108,32 @@ class TestThePlatformsInThePassedCell:
             rule = made.rule('RULE-1')
             cell = rule['cells']['passed']
             assert cell['word'] == 'partial', cell
-            assert cell['reasons'] == ['passed on linux',
-                                       'windows: failed'], cell
+            assert cell['reasons'] == ['passed on Linux/Unix',
+                                       'Windows: failed'], cell
             assert rule['bucket'] == 'partial', rule['bucket']
             assert rule['flags']['partial'] is True, rule['flags']
             assert rule['flags']['failing'] is False, rule['flags']
             assert rule['left'] == 'to_fix', rule['left']
         finally:
             made.close()
+
+    # purlin: states PROOF-235
+    def test_two_systems_that_passed_are_named_in_one_reason(self):
+        made = Project(spec=ONE_RULE_SPEC, gate='strong')
+        try:
+            for os_name, status, at in (
+                    ('linux', 'pass', '2026-09-13T12:00:00Z'),
+                    ('macos', 'pass', '2026-09-13T12:30:00Z'),
+                    ('windows', 'fail', '2026-09-13T13:00:00Z')):
+                made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                                'status': status}],
+                              os_name=os_name, source='ci', at=at)
+            cell = made.cell('RULE-1', 'passed')
+        finally:
+            made.close()
+        assert cell['word'] == 'partial', cell
+        assert cell['reasons'] == ['passed on Linux/Unix and macOS',
+                                   'Windows: failed'], cell
 
     # purlin: states PROOF-54
     def test_an_older_section_that_is_out_of_date_is_not_read(self):
@@ -2553,6 +2599,21 @@ class TestASpecThatNamesNoFiles:
         finally:
             made.close()
 
+    # purlin: states PROOF-222
+    def test_at_signed_it_waits_for_the_audit_until_the_audit_clears_it(
+            self):
+        made = Project(spec=NO_SCOPE_SPEC, gate='signed')
+        try:
+            made.evidence(PASSING)
+            rule = made.rule('RULE-1')
+        finally:
+            made.close()
+        assert rule['cells']['passed']['word'] == 'passed', rule
+        assert rule['cells']['strong']['word'] == 'not audited', rule
+        assert rule['cells']['signed']['word'] == 'waiting', rule
+        assert rule['cells']['signed']['reasons'] == [
+            'waiting for the audit'], rule
+
     @staticmethod
     def _no_code_files(gate):
         """RULE-1 of a spec with no `> Scope:` line at `gate`, breaking on,
@@ -2603,7 +2664,8 @@ class TestASpecThatNamesNoFiles:
         finally:
             made.close()
         assert ('1 spec names no files, so its tests run every time: '
-                'login.') in lines, (gate, lines)
+                'login. Run purlin:spec login to add its > Scope: line.'
+                ) in lines, (gate, lines)
 
     # purlin: states PROOF-76
     def test_status_names_one_spec_at_passed(self):
@@ -2628,7 +2690,8 @@ class TestASpecThatNamesNoFiles:
         finally:
             made.close()
         assert ('2 specs name no files, so their tests run every '
-                'time: export, login.') in lines, (gate, lines)
+                'time: export, login. Run purlin:spec with each name to add '
+                'its > Scope: line.') in lines, (gate, lines)
 
     # purlin: states PROOF-109
     def test_status_names_two_specs_at_passed(self):
@@ -2681,3 +2744,160 @@ class TestASpecThatNamesNoFiles:
             ], lines
         finally:
             made.close()
+
+
+# ---------------------------------------------------------------------------
+# The page after a run, the settings lines, uncommitted specs and anchors
+# ---------------------------------------------------------------------------
+
+# purlin: states PROOF-223
+def test_a_test_run_leaves_its_results_in_the_page_data(tmp_path):
+    from run_project import _pytest_project, _run, _spec
+    root = _pytest_project(tmp_path)
+    _spec(root, 'feat')
+    assert not os.path.exists(os.path.join(str(root), '.purlin',
+                                           'report-data.js'))
+    code, output = _run(root, '--all', '--test')
+    assert code == 0, output
+    data = _dashboard_data(str(root))
+    feature = next(f for f in data['features'] if f['name'] == 'feat')
+    rule = next(r for r in feature['rules'] if r['id'] == 'RULE-1')
+    assert rule['cells']['passed']['word'] == 'passed', rule
+
+
+def _status_of(gate='passed', **settings):
+    """The status report's lines for the two-rule `login` project with
+    `settings` written into its settings file."""
+    made = Project(gate=gate, extra_config=settings)
+    try:
+        return purlin_status.sync_status(made.root).splitlines()
+    finally:
+        made.close()
+
+
+class TestTheSettingsLines:
+
+    # purlin: states PROOF-224
+    def test_a_gate_not_accepted_is_read_as_passed_with_its_fix(self):
+        lines = _status_of(gate='gold')
+        assert ('"gold" is not accepted for gate in .purlin/config.json; it '
+                'takes passed, strong or signed. Reading it as passed; set it '
+                'with purlin:init --gate <gate>.') in lines, lines
+
+    # purlin: states PROOF-225
+    def test_an_audit_parallel_not_accepted_is_read_as_4_with_its_fix(self):
+        lines = _status_of(audit_parallel='four')
+        assert ('"four" is not accepted for audit_parallel in '
+                '.purlin/config.json; it takes a whole number from 1 to 16. '
+                'Reading it as 4; fix the file by hand.') in lines, lines
+
+    # purlin: states PROOF-226
+    def test_a_min_strength_that_is_no_number_at_passed(self):
+        lines = _status_of(gate='passed', min_strength='high')
+        assert ('"min_strength" is not a number; no minimum applies'
+                in lines), lines
+
+    # purlin: states PROOF-227
+    def test_a_min_strength_that_is_no_number_at_strong(self):
+        lines = _status_of(gate='strong', min_strength='high')
+        assert '"min_strength" is not a number; using 70' in lines, lines
+
+    # purlin: states PROOF-228
+    def test_a_key_this_release_does_not_read_is_named(self):
+        lines = _status_of(pre_push='block')
+        assert ('.purlin/config.json still carries pre_push, which this '
+                'release does not read. Run purlin:init --update.'
+                in lines), lines
+
+
+# purlin: states PROOF-229
+def test_a_spec_changed_and_not_committed_is_listed(project):
+    project.spec(SPEC.replace('return 200 with a session token',
+                              'return 200 and a session token'))
+    lines = purlin_status.sync_status(project.root).splitlines()
+    index = lines.index('Uncommitted spec changes:')
+    assert lines[index + 1] == '   M specs/auth/login.md', lines
+
+
+def _anchor_source(folder):
+    """A git repository holding an anchor's rules. Its HEAD's sha."""
+    os.makedirs(folder)
+    _write(os.path.join(folder, 'policy.md'), '# Anchor: policy\n')
+    _git(folder, 'init', '-q')
+    _git(folder, 'config', 'user.email', 'dev@example.com')
+    _git(folder, 'config', 'user.name', 'Dev')
+    _git(folder, 'add', '-A')
+    _git(folder, 'commit', '-q', '-m', 'first')
+    return _git(folder, 'rev-parse', 'HEAD').stdout.strip()
+
+
+def _advance(folder):
+    """One more commit in the anchor's source. Its sha."""
+    _write(os.path.join(folder, 'policy.md'), '# Anchor: policy\n\nv2\n')
+    _git(folder, 'commit', '-q', '-am', 'second')
+    return _git(folder, 'rev-parse', 'HEAD').stdout.strip()
+
+
+def _anchored_status(source, pinned=None):
+    """The status report's lines for a project whose anchor `policy` names
+    `source`, pinned to `pinned` when given."""
+    meta = '> Source: %s\n' % source
+    if pinned:
+        meta += '> Pinned: %s\n' % pinned
+    made = Project()
+    try:
+        made.spec('# Anchor: policy\n\n%s\n## Rules\n\n- RULE-1: Every '
+                  'answer is JSON\n\n## Proof\n\n- PROOF-1 (RULE-1): An '
+                  'answer parses as JSON\n' % meta,
+                  name='policy', category='_anchors')
+        _git(made.root, 'add', '-A')
+        _git(made.root, 'commit', '-q', '-m', 'anchor(policy): create')
+        return purlin_status.sync_status(made.root).splitlines()
+    finally:
+        made.close()
+
+
+class TestTheAnchorLines:
+
+    @staticmethod
+    def _behind(tmp_path):
+        source = str(tmp_path / 'policy-source')
+        old = _anchor_source(source)
+        new = _advance(source)
+        return _anchored_status(source, old), old, new
+
+    # purlin: states PROOF-230
+    def test_the_anchor_lines_open_on_anchors(self, tmp_path):
+        lines, _old, _new = self._behind(tmp_path)
+        index = lines.index('Anchors:')
+        assert lines[index + 1].startswith('policy: '), lines
+
+    # purlin: states PROOF-231
+    def test_a_pin_behind_its_source_names_both_commits(self, tmp_path):
+        lines, old, new = self._behind(tmp_path)
+        assert ('policy: the pin %s is behind its source, now %s. Run '
+                'purlin:anchor sync policy.' % (old[:7], new[:7])) in lines, \
+            lines
+
+    # purlin: states PROOF-232
+    def test_a_source_with_no_pin_is_named(self, tmp_path):
+        source = str(tmp_path / 'policy-source')
+        _anchor_source(source)
+        lines = _anchored_status(source)
+        assert ('policy: names a source and no pin. Run purlin:anchor sync '
+                'policy.') in lines, lines
+
+    # purlin: states PROOF-233
+    def test_a_source_that_could_not_be_read_names_the_fix(self, tmp_path):
+        lines = _anchored_status(str(tmp_path / 'no-repository-here'),
+                                 'abc1234')
+        found = [line for line in lines
+                 if line.startswith('policy: the source could not be read (')]
+        assert len(found) == 1, lines
+        assert found[0].endswith('). Check its > Source: line, then run '
+                                 'purlin:anchor sync policy.'), found
+
+    # purlin: states PROOF-234
+    def test_a_source_refused_names_the_reason(self):
+        lines = _anchored_status('--upload-pack=/bin/echo', 'abc1234')
+        assert 'policy: (source rejected: begins with "-")' in lines, lines

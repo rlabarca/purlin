@@ -37,7 +37,6 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from purlin import evidence as evidence_module                 # noqa: E402
 from purlin import states                                      # noqa: E402
 
 # The kinds of work left, in the order the work is done and the lines read.
@@ -80,7 +79,7 @@ NOTHING_LEFT = 'Nothing left to do.'
 RELEASE = NOTHING_LEFT + ' Push the tag to release it: git push origin %s'
 
 # The order systems are named in, whatever order the rules name them.
-SYSTEM_ORDER = ('linux', 'macos', 'windows')
+SYSTEM_ORDER = states.SYSTEM_ORDER
 
 _UPPER = ('strong', 'signed')
 
@@ -213,9 +212,9 @@ def systems_text(systems):
     """The systems in display words, Linux/Unix, macOS, Windows, joined ` and `.
 
     This machine's own system is never among them, so there are one or two.
+    The join is the cell reasons' own, `states.systems_text`.
     """
-    known = [name for name in SYSTEM_ORDER if name in systems]
-    return ' and '.join(evidence_module.os_word(name) for name in known)
+    return states.systems_text(systems)
 
 
 def left(features, gate, here_os, tag=None, corrections=0):

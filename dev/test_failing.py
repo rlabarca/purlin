@@ -31,6 +31,12 @@ def _other(here):
     return 'windows' if here != 'windows' else 'linux'
 
 
+def _word(os_name):
+    """The system as a person reads it: `Windows`, `macOS` or `Linux/Unix`."""
+    return {'windows': 'Windows', 'macos': 'macOS',
+            'linux': 'Linux/Unix'}[os_name]
+
+
 def _tagged_for(project, os_name):
     """`PROOF-1` tagged `@env` for `os_name`."""
     project.spec(SPEC.replace('and a token\n',
@@ -44,7 +50,8 @@ def test_a_failing_test_is_named_where_it_failed(project):
     one, two = project.rule('RULE-1'), project.rule('RULE-2')
     assert one['cells']['passed']['word'] == 'failed', one
     assert one['flags']['failing'] is True
-    assert 'failing: %s, local' % here in one['cells']['passed']['reasons'], one
+    assert ('failing: %s, local' % _word(here)
+            in one['cells']['passed']['reasons']), one
     assert two['flags']['failing'] is False
     assert one['bucket'] == 'failing', one
     assert project.payload()['summary']['failing'] == 1
@@ -60,7 +67,8 @@ def test_failures_from_two_sources_and_two_systems_are_each_named(project):
     two = project.rule('RULE-2')
     assert two['flags']['failing'] is True
     assert two['cells']['passed']['reasons'] == [
-        'failing: %s, local' % here, 'failing: %s, ci' % other], two
+        'failing: %s, local' % _word(here),
+        'failing: %s, ci' % _word(other)], two
     assert project.payload()['summary']['failing'] == 2
 
 
@@ -72,7 +80,7 @@ def test_an_env_proof_failing_on_another_system_here_is_not_run(project):
     one = project.rule('RULE-1')
     assert one['cells']['passed']['word'] == 'not run', one
     assert one['cells']['passed']['reasons'] == [
-        '%s: no run yet' % other], one
+        '%s: no run yet' % _word(other)], one
     assert one['flags']['failing'] is False, one
     assert project.payload()['summary']['failing'] == 0
 
@@ -88,4 +96,4 @@ def test_an_env_proof_failing_on_its_own_system_is_failed(project):
     assert one['cells']['passed']['word'] == 'failed', one
     assert one['flags']['failing'] is True, one
     assert one['cells']['passed']['reasons'] == [
-        'failing: %s, ci' % other], one
+        'failing: %s, ci' % _word(other)], one

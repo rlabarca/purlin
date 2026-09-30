@@ -211,11 +211,16 @@ def incomplete_names(data):
 
 
 def incomplete_line(names):
-    """`1 spec names no files, so its tests run every time: export.`"""
+    """The one line for the feature specs that name no files, with its step.
+
+    The status prints it, and so does the upgrade.
+    """
     if len(names) == 1:
-        return ('1 spec names no files, so its tests run every time: %s.'
-                % names[0])
-    return ('%d specs name no files, so their tests run every time: %s.'
+        return ('1 spec names no files, so its tests run every time: %s. Run '
+                'purlin:spec %s to add its > Scope: line.'
+                % (names[0], names[0]))
+    return ('%d specs name no files, so their tests run every time: %s. Run '
+            'purlin:spec with each name to add its > Scope: line.'
             % (len(names), ', '.join(names)))
 
 
@@ -258,8 +263,10 @@ def _pin_lines(project_root):
             lines.append('%s: names a source and no pin. Run purlin:anchor sync '
                          '%s.' % (row['anchor'], row['anchor']))
         else:
-            lines.append('%s: the source could not be read (%s).'
-                         % (row['anchor'], row.get('error', 'unknown')))
+            lines.append('%s: the source could not be read (%s). Check its '
+                         '> Source: line, then run purlin:anchor sync %s.'
+                         % (row['anchor'], row.get('error', 'unknown'),
+                            row['anchor']))
     if lines:
         lines.insert(0, 'Anchors:')
     return lines

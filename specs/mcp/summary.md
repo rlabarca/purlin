@@ -10,6 +10,7 @@
 >   names its filter buttons by the lines of `Left to do` and shows no sentence.
 > Scope: scripts/mcp/purlin/summary.py
 > Stack: python/stdlib
+> Highest-Rule: 14
 
 ## Rules
 
@@ -64,3 +65,5 @@
 - PROOF-30 (RULE-11): At the gate `signed`, every rule signed, no `signed/*` tag on HEAD and one test comment naming nothing, `Left to do:` holds the one line `  1 test comment to correct: purlin:build`, and no line names the version to tag
 - PROOF-26 (RULE-4): At the gate `signed`, the status report of a project whose one spec has no `> Scope:` line, and whose two rules pass their tests and are audited with nothing found, ends on `Left to do:` and `  2 rules to tie to their files: purlin:spec`
 - PROOF-29 (RULE-4): At the gate `passed`, a test comment naming `login PROOF-9`, which no spec has, beside two rules that pass their tests, ends on `Left to do:` and the one line `  1 test comment to correct: purlin:build`
+- PROOF-36 (RULE-4): At the gate `passed`, three test comments naming `login PROOF-7`, `login PROOF-8` and `login PROOF-9`, which no spec has, beside two rules that pass their tests, end the status on `Left to do:` and the one line `  3 test comments to correct: purlin:build`
+- PROOF-37 (RULE-8): A current section passes `PROOF-1`'s test and lists `PROOF-2`, of the same rule, as `missing` with no test named, and no marker names `PROOF-2`; the status ends on `  1 rule to write a test for: purlin:build`

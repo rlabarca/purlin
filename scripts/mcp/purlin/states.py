@@ -35,7 +35,8 @@ cell above the gate is absent, not empty.
             signature that no longer binds the rule is read as none. At the
             gate `signed` a rule whose spec names no files in `> Scope:`
             reads `unsigned` whatever was signed, because a signature cannot
-            be tied to the code it governs.
+            be tied to the code it governs; while it reads `waiting` it
+            still waits for the audit.
 
 A proof marked `@manual` is checked by a person, who signs the rule: a
 signature that counts and binds the rule's current hashes is its hand check,
@@ -101,6 +102,10 @@ NO_CODE_FILES = 'the spec names no code files: run purlin:spec %s'
 # The passed cell's reason for the proofs of a rule no test backs.
 NO_TEST_FOR = 'no test for %s'
 
+# The passed cell's reason for a system a proof is tagged for that no
+# current section comes from, the system in the words a person reads.
+NO_RUN_YET = '%s: no run yet'
+
 # Where a pass came from. An evidence file's source is the folder it sits
 # in, `.purlin/evidence/ci/` or `.purlin/evidence/local/`; a cell names
 # `local` whenever a person's own run is among its sources.
@@ -114,6 +119,10 @@ OUT_OF_DATE = 'out of date'
 WAITING = 'waiting'
 WAITING_FOR_TESTS = 'waiting for its tests to pass'
 WAITING_FOR_AUDIT = 'waiting for the audit'
+
+# The order a person reads systems in, whatever order the evidence names
+# them.
+SYSTEM_ORDER = ('linux', 'macos', 'windows')
 
 # The reason the passed cell gives for a rule no proof line names and no
 # test marked with the rule's own id answers.
@@ -181,7 +190,7 @@ def rule_cells(inp, cfg):
     `incomplete`    why the rule's own spec names no files, or None; at the
                     gate `signed` the signed cell then reads `unsigned` with
                     `NAMES_NO_FILES`, because a signature cannot be tied to
-                    the code it governs
+                    the code it governs, unless it reads `waiting`
     """
     gate = cfg.gate if cfg and cfg.gate in CELLS else CELLS[0]
     proofs = inp.get('proofs') or []
@@ -206,7 +215,10 @@ def rule_cells(inp, cfg):
         # not cleared has nothing to sign yet. A hand check is signed by a
         # person, so it waits on a person and not on the audit.
         signed = dict(signed, word=WAITING, reasons=[WAITING_FOR_AUDIT])
-    if inp.get('incomplete') and gate == CELLS[-1]:
+    if (inp.get('incomplete') and gate == CELLS[-1]
+            and signed['word'] != WAITING):
+        # The override stands once the strong cell is met, or a person
+        # checks the rule by hand; before that the cell waits for the audit.
         signed = dict(signed, word='unsigned', reasons=[NAMES_NO_FILES])
 
     cells = {}
@@ -343,7 +355,8 @@ def _passed_cell(inp, cfg):
         if missing_env:
             cell['word'] = 'not run'
             cell['missing_env'] = list(missing_env)
-            cell['reasons'] = ['%s: no run yet' % env for env in missing_env]
+            cell['reasons'] = [NO_RUN_YET % system_word(env)
+                               for env in missing_env]
             return cell
         cell['word'] = 'passed'
         return cell
@@ -369,12 +382,17 @@ def _partial(cell, platforms):
 
 
 def _untested(proofs, current, marked):
-    """The ids of the proofs no marker ties to a test and no current section lists."""
-    listed = set()
-    for entry in current or ():
-        listed.update(evidence_module.proof_results(entry['section']))
+    """The ids of the proofs no marker ties to a test and no current section lists with one.
+
+    A section lists a proof with a test only where its entry names the test:
+    an entry with no test, such as one a run wrote for a proof it found no
+    test for, is not a test.
+    """
     return [proof.get('id') for proof in proofs
-            if proof.get('id') not in marked and proof.get('id') not in listed]
+            if proof.get('id') not in marked
+            and not any(evidence_module.proof_tests(entry['section'],
+                                                    proof.get('id'))
+                        for entry in current or ())]
 
 
 def proof_result(proof, sections, marked=()):
@@ -478,22 +496,42 @@ def _passing_source(platforms):
                           if entry.get('word') == 'passed')
 
 
+def system_word(name):
+    """`Windows`, `macOS` or `Linux/Unix` for a stored system word."""
+    return evidence_module.os_word(name)
+
+
+def systems_text(names):
+    """The systems as a person reads them, `Linux/Unix`, `macOS`, `Windows` in
+    that order, joined by `, ` and a last ` and `."""
+    words = [system_word(name) for name in _in_order(set(names))]
+    if len(words) < 2:
+        return ''.join(words)
+    return '%s and %s' % (', '.join(words[:-1]), words[-1])
+
+
 def _platform_reasons(platforms):
     """One reason per platform that did not pass, and one naming those that did."""
-    passed = sorted(name for name, entry in platforms.items()
-                    if entry.get('word') == 'passed')
+    passed = [name for name, entry in platforms.items()
+              if entry.get('word') == 'passed']
     reasons = []
     if passed:
-        reasons.append('passed on %s' % ', '.join(passed))
-    for name in sorted(platforms):
+        reasons.append('passed on %s' % systems_text(passed))
+    for name in _in_order(platforms):
         entry = platforms[name]
         if entry.get('word') == 'passed':
             continue
         if entry.get('source') is None:
-            reasons.append('%s: no run yet' % name)
+            reasons.append(NO_RUN_YET % system_word(name))
         else:
-            reasons.append('%s: %s' % (name, entry.get('word')))
+            reasons.append('%s: %s' % (system_word(name), entry.get('word')))
     return reasons
+
+
+def _in_order(names):
+    """The stored system words in the order a person reads them."""
+    return ([name for name in SYSTEM_ORDER if name in names]
+            + sorted(name for name in names if name not in SYSTEM_ORDER))
 
 
 def _failing_where(proofs, current):
@@ -510,7 +548,8 @@ def _failing_where(proofs, current):
             if proof.get('env') and proof.get('env') != entry['os']:
                 continue
             if statuses.get(proof.get('id')) == 'fail':
-                where.append('%s, %s' % (entry['os'], entry['source']))
+                where.append('%s, %s' % (system_word(entry['os']),
+                                         entry['source']))
                 break
     return where
 

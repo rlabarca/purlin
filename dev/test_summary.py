@@ -7,6 +7,7 @@ the sentence over the rules each feature owns, then `left` over every
 feature, then the nothing-left line.
 """
 
+import json
 import os
 import sys
 
@@ -214,6 +215,21 @@ class TestTheLines:
                               '  1 test comment to correct: purlin:build'], \
             lines
 
+    # purlin: summary PROOF-36
+    def test_three_comments_naming_nothing_read_plural(self):
+        made = Project()
+        try:
+            _commit_tests(made, 'PROOF-1', 'PROOF-2', 'PROOF-7', 'PROOF-8',
+                          'PROOF-9')
+            made.evidence([_entry('PROOF-1', 'RULE-1'),
+                           _entry('PROOF-2', 'RULE-2')])
+            lines = purlin_status.sync_status(made.root).splitlines()
+        finally:
+            made.close()
+        assert lines[-2:] == ['Left to do:',
+                              '  3 test comments to correct: purlin:build'], \
+            lines
+
     # purlin: summary PROOF-35
     def test_a_comment_to_correct_comes_before_a_rule_to_fix(self):
         lines = ending([rule(passed='failed')], 'passed', corrections=1)
@@ -323,6 +339,28 @@ class TestOneKindPerRule:
         try:
             _commit_tests(made, 'PROOF-1')
             made.evidence([_entry('PROOF-1', 'RULE-1')])
+            lines = purlin_status.sync_status(made.root).splitlines()
+        finally:
+            made.close()
+        assert lines[-1] == '  1 rule to write a test for: purlin:build', \
+            lines
+
+    # purlin: summary PROOF-37
+    def test_a_proof_listed_with_no_test_named_wants_a_test(self):
+        made = Project(spec=TWO_PROOFS_SPEC)
+        try:
+            _commit_tests(made, 'PROOF-1')
+            rel = made.evidence([_entry('PROOF-1', 'RULE-1'),
+                                 _entry('PROOF-2', 'RULE-1',
+                                        status='missing')])
+            path = os.path.join(made.root, *rel.split('/'))
+            with open(path, encoding='utf-8') as handle:
+                data = json.load(handle)
+            for section in data['platforms'].values():
+                for entry in section['proofs']:
+                    if entry['id'] == 'PROOF-2':
+                        entry['test'] = ''
+            _write(path, json.dumps(data, indent=2, sort_keys=True))
             lines = purlin_status.sync_status(made.root).splitlines()
         finally:
             made.close()
