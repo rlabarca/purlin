@@ -57,7 +57,7 @@ belongs in `> Description:`, which the dashboard displays.
 | Field | Required | Description |
 |-------|----------|-------------|
 | `> Description:` | No | Plain-language description. Continuation lines start with `>` and are not themselves `> Field:` lines. Displayed in the dashboard. |
-| `> Scope:` | At the gate `signed` | Comma-separated paths this feature touches: a file, a directory, or a glob holding `*`, `?` or `[`. The evidence carries a fingerprint of the tracked files they reach, which is what tells a code change from a rule change. Below `signed` it is optional: a feature spec with none, or one that reaches no tracked file, is reported as naming no files (`incomplete` in the payload), its tests run on every `purlin:test`, and nothing blocks. At `signed` such a spec's rules are signed and their signatures do not count, so no tag is written. An entry that finds no file git tracks, where the others reach files, is warned of. An anchor carries none: its rules cover the whole project, and a `> Scope:` line on an anchor is warned of and not read. |
+| `> Scope:` | At the gate `signed` | Comma-separated paths this feature touches: a file, a directory, or a glob holding `*`, `?` or `[`. The evidence carries a fingerprint of the tracked files they reach, which is what tells a code change from a rule change. Below `signed` it is optional: a feature spec with none, or one that reaches no tracked file, is reported as naming no files (`incomplete` in the payload), its tests run on every `purlin:test`, and nothing blocks. An entry that finds no file git tracks, where the others reach files, is warned of. An anchor carries none: its rules cover the whole project, and a `> Scope:` line on an anchor is warned of and not read. |
 | `> Stack:` | No | Technology choices: `language/framework, key libraries, patterns` |
 | `> Highest-Rule:` | No | The highest rule number the spec has ever held, as a whole number. A new rule takes the next number above it, so a deleted number is never used again. It changes no fingerprint and no count |
 | `> Highest-Proof:` | No | The highest proof number the spec has ever held, as a whole number. A new proof takes the next number above it, so a deleted number is never used again. It changes no fingerprint and no count |
@@ -95,10 +95,10 @@ is not read, and every status and test run warns of it with its fix:
 Rule ids are assigned in increasing order and never reused. A retired rule
 leaves its number vacant and the rules that remain keep the numbers they had,
 so a gap in the sequence is legal and the parser reports nothing for it.
-Renumbering would silently repoint every test marker and every signature that
-already names the old id.
+Renumbering by hand would silently repoint every test comment that already
+names the old id.
 A new rule takes one more than the highest of `> Highest-Rule:` and every rule number the spec holds, and `> Highest-Rule:` is raised to it, so a number is never used again.
-When two branches take the same number, the number already on the default branch keeps it, and the rule or proof from the branch not yet merged moves to the next free number. A moved rule needs a new audit and a new signature; its old signature ends and stays on disk.
+When two branches take the same number, the number already on the default branch keeps it, and the rule or proof from the branch not yet merged moves to the next free number. A moved rule's audit is read again; `purlin:spec` renumbers it and its test comments when you say yes.
 Unnumbered lines under `## Rules` are reported. A rule id written twice is
 warned of; the rule is read once, with the text of its second line, and every
 rule of the spec reads `failed`, with the reason `RULE-N is written twice in the
@@ -140,10 +140,10 @@ with the reason `no proof written`.
 
 A proof describes what a test asserts, not how it is written. Proofs are
 optional at the gate `passed`, where a rule's passing tests are the whole of its
-evidence, and required from `strong` up: there a rule whose test passes and
-that has no proof reads `no proof` in its strong cell, with the reason `the rule
-has a test and no proof`, and counts under `Left to do` as a rule to write a
-proof for. Several proofs can name the same rule, and one proof can name
+evidence, and required at `signed`, where a rule with no proof counts under
+`Left to do` as a rule to write a proof for. A rule whose test passes and that
+has no proof reads `no proof` in its strong cell, with the reason `the rule has
+a test and no proof`. Several proofs can name the same rule, and one proof can name
 several rules when it drives a flow through all of them. A list item under
 `## Proof` of any other form is not read as a proof and is warned of.
 
@@ -170,7 +170,7 @@ Append `@manual` to a proof that no test can settle:
 | Tag | When to use |
 |-----|-------------|
 | (none) | A marked test settles the proof, whatever it needs to run |
-| `@manual` | A person's judgment is the only instrument. No test, so the rule's strong cell reads `manual test`; the evidence is a signature a person writes with `purlin:sign`, carrying a one-line note of what they saw when one is given |
+| `@manual` | A person's judgment is the only instrument. No test, so the rule's strong cell reads `manual test`. At the gate `signed` a person checks it in the sign-off walk of `purlin:sign` and types a one-line note of what they saw, which the sign-off records; at `passed` the release lists it as not checked |
 
 `@manual` and `@env` are the only tags a proof line carries. Any other trailing
 `@<name>` is not a tag: it stays in the proof text. `purlin:test` runs every

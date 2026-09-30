@@ -60,11 +60,11 @@ it by repo URL plus path.
 
 Every rule of an anchor holds across the whole project, and its tests check the
 whole project. The project is every file git tracks but the records Purlin
-writes: the results of a run and the evidence package under `.purlin/evidence/`,
-the table `.purlin/tests.md`, and the signatures. Any change to the project ends
-an anchor's results and its signatures, so at the gate `signed` an anchor is in
-practice signed last. No code is broken on purpose for an anchor: the AI audit
-alone judges its tests. A rule that cannot be checked across the whole project
+writes: the results of a run, the evidence package and its sign-offs under
+`.purlin/evidence/`, and the table `.purlin/tests.md`. Any change to the project
+ends an anchor's results. At the gate `signed` its rules are signed as part of
+the release, with every other rule. No code is broken on purpose for an anchor:
+the AI audit alone judges its tests. A rule that cannot be checked across the whole project
 is not an anchor's; write it in the spec of each feature that needs it, in that
 feature's words.
 
@@ -141,10 +141,6 @@ anchor of its own when it holds across the whole project, and in the spec of
 each feature it holds for when it does not.
 
 A pinned copy is written as its source holds it; a `> Requires:`, `> Global:` or `> Scope:` line in it is warned of, naming the source's owners as the ones to take it out.
-
-A rule of a pinned anchor that no test in this project can show, because it
-does not apply here, is signed by a person in the project as not applying, with
-the reason. A rule of the project's own anchor that does not apply is deleted.
 
 ## Fields 0.9.5 wrote
 
