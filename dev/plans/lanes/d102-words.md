@@ -19,7 +19,8 @@ changed.
 
 ## Tests
 
-- `dev/test_purlin_docs.py`: 10 passed before the change of the sample, 10 passed after.
+- `dev/test_purlin_docs.py`: 10 tests before and after (no test added or removed); run only
+  after the change, where all 10 passed. `--fast` was not run before the change.
 - `bash dev/run_tests.sh --fast`, after: 2141 passed, 3 failed, 12 skipped, 1 error. None is in
   a file this lane owns or reads a file it changed; each is this container's:
   - `dev/test_signatures.py::TestTheMachines::test_a_new_system_ends_nothing` and
