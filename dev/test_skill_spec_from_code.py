@@ -320,10 +320,10 @@ TAXONOMY = ('**Propose a taxonomy.** Group the behaviour into features',
 STOP = ('Show the list and stop.',
         'Merge, split and rename until they say it is right.')
 ORDER = ('**Write one spec at a time**, in that order',)
-ANCHOR = ('**Order by dependency.** Where features share rules, write those '
-          'rules once in an anchor with `purlin:anchor create <name>`, first, '
-          'and have each feature name it with `> Requires: <name>`.',
-          '`> Requires:` names anchors only.')
+ANCHOR = ('**Shared rules first.** Rules that hold across the whole project, '
+          'it writes once in an anchor, with `purlin:anchor create <name>`.',
+          'A rule that several features share and that does not hold '
+          'everywhere is written in each of their specs.')
 COMMIT = ('committing each spec with the comments it adds above existing '
           'tests, on its own, with the `spec(<name>):` prefix',)
 POSITION = ('After each commit write `.purlin/runtime/spec-from-code.json`, '
@@ -369,32 +369,34 @@ class TestTheProcedure:
         ]) == []
 
     # purlin: skill_spec_from_code PROOF-158
-    def test_it_writes_one_spec_at_a_time_in_the_dependency_order(
+    def test_it_writes_one_spec_at_a_time_after_the_shared_rules(
             self, monkeypatch):
         def check():
             problems = step_problems('5', ORDER)
-            if not steps().get('4', '').startswith('**Order by dependency.**'):
-                problems.append('%s step 4 is not the dependency order'
+            if not steps().get('4', '').startswith('**Shared rules first.**'):
+                problems.append('%s step 4 is not the shared rules'
                                 % SKILL)
             return problems
         assert check() == []
         assert refusals(monkeypatch, check, [
             (SKILL, replace(', in that order,', ','),
              '%s step 5 does not carry %r' % (SKILL, ORDER[0])),
-            (SKILL, replace('**Order by dependency.**', '**Share rules.**'),
-             '%s step 4 is not the dependency order' % SKILL),
+            (SKILL, replace('**Shared rules first.**', '**Share rules.**'),
+             '%s step 4 is not the shared rules' % SKILL),
         ]) == []
 
     # purlin: skill_spec_from_code PROOF-152
-    def test_shared_rules_go_once_into_an_anchor_that_features_require(
+    def test_project_rules_go_once_into_an_anchor_the_rest_into_each_spec(
             self, monkeypatch):
         assert step_problems('4', ANCHOR) == []
         assert refusals(monkeypatch, lambda: step_problems('4', ANCHOR), [
-            (SKILL, resub(r' `> Requires:` names anchors only\.'),
+            (SKILL, resub(r'is written in each of their specs\.',
+                          'is written once in an anchor.'),
              '%s step 4 does not carry %r' % (SKILL, ANCHOR[1])),
-            (SKILL, resub(r'write those rules once in an anchor\s+with '
-                          r'`purlin:anchor create <name>`, first,',
-                          'write those features first,'),
+            (SKILL, resub(r'Rules that hold across the whole project, it '
+                          r'writes once in an\s+anchor,',
+                          'Rules that several features share, it writes '
+                          'once in an anchor,'),
              '%s step 4 does not carry %r' % (SKILL, ANCHOR[0])),
         ]) == []
 

@@ -35,9 +35,9 @@ with `git switch -c <name>` before the first commit.
 3. **Let the person edit it.** Show the list and stop. Merge, split and rename until they say
    it is right. Everything after this point is mechanical, so this is the only step worth a
    conversation.
-4. **Order by dependency.** Where features share rules, write those rules once in an anchor
-   with `purlin:anchor create <name>`, first, and have each feature name it with
-   `> Requires: <name>`. `> Requires:` names anchors only.
+4. **Shared rules first.** Rules that hold across the whole project, it writes once in an
+   anchor, with `purlin:anchor create <name>`. A rule that several features share and that
+   does not hold everywhere is written in each of their specs.
 5. **Write one spec at a time**, in that order, committing each spec with the comments it adds
    above existing tests, on its own, with the `spec(<name>):` prefix from
    `references/commit_conventions.md`. After each commit write

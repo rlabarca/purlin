@@ -24,13 +24,13 @@
 - RULE-34: The skill tells the agent to commit each spec on its own, with the `spec(<name>):` prefix and the comments it adds above existing tests
 - RULE-35: The skill tells the agent to run `git branch --show-current` before the first commit and, when it prints nothing, to make a branch with `git switch -c <name>`
 - RULE-36: The skill tells the agent to report one line per feature, giving its rules, its proofs, how many proofs an existing test already shows and how many have no test
-- RULE-37: The skill tells the agent to write rules that features share once, in an anchor made first with `purlin:anchor create <name>`, which each feature names with `> Requires: <name>`, and that `> Requires:` names anchors only
+- RULE-37: The skill tells the agent to write rules that hold across the whole project once, in an anchor made first with `purlin:anchor create <name>`, and a rule several features share that does not hold everywhere in each of their specs
 - RULE-38: The skill tells the agent that a commented-out test, or a benchmark the project's test command does not run, is not a test, and is left alone and counted nowhere
 - RULE-39: The spec the skill shows as the shape of what it writes carries `> Highest-Rule:` after its other `>` lines, holding its highest rule number
 - RULE-40: The skill's first step walks the tree once, noting the entry points, the modules with real branching, the configuration surface and the test files, and ignoring generated code, vendored dependencies and build output
 - RULE-41: The skill tells the agent to group the behaviour into features and print the list with a one-line description and the files each would carry in `> Scope:`
 - RULE-42: The skill tells the agent to show the list of features and stop until the person says it is right
-- RULE-43: The skill tells the agent to write one spec at a time, in the order its dependency step sets
+- RULE-43: The skill tells the agent to write one spec at a time, in the order its step `Shared rules first` sets
 - RULE-44: The skill tells the agent that every rule it writes is a draft until a person reads it, and to say so when handing the result over
 - RULE-45: The skill tells the agent not to copy an implementation into a rule
 - RULE-46: The skill tells the agent not to write evidence or signatures
@@ -59,13 +59,13 @@
 - PROOF-149 (RULE-34): The commit conventions' `spec(<name>):` row reads, in its second cell, ``from `purlin:spec-from-code`, with the comments it adds above the project's existing tests``
 - PROOF-150 (RULE-35): The skill's section `Before you start` gives `git branch --show-current` and says that when it prints nothing, make a branch with `git switch -c <name>` before the first commit
 - PROOF-151 (RULE-36): The skill's report step says `Print one line per feature: its rules, its proofs, how many proofs an existing test already shows, and how many have no test.`
-- PROOF-152 (RULE-37): The skill's fourth step says to write shared rules once in an anchor with `purlin:anchor create <name>`, first, to have each feature name it with `> Requires: <name>`, and says `> Requires:` names anchors only.
+- PROOF-152 (RULE-37): The skill's fourth step, headed `Shared rules first.`, says rules that hold across the whole project are written once in an anchor with `purlin:anchor create <name>`, and that a rule several features share that does not hold everywhere is written in each of their specs
 - PROOF-153 (RULE-38): One sentence of the skill says a test that is commented out, or a benchmark the project's test command does not run, `is not a test: leave it and count it nowhere`
 - PROOF-154 (RULE-39): The skill's example spec carries the line `> Highest-Rule: 2` after its other `>` lines, and 2 is the highest rule number the example holds
 - PROOF-155 (RULE-40): The skill's first step, `Survey`, says `Walk the tree once`, names the entry points, the modules with real branching, the configuration surface and the test files, and says to ignore generated code, vendored dependencies and build output
 - PROOF-156 (RULE-41): The skill's second step says to group the behaviour into features and to print the list with a one-line description and the files each would carry in `> Scope:`
 - PROOF-157 (RULE-42): The skill's third step says `Show the list and stop.` and to merge, split and rename until the person says it is right
-- PROOF-158 (RULE-43): The skill's fifth step opens `Write one spec at a time`, `in that order`, and comes directly after the step headed `Order by dependency`
+- PROOF-158 (RULE-43): The skill's fifth step opens `Write one spec at a time`, `in that order`, and comes directly after the step headed `Shared rules first`
 - PROOF-159 (RULE-44): The skill says every rule it writes `is a draft until a person reads it`, followed by `Say so when you hand the result over.`
 - PROOF-160 (RULE-45): The skill's section `What not to do` says `Do not copy an implementation into a rule.`
 - PROOF-161 (RULE-46): The skill's section `What not to do` says `Do not write evidence or signatures.`
