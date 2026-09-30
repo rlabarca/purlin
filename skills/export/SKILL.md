@@ -6,7 +6,8 @@ description: Write the evidence package for a version, the data file a regulated
 Write one data file that holds the evidence for a version: whether it is finished, the count at
 each step, what is left to do, and every rule's words, its proofs, its tests, each result on each
 operating system, what the audit found and who signed it. A reviewer who cannot open the
-repository reads it in the system that holds the authority to sign the version off.
+repository reads it in the system of record, which holds the controlled document, the authority
+to sign it off and the signature that counts under the regulation.
 
 Purlin makes no claim that the software is compliant. The package is evidence for review in a
 regulated document and sign-off system, such as Veeva; how it is shown is that system's job.

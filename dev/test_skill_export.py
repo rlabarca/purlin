@@ -383,6 +383,8 @@ def padded_to(count):
 
 
 # purlin: skill_export PROOF-35
-def test_the_package_is_read_where_the_authority_to_sign_off_is():
-    assert ('reads it in the system that holds the authority to sign the '
-            'version off') in ' '.join(read(SKILL).split())
+def test_the_system_of_record_holds_the_document_authority_and_signature():
+    assert carries(SKILL, [
+        'reads it in the system of record, which holds the controlled '
+        'document, the authority to sign it off and the signature that '
+        'counts under the regulation']) == []
