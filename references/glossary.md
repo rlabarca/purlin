@@ -8,16 +8,16 @@ other page points here rather than defining it again.
 
 - **spec**: one Markdown file under `specs/<category>/<name>.md`, with a `## Rules` section and
   a `## Proof` section. **feature**: what a spec describes, named by its file. **scope**: the
-  `> Scope:` line, the files the feature's code lives in. It is optional below the gate
-  `signed` and required at `signed`, where a rule of a spec that names no files is signed and
-  its signature does not count.
+  `> Scope:` line, the files the feature's code lives in. It is optional; a spec without one
+  runs on every `purlin:test`.
 - **rule**: one line in a spec saying what must be true, `RULE-<n>`.
 - **proof**: one line in a spec saying in plain language how a rule is shown to hold,
   `PROOF-<n> (RULE-<n>)`. QA writes and reviews proofs, and AI may draft them against the
-  guideline in `references/spec_quality_guide.md`. Proofs are optional at the gate `passed` and
-  required from `strong` up. **`@manual`**: a proof a person carries out by hand, with no test.
+  guideline in `references/spec_quality_guide.md`. Proofs are optional at the gate `passed`; at
+  `signed` a rule without one is left to do as `to write a proof for`. **`@manual`**: a proof a
+  person carries out by hand, with no test.
   **`@env(<os>)`**: a proof that can only be shown on `windows`, `macos` or `linux`.
-- **system**: an operating system. A spec, the evidence and a signature store it as `windows`,
+- **system**: an operating system. A spec, the evidence and the package store it as `windows`,
   `macos` or `linux`, and every system that is not Windows or macOS is `linux`. A person reads
   it as `Windows`, `macOS` or `Linux/Unix`, and in the dashboard's small boxes as `Win`, `Mac`
   or `Lin`.
@@ -29,24 +29,23 @@ other page points here rather than defining it again.
   **report** lands, the report's format and the globs its test files live under. Setup leaves
   the setting empty; the first test run suggests an entry for each test tool it recognises, and
   they are written together once a person confirms them.
-- **step**: `passed`, `strong` or `signed`, in that order, each containing the one before.
-  `passed`: every test tied to the rule ran and passed. `strong`: those tests passed and the
-  audit found them sound. `signed`: both, and a person signed the rule.
-- **gate**: the one project setting, `passed`, `strong` or `signed`: the last step every rule
-  must reach before a version is finished. Every rule is asked what the gate asks.
-- **cell**: the answer to one step for one rule. It reads one word and carries its reasons,
-  and exists only at or below the gate. The words each cell can read are in the chain below.
-- **summary**: the sentence every run, every audit and `purlin:status` end on, one count per
-  step up to the gate: `40 rules. 35 pass their tests. 30 are strong. 20 are signed.` A rule
-  is counted once, under the spec that owns it.
+- **gate**: the one project setting, passed or signed. passed: every rule's tests pass on the
+  evidence committed at the release commit. signed: the same, and at least one person signs the
+  evidence package.
+- **cell**: one of the two answers every rule carries at both gates. The **passed** cell says
+  whether every test tied to the rule ran and passed; a release waits on it. The **strong** cell
+  says what the audit found; nothing waits on it. A cell reads one word and carries its reasons.
+  The words each cell can read are in the chain below.
+- **summary**: the sentence every run, every audit and `purlin:status` end on:
+  `40 rules. 35 pass their tests.`, and, where the audit has read a rule that passes,
+  `40 rules. 35 pass their tests. The audit found 30 strong and 2 weak.` A rule is counted once,
+  under the spec that owns it.
 - **Left to do**: the list under the summary, one line per kind of remaining work, in the order
   the work is done, each with its count and the command that does it; a kind at zero is left
-  out. The first line is the next step. The kinds, as printed: `to write a proof for`,
-  `to correct`, `to fix`, `to write a test for`, `to test`, `to test on <systems>`,
-  `to test by hand`, `to confirm as not applying`, `to audit`, `to measure`, `to strengthen`, `to tie to its files`,
-  `to sign` and `the version to tag`.
-  `references/hard_gates.md` says when each applies. **finished**: a version with nothing left
-  to do.
+  out. It lists only work. The first line is the next step. The kinds, as printed:
+  `to repair`, `to write a proof for`, `to correct`, `to fix`, `to write a test for`, `to test`,
+  `to test on <systems>` and `to strengthen`. `references/hard_gates.md` says when each applies
+  and which stop a release. **finished**: a version with nothing left to do.
 - **run**: one execution of the project's suites by `purlin:test` or `purlin:audit`.
 - **evidence**: what runs saw, one file per feature per source,
   `.purlin/evidence/<source>/<feature>.json`, with one **section** per system and, once the
@@ -69,54 +68,47 @@ other page points here rather than defining it again.
   audit, written into each feature's evidence. **AI audit**: one model call per rule, reading
   the rule, its proofs and its tests against `references/review_criteria.md`. Each answer names
   the model that gave it. **finding**: one sentence the AI audit wrote about a gap. A finding
-  makes the rule `weak`, and a weak rule is left to do as `to strengthen`. A proof longer than
-  the standard, or holding two cases, is written among the audit's notes and does not make the
-  rule weak. **waiting**: the word a cell reads while the cell below it is not met, and the
-  neutral one on every surface: the strong cell `waiting for its tests to pass`, and the signed
-  cell `waiting for the audit`. It is never met and it is not `weak`.
+  makes the rule `weak`, and a weak rule is left to do as `to strengthen`; it never stops a
+  release. A proof longer than the standard, or holding two cases, is written among the audit's
+  notes and does not make the rule weak. **strong**: what the AI audit found a rule's tests to
+  be. A tool: nothing waits on it. **waiting**: the word the strong cell reads while the passed
+  cell is not met, `waiting for its tests to pass`, and the neutral one on every surface. It is
+  not `weak`.
 - **mutation testing**, **the breaks**: deliberate changes to the code, to see whether the tests
-  catch them. Optional, off by default, asked about only at the gates `strong` and `signed`,
-  set by `mutation_engine`. **test strength**: the share of one feature's breaks the tests
-  caught, as a percentage, compared with `min_strength`. `references/hard_gates.md`, under the
-  gate table, says how it reaches a rule.
-- **hand check**: the check of a rule with a `@manual` proof. A person carries the proof out
-  and signs the rule with `purlin:sign`, at any gate, with a **note** saying what they saw when
-  they give one. That one act stands for the test, the audit and the signature of the rule.
-  Until it is done the rule is left to do as `to test by hand`. Its signature is made over the
-  rule's and its proofs' wording alone, so a change to the code, a test or the machines does
-  not end it.
-- **signature**: a person's attestation, for one rule in one feature, that the rule, its proof,
-  its test, the code the feature lists, what the audit found, and the machine the tests ran on
-  for each system belong together. One file under `specs/<category>/<feature>.signatures/`, committed in a signed
-  commit by `purlin:sign`. It records the signer's name and email as git holds them, the time
-  and the key's fingerprint, and not the machine it was signed on. **audit hash**: the hash over
-  what the audit found. **counting signature**: one whose commit carries a signature, made with
-  any key, that verifies over the commit, and whose hashes still match. A change to anything it
-  covers ends it, and the rule is left to do as `to sign`; the status and every test run print
-  one line naming the rule, the signer and why it ended. A result from a system it did not
-  cover ends nothing.
-- **does not apply**: the word a rule of a pinned anchor reads once a person in the project
-  signs it as not applying, with the reason. It counts as met, and like every anchor signature
-  it ends on any change to the project, so the person confirms it again.
-- **version**: the name of what is tagged, read from the `VERSION` file at the project root,
-  then from the version the project's package description states; `purlin:sign` asks for one
-  when neither gives it.
-- **tag**: `signed/<version>`, the signed tag `purlin:sign` writes at the gate `signed` when
-  nothing is left to do and every result came from committed work, on the commit that carries
-  the evidence package. Below `signed` no tag is written. `references/hard_gates.md` gives it
-  at length. A person pushes it.
-- **release branch**: the branch a version is signed and tagged on, cut from the default branch
-  once that version's specs are done.
+  catch them. Optional and off by default at either gate, set by `mutation_engine`; setup asks
+  about it at the gate `signed` alone. **test strength**: the share of one feature's breaks the
+  tests caught, as a percentage, shown on each rule of the feature as `strength 84%`.
+  `references/hard_gates.md`, under "The two gates", says how it reaches a rule.
+- **hand check**: a proof marked @manual, which no test runs; at the gate signed a person checks
+  it in the sign-off walk and types what they saw. What they type is a **note**, kept in the
+  sign-off. At the gate `passed` the package lists the rule as not checked.
+- **version**: the name of what is released, read from the `VERSION` file at the project root,
+  then from the version the project's package description states; `--release <version>` names
+  it instead.
+- **release**: a commit, its evidence package and a tag, made by purlin:test --release on a
+  release branch.
+- **release branch**: the branch a version is released on, cut from the default branch once
+  that version's specs are done.
+- **tag**: `passed/<version>`, written unsigned by `purlin:test --release` at the gate `passed`,
+  or `signed/<version>`, written as a signed tag by the first sign-off at the gate `signed`. It
+  never moves. `references/hard_gates.md`, "What the tags mean", gives both at length. A person
+  pushes it.
 - **to repair**: the kind of `Left to do` for a spec that writes a rule or proof number twice or
   holds a line left from a merge conflict, `<n> specs to repair: purlin:spec`. Every rule of such
-  a spec reads `failed` with the reason, and signing it and the tag are refused until it is
-  fixed.
-- **evidence package**: one data file describing one version,
-  `.purlin/evidence/package/<version>.json`: every rule's words, proofs, tests, results, what
-  the audit found and who signed, the count at each step, what is left, the state `finished`
-  or `not finished`, and a fingerprint of its own bytes. `purlin:export` writes it at any gate,
-  and at the gate `signed` `purlin:sign` commits it just before the tag. It is what a person
-  hands to a regulated document and sign-off system.
+  a spec reads `failed` with the reason, and a release is refused until it is fixed.
+- **evidence package**: one data file describing one release,
+  `.purlin/evidence/package/<version>.json`: every rule's words, proofs, tests, results and what
+  the audit found, the hand checks, the counts, what is left, the state `finished` or
+  `not finished`, and a fingerprint of its own bytes. `purlin:test --release` commits it at the
+  release commit, and it is never rewritten after; `purlin:export` writes it at any time. It is
+  what a person hands to a regulated document and sign-off system.
+- **sign-off**: one person's signature over a release's evidence package, a file in a signed
+  commit; the first writes signed/<version>, and later ones are added beside it. The file,
+  `.purlin/evidence/package/<version>.signoffs/<signer-slug>.json`, records the package's
+  fingerprint, the signer's name and email as git holds them, the time, the key's fingerprint,
+  what the **sign-off walk** of `purlin:sign` showed, and every note. It records no judgment.
+  It counts when its commit's signature verifies, made with any key, and its package hash is
+  the committed package's.
 - **git host**: GitHub or Azure DevOps. With neither, the settings say `ci: none`, and
   everything on a person's own machine still works. **remote runner**: the git host's CI
   running the same run script a person runs. A project has one for one reason: a proof tagged
@@ -125,31 +117,30 @@ other page points here rather than defining it again.
   run**: `purlin:test --remote`, which pushes a **run branch**, `run/<branch>-<sha7>`, waits
   for the runner and pulls its evidence back. **runner file**: the file setup writes for the
   git host, `.github/workflows/purlin.yml` or `purlin.azure-pipelines.yml`, with one job for each
-  system a proof is tagged `@env` for that the machine running setup is not. **tag run**: the run a pushed `signed/*` tag
-  starts, which runs the tests and nothing else.
+  system a proof is tagged `@env` for that the machine running setup is not. **tag run**: the
+  run a pushed `signed/*` tag starts, which runs the tests and nothing else.
 - **drift**: `purlin:drift`, the facts your last pull, merge, rebase, checkout, clone or reset
   brought in, in one view per role: `pm`, `eng` or `qa`.
 - **role**: product, developer or QA. There are no others.
 - **anchor**: a set of rules for the whole project, kept under `specs/_anchors/` or opening
-  `# Anchor:`. Its tests check the whole project, and each of its rules is counted, audited and
-  signed once. No spec names an anchor. **pinned anchor**: a local copy of an anchor from another
-  repository, tied to a commit by `> Pinned:`. **anchor repo**: a repository that holds anchors
-  for one or more projects.
+  `# Anchor:`. Its tests check the whole project, and each of its rules is counted and audited
+  once, and signed as part of the release. No spec names an anchor. **pinned anchor**: a local
+  copy of an anchor from another repository, tied to a commit by `> Pinned:`. **anchor repo**: a
+  repository that holds anchors for one or more projects.
 
 ## The chain
 
-For one rule, top to bottom. Each row is a cell; the gate decides how many rows exist.
+For one rule, top to bottom. Each row is a cell, and every rule has both at both gates.
 
-| Step | Reached when | Words the cell can read |
-|------|--------------|-------------------------|
-| passed | every proof of the rule, or the rule itself where it has no proof, has a test in a current section, and every test tied to it ran and passed, each current section answering for the proofs it lists | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date`, `does not apply` |
-| strong | passed, and an AI audit of the current rule, proof and test found nothing, with the test strength at or above `min_strength` where mutation testing is on | `strong`, `weak`, `waiting`, `not audited`, `manual test`, `no proof`, `does not apply` |
-| signed | a counting signature for the current rule, proof, test, code, audit and machines | `signed`, `unsigned`, `waiting`, `does not apply` |
+| Cell | Met when | Words the cell can read |
+|------|----------|-------------------------|
+| passed | every proof of the rule, or the rule itself where it has no proof, has a test in a current section, and every test tied to it ran and passed, each current section answering for the proofs it lists | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date` |
+| strong | passed, and the AI audit of the current rule, proof and test found nothing; nothing waits on it | `strong`, `weak`, `waiting`, `not audited`, `manual test`, `no proof` |
 
 A rule with neither a proof nor a marked test reads `no test` with the reason
-`no proof written`. From `strong` up, a rule with a test and no proof reads `no proof`. A rule
-with a `@manual` proof counts among those that pass their tests only once it is checked by
-hand. A rule that reads `does not apply` is met in every cell.
+`no proof written`. A rule with a test and no proof reads `no proof` in its strong cell. A
+`@manual` proof is read out of the passed cell, so a rule whose every proof is `@manual` reads
+`passed` and `manual test`.
 
 ## Where each is defined
 
@@ -159,9 +150,9 @@ hand. A rule that reads `does not apply` is met in every cell.
 | marker, suite, report | `references/formats/marker_format.md` |
 | anchor, pinned anchor | `references/formats/anchor_format.md` |
 | evidence, source, section, machine, fingerprint, test strength, the table | `references/formats/evidence_format.md` |
-| signature, note, audit hash | `references/formats/signature_format.md` |
+| sign-off, note | `references/formats/signature_format.md` |
 | evidence package | `references/formats/package_format.md` |
-| the gate, the summary, `Left to do`, which evidence counts, when a signature counts, what `signed/<version>` means | `references/hard_gates.md` |
+| the gate, the summary, `Left to do`, the release, which evidence counts, when a sign-off counts, what the tags mean | `references/hard_gates.md` |
 | drift, where its range starts, the three role views | `references/drift_criteria.md` |
 | what the AI audit looks for | `references/review_criteria.md` |
 | a good rule, a good proof | `references/spec_quality_guide.md` |

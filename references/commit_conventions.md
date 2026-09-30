@@ -11,9 +11,8 @@ Every commit Purlin makes, or asks you to make, uses one of these. There is no o
 | `fix(<name>):` | Fixing a bug | `purlin:build` |
 | `test(<name>):` | Writing or changing tests without changing behaviour | `purlin:build` |
 | `purlin: specs, tests and settings for <feature>[, <feature>...]` | The specs of the features a run covered, the test files carrying their markers, and `.purlin/config.json`: the work the run's results describe | `purlin:test --commit`, `purlin:audit --commit` |
-| `purlin: evidence at <commit7>` | The evidence a run wrote, under `.purlin/evidence/` with `.purlin/tests.md`, or the evidence package | `purlin:test --commit`, `purlin:audit --commit`, `purlin:export --commit`, `purlin:sign` at the gate `signed` for the package the tag carries, and a remote runner |
-| `sign(<name>): RULE-N ...` | Signatures, signed | `purlin:sign` |
-| `sign(batch): <feature> RULE-N, ...` | Signatures, signed, in one commit covering more than one feature | `purlin:sign`, whenever the rules it signs belong to more than one feature |
+| `purlin: evidence at <commit7>` | The evidence a run wrote, under `.purlin/evidence/` with `.purlin/tests.md`, or the evidence package | `purlin:test --commit`, `purlin:audit --commit`, `purlin:export --commit`, `purlin:test --release` for the package of the release, and a remote runner |
+| `sign(<version>): <signer email>` | One sign-off over a release's evidence package, signed | `purlin:sign` |
 | `anchor(<name>): create` | A new local anchor | `purlin:anchor create` |
 | `anchor(<name>): sync (<sha>)` | Advancing a pin to that commit | `purlin:anchor sync` |
 | `chore(update): migrate to <VERSION> (<ids>)` | Migrating a project to the installed plugin | `purlin:init --update` |
@@ -30,8 +29,7 @@ test(auth_login): a negative case for an expired token
 fix(auth_login): reject a token whose issuer moved
 purlin: specs, tests and settings for auth_login, checkout
 purlin: evidence at a1b2c3d
-sign(auth_login): RULE-3 RULE-4 RULE-7
-sign(batch): auth_login RULE-9, checkout RULE-2
+sign(1.2.0): quinn.qa@labconnect.example
 anchor(security_baseline): sync (abc1234)
 chore(update): migrate to 0.10.0 (markers, plugins)
 chore: rename login to authentication
@@ -68,45 +66,56 @@ seen. Both commits are yours, made under your own git identity, and neither is p
 A remote runner on a run branch commits its own section of `.purlin/evidence/ci/` with the same
 subject, through the git host's API under the build identity, and always does, because its
 evidence exists nowhere else. A tag run writes nothing at all: it runs the tests and nothing
-else. No run writes a signature file, so an evidence commit never carries one.
+else. No run writes a sign-off, so an evidence commit never carries one.
 
-## The signature commit
+## The release commit
 
-```
-sign(<feature>): RULE-N RULE-M ...
-sign(batch): <feature> RULE-N, <feature> RULE-M ...
-```
-
-Signed, always. `purlin:sign` makes the commit with your git identity, and at every gate the
-signature counts when the commit carries a signature and what it was made over is unchanged,
-on whatever branch carries it (`references/hard_gates.md`, "When a signature counts"). One
-commit may carry a batch; the rule ids are all listed in the subject, in order.
-
-## The tag
+`purlin:test --release` makes the two commits of a run, then one more carrying the evidence
+package alone, `.purlin/evidence/package/<version>.json`:
 
 ```
-signed/<version>
-signed/<name>            with --release <name>
+purlin: evidence at <commit7>
 ```
 
-Signed, never lightweight (`git tag -s`, with the key you sign commits with), and written by
-`purlin:sign` at the gate `signed` when nothing is left to do and every result came from
-committed work, and never below `signed`; what that means is defined once, in
-`references/hard_gates.md`, which also says where the version is read from. The message names
-the commit and the gate:
+`<commit7>` is the commit the package describes. The commit is signed where `commit.gpgsign` is
+on, and plain otherwise.
+
+## The sign-off commit
 
 ```
-Nothing left to do at the gate signed.
+sign(<version>): <signer email>
+```
+
+Signed, always: one commit per sign-off, adding
+`.purlin/evidence/package/<version>.signoffs/<signer-slug>.json` and nothing else. `purlin:sign`
+makes it with your git identity, and the sign-off counts when the commit's signature verifies and
+the file carries the committed package's fingerprint (`references/hard_gates.md`, "When a
+sign-off counts").
+
+## The tags
+
+```
+passed/<version>         at the gate passed, by purlin:test --release
+signed/<version>         at the gate signed, by the first sign-off
+```
+
+`passed/<version>` is annotated and unsigned (`git tag -a`), on the release commit.
+`signed/<version>` is signed (`git tag -s`, with the key you sign commits with), on the first
+sign-off's commit; a later sign-off adds its file after it, and the tag does not move. What each
+means is defined once, in `references/hard_gates.md`, which also says where the version is read
+from. The message names the commit the package describes and the gate:
+
+```
+Released at the gate <gate>.
 
 Commit: <full sha>
-Gate: signed
+Gate: <gate>
 ```
 
-No tag is written while anything is left to do, and none is written over a tag that is
-already there. Nothing is pushed: `purlin:sign` prints `Tagged signed/<version> at <sha7>.`,
-then `Nothing left to do. Push the tag to release it: git push origin signed/<version>`. Where
-the project has a remote runner, pushing it starts the run that reruns the tests on a clean
-machine.
+No tag is written over one that is already there. Nothing is pushed: the run prints
+`Tagged <tag> at <sha7>.`, then `Nothing left to do. Push the tag to release it: git push origin <tag>`.
+Where the project has a remote runner, pushing `signed/<version>` starts the run that reruns the
+tests on a clean machine; `passed/<version>` starts none.
 
 ## The build commit body
 
@@ -143,7 +152,8 @@ Review:
 | The spec is agreed | The spec file | It is the contract the build reads |
 | The build is stable | Code, tests, and the changeset in the body | Half a feature is not a milestone |
 | A run you want to keep, with `--commit` | The work the results describe, then the evidence and the table, alone | The evidence names the commit the tests ran against |
-| A signing walk ended | The signatures, signed, in one commit | The batch is one attestation |
+| A release is made | The evidence package, alone, by `purlin:test --release` | The package describes one commit |
+| A sign-off walk ended with yes | The sign-off, signed, in one commit | One person's signature over one package |
 | A pin advanced | The anchor spec | Staleness is read from the committed pin |
 
 Do not commit after each failed test iteration, do not batch two skills' output into one commit,
