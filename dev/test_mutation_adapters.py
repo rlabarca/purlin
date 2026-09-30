@@ -133,7 +133,7 @@ if argv[:1] == ['run']:
     sys.stdout.flush()
     if SETUP.get('slow'):
         time.sleep(60)
-    sys.exit(0)
+    sys.exit(SETUP.get('run_exit', 0))
 if argv == ['results', '--all', 'true']:
     sys.stdout.write(SETUP.get('listing', ''))
 sys.exit(0)
@@ -1105,3 +1105,96 @@ def test_an_audit_given_arm_timeout_stops_a_running_engine(
     mutation_entry = evidence['audit']['mutation']
     assert (mutation_entry['engine'], mutation_entry['score']) == ('mutmut',
                                                                    None)
+
+
+# ---------------------------------------------------------------------------
+# The engine logs
+# ---------------------------------------------------------------------------
+
+def log_lines(answer):
+    return answer['log'].splitlines()
+
+
+# purlin: mutation PROOF-92
+def test_a_mutmut_log_names_the_block_and_its_file(tools, project):
+    answer = mutmut_run(tools, project, read_fixture('mutmut_results.txt'),
+                        {'login': ['src/login/session.py']},
+                        ['src/login/session.py'])
+    assert log_lines(answer)[0] == (
+        'engine mutmut, config [tool.mutmut] in pyproject.toml')
+
+
+# purlin: mutation PROOF-93
+def test_a_mutmut_log_gives_the_code_mutmut_run_exited_with(tools, project):
+    with_block(project)
+    tracked(project, 'src/login/session.py')
+    program = install_mutmut(tools, run_exit=2,
+                             listing=read_fixture('mutmut_results.txt'))
+    answer = mutmut.run(str(project), {'login': ['src/login/session.py']})
+    assert 'mutmut run exited 2' in log_lines(answer)
+    assert [call['argv'] for call in calls(program)] == [
+        ['run'], ['results', '--all', 'true']]
+    assert '9 breaks read' in log_lines(answer)
+
+
+# purlin: mutation PROOF-94
+def test_a_mutmut_log_counts_the_breaks_it_read(tools, project):
+    answer = mutmut_run(tools, project, read_fixture('mutmut_results.txt'),
+                        {'login': ['src/login/session.py']},
+                        ['src/login/session.py'])
+    assert '9 breaks read' in log_lines(answer)
+
+
+# purlin: mutation PROOF-95
+def test_a_mutmut_log_gives_each_features_breaks_and_share(tools, project):
+    answer = mutmut_run(tools, project, read_fixture('mutmut_results.txt'),
+                        {'login': ['src/login/session.py']},
+                        ['src/login/session.py'])
+    assert 'login: 5 breaks, 60% caught' in log_lines(answer)
+
+
+# purlin: mutation PROOF-96
+def test_a_stryker_log_names_the_test_runner_first(project):
+    (project / 'package.json').write_text(
+        json.dumps({'devDependencies': {'vitest': '^2.0.0'}}),
+        encoding='utf-8')
+    install_stryker(project)
+    answer = stryker.run(str(project), {'calc': ['src/calc.js']})
+    assert log_lines(answer)[0] == 'engine stryker, test runner vitest'
+
+
+# purlin: mutation PROOF-97
+def test_a_stryker_log_gives_each_features_files_and_share(project):
+    install_stryker(project)
+    answer = stryker.run(str(project),
+                         {'calc': ['src/calc.js', 'src/util.js']})
+    assert 'calc: 2 files broken, 64% caught' in log_lines(answer)
+
+
+# purlin: mutation PROOF-98
+def test_a_stryker_net_log_names_the_engine_first(tools, project):
+    answer = login_run(tools, project,
+                       read_fixture('stryker_net_report.json'))
+    assert log_lines(answer)[0] == 'engine stryker_net'
+
+
+# purlin: mutation PROOF-99
+def test_a_stryker_net_log_gives_each_features_files_and_share(tools,
+                                                              project):
+    install_dotnet(tools)
+    answer = stryker_net.run(
+        str(project), {'login': ['src/Login/Session.cs', 'src/Api.cs']})
+    assert 'login: 2 files broken, 60% caught' in log_lines(answer)
+
+
+# purlin: mutation PROOF-100
+def test_stryker_net_breaks_nothing_for_a_feature_with_no_scope_files(
+        tools, project):
+    program = install_dotnet(tools)
+    answer = stryker_net.run(str(project), {'login': []})
+    assert [call['argv'] for call in calls(program)] == [
+        ['stryker', '--version']]
+    assert answer['features']['login'] == {
+        'scope_score': {'score': None, 'killed': 0, 'survived': 0},
+        'missing': ''}
+    assert 'login: no scope files, nothing to break' in log_lines(answer)

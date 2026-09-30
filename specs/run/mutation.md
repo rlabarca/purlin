@@ -11,6 +11,7 @@
 >   where nothing was, so the evidence carries the same fields whichever one measured it.
 > Scope: scripts/run/mutation/__init__.py, scripts/run/mutation/stryker.py, scripts/run/mutation/stryker_net.py, scripts/run/mutation/mutmut.py, scripts/run/mutation/none.py
 > Stack: python/stdlib (importlib, subprocess, json, tempfile), Stryker, Stryker.NET, mutmut
+> Highest-Rule: 37
 
 ## Rules
 
@@ -42,6 +43,10 @@
 - RULE-31: Without mutmut's config block no breaks are made, and the reason names the block and the file
 - RULE-32: On Windows mutmut is not started, and the answer is engine `none`, not available, with the reason `mutmut does not run on Windows, so test strength is not measured here and the AI audit alone decides` and every feature's `missing` empty
 - RULE-33: An engine name outside the four shipped engines is not run
+- RULE-34: A mutmut run logs, a line each, `engine mutmut, config <section> in <path>`, `mutmut run exited <code>` and `<n> breaks read`, then `<feature>: <n> breaks, <p>% caught` for each feature
+- RULE-35: A Stryker run logs `engine stryker, test runner <runner>`, then `<feature>: <n> files broken, <p>% caught` for each feature whose report it read
+- RULE-36: A Stryker.NET run logs `engine stryker_net`, then `<feature>: <n> files broken, <p>% caught` for each feature whose report it read
+- RULE-37: Stryker and Stryker.NET break nothing for a feature with no scope files, and the log reads `<feature>: no scope files, nothing to break`
 
 ## Proof
 
@@ -81,7 +86,7 @@
 - PROOF-39 (RULE-8): A mutmut listing of nine breaks to one file, one each `killed`, `timeout`, `caught by type check`, `survived`, `no tests`, `skipped`, `suspicious`, `not checked` and `check was interrupted by user`, gives the feature scoped to that file 3 caught and 2 missed, 60
 - PROOF-12 (RULE-12): A Stryker run of `calc` that exits 0 and leaves its report holding `not json` gives the feature a score of None, and its log reads `calc: stryker exited 0 and wrote no report`
 - PROOF-51 (RULE-12): A Stryker run of `calc` that exits 1, prints `boom` and writes no report gives the feature a score of None, and its log reads `calc: stryker exited 1 and wrote no report` and carries `boom`
-- PROOF-52 (RULE-12): A run of `calc`, a feature with no scope files, never starts Stryker; the feature reads score None with an empty `missing`, and the log reads `calc: no scope files, nothing to break`
+- PROOF-52 (RULE-37): A run of `calc`, a feature with no scope files, never starts Stryker; the feature reads score None with an empty `missing`, and the log reads `calc: no scope files, nothing to break`
 - PROOF-75 (RULE-12): A Stryker run of `calc` that exits 0 and writes no report gives the feature a score of None and the `missing` `stryker ran and wrote no report: run purlin:audit again`
 - PROOF-82 (RULE-12): A mutmut run whose results list no break gives the feature scoped to `src/login/session.py` a score of None and the `missing` `mutmut ran and wrote no report: run purlin:audit again`
 - PROOF-13 (RULE-13): A Stryker.NET run of `login`, scoped to `src/Login/Session.cs` and `src/Api.cs`, starts `dotnet` with exactly `stryker --mutate src/Login/Session.cs --mutate src/Api.cs --coverage-analysis perTest --disable-bail --reporter json --output` and a folder named `login`, once, after the install check
@@ -126,3 +131,12 @@
 - PROOF-67 (RULE-22): At the gate `strong` with `mutation_engine` set to `mutmut`, a run of `--all --audit --arm-timeout 1` over `login`, whose test passes and whose mutmut would keep breaking for 60 seconds, ends within 30 seconds, prints the line `purlin: the engine timed out after 1 s, ...`, and writes `login`'s evidence with `audit.mutation` at engine `mutmut`, score null
 - PROOF-80 (RULE-22): With the limit at 3 seconds, a Stryker run of `calc` and `slow`, only `slow` still going at the limit, gives `slow` the `missing` `the engine timed out after 3 s, so the breaks it made measure nothing: run purlin:audit --arm-timeout <seconds> to give it longer` and `calc` an empty `missing`
 - PROOF-81 (RULE-23): With no Stryker in the project and none on the PATH, a run of `calc` and `util` gives each feature the `missing` `stryker is not installed: run "npm install --save-dev @stryker-mutator/core"`
+- PROOF-92 (RULE-34): A mutmut run in a project whose `pyproject.toml` carries the `[tool.mutmut]` block logs the line `engine mutmut, config [tool.mutmut] in pyproject.toml`
+- PROOF-93 (RULE-34): A mutmut run whose `mutmut run` exits 2 logs the line `mutmut run exited 2`, then still reads the breaks mutmut lists
+- PROOF-94 (RULE-34): A mutmut run whose listing holds nine breaks logs the line `9 breaks read`
+- PROOF-95 (RULE-34): A mutmut run over `login`, scoped to `src/login/session.py`, whose listing gives that file 3 caught and 2 missed breaks, logs the line `login: 5 breaks, 60% caught`
+- PROOF-96 (RULE-35): A Stryker run in a project whose `package.json` lists vitest logs the line `engine stryker, test runner vitest` first
+- PROOF-97 (RULE-35): A Stryker run of `calc`, scoped to `src/calc.js` and `src/util.js`, whose report holds 7 caught and 4 missed breaks, logs the line `calc: 2 files broken, 64% caught`
+- PROOF-98 (RULE-36): A Stryker.NET run with `dotnet stryker` installed logs the line `engine stryker_net` first
+- PROOF-99 (RULE-36): A Stryker.NET run of `login`, scoped to `src/Login/Session.cs` and `src/Api.cs`, whose report holds 3 caught and 2 missed breaks, logs the line `login: 2 files broken, 60% caught`
+- PROOF-100 (RULE-37): A Stryker.NET run of `login`, a feature with no scope files, starts `dotnet` only to ask its version; `login` reads score None with an empty `missing`, and the log reads `login: no scope files, nothing to break`
