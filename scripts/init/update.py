@@ -59,6 +59,18 @@ PRE_PUSH_KEY = 'pre_push'
 DESIGN_FIELD_RE = re.compile(r'^>\s*(Visual-Reference|Visual-Hash):')
 FIGMA_SOURCE_RE = re.compile(r'^>\s*Source:.*figma', re.I)
 PINNED_RE = re.compile(r'^>\s*Pinned:')
+# The lines by which a 0.9.5 spec named an anchor, and an anchor named what
+# it covered, in the order the upgrade names them.
+ANCHOR_FIELDS = ('Requires', 'Global', 'Scope')
+ANCHOR_FIELD_RE = re.compile(r'^>\s*(Requires|Global|Scope):')
+REQUIRES_RE = re.compile(r'^>\s*Requires:(.*)$', re.M)
+GLOBAL_TRUE_RE = re.compile(r'^>\s*Global:\s*true\s*$', re.M | re.I)
+NAMED_ONE = ('%s: its rules now cover the whole project, where %d spec named '
+             'it: %s. A rule that holds only there belongs in that spec: run '
+             'purlin:spec %s.')
+NAMED_MANY = ('%s: its rules now cover the whole project, where %d specs '
+              'named it: %s. A rule that holds only for some of them belongs '
+              'in each of their specs: run purlin:spec %s.')
 # The markers v0.9.5's proof plugins read, one per framework, and the files
 # its init copied and wired. The upgrade rewrites the first and removes the
 # second; nothing else in this release reads either.
@@ -266,6 +278,88 @@ def _apply_design_refs(root, files, args, out):
         out.done(rel)
         out.say('removed the design reference from %s: %s'
                 % (rel, ', '.join('> ' + name for name in removed)))
+
+def _is_anchor(rel, text):
+    return (rel.startswith('specs/_anchors/')
+            or text.lstrip().startswith('# Anchor:'))
+
+def _anchor_lines(rel, text):
+    """`(the text without the lines naming anchors, the fields it removed)`.
+
+    Released 0.9.5 let a spec name the anchors it required and an anchor say
+    it was global or name the files it covered. Every anchor covers the whole
+    project now, so `> Requires:` and `> Global:` go from every spec and
+    `> Scope:` from every anchor, each with the `>` lines continuing it. Only
+    the lines above the first section heading are read.
+    """
+    anchor = _is_anchor(rel, text)
+    kept, removed, dropping, body = [], set(), False, False
+    for line in text.splitlines(True):
+        if line.startswith('## '):
+            body = True
+        field = None if body else META_RE.match(line)
+        if field:
+            name = ANCHOR_FIELD_RE.match(line)
+            name = name.group(1) if name else None
+            dropping = bool(name) and (name != 'Scope' or anchor)
+            if dropping:
+                removed.add(name)
+                continue
+        elif dropping and line.startswith('>'):
+            continue
+        else:
+            dropping = False
+        kept.append(line)
+    return ''.join(kept), [n for n in ANCHOR_FIELDS if n in removed]
+
+def _joined(items):
+    """`a`, `a and b`, `a, b and c`."""
+    return (items[0] if len(items) == 1
+            else ', '.join(items[:-1]) + ' and ' + items[-1])
+
+def _named_anchors(root):
+    """`{anchor: [names of the specs whose > Requires: named it]}`, sorted.
+
+    An anchor that carried `> Global: true` is left out: its rules already
+    covered every spec.
+    """
+    specs = {}
+    for rel in _files_under(root, 'specs', ('*.md',)):
+        specs[rel] = _read(os.path.join(root, rel))
+    anchors = {}
+    for rel, text in specs.items():
+        if _is_anchor(rel, text) and not GLOBAL_TRUE_RE.search(text):
+            anchors[os.path.basename(rel)[:-len('.md')]] = []
+    for rel, text in sorted(specs.items()):
+        name = os.path.basename(rel)[:-len('.md')]
+        found = REQUIRES_RE.search(text)
+        if not found:
+            continue
+        for wanted in re.split(r'[,\s]+', found.group(1)):
+            if wanted in anchors and wanted != name \
+                    and name not in anchors[wanted]:
+                anchors[wanted].append(name)
+    return dict((a, sorted(n)) for a, n in anchors.items() if n)
+
+def _detect_anchor_lines(root):
+    return [rel for rel in _files_under(root, 'specs', ('*.md',))
+            if _anchor_lines(rel, _read(os.path.join(root, rel)))[1]]
+
+def _apply_anchor_lines(root, files, args, out):
+    """No spec names an anchor, and no anchor names files: the lines go."""
+    named = _named_anchors(root)
+    for rel in files:
+        path = os.path.join(root, rel)
+        out.kept(_back_up_copy(path, rel))
+        text, removed = _anchor_lines(rel, _read(path))
+        _write(path, text)
+        out.done(rel)
+        out.say('removed from %s: %s'
+                % (rel, _joined(['> %s:' % name for name in removed])))
+    for anchor in sorted(named):
+        specs = named[anchor]
+        out.say((NAMED_ONE if len(specs) == 1 else NAMED_MANY)
+                % (anchor, len(specs), ', '.join(specs), anchor))
 
 def _detect_untracked(root):
     hits = _files_under(root, 'specs', (PROOF_FILE_GLOB, RUN_FILE_GLOB))
@@ -954,6 +1048,8 @@ MIGRATIONS = (
     ('design-refs', 'remove the Figma source and the picture fingerprint '
      'from each spec that carries them',
      _detect_design_refs, _apply_design_refs),
+    ('anchor-lines', 'take out > Requires: and > Global: from every spec, and '
+     '> Scope: from every anchor', _detect_anchor_lines, _apply_anchor_lines),
     ('os-tags', 'rewrite the retired operating-system tag to @env(windows)',
      _detect_os_tags, _apply_os_tags),
     ('kind-tags', 'drop the kind of test from every proof line',
@@ -998,7 +1094,7 @@ def scope_advice(project_root):
     """The line naming every feature spec with no `> Scope:` line, or None.
 
     Advice, not a migration: nothing is changed, and nothing stays pending.
-    Anchors are exempt, because their code is the requiring feature's. The
+    Anchors are exempt, because an anchor names no files. The
     words are the status's own, so the two never say it differently.
     """
     root = os.path.abspath(project_root)

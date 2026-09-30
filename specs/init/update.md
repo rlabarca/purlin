@@ -10,8 +10,8 @@
 >   carries the whole run.
 > Scope: scripts/init/update.py
 > Stack: python3 (stdlib only, 3.9 floor)
-> Highest-Rule: 45
-> Highest-Proof: 152
+> Highest-Rule: 46
+> Highest-Proof: 158
 
 ## Rules
 
@@ -54,13 +54,14 @@
 - RULE-43: A run that commits names the commit on one line, `  committed <sha> as chore(update): migrate to <VERSION> (<ids>)`
 - RULE-44: A commit git refuses leaves the changes staged and prints `The changes are staged and not committed: <git's own message>`
 - RULE-45: Each backup copy a migration writes is named on a line of its own, `kept the previous bytes at <path>`
+- RULE-46: The lines by which 0.9.5 named an anchor go: `> Requires:` and `> Global:` from every spec and `> Scope:` from every anchor, each with the `>` lines continuing it; each file is backed up first and named in one line, `removed from <path>: <fields>`, and each anchor that a spec's `> Requires:` named and that carried no `> Global: true` is kept and named in one line with the specs that named it and the command that moves a rule into them
 
 ## Proof
 
 - PROOF-1 (RULE-1): A folder with no `.purlin/` has no migration pending: the list is empty
 - PROOF-67 (RULE-1): The sample v0.9.5 project has at least one migration pending; each entry carries exactly `id`, `description` and `files`, with a description of one line and at least one file named, and no id appears twice in the list
-- PROOF-2 (RULE-2): The sample v0.9.5 project, which carries no hook under `.git/hooks/`, has pending exactly `design-refs`, `os-tags`, `kind-tags`, `untracked-files`, `config`, `evidence`, `workflows` and `plugins`, in that order
-- PROOF-68 (RULE-2): With the pre-commit hook v0.9.5 installed written into the sample v0.9.5 project's `.git/hooks/`, the pending list is the same eight with `hooks` between `untracked-files` and `config`
+- PROOF-2 (RULE-2): The sample v0.9.5 project, which carries no hook under `.git/hooks/`, has pending exactly `design-refs`, `anchor-lines`, `os-tags`, `kind-tags`, `untracked-files`, `config`, `evidence`, `workflows` and `plugins`, in that order
+- PROOF-68 (RULE-2): With the pre-commit hook v0.9.5 installed written into the sample v0.9.5 project's `.git/hooks/`, the pending list is the same nine with `hooks` between `untracked-files` and `config`
 - PROOF-4 (RULE-4): The update run against an empty folder exits 2 and prints as an error `There is no .purlin/ under <folder>, so there is nothing to update. Run purlin:init first.`, `<folder>` being that folder's full path
 - PROOF-5 (RULE-5): The update with `--yes` on the sample v0.9.5 project asks no question, exits 0, and afterwards no migration is pending
 - PROOF-33 (RULE-5): Run with `--yes` a second time on the sample v0.9.5 project it has already updated, the update exits 0, prints `Nothing is pending: this project is at <VERSION>.`, `<VERSION>` being the release in the `VERSION` file, and leaves the latest commit and `git status` exactly as the first run left them
@@ -143,11 +144,11 @@
 - PROOF-98 (RULE-23): A proof line reading `Lock a file`, a kind-of-test tag and `@env(linux)`, added to a spec of the sample v0.9.5 project, reads exactly `- PROOF-14 (RULE-1): Lock a file @env(linux)` after the update with `--yes`
 - PROOF-125 (RULE-23): On Windows, a proof line reading `Lock a file`, a kind-of-test tag and `@env(linux)` reads after the update with `--yes` exactly `- PROOF-14 (RULE-1): Lock a file @env(linux)` followed by a line feed alone @env(windows)
 - PROOF-24 (RULE-24): After the update with `--yes`, the sample v0.9.5 project's anchor `checkout_design` has no line starting `> Source:`, `> Pinned:`, `> Visual-Reference:` or `> Visual-Hash:`, every other line outside its proof lines is as it was, and the output holds `removed the design reference from specs/_anchors/checkout_design.md: > Source:, > Pinned:, > Visual-Reference:, > Visual-Hash:`
-- PROOF-99 (RULE-24): After the update with `--yes`, the sample v0.9.5 project's spec `figma_web` has no line starting `> Visual-Reference:`, every other line outside its proof lines is as it was, and the output holds `removed the design reference from specs/workflows/figma_web.md: > Visual-Reference:`
+- PROOF-99 (RULE-24): After the update with `--yes`, the sample v0.9.5 project's spec `figma_web` has no line starting `> Visual-Reference:`, every other line outside its proof lines and its `> Requires:` line is as it was, and the output holds `removed the design reference from specs/workflows/figma_web.md: > Visual-Reference:`
 - PROOF-100 (RULE-24): After the update with `--yes`, `specs/_anchors/checkout_design.md` and `specs/workflows/figma_web.md` in the sample v0.9.5 project each have a backup beside them holding their text from before the run
 - PROOF-101 (RULE-24): An anchor whose `> Source:` is `figma://ABC123/1:2`, with a `> Pinned:` time, loses both lines in the update with `--yes` and keeps its rule `The modal matches the frame`
 - PROOF-102 (RULE-24): An anchor whose `> Source:` is a git address, with a `> Path:` and a `> Pinned:` sha, is exactly what it was after the update with `--yes`
-- PROOF-126 (RULE-24): On Windows, after the update with `--yes`, the sample 0.9.5 project's spec `figma_web` has no `> Visual-Reference:` line, and every other line outside its proof lines is byte for byte as it was, line endings included @env(windows)
+- PROOF-126 (RULE-24): On Windows, after the update with `--yes`, the sample 0.9.5 project's spec `figma_web` has no `> Visual-Reference:` line, and every other line outside its proof lines and its `> Requires:` line is byte for byte as it was, line endings included @env(windows)
 - PROOF-25 (RULE-25): The sample v0.9.5 project's config carries `digest`, `report`, `spec_dir` and `pre_push`, and is given `audit_criteria` and `audit_criteria_pinned`; after the update with `--yes` the output holds `dropped 6 keys this release does not read: audit_criteria, audit_criteria_pinned, digest, pre_push, report, spec_dir` and the config carries none of the six
 - PROOF-103 (RULE-25): A config holding only `version` and the frameworks prints, on the update with `--yes`, the line `set the gate to passed` with nothing after it, and no line saying `this release does not read`
 - PROOF-26 (RULE-26): At the gate `strong`, the update of the sample v0.9.5 project given a `conftest.py` asks, after the gate question, a question starting `Measure test strength by breaking the code on purpose? It needs mutmut`, and an empty answer writes `mutation_engine` `none` and `min_strength` null
@@ -175,7 +176,7 @@
 - PROOF-31 (RULE-31): In the sample v0.9.5 project `purlin-report.html` at the root is a link to a page that no longer exists, and `dashboard` is pending; after the update with `--yes` the path is a file, not a link, holding exactly the bytes of the page the plugin ships, and `dashboard` is no longer pending @env(macos)
 - PROOF-112 (RULE-31): In the updated sample project, a `purlin-report.html` holding `<html>an older copy</html>` makes `dashboard` pending, and a second update with `--yes` replaces it with exactly the bytes of the page the plugin ships
 - PROOF-113 (RULE-31): The sample v0.9.5 project with no page at the root does not have `dashboard` pending, and after the update with `--yes` there is still no page there
-- PROOF-133 (RULE-41): The update with `--yes` on the sample 0.9.5 project prints as its first line `8 migrations pending in <root>:`, `<root>` being the project's full path
+- PROOF-133 (RULE-41): The update with `--yes` on the sample 0.9.5 project prints as its first line `9 migrations pending in <root>:`, `<root>` being the project's full path
 - PROOF-134 (RULE-41): The update with `--yes` on the sample 0.9.5 project lists `  design-refs: remove the Figma source and the picture fingerprint from each spec that carries them`, then `      specs/_anchors/checkout_design.md` and `      specs/workflows/figma_web.md`
 - PROOF-135 (RULE-41): The update with `--yes` on the sample 0.9.5 project, whose `untracked-files` migration touches 18 files, lists the first six under it, each indented six spaces, then `      and 12 more`
 - PROOF-136 (RULE-42): The update with `--yes` on the sample 0.9.5 project prints `  deleted 15 files beside the specs and the folder .purlin/cache/, and untracked the dashboard data; a run writes no file beside a spec, and evidence lives in .purlin/evidence`
@@ -196,3 +197,9 @@
 - PROOF-151 (RULE-44): With a pre-commit hook of the project's own that prints `blocked by policy` and exits 1, the update with `--yes` of the sample 0.9.5 project prints `The changes are staged and not committed: blocked by policy`, leaves the latest commit as it was, and the changes staged
 - PROOF-152 (RULE-45): After the update with `--yes` on the sample 0.9.5 project, the output holds exactly one line `  kept the previous bytes at <path>` for each backup file the run left, `<path>` being that backup's path in the project
 - PROOF-116 (RULE-40): The sample v0.9.5 project whose `.purlin/config.json` has a comma after its last value is updated with `--yes`; it exits 1, prints `.purlin/config.json cannot be read:`, the reader's message with its line, and `Fix the file by hand; nothing ran and nothing was saved.`, and `git status` and the latest commit are unchanged
+- PROOF-153 (RULE-46): The sample 0.9.5 project, given the line `> Global: true` in the spec `static_checks`, is updated with `--yes`; afterwards no spec holds a line starting `> Requires:` or `> Global:`, and no anchor a line starting `> Scope:`
+- PROOF-154 (RULE-46): The update with `--yes` on the sample 0.9.5 project prints `  removed from specs/_anchors/proof_common.md: > Scope:`
+- PROOF-155 (RULE-46): The sample 0.9.5 project whose spec `sync_status` also names `proof_common` in its `> Requires:` line prints, on the update with `--yes`, `  proof_common: its rules now cover the whole project, where 1 spec named it: sync_status. A rule that holds only there belongs in that spec: run purlin:spec proof_common.`
+- PROOF-156 (RULE-46): After the update with `--yes` on the sample 0.9.5 project, `specs/_anchors/proof_common.md` and `specs/mcp/sync_status.md` each have a backup beside them holding their text from before the run
+- PROOF-157 (RULE-46): The sample 0.9.5 project whose specs `sync_status`, `skill_verify` and `static_checks` each name `proof_common` in a `> Requires:` line prints, on the update with `--yes`, `  proof_common: its rules now cover the whole project, where 3 specs named it: skill_verify, static_checks, sync_status. A rule that holds only for some of them belongs in each of their specs: run purlin:spec proof_common.`
+- PROOF-158 (RULE-46): The sample 0.9.5 project whose anchor `proof_common` also carries `> Global: true`, and whose spec `sync_status` names it in `> Requires:`, prints on the update with `--yes` `  removed from specs/_anchors/proof_common.md: > Global: and > Scope:` and no line starting `  proof_common: its rules now cover`

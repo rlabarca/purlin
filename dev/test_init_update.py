@@ -223,8 +223,8 @@ def _updated(tmp_path):
 # --- what a project still needs ---------------------------------------------
 
 # The migrations the v0.9.5 fixture needs, in the order they are applied.
-EIGHT = ['design-refs', 'os-tags', 'kind-tags', 'untracked-files', 'config',
-         'evidence', 'workflows', 'plugins']
+NINE = ['design-refs', 'anchor-lines', 'os-tags', 'kind-tags',
+        'untracked-files', 'config', 'evidence', 'workflows', 'plugins']
 
 
 # purlin: update PROOF-1
@@ -251,16 +251,16 @@ def test_every_pending_entry_says_what_it_does_and_to_which_files(tmp_path):
 # purlin: update PROOF-2
 def test_the_v095_layout_needs_the_migrations_that_layout_left(tmp_path):
     root = _project(tmp_path, V095)
-    assert _ids(root) == EIGHT
+    assert _ids(root) == NINE
 
 
 # purlin: update PROOF-68
 def test_a_retired_hook_adds_the_hook_migration(tmp_path):
     root = _project(tmp_path, V095)
     _write(root, '.git/hooks/pre-commit', OLD_PRE_COMMIT)
-    assert _ids(root) == ['design-refs', 'os-tags', 'kind-tags',
-                          'untracked-files', 'hooks', 'config', 'evidence',
-                          'workflows', 'plugins']
+    assert _ids(root) == ['design-refs', 'anchor-lines', 'os-tags',
+                          'kind-tags', 'untracked-files', 'hooks', 'config',
+                          'evidence', 'workflows', 'plugins']
 
 
 # purlin: update PROOF-4
@@ -1063,12 +1063,13 @@ def test_the_picture_reference_of_the_feature_is_removed(tmp_path, capsys):
     after = _read(root, DESIGN_FEATURE)
     assert not [line for line in after.splitlines()
                 if line.startswith('> Visual-Reference:')]
+    # The anchor-lines migration takes its `> Requires:` line too.
     assert _without(after, ('- PROOF-',)) == _without(
-        before, ('> Visual-Reference:', '- PROOF-'))
+        before, ('> Visual-Reference:', '> Requires:', '- PROOF-'))
     # The same lines as bytes, each with its own line ending.
     now = _read_bytes(root, DESIGN_FEATURE)
     assert _bytes_without(now, (b'- PROOF-',)) == _bytes_without(
-        was, (b'> Visual-Reference:', b'- PROOF-'))
+        was, (b'> Visual-Reference:', b'> Requires:', b'- PROOF-'))
     assert ('removed the design reference from %s: > Visual-Reference:\n'
             % DESIGN_FEATURE) in printed
 
@@ -1930,7 +1931,7 @@ def _printed(tmp_path, capsys, monkeypatch=None, host=None):
 # purlin: update PROOF-133
 def test_the_pending_list_opens_on_its_count(tmp_path, capsys):
     root, printed = _printed(tmp_path, capsys)
-    assert printed[0] == '8 migrations pending in %s:' % os.path.abspath(root)
+    assert printed[0] == '9 migrations pending in %s:' % os.path.abspath(root)
 
 
 # purlin: update PROOF-134
@@ -2157,3 +2158,108 @@ def test_a_settings_file_that_cannot_be_read_stops_the_update(tmp_path,
                     % (reader.value.msg, reader.value.lineno)], printed
     assert _git(root, 'status', '--porcelain').stdout == status
     assert _git(root, 'rev-parse', 'HEAD').stdout == head
+
+
+# --- the lines that named an anchor -------------------------------------------
+
+COMMON = 'specs/_anchors/proof_common.md'
+SYNC = 'specs/mcp/sync_status.md'
+
+
+def _naming(tmp_path, edits):
+    """The fixture with each `(rel, old, new)` edit made and committed.
+
+    0.9.5 wrote the fixture's `> Requires:` lines naming specs it does not
+    carry, so a case that needs an anchor named names one in its own copy.
+    """
+    root = _project(tmp_path, V095)
+    for rel, old, new in edits:
+        text = _read(root, rel)
+        assert old in text, (rel, old)
+        _write(root, rel, text.replace(old, new, 1))
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'an anchor named')
+    return root
+
+
+def _add_requires(rel, name):
+    """An edit naming `name` first in the `> Requires:` line, adding one."""
+    return (rel, '\n> ', '\n> Requires: %s\n> ' % name)
+
+
+# purlin: update PROOF-153
+def test_no_spec_names_an_anchor_after_the_update(tmp_path):
+    root = _naming(tmp_path, [('specs/audit/static_checks.md', '\n> Scope:',
+                               '\n> Global: true\n> Scope:')])
+    assert 'anchor-lines' in _ids(root)
+    _apply(root)
+    for rel in _walk(root, ('*.md',)):
+        if not rel.startswith('specs/'):
+            continue
+        lines = _read(root, rel).splitlines()
+        assert not [l for l in lines
+                    if l.startswith(('> Requires:', '> Global:'))], rel
+        if rel.startswith('specs/_anchors/'):
+            assert not [l for l in lines if l.startswith('> Scope:')], rel
+    assert 'anchor-lines' not in _ids(root)
+
+
+# purlin: update PROOF-154
+def test_each_file_rewritten_names_the_fields_it_lost(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    assert '  removed from %s: > Scope:' % COMMON in printed, printed
+
+
+# purlin: update PROOF-155
+def test_an_anchor_one_spec_named_is_named_with_that_spec(tmp_path, capsys):
+    root = _naming(tmp_path, [(SYNC, '> Requires: ',
+                               '> Requires: proof_common, ')])
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    assert ('  proof_common: its rules now cover the whole project, where 1 '
+            'spec named it: sync_status. A rule that holds only there belongs '
+            'in that spec: run purlin:spec proof_common.') in printed, printed
+    assert _read(root, COMMON).startswith('# Anchor: proof_common')
+
+
+# purlin: update PROOF-156
+def test_each_file_that_lost_a_line_is_backed_up(tmp_path):
+    root = _project(tmp_path, V095)
+    before = {rel: _read(root, rel) for rel in (COMMON, SYNC)}
+    _apply(root)
+    for rel, text in before.items():
+        folder, name = os.path.split(rel)
+        copies = _walk(os.path.join(root, folder), (name + '.local-*.bak',),
+                       skip_backups=False)
+        assert text in [_read(os.path.join(root, folder), copy)
+                        for copy in copies], (rel, copies)
+
+
+# purlin: update PROOF-157
+def test_an_anchor_three_specs_named_is_named_with_all_three(tmp_path,
+                                                             capsys):
+    root = _naming(tmp_path, [
+        (SYNC, '> Requires: ', '> Requires: proof_common, '),
+        _add_requires('specs/skills/skill_verify.md', 'proof_common'),
+        _add_requires('specs/audit/static_checks.md', 'proof_common')])
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    assert ('  proof_common: its rules now cover the whole project, where 3 '
+            'specs named it: skill_verify, static_checks, sync_status. A rule '
+            'that holds only for some of them belongs in each of their specs: '
+            'run purlin:spec proof_common.') in printed, printed
+
+
+# purlin: update PROOF-158
+def test_a_global_anchor_named_by_a_spec_gets_no_line(tmp_path, capsys):
+    root = _naming(tmp_path, [
+        (SYNC, '> Requires: ', '> Requires: proof_common, '),
+        (COMMON, '\n> Scope:', '\n> Global: true\n> Scope:')])
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    assert ('  removed from %s: > Global: and > Scope:' % COMMON
+            ) in printed, printed
+    assert not [l for l in printed
+                if l.startswith('  proof_common: its rules now cover')], printed
