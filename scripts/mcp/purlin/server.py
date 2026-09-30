@@ -33,13 +33,13 @@ from purlin import status as status_module
 SERVER_INFO = {"name": "purlin", "version": PURLIN_VERSION}
 
 # Every tool takes the same optional root, so every tool declares it the same
-# way. A session opened above or beside the workspace (a monorepo root, a
-# worktree) names the workspace per call instead of restarting the server,
+# way. A session opened above or beside the project root (a monorepo root, a
+# worktree) names the project root per call instead of restarting the server,
 # which resolves its default root once at startup.
 _PROJECT_ROOT_PROPERTY = {
     "type": "string",
     "description": (
-        "Directory of the Purlin workspace (the one holding .purlin/). "
+        "The project root, the folder holding .purlin/. "
         "Defaults to the root the server resolved at startup."
     ),
 }
@@ -108,6 +108,8 @@ TOOLS = [
 
 
 NOT_SAVED = 'The setting was not saved: %s.'
+NO_KEY = 'A change needs a key; nothing was saved.'
+SAVED = '%s is now %s; saved to .purlin/config.json.'
 NO_VALUE = 'A change needs a value; nothing was saved.'
 NOT_ACCEPTED = '"%s" is not accepted for %s; it takes %s. Nothing was saved.'
 VERSION_NOT_WRITTEN = ("version is written by purlin:init from Purlin's own "
@@ -176,7 +178,7 @@ def handle_purlin_config(project_root, arguments):
         return json.dumps(config, indent=2)
     if action == 'write':
         if not key:
-            return "Error: 'key' is required for write action."
+            return NO_KEY
         refusal = _write_refusal(key, arguments)
         if refusal:
             return refusal
@@ -184,22 +186,22 @@ def handle_purlin_config(project_root, arguments):
             update_config(project_root, key, value)
         except OSError as error:
             return NOT_SAVED % (error.strerror or error)
-        return "Set '%s' = %s" % (key, json.dumps(value))
+        return SAVED % (key, json.dumps(value))
     return "Unknown action: %s. Use 'read' or 'write'." % action
 
 
-def _no_workspace_text(root, source_text):
-    """What a tool says instead of a report when the root holds no workspace.
+def _no_project_root_text(root, source_text):
+    """What a tool says instead of a report when the root holds no project.
 
-    Reporting zero features for a root that was never a workspace reads as a
-    project with nothing in it. Naming the root and how it was chosen turns
+    Reporting zero features for a root that was never a project root reads as
+    a project with nothing in it. Naming the root and how it was chosen turns
     that into the one fact the caller needs: they are pointed somewhere else.
     """
     return (
-        'No Purlin workspace at {root}: .purlin/config.json is not there. '
+        'No Purlin project root at {root}: .purlin/config.json is not there. '
         'That root came from {source}.\n'
         '→ Fix: pass project_root to this tool, or set PURLIN_PROJECT_ROOT '
-        'to the workspace directory (in .claude/settings.json "env" for the '
+        'to the project root (in .claude/settings.json "env" for the '
         'project), or run purlin:init there.'
     ).format(root=root, source=source_text)
 
@@ -253,11 +255,11 @@ def handle_request(request, project_root):
 
         call_root, root_source = _resolve_call_root(project_root, arguments)
         # One check for all three: a root with no config.json is not a
-        # workspace, and every one of the three would otherwise answer as if
-        # it were an empty one.
+        # project root, and every one of the three would otherwise answer as
+        # if it were an empty one.
         if not os.path.isfile(os.path.join(call_root, '.purlin', 'config.json')):
             return _text_result(req_id,
-                                _no_workspace_text(call_root, root_source))
+                                _no_project_root_text(call_root, root_source))
         # A settings file that cannot be read stops every tool the same way,
         # before anything reads it as empty or writes over it.
         problem = config_problem(call_root)

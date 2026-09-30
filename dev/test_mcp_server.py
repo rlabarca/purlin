@@ -191,11 +191,11 @@ class TestTransport:
 
 
 # ---------------------------------------------------------------------------
-# Which workspace a call answers for
+# Which project root a call answers for
 # ---------------------------------------------------------------------------
 
 def _named_then_unnamed(project, empty, monkeypatch):
-    """Start the server in `empty`; call status naming the workspace, then naming none."""
+    """Start the server in `empty`; call status naming the project, then naming none."""
     monkeypatch.delenv('PURLIN_PROJECT_ROOT', raising=False)
     responses, _stderr = _rpc(
         str(empty),
@@ -204,21 +204,23 @@ def _named_then_unnamed(project, empty, monkeypatch):
     return [_text(r) for r in responses]
 
 
-class TestWhichWorkspace:
+class TestWhichProjectRoot:
 
     # purlin: server PROOF-6
-    def test_a_call_naming_a_workspace_answers_for_it(self, project, tmp_path,
-                                                      monkeypatch):
+    def test_a_call_naming_a_project_root_answers_for_it(self, project,
+                                                         tmp_path,
+                                                         monkeypatch):
         named, _unnamed = _named_then_unnamed(project, tmp_path, monkeypatch)
         assert named.startswith('Purlin status: proj'), named
         assert 'login' in named, named
 
     # purlin: server PROOF-128
-    def test_the_named_workspace_is_for_that_call_alone(self, project,
-                                                        tmp_path, monkeypatch):
+    def test_the_named_project_root_is_for_that_call_alone(self, project,
+                                                           tmp_path,
+                                                           monkeypatch):
         _named, unnamed = _named_then_unnamed(project, tmp_path, monkeypatch)
-        assert unnamed.startswith('No Purlin workspace at %s:' % os.path.realpath(
-            str(tmp_path))), unnamed
+        assert unnamed.startswith('No Purlin project root at %s:'
+                                  % os.path.realpath(str(tmp_path))), unnamed
 
     # purlin: server PROOF-129
     # purlin: server PROOF-160
@@ -237,49 +239,60 @@ class TestWhichWorkspace:
         assert text.startswith('Purlin status: proj'), text
         assert 'login' in text, text
 
+    # purlin: server PROOF-162
+    def test_a_root_with_no_project_says_so_rather_than_reporting_nothing(
+            self, tmp_path, monkeypatch):
+        monkeypatch.delenv('PURLIN_PROJECT_ROOT', raising=False)
+        responses, _stderr = _rpc(str(tmp_path), _call('sync_status'))
+        first = _text(responses[0]).split('\n')[0]
+        assert first == (
+            'No Purlin project root at %s: .purlin/config.json is not there. '
+            'That root came from the working directory, with no .purlin/ '
+            'marker in it or above it.' % os.path.realpath(str(tmp_path))), first
+
     # purlin: server PROOF-7
-    def test_a_root_with_no_workspace_says_so_rather_than_reporting_nothing(
+    def test_a_root_with_no_project_says_how_to_fix_it_and_nothing_more(
             self, tmp_path, monkeypatch):
         monkeypatch.delenv('PURLIN_PROJECT_ROOT', raising=False)
         responses, _stderr = _rpc(str(tmp_path), _call('sync_status'))
         text = _text(responses[0])
-        first, _newline, rest = text.partition('\n')
-        assert first == (
-            'No Purlin workspace at %s: .purlin/config.json is not there. '
-            'That root came from the working directory, with no .purlin/ '
-            'marker in it or above it.' % os.path.realpath(str(tmp_path))), text
-        assert 'purlin:init' in rest, text
+        lines = text.split('\n')
+        assert len(lines) == 2, text
+        assert lines[1] == (
+            '\u2192 Fix: pass project_root to this tool, or set '
+            'PURLIN_PROJECT_ROOT to the project root (in .claude/settings.json '
+            '"env" for the project), or run purlin:init there.'), text
         assert 'Tests' not in text and 'Rules' not in text, text
         assert 'No specs found' not in text, text
 
     # purlin: server PROOF-130
-    def test_a_named_root_with_no_workspace_says_it_came_from_the_argument(
+    def test_a_named_root_with_no_project_says_it_came_from_the_argument(
             self, project, tmp_path):
         responses, _stderr = _rpc(project.root, _call(
             'sync_status', {'project_root': str(tmp_path)}))
         text = _text(responses[0])
-        assert text.startswith('No Purlin workspace at %s:' % tmp_path), text
+        assert text.startswith('No Purlin project root at %s:' % tmp_path), text
         assert 'That root came from the project_root argument.' in text, text
 
     # purlin: server PROOF-131
-    def test_a_config_write_where_there_is_no_workspace_writes_nothing(
+    def test_a_config_write_where_there_is_no_project_writes_nothing(
             self, tmp_path, monkeypatch):
         monkeypatch.delenv('PURLIN_PROJECT_ROOT', raising=False)
         responses, _stderr = _rpc(str(tmp_path), _call(
             'purlin_config', {'action': 'write', 'key': 'gate',
                               'value': 'strong'}))
         text = _text(responses[0])
-        assert text.startswith('No Purlin workspace at'), text
+        assert text.startswith('No Purlin project root at'), text
         assert not os.path.exists(_config_file(str(tmp_path))), text
 
     # purlin: server PROOF-132
-    def test_drift_where_there_is_no_workspace_says_so(self, tmp_path,
-                                                       monkeypatch):
+    def test_drift_where_there_is_no_project_says_so(self, tmp_path,
+                                                     monkeypatch):
         monkeypatch.delenv('PURLIN_PROJECT_ROOT', raising=False)
         responses, _stderr = _rpc(str(tmp_path), _call('drift'))
         text = _text(responses[0])
-        assert text.startswith('No Purlin workspace at %s:' % os.path.realpath(
-            str(tmp_path))), text
+        assert text.startswith('No Purlin project root at %s:'
+                               % os.path.realpath(str(tmp_path))), text
 
 
 # ---------------------------------------------------------------------------
@@ -290,7 +303,7 @@ TRAILING_COMMA = '{\n  "gate": "passed",}\n'
 
 
 def _unreadable(root):
-    """Give the workspace a settings file with a trailing comma; its bytes and sentence."""
+    """Give the project a settings file with a trailing comma; its bytes and sentence."""
     with open(_config_file(root), 'wb') as handle:
         handle.write(TRAILING_COMMA.encode('utf-8'))
     with pytest.raises(json.JSONDecodeError) as refused:
@@ -388,7 +401,8 @@ class TestTheConfigurationTool:
                                     'value': 'strong'}, req_id=1),
             _call('purlin_config', {'action': 'read', 'key': 'gate'},
                   req_id=2))
-        assert _text(responses[0]) == 'Set \'gate\' = "strong"', responses
+        assert _text(responses[0]) == (
+            'gate is now "strong"; saved to .purlin/config.json.'), responses
         with open(_config_file(project.root), encoding='utf-8') as handle:
             on_disk = json.load(handle)
         assert on_disk == dict(before, gate='strong'), on_disk
@@ -445,7 +459,8 @@ class TestTheConfigurationTool:
         responses, _stderr = _rpc(project.root, _call(
             'purlin_config', {'action': 'write', 'key': 'team',
                               'value': 'blue'}))
-        assert _text(responses[0]) == 'Set \'team\' = "blue"'
+        assert _text(responses[0]) == (
+            'team is now "blue"; saved to .purlin/config.json.')
         with open(_config_file(project.root), encoding='utf-8') as handle:
             assert json.load(handle)['team'] == 'blue'
 
@@ -455,7 +470,7 @@ class TestTheConfigurationTool:
         responses, _stderr = _rpc(project.root, _call(
             'purlin_config', {'action': 'write', 'value': 'x'}))
         assert _text(responses[0]) == \
-            "Error: 'key' is required for write action."
+            'A change needs a key; nothing was saved.'
         assert _read_bytes(_config_file(project.root)) == before
 
     # purlin: server PROOF-136
@@ -526,7 +541,8 @@ class TestAWriteTheToolRefuses:
         responses, _stderr = _rpc(project.root, _call(
             'purlin_config', {'action': 'write', 'key': 'min_strength',
                               'value': None}))
-        assert _text(responses[0]) == "Set 'min_strength' = null"
+        assert _text(responses[0]) == (
+            'min_strength is now null; saved to .purlin/config.json.')
         with open(_config_file(project.root), encoding='utf-8') as handle:
             held = json.load(handle)
         assert 'min_strength' in held and held['min_strength'] is None, held
