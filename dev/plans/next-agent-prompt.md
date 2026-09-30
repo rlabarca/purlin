@@ -1,4 +1,4 @@
-# Prompt for the next session: decision 100, the sanity checks, the owner's review
+# Prompt for the next session: build decision 100, prove it on the Mac, then the QA sanity check
 
 Paste everything below the line into a new session opened in
 `/Users/richlabarca/LocalCode/purlin`.
@@ -6,109 +6,105 @@ Paste everything below the line into a new session opened in
 ---
 
 You are continuing Purlin 0.10.0, a Claude Code plugin for spec-driven development that uses
-itself. The owner has closed decisions 60 to 100. Decisions 60 to 99 are built and proven on `main`:
-the product work of decisions 94 to 97, Windows (86 proofs tagged `@env(windows)`, 13 tagged
-`@env(macos)`), sanity check 3 applied in phase 4, every page of the docs read again against
-the code with the screenshots retaken, and the five answers of decision 99. Every rule
-passes on the Mac and, where tagged, on Windows. Decision 100 is closed and not built. Your job
-is what is left before the handover: decision 100, the further sanity checks, and getting the
-owner's review done.
+itself. Decisions 60 to 99 are built and proven on local `main`: 891 rules, all passing on the
+Mac and, where tagged, on Windows. Decision 100 is closed and nothing of it is built. Your job
+is to build decision 100, prove it on this Mac, and then stop and ask me to describe the QA
+sanity check. Tokens are short: spend them on the build, not on ceremony.
 
-## Read first, in this order, in full
+## Read first, in this order
 
-1. `dev/plans/handoff.md`: where the tree is, what is left, the words for the owner to read,
-   the small things known and not fixed, and how the owner wants work done.
-2. `dev/plans/three-levels.md`, decisions 60 to 100 (search `60. **`). Later decisions amend
-   earlier ones; the later holds.
-3. `dev/plans/phase4-interfaces.md`: what phase 4 built, where it differs from
-   `dev/plans/phase4-contracts.md`, the calls left, "The pages", what fan-out 2 and its
-   integration did to `README.md` and `docs/`, and "Decision 99", what its lanes built and left.
-4. `dev/plans/sanity-3.md`, sections 1, 2 and 9 to 11: how sanity check 3 was run and what the
-   next check must add.
-5. `dev/plans/windows-untagged-failures.txt`: the tests that fail on Windows and that no rule is
-   tagged for.
-6. `CLAUDE.md`, `references/spec_quality_guide.md`, `references/writing_style.md`.
+1. `dev/plans/three-levels.md`, decision 100 in full, then decisions 94 to 99 for the words and
+   shapes already settled (search `94. **`). The later decision holds.
+2. `dev/plans/handoff.md`: "Where the tree is", "What is left" item 1, "How to work".
+3. `dev/plans/phase3-plan.md` section 4: which lane owns which file. Reuse that ownership.
+4. `CLAUDE.md`, `references/spec_quality_guide.md`, `references/writing_style.md`.
+
+Read nothing else in `dev/plans/` unless a question sends you there.
+
+## What decision 100 is
+
+An anchor is a set of rules for the whole project.
+
+- Every anchor is global: its rules are proven by tests that run across the whole project, tied
+  to no feature. A rule that cannot be checked that way is not an anchor rule; it is an
+  ordinary rule in each feature's spec that needs it.
+- A spec names no anchor. `> Requires:` and `> Global: true` go. A spec that still carries
+  either is warned of, with its fix, in the shape of decision 97's spec mistakes.
+- Each anchor rule is counted, audited and signed once. A feature's row counts its own rules
+  only: the counts `(+8)` and `(+8 shared)` go, and a feature whose 11 rules pass reads
+  `11 of 11`.
+- On the dashboard, anchors stand in a section of their own above the spec table, headed
+  `Anchors`, same columns, same filters; `(anchor)` after a name goes.
+- Any change to any tracked file ends an anchor's results and its signatures, except the
+  records Purlin itself writes: run results, signatures, the evidence package. An anchor names
+  no covered files.
+- A rule of a pinned anchor that no project-wide test can show is checked by hand and signed.
+- An anchor's tests are judged by the AI audit alone: no code is broken on purpose for an
+  anchor and no test strength is shown for one.
 
 ## How to work
 
-- Maximum parallelization, cut by ownership of files, as the memory file
-  `feedback-parallel-by-file-ownership` and `handoff.md` describe. Use a workflow to fan out
-  agents; every agent is Opus. The owner has opted in to workflows for this project. A workflow
-  runs about ten agents at a time and queues the rest; say so when you report.
-- Before any fan-out that changes files: have a planning agent cut the work into lanes in which
-  every file has one owner, and write the contracts between lanes word for word. The shared
-  helpers `dev/skill_checks.py`, `dev/mcp_project.py`, `dev/sign_project.py`,
-  `dev/run_project.py`, `dev/reports_project.py`, `dev/conftest.py` and `dev/fake_claude.py`
-  are frozen during a fan-out.
-- Each agent has its own worktree under `/Users/richlabarca/LocalCode/purlin-wt/<name>` and its
-  own scratch folder. No lane stages a generated file: `scripts/report/purlin-report.html`,
-  `purlin-report.html`, `.purlin/evidence/**`, `.purlin/tests.md`, `.purlin/report-data.js`,
-  `.github/workflows/purlin.yml`, `docs/images/**`. Integration rebuilds them once.
-- A sanity check is a fresh agent that reads and runs, and changes nothing: it ends in a report
-  and questions, and the fixes it finds go through a planned fan-out afterwards.
-- An agent that meets a call no decision makes builds the rest, leaves that thing as it is, and
-  reports it. Technical calls you rule on and write down; any word a user reads, and any change
-  to what the product does, goes to the owner with the question UI.
-- Questions are asked from the root: what the thing is for in plain words, then the question,
-  then two to four options with what each means for a user, always with the option that removes
-  the thing. No function names, no file names, no unexplained term. The question window covers
-  the reply, so anything the owner needs to answer goes inside the question.
-- `export PATH=/opt/homebrew/opt/dotnet@8/bin:/Users/richlabarca/LocalCode/purlin/.venv/bin:$PATH`
-  first, in every shell.
-- Before an agent breaks code on purpose to check an assertion, it makes sure the break cannot
-  reach the real `claude` program or any real service. A file is restored with
-  `git checkout -- <that file>`, never `git checkout -- specs/`.
-- A status on a project whose anchor names an `https` source reaches the network; the 0.9.5
-  fixture under `dev/fixtures/upgrade-0.9.5/` carries one. Run no status there unless a network
-  call is what you want.
-- A test tied to a Windows proof stays able to run on a real Windows machine: no Unix-only call
-  on its path, paths compared in one spelling, bytes compared with line endings in mind. A rule
-  that carries a Windows proof keeps it, with its tag and its marker, through any split.
-- Look at anything visual with playwright from the `.venv`, headless, at 1500, 1280, 1024, 768
-  and 390 pixels, in both themes, before telling the owner it is done.
-- Push nothing but the one temporary run branch a remote run pushes, tag nothing, open no pull
-  request, run no `purlin:audit` and no `purlin:sign` against this repository. The owner runs
-  the audit and signs.
-- Acceptance is the full sweep, `bash dev/run_tests.sh`, with 0 failed, and this repository
-  through its own tool, `python3 scripts/run/purlin_run.py --test --all`, with every marker tied
-  and every rule passing except those that wait for Windows; then the same with `--commit`.
-  Never edit a number to make a sweep pass.
+- One planning agent first. It cuts the work into lanes in which every file has one owner,
+  using `phase3-plan.md` section 4, and fixes word for word every line two lanes share. Expect
+  about 8 to 12 lanes: the spec reader and the two formats, the states and the summary, the
+  evidence and its fingerprint, signing, the run, the evidence package, the dashboard, the
+  upgrade from 0.9.5, the skills and the agent definition, the references and the docs. Leave
+  out any lane with no work.
+- Then one workflow: the lanes at once, each in its own worktree under
+  `/Users/richlabarca/LocalCode/purlin-wt/<name>`, then one integration agent alone. Every
+  agent is Opus. **No review agents.** Each lane ends on its own self-check: every proof one
+  case in at most 60 words with a marked test of its own, no rule or proof number reused
+  (`> Highest-Rule:` and `> Highest-Proof:` are raised), no generated file staged, its most
+  important change broken on purpose and seen to fail.
+- The branch `lane/anchors-section` (worktree `purlin-wt/anchors-section`, two commits, not
+  merged) holds a first build of the dashboard's `Anchors` section made before decision 100.
+  It keeps the per-feature counts. The dashboard lane starts from it and brings it to the
+  decision.
+- This repository has two anchors. The security one is already global and stays an anchor. The
+  one about the spec format was required by one feature and its rules are about one piece of
+  code: make it an ordinary spec, unless you find a reason it must stay an anchor, and tell me
+  which you did.
+- Frozen during the fan-out: `dev/skill_checks.py`, `dev/mcp_project.py`,
+  `dev/sign_project.py`, `dev/run_project.py`, `dev/reports_project.py`, `dev/conftest.py`,
+  `dev/fake_claude.py`. If one must change, that lands alone, first.
+- A format that changes follows `CLAUDE.md` "Format reference versioning" in the same commit.
+  Clean release: what is retired is deleted outright, with no test that it is absent; only
+  `RELEASE_NOTES.md` keeps history, and what an upgrade from 0.9.5 needs is the one exception.
+- Put `/opt/homebrew/opt/dotnet@8/bin` and the repository's `.venv/bin` first on PATH for every
+  test run. Before an agent breaks code on purpose, it makes sure the break cannot reach the
+  real `claude` program or any real service.
+- Push nothing, tag nothing, run no `purlin:audit` and no `purlin:sign` against this
+  repository. **No remote run on Windows in this session.**
 
-## The work, in order
+## Questions to me
 
-1. **Decision 100: an anchor is a set of rules for the whole project.** Read it in
-   `three-levels.md` and `handoff.md`, "What is left", item 1. The owner asked for a plan
-   first. Have a planning agent cut the work into lanes by ownership of files, as phases 3 and
-   4 were cut (`phase3-plan.md` section 4 is the ownership), and write word for word every line
-   a person would read that this changes: the warning for a spec that still names an anchor,
-   the terminal's counts, the dashboard's section, the formats, the release notes, the slide on
-   anchors. Put those words and the two things decision 100 leaves open to the owner with the
-   question UI, and wait. Then build it, integrate, prove, and run `purlin:test --remote` once:
-   it pushes one temporary run branch and nothing else. The 78 tests that fail on Windows and
-   that no rule is tagged for stay as they are (decision 99).
-2. **The further sanity checks**, each its own fresh agent, in the order the owner picks:
-   - `purlin:spec-from-code` run for real on small real projects, one of which carries a test
-     that fails before the run, so decision 66's clause about failing tests is tried; the
-     agents count existing tests one way (`sanity-3.md` section 9, last line).
-   - a QA person writes proofs;
-   - an upgrade from a real 0.9.5 project;
-   - a hostile reviewer who tries to make an unproven rule read as proven.
-   Decision 64 also asks that the docs be read against the rules by a fresh agent before every
-   release; the last such reading is phase 4's.
-3. **Integrate and prove** whatever the checks and the answers changed, as "How to work" says,
-   then bring `handoff.md` up to date and write the prompt for the session after you.
+Ask only what changes what the product does and that decision 100 does not settle. Ask with
+the question UI, from the root, in plain words, with the recommended option first and what I
+need to answer inside the question. Do not ask about words: where a line a person reads
+changes, write it in the shape of the lines decisions 94 to 99 already give, build it, and list
+every such line for me at the end. If nothing needs asking, ask nothing and build.
 
-## What the owner still has to read
+## Done means
 
-- `RELEASE_NOTES.md` 0.10.0, `README.md`, every page under `docs/`, and the slides.
-- The words agents chose where no decision gave them: the table in `handoff.md` under "Words for
-  the owner to read", which points into `phase3-interfaces.md` and `phase4-interfaces.md`.
-- The 55 readings of `phase2-questions.md`, to say which to reverse.
+1. Every lane merged into local `main` by fast-forward.
+2. `bash dev/run_tests.sh` ends with 0 failed.
+3. `python3 scripts/run/purlin_run.py --test --all` ties every marker, and no rule reads
+   `failed`, `partial` or `no test`. Rules that wait for Windows may wait: say how many. Then
+   the same with `--commit`.
+4. The dashboard looked at with playwright from the `.venv`, headless, dark theme, at 1500,
+   1024 and 390 pixels: the `Anchors` section above the spec table, a feature's row counting
+   its own rules only, no sideways scroll.
+5. `dev/plans/handoff.md` brought up to date in a few lines: where the tree is, that decision
+   100 is built, that Windows has not been run since, and what is left.
 
-Then the handover to the work machine, which is the owner's: `dev/plans/` is deleted (it is
-history, and it ships), the work is pushed as a branch, and on the work machine
-`dev/manual/check_azure_remote.py` runs against a real Azure DevOps project, then
-`purlin:audit`, `purlin:sign`, the push of the tag and the release.
+Leave for later, and say so in the handoff: the remote run on Windows, the two docs
+screenshots, the slide on anchors, and a full reading of the docs pages. A page that states
+something decision 100 makes false is corrected now; nothing else on it is touched.
 
-When you have read the files, tell the owner in a few lines what you understand the work to be,
-then ask which sanity check comes first.
+## Then stop and ask me
+
+Report in a short message: the counts from steps 2 and 3, what became of the spec-format
+anchor, every line a person reads that you chose, and anything you left unbuilt. Then ask me,
+in one plain question, to describe the QA sanity check I want run: who the person is, what
+project they start from, what they try to do, and what I want to learn. Wait for my answer and
+start nothing else.
