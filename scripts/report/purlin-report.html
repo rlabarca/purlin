@@ -167,7 +167,7 @@ function themeButton() {
     + '</button>';
 }
 var VERSION_KINDS = ['to_tag', 'to_correct'];
-var SHORT_LABELS = {to_confirm: 'To confirm'};
+var SHORT_LABELS = {to_confirm: 'To confirm', to_repair: 'To repair'};
 function leftLabel(item) {
   if (SHORT_LABELS[item.kind]) { return SHORT_LABELS[item.kind]; }
   var text = String(item.text || '');
@@ -669,7 +669,7 @@ function renderRule() {
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null,
             features: {}, groups: {}, filter: null, proofs: {}};
-var SCHEMA = 11;
+var SCHEMA = 12;
 var REFRESH_AFTER = 60;
 var GATE_LEVELS = ['passed', 'strong', 'signed'];
 var STEP_LABELS = {passed: 'Passing', strong: 'Strong', signed: 'Signed'};
