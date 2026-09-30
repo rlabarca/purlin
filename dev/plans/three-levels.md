@@ -1088,6 +1088,27 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **Still to be asked when it is planned:** the words of every line a person reads that this
       changes, and what becomes of this repository's anchor about the spec format, which one
       feature required and whose rules are about one piece of code.
+101. **The answers to the plan for decision 100** (added 2026-09-30), to the three questions of
+    `d100-plan.md`, with one further request. The plan carries them in its contracts C12 to C15.
+    - **A pulled anchor whose source carries `> Requires:`, `> Global:` or `> Scope:` is copied as
+      it is, and warned of.** Every status and test run prints one line, the anchor's name first
+      and the fix last, until the other team changes its file:
+      `security_baseline: its source, https://github.com/acme/policies.git, carries > Scope:, which Purlin does not read on an anchor, so the line is read as nothing. Ask the owners of https://github.com/acme/policies.git to take it out, then run purlin:anchor sync security_baseline.`
+    - **The upgrade from 0.9.5 keeps each anchor and takes the naming lines out**, printing one
+      line per anchor that specs named, naming them and the command that moves a rule into them:
+      `proof_common: its rules now cover the whole project, where 1 spec named it: sync_status. A rule that holds only there belongs in that spec: run purlin:spec proof_common.`
+    - **A pinned anchor's rule that does not apply to this project is signed as not applying.**
+      In the owner's words: "this project can sign it but the signature just means it doesnt
+      apply, in this case". `purlin:sign <anchor> RULE-N --does-not-apply "<why>"` writes a
+      signature carrying the reason; the rule then reads `does not apply` in every cell, counts
+      as met, names who said so, and the evidence package carries it. Only a rule of a pinned
+      anchor is signed this way; a rule of the project's own anchor that does not apply is
+      deleted. Like every anchor signature it ends on any change to the project, and the rule is
+      then `1 rule to confirm as not applying: purlin:sign`.
+    - **The dashboard's theme button is a glyph**, `◐` in the dark theme and `◑` in the light,
+      the words `Light theme` and `Dark theme` staying as its hover and accessible name. The two
+      glyphs join `▶ ▼ ▲ →` as the ones Purlin uses.
+    - The six calls the plan made stand.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5

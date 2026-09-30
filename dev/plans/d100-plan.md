@@ -3,8 +3,9 @@
 Written by the planning agent on 2026-09-30, against `main` at `194d51d53`. It builds decision
 100 of `three-levels.md` and nothing else. Ten lanes run at once, each owning files no other
 lane writes, then one integration agent alone. Section 2 is the contract: every lane builds to
-it and none chooses. Section 7 holds the three questions the owner answers before anything
-launches; the contract items they change are marked `(Q1)`, `(Q2)`, `(Q3)`.
+it and none chooses. Section 7 holds the owner's answers to the three questions this plan
+raised, recorded as decision 101; the contracts carry them (C12, C13, C14), with the owner's
+request for the theme button (C15).
 
 ## 1. Rules for every lane
 
@@ -198,10 +199,10 @@ column, two spaces in like every row:
 | `references/formats/spec_format.md` | 20 | 21 | `> Requires:` removed; a field on an anchor is not read |
 | `references/formats/anchor_format.md` | 10 | 11 | `> Scope:` and `> Global:` removed; what an anchor covers |
 | `references/formats/evidence_format.md` | 6 | 7 | the `spec` part is the spec's own; an anchor's `code` part is the project |
-| `references/formats/signature_format.md` | 11 | 12 | `applies_to` is always the rule's own spec; an anchor's `code_hash` is the project |
-| `references/formats/package_format.md` | 4 | 5 | a feature's `requires` field removed |
+| `references/formats/signature_format.md` | 11 | 12 | `applies_to` is always the rule's own spec; an anchor's `code_hash` is the project; the optional field `does_not_apply` (C14) |
+| `references/formats/package_format.md` | 4 | 5 | a feature's `requires` field removed; a signature's `does_not_apply` (C14) |
 | `references/formats/marker_format.md` | 3 | 3 | unchanged |
-| payload `schema_version` | 10 | 11 | `requires`, `is_global`, `label`, `consumers` removed |
+| payload `schema_version` | 10 | 11 | `requires`, `is_global`, `label`, `consumers` removed; a rule's `does_not_apply`, the kind `to_confirm` (C14) |
 
 `specs/review/signatures.md` RULE-9 says `signature format 12`.
 
@@ -225,7 +226,7 @@ column, two spaces in like every row:
   `Anchor: its rules cover the whole project, so its tests must check the whole project. No test strength is measured for an anchor.`
   in place of `Test strength: ...`, and `render` prints nothing of strength.
 
-### C12. The upgrade from 0.9.5, lane `upgrade` (Q2)
+### C12. The upgrade from 0.9.5, lane `upgrade` (decision 101)
 
 A migration with id `anchor-lines`, after `design-refs` in `MIGRATIONS`, described
 `take out > Requires: and > Global: from every spec, and > Scope: from every anchor`. It backs
@@ -237,9 +238,9 @@ removed from <rel>: > Requires:
 removed from <rel>: > Scope: and > Global:
 ```
 
-the fields in the order Requires, Global, Scope, joined `, ` with ` and ` before the last. Under
-Q2's first option it then prints, for each anchor that one or more specs named in `> Requires:`
-and that carried no `> Global: true`,
+the fields in the order Requires, Global, Scope, joined `, ` with ` and ` before the last. It
+keeps every anchor, and then prints, for each anchor that one or more specs named in
+`> Requires:` and that carried no `> Global: true`,
 
 ```
 proof_common: its rules now cover the whole project, where 1 spec named it: sync_status. A rule that holds only there belongs in that spec: run purlin:spec proof_common.
@@ -248,28 +249,79 @@ proof_common: its rules now cover the whole project, where 3 specs named it: a, 
 
 A `> Requires:` name that is no anchor of the project gets no such line.
 
-### C13. A pinned anchor's copy, lane `upstream` (Q1)
+### C13. A pinned anchor whose source carries the lines, lane `reader` (decision 101)
 
-Under Q1's first option, `add` and `sync` write the copy without any `> Requires:`,
-`> Global:` or `> Scope:` line the source carries, as they already leave out the tracking lines,
-and print under their result
+`add` and `sync` copy the source unchanged. A pinned anchor (one carrying `> Source:`) whose
+`unread_fields` is not empty gets one line in place of C2's lines, naming every such field, from
+`spec_mistakes`, sorted by name with C2's `UNREAD_SCOPE` lines:
 
 ```
-  The copy leaves out > Scope: and > Global:, which Purlin does not read on an anchor.
+PINNED_UNREAD = '%s: its source, %s, carries %s, which Purlin does not read on an anchor, so %s read as nothing. Ask the owners of %s to take %s out, then run purlin:anchor sync %s.'
 ```
 
-naming only the fields left out, in the order Requires, Global, Scope, joined as C12 joins them.
-`references/formats/anchor_format.md` (lane `reader`) carries the sentence
-`` `add` and `sync` leave out of the copy any `> Requires:`, `> Global:` or `> Scope:` line the source carries, and say which. ``
-Under Q1's second option neither the code nor that sentence changes, and the copy warns (C2).
+filled with the anchor's name, the `> Source:` URL as the spec reader splits it (no path), the
+fields joined as C12 joins them, `the line is` or `the lines are`, the URL again, `it` or `them`,
+and the name:
 
-### C14. A pinned rule no test here can show (Q3)
+```
+security_baseline: its source, https://github.com/acme/policies.git, carries > Scope:, which Purlin does not read on an anchor, so the line is read as nothing. Ask the owners of https://github.com/acme/policies.git to take it out, then run purlin:anchor sync security_baseline.
+security_baseline: its source, https://github.com/acme/policies.git, carries > Global: and > Scope:, which Purlin does not read on an anchor, so the lines are read as nothing. Ask the owners of https://github.com/acme/policies.git to take them out, then run purlin:anchor sync security_baseline.
+```
 
-Under Q3's first option nothing is built: the anchor format, the anchor skill and
-`docs/specs-and-anchors.md` say that such a rule's proof is marked `@manual` in the source
-repository, by a pull request there, and a person in the project then checks it by hand and
-signs it, again each time its signature ends. Under the second option the owner's answer is
-written into this section before the fan-out, with its lane.
+`references/formats/anchor_format.md` carries the sentence
+`` A pinned copy is written as its source holds it; a `> Requires:`, `> Global:` or `> Scope:` line in it is warned of, naming the source's owners as the ones to take it out. ``
+Nothing in `scripts/anchor/upstream.py` changes.
+
+### C14. A pinned anchor's rule that does not apply, decision 101
+
+In the owner's words: "this project can sign it but the signature just means it doesnt apply,
+in this case." Only a rule of a pinned anchor is signed this way; a rule of the project's own
+anchor that does not apply is deleted from it.
+
+- **The command** (lane `signing`): `purlin:sign <anchor> RULE-N [RULE-N ...] --does-not-apply "<why>"`,
+  that is `sign.py <anchor> RULE-N ... --does-not-apply "<why>"`. It writes an ordinary
+  signature, over the same hashes as any other, carrying the reason, in one signed commit with
+  the usual subject. It works at every gate. Its refusals, nothing written:
+  - exit 2, `--does-not-apply needs the reason the rule does not apply to this project.`
+  - exit 2, `--does-not-apply names a pinned anchor and the rules it carries.` (with `--all`,
+    `--note`, `--release` or no rule named)
+  - exit 1, `login RULE-3 is not a rule of a pinned anchor, so it cannot be signed as not applying. A rule of this project that does not apply is deleted: run purlin:spec login.`
+- **The file** (lane `signing`, signature format 12): the optional field `does_not_apply`, the
+  reason as one line, or null or absent for any other signature. Like `note` it is outside
+  `signed_hash`: the signed commit is what holds it.
+- **The cells** (lane `counting`): a rule that a counting signature carrying `does_not_apply`
+  binds reads `does not apply` in every cell up to the gate, each met, each with the one reason
+  `by <signer>: <why>`. Its bucket is the gate's own step, it carries no flag, its `left` is
+  null, and the rule entry carries `does_not_apply: {"why": ..., "signer": ..., "at": ...}`
+  (null otherwise). `states.DOES_NOT_APPLY = 'does not apply'`. Like every anchor signature it
+  ends on any change to the project; the rule then reads its cells as usual, and while the last
+  signature for it carried `does_not_apply` and none binds, its `left` is `to_confirm`, before
+  any other kind it would take.
+- **`Left to do`** (lane `counting`, `summary.py`): the kind `to_confirm`, after
+  `to_test_by_hand` and before `to_sign`, reading `1 rule to confirm as not applying: purlin:sign`
+  or `<n> rules to confirm as not applying: purlin:sign`. The dashboard's filter button is
+  therefore `To confirm`.
+- **The row** (lanes `counting`, `dashboard`): the `Tests` cell reads `<passed> of <rules>`, then
+  ` · <k> does not apply` where k is not zero, before ` · <k> partial` and ` · <k> failing`:
+  `7 of 8 · 1 does not apply`, a rule that does not apply counted among the `<passed>`.
+- **The walk** (lanes `signing`, `skills`): `purlin:sign` with no argument stops at a rule to
+  confirm with three answers, confirm, sign it as applying after all (it then waits as any rule
+  does), or skip. Confirming writes a new signature with the earlier reason. `--all` does not
+  confirm one. The stop reads
+  `security_baseline RULE-4 was signed as not applying by jane@acme.com: the project stores no card data. Confirm it still does not apply?`
+- **The dashboard** (lane `dashboard`): each cell's badge reads `DOES NOT APPLY` in the neutral
+  teal; the rule's page, in its signed panel,
+  `Does not apply to this project: <why>. Signed by <signer name> (<signer>) at <at>.`
+- **The package** (lane `signing`, package format 5): each signature entry carries
+  `does_not_apply`, string or null, and the rule's cells read `does not apply`.
+
+### C15. The theme button, lane `dashboard` (the owner's request)
+
+The button shows one glyph: `◐` in the dark theme and `◑` in the light, the glyph of the theme a
+click leads to being the one shown. Its hover text and its accessible name stay
+`Light theme` in the dark theme and `Dark theme` in the light. `CLAUDE.md` ("Two surfaces, one
+system") and `design/readme.md` (its glyph sentence) name the glyphs `▶ ▼ ▲ → ◐ ◑`; no other
+file lists them. Lane `dashboard` owns both files for this sentence alone.
 
 ## 3. Lines a person reads, chosen
 
@@ -284,7 +336,13 @@ In the shape of decisions 94 to 99. The owner reads these and says which to chan
 | The audit's prompt (C11) | `Anchor: its rules cover the whole project, so its tests must check the whole project. No test strength is measured for an anchor.` |
 | The review criteria, a paragraph of "What the audit looks for" | `An anchor's rule covers the whole project. Its test is strong only when it checks every file of the project the rule speaks of, not a sample of them and not one feature's files. No code is broken on purpose for an anchor, so the audit alone judges its tests.` |
 | The upgrade (C12) | the migration's description, `removed from <rel>: <fields>`, and the per-anchor line |
-| A pinned copy (C13) | `  The copy leaves out <fields>, which Purlin does not read on an anchor.` |
+| A pinned anchor whose source carries the lines (C13) | `<anchor>: its source, <url>, carries <fields>, which Purlin does not read on an anchor, so the line is read as nothing. Ask the owners of <url> to take it out, then run purlin:anchor sync <anchor>.` (plural: `the lines are`, `take them out`) |
+| A rule that does not apply (C14) | the cell word `does not apply` with `by <signer>: <why>`; the badge `DOES NOT APPLY`; the rule's page `Does not apply to this project: <why>. Signed by <signer name> (<signer>) at <at>.`; the Tests cell `7 of 8 · 1 does not apply`; `Left to do` `1 rule to confirm as not applying: purlin:sign` and `<n> rules to confirm as not applying: purlin:sign`; the button `To confirm`; the walk's stop `<anchor> <RULE-N> was signed as not applying by <signer>: <why>. Confirm it still does not apply?` |
+| Signing a rule as not applying (C14) | `--does-not-apply needs the reason the rule does not apply to this project.`; `--does-not-apply names a pinned anchor and the rules it carries.`; `<feature> <RULE-N> is not a rule of a pinned anchor, so it cannot be signed as not applying. A rule of this project that does not apply is deleted: run purlin:spec <feature>.`; the usage line `purlin:sign <anchor> RULE-N --does-not-apply "<why>"  Sign a pinned anchor's rule as not applying to this project` |
+| The glossary, C14 | `**does not apply**: the word a rule of a pinned anchor reads once a person in the project signs it as not applying, with the reason. It counts as met, and like every anchor signature it ends on any change to the project, so the person confirms it again.` |
+| `references/hard_gates.md`, C14 | `A rule of a pinned anchor that does not apply to this project is signed with purlin:sign <anchor> RULE-N --does-not-apply "<why>". It then reads does not apply in every cell and counts as met; any change to the project ends that signature, and the rule is left to confirm.` |
+| The anchor format, C14 | `A rule of a pinned anchor that no test in this project can show, because it does not apply here, is signed by a person in the project as not applying, with the reason. A rule of the project's own anchor that does not apply is deleted.` |
+| The theme button (C15) | the glyph `◐` or `◑`; the hover and accessible name `Light theme` or `Dark theme` |
 | The anchor format, a section `What an anchor covers` | `Every rule of an anchor holds across the whole project, and its tests check the whole project. The project is every file git tracks but the records Purlin writes: the results of a run and the evidence package under .purlin/evidence/, the table .purlin/tests.md, and the signatures. Any change to the project ends an anchor's results and its signatures, so at the gate signed an anchor is in practice signed last. No code is broken on purpose for an anchor: the AI audit alone judges its tests. A rule that cannot be checked across the whole project is not an anchor's; write it in the spec of each feature that needs it, in that feature's words.` |
 | The spec format, the `> Scope:` row's last sentence | `An anchor carries none: its rules cover the whole project, and a > Scope: line on an anchor is warned of and not read.` |
 | The glossary | `**anchor**: a set of rules for the whole project, kept under specs/_anchors/ or opening # Anchor:. Its tests check the whole project, and each of its rules is counted, audited and signed once. No spec names an anchor.` |
@@ -311,12 +369,12 @@ Every file that changes has exactly one owner. "Owns" is every file the lane may
 |---|---|
 | L1 `fingerprint` | `scripts/mcp/purlin/fingerprint.py`; `scripts/mcp/purlin/evidence.py`; `specs/mcp/evidence.md`; `dev/test_fingerprint.py`; `dev/test_evidence_reader.py`; `references/formats/evidence_format.md` |
 | L2 `counting` | `scripts/mcp/purlin/{states,payload,status,summary,board,drift}.py`; `specs/mcp/{states,summary,drift}.md`; `dev/test_{states,summary,backing_tests,failing,drift}.py`; `dev/test_e2e_required_rules.sh`, moved to `dev/test_e2e_anchor_rules.sh`; `dev/run_tests.sh`; `skills/status/SKILL.md`; `specs/skills/skill_status.md`; `dev/test_skill_status.py` |
-| L3 `dashboard` | `scripts/report/src/**`; `scripts/mcp/purlin/report_data.py`; `dev/build_report.py`; `dev/capture_doc_screenshots.py`; `specs/dashboard/purlin_report.md`; `dev/test_purlin_report.py`; `dev/test_purlin_report_board_layout.py`; `dev/test_report_refresh.py`; `dev/fixtures/report/*.json`; `docs/dashboard.md` |
+| L3 `dashboard` | `scripts/report/src/**`; `scripts/mcp/purlin/report_data.py`; `dev/build_report.py`; `dev/capture_doc_screenshots.py`; `specs/dashboard/purlin_report.md`; `dev/test_purlin_report.py`; `dev/test_purlin_report_board_layout.py`; `dev/test_report_refresh.py`; `dev/fixtures/report/*.json`; `docs/dashboard.md`; `CLAUDE.md` and `design/readme.md` (the glyph sentence alone, C15) |
 | L4 `reader` | `scripts/mcp/purlin/specs.py`; `references/formats/spec_format.md`; `references/formats/anchor_format.md`; `specs/mcp/specs.md`; `specs/_anchors/schema_spec_format.md`, moved to `specs/mcp/schema_spec_format.md`; `specs/_anchors/security_no_dangerous_patterns.md`; `dev/test_specs_reader.py`; `dev/test_schema_spec_format.py`; `dev/test_security.py` |
 | L5 `run` | `scripts/run/purlin_run.py`; `specs/run/run_script.md`; `dev/test_run_script.py`; `scripts/review/ai_audit.py`; `specs/review/ai_audit.md`; `dev/test_ai_audit.py`; `dev/test_ai_audit_tests_named.py`; `references/review_criteria.md` |
 | L6 `signing` | `scripts/review/sign.py`; `scripts/mcp/purlin/signatures.py`; `specs/review/signatures.md`; `dev/test_signatures.py`; `dev/test_tag.py`; `references/formats/signature_format.md`; `scripts/export/package.py`; `specs/export/package.md`; `dev/test_export.py`; `references/formats/package_format.md` |
 | L7 `upgrade` | `scripts/init/update.py`; `specs/init/update.md`; `dev/test_init_update.py`; `dev/fixtures/upgrade-0.9.5/**` |
-| L8 `upstream` | `scripts/anchor/upstream.py`; `specs/anchor/upstream.md`; `dev/test_upstream.py`; `dev/test_upstream_notes.py`; `dev/test_e2e_anchor_authority.sh`; `dev/test_e2e_external_refs.sh` |
+| L8 `upstream` | `dev/test_e2e_anchor_authority.sh`; `dev/test_e2e_external_refs.sh` |
 | L9 `skills` | `skills/{anchor,build,spec,spec-from-code,sign}/SKILL.md`; `specs/skills/{skill_anchor,skill_build,skill_spec,skill_spec_from_code,skill_sign}.md`; `dev/test_skill_{anchor,build,spec,spec_from_code,sign}.py`; `agents/purlin.md`; `specs/instructions/purlin_agent.md`; `dev/test_purlin_agent.py`; `references/spec_quality_guide.md` |
 | L10 `words` | `references/{glossary,purlin_commands,hard_gates,drift_criteria}.md`; `RELEASE_NOTES.md`; `README.md`; `docs/{specs-and-anchors,spec-from-code,review-and-signing,working-together,how-purlin-works,index,team-workflow}.md`; `specs/instructions/purlin_docs.md`; `dev/test_purlin_docs.py` |
 
@@ -372,7 +430,15 @@ status table's `Anchors` and `Specs` lines; `dev/run_tests.sh` line 49 names it
   under a minimum of 80, the anchor's rule reads `strong` with the one reason
   `the AI audit alone judges an anchor's tests`; PROOF-241: its `Strong` cell shows no `%`);
   RULE-99, the status table's anchors group (PROOF-242: the `Anchors` line, then the anchor's
-  row, then `Specs`; PROOF-243: a project with no anchor has neither line).
+  row, then `Specs`; PROOF-243: a project with no anchor has neither line); RULE-100, a rule a
+  counting signature carrying `does_not_apply` binds reads C14's cells (PROOF-244: at the gate
+  `signed`, a pinned anchor's rule with no test so signed reads `does not apply` in all three
+  cells with `by <signer>: <why>`; PROOF-245: its row's Tests cell reads
+  `1 of 1 · 1 does not apply`; PROOF-246: nothing is left to do for it); RULE-101, once that
+  signature ends its `left` is `to_confirm` (PROOF-247: an edit to a tracked file, then
+  `Left to do` reads `1 rule to confirm as not applying: purlin:sign`).
+- `summary.md` gains RULE-15, the kind `to_confirm` stands after `to_test_by_hand` and before
+  `to_sign` (PROOF-38, PROOF-39 for the plural).
 
 `specs/mcp/summary.md` (R14 P37; next RULE-15, PROOF-38): PROOF-4 rewritten: an anchor's one
 passing rule beside two features of one passing rule each reads `3 rules. 3 pass their tests.`
@@ -385,7 +451,8 @@ the old example or ` (+<k> shared)` is reworded to C7; none is written to say th
 gone (clean release).
 
 Break on purpose: list an anchor's rules under every feature again in `_feature_entry`;
-PROOF-238's test fails.
+PROOF-238's test fails. Then read a `does_not_apply` signature as an ordinary one; PROOF-244's
+test fails.
 
 ### L3 `dashboard`
 
@@ -405,19 +472,28 @@ filters) and `filters.js`; the fixtures move to schema 11 with no `label`, no `r
   the schema 11 fixtures (receipt reads `1`; the bands and the anchor's rules add up to the
   sample's total).
 - Deleted: PROOF-72 (the `2 (+6)` walk) and its test.
-- New: RULE-64, an anchor's `Strong` cell shows no strength (PROOF-209).
+- New: RULE-64, an anchor's `Strong` cell shows no strength (PROOF-209). RULE-65, a rule that
+  does not apply (C14): every badge reads `DOES NOT APPLY` (PROOF-210), the signed panel reads
+  its line (PROOF-211), the Tests cell names the count (PROOF-212), and `To confirm` is a filter
+  button where the payload has that kind (PROOF-213). The regulated sample gains a pinned anchor
+  with one rule so signed, and the team sample one rule to confirm.
+- RULE-12 reworded for C15: the toggle is a button showing `◐` in the dark theme and `◑` in the
+  light, its hover and accessible name `Light theme` or `Dark theme`, the theme it turns to.
+  PROOF-182 rewritten (opens dark: the button shows `◐`, named `Light theme`), PROOF-183 (pressed
+  once: `◑`, named `Dark theme`), PROOF-185 (pressed and reloaded: light, `◑`, `Dark theme`).
+  `docs/dashboard.md` line 40 says the same.
 - `docs/dashboard.md`: the `Rules` row of the columns table and the two `16 (+6)` examples say
   the count alone.
 
 Break on purpose: render `(+<k>)` again from rules of other specs in `rulesCell`; PROOF-71's
-test fails.
+test fails. Then show the same glyph in both themes; PROOF-183's test fails.
 
 ### L4 `reader`
 
 Builds C1, C2, the spec format 21 and the anchor format 11 (section 3's words; the `Requires`,
 `Global anchors` sections, the `> Global:` and `> Scope:` rows and the template's `> Scope:` go;
-`Editing a pinned anchor` takes the anchor skill's sentence of section 3; C13's sentence and
-C14's under the owner's answers). Moves this repository's two anchors:
+`Editing a pinned anchor` takes the anchor skill's sentence of section 3; C13's and C14's
+sentences). Builds C13's `PINNED_UNREAD`. Moves this repository's two anchors:
 
 - `specs/_anchors/security_no_dangerous_patterns.md`: its `> Scope:` and `> Global:` lines go;
   its description's last sentence reads `Its tests read every file under scripts/, where all of
@@ -439,7 +515,10 @@ C14's under the owner's answers). Moves this repository's two anchors:
   PROOF-74: on a feature). RULE-32, `> Scope:` on an anchor is warned of and not read (PROOF-75:
   the warning; PROOF-76: the anchor's scope reads `[]`). RULE-33, an anchor's scope is never
   warned of as finding no file (PROOF-77: an anchor scoped `src/gone.py` prints C2's line and
-  no `which finds no file in git`).
+  no `which finds no file in git`). RULE-34, a pinned anchor whose copy carries any of the three
+  fields gets C13's one line and none of C2's (PROOF-78: `> Scope:` alone, the singular line;
+  PROOF-79: `> Global:` and `> Scope:`, the plural line; PROOF-80: no process is started to read
+  its source).
 
 `specs/mcp/specs.md` (R21 P43; next RULE-22, PROOF-44): deleted RULE-13 with PROOF-14 and
 PROOF-37, RULE-19 with PROOF-36 and PROOF-38, and their tests; `dev/test_specs_reader.py` loses
@@ -480,17 +559,25 @@ line 51 in section 3's hard-gates words) and package format 5.
   once.
 - New: RULE-90, an anchor's signature ends on an edit to a tracked file under no spec's scope
   (PROOF-179) and stands across a signature commit and an evidence commit (PROOF-180). RULE-91,
-  the walk visits features' rules before anchors' (PROOF-181).
+  the walk visits features' rules before anchors' (PROOF-181). RULE-92,
+  `--does-not-apply "<why>"` writes a signature carrying `does_not_apply` (PROOF-182) in one
+  signed commit (PROOF-183). RULE-93, it signs only a pinned anchor's rule (PROOF-184: a local
+  anchor's rule is refused with C14's exit-1 line and nothing is written; PROOF-185: a feature's
+  rule likewise). RULE-94, its two usage refusals (PROOF-186: no reason; PROOF-187: with
+  `--all`). RULE-95, the walk stops at a rule to confirm and confirming writes the earlier reason
+  again (PROOF-188); `--all` leaves it (PROOF-189).
 
 `specs/export/package.md` (R25 P55; next RULE-26, PROOF-56): new RULE-26, a feature entry holds
 exactly `name`, `spec`, `scope`, `anchor`, `rules` (PROOF-56), an anchor's `scope` `[]`
-(PROOF-57).
+(PROOF-57); RULE-27, a signature entry carries `does_not_apply`, the reason or null (PROOF-58),
+and a rule that does not apply reads `does not apply` in its cells (PROOF-59).
 
 Break on purpose: take `code_hash` from the anchor's (empty) scope; PROOF-179's test fails.
+Then let `--does-not-apply` sign a local anchor's rule; PROOF-184's test fails.
 
 ### L7 `upgrade`
 
-Builds C12 under Q2's answer. `scope_advice`'s docstring says anchors are exempt because an
+Builds C12. `scope_advice`'s docstring says anchors are exempt because an
 anchor names no files. The fixture stays as 0.9.5 wrote it. Its `proof_common` anchor is named by
 no spec there, so the test of PROOF-155 adds `proof_common` to the `> Requires:` line of
 `specs/mcp/sync_status.md` in its own copy of the fixture before it runs the upgrade.
@@ -498,30 +585,29 @@ no spec there, so the test of PROOF-155 adds `proof_common` to the `> Requires:`
 `specs/init/update.md` (R45 P152; next RULE-46, PROOF-153): RULE-46, the migration (PROOF-153:
 after `--yes` no spec of the sample holds `> Requires:` or `> Global:` and no anchor `> Scope:`;
 PROOF-154: the line `removed from specs/_anchors/proof_common.md: > Scope:`; PROOF-155: the
-per-anchor line for `proof_common` under Q2's first option; PROOF-156: a backup beside each file
+per-anchor line for `proof_common`; PROOF-156: a backup beside each file
 it rewrote). PROOF-134's pending list gains the migration's line where it quotes the list whole.
 
 Break on purpose: skip the `> Global:` line in the migration; PROOF-153's test fails.
 
 ### L8 `upstream`
 
-Builds C13 under Q1's answer. `dev/test_e2e_anchor_authority.sh` stops writing a local anchor
-that `> Requires:` the pinned one: the project's own rule stands in a local anchor of its own.
-`dev/test_e2e_external_refs.sh` stops writing `> Requires:`.
+`add` and `sync` copy the source unchanged (decision 101), so `scripts/anchor/upstream.py` and
+its spec do not change. `dev/test_e2e_anchor_authority.sh` stops writing a local anchor that
+`> Requires:` the pinned one: the project's own rule stands in a local anchor of its own, and a
+pinned source carrying `> Scope:` prints C13's line in the status. `dev/test_e2e_external_refs.sh`
+stops writing `> Requires:`. These are untied suites; no spec changes.
 
-`specs/anchor/upstream.md` (R35 P59; next RULE-36, PROOF-60), under Q1's first option: RULE-36,
-`add` leaves the three lines out and says so (PROOF-60, PROOF-61); RULE-37, `sync` does the same
-(PROOF-62). Under the second option: no rule changes.
-
-Break on purpose: stop stripping `> Global:`; PROOF-60's test fails, against a local bare
-repository only.
+Break on purpose: none in code; the lane runs both suites against local bare repositories only.
 
 ### L9 `skills`
 
 Takes section 3's lines into the anchor, build, spec, spec-from-code and sign skills, the agent's
 `Renaming a feature`, and the quality guide (a paragraph `A rule for the whole project`: when a
-rule belongs in an anchor, when in each feature's spec, and that a pinned rule no test here can
-show is `@manual` at its source, per C14). Every `> Requires:` and `> Global:` goes from the
+rule belongs in an anchor, when in each feature's spec, and that a pinned rule that does not
+apply here is signed as not applying, per C14). The sign skill gains the command of C14 and the
+walk's stop to confirm, cutting as many lines as it adds (ceiling 185); the anchor skill's
+`Changing a pinned rule` gains the anchor format's C14 sentence. Every `> Requires:` and `> Global:` goes from the
 five skills, the agent and the guide, including the spec skill's shape example.
 
 Next free ids: `skill_anchor` RULE-15 PROOF-36; `skill_build` RULE-18 PROOF-47; `skill_spec`
@@ -536,6 +622,10 @@ RULE-24 PROOF-54; `skill_spec_from_code` RULE-52 PROOF-166; `skill_sign` RULE-24
   anchor's `> Scope:` (PROOF-54).
 - `skill_spec_from_code`: RULE-37 reworded to section 3's step 4; PROOF-152 rewritten.
 - `purlin_agent`: RULE-7 and PROOF-7 lose `> Requires:` and say four places.
+- `skill_sign`: new RULE-24, the skill names `--does-not-apply "<why>"` for a pinned anchor's
+  rule alone (PROOF-52) and the walk's stop to confirm (PROOF-53).
+- `skill_anchor`: new RULE-16, `Changing a pinned rule` says a pinned rule that does not apply is
+  signed as not applying (PROOF-38).
 
 Break on purpose: put `> Requires: <name>` back in the anchor skill's `create`; PROOF-36's test
 fails.
@@ -547,7 +637,8 @@ Section 3's glossary, hard-gates and release-notes lines. `references/purlin_com
 `references/drift_criteria.md`: no anchor has a scope in the `unscoped` view's words, if it names
 one. `docs/specs-and-anchors.md`: the metadata table loses `> Requires:`; the anchors section
 (lines 194 to 205) is rewritten in the anchor format's words of section 3; line 275 in the anchor
-skill's words; C14's sentence. `docs/spec-from-code.md` step 4, `docs/review-and-signing.md`
+skill's words; C13's and C14's sentences, with the command. `references/purlin_commands.md`
+gains C14's usage line under `purlin:sign`, and the glossary and `hard_gates.md` C14's lines. `docs/spec-from-code.md` step 4, `docs/review-and-signing.md`
 lines 139 and 232, `docs/working-together.md` "A rule from a pinned anchor", and every other
 line of the owned pages a grep for `Requires`, `Global`, `shared`, `(+` or `applies to` finds
 false. `README.md` only where a line is false. `specs/instructions/purlin_docs.md` (R12 P17)
@@ -575,7 +666,6 @@ Read on `main` at `194d51d53`. A lane recomputes on rebase and never reuses one.
 | `specs/review/signatures.md` | 89 | 178 | RULE-90, PROOF-179 |
 | `specs/export/package.md` | 25 | 55 | RULE-26, PROOF-56 |
 | `specs/init/update.md` | 45 | 152 | RULE-46, PROOF-153 |
-| `specs/anchor/upstream.md` | 35 | 59 | RULE-36, PROOF-60 |
 | `specs/skills/skill_anchor.md` | 14 | 35 | RULE-15, PROOF-36 |
 | `specs/skills/skill_build.md` | 17 | 46 | RULE-18, PROOF-47 |
 | `specs/skills/skill_spec.md` | 23 | 53 | RULE-24, PROOF-54 |
@@ -627,8 +717,8 @@ the merged `fingerprint`, `counting` and `dashboard`.
    `Requires`, `Global: true`, `is_global`, `rule_refs`, `global_anchors`, `counted_specs`,
    `shared_counts`, `listings_to_sign`, `shared)`, `(anchor)`, `required rule`,
    `global anchor`, `signed once in each`; under `scripts/` alone `consumers` and
-   `get('label')`; under `scripts/report/src/`, `docs/`, `skills/` and `specs/` alone `(+`. Under Q1's first option,
-   `scripts/anchor/upstream.py` and its tests are also allowed `Requires`, `Global` and `Scope`.
+   `get('label')`; under `scripts/report/src/`, `docs/`, `skills/` and `specs/` alone `(+`.
+   The C13 constant and its rule, proofs and tests are allowed the three field names too.
 7. `python3 scripts/run/purlin_run.py --test --all`: `Markers: <n> tied to a test, 0 not tied.`,
    no rule `failed`, `partial` or `no test`, and none of C2's warnings (this repository carries
    no `> Requires:`, no `> Global:` and no anchor `> Scope:`). Then the same with `--commit`.
@@ -647,49 +737,25 @@ the merged `fingerprint`, `counting` and `dashboard`.
 11. Update `dev/plans/handoff.md` ("Where the tree is", "What is left" item 1 closed, the words of
     section 3 into "Words for the owner to read") and `dev/plans/next-agent-prompt.md`.
 
-## 7. Questions for the owner
+## 7. The owner's answers (decision 101)
 
-Three things decision 100 does not settle, each about what the product does. The recommended
-option is first.
+Given on 2026-09-30 to the three questions this plan raised, with one further request.
 
-**Q1. An anchor pulled from another repository whose author still writes the old lines.**
-When a project pulls an anchor from another team's repository, Purlin writes a copy of that file
-into the project, adding the lines that say where it came from. If the other team's file still
-says which features need it (`> Requires:`), that it applies to all of them (`> Global:`), or
-which files it covers (`> Scope:`), those lines mean nothing now, and the project cannot edit a
-pulled copy: the next pull overwrites it.
-- **Leave those lines out of the copy, and say so in one line when it is added or pulled again.**
-  The copy never carries a line the project cannot change, so it never warns about one; it
-  differs from its source by those lines, as it already does by the lines Purlin adds.
-- **Copy the file as it is, and warn.** The warning prints on every status and test run until
-  the other team changes its file; the project cannot clear it on its own.
-
-**Q2. The upgrade from 0.9.5 and an anchor that only some features named.**
-In 0.9.5 an anchor could apply to a few features that named it. Now an anchor's rules apply to
-the whole project, and a rule for only some features belongs in those features' specs. The
-upgrade cannot tell which of an anchor's rules hold everywhere.
-- **Take the naming lines out, keep each anchor as it is, and print one line per such anchor
-  naming the specs that named it and the command that moves a rule into them.** Nothing is lost;
-  the anchor's tests must now hold across the whole project, and some may fail until a person
-  moves the rules that do not.
-- **Also copy each such anchor's rules into every spec that named it, and delete the anchor.**
-  Nothing fails at once, but the same rule is then written in several specs, each copy needs its
-  own test comment and signature, and every test comment that names the anchor must be
-  rewritten by hand.
-- **Take nothing out.** The upgrade leaves the lines, and the status warns on each until a person
-  runs `purlin:spec`; the project comes out of the upgrade with warnings.
-
-**Q3. A rule of a pulled anchor that no test in the project can show.**
-Decision 100 says a person checks the project against such a rule by hand and signs it. Today a
-rule is checked by hand when its proof carries `@manual`, and a pulled anchor's proofs are the
-other team's words, which the project cannot edit.
-- **The other team marks that proof `@manual` in its repository, and the next pull brings it
-  in.** Nothing new is built. Until then the rule reads `no test` and holds the project short of
-  its gate, and the project depends on the other team to change it.
-- **A person in the project may sign such a rule by name, and on a pulled anchor that signature
-  stands for the missing test.** The project is never held by another team, but a rule can then
-  reach `signed` with no test and no `@manual` proof, a second way to be checked by hand that the
-  dashboard, the package and the signing rules must each show and explain.
+- **A pulled anchor whose source carries `> Requires:`, `> Global:` or `> Scope:` is copied as it
+  is, and warned of.** The file is copied unchanged, and every status and test run warns, the
+  anchor's name first and the fix last, naming the source's owners, until the other team changes
+  its file (C13).
+- **The upgrade keeps each anchor, takes the naming lines out, and prints one line per anchor**
+  naming the specs that named it and the command that moves a rule into them (C12).
+- **A pinned anchor's rule that does not apply to this project is signed as not applying.** In
+  the owner's words: "this project can sign it but the signature just means it doesnt apply, in
+  this case". A person signs it with `--does-not-apply "<why>"`; it then counts as met, reads
+  `does not apply` with who said so, and the package says so. Only a pinned anchor's rule is
+  signed this way; the project's own anchor rule that does not apply is deleted. Like every
+  anchor signature it ends on any change to the project, and the person confirms it again (C14).
+- **The theme button is a glyph**, `◐` in one theme and `◑` in the other, the words staying as
+  its hover and accessible name; `CLAUDE.md` and `design/readme.md` allow the two glyphs (C15).
+- The six calls of section 9 stand.
 
 ## 8. This repository's two anchors
 
