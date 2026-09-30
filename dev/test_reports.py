@@ -267,6 +267,47 @@ class TestTheMarker:
         first = markers.Suite('first', 'x', None, 'junit', ['tests/*.py'])
         assert set(markers.scan(str(root), [first])) == {'tests/test_a.py'}
 
+    @staticmethod
+    def _no_suite(tmp_path, rel, proof='PROOF-1'):
+        """A `login` project of one proof, `tests` set to `[]`, whose one
+        test marked `login <proof>` is `rel`, added to git; nothing has
+        run."""
+        root = _project(tmp_path, [], spec=_spec('login', 1))
+        _write(root, rel, '# purlin: login %s\ndef test_a():\n'
+                          '    pass\n' % proof)
+        for command in (['git', 'init', '-q'], ['git', 'add', '-A']):
+            subprocess.run(command, cwd=str(root), check=True,
+                           capture_output=True)
+        return root
+
+    @staticmethod
+    def _passed_word(root):
+        from purlin import payload
+        (feature,) = payload.build_payload(str(root))['features']
+        (rule,) = feature['rules']
+        return rule['cells']['passed']['word']
+
+    # purlin: reports PROOF-105
+    def test_with_no_suite_a_marked_test_is_not_run(self, tmp_path):
+        root = self._no_suite(tmp_path, 'tests/test_login.py')
+        assert self._passed_word(root) == 'not run'
+
+    # purlin: reports PROOF-106
+    def test_with_no_suite_the_status_sends_the_rule_to_be_tested(
+            self, tmp_path):
+        from purlin import status
+        root = self._no_suite(tmp_path, 'tests/test_login.py')
+        text = status.sync_status(str(root))
+        assert text.splitlines()[-1] == '  1 rule to test: purlin:test', text
+
+    # purlin: reports PROOF-107
+    def test_with_no_suite_a_file_of_no_test_language_is_not_read(
+            self, tmp_path):
+        from purlin import status
+        root = self._no_suite(tmp_path, 'notes/test_login.md', 'PROOF-9')
+        text = status.sync_status(str(root))
+        assert 'Left to do:' in text and 'to correct' not in text, text
+
     # purlin: reports PROOF-6
     def test_python_declares_test_functions_and_methods_only(self):
         python = markers.python_tests(
@@ -754,8 +795,9 @@ class TestThroughARun:
     # purlin: reports PROOF-5
     def test_a_marker_above_nothing_is_tied_to_no_test(self, untied_run):
         code, out, results = untied_run
-        assert ('purlin: login PROOF-3 at tests/test_login.py:9 is tied to '
-                'no test') in out.splitlines(), out
+        assert ('tests/test_login.py:9 names login PROOF-3 and no test '
+                'follows it. Put the comment directly above a test, or run '
+                'purlin:build to repair it.') in out.splitlines(), out
         assert results[('PROOF-3', '')] == 'missing'
         assert code == 1
 
@@ -777,9 +819,9 @@ class TestThroughARun:
             '# purlin: login PROOF-1\ndef test_x():\n    pass\n\n'
             '# purlin: login PROOF-2\ndef test_x():\n    pass\n'),
             _spec('login', 2))
-        assert ("purlin: the report's test_x matches 2 tests in "
-                'tests/test_login.py, so its result is not counted'
-                ) in out.splitlines(), out
+        assert ("The report's test_x matches 2 tests in tests/test_login.py, "
+                'so its result is not counted. Give the tests different '
+                'names, then run purlin:test.') in out.splitlines(), out
         assert {key[0]: value for key, value in results.items()} == {
             'PROOF-1': 'missing', 'PROOF-2': 'missing'}, out
         assert code == 1, out
@@ -1016,8 +1058,9 @@ class TestThroughARun:
     def test_a_marker_naming_a_rule_that_has_proofs_fails_the_run(
             self, tmp_path):
         code, out, lines = self._names_nothing(tmp_path, 'login RULE-1')
-        assert ('purlin: login RULE-1 at tests/test_login.py:13 names a '
-                'rule that has proofs; name one of them') in lines, out
+        assert ('tests/test_login.py:13 names login RULE-1, which has '
+                'proofs; a comment names one of its proofs. Correct the '
+                'comment, or run purlin:build to repair it.') in lines, out
         assert code == 1
 
     # purlin: reports PROOF-24
@@ -1026,7 +1069,7 @@ class TestThroughARun:
         _write(root, 'tests/test_login.py', _WELL_FORMED)
         code, out = _run(root, '--all', '--test')
         assert 'which no spec has' not in out, out
-        assert 'names a rule that has proofs' not in out, out
+        assert 'which has proofs' not in out, out
         assert code == 0, out
 
     @staticmethod
@@ -1035,7 +1078,10 @@ class TestThroughARun:
         _write(root, 'tests/test_login.py', _WELL_FORMED)
         code, out = _run(root, '--all', '--test')
         lines = out.splitlines()
-        return (code, out, [line for line in lines
+        # The run's step after each problem is its own (run-11); these
+        # read the line up to the problem's full stop.
+        return (code, out, [line.split('. ')[0].rstrip('.') + '.'
+                            for line in lines
                             if line.startswith('purlin: the ')],
                 [line for line in lines if line.startswith('Running')])
 
@@ -1064,6 +1110,72 @@ class TestThroughARun:
         assert said == ['purlin: the c suite names no files.'], out
         assert started == ['Running the pytest suite.'], out
         assert code == 0, out
+
+    @staticmethod
+    def _suites_read(tmp_path, tests):
+        """`(names, problems)` of the suites a settings file's `tests`
+        holding `tests` is read as."""
+        root = _project(tmp_path, tests)
+        read, problems = markers.read_suites(str(root))
+        return [suite.name for suite in read], problems
+
+    # purlin: reports PROOF-110
+    def test_a_suite_with_no_files_names_its_problem(self, tmp_path):
+        assert self._suites_read(tmp_path, [
+            {'name': 'c', 'run': 'x', 'format': 'junit'}]) == (
+            [], ['the c suite names no files'])
+
+    # purlin: reports PROOF-108
+    def test_a_tests_setting_that_is_not_a_list_is_no_suite(self, tmp_path):
+        assert self._suites_read(tmp_path, {}) == (
+            [], ['"tests" in .purlin/config.json is not a list'])
+
+    # purlin: reports PROOF-109
+    def test_an_entry_that_is_not_an_object_is_left_out(self, tmp_path):
+        assert self._suites_read(tmp_path, [
+            'pytest', suites.pytest_suite()]) == (
+            ['pytest'], ['tests[0] is not an object'])
+
+    # purlin: reports PROOF-111
+    def test_a_suite_named_twice_keeps_the_first(self, tmp_path):
+        second = dict(suites.pytest_suite(), run='echo second')
+        root = _project(tmp_path, [suites.pytest_suite(), second])
+        read, problems = markers.read_suites(str(root))
+        assert [(suite.name, suite.run) for suite in read] == [
+            ('pytest', suites.pytest_suite()['run'])]
+        assert problems == [
+            'the pytest suite is named twice; the second is left out']
+
+    @staticmethod
+    def _report_written(tmp_path, command):
+        """Run a pytest suite whose `command` writes its report."""
+        root = _project(tmp_path, [{
+            'name': 'pytest', 'run': command,
+            'report': '.purlin/runtime/reports/pytest.xml',
+            'format': 'junit', 'files': ['tests/test_*.py']}])
+        _write(root, 'tests/test_login.py', _WELL_FORMED)
+        return _run(root, '--all', '--test')
+
+    # purlin: reports PROOF-113
+    def test_a_report_that_cannot_be_read_is_missing_evidence(
+            self, tmp_path):
+        code, out = self._report_written(
+            tmp_path, "mkdir -p .purlin/runtime/reports && "
+                      "printf '\\377\\376' > {report}")
+        assert ('Evidence is missing: the pytest suite wrote a report at '
+                '.purlin/runtime/reports/pytest.xml that could not be read'
+                ) in out, out
+        assert code == 1, out
+
+    # purlin: reports PROOF-114
+    def test_a_report_not_in_its_format_is_missing_evidence(self, tmp_path):
+        code, out = self._report_written(
+            tmp_path, "mkdir -p .purlin/runtime/reports && "
+                      "printf 'not xml' > {report}")
+        assert ('Evidence is missing: the pytest suite wrote a report at '
+                '.purlin/runtime/reports/pytest.xml that is not junit: '
+                'syntax error: line 1, column 0') in out, out
+        assert code == 1, out
 
 
 # ---------------------------------------------------------------------------
@@ -1154,8 +1266,9 @@ class TestNearMisses:
 
     # purlin: reports PROOF-34
     def test_a_comment_naming_no_id_has_no_fix(self, tmp_path):
-        fix, _why = _fix_and_why(tmp_path, '# purlin: login')
-        assert fix is None
+        assert _fix_and_why(tmp_path, '# purlin: login') == (
+            None, 'The comment names no `<feature> PROOF-<n>` or '
+                  '`<feature> RULE-<n>`.')
 
     # purlin: reports PROOF-38
     def test_an_id_that_is_neither_proof_nor_rule_has_no_fix(self, tmp_path):
@@ -1164,9 +1277,9 @@ class TestNearMisses:
 
     # purlin: reports PROOF-35
     def test_a_feature_one_character_off(self, tmp_path):
-        fix, why = _fix_and_why(tmp_path, '# purlin: logn PROOF-1')
-        assert fix == '# purlin: login PROOF-1'
-        assert '`logn`' in why and '`login`' in why, why
+        assert _fix_and_why(tmp_path, '# purlin: logn PROOF-1') == (
+            '# purlin: login PROOF-1',
+            '`logn` is one character from the feature `login`.')
 
     # purlin: reports PROOF-36
     def test_a_proof_id_one_character_off(self, tmp_path):
@@ -1175,8 +1288,13 @@ class TestNearMisses:
 
     # purlin: reports PROOF-39
     def test_a_misspelled_proof_word(self, tmp_path):
-        fix, _why = _fix_and_why(tmp_path, '# purlin: login PROF-2')
-        assert fix == '# purlin: login PROOF-2'
+        assert _fix_and_why(tmp_path, '# purlin: login PROF-2') == (
+            '# purlin: login PROOF-2', '`PROF` is one character from `PROOF`.')
+
+    # purlin: reports PROOF-112
+    def test_a_proof_word_in_lower_case(self, tmp_path):
+        assert _fix_and_why(tmp_path, '# purlin: login proof-1') == (
+            '# purlin: login PROOF-1', '`proof` is `PROOF` in lower case.')
 
     # purlin: reports PROOF-91
     def test_a_rule_with_one_proof_is_offered_its_proof(self, tmp_path):

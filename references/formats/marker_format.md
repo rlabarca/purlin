@@ -101,7 +101,8 @@ list with one entry per suite:
 suite's globs match is read for markers. `*` and `?` match within one path
 segment and `**` matches any number of segments; a glob with no `/` matches
 that file name in any directory. A file two suites match belongs to the
-first.
+first. With no suite set, the comments in every tracked file of a language
+Purlin reads tests in are read: Python, JavaScript, TypeScript, C# and Go.
 
 An entry with no `run`, a `format` outside the four, or no `files` is left out,
 and the run says so in one line. With no entry left, the run runs nothing and
@@ -193,10 +194,10 @@ Purlin never guesses. Each of these is printed as one line, by file and line:
 
 | Line | Counts as |
 |------|-----------|
-| `purlin: <feature> <id> at <file>:<line> is tied to no test` | `not run` |
+| `<file>:<line> names <feature> <ID> and no test follows it. Put the comment directly above a test, or run purlin:build to repair it.` | `not run` |
 | `<file>:<line> names <feature> <ID>, which no spec has. Correct the comment, or run purlin:build to repair it.` | nothing, and fails the run |
-| `purlin: <feature> <id> at <file>:<line> names a rule that has proofs; name one of them` | nothing, and fails the run |
-| `purlin: the report's <name> matches <n> tests in <file>, so its result is not counted` | `not run` for those tests |
+| `<file>:<line> names <feature> <RULE-N>, which has proofs; a comment names one of its proofs. Correct the comment, or run purlin:build to repair it.` | nothing, and fails the run |
+| `The report's <case> matches <n> tests in <files>, so its result is not counted. Give the tests different names, then run purlin:test.` | `not run` for those tests |
 
 The second line covers a feature no spec has, and a proof or a rule its feature's
 spec does not have. A run with either of the two that fail it exits 1, whatever

@@ -14,8 +14,9 @@ the one home of the contract; this module is the one reader of it.
 
 The settings file names the suites under `tests`, each with the globs its test
 files live under. Only a file one of those globs matches is read, so a
-marker-shaped line in a file no suite runs is not a marker. How a marker is
-tied to a test depends on the suite's format:
+marker-shaped line in a file no suite runs is not a marker. With no suite set,
+every tracked file of a language a test reader below reads is read. How a
+marker is tied to a test depends on the suite's format:
 
 - `junit`, `trx` and `gotest`: the marker belongs to the next test declared
   after it. Blank lines, decorators, attributes and other comments may sit
@@ -83,6 +84,10 @@ _JS_EXTENSIONS = ('.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx', '.mts',
 _CS_EXTENSIONS = ('.cs',)
 _GO_EXTENSIONS = ('.go',)
 _SHELL_EXTENSIONS = ('.sh', '.bash', '.zsh')
+# The languages a test reader reads: with no suite set, every tracked file of
+# one of them is read for markers.
+_READ_EXTENSIONS = (_PY_EXTENSIONS + _JS_EXTENSIONS + _CS_EXTENSIONS
+                    + _GO_EXTENSIONS)
 
 
 class Marker(object):
@@ -190,6 +195,11 @@ class Suite(object):
     def as_dict(self):
         return {'name': self.name, 'run': self.run, 'report': self.report,
                 'format': self.format, 'files': list(self.files)}
+
+
+# What a file read with no suite set belongs to: no command runs it, and its
+# markers tie to the next test declared after them.
+NO_SUITE = Suite('', '', None, 'junit', [])
 
 
 def load_config(project_root):
@@ -853,9 +863,14 @@ def test_files(project_root, suites, tracked_only=False):
     From the disk, tracked or not, so a new test runs before anyone added it;
     `tracked_only` reads git's list instead, which is what the fingerprint
     hashes. A file two suites match belongs to the first.
+
+    With no suite set, every tracked file of a language a test reader reads
+    is answered, each with `NO_SUITE`: before the first test run a marked
+    test is a test, whose proof is not run yet.
     """
     if not suites:
-        return {}
+        return {path: NO_SUITE for path in _tracked(project_root) or ()
+                if os.path.splitext(path)[1].lower() in _READ_EXTENSIONS}
     paths = _tracked(project_root) if tracked_only else None
     if paths is None:
         paths = list(_walk(project_root))
@@ -923,12 +938,13 @@ def marker_index(project_root):
 # Comments that name nothing
 # ---------------------------------------------------------------------------
 
-# A marker naming a feature, a proof or a rule no spec has fails the run, and
-# its line says what to do.
+# A marker naming a feature, a proof or a rule no spec has, or naming a rule
+# that has proofs, fails the run, and its line says what to do.
 NAMES_NOTHING = ('%s:%d names %s %s, which no spec has. Correct the comment, '
                  'or run purlin:build to repair it.')
-RULE_HAS_PROOFS = ('purlin: %s %s at %s:%d names a rule that has proofs; '
-                   'name one of them')
+RULE_HAS_PROOFS = ('%s:%d names %s %s, which has proofs; a comment names one '
+                   'of its proofs. Correct the comment, or run purlin:build '
+                   'to repair it.')
 
 
 def marker_problems(scan, features):
@@ -951,8 +967,8 @@ def marker_problems(scan, features):
                                               marker.feature, marker.id))
             elif (not marker.id.startswith('PROOF-')
                   and (info.get('proofs_by_rule') or {}).get(marker.id)):
-                lines.append(RULE_HAS_PROOFS % (marker.feature, marker.id,
-                                                path, marker.line))
+                lines.append(RULE_HAS_PROOFS % (path, marker.line,
+                                                marker.feature, marker.id))
     return lines
 
 
@@ -1074,12 +1090,14 @@ def _sentence(parts):
 def near_misses(project_root, features, suites=None):
     """`[{file, line, text, fix, why}]`, one per comment nearly a marker.
 
-    Only a file one suite's globs match is read, as for a marker, in path
-    and line order.
+    Only a file one suite's globs match is read, in path and line order;
+    with no suite set, none is.
     """
     if suites is None:
         suites = read_suites(project_root)[0]
     out = []
+    if not suites:
+        return out
     for path in test_files(project_root, suites):
         full = os.path.join(project_root, *path.split('/'))
         try:

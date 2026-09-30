@@ -49,12 +49,12 @@ PASS, FAIL, SKIP = 'pass', 'fail', 'skip'
 # What a marker's result is.
 NOT_RUN = 'not run'
 
-# The words the run prints about a marker it could not use. A marker naming
-# a feature, a proof or a rule no spec has fails the run, and its line says
-# what to do.
-TIED_TO_NO_TEST = 'purlin: %s %s at %s:%d is tied to no test'
-AMBIGUOUS = ("purlin: the report's %s matches %d tests in %s, so its result "
-             'is not counted')
+# The words the run prints about a marker it could not use, and about a case
+# it could not count. Each line says what to do.
+TIED_TO_NO_TEST = ('%s:%d names %s %s and no test follows it. Put the comment '
+                   'directly above a test, or run purlin:build to repair it.')
+AMBIGUOUS = ("The report's %s matches %d tests in %s, so its result is not "
+             'counted. Give the tests different names, then run purlin:test.')
 
 # The outcomes TRX writes that mean the test ran and did not pass, and those
 # that mean the test itself ran and passed; any other outcome is a skip.
@@ -465,6 +465,6 @@ def untied_lines(scan):
     lines = []
     for path in sorted(scan):
         for marker in scan[path].untied:
-            lines.append(TIED_TO_NO_TEST % (marker.feature, marker.id, path,
-                                            marker.line))
+            lines.append(TIED_TO_NO_TEST % (path, marker.line,
+                                            marker.feature, marker.id))
     return lines

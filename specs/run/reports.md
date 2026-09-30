@@ -9,14 +9,15 @@
 >   test is reported by file and line; it never guesses.
 > Scope: scripts/run/reports.py, scripts/mcp/purlin/markers.py, references/formats/marker_format.md
 > Stack: python/stdlib (xml.etree, json, tokenize, ast, re, shlex), pytest, jest, vitest, dotnet, go, bash, sqlite3
+> Highest-Rule: 31
 
 ## Rules
 
 - RULE-1: A marker is one whole-line comment, `purlin: <feature> PROOF-<n>` or `purlin: <feature> RULE-<n>`, after any of `#`, `//`, `--`, `;`, `%` and `'`, or inside a one-line `/* */` or `<!-- -->`; a `purlin:` comment of any other shape ties nothing
 - RULE-2: A marker-shaped line inside a Python string or inside a shell here document is not a marker
-- RULE-3: Only a file one suite's `files` globs match is read for markers; `*` and `?` match within one path segment, `**` matches any number of segments, a glob with no `/` matches that file name in any directory, and a file two suites match belongs to the first
+- RULE-3: Only a file one suite's `files` globs match is read for markers; `*` and `?` match within one path segment, `**` matches any number of segments, a glob with no `/` matches that file name in any directory, and a file two suites match belongs to the first; with no suite set, every tracked file of a language Purlin reads tests in, Python, JavaScript, TypeScript, C# or Go, is read
 - RULE-4: A marker belongs to the next test declared after it in its file: blank lines, decorators, attributes and other comments may sit between them, every marker between the previous test's declaration and this one belongs to this one, and the test's result counts for each of them
-- RULE-5: A marker no test follows is reported as `purlin: <feature> <id> at <file>:<line> is tied to no test` and its result is `not run`, which the evidence writes as `missing`
+- RULE-5: A marker no test follows is reported as `<file>:<line> names <feature> <ID> and no test follows it. Put the comment directly above a test, or run purlin:build to repair it.` and its result is `not run`, which the evidence writes as `missing`
 - RULE-6: A test is declared by a Python function whose name starts with `test`, at module level or in a class; a JavaScript or TypeScript `it` or `test` call with a literal title, inside any number of `describe` calls; a C# method carrying `[Fact]`, `[Theory]`, `[Test]`, `[TestCase]`, `[TestCaseSource]`, `[TestMethod]`, `[DataTestMethod]`, `[SkippableFact]` or `[SkippableTheory]`; a Go `func TestX(t *testing.T)`
 - RULE-7: A `junit` report is read case by case: a case with a `failure` or `error` child fails, one with a `skipped` child is skipped, and any other passes; its `classname`, `name` and `file` are what the tie reads
 - RULE-8: A `trx` report is read result by result, each joined through its `testId` to the class and method it ran: `Passed`, `Warning`, `Completed` and `PassedButRunAborted` pass, `Failed`, `Error`, `Timeout` and `Aborted` fail, and any other outcome is skipped
@@ -24,13 +25,13 @@
 - RULE-10: A case's file is its `file` attribute where the report writes one, else its class name where that is a path, else the Python module its dotted class name names among the suite's marked files; a `trx` case is found by its class chain, narrowed by namespace, and a `gotest` case by its package, read against the module line of `go.mod`
 - RULE-11: The cases of one parametrised test, `test_x[a]` and `test_x[b]`, `TestX/a`, `Method(x: 1)`, or the rows of an `it.each` table, all belong to that one test, and the test passes only when every one of them passes
 - RULE-12: A nested title, `outer > inner > title`, is matched by its last part and, where two tests in the file share that part, narrowed by the outer parts; a Python class and a C# class narrow the same way
-- RULE-13: A case that matches more than one test is counted for none of them, and the run prints `purlin: the report's <name> matches <n> tests in <file>, so its result is not counted`
+- RULE-13: A case that matches more than one test is counted for none of them, and the run prints `The report's <case> matches <n> tests in <files>, so its result is not counted. Give the tests different names, then run purlin:test.`
 - RULE-14: A test whose cases all passed reads `pass`; one with any failed or errored case reads `fail`; any other, its cases all or partly skipped with none failed, or none of them in the report, reads `not run`, which the evidence writes as `missing`
 - RULE-15: In an `exit` suite each test file is one test: the command runs once per file, with `{files}` that one file, and the file passes when the command exits 0; every marker in the file takes the file's result
 - RULE-16: `{files}` in a suite's command becomes the test files that carry a marker of a feature the run covers, each quoted, on a run over some features, and nothing on a run over every feature; `{report}` becomes the report path
 - RULE-17: A suite's report is deleted before the suite runs, file or folder, so a report from an earlier run is never read
 - RULE-18: A suite that leaves no report to read makes the run say `Evidence is missing: the <name> suite wrote no report at <path>.`, or `in <path>` where it left a folder with no report in it, and exit 1
-- RULE-19: A marker naming a feature no spec has, or a proof or a rule its feature's spec does not have, is printed as `<file>:<line> names <feature> <ID>, which no spec has. Correct the comment, or run purlin:build to repair it.`, and one naming a rule that has proofs as `purlin: <feature> <id> at <file>:<line> names a rule that has proofs; name one of them`; either exits the run 1 whatever its tests did
+- RULE-19: A marker naming a feature no spec has, or a proof or a rule its feature's spec does not have, is printed as `<file>:<line> names <feature> <ID>, which no spec has. Correct the comment, or run purlin:build to repair it.`, and one naming a rule that has proofs as `<file>:<line> names <feature> <RULE-N>, which has proofs; a comment names one of its proofs. Correct the comment, or run purlin:build to repair it.`; either exits the run 1 whatever its tests did
 - RULE-20: A `tests` entry with no `run`, a `format` other than `junit`, `trx`, `gotest` and `exit`, or no `files` is left out with one line naming the suite and why
 - RULE-21: `markers.py --near-misses --project-root <dir>` prints one JSON array holding `{"file", "line", "text", "fix", "why"}` for each comment that is nearly a marker, in a file one suite's globs match, and exits 0; any other command line exits 2
 - RULE-22: A comment whose `purlin` is misspelled by one letter or written in capitals, or that has no space after the colon, is a near miss whose fix is the marker it meant, and a marker naming what a spec has is none
@@ -40,6 +41,9 @@
 - RULE-26: A suite's command runs from the project root
 - RULE-27: A report path that is a folder is read file by file
 - RULE-28: A report path of `-` is read from the command's standard output
+- RULE-29: A `tests` setting that is not a list, an entry of it that is not an object, and an entry whose name an earlier suite has are each left out with one line saying why
+- RULE-30: A comment whose `PROOF` or `RULE` is written in lower case is a near miss whose fix is the marker it meant
+- RULE-31: A report the run cannot read, or that is not in its suite's format, makes the run say `Evidence is missing`, naming the suite, the report's path and why, and exit 1
 
 ## Proof
 
@@ -57,12 +61,15 @@
 - PROOF-46 (RULE-3): The glob `dev/**/test_*.py` matches `dev/test_a.py`, with no folder between `dev` and the file
 - PROOF-47 (RULE-3): With a suite `first` on `tests/*.py` and then a suite `second` on `**/*.py`, `tests/test_a.py`, which both match, belongs to `first`, and `other/test_b.py`, which only `second` matches, belongs to `second`
 - PROOF-48 (RULE-3): With one suite, on `tests/*.py`, markers are read from `tests/test_a.py` and not from `other/test_b.py`, which carries a marker too
+- PROOF-105 (RULE-3): With `tests` set to `[]`, a tracked Python file carries `# purlin: login PROOF-1` above the test `test_a`, and nothing has run; that proof's passed cell reads `not run`
+- PROOF-106 (RULE-3): With `tests` set to `[]`, the one proof of `login` is marked above a test in a tracked Python file, and nothing has run; the status ends `  1 rule to test: purlin:test`
+- PROOF-107 (RULE-3): With `tests` set to `[]`, a tracked Markdown file carries `# purlin: login PROOF-9` above the line `def test_a():`, naming a proof `login` does not have; the status names no test comment to correct
 - PROOF-99 (RULE-3): On Windows, with one suite on `tests/*.py`, markers are read from `tests\test_a.py` and not from `other\test_b.py`, which carries a marker too @env(windows)
 - PROOF-4 (RULE-4): A Python test file holds the marker `login PROOF-1` above a decorator above the passing test `test_decorated`; the run's evidence holds exactly one result, `PROOF-1` `pass` under `tests/test_login.py::test_decorated`
 - PROOF-49 (RULE-4): A Python test file holds the markers `login PROOF-1` and `login PROOF-2`, one above the other, over the passing test `test_two`; the evidence holds exactly two results, each proof `pass` under `tests/test_login.py::test_two`
 - PROOF-50 (RULE-4): A Python test file holds `login PROOF-1`, then a blank line, an ordinary comment and a decorator, then the passing test `test_decorated`; the evidence holds exactly one result, `PROOF-1` `pass` under `tests/test_login.py::test_decorated`
 - PROOF-51 (RULE-4): The markers `login PROOF-1` and `login PROOF-2` sit over `test_two`, which fails; the run exits 1 and the evidence holds exactly two entries, each proof once, `fail` under `tests/test_login.py::test_two`
-- PROOF-5 (RULE-5): A Python test file ends with the marker `login PROOF-3` on its line 9, with no test after it; the run prints `purlin: login PROOF-3 at tests/test_login.py:9 is tied to no test`, exits 1, and the evidence holds `PROOF-3` with no test and the result `missing`
+- PROOF-5 (RULE-5): A Python test file ends with the marker `login PROOF-3` on its line 9, with no test after it; the run prints `tests/test_login.py:9 names login PROOF-3 and no test follows it. Put the comment directly above a test, or run purlin:build to repair it.`, exits 1, and the evidence holds `PROOF-3` with no test and the result `missing`
 - PROOF-52 (RULE-5): In the same file, `login PROOF-1` and `login PROOF-2` each sit above a passing test; the evidence holds both `pass` under their tests, and the run prints `Evidence is missing: 1 marker has no passing or failing result: login PROOF-3 at tests/test_login.py:9.`
 - PROOF-6 (RULE-6): A Python file of a module-level `helper`, `test_a`, and a class `TestB` holding `test_c` and a method `helper` declares exactly two tests, `test_a` and `test_c` in `TestB`
 - PROOF-53 (RULE-6): A TypeScript file declares exactly its five `it` and `test` calls: `accepts` at the top, `same name` inside `outer` and then `inner`, and `same name`, `skipped` and `param %i` inside `outer`
@@ -97,7 +104,7 @@
 - PROOF-72 (RULE-12): A test file declares `same name` inside `outer` and then `inner`, marked and passing, and `same name` directly inside `outer`, unmarked and failing; from the Jest report the marker reads `pass`, and no case is reported as matching two tests
 - PROOF-73 (RULE-12): In a Python file the classes `TestGroup` and `TestOther` each declare `test_same`, the marked one in `TestGroup` passing and the other failing; the marker reads `pass`, and no case is reported as matching two tests
 - PROOF-74 (RULE-12): In a C# file the classes `First` and `Second` of the namespace `N` each declare a test `Same`, `First`'s marked and passing and `Second`'s failing; the marker reads `pass`, and no case is reported as matching two tests
-- PROOF-13 (RULE-13): A Python test file declares `test_x` twice, marked `login PROOF-1` and `login PROOF-2`, and its one case passes; the run prints `purlin: the report's test_x matches 2 tests in tests/test_login.py, so its result is not counted` on a line of its own, the evidence holds both proofs `missing`, and it exits 1
+- PROOF-13 (RULE-13): A Python test file declares `test_x` twice, marked `login PROOF-1` and `login PROOF-2`, and its one case passes; the run prints `The report's test_x matches 2 tests in tests/test_login.py, so its result is not counted. Give the tests different names, then run purlin:test.` on a line of its own, the evidence holds both proofs `missing`, and it exits 1
 - PROOF-14 (RULE-14): Of five marked Python tests run together, the one that passes is `pass` in the evidence
 - PROOF-75 (RULE-14): Of five marked Python tests run together, the one that fails an assertion is `fail` in the evidence
 - PROOF-76 (RULE-14): Of five marked Python tests run together, the one that is skipped is `missing` in the evidence
@@ -123,27 +130,34 @@
 - PROOF-19 (RULE-19): Every rule of `login` has a passing test, and one more passing test, on line 13, is marked `purlin: nosuch PROOF-1`; the run prints `tests/test_login.py:13 names nosuch PROOF-1, which no spec has. Correct the comment, or run purlin:build to repair it.` and exits 1
 - PROOF-21 (RULE-19): `login` has `PROOF-1` to `PROOF-3`, each with a passing test, and one more passing test, on line 13, is marked `purlin: login PROOF-9`; the run prints `tests/test_login.py:13 names login PROOF-9, which no spec has. Correct the comment, or run purlin:build to repair it.` and exits 1
 - PROOF-22 (RULE-19): `login` has `RULE-1` to `RULE-3`, each with a passing test, and one more passing test, on line 13, is marked `purlin: login RULE-9`; the run prints `tests/test_login.py:13 names login RULE-9, which no spec has. Correct the comment, or run purlin:build to repair it.` and exits 1
-- PROOF-23 (RULE-19): Every rule of `login` has a passing test, and one more passing test, on line 13, is marked `purlin: login RULE-1`, a rule that has `PROOF-1`; the run prints `purlin: login RULE-1 at tests/test_login.py:13 names a rule that has proofs; name one of them` and exits 1
-- PROOF-24 (RULE-19): The same project with only the three markers `login PROOF-1`, `PROOF-2` and `PROOF-3`, each above a passing test, exits 0, and nothing it prints contains `which no spec has` or `names a rule that has proofs`
+- PROOF-23 (RULE-19): Every rule of `login` has a passing test, and one more passing test, on line 13, is marked `purlin: login RULE-1`, a rule that has `PROOF-1`; the run prints `tests/test_login.py:13 names login RULE-1, which has proofs; a comment names one of its proofs. Correct the comment, or run purlin:build to repair it.` and exits 1
+- PROOF-24 (RULE-19): The same project with only the three markers `login PROOF-1`, `PROOF-2` and `PROOF-3`, each above a passing test, exits 0, and nothing it prints contains `which no spec has` or `which has proofs`
 - PROOF-25 (RULE-19): Two passing tests are marked for features no spec has, `nosuch` on line 13 and `other` on line 17; the run prints `tests/test_login.py:13 names nosuch PROOF-1, which no spec has.` and `tests/test_login.py:17 names other PROOF-2, which no spec has.`, each at the start of its own line with the advice after it, and exits 1
 - PROOF-20 (RULE-20): Beside one complete suite, a `tests` entry `a` names no `run`; the run prints `purlin: the a suite names no run command.`, starts only the complete suite, printing `Running the pytest suite.` alone, and exits 0 when its tests pass
 - PROOF-88 (RULE-20): Beside one complete suite, a `tests` entry `b` names the format `tap`; the run prints `purlin: the b suite names the format "tap", which is not one of junit, trx, gotest, exit.`, starts only the complete suite, and exits 0 when its tests pass
 - PROOF-89 (RULE-20): Beside one complete suite, a `tests` entry `c` names no `files`; the run prints `purlin: the c suite names no files.`, starts only the complete suite, and exits 0 when its tests pass
+- PROOF-110 (RULE-20): A `tests` entry `c` with a `run` and a `format` and no `files` is left out, with the one suite problem `the c suite names no files`
 - PROOF-28 (RULE-21): In a project whose pytest suite reads `tests/test_login.py`, where line 1 reads `# purln: login PROOF-1`, `--near-misses` prints one JSON array holding one entry: file `tests/test_login.py`, line 1, that text, the fix `# purlin: login PROOF-1`, and a `why` naming `purln`; it exits 0
 - PROOF-29 (RULE-21): `markers.py --near-misses --nonsense` prints the line `Usage: markers.py --near-misses [--project-root DIR]` and exits 2
 - PROOF-30 (RULE-21): A misspelled comment in a file no suite's globs match is not listed, and the array is empty
 - PROOF-104 (RULE-21): On Windows, in a project whose pytest suite reads `tests/test_login.py`, where line 1 reads `# purln: login PROOF-1`, `--near-misses` prints one entry with the file `tests/test_login.py`, spelled with `/`, and exits 0 @env(windows)
-- PROOF-31 (RULE-22): A test file carrying `# PURLIN: login PROOF-1` is listed with the fix `# purlin: login PROOF-1`, and its why is the one sentence saying `PURLIN` is `purlin` in capitals
+- PROOF-31 (RULE-22): A test file carrying `# PURLIN: login PROOF-1` is listed with the fix `# purlin: login PROOF-1`, and its why reads `` `PURLIN` is `purlin` in capitals. ``
 - PROOF-32 (RULE-22): A test file carrying `# purlin:login PROOF-1` is listed with the fix `# purlin: login PROOF-1`, and its why reads `There is no space after the colon.`
-- PROOF-90 (RULE-22): A test file carrying `# purlim: login PROOF-1` is listed with the fix `# purlin: login PROOF-1`, and its why is the one sentence saying `purlim` is one letter from `purlin`
+- PROOF-90 (RULE-22): A test file carrying `# purlim: login PROOF-1` is listed with the fix `# purlin: login PROOF-1`, and its why reads `` `purlim` is one letter from `purlin`. ``
 - PROOF-33 (RULE-22): A test file carrying `# purlin: login PROOF-1`, naming a feature and a proof a spec has, is not listed: the array is empty
-- PROOF-34 (RULE-23): A test file carrying `# purlin: login`, which names no id, is listed with the fix null
+- PROOF-34 (RULE-23): A test file carrying `# purlin: login`, which names no id, is listed with the fix null, and its why reads `` The comment names no `<feature> PROOF-<n>` or `<feature> RULE-<n>`. ``
 - PROOF-38 (RULE-23): A test file carrying `# purlin: login TEST-1`, whose id is neither a PROOF nor a RULE, is listed with the fix null
-- PROOF-35 (RULE-24): Where the spec `login` exists, a test file carrying `# purlin: logn PROOF-1` is listed with the fix `# purlin: login PROOF-1`, and why names `logn` and `login`
+- PROOF-35 (RULE-24): Where the spec `login` exists, a test file carrying `# purlin: logn PROOF-1` is listed with the fix `# purlin: login PROOF-1`, and its why reads `` `logn` is one character from the feature `login`. ``
 - PROOF-36 (RULE-24): Where `login` has `PROOF-1`, `PROOF-2` and `PROOF-3`, a test file carrying `# purlin: login PROOF-30` is listed with the fix `# purlin: login PROOF-3`
-- PROOF-39 (RULE-24): Where `login` has `PROOF-2`, a test file carrying `# purlin: login PROF-2` is listed with the fix `# purlin: login PROOF-2`
-- PROOF-91 (RULE-24): Where `login`'s `RULE-3` has the one proof `PROOF-3`, a test file carrying `# purlin: login RULE-30` is listed with the fix `# purlin: login PROOF-3`, and its why is the one sentence saying `RULE-30` is one character from `RULE-3`, which login has, and that a comment names its one proof, `PROOF-3`
+- PROOF-39 (RULE-24): Where `login` has `PROOF-2`, a test file carrying `# purlin: login PROF-2` is listed with the fix `# purlin: login PROOF-2`, and its why reads `` `PROF` is one character from `PROOF`. ``
+- PROOF-91 (RULE-24): Where `login`'s `RULE-3` has the one proof `PROOF-3`, a test file carrying `# purlin: login RULE-30` is listed with the fix `# purlin: login PROOF-3`, and its why reads `` `RULE-30` is one character from `RULE-3`, which login has; a comment names its one proof, `PROOF-3`. ``
 - PROOF-97 (RULE-24): Where `login`'s `RULE-3` has two proofs, `PROOF-3` and `PROOF-4`, a test file carrying `# purlin: login RULE-30` is not listed: the array is empty
 - PROOF-98 (RULE-24): Where `login`'s `RULE-3` has no proof, a test file carrying `# purlin: login RULE-30` is listed with the fix `# purlin: login RULE-3`
 - PROOF-37 (RULE-24): Where `login` has `PROOF-1`, `PROOF-2` and `PROOF-3`, a test file carrying `# purlin: login PROOF-4`, one character from all three, is not listed: the array is empty
 - PROOF-92 (RULE-24): Where the specs `login` and `logon` both exist, a test file carrying `# purlin: logn PROOF-1`, one character from each, is not listed: the array is empty
+- PROOF-108 (RULE-29): A settings file whose `tests` holds `{}` is read as no suite, with the one suite problem `"tests" in .purlin/config.json is not a list`
+- PROOF-109 (RULE-29): A `tests` list whose first entry is the text `pytest` and whose second is a complete suite is read as that suite, with the one suite problem `tests[0] is not an object`
+- PROOF-111 (RULE-29): Two complete `tests` entries both named `pytest` are read as the first alone, with the one suite problem `the pytest suite is named twice; the second is left out`
+- PROOF-112 (RULE-30): A test file carrying `# purlin: login proof-1` is listed with the fix `# purlin: login PROOF-1`, and its why reads `` `proof` is `PROOF` in lower case. ``
+- PROOF-113 (RULE-31): A pytest suite whose command writes bytes that are not UTF-8 as its report ends the run with exit code 1, and the run's `Evidence is missing` line names the reason `wrote a report at .purlin/runtime/reports/pytest.xml that could not be read`
+- PROOF-114 (RULE-31): A pytest suite whose command writes the text `not xml` as its report ends the run with exit code 1, and the run's `Evidence is missing` line names the reason `wrote a report at .purlin/runtime/reports/pytest.xml that is not junit: syntax error: line 1, column 0`
