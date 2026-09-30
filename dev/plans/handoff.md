@@ -6,6 +6,12 @@ decisions 60 to 100 (together with this file they are the product as the owner s
 
 ## Where the tree is
 
+- **Decision 102 is built** (the answers to the QA and product check), by eight lanes merged into
+  `main` by fast-forward and one integration (`d102-interfaces.md`: what differs from the plan,
+  the ids, the words chosen, the test counts). Full sweep: 2411 passed, 3 skipped,
+  `Suites: 5 passed, 0 failed`. `purlin_run.py --test --all --commit`: `Markers: 2453 tied to a
+  test, 0 not tied.`, `957 rules. 870 pass their tests.`, 87 waiting for Windows. **Windows has
+  not been run since decision 100.**
 - **Decisions 100 and 101 are built** (anchors are global; a pinned anchor's rule signed as not
   applying), by ten lanes merged into `main` by fast-forward and one integration
   (`d100-interfaces.md`: what differs from the plan, the ids, the words chosen). Full sweep at
@@ -85,6 +91,9 @@ a system of record, which decides who was entitled to sign.
 
 The prompt for the next session is `dev/plans/next-agent-prompt.md`.
 
+0. **After decision 102**: the remote run on Windows (`purlin:test --remote`); the anchors slide
+   below; a full reading of the docs pages against the code, `docs/qa-guide.md` among them; and,
+   if the owner wants it, the QA and product check run again with separate agents.
 1. **After decisions 100 and 101**, in this order: the remote run on Windows
    (`purlin:test --remote`, pushing only its run branch); the slide on anchors, taken into
    `dev/plans/deck/build_deck.py` with these words and published: title `Anchors: rules the
@@ -114,6 +123,9 @@ The prompt for the next session is `dev/plans/next-agent-prompt.md`.
    tag, the release.
 
 ## Words for the owner to read
+
+Decision 102's words are in `d102-interfaces.md`: section 7 of `d102-plan.md` under "Words
+chosen for the owner to read", and each lane's own under "Words chosen by a lane, word for word".
 
 Chosen by an agent where no decision gave them, gathered from `phase3-interfaces.md` ("Words
 chosen for the owner to read") and `phase4-interfaces.md` ("Words chosen for the owner to read",
