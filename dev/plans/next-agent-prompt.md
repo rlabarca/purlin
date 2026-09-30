@@ -6,7 +6,7 @@ Paste everything below the line into a new session opened in
 ---
 
 You are continuing Purlin 0.10.0, a Claude Code plugin for spec-driven development that uses
-itself. The owner has closed decisions 60 to 99, and all of them are built and proven on `main`:
+itself. The owner has closed decisions 60 to 100. Decisions 60 to 99 are built and proven on `main`:
 the product work of decisions 94 to 97, Windows (86 proofs tagged `@env(windows)`, 13 tagged
 `@env(macos)`), sanity check 3 applied in phase 4, every page of the docs read again against
 the code with the screenshots retaken, and the five answers of decision 99. Every rule
@@ -18,7 +18,7 @@ owner's review done.
 
 1. `dev/plans/handoff.md`: where the tree is, what is left, the words for the owner to read,
    the small things known and not fixed, and how the owner wants work done.
-2. `dev/plans/three-levels.md`, decisions 60 to 99 (search `60. **`). Later decisions amend
+2. `dev/plans/three-levels.md`, decisions 60 to 100 (search `60. **`). Later decisions amend
    earlier ones; the later holds.
 3. `dev/plans/phase4-interfaces.md`: what phase 4 built, where it differs from
    `dev/plans/phase4-contracts.md`, the calls left, "The pages", what fan-out 2 and its

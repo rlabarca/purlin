@@ -1,7 +1,7 @@
 # Handoff, 2026-09-30
 
 For the session that continues Purlin 0.10.0. Read this, then `dev/plans/three-levels.md`
-decisions 60 to 99 (together with this file they are the product as the owner settled it), then
+decisions 60 to 100 (together with this file they are the product as the owner settled it), then
 `dev/plans/next-agent-prompt.md`, the prompt that session is given.
 
 ## Where the tree is
