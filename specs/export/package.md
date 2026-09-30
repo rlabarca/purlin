@@ -8,7 +8,7 @@
 >   evidence handed to a regulated system of record; Purlin makes no claim of compliance.
 > Scope: scripts/export/package.py
 > Stack: python/stdlib (json, hashlib, subprocess), git worktree
-> Highest-Rule: 24
+> Highest-Rule: 25
 
 ## Rules
 
@@ -36,6 +36,7 @@
 - RULE-22: `--check` on a file that is not a package in the format prints `The package does not match its fingerprint: <reason>.` and exits 1, the reason naming what is wrong with the file
 - RULE-23: Where the package cannot be built or written, the command prints `export: the package was not written: <why>.` and exits 1
 - RULE-24: Where `--commit` cannot commit the package, the command prints `export: the package was not committed: <why>.` after the line naming the file it wrote, and exits 1
+- RULE-25: The evidence package states the gate and whether the version is finished, and no field of it says that the software complies with a regulation
 
 ## Proof
 
@@ -93,3 +94,4 @@
 - PROOF-52 (RULE-23): In a project where `.purlin/evidence/package` is a file and not a folder, the command is run with no argument; it exits 1 and prints only `export: the package was not written: <the operating system's own message>.`
 - PROOF-53 (RULE-24): In a project whose commit hook refuses every commit, printing `no commits today`, the command is run with `--commit`; it exits 1, its last line reads `export: the package was not committed: git commit failed: no commits today.`, and `HEAD` has not moved
 - PROOF-54 (RULE-24): In a project whose index another git process holds locked, the command is run with `--commit`; it exits 1, and the line after the one naming the file it wrote begins `export: the package was not committed: git add failed: `, followed by git's own message
+- PROOF-55 (RULE-25): At the gate `signed`, with both rules signed, the package written for the tag holds exactly the top-level keys the format lists, its `gate` reads `signed` and its `state` `finished`, and no key or value in it holds the word `compliant` or `compliance`

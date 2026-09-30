@@ -118,6 +118,23 @@ def rule_of(package, rule_id, feature='login'):
     return next(r for r in entry['rules'] if r['id'] == rule_id)
 
 
+def words_naming_compliance(value):
+    """Every key and every text value in a package, at any depth, that holds
+    `compliant` or `compliance` in any case."""
+    found = []
+    if isinstance(value, dict):
+        for key, inner in value.items():
+            if re.search(r'complian(t|ce)', key, re.I):
+                found.append(key)
+            found.extend(words_naming_compliance(inner))
+    elif isinstance(value, list):
+        for inner in value:
+            found.extend(words_naming_compliance(inner))
+    elif isinstance(value, str) and re.search(r'complian(t|ce)', value, re.I):
+        found.append(value)
+    return found
+
+
 def line(kind, count, text, command):
     return {'kind': kind, 'count': count, 'text': text, 'command': command}
 
@@ -388,6 +405,18 @@ class TestTheState:
 # ---------------------------------------------------------------------------
 
 class TestTheContent:
+
+    # purlin: package PROOF-55
+    def test_the_package_states_the_gate_and_claims_no_compliance(
+            self, tagged):
+        package = read_package(tagged.root)
+        assert list(package) == TOP_LEVEL
+        assert (package['gate'], package['state']) == ('signed', 'finished')
+        assert words_naming_compliance(package) == []
+        # A key or a value naming it anywhere in the package is found.
+        assert words_naming_compliance(
+            {'rules': [{'note': 'Compliant with Part 11'}],
+             'compliance': None}) == ['Compliant with Part 11', 'compliance']
 
     # purlin: package PROOF-9
     def test_one_rule_carries_its_words_its_proof_and_its_test(self, tagged):
