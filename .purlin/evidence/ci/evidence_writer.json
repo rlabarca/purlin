@@ -2,15 +2,15 @@
   "feature": "evidence_writer",
   "platforms": {
     "windows": {
-      "at": "2026-09-30T05:20:25Z",
-      "commit": "babd6aeeca3c60254b51d4b26e3d6361d0aeb2b9",
+      "at": "2026-09-30T12:59:39Z",
+      "commit": "c98fe7be7e22a4548b2a347e02bf6e86d754acde",
       "dirty": false,
       "fingerprint": {
-        "code": "7ed39025c74a69de9210d6472f8ee15dacbb6c915df381c878ee349de073fd1a",
+        "code": "f0e5c71a60b9c46101f42fdad19d9972d1aa701f769fb011ae961608be95dae4",
         "spec": "673f695886a4345860c7cf7f098a70db51bcd49a51299832d4edbcd934ecd5aa",
         "tests": "d8a9cab035d11bde64dce7daf59d32c90408aa145445951025a00eb38b1bd971"
       },
-      "hostname": "runnervmfi6oq",
+      "hostname": "runnervm99s1a",
       "machine": "remote runner, Windows",
       "proofs": [
         {
