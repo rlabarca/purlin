@@ -35,8 +35,8 @@ for the tag: the `VERSION` file at the project root, else `version` in
 `purlin:export --release <name>` names another, which is the same name
 `purlin:sign --release <name>` gives the tag. Where the project states none
 and `--release` names none, `purlin:export` prints `No version: nothing in
-this project states one. Name it with --release <version>.`, writes nothing
-and exits 1.
+this project states one. Run purlin:export --release <version>, or write it
+to a VERSION file.`, writes nothing and exits 1.
 
 ## What it reads
 
@@ -108,7 +108,7 @@ The state is the first thing a reader sees after the schema.
 | `name` | string | the spec's name |
 | `spec` | string | the spec's path, `/` separated |
 | `scope` | array of strings | the spec's `> Scope:` entries, as written |
-| `requires` | array of strings | the specs its `> Requires:` names |
+| `requires` | array of strings | the names its `> Requires:` line holds |
 | `anchor` | bool | whether the spec is an anchor |
 | `rules` | array | the spec's own rules, ordered by rule number |
 

@@ -8,6 +8,7 @@
 >   evidence handed to a regulated system of record; Purlin makes no claim of compliance.
 > Scope: scripts/export/package.py
 > Stack: python/stdlib (json, hashlib, subprocess), git worktree
+> Highest-Rule: 24
 
 ## Rules
 
@@ -26,10 +27,15 @@
 - RULE-13: Each rule carries each current signature with the signer's email and name, the key's fingerprint, the feature it applies to, the machines, the time, the note, whether its commit is signed and the hashes it locked
 - RULE-14: Each rule carries one status for each step up to the gate
 - RULE-15: Nothing in the package names who last changed a test
-- RULE-16: Run with no argument in a project that states no version, the command prints `No version: nothing in this project states one. Name it with --release <version>.`, writes nothing and exits 1
+- RULE-16: Run with no argument in a project that states no version, the command prints `No version: nothing in this project states one. Run purlin:export --release <version>, or write it to a VERSION file.`, writes nothing and exits 1
 - RULE-17: Every time in the package is in UTC, ending in `Z`
 - RULE-18: A second `--commit` over the same evidence prints `Package unchanged.` and leaves the commit the evidence was taken at named
 - RULE-19: Where `.purlin/config.json` cannot be read, the command, `--check` included, prints `.purlin/config.json cannot be read: <cause>. Fix the file by hand; nothing ran and nothing was saved.`, writes nothing and exits 1
+- RULE-20: Run with a `--project-root` that is not a folder, the command prints `package.py: <path> is not a directory.`, writes nothing and exits 2
+- RULE-21: A command line the export does not take prints the two usage lines, then `package.py: <what is wrong>`, and the command writes nothing and exits 2
+- RULE-22: `--check` on a file that is not a package in the format prints `The package does not match its fingerprint: <reason>.` and exits 1, the reason naming what is wrong with the file
+- RULE-23: Where the package cannot be built or written, the command prints `export: the package was not written: <why>.` and exits 1
+- RULE-24: Where `--commit` cannot commit the package, the command prints `export: the package was not committed: <why>.` after the line naming the file it wrote, and exits 1
 
 ## Proof
 
@@ -68,8 +74,22 @@
 - PROOF-20 (RULE-14): In a signed and tagged project, `RULE-1`'s `statuses` holds exactly `passed`, `strong` and `signed`, reading `passed`, `strong` and `signed`
 - PROOF-29 (RULE-14): A project at the gate `passed` whose two rules pass is exported; `RULE-2`'s `statuses` holds exactly one status, `passed`, reading `passed`
 - PROOF-11 (RULE-15): In a signed and tagged project whose test file was committed by `dev@example.com`, the package's text carries neither that address nor the word `author` anywhere
-- PROOF-21 (RULE-16): In a project with no `VERSION` file and nothing else stating a version, the command is run with no argument; it exits 1, prints only `No version: nothing in this project states one. Name it with --release <version>.`, and no `.purlin/evidence/package` folder exists
+- PROOF-21 (RULE-16): In a project with no `VERSION` file and nothing else stating a version, the command is run with no argument; it exits 1, prints only `No version: nothing in this project states one. Run purlin:export --release <version>, or write it to a VERSION file.`, and no `.purlin/evidence/package` folder exists
 - PROOF-15 (RULE-17): In a signed and tagged project's package, the times stored under `at` and `committed_at` that are not null number at least four, and each reads as a date, `T`, a time to the second and `Z`, as `2026-09-13T12:00:00Z` does, with no offset and no fraction of a second
 - PROOF-34 (RULE-18): After the package was committed with `--commit` over the evidence at `<sha>`, `--commit` is run again with nothing changed; it exits 0, its last line reads `Package unchanged.`, `HEAD` has not moved, and the package's `commit` still reads the full `<sha>`
 - PROOF-36 (RULE-19): In a project whose `VERSION` file reads `2.1.0`, `.purlin/config.json` reads `{"gate": "signed",}`, with a trailing comma, and the command is run with no argument; it exits 1, prints only `.purlin/config.json cannot be read: <the JSON reader's own message> at line 1. Fix the file by hand; nothing ran and nothing was saved.`, and no `.purlin/evidence/package` folder exists
 - PROOF-37 (RULE-19): A package is exported, then `.purlin/config.json` is made to read `{"gate": "signed",}`, with a trailing comma, and the package is checked with `--check`; it exits 1 and prints only `.purlin/config.json cannot be read: <the JSON reader's own message> at line 1. Fix the file by hand; nothing ran and nothing was saved.`
+- PROOF-41 (RULE-20): The command is run with `--project-root` naming a path where no folder is; it exits 2 and prints only `package.py: <that path> is not a directory.`
+- PROOF-42 (RULE-21): Each of `--release`, `--project-root` and `--check` is given as the last word, with no value after it; each run exits 2 and prints only the two usage lines, the first `Usage: package.py [--release NAME] [--commit] [--project-root DIR]`, then `package.py: <that option> needs a value.`
+- PROOF-43 (RULE-21): In a project whose `VERSION` file reads `2.1.0`, the command is run with `--verbose`; it exits 2, prints only the two usage lines, then `package.py: unexpected argument --verbose`, and no `.purlin/evidence/package` folder exists
+- PROOF-44 (RULE-21): Each of `--commit` and `--release beta` is given beside `--check <file>`; each run exits 2 and prints only the two usage lines, then `package.py: --check reads a file and takes nothing else.`
+- PROOF-45 (RULE-22): Each of a file whose bytes are not UTF-8 and a file of UTF-8 text that is not JSON is checked with `--check`; each run exits 1 and prints only `The package does not match its fingerprint: the file is not UTF-8 JSON.`
+- PROOF-46 (RULE-22): An exported package has its `schema` changed to `purlin-package/1` and is checked with `--check`; it exits 1 and prints only `The package does not match its fingerprint: the file does not carry the schema purlin-package/2.`
+- PROOF-47 (RULE-22): An exported package gains a top-level key `extra` and is checked with `--check`; it exits 1 and prints only `The package does not match its fingerprint: the package carries keys the format does not name: extra.`
+- PROOF-48 (RULE-22): An exported package has its top-level `warnings` key taken out and is checked with `--check`; it exits 1 and prints only `The package does not match its fingerprint: the top-level keys are not the ones the format names, in its order.`
+- PROOF-49 (RULE-22): `--check` is given a path where no file is; it exits 1 and prints only `The package does not match its fingerprint: the file could not be read: <the operating system's own message>.`
+- PROOF-50 (RULE-23): In a project whose `VERSION` file reads `2.1.0` and which has no commit yet, the command is run with no argument; it exits 1, prints only `export: the package was not written: the project has no commit yet.`, and no `.purlin/evidence/package` folder exists
+- PROOF-51 (RULE-23): In a project where git cannot add a second checkout, because `.git/worktrees` is a file, the command is run with no argument; it exits 1 and prints only `export: the package was not written: the commit <the first 7 characters of HEAD> could not be checked out: <git's own message>.`
+- PROOF-52 (RULE-23): In a project where `.purlin/evidence/package` is a file and not a folder, the command is run with no argument; it exits 1 and prints only `export: the package was not written: <the operating system's own message>.`
+- PROOF-53 (RULE-24): In a project whose commit hook refuses every commit, printing `no commits today`, the command is run with `--commit`; it exits 1, its last line reads `export: the package was not committed: git commit failed: no commits today.`, and `HEAD` has not moved
+- PROOF-54 (RULE-24): In a project whose index another git process holds locked, the command is run with `--commit`; it exits 1, and the line after the one naming the file it wrote begins `export: the package was not committed: git add failed: `, followed by git's own message

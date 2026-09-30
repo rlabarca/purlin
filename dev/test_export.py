@@ -21,6 +21,9 @@ What each group holds:
 *committing*      `--commit`, run once, run again, and beside a staged change
 *the settings*    a settings file that cannot be read stops the command, the
                   check of a package file included
+*the refusals*    a command line it does not take, a root that is not a
+                  folder, each reason `--check` gives, and a package git
+                  could not check out, write or commit
 
 Each evidence section records the machine it ran on, as the evidence format
 has it. The tagged project gets its package from the call `purlin:sign`
@@ -70,7 +73,8 @@ SPEC_WITH_A_THIRD_RULE = SPEC.replace(
     '\n- RULE-3: A locked account returns 423 (URS-042)\n\n## Proof')
 
 NO_VERSION = ('No version: nothing in this project states one. '
-              'Name it with --release <version>.')
+              'Run purlin:export --release <version>, or write it to a '
+              'VERSION file.')
 
 NOT_COMMITTED = '%s is written and not committed; the package leaves it out.'
 
@@ -761,3 +765,206 @@ class TestTheSettings:
         break_the_settings(unsigned)
         code, lines = export(unsigned.root, '--check', path)
         assert (code, lines) == (1, [cannot_be_read()])
+
+
+# ---------------------------------------------------------------------------
+# The refusals
+# ---------------------------------------------------------------------------
+
+USAGE = ['Usage: package.py [--release NAME] [--commit] [--project-root DIR]',
+         '       package.py --check FILE']
+
+CHECK_FAILED = 'The package does not match its fingerprint: %s.'
+
+NOT_WRITTEN = 'export: the package was not written: %s.'
+
+NOT_COMMITTED_BY_GIT = 'export: the package was not committed: %s.'
+
+
+def run_package(cwd, *args):
+    """Run the package command in `cwd` with exactly `args`. `(code, lines)`."""
+    done = subprocess.run([sys.executable, PACKAGE_PY] + list(args),
+                          capture_output=True, text=True, encoding='utf-8',
+                          errors='replace', cwd=cwd)
+    return done.returncode, (done.stdout + done.stderr).splitlines()
+
+
+@pytest.fixture
+def versioned():
+    """A git repository with no commit, whose `VERSION` file reads `2.1.0`."""
+    parent = tempfile.mkdtemp()
+    root = os.path.join(parent, 'proj')
+    os.makedirs(root)
+    git(root, 'init', '-q')
+    write(os.path.join(root, 'VERSION'), '2.1.0\n')
+    yield root
+    shutil.rmtree(parent, ignore_errors=True)
+
+
+def no_package_folder(root):
+    return not os.path.exists(os.path.join(root, '.purlin', 'evidence',
+                                           'package'))
+
+
+def edited_package(made, edit):
+    """Export, rewrite the package through `edit(dict)`, return its path."""
+    path, data = _exported(made)
+    package = json.loads(data.decode('utf-8'))
+    edit(package)
+    with open(path, 'wb') as handle:
+        handle.write((json.dumps(package, indent=2) + '\n').encode('utf-8'))
+    return path
+
+
+class TestTheRefusals:
+
+    # purlin: package PROOF-41
+    def test_a_project_root_that_is_not_a_folder_is_refused(self, versioned):
+        missing = os.path.join(versioned, 'missing')
+        code, lines = run_package(versioned, '--project-root', missing)
+        assert (code, lines) == (
+            2, ['package.py: %s is not a directory.' % missing])
+
+    # purlin: package PROOF-42
+    def test_an_option_with_no_value_is_refused(self, versioned):
+        for option, args in (('--release', ['--project-root', versioned,
+                                            '--release']),
+                             ('--project-root', ['--project-root']),
+                             ('--check', ['--project-root', versioned,
+                                          '--check'])):
+            code, lines = run_package(versioned, *args)
+            assert (code, lines) == (
+                2, USAGE + ['package.py: %s needs a value.' % option]), option
+        assert no_package_folder(versioned)
+
+    # purlin: package PROOF-43
+    def test_an_argument_it_does_not_take_is_refused(self, versioned):
+        code, lines = run_package(versioned, '--project-root', versioned,
+                                  '--verbose')
+        assert (code, lines) == (
+            2, USAGE + ['package.py: unexpected argument --verbose'])
+        assert no_package_folder(versioned)
+
+    # purlin: package PROOF-44
+    def test_check_beside_another_option_is_refused(self, versioned):
+        for other in (['--commit'], ['--release', 'beta']):
+            code, lines = run_package(versioned, '--check', 'package.json',
+                                      *other)
+            assert (code, lines) == (2, USAGE + [
+                'package.py: --check reads a file and takes nothing else.']), \
+                other
+
+    # purlin: package PROOF-45
+    def test_check_names_a_file_that_is_not_utf8_json(self, versioned):
+        for name, data in (('latin.json', b'{"schema": "caf\xe9"}\n'),
+                           ('text.json', b'not a package\n')):
+            path = os.path.join(versioned, name)
+            with open(path, 'wb') as handle:
+                handle.write(data)
+            code, lines = run_package(versioned, '--check', path)
+            assert (code, lines) == (
+                1, [CHECK_FAILED % 'the file is not UTF-8 JSON']), name
+
+    # purlin: package PROOF-46
+    def test_check_names_another_schema(self, unsigned):
+        path = edited_package(
+            unsigned, lambda package: package.update(schema='purlin-package/1'))
+        code, lines = export(unsigned.root, '--check', path)
+        assert (code, lines) == (1, [
+            CHECK_FAILED
+            % 'the file does not carry the schema purlin-package/2'])
+
+    # purlin: package PROOF-47
+    def test_check_names_a_key_the_format_does_not_name(self, unsigned):
+        path = edited_package(
+            unsigned, lambda package: package.update(extra=1))
+        code, lines = export(unsigned.root, '--check', path)
+        assert (code, lines) == (1, [
+            CHECK_FAILED
+            % 'the package carries keys the format does not name: extra'])
+
+    # purlin: package PROOF-48
+    def test_check_names_top_level_keys_out_of_the_format(self, unsigned):
+        path = edited_package(
+            unsigned, lambda package: package.pop('warnings'))
+        code, lines = export(unsigned.root, '--check', path)
+        assert (code, lines) == (1, [
+            CHECK_FAILED % 'the top-level keys are not the ones the format '
+                           'names, in its order'])
+
+    # purlin: package PROOF-49
+    def test_check_names_a_file_that_cannot_be_read(self, versioned):
+        path = os.path.join(versioned, 'gone.json')
+        try:
+            open(path, 'rb')
+        except (IOError, OSError) as error:
+            reason = 'the file could not be read: %s' % error
+        else:
+            raise AssertionError('%s exists' % path)
+        code, lines = run_package(versioned, '--check', path)
+        assert (code, lines) == (1, [CHECK_FAILED % reason])
+
+    # purlin: package PROOF-50
+    def test_a_project_with_no_commit_is_not_written(self, versioned):
+        code, lines = run_package(versioned, '--project-root', versioned)
+        assert (code, lines) == (
+            1, [NOT_WRITTEN % 'the project has no commit yet'])
+        assert no_package_folder(versioned)
+
+    # purlin: package PROOF-51
+    def test_a_commit_git_cannot_check_out_is_not_written(self, unsigned):
+        worktrees = os.path.join(unsigned.root, '.git', 'worktrees')
+        shutil.rmtree(worktrees, ignore_errors=True)
+        write(worktrees, 'not a folder\n')
+        code, lines = export(unsigned.root)
+        prefix = ('export: the package was not written: the commit %s could '
+                  'not be checked out: ' % unsigned.head()[:7])
+        assert code == 1, lines
+        assert len(lines) == 1, lines
+        assert lines[0].startswith(prefix) and lines[0].endswith('.'), lines
+        assert lines[0][len(prefix):-1].strip(), lines
+        assert no_package_folder(unsigned.root)
+
+    # purlin: package PROOF-52
+    def test_a_package_folder_that_is_a_file_is_not_written(self, unsigned):
+        folder = os.path.join(unsigned.root, '.purlin', 'evidence', 'package')
+        write(folder, 'not a folder\n')
+        try:
+            os.makedirs(folder, exist_ok=True)
+        except (IOError, OSError) as error:
+            reason = str(error)
+        else:
+            raise AssertionError('%s became a folder' % folder)
+        code, lines = export(unsigned.root)
+        assert (code, lines) == (1, [NOT_WRITTEN % reason])
+
+    # purlin: package PROOF-53
+    def test_a_commit_git_refuses_is_not_committed(self, unsigned):
+        hooks = tempfile.mkdtemp()
+        try:
+            hook = os.path.join(hooks, 'pre-commit')
+            with open(hook, 'w', encoding='utf-8', newline='\n') as handle:
+                handle.write('#!/bin/sh\necho "no commits today" >&2\nexit 1\n')
+            os.chmod(hook, 0o755)
+            git(unsigned.root, 'config', 'core.hooksPath', hooks)
+            head = unsigned.head()
+            code, lines = export(unsigned.root, '--commit')
+            assert code == 1, lines
+            assert lines[-1] == NOT_COMMITTED_BY_GIT % (
+                'git commit failed: no commits today'), lines
+            assert unsigned.head() == head
+        finally:
+            shutil.rmtree(hooks, ignore_errors=True)
+
+    # purlin: package PROOF-54
+    def test_a_file_git_cannot_add_is_not_committed(self, unsigned):
+        head = unsigned.head()
+        write(os.path.join(unsigned.root, '.git', 'index.lock'), '')
+        code, lines = export(unsigned.root, '--commit')
+        assert code == 1, lines
+        assert lines[0] == ('Evidence package written to %s. State: not '
+                            'finished.' % PACKAGE_REL), lines
+        prefix = 'export: the package was not committed: git add failed: '
+        assert lines[1].startswith(prefix), lines
+        assert lines[1][len(prefix):].strip(), lines
+        assert unsigned.head() == head

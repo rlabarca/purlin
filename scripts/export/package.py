@@ -95,7 +95,8 @@ LOCKED = ('signed_hash', 'rule_hash', 'proof_hash', 'test_hash',
 
 WRITTEN = 'Evidence package written to %s. State: %s.'
 NO_VERSION = ('No version: nothing in this project states one. '
-              'Name it with --release <version>.')
+              'Run purlin:export --release <version>, or write it to a '
+              'VERSION file.')
 WORK_LEFT = 'the committed evidence still has work left to do'
 NOT_COMMITTED = '%s is written and not committed; the package leaves it out.'
 MATCHES = 'The package matches its fingerprint.'
@@ -646,7 +647,7 @@ def main(argv=None):
 
     root = args['root']
     if not os.path.isdir(root):
-        print('package.py: not a directory: %r' % root, file=sys.stderr)
+        print('package.py: %s is not a directory.' % root, file=sys.stderr)
         return EXIT_BAD_INVOCATION
     try:
         package = build(root, args['release'])
