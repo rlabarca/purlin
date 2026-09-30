@@ -203,7 +203,7 @@ def pressed(page):
 
 def head_labels(page):
     """The spec table's column headings, in the order they are drawn."""
-    return texts(page, '.th > div')
+    return texts(page, '[data-table="specs"] .th > div')
 
 
 def open_rule(page, feature, rule_id):
@@ -242,9 +242,9 @@ PLATFORM_BOXES = """() => Array.from(document.querySelectorAll('.kv .os')).map(
 # Every cell of every spec row, keyed by the spec name, as the `title` the
 # hover carries rather than the text under it.
 HOVERS = """els => {
-  const head = Array.from(document.querySelectorAll('.th > div'))
-    .map(d => d.textContent.trim());
   return els.map(e => {
+    const head = Array.from(e.closest('.tbl').querySelectorAll('.th > div'))
+      .map(d => d.textContent.trim());
     const row = {name: e.querySelector('.name .n').textContent.trim()};
     head.forEach((label, i) => {
       const node = e.children[i].querySelector('[title]');
@@ -672,9 +672,9 @@ def test_a_strong_project_has_no_proof_passing_and_strong(browser, tmp_path):
 # Every count cell of every spec row, keyed by the spec name, as the text a
 # person reads rather than the markup under it.
 COUNT_CELLS = r"""els => {
-  const head = Array.from(document.querySelectorAll('.th > div'))
-    .map(d => d.textContent.trim());
   return els.map(e => {
+    const head = Array.from(e.closest('.tbl').querySelectorAll('.th > div'))
+      .map(d => d.textContent.trim());
     const row = {name: e.querySelector('.name .n').textContent.trim()};
     head.forEach((label, i) => {
       row[label] = e.children[i].innerText.trim().replace(/\s+/g, ' ');
@@ -846,8 +846,7 @@ def test_the_group_band_says_what_its_numbers_are(browser, tmp_path):
         '.group',
         r'els => els.map(e => e.innerText.replace(/\s+/g, " ").trim())')
     assert bands == ['▼ AUTH 1 spec 3 of 4 rules pass',
-                     '▼ BILLING 2 specs 4 of 5 rules pass',
-                     '▼ _ANCHORS 1 spec 1 of 1 rule passes']
+                     '▼ BILLING 2 specs 4 of 5 rules pass']
     page.close()
 
 
@@ -872,8 +871,11 @@ def test_a_band_has_two_ends_on_one_line(browser, tmp_path):
     page = open_board(browser, tmp_path, payload,
                       viewport={'width': 1500, 'height': 900})
     ends = page.eval_on_selector_all('.group', BAND_ENDS)
+    anchored = anchor_rule_count(page, payload)
     page.close()
-    assert sum(end['count'] for end in ends) == payload['summary']['rules']
+    assert anchored == 1
+    assert sum(end['count'] for end in ends) + anchored \
+        == payload['summary']['rules']
     assert payload['summary']['rules'] == 10
     for end in ends:
         assert end['sameLine'], end
@@ -883,15 +885,24 @@ def test_a_band_has_two_ends_on_one_line(browser, tmp_path):
         assert abs(end['barRight'] - ends[0]['barRight']) < 1, ends
 
 
+def anchor_rule_count(page, payload):
+    """How many rules the anchors listed in the anchors' section own."""
+    listed = texts(page, '[data-table="anchors"] .tr .name .n')
+    return sum(len([r for r in f['rules'] if r['label'] == 'own'])
+               for f in payload['features'] if f['name'] in listed)
+
+
 # purlin: purlin_report PROOF-94
 def test_a_band_counts_a_shared_rule_once(browser, tmp_path):
     payload = payload_named('team')
     page = open_board(browser, tmp_path, payload,
                       viewport={'width': 1500, 'height': 900})
     ends = page.eval_on_selector_all('.group', BAND_ENDS)
+    anchored = anchor_rule_count(page, payload)
     page.close()
     assert payload['summary']['rules'] == 7
-    assert sum(end['count'] for end in ends) == 7, ends
+    assert anchored == 1
+    assert sum(end['count'] for end in ends) + anchored == 7, ends
 
 
 # purlin: purlin_report PROOF-95
@@ -991,7 +1002,8 @@ def test_to_strengthen_leaves_the_rules_to_strengthen(browser, tmp_path):
     page.click(chip_for('To strengthen'))
     assert page.get_attribute(chip_for('To strengthen'),
                               'aria-pressed') == 'true'
-    assert feature_names(page) == ['login', 'invoice', 'checkout_design']
+    assert sorted(feature_names(page)) == ['checkout_design', 'invoice',
+                                           'login']
     page.click('[data-act="feature"][data-feature="login"]')
     assert rule_ids(page) == ['RULE-3']
     page.close()
@@ -2701,3 +2713,81 @@ def test_a_signed_manual_proof_reads_checked_by_hand(browser, tmp_path):
     tests = page.inner_text('.rule-proofs .ptests').strip()
     page.close()
     assert tests == 'Checked by hand.', tests
+
+
+# ---------------------------------------------------------------------------
+# The anchors' section
+# ---------------------------------------------------------------------------
+
+def section_labels(page):
+    """Each section label on the board, as a person reads it."""
+    return page.eval_on_selector_all(
+        '.eyebrow', 'els => els.map(e => e.innerText.trim())')
+
+
+def listed_in(page, table):
+    """The specs one table lists, in order: `anchors` or `specs`."""
+    return texts(page, '[data-table="%s"] .tr .name .n' % table)
+
+
+# purlin: purlin_report PROOF-203
+def test_the_anchors_stand_in_a_section_of_their_own(browser, tmp_path):
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    assert section_labels(page) == ['ANCHORS', 'SPECS']
+    below = page.evaluate(
+        "() => document.querySelector('.filters').getBoundingClientRect().bottom"
+        " <= document.querySelector('[data-table=\"anchors\"]')"
+        ".getBoundingClientRect().top")
+    names = texts(page, '[data-table="anchors"] .tr .name')
+    heads = texts(page, '[data-table="anchors"] .th > div')
+    specs = listed_in(page, 'specs')
+    page.close()
+    assert below
+    assert names == ['▶checkout_design'], names
+    assert heads == ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed']
+    assert specs == ['login', 'invoice', 'export'], specs
+
+
+# purlin: purlin_report PROOF-204
+def test_a_project_with_no_anchor_has_no_anchors_section(browser, tmp_path):
+    payload = payload_named('solo')
+    assert not any(f['is_anchor'] for f in payload['features'])
+    page = open_board(browser, tmp_path, payload)
+    labels = section_labels(page)
+    page.close()
+    assert labels == ['SPECS'], labels
+
+
+# purlin: purlin_report PROOF-205
+def test_a_filter_keeps_the_anchors_it_accepts(browser, tmp_path):
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    page.click(chip_for('To strengthen'))
+    anchors, specs = listed_in(page, 'anchors'), listed_in(page, 'specs')
+    page.close()
+    assert anchors == ['checkout_design'], anchors
+    assert specs == ['login', 'invoice'], specs
+
+
+# purlin: purlin_report PROOF-206
+def test_a_filter_that_leaves_no_anchor_hides_the_section(browser, tmp_path):
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    page.click(chip_for('To audit'))
+    labels, specs = section_labels(page), listed_in(page, 'specs')
+    page.close()
+    assert 'ANCHORS' not in labels, labels
+    assert specs == ['export'], specs
+
+
+# purlin: purlin_report PROOF-207
+def test_an_anchors_row_opens_and_closes(browser, tmp_path):
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    row = '[data-table="anchors"] [data-act="feature"]' \
+        '[data-feature="checkout_design"]'
+    page.click(row)
+    rule = '[data-table="anchors"] .rule[data-feature="checkout_design"]'
+    assert texts(page, rule + ' .rid') == ['RULE-1']
+    assert texts(page, rule + ' .rp') == ['PASSED']
+    assert texts(page, rule + ' .more') == ['▶1 proof']
+    page.click(row)
+    assert rule_ids(page) == []
+    page.close()

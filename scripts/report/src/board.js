@@ -293,10 +293,10 @@ function proofsUnder(rule) {
    how many specs it holds; at the right how many of their rules pass their
    tests, `187 of 187 rules pass`, and a bar of one fixed width, so the bars
    line up down the page. A band counts each rule once, under the spec that
-   owns it, as the summary does: a shared rule is counted in its anchor's
-   band, so the bands add up to the project's rules. The whole band is the
-   control
-   that folds the group, from the keyboard too, and says whether it is open.
+   owns it, as the summary does: a shared rule is counted with its anchor,
+   which stands in the anchors' section above and in no band. The whole band
+   is the control that folds the group, from the keyboard too, and says
+   whether it is open.
    Under 1024 pixels the right end drops beneath the left. */
 function groupBand(name, features, columns) {
   var open = VIEW.groups[name] !== false;
@@ -321,33 +321,47 @@ function groupBand(name, features, columns) {
     }).join('') : '');
 }
 
+/* One table under its small label: the heading row, then its rows. The
+   table owns the tracks and every row shares them, so a heading and its
+   cells start at one edge. A value column is never narrower than its widest
+   value; the name gives way at its floor. */
+function specTable(label, columns, body) {
+  return '<section data-table="' + label.toLowerCase() + '"><p class="eyebrow">'
+    + label + '</p><div class="tbl specs" style="--cols:'
+    + columns.map(function (c) {
+      return 'minmax(' + (c.floor ? c.floor + 'px' : 'max-content') + ','
+        + c.width + ')';
+    }).join(' ') + '"><div class="th">' + columns.map(function (c) {
+      return '<div>' + esc(c.label) + '</div>';
+    }).join('') + '</div>' + body + '</div></section>';
+}
+
+/* The board opens on the step boxes, then the filters, which apply to both
+   tables beneath them: the anchors, where the project has one a filter
+   leaves showing, and then the specs, grouped by category. The anchors'
+   section says what they are, so they carry no band and no mark of their
+   own. */
 function renderBoard() {
   var columns = boardColumns();
   var shown = (DATA.features || []).filter(function (feature) {
     return visibleRules(feature).length > 0;
   });
+  var anchors = shown.filter(function (f) { return f.is_anchor; });
   var order = [];
   var groups = {};
   shown.forEach(function (feature) {
+    if (feature.is_anchor) { return; }
     var name = feature.category || 'specs';
     if (!groups[name]) { groups[name] = []; order.push(name); }
     groups[name].push(feature);
   });
-  /* The board opens on the step boxes. */
-  var head = '<section>' + statStrip() + '</section>';
-  var table = order.length
-    ? '<div class="tbl specs" style="--cols:' + columns.map(function (c) {
-        /* The table owns the tracks and every row shares them, so a heading
-           and its cells start at one edge. A value column is never narrower
-           than its widest value; the name gives way at its floor. */
-        return 'minmax(' + (c.floor ? c.floor + 'px' : 'max-content') + ','
-          + c.width + ')';
-      }).join(' ') + '"><div class="th">' + columns.map(function (c) {
-        return '<div>' + esc(c.label) + '</div>';
-      }).join('') + '</div>' + order.map(function (name) {
-        return groupBand(name, groups[name], columns);
-      }).join('') + '</div>'
-    : '<div class="panel empty">No rule is left of this kind.</div>';
-  return head + '<section><p class="eyebrow">Specs</p>' + filtersMarkup()
-    + table + '</section>';
+  return '<section>' + statStrip() + '</section>' + filtersMarkup()
+    + (anchors.length ? specTable('Anchors', columns, anchors.map(
+      function (feature) { return featureRow(feature, columns); }).join(''))
+      : '')
+    + (order.length ? specTable('Specs', columns, order.map(function (name) {
+      return groupBand(name, groups[name], columns);
+    }).join('')) : anchors.length ? '' : '<section><p class="eyebrow">Specs'
+      + '</p><div class="panel empty">No rule is left of this kind.</div>'
+      + '</section>');
 }

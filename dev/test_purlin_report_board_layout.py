@@ -20,14 +20,14 @@ from test_purlin_report import (browser, open_board,  # noqa: E402,F401
 # content stops widening at 1360, so 1440 and 1920 read the same table.
 WIDTHS = (1920, 1440, 1280, 1024)
 
-# For every spec row, how far each cell's left edge sits from its heading's.
-OFFSETS = """() => {
-  const heads = Array.from(document.querySelectorAll('.th > div'))
+# For every spec row, how far each cell's left edge sits from its own
+# table's heading's.
+OFFSETS = """() => Array.from(document.querySelectorAll('.tr')).map(row => {
+  const heads = Array.from(row.closest('.tbl').querySelectorAll('.th > div'))
     .map(d => d.getBoundingClientRect().left);
-  return Array.from(document.querySelectorAll('.tr')).map(row =>
-    Array.from(row.children).map((cell, i) =>
-      Math.abs(cell.getBoundingClientRect().left - heads[i])));
-}"""
+  return Array.from(row.children).map((cell, i) =>
+    Math.abs(cell.getBoundingClientRect().left - heads[i]));
+})"""
 
 
 # purlin: purlin_report PROOF-33
@@ -340,3 +340,19 @@ def test_the_total_is_one_line_at_every_width(browser, tmp_path):  # noqa: F811
         found = page.evaluate(TOTAL_LINE)
         page.close()
         assert found == ['563 RULES TOTAL', 1], (width, found)
+
+
+# purlin: purlin_report PROOF-208
+def test_a_narrow_anchors_section_is_blocks_of_labelled_pairs(browser,  # noqa: F811
+                                                             tmp_path):
+    page = _board_at(browser, tmp_path, 'team', 390)
+    heads = page.is_visible('[data-table="anchors"] .th')
+    block = ' '.join(page.inner_text(
+        '[data-table="anchors"] .tr[data-feature="checkout_design"]').split())
+    label = page.eval_on_selector(
+        '[data-table="anchors"] .tr[data-feature="checkout_design"]'
+        ' > div:nth-child(2)', "el => getComputedStyle(el, '::before').content")
+    page.close()
+    assert heads is False
+    assert block.startswith('▶ checkout_design 1 '), block
+    assert label == '"Rules"', label
