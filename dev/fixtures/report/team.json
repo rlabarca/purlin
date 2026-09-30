@@ -805,7 +805,7 @@
         "rules": 1,
         "strong": 0,
         "test_strength": null,
-        "untested": 0
+        "untested": 1
       },
       "rules": [
         {

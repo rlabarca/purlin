@@ -997,7 +997,7 @@
         "manual": 0,
         "not_audited": 0,
         "partial": 0,
-        "passed": 1,
+        "passed": 0,
         "proofs": 1,
         "proofs_without_test": 1,
         "proofs_without_test_ids": [
@@ -1005,7 +1005,7 @@
         ],
         "rules": 1,
         "signed": 1,
-        "strong": 1,
+        "strong": 0,
         "test_strength": null,
         "untested": 0
       },
@@ -1384,7 +1384,7 @@
     ],
     "rules": 11,
     "sentence": "11 rules. 8 pass their tests. 3 are strong. 2 are signed.",
-    "signed": 1,
+    "signed": 2,
     "steps": {
       "passed": 8,
       "signed": 2,
