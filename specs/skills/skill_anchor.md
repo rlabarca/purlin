@@ -5,7 +5,7 @@
 >   repository and keeps its pin current.
 > Scope: skills/anchor/SKILL.md
 > Stack: markdown, Claude Code skill definition
-> Highest-Rule: 13
+> Highest-Rule: 14
 
 ## Rules
 
@@ -22,6 +22,7 @@
 - RULE-11: The skill tells the agent that a change to a pinned rule is a pull request against the source repository
 - RULE-12: The skill tells the agent that a rule belonging only to this project goes in a separate local anchor that requires the pinned one
 - RULE-13: The skill tells the agent that an anchor repository is for rules two or more projects must share, and that one project keeps its anchors in `specs/_anchors/`
+- RULE-14: The skill tells the agent to commit a new anchor with the `anchor(<name>): create` prefix
 
 ## Proof
 
@@ -39,3 +40,4 @@
 - PROOF-7 (RULE-6): The anchor skill's section on `create`, read across its line breaks, carries the sentence ``The folder `specs/_anchors/` is created with the first anchor, written here or brought in by `add`.``
 - PROOF-33 (RULE-7): The anchor skill's section on `add`, read across its line breaks, says `The file is a spec in Purlin's format that holds at least one rule, kept in a git repository.`, that any other source is refused and nothing is written, and that the refusal names `purlin:anchor create <name>`
 - PROOF-34 (RULE-13): The anchor skill's section `One repository is the default` says `Reach for an anchor repository only when two or more projects must share the same rules`, and that most projects need nothing but `specs/_anchors/`
+- PROOF-35 (RULE-14): The anchor skill's section on `create`, read across its line breaks, says to commit the new anchor with the `anchor(<name>): create` prefix

@@ -349,3 +349,10 @@ def repository_problems():
     return ['%s One repository is the default section does not carry %r'
             % (REL, needle) for needle in SHARED_REPOSITORY
             if needle not in body]
+
+
+# purlin: skill_anchor PROOF-35
+def test_a_new_anchor_is_committed_with_the_create_prefix():
+    create = flat(section(read(REL), r'^create$') or '')
+    assert ('Commit it with the `anchor(<name>): create` prefix'
+            in create), create
