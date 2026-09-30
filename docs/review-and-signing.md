@@ -1,193 +1,270 @@
-# Review and signing
+# The release and the sign-off
 
-For QA, or a developer acting as QA, at any gate.
+For QA, product or a developer who releases a version, at either gate.
 
-`purlin:sign` is how a person signs. With no argument it walks the rules left to do as
-`to test by hand`, `to confirm` or `to sign`, one at a time, with the evidence already gathered, and you
-answer each. At the gate `signed`, when nothing but the tag is left and every result came from
-committed work, it writes the evidence package, commits it, and tags that commit
-`signed/<version>`; you push the tag. At `passed` and `strong` it signs hand checks and writes no
-tag and no package. This page says what waits for a person, what the walk shows you, what makes a
-signature count, and what the tag carries. [hard_gates.md](../references/hard_gates.md) is the
-one home of the gate and of the tag.
+A release is a commit, its evidence package and a tag. `purlin:test --release` runs every test,
+commits the evidence and the package, and at the gate `passed` tags the release
+`passed/<version>`, unsigned. At the gate `signed` it writes no tag: `purlin:sign` walks the
+package with you, and the first sign-off writes `signed/<version>`. Later sign-offs are added
+over the same package and the tag does not move. This page says what the release run checks,
+what the walk shows you, what a sign-off records and when it counts.
+[hard_gates.md](../references/hard_gates.md) is the one home of the gate and of the tags.
 
-## What waits for a person
+## While specs change
 
-Three lines of `Left to do` are a person's work, and each names `purlin:sign`:
+Nothing is signed while product, QA and the developers improve rules, proofs and tests together
+on their branches. `Left to do` lists only work: specs to repair, proofs and tests to write,
+tests to fix, and, where the audit ran, rules to strengthen. The AI audit and mutation testing
+are tools you run with `purlin:audit`; nothing waits on them, at either gate. When nothing is
+left, the last line names the release step:
 
-| The line | A rule is on it when | What you do |
-|---|---|---|
-| `<n> rules to test by hand: purlin:sign` | a proof of the rule is `@manual` and nobody has checked it by hand; at every gate | carry the proof out yourself and sign, with a line saying what you saw when you give one |
-| `<n> rules to confirm as not applying: purlin:sign` | a person signed a rule of a pinned anchor as not applying to this project, and a change to the project ended that signature; at every gate | confirm it still does not apply, or sign it as applying |
-| `<n> rules to sign: purlin:sign` | at the gate `signed`, every other kind of work on the rule is done and no signature counts for it as it stands | read what the walk shows and sign |
+```text
+Nothing left to do. To release a version: purlin:test --release
+Nothing left to do. To release a version: purlin:test --release, then purlin:sign
+```
 
-A rule is on one line of `Left to do` at a time, the first that applies, and every other line
-names another command: a rule `to audit` waits for `purlin:audit`, a rule `to strengthen` for
-`purlin:build`, a rule `to tie to its files` for `purlin:spec`.
-[hard_gates.md](../references/hard_gates.md), "When a version is finished", lists every kind.
+the first at the gate `passed`, the second at `signed`.
 
-At the gate `signed` a rule's signed cell reads one of four words:
+## The release run
 
-| Word | What it says |
+Release a version on a release branch, such as `release/1.2.0`, cut from the default branch once
+its specs are done. New specs land on the default branch and wait for the next version; a fix
+lands on the release branch and is merged back.
+
+```
+purlin:test --release [<version>]
+```
+
+It runs every test and commits the evidence, as `purlin:test --all --commit` does. Evidence may
+be committed on any branch; a release uses only the evidence at the release commit. Then it
+checks that commit, in this order, and stops at the first check that fails, prints one line,
+writes nothing more and exits 1:
+
+| What it prints | Why |
 |---|---|
-| `signed` | a signature that counts matches the rule as it stands |
-| `unsigned` | none does: none was made, or what one was made over changed |
-| `waiting` | the strong cell below it is not met, `waiting for the audit` |
-| `does not apply` | a signature that counts says a rule of a pinned anchor does not apply to this project; every cell reads it, and each is met |
+| `No release: <feature> cannot be counted: <reason>. Run purlin:spec <feature>, then purlin:test --release.` | the feature's spec writes a number twice or holds a line left from a merge conflict |
+| `No release: 2 rules do not pass at 8de0b6e: sample_age RULE-2; stability RULE-1. Run purlin:status to see what is left, then purlin:test --release.` | a rule fails, has no test, has not run, or waits on a run on another system, or a test comment names nothing |
+| `No release: the working tree holds changes that are not committed, so the results do not describe a commit. Commit them, then run purlin:test --release.` | `git status` lists a change |
+| `No release: origin/release/1.2.0 holds 1 commit that 8de0b6e does not, as this checkout last fetched it. Pull, then run purlin:test --release.` | the branch's copy on the host, as this checkout last fetched it, holds commits the checkout lacks; the release run does not fetch |
+| `No version: nothing in this project states one. Run purlin:test --release <version>, or write it to a VERSION file.` | no version is stated and none is named |
+| `No release: passed/1.2.0 is already written. Run purlin:test --release <version> to name another.` | the gate's tag exists; a tag that exists is never moved |
+| `No release: the evidence package was not committed: <why>.` | the package could not be written or committed |
+| `No tag: git could not write passed/1.2.0: <git's own message>.` | git refused the tag |
 
-## The walk
+A weak rule, a rule not audited and a rule with no proof are listed in the package, and none of
+them stops a release.
+
+The version is read from the `VERSION` file at the project root, then the `version` of
+`package.json`, then `[project]` and then `[tool.poetry]` `version` in `pyproject.toml`, then
+`<Version>` in a `*.csproj` at the root; `purlin:test --release <version>` names it instead.
+
+The run then writes the evidence package, `.purlin/evidence/package/<version>.json`, and commits
+it alone as `purlin: evidence at <sha7>`. At the gate `passed` it writes the tag
+`passed/<version>` on that commit, unsigned:
+
+```text
+Evidence package committed: .purlin/evidence/package/1.2.0.json.
+Tagged passed/1.2.0 at 3c9d2e1.
+Nothing left to do. Push the tag to release it: git push origin passed/1.2.0
+```
+
+At the gate `signed` it writes no tag and ends on the next step:
+
+```text
+Evidence package committed: .purlin/evidence/package/1.2.0.json.
+Run purlin:sign to sign it; the first signature writes signed/1.2.0.
+```
+
+The tag's message reads `Released at the gate passed.` or `Released at the gate signed.`, then
+`Commit: <sha>` and `Gate: <gate>`. You push the tag; Purlin pushes nothing. A package for a
+version whose tag is not yet written is written again by the next release run.
+
+## A hand check at the gate `passed`
+
+A hand check is a proof marked `@manual`, which no test runs. At `passed` nobody signs, so
+nothing records one. The release goes ahead, prints one line before the package line, and the
+package lists those rules as not checked:
+
+```text
+2 rules are checked by hand, and the gate passed records no hand check: accession_screen RULE-1, sample_age RULE-6. The package lists them as not checked.
+```
+
+A team that wants its hand checks recorded releases at the gate `signed`.
+
+## The sign-off walk
 
 ```
-purlin:sign
+purlin:sign [--release <version>]
 ```
 
-The walk opens on the two lines it walks, or on
-`Nothing is waiting for someone to test by hand or to sign.` It stops at the rules in order of
-feature name, then rule number, so `RULE-2` comes before `RULE-10`. Each stop is headed with the
-feature, the rule and its work left, then shows the rule, each proof with its `@manual` or `@env`
-tag and, under each proof that is not `@manual`, the test tied to it, or `tied to no test`, and
-what the audit found, and asks for one answer. The walk names each test; open the file to read
-its body. A walk at the gate `signed` over three
-rules, answered `sign`, `case` and `sign`:
+Run it on the release branch, after `purlin:test --release`. At the gate `passed` it prints
+`Nothing is signed at the gate passed: purlin:test --release tags the release unsigned. To sign releases, run purlin:init --gate signed.`
+and exits 0. Otherwise it refuses, writes nothing and exits 1 when:
 
+| What it prints | Why |
+|---|---|
+| `No sign-off: the working tree holds changes that are not committed. Commit them, then run purlin:test --release.` | `git status` lists a change |
+| `No sign-off: no evidence package for 1.2.0 is committed at 8de0b6e. Run purlin:test --release.` | no release run committed a package for the version |
+| `No sign-off: the evidence package for 1.2.0 describes 3c9d2e1, and 8de0b6e has changed since. Run purlin:test --release.` | a commit after the package touches anything but that version's sign-offs |
+| `No sign-off: 1 rule does not pass at 8de0b6e: sample_age RULE-2. Run purlin:status to see what is left, then purlin:test --release.` | a rule's tests do not pass at this commit |
+| `No sign-off: origin/release/1.2.0 holds 1 commit that 8de0b6e does not, as this checkout last fetched it. Pull, then run purlin:sign.` | the branch's copy on the host holds commits the checkout lacks |
+| `quinn.qa@labconnect.example has already signed 1.2.0 over this package; nothing was written.` | one sign-off per signer per version |
+
+It opens on an overview of the package:
+
+```text
+Signing 1.2.0: .purlin/evidence/package/1.2.0.json, at 3c9d2e1.
+  40 rules on Linux/Unix and Windows: 38 pass their tests, 2 are checked by hand.
+  The audit: 30 strong, 2 weak, 6 not audited.
+  10 stops: 2 hand checks, 2 weak, 6 not audited.
 ```
-1 rule to test by hand: purlin:sign
-2 rules to sign: purlin:sign
 
-login RULE-1   to sign
+or, where there is nothing to stop at, `  No stops: nothing is checked by hand, weak or not audited.`
+
+### The strong list
+
+The rules the audit found strong are a list, not stops. Before the stops the walk asks:
+
+```text
+30 rules the audit found strong. list / walk / go on: 
+```
+
+`list` prints them, one line per feature, such as `  sample_age RULE-2, RULE-3`, then asks
+`walk / go on: `. `walk` makes each strong rule a stop after the others. `go on`, or an empty
+line, leaves them in the list.
+
+### The stops
+
+The walk stops only where you have something to look at: each hand check, then each weak rule,
+then each rule never audited, then any strong rule you chose to walk. Within each, by feature
+name, then rule number, so `RULE-2` comes before `RULE-10`. A rule with a `@manual` proof and a
+weak audit stops once, as a hand check.
+
+A stop shows the rule, each proof with the test tied to it and that test's body, the result on
+each system with the machine it ran on, and what the audit found:
+
+```text
+sample_age RULE-1   weak
 Rule
-  The right email and password sign the user in
+  The age at receipt is the time from collection to receipt, across time zones
 Proof
-  PROOF-1: Signing in as `ada@example.com` with her password `secret` is answered with the status `200`
-    tied to tests/test_login.py::test_right_password_signs_in
+  PROOF-1: A sample received at 10:30 UTC-5, collected at 14:00 UTC, has an age of `90` minutes
+    tied to tests/test_age.py::test_age_at_receipt
+      def test_age_at_receipt():
+          assert age_minutes('14:00Z', '10:30-05:00') == 90
+Results
+  Linux/Unix: passed on quinn-laptop
+  Windows: passed on remote runner, Windows
 What the audit found
-  Strong. It found nothing.
-login RULE-1   sign / case / skip: sign
-
-login RULE-2   to sign
-Rule
-  Five wrong passwords in a row lock the account
-Proof
-  PROOF-2: After five wrong passwords for `ada@example.com`, signing in with the right one is answered with the status `423`
-    tied to tests/test_login.py::test_five_wrong_passwords_lock
-What the audit found
-  Strong. It found nothing.
-login RULE-2   sign / case / skip: case
-  in one line: a sign-in 15 minutes after the lock is answered with 200
-
-login RULE-3   to test by hand
-Rule
-  The refusal messages follow the brand voice guide
-Proof
-  PROOF-3 (@manual): Read each refusal message against the brand voice guide
-What the audit found
-  No audit has read this rule's text, proof and test yet.
-login RULE-3   sign / case / skip: sign
-What did you see, in one line: Each refusal reads as the guide asks.
-
-Walked 3 rules: 2 signed, 1 case added, 0 skipped.
-  login RULE-2   add this proof line: a sign-in 15 minutes after the lock is answered with 200
-Signed 2 rules as jane@acme.com with the key ending ...K0hI.
-Commits: 8fbd2ea
-3 rules. 3 pass their tests. 3 are strong. 2 are signed.
-Left to do:
-  1 rule to sign: purlin:sign
+  Weak.
+  The test checks one time zone; PROOF-1 names two.
+sample_age RULE-1   continue / note / stop: 
 ```
 
-Under `What the audit found` a stop reads `No audit has read this rule's text, proof and test yet.`,
-`Strong. It found nothing.`, or `Strong.`, `Weak.` or
-`Undecided. The AI audit could not decide, so the rule reads weak until its proof or test changes.`
-followed by each finding on a line of its own.
+A proof with no test reads `    tied to no test`, and a test whose file is gone reads
+`      the test's source was not found`. The answers:
 
-The walk says what was measured and what was seen, and you decide. Before anything is written,
-`purlin:sign` reads each rule in full with `scripts/review/ai_audit.py`: the rule, its proofs,
-each test's source, the test strength beside `min_strength` where it was measured, and what the
-last audit found with the model that read it.
-[review_criteria.md](../references/review_criteria.md) is what the audit reads a rule against.
+- **continue** moves on.
+- **note** asks `Your note, in one line: `, keeps the line, and moves on.
+- **stop** ends the walk and signs nothing:
+  `Stopped at sample_age RULE-1: nothing was signed. After the fix, run purlin:test --release, then purlin:sign.`
 
-## The three answers
+A hand check shows the rule and its proofs alone and asks what you saw:
 
-**Sign.** The rule, the proof and the test belong together. At a hand check the walk then asks
-`What did you see, in one line:`, and the line becomes the signature's note; an empty line signs
-with no note.
-
-**Case.** Say in plain language what is missing, such as "a sign-in 15 minutes after the lock is
-answered with 200". The walk asks for it on one line and closes with
-`add this proof line:` and the case. `purlin:sign` writes it into the spec as a new proof line
-with the next free proof id and leaves its test for the next `purlin:build`. It writes specs and
-signatures, never code.
-
-**Skip.** Move on and leave the rule as it is. A skipped rule is still `to sign` or
-`to test by hand` after the walk, and no file records the skip.
-
-Never narrow a rule or a proof to make a finding disappear: that lowers the claim instead of
-strengthening the evidence.
-
-The walk writes nothing until it closes, then makes one signed commit for every signature it
-carries, `sign(<feature>): RULE-N ...`, or `sign(batch): ...` across features. It closes with
-`Walked <n> rules: ...`, each case to add, `Signed <n> rules as <email> with the key ending
-...<last 4>.` and the commit, then ends on the summary and `Left to do`, or, at the gate `signed`,
-on what the tag says.
-
-## Signing outside the walk
-
-```
-purlin:sign <feature> RULE-N [RULE-M ...]        one rule, or several
-purlin:sign <feature>                            every waiting rule of one feature
-purlin:sign --all                                every waiting rule
-purlin:sign <feature> RULE-N --note "<text>"     a hand check, with what you saw
-purlin:sign <anchor> RULE-N --does-not-apply "<why>"  a pinned anchor's rule that does not apply here
+```text
+accession_screen RULE-1   what did you see, in one line, or stop: 
 ```
 
-These sign with no stop, at every gate. A rule named by id is signed whatever work it has left.
-Each writes one file per rule,
-`specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, and makes one signed
-commit for all of them, so forty rules are one commit and forty files that cannot conflict with
-anyone else's. An anchor's rule gets one file, under its anchor. A hand check signed
-by name:
+The line you type is the hand check's note. An empty line asks again; `stop` stops.
 
-```
-Signed 1 rule as jane@acme.com with the key ending ...K0hI.
-  login RULE-3
-3 rules. 3 pass their tests. 3 are strong. 1 is signed.
-Left to do:
-  2 rules to sign: purlin:sign
-```
+A weak rule or a rule not audited never blocks the signature. The walk shows you what was
+measured and what was seen, and you decide whether to sign, add a note, or stop to fix.
 
-A rule no spec has is named last, just above the summary, and the rules named beside it are
-signed all the same; the command exits 1:
+### The signature
 
-```
-Signed 1 rule as jane@acme.com with the key ending ...K0hI.
-  login RULE-1
-login RULE-9 is not a rule any spec has. Run purlin:status login to see its rules.
-3 rules. 3 pass their tests. 3 are strong. 2 are signed.
-Left to do:
-  1 rule to sign: purlin:sign
+After the last stop the walk asks once:
+
+```text
+Sign the evidence package for 1.2.0 as quinn.qa@labconnect.example? [y/N] y
+Signed 1.2.0 as quinn.qa@labconnect.example with the key ending ...4f2a.
+Tagged signed/1.2.0 at 8de0b6e.
+Nothing left to do. Push the tag to release it: git push origin signed/1.2.0
+Sign-offs of 1.2.0: quinn.qa@labconnect.example.
 ```
 
-The walk is what writes the tag. Once `--all` or a named rule has signed the last rule,
-`Left to do` reads `the version to tag: purlin:sign`, and `purlin:sign` with no argument writes
+On `y` it writes your sign-off file and makes one signed commit,
+`sign(1.2.0): quinn.qa@labconnect.example`. The first sign-off of a version writes the signed tag
+`signed/<version>` on that commit with `git tag -s`. Any other answer prints `Nothing was signed.`
+and writes nothing. Where git cannot make the commit, the walk prints
+`The sign-off commit was not made: <git's message>. Nothing was signed; run purlin:sign again.`
+
+## Several signers
+
+Any person with a key may sign, and several may sign one release, each once. A later sign-off
+adds its own file over the same package, and the tag stays where the first put it:
+
+```text
+signed/1.2.0 stays at 8de0b6e; this sign-off is added after it. Push it: git push
+Sign-offs of 1.2.0: quinn.qa@labconnect.example, pat.product@labconnect.example.
+```
+
+Purlin creates evidence and enforces no policy about who signs: a sign-off counts whoever wrote
 it.
 
-At the gate `signed` a rule of a spec that names no files in `> Scope:` is signed all the same,
-and its signature does not count until the spec names them. Its line says so and names the
-command that adds them:
+## Through the agent
 
+The agent's shell has no terminal for you to answer in, so `purlin:sign` in Claude Code makes
+the walk in two calls. It runs `purlin:sign --show`, which prints the overview, every stop and the
+strong list in full, asks nothing and writes nothing, and ends on
+`Answer each stop, then run purlin:sign --answers <file>.` The agent asks you each stop, writes
+your answers to `.purlin/runtime/signoff-answers.json`, and runs `purlin:sign --answers` with it:
+
+```json
+{"strong": "go on",
+ "stops": {"accession_screen RULE-1": {"answer": "note", "note": "the tube is red"},
+           "sample_age RULE-1": {"answer": "continue"}},
+ "sign": true}
 ```
-Signed 1 rule as jane@acme.com with the key ending ...K0hI.
-  login RULE-1   does not count until the spec names its files: purlin:spec login
-3 rules. 2 pass their tests. 2 are strong. 0 are signed.
-Left to do:
-  1 rule to test by hand: purlin:sign
-  2 rules to tie to their files: purlin:spec
+
+The walk then runs with those answers and prints the same lines. A stop with no answer refuses:
+
+```text
+No sign-off: sample_age RULE-1 has no answer in .purlin/runtime/signoff-answers.json. Answer every stop, then run purlin:sign --answers .purlin/runtime/signoff-answers.json again.
 ```
+
+## What the sign-off records
+
+One sign-off covers the whole package. It is a file,
+`.purlin/evidence/package/<version>.signoffs/<signer>.json`, added in a signed commit, carrying
+the package's `fingerprint`. It records the signer's email and name as git holds them, the key's
+fingerprint, the time, the commit the package describes, and what the walk showed:
+
+- the overview's numbers;
+- each rule shown one by one, in the order walked, with why it stopped: `hand check`, `weak`,
+  `not audited` or `strong`;
+- each rule the audit found strong that you did not walk, and whether you opened the list;
+- every note you typed, hand checks among them.
+
+It records no judgment: no answer word, only what was shown and what was typed.
+[signature_format.md](../references/formats/signature_format.md) holds every field.
+
+## When a sign-off counts
+
+A sign-off counts when all of these hold:
+
+- the last commit that touched its file carries a signature, made with any key;
+- that signature verifies over the commit; where it does not, the reason reads
+  `the signature on the commit that added it does not verify`;
+- its package hash equals the `fingerprint` of the package committed for that version.
+
+The key is not compared with the signer. An SSH signature is checked with
+`ssh-keygen -Y check-novalidate`, which needs no list of allowed signers, and an OpenPGP one with
+`git verify-commit`.
 
 Purlin signs with an SSH key, any key. A checkout with none gets the commands that set one up,
-writes no signature and exits 1; the `ssh-keygen` line shows only while that key file does not
-exist:
+writes nothing and exits 1; the `ssh-keygen` line shows only while that key file does not exist:
 
-```
+```text
 No key to sign with. These commands set one up:
   ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""
   git config gpg.format ssh
@@ -196,156 +273,23 @@ No key to sign with. These commands set one up:
 
 `purlin:sign` shows you the commands, offers to run them, and carries on once they ran.
 
-## A rule that does not apply
-
-A rule of a pinned anchor that no test in this project can show, because it does not apply here,
-is signed by a person in the project as not applying, with the reason. A rule of the project's
-own anchor that does not apply is deleted.
-
-```
-purlin:sign security_baseline RULE-4 --does-not-apply "the project stores no card data"
-```
-
-The signature is an ordinary one, in one signed commit, carrying the reason. The rule then reads
-`does not apply` in every cell, with the reason `by <signer>: <why>`, and counts as met; its row's
-`Tests` cell names it, `7 of 8 · 1 does not apply`, and the evidence package carries the reason.
-Any change to the project ends that signature, and the rule is left to do as
-`1 rule to confirm as not applying: purlin:sign`. The walk stops at it:
-
-```
-security_baseline RULE-4 was signed as not applying by jane@acme.com: the project stores no card data. Confirm it still does not apply?
-```
-
-Confirming writes a new signature with the same reason. You may instead sign it as applying after
-all, and it then waits as any rule does, or skip it. `purlin:sign --all` does not confirm one.
-[purlin_commands.md](../references/purlin_commands.md) gives the lines `--does-not-apply`
-refuses with.
-
-## What makes a signature count
-
-A signature is made over six things: the rule text, its proof text, its test, the code the
-feature's `> Scope:` lists, or for an anchor every file of the project but Purlin's own records,
-what the audit found, and the machine each system's tests ran on. The
-file records the signer's email and name as git holds them, the key's fingerprint, the time, the
-gate, the evidence file it rested on and the note.
-[signature_format.md](../references/formats/signature_format.md) holds every field.
-
-At every gate a signature counts when both of these hold:
-
-| The signature counts when | What the signed cell reads when it does not |
-|---|---|
-| The last commit that touched its file carries a signature, made with any key | `unsigned`, with the reason `the commit that added it is not signed` |
-| That signature verifies over the commit | `unsigned`, with the reason `the signature on the commit that added it does not verify` |
-| What it was made over still hashes to what it was made over | `unsigned`, and the rule is `to sign` again |
-
-A signature counts when the commit that added it is signed and that signature verifies over the
-commit. The key is not compared with the signer. An SSH signature is checked with
-`ssh-keygen -Y check-novalidate`, which needs no list of allowed signers, and an OpenPGP one with
-`git verify-commit`.
-
-Purlin records who signed and with which key, and does not decide who may sign: a signature counts
-whoever wrote it, and on whatever branch carries it.
-
-## What ends a signature
-
-A change to the rule text, a proof's text, the test, or a file the feature's `> Scope:` lists ends
-every signature it covers. So does an audit that finds something different, and a run on another
-machine for a system the signature covers. A signature covers the rule's test files whole and the
-machine each system's results came from, so editing another test in the same file, or running
-the same tests on another computer, ends it.
-
-A hand check's signature is made over the rule's and its proofs' wording alone: a change to the
-code, a test or the machines does not end it, and a change to that wording does. A hand check is
-a rule whose every proof is `@manual` or has no test.
-
-A signature that ends returns its rule to `to sign`, or, for a hand check, to
-`to test by hand`. The status and every test run print one line naming the rule, the signer and
-why it ended, and the signed cell carries the same reason:
-
-```
-login RULE-2: the signature by jane@acme.com ended because a test file behind it changed: tests/test_login.py.
-```
-
-The causes are `the rule's wording changed`, `a proof's wording changed`,
-`a test file behind it changed: <files>`, `a file its spec names changed`,
-`a file of the project changed`, `what the audit found changed`,
-`the results on macOS now come from quinn-laptop, not vm` and `Windows has no results any more`,
-joined `; ` where more than one holds. `purlin:drift qa` prints the same lines. After a change
-to `src/login.py`, the one file `login` lists, the next test run reads:
-
-```
-Selected 1 of 1 feature: login (code changed since 1e7b7e4).
-```
-
-and ends on:
-
-```
-3 rules. 2 pass their tests. 2 are strong. 0 are signed.
-Left to do:
-  1 rule to test by hand: purlin:sign
-  2 rules to sign: purlin:sign
-```
-
-Running the same audit again over the same code ends nothing, and neither does a result from a
-system the signature does not cover. An anchor's rule is signed once, over every file of the
-project but Purlin's own records, so any change to the project ends that signature.
-
 ## The tag
 
-A signature locks one rule. The tag locks the version.
+The tag pins the version: the code, the evidence, the package and, at `signed`, the sign-offs,
+under one name.
 
-At the gate `signed`, when the walk leaves nothing but the tag, `purlin:sign` writes the evidence
-package, `.purlin/evidence/package/<version>.json`, commits it as a signed commit
-`purlin: evidence at <sha7>`, and writes a signed tag on that commit with `git tag -s`, signed
-with the key `user.signingkey` names. The tag is `signed/<version>`. The version is read from the
-`VERSION` file at the project root, then the `version` of `package.json`, then `[project]` and
-then `[tool.poetry]` `version` in `pyproject.toml`, then `<Version>` in a `*.csproj` at the root;
-`purlin:sign --release <name>` tags `signed/<name>` instead. The tag's message reads
-`Nothing left to do at the gate signed.`, then the commit and the gate.
+| Tag | Written by | Signed |
+|---|---|---|
+| `passed/<version>` | `purlin:test --release` at the gate `passed`, on the package's commit | no |
+| `signed/<version>` | the first `purlin:sign` at the gate `signed`, on its sign-off commit | yes, with the key `user.signingkey` names |
 
-```
-Nothing is waiting for someone to test by hand or to sign.
-Evidence package committed: .purlin/evidence/package/1.4.0.json.
-Tagged signed/1.4.0 at 698261b.
-Nothing left to do. Push the tag to release it: git push origin signed/1.4.0
-```
+A tag that exists is never moved. The package is one data file describing every rule of that
+version, the thing you hand to a regulated system:
+[package_format.md](../references/formats/package_format.md) holds its fields, and
+[regulated-workflow.md](regulated-workflow.md) says what happens to it next. Where a project has
+a remote runner, pushing a `signed/*` tag starts a tag run, which runs the tests tied to proofs
+tagged for the runner's system and writes nothing.
 
-You push it; `purlin:sign` pushes nothing. It writes no tag, and says why, when:
-
-| What it prints | Why |
-|---|---|
-| `No tag: <feature> cannot be counted: <reason>. Run purlin:spec <feature>, then purlin:sign.` | the feature's spec writes a number twice or holds a line left from a merge conflict |
-| The summary and `Left to do` | work other than the tag is left |
-| `No tag: the working tree holds changes that are not committed, so the results do not describe a commit. Commit them, then run purlin:sign.` | `git status` lists a path outside `.purlin/` |
-| `No tag: <feature> has results that are not committed. Run purlin:test --commit.` | a feature's results are written and not committed |
-| `No tag: origin/main holds 1 commit that 8de0b6e does not, as this checkout last fetched it. Pull, run purlin:test --commit, then purlin:sign.` | the checked-out branch's copy on the host, as this checkout last fetched it, holds commits the checkout lacks; `purlin:sign` does not fetch |
-| `No version: nothing in this project states one. Run purlin:sign --release <version>, or write it to a VERSION file.` | no version is stated and no `--release` is given |
-| `No tag: signed/1.4.0 is already written. Run purlin:sign --release <name> to name another.` | the tag exists; a tag that exists is never moved |
-| `No tag: the committed evidence still has work left to do, so no evidence package was committed. Run purlin:test --commit, then purlin:sign.` | the package, read from the committed evidence, finds work left |
-| `No tag: the evidence package was not committed: <why>.` | the package could not be written or committed |
-| `No tag: git could not write signed/<version>: <git's own message>.` | git refused the tag |
-
-A feature whose spec writes a number twice or holds a line left from a merge conflict is not
-signed either: `purlin:sign <feature>` prints
-`<feature> is not signed: <reason>. Run purlin:spec <feature>, then purlin:sign again.`, writes
-nothing and exits 1.
-
-Sign a version on a release branch, such as `release/1.2.0`, cut from the default branch once
-its specs are done. New specs land on the default branch and wait for the next version; a fix
-lands on the release branch and is merged back. On `release/1.2.0` the tag keeps up with
-`origin/release/1.2.0`.
-
-With no version stated, `purlin:sign` asks you for one and offers to write it to a `VERSION` file.
-The command exits 0 when the tag already exists and 1 for every other refusal.
-
-The tag holds the whole tree, so the code, the evidence, the signatures and the package are pinned
-together under one name. The package is one data file describing every rule of that version, the
-thing you hand to a regulated system: [package_format.md](../references/formats/package_format.md)
-holds its fields, and [regulated-workflow.md](regulated-workflow.md) says what happens to it next.
-Where a project has a remote runner, pushing the tag starts a tag run, which runs the tests tied
-to proofs tagged for the runner's system and writes nothing.
-
-Read next: [regulated-workflow.md](regulated-workflow.md) for the tag and the package in a
-regulated setting, [raising-the-gate-and-upgrading.md](raising-the-gate-and-upgrading.md) for the
-move to the gate `signed`, [specs-and-anchors.md](specs-and-anchors.md) for writing a proof a test
-can prove.
+Read next: [regulated-workflow.md](regulated-workflow.md) for the release in a regulated setting,
+[raising-the-gate-and-upgrading.md](raising-the-gate-and-upgrading.md) for the move to the gate
+`signed`, [specs-and-anchors.md](specs-and-anchors.md) for writing a proof a test can prove.

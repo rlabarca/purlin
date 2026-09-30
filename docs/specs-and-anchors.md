@@ -58,8 +58,7 @@ nothing reads that heading. What the feature does belongs in `> Description:`.
 
 ### Metadata
 
-Every metadata line starts with `>`. `> Scope:` is required at the gate `signed`; every other
-line is optional.
+Every metadata line starts with `>`, and every one is optional.
 
 | Field | What it does |
 |-------|--------------|
@@ -72,9 +71,7 @@ line is optional.
 `> Scope:` earns its place. The evidence carries a fingerprint of the files it names, so a
 change to one of them is told from a change to a rule. When the code changes, the rule's passed
 cell reads `out of date` with the reason `code changed since <sha7>` until the next run clears
-it, and `purlin:test` with no feature named runs this feature again. A signature covers the
-code as well as the rule, the proof and the test, so a change to any of them ends it, and the
-rule is left to do as `to sign`.
+it, and `purlin:test` with no feature named runs this feature again.
 
 A spec with no `> Scope:`, or one whose entries reach no file git tracks, names no files.
 `purlin:test` runs its tests every time, and the status names it:
@@ -82,9 +79,6 @@ A spec with no `> Scope:`, or one whose entries reach no file git tracks, names 
 ```
 1 spec names no files, so its tests run every time: export. Run purlin:spec export to add its > Scope: line.
 ```
-
-At the gate `signed` a rule of such a spec can be signed, but the signature does not count: the
-rule is left to do as `to tie to its files`, and no tag is written until the spec names them.
 
 An entry that finds no file git tracks, where the spec's other entries reach files, is warned
 of with the spec's name, the entry and `purlin:spec`.
@@ -106,7 +100,7 @@ never used again. Proof numbers are never reused either: a new proof takes one m
 highest of `> Highest-Proof:` and every proof number in the spec, and `> Highest-Proof:` is raised
 to it. `purlin:spec` reads both copies of the spec, the working copy and `origin/main`'s, for
 both numbers. A deleted rule leaves its number vacant and every other rule keeps the number it
-had; a gap in the sequence is legal and nothing reports it. Renumbering would repoint every test marker and every signature that
+had; a gap in the sequence is legal and nothing reports it. Renumbering would repoint every test marker that
 already names the old id.
 
 A rule number written twice is warned of, and the rule is read once, with the text of its
@@ -140,8 +134,8 @@ through all of them.
 
 A proof is optional at the gate `passed`: there a test may carry the rule's own id instead,
 `# purlin: login RULE-2`. A rule with neither a proof nor such a test reads `no test` with the
-reason `no proof written`. From `strong` up every rule needs a proof, and a rule whose tests
-pass with none reads `no proof` in its strong cell.
+reason `no proof written`. A rule whose tests pass with no proof reads `no proof` in its strong
+cell, and at the gate `signed` it is left to do as a rule to write a proof for.
 
 ### Manual proofs
 
@@ -153,9 +147,10 @@ judgment settles it:
 - PROOF-5 (RULE-2): Read the error messages against the brand voice guide @manual
 ```
 
-A `@manual` proof has no test. Its rule's strong cell reads `manual test`, and the rule is left
-to do as `to test by hand` at every gate until a person checks it and signs it with
-`purlin:sign`, adding `--note "<what you saw>"` when they write what they saw.
+A `@manual` proof has no test, and nothing is left to do for it while the specs change. Its
+rule's strong cell reads `manual test`. At the gate `signed` a person checks it in the sign-off
+walk of `purlin:sign` and types, in one line, what they saw; at `passed` the release lists it as
+not checked.
 
 ### Operating systems
 
@@ -180,13 +175,14 @@ system. Which run proves which proof is in
 
 When two branches took the same number before either fetched, the merge leaves one id twice.
 When two branches take the same number, the number already on the default branch keeps it, and
-the rule or proof from the branch not yet merged moves to the next free number. A moved rule
-needs a new audit and a new signature; its old signature ends and stays on disk. Move the test
-comments that name the moved id with it. `purlin:drift` names every number written twice and
-which line moves.
+the rule or proof from the branch not yet merged moves to the next free number. A moved rule's
+audit is read again; purlin:spec renumbers it and its test comments when you say yes.
+`purlin:drift` names every number written twice and which line moves. `purlin:spec` shows a dry
+run first, the spec lines and the test comments in this checkout that would change, and asks
+`Do it? [y/N]`; a test comment on another branch is named and never touched.
 
 While a number is written twice, or a line git left from the conflict stays in the spec, every
-rule of that spec reads `failed` with the reason, signing it and the tag are refused, and
+rule of that spec reads `failed` with the reason, a release is refused, and
 `Left to do` reads `1 spec to repair: purlin:spec`. Two branches that advanced the same anchor
 pin resolve to the newer sha.
 
@@ -195,16 +191,15 @@ pin resolve to the newer sha.
 An anchor is a set of rules for the whole project, such as a security policy or a rule about
 what the code must never hold. It lives under `specs/_anchors/`, or opens with
 `# Anchor: <name>`, and uses the same two sections and the same rule and proof grammar as any
-other spec. Its tests check the whole project, and each of its rules is counted, audited and
-signed once. No spec names an anchor.
+other spec. Its tests check the whole project, and each of its rules is counted and audited
+once, and signed as part of the release. No spec names an anchor.
 
 ### What an anchor covers
 
 Every rule of an anchor holds across the whole project, and its tests check the whole project.
 The project is every file git tracks but the records Purlin writes: the results of a run and the
-evidence package under `.purlin/evidence/`, the table `.purlin/tests.md`, and the signatures.
-Any change to the project ends an anchor's results and its signatures, so at the gate `signed`
-an anchor is in practice signed last. No code is broken on purpose for an anchor: the AI audit
+evidence package and its sign-offs under `.purlin/evidence/`, and the table `.purlin/tests.md`.
+Any change to the project leaves an anchor's results out of date until the next run. No code is broken on purpose for an anchor: the AI audit
 alone judges its tests. A rule that cannot be checked across the whole project is not an
 anchor's; write it in the spec of each feature that needs it, in that feature's words.
 
@@ -287,25 +282,13 @@ security_baseline: RULE-2 changed, RULE-3 added. Pin advanced from 71abd36 to b3
 ```
 
 It commits nothing: you commit the copy in one commit with that subject, so the diff shows which
-rules moved. A signature on a rule whose text moved ends, and the rule is left to do as
-`to sign` again.
+rules moved.
 
 Never edit a pinned rule in place: the next sync overwrites it and the change is lost with no
 trace. A change to the rule is a pull request against the source repository, and the next sync
 brings it here once it merges. A rule that belongs only to this project goes in a local anchor
 of its own when it holds across the whole project, and in the spec of each feature it holds for
 when it does not.
-
-A rule of a pinned anchor that no test in this project can show, because it does not apply here,
-is signed by a person in the project as not applying, with the reason. A rule of the project's
-own anchor that does not apply is deleted.
-
-```
-purlin:sign security_baseline RULE-4 --does-not-apply "the project stores no card data"
-```
-
-It then reads `does not apply` in every cell and counts as met; any change to the project ends
-that signature, and the rule is left to confirm.
 
 ## Next
 

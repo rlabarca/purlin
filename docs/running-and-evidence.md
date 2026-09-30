@@ -13,9 +13,9 @@ its own ([Who pushes](#who-pushes)).
 |---|---|---|
 | Runs the marked tests | yes | yes |
 | Reads each rule with a model | no | yes, one call per rule |
-| Breaks the code to measure test strength | no | where mutation testing is on, at the gates `strong` and `signed` |
+| Breaks the code to measure test strength | no | where `mutation_engine` names an engine, at either gate |
 | Writes the evidence, and commits it with `--commit` | yes | yes |
-| The step it answers | `passed` | `strong` |
+| The cell it writes | `passed` | `passed` and `strong` |
 
 ## purlin:test
 
@@ -26,6 +26,7 @@ purlin:test <feature> [...]     Run one feature, or several
 purlin:test --commit            Commit the work and the evidence the run wrote
 purlin:test --remote            Let the git host's runner do the run
 purlin:test --arm-timeout <seconds>  Give each suite longer than an hour
+purlin:test --release [<version>]  Run every test, commit the evidence and the package, and tag the release at the gate passed
 ```
 
 ### The first run
@@ -125,11 +126,12 @@ was.
 ### How a run ends
 
 Every run ends on the status table, the summary and `Left to do`, counted over every rule under
-`specs/` rather than over the features this run covered. The summary names each step up to the
-gate; `Left to do` names each kind of work left with its count and its command, and its first
-line is the next step. [hard_gates.md](../references/hard_gates.md#when-a-version-is-finished)
-gives every kind. With nothing left, a project at `passed` or `strong` ends on `Nothing left to
-do.`
+`specs/` rather than over the features this run covered. The summary counts the rules whose tests
+pass and, where the audit read any, what it found; `Left to do` names each kind of work left with
+its count and its command, and its first line is the next step.
+[hard_gates.md](../references/hard_gates.md) gives every kind. With nothing left, a run ends on
+the release step: `Nothing left to do. To release a version: purlin:test --release` at the gate
+`passed`, with `, then purlin:sign` at `signed`.
 
 A test run exits on the tests alone, whatever the gate: 1 where a test failed, evidence is
 missing or a comment names nothing a spec has, 0 otherwise. Before anything runs it also exits
@@ -228,7 +230,7 @@ purlin:audit --arm-timeout <seconds>  Give the breaking tool longer per feature
 An audit runs the tests as `purlin:test` does, then the breaks where mutation testing is on,
 then the AI audit. The AI audit reads a rule that is its feature's own, has at least one proof
 with a test, whose passed cell reads `passed`, and that has no audit of its current rule, proof
-and test text in the evidence. It reads the same rules at every gate. With no feature named it
+and test text in the evidence. It reads the same rules at either gate. With no feature named it
 reads the rules of every feature, whichever features its tests ran; `--all` reads every such
 rule again. Before the first call it prints `AI audit: <n> rules to read, <k> at a time.` and
 carries on without asking.
@@ -246,8 +248,8 @@ written, reads `not audited`, and the run prints `<n> rules could not be audited
 what to do.
 
 It writes what it found under `audit` in `.purlin/evidence/local/<feature>.json`, and commits
-it only with `--commit`, in the same two commits as a test run. An audit of a project at the
-gate `strong` in which the model found one gap reads, after the tests:
+it only with `--commit`, in the same two commits as a test run. An audit in which the model found
+one gap reads, after the tests:
 
 ```
 AI audit: 3 rules to read, 3 at a time.
@@ -256,22 +258,21 @@ Evidence written to .purlin/evidence/local/cart.json.
 Evidence committed.
 AI audit: 3 rules read, 2 strong, 1 weak.
 
-Purlin status: team, plugin 0.10.0, gate strong
+Purlin status: team, plugin 0.10.0, gate passed
 
 Spec  Rules  Proofs  Tests   Strong
 ───────────────────────────────────
 cart  3      3       3 of 3  2 of 3
 ───────────────────────────────────
 
-3 rules. 3 pass their tests. 2 are strong.
+3 rules. 3 pass their tests. The audit found 2 strong and 1 weak.
 Left to do:
   1 rule to strengthen: purlin:build
 ```
 
-An audit exits 1 at every gate when a test it ran failed or did not run. Above the gate
-`passed` it also exits 1 when a rule it read is weak or could not be audited; a rule waiting
-only on a signature does not make it exit 1. At the gate `passed` nothing the audit finds
-makes it exit 1.
+An audit exits 1 when a test it ran failed or did not run, and 0 whatever it found, at either
+gate: the audit is a tool, and nothing waits on it. A weak rule is left to do as `to strengthen`,
+which never stops a release.
 
 ### The flow
 
@@ -301,12 +302,11 @@ test_strength = killed / (killed + survived)
 A break that no test covers counts survived. A break that made a test hang counts killed. The
 technique is mutation testing; the output calls them breaks.
 
-`mutation_engine` in `.purlin/config.json` turns it on. `purlin:init` asks about it at the
-gates `strong` and `signed` only, and writes `auto` when you answer yes or pass `--mutation`
-and `none` otherwise; `auto` lets the detected test framework pick the engine. A config with no
-`mutation_engine` is read as `none`, which is off. `min_strength` is the floor: 70 at `strong`
-and 80 at `signed` while mutation testing is on, null while it is off, and you can set it in
-the file. No breaks run under `passed`, and none run on a remote runner.
+`mutation_engine` in `.purlin/config.json` turns it on, at either gate. `purlin:init` asks about
+it at the gate `signed` only, and writes `auto` when you answer yes or pass `--mutation` and
+`none` otherwise; `auto` lets the detected test framework pick the engine. A config with no
+`mutation_engine` is read as `none`, which is off. The breaks run under `purlin:audit`, and none
+run on a remote runner.
 
 | Engine | Breaks the code behind | Install it with |
 |---|---|---|
@@ -318,11 +318,11 @@ Go, shell and SQL have no engine, and mutmut does not run on Windows. Where no e
 audit alone decides the strong cell, and a rule it found nothing against reads `strong` with the
 reason `no mutation score measured`.
 
-Test strength is one share per feature, whatever the engine, so every rule of a feature is
-judged on the same number. With mutation testing on, a share under `min_strength` leaves the
-strong cell `weak` with the reason `strength <n>% under <m>%`, and a feature whose share could
-not be measured leaves its rules `weak` with the reason `strength not measured: <why>`, counted
-in `Left to do` as `rules to measure`. An engine that runs past `--arm-timeout`, 3600 seconds by
+Test strength is one share per feature, whatever the engine, and it is shown beside what the
+audit found: the strong cell carries it as a reason, `strength 84%`, and the audit's prompt names
+it as `Test strength 84%.` The cell's word stays the audit's. A feature whose share could not be
+measured carries the reason `strength not measured: <why>`, which names the command that fixes it
+and does not make the rule weak. An engine that runs past `--arm-timeout`, 3600 seconds by
 default, measures nothing for the feature it was breaking, and the run prints `purlin: the
 engine timed out after 3600 s, so the breaks it made measure nothing: run purlin:audit
 --arm-timeout <seconds> to give it longer`.
@@ -356,10 +356,7 @@ word and one entry per proof and test. The `audit` object carries the test stren
 A section is current while its fingerprint equals one taken now, committed or not. When the
 spec, the covered code or the tests change, the passed cell reads `out of date`, naming what
 changed, as `code changed since <sha7>`, `spec changed since <sha7>` or `tests changed since
-<sha7>`, and the next run clears it. A signature is bound to the rule, its proof, its test, the
-code the spec lists, what the audit found and the machine the tests ran on: a change to any of
-them ends it, and the rule is left to do as `to sign`
-([hard_gates.md](../references/hard_gates.md#when-a-signature-counts)).
+<sha7>`, and the next run clears it.
 
 ### The table
 
@@ -390,24 +387,28 @@ A file keeps the newest section per operating system and the newest audit entry 
 history is the file's `git log`. A run deletes the evidence of a feature no spec defines and
 prints `Removed <path>: no spec defines <feature>.`
 
-At the gate `signed`, when nothing but the tag is left to do and every result came from
-committed work, `purlin:sign` writes the evidence package,
-`.purlin/evidence/package/<version>.json`, commits it and tags that commit `signed/<version>`.
-[hard_gates.md](../references/hard_gates.md#what-signedversion-means) says what the tag means.
+`purlin:test --release` writes the evidence package, `.purlin/evidence/package/<version>.json`,
+from the evidence at the release commit and commits it; at the gate `passed` it tags that commit
+`passed/<version>`. At `signed` the first `purlin:sign` over the package writes
+`signed/<version>`, and each sign-off is a file under `.purlin/evidence/package/<version>.signoffs/`.
+[hard_gates.md](../references/hard_gates.md) says what each tag means, and
+[review-and-signing.md](review-and-signing.md) is the release in full.
 
 ### Who commits the evidence
 
 Whoever runs `purlin:test --commit` or `purlin:audit --commit` commits the evidence, on the branch
 they are on: it describes that branch's code. When a merge conflicts in `.purlin/evidence/`, take
 either side and run `purlin:test --commit`: the file is written again, keeping each audit result
-whose rule, proof and test are unchanged. The evidence a version is signed on is committed on
-its release branch.
+whose rule, proof and test are unchanged. Evidence may be committed on any branch; a release uses
+only the evidence at the release commit, which `purlin:test --release` commits on the release
+branch.
 
 ## Who pushes
 
 A push is `git push`, typed by a person. `purlin:test` and `purlin:audit` write the evidence,
-commit it when you pass `--commit`, and stop. `purlin:sign` makes its signed commits, writes the
-tag and stops; you push the tag. The one push Purlin makes is `purlin:test --remote`, to a
+commit it when you pass `--commit`, and stop. `purlin:test --release` commits the package and,
+at `passed`, writes the tag; `purlin:sign` makes its signed commit and, for the first sign-off,
+writes the tag. Each stops there; you push the tag. The one push Purlin makes is `purlin:test --remote`, to a
 branch of its own, described below.
 
 ## When a project has a runner
@@ -470,8 +471,7 @@ the host lent the runner kept beside it as `hostname`
 
 No breaks and no AI audit run on the runner. The test step is the last step: it ends on the
 summary and `Left to do`, and its exit code is the job's. The job fails only when a test tied to
-a proof tagged for its system fails or could not run; a rule not yet audited or signed never
-fails it.
+a proof tagged for its system fails or could not run; a rule not yet audited never fails it.
 
 The runner file carries one job per operating system a proof in `specs/` is tagged `@env` for
 that the machine running setup is not. Each job writes its own section, merged into the file at
@@ -517,5 +517,5 @@ starts prompts: a push or a pull that needs a credential fails rather than asks.
 
 - [how-purlin-works.md](how-purlin-works.md): the chain, and who writes each file.
 - [dashboard.md](dashboard.md): the same data as a page that opens from disk.
-- [team-workflow.md](team-workflow.md): what the `strong` gate asks of a team.
-- [regulated-workflow.md](regulated-workflow.md): signatures, the tag and the evidence package.
+- [team-workflow.md](team-workflow.md): how a team works with the audit as a tool.
+- [regulated-workflow.md](regulated-workflow.md): the evidence package, the sign-offs and the tag.

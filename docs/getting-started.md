@@ -47,9 +47,9 @@ Then, inside Claude Code, run `/plugin install purlin@purlin` and `/reload-plugi
 **2. Set up.** Type `purlin:init`. It asks up to three things:
 
 - the gate, `What must be true of every rule before a version is finished?`, with the choices
-  `passed`, `strong` and `signed`. Answer `passed`.
-- at `strong` and `signed` only, and only where a tool that can do it exists for your test
-  framework, whether to break the code on purpose to measure test strength.
+  `passed` and `signed`. Answer `passed`.
+- at `signed` only, and only where a tool that can do it exists for your test framework,
+  whether to break the code on purpose to measure test strength.
 - whether it may commit the files it wrote. Answer yes.
 
 It names each file it wrote, copied or skipped:
@@ -129,7 +129,7 @@ cart  3      3       3 of 3
 ───────────────────────────
 
 3 rules. 3 pass their tests.
-Nothing left to do.
+Nothing left to do. To release a version: purlin:test --release
 ```
 
 Where the first run recognises no test tool, which for pytest means no `conftest.py`, no
@@ -145,8 +145,8 @@ No test command is set and no test tool Purlin knows was found, so nothing ran. 
 recognises and the entry it suggests for each.
 
 **5. Read it.** `3 rules. 3 pass their tests.` is the summary: how many rules there are and how
-many passed their tests. `Nothing left to do.` means no rule has anything left at the gate
-`passed`. Open `purlin-report.html` in a browser to see each rule on its own line; it reads the
+many passed their tests. `Nothing left to do.` means no rule has anything left, and the rest of
+the line names how a version is released. Open `purlin-report.html` in a browser to see each rule on its own line; it reads the
 results of the last run.
 
 Where a test fails, here the test of `RULE-2`, the run names the rule and the test:
@@ -196,8 +196,8 @@ the evidence, as `purlin: evidence at <sha7>`, naming the first. A teammate read
 the git host without running anything. It never pushes; the push is yours.
 
 Every run ends on the summary and `Left to do`. The first line of `Left to do` is the next step
-and names its command; a project with nothing left at the gate `passed` or `strong` ends on
-`Nothing left to do.`
+and names its command; a project with nothing left ends on the release step,
+`purlin:test --release`.
 
 [running-and-evidence.md](running-and-evidence.md) covers a run in full, including the one
 reason a project has a remote runner: a proof tagged for an operating system this machine is
@@ -205,27 +205,28 @@ not.
 
 ## When a team wants more
 
-The gate is the last step every rule must reach before a version is finished. There are three:
+The gate says what a release asks. There are two:
 
-| Gate | What every rule must have | The command |
-|------|---------------------------|-------------|
-| `passed` | its tests pass over the current code | `purlin:test` |
-| `strong` | that, and an audit that found the tests sound | `purlin:audit` |
-| `signed` | that, and a person's signature | `purlin:sign` |
+| Gate | What a release must have | The commands |
+|------|--------------------------|--------------|
+| `passed` | every rule's tests pass at the release commit | `purlin:test --release` |
+| `signed` | that, and a person's signature over the evidence package | `purlin:test --release`, then `purlin:sign` |
 
-From `strong` up every rule needs a proof, which QA writes or reads and the audit checks the
-test against. `purlin:audit` has a model read each rule, its proofs and its tests; a finding
-makes the rule `weak`, and it is left to do as `to strengthen`. At `signed` a person signs each
-rule, and `purlin:sign` writes the signed tag `signed/<version>` once nothing is left to do and
-every result came from committed work.
+`purlin:test --release`, on a release branch, runs every test, commits the evidence and the
+evidence package, and at `passed` tags the release `passed/<version>`. At `signed` a person walks
+the package with `purlin:sign`, and the first sign-off writes the signed tag `signed/<version>`.
 
-`purlin:init --gate strong` raises the gate. The specs, the tests and the evidence stay as they
-are, and the summary gains a step.
+`purlin:audit` is a tool you run at either gate: a model reads each rule, its proofs and its
+tests. A finding makes the rule `weak`, and it is left to do as `to strengthen`; nothing waits on
+it, and the summary adds what the audit found only where it ran.
+
+`purlin:init --gate signed` changes the gate. The specs, the tests and the evidence stay as they
+are.
 
 ## Where to go next
 
 - The model in one page: [how-purlin-works.md](how-purlin-works.md).
-- The gate `strong`, for a team: [team-workflow.md](team-workflow.md).
+- A team of product, developers and QA: [team-workflow.md](team-workflow.md).
 - The gate `signed`, when the software is signed off in a regulated system:
   [regulated-workflow.md](regulated-workflow.md).
 - An existing codebase with no specs yet: [spec-from-code.md](spec-from-code.md).

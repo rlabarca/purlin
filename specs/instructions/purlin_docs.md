@@ -8,16 +8,18 @@
 >   The sample project is the ten-minute path: a Python project whose `pyproject.toml`
 >   configures pytest and that holds no code, set up at the gate `passed` with the commit agreed,
 >   then one spec, `cart`, of three rules, with its code and three marked tests. A second project
->   with no test tool Purlin knows gives the line the first run prints for it.
-> Scope: README.md, docs/index.md, docs/getting-started.md, docs/how-purlin-works.md
-> Highest-Rule: 12
-> Highest-Proof: 17
+>   with no test tool Purlin knows gives the line the first run prints for it. The release page,
+>   `docs/review-and-signing.md`, names the two tags a release writes.
+> Scope: README.md, docs/index.md, docs/getting-started.md, docs/how-purlin-works.md, docs/review-and-signing.md
+> Highest-Rule: 13
+> Highest-Proof: 18
 
 ## Rules
 
 - RULE-1: The README's command table gives every command the purpose sentence `references/purlin_commands.md` gives it, word for word
 - RULE-2: Every printed line quoted on the four pages is printed, word for word, by a run of the sample project the page describes
 - RULE-12: Every relative link on the four pages names a file in the repository, and every `#` part names a heading of that file
+- RULE-13: The release page names both tags a release writes, each with the command that writes it
 
 ## Proof
 
@@ -31,3 +33,4 @@
 - PROOF-8 (RULE-2): In a set-up project with the spec and tests of `cart` and no test tool Purlin knows, the first test run of `cart` prints each block of lines the pages take from it
 - PROOF-9 (RULE-2): Every fenced block on the four pages names its language, and every block marked `text` sits under a comment naming one of the six runs of the sample project
 - PROOF-17 (RULE-12): Each relative link on the four pages is followed from the page's own folder; each names a file the repository holds, and each `#` part matches a heading of that file as the git host spells its anchor
+- PROOF-18 (RULE-13): The release page's table of tags has a row for `passed/<version>` naming `purlin:test --release` and a row for `signed/<version>` naming `purlin:sign`

@@ -118,8 +118,8 @@ the project's test command does not run, is not a test: it is left alone and cou
   reaches; in C#, the `public` types of a project that is not a test project.
 - No implementation in a rule. "Uses a sorted set in the cache" is not a claim about
   behaviour; "rejects the 61st request in a minute" is.
-- No evidence and no signatures. Those come from `purlin:test`, `purlin:audit` and
-  `purlin:sign`.
+- No evidence. That comes from `purlin:test` and `purlin:audit`, and a release's sign-off
+  from `purlin:sign`.
 - No rule for behaviour that could not be stated as an observable. The behaviour is noted in
   `> Description:` and the rule is dropped.
 
@@ -131,7 +131,7 @@ The skill reports the counts, then names the first of these that applies:
 |--------------|---------------|
 | Rules whose existing tests now carry their comments | `→ Run: purlin:test`, which suggests the test command and runs them |
 | Rules with no test at all | `→ Run: purlin:build <name>` on the feature with the most of them |
-| At the gate `passed`, every rule passing, and the team wanting the paper trail | `→ Run: purlin:init --gate strong` |
+| At the gate `passed`, every rule passing, and the team wanting the paper trail | `→ Run: purlin:audit` |
 
 Before the first test run the status already counts the marked tests as work to run:
 

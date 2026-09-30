@@ -11,22 +11,20 @@ set up for. `purlin:init` changes both, with `--gate` and `--update`.
 
 ```
 purlin:init --gate passed
-purlin:init --gate strong
 purlin:init --gate signed
 ```
 
-Each gate asks one more step of every rule: `passed` asks whether the marked tests passed,
-`strong` whether the audit found those tests sound, and `signed` whether a person signed the rule.
-Each step is one cell on every rule, and a cell above the gate does not exist, so raising the gate
-is what adds the `Strong` and `Signed` columns to the status table.
-[hard_gates.md](../references/hard_gates.md) is the one home of the gate.
+The gate is two answers. `passed`: every rule's tests pass on the evidence committed at the
+release commit. `signed`: the same, and at least one person signs the evidence package. Every
+rule carries two cells at either gate, `passed` and `strong`; the gate reads the first, and the
+second says what the audit found, where it ran. [hard_gates.md](../references/hard_gates.md) is
+the one home of the gate.
 
-Raising the gate writes the setting and keeps every file an earlier run wrote. Lowering it writes
-the setting and deletes nothing: the evidence and the signatures stay where they are, and the cells
-above the new gate are not read. A team can drop to `passed` for a spike and come back up without
-losing a file.
+Changing the gate writes the setting and keeps every file an earlier run wrote: the evidence, the
+packages and the sign-offs stay where they are. A team can drop to `passed` for a spike and come
+back to `signed` without losing a file.
 
-Raised from `strong` to `signed`, with the commit question answered `y`:
+Raised from `passed` to `signed`, with the commit question answered `y`:
 
 ```
 Gate signed. Suites pytest.
@@ -43,10 +41,8 @@ Commit the files setup wrote? [y/N] y
 Committed 35a89f7, the files setup wrote:
   .purlin/config.json
 
-3 rules. 2 pass their tests. 2 are strong. 0 are signed.
-Left to do:
-  1 rule to test by hand: purlin:sign
-  2 rules to sign: purlin:sign
+3 rules. 3 pass their tests.
+Nothing left to do. To release a version: purlin:test --release, then purlin:sign
 ```
 
 Setup names every path it wrote, kept, copied or skipped, one per line. Once it wrote a file git
@@ -57,29 +53,32 @@ project as it now is.
 
 | Flag | What it does |
 |------|--------------|
-| `--gate <gate>` | sets the gate, `passed`, `strong` or `signed`, without asking |
-| `--mutation` | turns mutation testing on without asking |
+| `--gate <gate>` | sets the gate, `passed` or `signed`, without asking |
+| `--mutation` | turns mutation testing on without asking, at either gate |
 | `--yes` | takes the default answer to every question, so mutation testing stays off, and commits the files setup wrote |
 | `--update` | brings a project an older Purlin set up onto the installed one |
 
 ## What each gate writes
 
-**At every gate.** `.purlin/config.json` with exactly seven keys: `version`, `gate`,
-`mutation_engine`, `min_strength`, `audit_parallel` at 4, `tests` and `ci`. A first setup writes
-`tests` empty, and the first test run suggests an entry for each test tool it recognises; a
-`tests` setting the project already carries is kept. Setup also writes `specs/`,
-`.purlin/evidence/` with its README, a block in `.gitignore` naming `/purlin-report.html` and
-`.purlin/runtime/`, and the dashboard page, copied to `purlin-report.html`.
+**At either gate.** `.purlin/config.json` with exactly six keys: `version`, `gate`,
+`mutation_engine`, `audit_parallel` at 4, `tests` and `ci`. A first setup writes `tests` empty,
+and the first test run suggests an entry for each test tool it recognises; a `tests` setting the
+project already carries is kept. Setup also writes `specs/`, `.purlin/evidence/` with its README,
+a block in `.gitignore` naming `/purlin-report.html` and `.purlin/runtime/`, and the dashboard
+page, copied to `purlin-report.html`.
 
-**Mutation testing.** Setup asks
+**The audit and mutation testing.** Both are tools you run with `purlin:audit`, at either gate,
+and nothing waits on them. What the audit finds is part of the evidence: `purlin:audit` writes it
+into each feature's `.purlin/evidence/local/<feature>.json`, and `--commit` commits it. A rule
+the audit found weak is left to do as `to strengthen`, which never stops a release. Setup asks
 `Measure test strength by breaking the code on purpose? It needs <engine> and takes minutes to hours per run. [y/N]`
-only at `strong` and `signed`, only where an engine that runs on this operating system exists for
-a framework the project carries, and only while the settings name no `mutation_engine`. The answer
-is kept, so raising the gate later does not ask again; `--mutation` turns it on. With it on,
-`min_strength` is 70 at `strong` and 80 at `signed`, and setup writes the engine's configuration:
+only at `signed`, where a person reads the audit at the sign-off, only where an engine that runs
+on this operating system exists for a framework the project carries, and only while the settings
+name no `mutation_engine`. The answer is kept, so changing the gate later does not ask again;
+`--mutation` turns it on at either gate. With it on, setup writes the engine's configuration:
 
 ```
-Gate strong. Suites pytest.
+Gate signed. Suites pytest.
 No git host found.
 kept .purlin/
 kept specs/
@@ -88,17 +87,15 @@ wrote setup.cfg
 wrote .gitignore
 ```
 
-**To `strong`.** What the audit finds is part of the evidence: `purlin:audit` writes it into each
-feature's `.purlin/evidence/local/<feature>.json`, and `--commit` commits it. A rule no audit has
-read is left to do as `to audit`. A rule with a `@manual` proof waits as `to test by hand` at
-every gate, `passed` included.
+**At `passed`.** `purlin:test --release` runs every test, commits the evidence and the evidence
+package, and tags the release `passed/<version>`, unsigned. A rule with a `@manual` proof is
+listed in the package as not checked.
 
-**To `signed`.** Every rule waits for a person's signature once its tests pass and its audit is
-strong, left to do as `to sign`, and a rule whose spec names no files in `> Scope:` is left to do
-as `to tie to its files`. `purlin:sign` checks for a key to sign with and prints the commands that
-set one up when there is none. When nothing but the tag is left, its walk writes the evidence
-package and the tag `signed/<version>`, and a person pushes the tag.
-[review-and-signing.md](review-and-signing.md#the-tag) has the tag.
+**At `signed`.** A rule with no proof is left to do as a rule to write a proof for, with `purlin:spec`. The release run
+commits the package and writes no tag; `purlin:sign` walks it with a person, checks for a key to
+sign with and prints the commands that set one up when there is none. The first sign-off writes
+the tag `signed/<version>`, and a person pushes it.
+[review-and-signing.md](review-and-signing.md#the-tag) has the tags.
 
 ## A remote runner, at any gate
 
@@ -159,7 +156,7 @@ is written from them:
 | `kind-tags` | drops the tag naming the kind of test from every proof line |
 | `untracked-files` | deletes the proof files 0.9.5 committed beside the specs and its cache folder, and untracks the dashboard data |
 | `hooks` | deletes the git hooks 0.9.5 installed, and leaves a hook another tool wrote |
-| `config` | writes `.purlin/config.json` at this release's seven keys, asks the gate question, and names every key it drops |
+| `config` | writes `.purlin/config.json` at this release's six keys, asks the gate question, and names every key it drops |
 | `evidence` | creates `.purlin/evidence/` with its README |
 | `dashboard` | replaces a `purlin-report.html` at the project root that is a link or differs from the page `purlin:init` copies; a project with no page there is left without one |
 | `workflows` | removes the workflow 0.9.5 wrote, and offers the runner file where `purlin:init` would write it, only where a proof is tagged `@env` for a system this machine is not |
@@ -172,12 +169,12 @@ settings name as the default:
 ```
 What must be true of every rule before a version is finished?
   passed  every rule's tests pass
-  strong  tests pass and the audit finds them sound
-  signed  strong, and a person signs each rule
-Gate [passed]: strong
+  signed  every rule's tests pass, and a person signs each release
+Gate [passed]: passed
 ```
 
-An empty answer takes the default. At `strong` and `signed`, where the settings name no
+An empty answer takes the default. A 0.9.5 project whose hook setting blocked a push is offered
+`passed`. At `signed`, where the settings name no
 `mutation_engine` and an engine that runs on this operating system exists for the project's
 frameworks, the mutation question follows, and its default is no. The `tests` setting is written
 from the frameworks the old settings named, and a framework nothing in the tree runs is dropped
@@ -191,9 +188,13 @@ Once the last question is answered, each migration applied prints what it did, i
 spaces, such as:
 
 ```
-  set the gate to strong and dropped 4 keys this release does not read: digest, pre_push, report, spec_dir
+  set the gate to passed and dropped 4 keys this release does not read: digest, pre_push, report, spec_dir
   wrote the tests setting: no suite; add one under "tests" in .purlin/config.json
 ```
+
+A `gate` this release does not offer is written as `passed`, with `mutation_engine` kept as it
+is, and the migration prints a line saying so. Each key this release does not read is taken out,
+with the line `removed from .purlin/config.json: <key>`.
 
 Before a migration rewrites a file it copies the bytes beside it as `<name>.local-<sha8>.bak` and
 prints `kept the previous bytes at <path>`. A feature spec with no `> Scope:` line is not a
@@ -212,4 +213,4 @@ read, with the sentence saying why; 2 when the folder has no `.purlin/`, with
 
 Read next: [getting-started.md](getting-started.md) if you are setting a project up for the first
 time, [team-workflow.md](team-workflow.md) and [regulated-workflow.md](regulated-workflow.md) for
-the two higher gates.
+the two ways a team works.

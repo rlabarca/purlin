@@ -1,35 +1,20 @@
 # Team workflow
 
-For a team of product, developers and QA working at the `strong` gate.
+For a team of product, developers and QA working together, at either gate.
 
-At `strong` a rule carries a second cell. The passed cell asks whether the marked tests passed;
-the strong cell asks whether the AI audit found those tests sound. It is met when the AI audit
-read the rule's current text, proof and test and found nothing, and, where mutation testing is
-on, the feature's test strength is at or above `min_strength`. With mutation testing on and no
-strength measured, the cell reads `weak` with the reason `strength not measured: <reason>`, and
-the reason names the command that fixes it. Your own `purlin:audit` writes what the strong cell
-reads, on your own machine, and it counts.
+Product, QA and the developers improve rules, proofs and tests together, each on their own
+branch. Nothing is signed while the specs change: the status and the dashboard show the state,
+and `Left to do` lists only work. A person appears at release time alone, and only at the gate
+`signed`: [review-and-signing.md](review-and-signing.md) is that walk.
 
-A person appears at this gate for one thing: a proof tagged `@manual`, which no test can settle.
-Every other rule reaches `strong` without anyone being asked. The `signed` gate, where every
-rule waits on a signature, is [regulated-workflow.md](regulated-workflow.md).
+Every rule carries two cells. The passed cell asks whether its marked tests passed; it is what
+the gate reads. The strong cell says what the AI audit found those tests to be, where the audit
+ran; nothing waits on it. The audit and mutation testing are tools you run with `purlin:audit`,
+at either gate.
 
 [how-purlin-works.md](how-purlin-works.md) is the model in one page. If the project is not set
-up yet, read [getting-started.md](getting-started.md) first. If it is set up at `passed`, read
+up yet, read [getting-started.md](getting-started.md) first. To change the gate, read
 [raising-the-gate-and-upgrading.md](raising-the-gate-and-upgrading.md).
-
-## What the gate requires
-
-1. The setting `gate` in `.purlin/config.json`, here `strong`.
-2. A proof for every rule. A rule whose tests pass and that has no proof reads `no proof`.
-3. For every rule, an audit entry in its feature's evidence for the current rule, proof and
-   test, which `purlin:audit` writes.
-
-`strong` derives one default you can change: `min_strength` 70, where mutation testing is on.
-The AI audit reads each rule that has a proof with a test, whose tests pass, and that has no
-audit entry for its current text, proof and test. No rule has a signed cell at this gate. A
-signature still clears a strong cell reading `manual test`: `purlin:sign <feature>` signs that
-feature's rules waiting for a person, and `purlin:sign --all` signs every one.
 
 ## The loop, and what it writes
 
@@ -40,24 +25,19 @@ flowchart TD
     Sp["purlin:spec"] --> B["purlin:build"]
     B --> T{"purlin:test<br>passed?"}
     T -->|no| B
-    T -->|yes| A{"purlin:audit --commit<br>the strong cell"}
-    A -->|"weak: a finding, or strength under the minimum"| B
-    A -->|"no proof, or no code files in the spec"| Sp
-    A -->|"weak: strength not measured"| M["the command the reason names"]
-    M --> A
-    A -->|"manual test"| Q["QA: purlin:sign<br>a hand check, with a note"]
-    Q -->|"a case: a new proof line"| B
-    A -->|strong| G["strong"]
-    Q -->|signed| G
+    T -->|yes| A{"purlin:audit --commit<br>where you run it"}
+    A -->|"weak: a finding"| B
+    A -->|"no proof"| Sp
+    A -->|"strong, or not run"| R["purlin:test --release"]
 ```
 
 Every step is on your machine. `purlin:test` and `purlin:audit` write the evidence, `--commit`
 on either commits it, and the push is yours to type.
 
-`purlin:audit` runs the tests, then the breaks where mutation testing is on, then the AI audit,
-one model call per rule, `audit_parallel` at once (4 by default). It skips a rule whose text,
-proof and test match its last audit; `purlin:audit --all` reads them again. It writes what it
-found into each feature's `.purlin/evidence/local/<feature>.json`, which `--commit` commits as
+`purlin:audit` runs the tests, then the breaks where `mutation_engine` names an engine, then the
+AI audit, one model call per rule, `audit_parallel` at once (4 by default). It skips a rule whose
+text, proof and test match its last audit; `purlin:audit --all` reads them again. It writes what
+it found into each feature's `.purlin/evidence/local/<feature>.json`, which `--commit` commits as
 `purlin: evidence at <sha7>`. A run over tests that already match their evidence runs none of
 them and still reads every rule the audit has not read:
 
@@ -73,16 +53,15 @@ AI audit: 3 rules read, 3 strong, 0 weak.
 It ends on the status table, the summary and `Left to do`, as every run does:
 
 ```
-3 rules. 3 pass their tests. 3 are strong.
-Nothing left to do.
+3 rules. 3 pass their tests. The audit found 3 strong and 0 weak.
+Nothing left to do. To release a version: purlin:test --release
 ```
 
-It exits 1 when a test it ran failed or did not run, or when a rule it read is weak or could
-not be audited.
+It exits 1 when a test it ran failed or did not run, and 0 whatever the audit found.
 
 ## When a runner joins in
 
-A team at `strong` usually has no remote runner. `purlin:init` writes a runner file for one
+A team usually has no remote runner. `purlin:init` writes a runner file for one
 reason: a proof is tagged `@env` for an operating system this machine is not. Where one exists,
 `purlin:test --remote` pushes this commit to a branch of its own, `run/<branch>-<sha7>`, waits
 for the run, pulls back what the runner committed under `.purlin/evidence/ci/`, and deletes the
@@ -91,28 +70,21 @@ branch. The branch you are working on stays on your machine.
 
 ## What the strong cell can read
 
-The strong cell reads one of six words, and each names who moves it next. `weak` has three
-causes, each with its own fix.
+The strong cell reads one of six words. Its word comes from the audit alone; a measured strength
+is one of its reasons, as `strength 84%`, and a strength the engine could not measure is
+another, as `strength not measured: <why>`.
 
-| Word | What it means | What moves it |
-|------|---------------|---------------|
-| `strong` | the passed cell is met, the AI audit read the current rule, proof and test and found nothing, and, where mutation testing is on, the strength is at or above `min_strength` | nothing; the rule has reached the gate |
-| `weak` | the audit found a gap or could not decide, or the strength is under the minimum: `to strengthen` | `purlin:build`, then `purlin:audit` |
-| `weak`, `strength not measured: <reason>` | mutation testing is on and the feature's strength could not be measured, the engine not installed, out of time or writing no report: `to measure` | the command the reason names, then `purlin:audit` |
-| `weak`, `strength not measured: the spec names no code files: run purlin:spec <feature>` | mutation testing is on and the spec's `> Scope:` names no code file to break: `to tie to its files` | `purlin:spec` |
-| `waiting` | the passed cell is not met, so there is no passing test for the audit to read: `waiting for its tests to pass` | whatever moves the passed cell: a test, a fix or a run |
-| `not audited` | no audit has read this rule, proof and test | `purlin:audit`; no person is waiting |
-| `no proof` | the tests pass and the rule has no proof | `purlin:spec` |
-| `manual test` | a proof of the rule is tagged `@manual`, so no test can be written for it | a person runs the check and signs with `purlin:sign <feature> RULE-N --note "<what you saw>"` |
+| Word | What it means | What you can do |
+|------|---------------|-----------------|
+| `strong` | the AI audit read the current rule, proof and test and found nothing | nothing |
+| `weak` | the audit found a gap or could not decide: `to strengthen` | `purlin:build`, then `purlin:audit` |
+| `waiting` | the passed cell is not met, so there is no passing test for the audit to read | whatever moves the passed cell: a test, a fix or a run |
+| `not audited` | no audit has read this rule, proof and test | `purlin:audit`, when you want it read |
+| `no proof` | the tests pass and the rule has no proof | `purlin:spec`; at the gate `signed` the rule is left to write a proof for |
+| `manual test` | a proof of the rule is tagged `@manual`, so no test can be written for it | at the gate `signed`, a person checks it in the sign-off walk and types what they saw |
 
-With mutation testing off, or with an engine that cannot run on this system, a `strong` cell
-carries the reason `no mutation score measured`: the audit alone decided it.
-
-A rule whose strong cell reads `manual test` is left to do as `to test by hand`, and
-`purlin:sign` walks exactly those rules at this gate. It opens on the line `Left to do` gives
-them, such as `1 rule to test by hand: purlin:sign`, or on
-`Nothing is waiting for someone to test by hand or to sign.` A counting signature for the
-rule's current text, proof and test turns `manual test` into `strong`.
+A weak rule is listed as `to strengthen` and never stops a release. The sentence and the
+dashboard's `Strong` column name what the audit found only where it read a rule.
 
 ## One sprint, traced
 
@@ -121,40 +93,24 @@ assistant or by a developer's `purlin:spec`. [working-together.md](working-toget
 each role's way in.
 
 **The developer builds.** `purlin:drift eng` after a pull says what it brought in. Then
-`purlin:anchor sync` if a pin is behind, `purlin:spec` if a rule is wrong, `purlin:build`,
-`purlin:test` while working, and `purlin:audit --commit` before pushing, which writes what the
-strong cell reads.
+`purlin:anchor sync` if a pin is behind, `purlin:spec` if a rule is wrong, `purlin:build`, and
+`purlin:test` while working, with `--commit` before pushing.
 
-**The audit proves it.** Every rule whose tests the audit found sound reads `strong` without
-anyone being asked.
+**The audit reads it, where you run it.** `purlin:audit --commit` writes what the strong cell
+reads. A weak rule is left to do as `to strengthen`: `purlin:build` adds the case the finding
+names.
 
-**QA looks at what is left.** `purlin:sign` walks the rules left `to test by hand`, one rule at
-a time, showing the rule, its proofs and what the audit found. At each stop QA answers `sign`,
-`case` or `skip`: signs with a line saying what they saw, adds a case in plain language, or
-skips. A case is a new proof line in the spec, and the next `purlin:build` writes its test,
-which is how QA's judgment reaches the code without QA writing it. The walk closes on what it
-did, however much is left:
-
-```
-Walked 1 rule: 1 signed, 0 cases added, 0 skipped.
-Signed 1 rule as jane@acme.com with the key ending ...YcV4.
-Commits: bc0f607
-```
-
-The tag `signed/<version>` and the evidence package it carries belong to the gate `signed`,
-[regulated-workflow.md](regulated-workflow.md). [review-and-signing.md](review-and-signing.md)
-is the whole of that loop.
+**QA improves the proofs.** `purlin:drift qa` after a pull names the proofs added, changed and
+moved. QA writes a missing case as a new proof line with `purlin:spec`, and the next
+`purlin:build` writes its test, which is how QA's judgment reaches the code without QA writing
+it.
 
 **The change lands.** A person pushes it.
 
 ## Working at the same time
 
-QA reading version N of a rule while a developer builds N+1 is normal. A signature is made over
-the rule, its proof, its test, the code the feature's `> Scope:` lists, what the audit found and
-the machine the tests ran on, so the signature of N stays current on the default branch, and on
-the branch that changed the text the rule reads `unsigned` and is left to do as `to sign`.
-Signatures are one file per rule, signer and set of hashes, so a batch of forty is forty files
-in one commit and none of them conflicts. The reports a run reads are under
+QA reading version N of a rule while a developer builds N+1 is normal: nothing is signed
+until the release, so neither waits on the other. The reports a run reads are under
 `.purlin/runtime/`, which git ignores, so two people running tests at once do not disturb each
 other.
 
@@ -167,24 +123,35 @@ and test are unchanged.
 
 And two branches can take the same number before either fetched. When two branches take the
 same number, the number already on the default branch keeps it, and the rule or proof from the
-branch not yet merged moves to the next free number. A moved rule needs a new audit and a new
-signature; its old signature ends and stays on disk. `purlin:drift` after the merge names every
-number written twice and which line moves; until it is fixed, every rule of that spec reads
-`failed`.
+branch not yet merged moves to the next free number. A moved rule's audit is read again.
+`purlin:drift` after the merge names every number written twice and which line moves; until it is
+fixed, every rule of that spec reads `failed`. `purlin:spec` shows a dry run of the renumbering,
+the spec lines and the test comments in this checkout that would change, and asks
+`Do it? [y/N]`. Comments on another branch are named, never touched.
 
 ## Releasing a version
 
-Sign a version on a release branch, such as `release/1.2.0`, cut from the default branch once
+Release a version on a release branch, such as `release/1.2.0`, cut from the default branch once
 its specs are done. New specs land on the default branch and wait for the next version; a fix
-lands on the release branch and is merged back. The evidence a version is signed on is committed
-on its release branch. The tag is refused while the release branch's copy on the host, as this
-checkout last fetched it, holds commits the checkout lacks.
+lands on the release branch and is merged back. Evidence may be committed on any branch; a
+release uses only the evidence at the release commit.
+
+```
+purlin:test --release
+```
+
+The release run runs every test, commits the evidence and the evidence package
+`.purlin/evidence/package/<version>.json`, and at the gate `passed` tags that commit
+`passed/<version>`, unsigned. It is refused while a rule's tests do not pass, while the working
+tree holds uncommitted changes, and while the release branch's copy on the host, as this checkout
+last fetched it, holds commits the checkout lacks. You push the tag.
 
 ## When to go further
 
 Raise the gate to `signed` when someone outside the team has to be able to read, from git alone,
-who signed what and when. [regulated-workflow.md](regulated-workflow.md) describes that gate, and
-[raising-the-gate-and-upgrading.md](raising-the-gate-and-upgrading.md) describes the move.
+who signed each release and what they were shown. [regulated-workflow.md](regulated-workflow.md)
+describes that gate, and [raising-the-gate-and-upgrading.md](raising-the-gate-and-upgrading.md)
+describes the move.
 
-Read next: [review-and-signing.md](review-and-signing.md) for QA's loop,
+Read next: [review-and-signing.md](review-and-signing.md) for the release run and the sign-off,
 [running-and-evidence.md](running-and-evidence.md) for what the audit does in detail.

@@ -1,6 +1,7 @@
 """The four pages a reader meets first, read against the product.
 
-`specs/instructions/purlin_docs.md` holds two rules. The README's command
+`specs/instructions/purlin_docs.md` holds four rules; the release page's
+table of tags is read at the end of this file. The README's command
 table gives every command the purpose sentence `references/purlin_commands.md`
 gives it, word for word. Every printed line the four pages quote is printed by
 a run of the sample project the pages describe: each quote sits in a fenced
@@ -459,6 +460,42 @@ class TestLinks:
         assert broken_links('docs/index.md', text) == [
             'docs/index.md: how-purlin-works.md#no-such-heading',
             'docs/index.md: no-such-page.md']
+
+
+# --- The release page's tags ------------------------------------------------
+
+RELEASE_PAGE = 'docs/review-and-signing.md'
+TAGS = {'passed/<version>': 'purlin:test --release',
+        'signed/<version>': 'purlin:sign'}
+
+
+def tags_missing(text):
+    """Each tag of `TAGS` whose row in the page's table of tags is missing or
+    does not name the command that writes it, as `<tag>: <command>`."""
+    rows = [line for line in text.splitlines() if line.startswith('| `')]
+    missing = []
+    for tag, command in TAGS.items():
+        row = next((row for row in rows if row.startswith('| `%s`' % tag)),
+                   '')
+        if '`%s' % command not in row:
+            missing.append('%s: %s' % (tag, command))
+    return missing
+
+
+class TestReleasePage:
+
+    # purlin: purlin_docs PROOF-18
+    def test_the_table_of_tags_names_both_tags_and_their_commands(self):
+        text = read(os.path.join(ROOT, RELEASE_PAGE))
+        assert tags_missing(text) == []
+        # A row taken out, and a row naming the wrong command, are found.
+        without = '\n'.join(line for line in text.splitlines()
+                            if not line.startswith('| `signed/<version>`'))
+        assert tags_missing(without) == ['signed/<version>: purlin:sign']
+        wrong = text.replace('| `passed/<version>` | `purlin:test --release`',
+                             '| `passed/<version>` | `purlin:sign`')
+        assert tags_missing(wrong) == [
+            'passed/<version>: purlin:test --release']
 
 
 if __name__ == '__main__':

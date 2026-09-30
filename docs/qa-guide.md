@@ -1,10 +1,12 @@
-# From criteria to a signature
+# From criteria to a sign-off
 
-For a QA person who turns acceptance criteria into proofs and signs the rules they cover.
+For a QA person who turns acceptance criteria into proofs and signs the release they cover.
 
-The path has five steps: your criteria become proofs, the developer adds the tests, you walk the
-rules waiting for a person, you sign them, and after each pull you read what changed. Every step
-runs in Claude Code on a checkout of the repository.
+The path has five steps: your criteria become proofs, the developer adds the tests, after each
+pull you read what changed, the release run commits the evidence package, and at the gate
+`signed` you walk the package and sign it. Every step runs in Claude Code on a checkout of the
+repository. Nothing is signed while the specs change; the sign-off is the final check, once
+everybody is done.
 
 ## Your criteria become proofs
 
@@ -36,54 +38,8 @@ A proof that only a person can judge, such as wording against a brand voice guid
 
 `purlin:build login` writes the code and one test per proof, with a comment on the line above
 each test naming the proof it carries out, `# purlin: login PROOF-3`. `purlin:test` runs those
-tests. A `@manual` proof has no test: its rule waits for you as `to test by hand`.
-
-## The walk
-
-```
-purlin:sign
-```
-
-The walk stops at each rule waiting for a person, `to test by hand` or `to sign`. It shows the
-rule, each proof, the test tied to each proof that is not `@manual`, and what the audit found:
-
-```
-Proof
-  PROOF-3: After 5 wrong passwords in a row, the right password is refused with `423`
-    tied to tests/test_login.py::test_locked_after_five
-  PROOF-4: 15 minutes after the fifth wrong password, the right password is answered with `200`
-    tied to no test
-```
-
-`tied to no test` means no test carries that proof out yet. At each stop you answer `sign`, `case` or `skip`. A case
-is a missing situation in plain language: it is written into the spec as a new proof line with
-the next free number, and the next `purlin:build` writes its test. A skipped rule waits again
-next time. [review-and-signing.md](review-and-signing.md) is the walk in full.
-
-## The signature
-
-A signature is one file per rule, written in a signed commit that `purlin:sign` makes with your
-key. It counts when that commit's signature verifies. It is made over the rule, its proofs,
-its test files, the files the spec's `> Scope:` names, what the audit found and the machine each
-system's results came from.
-
-A hand check's signature is made over the rule's and its proofs' wording alone: a change to the
-code, a test or the machines does not end it, and a change to that wording does. Every other
-signature covers the rule's test files whole and the machine each system's results came from,
-so editing another test in the same file, or running the same tests on another computer, ends
-it.
-
-## What ends a signature
-
-When a signature ends, the rule is left to do as `to sign`, or `to test by hand` for a hand
-check, and the status and every test run print one line naming the rule, the signer and the
-cause:
-
-```
-login RULE-3: the signature by quinn.qa@labconnect.example ended because a test file behind it changed: tests/test_login.py.
-```
-
-Read the cause, look at what changed, and sign again when the rule still holds.
+tests. A `@manual` proof has no test: at the gate `signed` you check it by hand in the sign-off
+walk and type what you saw.
 
 ## Drift after a pull
 
@@ -93,17 +49,64 @@ purlin:drift qa
 
 Run it right after you pull, merge or check out someone else's branch. It names the proofs
 added, changed and moved, with the old and new text of each changed proof, the test files that
-changed and the features they cover, each signature that ended and why, and what waits for you.
-It names a number written twice and which line moves, and a test comment whose proof's wording
-changed since the comment was written. Drift reads only your checkout and never fetches; where
-it names a number written twice it says how old your copy of the default branch is.
+changed and the features they cover, and what is left to do. It names a number written twice and
+which line moves, and a test comment whose proof's wording changed since the comment was written;
+`purlin:spec` renumbers either when you say yes. Drift reads only your checkout and never
+fetches; where it names a number written twice it says how old your copy of the default branch
+is.
+
+## The release
+
+```
+purlin:test --release
+```
+
+On the release branch, once `Left to do` is empty, the release run runs every test, commits the
+evidence and the evidence package, `.purlin/evidence/package/<version>.json`. At the gate `signed`
+it ends on `Run purlin:sign to sign it; the first signature writes signed/<version>.`
+[review-and-signing.md](review-and-signing.md) lists what it checks first.
+
+## The sign-off
+
+```
+purlin:sign
+```
+
+The walk opens on an overview of the package: the rules, the systems they ran on, what the audit
+found, and the stops. It stops only where you have something to look at: each hand check, each
+weak rule and each rule never audited. A stop shows the rule, each proof with the test tied to it
+and the test's body, the results on each system and what the audit found:
+
+```
+Proof
+  PROOF-3: After 5 wrong passwords in a row, the right password is refused with `423`
+    tied to tests/test_login.py::test_locked_after_five
+      def test_locked_after_five():
+          assert sign_in_after_wrong(5).status == 423
+```
+
+At a hand check you type, in one line, what you saw. At any other stop you answer `continue`,
+`note` or `stop`; `stop` signs nothing, so you can fix what you found and run the release again.
+The rules the audit found strong are a list you can open, or walk in full. After the last stop
+the walk asks once whether to sign; `y` makes one signed commit with your key, and the first
+sign-off of a version writes the tag `signed/<version>`. Others may sign the same package after
+you; the tag does not move. [review-and-signing.md](review-and-signing.md) is the walk in full.
+
+## What the package records
+
+The evidence package describes every rule of the version at the release commit: its words, its
+proofs, its tests, each result on each system with its machine, what the audit found, and the
+rules checked by hand. Your sign-off sits beside it, in its own file, and records what the walk
+showed you, which rules one by one and which only in the list, and every note you typed. It
+records no judgment. [package_format.md](../references/formats/package_format.md) and
+[signature_format.md](../references/formats/signature_format.md) hold every field.
 
 ## Where the risk is
 
-No rule carries a level of its own: every rule at the gate is asked the same things, and the
-weight of a risk goes into its proofs. The quality guide's paragraph
+No rule carries a level of its own: every rule is asked the same things, and the weight of a
+risk goes into its proofs. The quality guide's paragraph
 [Where the risk is](../references/spec_quality_guide.md#where-the-risk-is) says which proofs a
 risk asks for.
 
-Read next: [review-and-signing.md](review-and-signing.md) for the walk and the tag,
+Read next: [review-and-signing.md](review-and-signing.md) for the release run and the walk,
 [working-together.md](working-together.md) for what each role runs.

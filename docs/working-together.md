@@ -1,7 +1,7 @@
 # Working together
 
 For a team where more than one person decides what the software must do: product, developers
-and QA. It holds at every gate.
+and QA. It holds at either gate.
 
 Purlin holds one thing everyone shares, the spec. Product, developers and QA all work in Claude
 Code on a checkout of the repository, and `purlin:drift` is how each catches up after a pull.
@@ -14,9 +14,8 @@ a ticket or a list of acceptance criteria, and `purlin:spec` turns it into rules
 with their proofs, and asks whether to change any before it saves the spec. It never starts
 building.
 
-**What you see.** The dashboard's boxes count the rules that reached each step the gate asks
-for, `Passing`, then `Strong` from the gate `strong` up and `Signed` at `signed`, with a
-`No proof` box first from `strong` up. `.purlin/tests.md` is the table of the newest run of
+**What you see.** The dashboard's boxes count the rules whose tests pass, `Passing`, and, where
+the audit read a rule, what it found, `Strong`. `.purlin/tests.md` is the table of the newest run of
 each feature, written from every evidence file on disk, committed or not. After a pull,
 `purlin:drift pm` tells you which rules it added, changed or removed:
 
@@ -32,19 +31,19 @@ Since your last pull, 0 seconds ago (b9f91d5..1af085f, 2 commits).
 plain language how a rule is shown, and `references/spec_quality_guide.md` is the guideline an
 AI draft is held to.
 
-**What you work.** `purlin:sign` walks the rules left to do as `to test by hand` or `to sign`,
-one rule at a time, showing the rule, its proofs and what the audit found. A rule is
-`to test by hand` at every gate while a `@manual` proof of it is not checked, and `to sign` at
-the gate `signed` once its tests pass and its audit is strong. Everything else is work for the
-build or the audit, and `Left to do` names the command for it. At each stop you answer `sign`,
-`case` or `skip`. A signature is a signed commit `purlin:sign` makes.
+**What you work.** While the specs change, you improve the proofs alongside product and the
+developers, and nothing is signed. Adding a case is plain language: say "it should also reject an
+expired token" to `purlin:spec` and the proof line is written into the spec with the next free
+proof id; the test arrives on the next `purlin:build`. `Left to do` names the command for every
+other kind of work.
 
-Adding a case is plain language. Say "it should also reject an expired token" and the proof
-line is written into the spec with the next free proof id; the test arrives on the next
-`purlin:build`. At the gate `signed`, when nothing is left but the tag, `purlin:sign` writes
-the tag `signed/<version>` and you push it. [review-and-signing.md](review-and-signing.md) is
-the walk in full, and [qa-guide.md](qa-guide.md) takes you from acceptance criteria to a
-signature.
+At the gate `signed`, once `purlin:test --release` has committed the evidence package on the
+release branch, `purlin:sign` walks it with you: each hand check, where you type what you saw,
+each weak rule and each rule never audited, with its proofs, its tests' bodies, its results and
+what the audit found. You continue, add a note, or stop to fix. Then one signed commit over the
+whole package; the first sign-off writes the tag `signed/<version>` and you push it.
+[review-and-signing.md](review-and-signing.md) is the walk in full, and
+[qa-guide.md](qa-guide.md) takes you from acceptance criteria to a sign-off.
 
 ## The developer
 
@@ -75,9 +74,9 @@ anchor security_baseline: the pin 71abd36 is behind its source, now b3a6387. Run
 1 feature is out of date: login. Run purlin:test.
 ```
 
-You may also be the person who signs. Signing is logged, not policed: the signature records
-your name and email as git holds them and the fingerprint of your key, and Purlin does not
-decide who may sign.
+You may also be the person who signs a release. Signing is logged, not policed: the sign-off
+records your name and email as git holds them and the fingerprint of your key, and Purlin does
+not decide who may sign.
 
 ## A rule from a pinned anchor
 
@@ -85,12 +84,6 @@ A rule that came from a pinned anchor belongs to the anchor repository, whoever 
 change to it is a pull request against that repository, and `purlin:anchor sync` brings it back
 once it merges. Like every anchor rule it holds across the whole project, and its tests check
 the whole project.
-
-A rule of a pinned anchor that no test in this project can show, because it does not apply here,
-is signed by a person in the project as not applying, with the reason:
-`purlin:sign <anchor> RULE-N --does-not-apply "<why>"`. It then reads `does not apply` in every
-cell and counts as met; any change to the project ends that signature, and the rule is left to
-confirm. A rule of the project's own anchor that does not apply is deleted.
 
 ## Drift, one view per role
 
@@ -103,20 +96,20 @@ writes nothing and judges nothing.
 |------|-----------------|
 | `pm` | Rules added, rules changed, rules removed, then proofs added, changed and moved |
 | `eng` | Code changed and the rules behind it, changed files under no spec's scope, rules with no test, anchors behind their source, features out of date |
-| `qa` | Proofs added, changed and moved, test files changed and the features they cover, each signature that ended and why, then the `to test by hand` and `to sign` lines of `Left to do` |
+| `qa` | Proofs added, changed and moved, test files changed and the features they cover, then the lines of `Left to do` that stop a release |
 
 Every view then names each number a spec writes twice and which line moves, and each test
 comment whose proof's wording changed since the comment was written. Drift reads only this
 checkout and never fetches: where it names a number written twice, it says how old this
 checkout's copy of the default branch is, so you can run `git fetch` and drift again.
+`purlin:spec` renumbers either when you say yes, after a dry run that names each line and test
+comment it would change.
 
-The `qa` view prints those lines at every gate; at `passed` only a rule to test by hand waits
-for a person:
+The `qa` view prints the same lines at either gate:
 
 ```
 Since your last pull, 1 second ago (b9f91d5..1af085f, 2 commits).
 1 test file changed, covering login.
-1 rule to test by hand: purlin:sign
 ```
 
 Every view ends with `<n> spec files have changes that are not committed.` when a spec file
@@ -129,4 +122,4 @@ the session touched and says which it chose. `--since <N>` reads the last N comm
 
 - Writing the rules themselves: [specs-and-anchors.md](specs-and-anchors.md)
 - Bringing an existing codebase in: [spec-from-code.md](spec-from-code.md)
-- The gate that decides what every rule must have: [team-workflow.md](team-workflow.md)
+- How a team works and releases a version: [team-workflow.md](team-workflow.md)
