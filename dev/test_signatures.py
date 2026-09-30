@@ -15,7 +15,8 @@ What each group holds:
 *the commit*   one signed commit, what makes a signature count, and the lines
                to print when there is no key
 *the walk*     the rules that wait for a person, one at a time
-*anchors*      one signature per feature an anchor's rule applies to
+*anchors*      an anchor's rule signed once, over the whole project, and a
+               pinned anchor's rule signed as not applying
 """
 
 import json
@@ -420,11 +421,12 @@ class TestTheMachines:
 # The file
 # ---------------------------------------------------------------------------
 
-# The fields signature format 11 names, required and optional.
+# The fields signature format 12 names, required and optional.
 FIELDS = {'schema', 'feature', 'rule', 'applies_to', 'signed_hash',
           'rule_hash', 'proof_hash', 'test_hash', 'code_hash', 'audit_hash',
           'machines', 'signer', 'key_fingerprint', 'timestamp',
-          'signer_name', 'test_hash_kind', 'note', 'gate', 'evidence'}
+          'signer_name', 'test_hash_kind', 'note', 'does_not_apply', 'gate',
+          'evidence'}
 
 
 class TestTheFile:
@@ -1353,24 +1355,36 @@ class TestTheCommitNotMade:
 # Anchors
 # ---------------------------------------------------------------------------
 
-ANCHOR = ('# Anchor: secure\n\n'
-          '> Description: What every feature does with a password.\n\n'
+ANCHOR = ('# Anchor: %s\n\n'
+          '> Description: What every feature does with a password.\n%s\n'
           '## Rules\n\n'
           '- RULE-1: A password is never written to a log\n\n'
           '## Proof\n\n'
           '- PROOF-1 (RULE-1): A sign-in with the password "secret" leaves '
           'no line holding "secret" in the log @manual\n')
 
+SOURCE = 'https://github.com/acme/policies.git'
+PINNED = '> Source: %s\n> Pinned: %s\n' % (SOURCE, 'a' * 40)
+NO_CARD_DATA = 'the project stores no card data'
+
+
+def an_anchor(made, name='secure', pinned=False):
+    """An anchor of one hand-checked rule, and a tracked `NOTES.txt`, committed.
+
+    With `pinned` the anchor carries `> Source:`, as a copy pulled from
+    another repository does.
+    """
+    write(os.path.join(made.root, 'specs', '_anchors', name + '.md'),
+          ANCHOR % (name, PINNED if pinned else ''))
+    write(os.path.join(made.root, 'NOTES.txt'), 'Notes.\n')
+    commit_all(made, 'spec(%s): the anchor' % name)
+
 
 def with_anchor(made):
-    """`secure`, an anchor both `login` and `billing` require, committed."""
-    write(os.path.join(made.root, 'specs', '_anchors', 'secure.md'), ANCHOR)
-    made.spec(SPEC.replace('> Scope: src/login.py\n',
-                           '> Scope: src/login.py\n> Requires: secure\n'))
+    """The anchor `secure` beside `login` and a second feature, `billing`."""
     made.spec('# Feature: billing\n\n'
               '> Description: Invoices.\n'
-              '> Scope: src/billing.py\n'
-              '> Requires: secure\n\n'
+              '> Scope: src/billing.py\n\n'
               '## Rules\n\n'
               '- RULE-1: An invoice shows its total with tax\n\n'
               '## Proof\n\n'
@@ -1379,61 +1393,211 @@ def with_anchor(made):
               category='pay')
     write(os.path.join(made.root, 'src', 'billing.py'),
           'def total(lines):\n    return sum(lines) * 1.1\n')
-    commit_all(made, 'spec(secure): the anchor and its two features')
+    an_anchor(made)
 
 
-def listed(made, feature, applies_to, rule='RULE-1'):
-    payload = made.payload()
-    entry = next(item for item in payload['features']
-                 if item['name'] == applies_to)
-    return next(item for item in entry['rules']
-                if item['feature'] == feature and item['id'] == rule)
+def anchor_signatures(made, name='secure'):
+    """Every signature of the anchor's `RULE-1`, as the reader returns them."""
+    return made.load().get((name, 'RULE-1')) or []
+
+
+def anchor_current(made, name='secure'):
+    """The anchor's signatures still made over its rule as it now stands."""
+    entry = made.rule('RULE-1', feature=name)
+    return [signature for signature in anchor_signatures(made, name)
+            if purlin_signatures.is_current(signature, entry)]
+
+
+def edit_notes(made):
+    """An edit to `NOTES.txt`, a tracked file no spec names, committed."""
+    write(os.path.join(made.root, 'NOTES.txt'), 'Notes, edited.\n')
+    commit_all(made, 'docs: notes')
+
+
+@pytest.fixture
+def beside_features():
+    """`login`, whose rules pass and wait for an audit, `billing` and `secure`."""
+    made = ready(audited=())
+    with_anchor(made)
+    yield made
+    made.close()
 
 
 class TestAnchors:
 
     # purlin: signatures PROOF-131
-    def test_all_signs_an_anchor_rule_once(self, at_signed, capsys):
-        with_anchor(at_signed)
+    def test_all_signs_an_anchor_rule_once(self, beside_features, capsys):
         assert sign_module.main(['--all', '--project-root',
-                                 at_signed.root]) == 0
+                                 beside_features.root]) == 0
         lines = capsys.readouterr().out.splitlines()
         assert lines[0].startswith('Signed 2 rules as '), lines
         assert lines[1:3] == ['  billing RULE-1', '  secure RULE-1'], lines
         assert not lines[3].startswith('  '), lines
 
     # purlin: signatures PROOF-113
-    def test_an_anchor_rule_is_signed_once_per_feature(self, at_signed,
-                                                       capsys):
-        with_anchor(at_signed)
-        before = at_signed.head()
+    def test_an_anchor_rule_is_signed_once(self, beside_features, capsys):
+        before = beside_features.head()
         assert sign_module.main(['secure', 'RULE-1', '--project-root',
-                                 at_signed.root]) == 0
+                                 beside_features.root]) == 0
         capsys.readouterr()
-        folder = os.path.join(at_signed.root, 'specs', '_anchors',
+        folder = os.path.join(beside_features.root, 'specs', '_anchors',
                               'secure.signatures')
-        applies = sorted(read_json(folder, name)['applies_to']
-                         for name in os.listdir(folder))
-        assert applies == ['billing', 'login'], applies
-        assert git(at_signed.root, 'rev-list', '--count',
+        applies = [read_json(folder, name)['applies_to']
+                   for name in os.listdir(folder)]
+        assert applies == ['secure'], applies
+        assert git(beside_features.root, 'rev-list', '--count',
                    before + '..HEAD').stdout.strip() == '1'
 
-    # purlin: signatures PROOF-114
-    def test_one_features_code_ends_that_signature_alone(self, at_signed,
-                                                         capsys):
-        with_anchor(at_signed)
+    # purlin: signatures PROOF-179
+    def test_an_edit_anywhere_in_the_project_ends_it(self, beside_features,
+                                                     capsys):
         sign_module.main(['secure', 'RULE-1', '--project-root',
-                          at_signed.root])
+                          beside_features.root])
         capsys.readouterr()
-        write(os.path.join(at_signed.root, 'src', 'billing.py'),
-              'def total(lines):\n    return sum(lines)\n')
-        found = at_signed.load()[('secure', 'RULE-1')]
-        standing = sorted(
-            signature['applies_to'] for signature in found
-            if purlin_signatures.is_current(
-                signature, listed(at_signed, 'secure',
-                                  signature['applies_to'])))
-        assert standing == ['login'], standing
+        assert len(anchor_current(beside_features)) == 1
+        edit_notes(beside_features)
+        assert len(anchor_signatures(beside_features)) == 1
+        assert anchor_current(beside_features) == []
+
+    # purlin: signatures PROOF-180
+    def test_signatures_and_results_leave_it_standing(self, beside_features,
+                                                      capsys):
+        root = beside_features.root
+        sign_module.main(['secure', 'RULE-1', '--project-root', root])
+        sign_module.main(['login', 'RULE-1', '--project-root', root])
+        capsys.readouterr()
+        record(beside_features, at='2026-09-14T12:00:00Z')
+        commit_all(beside_features)
+        assert len(anchor_current(beside_features)) == 1
+
+    # purlin: signatures PROOF-181
+    def test_the_walk_visits_features_before_anchors(self, at_signed):
+        an_anchor(at_signed, name='aaa')
+        order = []
+
+        def seen(entry, _rendered):
+            order.append((entry['feature'], entry['id']))
+            return 'skip'
+
+        sign_module.walk(at_signed.root, out=_Out(), answer=seen)
+        assert order == [('login', 'RULE-1'), ('login', 'RULE-2'),
+                         ('aaa', 'RULE-1')], order
+
+
+def not_applying(made, rule='RULE-1', reason=NO_CARD_DATA, name='baseline'):
+    """`sign.py <name> <rule> --does-not-apply <reason>`. Its exit code."""
+    return sign_module.main([name, rule, '--does-not-apply', reason,
+                             '--project-root', made.root])
+
+
+@pytest.fixture
+def pinned():
+    """At the gate `signed`, `login` beside the pinned anchor `baseline`."""
+    made = ready()
+    an_anchor(made, name='baseline', pinned=True)
+    yield made
+    made.close()
+
+
+class TestDoesNotApply:
+
+    # purlin: signatures PROOF-182
+    def test_the_signature_carries_the_reason(self, pinned, capsys):
+        assert not_applying(pinned) == 0
+        capsys.readouterr()
+        [signature] = anchor_signatures(pinned, 'baseline')
+        assert signature['does_not_apply'] == NO_CARD_DATA
+
+    # purlin: signatures PROOF-183
+    def test_it_is_one_signed_commit(self, pinned, capsys):
+        before = pinned.head()
+        assert not_applying(pinned) == 0
+        capsys.readouterr()
+        assert git(pinned.root, 'rev-list', '--count',
+                   before + '..HEAD').stdout.strip() == '1'
+        assert git(pinned.root, 'log', '-1', '--format=%s').stdout.strip() \
+            == 'sign(baseline): RULE-1'
+        assert signed_by_last_commit(pinned.root)
+        carried = git(pinned.root, 'show', '--name-only', '--format=',
+                      'HEAD').stdout.split()
+        assert [path.rsplit('/', 1)[0] for path in carried] == [
+            'specs/_anchors/baseline.signatures'], carried
+
+    # purlin: signatures PROOF-184
+    def test_a_local_anchors_rule_is_refused(self, beside_features, capsys):
+        before = beside_features.head()
+        assert not_applying(beside_features, reason='no card data',
+                            name='secure') == 1
+        assert capsys.readouterr().out.splitlines() == [
+            'secure RULE-1 is not a rule of a pinned anchor, so it cannot be '
+            'signed as not applying. A rule of this project that does not '
+            'apply is deleted: run purlin:spec secure.']
+        assert beside_features.head() == before
+        assert anchor_signatures(beside_features) == []
+
+    # purlin: signatures PROOF-185
+    def test_a_features_rule_is_refused(self, pinned, capsys):
+        before = pinned.head()
+        assert not_applying(pinned, reason='no card data', name='login') == 1
+        assert capsys.readouterr().out.splitlines() == [
+            'login RULE-1 is not a rule of a pinned anchor, so it cannot be '
+            'signed as not applying. A rule of this project that does not '
+            'apply is deleted: run purlin:spec login.']
+        assert (pinned.head(), pinned.signatures()) == (before, [])
+
+    # purlin: signatures PROOF-186
+    def test_no_reason_exits_two(self, pinned, capsys):
+        before = pinned.head()
+        assert sign_module.main(['baseline', 'RULE-1', '--does-not-apply',
+                                 '--project-root', pinned.root]) == 2
+        assert capsys.readouterr().err.splitlines() == [
+            sign_module.USAGE,
+            'sign.py: --does-not-apply needs the reason the rule does not '
+            'apply to this project.']
+        assert pinned.head() == before
+        assert anchor_signatures(pinned, 'baseline') == []
+
+    # purlin: signatures PROOF-187
+    def test_with_all_it_exits_two(self, pinned, capsys):
+        before = pinned.head()
+        assert sign_module.main(['--all', '--does-not-apply', 'no card data',
+                                 '--project-root', pinned.root]) == 2
+        assert capsys.readouterr().err.splitlines() == [
+            sign_module.USAGE,
+            'sign.py: --does-not-apply names a pinned anchor and the rules it '
+            'carries.']
+        assert (pinned.head(), pinned.signatures()) == (before, [])
+
+    # purlin: signatures PROOF-188
+    def test_the_walk_asks_to_confirm_and_signs_the_reason_again(
+            self, pinned, capsys):
+        assert not_applying(pinned) == 0
+        capsys.readouterr()
+        edit_notes(pinned)
+        stops = {}
+
+        def seen(entry, rendered):
+            stops[entry['feature']] = rendered.splitlines()
+            return 'confirm' if entry['feature'] == 'baseline' else 'skip'
+
+        sign_module.walk(pinned.root, out=_Out(), answer=seen)
+        assert stops['baseline'][-1] == (
+            'baseline RULE-1 was signed as not applying by jane@acme.com: '
+            'the project stores no card data. Confirm it still does not '
+            'apply?'), stops
+        [now] = anchor_current(pinned, 'baseline')
+        assert now['does_not_apply'] == NO_CARD_DATA
+        assert len(anchor_signatures(pinned, 'baseline')) == 2
+
+    # purlin: signatures PROOF-189
+    def test_all_leaves_a_rule_to_confirm(self, pinned, capsys):
+        assert not_applying(pinned) == 0
+        edit_notes(pinned)
+        assert sign_module.main(['--all', '--project-root', pinned.root]) == 0
+        capsys.readouterr()
+        assert len(anchor_signatures(pinned, 'baseline')) == 1
+        assert pinned.rule('RULE-1', feature='baseline')['left'] == \
+            'to_confirm'
 
 
 # ---------------------------------------------------------------------------

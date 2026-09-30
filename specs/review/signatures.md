@@ -10,8 +10,8 @@
 >   evidence package and the signed tag that marks the commit.
 > Scope: scripts/mcp/purlin/signatures.py, scripts/review/sign.py
 > Stack: python/stdlib (json, subprocess), git signed commits, SSH keys
-> Highest-Rule: 89
-> Highest-Proof: 178
+> Highest-Rule: 95
+> Highest-Proof: 189
 
 ## Rules
 
@@ -22,7 +22,7 @@
 - RULE-6: A signature stays current only while the rule text, the proof text, the test body, the code its feature lists and what the audit found still hash to what it was made over
 - RULE-7: A signature that is no longer current still comes back from the reader with its signer, and at the gate `signed` its rule is `to sign` again
 - RULE-8: A signature file is named for the rule, the first eight characters of the hash it is made over and the signer's slug, the email local part lowercased with every character that is not a letter or a digit replaced by a hyphen
-- RULE-9: A signature carries schema `purlin-signature/2` and exactly the fields signature format 11 names, its `signed_hash` taken over the feature it applies to, the rule, proof, test, code and audit hashes, and the machines the tests ran on
+- RULE-9: A signature carries schema `purlin-signature/2` and exactly the fields signature format 12 names, its `signed_hash` taken over the spec that holds the rule, the rule, proof, test, code and audit hashes, and the machines the tests ran on
 - RULE-10: The signature reader finds a signature in the `<feature>.signatures/` directory beside its spec
 - RULE-11: With no feature named the command opens on the `to test by hand` and `to sign` lines of `Left to do`, or on `Nothing is waiting for someone to test by hand or to sign.` when both are zero, and walks those rules one at a time showing the rule, its proofs and what the audit found under a line naming the rule and its work left
 - RULE-12: `--all` signs, in one signed commit, every rule that waits for a person; a bare feature signs the waiting rules of that feature alone; both work at every gate
@@ -47,7 +47,7 @@
 - RULE-56: The version a tag is named for is the first one stated by the `VERSION` file at the root, `package.json`'s `version`, `pyproject.toml`'s `[project]` then `[tool.poetry]` `version`, and the `<Version>` of a root `*.csproj`
 - RULE-57: With no version stated and no `--release`, no tag is written and the command prints `No version: nothing in this project states one. Run purlin:sign --release <version>, or write it to a VERSION file.`
 - RULE-58: When it has signed, the command prints `Signed <n> rules as <email> with the key ending ...<last 4>.`, reading `1 rule` for one
-- RULE-59: An anchor's rule is signed once in each feature it applies to: one file per feature, each made over that feature's code, so a change to one feature's files ends that one signature alone
+- RULE-59: An anchor's rule is signed once, in one file applying to the anchor, over every file of the project but Purlin's own records
 - RULE-60: The key fingerprint is read from `user.signingkey`, a public key path, a private key path with its `.pub` beside it, or a `key::` literal, and reads as `ssh-keygen -l` prints it; a key that is not an SSH key is no key
 - RULE-61: A signature is made over the machine each system's tests ran on: another machine for a system it names ends it, a system it names that is gone ends it, and a system it does not name ends nothing
 - RULE-62: A rule named by id is signed at every gate, whatever work it has left
@@ -78,6 +78,12 @@
 - RULE-87: A walk that signed prints `Commits: <sha7>`, the signature commit it made, just after `Signed <n> rules as ...`
 - RULE-88: A rule skipped in the walk is still `to sign` or `to test by hand` after it, and no file records the skip
 - RULE-89: `signed/<version>` carries an SSH signature made with the key `user.signingkey` names
+- RULE-90: An anchor's signature ends on an edit to any tracked file, one no spec's `> Scope:` names included, and stands across a signature commit and an evidence commit
+- RULE-91: The walk and `--all` visit every feature's rules before any anchor's
+- RULE-92: `<anchor> RULE-N --does-not-apply "<why>"` writes a signature carrying the reason in `does_not_apply`, in one signed commit under the usual subject
+- RULE-93: `--does-not-apply` signs only a rule of a pinned anchor; for any other rule it prints `<feature> <RULE-N> is not a rule of a pinned anchor, so it cannot be signed as not applying. A rule of this project that does not apply is deleted: run purlin:spec <feature>.`, writes nothing and exits 1
+- RULE-94: `--does-not-apply` with no reason exits 2 with `sign.py: --does-not-apply needs the reason the rule does not apply to this project.`, and with `--all`, `--note`, `--release` or no rule named exits 2 with `sign.py: --does-not-apply names a pinned anchor and the rules it carries.`; neither writes anything
+- RULE-95: The walk stops at a rule to confirm as not applying with `<anchor> <RULE-N> was signed as not applying by <signer>: <why>. Confirm it still does not apply?`, and confirming writes a new signature carrying the earlier reason; `--all` leaves such a rule
 
 ## Proof
 
@@ -97,7 +103,7 @@
 - PROOF-11 (RULE-7): `jane@acme.com` signs `login RULE-1`, then its rule text changes from `a session token` to `two session tokens`; the reader still returns exactly 1 signature for the rule, its signer reads `jane@acme.com`, and it is not current
 - PROOF-85 (RULE-7): At the gate `signed`, `login RULE-2` is signed with the command; its `401` is then changed to `403`, its results recorded again and its audit written again; the rule's work left reads `to_sign`
 - PROOF-12 (RULE-8): `Rich.LaBarca+purlin@example.com` signs `login RULE-1`; the one file in `login.signatures/` is named `RULE-1.<h>.rich-labarca-purlin.json`, where `<h>` is the first 8 characters of the rule's signed hash: the capitals are lowercased and the `.` and the `+` each become a hyphen
-- PROOF-13 (RULE-9): `jane@acme.com` signs `login RULE-1` under the gate `strong` with no note. The signature reads schema `purlin-signature/2` and carries exactly the 19 fields signature format 11 names; its `signed_hash` is the sha256 of the feature, the rule, proof, test, code and audit hashes and the machines, one per line; `note` is null and `timestamp` ends in `Z`
+- PROOF-13 (RULE-9): `jane@acme.com` signs `login RULE-1` under the gate `strong` with no note. The signature reads schema `purlin-signature/2` and carries exactly the 20 fields signature format 12 names; its `signed_hash` is the sha256 of the feature, the rule, proof, test, code and audit hashes and the machines, one per line; `note` is null and `timestamp` ends in `Z`
 - PROOF-14 (RULE-10): `jane@acme.com` signs `login RULE-1`, whose spec is `specs/auth/login.md`, and the project's signatures are read; exactly 1 comes back for the rule, its signer reads `jane@acme.com`, and its file lies in `specs/auth/login.signatures/`
 - PROOF-128 (RULE-10): `login RULE-1` is signed, and copies of its signature file are placed in `specs/login.signatures/`, `signatures/` and `specs/auth/signatures/`; the rule still has exactly 1 signature, the one in `specs/auth/login.signatures/`
 - PROOF-129 (RULE-10): `login RULE-1` is signed, its signature file is copied into `specs/login.signatures/`, `signatures/` and `specs/auth/signatures/`, and the file in `specs/auth/login.signatures/` is removed; the rule has no signature
@@ -121,7 +127,7 @@
 - PROOF-20 (RULE-16): At the gate `signed`, with both `login` rules to sign and `billing RULE-1` a hand check, the walk is run; it stops at `billing RULE-1`, `login RULE-1` and `login RULE-2`, in that order
 - PROOF-130 (RULE-16): At the gate `signed`, with both `login` rules to sign and `billing RULE-1` a hand check, `--all` is run; below its first line it lists `  billing RULE-1`, `  login RULE-1` and `  login RULE-2`, in that order
 - PROOF-30 (RULE-16): At the gate `signed`, with `login RULE-1` to sign and the one proof of `login RULE-2` tagged `@manual`, so that its work left reads `to_test_by_hand`, a bare `login` is run; it writes one signature for each rule, in one commit under the subject `sign(login): RULE-1 RULE-2`
-- PROOF-131 (RULE-16): At the gate `signed`, with an anchor, `secure`, whose one rule is a hand check, required by `login` and `billing`, `--all` is run; below `Signed 2 rules as ...` it lists `  billing RULE-1` and `  secure RULE-1`, each once
+- PROOF-131 (RULE-16): At the gate `signed`, with `billing RULE-1` and the one rule of an anchor, `secure`, both hand checks, `--all` is run; below `Signed 2 rules as ...` it lists `  billing RULE-1` and `  secure RULE-1`, each once
 - PROOF-21 (RULE-17): In a home with no `~/.ssh/id_ed25519`, in a checkout with no signing key, `login` is run; it exits 1, prints exactly `No key to sign with. These commands set one up:`, the `ssh-keygen` line and the two `git config` lines, and `login.signatures/` holds no file
 - PROOF-95 (RULE-17): In a home where `~/.ssh/id_ed25519` exists, in a checkout with no signing key, `login` is run; it exits 1 and prints exactly the first line and the two `git config` lines, with no `ssh-keygen` line
 - PROOF-22 (RULE-17): The command is started as its own process, the way a person runs it, for `login` in a home and a checkout with no key; it exits 1, prints exactly the four lines, and `login.signatures/` holds no file
@@ -175,8 +181,7 @@
 - PROOF-110 (RULE-56): With only a `Shop.csproj` at the root whose `<Version>` reads `1.4.0`, the tag is named `signed/1.4.0`
 - PROOF-111 (RULE-57): At the gate `signed`, in a project that states no version, with every rule signed, the walk is run; no tag is written, and its last line is `No version: nothing in this project states one. Run purlin:sign --release <version>, or write it to a VERSION file.`
 - PROOF-112 (RULE-58): At the gate `signed`, `jane@acme.com` signs `login RULE-2` by name; the command prints `Signed 1 rule as jane@acme.com with the key ending ...` followed by the last 4 characters of her key's fingerprint and a full stop
-- PROOF-113 (RULE-59): With an anchor, `secure`, that `login` and `billing` both require, `secure RULE-1` is signed by name; 1 commit is added and `secure.signatures/` holds 2 files, one applying to `billing` and one to `login`
-- PROOF-114 (RULE-59): With `secure RULE-1` signed for `login` and `billing`, `src/billing.py`, the file `billing` lists, is changed; the signature applying to `login` is still current and the one applying to `billing` is not
+- PROOF-113 (RULE-59): Beside the features `login` and `billing`, `secure RULE-1`, the one rule of the anchor `secure`, is signed by name; 1 commit is added and `secure.signatures/` holds 1 file, applying to `secure`
 - PROOF-115 (RULE-60): With `user.signingkey` naming a public key file, the key fingerprint a signature would record reads what `ssh-keygen -l` prints for that key
 - PROOF-116 (RULE-60): With `user.signingkey` naming the private key file whose `.pub` sits beside it, the key fingerprint a signature would record reads what `ssh-keygen -l` prints for that key
 - PROOF-117 (RULE-60): With `user.signingkey` set to `key::` followed by the public key's text, the key fingerprint a signature would record reads what `ssh-keygen -l` prints for that key
@@ -217,4 +222,15 @@
 - PROOF-175 (RULE-86): At the gate `signed`, the walk is answered `case` with an empty line at `login RULE-2`; no signature file is written and the close carries `  login RULE-2   add this proof line: the reviewer named no case`
 - PROOF-176 (RULE-87): At the gate `signed`, with both `login` rules to sign, the walk is answered `sign` at each stop; the line after `Signed 2 rules as ...` reads `Commits: ` and the first seven characters of the signature commit
 - PROOF-177 (RULE-88): At the gate `signed`, with both `login` rules to sign, the walk is answered `skip` at each stop; afterwards both rules' work left reads `to_sign`, and `git status` lists no file
+- PROOF-179 (RULE-90): `secure RULE-1`, the one rule of the anchor `secure`, is signed by name; then `NOTES.txt`, a tracked file no spec's `> Scope:` names, is edited and committed; the signature is no longer current
+- PROOF-180 (RULE-90): `secure RULE-1` is signed by name; then `login RULE-1` is signed in a commit of its own, and new `login` results are recorded and committed; the `secure` signature is still current
+- PROOF-181 (RULE-91): At the gate `signed`, with both `login` rules to sign and the one rule of the anchor `aaa` a hand check, the walk is run; it stops at `login RULE-1`, `login RULE-2`, then `aaa RULE-1`
+- PROOF-182 (RULE-92): `baseline RULE-1`, the one rule of an anchor pinned from `https://github.com/acme/policies.git`, is signed with `--does-not-apply "the project stores no card data"`; the command exits 0, and its one signature's `does_not_apply` reads `the project stores no card data`
+- PROOF-183 (RULE-92): `baseline RULE-1`, a pinned anchor's rule, is signed with `--does-not-apply "the project stores no card data"`; exactly 1 commit is added, carrying that one signature file and an SSH signature, under the subject `sign(baseline): RULE-1`
+- PROOF-184 (RULE-93): `secure RULE-1`, a rule of the project's own anchor, is signed with `--does-not-apply "no card data"`; it exits 1, prints only `secure RULE-1 is not a rule of a pinned anchor, so it cannot be signed as not applying. A rule of this project that does not apply is deleted: run purlin:spec secure.` and adds no commit
+- PROOF-185 (RULE-93): `login RULE-1`, a feature's rule, is signed with `--does-not-apply "no card data"`; the command exits 1, prints only `login RULE-1 is not a rule of a pinned anchor, so it cannot be signed as not applying. A rule of this project that does not apply is deleted: run purlin:spec login.`, and adds no file and no commit
+- PROOF-186 (RULE-94): The command is run as `baseline RULE-1 --does-not-apply`, with no reason after it; it exits 2, prints `sign.py: --does-not-apply needs the reason the rule does not apply to this project.` below the usage line, and adds no file and no commit
+- PROOF-187 (RULE-94): The command is run as `--all --does-not-apply "no card data"`; it exits 2, prints `sign.py: --does-not-apply names a pinned anchor and the rules it carries.` below the usage line, and adds no file and no commit
+- PROOF-188 (RULE-95): `jane@acme.com` signs `baseline RULE-1` as not applying, `the project stores no card data`, then a tracked file is edited and committed; the walk's stop for it ends `baseline RULE-1 was signed as not applying by jane@acme.com: the project stores no card data. Confirm it still does not apply?`; answered `confirm`, it signs with that reason
+- PROOF-189 (RULE-95): At the gate `signed`, `baseline RULE-1` is signed as not applying, then a tracked file is edited and committed; `--all` is run and writes no signature for `baseline RULE-1`, whose work left still reads `to_confirm`
 - PROOF-178 (RULE-89): At the gate `signed`, with every rule signed and `VERSION` reading `2.1.0`, the walk writes `signed/2.1.0`; `git tag -v`, with the signer's public key as the one allowed signer, reports a good signature by the key whose fingerprint `ssh-keygen -l` prints for the file `user.signingkey` names

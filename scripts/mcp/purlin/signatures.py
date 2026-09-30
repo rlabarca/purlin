@@ -20,7 +20,7 @@ The file, field by field in `references/formats/signature_format.md`:
       "rule_hash": "<sha256 of the rule text>",
       "proof_hash": "<sha256 of the proof text>",
       "test_hash": "<sha256 of the test files' blob ids>",
-      "code_hash": "<sha256 of the files the feature lists>",
+      "code_hash": "<sha256 of the files the spec lists, or of the project>",
       "audit_hash": "<sha256 of what the audit found>",
       "machines": {"macos": "jane-laptop"},
       "signer": "jane@acme.com",
@@ -28,15 +28,22 @@ The file, field by field in `references/formats/signature_format.md`:
       "key_fingerprint": "SHA256:...",
       "test_hash_kind": "file",
       "note": null,
+      "does_not_apply": null,
       "timestamp": "2026-09-13T12:00:00Z",
       "gate": "signed",
       "evidence": ".purlin/evidence/local/login.json"
     }
 
 A signature is **current** while `signed_hash` recomputed from the rule's
-entry equals the one stored: the feature it applies to, the rule, its proof,
-its test, the code that feature lists, what the audit found, and the machine
-each system's tests ran on. A result from a system the signature does not name
+entry equals the one stored: the spec that holds the rule, the rule, its
+proof, its test, the code that spec lists, what the audit found, and the
+machine each system's tests ran on. An anchor's rule is signed once, over
+every file of the project but Purlin's own records, so any change to the
+project ends that signature.
+
+`does_not_apply` is the reason a person gave for signing a pinned anchor's
+rule as not applying to this project, or null. Like `note` it is outside
+`signed_hash`: the signed commit is what holds it. A result from a system the signature does not name
 is left out of the comparison, so a first run on a new system ends nothing.
 
 `audit_hash` is taken over what the audit found: the test strength, the audit
@@ -187,8 +194,8 @@ def signed_hash(entry):
 def is_current(signature, entry):
     """True while a signature is still made over the rule entry it is compared with.
 
-    `entry` is the payload's rule entry for the feature the signature applies
-    to. The hash is taken again from the entry and compared with the stored
+    `entry` is the payload's rule entry, listed under the rule's own spec.
+    The hash is taken again from the entry and compared with the stored
     `signed_hash`, the machines restricted to the systems the signature
     names: a system the signature names that the entry no longer has, or has
     under another machine, ends it, and a system the entry has and the

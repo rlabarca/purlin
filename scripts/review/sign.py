@@ -5,6 +5,7 @@
     sign.py <feature> [RULE-N ...] [--project-root DIR]
     sign.py --all [--project-root DIR]
     sign.py <feature> RULE-N [RULE-N ...] --note "<what you saw>"
+    sign.py <anchor> RULE-N [RULE-N ...] --does-not-apply "<why>"
 
 A signature is one person's attestation that a rule, its proof, its test, the
 code its feature lists and what the audit found belong together, over the
@@ -29,10 +30,19 @@ one signed commit for the signatures. It works at every gate.
 A bare feature signs every waiting rule of that feature, and `--all` every
 waiting rule, in one signed commit and with no stop. A rule named by id is
 signed whatever it waits on; one no spec has is named last, just above the
-summary ending, and the rules named beside it are signed all the same. An
-anchor's rule is signed once in each
-feature it applies to: one file per feature, each made over that feature's
-code.
+summary ending, and the rules named beside it are signed all the same. The
+walk and `--all` visit every feature's rules before any anchor's. An anchor's
+rule is signed once, over every file of the project but Purlin's own records,
+so any change to the project ends that signature.
+
+**Not applying.** `--does-not-apply "<why>"` signs a rule of a pinned anchor,
+one carrying `> Source:`, as not applying to this project: an ordinary
+signature, over the same hashes, that carries the reason. It works at every
+gate. A rule of the project's own anchor that does not apply is deleted
+instead. Once such a signature has ended, the rule is left `to_confirm`: the
+walk stops at it with three answers, confirm (a new signature with the
+earlier reason), sign (it then waits as any rule does) or skip; `--all` and a
+bare feature leave it.
 
 **The tag.** At the gate `signed`, when the walk closes and nothing is left
 to do but the tag, it writes the evidence package, commits it signed, and
@@ -52,8 +62,8 @@ so a signature this script writes is current the moment it lands.
 
 Exit codes: 0 the signatures were written and committed, the walk closed,
 nothing was left to tag, or the tag already exists; 1 there is no key to sign
-with, the commit was not made, a rule named is not one any spec has, the tag
-was refused for work or results not committed, no version or a package not
+with, the commit was not made, a rule named is not one any spec has or, with
+`--does-not-apply`, not a rule of a pinned anchor, the tag was refused for work or results not committed, no version or a package not
 committed, git could not write the tag, or the settings file cannot be read;
 2 the command line was wrong.
 """
@@ -81,7 +91,7 @@ from purlin import (console as console_module,                 # noqa: E402
 
 SCHEMA = 'purlin-signature/2'
 USAGE = ('Usage: sign.py [<feature> [RULE-N ...]] [--all] [--note TEXT] '
-         '[--release NAME] [--project-root DIR]')
+         '[--does-not-apply TEXT] [--release NAME] [--project-root DIR]')
 
 # The tag `purlin:sign` writes at the gate `signed` when nothing is left but
 # the tag itself.
@@ -136,6 +146,25 @@ def not_a_rule(feature, rule):
     return NOT_A_RULE % (feature, rule, feature)
 
 
+# Signing a pinned anchor's rule as not applying to this project, and the
+# walk's stop at one whose signature has ended.
+TO_CONFIRM = 'to_confirm'
+NEEDS_A_REASON = ('--does-not-apply needs the reason the rule does not apply '
+                  'to this project.')
+NAMES_AN_ANCHOR = ('--does-not-apply names a pinned anchor and the rules it '
+                   'carries.')
+NOT_PINNED = ('%s %s is not a rule of a pinned anchor, so it cannot be signed '
+              'as not applying. A rule of this project that does not apply is '
+              'deleted: run purlin:spec %s.')
+CONFIRM = ('%s %s was signed as not applying by %s: %s. Confirm it still does '
+           'not apply?')
+
+
+def not_pinned(feature, rule):
+    """The refusal for a rule `--does-not-apply` names outside a pinned anchor."""
+    return NOT_PINNED % (feature, rule, feature)
+
+
 NOT_MADE = ('The signature commit was not made: %s. Nothing was signed; run '
             'purlin:sign again once git can make a signed commit.')
 NOT_A_DIRECTORY = 'sign.py: %s is not a directory.'
@@ -160,8 +189,10 @@ EXIT_OK = 0
 EXIT_NOTHING = 1
 EXIT_BAD_INVOCATION = 2
 
-# The three answers the walk takes, and the letters that reach each one.
+# The three answers the walk takes, and the letters that reach each one; at a
+# rule to confirm as not applying, the three it takes there.
 ANSWERS = ('sign', 'case', 'skip')
+CONFIRM_ANSWERS = ('confirm', 'sign', 'skip')
 
 # The version files a project already states its version in, read in order.
 _PACKAGE_JSON = 'package.json'
@@ -182,44 +213,30 @@ def load_payload(project_root, payload=None):
     return payload_module.build_payload(project_root, generated_by='sign')
 
 
-def _listings(payload, feature, rule):
-    """Every entry for `<feature> <rule>`, one per feature that lists it."""
-    found = []
+def rule_entry(payload, feature, rule):
+    """The rule dict for `<feature> <rule>` as its own spec lists it, or None.
+
+    Every rule is listed once, under the spec that holds it, an anchor's
+    included, and that one listing is what its signature is made over.
+    """
     for entry in (payload or {}).get('features') or ():
+        if entry.get('name') != feature:
+            continue
         for item in entry.get('rules') or ():
             if item.get('feature') == feature and item.get('id') == rule:
-                found.append(item)
-    return found
+                return item
+    return None
 
 
-def _applies_to(item):
-    return item.get('applies_to') or item.get('feature')
+def is_pinned_anchor(project_root, feature):
+    """True when `feature` is an anchor carrying `> Source:`, pinned from elsewhere."""
+    info = specs_module.scan_specs(project_root).get(feature) or {}
+    return bool(info.get('is_anchor') and info.get('source'))
 
 
-def rule_entry(payload, feature, rule):
-    """The rule dict for `<feature> <rule>` as its own feature lists it, or None.
-
-    A rule an anchor declares is listed under the anchor and again under
-    every feature that uses it; the anchor's own listing answers first.
-    """
-    found = _listings(payload, feature, rule)
-    for item in found:
-        if _applies_to(item) == feature:
-            return item
-    return found[0] if found else None
-
-
-def listings_to_sign(payload, feature, rule):
-    """The entries one signature each goes to for `<feature> <rule>`.
-
-    An anchor's rule is signed once in each feature it applies to, so it is
-    one entry per feature that lists it; any other rule is its own entry.
-    """
-    found = _listings(payload, feature, rule)
-    elsewhere = [item for item in found if _applies_to(item) != feature]
-    if elsewhere:
-        return elsewhere
-    return [item for item in found if _applies_to(item) == feature][:1]
+def one_line(text):
+    """`text` with its whitespace, line ends included, run into single spaces."""
+    return ' '.join(str(text or '').split())
 
 
 # ---------------------------------------------------------------------------
@@ -237,12 +254,15 @@ def signature_path(project_root, feature, rule, signed, signer_slug):
 
 
 def write_signature(project_root, entry, signer_email, evidence_path=None,
-                    gate=None, note=None, signer_name=None, key=None):
+                    gate=None, note=None, signer_name=None, key=None,
+                    does_not_apply=None):
     """Write one signature file for a rule entry. Its project-relative path.
 
-    `entry` is the payload's rule entry for the feature the signature applies
-    to, which carries every hash the signature is made over. `key` is the
-    signing key's fingerprint.
+    `entry` is the payload's rule entry, listed under the rule's own spec,
+    which carries every hash the signature is made over. `key` is the
+    signing key's fingerprint. `does_not_apply` is the reason a pinned
+    anchor's rule does not apply to this project, or None for any other
+    signature; like `note` it is outside `signed_hash`.
     """
     feature, rule = entry.get('feature'), entry.get('id')
     signed = signatures_module.signed_hash(entry)
@@ -254,7 +274,7 @@ def write_signature(project_root, entry, signer_email, evidence_path=None,
         'schema': SCHEMA,
         'feature': feature,
         'rule': rule,
-        'applies_to': _applies_to(entry),
+        'applies_to': entry.get('applies_to') or feature,
         'signed_hash': signed,
         'rule_hash': entry.get('rule_hash'),
         'proof_hash': entry.get('proof_hash'),
@@ -267,6 +287,7 @@ def write_signature(project_root, entry, signer_email, evidence_path=None,
         'key_fingerprint': key,
         'test_hash_kind': entry.get('test_hash_kind'),
         'note': str(note).strip() if str(note or '').strip() else None,
+        'does_not_apply': one_line(does_not_apply) or None,
         'timestamp': payload_module.now_iso(),
         'gate': gate,
         'evidence': evidence_path,
@@ -304,26 +325,36 @@ def _write_json(path, body):
 # What waits for a person
 # ---------------------------------------------------------------------------
 
-def waiting(payload, feature=None, rules=None):
-    """The rule entries that wait for a person, by feature and rule number.
+def waiting(payload, feature=None, rules=None, confirm=False):
+    """The rule entries that wait for a person: features' first, then anchors'.
 
     A rule waits for a person when its work left is `to_test_by_hand` or
-    `to_sign`, read off the payload rather than worked out again. Each rule
-    is read once, as the feature that owns it lists it.
+    `to_sign`, read off the payload rather than worked out again, and with
+    `confirm` also `to_confirm`, which the walk alone stops at. Each rule is
+    read once, as the spec that owns it lists it. Every feature's rules come
+    before any anchor's, each group by name and rule number.
     """
+    kinds = [kind for kind in summary_module.FOR_A_PERSON
+             if kind != TO_CONFIRM]
+    if confirm:
+        kinds.append(TO_CONFIRM)
+    anchors = set()
     found = []
     for entry in (payload or {}).get('features') or ():
+        if entry.get('is_anchor'):
+            anchors.add(entry.get('name'))
         for item in entry.get('rules') or ():
             if item.get('feature') != entry.get('name'):
                 continue
-            if item.get('left') not in summary_module.FOR_A_PERSON:
+            if item.get('left') not in kinds:
                 continue
             if feature and item.get('feature') != feature:
                 continue
             if rules and item.get('id') not in rules:
                 continue
             found.append(item)
-    return sorted(found, key=lambda item: (item.get('feature') or '',
+    return sorted(found, key=lambda item: (item.get('feature') in anchors,
+                                           item.get('feature') or '',
                                            _rule_number(item.get('id'))))
 
 
@@ -609,18 +640,21 @@ def commit_message(targets):
 
 
 def sign_and_commit(project_root, targets, signer_email, note=None,
-                    payload=None, notes=None):
+                    payload=None, notes=None, does_not_apply=None,
+                    reasons=None):
     """Write every signature in `targets` and commit them once, signed.
 
     `targets` is `[(feature, rule), ...]`. One invocation is one commit
-    whether it carries one rule or forty, and an anchor's rule adds one file
-    per feature it applies to. `note` is the one line every signature
-    carries, and `notes` maps a `(feature, rule)` to a line of its own, which
-    is how the walk records what a person saw at each hand check. Returns
-    `(sha, None)`, or `(None, why)` when the commit was not made, `why` being
-    git's own message; `(None, None)` when no signature file was written.
+    whether it carries one rule or forty, one file per rule. `note` is the
+    one line every signature carries, and `notes` maps a `(feature, rule)` to
+    a line of its own, which is how the walk records what a person saw at
+    each hand check. `does_not_apply` and `reasons` carry the reason a rule
+    does not apply the same way. Returns `(sha, None)`, or `(None, why)` when
+    the commit was not made, `why` being git's own message; `(None, None)`
+    when no signature file was written.
     """
     notes = notes or {}
+    reasons = reasons or {}
     payload = load_payload(project_root, payload)
     gate = (payload.get('gate') or {}).get('gate') or gate_module.DEFAULT_GATE
     key = signatures_module.key_fingerprint(project_root)
@@ -628,16 +662,19 @@ def sign_and_commit(project_root, targets, signer_email, note=None,
     paths = []
     written = []
     for feature, rule in targets:
-        for entry in listings_to_sign(payload, feature, rule):
-            path = write_signature(
-                project_root, entry, signer_email,
-                evidence_for(payload, feature), gate,
-                note=notes.get((feature, rule), note), signer_name=name,
-                key=key)
-            if path:
-                paths.append(path)
-                if (feature, rule) not in written:
-                    written.append((feature, rule))
+        entry = rule_entry(payload, feature, rule)
+        if entry is None:
+            continue
+        path = write_signature(
+            project_root, entry, signer_email,
+            evidence_for(payload, feature), gate,
+            note=notes.get((feature, rule), note), signer_name=name,
+            key=key,
+            does_not_apply=reasons.get((feature, rule), does_not_apply))
+        if path:
+            paths.append(path)
+            if (feature, rule) not in written:
+                written.append((feature, rule))
     if not paths:
         return None, None
     return _commit(project_root, paths, commit_message(written))
@@ -698,9 +735,36 @@ def does_not_count(payload, feature):
 # ---------------------------------------------------------------------------
 
 def opening_lines(payload):
-    """What the walk prints first: the two lines of `Left to do` it walks."""
-    lines = summary_module.left_lines(payload, summary_module.FOR_A_PERSON)
+    """What the walk prints first: the lines of `Left to do` it walks."""
+    lines = summary_module.left_lines(
+        payload, tuple(summary_module.FOR_A_PERSON) + (TO_CONFIRM,))
     return lines or [NOTHING_WAITING]
+
+
+def last_not_applying(project_root, feature, rule):
+    """The last signature for a rule, when it carried `does_not_apply`, or None.
+
+    The last is the one written last, by the time the file records; the walk
+    asks the person to confirm its reason once it has ended.
+    """
+    info = specs_module.scan_specs(project_root).get(feature)
+    if not info:
+        return None
+    found = signatures_module.load_signatures(
+        project_root, {feature: info}).get((feature, rule)) or []
+    if not found:
+        return None
+    last = max(found, key=lambda signature: (str(signature.get('timestamp')
+                                                  or ''),
+                                              str(signature.get('path'))))
+    return last if one_line(last.get('does_not_apply')) else None
+
+
+def confirm_line(entry, earlier):
+    """The walk's question at a rule to confirm as not applying."""
+    return CONFIRM % (entry.get('feature'), entry.get('id'),
+                      earlier.get('signer'),
+                      one_line(earlier.get('does_not_apply')).rstrip('.'))
 
 
 def _proof_tags(proof):
@@ -771,9 +835,10 @@ def walk(project_root, payload=None, answer=None, out=None, signer_email=None,
     answer = _prompt if answer is None else answer
     email = signer_email or _config(project_root, 'user.email')
 
-    rows = waiting(payload)
+    rows = waiting(payload, confirm=True)
     result = {'rules': len(rows), 'signed': [], 'cases': [], 'skipped': [],
-              'notes': {}, 'commits': [], 'not_made': False, 'why': None,
+              'notes': {}, 'reasons': {}, 'commits': [], 'not_made': False,
+              'why': None,
               'tag': None, 'refused': None}
     for line in opening_lines(payload):
         print(line, file=out)
@@ -784,11 +849,20 @@ def walk(project_root, payload=None, answer=None, out=None, signer_email=None,
 
     for entry in rows:
         rendered = render_row(entry)
+        earlier = (last_not_applying(project_root, entry['feature'],
+                                     entry['id'])
+                   if entry.get('left') == TO_CONFIRM else None)
+        if earlier:
+            rendered += '\n' + confirm_line(entry, earlier)
         print('', file=out)
         print(rendered, file=out)
-        given, text = _one_answer(answer, entry, rendered)
+        given, text = _one_answer(answer, entry, rendered,
+                                  CONFIRM_ANSWERS if earlier else ANSWERS)
         pair = (entry['feature'], entry['id'])
-        if given == 'sign':
+        if given == 'confirm':
+            result['signed'].append(pair)
+            result['reasons'][pair] = earlier.get('does_not_apply')
+        elif given == 'sign':
             result['signed'].append(pair)
             if str(text or '').strip():
                 result['notes'][pair] = str(text).strip()
@@ -799,7 +873,8 @@ def walk(project_root, payload=None, answer=None, out=None, signer_email=None,
 
     if result['signed']:
         sha, why = sign_and_commit(project_root, result['signed'], email,
-                                   payload=payload, notes=result['notes'])
+                                   payload=payload, notes=result['notes'],
+                                   reasons=result['reasons'])
         if sha:
             result['commits'].append(sha)
         else:
@@ -823,13 +898,13 @@ def _finish(project_root, out, release, payload=None):
     return None, None
 
 
-def _one_answer(answer, entry, rendered):
+def _one_answer(answer, entry, rendered, answers=ANSWERS):
     given = answer(entry, rendered)
     text = None
     if isinstance(given, (tuple, list)):
         given, text = (list(given) + [None])[:2]
     given = str(given or 'skip').strip().lower()
-    for word in ANSWERS:
+    for word in answers:
         if given == word or (given and word.startswith(given)):
             return word, text
     return 'skip', text
@@ -840,7 +915,15 @@ def _prompt(entry, _rendered):
 
     Signing a hand check asks what the person saw, which the signature
     carries as its note when one is given; adding a case asks for the case.
+    At a rule to confirm as not applying the answers are confirm, sign or
+    skip, and none asks a second question.
     """
+    if entry.get('left') == TO_CONFIRM:
+        try:
+            return input('%s %s   confirm / sign / skip: '
+                         % (entry['feature'], entry['id']))
+        except (EOFError, KeyboardInterrupt):
+            return 'skip'
     try:
         given = input('%s %s   sign / case / skip: '
                       % (entry['feature'], entry['id']))
@@ -889,14 +972,15 @@ def _close(project_root, out, result, email, payload):
 class _Args(object):
     """One parsed invocation, or the reason it could not be parsed."""
 
-    __slots__ = ('feature', 'rules', 'all', 'note', 'release',
-                 'project_root', 'error', 'help')
+    __slots__ = ('feature', 'rules', 'all', 'note', 'does_not_apply',
+                 'release', 'project_root', 'error', 'help')
 
     def __init__(self):
         self.feature = None
         self.rules = []
         self.all = False
         self.note = None
+        self.does_not_apply = None
         self.release = None
         self.project_root = '.'
         self.error = None
@@ -919,6 +1003,11 @@ def _parse(argv):
                 args.error = '--note needs the line you want on the signature.'
                 return args
             args.note = rest.pop(0)
+        elif item == '--does-not-apply':
+            if not rest or not rest[0].strip() or rest[0].startswith('--'):
+                args.error = NEEDS_A_REASON
+                return args
+            args.does_not_apply = one_line(rest.pop(0))
         elif item == '--release':
             if not rest or not rest[0].strip() or rest[0].startswith('--'):
                 args.error = '--release needs the name to tag.'
@@ -939,7 +1028,11 @@ def _parse(argv):
         else:
             args.error = 'unexpected argument %s' % item
             return args
-    if args.note is not None and (args.all or not args.rules):
+    if args.does_not_apply is not None and (
+            args.all or not args.rules or args.note is not None
+            or args.release is not None):
+        args.error = NAMES_AN_ANCHOR
+    elif args.note is not None and (args.all or not args.rules):
         args.error = '--note names a feature and the rules it carries.'
     return args
 
@@ -982,6 +1075,15 @@ def main(argv=None):
         return EXIT_NOTHING if failed else EXIT_OK
 
     unknown = []
+    if args.does_not_apply is not None and not is_pinned_anchor(
+            project_root, args.feature):
+        # Only a pinned anchor's rule is signed as not applying; nothing is
+        # written for any rule named.
+        for rule in args.rules:
+            print(not_pinned(args.feature, rule)
+                  if rule_entry(payload, args.feature, rule)
+                  else not_a_rule(args.feature, rule))
+        return EXIT_NOTHING
     if args.feature and args.rules:
         # A rule no spec has is named last, just above the summary ending,
         # and the rules named beside it are signed all the same; the exit
@@ -1006,7 +1108,8 @@ def main(argv=None):
         return EXIT_NOTHING if refused in MUST_FIX else EXIT_OK
 
     sha, why = sign_and_commit(project_root, targets, email, note=args.note,
-                               payload=payload)
+                               payload=payload,
+                               does_not_apply=args.does_not_apply)
     if not sha:
         for rule in unknown:
             print(not_a_rule(args.feature, rule))

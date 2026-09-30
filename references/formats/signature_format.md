@@ -1,4 +1,4 @@
-> Format-Version: 11
+> Format-Version: 12
 
 # Signature Format
 
@@ -30,11 +30,11 @@ forty adds forty files in one commit.
 
 | Line | What it holds |
 |---|---|
-| 1 | `applies_to`, the feature the rule is signed in |
+| 1 | `applies_to`, the spec that holds the rule |
 | 2 | `rule_hash`: the rule text, its whitespace normalised, so reflowing a long line leaves it as it was |
 | 3 | `proof_hash`: the proof descriptions of that rule, in order, normalised the same way |
 | 4 | `test_hash`: the test files backing those proofs, each with the test's name and the file's blob id. The tests are the ones the feature's current evidence sections list, every operating system and both sources together, so every checkout reads the same hash |
-| 5 | `code_hash`: the files the `> Scope:` of `applies_to` names, each with its path and blob id |
+| 5 | `code_hash`: the files the `> Scope:` of `applies_to` names, each with its path and blob id; for an anchor, every file git tracks but Purlin's own records, as `evidence_format.md` gives them |
 | 6 | `audit_hash`: what the audit found, the feature's test strength from `audit.mutation`, the `verdict` of the audit entry for the rule's current hashes and its `findings` sorted; `sha256` of the empty string where no such entry exists |
 | 7 | `machines`, written as `os=machine` pairs, sorted and joined with `,` |
 
@@ -48,9 +48,14 @@ host's name for a person's own run, and `remote runner, <Windows|macOS|Linux/Uni
 for a remote runner, so a second remote run names the same machine. The
 machine the signature itself was made on is not part of it.
 
-An anchor's rule is signed once in each feature it applies to. Each file
-carries that feature in `applies_to` and is made over that feature's code, so
-a change to one feature's files ends that one signature alone.
+An anchor's rule is signed once, over every file of the project but Purlin's
+own records, so any change to the project ends that signature.
+
+A rule of a pinned anchor that does not apply to this project is signed with
+`purlin:sign <anchor> RULE-N --does-not-apply "<why>"`. The signature is made
+over the same seven lines as any other and carries the reason in
+`does_not_apply`, which, like `note`, is outside `signed_hash`: the signed
+commit is what holds it. No other rule is signed this way.
 
 `test_hash_kind` says what line 4 was taken from: `file` for a test file
 version control tracks, `manual` for a proof with no test at all, and `none`
@@ -76,6 +81,7 @@ for a rule with nothing behind it yet.
   "key_fingerprint": "SHA256:vrDM+WX4Ab76HvBbinAXOjKHP5EQjT33PqbnJT6Xy4Q",
   "test_hash_kind": "file",
   "note": null,
+  "does_not_apply": null,
   "timestamp": "2026-09-13T12:00:00Z",
   "gate": "signed",
   "evidence": ".purlin/evidence/local/login.json"
@@ -91,7 +97,7 @@ REQUIRED: `schema`, `feature`, `rule`, `applies_to`, `signed_hash`,
 | `schema` | string | `purlin-signature/2` for this format version |
 | `feature` | string | the spec that holds the rule, which owns it |
 | `rule` | string | `RULE-N` |
-| `applies_to` | string | the feature the rule is signed in: the owner, or for an anchor's rule the feature that uses it |
+| `applies_to` | string | the spec that holds the rule, the same as `feature` |
 | `signed_hash` | string | the hash over the seven lines above, of which the file name carries eight characters |
 | `rule_hash` | string | line 2 |
 | `proof_hash` | string | line 3 |
@@ -104,6 +110,7 @@ REQUIRED: `schema`, `feature`, `rule`, `applies_to`, `signed_hash`,
 | `key_fingerprint` | string | `SHA256:` and the unpadded base64 of the sha256 of the SSH key the signer signs with, as `ssh-keygen -l` prints it |
 | `test_hash_kind` | string | `file`, `manual` or `none` |
 | `note` | string or null | what the signer saw, for a `@manual` proof; null where none was given |
+| `does_not_apply` | string or null | the reason, as one line, a pinned anchor's rule does not apply to this project; null or absent for any other signature |
 | `timestamp` | string | ISO 8601 UTC with `Z` |
 | `gate` | string | the gate in force when the signature was written: `passed`, `strong` or `signed` |
 | `evidence` | string or null | the feature's evidence file the signature rests on, the `local` one where both sources have one |
@@ -111,7 +118,7 @@ REQUIRED: `schema`, `feature`, `rule`, `applies_to`, `signed_hash`,
 ## Current
 
 A signature is **current** while `signed_hash`, taken again from the rule as
-it now stands in the feature it applies to, equals the one stored. Line 7 is
+it now stands in the spec that holds it, equals the one stored. Line 7 is
 taken from the rule's machines restricted to the systems the signature's own
 `machines` names:
 
