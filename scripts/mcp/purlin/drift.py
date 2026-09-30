@@ -755,13 +755,13 @@ def default_branch(project_root):
     `origin/HEAD` where git recorded it, else the first of `origin/main` and
     `origin/master` that exists. Nothing is fetched.
     """
-    ref = _git(project_root, ['symbolic-ref', '--quiet',
+    ref = _git(project_root, ['symbolic-ref', '--quiet', '--end-of-options',
                               _REMOTES + 'origin/HEAD'])
     if ref.startswith(_REMOTES):
         return ref[len(_REMOTES):]
     for name in ('origin/main', 'origin/master'):
         if _git(project_root, ['rev-parse', '--verify', '-q',
-                               _REMOTES + name]):
+                               '--end-of-options', _REMOTES + name]):
             return name
     return None
 
@@ -777,7 +777,8 @@ def fetched_age(project_root, ref):
     # `%gd` under `--date=unix` names the entry's own time, `<ref>@{<secs>}`;
     # `%ct` would name the time of the commit the entry points at.
     entry = _git(project_root, ['reflog', 'show', '-1', '--date=unix',
-                                '--format=%gd', _REMOTES + ref, '--'])
+                                '--format=%gd', '--end-of-options',
+                                _REMOTES + ref, '--'])
     when = entry[entry.rfind('{') + 1:-1] if entry.endswith('}') else ''
     if when.isdigit():
         return max(0, int(time.time()) - int(when))
