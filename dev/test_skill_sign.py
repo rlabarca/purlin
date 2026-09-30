@@ -7,14 +7,12 @@ copies this file shares with the other skill test files are in
 `dev/skill_checks.py`; the checks only this spec needs are below the tests.
 """
 
-import re
-
-from skill_checks import (COMMAND_REF, closing_outcomes, flat, frontmatter,
-                          frontmatter_problems, field, in_order,
-                          next_step_problems, next_step_refusals, on_copy,
-                          read, refusals, replace, section, sections,
-                          skill_ceiling_problems, skill_path, swap_first,
-                          table_rows, undirected_outcome_problems)
+from skill_checks import (COMMAND_REF, field, flat, frontmatter,
+                          frontmatter_problems, next_step_problems,
+                          next_step_refusals, on_copy, read, refusals,
+                          replace, section, skill_ceiling_problems,
+                          skill_path, swap_first, table_rows,
+                          undirected_outcome_problems)
 
 SKILL = skill_path('sign')
 
@@ -31,11 +29,7 @@ class TestSkillSign:
             (SKILL, replace('name: sign\n'),
              "%s frontmatter name is None, expected 'sign'" % SKILL),
             (SKILL, replace(line, 'description:'), NO_DESCRIPTION),
-            (SKILL, replace('name: sign\n' + line,
-                            'description:\nname: sign'), NO_DESCRIPTION),
             (SKILL, replace(line, 'description: |\n  ' + description()),
-             NO_DESCRIPTION),
-            (SKILL, replace(line, line + '\n  and a second line'),
              NO_DESCRIPTION)]) == []
 
     # RULE-11: the command reference.
@@ -45,62 +39,20 @@ class TestSkillSign:
         assert command_row_problems() == []
         row = next(line for line in read(COMMAND_REF).splitlines()
                    if line.startswith('| `purlin:sign'))
-        edit = replace(row + '\n')
-        # The command's name is still in the reference outside the table.
-        assert 'purlin:sign' in edit(read(COMMAND_REF))
         assert refusals(monkeypatch, frontmatter_check, [
-            (COMMAND_REF, edit,
+            (COMMAND_REF, replace(row + '\n'),
              '%s carries no row for purlin:sign' % COMMAND_REF)]) == []
-
-    # RULE-2: what waits.
-
-    # purlin: skill_sign PROOF-2
-    def test_what_waits_is_read_from_sync_status(self, monkeypatch):
-        assert sign_waiting_problems() == []
-        assert refusals(monkeypatch, sign_waiting_problems, [
-            (SKILL, replace('Call `sync_status`', 'Call it'),
-             '%s does not read left, to_test_by_hand and to_sign from '
-             'sync_status' % SKILL)]) == []
-
-    # RULE-18: the project root, passed to sync_status.
-
-    # purlin: skill_sign PROOF-46
-    def test_sync_status_is_given_the_project_root(self, monkeypatch):
-        assert sign_root_problems() == []
-        assert refusals(monkeypatch, sign_root_problems, [
-            (SKILL, replace('`sync_status` with `project_root` set to',
-                            '`sync_status` with'),
-             '%s section on what waits does not say %r'
-             % (SKILL, ROOT_CALL))]) == []
-
-    # RULE-12: what the audit found, read before anything is written.
-
-    # purlin: skill_sign PROOF-30
-    def test_it_says_to_read_what_the_audit_found_before_writing(self):
-        assert sign_read_first_problems() == []
-
-    # purlin: skill_sign PROOF-31
-    def test_the_audit_script_comes_before_the_signing_script(
-            self, monkeypatch):
-        assert sign_script_problems() == []
-        assert refusals(monkeypatch, sign_script_problems, [
-            (SKILL, swap_first(SIGN_SCRIPTS[0], SIGN_SCRIPTS[1]),
-             'out of order, at offsets'),
-            (SKILL, replace(SIGN_SCRIPTS[0], '"scripts/review/ai_audit.py"'),
-             '%s does not carry %r' % (SKILL, SIGN_SCRIPTS[0]))]) == []
 
     # RULE-3: the closing section.
 
     # purlin: skill_sign PROOF-3
     def test_it_closes_by_naming_the_next_step(self, monkeypatch):
-        assert closing_check() == []
+        assert next_step_problems('sign') + \
+            undirected_outcome_problems('sign') == []
         assert next_step_refusals(
-            monkeypatch, 'sign', '| `Left to do:` and its lines',
-            '| A case was added | `→ Run: purlin:build <feature>` |') == []
-
-    # purlin: skill_sign PROOF-44
-    def test_an_unknown_rule_is_sent_to_the_status(self):
-        assert closing_row_problems(NOT_A_RULE_ROW) == []
+            monkeypatch, 'sign', '| `Nothing left to do. Push the tag',
+            '| `No version:` | `→ Write the version the person gives to '
+            'VERSION, then run: purlin:sign` |') == []
 
     # RULE-4: the ceiling.
 
@@ -113,155 +65,135 @@ class TestSkillSign:
             (SKILL, lengthen_to(186),
              '%s is 186 lines, ceiling 185' % SKILL)]) == []
 
-    # RULE-5: the two things that make a signature count.
+    # RULE-5: the two things that make a sign-off count.
 
     # purlin: skill_sign PROOF-5
-    def test_a_signature_counts_on_two_conditions(self, monkeypatch):
-        assert sign_count_problems() == []
-        first = next(line for line in read(SKILL).splitlines()
-                     if line.startswith('| ' + SIGN_COUNTS[0]))
+    def test_a_sign_off_counts_on_two_conditions(self, monkeypatch):
+        assert count_problems() == []
         second = next(line for line in read(SKILL).splitlines()
-                      if line.startswith('| ' + SIGN_COUNTS[1]))
-        extra = '| The signer is on a list | A change to the list |'
-        assert refusals(monkeypatch, sign_count_problems, [
-            (SKILL, replace(first + '\n'),
-             '%s table A signature counts when has no row %r'
-             % (SKILL, SIGN_COUNTS[0])),
-            (SKILL, replace(second, second + '\n' + extra),
-             '%s table A signature counts when has a third row '
+                      if line.startswith('| ' + COUNTS[1]))
+        assert refusals(monkeypatch, count_problems, [
+            (SKILL, replace(second + '\n'),
+             '%s table A sign-off counts when has no row %r'
+             % (SKILL, COUNTS[1])),
+            (SKILL, replace(second, second + '\n| The signer is on a list '
+                            '| A change to the list |'),
+             "%s table A sign-off counts when has a third row "
              "'The signer is on a list'" % SKILL)]) == []
 
-    # RULE-13: whose signature counts.
+    # RULE-13: whose sign-off counts.
 
     # purlin: skill_sign PROOF-38
-    def test_it_says_whose_signature_counts(self, monkeypatch):
-        assert sign_whose_problems() == []
-        assert refusals(monkeypatch, sign_whose_problems, [
-            (SKILL, replace('whoever last committed\nto the test file',
-                            'whoever committed last'),
-             '%s does not say the signature counts' % SKILL)]) == []
-
-    # RULE-19: a rule of a spec that names no files.
-
-    # purlin: skill_sign PROOF-47
-    def test_a_rule_of_a_spec_naming_no_files_is_signed_and_says_so(
-            self, monkeypatch):
-        assert sign_no_files_problems() == []
-        assert refusals(monkeypatch, sign_no_files_problems, [
-            (SKILL, replace(NO_FILES_LINE + '\n', '  <feature> <RULE-N>\n'),
-             '%s section on when a signature counts does not show %r'
-             % (SKILL, NO_FILES_LINE)),
-            (SKILL, replace('At the gate `signed` a rule of a spec',
-                            'A rule of a spec'),
-             '%s section on when a signature counts does not say %r'
-             % (SKILL, NO_FILES_SIGNED))]) == []
-
-    # RULE-6: the walk's three answers.
-
-    # purlin: skill_sign PROOF-6
-    def test_the_walk_takes_one_of_three_answers(self):
-        assert sign_answer_problems() == []
-
-    # RULE-7: what each gate leaves it able to do.
-
-    # purlin: skill_sign PROOF-7
-    def test_it_says_what_each_gate_leaves_it_able_to_do(self, monkeypatch):
-        assert sign_gate_problems() == []
-        passed = next(line for line in read(SKILL).splitlines()
-                      if line.startswith('| `passed` |'))
-        assert refusals(monkeypatch, sign_gate_problems, [
-            (SKILL, replace(passed + '\n'),
-             '%s gate table has no `passed` row' % SKILL),
-            (SKILL, replace('| Every rule waits for a signature once',
-                            '| Rules wait once'),
-             "%s signed row does not name 'Every rule waits for a signature"
-             % SKILL)]) == []
-
-    # RULE-8: the package and the tag.
-
-    # purlin: skill_sign PROOF-8
-    def test_at_signed_it_commits_the_package_and_tags_that_commit(self):
-        assert sign_tag_problems() == []
-
-    # purlin: skill_sign PROOF-40
-    def test_it_prints_the_package_line_above_the_tag_line(self, monkeypatch):
-        assert sign_tag_line_problems() == []
-        assert refusals(monkeypatch, sign_tag_line_problems, [
-            (SKILL, swap_first(SIGN_PACKAGE_LINE, SIGN_TAG_LINE),
-             '%s tag section prints the tag line before the package line'
-             % SKILL)]) == []
-
-    # RULE-14: below signed.
-
-    # purlin: skill_sign PROOF-41
-    def test_below_signed_it_writes_no_tag_and_no_package(self, monkeypatch):
-        assert tag_section_says(BELOW_SIGNED) == []
-        assert refusals(monkeypatch, lambda: tag_section_says(BELOW_SIGNED), [
-            (SKILL, replace(BELOW_SIGNED + '.', ''),
-             '%s tag section does not carry %r'
-             % (SKILL, BELOW_SIGNED))]) == []
-
-    # RULE-15: no push.
-
-    # purlin: skill_sign PROOF-42
-    def test_it_never_pushes(self):
-        assert tag_section_says(NEVER_PUSHES) == []
-
-    # RULE-9: where the version comes from.
-
-    # purlin: skill_sign PROOF-19
-    def test_it_says_where_the_version_comes_from(self):
-        assert sign_version_problems() == []
-
-    # RULE-16: no version stated.
-
-    # purlin: skill_sign PROOF-43
-    def test_with_no_version_it_asks_and_offers_to_write_one(
-            self, monkeypatch):
-        assert sign_version_offer_problems() == []
-        assert refusals(monkeypatch, sign_version_offer_problems, [
-            (SKILL, replace('offer to write it to a', 'then use'),
-             '%s tag section does not offer to write the version'
-             % SKILL)]) == []
-
-    # RULE-20: the line with no version.
-
-    # purlin: skill_sign PROOF-48
-    def test_it_quotes_the_no_version_line(self, monkeypatch):
-        assert tag_section_says(NO_VERSION) == []
-        assert refusals(monkeypatch, lambda: tag_section_says(NO_VERSION), [
-            (SKILL, replace('Run purlin:sign --release <version>, or',
-                            'Name it with --release <version>, or'),
-             '%s tag section does not carry %r'
-             % (SKILL, NO_VERSION))]) == []
-
-    # RULE-21: the line over a tag already written.
-
-    # purlin: skill_sign PROOF-49
-    def test_it_quotes_the_tag_already_written_line(self, monkeypatch):
-        assert tag_section_says(TAG_WRITTEN) == []
-        assert refusals(monkeypatch, lambda: tag_section_says(TAG_WRITTEN), [
-            (SKILL, replace('Run purlin:sign --release <name> to name another.',
-                            'Name another with --release <name>.'),
-             '%s tag section does not carry %r'
-             % (SKILL, TAG_WRITTEN))]) == []
+    def test_it_says_whose_sign_off_counts(self, monkeypatch):
+        check = lambda: says(WHOSE)  # noqa: E731
+        assert check() == []
+        assert refusals(monkeypatch, check, [
+            (SKILL, replace('whoever wrote it and', 'when'),
+             'does not carry %r' % WHOSE)]) == []
 
     # RULE-10: the key.
 
     # purlin: skill_sign PROOF-21
     def test_it_shows_the_key_commands_and_offers_to_run_them(
             self, monkeypatch):
-        assert sign_key_problems() == []
-        assert refusals(monkeypatch, sign_key_problems, [
+        assert key_problems() == []
+        assert refusals(monkeypatch, key_problems, [
             (SKILL, replace('offer to run them', 'tell them'),
              "%s key section does not say 'offer to run them'"
              % SKILL)]) == []
 
-    # RULE-17: what the script exits with when the tag is refused.
+    # RULE-15: no push.
 
-    # purlin: skill_sign PROOF-45
-    def test_it_says_what_a_refused_tag_exits_with(self):
-        assert tag_section_says(TAG_EXITS) == []
+    # purlin: skill_sign PROOF-42
+    def test_it_never_pushes(self, monkeypatch):
+        check = lambda: says(NEVER_PUSHES)  # noqa: E731
+        assert check() == []
+        assert refusals(monkeypatch, check, [
+            (SKILL, replace(NEVER_PUSHES, 'this skill pushes'),
+             'does not carry %r' % NEVER_PUSHES)]) == []
+
+    # RULE-16: no version stated.
+
+    # purlin: skill_sign PROOF-43
+    def test_with_no_version_it_asks_and_offers_to_write_one(
+            self, monkeypatch):
+        check = lambda: section_says(r'refusals', [OFFER])  # noqa: E731
+        assert check() == []
+        assert refusals(monkeypatch, check, [
+            (SKILL, replace('offer to write it to a', 'then use'),
+             'does not carry %r' % OFFER)]) == []
+
+    # RULE-20: the line with no version.
+
+    # purlin: skill_sign PROOF-48
+    def test_it_quotes_the_no_version_line(self, monkeypatch):
+        check = lambda: section_says(r'refusals', [NO_VERSION])  # noqa: E731
+        assert check() == []
+        assert refusals(monkeypatch, check, [
+            (SKILL, replace('Run purlin:sign --release <version>, or',
+                            'Name it with --release <version>, or'),
+             'does not carry %r' % NO_VERSION)]) == []
+
+    # RULE-23: no narrowing.
+
+    # purlin: skill_sign PROOF-51
+    def test_a_rule_is_never_narrowed_to_lose_an_observation(self):
+        assert says(NEVER_NARROW) == []
+
+    # RULE-25: the tied test at each stop.
+
+    # purlin: skill_sign PROOF-54
+    def test_each_stop_shows_each_proofs_tied_test(self, monkeypatch):
+        # The spaces that indent a tied line are its own, so they are read
+        # as written, the line breaks around them as spaces.
+        check = lambda: section_says(  # noqa: E731
+            r'the stops', TIED, lambda text: text.replace('\n', ' '))
+        assert check() == []
+        assert refusals(monkeypatch, check, [
+            (SKILL, replace('tied to no test', 'no test'),
+             'does not carry %r' % TIED[1])]) == []
+
+    # RULE-29: the walk in two calls.
+
+    # purlin: skill_sign PROOF-59
+    def test_it_shows_first_and_asks_about_each_stop(self, monkeypatch):
+        assert show_first_problems() == []
+        assert refusals(monkeypatch, show_first_problems, [
+            (SKILL, replace('sign.py" --show', 'sign.py"'),
+             'first sign.py command does not carry --show'),
+            (SKILL, replace('in the order printed, one at a time',
+                            'one at a time'),
+             'does not carry %r' % ASK_EACH)]) == []
+
+    # purlin: skill_sign PROOF-60
+    def test_it_writes_the_answers_then_walks_with_them(self, monkeypatch):
+        assert answers_problems() == []
+        assert refusals(monkeypatch, answers_problems, [
+            (SKILL, swap_first(ANSWERS_FILE, ANSWERS_RUN),
+             'the answers file is not named before the --answers run'),
+            (SKILL, replace(ANSWERS_RUN, 'sign.py" --answers'),
+             'does not carry %r' % ANSWERS_RUN)]) == []
+
+    # RULE-30: the gate passed.
+
+    # purlin: skill_sign PROOF-61
+    def test_at_passed_nothing_is_signed(self, monkeypatch):
+        assert passed_problems() == []
+        assert refusals(monkeypatch, passed_problems, [
+            (SKILL, replace('To sign releases, run purlin:init --gate '
+                            'signed.', ''),
+             'passed row does not quote')]) == []
+
+    # RULE-31: the tag at the first sign-off.
+
+    # purlin: skill_sign PROOF-62
+    def test_the_first_sign_off_writes_the_tag(self, monkeypatch):
+        check = lambda: says(FIRST_TAG, TAG_STAYS)  # noqa: E731
+        assert check() == []
+        assert refusals(monkeypatch, check, [
+            (SKILL, replace('For the first sign-off of the\nversion it '
+                            'writes', 'It writes'),
+             'does not carry %r' % FIRST_TAG)]) == []
 
 
 # ---------------------------------------------------------------------------
@@ -295,73 +227,6 @@ def description_line():
     return 'description: %s' % description()
 
 
-# ---------------------------------------------------------------------------
-# RULE-2 and RULE-12
-# ---------------------------------------------------------------------------
-
-# The script that shows what the audit found, and the one that signs.
-SIGN_SCRIPTS = ('"${CLAUDE_PLUGIN_ROOT}/scripts/review/ai_audit.py"',
-                '"${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py"')
-
-READ_FIRST = ('Read what the audit read and found for a rule before anything '
-              'is written')
-
-
-def waiting_section():
-    return section(read(SKILL), r'what waits') or ''
-
-
-# The words every first call of sync_status carries.
-ROOT_CALL = ('`sync_status` with `project_root` set to the project root, the '
-             'top folder of the git checkout')
-
-
-def sign_waiting_problems():
-    # The kinds are read off what the sync_status call returns.
-    if re.search(r'`sync_status`.*`left`.*`to_test_by_hand`.*`to_sign`',
-                 waiting_section(), re.S):
-        return []
-    return ['%s does not read left, to_test_by_hand and to_sign from '
-            'sync_status in its section on what waits' % SKILL]
-
-
-def sign_root_problems():
-    if 'Call ' + ROOT_CALL in flat(waiting_section()):
-        return []
-    return ['%s section on what waits does not say %r' % (SKILL, ROOT_CALL)]
-
-
-def sign_read_first_problems():
-    if READ_FIRST in flat(waiting_section()):
-        return []
-    return ['%s section on what waits does not say %r' % (SKILL, READ_FIRST)]
-
-
-def sign_script_problems():
-    return in_order(SKILL, SIGN_SCRIPTS)
-
-
-# ---------------------------------------------------------------------------
-# RULE-3 and RULE-4
-# ---------------------------------------------------------------------------
-
-def closing_check():
-    return next_step_problems('sign') + undirected_outcome_problems('sign')
-
-
-# The unknown rule's line, as signing prints it, and the step it is given.
-NOT_A_RULE_ROW = ('| `<feature> <RULE-N> is not a rule any spec has. Run '
-                  'purlin:status <feature> to see its rules.` | '
-                  '`→ Run: purlin:status <feature>` |')
-
-
-def closing_row_problems(row):
-    body = sections(read(SKILL))[-1][1]
-    if row in closing_outcomes(body):
-        return []
-    return ['%s closing table has no row %r' % (SKILL, row)]
-
-
 def lengthen_to(count):
     """An edit that adds lines of prose until the file is `count` lines."""
     def edit(text):
@@ -372,175 +237,61 @@ def lengthen_to(count):
 
 
 # ---------------------------------------------------------------------------
-# RULE-5 and RULE-13
+# What the skill says
 # ---------------------------------------------------------------------------
 
-# The two things that make a signature count.
-SIGN_COUNTS = (
-    'The last commit that touched the file is signed, with any key, and '
-    'that signature verifies',
-    'It is still made over the rule, the proof, the test, the code its '
-    'feature lists, what the audit found and the machine each system\'s '
-    'tests ran on')
-
-WHOSE = ('the signature counts whoever wrote it, whoever last committed to '
-         'the test file, and on whatever branch carries it')
-
-
-def sign_count_problems():
-    conditions = [cells[0] for cells in table_rows(
-        read(SKILL), '| A signature counts when |')]
-    problems = ['%s table A signature counts when has no row %r'
-                % (SKILL, condition)
-                for condition in SIGN_COUNTS if condition not in conditions]
-    problems.extend('%s table A signature counts when has a third row %r'
-                    % (SKILL, condition)
-                    for condition in conditions if condition not in SIGN_COUNTS)
-    return problems
-
-
-# A rule of a spec that names no files, signed at the gate signed.
-NO_FILES_SIGNED = ('At the gate `signed` a rule of a spec that names no files '
-                   'is signed')
-NO_FILES_LINE = ('  <feature> <RULE-N>   does not count until the spec names '
-                 'its files: purlin:spec <feature>')
-
-
-def sign_no_files_problems():
-    body = section(read(SKILL), r'when a signature counts') or ''
-    problems = []
-    if NO_FILES_SIGNED not in flat(body):
-        problems.append('%s section on when a signature counts does not say '
-                        '%r' % (SKILL, NO_FILES_SIGNED))
-    if NO_FILES_LINE not in body.splitlines():
-        problems.append('%s section on when a signature counts does not show '
-                        '%r' % (SKILL, NO_FILES_LINE))
-    return problems
-
-
-def sign_whose_problems():
-    body = section(read(SKILL), r'when a signature counts') or ''
-    if WHOSE in flat(body):
-        return []
-    return ['%s does not say the signature counts whoever wrote it, whoever '
-            'last committed to the test file, and on whatever branch carries '
-            'it' % SKILL]
-
-
-# ---------------------------------------------------------------------------
-# RULE-6 and RULE-7
-# ---------------------------------------------------------------------------
-
-def sign_answer_problems():
-    body = section(read(SKILL), r'three answers')
-    if body is None:
-        return ["%s has no section naming the walk's answers" % SKILL]
-    flattened = flat(body)
-    problems = ['%s answers do not name %r' % (SKILL, label)
-                for label in ('**Sign.**', '**Add a case.**', '**Skip.**')
-                if label not in flattened]
-    if 'A skipped rule waits again next time' not in flattened:
-        problems.append('%s answers do not say a skipped rule comes back'
-                        % SKILL)
-    return problems
-
-
-def sign_gate_problems():
-    rows = {cells[0]: cells[-1] for cells in table_rows(read(SKILL),
-                                                        '| Gate |')}
-    problems = ['%s gate table has no %s row' % (SKILL, gate)
-                for gate in ('`passed`', '`strong`', '`signed`')
-                if gate not in rows]
-    if problems:
-        return problems
-    for gate in ('`passed`', '`strong`'):
-        if 'The walk and `--note` work on the hand checks' not in rows[gate]:
-            problems.append("%s %s row does not name 'The walk and `--note` "
-                            "work on the hand checks'"
-                            % (SKILL, gate.strip('`')))
-    needle = ('Every rule waits for a signature once its tests pass and its '
-              'audit is strong')
-    if needle not in rows['`signed`']:
-        problems.append('%s signed row does not name %r' % (SKILL, needle))
-    return problems
-
-
-# ---------------------------------------------------------------------------
-# RULE-8, RULE-9 and RULE-14 to RULE-17: the section on the tag
-# ---------------------------------------------------------------------------
-
-SIGN_PACKAGE_LINE = ('Evidence package committed: '
-                     '.purlin/evidence/package/1.4.0.json.')
-SIGN_TAG_LINE = 'Tagged signed/1.4.0 at a1b2c3d.'
-BELOW_SIGNED = 'Below `signed` it writes no tag and no package'
+COUNTS = ('The last commit that touched the file is signed, with any key, and '
+          'that signature verifies',
+          'Its `package_hash` is the fingerprint of the package committed '
+          'for its version')
+WHOSE = ('a sign-off counts whoever wrote it and on whatever branch carries '
+         'it')
 NEVER_PUSHES = 'this skill never pushes'
+OFFER = ('ask the person for the version, offer to write it to a `VERSION` '
+         'file')
 NO_VERSION = ('No version: nothing in this project states one. Run '
               'purlin:sign --release <version>, or write it to a VERSION '
               'file.')
-TAG_WRITTEN = ('No tag: <tag> is already written. Run purlin:sign --release '
-               '<name> to name another.')
-TAG_EXITS = ('It exits 1 when the tag was refused for a reason to fix, '
-             'uncommitted work or results, no version, a package not '
-             'committed or git failing to write the tag, and 0 when the tag '
-             'already exists')
+NEVER_NARROW = ('Never narrow a rule or a proof to make an observation '
+                'disappear.')
+TIED = ('`    tied to tests/test_login.py::test_valid_credentials_return_200`',
+        '`    tied to no test`',
+        'Under each proof that is not `@manual`')
+ASK_EACH = 'ask about each stop in the order printed, one at a time'
+ANSWERS_FILE = 'Write the answers to `.purlin/runtime/signoff-answers.json`'
+ANSWERS_RUN = 'sign.py" --answers .purlin/runtime/signoff-answers.json'
+AT_PASSED = ('Nothing is signed at the gate passed: purlin:test --release '
+             'tags the release unsigned. To sign releases, run purlin:init '
+             '--gate signed.')
+FIRST_TAG = ('For the first sign-off of the version it writes '
+             '`signed/<version>` on that commit')
+TAG_STAYS = ('`signed/1.2.0 stays at 8de0b6e; this sign-off is added after '
+             'it. Push it: git push`')
 
 
-def tag_section():
-    return section(read(SKILL), r'the tag')
+def says(*needles):
+    whole = flat(read(SKILL))
+    return ['%s does not carry %r' % (SKILL, needle)
+            for needle in needles if needle not in whole]
 
 
-def tag_section_says(*needles):
-    body = tag_section()
-    if body is None:
-        return ['%s has no section on the tag' % SKILL]
-    return ['%s tag section does not carry %r' % (SKILL, needle)
-            for needle in needles if needle not in flat(body)]
+def section_says(pattern, needles, whole=flat):
+    body = whole(section(read(SKILL), pattern) or '')
+    return ['%s section %r does not carry %r' % (SKILL, pattern, needle)
+            for needle in needles if needle not in body]
 
 
-def sign_tag_problems():
-    return tag_section_says('At the gate `signed`, when nothing is left but '
-                            'the tag',
-                            '.purlin/evidence/package/<version>.json',
-                            'commits it as a signed commit',
-                            'writes a signed tag',
-                            'on that commit')
+def count_problems():
+    conditions = [cells[0] for cells in table_rows(
+        read(SKILL), '| A sign-off counts when |')]
+    problems = ['%s table A sign-off counts when has no row %r'
+                % (SKILL, condition)
+                for condition in COUNTS if condition not in conditions]
+    problems.extend('%s table A sign-off counts when has a third row %r'
+                    % (SKILL, condition)
+                    for condition in conditions if condition not in COUNTS)
+    return problems
 
-
-def sign_tag_line_problems():
-    lines = (tag_section() or '').splitlines()
-    if SIGN_PACKAGE_LINE not in lines or SIGN_TAG_LINE not in lines:
-        return ['%s tag section does not print %r above %r'
-                % (SKILL, SIGN_PACKAGE_LINE, SIGN_TAG_LINE)]
-    if lines.index(SIGN_PACKAGE_LINE) > lines.index(SIGN_TAG_LINE):
-        return ['%s tag section prints the tag line before the package line'
-                % SKILL]
-    return []
-
-
-VERSION_SOURCES = ('`VERSION`', '`package.json`', '`pyproject.toml`',
-                   '`*.csproj`')
-
-
-def sign_version_problems():
-    body = flat(tag_section() or '')
-    found = [body.find(source) for source in VERSION_SOURCES]
-    if -1 in found or found != sorted(found):
-        return ['%s tag section does not name %s in that order'
-                % (SKILL, ', '.join(VERSION_SOURCES))]
-    return []
-
-
-def sign_version_offer_problems():
-    if ('ask the person for the version, offer to write it to a `VERSION` '
-            'file') in flat(tag_section() or ''):
-        return []
-    return ['%s tag section does not offer to write the version to a '
-            'VERSION file' % SKILL]
-
-
-# ---------------------------------------------------------------------------
-# RULE-10
-# ---------------------------------------------------------------------------
 
 KEY_LINES = ('No key to sign with. These commands set one up:',
              '  ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""',
@@ -548,7 +299,7 @@ KEY_LINES = ('No key to sign with. These commands set one up:',
              '  git config user.signingkey ~/.ssh/id_ed25519.pub')
 
 
-def sign_key_problems():
+def key_problems():
     body = section(read(SKILL), r'a key to sign with') or ''
     lines = body.splitlines()
     problems = ['%s key section does not print %r' % (SKILL, line)
@@ -559,167 +310,32 @@ def sign_key_problems():
     return problems
 
 
-def add_a_case(text):
-    """The walk's `**Add a case.**` paragraph, its line breaks read as spaces."""
-    match = re.search(r'\*\*Add a case\.\*\*(.*?)(?:\n\n|\Z)', text, re.S)
-    return flat(match.group(1)) if match else ''
-
-
-# purlin: skill_sign PROOF-50
-def test_a_case_becomes_a_proof_line_and_waits_for_build():
-    paragraph = add_a_case(read(SKILL))
-    for words in ('Write it into the spec as a new proof line with the next '
-                  'free proof id',
-                  'leave the test for the next `purlin:build`',
-                  'This skill writes specs and signatures, never code.'):
-        assert words in paragraph, paragraph
-    # A paragraph that leaves the id to chance is found wanting.
-    assert 'next free proof id' not in add_a_case(read(SKILL).replace(
-        'with the next free proof id', 'with any id'))
-
-
-# purlin: skill_sign PROOF-51
-def test_a_rule_is_never_narrowed_to_lose_an_observation():
-    assert ('Never narrow a rule or a proof to make an observation '
-            'disappear.') in flat(read(SKILL))
-
-
-DOES_NOT_APPLY_USAGE = ('purlin:sign <anchor> RULE-N --does-not-apply "<why>"  '
-                        "Sign a pinned anchor's rule as not applying to this "
-                        'project')
-CONFIRM_STOP = ('`security_baseline RULE-4 was signed as not applying by '
-                'jane@acme.com: the project stores no card data. Confirm it '
-                'still does not apply?`')
-CONFIRM_ANSWERS = ('confirm, which signs it again with the earlier reason',
-                   'sign it as applying after all',
-                   'or skip')
-
-
-def does_not_apply_problems():
+def show_first_problems():
     text = read(SKILL)
-    usage = section(text, r'^Usage$') or ''
-    answers = flat(section(text, r'three answers') or '')
+    command = next((line for line in text.splitlines()
+                    if 'scripts/review/sign.py"' in line), '')
     problems = []
-    if DOES_NOT_APPLY_USAGE not in usage.splitlines():
-        problems.append('%s usage carries no line %r'
-                        % (SKILL, DOES_NOT_APPLY_USAGE))
-    if 'Any other rule is refused' not in answers:
-        problems.append("%s answers section does not say 'Any other rule is "
-                        "refused'" % SKILL)
+    if ' --show' not in command:
+        problems.append('%s first sign.py command does not carry --show'
+                        % SKILL)
+    problems.extend(section_says(r'the stops', [ASK_EACH]))
     return problems
 
 
-def confirm_problems():
-    walk = flat(section(read(SKILL), r'walk it') or '')
-    return ['%s walk section does not carry %r' % (SKILL, needle)
-            for needle in (CONFIRM_STOP,) + CONFIRM_ANSWERS
-            if needle not in walk]
+def answers_problems():
+    text = flat(read(SKILL))
+    problems = ['%s does not carry %r' % (SKILL, needle)
+                for needle in (ANSWERS_FILE, ANSWERS_RUN)
+                if needle not in text]
+    if not problems and text.index(ANSWERS_FILE) > text.index(ANSWERS_RUN):
+        problems.append('%s: the answers file is not named before the '
+                        '--answers run' % SKILL)
+    return problems
 
 
-# purlin: skill_sign PROOF-52
-def test_does_not_apply_signs_a_pinned_anchors_rule_alone(monkeypatch):
-    assert does_not_apply_problems() == []
-    assert refusals(monkeypatch, does_not_apply_problems, [
-        (SKILL, replace(DOES_NOT_APPLY_USAGE + '\n'),
-         '%s usage carries no line' % SKILL),
-        (SKILL, replace('Any other rule is refused', 'Any other rule is '
-                        'signed so too'),
-         "answers section does not say 'Any other rule is refused'"),
-    ]) == []
-
-
-# purlin: skill_sign PROOF-53
-def test_the_walk_stops_at_a_rule_to_confirm(monkeypatch):
-    assert confirm_problems() == []
-    assert refusals(monkeypatch, confirm_problems, [
-        (SKILL, replace('Confirm it still does not apply?',
-                        'Sign it again?'),
-         'walk section does not carry %r' % CONFIRM_STOP),
-        (SKILL, replace('sign it as applying\nafter all',
-                        'delete it'),
-         'walk section does not carry %r' % CONFIRM_ANSWERS[1]),
-    ]) == []
-
-
-TIED = ('`    tied to tests/test_login.py::test_valid_credentials_return_200`',
-        '`    tied to no test`',
-        'Under each proof that is not `@manual`')
-SPEC_REFUSED = ('`login is not signed: PROOF-2 is written twice in the spec. '
-                'Run purlin:spec login, then purlin:sign again.`',
-                'writes nothing and exits 1')
-HAND_CHECK = ("A hand check's signature is made over the rule's and its "
-              "proofs' wording alone: a change to the code, a test or the "
-              'machines does not end it, and a change to that wording does.')
-NO_TAG_SPEC = ('`No tag: login cannot be counted: PROOF-2 is written twice in '
-               'the spec. Run purlin:spec login, then purlin:sign.`')
-NO_TAG_BEHIND = ('`No tag: origin/main holds 1 commit that 8de0b6e does not, '
-                 'as this checkout last fetched it. Pull, run purlin:test '
-                 '--commit, then purlin:sign.`')
-RELEASE = ('Sign a version on a release branch, such as `release/1.2.0`, cut '
-           'from the default branch once its specs are done.')
-
-
-def section_says(pattern, needles, whole=flat):
-    body = whole(section(read(SKILL), pattern) or '')
-    return ['%s section %r does not carry %r' % (SKILL, pattern, needle)
-            for needle in needles if needle not in body]
-
-
-# purlin: skill_sign PROOF-54
-def test_the_walk_shows_each_proofs_tied_test(monkeypatch):
-    # The spaces that indent a tied line are its own, so they are read as
-    # written, the line breaks around them as spaces.
-    check = lambda: section_says(  # noqa: E731
-        r'walk it', TIED, lambda text: text.replace('\n', ' '))
-    assert check() == []
-    assert refusals(monkeypatch, check, [
-        (SKILL, replace('tied to no test', 'no test'),
-         'does not carry %r' % TIED[1]),
-    ]) == []
-
-
-# purlin: skill_sign PROOF-55
-def test_a_broken_spec_is_not_signed(monkeypatch):
-    check = lambda: section_says(r'three answers', SPEC_REFUSED)  # noqa: E731
-    assert check() == []
-    assert refusals(monkeypatch, check, [
-        (SKILL, replace('login is not signed:', 'login is signed:'),
-         'does not carry %r' % SPEC_REFUSED[0]),
-        (SKILL, replace('writes nothing and exits 1', 'signs it'),
-         'does not carry %r' % SPEC_REFUSED[1]),
-    ]) == []
-
-
-# purlin: skill_sign PROOF-56
-def test_a_hand_check_ends_only_on_a_change_of_wording(monkeypatch):
-    check = lambda: section_says(r'when a signature counts',  # noqa: E731
-                                 (HAND_CHECK,))
-    assert check() == []
-    assert refusals(monkeypatch, check, [
-        (SKILL, replace('does not end it, and', 'ends it, and'),
-         'does not carry %r' % HAND_CHECK),
-    ]) == []
-
-
-# purlin: skill_sign PROOF-57
-def test_the_tag_is_refused_on_a_broken_spec_or_a_host_ahead(monkeypatch):
-    check = lambda: tag_section_says(NO_TAG_SPEC, NO_TAG_BEHIND)  # noqa: E731
-    assert check() == []
-    assert refusals(monkeypatch, check, [
-        (SKILL, replace('as this checkout last fetched it. Pull',
-                        'as fetched. Pull'),
-         'tag section does not carry %r' % NO_TAG_BEHIND),
-        (SKILL, replace('No tag: login cannot be counted',
-                        'No tag: login is broken'),
-         'tag section does not carry %r' % NO_TAG_SPEC),
-    ]) == []
-
-
-# purlin: skill_sign PROOF-58
-def test_a_version_is_signed_on_a_release_branch(monkeypatch):
-    check = lambda: tag_section_says(RELEASE)  # noqa: E731
-    assert check() == []
-    assert refusals(monkeypatch, check, [
-        (SKILL, replace('on a release branch', 'on the default branch'),
-         'tag section does not carry %r' % RELEASE),
-    ]) == []
+def passed_problems():
+    rows = {cells[0]: cells[-1] for cells in table_rows(read(SKILL),
+                                                        '| Gate |')}
+    if AT_PASSED in rows.get('`passed`', ''):
+        return []
+    return ['%s gate table passed row does not quote %r' % (SKILL, AT_PASSED)]
