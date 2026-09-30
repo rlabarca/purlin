@@ -13,8 +13,8 @@
 >   an upgrade, and that a test command is set, suggesting one for every test tool it knows.
 > Scope: scripts/run/purlin_run.py, scripts/mcp/purlin/frameworks.py, references/supported_frameworks.md
 > Stack: python/stdlib (subprocess, re, hashlib), bash, pytest, sqlite3
-> Highest-Rule: 84
-> Highest-Proof: 255
+> Highest-Rule: 85
+> Highest-Proof: 258
 
 ## Rules
 
@@ -56,6 +56,7 @@
 - RULE-56: Before it runs anything, such a run prints `Selected <n> of <m> features: <feature> (<reasons>), ...` with the reasons `no run on <System> yet`, the system written `Windows`, `macOS` or `Linux/Unix`, `<part> changed since <sha7>`, `a file is not tracked` and `names no files, so every run includes it`, and, after the `Skipped` line, one line for each untracked file that selected a feature, `<path> is under <feature>'s scope and is not tracked, so its content is not part of the evidence until you git add it.`
 - RULE-78: After the `Selected` line such a run prints `Skipped <k> features whose spec, code and tests match their evidence: <names>. purlin:test --all runs them too.`, naming ten and counting the rest
 - RULE-57: When such a run selects nothing it prints `Nothing to run: every feature's spec, code and tests match its evidence. purlin:test --all runs them anyway.`, runs no test, writes no evidence, ends on the status table, the summary sentence and `Left to do`, and exits 1 where a rule's tests fail in the evidence it stands on and 0 otherwise; with `--commit` it still commits the evidence an earlier run wrote
+- RULE-85: When such a run selects nothing, `--commit` first commits every spec, every test file carrying a marker and `.purlin/config.json` that changed, in one commit whose subject is `purlin: specs, tests and settings for <feature>[, <feature>…]`, naming each feature whose spec or marked tests it holds, or `purlin: specs, tests and settings` where it holds only the settings; where none changed it makes no such commit
 - RULE-58: A run over fewer features than the project has gives each suite's `{files}` only the test files that carry a marker of a feature it runs, and starts no suite that has none; a run over every feature runs every suite whole
 - RULE-59: `--all` runs every feature whatever its evidence says, and `--ci` with no feature named runs every feature that has a proof tagged for this runner's system
 - RULE-60: With no feature named, `--audit` runs its tests on the selection RULE-55 makes and then reads the rules RULE-49 names; with nothing selected it runs no test and still reads each rule that has no audit entry for its current text, proof and test
@@ -221,6 +222,9 @@
 - PROOF-192 (RULE-58): In that project of two shell scripts, `--all --test` exits 0 and leaves the shared file holding both `export` and `login`
 - PROOF-193 (RULE-58): In a project of two shell suites, `logins` holding only login's script and `exports` only export's, `--feature login --test` prints `Running the logins suite.`, prints no `Running the exports suite.` line, and the shared file reads only `login`
 - PROOF-233 (RULE-58): On Windows, in a project whose one suite runs two shell scripts, one marked for `login` and one for `export`, each writing its feature's name to a shared file, `--feature login --test` exits 0 and leaves the file reading only `login` @env(windows)
+- PROOF-256 (RULE-85): In a git checkout of `feat` whose run is committed, with only `.purlin/config.json` edited since, `--test --commit` prints `Nothing to run` and makes one commit, `purlin: specs, tests and settings`, holding only `.purlin/config.json`
+- PROOF-257 (RULE-85): In that committed checkout, with the spec, its marked test file and the settings edited and a `--test` run over them, `--test --commit` prints `Nothing to run`, commits exactly those three files as `purlin: specs, tests and settings for feat`, then `purlin: evidence at <sha7 of that commit>`
+- PROOF-258 (RULE-85): In that committed checkout, with nothing changed, `--test --commit` prints `Nothing to run: every feature's spec, code and tests match its evidence. purlin:test --all runs them anyway.`, prints no `Committed` line and leaves HEAD where it was
 - PROOF-98 (RULE-59): In a git checkout of `login` and `export` with committed evidence and nothing changed, `--all --test` exits 0, prints no `Selected` line and no `Nothing to run` line, prints `Running the pytest suite.`, and the suite's report holds both tests, `test_export` and `test_login`
 - PROOF-194 (RULE-59): In a git checkout of `login` and `export` with committed evidence, each with one proof tagged for this machine's system, `--ci` with no feature named exits 0 and hands the git host one commit holding exactly `.purlin/evidence/ci/export.json` and `.purlin/evidence/ci/login.json`
 - PROOF-99 (RULE-60): At the gate `strong`, in a git checkout of `login` and `export`, one passing rule each, with current committed evidence and no audit, `--audit` with no feature named prints `Nothing to run` and no `Running the` line, prints `AI audit: 2 rules to read, 2 at a time.`, makes 2 model calls and exits 0

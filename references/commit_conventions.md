@@ -52,6 +52,11 @@ markers and `.purlin/config.json`, where any of them changed. The run prints
 `Committed <sha7>, the work these results describe:` and then each path on a line of its own,
 indented two spaces. With nothing to commit there is no first commit.
 
+A run that selected nothing to run still commits, in the first commit, every spec, every test
+file carrying a marker and `.purlin/config.json` that changed. Its subject names each feature
+whose spec or marked tests it holds, and reads `purlin: specs, tests and settings` where it
+holds only the settings.
+
 The second carries the files under `.purlin/evidence/local/`, `.purlin/tests.md` and any
 evidence file the run removed because its feature has no spec, and nothing else. `<commit7>`
 is the first seven characters of the first commit, or of HEAD when there was nothing to commit:

@@ -3209,3 +3209,62 @@ class TestTheTwoCommits:
             'purlin: evidence at %s' % head[:7]), output
         assert _git(root, 'status', '--porcelain', '--',
                     '.purlin/evidence').strip() == '', output
+
+    @staticmethod
+    def _run_committed(tmp_path):
+        """A checkout of `feat`, scoped to `src/feat.py`, whose
+        `--test --commit` is committed."""
+        root, _sha = _touched_project(tmp_path, names=('feat',))
+        return root
+
+    # purlin: run_script PROOF-256
+    def test_nothing_to_run_commits_the_settings_alone(self, tmp_path):
+        root = self._run_committed(tmp_path)
+        _config(root, min_strength=80)
+        code, output = _run(root, '--test', '--commit')
+        assert code == 0, output
+        assert 'Nothing to run' in output, output
+        assert _git(root, 'log', '-1', '--format=%s').strip() == (
+            'purlin: specs, tests and settings'), output
+        assert _git(root, 'show', '--format=', '--name-only',
+                    'HEAD').split() == ['.purlin/config.json'], output
+        assert _git(root, 'status', '--porcelain', '--', 'specs', 'tests/test_feat.py',
+                    '.purlin/config.json').strip() == '', output
+
+    # purlin: run_script PROOF-257
+    def test_nothing_to_run_commits_the_spec_tests_and_settings(
+            self, tmp_path):
+        root = self._run_committed(tmp_path)
+        spec = root / 'specs' / 'a' / 'feat.md'
+        spec.write_text(spec.read_text(encoding='utf-8') + '\n',
+                        encoding='utf-8')
+        test = root / 'tests' / 'test_feat.py'
+        test.write_text(test.read_text(encoding='utf-8') + '# edited\n',
+                        encoding='utf-8')
+        _config(root, min_strength=80)
+        _run(root, '--test')
+        code, output = _run(root, '--test', '--commit')
+        assert code == 0, output
+        assert 'Nothing to run' in output, output
+        first = _git(root, 'rev-parse', 'HEAD~1').strip()
+        assert _git(root, 'log', '-1', '--format=%s', first).strip() == (
+            'purlin: specs, tests and settings for feat'), output
+        assert sorted(_git(root, 'show', '--format=', '--name-only',
+                           first).split()) == [
+            '.purlin/config.json', 'specs/a/feat.md',
+            'tests/test_feat.py'], output
+        assert _git(root, 'log', '-1', '--format=%s').strip() == (
+            'purlin: evidence at %s' % first[:7]), output
+
+    # purlin: run_script PROOF-258
+    def test_nothing_to_run_with_nothing_changed_commits_nothing(
+            self, tmp_path):
+        root = self._run_committed(tmp_path)
+        head = _head(root)
+        code, output = _run(root, '--test', '--commit')
+        assert code == 0, output
+        assert ("Nothing to run: every feature's spec, code and tests match "
+                'its evidence. purlin:test --all runs them anyway.'
+                in output.splitlines()), output
+        assert 'Committed' not in output, output
+        assert _head(root) == head, output

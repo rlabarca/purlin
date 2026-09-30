@@ -806,6 +806,61 @@ def commit_the_work(project_root, paths):
     return evidence_writer.commit_work(project_root, paths)
 
 
+# The first commit's subject where the work names no feature.
+WORK_SUBJECT_NO_FEATURE = 'purlin: specs, tests and settings'
+
+
+def commit_all_work(project_root, features, suites):
+    """The first commit of a `--commit` run that selected nothing, or None.
+
+    Every spec, every test file carrying a marker and the settings file,
+    where any changed, go into one commit, so nothing of Purlin's is left
+    uncommitted. Its subject names each feature whose spec or marked tests
+    it holds, or no feature where it holds only the settings. Returns the
+    new commit's sha, or None where nothing changed.
+    """
+    scan = markers_module.scan(project_root, suites)
+    changed = changed_paths(project_root,
+                            work_paths(scan, features, sorted(features)))
+    if not changed:
+        return None
+    named = {name for name in features
+             if (features[name] or {}).get('spec_path') in changed}
+    for path in changed:
+        if path in scan:
+            named.update(scan[path].features() & set(features))
+    if named:
+        specs = [features[name].get('spec_path') for name in named]
+        return commit_the_work(project_root,
+                               sorted(set(changed) | set(filter(None, specs))))
+    if evidence_writer.commit_paths(project_root, changed,
+                                    WORK_SUBJECT_NO_FEATURE) \
+            != evidence_writer.COMMITTED:
+        return None
+    sha = head_commit(project_root)
+    print(evidence_writer.WORK_COMMITTED % sha[:7])
+    for path in changed:
+        print('  %s' % path)
+    return sha
+
+
+def changed_paths(project_root, paths):
+    """Those of `paths` git sees a change in, sorted; none outside git."""
+    if not paths:
+        return []
+    try:
+        result = subprocess.run(
+            ['git', 'status', '--porcelain', '-z', '--no-renames',
+             '--untracked-files=all', '--'] + list(paths),
+            capture_output=True, text=True, cwd=project_root, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return []
+    if result.returncode != 0:
+        return []
+    return sorted({entry[3:] for entry in result.stdout.split('\0')
+                   if len(entry) > 3})
+
+
 def commit_the_evidence(project_root, work, removed=()):
     """The second commit, naming the first, or HEAD where nothing was."""
     evidence_writer.commit_local(
@@ -900,7 +955,7 @@ def main(argv=None):
             fingerprint_module.selection(project_root, features, os_name),
             'purlin:%s' % args.action)
         if not selected:
-            return _nothing_to_run(project_root, args, features, cfg)
+            return _nothing_to_run(project_root, args, features, cfg, suites)
 
     # A remote runner answers only for the proofs tagged for its own system:
     # a feature with none of them is not run there, and only their markers
@@ -1208,11 +1263,12 @@ def untracked_lines(rows):
     return lines
 
 
-def _nothing_to_run(project_root, args, features, cfg):
+def _nothing_to_run(project_root, args, features, cfg, suites):
     """A run with no feature named that selected nothing. The exit code.
 
-    No test runs. `--commit` still commits the settings and evidence an
-    earlier run wrote, because that is the command a refused tag names.
+    No test runs. `--commit` still commits every changed spec, marked test
+    and the settings in one commit, then the evidence an earlier run wrote,
+    because that is the command a refused tag names.
     `--audit` goes on to the AI audit, which reads every rule that has no
     audit of its current text, proof and test. The tests this run answers
     with are the ones the evidence already holds: a rule whose tests fail
@@ -1223,7 +1279,7 @@ def _nothing_to_run(project_root, args, features, cfg):
     work = None
     if args.commit:
         print('')
-        work = commit_the_work(project_root, work_paths({}, features, []))
+        work = commit_all_work(project_root, features, suites)
     if args.action == 'audit':
         return _audit(project_root, args, features, sorted(features), [],
                       cfg, [], [], exit_code, work)
