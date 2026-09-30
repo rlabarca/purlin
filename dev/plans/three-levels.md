@@ -1109,6 +1109,45 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       the words `Light theme` and `Dark theme` staying as its hover and accessible name. The two
       glyphs join `▶ ▼ ▲ →` as the ones Purlin uses.
     - The six calls the plan made stand.
+102. **The answers to the QA and product check** (added 2026-09-30), to the findings of
+    `sanity-qa-product.md`, a cloud run in which one agent played product, QA and dev in three
+    clones of one repository on a sample-intake project at the gate `signed`.
+    - **A number written twice in one spec is caught, and so is a leftover merge-conflict line.**
+      A proof id written twice is warned of as a rule id is, in the shape of decision 97. The
+      spec's rules then read `failed` with the reason naming the number, so nothing counts as
+      passing; tests still run and print. Signing that feature and writing a tag are refused
+      until the spec is fixed. This amends decision 94's "nothing is refused" for these two
+      mistakes alone.
+    - **Drift catches a reused number in your own checkout.** In the owner's words: "drift is
+      only working locally on your checkout.. so it's a merge process locally based on what you
+      checked out". After you merge or pull, drift names a number written twice and a test
+      comment whose proof's wording changed since the test was marked, and suggests renumbering
+      the side that is not already on the default branch. Drift never fetches; its line says how
+      old the local copy of the default branch is, so the person can fetch and run it again.
+    - **The rule for a collision is written down:** the number already on the default branch
+      keeps it, and the branch's rule or proof moves. The advice to rename signature files goes;
+      a moved rule needs a new audit and a new signature.
+    - **A hand check's signature is bound to the rule's and proof's wording alone**, so a code
+      change does not end it. Editing another test in the same file and re-running the same
+      tests on another computer still end a signature, as now.
+    - **Every signature that ends says so**, one line each, naming the rule, the signer and the
+      cause.
+    - **No rule carries a level of its own**, as before. QA's risk-based validation is taught on
+      a QA page: look and feel is not a rule, and critical computations and data flows carry
+      more proofs.
+    - **A version is signed on a release branch**, which the docs teach; new specs land on the
+      default branch and wait for the next version.
+    - **Fixed without a question, as bugs or plain gaps:** the signing commit's signature is
+      verified, not only present (decision 48 kept it); the tag is refused when the default
+      branch on the host has moved past the commit being tagged, as far as the local copy
+      shows; the signing walk shows each proof's tied test; drift reports proofs added, changed
+      and moved; a re-run after an evidence conflict keeps audit results whose hashes still
+      match; the docs say who commits evidence and on which branch; the status names the real
+      cause when a spec's files do not exist yet; the first test run recognises a plain
+      `tests/test_*.py` project; the docs example of `> Highest-Proof:` is corrected; a QA page
+      walks a person from criteria to proof to signature.
+    - **Not changed, as settled before:** who may sign (logged, not policed, decisions 48 and
+      52) and the walk writing the tag when nothing is left.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
