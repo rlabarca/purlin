@@ -251,14 +251,14 @@ def _other_branches(project_root, info, moved, ref):
                     continue
                 sha = drift_module._blamed_commit(project_root, path, number,
                                                   rev=full)
-                if sha and _is_ancestor(project_root, sha):
+                if sha and _in_history(project_root, sha):
                     continue
                 lines.append(OTHER_BRANCH % (_short(full), name, item, path,
                                              number, moved[item][0]))
     return lines
 
 
-def _is_ancestor(project_root, sha):
+def _in_history(project_root, sha):
     """True when the commit `sha` is in HEAD's history."""
     try:
         return subprocess.run(
