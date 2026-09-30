@@ -31,7 +31,9 @@ question that sets it: `What must be true of every rule before a version is fini
 its tests caught, and every rule of the feature is judged on it. With mutation testing on, a
 feature whose share could not be measured leaves its rules `weak` with the reason
 `strength not measured: <reason>`, and the reason names the command that fixes it. An engine
-that cannot run on this system counts as none, and the AI audit alone decides.
+that cannot run on this system counts as none, and the AI audit alone decides. No code is
+broken on purpose for an anchor: the AI audit alone judges its tests, and its rule's strong cell,
+once met, reads `strong` with the reason `the AI audit alone judges an anchor's tests`.
 
 Each gate derives a default you can override:
 
@@ -65,8 +67,8 @@ Left to do:
 tests.`, then ` <s> are strong.` at `strong` and `signed`, then ` <g> are signed.` at `signed`.
 Each step contains the next. `p` counts the rules whose passed cell reads `passed` and, where a
 proof is `@manual`, that are checked by hand; `s` counts those of them whose strong cell reads
-`strong`; `g` counts those of them whose signed cell reads `signed`. A rule is counted once,
-under the feature that owns it.
+`strong`; `g` counts those of them whose signed cell reads `signed`. A rule that reads
+`does not apply` is counted at every step. A rule is counted once, under the spec that owns it.
 
 **`Left to do`** gives each rule at most one kind, the first that applies, in this order. A
 line carries a count and a command and names no rule; a run names each rule where it reports
@@ -82,6 +84,7 @@ counts test comments, not rules, and is carried by the project.
 | `to_test` | the passed cell reads `not run` or `out of date`, and this machine can run it | `<n> rules to test` | `purlin:test` |
 | `to_test_remote` | the passed cell reads `not run` for a system this machine is not | `<n> rules to test on <systems>` | `purlin:test --remote` |
 | `to_test_by_hand` | a proof is `@manual` and the rule is not checked by hand, at any gate | `<n> rules to test by hand` | `purlin:sign` |
+| `to_confirm` | at any gate, the last signature for a rule of a pinned anchor said it does not apply, and that signature has ended; the rule takes this kind before any other | `<n> rules to confirm as not applying` | `purlin:sign` |
 | `to_audit` | at `strong` and `signed`, the strong cell reads `not audited` | `<n> rules to audit` | `purlin:audit` |
 | `to_measure` | with mutation testing on, the strong cell reads `weak` only because its feature's strength could not be measured | `<n> rules to measure` | `purlin:audit` |
 | `to_strengthen` | the strong cell reads `weak`, and not because its spec names no code files | `<n> rules to strengthen` | `purlin:build` |
@@ -89,7 +92,8 @@ counts test comments, not rules, and is carried by the project.
 | `to_sign` | at `signed`, the signed cell does not read `signed` | `<n> rules to sign` | `purlin:sign` |
 | `to_tag` | at `signed`, every other kind is at zero and no `signed/*` tag points at HEAD | `the version to tag` | `purlin:sign` |
 
-A count of 1 reads `1 rule to fix`, `1 rule to tie to its files`, `1 test comment to correct`,
+A count of 1 reads `1 rule to fix`, `1 rule to tie to its files`,
+`1 rule to confirm as not applying`, `1 test comment to correct`,
 and so on. The systems read `Linux/Unix`, `macOS` and `Windows`, in that order, joined by `, `
 and ` and `.
 
@@ -128,7 +132,9 @@ runner would measure.
 
 A section describes the checkout while its fingerprint, over the spec, the code the spec's
 `> Scope:` covers and the tests, is the one taken now. A pass that is not current makes the
-passed cell read `out of date`, naming what changed, and the next run clears it.
+passed cell read `out of date`, naming what changed, and the next run clears it. An anchor's
+code is every file of the project but Purlin's own records, so any change to the project makes
+its results out of date.
 
 ## Where a runner runs, and when a project has one
 
@@ -183,9 +189,13 @@ it counts when two things are true:
 
 A signature that no longer matches ends with no message: its cell reads `unsigned`, and the
 rule is left to do as `to sign`. A signature counts on whatever commit carries it, on any
-branch. An anchor's rule is signed once in each feature it applies to, a change to that
-feature's files ends that one signature, and the rule counts as signed when it is signed in
-every one of them.
+branch. An anchor's rule is signed once, over every file of the project but Purlin's own
+records, so any change to the project ends that signature.
+
+A rule of a pinned anchor that does not apply to this project is signed with
+`purlin:sign <anchor> RULE-N --does-not-apply "<why>"`. It then reads `does not apply` in every
+cell and counts as met; any change to the project ends that signature, and the rule is left to
+confirm.
 
 Before signing starts `purlin:sign` confirms only that there is a key to sign with. With none
 it shows the commands that set one up, offers to run them, and carries on. When it finishes it

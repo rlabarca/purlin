@@ -82,7 +82,14 @@ decide who may sign.
 
 A rule that came from a pinned anchor belongs to the anchor repository, whoever wrote it. A
 change to it is a pull request against that repository, and `purlin:anchor sync` brings it back
-once it merges.
+once it merges. Like every anchor rule it holds across the whole project, and its tests check
+the whole project.
+
+A rule of a pinned anchor that no test in this project can show, because it does not apply here,
+is signed by a person in the project as not applying, with the reason:
+`purlin:sign <anchor> RULE-N --does-not-apply "<why>"`. It then reads `does not apply` in every
+cell and counts as met; any change to the project ends that signature, and the rule is left to
+confirm. A rule of the project's own anchor that does not apply is deleted.
 
 ## Drift, one view per role
 

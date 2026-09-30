@@ -85,8 +85,9 @@ anything in your test suite: a test is any test in your own suite with one comme
   naming the spec, the mistake and the command that fixes it, and carry on: a `> Scope:` entry
   that finds no file, two specs with one name, a rule number written twice, a proof line that
   cannot be read, and a first heading that names another feature.
-- `> Requires:` names anchors only. A name that is a feature's spec is warned of, and its rules do not apply.
-- A spec records the highest rule number it has held in `> Highest-Rule:` and the highest proof number in `> Highest-Proof:`, so a deleted number is never used again. The spec format is at version 20.
+- A spec records the highest rule number it has held in `> Highest-Rule:` and the highest proof number in `> Highest-Proof:`, so a deleted number is never used again.
+- **A rule of a pinned anchor that does not apply to this project** is signed with `purlin:sign <anchor> RULE-N --does-not-apply "<why>"`. It then reads `does not apply` in every cell, counts as met, names who signed it, and the evidence package carries the reason. Any change to the project ends that signature, and the rule is left to do as `1 rule to confirm as not applying: purlin:sign`. A rule of the project's own anchor that does not apply is deleted.
+- A pinned anchor is copied as its source holds it. A `> Requires:`, `> Global:` or `> Scope:` line in it is warned of on every status and test run, naming the source's owners as the ones to take it out.
 - `purlin:init` asks whether it may commit the files it wrote, and with `--yes` commits them as `chore(init): set up Purlin at the gate <gate>`.
 - `purlin:test --remote` with no `gh` on GitHub or no `az` on Azure DevOps pushes nothing and names the program to install.
 - The first test run keeps running examples inside a function's documentation where the project's own test command ran them.
@@ -135,6 +136,12 @@ anything in your test suite: a test is any test in your own suite with one comme
 - **The skills start Purlin's scripts through the interpreter lookup**,
   `scripts/purlin_python.sh`, which finds Python 3 as the plugin's server does, `py -3` on
   Windows included.
+- **An anchor is a set of rules for the whole project.** Its tests check the whole project, and each of its rules is counted, audited and signed once. A rule that holds only for some features is written in each of their specs.
+- **A spec names no anchor.** `> Requires:` and `> Global:` are not read, and neither is `> Scope:` on an anchor; each is warned of with its fix, and `purlin:init --update` takes them out.
+- **A feature's row counts its own rules.** The dashboard lists the anchors in a section of their own, `Anchors`, above the spec table; the counts `(+8)` and `(+8 shared)` are gone.
+- **Any change to the project ends an anchor's results and signatures**, but for the records Purlin writes: `.purlin/evidence/`, `.purlin/tests.md` and the signatures.
+- **No test strength for an anchor.** Its code is not broken on purpose; the AI audit alone judges its tests.
+- **The formats** stand at spec 21, anchor 11, evidence 7, signature 12, package 5 and marker 3, and the dashboard's data at schema 11.
 - An anchor is copied only from a spec in Purlin's format kept in a git repository. `purlin:anchor add` refuses a text file, a description in words or a file with no rule, and `purlin:drift` and `purlin:anchor sync --check` report an anchor made from plain text as `error`.
 
 ### Windows
@@ -176,40 +183,45 @@ The run goes in this order:
    `<name>.local-<sha8>.bak`.
 2. `design-refs`: deletes each spec's `> Visual-Reference:` and `> Visual-Hash:` lines, a
    `> Source:` that names Figma and the `> Pinned:` that goes with it, one line per spec.
-3. `os-tags`: rewrites a trailing `@windows` on a proof line as `@env(windows)`.
-4. `kind-tags`: drops `@unit`, `@integration` and `@e2e` from proof lines.
-5. `untracked-files`: deletes the proof files and the receipts beside the specs, untracks
+3. `anchor-lines`: takes out `> Requires:` and `> Global:` from every spec, and `> Scope:` from
+   every anchor, one line per file, `removed from <rel>: <fields>`. It keeps every anchor, and
+   for each anchor that specs named it prints one line naming them and the command that moves a
+   rule into them:
+   `proof_common: its rules now cover the whole project, where 1 spec named it: sync_status. A rule that holds only there belongs in that spec: run purlin:spec proof_common.`
+4. `os-tags`: rewrites a trailing `@windows` on a proof line as `@env(windows)`.
+5. `kind-tags`: drops `@unit`, `@integration` and `@e2e` from proof lines.
+6. `untracked-files`: deletes the proof files and the receipts beside the specs, untracks
    `.purlin/report-data.js` and `.purlin/cache/`, and adds `.purlin/report-data.js` to
    `.gitignore`.
-6. `hooks`: removes the `pre-commit` and `pre-push` hooks under `.git/hooks/` that name Purlin.
-7. `config`: rewrites `.purlin/config.json` with `version`, `gate`, `mutation_engine`,
+7. `hooks`: removes the `pre-commit` and `pre-push` hooks under `.git/hooks/` that name Purlin.
+8. `config`: rewrites `.purlin/config.json` with `version`, `gate`, `mutation_engine`,
    `min_strength`, `audit_parallel`, `tests` and `ci`, and names every key it drops
    (`spec_dir`, `pre_push`, `report`, `digest` and whichever others the file carried). It asks
    the gate question, defaulting to `strong` where `pre_push` was `strict` and to `passed`
    otherwise; turns `test_framework` into `tests`, one entry per framework the tree still runs
    (`xunit` becomes `dotnet`), naming any it drops; and at `strong` and `signed` asks the
    mutation question where an engine exists, defaulting to no.
-8. `evidence`: writes `.purlin/evidence/README.md`.
-9. `dashboard`: replaces `purlin-report.html` at the project root, the link 0.9.5 left into its
-   own plugin folder or a copy that differs, with the 0.10.0 page, the bytes `purlin:init`
-   copies. A project with no page there is left without one.
-10. `workflows`: removes a workflow that committed proof files, and, after asking, writes the
+9. `evidence`: writes `.purlin/evidence/README.md`.
+10. `dashboard`: replaces `purlin-report.html` at the project root, the link 0.9.5 left into its
+    own plugin folder or a copy that differs, with the 0.10.0 page, the bytes `purlin:init`
+    copies. A project with no page there is left without one.
+11. `workflows`: removes a workflow that committed proof files, and, after asking, writes the
     runner file where `purlin:init` writes it, `.github/workflows/purlin.yml` on GitHub or
     `purlin.azure-pipelines.yml` at the root on Azure DevOps, only where a proof is tagged for
     a system the machine running the update is not.
-11. `markers`: rewrites each 0.9.5 marker as a comment above the same test, one line per file.
+12. `markers`: rewrites each 0.9.5 marker as a comment above the same test, one line per file.
     A shell or SQL test file becomes one test that passes when it exits 0. A marker it cannot
     place, such as a module-wide `pytestmark`, is named by file and line and left for you.
-12. `plugins`: removes the plugin copies under `.purlin/plugins/`, the `pytest_plugins` entry
+13. `plugins`: removes the plugin copies under `.purlin/plugins/`, the `pytest_plugins` entry
     in `conftest.py` (the file too, when it held nothing else) and the reporter entry in the
     Jest or Vitest configuration or `package.json`, and names a `.csproj` that compiles the
     xUnit logger for you to edit by hand.
-13. It commits everything it changed in one commit,
+14. It commits everything it changed in one commit,
     `chore(update): migrate to 0.10.0 (<ids>)`.
-14. It names each spec with no `> Scope:` line,
+15. It names each spec with no `> Scope:` line,
     `2 specs name no files, so their tests run every time: a, b. Run purlin:spec with each name to add its > Scope: line.`,
     and changes none.
-15. It ends as `purlin:status` does, on the summary and `Left to do`.
+16. It ends as `purlin:status` does, on the summary and `Left to do`.
 
 After it, run `purlin:test`. The receipts and `@manual` stamps 0.9.5 wrote do not carry
 forward: nothing in 0.9.5 bound what 0.10.0 signs, so at the gate `signed` every rule is left to
@@ -234,6 +246,7 @@ do as `to sign`, and at every gate a rule with a `@manual` proof as `to test by 
 | `purlin:find` | `purlin:status <name>` |
 | `dev` as a role | `eng` in `purlin:drift` |
 | `.purlin/config.local.json` | `.purlin/config.json` alone |
+| `> Requires:`, `> Global: true` | none: every anchor covers the whole project |
 
 ## 0.9.5 — Windows-scoped proof checks & C# support
 

@@ -3,7 +3,7 @@
 For QA, or a developer acting as QA, at any gate.
 
 `purlin:sign` is how a person signs. With no argument it walks the rules left to do as
-`to test by hand` or `to sign`, one at a time, with the evidence already gathered, and you
+`to test by hand`, `to confirm` or `to sign`, one at a time, with the evidence already gathered, and you
 answer each. At the gate `signed`, when nothing but the tag is left and every result came from
 committed work, it writes the evidence package, commits it, and tags that commit
 `signed/<version>`; you push the tag. At `passed` and `strong` it signs hand checks and writes no
@@ -13,11 +13,12 @@ one home of the gate and of the tag.
 
 ## What waits for a person
 
-Two lines of `Left to do` are a person's work, and both name `purlin:sign`:
+Three lines of `Left to do` are a person's work, and each names `purlin:sign`:
 
 | The line | A rule is on it when | What you do |
 |---|---|---|
 | `<n> rules to test by hand: purlin:sign` | a proof of the rule is `@manual` and nobody has checked it by hand; at every gate | carry the proof out yourself and sign, with a line saying what you saw when you give one |
+| `<n> rules to confirm as not applying: purlin:sign` | a person signed a rule of a pinned anchor as not applying to this project, and a change to the project ended that signature; at every gate | confirm it still does not apply, or sign it as applying |
 | `<n> rules to sign: purlin:sign` | at the gate `signed`, every other kind of work on the rule is done and no signature counts for it as it stands | read what the walk shows and sign |
 
 A rule is on one line of `Left to do` at a time, the first that applies, and every other line
@@ -25,13 +26,14 @@ names another command: a rule `to audit` waits for `purlin:audit`, a rule `to st
 `purlin:build`, a rule `to tie to its files` for `purlin:spec`.
 [hard_gates.md](../references/hard_gates.md), "When a version is finished", lists every kind.
 
-At the gate `signed` a rule's signed cell reads one of three words:
+At the gate `signed` a rule's signed cell reads one of four words:
 
 | Word | What it says |
 |---|---|
 | `signed` | a signature that counts matches the rule as it stands |
 | `unsigned` | none does: none was made, or what one was made over changed |
 | `waiting` | the strong cell below it is not met, `waiting for the audit` |
+| `does not apply` | a signature that counts says a rule of a pinned anchor does not apply to this project; every cell reads it, and each is met |
 
 ## The walk
 
@@ -130,13 +132,14 @@ purlin:sign <feature> RULE-N [RULE-M ...]        one rule, or several
 purlin:sign <feature>                            every waiting rule of one feature
 purlin:sign --all                                every waiting rule
 purlin:sign <feature> RULE-N --note "<text>"     a hand check, with what you saw
+purlin:sign <anchor> RULE-N --does-not-apply "<why>"  a pinned anchor's rule that does not apply here
 ```
 
 These sign with no stop, at every gate. A rule named by id is signed whatever work it has left.
 Each writes one file per rule,
 `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, and makes one signed
 commit for all of them, so forty rules are one commit and forty files that cannot conflict with
-anyone else's. An anchor's rule gets one file for each feature it applies to. A hand check signed
+anyone else's. An anchor's rule gets one file, under its anchor. A hand check signed
 by name:
 
 ```
@@ -189,10 +192,36 @@ No key to sign with. These commands set one up:
 
 `purlin:sign` shows you the commands, offers to run them, and carries on once they ran.
 
+## A rule that does not apply
+
+A rule of a pinned anchor that no test in this project can show, because it does not apply here,
+is signed by a person in the project as not applying, with the reason. A rule of the project's
+own anchor that does not apply is deleted.
+
+```
+purlin:sign security_baseline RULE-4 --does-not-apply "the project stores no card data"
+```
+
+The signature is an ordinary one, in one signed commit, carrying the reason. The rule then reads
+`does not apply` in every cell, with the reason `by <signer>: <why>`, and counts as met; its row's
+`Tests` cell names it, `7 of 8 · 1 does not apply`, and the evidence package carries the reason.
+Any change to the project ends that signature, and the rule is left to do as
+`1 rule to confirm as not applying: purlin:sign`. The walk stops at it:
+
+```
+security_baseline RULE-4 was signed as not applying by jane@acme.com: the project stores no card data. Confirm it still does not apply?
+```
+
+Confirming writes a new signature with the same reason. You may instead sign it as applying after
+all, and it then waits as any rule does, or skip it. `purlin:sign --all` does not confirm one.
+[purlin_commands.md](../references/purlin_commands.md) gives the lines `--does-not-apply`
+refuses with.
+
 ## What makes a signature count
 
 A signature is made over six things: the rule text, its proof text, its test, the code the
-feature's `> Scope:` lists, what the audit found, and the machine each system's tests ran on. The
+feature's `> Scope:` lists, or for an anchor every file of the project but Purlin's own records,
+what the audit found, and the machine each system's tests ran on. The
 file records the signer's email and name as git holds them, the key's fingerprint, the time, the
 gate, the evidence file it rested on and the note.
 [signature_format.md](../references/formats/signature_format.md) holds every field.
@@ -229,8 +258,8 @@ Left to do:
 ```
 
 Running the same audit again over the same code ends nothing, and neither does a result from a
-system the signature does not cover. An anchor's rule is signed once in each feature it applies
-to, and a change to one feature's files ends that one signature.
+system the signature does not cover. An anchor's rule is signed once, over every file of the
+project but Purlin's own records, so any change to the project ends that signature.
 
 ## The tag
 

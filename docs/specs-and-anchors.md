@@ -23,7 +23,6 @@ specs/<category>/<name>.md
 # Feature: login
 
 > Description: Email and password sign-in with a lockout after repeated failures.
-> Requires: security_baseline
 > Scope: src/auth.py, src/session.py
 > Stack: python/flask, bcrypt
 > Highest-Rule: 3
@@ -65,8 +64,7 @@ line is optional.
 | Field | What it does |
 |-------|--------------|
 | `> Description:` | Plain-language summary. Continuation lines start with `>`. The dashboard shows it beneath the spec's row when the row is opened |
-| `> Requires:` | The anchors whose rules also apply to this feature, by name. It names anchors only |
-| `> Scope:` | The files this feature's code lives in: a file, a folder, or a glob holding `*`, `?` or `[` |
+| `> Scope:` | The files this feature's code lives in: a file, a folder, or a glob holding `*`, `?` or `[`. An anchor carries none: its rules cover the whole project, and a `> Scope:` line on an anchor is warned of and not read |
 | `> Stack:` | Language, framework and the libraries that matter, read as one line |
 | `> Highest-Rule:` | The highest rule number the spec has ever held |
 | `> Highest-Proof:` | The highest proof number the spec has ever held |
@@ -187,22 +185,31 @@ newer sha.
 
 ## Anchors
 
-An anchor is a spec for something shared across features: a security policy, an API contract,
-a data-retention rule. It lives under `specs/_anchors/`, or opens with `# Anchor: <name>`, and
-uses the same two sections and the same rule and proof grammar as any other spec.
+An anchor is a set of rules for the whole project, such as a security policy or a rule about
+what the code must never hold. It lives under `specs/_anchors/`, or opens with
+`# Anchor: <name>`, and uses the same two sections and the same rule and proof grammar as any
+other spec. Its tests check the whole project, and each of its rules is counted, audited and
+signed once. No spec names an anchor.
 
-A feature names the anchors whose rules apply to it with `> Requires: <name>`, and their rules
-are counted with the feature's own, labelled `required`: the feature must prove them too. An
-anchor's own `> Requires:` brings in the anchors it names in turn. An anchor with
-`> Global: true` applies to every feature spec without being named. In the status table a
-feature's `Rules` cell counts the rules it owns and then the anchor rules it proves, as
-`4 (+2 shared)`; the summary counts each rule once, under the spec that owns it.
+### What an anchor covers
 
-`> Requires:` names anchors only. A name that is a feature's spec is warned of, and its rules
-do not apply:
+Every rule of an anchor holds across the whole project, and its tests check the whole project.
+The project is every file git tracks but the records Purlin writes: the results of a run and the
+evidence package under `.purlin/evidence/`, the table `.purlin/tests.md`, and the signatures.
+Any change to the project ends an anchor's results and its signatures, so at the gate `signed`
+an anchor is in practice signed last. No code is broken on purpose for an anchor: the AI audit
+alone judges its tests. A rule that cannot be checked across the whole project is not an
+anchor's; write it in the spec of each feature that needs it, in that feature's words.
+
+In the status table the anchors stand first, under the line `Anchors`, and every other spec
+follows under `Specs`. Each row counts its own rules, and the summary counts each rule once.
+
+A spec that carries `> Requires:` or `> Global:`, or an anchor that carries `> Scope:`, is
+warned of, and the line is not read:
 
 ```
-login: > Requires: names export, which is not an anchor, so its rules do not apply. Run purlin:spec login.
+login: > Requires: is not read, because every anchor covers the whole project. Run purlin:spec login.
+security_no_dangerous_patterns: > Scope: is not read on an anchor, because an anchor covers the whole project. Run purlin:spec security_no_dangerous_patterns.
 ```
 
 ### One repository is the default
@@ -246,6 +253,13 @@ repository. `add` refuses any other source, a text file, a description in words 
 no rule, writes nothing, and names `purlin:anchor create <name>` to write the rules in this
 project instead.
 
+A pinned copy is written as its source holds it; a `> Requires:`, `> Global:` or `> Scope:` line
+in it is warned of, naming the source's owners as the ones to take it out:
+
+```
+security_baseline: its source, https://github.com/acme/policies.git, carries > Scope:, which Purlin does not read on an anchor, so the line is read as nothing. Ask the owners of https://github.com/acme/policies.git to take it out, then run purlin:anchor sync security_baseline.
+```
+
 A pin is always a commit, never a branch. A branch moves, and an anchor whose rules changed
 under a project with no diff to read is what pinning exists to prevent.
 
@@ -271,8 +285,20 @@ rules moved. A signature on a rule whose text moved ends, and the rule is left t
 
 Never edit a pinned rule in place: the next sync overwrites it and the change is lost with no
 trace. A change to the rule is a pull request against the source repository, and the next sync
-brings it here once it merges. A rule that belongs only to this project goes in a separate
-local anchor that says `> Requires: <the pinned one>`.
+brings it here once it merges. A rule that belongs only to this project goes in a local anchor
+of its own when it holds across the whole project, and in the spec of each feature it holds for
+when it does not.
+
+A rule of a pinned anchor that no test in this project can show, because it does not apply here,
+is signed by a person in the project as not applying, with the reason. A rule of the project's
+own anchor that does not apply is deleted.
+
+```
+purlin:sign security_baseline RULE-4 --does-not-apply "the project stores no card data"
+```
+
+It then reads `does not apply` in every cell and counts as met; any change to the project ends
+that signature, and the rule is left to confirm.
 
 ## Next
 

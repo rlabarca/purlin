@@ -47,9 +47,9 @@ hands the result over.
    is normal for a mid-sized service. Two hundred means the grouping is too fine.
 3. **Your edits.** It stops there and waits. Merge, split and rename until the list is right.
    This is the only step worth a conversation; everything after it is mechanical.
-4. **Shared rules first.** Where features share rules, it writes those rules once in an anchor,
-   with `purlin:anchor create <name>`, and each feature names it with `> Requires: <name>`.
-   `> Requires:` names anchors only.
+4. **Shared rules first.** Rules that hold across the whole project, it writes once in an
+   anchor, with `purlin:anchor create <name>`. A rule that several features share and that does
+   not hold everywhere is written in each of their specs.
 5. **One spec at a time**, in that order. Each spec is committed on its own with the comments
    the skill adds above existing tests, as `spec(<name>):`. After each commit it writes
    `.purlin/runtime/spec-from-code.json`:

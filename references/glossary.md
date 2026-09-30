@@ -38,12 +38,12 @@ other page points here rather than defining it again.
   and exists only at or below the gate. The words each cell can read are in the chain below.
 - **summary**: the sentence every run, every audit and `purlin:status` end on, one count per
   step up to the gate: `40 rules. 35 pass their tests. 30 are strong. 20 are signed.` A rule
-  is counted once, under the feature that owns it.
+  is counted once, under the spec that owns it.
 - **Left to do**: the list under the summary, one line per kind of remaining work, in the order
   the work is done, each with its count and the command that does it; a kind at zero is left
   out. The first line is the next step. The kinds, as printed: `to write a proof for`,
   `to correct`, `to fix`, `to write a test for`, `to test`, `to test on <systems>`,
-  `to test by hand`, `to audit`, `to measure`, `to strengthen`, `to tie to its files`,
+  `to test by hand`, `to confirm as not applying`, `to audit`, `to measure`, `to strengthen`, `to tie to its files`,
   `to sign` and `the version to tag`.
   `references/hard_gates.md` says when each applies. **finished**: a version with nothing left
   to do.
@@ -91,7 +91,10 @@ other page points here rather than defining it again.
   what the audit found. **counting signature**: one whose commit carries a signature, made with
   any key, and whose hashes still match. A change to anything it covers ends it, with no
   message, and the rule is left to do as `to sign`; a result from a system it did not cover
-  ends nothing. An anchor's rule is signed once in each feature it applies to.
+  ends nothing.
+- **does not apply**: the word a rule of a pinned anchor reads once a person in the project
+  signs it as not applying, with the reason. It counts as met, and like every anchor signature
+  it ends on any change to the project, so the person confirms it again.
 - **version**: the name of what is tagged, read from the `VERSION` file at the project root,
   then from the version the project's package description states; `purlin:sign` asks for one
   when neither gives it.
@@ -118,9 +121,9 @@ other page points here rather than defining it again.
 - **drift**: `purlin:drift`, the facts your last pull, merge, rebase, checkout, clone or reset
   brought in, in one view per role: `pm`, `eng` or `qa`.
 - **role**: product, developer or QA. There are no others.
-- **anchor**: a spec for something shared across features, under `specs/_anchors/`, a folder
-  created with the first anchor. A feature spec names the anchors whose rules apply to it with
-  `> Requires:`; `> Requires:` names anchors only. **pinned anchor**: a local copy of an anchor from another
+- **anchor**: a set of rules for the whole project, kept under `specs/_anchors/` or opening
+  `# Anchor:`. Its tests check the whole project, and each of its rules is counted, audited and
+  signed once. No spec names an anchor. **pinned anchor**: a local copy of an anchor from another
   repository, tied to a commit by `> Pinned:`. **anchor repo**: a repository that holds anchors
   for one or more projects.
 
@@ -130,14 +133,14 @@ For one rule, top to bottom. Each row is a cell; the gate decides how many rows 
 
 | Step | Reached when | Words the cell can read |
 |------|--------------|-------------------------|
-| passed | every proof of the rule, or the rule itself where it has no proof, has a test in a current section, and every test tied to it ran and passed, each current section answering for the proofs it lists | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date` |
-| strong | passed, and an AI audit of the current rule, proof and test found nothing, with the test strength at or above `min_strength` where mutation testing is on | `strong`, `weak`, `waiting`, `not audited`, `manual test`, `no proof` |
-| signed | a counting signature for the current rule, proof, test, code, audit and machines | `signed`, `unsigned`, `waiting` |
+| passed | every proof of the rule, or the rule itself where it has no proof, has a test in a current section, and every test tied to it ran and passed, each current section answering for the proofs it lists | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date`, `does not apply` |
+| strong | passed, and an AI audit of the current rule, proof and test found nothing, with the test strength at or above `min_strength` where mutation testing is on | `strong`, `weak`, `waiting`, `not audited`, `manual test`, `no proof`, `does not apply` |
+| signed | a counting signature for the current rule, proof, test, code, audit and machines | `signed`, `unsigned`, `waiting`, `does not apply` |
 
 A rule with neither a proof nor a marked test reads `no test` with the reason
 `no proof written`. From `strong` up, a rule with a test and no proof reads `no proof`. A rule
 with a `@manual` proof counts among those that pass their tests only once it is checked by
-hand.
+hand. A rule that reads `does not apply` is met in every cell.
 
 ## Where each is defined
 

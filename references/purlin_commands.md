@@ -32,7 +32,7 @@ included.
 | `purlin:build [name]` | Load a spec's rules, write the code and the marked tests, commit the changeset | A developer, on every change. With no name it reads `sync_status` and names the specs with rules that have no passing test. It repairs a marker comment that is nearly right, and ends by running `purlin:test` |
 | `purlin:test [feature ...] [--all] [--arm-timeout <seconds>]` | Run the marked tests and print each rule's passed cell | A developer, constantly. Seconds; tests only. The first run in a project with no test command suggests one for each test tool it recognises and runs once you confirm it. It writes the evidence, commits it with `--commit`, and never pushes |
 | `purlin:audit [feature ...] [--all] [--arm-timeout <seconds>]` | Run the tests, the breaks where mutation testing is on, and the AI audit, then write what it found into the evidence | A developer, any time. It writes the evidence, commits it with `--commit`, and never pushes |
-| `purlin:sign [feature] [RULE-N ...] [--all]` | Sign a rule, a feature or every rule that waits for a person, as a signed commit | Anyone with a key to sign with; the signature names them. With no argument it walks the rules waiting for someone to test by hand or to sign. It works at every gate |
+| `purlin:sign [feature] [RULE-N ...] [--all]` | Sign a rule, a feature or every rule that waits for a person, as a signed commit | Anyone with a key to sign with; the signature names them. With no argument it walks the rules waiting for someone to test by hand, to confirm as not applying or to sign. It works at every gate |
 | `purlin:drift [role]` | Report what changed since your last pull, by role | Everyone, after a pull, a merge, a rebase, a checkout, a clone or a reset |
 
 ## Supporting
@@ -76,6 +76,7 @@ Purlin
   purlin:sign <feature> [RULE-N ...]  Sign, as a signed commit
   purlin:sign --all               Sign every rule waiting to be tested by hand or signed
   purlin:sign <feature> RULE-N --note "<text>"  Sign a hand check with what you saw
+  purlin:sign <anchor> RULE-N --does-not-apply "<why>"  Sign a pinned anchor's rule as not applying to this project
 
   Reporting
   ──────
@@ -109,7 +110,7 @@ Purlin
 | `purlin:build` | Code, test files with a marker comment above each test, the repairs to marker comments it asked about, and the commit carrying the changeset |
 | `purlin:test` | Each suite's report under `.purlin/runtime/reports/`, which is not committed, and this system's section of `.purlin/evidence/local/<feature>.json` and `.purlin/tests.md`. `--commit` makes two commits: the specs of the features run, the test files carrying their markers and `.purlin/config.json` as `purlin: specs, tests and settings for <feature>, ...`, then the evidence as `purlin: evidence at <sha7>`; it never pushes. On the first run it writes the `tests` entry you confirm into `.purlin/config.json`. `--remote` pushes the run branch `run/<branch>-<sha7>`, waits for the git host's run through `gh` on GitHub or `az` on Azure DevOps, pulls the runner's own section home under `.purlin/evidence/ci/<feature>.json`, and deletes the branch; what the runner runs is in `references/hard_gates.md`, "Where a runner runs" |
 | `purlin:audit` | The same section, plus what the audit found under `audit`, in `.purlin/evidence/local/<feature>.json`, which `--commit` commits in the same two commits; it never pushes |
-| `purlin:sign` | `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, in a signed commit, one file per feature an anchor's rule applies to. Proof lines in a spec when the walk adds a case. `VERSION` when you name the version and agree to write it. At the gate `signed` alone, the signed tag `signed/<version>` when nothing is left to do and every result came from committed work, on a signed commit carrying the evidence package `.purlin/evidence/package/<version>.json`, which a person pushes |
+| `purlin:sign` | `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, in a signed commit. Proof lines in a spec when the walk adds a case. `VERSION` when you name the version and agree to write it. At the gate `signed` alone, the signed tag `signed/<version>` when nothing is left to do and every result came from committed work, on a signed commit carrying the evidence package `.purlin/evidence/package/<version>.json`, which a person pushes |
 | `purlin:export` | `.purlin/evidence/package/<version>.json`, which `--commit` commits as `purlin: evidence at <sha7>`; it never pushes |
 | `purlin:init` | `.purlin/`, `specs/`, `.purlin/config.json` with an empty `tests` setting, a block in `.gitignore`, `.purlin/evidence/` with its README, `purlin-report.html` at the project root, mutmut's config block where mutation testing is on, and the workflow when a proof names another system and the git host is GitHub or Azure DevOps. It commits the files it wrote in one commit, `chore(init): set up Purlin at the gate <gate>`, once you agree or with `--yes`. `--update` commits what it applied as `chore(update): migrate to <VERSION> (<ids>)` |
 | `purlin:anchor` | `specs/_anchors/<name>.md`, creating `specs/_anchors/` with the first anchor |
@@ -136,7 +137,7 @@ changed.
 |---------|---|---|---|
 | `scripts/run/purlin_run.py --test`, `--audit` | everything asked happened | a tied test failed or did not run; evidence is missing; a marker names nothing a spec has; no settings file; the settings file cannot be read; a project set up by 0.9.5 and not upgraded; no test command; for `--audit` at `strong` and `signed`, a rule read is weak or could not be audited | a bad command line |
 | `scripts/run/purlin_run.py --ci` | the tests tied to the proofs tagged for this runner's system passed | one of those failed or could not run, and nothing else | a bad command line |
-| `scripts/review/sign.py` | written and committed, the walk closed, nothing to tag, or the tag already exists | no key; the commit was not made; a named rule no spec has; the tag refused for work or results not committed, no version, or a package not committed; git could not write the tag; the settings file cannot be read | a bad command line |
+| `scripts/review/sign.py` | written and committed, the walk closed, nothing to tag, or the tag already exists | no key; the commit was not made; a named rule no spec has; a rule named with `--does-not-apply` that is not a pinned anchor's; the tag refused for work or results not committed, no version, or a package not committed; git could not write the tag; the settings file cannot be read | a bad command line |
 | `scripts/export/package.py` | written, or the check matched | the check did not match; the project states no version; the package could not be written; the settings file cannot be read | a bad command line |
 | `scripts/review/ai_audit.py` | a rule was printed | the rule is not in the project; the settings file cannot be read | a bad command line |
 | `scripts/init/scaffold.py` | set up | the settings file cannot be read | a bad command line, not a git repository, or no such project root |
@@ -166,6 +167,14 @@ A run names each rule where it reports the problem:
 
 `purlin:sign`, last and above the summary, and `scripts/review/ai_audit.py --rule` name a rule no
 spec has: `<feature> <RULE-N> is not a rule any spec has. Run purlin:status <feature> to see its rules.`
+
+`purlin:sign --does-not-apply` refuses, and writes nothing, with one of three lines:
+
+- `--does-not-apply needs the reason the rule does not apply to this project.`, exit 2.
+- `--does-not-apply names a pinned anchor and the rules it carries.`, exit 2, with `--all`,
+  `--note`, `--release` or no rule named.
+- `<feature> <RULE-N> is not a rule of a pinned anchor, so it cannot be signed as not applying. A rule of this project that does not apply is deleted: run purlin:spec <feature>.`,
+  exit 1.
 
 `markers.py --near-misses --project-root <dir>` is what `purlin:build` runs to find a marker
 comment that is nearly right. It prints one JSON array of `{"file", "line", "text", "fix",
