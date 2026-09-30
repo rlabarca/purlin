@@ -5,9 +5,9 @@ description: Create anchors, pull them from another repository, and keep the pin
 
 # purlin:anchor
 
-An anchor is a spec for something shared across features: a security policy, an API contract,
-a brand rule. Feature specs name it with `> Requires: <name>` and its
-rules are counted with theirs.
+An anchor is a set of rules for the whole project: a security policy, an API contract, a brand
+rule. Its tests check the whole project, and each of its rules is counted, audited and signed
+once. No spec names an anchor.
 
 **Paths.** Every `references/` and `scripts/` path below is inside the plugin and is reached
 through `${CLAUDE_PLUGIN_ROOT}`. A project carries none of them. For the format, read
@@ -28,13 +28,13 @@ purlin:anchor create <name>
 
 Writes `specs/_anchors/<name>.md` with the same two sections every spec uses. The folder
 `specs/_anchors/` is created with the first anchor, written here or brought in by `add`. Give it a
-`> Description:`, a `> Scope:` and, when it helps the reader, a `> Type:` of `api`, `security`,
-`brand`, `schema` or `legal`. Rules and proofs follow the grammar in
+`> Description:` and, when it helps the reader, a `> Type:`. An anchor carries no `> Scope:`: its
+rules cover the whole project and its tests check the whole project. A rule that cannot be
+checked across the whole project is not an anchor's: write it in the spec of each feature that
+needs it, with `purlin:spec <feature>`. Rules and proofs follow the grammar in
 `references/formats/spec_format.md`.
 
 Commit it with the `anchor(<name>): create` prefix from `references/commit_conventions.md`.
-Then add `> Requires: <name>` to every feature spec the anchor governs, or `> Global: true` to
-the anchor itself when it governs all of them.
 
 ## add
 
@@ -83,15 +83,20 @@ which rules moved. A signature on a rule whose text moved ends, and the rule is 
 no trace. A change to the rule is a pull request against the source repository, made in a
 checkout of it; once it merges, `sync` brings it here.
 
-A rule that belongs only to this project goes in a separate local anchor that says
-`> Requires: <the pinned one>`, and the pinned copy stays untouched.
+A rule that belongs only to this project goes in a local anchor of its own when it holds across
+the whole project, and in the spec of each feature it holds for when it does not. The pinned
+copy stays untouched.
+
+A rule of a pinned anchor that no test in this project can show, because it does not apply here,
+is signed by a person in the project as not applying, with the reason:
+`purlin:sign <anchor> RULE-N --does-not-apply "<why>"`. A rule of the project's own anchor that
+does not apply is deleted.
 
 ## When you are done
 
 Name the next step from the state:
 
-- Anchor created, no feature requires it yet: name the features that should and offer to add
-  `> Requires:` to each, `→ Run: purlin:spec <feature>`
+- Anchor created: `→ Run: purlin:build <name>`, which writes tests that check the whole project
 - Anchor added or synced, rules changed: `→ Run: purlin:test`, whose `Left to do` names what
   the change sent back to be audited or signed.
 - Pin current and nothing moved: say so in one line, `→ Run: purlin:status`

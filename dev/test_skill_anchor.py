@@ -138,7 +138,8 @@ class TestTheCeiling:
 class TestThePin:
     """RULE-5: a pin is a commit. RULE-10: a pinned rule is never edited
     here. RULE-11: a change goes upstream. RULE-12: a rule of this project
-    alone goes in a local anchor."""
+    alone goes in a local anchor or in each feature's spec. RULE-16: a pinned
+    rule that does not apply is signed as not applying."""
 
     # purlin: skill_anchor PROOF-5
     def test_a_pin_is_a_commit_never_a_branch(self, monkeypatch):
@@ -168,14 +169,34 @@ class TestThePin:
         ]) == []
 
     # purlin: skill_anchor PROOF-31
-    def test_a_local_rule_goes_in_an_anchor_that_requires_the_pin(
+    def test_a_local_rule_goes_in_a_local_anchor_or_each_feature(
             self, monkeypatch):
-        assert local_anchor_problems() == []
-        assert refusals(monkeypatch, local_anchor_problems, [
-            (REL, replace('goes in a separate local anchor that says',
-                          'goes in the pinned copy, which says'),
-             "Changing a pinned rule section has no sentence carrying both "
-             "'separate local anchor' and '`> Requires: <the pinned one>`'"),
+        assert changing_problems(LOCAL_RULE) == []
+        assert refusals(monkeypatch, lambda: changing_problems(LOCAL_RULE), [
+            (REL, replace('goes in a local anchor of its own',
+                          'goes in the pinned copy'),
+             "Changing a pinned rule section does not carry %r" % LOCAL_RULE),
+            (REL, replace('in the spec of each feature it holds for',
+                          'in the pinned copy'),
+             "Changing a pinned rule section does not carry %r" % LOCAL_RULE),
+        ]) == []
+
+    # purlin: skill_anchor PROOF-38
+    def test_a_pinned_rule_that_does_not_apply_is_signed_so(
+            self, monkeypatch):
+        assert does_not_apply_problems() == []
+        assert refusals(monkeypatch, does_not_apply_problems, [
+            (REL, replace(' --does-not-apply "<why>"', ' --note "<why>"'),
+             "Changing a pinned rule section does not carry %r"
+             % DOES_NOT_APPLY[1]),
+            (REL, replace('is signed by a person in the project as not '
+                          'applying', 'is edited in place'),
+             "Changing a pinned rule section does not carry %r"
+             % DOES_NOT_APPLY[0]),
+            (REL, replace("anchor that\ndoes not apply is deleted.",
+                          "anchor that\ndoes not apply is kept."),
+             "Changing a pinned rule section does not carry %r"
+             % DOES_NOT_APPLY[2]),
         ]) == []
 
 
@@ -195,6 +216,36 @@ class TestTheAnchorRepository:
                           'Most projects need an anchor repository.'),
              "One repository is the default section does not carry %r"
              % SHARED_REPOSITORY[1]),
+        ]) == []
+
+
+class TestTheWholeProject:
+    """RULE-15: an anchor carries no `> Scope:`, and a rule not checkable
+    across the project goes in each feature's spec."""
+
+    # purlin: skill_anchor PROOF-36
+    def test_an_anchor_carries_no_scope_and_names_no_spec(self, monkeypatch):
+        assert create_metadata_problems() == []
+        assert refusals(monkeypatch, create_metadata_problems, [
+            (REL, replace('An anchor carries no `> Scope:`: its\nrules',
+                          'An anchor carries a `> Scope:`: its\nrules'),
+             'create section does not carry %r' % NO_SCOPE),
+            (REL, replace('prefix from `references/commit_conventions.md`.',
+                          'prefix from `references/commit_conventions.md`.\n'
+                          'Then give it a `> Stack:`.'),
+             "create section names the metadata line '> Stack:'"),
+        ]) == []
+
+    # purlin: skill_anchor PROOF-37
+    def test_a_rule_not_checkable_everywhere_goes_in_each_feature(
+            self, monkeypatch):
+        assert create_problems(EACH_FEATURE) == []
+        assert refusals(monkeypatch, lambda: create_problems(EACH_FEATURE), [
+            (REL, replace('write it in the spec of each feature that\nneeds '
+                          'it', 'write it in this anchor'),
+             'create section does not carry %r' % EACH_FEATURE[1]),
+            (REL, replace("is not an anchor's", 'is still an anchor\'s'),
+             'create section does not carry %r' % EACH_FEATURE[0]),
         ]) == []
 
 
@@ -234,7 +285,20 @@ class TestTheSource:
 NO_DESCRIPTION = '%s frontmatter carries no one-line description' % REL
 NEVER_EDIT = 'Never edit a pinned rule in place.'
 PULL_REQUEST = 'a pull request against the source repository'
-REQUIRES = '`> Requires: <the pinned one>`'
+LOCAL_RULE = ('A rule that belongs only to this project goes in a local anchor '
+              'of its own when it holds across the whole project, and in the '
+              'spec of each feature it holds for when it does not.')
+DOES_NOT_APPLY = ('is signed by a person in the project as not applying, with '
+                  'the reason',
+                  '`purlin:sign <anchor> RULE-N --does-not-apply "<why>"`',
+                  "A rule of the project's own anchor that does not apply is "
+                  'deleted.')
+NO_SCOPE = ('An anchor carries no `> Scope:`: its rules cover the whole '
+            'project')
+EACH_FEATURE = ("A rule that cannot be checked across the whole project is not "
+                "an anchor's",
+                'write it in the spec of each feature that needs it, with '
+                '`purlin:spec <feature>`')
 
 
 def description():
@@ -308,12 +372,32 @@ def changing_problems(needle):
             % (REL, needle)]
 
 
-def local_anchor_problems():
-    sentences = re.split(r'(?<=\.)\s+(?=[A-Z`*])', changing_body())
-    if any('separate local anchor' in s and REQUIRES in s for s in sentences):
-        return []
-    return ["%s Changing a pinned rule section has no sentence carrying both "
-            "'separate local anchor' and %r" % (REL, REQUIRES)]
+def does_not_apply_problems():
+    body = changing_body()
+    return ['%s Changing a pinned rule section does not carry %r'
+            % (REL, needle) for needle in DOES_NOT_APPLY if needle not in body]
+
+
+def create_body():
+    return flat(section(read(REL), r'^create$') or '')
+
+
+def create_problems(needles):
+    body = create_body()
+    return ['%s create section does not carry %r' % (REL, needle)
+            for needle in needles if needle not in body]
+
+
+def create_metadata_problems():
+    """The create section says an anchor carries no `> Scope:`, and the
+    metadata lines it names are `> Description:`, `> Type:` and that
+    `> Scope:` alone."""
+    problems = create_problems([NO_SCOPE])
+    named = set(re.findall(r'`(> [A-Z][A-Za-z-]*:)', create_body()))
+    problems.extend("%s create section names the metadata line %r"
+                    % (REL, line) for line in sorted(named - {
+                        '> Description:', '> Type:', '> Scope:'}))
+    return problems
 
 
 def folder_problems():
