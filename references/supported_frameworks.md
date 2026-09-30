@@ -32,7 +32,7 @@ On Windows the pytest entry's command starts `py -3 -m pytest` in place of
 
 | Framework | Detected by | Needs added |
 |-----------|-------------|-------------|
-| pytest | `conftest.py` or `pytest.ini` at the root, or `[tool.pytest` in `pyproject.toml` | nothing; `--junitxml` is pytest's own |
+| pytest | `conftest.py` or `pytest.ini` at the root, `[tool.pytest` in `pyproject.toml`, or a file named `test_*.py` under `tests/` | nothing; `--junitxml` is pytest's own |
 | vitest | `vitest` under `dependencies` or `devDependencies` in `package.json`, or a `vitest.config.*` file | nothing; the `junit` reporter is Vitest's own |
 | jest | `jest` under `dependencies` or `devDependencies` in `package.json`, or a `jest.config.*` file | the package `jest-junit`: `yarn add --dev jest-junit` where the root holds `yarn.lock`, `pnpm add --save-dev jest-junit` where it holds `pnpm-lock.yaml`, and `npm install --save-dev jest-junit` otherwise |
 | dotnet | a `*.csproj` referencing xUnit, NUnit, MSTest or the test SDK | nothing; the `trx` logger ships with `dotnet test` |

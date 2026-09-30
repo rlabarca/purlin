@@ -738,10 +738,39 @@ def write_sections(project_root, features, sections, os_name, source):
     Each file is read from disk and only this operating system's section is
     replaced, so a `--feature` run, and a run on another machine, leave
     every other section as it was.
+
+    A file a merge left conflicted is written afresh, then keeps from both
+    of its sides each audit entry whose rule, proof and test are the rule's
+    current ones, and the newer mutation score.
     """
-    return [evidence_writer.write_section(
+    conflicted = {}
+    for name in sections:
+        sides = evidence_writer.read_conflicted(project_root, source, name)
+        if sides:
+            conflicted[name] = sides
+    paths = [evidence_writer.write_section(
         project_root, source, name, features.get(name) or {}, os_name,
         section) for name, section in sections.items()]
+    if conflicted:
+        # The current hashes are read after the new sections are written:
+        # a rule's test hash is taken over the tests its results name.
+        payload = payload_module.build_payload(project_root, generated_by='run')
+        for feature in payload.get('features') or ():
+            name = feature.get('name')
+            if name not in conflicted:
+                continue
+            current = {rule['id']: (rule.get('rule_hash'),
+                                    rule.get('proof_hash'),
+                                    rule.get('test_hash'))
+                       for rule in feature.get('rules') or ()
+                       if rule.get('feature') == name}
+            entries, mutation = evidence_writer.kept_audits(conflicted[name],
+                                                            current)
+            if entries or mutation:
+                evidence_writer.write_audit(
+                    project_root, source, name, features.get(name) or {},
+                    entries, mutation, mutation is not None)
+    return paths
 
 
 def rule_problems(features, sections, index):
@@ -889,6 +918,20 @@ def failed_rules(project_root):
                if rule.get('feature') == feature.get('name')
                and ((rule.get('cells') or {}).get('passed') or {}).get('word')
                == 'failed')
+
+
+def broken_specs(features):
+    """The features whose spec writes a number twice or holds a line left
+    from a merge conflict: every rule of such a spec reads `failed`, so the
+    run exits 1 on it and the audit reads none of its rules.
+
+    The reasons are the spec reader's `broken_reasons`; until the reader
+    gives it, no spec is broken.
+    """
+    reasons = getattr(specs_module, 'broken_reasons', None)
+    if reasons is None:
+        return set()
+    return {name for name, info in features.items() if reasons(info)}
 
 
 # ---------------------------------------------------------------------------
@@ -1065,7 +1108,9 @@ def main(argv=None):
         tests_failed = bool(failures or any(
             entry['status'] == reports_module.FAIL
             for key in remote_proofs for entry in index.get(key) or ()))
-    exit_code = 1 if (tests_failed or wrong) else 0
+    # A broken spec fails the run whichever features it ran, once every test
+    # has run and printed.
+    exit_code = 1 if (tests_failed or wrong or broken_specs(features)) else 0
     if failures:
         print('')
         for failure in failures:
@@ -1275,7 +1320,8 @@ def _nothing_to_run(project_root, args, features, cfg, suites):
     there exits 1.
     """
     print(NOTHING_TO_RUN % ('purlin:%s' % args.action))
-    exit_code = 1 if failed_rules(project_root) else 0
+    exit_code = 1 if (failed_rules(project_root)
+                      or broken_specs(features)) else 0
     work = None
     if args.commit:
         print('')
@@ -1341,8 +1387,10 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
     gate = cfg.gate
     payload = payload_module.build_payload(project_root, generated_by='audit')
     to_read, skipped = [], 0
+    # A broken spec's rules all read `failed`: none is read until it is fixed.
+    broken = broken_specs(features)
     for feature in payload.get('features') or ():
-        if feature.get('name') not in selected:
+        if feature.get('name') not in selected or feature.get('name') in broken:
             continue
         for rule in feature.get('rules') or ():
             if ai_audit.is_read(rule, again=args.all):

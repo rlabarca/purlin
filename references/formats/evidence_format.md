@@ -220,6 +220,10 @@ each part that differs: `code changed since 4f1c2ab`, `spec changed since
   different.
 - Every write drops the `rules` and `audit.rules` entries of rules the spec no
   longer carries.
+- A test run over a file a merge left conflicted, which is not JSON, writes it
+  afresh and keeps from both sides each `audit.rules` entry whose `rule_hash`,
+  `proof_hash` and `test_hash` equal the rule's current ones, the newer `at`
+  where both hold one, and the newer `audit.mutation`.
 - Every run deletes the files under `local/` and `ci/` whose feature has no
   spec.
 - A `ci/` write carries only the runner's own section. In the API commit's

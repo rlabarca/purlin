@@ -278,6 +278,93 @@ def read_file(project_root, source, feature):
     return parse(data, source)
 
 
+# A line git leaves where its merge of a file stopped on a conflict.
+_CONFLICT_LINE = re.compile(r'^(<{7}|\|{7}|={7}|>{7})(?:[ \t].*)?$')
+
+
+def conflict_sides(text):
+    """The two sides of a file a merge left conflicted, as their two texts.
+
+    The lines outside every hunk belong to both sides. Within a hunk the
+    lines after `<<<<<<<` make one side and those after `=======` the
+    other; a `|||||||` base belongs to neither. [] when the text holds no
+    conflict line.
+    """
+    ours, theirs = [], []
+    where = 'both'
+    seen = False
+    for line in text.splitlines():
+        found = _CONFLICT_LINE.match(line)
+        if found:
+            seen = True
+            where = {'<': 'ours', '|': 'base', '=': 'theirs',
+                     '>': 'both'}[found.group(1)[0]]
+            continue
+        if where in ('both', 'ours'):
+            ours.append(line)
+        if where in ('both', 'theirs'):
+            theirs.append(line)
+    return ['\n'.join(ours), '\n'.join(theirs)] if seen else []
+
+
+def read_conflicted(project_root, source, feature):
+    """Each side of the feature's file that parses, where a merge left it
+    conflicted; [] for a file that reads as JSON or holds no conflict."""
+    path = full_path(project_root, reader.evidence_path(source, feature))
+    try:
+        with open(path, 'r', encoding='utf-8') as handle:
+            text = handle.read()
+        json.loads(text)
+        return []
+    except (IOError, OSError, UnicodeDecodeError):
+        return []
+    except ValueError:
+        pass
+    sides = []
+    for side in conflict_sides(text):
+        try:
+            data = parse(json.loads(side), source)
+        except ValueError:
+            continue
+        if data is not None:
+            sides.append(data)
+    return sides
+
+
+def kept_audits(sides, current):
+    """What a write over a conflicted file keeps of its audits.
+
+    `sides` are the file's parsed sides, `current` is `{rule: (rule_hash,
+    proof_hash, test_hash)}` for the rule as it stands. Every `audit.rules`
+    entry whose three hashes equal the current ones is kept, the newer `at`
+    where both sides hold one, and so is the newer `audit.mutation`.
+    Returns `(entries, mutation)`, the mutation None where neither side
+    holds one.
+    """
+    entries, mutation = {}, None
+    for side in sides:
+        audit = side.get('audit')
+        if not isinstance(audit, dict):
+            continue
+        rules = audit.get('rules')
+        for rule_id, entry in (rules.items() if isinstance(rules, dict)
+                               else ()):
+            if not isinstance(entry, dict) or rule_id not in current:
+                continue
+            if (entry.get('rule_hash'), entry.get('proof_hash'),
+                    entry.get('test_hash')) != tuple(current[rule_id]):
+                continue
+            kept = entries.get(rule_id)
+            if kept is None or str(entry.get('at') or '') > str(
+                    kept.get('at') or ''):
+                entries[rule_id] = entry
+        found = audit.get('mutation')
+        if isinstance(found, dict) and (mutation is None or str(
+                found.get('at') or '') > str(mutation.get('at') or '')):
+            mutation = found
+    return entries, mutation
+
+
 def parse(data, source):
     """`data` when it is a file of this format and this source, else None."""
     if (isinstance(data, dict) and data.get('schema') == SCHEMA

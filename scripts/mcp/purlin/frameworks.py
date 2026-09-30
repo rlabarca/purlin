@@ -188,10 +188,19 @@ def _any_file(root, test):
     return False
 
 
+def _pytest_tests_folder(root):
+    """True when `tests/` at the root holds a `test_*.py` at any depth."""
+    tests = os.path.join(root, 'tests')
+    if not os.path.isdir(tests):
+        return False
+    return _any_file(tests, lambda n: n.startswith('test_') and n.endswith('.py'))
+
+
 _DETECTORS = (
     ('pytest', lambda root: (os.path.isfile(os.path.join(root, 'conftest.py'))
                              or os.path.isfile(os.path.join(root, 'pytest.ini'))
-                             or '[tool.pytest' in _read(root, 'pyproject.toml'))),
+                             or '[tool.pytest' in _read(root, 'pyproject.toml')
+                             or _pytest_tests_folder(root))),
     ('vitest', lambda root: _npm_package(root, 'vitest')),
     ('jest', lambda root: _npm_package(root, 'jest')),
     ('dotnet', _has_dotnet_tests),

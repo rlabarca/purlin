@@ -11,8 +11,8 @@
 >   a run removes, the table, the lines the run prints, the two commits, and the audit's entries.
 > Scope: scripts/run/evidence.py, references/formats/evidence_format.md, templates/gitignore.purlin
 > Stack: python/stdlib (json, subprocess, datetime, platform), git
-> Highest-Rule: 25
-> Highest-Proof: 87
+> Highest-Rule: 26
+> Highest-Proof: 89
 
 ## Rules
 
@@ -40,6 +40,7 @@
 - RULE-17: A section that differs from the one on disk in its `machine` alone replaces it, and a `ci` section that differs in its `hostname` alone leaves the file byte for byte as it was
 - RULE-18: An audit entry carries `notes`, the audit's sentences about a proof longer than the standard or holding two cases, only when the audit gave some
 - RULE-23: A test run over a feature whose evidence file was resolved to either side of a merge rewrites that system's section
+- RULE-26: A test run over a feature whose evidence file a merge left conflicted writes the file afresh and keeps, from both sides, each audit entry whose rule, proof and test are the rule's current ones
 - RULE-19: With `--commit`, before the results, the run commits the specs of the features it ran, the test files carrying their markers and `.purlin/config.json`, where any of them changed, under the person's own git identity with the subject `purlin: specs, tests and settings for <feature>[, <feature>…]`, and prints `Committed <sha7>, the work these results describe:` then each file that commit changed on a line of its own, indented two spaces; where none changed it makes no commit and prints no such line
 
 ## Proof
@@ -126,6 +127,8 @@
 - PROOF-49 (RULE-19): In a git checkout where the specs, tests and settings of a run over `feat` are all committed, committing the run's work makes no commit and prints nothing, and the results' commit that follows names HEAD
 - PROOF-50 (RULE-19): In a git checkout where the spec `feat` was edited and not committed, a `--all --test --commit` run makes two commits, `purlin: specs, tests and settings for feat` and then `purlin: evidence at <sha7>` naming the first, and prints `Committed <sha7>, the work these results describe:` then `  specs/a/feat.md`
 - PROOF-85 (RULE-23): Two branches each commit a section for this system into `feat`'s evidence file, one naming the machine `build-8` and one `build-9`; their merge conflicts and is resolved to the `build-9` side; a `--all --test` run then rewrites that section, which names this machine
+- PROOF-88 (RULE-26): Two branches each commit `feat`'s evidence with an audit entry for `RULE-1` over its current rule, proof and test, and their merge conflicts in that file; after a `--all --test` run the file reads as JSON and its audit holds the `RULE-1` entry
+- PROOF-89 (RULE-26): In that conflicted file one side's audit entry for `RULE-1` was made before `RULE-1`'s text changed; after a `--all --test` run the file holds no audit entry for `RULE-1`
 - PROOF-51 (RULE-12): An evidence file's `audit.rules` holds an entry for `RULE-1` and a `weak` one for `RULE-2`, and an audit that read `RULE-2` again and found it `strong` is written into it; `audit.rules` holds the `strong` entry for `RULE-2` and the `RULE-1` entry exactly as it was
 - PROOF-52 (RULE-12): An evidence file whose `audit.mutation` reads the score `71` is written with an audit in which mutation testing did not run and a score of `5` was handed in; `audit.mutation` still reads `71`
 - PROOF-53 (RULE-12): An audit in which mutation testing did not run is written into an evidence file that had no `audit`; `audit.mutation` reads null

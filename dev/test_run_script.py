@@ -2825,6 +2825,25 @@ class TestNoTestCommand:
     def test_shell_is_suggested_its_own_entry(self, tmp_path):
         assert self._suggested_for(tmp_path, 'shell')['name'] == 'shell'
 
+    # purlin: run_script PROOF-262
+    def test_a_plain_tests_folder_is_suggested_pytest(self, tmp_path):
+        root = _no_command(tmp_path)
+        (root / 'tests').mkdir()
+        (root / 'tests' / 'test_cart.py').write_text(
+            'def test_cart():\n    assert True\n', encoding='utf-8')
+        _code, output = _run(root, '--all', '--test')
+        assert ('Suggested for pytest: python3 -m pytest --ignore=mutants '
+                '{files} --junitxml={report}' in output.splitlines()), output
+
+    # purlin: run_script PROOF-263
+    def test_a_tests_folder_with_no_test_file_is_not_pytest(self, tmp_path):
+        root = _no_command(tmp_path)
+        (root / 'tests').mkdir()
+        (root / 'tests' / 'helpers.py').write_text(
+            'VALUE = 1\n', encoding='utf-8')
+        _code, output = _run(root, '--all', '--test')
+        assert 'Suggested for pytest:' not in output, output
+
     # purlin: run_script PROOF-129
     def test_every_tool_found_is_suggested_in_the_order(self, tmp_path):
         root = _no_command(tmp_path, 'pytest', 'vitest')
@@ -3307,3 +3326,47 @@ class TestTheTwoCommits:
                 in output.splitlines()), output
         assert 'Committed' not in output, output
         assert _head(root) == head, output
+
+
+# A spec writing PROOF-2 twice: its rules read `failed` until it is fixed.
+TWICE = (('PROOF-1', 'RULE-1', ''), ('PROOF-2', 'RULE-1', ''),
+         ('PROOF-2', 'RULE-2', ''))
+
+
+def _broken_login(tmp_path, gate='passed'):
+    """`feat`, sound, and `login`, whose spec writes PROOF-2 twice; every
+    marked test of both passes."""
+    root = _pytest_project(tmp_path, gate=gate)
+    _spec(root, 'feat')
+    _spec(root, 'login', rules=2, proofs=TWICE)
+    (root / 'tests' / 'test_login.py').write_text(
+        'import pytest\n\n'
+        '# purlin: login PROOF-1\n'
+        'def test_one():\n'
+        '    assert 1 == 1\n\n'
+        '# purlin: login PROOF-2\n'
+        'def test_two():\n'
+        '    assert 2 == 2\n', encoding='utf-8')
+    return root
+
+
+class TestABrokenSpec:
+
+    # purlin: run_script PROOF-261
+    def test_a_test_run_writes_its_results_and_exits_1(self, tmp_path):
+        root = _broken_login(tmp_path)
+        code, output = _run(root, '--test', '--all')
+        proofs = _evidence(root, 'login')['platforms'][HERE_OS]['proofs']
+        assert {(p['id'], p['result']) for p in proofs} == {
+            ('PROOF-1', 'pass'), ('PROOF-2', 'pass')}, output
+        assert code == 1, output
+
+    # purlin: run_script PROOF-264
+    def test_the_audit_reads_no_rule_of_it(self, tmp_path, claude):
+        _install, directory = claude
+        root = _broken_login(tmp_path, gate='strong')
+        _code, output = _run(root, '--audit', '--all')
+        calls = fake_claude.calls(directory)
+        assert calls, output
+        assert not [call for call in calls if 'login' in call['prompt']], \
+            output

@@ -1149,6 +1149,79 @@ def test_a_run_rewrites_a_section_resolved_to_either_side_of_a_merge(
         writer.local_machine()), out
 
 
+def _current_hashes(root, rule_id='RULE-1'):
+    """`feat`'s rule, proof and test hashes for `rule_id` as they stand."""
+    for feature in payload_module.build_payload(str(root)).get('features'):
+        for rule in feature.get('rules') or ():
+            if feature['name'] == 'feat' and rule['id'] == rule_id:
+                return {key: rule[key]
+                        for key in ('rule_hash', 'proof_hash', 'test_hash')}
+    raise AssertionError('no %s' % rule_id)
+
+
+def _audit_and_commit(root, hashes, at, finding, message):
+    """Commit `feat`'s local evidence with an audit entry for RULE-1."""
+    data = _evidence(root)
+    entry = dict(hashes, verdict='strong', findings=[finding], model='m',
+                 criteria='c', at=at, commit='a' * 40)
+    data['audit'] = {'mutation': None, 'rules': {'RULE-1': entry}}
+    _put(root, data)
+    _git(root, 'commit', '-q', '-am', message)
+
+
+def _conflicted_audits(tmp_path, reword=False):
+    """`feat` audited on two branches whose merge conflicts in its evidence;
+    with `reword`, the other branch also changes RULE-1's text."""
+    root = _project(tmp_path)
+    _spec(root)
+    _test_file(root)
+    _repo(root)
+    code, out = _run(root, '--all', '--test', '--commit')
+    assert code == 0, out
+    hashes = _current_hashes(root)
+    _git(root, 'checkout', '-q', '-b', 'other')
+    if reword:
+        spec = root / 'specs' / 'a' / 'feat.md'
+        spec.write_text(spec.read_text(encoding='utf-8').replace(
+            'The thing works, case 1', 'The thing works, first case'),
+            encoding='utf-8')
+    _audit_and_commit(root, hashes, '2026-09-02T00:00:00Z', 'b', 'audit b')
+    _git(root, 'checkout', '-q', 'main')
+    _audit_and_commit(root, hashes, '2026-09-01T00:00:00Z', 'a', 'audit a')
+    merged = subprocess.run(['git', 'merge', '-q', 'other'], cwd=str(root),
+                            capture_output=True, encoding='utf-8')
+    assert merged.returncode != 0, merged.stdout + merged.stderr
+    text = (root / '.purlin' / 'evidence' / 'local' / 'feat.json').read_text(
+        encoding='utf-8')
+    assert '<<<<<<<' in text, text
+    return root
+
+
+# purlin: evidence_writer PROOF-88
+def test_a_run_over_a_conflicted_file_keeps_the_audit_that_still_matches(
+        tmp_path):
+    root = _conflicted_audits(tmp_path)
+
+    code, out = _run(root, '--all', '--test')
+
+    assert code == 0, out
+    entry = _evidence(root)['audit']['rules']['RULE-1']
+    assert {key: entry[key] for key in ('rule_hash', 'proof_hash',
+                                        'test_hash')} == _current_hashes(root)
+    assert entry['findings'] == ['b'], entry
+
+
+# purlin: evidence_writer PROOF-89
+def test_a_run_over_a_conflicted_file_drops_an_audit_of_older_text(tmp_path):
+    root = _conflicted_audits(tmp_path, reword=True)
+
+    code, out = _run(root, '--all', '--test')
+
+    assert code == 0, out
+    assert 'RULE-1' not in (_evidence(root).get('audit') or {}).get(
+        'rules', {}), out
+
+
 # purlin: evidence_writer PROOF-11
 def test_outside_git_the_files_are_written_and_nothing_is_committed(tmp_path):
     root = _project(tmp_path)
