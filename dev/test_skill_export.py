@@ -174,6 +174,15 @@ class TestSkillExport:
 
     # --------------------------------------------------------------- RULE-12
 
+    # purlin: skill_export PROOF-36
+    def test_it_names_the_release_run(self, monkeypatch):
+        assert release_problems() == []
+        assert refusals(monkeypatch, release_problems, [
+            (SKILL, replace('`purlin:test --release`, which',
+                            '`purlin:sign`, which'),
+             "%s does not carry %r" % (SKILL, RELEASED)),
+        ]) == []
+
     # purlin: skill_export PROOF-34
     def test_it_quotes_the_no_version_line(self, monkeypatch):
         assert no_version_problems() == []
@@ -275,6 +284,14 @@ def no_version_problems():
     return carries(SKILL, [NO_VERSION])
 
 
+RELEASED = ('writes the package at any time, at any gate, and releases '
+            'nothing. A version is released by `purlin:test --release`')
+
+
+def release_problems():
+    return carries(SKILL, [RELEASED])
+
+
 # ---------------------------------------------------------------------------
 # RULE-4 and RULE-10: the two states and what `left` holds
 # ---------------------------------------------------------------------------
@@ -311,7 +328,7 @@ def left_problems():
 FAILURE_OUTCOMES = {
     'Evidence not committed': '`→ Run: purlin:test --commit`',
     'No version': '`→ Run: purlin:export --release <version>`',
-    '`--check` named a mismatch': '`→ Run: git show signed/<version>:'
+    '`--check` named a mismatch': '`→ Run: git show <the release tag>:'
                                   '.purlin/evidence/package/<version>.json`',
 }
 

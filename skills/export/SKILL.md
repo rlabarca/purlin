@@ -3,15 +3,19 @@ name: export
 description: Write the evidence package for a version, the data file a regulated system of record reviews
 ---
 
-Write one data file that holds the evidence for a version: whether it is finished, the count at
-each step, what is left to do, and every rule's words, its proofs, its tests, each result on each
-operating system, what the audit found and who signed it. A reviewer who cannot open the
-repository reads it in the system of record, which holds the controlled document, the authority
-to sign it off and the signature that counts under the regulation.
+Write one data file that holds the evidence for a version: whether it is finished, the count
+that pass, what is left to do, every rule's words, proofs, tests, results on each operating
+system and what the audit found, and every hand check. A reviewer who cannot open the repository
+reads it in the system of record, which holds the controlled document, the authority to sign it
+off and the signature that counts under the regulation.
 
 Purlin makes no claim that the software is compliant. The package is evidence for review in a
 regulated document and sign-off system, such as Veeva; how it is shown is that system's job.
 `references/formats/package_format.md` holds every field.
+
+`purlin:export` writes the package at any time, at any gate, and releases nothing. A version is
+released by `purlin:test --release`, which commits the evidence and the package and tags
+`passed/<version>` at the gate `passed`; at `signed` the first `purlin:sign` tags it.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
 is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
@@ -39,22 +43,23 @@ It writes `.purlin/evidence/package/<version>.json` and prints the path and the 
 Evidence package written to .purlin/evidence/package/1.4.0.json. State: not finished.
 ```
 
-The version is the one `purlin:sign` names its tag for: the `VERSION` file, else the version the
-project's package description states. With neither, the script prints
+The version is the one `purlin:test --release` names its tag for: the `VERSION` file, else the
+version the project's package description states. With neither, the script prints
 `No version: nothing in this project states one. Run purlin:export --release <version>, or write it to a VERSION file.`
 and writes nothing. Print its lines verbatim. It works at every gate and at any time. It reads
-only what git holds: evidence or a signature that is written and not committed is left out, and
-each such file is named on a line of its own and in the package's `warnings`.
+only what git holds: evidence that is written and not committed is left out, and each such file
+is named on a line of its own and in the package's `warnings`.
 
 ## Step 2: read the state
 
 | State | What it means |
 |-------|---------------|
-| `finished` | Nothing is left to do at the package's gate: `left` is empty |
+| `finished` | No line of `left` stops a release: every rule's tests pass, and a weak rule or one with no proof may still be listed |
 | `not finished` | `left` holds the lines of `Left to do`, first the next step, each with its command |
 
-The package also carries `rules`, the total, and `steps`, the count that reached each step up to
-the gate, as `purlin:status` says them. The receiving system reads the state beside the gate.
+The package also carries `rules`, the total, `steps`, the count whose tests pass, and `audit`,
+what the audit found, as `purlin:status` says them. The receiving system reads the state beside
+the gate.
 
 ## Step 3: commit only when asked
 
@@ -80,4 +85,4 @@ always gives the same bytes, so a package exported again at the tag matches the 
 | No version | `→ Run: purlin:export --release <version>` |
 | `not finished` | `→ Run: <the command of the first line of left>` |
 | `finished` | `→ Hand .purlin/evidence/package/<version>.json to the system of record.` |
-| `--check` named a mismatch | `→ Run: git show signed/<version>:.purlin/evidence/package/<version>.json` |
+| `--check` named a mismatch | `→ Run: git show <the release tag>:.purlin/evidence/package/<version>.json` |

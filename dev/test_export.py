@@ -1,20 +1,18 @@
 """The evidence package `purlin:export` writes.
 
 Every project here is a throwaway git repository in a temporary directory,
-with a spec, a test file, evidence, audit entries and, where a signature is
-involved, a signing key that exists nowhere but that directory. The package
-command runs as a separate process, as a person runs it.
+with a spec, a test file, evidence and audit entries. The package command
+runs as a separate process, as a person runs it.
 
 What each group holds:
 
 *the file*        where it is written, its name, what it prints, that it
                   commits nothing, the project with no version, and the
                   commit the package names
-*the state*       `finished` and `not finished`, with the total, the count at
-                  each step and what is left to do
+*the state*       `finished` and `not finished`, with the total, the count
+                  that pass, what the audit found and what is left to do
 *the content*     what one rule carries, and what it never carries
-*what git holds*  evidence or a signature written and not committed is
-                  left out and named
+*what git holds*  evidence written and not committed is left out and named
 *the bytes*       the same tag gives the same bytes, from a second clone too
 *the fingerprint* what it is taken over, and `--check` on a package as
                   written and on one edited after
@@ -26,11 +24,10 @@ What each group holds:
                   could not check out, write or commit
 
 Each evidence section records the machine it ran on, as the evidence format
-has it. The tagged project gets its package from the call `purlin:sign`
-makes before it tags, and its tag from git.
+has it. The released project gets its package and its tag `passed/2.1.0`
+from the release run, `release.run_release`.
 """
 
-import base64
 import hashlib
 import json
 import os
@@ -49,21 +46,20 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'export'))
 
-import package as package_module                              # noqa: E402
-import sign as sign_module                                    # noqa: E402
+import release as release_module                              # noqa: E402
 from purlin import PURLIN_VERSION                             # noqa: E402
 from purlin import evidence as evidence_module                # noqa: E402
-from purlin import signatures as signatures_module            # noqa: E402
-from sign_project import (CRITERIA, MODEL, SIGNING_GATE,  # noqa: E402
-                          SPEC, TEST_FILE, Project, commit_all, git,
-                          machine_of, name_the_model, signing_key, status,
-                          write)
+from sign_project import (CRITERIA, FIRST_GATE, MODEL,        # noqa: E402
+                          SIGNING_GATE, SPEC, TEST_FILE, Project, _Out,
+                          commit_all, git, machine_of, name_the_model,
+                          status, write)
 
 PACKAGE_PY = os.path.join(ROOT, 'scripts', 'export', 'package.py')
 
-TOP_LEVEL = ['schema', 'state', 'rules', 'steps', 'left', 'purlin_version',
-             'project', 'version', 'tag', 'commit', 'gate', 'mutation_engine',
-             'min_strength', 'features', 'warnings', 'fingerprint']
+TOP_LEVEL = ['schema', 'state', 'rules', 'steps', 'audit', 'left',
+             'purlin_version', 'project', 'version', 'tag', 'commit', 'gate',
+             'mutation_engine', 'features', 'hand_checks', 'warnings',
+             'fingerprint']
 
 UTC = re.compile(r'^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$')
 
@@ -145,10 +141,9 @@ def made_project(gate=SIGNING_GATE, spec=SPEC, version='2.1.0',
 
     With `audited` both rules carry an audit reading `strong`, and `RULE-2`'s
     names the model and the fingerprint of its instructions. The `VERSION`
-    file states `version`, and none is written where it is None. The
-    signer's key is set up last.
+    file states `version`, and none is written where it is None.
     """
-    made = Project(spec=spec, gate=gate, config={'min_strength': 50})
+    made = Project(spec=spec, gate=gate)
     made.tests_ran_at = made.head()
     made.evidence(strength=90, runner='ci', commit_it=False, source='ci')
     if audited:
@@ -158,35 +153,20 @@ def made_project(gate=SIGNING_GATE, spec=SPEC, version='2.1.0',
     if version:
         write(os.path.join(made.root, 'VERSION'), version + '\n')
     commit_all(made.root)
-    made.public_key = signing_key(made.root)
     return made
 
 
-def sign_both(made):
-    """Jane signs both rules, in one signed commit."""
-    assert sign_module.sign_and_commit(
-        made.root, [('login', 'RULE-1'), ('login', 'RULE-2')],
-        'jane@acme.com')
-
-
-def tag_it(made):
-    """Write and commit the package for the tag, then tag that commit."""
-    rel, why = package_module.write_for_tag(made.root)
-    assert rel, why
-    git(made.root, 'tag', '-s', 'signed/2.1.0', '-m', 'Nothing left to do.')
-
-
-def key_fingerprint(public_key_path):
-    """`SHA256:` and the unpadded base64 of the sha256 of the key's blob."""
-    with open(public_key_path, encoding='utf-8') as handle:
-        blob = base64.b64decode(handle.read().split()[1])
-    return 'SHA256:' + base64.b64encode(
-        hashlib.sha256(blob).digest()).decode('ascii').rstrip('=')
+def release(made):
+    """Run the release, as `purlin:test --release` does after its tests."""
+    out = _Out()
+    tag, refused = release_module.run_release(made.root, out=out)
+    assert refused is None, out.text()
+    return tag
 
 
 @pytest.fixture
 def unsigned():
-    """At the gate `signed`, both rules pass and are strong, and neither is signed."""
+    """At the gate `signed`, both rules pass and are strong, and no release is made."""
     made = made_project()
     yield made
     made.close()
@@ -194,10 +174,9 @@ def unsigned():
 
 @pytest.fixture
 def tagged():
-    """At the gate `signed`, both rules signed, the package committed and tagged."""
-    made = made_project()
-    sign_both(made)
-    tag_it(made)
+    """At the gate `passed`, both rules pass and are strong, released as `passed/2.1.0`."""
+    made = made_project(gate=FIRST_GATE)
+    assert release(made) == 'passed/2.1.0'
     yield made
     made.close()
 
@@ -217,7 +196,7 @@ class TestTheFile:
         assert code == 0, lines
         assert lines == [
             'Evidence package written to .purlin/evidence/package/2.1.0.json. '
-            'State: not finished.'], lines
+            'State: finished.'], lines
         assert unsigned.head() == head
         assert status(unsigned.root) == (
             '?? .purlin/evidence/package/2.1.0.json\n')
@@ -263,11 +242,10 @@ class TestTheFile:
         export(unsigned.root)
         package = read_package(unsigned.root)
         assert list(package) == TOP_LEVEL
-        assert package['schema'] == 'purlin-package/2'
+        assert package['schema'] == 'purlin-package/3'
         assert package['purlin_version'] == PURLIN_VERSION
         assert (package['project'], package['gate'],
-                package['mutation_engine'], package['min_strength']) == (
-                    'proj', 'signed', 'none', 50)
+                package['mutation_engine']) == ('proj', 'signed', 'none')
         assert package['commit'] == unsigned.head()
 
     # purlin: package PROOF-30
@@ -322,37 +300,8 @@ class TestTheState:
             assert third['left'] == 'no_proof'
             assert package['left'][0] == line(
                 'no_proof', 1, '1 rule to write a proof for', 'purlin:spec')
-            assert package['state'] == 'not finished'
         finally:
             made.close()
-
-    # purlin: package PROOF-6
-    def test_rules_no_audit_has_read_are_left_to_audit(self):
-        made = made_project(gate='strong', audited=False)
-        try:
-            export(made.root)
-            package = read_package(made.root)
-            second = rule_of(package, 'RULE-2')
-            assert second['audit'] is None
-            assert second['statuses']['strong']['word'] == 'not audited'
-            assert second['left'] == 'to_audit'
-            assert (package['state'], package['steps'], package['left']) == (
-                'not finished', {'passed': 2, 'strong': 0},
-                [line('to_audit', 2, '2 rules to audit', 'purlin:audit')])
-        finally:
-            made.close()
-
-    # purlin: package PROOF-7
-    def test_rules_not_signed_are_left_to_sign(self, unsigned):
-        export(unsigned.root)
-        package = read_package(unsigned.root)
-        second = rule_of(package, 'RULE-2')
-        assert second['signatures'] == []
-        assert second['statuses']['signed']['word'] == 'unsigned'
-        assert second['left'] == 'to_sign'
-        assert (package['steps'], package['left']) == (
-            {'passed': 2, 'strong': 2, 'signed': 0},
-            [line('to_sign', 2, '2 rules to sign', 'purlin:sign')])
 
     # purlin: package PROOF-8
     def test_at_passed_rules_that_pass_are_finished(self):
@@ -365,39 +314,6 @@ class TestTheState:
                     package['left']) == ('finished', 2, {'passed': 2}, [])
         finally:
             made.close()
-
-    # purlin: package PROOF-19
-    def test_at_strong_rules_that_are_strong_are_finished(self):
-        made = made_project(gate='strong')
-        try:
-            export(made.root)
-            package = read_package(made.root)
-            assert (package['state'], package['steps'], package['left']) == (
-                'finished', {'passed': 2, 'strong': 2}, [])
-        finally:
-            made.close()
-
-    # purlin: package PROOF-23
-    def test_at_signed_with_every_rule_signed_the_tag_is_left(self, unsigned):
-        sign_both(unsigned)
-        export(unsigned.root)
-        package = read_package(unsigned.root)
-        assert (package['state'], package['left']) == (
-            'not finished',
-            [line('to_tag', 1, 'the version to tag', 'purlin:sign')])
-
-    # purlin: package PROOF-24
-    def test_the_package_written_for_the_tag_is_finished(self, unsigned):
-        sign_both(unsigned)
-        evidence_commit = unsigned.head()
-        rel, why = package_module.write_for_tag(unsigned.root)
-        assert rel == '.purlin/evidence/package/2.1.0.json', why
-        package = json.loads(git(unsigned.root, 'show',
-                                 'HEAD:' + rel).stdout)
-        assert (package['state'], package['left'], package['steps']) == (
-            'finished', [], {'passed': 2, 'strong': 2, 'signed': 2})
-        assert git(unsigned.root, 'rev-parse', 'HEAD^').stdout.strip() == \
-            evidence_commit == package['commit']
 
 
 # `login` with `PROOF-2` written a second time, in the same words.
@@ -420,6 +336,72 @@ class TestABrokenSpec:
             made.close()
 
 
+# `PROOF-2` is a hand check, and no test carries it.
+MANUAL_SPEC = SPEC.replace('verify 401 and the body "denied"',
+                           'verify 401 and the body "denied" @manual')
+MANUAL_TEST_FILE = TEST_FILE.split('\n\n\n# purlin: login PROOF-2')[0] + '\n'
+
+
+def weak_second_rule(gate):
+    """Both rules pass on a runner; `RULE-1` is audited strong, `RULE-2` weak."""
+    made = Project(gate=gate)
+    made.evidence(runner='ci', commit_it=False, source='ci')
+    made.audit('RULE-1')
+    made.audit('RULE-2', findings=['The test checks one bad password.'])
+    write(os.path.join(made.root, 'VERSION'), '2.1.0\n')
+    commit_all(made.root)
+    return made
+
+
+class TestTheAuditAndTheHandChecks:
+
+    # purlin: package PROOF-61
+    def test_the_package_counts_what_the_audit_found(self):
+        made = weak_second_rule(SIGNING_GATE)
+        try:
+            export(made.root)
+            assert read_package(made.root)['audit'] == {
+                'strong': 1, 'weak': 1, 'not_audited': 0}
+        finally:
+            made.close()
+
+    # purlin: package PROOF-62
+    def test_a_hand_check_is_listed_at_signed(self):
+        made = Project(spec=MANUAL_SPEC, gate=SIGNING_GATE)
+        try:
+            made.edit_test(MANUAL_TEST_FILE)
+            made.evidence(statuses={'PROOF-1': 'pass'}, commit_it=False)
+            write(os.path.join(made.root, 'VERSION'), '2.1.0\n')
+            commit_all(made.root)
+            export(made.root)
+            assert read_package(made.root)['hand_checks'] == [
+                {'feature': 'login', 'rule': 'RULE-2', 'proofs': ['PROOF-2'],
+                 'checked': 'in the sign-offs'}]
+        finally:
+            made.close()
+
+    # purlin: package PROOF-63
+    def test_a_rule_left_only_to_strengthen_leaves_it_finished(self):
+        made = weak_second_rule(SIGNING_GATE)
+        try:
+            export(made.root)
+            package = read_package(made.root)
+            assert (package['state'], package['left']) == (
+                'finished', [line('to_strengthen', 1, '1 rule to strengthen',
+                                  'purlin:build')])
+        finally:
+            made.close()
+
+    # purlin: package PROOF-64
+    def test_at_passed_the_tag_is_passed(self):
+        made = made_project(gate=FIRST_GATE)
+        try:
+            export(made.root)
+            assert read_package(made.root)['tag'] == 'passed/2.1.0'
+        finally:
+            made.close()
+
+
 # ---------------------------------------------------------------------------
 # The content
 # ---------------------------------------------------------------------------
@@ -428,8 +410,9 @@ class TestTheContent:
 
     # purlin: package PROOF-55
     def test_the_package_states_the_gate_and_claims_no_compliance(
-            self, tagged):
-        package = read_package(tagged.root)
+            self, unsigned):
+        release(unsigned)
+        package = read_package(unsigned.root)
         assert list(package) == TOP_LEVEL
         assert (package['gate'], package['state']) == ('signed', 'finished')
         assert words_naming_compliance(package) == []
@@ -469,44 +452,21 @@ class TestTheContent:
                 audit['model'], audit['criteria'], audit['at']) == (
                     'strong', [], 90, MODEL, CRITERIA, '2026-09-13T12:05:00Z')
 
-    # purlin: package PROOF-27
-    def test_one_rule_carries_who_signed_it_and_with_which_key(self, tagged):
-        [signature] = rule_of(read_package(tagged.root), 'RULE-2')[
-            'signatures']
-        assert (signature['signer'], signature['signer_name'],
-                signature['applies_to'], signature['note'],
-                signature['signed_commit']) == (
-                    'jane@acme.com', 'Jane', 'login', None, True)
-        assert signature['key_fingerprint'] == key_fingerprint(
-            tagged.public_key)
-        assert UTC.match(signature['at']), signature['at']
-
-    # purlin: package PROOF-28
-    def test_one_rule_carries_what_its_signature_locked(self, tagged):
-        [signature] = rule_of(read_package(tagged.root), 'RULE-2')[
-            'signatures']
-        now = tagged.rule('RULE-2')
-        assert signature['machines'] == now['machines'] != {}
-        assert signature['locked'] == dict(
-            {key: now[key] for key in ('rule_hash', 'proof_hash', 'test_hash',
-                                       'test_hash_kind', 'code_hash',
-                                       'audit_hash')},
-            signed_hash=signatures_module.signed_hash(now))
-
     # purlin: package PROOF-20
-    def test_at_signed_a_rule_carries_every_status(self, tagged):
-        statuses = rule_of(read_package(tagged.root), 'RULE-1')['statuses']
+    def test_at_signed_a_rule_carries_two_statuses(self, unsigned):
+        export(unsigned.root)
+        statuses = rule_of(read_package(unsigned.root), 'RULE-1')['statuses']
         assert {name: cell['word'] for name, cell in statuses.items()} == {
-            'passed': 'passed', 'strong': 'strong', 'signed': 'signed'}
+            'passed': 'passed', 'strong': 'strong'}
 
     # purlin: package PROOF-29
-    def test_at_passed_a_rule_carries_one_status(self):
+    def test_at_passed_a_rule_carries_two_statuses(self):
         made = made_project(gate='passed', audited=False)
         try:
             export(made.root)
             statuses = rule_of(read_package(made.root), 'RULE-2')['statuses']
             assert {name: cell['word'] for name, cell in statuses.items()} == {
-                'passed': 'passed'}
+                'passed': 'passed', 'strong': 'not audited'}
         finally:
             made.close()
 
@@ -556,10 +516,8 @@ class TestTheContent:
 
 
 # ---------------------------------------------------------------------------
-# Anchors, and a rule that does not apply
+# Anchors
 # ---------------------------------------------------------------------------
-
-NO_CARD_DATA = 'the project stores no card data'
 
 
 def anchor_beside(made, name, header=''):
@@ -573,18 +531,6 @@ def anchor_beside(made, name, header=''):
           '- PROOF-1 (RULE-1): A sign-in with the password "secret" leaves '
           'no line holding "secret" in the log @manual\n' % (name, header))
     commit_all(made.root, 'spec(%s): the anchor' % name)
-
-
-def signed_as_not_applying(made):
-    """`baseline`, pinned from elsewhere, its rule signed as not applying."""
-    anchor_beside(made, 'baseline',
-                  '> Source: https://github.com/acme/policies.git\n'
-                  '> Pinned: %s\n' % ('a' * 40))
-    assert sign_module.main(['baseline', 'RULE-1', '--does-not-apply',
-                             NO_CARD_DATA, '--project-root', made.root]) == 0
-    code, lines = export(made.root)
-    assert code == 0, lines
-    return rule_of(read_package(made.root), 'RULE-1', 'baseline')
 
 
 class TestAnchors:
@@ -607,24 +553,6 @@ class TestAnchors:
             'features'] if feature['name'] == 'secure')
         assert (entry['anchor'], entry['scope']) == (True, [])
 
-    # purlin: package PROOF-58
-    def test_a_signature_carries_the_reason_it_does_not_apply(
-            self, unsigned, capsys):
-        rule = signed_as_not_applying(unsigned)
-        capsys.readouterr()
-        assert [signature['does_not_apply']
-                for signature in rule['signatures']] == [NO_CARD_DATA]
-
-    # purlin: package PROOF-59
-    def test_a_rule_that_does_not_apply_reads_so(self, unsigned, capsys):
-        rule = signed_as_not_applying(unsigned)
-        capsys.readouterr()
-        assert {name: status['word'] for name, status in
-                rule['statuses'].items()} == {
-            'passed': 'does not apply', 'strong': 'does not apply',
-            'signed': 'does not apply'}
-
-
 # ---------------------------------------------------------------------------
 # What git holds
 # ---------------------------------------------------------------------------
@@ -633,7 +561,6 @@ class TestWhatGitHolds:
 
     # purlin: package PROOF-12
     def test_evidence_not_committed_is_left_out_and_named(self, unsigned):
-        sign_both(unsigned)
         unsigned.evidence(strength=90, runner='ci', source='ci',
                           commit_it=False, at='2026-09-14T12:00:00Z')
         code, lines = export(unsigned.root)
@@ -643,22 +570,6 @@ class TestWhatGitHolds:
         assert package['warnings'] == [warning]
         assert [r['at'] for r in rule_of(package, 'RULE-2')['results']] == [
             '2026-09-13T12:00:00Z']
-
-    # purlin: package PROOF-31
-    def test_a_signature_not_committed_is_left_out_and_named(self, unsigned):
-        assert sign_module.sign_and_commit(
-            unsigned.root, [('login', 'RULE-2')], 'jane@acme.com')
-        git(unsigned.root, 'reset', '-q', 'HEAD~1')
-        [written] = [line[3:] for line in status(unsigned.root).splitlines()]
-        assert written.startswith('specs/auth/login.signatures/RULE-2.'), \
-            written
-        code, lines = export(unsigned.root)
-        assert code == 0, lines
-        assert NOT_COMMITTED % written in lines, lines
-        package = read_package(unsigned.root)
-        assert package['warnings'] == [NOT_COMMITTED % written]
-        assert rule_of(package, 'RULE-2')['signatures'] == []
-
 
 # ---------------------------------------------------------------------------
 # The bytes
@@ -676,7 +587,7 @@ def _clone_at_the_tag(made):
     cloned = git(parent, 'clone', '-q', '-c', 'core.autocrlf=true',
                  made.root, clone)
     assert cloned.returncode == 0, cloned.stderr
-    checked_out = git(clone, 'checkout', '-q', 'signed/2.1.0')
+    checked_out = git(clone, 'checkout', '-q', 'passed/2.1.0')
     assert checked_out.returncode == 0, checked_out.stderr
     return parent, clone
 
@@ -705,7 +616,7 @@ class TestTheBytes:
     # purlin: package PROOF-39
     def test_a_second_clone_at_the_tag_gives_the_committed_bytes(self, tagged):
         committed = git_bytes(tagged.root, 'show',
-                              'signed/2.1.0:' + PACKAGE_REL)
+                              'passed/2.1.0:' + PACKAGE_REL)
         assert b'\r' not in committed
         parent, clone = _clone_at_the_tag(tagged)
         try:
@@ -731,7 +642,7 @@ class TestTheBytes:
         def walk(value):
             if isinstance(value, dict):
                 for key, item in value.items():
-                    if key in ('at', 'committed_at') and item is not None:
+                    if key == 'at' and item is not None:
                         times.append(item)
                     walk(item)
             elif isinstance(value, list):
@@ -774,7 +685,7 @@ class TestTheFingerprint:
     # purlin: package PROOF-17
     def test_check_names_an_edit_made_after(self, unsigned):
         path, data = _exported(unsigned)
-        edited = data.replace(b'"unsigned"', b'"signed"', 1)
+        edited = data.replace(b'"passed"', b'"failed"', 1)
         assert edited != data
         with open(path, 'wb') as handle:
             handle.write(edited)
@@ -986,11 +897,11 @@ class TestTheRefusals:
     # purlin: package PROOF-46
     def test_check_names_another_schema(self, unsigned):
         path = edited_package(
-            unsigned, lambda package: package.update(schema='purlin-package/1'))
+            unsigned, lambda package: package.update(schema='purlin-package/2'))
         code, lines = export(unsigned.root, '--check', path)
         assert (code, lines) == (1, [
             CHECK_FAILED
-            % 'the file does not carry the schema purlin-package/2'])
+            % 'the file does not carry the schema purlin-package/3'])
 
     # purlin: package PROOF-47
     def test_check_names_a_key_the_format_does_not_name(self, unsigned):
@@ -1080,7 +991,7 @@ class TestTheRefusals:
         write(os.path.join(unsigned.root, '.git', 'index.lock'), '')
         code, lines = export(unsigned.root, '--commit')
         assert code == 1, lines
-        assert lines[0] == ('Evidence package written to %s. State: not '
+        assert lines[0] == ('Evidence package written to %s. State: '
                             'finished.' % PACKAGE_REL), lines
         prefix = 'export: the package was not committed: git add failed: '
         assert lines[1].startswith(prefix), lines

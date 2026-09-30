@@ -530,10 +530,10 @@ def test_a_rewritten_tests_table_leaves_an_anchor_as_it_was(anchored):
 
 
 # purlin: evidence PROOF-82
-def test_a_signature_file_leaves_an_anchor_as_it_was(anchored):
+def test_a_signoff_file_leaves_an_anchor_as_it_was(anchored):
     _record_leaves_the_anchor(
-        anchored, 'specs/_anchors/security.signatures/RULE-1.json',
-        '{"rule": "RULE-1"}\n')
+        anchored, '.purlin/evidence/package/1.0.0.signoffs/jane.json',
+        '{"schema": "purlin-signoff/1"}\n')
 
 
 # purlin: evidence PROOF-83
@@ -552,7 +552,7 @@ def test_an_anchors_code_part_is_the_blob_ids_the_commit_holds(anchored):
     held = []
     for line in anchored.git('ls-tree', '-r', 'HEAD').splitlines():
         head, path = line.split('\t', 1)
-        if not path.startswith(records) and '.signatures/' not in path:
+        if not path.startswith(records):
             held.append('%s %s' % (path, head.split()[2]))
     expected = hashlib.sha256(
         '\n'.join(sorted(held)).encode('utf-8')).hexdigest()

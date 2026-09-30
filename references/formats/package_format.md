@@ -1,22 +1,31 @@
-> Format-Version: 6
+> Format-Version: 7
 
 # Package format
 
 The evidence package is one data file describing one version: whether it is
-finished, the total of rules, the count at each step and what is left to do,
-then every rule's words, its proofs and its tests, each result on each
-operating system, what the audit found and who signed it. It is written for a
-reviewer who cannot open the repository.
+finished, the total of rules, the count that pass, what the audit found and
+what is left to do, then every rule's words, its proofs and its tests, each
+result on each operating system and what the audit found, and last every hand
+check. It is written for a reviewer who cannot open the repository.
 
 ```
 .purlin/evidence/package/<version>.json
 ```
 
-`purlin:export` writes it at any time and at any gate, and at the gate
-`signed` `purlin:sign` writes and commits it before it writes the tag
-`signed/<version>`, so the tagged commit carries the
-package that describes it. The file is tracked like the rest of
-`.purlin/evidence/`.
+`purlin:export` writes it at any time and at any gate. `purlin:test --release`
+writes it once per release run and commits it alone: at the gate `passed` it
+then writes the tag `passed/<version>` on that commit; at `signed` the first
+sign-off writes `signed/<version>`. The tagged commit carries the package that
+describes it. The file is tracked like the rest of `.purlin/evidence/`.
+
+The sign-offs sit beside the package, one file per signer:
+
+```
+.purlin/evidence/package/<version>.signoffs/<signer-slug>.json
+```
+
+A sign-off never rewrites the package, so every sign-off of a version carries
+the same `fingerprint`. `signature_format.md` holds the sign-off's fields.
 
 ## What the package is for
 
@@ -28,12 +37,12 @@ how it is shown is the receiving system's job.
 
 ## The file name
 
-`<version>` is the version the project states, read as `purlin:sign` reads it
-for the tag: the `VERSION` file at the project root, else `version` in
+`<version>` is the version the project states, read as `purlin:test --release`
+reads it for the tag: the `VERSION` file at the project root, else `version` in
 `package.json`, else the `[project]` or `[tool.poetry]` version in
 `pyproject.toml`, else the `<Version>` of the first `*.csproj` at the root.
 `purlin:export --release <name>` names another, which is the same name
-`purlin:sign --release <name>` gives the tag. Where the project states none
+`purlin:test --release <name>` gives the tag. Where the project states none
 and `--release` names none, `purlin:export` prints `No version: nothing in
 this project states one. Run purlin:export --release <version>, or write it
 to a VERSION file.`, writes nothing and exits 1.
@@ -41,30 +50,26 @@ to a VERSION file.`, writes nothing and exits 1.
 ## What it reads
 
 The package is built from a checkout of one commit, so it describes only what
-git holds. Evidence or a signature that is written and not committed is left
-out, and each such file is named in `warnings` and on the terminal.
+git holds. Evidence that is written and not committed is left out, and each such file is named in `warnings` and on the terminal.
 
 That commit is the one the evidence was taken at: `HEAD`, stepping back over
-any commit that changed nothing but files under `.purlin/evidence/package/`.
-When `purlin:sign` writes the package for a tag, this is the parent of the
-commit that carries the package, because a file cannot name the commit that
-contains it.
+any commit that changed nothing but files under `.purlin/evidence/package/`,
+a sign-off included. When `purlin:test --release` writes the package, this is
+the parent of the commit that carries the package, because a file cannot name
+the commit that contains it.
 
 ## Fields
 
 ```json
 {
-  "schema": "purlin-package/2",
-  "state": "not finished",
+  "schema": "purlin-package/3",
+  "state": "finished",
   "rules": 42,
-  "steps": {"passed": 40, "signed": 30, "strong": 35},
+  "steps": {"passed": 42},
+  "audit": {"not_audited": 8, "strong": 32, "weak": 2},
   "left": [
-    {"command": "purlin:build", "count": 2, "kind": "to_fix",
-     "text": "2 rules to fix"},
-    {"command": "purlin:audit", "count": 5, "kind": "to_audit",
-     "text": "5 rules to audit"},
-    {"command": "purlin:sign", "count": 5, "kind": "to_sign",
-     "text": "5 rules to sign"}
+    {"command": "purlin:build", "count": 2, "kind": "to_strengthen",
+     "text": "2 rules to strengthen"}
   ],
   "purlin_version": "0.10.0",
   "project": "ledger",
@@ -73,8 +78,11 @@ contains it.
   "commit": "4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1d9f4c2e7",
   "gate": "signed",
   "mutation_engine": "auto",
-  "min_strength": 80,
   "features": [],
+  "hand_checks": [
+    {"checked": "in the sign-offs", "feature": "ledger_screen",
+     "proofs": ["PROOF-3"], "rule": "RULE-2"}
+  ],
   "warnings": [],
   "fingerprint": "<sha256>"
 }
@@ -85,19 +93,20 @@ The state is the first thing a reader sees after the schema.
 
 | Field | Type | What it holds |
 |---|---|---|
-| `schema` | string | `purlin-package/2` |
+| `schema` | string | `purlin-package/3` |
 | `state` | string | `finished` or `not finished`. See "The state" |
 | `rules` | int | the rules of the project, each counted once under the feature that owns it |
-| `steps` | object | the rules that reached each step, `passed`, then `strong` and `signed` where the gate names them; each step counts only rules that reached the one before it |
+| `steps` | object | `{"passed": p}`: the rules whose tests pass, a hand check included |
+| `audit` | object | `{"strong", "weak", "not_audited"}`: what the audit found, over the rules whose tests pass |
 | `left` | array | the lines of `Left to do`, in the order the work is done: `{kind, count, text, command}` each. See "What is left" |
 | `purlin_version` | string | the version of Purlin that wrote the package |
 | `project` | string | `project_name` in `.purlin/config.json`, else the project folder's name |
-| `version`, `tag` | string, string | the version the file is named for, and the tag named for it, `signed/<version>` |
+| `version`, `tag` | string, string | the version the file is named for, and the tag the release writes for it: `passed/<version>` at the gate `passed`, `signed/<version>` at `signed` |
 | `commit` | string | the full sha the evidence was taken at. See "What it reads" |
-| `gate` | string | `passed`, `strong` or `signed` |
+| `gate` | string | `passed` or `signed` |
 | `mutation_engine` | string or null | the setting as the project resolves it |
-| `min_strength` | int or null | the test strength a rule's strong cell compares with |
 | `features` | array | one entry per spec, ordered by name |
+| `hand_checks` | array | one entry per rule with a `@manual` proof, by feature then rule number. See "Hand checks" |
 | `warnings` | array of strings | one sentence per file left out, then each warning reading the specs and the evidence raised |
 | `fingerprint` | string | sha256 hex. See "The fingerprint" |
 
@@ -124,8 +133,7 @@ A feature entry holds exactly these five fields.
 | `tests` | array | `{proof, file, name}` per test backing a proof, then per test marked with the rule's own id, whose `proof` is then the `RULE-N` |
 | `results` | array | one entry per evidence section, ordered by operating system then source. See below |
 | `audit` | object or null | what the audit found for the rule's current words, proof and test. Null where no audit has |
-| `signatures` | array | every signature whose hashes still match the rule as it now stands, ordered by `at`. A signature that no longer matches is not listed |
-| `statuses` | object | one `{word, reasons}` per step up to the gate: `passed` always, `strong` at the gates `strong` and `signed`, `signed` at `signed`. A status above the gate is absent, not null. A pinned anchor's rule a person signed as not applying reads `does not apply` in each, with the reason `by <signer>: <why>` |
+| `statuses` | object | `{"passed": {word, reasons}, "strong": {word, reasons}}` at both gates. `strong` is what the audit found, and nothing waits on it |
 
 Each `results` entry:
 
@@ -154,23 +162,18 @@ Each `results` entry:
 | `commit` | string | the full sha the audit ran at |
 | `source` | string | `local` or `ci`, the evidence file the entry sits in |
 
-Each `signatures` entry:
+### Hand checks
+
+Each `hand_checks` entry:
 
 | Field | Type | What it holds |
 |---|---|---|
-| `signer` | string | the signer's email, as git holds it |
-| `signer_name` | string or null | the signer's name, as git holds it |
-| `key_fingerprint` | string or null | `SHA256:` and the fingerprint of the key the signer signs with |
-| `applies_to` | string or null | the spec that holds the rule |
-| `machines` | object | `{os: machine}`, the machine each operating system's results came from when it was signed |
-| `at` | string | the time the signature file records |
-| `committed_at` | string or null | when the commit carrying it was made |
-| `note` | string or null | what the signer wrote about a hand check |
-| `does_not_apply` | string or null | the reason a pinned anchor's rule does not apply to this project, where the signer signed it so; null otherwise |
-| `gate` | string or null | the gate in force when it was signed |
-| `path` | string | the signature file |
-| `signed_commit` | bool | whether the commit that carries it is signed and that signature verifies, which is what makes a signature count |
-| `locked` | object | `signed_hash`, `rule_hash`, `proof_hash`, `test_hash`, `test_hash_kind`, `code_hash` and `audit_hash`, the hashes it binds (`signature_format.md`) |
+| `feature` | string | the spec that holds the rule |
+| `rule` | string | `RULE-N` |
+| `proofs` | array of strings | the rule's `@manual` proofs, by number |
+| `checked` | false or string | `false` at the gate `passed`, where nobody signs and no hand check is recorded; `in the sign-offs` at `signed`, where each signer types what they saw |
+
+What a signer typed for a hand check is in that signer's sign-off, not here.
 
 Nothing in the package names who last changed a test.
 
@@ -180,8 +183,11 @@ Every time is ISO 8601 UTC with `Z`.
 
 | State | When |
 |---|---|
-| `finished` | nothing is left to do: `left` is empty |
-| `not finished` | `left` holds at least one line |
+| `finished` | no line of `left` stops a release: every rule's tests pass, and every spec and test comment can be read |
+| `not finished` | `left` holds a line of `to_repair`, `to_correct`, `to_fix`, `no_test`, `to_test` or `to_test_remote` |
+
+A weak rule (`to_strengthen`) and a rule with no proof (`no_proof`) are listed
+in `left` and leave the state `finished`.
 
 The state and the gate beside it are what the receiving system reads to
 decide what the package may be used for.
@@ -204,21 +210,10 @@ and is carried by the project:
 | `no_test` | `1 rule to write a test for`, `<n> rules to write a test for` | `purlin:build` |
 | `to_test` | `1 rule to test`, `<n> rules to test` | `purlin:test` |
 | `to_test_remote` | `1 rule to test on <systems>`, `<n> rules to test on <systems>` | `purlin:test --remote` |
-| `to_test_by_hand` | `1 rule to test by hand`, `<n> rules to test by hand` | `purlin:sign` |
-| `to_confirm` | `1 rule to confirm as not applying`, `<n> rules to confirm as not applying` | `purlin:sign` |
-| `to_audit` | `1 rule to audit`, `<n> rules to audit` | `purlin:audit` |
-| `to_measure` | `1 rule to measure`, `<n> rules to measure` | `purlin:audit` |
 | `to_strengthen` | `1 rule to strengthen`, `<n> rules to strengthen` | `purlin:build` |
-| `no_scope` | `1 rule to tie to its files`, `<n> rules to tie to their files` | `purlin:spec` |
-| `to_sign` | `1 rule to sign`, `<n> rules to sign` | `purlin:sign` |
-| `to_tag` | `the version to tag`, with `count` 1 | `purlin:sign` |
 
 `<systems>` names each system in the words `Linux/Unix`, `macOS` and
-`Windows`, in that order. `to_tag` is the one line at the gate `signed` once
-nothing else is left and no `signed/*` tag names the commit. The package
-leaves it out when `purlin:sign` writes the package for the tag, and when the
-package is read again at the commit the tag `signed/<version>` names, so the
-package the tag carries reads `finished`.
+`Windows`, in that order. `no_proof` is counted at the gate `signed` alone.
 
 ## The canonical form
 
@@ -243,5 +238,6 @@ bytes, so an edit to whitespace alone is caught too.
 fingerprint.`, or names the mismatch and exits 1.
 
 The fingerprint shows the file was not changed after it was written. It is
-not a signature: the tag's own signature, and the regulated system's, are
-what say who stands behind it.
+not a signature: each sign-off carries it as `package_hash`, and the sign-off's
+signed commit, and the regulated system's signature, are what say who stands
+behind it.

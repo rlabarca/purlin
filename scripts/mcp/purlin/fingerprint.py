@@ -40,11 +40,10 @@ PARTS = ('spec', 'code', 'tests')
 _GLOB_CHARS = ('*', '?', '[')
 
 # The records Purlin itself writes, which no anchor's code part reads:
-# the results of every run and the evidence package, the tests table a
-# run renders, and the signatures.
+# the results of every run, the evidence package and its sign-offs, and
+# the tests table a run renders.
 RECORDS = (':(exclude).purlin/evidence',
-           ':(exclude).purlin/tests.md',
-           ':(exclude,glob)specs/**/*.signatures/**')
+           ':(exclude).purlin/tests.md')
 
 
 # ---------------------------------------------------------------------------

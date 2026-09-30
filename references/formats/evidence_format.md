@@ -168,10 +168,9 @@ something, each finding one sentence, and `undecided` when it could not
 settle, its findings being the reason it gave. A rule the model could not be
 reached for gets no entry at all, so the next audit reads it again.
 
-`model` and `criteria` name the judge and the instructions it was given. A
-signature locks neither, nor the `notes`: it locks the `verdict`, the test
-strength and the `findings`, so a new model that finds the same thing ends no
-signature.
+`model` and `criteria` name the judge and the instructions it was given. The
+evidence package carries each rule's `verdict`, `findings` and test strength
+as they stand at the release commit.
 
 An audit entry answers a rule while its `rule_hash`, `proof_hash` and
 `test_hash` all equal the rule's current ones. `commit` and `at` are shown and
@@ -187,7 +186,7 @@ so an edit counts before it is committed.
 | Part | What it covers |
 |---|---|
 | `spec` | the spec's own rule and proof lines. A rule line is `<spec> <RULE-N> <text> <tag>`; a proof line is `<spec> <PROOF-N> <rules> <text>`, then `@manual` and `@env(<os>)` where the proof carries them. `> Description:` and the other metadata fields are not covered |
-| `code` | for a feature, the tracked files the `> Scope:` entries reach, each as `<path> <blob>`. A file names itself, a directory names every tracked file under it, and an entry holding `*`, `?` or `[` is a git glob, so `scripts/**/*.py` reaches every Python file under `scripts/`. For an anchor, every tracked file but the records Purlin writes: `.purlin/evidence/` whole, results and package, `.purlin/tests.md`, and every `*.signatures/` folder under `specs/`. Any other change to the project changes it; writing a record does not |
+| `code` | for a feature, the tracked files the `> Scope:` entries reach, each as `<path> <blob>`. A file names itself, a directory names every tracked file under it, and an entry holding `*`, `?` or `[` is a git glob, so `scripts/**/*.py` reaches every Python file under `scripts/`. For an anchor, every tracked file but the records Purlin writes: `.purlin/evidence/` whole, the results, the evidence package and its sign-offs, and `.purlin/tests.md`. Any other change to the project changes it; writing a record does not |
 | `tests` | every tracked test file carrying a marker for the feature, each as `<path> <blob>`. A test file is one a suite of the `tests` setting names |
 
 A file git does not track is in no part: it would change the fingerprint on
