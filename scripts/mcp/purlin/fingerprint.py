@@ -2,10 +2,9 @@
 
 A fingerprint has three parts, each a sha256 hex string:
 
-    spec   the rule and proof lines of the feature, and of every anchor whose
-           rules count inside it: the anchors it requires, transitively, and
-           every global anchor
-    code   the files its `> Scope:` names
+    spec   the spec's own rule and proof lines
+    code   the files its `> Scope:` names; for an anchor, the project: every
+           tracked file but `RECORDS`
     tests  the test files that carry a marker for it
 
 Every file is read from the working tree through `git hash-object`, so an edit
@@ -39,6 +38,13 @@ from purlin import specs as specs_module                      # noqa: E402
 PARTS = ('spec', 'code', 'tests')
 
 _GLOB_CHARS = ('*', '?', '[')
+
+# The records Purlin itself writes, which no anchor's code part reads:
+# the results of every run and the evidence package, the tests table a
+# run renders, and the signatures.
+RECORDS = (':(exclude).purlin/evidence',
+           ':(exclude).purlin/tests.md',
+           ':(exclude,glob)specs/**/*.signatures/**')
 
 
 # ---------------------------------------------------------------------------
@@ -168,6 +174,58 @@ def code_hash(project_root, scope):
     return _files_part(project_root, files)
 
 
+def project_files(project_root):
+    """Every tracked file but `RECORDS`, sorted: what an anchor covers."""
+    found = _git_lines(project_root, ['ls-files', '-z', '--'] + list(RECORDS))
+    return sorted(set(found or ()))
+
+
+def project_hash(project_root):
+    """The `code` part of an anchor: `_files_part` over `project_files`.
+
+    The blob id of a regular file git reads as unchanged comes from the
+    index (`git ls-files -s`); only the files `git ls-files -m` names, and
+    any link or submodule, are hashed from the working tree. The answer
+    equals `_files_part(project_root, project_files(project_root))`, and a
+    large project is not read whole on every status.
+    """
+    staged = _git_lines(project_root,
+                        ['ls-files', '-s', '-z', '--'] + list(RECORDS))
+    changed = _git_lines(project_root,
+                         ['ls-files', '-m', '-z', '--'] + list(RECORDS))
+    if staged is None or changed is None:
+        return _files_part(project_root, project_files(project_root))
+    changed = set(changed)
+    ids = {}
+    slow = []
+    for entry in staged:
+        head, _, path = entry.partition('\t')
+        fields = head.split()
+        if (len(fields) == 3 and fields[0] in ('100644', '100755')
+                and fields[2] == '0' and path not in changed):
+            ids[path] = fields[1]
+        else:
+            slow.append(path)
+    ids.update(blob_ids(project_root, sorted(set(slow) - set(ids))))
+    return _hash_lines('%s %s' % (path, ids[path]) for path in ids)
+
+
+def code_part(project_root, info, cache=None):
+    """The `code` part of one spec's fingerprint.
+
+    `project_hash` for an anchor, `code_hash` of its `> Scope:` otherwise.
+    `cache` is a dict a caller passes to take the project hash once for
+    many anchors.
+    """
+    if not info.get('is_anchor'):
+        return code_hash(project_root, info.get('scope') or [])
+    if cache is None:
+        return project_hash(project_root)
+    if 'project_hash' not in cache:
+        cache['project_hash'] = project_hash(project_root)
+    return cache['project_hash']
+
+
 # The two reasons a feature spec is incomplete.
 NO_SCOPE_LINE = 'no > Scope: line'
 SCOPE_NAMES_NOTHING = '> Scope: names nothing that exists'
@@ -178,8 +236,7 @@ def incomplete_reason(project_root, feature, features=None):
 
     A feature spec is incomplete when it has no `> Scope:` line, or when its
     scope reaches no tracked file: Purlin then cannot tell which code belongs
-    to it. An anchor is never incomplete, because the code behind its rules
-    belongs to the features that use it.
+    to it. An anchor is never incomplete: its code part is the project.
     """
     features = _features(project_root, features)
     info = _info(feature, features)
@@ -215,26 +272,14 @@ def proof_line(spec_path, proof_id, proof):
     return ' '.join(parts)
 
 
-def counted_specs(feature, features):
-    """The feature and every anchor whose rules count inside it, in walk order."""
-    _info(feature, features)
-    names = [feature]
-    for name, _, _ in specs_module.rule_refs(feature, features):
-        if name not in names:
-            names.append(name)
-    return names
-
-
 def spec_lines(feature, features):
-    """Every rule and proof line the `spec` part hashes, sorted."""
-    lines = []
-    for name in counted_specs(feature, features):
-        info = features[name]
-        path = info['spec_path']
-        for rule_id in info.get('rule_order', ()):
-            lines.append(rule_line(path, rule_id, info['rules'][rule_id]))
-        for proof_id, proof in sorted(info.get('proofs', {}).items()):
-            lines.append(proof_line(path, proof_id, proof))
+    """The spec's own rule and proof lines, which the `spec` part hashes, sorted."""
+    info = _info(feature, features)
+    path = info['spec_path']
+    lines = [rule_line(path, rule_id, info['rules'][rule_id])
+             for rule_id in info.get('rule_order', ())]
+    lines += [proof_line(path, proof_id, proof)
+              for proof_id, proof in sorted(info.get('proofs', {}).items())]
     return sorted(lines)
 
 
@@ -273,19 +318,19 @@ def tests_hash(project_root, feature, index=None):
 # The fingerprint
 # ---------------------------------------------------------------------------
 
-def fingerprint(project_root, feature, features=None, index=None):
+def fingerprint(project_root, feature, features=None, index=None, cache=None):
     """`{spec, code, tests}` for one feature, taken from the working tree now.
 
-    `features` is `specs.scan_specs`'s answer and `index` is
-    `marker_index`'s; a caller taking many fingerprints passes both so the
-    specs are parsed and the test sources read once. A feature no spec
-    defines raises `KeyError`.
+    `features` is `specs.scan_specs`'s answer, `index` is `marker_index`'s
+    and `cache` is `code_part`'s; a caller taking many fingerprints passes
+    all three so the specs are parsed, the test sources read and the project
+    hashed once. A feature no spec defines raises `KeyError`.
     """
     features = _features(project_root, features)
     info = _info(feature, features)
     return {
         'spec': spec_hash(feature, features),
-        'code': code_hash(project_root, info.get('scope') or []),
+        'code': code_part(project_root, info, cache),
         'tests': tests_hash(project_root, feature, index),
     }
 
@@ -316,13 +361,14 @@ def untracked_parts(project_root, feature, features=None, index=None):
     """`{scope, tests}`: `untracked`'s answer, split by why each file counts.
 
     `scope` lists the files under a `> Scope:` entry and `tests` the files
-    beside a marker file that no scope entry reaches, each sorted.
+    beside a marker file that no scope entry reaches, each sorted. An anchor
+    names no files, so for an anchor `scope` is empty.
     """
     features = _features(project_root, features)
     info = _info(feature, features)
     in_scope = set()
-    specs = [pathspec(entry) for entry in info.get('scope') or ()
-             if entry.strip()]
+    scope = () if info.get('is_anchor') else info.get('scope') or ()
+    specs = [pathspec(entry) for entry in scope if entry.strip()]
     if specs:
         in_scope.update(_git_lines(
             project_root,
@@ -374,9 +420,9 @@ def selection(project_root, features=None, os_name=None, index=None):
       cannot be told: `names no files, so every run includes it`.
 
     No commit is compared, so the answer survives a rebase, a merge and a
-    tree with changes no commit holds. The `spec` part covers the anchors a
-    feature requires, transitively, and every global anchor, so an edit to
-    one of those anchors selects the feature too.
+    tree with changes no commit holds. An anchor's `code` part is the
+    project, so an edit to any tracked file outside `RECORDS` selects every
+    anchor.
     """
     from purlin import evidence as evidence_module
 
@@ -385,6 +431,7 @@ def selection(project_root, features=None, os_name=None, index=None):
     if index is None:
         index = marker_index(project_root)
     look_for_untracked = any_untracked(project_root)
+    cache = {}
     out = []
     for name in sorted(features):
         reasons = []
@@ -399,7 +446,7 @@ def selection(project_root, features=None, os_name=None, index=None):
                 if (_text(entry['section'].get('at'))
                         > _text(newest['section'].get('at'))):
                     newest = entry
-            now = fingerprint(project_root, name, features, index)
+            now = fingerprint(project_root, name, features, index, cache)
             commit = _text(newest['section'].get('commit'))[:7]
             for part in differing_parts(newest['section'].get('fingerprint'),
                                         now):

@@ -1,4 +1,4 @@
-> Format-Version: 6
+> Format-Version: 7
 
 # Evidence format
 
@@ -186,8 +186,8 @@ so an edit counts before it is committed.
 
 | Part | What it covers |
 |---|---|
-| `spec` | the rule and proof lines of the feature, of every anchor it requires, transitively, and of every anchor carrying `> Global: true`. A rule line is `<spec> <RULE-N> <text> <tag>`; a proof line is `<spec> <PROOF-N> <rules> <text>`, then `@manual` and `@env(<os>)` where the proof carries them. `> Description:` and the other metadata fields are not covered |
-| `code` | the tracked files the `> Scope:` entries reach, each as `<path> <blob>`. A file names itself, a directory names every tracked file under it, and an entry holding `*`, `?` or `[` is a git glob, so `scripts/**/*.py` reaches every Python file under `scripts/` |
+| `spec` | the spec's own rule and proof lines. A rule line is `<spec> <RULE-N> <text> <tag>`; a proof line is `<spec> <PROOF-N> <rules> <text>`, then `@manual` and `@env(<os>)` where the proof carries them. `> Description:` and the other metadata fields are not covered |
+| `code` | for a feature, the tracked files the `> Scope:` entries reach, each as `<path> <blob>`. A file names itself, a directory names every tracked file under it, and an entry holding `*`, `?` or `[` is a git glob, so `scripts/**/*.py` reaches every Python file under `scripts/`. For an anchor, every tracked file but the records Purlin writes: `.purlin/evidence/` whole, results and package, `.purlin/tests.md`, and every `*.signatures/` folder under `specs/`. Any other change to the project changes it; writing a record does not |
 | `tests` | every tracked test file carrying a marker for the feature, each as `<path> <blob>`. A test file is one a suite of the `tests` setting names |
 
 A file git does not track is in no part: it would change the fingerprint on
@@ -195,9 +195,9 @@ the one machine that holds it and nowhere else. It joins the fingerprint once
 `git add` tracks it, and until then Purlin names it when it sits under the
 feature's scope or in the directory of one of its marker files.
 
-A spec with no `> Scope:` line names no files. Its `code` part is the sha256
-of the empty string, and its sections are compared on `spec` and `tests`
-alone. A scope entry that reaches no tracked file, a path that does not exist
+A feature spec with no `> Scope:` line names no files. Its `code` part is
+the sha256 of the empty string, and its sections are compared on `spec` and
+`tests` alone. A scope entry that reaches no tracked file, a path that does not exist
 or a glob that matches nothing, is named and adds nothing.
 
 A section is **current** when all three of its stored parts equal a

@@ -21,16 +21,12 @@ from purlin import fingerprint, specs  # noqa: E402
 EMPTY = hashlib.sha256(b'').hexdigest()
 
 
-def _spec(name, rules, proofs, scope=None, requires=None, anchor=False,
-          is_global=False, description='What it does.'):
+def _spec(name, rules, proofs, scope=None, anchor=False,
+          description='What it does.'):
     lines = ['# %s: %s' % ('Anchor' if anchor else 'Feature', name), '',
              '> Description: %s' % description]
-    if requires:
-        lines.append('> Requires: %s' % requires)
     if scope is not None:
         lines.append('> Scope: %s' % scope)
-    if is_global:
-        lines.append('> Global: true')
     lines += ['', '## Rules', '']
     lines += ['- RULE-%d: %s' % (i + 1, text) for i, text in enumerate(rules)]
     lines += ['', '## Proof', '']
@@ -166,18 +162,17 @@ def test_a_rewritten_description_changes_no_part(project):
     assert project.fp('login') == first
 
 
-def _requiring_api(project, api_proof):
-    project.login(requires='api')
+def _api(project, rule):
     project.write('specs/_anchors/api.md', _spec(
-        'api', ['Responses carry a request id'], [api_proof], anchor=True))
+        'api', [rule], ['GET /x; verify the header'], anchor=True))
 
 
 # purlin: evidence PROOF-3
-def test_a_changed_proof_of_a_required_anchor_changes_spec_alone(project):
-    _requiring_api(project, 'GET /x; verify the header')
+def test_a_reworded_anchor_rule_leaves_a_feature_as_it_was(project):
+    _api(project, 'Carry a request id')
     first = project.fp('login')
-    _requiring_api(project, 'GET /y; verify the header')
-    assert _changed(first, project.fp('login')) == ['spec']
+    _api(project, 'Carry a trace id')
+    assert project.fp('login') == first
 
 
 # purlin: evidence PROOF-34
@@ -185,55 +180,6 @@ def test_manual_added_to_a_proof_changes_spec_alone(project):
     first = project.fp('login')
     project.login(proof=LOGIN_PROOF + ' @manual')
     assert _changed(first, project.fp('login')) == ['spec']
-
-
-# --- RULE-3 and RULE-23 -----------------------------------------------------
-
-# purlin: evidence PROOF-4
-def test_an_anchor_rule_edit_reaches_every_feature_that_requires_it(tmp_path):
-    p = Project(tmp_path)
-    p.write('specs/_anchors/api.md', _spec('api', ['Carry a request id'],
-                                           ['GET /x; verify it'], anchor=True))
-    p.write('specs/_anchors/orders.md', _spec('orders', ['Orders list'],
-                                              ['GET; verify'], requires='api',
-                                              anchor=True))
-    p.write('specs/auth/login.md', _spec('login', ['Login works'],
-                                         ['POST; verify'], requires='orders'))
-    p.write('specs/pay/billing.md', _spec('billing', ['Bills add up'],
-                                          ['Sum; verify']))
-    p.commit()
-    names = ('api', 'orders', 'login', 'billing')
-    before = {name: p.fp(name) for name in names}
-    p.write('specs/_anchors/api.md', _spec('api', ['Carry a trace id'],
-                                           ['GET /x; verify it'], anchor=True))
-    after = {name: p.fp(name) for name in names}
-    for name in ('api', 'login'):
-        assert _changed(before[name], after[name]) == ['spec'], name
-    assert after['billing'] == before['billing']
-
-
-def _security(project, rule, is_global):
-    project.write('specs/_anchors/security.md', _spec(
-        'security', [rule], ['Grep for eval(; verify 0'], anchor=True,
-        is_global=is_global))
-
-
-# purlin: evidence PROOF-5
-def test_a_global_anchor_rule_edit_reaches_a_feature_that_does_not_name_it(
-        project):
-    _security(project, 'No eval anywhere', is_global=True)
-    first = project.fp('login')
-    _security(project, 'No exec anywhere', is_global=True)
-    assert _changed(first, project.fp('login')) == ['spec']
-
-
-# purlin: evidence PROOF-35
-def test_an_anchor_that_is_not_global_leaves_a_feature_that_does_not_name_it(
-        project):
-    _security(project, 'No eval anywhere', is_global=False)
-    first = project.fp('login')
-    _security(project, 'No exec anywhere', is_global=False)
-    assert project.fp('login') == first
 
 
 # --- RULE-4, RULE-24 and RULE-25 --------------------------------------------
@@ -529,3 +475,103 @@ def test_a_feature_with_no_evidence_is_selected_as_never_run_here(project):
     (login,) = fingerprint.selection(project.root)
     assert (login['feature'], login['selected'], login['reasons']) == (
         'login', True, ['no run on %s yet' % word])
+
+
+# --- RULE-30 to RULE-33: an anchor's code part is the project ---------------
+
+SECURITY = _spec('security', ['No eval anywhere'],
+                 ['Grep every file for eval(; verify 0'], anchor=True)
+
+
+@pytest.fixture
+def anchored(project):
+    """`project` with the anchor `security` and a tracked `docs/guide.md`."""
+    project.write('specs/_anchors/security.md', SECURITY)
+    project.write('docs/guide.md', 'How to use it.\n')
+    project.commit()
+    return project
+
+
+# purlin: evidence PROOF-78
+def test_an_edit_to_a_file_no_scope_names_changes_an_anchors_code(anchored):
+    first = anchored.fp('security')
+    anchored.write('docs/guide.md', 'How to use it, again.\n')
+    assert _changed(first, anchored.fp('security')) == ['code']
+
+
+# purlin: evidence PROOF-79
+def test_an_untracked_file_leaves_an_anchor_as_it_was(anchored):
+    first = anchored.fp('security')
+    anchored.write('docs/draft.md', 'Not added.\n')
+    assert anchored.fp('security') == first
+
+
+def _record_leaves_the_anchor(project, rel, text):
+    first = project.fp('security')
+    project.write(rel, text)
+    project.git('add', '-f', rel)
+    project.git('commit', '-q', '-m', 'chore: a record')
+    assert rel in project.git('ls-files', '--', rel)
+    assert project.fp('security') == first, rel
+
+
+# purlin: evidence PROOF-80
+def test_a_new_evidence_file_leaves_an_anchor_as_it_was(anchored):
+    _record_leaves_the_anchor(anchored, '.purlin/evidence/local/login.json',
+                              '{"schema": "purlin-evidence/2"}\n')
+
+
+# purlin: evidence PROOF-81
+def test_a_rewritten_tests_table_leaves_an_anchor_as_it_was(anchored):
+    anchored.write('.purlin/tests.md', '# Tests\n')
+    anchored.commit()
+    _record_leaves_the_anchor(anchored, '.purlin/tests.md',
+                              '# Tests\n\n| login | 1 |\n')
+
+
+# purlin: evidence PROOF-82
+def test_a_signature_file_leaves_an_anchor_as_it_was(anchored):
+    _record_leaves_the_anchor(
+        anchored, 'specs/_anchors/security.signatures/RULE-1.json',
+        '{"rule": "RULE-1"}\n')
+
+
+# purlin: evidence PROOF-83
+def test_an_evidence_package_leaves_an_anchor_as_it_was(anchored):
+    _record_leaves_the_anchor(anchored, '.purlin/evidence/package/1.0.0.json',
+                              '{"version": "1.0.0"}\n')
+
+
+# purlin: evidence PROOF-84
+def test_an_anchors_code_part_is_the_blob_ids_the_commit_holds(anchored):
+    anchored.write('.purlin/tests.md', '# Tests\n')
+    anchored.commit()
+    anchored.check_out_again('true')
+    assert b'\r\n' in anchored.read_bytes('docs/guide.md')
+    records = ('.purlin/evidence/', '.purlin/tests.md')
+    held = []
+    for line in anchored.git('ls-tree', '-r', 'HEAD').splitlines():
+        head, path = line.split('\t', 1)
+        if not path.startswith(records) and '.signatures/' not in path:
+            held.append('%s %s' % (path, head.split()[2]))
+    expected = hashlib.sha256(
+        '\n'.join(sorted(held)).encode('utf-8')).hexdigest()
+    assert anchored.fp('security')['code'] == expected
+
+
+# purlin: evidence PROOF-85
+def test_a_run_with_no_feature_named_selects_an_anchor_after_an_edit(anchored):
+    from purlin import evidence
+    head = anchored.git('rev-parse', 'HEAD').strip()
+    os_name = evidence.host_os()
+    anchored.write('.purlin/evidence/local/security.json', json.dumps({
+        'schema': 'purlin-evidence/2', 'feature': 'security',
+        'source': 'local', 'spec': 'specs/_anchors/security.md',
+        'platforms': {os_name: {
+            'commit': head, 'at': '2026-09-30T12:00:00Z',
+            'fingerprint': anchored.fp('security')}}}))
+    anchored.write('docs/guide.md', 'How to use it, again.\n')
+    (entry,) = [row for row in fingerprint.selection(anchored.root)
+                if row['feature'] == 'security']
+    assert (entry['selected'], entry['reasons']) == (
+        True, ['code changed since %s' % head[:7]])

@@ -1,8 +1,9 @@
 # Feature: evidence
 
 > Description: The fingerprint says what a feature's evidence was taken over:
->   its rule and proof lines, the files its `> Scope:` names, and the files
->   that carry its proof markers, each read from the working tree. The reader
+>   its own rule and proof lines, the files its `> Scope:` names, or for an
+>   anchor every tracked file but Purlin's records, and the files that carry
+>   its proof markers, each read from the working tree. The reader
 >   loads a feature's two evidence files, one per source, and says which
 >   sections are current against a fingerprint taken now, which parts are out
 >   of date, which audit entry answers a rule, which section is the newest,
@@ -11,14 +12,13 @@
 >   The reader never writes.
 > Scope: scripts/mcp/purlin/fingerprint.py, scripts/mcp/purlin/evidence.py
 > Stack: python/stdlib, hashlib, json, subprocess (list-only)
-> Highest-Rule: 29
-> Highest-Proof: 77
+> Highest-Rule: 33
+> Highest-Proof: 85
 
 ## Rules
 
 - RULE-1: A fingerprint is three 64-character sha256 hex strings named `spec`, `code` and `tests`
-- RULE-2: The `spec` part covers the rule and proof lines of the feature, of every anchor it requires transitively and of every global anchor; editing a rule's text changes `spec` and no other part
-- RULE-3: Editing a rule of an anchor changes the `spec` part of every feature that requires the anchor, directly or through another anchor
+- RULE-2: The `spec` part covers the spec's own rule and proof lines; editing a rule's text changes `spec` and no other part
 - RULE-4: The `code` part covers the tracked files the `> Scope:` entries reach, and an entry naming a file reaches that file; editing a file it reaches changes `code` and no other part
 - RULE-5: A scope entry that reaches no tracked file, because the path does not exist or the glob matches nothing, is listed as unmatched, and the fingerprint is still taken
 - RULE-6: A spec with no `> Scope:` line is reported incomplete with the reason `no > Scope: line`, and its fingerprint is still taken, with a `code` part that is the sha256 of the empty string
@@ -38,13 +38,16 @@
 - RULE-20: A section's result for a proof is the worst of the entries it lists against that proof: `fail` where one failed, else `not run` where one reads `missing` or `not run`, else `pass`, so a proof has passed only when every test tied to it ran and passed
 - RULE-21: A fingerprint is taken from the working tree, so an edit that is not committed changes it
 - RULE-22: Editing `> Description:` changes no part of the fingerprint
-- RULE-23: Editing a rule of an anchor carrying `> Global: true` changes the `spec` part of every feature; a feature that does not require an anchor without `> Global: true` is left unchanged
 - RULE-24: A `> Scope:` entry naming a directory reaches every tracked file under it
 - RULE-25: A `> Scope:` entry holding `*`, `?` or `[` is a glob
 - RULE-26: A test file under a folder whose name begins with `.` or is `node_modules`, `bin`, `obj` or `mutants` is not counted in the `tests` part
 - RULE-27: The machine the reader runs on is `windows` on Windows, `macos` on macOS, and `linux` on any other system
 - RULE-28: Where both sources hold a matching audit entry, the later `at` wins, and the entry names its source
 - RULE-29: A run with no feature named selects a feature that has no section for this machine's operating system in either source, with the reason `no run on <System> yet`, the system written as a person reads it
+- RULE-30: An anchor's `code` part covers every file git tracks but the records Purlin writes, so an edit to any other tracked file changes it and an untracked file does not
+- RULE-31: Writing Purlin's records, the evidence under `.purlin/evidence/`, the evidence package, `.purlin/tests.md` and a signature under a `*.signatures/` folder, leaves an anchor's `code` part as it was
+- RULE-32: An anchor's `code` part is taken the same on Windows, where git writes each text file out with CRLF, as the blob ids the commit holds
+- RULE-33: A run with no feature named selects an anchor after an edit to any tracked file outside Purlin's records, with the reason `code changed since <sha7>`
 
 ## Proof
 
@@ -53,11 +56,8 @@
 - PROOF-32 (RULE-21): `login` covers the committed file `src/login.py`, which is then edited and not committed; the fingerprint of `login` taken after the edit differs from the one taken before in `code` and in no other part
 - PROOF-2 (RULE-2): The rule `Valid credentials return 200` of `login` is reworded to `Valid credentials return 201`; the fingerprint of `login` differs from the one taken before in `spec` alone
 - PROOF-33 (RULE-22): The `> Description:` of `login` is rewritten from `What it does.` to `Something else entirely.`; all three parts of the fingerprint of `login` equal the ones taken before
-- PROOF-3 (RULE-2): `login` names `> Requires: api`, and the proof line of the anchor `api` is changed from `GET /x; verify the header` to `GET /y; verify the header`; the fingerprint of `login` differs from the one taken before in `spec` alone
+- PROOF-3 (RULE-2): The anchor `api` stands beside the feature `login`, and `api` RULE-1 is reworded from `Carry a request id` to `Carry a trace id`; all three parts of the fingerprint of `login` are as they were
 - PROOF-34 (RULE-2): `@manual` is added to the end of the one proof line of `login`; the fingerprint of `login` differs from the one taken before in `spec` alone
-- PROOF-4 (RULE-3): The anchor `api` is required by the anchor `orders`, `orders` is required by the feature `login`, and `billing` requires nothing; `api` RULE-1 is reworded from `Carry a request id` to `Carry a trace id`; the fingerprints of `api` and `login` each differ in `spec` alone, and the fingerprint of `billing` is the same as before
-- PROOF-5 (RULE-23): The anchor `security` carries `> Global: true`, and `login` does not name it in `> Requires:`; `security` RULE-1 is reworded from `No eval anywhere` to `No exec anywhere`, and the fingerprint of `login` differs from the one taken before in `spec` alone
-- PROOF-35 (RULE-23): The anchor `security` carries no `> Global:` line, and `login` does not name it in `> Requires:`; `security` RULE-1 is reworded from `No eval anywhere` to `No exec anywhere`, and the fingerprint of `login` is the same as before
 - PROOF-6 (RULE-4): `login` covers `src/login.py`, and that file is edited; the fingerprint of `login` differs from the one taken before in `code` alone
 - PROOF-36 (RULE-4): `login` covers `src/login.py`, and `src/other.py`, a tracked file outside the scope, is edited; all three parts of the fingerprint of `login` are as they were
 - PROOF-7 (RULE-24): `login` covers the folder `src`, which holds the tracked file `src/deep/token.py` one folder down; editing `src/deep/token.py` changes the fingerprint in `code` alone
@@ -125,3 +125,11 @@
 - PROOF-30 (RULE-20): A section lists `PROOF-1` twice, `pass` with each of two tests; the reader gives `PROOF-1` the result `pass`
 - PROOF-31 (RULE-20): A section lists `PROOF-1` once, `not run` with no test named; the reader gives `PROOF-1` the result `not run`
 - PROOF-76 (RULE-29): In a project whose one feature `login` has no evidence file in either source, a run with no feature named selects `login` with the one reason `no run on <System> yet`, `<System>` the running machine's word: `macOS` on a Mac, `Windows` on Windows, `Linux/Unix` elsewhere
+- PROOF-78 (RULE-30): The anchor `security` stands beside `login`, which covers `src/login.py`; `docs/guide.md`, a tracked file no `> Scope:` names, is edited and not committed; the fingerprint of `security` differs from the one taken before in `code` alone
+- PROOF-79 (RULE-30): Beside the anchor `security`, `docs/draft.md` is written and not added to git; all three parts of the fingerprint of `security` are as they were
+- PROOF-80 (RULE-31): A new evidence file `.purlin/evidence/local/login.json` is written and committed; the fingerprint of the anchor `security` is the same as before
+- PROOF-81 (RULE-31): The tracked table `.purlin/tests.md` is rewritten and committed; the fingerprint of the anchor `security` is the same as before
+- PROOF-82 (RULE-31): A signature file `specs/_anchors/security.signatures/RULE-1.json` is written and committed; the fingerprint of the anchor `security` is the same as before
+- PROOF-83 (RULE-31): An evidence package `.purlin/evidence/package/1.0.0.json` is written and committed; the fingerprint of the anchor `security` is the same as before
+- PROOF-84 (RULE-32): In a checkout with `core.autocrlf` set to `true`, whose text files git writes out with CRLF, the anchor `security`'s `code` part equals the sha256 over each tracked file's path and the blob id the commit holds for it, the records aside @env(windows)
+- PROOF-85 (RULE-33): The anchor `security` has a section for this machine holding its fingerprint taken at the last commit; `docs/guide.md` is edited; a run with no feature named selects `security` with the one reason `code changed since <sha7>`, `<sha7>` that commit's first 7 characters
