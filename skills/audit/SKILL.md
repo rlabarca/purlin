@@ -9,9 +9,9 @@ evidence. An audit reports how good the tests are. What it writes counts at ever
 it: the strong cell reads the audit entry for each rule's current text, proof and test.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below is
-relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
-
-**Pending migrations:** when `sync_status` opens with a pending-migrations advisory, stop and follow
+relative to the plugin root; see `references/purlin_commands.md#path-resolution`. **Pending
+migrations:** when `sync_status` with `project_root` set to the project root, the top folder of the
+git checkout, opens with a pending-migrations advisory, stop and follow
 `references/purlin_commands.md#pending-migrations` before doing this skill's work.
 
 ## Usage

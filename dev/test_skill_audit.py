@@ -274,6 +274,17 @@ class TestSkillAudit:
                        "%s does not carry '`--remote` belongs to `purlin:test "
                        "--remote`'" % SKILL) == []
 
+    # --- RULE-24: `sync_status` with the project root --------------------
+
+    # purlin: skill_audit PROOF-51
+    def test_the_first_sync_status_names_the_project_root(self, monkeypatch):
+        assert project_root_problems() == []
+        assert refused(monkeypatch, project_root_problems,
+                       resub(r'`sync_status`\s+with\s+`project_root`.*?'
+                             r'checkout,', '`sync_status`'),
+                       '%s first `sync_status` is not followed by %r'
+                       % (SKILL, PROJECT_ROOT)) == []
+
 
 # ---------------------------------------------------------------------------
 # The checks this skill needs. Each reads one part of the skill and returns
@@ -455,3 +466,18 @@ def arm_timeout_problems():
         problems.append('%s step that runs the script does not carry %r'
                         % (SKILL, ARM_TIMEOUT_PASSED))
     return problems
+
+
+# What follows the first `sync_status` the skill names, its wrapping ignored.
+PROJECT_ROOT = ('with `project_root` set to the project root, the top folder '
+                'of the git checkout')
+
+
+def project_root_problems():
+    text = flat(read(SKILL))
+    at = text.find('`sync_status`')
+    if at >= 0 and text[at + len('`sync_status`'):].startswith(
+            ' ' + PROJECT_ROOT):
+        return []
+    return ['%s first `sync_status` is not followed by %r'
+            % (SKILL, PROJECT_ROOT)]

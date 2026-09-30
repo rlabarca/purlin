@@ -6,6 +6,7 @@
 >   which file the audit they are waiting for lands in.
 > Scope: skills/audit/SKILL.md
 > Stack: markdown, Claude Code skill definition
+> Highest-Rule: 24
 
 ## Rules
 
@@ -24,6 +25,7 @@
 - RULE-13: The skill tells the agent the two evidence folders, `.purlin/evidence/ci/` and `.purlin/evidence/local/`
 - RULE-14: The skill tells the agent that a file keeps the newest section per operating system and the newest audit entry per rule
 - RULE-15: The skill tells the agent that `--remote` belongs to `purlin:test`
+- RULE-24: The skill tells the agent to call `sync_status` with `project_root` set to the project root, the top folder of the git checkout
 
 ## Proof
 
@@ -47,3 +49,4 @@
 - PROOF-7 (RULE-7): A reader of the audit skill finds, its line wrapping ignored, the words ``into `.purlin/evidence/local/<feature>.json` ``
 - PROOF-44 (RULE-14): A reader of the audit skill finds, its line wrapping ignored, one sentence carrying both `A file keeps the newest section per operating system` and `the newest audit entry per rule`
 - PROOF-45 (RULE-15): A reader of the audit skill finds, its line wrapping ignored, the words ``` `--remote` belongs to `purlin:test --remote` ```
+- PROOF-51 (RULE-24): A reader of the audit skill finds the first `sync_status` followed, its line wrapping ignored, by ``with `project_root` set to the project root, the top folder of the git checkout``
