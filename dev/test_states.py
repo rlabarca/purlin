@@ -530,6 +530,12 @@ class TestTheStrongCell:
         assert cell['reasons'] == ['strength 48% under 70%'], cell
         assert cell['findings'] == [], cell
 
+    # purlin: states PROOF-237
+    def test_a_strength_just_under_the_minimum_shows_its_whole_part(self):
+        cell = self._strength_measured(69.6)
+        assert cell['word'] == 'weak'
+        assert cell['reasons'] == ['strength 69% under 70%'], cell
+
     # purlin: states PROOF-157
     def test_a_strength_of_exactly_the_minimum_is_not_under_it(self):
         at_minimum = self._strength_measured(70)

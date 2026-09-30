@@ -290,3 +290,4 @@
 - PROOF-233 (RULE-95): An anchor `policy` pinned to a commit of a `> Source:` where no repository exists makes the status report print a line opening `policy: the source could not be read (` and ending `). Check its > Source: line, then run purlin:anchor sync policy.`
 - PROOF-234 (RULE-95): An anchor `policy` whose `> Source:` begins with `--upload-pack=` makes the status report print `policy: (source rejected: begins with "-")`
 - PROOF-236 (RULE-96): In a git checkout with no `.purlin/config.json` and one spec, `login`, of two rules, the status report lists `login` in its table and its summary reads `2 rules. 0 pass their tests.`
+- PROOF-237 (RULE-12): At the gate `strong`, with mutation testing on and its minimum of 70, a committed `ci` section measured a test strength of 69.6 with both proofs passing, and the audit found nothing in `RULE-1`; `RULE-1`'s strong cell reads `weak` with the reason `strength 69% under 70%`

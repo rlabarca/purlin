@@ -665,8 +665,10 @@ def _strong_cell(inp, cfg, passed, counting_signatures):
     min_strength = cfg.min_strength if cfg else None
     if (mutation_on and strength is not None and min_strength is not None
             and strength < min_strength):
+        # The whole-number part, as every surface shows a share: 69.6
+        # under 70 reads 69%, never the minimum itself.
         reasons.append('strength %d%% under %d%%'
-                       % (round(strength), min_strength))
+                       % (int(strength), min_strength))
     if (mutation_on and strength is None and gate in ('strong', 'signed')
             and inp.get('incomplete')):
         # Nothing names the code to break, so nothing was measured, and
