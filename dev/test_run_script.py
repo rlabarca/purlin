@@ -1264,6 +1264,45 @@ class TestTheGateDecidesTheBreaks:
         assert len(calls['breaks']) == 2, calls['breaks']
         assert sorted(calls['breaks'][1][1]) == ['feat'], calls['breaks'][1]
 
+    @staticmethod
+    def _a_feature_and_an_anchor_audited(tmp_path, evidence_run, capsys):
+        root = _pytest_project(tmp_path, gate='strong', body=(
+            'import pytest\n\n'
+            '# purlin: feat PROOF-1\n'
+            'def test_ok():\n'
+            '    assert 1 + 1 == 2\n\n'
+            '# purlin: shared PROOF-1\n'
+            'def test_json():\n'
+            '    assert 2 + 2 == 4\n'))
+        (root / 'specs' / '_anchors').mkdir()
+        (root / 'specs' / '_anchors' / 'shared.md').write_text(
+            '# Anchor: shared\n\n## Rules\n\n- RULE-1: every answer is JSON\n'
+            '\n## Proof\n\n- PROOF-1 (RULE-1): an answer parses as JSON\n',
+            encoding='utf-8')
+        _config(root, mutation_engine='auto')
+        _spec(root, 'feat')
+        _code, calls = evidence_run(root, '--all', '--audit')
+        capsys.readouterr()
+        return root, calls
+
+    # purlin: run_script PROOF-259
+    def test_the_breaks_are_asked_for_no_anchor(
+            self, tmp_path, evidence_run, claude, capsys):
+        _root, calls = self._a_feature_and_an_anchor_audited(
+            tmp_path, evidence_run, capsys)
+        assert [scope for _engine, scope in calls['breaks']] == [
+            {'feat': ['src/']}], calls['breaks']
+
+    # purlin: run_script PROOF-260
+    def test_an_anchors_evidence_holds_no_mutation_score(
+            self, tmp_path, evidence_run, claude, capsys):
+        root, _calls = self._a_feature_and_an_anchor_audited(
+            tmp_path, evidence_run, capsys)
+        shared = _evidence(root, 'shared')['audit']
+        assert sorted(shared['rules']) == ['RULE-1'], shared
+        assert not shared.get('mutation'), shared
+        assert _evidence(root, 'feat')['audit']['mutation']['score'] == 80
+
 
 # ---------------------------------------------------------------------------
 # The AI audit: which rules, how many calls, what is written
@@ -1515,7 +1554,7 @@ class TestWhichRulesTheAuditReads:
         assert sorted(_audited(root, 'other')) == ['RULE-1']
 
     # purlin: run_script PROOF-176
-    def test_a_rule_taken_from_an_anchor_is_read_only_as_the_anchors(
+    def test_an_anchors_rule_is_read_as_the_anchors(
             self, tmp_path, evidence_run, claude, capsys):
         _install, directory = claude
         root = _pytest_project(tmp_path, gate='strong', body=(
@@ -1531,13 +1570,12 @@ class TestWhichRulesTheAuditReads:
             '# Anchor: shared\n\n## Rules\n\n- RULE-1: every answer is JSON\n'
             '\n## Proof\n\n- PROOF-1 (RULE-1): an answer parses as JSON\n',
             encoding='utf-8')
-        _spec(root, 'feat', requires='shared')
+        _spec(root, 'feat')
         code, _calls = evidence_run(root, '--audit')
         output = capsys.readouterr().out
         assert code == 0, output
         prompts = [call['prompt'] for call in fake_claude.calls(directory)]
-        # One call for feat's own rule and one for the anchor's, under the
-        # anchor: the rule feat takes from it is not read again as feat's.
+        # One call for feat's own rule and one for the anchor's.
         anchor = [prompt for prompt in prompts
                   if 'every answer is JSON' in prompt]
         assert len(prompts) == 2 and len(anchor) == 1, prompts
@@ -2205,7 +2243,7 @@ class TestAnEmptyProjectRootIsRefused:
 # ---------------------------------------------------------------------------
 
 def _touched_project(tmp_path, names=('login', 'export'), gate='passed',
-                     requires=None, failing=(),
+                     failing=(),
                      proofs=(('PROOF-1', 'RULE-1', ''),)):
     """A committed checkout of features that each own one source file and
     one test file, run once with `--commit` so every feature has evidence.
@@ -2226,8 +2264,7 @@ def _touched_project(tmp_path, names=('login', 'export'), gate='passed',
             '    assert %s\n' % (name, name,
                                  '1 == 2' if name in failing else 'True'),
             encoding='utf-8')
-        _spec(root, name, scope='src/%s.py' % name, requires=requires,
-              proofs=proofs)
+        _spec(root, name, scope='src/%s.py' % name, proofs=proofs)
     _git_repo(root)
     sha = _head(root)
     _code, output = _run(root, '--test', '--commit')
@@ -2314,31 +2351,33 @@ class TestARunCoversWhatTheChangeTouched:
             'export': 'tests changed since %s' % sha[:7]}, output
 
     # purlin: run_script PROOF-90
-    def test_an_anchor_edit_selects_every_feature_that_requires_it(
+    def test_an_edit_anywhere_in_the_project_selects_the_anchor(
             self, tmp_path):
-        root, sha = _touched_project(tmp_path, names=('login', 'export',
-                                                      'solo'))
+        root, _sha = _touched_project(tmp_path, names=('export', 'solo'))
         anchors = root / 'specs' / '_anchors'
         anchors.mkdir()
         (anchors / 'shared.md').write_text(
             '# Anchor: shared\n\n## Rules\n\n- RULE-1: every answer is JSON\n'
             '\n## Proof\n\n- PROOF-1 (RULE-1): an answer parses as JSON\n',
             encoding='utf-8')
-        for name in ('login', 'export'):
-            _spec(root, name, scope='src/%s.py' % name, requires='shared')
+        (root / 'tests' / 'test_shared.py').write_text(
+            'import pytest\n\n'
+            '# purlin: shared PROOF-1\n'
+            'def test_shared():\n'
+            '    assert True\n', encoding='utf-8')
+        # What a run writes and git does not track, as setup ignores it.
+        (root / '.gitignore').write_text(
+            '.purlin/runtime/\n.purlin/report-data.js\n__pycache__/\n',
+            encoding='utf-8')
         _git(root, 'add', '-A')
-        _git(root, 'commit', '-q', '-m', 'login and export require shared')
+        _git(root, 'commit', '-q', '-m', 'the anchor shared')
         _run(root, '--test', '--commit')
         assert _selection(_run(root, '--test')[1]) is None
-        text = (anchors / 'shared.md').read_text(encoding='utf-8')
-        (anchors / 'shared.md').write_text(
-            text.replace('every answer is JSON', 'every answer is UTF-8 JSON'),
-            encoding='utf-8')
+        (root / 'src' / 'solo.py').write_text('VALUE = 2\n', encoding='utf-8')
         _code, output = _run(root, '--test')
         chosen = _selection(output)
-        assert sorted(chosen) == ['export', 'login', 'shared'], output
-        assert chosen['login'].startswith('spec changed since '), output
-        assert chosen['export'].startswith('spec changed since '), output
+        assert sorted(chosen or ()) == ['shared', 'solo'], output
+        assert chosen['shared'].startswith('code changed since '), output
 
     # purlin: run_script PROOF-91
     def test_a_feature_with_no_evidence_is_selected(self, tmp_path):

@@ -1327,13 +1327,13 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
     """The `--audit` arm, after the tests: the breaks, the AI audit, the write.
 
     Which rules are read is `ai_audit.is_read`'s answer. The breaks run only
-    where mutation testing is on, and only for a feature with a rule being
-    read. One model call per rule, `cfg.audit_parallel` at once. What each
-    answer found goes under `audit.rules` in the feature's local evidence;
-    a rule the model could not be reached for gets nothing, and the reason
-    goes to `.purlin/runtime/` for the strong cell to name. `work` is the
-    first commit `--commit` made, which the evidence commit names. Returns
-    the exit code.
+    where mutation testing is on, only for a feature with a rule being read,
+    and never for an anchor. One model call per rule, `cfg.audit_parallel`
+    at once. What each answer found goes under `audit.rules` in the
+    feature's local evidence; a rule the model could not be reached for gets
+    nothing, and the reason goes to `.purlin/runtime/` for the strong cell
+    to name. `work` is the first commit `--commit` made, which the evidence
+    commit names. Returns the exit code.
     """
     import ai_audit
 
@@ -1345,8 +1345,6 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
         if feature.get('name') not in selected:
             continue
         for rule in feature.get('rules') or ():
-            if rule.get('feature') != feature.get('name'):
-                continue
             if ai_audit.is_read(rule, again=args.all):
                 to_read.append((feature['name'], rule['id']))
             elif ai_audit.is_read(rule, again=True):
@@ -1360,7 +1358,10 @@ def _audit(project_root, args, features, selected, log, cfg, paths, removed,
     else:
         print(NOTHING_TO_READ)
 
-    measured = sorted({feature for feature, _rule in to_read})
+    # No code is broken on purpose for an anchor: the AI audit alone judges
+    # its tests, so the breaks are asked only for the features.
+    measured = sorted({feature for feature, _rule in to_read
+                       if not (features.get(feature) or {}).get('is_anchor')})
     if cfg.breaks and measured:
         breaks = _run_breaks(project_root, args, features, measured)
         commit = head_commit(project_root)
@@ -1481,8 +1482,8 @@ def _rule_number(rule_id):
 def _run_breaks(project_root, args, features, selected):
     """The breaks, through the engine the project resolved to.
 
-    `selected` is the features with a rule the audit reads: a score is
-    measured for a feature only then.
+    `selected` is the features, never an anchor, with a rule the audit
+    reads: a score is measured for a feature only then.
     """
     import mutation as mutation_module
     from mutation import select_engine, run_breaks
