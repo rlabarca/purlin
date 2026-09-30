@@ -2,13 +2,13 @@
   "feature": "skill_drift",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:05Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-30T03:13:05Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "dirty": false,
       "fingerprint": {
         "code": "f0fdf89412fdb8461d4fdf9c4a6ab1274325fb4b184178e75e9ccbfe7538e05a",
-        "spec": "af55c95215759b1074353b77062fee796a694731a174c610d6520241b9c4d79e",
-        "tests": "e023ef8e58fc2fc1099dc09325bc7f75b738ebdc274a5c53dc4e7a3a0d58fa14"
+        "spec": "856adc5e98bd40f12c52b8f250c3df96b34448186a97e4d7c5e52233a9afb4ab",
+        "tests": "3680160466d292fc34f918cff50c11e7edade6f25ad179e1c072b701c08fdee3"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -107,10 +107,19 @@
           "result": "pass",
           "rule": "RULE-5",
           "test": "dev/test_skill_drift.py::TestSkillDrift::test_the_command_reference_carries_a_row_for_drift"
+        },
+        {
+          "env": null,
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_skill_drift.py::TestSkillDrift::test_it_infers_the_role_and_says_which"
         }
       ],
       "rules": {
         "RULE-1": "passed",
+        "RULE-10": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

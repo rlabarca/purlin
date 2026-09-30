@@ -2,13 +2,13 @@
   "feature": "evidence",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T23:03:56Z",
-      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "at": "2026-09-30T03:13:04Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
       "dirty": false,
       "fingerprint": {
-        "code": "230e1086e5bfeeb0bd0f4457b01c26a2d28f95caccb6f5e90e39b0e5b79f30d4",
-        "spec": "0285c45e2f87f2feacbfe4e23079e976d5b0b76088eadfe7ab8bd1c4ed27eb03",
-        "tests": "f51c37ae257cb94fed9c75f21ef6b967f014de1ab6a0ad0451da2c33280d65bc"
+        "code": "b3fca56fb17f51c6097d8e59090feabaa8987ca78395232810580dd33742c810",
+        "spec": "fb3b2e78a38d65d769628b2e9e8efc5d4bd184b9579dc653d720889c80fad68c",
+        "tests": "42b5bb0c6fc7fe6f5b173ffc2dd7ca7176749b704369025c33fc3066c5c0d460"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -259,6 +259,14 @@
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_evidence_reader.py::test_a_file_of_another_schema_is_ignored_with_one_warning"
+        },
+        {
+          "env": null,
+          "id": "PROOF-77",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_evidence_reader.py::test_a_file_under_ci_that_is_not_json_names_the_remote_run"
         },
         {
           "env": null,
@@ -611,6 +619,14 @@
           "result": "pass",
           "rule": "RULE-28",
           "test": "dev/test_evidence_reader.py::test_a_later_local_audit_entry_wins"
+        },
+        {
+          "env": null,
+          "id": "PROOF-76",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-29",
+          "test": "dev/test_fingerprint.py::test_a_feature_with_no_evidence_is_selected_as_never_run_here"
         }
       ],
       "rules": {
@@ -635,6 +651,7 @@
         "RULE-26": "passed",
         "RULE-27": "not run",
         "RULE-28": "passed",
+        "RULE-29": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

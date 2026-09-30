@@ -2,13 +2,13 @@
   "feature": "purlin_version",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T23:03:56Z",
-      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "at": "2026-09-30T03:13:04Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
       "dirty": false,
       "fingerprint": {
-        "code": "31879c573af5f9f5db220db7803f7cf8b6385746d75201b3ebbd09a16c722710",
+        "code": "380cec12582bb6979211c5b994508eb2272f69dccd7a76c8c79d8fac17824ecc",
         "spec": "b79ff772f7dc107a9b040c40b6ba6cdeecde3a76f316319d76724a2fd6b9e43f",
-        "tests": "b0c9d8963111f6688e2a249eedd2dd15643b115bd8dbf32e0e1358aa60e7e17f"
+        "tests": "2f4f78180eaeb9ec1b5fc9fc19ca3fd4a3621d40ebf7ea1a7d565a83d677261b"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [

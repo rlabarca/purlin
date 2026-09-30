@@ -2,13 +2,13 @@
   "feature": "skill_init",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:05Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-30T03:13:05Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "dirty": false,
       "fingerprint": {
-        "code": "4ebaabb2d4f600e0ff708aa82d2f948547c997d931f7b01a4426fc69ddbebbfe",
-        "spec": "0987e2e32246528d28478401d10ad67f03023536b589b495bafa3303364b817f",
-        "tests": "4095746139bd72d6ad353b15eaa5fed2437e727f8d199b1217d26eab6f70003b"
+        "code": "b25d9ac8d1e12baed149cdae72fcf441eab7032656e9b768a723f683d7274b28",
+        "spec": "685247731ec0ab714db0fdb47fa854286c6b79961d55504ef62cb191390f00ff",
+        "tests": "cc5601e81f673af3f6530bf1b39b385616abb4f2e0057d3a6b887729142674d2"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -46,6 +46,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-96",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_skill_init.py::TestRunLine::test_the_yes_row_says_it_commits"
+        },
+        {
+          "env": null,
           "id": "PROOF-24",
           "manual": false,
           "result": "pass",
@@ -74,7 +82,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skill_init.py::TestQuestions::test_it_names_the_two_questions_in_order"
+          "test": "dev/test_skill_init.py::TestQuestions::test_it_names_the_three_questions_in_order"
         },
         {
           "env": null,
@@ -98,7 +106,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skill_init.py::TestQuestions::test_setup_at_strong_asks_the_two_questions_the_skill_quotes"
+          "test": "dev/test_skill_init.py::TestQuestions::test_setup_at_strong_asks_the_three_questions_the_skill_quotes"
         },
         {
           "env": null,
@@ -106,7 +114,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skill_init.py::TestQuestions::test_setup_at_passed_asks_only_the_gate"
+          "test": "dev/test_skill_init.py::TestQuestions::test_setup_at_passed_asks_the_gate_then_the_commit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-94",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_skill_init.py::TestQuestions::test_the_third_question_is_the_commit"
         },
         {
           "env": null,
@@ -171,6 +187,14 @@
           "result": "pass",
           "rule": "RULE-11",
           "test": "dev/test_skill_init.py::TestTestsSetting::test_it_points_at_the_two_references"
+        },
+        {
+          "env": null,
+          "id": "PROOF-95",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-85",
+          "test": "dev/test_skill_init.py::TestRunLine::test_run_it_says_how_the_answers_reach_the_script"
         }
       ],
       "rules": {
@@ -184,6 +208,7 @@
         "RULE-6": "passed",
         "RULE-7": "passed",
         "RULE-8": "passed",
+        "RULE-85": "passed",
         "RULE-9": "passed"
       },
       "runner": "rich-labarca"

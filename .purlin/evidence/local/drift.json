@@ -2,13 +2,13 @@
   "feature": "drift",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T23:03:56Z",
-      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "at": "2026-09-30T03:13:04Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
       "dirty": false,
       "fingerprint": {
-        "code": "b67b30b12adb7e02567031ad878184c4bcf4ea0578a4064974ae25b4cab4dc3d",
-        "spec": "d7c4f9142bbb40aac80936300689d3813b1463c73186ca1d60fcd958bc646b2d",
-        "tests": "53f486e3483654c09a52c47050817b54c02054000f36dee8240c03dade41680a"
+        "code": "6c94763e7b0ab19cc1f364e3a66c4e184753245a31d776265a6c3dfe20f96392",
+        "spec": "6ab2bf34a3a571f111d59bb5c8855a389c1094af8fb2c55345e5787786fe4b9f",
+        "tests": "cdc295729535d948f7fbe6a5d79e6b555ce3d75b6e65843b8a8357484b730019"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -110,6 +110,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-62",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_drift.py::TestTheLastTwentyCommits::test_a_repository_of_one_commit_names_the_last_commit"
+        },
+        {
+          "env": null,
           "id": "PROOF-9",
           "manual": false,
           "result": "pass",
@@ -198,6 +206,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-63",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_drift.py::TestEngView::test_a_scope_with_no_rule_behind_it"
+        },
+        {
+          "env": null,
           "id": "PROOF-15",
           "manual": false,
           "result": "pass",
@@ -227,6 +243,14 @@
           "result": "pass",
           "rule": "RULE-9",
           "test": "dev/test_drift.py::TestEngView::test_rules_no_test_has_run_for_are_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-64",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_drift.py::TestEngView::test_one_rule_no_test_has_run_for_is_named"
         },
         {
           "env": null,
@@ -358,6 +382,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-65",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_drift.py::TestEngView::test_two_features_out_of_date_are_named_together"
+        },
+        {
+          "env": null,
           "id": "PROOF-24",
           "manual": false,
           "result": "pass",
@@ -483,6 +515,14 @@
           "result": "pass",
           "rule": "RULE-25",
           "test": "dev/test_drift.py::TestReportShape::test_the_qa_role_narrows_the_answer_to_its_view"
+        },
+        {
+          "env": null,
+          "id": "PROOF-61",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-26",
+          "test": "dev/test_drift.py::TestNoCommit::test_a_repository_with_no_commit_is_refused"
         }
       ],
       "rules": {
@@ -503,6 +543,7 @@
         "RULE-23": "passed",
         "RULE-24": "passed",
         "RULE-25": "passed",
+        "RULE-26": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

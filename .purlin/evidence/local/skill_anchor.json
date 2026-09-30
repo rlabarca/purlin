@@ -2,13 +2,13 @@
   "feature": "skill_anchor",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:05Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-30T03:13:05Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "dirty": false,
       "fingerprint": {
-        "code": "016b31e2f89171c7c156f620a59562dab414c3a6a2c48b89ebfcf1ee36fbdfd9",
-        "spec": "1ed4cae7566b032506d904dc08454d0962939e35af36ce7527529c50cea9719c",
-        "tests": "7c5101db262f362a7b1dc0445a32f228eb019923c9ac6c74be1c7c5afffbf962"
+        "code": "7590d3936fbf3c2395403715784e03e86047518a16a4b9a0f498287f673f6c2d",
+        "spec": "8153a7ee72b966295a9832fc6aa03de629cf45bdf6ccc713078476398f1db926",
+        "tests": "364745e302620399ea85beb2dafec7753495e1a6b946fdd2e81ed34c098a4cb7"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -115,6 +115,14 @@
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_skill_anchor.py::TestThePin::test_a_local_rule_goes_in_an_anchor_that_requires_the_pin"
+        },
+        {
+          "env": null,
+          "id": "PROOF-34",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_skill_anchor.py::TestTheAnchorRepository::test_an_anchor_repository_is_for_two_or_more_projects"
         }
       ],
       "rules": {
@@ -122,6 +130,7 @@
         "RULE-10": "passed",
         "RULE-11": "passed",
         "RULE-12": "passed",
+        "RULE-13": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

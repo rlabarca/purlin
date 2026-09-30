@@ -2,13 +2,13 @@
   "feature": "schema_spec_format",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:04Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-30T03:13:04Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "dirty": false,
       "fingerprint": {
-        "code": "08afbb4402832851d31115e20299d759fc47e30623ca714ff08c11f4c929bfd6",
-        "spec": "ce2782e2b98e3ec20547d75cf4a361652ffef2963ad55ae8dab84814bd259ff5",
-        "tests": "3d82f94d1d9a65acbaf4d55c85009493cb88807c3f26ed8ebf691faeb372da6c"
+        "code": "940bf79f6f2f4022474163efa779c1a1dd09dab8c1b0e8edcad66990c42854b6",
+        "spec": "3e8aba78e544190dd42c3ae7d71198097915629bc384ce707cb815224f847d53",
+        "tests": "b93be8b51a5ac4e98766bfb865bd1cee2a35f1188839df294a31e6c2cf8819fb"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -451,6 +451,78 @@
           "result": "pass",
           "rule": "RULE-24",
           "test": "dev/test_schema_spec_format.py::test_another_at_word_carrying_a_value_is_not_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-58",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-25",
+          "test": "dev/test_schema_spec_format.py::test_a_feature_requiring_a_feature_spec_is_warned_of"
+        },
+        {
+          "env": null,
+          "id": "PROOF-59",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-25",
+          "test": "dev/test_schema_spec_format.py::test_a_feature_requiring_a_feature_spec_proves_none_of_its_rules"
+        },
+        {
+          "env": null,
+          "id": "PROOF-60",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-25",
+          "test": "dev/test_schema_spec_format.py::test_an_anchor_requiring_a_feature_spec_is_warned_of_by_its_own_name"
+        },
+        {
+          "env": null,
+          "id": "PROOF-61",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-26",
+          "test": "dev/test_schema_spec_format.py::test_a_highest_rule_line_adds_no_rule"
+        },
+        {
+          "env": null,
+          "id": "PROOF-62",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-26",
+          "test": "dev/test_schema_spec_format.py::test_a_highest_rule_line_changes_no_fingerprint"
+        },
+        {
+          "env": null,
+          "id": "PROOF-63",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-26",
+          "test": "dev/test_schema_spec_format.py::test_a_highest_rule_line_leaves_the_description_above_it_whole"
+        },
+        {
+          "env": null,
+          "id": "PROOF-64",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_schema_spec_format.py::test_the_format_page_opens_with_its_version_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-65",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-28",
+          "test": "dev/test_schema_spec_format.py::test_the_stack_is_read_as_its_one_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-66",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-28",
+          "test": "dev/test_schema_spec_format.py::test_a_rewritten_stack_changes_no_fingerprint"
         }
       ],
       "rules": {
@@ -471,6 +543,10 @@
         "RULE-22": "passed",
         "RULE-23": "passed",
         "RULE-24": "passed",
+        "RULE-25": "passed",
+        "RULE-26": "passed",
+        "RULE-27": "passed",
+        "RULE-28": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

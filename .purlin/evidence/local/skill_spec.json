@@ -2,13 +2,13 @@
   "feature": "skill_spec",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:05Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-30T03:13:05Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "dirty": false,
       "fingerprint": {
-        "code": "43a297bac605c23c5dd7acf4120a7db8b172877bec9ab5161a2871189294d418",
-        "spec": "d09e9855d51f39867d02af90e050b7ee864dfd83ffe9aaf1bd0d542914704823",
-        "tests": "9e11bfcab08f8b9564667b6e3664a7321cb2823b648401654a72dc853a7e7c58"
+        "code": "66eb136aaff075c66611a2e447d7778a17778bb4ad29e3bef02b7aeea88035b7",
+        "spec": "9ba5f99f9de34f53b27ef180a02248b4220174dbcdad9f67363cdcdb947fa460",
+        "tests": "01ff1f9bd8531567806b5f785aa28e582627a915f5f73b313ad33754ef1a17c0"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -26,7 +26,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skill_spec.py::TestSkillSpec::test_it_allocates_ids_against_the_default_branch"
+          "test": "dev/test_skill_spec.py::TestSkillSpec::test_a_new_rule_counts_from_the_highest_ever_held"
         },
         {
           "env": null,
@@ -107,13 +107,94 @@
           "result": "pass",
           "rule": "RULE-11",
           "test": "dev/test_skill_spec.py::TestSkillSpec::test_the_guide_says_one_proof_one_case"
+        },
+        {
+          "env": null,
+          "id": "PROOF-42",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_skill_spec.py::TestSkillSpec::test_it_writes_the_highest_rule_into_the_spec"
+        },
+        {
+          "env": null,
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_skill_spec.py::TestSkillSpec::test_it_reads_the_state_at_the_project_root"
+        },
+        {
+          "env": null,
+          "id": "PROOF-44",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_skill_spec.py::TestSkillSpec::test_the_intake_table_says_what_to_do_with_each_input"
+        },
+        {
+          "env": null,
+          "id": "PROOF-45",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_skill_spec.py::TestSkillSpec::test_a_change_is_made_in_place_and_nothing_is_renumbered"
+        },
+        {
+          "env": null,
+          "id": "PROOF-46",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_skill_spec.py::TestSkillSpec::test_after_a_merge_the_incoming_id_takes_the_next_number"
+        },
+        {
+          "env": null,
+          "id": "PROOF-47",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_skill_spec.py::TestSkillSpec::test_two_pins_resolve_to_the_newer"
+        },
+        {
+          "env": null,
+          "id": "PROOF-48",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_skill_spec.py::TestSkillSpec::test_the_guide_lets_a_proof_name_a_library_s_public_names"
+        },
+        {
+          "env": null,
+          "id": "PROOF-49",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_skill_spec.py::TestSkillSpec::test_the_guide_lets_one_proof_name_a_list_of_like_inputs"
+        },
+        {
+          "env": null,
+          "id": "PROOF-50",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_skill_spec.py::TestSkillSpec::test_the_guide_s_stuck_row_names_the_runner_file"
         }
       ],
       "rules": {
         "RULE-1": "passed",
         "RULE-10": "passed",
         "RULE-11": "passed",
+        "RULE-13": "passed",
+        "RULE-14": "passed",
+        "RULE-15": "passed",
+        "RULE-16": "passed",
+        "RULE-17": "passed",
+        "RULE-18": "passed",
+        "RULE-19": "passed",
         "RULE-2": "passed",
+        "RULE-20": "passed",
+        "RULE-21": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

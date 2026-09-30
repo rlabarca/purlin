@@ -2,13 +2,13 @@
   "feature": "skill_audit",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:05Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-30T03:13:05Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "dirty": false,
       "fingerprint": {
-        "code": "229804969acc945972970cc5516a6a778bbf3a8d5c95bce90b3301923c886090",
-        "spec": "c91b26f72f0b38ae2dde605d6b1af30384119649486505e7711684b1777dfe37",
-        "tests": "ed118575495505189d7c5d76bc45c2b6da56f0b5ae7a5e56f7b12600e8ca2275"
+        "code": "b9c291312fee294a33736e8813a72e4173bb209a502ea4967080def783e74340",
+        "spec": "692a6b16b87e1bfb45d8057876b91d3500f2050b7da67bf9d1f72fc8f8667fa4",
+        "tests": "b3debcf9d626aa2dbe0427275449aa0a2dbdf23c3d79b4d0e5b2c8e8dfeaac20"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -171,6 +171,14 @@
           "result": "pass",
           "rule": "RULE-15",
           "test": "dev/test_skill_audit.py::TestSkillAudit::test_remote_belongs_to_purlin_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-51",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_skill_audit.py::TestSkillAudit::test_the_first_sync_status_names_the_project_root"
         }
       ],
       "rules": {
@@ -182,6 +190,7 @@
         "RULE-14": "passed",
         "RULE-15": "passed",
         "RULE-2": "passed",
+        "RULE-24": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

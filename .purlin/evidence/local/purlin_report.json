@@ -2,13 +2,13 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:04Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-30T03:13:04Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "dirty": false,
       "fingerprint": {
-        "code": "c2beb1a84ab275cefc0c0e96933fa36e145c1b134455f2dc98bc5dd3a7baaae7",
-        "spec": "14e79a2e886836942228114fd4dced7151a6ed6a191cdc0b6546f173e1d76809",
-        "tests": "68ca4fdd019f5676d099ea4a16780410736d4d23a717b3c52a8f147b89e5ec37"
+        "code": "bbcad71cba062482a972a516ab5694bf044012fd3e78aa0cf27536874d289bc6",
+        "spec": "255620221f2949a7a6bd6234a5461c1fb805ec69d93ce1180d185e92b6a5bd64",
+        "tests": "fa36a0bb15d5c38303aef835072f7ce2e35de3733657de82472f803c30de835a"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -227,6 +227,22 @@
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_purlin_report.py::test_the_theme_button_swaps_back_to_dark"
+        },
+        {
+          "env": null,
+          "id": "PROOF-182",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_purlin_report.py::test_the_theme_button_reads_the_theme_it_turns_to"
+        },
+        {
+          "env": null,
+          "id": "PROOF-183",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_purlin_report.py::test_the_pressed_theme_button_reads_dark_theme"
         },
         {
           "env": null,
@@ -494,6 +510,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-186",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-26",
+          "test": "dev/test_purlin_report.py::test_a_signed_rule_says_what_the_signature_covers"
+        },
+        {
+          "env": null,
           "id": "PROOF-39",
           "manual": false,
           "result": "pass",
@@ -750,6 +774,22 @@
         },
         {
           "env": null,
+          "id": "PROOF-187",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-39",
+          "test": "dev/test_purlin_report.py::test_a_strong_audit_with_a_finding_reads_strong_then_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-188",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-39",
+          "test": "dev/test_purlin_report.py::test_a_share_of_85_7_reads_85_on_the_board_and_the_rule"
+        },
+        {
+          "env": null,
           "id": "PROOF-55",
           "manual": false,
           "result": "pass",
@@ -779,6 +819,14 @@
           "result": "pass",
           "rule": "RULE-40",
           "test": "dev/test_purlin_report.py::test_the_top_bar_at_passed_shows_no_tag"
+        },
+        {
+          "env": null,
+          "id": "PROOF-197",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-40",
+          "test": "dev/test_purlin_report.py::test_the_tag_chip_names_its_commit_in_its_hover"
         },
         {
           "env": null,
@@ -1291,6 +1339,86 @@
           "result": "pass",
           "rule": "RULE-56",
           "test": "dev/test_purlin_report_board_layout.py::test_the_total_is_one_line_at_every_width"
+        },
+        {
+          "env": null,
+          "id": "PROOF-184",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-57",
+          "test": "dev/test_purlin_report.py::test_an_uncommitted_tree_is_named_on_the_board"
+        },
+        {
+          "env": null,
+          "id": "PROOF-185",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-58",
+          "test": "dev/test_purlin_report.py::test_a_chosen_theme_survives_a_reload"
+        },
+        {
+          "env": null,
+          "id": "PROOF-189",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-59",
+          "test": "dev/test_purlin_report.py::test_a_spec_no_run_covered_says_so_in_its_hover"
+        },
+        {
+          "env": null,
+          "id": "PROOF-190",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-59",
+          "test": "dev/test_purlin_report.py::test_a_spec_no_audit_read_says_so_in_its_hover"
+        },
+        {
+          "env": null,
+          "id": "PROOF-191",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-59",
+          "test": "dev/test_purlin_report.py::test_a_spec_nobody_signed_says_so_in_its_hover"
+        },
+        {
+          "env": null,
+          "id": "PROOF-192",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-59",
+          "test": "dev/test_purlin_report.py::test_no_signed_tag_says_what_writes_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-193",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-59",
+          "test": "dev/test_purlin_report.py::test_a_filter_no_rule_is_left_under_says_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-194",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-59",
+          "test": "dev/test_purlin_report.py::test_a_rule_with_no_test_names_the_build"
+        },
+        {
+          "env": null,
+          "id": "PROOF-195",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-59",
+          "test": "dev/test_purlin_report.py::test_a_proof_no_run_listed_tests_for_says_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-196",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-59",
+          "test": "dev/test_purlin_report.py::test_an_open_rule_gone_from_the_data_says_so"
         }
       ],
       "rules": {
@@ -1338,6 +1466,9 @@
         "RULE-53": "passed",
         "RULE-55": "passed",
         "RULE-56": "passed",
+        "RULE-57": "passed",
+        "RULE-58": "passed",
+        "RULE-59": "passed",
         "RULE-6": "passed",
         "RULE-7": "passed",
         "RULE-8": "passed",

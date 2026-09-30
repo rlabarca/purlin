@@ -2,13 +2,13 @@
   "feature": "update",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T23:03:57Z",
-      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "at": "2026-09-30T03:13:05Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
       "dirty": false,
       "fingerprint": {
-        "code": "4f7b411615431184e0c2b23c2626794ce05894274d29e4b10e4975d9d21a7845",
-        "spec": "b328044f83b0752da999f04ddf033ab18e8834598e55d0294c0b7355b6bed45f",
-        "tests": "edcc019cff5311023afbaaa3a4fea6d036a107723d2d7e780e97b2813c427f82"
+        "code": "694dcbb409c7d9e12af959db9d7a3215fd10c130fe3a8d79bc47e688b573899f",
+        "spec": "4588bca7edfc4a932afc2d7a5a1ca3552a72d6fff5b5e882e36ab1038a239c95",
+        "tests": "31cddbcb8c70ea9ebc87590368b02cdbabe6c261df2972fe5f0befa186dd720c"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -70,6 +70,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-129",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_init_update.py::test_one_run_rewrites_a_tag_the_windows_tag_hid"
+        },
+        {
+          "env": null,
           "id": "PROOF-69",
           "manual": false,
           "result": "pass",
@@ -91,6 +99,14 @@
           "result": "pass",
           "rule": "RULE-6",
           "test": "dev/test_init_update.py::test_a_declined_migration_is_left_pending"
+        },
+        {
+          "env": null,
+          "id": "PROOF-131",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_init_update.py::test_an_empty_answer_declines_a_migration"
         },
         {
           "env": null,
@@ -310,6 +326,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-130",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_init_update.py::test_the_gate_question_prints_its_three_choices"
+        },
+        {
+          "env": null,
           "id": "PROOF-13",
           "manual": false,
           "result": "pass",
@@ -438,6 +462,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-127",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_init_update.py::test_on_a_machine_read_as_windows_only_the_backups_are_left"
+        },
+        {
+          "env": null,
           "id": "PROOF-19",
           "manual": false,
           "result": "pass",
@@ -475,6 +507,14 @@
           "result": "pass",
           "rule": "RULE-20",
           "test": "dev/test_init_update.py::test_a_run_that_leaves_work_names_the_update_above_the_summary"
+        },
+        {
+          "env": null,
+          "id": "PROOF-128",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_init_update.py::test_a_run_over_no_spec_ends_on_the_two_no_spec_lines"
         },
         {
           "env": null,
@@ -643,6 +683,14 @@
           "result": "pass",
           "rule": "RULE-27",
           "test": "dev/test_init_update.py::test_the_scope_advice_is_given_again_when_nothing_is_pending"
+        },
+        {
+          "env": null,
+          "id": "PROOF-132",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_init_update.py::test_two_specs_with_no_scope_are_named_in_one_line"
         },
         {
           "env": null,
@@ -915,6 +963,166 @@
           "result": "pass",
           "rule": "RULE-40",
           "test": "dev/test_init_update.py::test_a_settings_file_that_cannot_be_read_stops_the_update"
+        },
+        {
+          "env": null,
+          "id": "PROOF-133",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_init_update.py::test_the_pending_list_opens_on_its_count"
+        },
+        {
+          "env": null,
+          "id": "PROOF-134",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_init_update.py::test_each_pending_migration_is_listed_with_its_files"
+        },
+        {
+          "env": null,
+          "id": "PROOF-135",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_init_update.py::test_a_long_file_list_ends_on_how_many_more"
+        },
+        {
+          "env": null,
+          "id": "PROOF-136",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_init_update.py::test_the_files_beside_the_specs_are_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-137",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_init_update.py::test_the_removed_hooks_are_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-138",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_init_update.py::test_the_rewritten_system_tags_are_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-139",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_init_update.py::test_the_specs_that_lose_the_kind_of_test_are_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-140",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_init_update.py::test_the_removed_workflows_are_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-141",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_init_update.py::test_the_runner_reason_at_passed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-142",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_init_update.py::test_the_runner_reason_at_strong"
+        },
+        {
+          "env": null,
+          "id": "PROOF-143",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_init_update.py::test_the_runner_reason_for_two_systems"
+        },
+        {
+          "env": null,
+          "id": "PROOF-144",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_init_update.py::test_the_runner_file_written_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-145",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_init_update.py::test_the_runner_file_says_when_it_runs"
+        },
+        {
+          "env": null,
+          "id": "PROOF-146",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_init_update.py::test_the_evidence_readme_written_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-147",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_init_update.py::test_the_replaced_page_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-148",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_init_update.py::test_the_removed_plugin_copies_are_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-149",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_init_update.py::test_a_tests_setting_with_no_suite_says_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-150",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_init_update.py::test_the_commit_is_named_on_one_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-151",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-44",
+          "test": "dev/test_init_update.py::test_a_commit_git_refuses_leaves_the_changes_staged"
+        },
+        {
+          "env": null,
+          "id": "PROOF-152",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-45",
+          "test": "dev/test_init_update.py::test_each_backup_is_named_on_a_line_of_its_own"
         }
       ],
       "rules": {
@@ -947,6 +1155,11 @@
         "RULE-39": "passed",
         "RULE-4": "passed",
         "RULE-40": "passed",
+        "RULE-41": "passed",
+        "RULE-42": "passed",
+        "RULE-43": "passed",
+        "RULE-44": "passed",
+        "RULE-45": "passed",
         "RULE-5": "not run",
         "RULE-6": "passed",
         "RULE-7": "not run",

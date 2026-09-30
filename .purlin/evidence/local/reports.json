@@ -2,13 +2,13 @@
   "feature": "reports",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T23:03:56Z",
-      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "at": "2026-09-30T03:13:04Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
       "dirty": false,
       "fingerprint": {
-        "code": "72fa0a6214fe515ec25771e7fdd1431818f1c2effe1f2cdc18c254f3624f253d",
-        "spec": "6c55e604d7d908afbbe95d89d368c5c15ab3a62fb14a9bbb3f9fe0bb28b918c2",
-        "tests": "5cbbc3b853719f70a55d80443448d92448168b490dba9aa5140085438ffb8a2d"
+        "code": "5a670faa833ddad30551c75b003201640c7f42dc7b18845fa384014b9b1aae3e",
+        "spec": "2e0bc2f25abb3a599ef53f44cbede0602a0ce4b7ff532b0c768eec718ca62d82",
+        "tests": "173ba363203a4f57ce90d7f497596a272d6cd7daf08128452bcaf62f1fbbb158"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -123,6 +123,30 @@
           "result": "pass",
           "rule": "RULE-3",
           "test": "dev/test_reports.py::TestTheMarker::test_a_file_no_suite_matches_is_not_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-105",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_reports.py::TestTheMarker::test_with_no_suite_a_marked_test_is_not_run"
+        },
+        {
+          "env": null,
+          "id": "PROOF-106",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_reports.py::TestTheMarker::test_with_no_suite_the_status_sends_the_rule_to_be_tested"
+        },
+        {
+          "env": null,
+          "id": "PROOF-107",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_reports.py::TestTheMarker::test_with_no_suite_a_file_of_no_test_language_is_not_read"
         },
         {
           "env": "windows",
@@ -670,6 +694,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-110",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_suite_with_no_files_names_its_problem"
+        },
+        {
+          "env": null,
           "id": "PROOF-28",
           "manual": false,
           "result": "pass",
@@ -843,6 +875,54 @@
           "result": "pass",
           "rule": "RULE-28",
           "test": "dev/test_reports.py::TestThroughARun::test_a_report_of_a_dash_is_read_from_the_output"
+        },
+        {
+          "env": null,
+          "id": "PROOF-108",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-29",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_tests_setting_that_is_not_a_list_is_no_suite"
+        },
+        {
+          "env": null,
+          "id": "PROOF-109",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-29",
+          "test": "dev/test_reports.py::TestThroughARun::test_an_entry_that_is_not_an_object_is_left_out"
+        },
+        {
+          "env": null,
+          "id": "PROOF-111",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-29",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_suite_named_twice_keeps_the_first"
+        },
+        {
+          "env": null,
+          "id": "PROOF-112",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_reports.py::TestNearMisses::test_a_proof_word_in_lower_case"
+        },
+        {
+          "env": null,
+          "id": "PROOF-113",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_report_that_cannot_be_read_is_missing_evidence"
+        },
+        {
+          "env": null,
+          "id": "PROOF-114",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_report_not_in_its_format_is_missing_evidence"
         }
       ],
       "rules": {
@@ -867,7 +947,10 @@
         "RULE-26": "passed",
         "RULE-27": "passed",
         "RULE-28": "passed",
+        "RULE-29": "passed",
         "RULE-3": "not run",
+        "RULE-30": "passed",
+        "RULE-31": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",

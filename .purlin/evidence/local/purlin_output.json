@@ -2,13 +2,13 @@
   "feature": "purlin_output",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T23:03:56Z",
-      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "at": "2026-09-30T03:13:04Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
       "dirty": false,
       "fingerprint": {
-        "code": "54026193a8358355116f0ba717affc67aa6ae1eb8a30f32ee48348dfc31f1a4e",
-        "spec": "78be2877235cb791dbd195c3cd391783f22bc1204706c988b70eee236febcf14",
-        "tests": "d0e6081e988d307f6819d5ef6665e19d391b9e1fb9962fbc08cf0fcb037df8a0"
+        "code": "3dfa37fb6a24ac6cfae8b243eded15c7e2dea0f403bc1925ba55453cf7071256",
+        "spec": "67573f9ecc7ba726b3c2c3bdcebe90a40a2852b4a913bf269d0a2aefd40b940f",
+        "tests": "c36ba63cc63ed28ee8c714d9607e1d6b3a6cdf924cef597303e5c17a16024378"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -19,10 +19,52 @@
           "result": "pass",
           "rule": "RULE-1",
           "test": "dev/test_purlin_output.py::TestNoPictograph::test_no_tracked_file_under_scripts_or_templates_holds_a_pictograph"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_purlin_output.py::TestPython39::test_every_python_file_under_scripts_parses_as_39"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_purlin_output.py::TestPython39::test_setup_runs_on_39"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_purlin_output.py::TestPython39::test_a_test_run_runs_on_39"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_purlin_output.py::TestPython39::test_the_status_runs_on_39"
+        },
+        {
+          "env": null,
+          "id": "PROOF-6",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_purlin_output.py::TestNoProcessLeft::test_no_command_leaves_a_process_running"
         }
       ],
       "rules": {
-        "RULE-1": "passed"
+        "RULE-1": "passed",
+        "RULE-2": "passed",
+        "RULE-3": "passed"
       },
       "runner": "rich-labarca"
     }

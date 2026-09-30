@@ -2,13 +2,13 @@
   "feature": "skill_status",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:05Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-30T03:13:05Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "dirty": false,
       "fingerprint": {
-        "code": "5fef8f9e594869993f3c1a2cb1955341f8cea6f6ddaf7a380b022639a733b850",
-        "spec": "bdada2c4087d71f81f32b9dfc005dd8768da92c2a4c3fed8ce436063a7253fd2",
-        "tests": "38d635d09855b34831bd471daecfd28281fdac9162a7a0b9aed4819969325e66"
+        "code": "f7442a5ea42dae1e14d67d98357aa670e76581767ce42798a5e44dd3dc94f384",
+        "spec": "d28281bc15c8bf36b56feeaf6cc9fc5f2da101e4c42442dfc35ee82cfa57e49c",
+        "tests": "2984a686383ad8efc1bfbab7eb85e203a1022c3c25ea0fe3cdf77e6609af0d41"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -115,10 +115,19 @@
           "result": "pass",
           "rule": "RULE-9",
           "test": "dev/test_skill_status.py::TestWithAName::test_the_command_reference_names_the_form_with_a_name"
+        },
+        {
+          "env": null,
+          "id": "PROOF-35",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_skill_status.py::TestTheFirstCall::test_the_first_call_names_the_project_root"
         }
       ],
       "rules": {
         "RULE-1": "passed",
+        "RULE-11": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

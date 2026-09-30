@@ -2,13 +2,13 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T23:03:56Z",
-      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "at": "2026-09-30T03:13:04Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
       "dirty": false,
       "fingerprint": {
-        "code": "1978b9a4e0ca5800dbf585e520b02d54ac309c08c206149c165fbc2c30161509",
-        "spec": "eddd8edcecb075ecad1b514db534445ed983a9966fd3c2165b10e43e02ddd86f",
-        "tests": "ef08e22a92dcb6f28e5e24dd42dd357bc1eda13ce6a6c35903ee26d37e45561f"
+        "code": "e26e2498841aff401aacf4648cbe6329f84399c79c6d6b22fa2f057036778d1e",
+        "spec": "d47e8e57f71892bedeef5ca8cbbd80bf33b805ea6ffe6c9797813ab43300a6a7",
+        "tests": "a44dcb96b8d6840423c55239144a3cea4e7028609f9be93688ada953cd0b849f"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -62,6 +62,38 @@
         },
         {
           "env": null,
+          "id": "PROOF-235",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_run_script.py::TestTheCommandLine::test_help_prints_the_usage_and_exits_0"
+        },
+        {
+          "env": null,
+          "id": "PROOF-236",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_run_script.py::TestTheCommandLine::test_h_prints_the_usage_and_exits_0"
+        },
+        {
+          "env": null,
+          "id": "PROOF-238",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_run_script.py::TestTheCommandLine::test_an_arm_timeout_that_is_not_a_number_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-239",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_run_script.py::TestTheCommandLine::test_a_project_root_with_no_folder_after_it_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-149",
           "manual": false,
           "result": "pass",
@@ -75,6 +107,14 @@
           "result": "pass",
           "rule": "RULE-1",
           "test": "dev/test_run_script.py::TestTheCommandLine::test_test_remote_with_commit_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-237",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_run_script.py::TestTheCommandLine::test_a_remote_run_with_commit_names_the_command_without_it"
         },
         {
           "env": null,
@@ -203,6 +243,14 @@
           "result": "pass",
           "rule": "RULE-8",
           "test": "dev/test_run_script.py::TestLoudFailureB::test_a_marker_with_no_test_after_it_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-244",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_run_script.py::TestLoudFailureB::test_one_marker_with_no_result_names_the_check_to_make"
         },
         {
           "env": null,
@@ -587,6 +635,14 @@
           "result": "pass",
           "rule": "RULE-40",
           "test": "dev/test_run_script.py::TestAFailingSuiteStatesItsReason::test_an_arm_that_passed_prints_no_tail"
+        },
+        {
+          "env": null,
+          "id": "PROOF-240",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-40",
+          "test": "dev/test_run_script.py::TestAFailingSuiteStatesItsReason::test_a_suite_that_printed_nothing_says_so"
         },
         {
           "env": null,
@@ -1326,6 +1382,22 @@
         },
         {
           "env": null,
+          "id": "PROOF-250",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-64",
+          "test": "dev/test_run_script.py::TestNoTestCommand::test_a_yarn_project_is_told_the_yarn_command"
+        },
+        {
+          "env": null,
+          "id": "PROOF-251",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-64",
+          "test": "dev/test_run_script.py::TestNoTestCommand::test_a_pnpm_project_is_told_the_pnpm_command"
+        },
+        {
+          "env": null,
           "id": "PROOF-135",
           "manual": false,
           "result": "pass",
@@ -1438,6 +1510,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-255",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-67",
+          "test": "dev/test_run_script.py::TestEachRuleThatFailsOrHasNoTest::test_a_rule_whose_only_proof_has_no_test_names_that_proof"
+        },
+        {
+          "env": null,
           "id": "PROOF-210",
           "manual": false,
           "result": "pass",
@@ -1491,6 +1571,94 @@
           "result": "pass",
           "rule": "RULE-69",
           "test": "dev/test_run_script.py::TestEveryRunEndsOnTheSummary::test_a_spec_mistake_is_named_and_the_tests_still_run"
+        },
+        {
+          "env": null,
+          "id": "PROOF-241",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-79",
+          "test": "dev/test_run_script.py::TestAFailingSuiteStatesItsReason::test_a_killed_test_file_names_the_longer_limit_to_run"
+        },
+        {
+          "env": null,
+          "id": "PROOF-242",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-79",
+          "test": "dev/test_run_script.py::TestAFailingSuiteStatesItsReason::test_a_killed_suite_names_the_longer_limit_to_run"
+        },
+        {
+          "env": null,
+          "id": "PROOF-243",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-79",
+          "test": "dev/test_run_script.py::TestAFailingSuiteStatesItsReason::test_a_killed_audit_names_the_audit_to_run"
+        },
+        {
+          "env": null,
+          "id": "PROOF-245",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-80",
+          "test": "dev/test_run_script.py::TestTheLinesARunPrints::test_a_suite_with_no_report_names_its_setting"
+        },
+        {
+          "env": null,
+          "id": "PROOF-246",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-81",
+          "test": "dev/test_run_script.py::TestTheLinesARunPrints::test_a_problem_in_the_setting_names_its_fix"
+        },
+        {
+          "env": null,
+          "id": "PROOF-247",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-82",
+          "test": "dev/test_run_script.py::TestTheLinesARunPrints::test_the_first_line_names_the_suite_it_starts"
+        },
+        {
+          "env": null,
+          "id": "PROOF-248",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-82",
+          "test": "dev/test_run_script.py::TestTheLinesARunPrints::test_the_markers_are_counted_next"
+        },
+        {
+          "env": null,
+          "id": "PROOF-249",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-82",
+          "test": "dev/test_run_script.py::TestTheLinesARunPrints::test_the_suites_run_are_named_before_the_table"
+        },
+        {
+          "env": null,
+          "id": "PROOF-252",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-83",
+          "test": "dev/test_run_script.py::TestNoTestCommand::test_jest_is_handed_the_files_before_its_reporters"
+        },
+        {
+          "env": null,
+          "id": "PROOF-253",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-84",
+          "test": "dev/test_run_script.py::TestNoTestCommand::test_a_project_that_runs_its_doctests_keeps_running_them"
+        },
+        {
+          "env": null,
+          "id": "PROOF-254",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-84",
+          "test": "dev/test_run_script.py::TestNoTestCommand::test_a_spec_naming_the_option_adds_nothing"
         },
         {
           "env": null,
@@ -1552,7 +1720,13 @@
         "RULE-76": "passed",
         "RULE-77": "passed",
         "RULE-78": "passed",
+        "RULE-79": "passed",
         "RULE-8": "passed",
+        "RULE-80": "passed",
+        "RULE-81": "passed",
+        "RULE-82": "passed",
+        "RULE-83": "passed",
+        "RULE-84": "passed",
         "RULE-9": "passed"
       },
       "runner": "rich-labarca"

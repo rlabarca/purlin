@@ -2,13 +2,13 @@
   "feature": "mutation",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T23:03:56Z",
-      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "at": "2026-09-30T03:13:04Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
       "dirty": false,
       "fingerprint": {
-        "code": "6b5bbb6e1df50931ef476b187c09029e824409bf5aab4aeb0b4efeb467653a1d",
-        "spec": "fa0c83975fa9126d569ed0f482082c39bf071d09b0c249aa1ef6a2a3d8c1cdc6",
-        "tests": "fe5491bbd7e1f751c338a0597b1b4112d541f6e9cc3f033b018bcc1be5d97c18"
+        "code": "b60bbccc8774b10c15a2a993e55a44286085aefcd1aa39f3814b6166b6845553",
+        "spec": "7981c0aebd75ce7dc52dfe4ab257413983bc97c946af3b6002bfdd7b140b15f8",
+        "tests": "b8177d9ec8529e50d05f41374ff88d40441e4e5fdbe7f85c9807372de561bcd4"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -211,14 +211,6 @@
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_mutation_adapters.py::test_a_run_that_failed_and_wrote_no_report_says_so"
-        },
-        {
-          "env": null,
-          "id": "PROOF-52",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_mutation_adapters.py::test_a_feature_with_no_scope_files_is_not_broken"
         },
         {
           "env": null,
@@ -659,6 +651,86 @@
           "result": "pass",
           "rule": "RULE-33",
           "test": "dev/test_mutation_adapters.py::test_an_engine_nobody_ships_is_not_run"
+        },
+        {
+          "env": null,
+          "id": "PROOF-92",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_mutation_adapters.py::test_a_mutmut_log_names_the_block_and_its_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-93",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_mutation_adapters.py::test_a_mutmut_log_gives_the_code_mutmut_run_exited_with"
+        },
+        {
+          "env": null,
+          "id": "PROOF-94",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_mutation_adapters.py::test_a_mutmut_log_counts_the_breaks_it_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-95",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_mutation_adapters.py::test_a_mutmut_log_gives_each_features_breaks_and_share"
+        },
+        {
+          "env": null,
+          "id": "PROOF-96",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_mutation_adapters.py::test_a_stryker_log_names_the_test_runner_first"
+        },
+        {
+          "env": null,
+          "id": "PROOF-97",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_mutation_adapters.py::test_a_stryker_log_gives_each_features_files_and_share"
+        },
+        {
+          "env": null,
+          "id": "PROOF-98",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_mutation_adapters.py::test_a_stryker_net_log_names_the_engine_first"
+        },
+        {
+          "env": null,
+          "id": "PROOF-99",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_mutation_adapters.py::test_a_stryker_net_log_gives_each_features_files_and_share"
+        },
+        {
+          "env": null,
+          "id": "PROOF-52",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-37",
+          "test": "dev/test_mutation_adapters.py::test_a_feature_with_no_scope_files_is_not_broken"
+        },
+        {
+          "env": null,
+          "id": "PROOF-100",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-37",
+          "test": "dev/test_mutation_adapters.py::test_stryker_net_breaks_nothing_for_a_feature_with_no_scope_files"
         }
       ],
       "rules": {
@@ -686,6 +758,10 @@
         "RULE-31": "passed",
         "RULE-32": "not run",
         "RULE-33": "passed",
+        "RULE-34": "passed",
+        "RULE-35": "passed",
+        "RULE-36": "passed",
+        "RULE-37": "passed",
         "RULE-5": "not run",
         "RULE-6": "passed",
         "RULE-7": "not run",

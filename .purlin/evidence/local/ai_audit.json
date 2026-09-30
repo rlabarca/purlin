@@ -2,13 +2,13 @@
   "feature": "ai_audit",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T23:03:56Z",
-      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "at": "2026-09-30T03:13:04Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
       "dirty": false,
       "fingerprint": {
-        "code": "f0b9864ea4f7763dc257025173db9770faeb69dd725b24c1e29d33a1784f3c1d",
-        "spec": "024abf865075e5a6c437084441bd6142a1a14ae19801e20261c9919f7d7127fa",
-        "tests": "8a330f04f20f8c2e6b3a115653e6f4e6d98aac4fd5296dfdbe9428146bc7b736"
+        "code": "20037cf21bf323041fdb9915d06f1f033bdf631e6ada3b506b60691b1010d685",
+        "spec": "d09dff6bb4a26ecf07166f5d2231f8d5ca4540dad3e494ef62e9ea672d7c34a6",
+        "tests": "35ea94b49209e6a2e8fdeadcee7f4498398558725bf24327754f565f27023f43"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -550,6 +550,54 @@
         },
         {
           "env": null,
+          "id": "PROOF-84",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_ai_audit.py::TestTheCommandLine::test_a_strong_answer_with_nothing_found_says_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-85",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_ai_audit.py::TestTheCommandLine::test_a_strong_answer_with_a_finding_prints_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-86",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_ai_audit.py::TestTheCommandLine::test_an_undecided_answer_says_the_rule_reads_weak"
+        },
+        {
+          "env": null,
+          "id": "PROOF-87",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_ai_audit.py::TestTheCommandLine::test_a_rule_with_no_test_names_the_command"
+        },
+        {
+          "env": null,
+          "id": "PROOF-88",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_ai_audit.py::TestTheCommandLine::test_a_manual_proof_prints_manual_under_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-89",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_ai_audit.py::TestTheCommandLine::test_the_strength_shows_its_whole_number_part"
+        },
+        {
+          "env": null,
           "id": "PROOF-63",
           "manual": false,
           "result": "pass",
@@ -603,6 +651,14 @@
           "result": "pass",
           "rule": "RULE-21",
           "test": "dev/test_ai_audit.py::TestTheCommandLine::test_a_settings_file_that_cannot_be_read_stops_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-90",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-29",
+          "test": "dev/test_ai_audit.py::TestTheCommandLine::test_a_project_root_that_is_not_a_directory_exits_two"
         }
       ],
       "rules": {
@@ -619,6 +675,7 @@
         "RULE-2": "passed",
         "RULE-20": "passed",
         "RULE-21": "passed",
+        "RULE-29": "passed",
         "RULE-3": "not run",
         "RULE-4": "passed",
         "RULE-5": "passed",

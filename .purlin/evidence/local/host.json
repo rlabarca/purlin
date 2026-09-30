@@ -2,13 +2,13 @@
   "feature": "host",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T23:03:56Z",
-      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "at": "2026-09-30T03:13:04Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
       "dirty": false,
       "fingerprint": {
-        "code": "4fedf883c63147f4d1cc1b7a2aaa1b6c5db772e9b5b79ef168c7863e93df666b",
-        "spec": "85fcd5c8d938c88f1679033ab801aed11edc6713adc0b09c9396eb50bdc349a1",
-        "tests": "6f382ca8613c78f5fd342bb067855a8435cf75d7bbb265050fd931d3fa92a5e9"
+        "code": "74588b572d762cf12c4ed1efd7637e30b78cb404b61fcd92a65983271ae50503",
+        "spec": "8e124f8f1831312fc26665399bc2de4228f845ef9e645b82c87c643972756a6f",
+        "tests": "cc03bcc47e9df99114d725cd99183821485a7dcc6f2a4c61563af3ab51589ef1"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -99,6 +99,14 @@
           "result": "pass",
           "rule": "RULE-7",
           "test": "dev/test_host.py::test_no_repository_name_writes_no_commit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-127",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_host.py::test_no_azure_token_writes_no_commit"
         },
         {
           "env": null,
@@ -211,14 +219,6 @@
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_host.py::test_a_run_that_never_registers_is_reported_and_the_branch_deleted"
-        },
-        {
-          "env": null,
-          "id": "PROOF-71",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_host.py::test_without_gh_the_run_is_neither_watched_nor_pulled"
         },
         {
           "env": null,
@@ -381,14 +381,6 @@
           "test": "dev/test_remote.py::test_a_run_past_ninety_minutes_is_left_for_the_person"
         },
         {
-          "env": null,
-          "id": "PROOF-82",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-31",
-          "test": "dev/test_remote.py::test_without_az_the_run_is_neither_found_nor_pulled"
-        },
-        {
           "env": "windows",
           "id": "PROOF-120",
           "manual": false,
@@ -438,6 +430,22 @@
         },
         {
           "env": null,
+          "id": "PROOF-128",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-39",
+          "test": "dev/test_consumer_ci.py::test_proofs_tagged_for_two_other_systems_are_named_together"
+        },
+        {
+          "env": null,
+          "id": "PROOF-129",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-39",
+          "test": "dev/test_consumer_ci.py::test_tests_tagged_for_two_other_systems_are_named_together_at_passed"
+        },
+        {
+          "env": null,
           "id": "PROOF-43",
           "manual": false,
           "result": "pass",
@@ -483,6 +491,54 @@
           "result": "pass",
           "rule": "RULE-18",
           "test": "dev/test_consumer_ci.py::test_the_azure_pipeline_has_the_same_triggers_and_ends_on_the_test_step"
+        },
+        {
+          "env": null,
+          "id": "PROOF-121",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_consumer_ci.py::test_the_sqlite_step_comes_just_before_the_test_step"
+        },
+        {
+          "env": null,
+          "id": "PROOF-122",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_consumer_ci.py::test_a_windows_runner_gets_sqlite3_when_a_tracked_file_names_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-123",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_consumer_ci.py::test_a_macos_runner_installs_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-124",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_consumer_ci.py::test_a_project_where_only_the_runner_file_names_sqlite3_installs_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-125",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_consumer_ci.py::test_a_windows_runner_that_has_sqlite3_installs_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-126",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_consumer_ci.py::test_an_azure_windows_agent_gets_sqlite3_on_its_search_path"
         },
         {
           "env": null,
@@ -803,6 +859,94 @@
           "result": "pass",
           "rule": "RULE-35",
           "test": "dev/test_host.py::test_a_settings_file_that_cannot_be_read_pushes_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-71",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_host.py::test_without_gh_the_run_is_neither_watched_nor_pulled"
+        },
+        {
+          "env": null,
+          "id": "PROOF-82",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_remote.py::test_without_az_the_run_is_neither_found_nor_pulled"
+        },
+        {
+          "env": null,
+          "id": "PROOF-130",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_remote.py::test_the_wait_on_azure_devops_is_announced_after_the_push"
+        },
+        {
+          "env": null,
+          "id": "PROOF-131",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_host.py::test_a_run_branch_that_cannot_be_deleted_is_named_with_its_command"
+        },
+        {
+          "env": null,
+          "id": "PROOF-132",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_host.py::test_a_command_that_cannot_be_started_is_named_with_the_error"
+        },
+        {
+          "env": null,
+          "id": "PROOF-133",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-44",
+          "test": "dev/test_consumer_ci.py::test_the_runner_file_opens_on_why_it_exists"
+        },
+        {
+          "env": null,
+          "id": "PROOF-134",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-44",
+          "test": "dev/test_consumer_ci.py::test_the_runner_file_says_whom_the_matrix_holds"
+        },
+        {
+          "env": null,
+          "id": "PROOF-135",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-44",
+          "test": "dev/test_consumer_ci.py::test_the_runner_file_says_what_starts_a_run"
+        },
+        {
+          "env": null,
+          "id": "PROOF-136",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-44",
+          "test": "dev/test_consumer_ci.py::test_the_runner_file_says_the_job_is_capped_at_ninety_minutes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-137",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-44",
+          "test": "dev/test_consumer_ci.py::test_the_runner_file_says_no_breaks_and_no_audit_run_there"
+        },
+        {
+          "env": null,
+          "id": "PROOF-138",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-44",
+          "test": "dev/test_consumer_ci.py::test_the_runner_file_says_each_test_command_has_an_hour"
         }
       ],
       "rules": {
@@ -826,6 +970,10 @@
         "RULE-38": "passed",
         "RULE-39": "passed",
         "RULE-40": "passed",
+        "RULE-41": "passed",
+        "RULE-42": "passed",
+        "RULE-43": "passed",
+        "RULE-44": "passed",
         "RULE-5": "not run",
         "RULE-6": "passed",
         "RULE-7": "passed",

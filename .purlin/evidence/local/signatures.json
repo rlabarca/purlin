@@ -2,13 +2,13 @@
   "feature": "signatures",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T23:03:56Z",
-      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "at": "2026-09-30T03:13:05Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
       "dirty": false,
       "fingerprint": {
-        "code": "40a9942914af60d09ca5814d3364277800ebfdaf8c9c1440b1b84307d00d470e",
-        "spec": "05f18857281c236c7fd558a4cd5b3a7e535071ab26732f69d20e30723a66a5a7",
-        "tests": "2e83764cbed036b6a1fff1f51e08bc49354196fbd6dbe80b526a5667b864426c"
+        "code": "e611ad6faaf03307e930d2e25cd8063a59dee02ea811262a40ad8efbe79435f8",
+        "spec": "9c1d6803c6fc7328f1d7938dc11296e9090dc2ec690cfb0d5659d1a3aacf0c23",
+        "tests": "ebadc47d00a2d9a9918932a79715a000e9616a3e1fcf635072d313adfe6ca302"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -947,6 +947,166 @@
           "result": "pass",
           "rule": "RULE-77",
           "test": "dev/test_signatures.py::TestTheCommandLine::test_an_unknown_option_alone_exits_two"
+        },
+        {
+          "env": null,
+          "id": "PROOF-159",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-78",
+          "test": "dev/test_signatures.py::TestNoFiles::test_a_named_rule_says_its_signature_does_not_count"
+        },
+        {
+          "env": null,
+          "id": "PROOF-160",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-78",
+          "test": "dev/test_signatures.py::TestNoFiles::test_the_walk_says_so_for_each_such_rule_it_signed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-161",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-78",
+          "test": "dev/test_signatures.py::TestNoFiles::test_below_signed_the_line_is_the_plain_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-162",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-79",
+          "test": "dev/test_signatures.py::TestTheCommitNotMade::test_gits_own_message_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-163",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-80",
+          "test": "dev/test_tag.py::TestThePackage::test_no_tag_while_the_package_finds_work_left"
+        },
+        {
+          "env": null,
+          "id": "PROOF-164",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-81",
+          "test": "dev/test_signatures.py::TestTheCommandLine::test_a_root_that_is_not_a_directory_exits_two"
+        },
+        {
+          "env": null,
+          "id": "PROOF-165",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-82",
+          "test": "dev/test_signatures.py::TestTheWalk::test_rule_2_comes_before_rule_10"
+        },
+        {
+          "env": null,
+          "id": "PROOF-166",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-83",
+          "test": "dev/test_signatures.py::TestTheWalk::test_a_proof_for_one_system_shows_its_tag"
+        },
+        {
+          "env": null,
+          "id": "PROOF-167",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-84",
+          "test": "dev/test_signatures.py::TestWhatTheAuditFound::test_no_audit_yet"
+        },
+        {
+          "env": null,
+          "id": "PROOF-168",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-84",
+          "test": "dev/test_signatures.py::TestWhatTheAuditFound::test_strong_with_no_finding"
+        },
+        {
+          "env": null,
+          "id": "PROOF-169",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-84",
+          "test": "dev/test_signatures.py::TestWhatTheAuditFound::test_strong_with_a_finding"
+        },
+        {
+          "env": null,
+          "id": "PROOF-170",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-84",
+          "test": "dev/test_signatures.py::TestWhatTheAuditFound::test_weak_with_a_finding"
+        },
+        {
+          "env": null,
+          "id": "PROOF-171",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-84",
+          "test": "dev/test_signatures.py::TestWhatTheAuditFound::test_undecided_with_a_finding"
+        },
+        {
+          "env": null,
+          "id": "PROOF-172",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-85",
+          "test": "dev/test_signatures.py::TestWhatTheWalkAsks::test_each_stop_asks_for_one_of_three"
+        },
+        {
+          "env": null,
+          "id": "PROOF-173",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-85",
+          "test": "dev/test_signatures.py::TestWhatTheWalkAsks::test_signing_a_hand_check_asks_what_was_seen"
+        },
+        {
+          "env": null,
+          "id": "PROOF-174",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-85",
+          "test": "dev/test_signatures.py::TestWhatTheWalkAsks::test_a_case_asks_for_the_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-175",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-86",
+          "test": "dev/test_signatures.py::TestTheWalk::test_a_case_with_no_line_says_the_reviewer_named_none"
+        },
+        {
+          "env": null,
+          "id": "PROOF-176",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-87",
+          "test": "dev/test_signatures.py::TestTheWalk::test_a_walk_that_signed_names_its_commit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-177",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-88",
+          "test": "dev/test_signatures.py::TestTheWalk::test_a_skipped_rule_is_still_to_sign_and_nothing_records_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-178",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-89",
+          "test": "dev/test_tag.py::TestTheTag::test_the_tag_is_signed_with_the_key_the_settings_name"
         }
       ],
       "rules": {
@@ -999,7 +1159,19 @@
         "RULE-75": "passed",
         "RULE-76": "passed",
         "RULE-77": "passed",
+        "RULE-78": "passed",
+        "RULE-79": "passed",
         "RULE-8": "passed",
+        "RULE-80": "passed",
+        "RULE-81": "passed",
+        "RULE-82": "passed",
+        "RULE-83": "passed",
+        "RULE-84": "passed",
+        "RULE-85": "passed",
+        "RULE-86": "passed",
+        "RULE-87": "passed",
+        "RULE-88": "passed",
+        "RULE-89": "passed",
         "RULE-9": "passed"
       },
       "runner": "rich-labarca"

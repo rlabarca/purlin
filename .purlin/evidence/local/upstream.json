@@ -2,13 +2,13 @@
   "feature": "upstream",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T23:03:57Z",
-      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "at": "2026-09-30T03:13:05Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
       "dirty": false,
       "fingerprint": {
-        "code": "3230ad65ea798e3f78bc2ca52e4f7d01c669518d02b95bd2a0d1ece0ea540c0b",
-        "spec": "34a6f369952bb0dc073e6adaccbb660564dd92d4af2c89abbf68c25d5c499f18",
-        "tests": "e6a8c0aa901239b27f7f31ec113adddc2c60a00069ef711370efc89a6a4348f1"
+        "code": "4e2f27b1d210bd71b21cbefb873b4923d00f33185612cc5ee5906615fd82536e",
+        "spec": "a78343d0a1d903e07119ac0176d264cbd948e59bfbea0c9b47fadcbc98a3b571",
+        "tests": "20b7dc7f3ce29a13ee14efdcbb940e6d8147bcd093581e4d170db3166483873e"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -318,6 +318,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-57",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_upstream.py::test_check_names_the_source_that_could_not_be_read_and_the_fix"
+        },
+        {
+          "env": null,
           "id": "PROOF-34",
           "manual": false,
           "result": "pass",
@@ -331,6 +339,54 @@
           "result": "pass",
           "rule": "RULE-29",
           "test": "dev/test_upstream.py::test_a_call_with_no_arguments_exits_2_naming_the_project_root"
+        },
+        {
+          "env": null,
+          "id": "PROOF-52",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_upstream.py::test_add_counts_two_rules_in_the_plural"
+        },
+        {
+          "env": null,
+          "id": "PROOF-53",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_upstream.py::test_add_counts_one_rule_in_the_singular"
+        },
+        {
+          "env": null,
+          "id": "PROOF-54",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_upstream.py::test_add_with_no_path_names_the_flag_and_writes_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-55",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-32",
+          "test": "dev/test_upstream.py::test_check_names_an_anchor_with_a_source_and_no_pin"
+        },
+        {
+          "env": null,
+          "id": "PROOF-56",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_upstream.py::test_sync_in_a_project_with_no_anchor_says_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-58",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_upstream.py::test_a_project_root_that_is_no_folder_is_named_with_the_flag"
         }
       ],
       "rules": {
@@ -350,6 +406,11 @@
         "RULE-28": "passed",
         "RULE-29": "passed",
         "RULE-3": "not run",
+        "RULE-30": "passed",
+        "RULE-31": "passed",
+        "RULE-32": "passed",
+        "RULE-33": "passed",
+        "RULE-34": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",

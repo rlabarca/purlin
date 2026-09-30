@@ -2,13 +2,13 @@
   "feature": "skill_test",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:05Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-30T03:13:05Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "dirty": false,
       "fingerprint": {
-        "code": "1b6ef83b56aaa565e9480eb8a5b2d7aa4f7330daad0ab3a85fa30b6f7e6f68ea",
-        "spec": "beee155991e49f0de8dd2d110b89cb02486e7056f75aae74ca1df1712e636a40",
-        "tests": "5011488273981bbe9ae123a5b6b10fd782e2bd2260cda174222006667bbedcbb"
+        "code": "003d449b5831f1c59e5373c6b056f2d225e15cd727d0e2f2cb7acb9739eaa6a9",
+        "spec": "40c1c6c6979602884dd0f7341f154e368efa49047b99e4566d1180f1bf1a0678",
+        "tests": "1f645d393194284462682221c19a86c31a716fa767cb58bf91fa78bb42374c2d"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -170,7 +170,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-15",
-          "test": "dev/test_skill_test.py::TestNoToolFound::test_the_shipped_row_for_no_tool_reads_proposes_and_runs_again"
+          "test": "dev/test_skill_test.py::TestNoToolFound::test_the_run_with_no_tool_prints_the_line_the_row_matches"
         },
         {
           "env": null,
@@ -179,6 +179,46 @@
           "result": "pass",
           "rule": "RULE-16",
           "test": "dev/test_skill_test.py::TestTheCommandRow::test_the_shipped_command_reference_has_a_row_for_the_skill"
+        },
+        {
+          "env": null,
+          "id": "PROOF-45",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_skill_test.py::TestTheComparison::test_the_shipped_row_carries_the_comparison"
+        },
+        {
+          "env": null,
+          "id": "PROOF-46",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_skill_test.py::TestTheComparison::test_the_shipped_row_runs_the_line_a_tool_needs_once_agreed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-47",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_skill_test.py::TestARemoteRunWithNoProgram::test_the_shipped_step_names_the_program_to_install"
+        },
+        {
+          "env": null,
+          "id": "PROOF-48",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_skill_test.py::TestTheArmTimeout::test_the_arm_timeout_is_in_the_usage_and_passed_on"
+        },
+        {
+          "env": null,
+          "id": "PROOF-49",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_skill_test.py::TestTheProjectRoot::test_the_first_sync_status_names_the_project_root"
         }
       ],
       "rules": {
@@ -190,7 +230,11 @@
         "RULE-14": "passed",
         "RULE-15": "passed",
         "RULE-16": "passed",
+        "RULE-17": "passed",
+        "RULE-18": "passed",
+        "RULE-19": "passed",
         "RULE-2": "passed",
+        "RULE-20": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

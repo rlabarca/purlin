@@ -2,13 +2,13 @@
   "feature": "summary",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T23:03:57Z",
-      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "at": "2026-09-30T03:13:05Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
       "dirty": false,
       "fingerprint": {
-        "code": "ef498e80a82d91331ed4a10346375d686536f2ede9a70449ff0ed15aa30fd8bd",
-        "spec": "91afd3368befae559b6f3915ab96c531afaf394f3f2005a886a3c4669db071b5",
-        "tests": "89c301a67b05a827a82e946e8f2f7d12ffb9740ca5932bdb15e23abc34bf206a"
+        "code": "6686ae47c8142b85e1b892530cd29788cad2f26ea8b6a23ee4c72ed5ef0ae7e6",
+        "spec": "ec330cac2e0da413f1412bb5506ca8d9e6fbead182ab32726021730fd728fc52",
+        "tests": "ef867bb03d32951401393f6cb180b13f7bb87a39eabdbd613f4ef6b53695db6e"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -99,6 +99,14 @@
           "result": "pass",
           "rule": "RULE-4",
           "test": "dev/test_summary.py::TestTheLines::test_a_comment_naming_nothing_is_a_line_of_its_own"
+        },
+        {
+          "env": null,
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_summary.py::TestTheLines::test_three_comments_naming_nothing_read_plural"
         },
         {
           "env": null,
@@ -219,6 +227,14 @@
           "result": "pass",
           "rule": "RULE-8",
           "test": "dev/test_summary.py::TestOneKindPerRule::test_a_rule_one_proof_of_which_no_test_backs_wants_a_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-37",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_summary.py::TestOneKindPerRule::test_a_proof_listed_with_no_test_named_wants_a_test"
         },
         {
           "env": null,

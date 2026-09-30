@@ -2,13 +2,13 @@
   "feature": "server",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T23:03:56Z",
-      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "at": "2026-09-30T03:13:05Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
       "dirty": false,
       "fingerprint": {
-        "code": "f4543891f34ffd29124061d7edf6fc4f494a86406d69e6020387b00968679d27",
-        "spec": "074415a3efbcfeeb5d31d474c929864c5035fc2ce7cfe1492afcc71da5e180c9",
-        "tests": "daf1bd5f98bc98112532ca6b780391b3d7b2f36359e54920375adc83e5279f3a"
+        "code": "20491ffe9297600ba5c17558531e0cacd5ed7f6f77104b7d8598aa9f7490a754",
+        "spec": "6a29206cbb394ec3114efbd55b378e3514d6141966a5b9ba21c9be59c6a0aa72",
+        "tests": "38e446c2855ad4fd9170e3f5d3d2fd22c43404a48590583ec8fec4a48cf357ac"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -82,7 +82,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_mcp_server.py::TestWhichWorkspace::test_a_call_naming_a_workspace_answers_for_it"
+          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_call_naming_a_project_root_answers_for_it"
         },
         {
           "env": null,
@@ -90,7 +90,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_mcp_server.py::TestWhichWorkspace::test_a_workspace_named_from_the_home_folder_is_found"
+          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_workspace_named_from_the_home_folder_is_found"
         },
         {
           "env": "windows",
@@ -98,7 +98,7 @@
           "manual": false,
           "result": "not run",
           "rule": "RULE-6",
-          "test": "dev/test_mcp_server.py::TestWhichWorkspace::test_a_workspace_named_from_the_home_folder_is_found"
+          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_workspace_named_from_the_home_folder_is_found"
         },
         {
           "env": null,
@@ -106,7 +106,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_mcp_server.py::TestWhichWorkspace::test_a_root_with_no_workspace_says_so_rather_than_reporting_nothing"
+          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_root_with_no_project_says_how_to_fix_it_and_nothing_more"
+        },
+        {
+          "env": null,
+          "id": "PROOF-162",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_root_with_no_project_says_so_rather_than_reporting_nothing"
         },
         {
           "env": null,
@@ -114,7 +122,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_mcp_server.py::TestWhichWorkspace::test_a_named_root_with_no_workspace_says_it_came_from_the_argument"
+          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_named_root_with_no_project_says_it_came_from_the_argument"
         },
         {
           "env": null,
@@ -122,7 +130,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_mcp_server.py::TestWhichWorkspace::test_a_config_write_where_there_is_no_workspace_writes_nothing"
+          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_config_write_where_there_is_no_project_writes_nothing"
         },
         {
           "env": null,
@@ -130,7 +138,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_mcp_server.py::TestWhichWorkspace::test_drift_where_there_is_no_workspace_says_so"
+          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_drift_where_there_is_no_project_says_so"
         },
         {
           "env": null,
@@ -266,7 +274,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-25",
-          "test": "dev/test_mcp_server.py::TestWhichWorkspace::test_the_named_workspace_is_for_that_call_alone"
+          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_the_named_project_root_is_for_that_call_alone"
         },
         {
           "env": null,

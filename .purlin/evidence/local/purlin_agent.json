@@ -2,13 +2,13 @@
   "feature": "purlin_agent",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:04Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-30T03:13:04Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "dirty": false,
       "fingerprint": {
-        "code": "aa38889fa17526acb5ed849ff6a09b6e6cca9fde86f4d08cc8ffde13d9d29f50",
-        "spec": "58cc90de7884bca3c822466f0f37e29fec4d0407f1e39042779f8b166e744ce4",
-        "tests": "84fb3a19979c81008e8682951effafd5e8a0d9f98d10330f82950c5856029819"
+        "code": "be512bfbb47e9714b9fbb4547b3250704cfe920cbb38ca2f085c36ad59f97590",
+        "spec": "05b44671daa81f5c81661d3459de42b67c14085995f3cbd029381e6250faca07",
+        "tests": "68ec926ef093e5b92861f46e76655a1041fe5aa5bde57c3aa0c571df2d12f9b4"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -83,10 +83,19 @@
           "result": "pass",
           "rule": "RULE-8",
           "test": "dev/test_purlin_agent.py::TestLeftToDo::test_it_says_every_run_ends_on_left_to_do"
+        },
+        {
+          "env": null,
+          "id": "PROOF-47",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_purlin_agent.py::TestProjectRoot::test_the_first_call_names_the_project_root"
         }
       ],
       "rules": {
         "RULE-1": "passed",
+        "RULE-16": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

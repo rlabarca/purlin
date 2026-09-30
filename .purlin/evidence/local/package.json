@@ -2,13 +2,13 @@
   "feature": "package",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T23:03:56Z",
-      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "at": "2026-09-30T03:13:04Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
       "dirty": false,
       "fingerprint": {
-        "code": "45ef658ee9b78204fce688b2e562748c3af030c6527f9400b0f630a11db3f10c",
-        "spec": "7201b36eb225330cd79b0c3f224878c4e523618552311077e56be24a5a7701b1",
-        "tests": "41869baa29854a6269e1471008931445d57509688ffa5a4bc9fc1d78bb4219ee"
+        "code": "bee1c6732c9e7ee1f27b8491c3c4364c8474a6b9d2bec0ff525ccb7fb73413c5",
+        "spec": "10d9d35a8e948a1b06edbd290adca52ead653e639046e780d03d3883709e217c",
+        "tests": "7966452f15d8918d9b09f960a2020a065c324ea73f9df31c136a47f0fe8627a8"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -331,6 +331,118 @@
           "result": "pass",
           "rule": "RULE-19",
           "test": "dev/test_export.py::TestTheSettings::test_a_settings_file_that_cannot_be_read_stops_the_check"
+        },
+        {
+          "env": null,
+          "id": "PROOF-41",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_export.py::TestTheRefusals::test_a_project_root_that_is_not_a_folder_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-42",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_export.py::TestTheRefusals::test_an_option_with_no_value_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_export.py::TestTheRefusals::test_an_argument_it_does_not_take_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-44",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_export.py::TestTheRefusals::test_check_beside_another_option_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-45",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_export.py::TestTheRefusals::test_check_names_a_file_that_is_not_utf8_json"
+        },
+        {
+          "env": null,
+          "id": "PROOF-46",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_export.py::TestTheRefusals::test_check_names_another_schema"
+        },
+        {
+          "env": null,
+          "id": "PROOF-47",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_export.py::TestTheRefusals::test_check_names_a_key_the_format_does_not_name"
+        },
+        {
+          "env": null,
+          "id": "PROOF-48",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_export.py::TestTheRefusals::test_check_names_top_level_keys_out_of_the_format"
+        },
+        {
+          "env": null,
+          "id": "PROOF-49",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_export.py::TestTheRefusals::test_check_names_a_file_that_cannot_be_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-50",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-23",
+          "test": "dev/test_export.py::TestTheRefusals::test_a_project_with_no_commit_is_not_written"
+        },
+        {
+          "env": null,
+          "id": "PROOF-51",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-23",
+          "test": "dev/test_export.py::TestTheRefusals::test_a_commit_git_cannot_check_out_is_not_written"
+        },
+        {
+          "env": null,
+          "id": "PROOF-52",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-23",
+          "test": "dev/test_export.py::TestTheRefusals::test_a_package_folder_that_is_a_file_is_not_written"
+        },
+        {
+          "env": null,
+          "id": "PROOF-53",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_export.py::TestTheRefusals::test_a_commit_git_refuses_is_not_committed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-54",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_export.py::TestTheRefusals::test_a_file_git_cannot_add_is_not_committed"
         }
       ],
       "rules": {
@@ -346,6 +458,11 @@
         "RULE-18": "passed",
         "RULE-19": "passed",
         "RULE-2": "passed",
+        "RULE-20": "passed",
+        "RULE-21": "passed",
+        "RULE-22": "passed",
+        "RULE-23": "passed",
+        "RULE-24": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

@@ -2,13 +2,13 @@
   "feature": "skill_sign",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:05Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-30T03:13:05Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "dirty": false,
       "fingerprint": {
-        "code": "ba6ab200b7605ca656d1ebe2c484acd43ea1c1ff7e10dec727a0d5c676566b51",
-        "spec": "cdd3086350e6ff34f1ff3a47fc22d4d86338fbaf3fff996fdb81360219f61795",
-        "tests": "ce83d0f99804f3f52da5b95fe2b300b0ef37d7a708bdf2b8cda40455f19933c9"
+        "code": "10aa024be527b9f71e127501e3a8816321d27d89a1d25289b723cca1484ffabd",
+        "spec": "d4d2d1825591bd54c087190c8c46344ee0a01ded069b326b20906ae22f90d2be",
+        "tests": "7c3176835aa2415ee66a7a64f76c642fcef1190449fbb6543f895dfd4e0a819f"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -171,6 +171,38 @@
           "result": "pass",
           "rule": "RULE-17",
           "test": "dev/test_skill_sign.py::TestSkillSign::test_it_says_what_a_refused_tag_exits_with"
+        },
+        {
+          "env": null,
+          "id": "PROOF-46",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_sync_status_is_given_the_project_root"
+        },
+        {
+          "env": null,
+          "id": "PROOF-47",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_rule_of_a_spec_naming_no_files_is_signed_and_says_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-48",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_quotes_the_no_version_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-49",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_quotes_the_tag_already_written_line"
         }
       ],
       "rules": {
@@ -183,7 +215,11 @@
         "RULE-15": "passed",
         "RULE-16": "passed",
         "RULE-17": "passed",
+        "RULE-18": "passed",
+        "RULE-19": "passed",
         "RULE-2": "passed",
+        "RULE-20": "passed",
+        "RULE-21": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

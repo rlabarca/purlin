@@ -2,13 +2,13 @@
   "feature": "scaffold",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T23:03:56Z",
-      "commit": "9c9cf4e3036ad1b12311c4f6cd2df1fbb4b6ada6",
+      "at": "2026-09-30T03:13:04Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
       "dirty": false,
       "fingerprint": {
-        "code": "068ba23d8bd96cf094a65a2d844bdc658464ee62563956aad8a4e0de16788f43",
-        "spec": "06f75ed99017c978746329bb2447867e8f14f4fef4323ad5787da14c02de7b21",
-        "tests": "46e25d68802b3e277ebd71a00d6839444510088b6a6141ea6c99b74b3aa36f19"
+        "code": "a268af0b63bec7492f208834a619f0c1a8e1b61e6943c3b0b2ec9e9ea807cdde",
+        "spec": "161ca1c30caebd05d2edc54c87a49b9bd7741ae641fa4161bca9075170500ed9",
+        "tests": "db27a66a256529c1037e6b953caffbcec0febc56ff53ef8b36e431aa7b7182f3"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -110,6 +110,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-138",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-64",
+          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_a_gate_flag_that_is_no_gate_is_refused"
+        },
+        {
+          "env": null,
           "id": "PROOF-5",
           "manual": false,
           "result": "pass",
@@ -186,7 +194,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
-          "test": "dev/test_init_scaffold.py::TestNothingInTheTests::test_a_vitest_project_is_told_about_stryker"
+          "test": "dev/test_init_scaffold.py::TestNothingInTheTests::test_a_vitest_project_is_told_how_to_install_stryker"
         },
         {
           "env": null,
@@ -194,7 +202,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
-          "test": "dev/test_init_scaffold.py::TestNothingInTheTests::test_a_jest_project_is_told_about_stryker"
+          "test": "dev/test_init_scaffold.py::TestNothingInTheTests::test_a_jest_project_is_told_how_to_install_stryker"
         },
         {
           "env": null,
@@ -202,7 +210,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
-          "test": "dev/test_init_scaffold.py::TestNothingInTheTests::test_a_csharp_project_is_told_about_stryker"
+          "test": "dev/test_init_scaffold.py::TestNothingInTheTests::test_a_csharp_project_with_no_dotnet_is_told_to_install_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-139",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_init_scaffold.py::TestNothingInTheTests::test_a_csharp_project_with_no_stryker_tool_is_told_to_add_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-140",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_init_scaffold.py::TestNothingInTheTests::test_an_installed_stryker_prints_no_line"
         },
         {
           "env": null,
@@ -262,11 +286,35 @@
         },
         {
           "env": null,
+          "id": "PROOF-142",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_with_no_remote_no_heading_is_printed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-143",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_with_a_prerequisite_missing_no_heading_is_printed"
+        },
+        {
+          "env": null,
           "id": "PROOF-13",
           "manual": false,
           "result": "pass",
           "rule": "RULE-53",
           "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_a_project_with_no_foreign_proof_gets_no_workflow"
+        },
+        {
+          "env": null,
+          "id": "PROOF-141",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-53",
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_at_passed_the_skip_line_says_every_test"
         },
         {
           "env": null,
@@ -390,6 +438,22 @@
         },
         {
           "env": null,
+          "id": "PROOF-144",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-65",
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_under_the_runner_file_it_names_where_it_runs"
+        },
+        {
+          "env": null,
+          "id": "PROOF-145",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-65",
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_under_the_runner_file_it_names_its_triggers"
+        },
+        {
+          "env": null,
           "id": "PROOF-18",
           "manual": false,
           "result": "pass",
@@ -411,6 +475,14 @@
           "result": "pass",
           "rule": "RULE-18",
           "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_the_dashboard_is_copied"
+        },
+        {
+          "env": null,
+          "id": "PROOF-146",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_the_gitignore_is_named_once"
         },
         {
           "env": null,
@@ -483,6 +555,14 @@
           "result": "pass",
           "rule": "RULE-21",
           "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_a_fresh_project_set_up_from_the_copy_does_not_name_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-147",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_a_project_set_up_from_this_checkout_does_not_name_it"
         },
         {
           "env": null,
@@ -626,7 +706,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-34",
-          "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_with_no_spec_the_last_line_sends_you_to_write_one"
+          "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_with_no_spec_over_code_it_ends_on_spec_from_code"
+        },
+        {
+          "env": null,
+          "id": "PROOF-137",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_with_no_spec_and_no_code_it_sends_you_to_write_one"
         },
         {
           "env": null,
@@ -747,6 +835,22 @@
           "result": "pass",
           "rule": "RULE-39",
           "test": "dev/test_init_scaffold.py::TestTheEngineBlock::test_nested_code_is_source_and_a_test_directory_is_the_selection"
+        },
+        {
+          "env": null,
+          "id": "PROOF-148",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-39",
+          "test": "dev/test_init_scaffold.py::TestTheEngineBlock::test_a_nested_tests_folder_is_the_selection_and_bench_is_not"
+        },
+        {
+          "env": null,
+          "id": "PROOF-149",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-39",
+          "test": "dev/test_init_scaffold.py::TestTheEngineBlock::test_docs_and_examples_are_not_source"
         },
         {
           "env": null,
@@ -894,6 +998,22 @@
         },
         {
           "env": null,
+          "id": "PROOF-150",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-47",
+          "test": "dev/test_init_scaffold.py::TestTheEvidenceFolder::test_at_passed_the_readme_names_no_audit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-151",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-47",
+          "test": "dev/test_init_scaffold.py::TestTheEvidenceFolder::test_the_readme_opens_on_what_a_run_leaves"
+        },
+        {
+          "env": null,
           "id": "PROOF-48",
           "manual": false,
           "result": "pass",
@@ -931,6 +1051,86 @@
           "result": "pass",
           "rule": "RULE-63",
           "test": "dev/test_init_scaffold.py::TestASettingsFileThatCannotBeRead::test_it_stops_setup_and_nothing_is_written"
+        },
+        {
+          "env": null,
+          "id": "PROOF-152",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-66",
+          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_the_gate_question_offers_three_choices"
+        },
+        {
+          "env": null,
+          "id": "PROOF-153",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-67",
+          "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_the_gitignore_names_the_dashboard_page"
+        },
+        {
+          "env": null,
+          "id": "PROOF-154",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-67",
+          "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_the_gitignore_names_the_runtime_folder"
+        },
+        {
+          "env": null,
+          "id": "PROOF-157",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-68",
+          "test": "dev/test_init_scaffold.py::TestTheCommit::test_with_no_answer_nothing_is_committed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-158",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-69",
+          "test": "dev/test_init_scaffold.py::TestTheCommit::test_yes_commits_the_files_and_names_them"
+        },
+        {
+          "env": null,
+          "id": "PROOF-159",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-70",
+          "test": "dev/test_init_scaffold.py::TestTheCommit::test_a_file_already_staged_stays_out_of_the_commit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-160",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-71",
+          "test": "dev/test_init_scaffold.py::TestTheCommit::test_a_project_with_no_commit_gets_setup_s_as_its_first"
+        },
+        {
+          "env": null,
+          "id": "PROOF-161",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-72",
+          "test": "dev/test_init_scaffold.py::TestTheCommit::test_git_refusing_leaves_the_files_staged_and_says_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-155",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-73",
+          "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_each_ignored_entry_has_its_comment_above_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-156",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-73",
+          "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_the_gitignore_says_the_evidence_is_tracked"
         }
       ],
       "rules": {
@@ -977,6 +1177,16 @@
         "RULE-61": "passed",
         "RULE-62": "passed",
         "RULE-63": "passed",
+        "RULE-64": "passed",
+        "RULE-65": "passed",
+        "RULE-66": "passed",
+        "RULE-67": "passed",
+        "RULE-68": "passed",
+        "RULE-69": "passed",
+        "RULE-70": "passed",
+        "RULE-71": "passed",
+        "RULE-72": "passed",
+        "RULE-73": "passed",
         "RULE-8": "passed",
         "RULE-9": "passed"
       },

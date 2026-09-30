@@ -2,13 +2,13 @@
   "feature": "skill_spec_from_code",
   "platforms": {
     "macos": {
-      "at": "2026-09-29T21:44:05Z",
-      "commit": "8b4d05e50a80b970afd4be594da605225ab4821a",
-      "dirty": true,
+      "at": "2026-09-30T03:13:05Z",
+      "commit": "7a3ef06989e98e4473b7eee044c8928ea1059d84",
+      "dirty": false,
       "fingerprint": {
-        "code": "42e9645ed432aaa7be80fb6dbe1fb4015ce716c5ae2f700adb0a11a56cf8b2e8",
-        "spec": "7f971ba9ec3b89df556bf84aa3a762d925a3c52d1d22c2e0950a60cc12b67043",
-        "tests": "3b4d7df823eb23e1d328eeefc6ae8d00130a9e52a09d5b63497306c63fa858b9"
+        "code": "9078fa68aa48a62f81a4160b9619ec2e8940f1f710ab5c30ef8516aeb1d1e718",
+        "spec": "184cd058b72678db947b1ba90f717eec3095fa737d6bd6c6ba4e2f1b1bde1bf8",
+        "tests": "8c54e4c9a07b3ebec00e3e84c4b90f253dc78076033401f0e90ee93d71768913"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -26,7 +26,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_skill_spec_from_code.py::TestBeforeYouStart::test_it_calls_sync_status_and_sends_a_bare_project_to_init_first"
+          "test": "dev/test_skill_spec_from_code.py::TestBeforeYouStart::test_it_passes_the_project_root_and_sends_a_bare_project_to_init"
         },
         {
           "env": null,
@@ -34,7 +34,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_skill_spec_from_code.py::TestWhenYouAreDone::test_it_names_the_next_step_from_the_state_for_each_outcome"
+          "test": "dev/test_skill_spec_from_code.py::TestWhenYouAreDone::test_it_names_the_first_of_three_next_steps_that_applies"
         },
         {
           "env": null,
@@ -66,7 +66,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_skill_spec_from_code.py::TestEverySourceFile::test_the_report_ends_on_the_files_with_no_rule"
+          "test": "dev/test_skill_spec_from_code.py::TestTheProcedure::test_the_report_ends_on_the_files_with_no_rule"
         },
         {
           "env": null,
@@ -74,7 +74,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
-          "test": "dev/test_skill_spec_from_code.py::TestUntiedTests::test_a_test_is_left_untied_for_three_reasons"
+          "test": "dev/test_skill_spec_from_code.py::TestUntiedTests::test_a_test_is_left_untied_for_five_reasons"
         },
         {
           "env": null,
@@ -90,7 +90,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-10",
-          "test": "dev/test_skill_spec_from_code.py::TestNoRuleForAPrivateHelper::test_it_writes_no_rule_for_a_private_helper"
+          "test": "dev/test_skill_spec_from_code.py::TestWhatNotToDo::test_code_no_caller_can_reach_gets_no_rule"
         },
         {
           "env": null,
@@ -99,6 +99,142 @@
           "result": "pass",
           "rule": "RULE-11",
           "test": "dev/test_skill_spec_from_code.py::TestFrontmatterAndCommandRow::test_the_command_reference_has_a_row_with_the_purpose"
+        },
+        {
+          "env": null,
+          "id": "PROOF-147",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_skill_spec_from_code.py::TestTheProcedure::test_the_position_file_holds_the_list_and_what_is_written"
+        },
+        {
+          "env": null,
+          "id": "PROOF-148",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_skill_spec_from_code.py::TestTheProcedure::test_each_spec_is_committed_with_the_comments_it_adds"
+        },
+        {
+          "env": null,
+          "id": "PROOF-149",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_skill_spec_from_code.py::TestTheProcedure::test_the_conventions_put_the_comments_in_the_spec_commit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-150",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_skill_spec_from_code.py::TestBeforeYouStart::test_it_makes_a_branch_on_a_detached_head_before_the_first_commit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-151",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_skill_spec_from_code.py::TestTheProcedure::test_the_report_gives_one_line_per_feature"
+        },
+        {
+          "env": null,
+          "id": "PROOF-152",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-37",
+          "test": "dev/test_skill_spec_from_code.py::TestTheProcedure::test_shared_rules_go_once_into_an_anchor_that_features_require"
+        },
+        {
+          "env": null,
+          "id": "PROOF-153",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-38",
+          "test": "dev/test_skill_spec_from_code.py::TestUntiedTests::test_a_commented_out_test_or_a_benchmark_is_not_a_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-154",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-39",
+          "test": "dev/test_skill_spec_from_code.py::TestHighestRule::test_the_spec_it_writes_carries_its_highest_rule"
+        },
+        {
+          "env": null,
+          "id": "PROOF-155",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-40",
+          "test": "dev/test_skill_spec_from_code.py::TestTheProcedure::test_the_survey_walks_the_tree_once"
+        },
+        {
+          "env": null,
+          "id": "PROOF-156",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_skill_spec_from_code.py::TestTheProcedure::test_the_taxonomy_lists_each_feature_with_its_files"
+        },
+        {
+          "env": null,
+          "id": "PROOF-157",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_skill_spec_from_code.py::TestTheProcedure::test_it_stops_on_the_list_until_the_person_agrees"
+        },
+        {
+          "env": null,
+          "id": "PROOF-158",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_skill_spec_from_code.py::TestTheProcedure::test_it_writes_one_spec_at_a_time_in_the_dependency_order"
+        },
+        {
+          "env": null,
+          "id": "PROOF-159",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-44",
+          "test": "dev/test_skill_spec_from_code.py::TestRulesFromWhatTheTestsExpect::test_it_says_at_hand_over_that_every_rule_is_a_draft"
+        },
+        {
+          "env": null,
+          "id": "PROOF-160",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-45",
+          "test": "dev/test_skill_spec_from_code.py::TestWhatNotToDo::test_no_implementation_is_copied_into_a_rule"
+        },
+        {
+          "env": null,
+          "id": "PROOF-161",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-46",
+          "test": "dev/test_skill_spec_from_code.py::TestWhatNotToDo::test_it_writes_no_evidence_and_no_signature"
+        },
+        {
+          "env": null,
+          "id": "PROOF-162",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-47",
+          "test": "dev/test_skill_spec_from_code.py::TestWhatNotToDo::test_an_unobservable_behaviour_goes_to_the_description"
+        },
+        {
+          "env": null,
+          "id": "PROOF-146",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-48",
+          "test": "dev/test_skill_spec_from_code.py::TestWhatNotToDo::test_it_says_what_a_caller_reaches_in_each_language"
         }
       ],
       "rules": {
@@ -107,7 +243,23 @@
         "RULE-11": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
+        "RULE-33": "passed",
+        "RULE-34": "passed",
+        "RULE-35": "passed",
+        "RULE-36": "passed",
+        "RULE-37": "passed",
+        "RULE-38": "passed",
+        "RULE-39": "passed",
         "RULE-4": "passed",
+        "RULE-40": "passed",
+        "RULE-41": "passed",
+        "RULE-42": "passed",
+        "RULE-43": "passed",
+        "RULE-44": "passed",
+        "RULE-45": "passed",
+        "RULE-46": "passed",
+        "RULE-47": "passed",
+        "RULE-48": "passed",
         "RULE-6": "passed",
         "RULE-7": "passed",
         "RULE-8": "passed",
