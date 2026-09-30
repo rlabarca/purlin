@@ -34,6 +34,7 @@ What each group proves:
 *backups*     every rewritten file leaves its previous bytes beside it
 *commit*      one commit, naming the migrations it carries
 *status*      `sync_status` says to run the update while anything is pending
+*printing*    the pending list, what each migration did, and the commit
 *settings*    a settings file that cannot be read stops the update
 """
 
@@ -269,8 +270,9 @@ def test_a_root_without_purlin_exits_2(tmp_path):
     done = subprocess.run([sys.executable, UPDATE, '--project-root', empty],
                           capture_output=True, text=True)
     assert done.returncode == 2
-    assert 'nothing to update' in done.stderr
-    assert 'Run purlin:init first.' in done.stderr
+    assert done.stderr.splitlines() == [
+        'There is no .purlin/ under %s, so there is nothing to update. Run '
+        'purlin:init first.' % os.path.abspath(empty)], done.stderr
 
 
 # --- applying ----------------------------------------------------------------
@@ -295,9 +297,32 @@ def test_running_yes_twice_changes_nothing_the_second_time(tmp_path, capsys):
     tree = _git(root, 'status', '--porcelain').stdout
     capsys.readouterr()
     assert _apply(root) == 0
-    assert 'Nothing is pending' in capsys.readouterr().out
+    assert NOTHING_PENDING in capsys.readouterr().out.splitlines()
     assert _git(root, 'rev-parse', 'HEAD').stdout.strip() == head
     assert _git(root, 'status', '--porcelain').stdout == tree
+
+
+NOTHING_PENDING = 'Nothing is pending: this project is at %s.' % VERSION
+
+# One proof line whose Windows tag hides a kind-of-test tag before it.
+HIDDEN_KIND = ('# Feature: lock\n\n> Scope: lock.py\n\n## Rules\n\n'
+               '- RULE-1: A lock holds\n\n## Proof\n\n'
+               '- PROOF-1 (RULE-1): Lock a file @unit @windows\n')  # retired
+
+
+# purlin: update PROOF-129
+def test_one_run_rewrites_a_tag_the_windows_tag_hid(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    _write(root, 'specs/core/lock.md', HIDDEN_KIND)
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'a proof line with two tags')
+    assert _apply(root) == 0
+    assert _read(root, 'specs/core/lock.md').splitlines()[-1] == (
+        '- PROOF-1 (RULE-1): Lock a file @env(windows)')
+    capsys.readouterr()
+    assert update.pending(root) == []
+    _apply(root)
+    assert NOTHING_PENDING in capsys.readouterr().out.splitlines()
 
 
 # purlin: update PROOF-69
@@ -330,6 +355,22 @@ def test_a_declined_migration_is_left_pending(tmp_path, capsys, monkeypatch):
         assert '  skipped %s\n' % migration_id in printed, migration_id
     assert _git(root, 'status', '--porcelain').stdout == tree
     assert _ids(root) == before
+
+
+DESIGN_REFS_QUESTION = ('Apply design-refs, which will remove the Figma '
+                        'source and the picture fingerprint from each spec '
+                        'that carries them? [y/N] ')
+
+
+# purlin: update PROOF-131
+def test_an_empty_answer_declines_a_migration(tmp_path, capsys, monkeypatch):
+    root = _project(tmp_path, V095)
+    asked = _answers(monkeypatch, default='')
+    _apply(root, argv=())
+    printed = capsys.readouterr().out.splitlines()
+    assert asked[0] == DESIGN_REFS_QUESTION, asked
+    assert '  skipped design-refs' in printed, printed
+    assert 'design-refs' in _ids(root)
 
 
 # purlin: update PROOF-70
@@ -541,9 +582,10 @@ def test_the_gate_question_takes_the_answer_you_type(tmp_path, capsys,
     asked = _answers(monkeypatch, [('Gate [', 'signed')])
     _apply(root, argv=())
     printed = capsys.readouterr().out
-    assert ('What must be true of every rule before a version is proven?'
-            in printed), printed
-    assert scaffold.GATE_QUESTION in printed, printed
+    # The question is setup's own; its words are held by setup's proofs.
+    assert scaffold.GATE_QUESTION.startswith(
+        'What must be true of every rule before a version is ')
+    assert scaffold.GATE_QUESTION in printed.splitlines(), printed
     assert len([prompt for prompt in asked if prompt.startswith('Gate [')]) == 1
     assert _config(root)['gate'] == 'signed'
 
@@ -555,8 +597,15 @@ def test_an_answer_that_is_not_a_gate_leaves_the_default(tmp_path, capsys,
     _answers(monkeypatch, [('Gate [', 'whenever')])
     _apply(root, argv=())
     printed = capsys.readouterr().out.splitlines()
-    assert ('purlin: "whenever" is not a gate; reading it as passed.'
-            in printed), printed
+    # Setup's line, the answer in it quoted once, as JSON writes it.
+    refusal = [line for line in printed if 'whenever' in line]
+    assert len(refusal) == 1, printed
+    assert refusal[0].count('"whenever"') == 1, refusal
+    assert '""' not in refusal[0], refusal
+    assert refusal[0].lower().endswith('reading it as passed.'), refusal
+    if 'is not accepted for gate' in scaffold.NOT_A_GATE:
+        assert refusal == ['"whenever" is not accepted for gate; it takes '
+                           'passed, strong or signed. Reading it as passed.']
     assert _config(root)['gate'] == 'passed'
 
 
@@ -572,7 +621,21 @@ def test_the_gate_the_project_named_is_the_default(tmp_path, capsys,
     assert [prompt for prompt in asked if 'Gate [' in prompt] == [
         'Gate [signed]: ']
     assert _config(root)['gate'] == 'signed'
-    assert 'is not a gate' not in printed, printed
+    assert 'reading it as' not in printed.lower(), printed
+
+
+# purlin: update PROOF-130
+def test_the_gate_question_prints_its_three_choices(tmp_path, capsys,
+                                                    monkeypatch):
+    root = _project(tmp_path, V095)
+    _answers(monkeypatch, [('Gate [', '')])
+    _apply(root, argv=())
+    printed = capsys.readouterr().out.splitlines()
+    at = printed.index(scaffold.GATE_QUESTION)
+    assert printed[at + 1:at + 4] == [
+        "  passed  every rule's tests pass",
+        '  strong  tests pass and the audit finds them sound',
+        '  signed  strong, and a person signs each rule'], printed
 
 
 # --- the tests setting ---------------------------------------------------------
@@ -949,8 +1012,9 @@ def test_each_file_the_wiring_leaves_is_backed_up(tmp_path, capsys):
 def test_a_csproj_compiling_the_logger_is_named_and_left(tmp_path, capsys):
     root, printed = _unwired(tmp_path, capsys)
     assert _read(root, 'App.Tests/App.Tests.csproj') == CSPROJ
-    assert ('App.Tests/App.Tests.csproj compiles the xUnit logger v0.9.5 '
-            'shipped; remove that line by hand') in printed
+    assert ('  App.Tests/App.Tests.csproj compiles the xUnit logger v0.9.5 '
+            'shipped; remove that line by hand, since dotnet test --logger trx '
+            'needs nothing added') in printed.splitlines(), printed
 
 
 # --- design references -------------------------------------------------------
@@ -1146,7 +1210,8 @@ def test_yes_turns_it_on_at_the_gate_s_minimum(tmp_path, capsys, monkeypatch):
     written = _config(root)
     assert written['mutation_engine'] == 'auto'
     assert written['min_strength'] == 70
-    assert 'run purlin:init to wire mutmut' in printed
+    assert ('  turned mutation testing on; run purlin:init to wire mutmut into '
+            'the project') in printed.splitlines(), printed
 
 
 # purlin: update PROOF-55
@@ -1157,7 +1222,9 @@ def test_no_engine_means_no_question(tmp_path, capsys, monkeypatch):
     printed = capsys.readouterr().out
     assert not [prompt for prompt in asked if MUTATION in prompt], asked
     assert _config(root)['mutation_engine'] == 'none'
-    assert "no engine breaks this project's code" in printed
+    assert ("  Mutation testing is off: no engine breaks this project's code, "
+            'so the AI audit alone judges test strength.'
+            ) in printed.splitlines(), printed
 
 
 class _WindowsOs(object):
@@ -1235,9 +1302,9 @@ UNSCOPED = """# Feature: nowhere
 - PROOF-1 (RULE-1): Call it and verify it answers
 """
 UNSCOPED_ANCHOR = UNSCOPED.replace('Feature: nowhere', 'Anchor: unscoped_anchor')
-SCOPE_ADVICE = ('1 spec has no > Scope: line: nowhere. Run purlin:spec <name> '
-                'to add one. The line is optional below the gate signed and '
-                'required at signed.\n')
+# The status's own line for specs that name no files, which the upgrade
+# prints as the status does. Its words are held by the status's proofs.
+SCOPE_ADVICE = status_module.incomplete_line(['nowhere'])
 
 
 def _with_specs(tmp_path, specs):
@@ -1256,8 +1323,10 @@ def test_a_spec_with_no_scope_is_named_and_left_alone(tmp_path, capsys):
         'specs/_anchors/unscoped_anchor.md': UNSCOPED_ANCHOR})
     _apply(root)
     printed = capsys.readouterr().out
-    assert SCOPE_ADVICE in printed, printed
-    assert 'unscoped_anchor' not in printed.split('Scope: line:')[1]
+    assert SCOPE_ADVICE.startswith(
+        '1 spec names no files, so its tests run every time: nowhere.')
+    assert '  ' + SCOPE_ADVICE in printed.splitlines(), printed
+    assert 'unscoped_anchor' not in printed, printed
     assert _read(root, 'specs/core/nowhere.md') == UNSCOPED
     assert update.pending(root) == []
 
@@ -1269,9 +1338,23 @@ def test_the_scope_advice_is_given_again_when_nothing_is_pending(tmp_path,
     _apply(root)
     capsys.readouterr()
     _apply(root)
-    again = capsys.readouterr().out
-    assert 'Nothing is pending' in again
+    again = capsys.readouterr().out.splitlines()
+    assert NOTHING_PENDING in again, again
     assert SCOPE_ADVICE in again, again
+
+
+# purlin: update PROOF-132
+def test_two_specs_with_no_scope_are_named_in_one_line(tmp_path, capsys):
+    root = _with_specs(tmp_path, {
+        'specs/core/nowhere.md': UNSCOPED,
+        'specs/core/elsewhere.md': UNSCOPED.replace('Feature: nowhere',
+                                                    'Feature: elsewhere')})
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    line = status_module.incomplete_line(['elsewhere', 'nowhere'])
+    assert line.startswith('2 specs name no files, so their tests run every '
+                           'time: elsewhere, nowhere.'), line
+    assert '  ' + line in printed, printed
 
 
 # purlin: update PROOF-105
@@ -1497,7 +1580,8 @@ def test_declining_the_workflow_leaves_it_unwritten(tmp_path, capsys,
     assert ('Write .github/workflows/purlin.yml, one job per operating system '
             'your specs name that this machine is not? [y/N] ') in asked, asked
     assert _workflows(root) == []
-    assert 'run purlin:init again to add it later' in printed
+    assert ('  left .github/workflows/purlin.yml unwritten; run purlin:init '
+            'again to add it later') in printed.splitlines(), printed
     assert 'workflows' not in _ids(root)
 
 
@@ -1830,6 +1914,225 @@ def test_a_run_over_no_spec_ends_on_the_two_no_spec_lines(tmp_path, capsys):
     assert printed[-2:] == [
         'No specs found under specs/.',
         '→ Run: purlin:spec <name> to write the first spec.'], printed
+
+
+# --- what the run prints ---------------------------------------------------
+
+def _printed(tmp_path, capsys, monkeypatch=None, host=None):
+    """The lines the update with `--yes` prints on the sample 0.9.5 project.
+
+    With `host` the machine is read as that system, so the reasons for a
+    runner file are the same on every machine.
+    """
+    if host:
+        from purlin import evidence as evidence_module
+        monkeypatch.setattr(evidence_module, 'host_os', lambda: host)
+    root = _project(tmp_path, V095)
+    _apply(root)
+    return root, capsys.readouterr().out.splitlines()
+
+
+# purlin: update PROOF-133
+def test_the_pending_list_opens_on_its_count(tmp_path, capsys):
+    root, printed = _printed(tmp_path, capsys)
+    assert printed[0] == '8 migrations pending in %s:' % os.path.abspath(root)
+
+
+# purlin: update PROOF-134
+def test_each_pending_migration_is_listed_with_its_files(tmp_path, capsys):
+    _root, printed = _printed(tmp_path, capsys)
+    at = printed.index('  design-refs: remove the Figma source and the '
+                       'picture fingerprint from each spec that carries them')
+    assert printed[at + 1:at + 3] == [
+        '      specs/_anchors/checkout_design.md',
+        '      specs/workflows/figma_web.md'], printed
+
+
+# purlin: update PROOF-135
+def test_a_long_file_list_ends_on_how_many_more(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    (touched,) = [item['files'] for item in update.pending(root)
+                  if item['id'] == 'untracked-files']
+    assert len(touched) == 18, touched
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    at = [index for index, line in enumerate(printed)
+          if line.startswith('  untracked-files: ')][0]
+    assert printed[at + 1:at + 8] == (
+        ['      ' + rel for rel in touched[:6]] + ['      and 12 more']), printed
+
+
+# purlin: update PROOF-136
+def test_the_files_beside_the_specs_are_counted(tmp_path, capsys):
+    _root, printed = _printed(tmp_path, capsys)
+    assert ('  deleted 15 files beside the specs and the folder .purlin/cache/, '
+            'and untracked the dashboard data; a run writes no file beside a '
+            'spec, and evidence lives in .purlin/evidence') in printed, printed
+
+
+# purlin: update PROOF-137
+def test_the_removed_hooks_are_counted(tmp_path, capsys):
+    root = _hooks(tmp_path, OLD_PRE_COMMIT, OLD_PRE_PUSH)
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    assert ('  removed 2 git hooks; this release runs nothing at commit or '
+            'push time') in printed, printed
+
+
+# purlin: update PROOF-138
+def test_the_rewritten_system_tags_are_counted(tmp_path, capsys):
+    _root, printed = _printed(tmp_path, capsys)
+    assert '  rewrote the operating-system tags in 1 spec' in printed, printed
+
+
+# purlin: update PROOF-139
+def test_the_specs_that_lose_the_kind_of_test_are_counted(tmp_path, capsys):
+    _root, printed = _printed(tmp_path, capsys)
+    assert ('  dropped the kind of test from the proof lines of 6 specs: '
+            'purlin:test runs every marked test') in printed, printed
+
+
+# purlin: update PROOF-140
+def test_the_removed_workflows_are_counted(tmp_path, capsys):
+    _root, printed = _printed(tmp_path, capsys)
+    assert '  removed 1 workflow this release replaced' in printed, printed
+
+
+def _reason(tags, gate):
+    """The runner reason for `tags` on a machine read as macOS, in the words
+    the runner file's own module gives it; its proofs hold those words."""
+    return update._flow().wanted(tags, 'macos', gate)[1]
+
+
+# purlin: update PROOF-141
+def test_the_runner_reason_at_passed(tmp_path, capsys, monkeypatch):
+    _root, printed = _printed(tmp_path, capsys, monkeypatch, 'macos')
+    (reason,) = _reason(['windows'], 'passed')
+    assert reason.lower().startswith('a test is tagged @env for windows, '), (
+        reason)
+    assert '  ' + reason in printed, printed
+
+
+# purlin: update PROOF-142
+def test_the_runner_reason_at_strong(tmp_path, capsys, monkeypatch):
+    from purlin import evidence as evidence_module
+    monkeypatch.setattr(evidence_module, 'host_os', lambda: 'macos')
+    root = _project(tmp_path, V095)
+    _answers(monkeypatch, [('Gate [', 'strong')])
+    _apply(root, argv=())
+    printed = capsys.readouterr().out.splitlines()
+    (reason,) = _reason(['windows'], 'strong')
+    assert reason.lower().startswith(
+        'a proof in specs/ is tagged @env for windows, '), reason
+    assert '  ' + reason in printed, printed
+
+
+# purlin: update PROOF-143
+def test_the_runner_reason_for_two_systems(tmp_path, capsys, monkeypatch):
+    from purlin import evidence as evidence_module
+    monkeypatch.setattr(evidence_module, 'host_os', lambda: 'macos')
+    root = _project(tmp_path, V095)
+    _write(root, 'specs/core/both.md',
+           '# Feature: both\n\n> Scope: both.py\n\n## Rules\n\n- RULE-1: x\n\n'
+           '## Proof\n\n- PROOF-1 (RULE-1): here @env(linux)\n'
+           '- PROOF-2 (RULE-1): there @env(windows)\n')
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'two other systems')
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    (reason,) = _reason(['linux', 'windows'], 'passed')
+    assert 'linux' in reason.lower() and 'windows' in reason.lower(), reason
+    assert '  ' + reason in printed, printed
+
+
+# purlin: update PROOF-144
+def test_the_runner_file_written_is_named(tmp_path, capsys, monkeypatch):
+    _root, printed = _printed(tmp_path, capsys, monkeypatch, 'macos')
+    assert ('  wrote .github/workflows/purlin.yml for github, covering '
+            'Windows') in printed, printed
+
+
+# purlin: update PROOF-145
+def test_the_runner_file_says_when_it_runs(tmp_path, capsys, monkeypatch):
+    _root, printed = _printed(tmp_path, capsys, monkeypatch, 'macos')
+    at = printed.index('  wrote .github/workflows/purlin.yml for github, '
+                       'covering Windows')
+    assert printed[at + 1] == ('  it runs on a push to a run/* branch and on a '
+                               'push of a signed/* tag'), printed
+
+
+# purlin: update PROOF-146
+def test_the_evidence_readme_written_is_named(tmp_path, capsys):
+    _root, printed = _printed(tmp_path, capsys)
+    assert ("  wrote .purlin/evidence/README.md: each feature's evidence lands "
+            'beside it, under local/ and ci/') in printed, printed
+
+
+# purlin: update PROOF-147
+def test_the_replaced_page_is_named(tmp_path, capsys):
+    root = _updated(tmp_path)
+    capsys.readouterr()
+    _write(root, 'purlin-report.html', '<html>an older copy</html>\n')
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    assert ('  replaced purlin-report.html with the page this release ships'
+            in printed), printed
+
+
+# purlin: update PROOF-148
+def test_the_removed_plugin_copies_are_counted(tmp_path, capsys):
+    _root, printed = _printed(tmp_path, capsys)
+    folder = '.purlin/plugins'  # retired
+    assert ('  removed the 5 plugin copies under %s/: Purlin reads the report '
+            'your own test command writes' % folder) in printed, printed
+
+
+# purlin: update PROOF-149
+def test_a_tests_setting_with_no_suite_says_so(tmp_path, capsys):
+    root, printed = _printed(tmp_path, capsys)
+    assert _config(root)['tests'] == []
+    assert ('  wrote the tests setting: no suite; add one under "tests" in '
+            '.purlin/config.json') in printed, printed
+
+
+# purlin: update PROOF-150
+def test_the_commit_is_named_on_one_line(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    applied = _ids(root)
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    sha = _git(root, 'rev-parse', '--short', 'HEAD').stdout.strip()
+    assert '  committed %s as chore(update): migrate to %s (%s)' % (
+        sha, VERSION, ', '.join(applied)) in printed, printed
+
+
+# A pre-commit hook of the project's own, which refuses every commit.
+REFUSING_HOOK = '#!/bin/sh\necho blocked by policy\nexit 1\n'
+
+
+# purlin: update PROOF-151
+def test_a_commit_git_refuses_leaves_the_changes_staged(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    _write_bytes(root, '.git/hooks/pre-commit', REFUSING_HOOK.encode('utf-8'))
+    os.chmod(os.path.join(root, '.git', 'hooks', 'pre-commit'), 0o755)
+    head = _git(root, 'rev-parse', 'HEAD').stdout
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    assert ('The changes are staged and not committed: blocked by policy'
+            in printed), printed
+    assert _git(root, 'rev-parse', 'HEAD').stdout == head
+    assert _git(root, 'diff', '--cached', '--quiet').returncode == 1
+
+
+# purlin: update PROOF-152
+def test_each_backup_is_named_on_a_line_of_its_own(tmp_path, capsys):
+    root, printed = _printed(tmp_path, capsys)
+    backups = _walk(root, ('*.bak',), skip_backups=False)
+    assert backups
+    named = sorted(line[len('  kept the previous bytes at '):]
+                   for line in printed
+                   if line.startswith('  kept the previous bytes at '))
+    assert named == backups, (named, backups)
 
 
 # --- a settings file that cannot be read ------------------------------------

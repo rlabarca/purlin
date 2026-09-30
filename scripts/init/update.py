@@ -101,9 +101,6 @@ DASHBOARD_PAGE = 'purlin-report.html'
 SHIPPED_PAGE = 'scripts/report/purlin-report.html'
 META_RE = re.compile(r'^>\s*[A-Z][A-Za-z-]+:')
 SCOPE_RE = re.compile(r'^>\s*Scope:', re.M)
-SCOPE_ADVICE = ('%d spec%s no > Scope: line: %s. Run purlin:spec <name> to '
-                'add one. The line is optional below the gate signed and '
-                'required at signed.')
 WORKFLOW_DIR = '.github/workflows'
 DROPPED_FRAMEWORK = 'dropped %s from the tests: nothing in the tree runs it'
 TEST_EXTENSIONS = ('.py', '.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx', '.cs',
@@ -390,9 +387,12 @@ def _ask_mutation(root, framework, assume_yes, out):
         return 'none'
     if assume_yes:
         return 'none'
+    question = init.MUTATION_QUESTION % init.ENGINE_NAMES.get(engine, engine)
+    # The prompt ends `[y/N] ` whether or not setup's own words carry it.
+    if not question.endswith('[y/N]'):
+        question += ' [y/N]'
     try:
-        answer = input('%s ' % (init.MUTATION_QUESTION
-                                % init.ENGINE_NAMES.get(engine, engine)))
+        answer = input('%s ' % question)
     except (EOFError, KeyboardInterrupt):
         return 'none'
     if not answer.strip().lower().startswith('y'):
@@ -418,7 +418,9 @@ def _ask_gate(default, assume_yes):
         return default
     if typed.lower() in _gate().GATES:
         return typed.lower()
-    print(init.NOT_A_GATE % (typed, default))
+    # The answer as JSON writes it, `"whenever"`, quoted once.
+    value = typed if '"%s"' in init.NOT_A_GATE else json.dumps(typed)
+    print(init.NOT_A_GATE % (value, default))
     return default
 
 def _tests_setting(root, old):
@@ -1000,17 +1002,17 @@ def scope_advice(project_root):
     """The line naming every feature spec with no `> Scope:` line, or None.
 
     Advice, not a migration: nothing is changed, and nothing stays pending.
-    Anchors are exempt, because their code is the requiring feature's.
+    Anchors are exempt, because their code is the requiring feature's. The
+    words are the status's own, so the two never say it differently.
     """
     root = os.path.abspath(project_root)
-    names = [os.path.basename(rel)[:-len('.md')]
-             for rel in _files_under(root, 'specs', ('*.md',))
-             if not rel.startswith('specs/_anchors/')
-             and not SCOPE_RE.search(_read(os.path.join(root, rel)))]
+    names = sorted(os.path.basename(rel)[:-len('.md')]
+                   for rel in _files_under(root, 'specs', ('*.md',))
+                   if not rel.startswith('specs/_anchors/')
+                   and not SCOPE_RE.search(_read(os.path.join(root, rel))))
     if not names:
         return None
-    return SCOPE_ADVICE % (len(names), ' has' if len(names) == 1 else 's have',
-                           ', '.join(names))
+    return _plugin_module('mcp', 'purlin.status').status.incomplete_line(names)
 
 # --- running ---------------------------------------------------------------
 class _Report(object):
@@ -1076,14 +1078,22 @@ def main(argv=None):
     _print_pending(items, root)
     print('')
     appliers = dict((m[0], m[3]) for m in MIGRATIONS)
-    report, applied = _Report(), []
-    for item in items:
+    report, applied, asked = _Report(), [], set()
+    queue = items
+    while queue:
+        item = queue[0]
+        asked.add(item['id'])
         if not _confirm('Apply %s, which will %s?'
                         % (item['id'], item['description']), args.yes):
             report.say('skipped %s' % item['id'])
+            queue = queue[1:]
             continue
         appliers[item['id']](root, item['files'], args, report)
         applied.append(item['id'])
+        # Read again: a migration can leave work for a later one, as the
+        # Windows tag rewritten to `@env(windows)` leaves a kind-of-test tag
+        # at the end of its line.
+        queue = [found for found in pending(root) if found['id'] not in asked]
     print('')
     for line in report.lines:
         print('  %s' % line)
