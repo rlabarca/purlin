@@ -43,9 +43,17 @@ signature that counts and binds the rule's current hashes is its hand check,
 with or without a note, and stands for the test, the audit and the
 signature. `hand_checked` says so.
 
-An anchor's rule is signed once in each feature it applies to. Listed under
-a feature, it is signed by that feature's signature; listed under the anchor
-itself, it is signed when every feature it applies to has signed it.
+Every rule is listed once, under the spec that owns it, and an anchor's
+rule is signed once, over the whole project. No code is broken on purpose
+for an anchor, so where its strong cell is met the one reason says the AI
+audit alone judges its tests, at every mutation setting.
+
+A rule that a counting signature carrying `does_not_apply` binds reads
+`does not apply` in every cell up to the gate, each met, each with the one
+reason `by <signer>: <why>`: a person signed that a pinned anchor's rule
+does not apply to the project. Once that signature ends, and while the last
+signature for the rule carried `does_not_apply`, the rule reads its cells as
+usual and `to_confirm` says it waits for a person to confirm it again.
 
 Each cell carries its reasons, so a surface never has to work out why a word
 reads the way it does.
@@ -56,6 +64,8 @@ returns:
     {'cells': {'passed': {...}, 'strong': {...}},
      'bucket': 'strong',
      'hand_checked': False,
+     'does_not_apply': None,
+     'to_confirm': False,
      'flags': {'failing': False, 'partial': False, 'manual': False,
                'not_audited': False, 'out_of_date': False,
                'no_proof': False}}
@@ -92,6 +102,15 @@ NOT_AUDITED_REASON = 'no audit has run on this code'
 COULD_NOT_RUN = 'the AI audit could not run: %s'
 COULD_NOT_DECIDE = 'the AI audit could not decide'
 NO_SCORE = 'no mutation score measured'
+
+# The strong cell's one reason, where it is met, for an anchor's rule: no
+# code is broken on purpose for an anchor.
+AUDIT_ALONE = "the AI audit alone judges an anchor's tests"
+
+# The word every cell of a rule reads once a person signed that it does not
+# apply to the project, and the one reason each cell gives.
+DOES_NOT_APPLY = 'does not apply'
+DOES_NOT_APPLY_REASON = 'by %s: %s'
 
 # The strong cell's reason where mutation testing is on and measured nothing
 # for the rule's feature: the engine's own sentence, or the spec naming no
@@ -174,10 +193,8 @@ def rule_cells(inp, cfg):
     `applies_to`, `rule_hash`, `proof_hash`, `test_hash`, `code_hash`,
     `machines`      what a signature is made over, beside `audit_hash`
     `audit_hash`    the hash of what the audit found
-    `consumers`     for an anchor's rule listed under the anchor itself,
-                    `[{'applies_to', 'code_hash'}, ...]`, one per feature
-                    it applies to; each must have signed it. Empty or absent
-                    for any other listing
+    `anchor`        true for a rule of an anchor, whose strong cell, where
+                    it is met, reads `AUDIT_ALONE` and never a strength
     `audit`         the evidence's audit entry for this rule's current
                     hashes, carrying its `path`, or None
     `could_not_run` why the last audit could not reach the model for this
@@ -196,14 +213,12 @@ def rule_cells(inp, cfg):
     proofs = inp.get('proofs') or []
 
     signatures = list(inp.get('signatures') or ())
-    targets = [dict(target) for target in inp.get('consumers') or ()] or [{}]
-    current = [sig for sig in signatures
-               if any(_binds(sig, inp, target) for target in targets)]
-    # The signatures that settle the rule: one that counts for each feature
-    # it applies to, and for any other listing one that counts at all.
-    settled = all(any(sig.get('counts') and _binds(sig, inp, target)
-                      for sig in signatures) for target in targets)
-    counting = [sig for sig in current if sig.get('counts')] if settled else []
+    current = [sig for sig in signatures if _binds(sig, inp)]
+    counting = [sig for sig in current if sig.get('counts')]
+    newest = _newest(counting)
+    if newest is not None and newest.get('does_not_apply'):
+        return _does_not_apply(inp, cfg, gate, newest)
+    last = _newest(signatures)
 
     passed = _passed_cell(inp, cfg)
     strong = _strong_cell(inp, cfg, passed, counting)
@@ -242,6 +257,50 @@ def rule_cells(inp, cfg):
         'hand_checked': bool(counting) and any(
             proof.get('manual') for proof in proofs),
         'flags': flags,
+        'does_not_apply': None,
+        # The last signature said the rule does not apply, and it no longer
+        # binds: a person confirms it again.
+        'to_confirm': bool(last is not None and last.get('does_not_apply')
+                           and not counting),
+    }
+
+
+def _newest(signatures):
+    """The signature made last among `signatures`, or None for none."""
+    newest = None
+    for signature in signatures or ():
+        if newest is None or str(_signature_at(signature) or '') > str(
+                _signature_at(newest) or ''):
+            newest = signature
+    return newest
+
+
+def _does_not_apply(inp, cfg, gate, signature):
+    """Every cell up to the gate of a rule signed as not applying.
+
+    Each cell reads `does not apply`, is met, and gives the one reason
+    naming the signer and why. The rule's bucket is the gate's own step, it
+    carries no flag, and `does_not_apply` holds the reason, the signer and
+    when it was signed.
+    """
+    why = str(signature.get('does_not_apply') or '')
+    reasons = [DOES_NOT_APPLY_REASON % (signature.get('signer'), why)]
+    signed = _signed_cell([signature], [signature])
+    made = {'passed': dict(_passed_cell(inp, cfg)),
+            'strong': {'strength': None, 'findings': [], 'evidence': None},
+            'signed': signed}
+    cells = {name: dict(made[name], word=DOES_NOT_APPLY, reasons=list(reasons))
+             for name in cells_for(gate)}
+    return {
+        'cells': cells,
+        'bucket': gate,
+        'hand_checked': False,
+        'flags': {name: False for name in ('failing', 'partial', 'out_of_date',
+                                           'manual', 'not_audited',
+                                           'no_proof')},
+        'does_not_apply': {'why': why, 'signer': signature.get('signer'),
+                           'at': _signature_at(signature)},
+        'to_confirm': False,
     }
 
 
@@ -663,13 +722,18 @@ def _strong_cell(inp, cfg, passed, counting_signatures):
 
     mutation_on = bool(cfg) and (cfg.mutation_engine or 'none') != 'none'
     min_strength = cfg.min_strength if cfg else None
-    if (mutation_on and strength is not None and min_strength is not None
-            and strength < min_strength):
+    anchor = bool(inp.get('anchor'))
+    if (mutation_on and not anchor and strength is not None
+            and min_strength is not None and strength < min_strength):
         # The whole-number part, as every surface shows a share: 69.6
         # under 70 reads 69%, never the minimum itself.
         reasons.append('strength %d%% under %d%%'
                        % (int(strength), min_strength))
-    if (mutation_on and strength is None and gate in ('strong', 'signed')
+    if anchor:
+        # No code is broken on purpose for an anchor, so no strength speaks
+        # for its tests: the audit alone does.
+        pass
+    elif (mutation_on and strength is None and gate in ('strong', 'signed')
             and inp.get('incomplete')):
         # Nothing names the code to break, so nothing was measured, and
         # with breaking on nothing measured is not strong.
@@ -682,7 +746,10 @@ def _strong_cell(inp, cfg, passed, counting_signatures):
         cell['reasons'] = reasons
         return cell
     cell['word'] = 'strong'
-    if not mutation_on or strength is None:
+    if anchor:
+        cell['strength'] = None
+        cell['reasons'] = [AUDIT_ALONE]
+    elif not mutation_on or strength is None:
         cell['reasons'] = [NO_SCORE]
     return cell
 
@@ -724,16 +791,10 @@ def _signed_cell(current, counting):
     return cell
 
 
-def _binds(signature, inp, target=None):
-    """True when a signature still binds the rule as `target` lists it.
-
-    `target` names the feature the signature is made for and that feature's
-    code, where it is not the listing `inp` describes.
-    """
+def _binds(signature, inp):
+    """True when a signature still binds the rule `inp` describes."""
     from purlin import signatures as signatures_module
-    entry = dict(inp, audit_hash=inp.get('audit_hash'))
-    entry.update(target or {})
-    return signatures_module.is_current(signature, entry)
+    return signatures_module.is_current(signature, dict(inp))
 
 
 # ---------------------------------------------------------------------------
@@ -741,10 +802,10 @@ def _binds(signature, inp, target=None):
 # ---------------------------------------------------------------------------
 
 def cell_is_met(name, cell):
-    """True when one cell reads the word that meets it."""
+    """True when one cell reads the word that meets it, or `does not apply`."""
     if not cell:
         return False
-    return cell['word'] == name
+    return cell['word'] in (name, DOES_NOT_APPLY)
 
 
 def _bucket(gate, passed, strong, signed):

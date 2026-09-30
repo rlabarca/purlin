@@ -1,4 +1,4 @@
-"""The structured project payload, schema 10.
+"""The structured project payload, schema 11.
 
 One reader assembles specs, evidence and signatures into the cells of every
 rule, and every surface renders that: the
@@ -7,7 +7,7 @@ that parsed the rendered table would be coupled to a layout; this is the shape
 they all read instead.
 
     {
-      "schema_version": 10,
+      "schema_version": 11,
       "generated_at": "2026-09-13T12:00:00Z",
       "generated_by": "sync_status",
       "project": "purlin",
@@ -23,7 +23,7 @@ they all read instead.
                   "sentence": "8 rules. 4 pass their tests. 2 are strong. 1 is signed."},
       "features": [
         {"name": "login", "category": "auth", "spec_path": "specs/auth/login.md",
-         "is_anchor": false, "requires": [], "source": null, "pinned": null,
+         "is_anchor": false, "source": null, "pinned": null,
          "scope": ["src/auth/"], "incomplete": false,
          "incomplete_reason": null,
          "rollup": {..., "proofs": 6, "proofs_without_test": 1,
@@ -39,11 +39,11 @@ they all read instead.
          "signatures": [...],
          "rules": [
            {"id": "RULE-1", "feature": "login", "applies_to": "login",
-            "label": "own",
             "text": "...",
             "audit_hash": "<sha256>", "code_hash": "<sha256>",
             "machines": {"macos": "jane-laptop"},
             "left": "to_sign", "hand_checked": false,
+            "does_not_apply": null,
             "audit": {"verdict": "strong", "findings": [], "notes": [],
                       "strength": 86,
                       "model": "<model>", "at": "...", "commit": "<sha>",
@@ -87,11 +87,11 @@ or `hand check`, as `states.proof_result` reads it, and each of its tests the
 `result` a current run gave it, `pass` or `fail`, or `not run` where no
 current run lists it.
 
-A feature's `rules` holds its own rules, `label` `own`, then every rule it
-must prove from an anchor it requires, `required`, or from a global anchor,
-`global`. Each carries `feature`, the name of the spec that owns it, so a
-rule is always addressed by its owner and its id: two features' `RULE-1` are
-two rules.
+A spec's `rules` holds its own rules and no other, anchors' included. Each
+carries `feature`, the name of the spec that owns it, so a rule is always
+addressed by its owner and its id: two features' `RULE-1` are two rules. An
+anchor's entry carries `scope: []`, `incomplete: false` and `test_strength:
+null`, since no code is broken on purpose for an anchor.
 
 Every rule carries every cell up to the gate: `passed` always, `strong` at the
 gate `strong` and above, `signed` at `signed`. A cell above the gate is
@@ -116,13 +116,15 @@ when `left` is empty, and `last_line` is then the line said in its place.
 Each rule carries its own `left`, the one kind it is counted under, or null.
 `scripts/mcp/purlin/summary.py` is the one place those words are written.
 
-A rule carries `applies_to`, the feature it is listed under, `code_hash`,
-`fingerprint.code_hash` over that feature's `> Scope:`, `machines`, `{os:
-machine}` over the current sections that speak for it, and `hand_checked`,
-true when it has a `@manual` proof and a signature that counts still binds
-it, with or without a note. Those are what a signature is made over. An
-anchor's rule listed under the anchor itself is signed when every feature it
-applies to has signed it.
+A rule carries `applies_to`, the spec it is listed under, `code_hash`,
+`fingerprint.code_part` of that spec, its `> Scope:` for a feature and the
+whole project for an anchor, `machines`, `{os: machine}` over the current
+sections that speak for it, and `hand_checked`, true when it has a `@manual`
+proof and a signature that counts still binds it, with or without a note.
+Those are what a signature is made over. `does_not_apply` is `{why, signer,
+at}` where a counting signature that says the rule does not apply to the
+project binds it, and null otherwise; its `left` is then null, and once
+that signature ends it is `to_confirm`.
 
 `write_report_data` writes the payload to `.purlin/report-data.js` as
 `const PURLIN_DATA = {...};`, which is gitignored and is what the local
@@ -150,7 +152,7 @@ from purlin import (PURLIN_VERSION,
                     specs as specs_module, states,
                     summary as summary_module)
 
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 11
 REPORT_DATA_PATH = os.path.join('.purlin', 'report-data.js')
 _PREFIX = 'const PURLIN_DATA = '
 
@@ -204,18 +206,15 @@ def build_payload(project_root, generated_by='sync_status', config=None):
 
     blob_cache = {}
     counted_cache = {}
-    # The code each feature's signatures are made over, and, for each
-    # anchor's rule, the features it applies to.
-    code_hashes = {name: fingerprint_module.code_hash(
-        project_root, features[name].get('scope') or [])
+    # The code each spec's signatures are made over: a feature's `> Scope:`
+    # files, and for every anchor the whole project, taken once.
+    part_cache = {}
+    code_hashes = {name: fingerprint_module.code_part(
+        project_root, features[name], part_cache)
         for name in sorted(features)}
-    consumers = _consumers(features)
     feature_entries = []
     rollups = {}
-    # The project summary counts each rule once, under the feature that owns
-    # it. A feature's own rollup counts what that feature must prove, which
-    # includes the rules it requires and the global anchors', so summing the
-    # feature rollups would count a global anchor's rules once per feature.
+    # The project summary counts every spec's rules once, anchors' included.
     own_results = {}
     # Which proofs have a test is read from the markers in the test files,
     # not from the evidence: a marked test that has not run yet is a test.
@@ -231,7 +230,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         entry, rollup = _feature_entry(
             project_root, name, info, features, evidence, all_signatures,
             cfg, blob_cache, own_results, counted_cache, could_not_run,
-            incomplete, tied, here_os, code_hashes, consumers)
+            incomplete, tied, here_os, code_hashes)
         feature_entries.append(entry)
         rollups[name] = rollup
 
@@ -239,11 +238,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         {'': states.feature_rollup(own_results, cfg.gate)}, cfg.gate)
     summary['features'] = len(features)
     summary['incomplete'] = sum(1 for reason in incomplete.values() if reason)
-    # The project's proofs are each feature's own, counted once: a rule an
-    # anchor declares is proved by every feature that requires it, and its
-    # proofs belong to the anchor.
-    own_rules = [rule for entry in feature_entries for rule in entry['rules']
-                 if rule.get('label') == 'own']
+    own_rules = [rule for entry in feature_entries for rule in entry['rules']]
     summary.update(proof_counts(own_rules, tied))
     summary['steps'] = summary_module.steps(own_rules, cfg.gate)
     summary['sentence'] = summary_module.sentence(summary, cfg.gate)
@@ -309,52 +304,31 @@ def proof_counts(rule_entries, tied=None):
             'proofs_without_test_ids': without}
 
 
-def _consumers(features):
-    """`{(anchor, rule_id): [feature, ...]}`: the features each anchor rule applies to.
-
-    A global anchor's rules apply to every feature, and any other anchor's
-    to each feature that requires it.
-    """
-    found = {}
-    for name in sorted(features):
-        for owner, rule_id, label in specs_module.rule_refs(name, features):
-            if label == 'own' or not features.get(owner, {}).get('is_anchor'):
-                continue
-            found.setdefault((owner, rule_id), []).append(name)
-    return found
-
-
 def _feature_entry(project_root, name, info, features, evidence,
                    all_signatures, cfg, blob_cache, own_results=None, counted_cache=None, could_not_run=None,
-                   incomplete=None, tied=None, here_os=None, code_hashes=None,
-                   consumers=None):
+                   incomplete=None, tied=None, here_os=None, code_hashes=None):
     incomplete = incomplete or {}
     code_hashes = code_hashes or {}
+    anchor = bool(info.get('is_anchor'))
     own = evidence.get(name) or _no_evidence(name)
-    mutation = evidence_module.mutation(own['loaded'])
+    # No code is broken on purpose for an anchor, so it carries no strength
+    # whatever its evidence holds.
+    mutation = None if anchor else evidence_module.mutation(own['loaded'])
     test_strength = mutation.get('score') if mutation else None
 
     rule_entries = []
     rule_results = {}
-    for owner, rule_id, label in specs_module.rule_refs(name, features):
-        owner_info = features.get(owner)
-        if not owner_info:
-            continue
-        owner_evidence = evidence.get(owner) or _no_evidence(owner)
-        owner_mutation = evidence_module.mutation(owner_evidence['loaded'])
+    marked = {rule for feature, rule in (tied or ()) if feature == name}
+    for rule_id in info.get('rule_order') or ():
         result = _rule_entry(
-            project_root, owner, owner_info, rule_id, label, owner_evidence,
-            all_signatures, cfg, blob_cache,
-            owner_mutation,
-            counted_cache, could_not_run, incomplete.get(owner),
-            {marked for feature, marked in (tied or ()) if feature == owner},
-            name, code_hashes, here_os,
-            (consumers or {}).get((owner, rule_id)) if owner == name else None)
+            project_root, name, info, rule_id, own, all_signatures, cfg,
+            blob_cache, mutation, counted_cache, could_not_run,
+            incomplete.get(name), marked, code_hashes.get(name), here_os)
         rule_entries.append(result)
         summary = {'bucket': result['bucket'], 'flags': result['flags']}
-        rule_results[(owner, rule_id)] = summary
-        if label == 'own' and own_results is not None:
-            own_results[(owner, rule_id)] = summary
+        rule_results[(name, rule_id)] = summary
+        if own_results is not None:
+            own_results[(name, rule_id)] = summary
 
     rollup = states.feature_rollup(rule_results, cfg.gate,
                                    test_strength=test_strength)
@@ -365,11 +339,9 @@ def _feature_entry(project_root, name, info, features, evidence,
         'name': name,
         'category': info.get('category', ''),
         'spec_path': info.get('spec_path', ''),
-        'is_anchor': bool(info.get('is_anchor')),
-        'is_global': bool(info.get('is_global')),
+        'is_anchor': anchor,
         'description': info.get('description'),
-        'requires': info.get('requires', []),
-        'scope': info.get('scope', []),
+        'scope': [] if anchor else info.get('scope', []),
         'incomplete': bool(incomplete.get(name)),
         'incomplete_reason': incomplete.get(name),
         'source': info.get('source'),
@@ -499,15 +471,14 @@ def _evidence_map(evidence):
     return out
 
 
-def _rule_entry(project_root, owner, owner_info, rule_id, label,
-                owner_evidence, all_signatures, cfg, blob_cache,
-                mutation=None, counted_cache=None, could_not_run=None,
-                incomplete=None, marked=None, applies_to=None,
-                code_hashes=None, here_os=None, consumers=None):
+def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
+                all_signatures, cfg, blob_cache, mutation=None,
+                counted_cache=None, could_not_run=None, incomplete=None,
+                marked=None, code_hash=None, here_os=None):
     text = owner_info['rules'].get(rule_id, '')
-    test_strength = (mutation or {}).get('score')
-    applies_to = applies_to or owner
-    code_hashes = code_hashes or {}
+    anchor = bool(owner_info.get('is_anchor'))
+    test_strength = None if anchor else (mutation or {}).get('score')
+    applies_to = owner
     proof_ids = owner_info.get('proofs_by_rule', {}).get(rule_id, [])
     sections = owner_evidence['sections']
 
@@ -533,9 +504,8 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
     test_hash = _test_hash(project_root, proof_dicts, blob_cache)
     test_hash_kind = signatures_module.test_hash_kind(proof_dicts)
     # What a signature is made over besides the rule, its proof and its
-    # test: the code the feature it is listed under names, and the machine
-    # each system's results came from.
-    code_hash = code_hashes.get(applies_to)
+    # test: the spec's code part, the whole project for an anchor, and the
+    # machine each system's results came from.
     machines = _machines(sections, proof_dicts, rule_id)
 
     signatures = [_counted(project_root, signature, cfg, counted_cache)
@@ -553,11 +523,8 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         'code_hash': code_hash,
         'machines': machines,
         'audit_hash': audit_hash,
-        # The features an anchor's own rule applies to, each of which signs
-        # it, with the code each is signed over.
-        'consumers': [{'applies_to': feature,
-                       'code_hash': code_hashes.get(feature)}
-                      for feature in consumers or ()],
+        # An anchor's rule: the audit alone judges its tests.
+        'anchor': anchor,
         'proofs': proof_dicts,
         'rule_id': rule_id,
         'sections': sections,
@@ -576,7 +543,8 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         'test_strength': test_strength,
         # Why the engine the settings chose measured nothing for the
         # feature, where it said.
-        'strength_missing': (mutation or {}).get('missing') or '',
+        'strength_missing': ('' if anchor
+                             else (mutation or {}).get('missing') or ''),
         'feature': owner,
         # Why the rule's own spec names no files, or None.
         'incomplete': incomplete,
@@ -589,7 +557,6 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         'id': rule_id,
         'feature': owner,
         'applies_to': applies_to,
-        'label': label,
         'text': text,
         'rule_hash': rule_hash,
         'proof_hash': proof_hash,
@@ -605,11 +572,14 @@ def _rule_entry(project_root, owner, owner_info, rule_id, label,
         # A person checked a `@manual` proof by hand: a signature that
         # counts still binds the rule.
         'hand_checked': result['hand_checked'],
+        # A person signed that the rule does not apply to the project.
+        'does_not_apply': result['does_not_apply'],
         'proofs': proof_dicts,
         'tests': _rule_tests(sections, rule_id),
     }
     entry['left'] = summary_module.rule_kind(entry, cfg.gate, here_os,
-                                             incomplete)
+                                             incomplete,
+                                             result['to_confirm'])
     return entry
 
 

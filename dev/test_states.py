@@ -26,6 +26,7 @@ from purlin import payload as purlin_payload
 from purlin import signatures as purlin_signatures
 from purlin import states as purlin_states
 from purlin import status as purlin_status
+from purlin import summary as purlin_summary
 
 
 # One rule proved by two proofs.
@@ -36,6 +37,13 @@ TWO_PROOFS_SPEC = (
     '- PROOF-1 (RULE-1): POST /login with valid credentials; verify 200\n'
     '- PROOF-2 (RULE-1): POST /login with valid credentials; verify a '
     'token\n')
+
+
+# An anchor of one rule, which covers the whole project.
+SECURITY_ANCHOR = (
+    '# Anchor: security\n\n'
+    '## Rules\n\n- RULE-1: No eval anywhere\n\n'
+    '## Proof\n\n- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\n')
 
 
 def _dashboard_data(root):
@@ -1363,9 +1371,9 @@ class TestEveryRuleIsAskedWhatTheGateAsks:
 class TestPayload:
 
     # purlin: states PROOF-31
-    def test_schema_ten_carries_the_documented_top_level(self, project):
+    def test_schema_eleven_carries_the_documented_top_level(self, project):
         data = project.payload()
-        assert data["schema_version"] == 10
+        assert data["schema_version"] == 11
         # Those keys and `schema_version`, and no other.
         assert sorted(data) == sorted((
             'schema_version', 'generated_at', 'generated_by', 'project',
@@ -1572,19 +1580,12 @@ class TestPayload:
             made.close()
 
     # purlin: states PROOF-30
-    def test_global_anchor_rules_are_counted_once_in_the_summary(self, project):
-        project.spec(
-            '# Anchor: security\n\n> Global: true\n\n'
-            '## Rules\n\n- RULE-1: No eval anywhere\n\n'
-            '## Proof\n\n- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\n',
-            name='security', category='_anchors')
+    def test_an_anchors_rules_are_counted_once_in_the_summary(self, project):
+        project.spec(SECURITY_ANCHOR, name='security', category='_anchors')
         data = project.payload()
         assert data['summary']['rules'] == 3, (
-            'two own rules plus the anchor\'s one, counted once')
+            'two rules of login and the anchor\'s one, counted once')
         assert data['summary']['features'] == 2
-        login = next(f for f in data['features'] if f['name'] == 'login')
-        assert login['rollup']['rules'] == 3, (
-            'the feature must prove the global anchor\'s rule too')
 
     # purlin: states PROOF-39
     def test_a_section_carries_the_result_of_the_run_it_names(self, project):
@@ -1689,22 +1690,19 @@ class TestPayload:
             'linux': {'word': 'Linux/Unix', 'short': 'Lin'}}
 
     # purlin: states PROOF-111
-    def test_a_shared_rule_is_signed_over_the_feature_it_is_listed_under(
-            self, project):
-        project.spec(
-            '# Anchor: security\n\n> Global: true\n\n'
-            '## Rules\n\n- RULE-1: No eval anywhere\n\n'
-            '## Proof\n\n- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\n',
-            name='security', category='_anchors')
+    def test_an_anchors_rule_is_signed_over_the_project(self, project):
+        project.spec(SECURITY_ANCHOR, name='security', category='_anchors')
+        _git(project.root, 'add', '-A')
+        _git(project.root, 'commit', '-q', '-m', 'anchor(security): create')
         data = project.payload()
-        listed = {(f['name'], r['feature'], r['id']): r
-                  for f in data['features'] for r in f['rules']}
-        under_login = listed[('login', 'security', 'RULE-1')]
-        assert under_login['applies_to'] == 'login'
-        assert under_login['code_hash'] == purlin_fingerprint.code_hash(
-            project.root, ['src/login.py'])
-        assert listed[('security', 'security', 'RULE-1')][
-            'applies_to'] == 'security'
+        listed = [(f['name'], r['feature'], r['id'])
+                  for f in data['features'] for r in f['rules']
+                  if r['feature'] == 'security']
+        assert listed == [('security', 'security', 'RULE-1')], listed
+        rule = _listed(data, 'RULE-1', 'security')
+        assert rule['applies_to'] == 'security'
+        assert rule['code_hash'] == purlin_fingerprint.project_hash(
+            project.root)
 
     # purlin: states PROOF-112
     def test_a_rule_names_the_machine_its_section_ran_on(self, project):
@@ -1796,54 +1794,6 @@ class TestPayload:
         finally:
             made.close()
 
-    @staticmethod
-    def _anchor_signed_under_login():
-        """At `signed`, `login` and `billing` both prove a global anchor's
-        audited rule, and only `login` has signed it."""
-        made = Project(gate='signed')
-        made.sign_commits()
-        made.spec(SPEC.replace('login', 'billing'), name='billing',
-                  category='billing')
-        _write(os.path.join(made.root, 'src', 'billing.py'), 'X = 1\n')
-        _git(made.root, 'add', '-A')
-        _git(made.root, 'commit', '-q', '-m', 'feat: billing')
-        made.spec('# Anchor: security\n\n> Global: true\n\n'
-                  '## Rules\n\n- RULE-1: No eval anywhere\n\n'
-                  '## Proof\n\n- PROOF-1 (RULE-1): Search the code for '
-                  'eval; verify 0 matches\n', name='security',
-                  category='_anchors')
-        made.evidence([_entry('PROOF-1', 'RULE-1', feature='security')],
-                      feature='security')
-        made.audit('RULE-1', feature='security')
-        made.signature('RULE-1', feature='security', category='_anchors',
-                       listed_under='login')
-        return made
-
-    @staticmethod
-    def _anchor_word(made, under):
-        return _listed(made.payload(), 'RULE-1', 'security', under)['cells'][
-            'signed']['word']
-
-    # purlin: states PROOF-148
-    def test_an_anchor_rule_is_signed_once_in_each_feature(self):
-        made = self._anchor_signed_under_login()
-        try:
-            assert tuple(self._anchor_word(made, under) for under in (
-                'login', 'billing', 'security')) == (
-                    'signed', 'unsigned', 'unsigned')
-        finally:
-            made.close()
-
-    # purlin: states PROOF-149
-    def test_an_anchor_rule_signed_in_every_feature_reads_signed(self):
-        made = self._anchor_signed_under_login()
-        try:
-            made.signature('RULE-1', feature='security', category='_anchors',
-                           listed_under='billing')
-            assert self._anchor_word(made, 'security') == 'signed'
-        finally:
-            made.close()
-
     # purlin: states PROOF-116
     def test_each_rule_names_the_one_kind_it_waits_for(self):
         made = Project(gate='strong')
@@ -1912,6 +1862,11 @@ class TestTheFixturesAreTheContract:
             made.audit('RULE-1')
             made.audit('RULE-2', observations=['PROOF-2 reads the status.'])
             made.signature('RULE-1')
+            made.spec(PINNED_ANCHOR, name='policy', category='_anchors')
+            _git(made.root, 'add', '-A')
+            _git(made.root, 'commit', '-q', '-m', 'anchor(policy): pin')
+            made.signature('RULE-1', feature='policy', category='_anchors',
+                           does_not_apply=NO_CARD_DATA)
             _git(made.root, 'tag', 'signed/1.0')
             return made.payload()
         finally:
@@ -2037,7 +1992,7 @@ class TestProofResult:
 # The dashboard's spec table as a reader sees it: its column headings, and
 # each spec's name and the text of each of its cells, one line each.
 DASHBOARD_ROWS = r"""els => {
-  const head = Array.from(document.querySelectorAll('.th > div'))
+  const head = Array.from(document.querySelector('.th').children)
     .map(d => d.textContent.trim());
   return [head, els.map(e => ({
     name: e.querySelector('.name .n').textContent.trim(),
@@ -2086,9 +2041,11 @@ def _table_cells(lines):
     starts = [header.index(heading) for heading in headings]
     rows = {}
     for line in lines[2:-1]:
+        if line in (purlin_status.ANCHORS, purlin_status.SPECS):
+            continue
         cells = [line[start:end].strip() for start, end in
                  zip(starts, starts[1:] + [len(line)])]
-        rows[cells[0].replace(' (anchor)', '')] = cells
+        rows[cells[0]] = cells
     return headings, rows
 
 
@@ -2116,28 +2073,11 @@ def _table_rows(lines):
     return lines[top + 1:lines.index(lines[top], top + 1)]
 
 
-SECURITY_ANCHOR = (
-    '# Anchor: security\n\n> Global: true\n\n'
-    '## Rules\n\n- RULE-1: No eval anywhere\n\n'
-    '## Proof\n\n- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\n')
-
-
-def _requiring_api(project):
-    """`login` requires `api`, an anchor of one rule that is not global."""
-    project.spec(
-        '# Anchor: api\n\n## Rules\n\n- RULE-1: Responses carry a type\n'
-        '\n## Proof\n\n- PROOF-1 (RULE-1): GET /x; verify the header\n',
-        name='api', category='_anchors')
-    project.spec(SPEC.replace('# Feature: login\n',
-                              '# Feature: login\n\n> Requires: api\n'))
-
-
 class TestStatusTable:
 
     # purlin: states PROOF-58
     def test_the_table_and_the_dashboard_show_the_same_cells(
             self, browser, dashboard_page, tmp_path):
-        shared = []
         for name, gate in (('solo', 'passed'), ('team', 'strong'),
                            ('regulated', 'signed')):
             sample = TestTheFixturesAreTheContract._fixture(name)
@@ -2146,69 +2086,15 @@ class TestStatusTable:
                                           str(tmp_path / name), sample)
             assert shown == headings, (name, shown, headings)
             assert sorted(dashboard) == sorted(table), (name, dashboard)
-            rules_at = headings.index('Rules')
             for spec, cells in table.items():
-                expected = list(cells)
-                if expected[rules_at].endswith(' shared)'):
-                    # The dashboard's hover says what the second number is.
-                    shared.append((spec, expected[rules_at],
-                                   dashboard[spec][rules_at]))
-                    expected[rules_at] = expected[rules_at].replace(
-                        ' shared)', ')')
-                assert dashboard[spec][1:] == expected[1:], (
+                assert dashboard[spec][1:] == cells[1:], (
                     name, spec, dashboard[spec], cells)
-        assert shared == [('receipt', '1 (+1 shared)', '1 (+1)')], shared
-
-    # purlin: states PROOF-86
-    def test_the_rules_cell_names_the_shared_rules(self, project):
-        project.spec(SECURITY_ANCHOR, name='security', category='_anchors')
-        lines = _status_lines(project.root)
-        header = _header(lines)
-        login = _row_of(lines, 'login')
-        assert login[header.index('Rules'):].startswith('2 (+1 shared)'), (
-            header, login)
-        assert _cell_under(lines, 'security', 'Rules') == '1', lines
 
     # purlin: states PROOF-179
-    def test_a_spec_proving_no_shared_rule_reads_its_own_count(self,
-                                                              project):
+    def test_a_spec_reads_its_own_rule_count(self, project):
         lines = _status_lines(project.root)
         assert _cell_under(lines, 'login', 'Rules') == '2', lines
         assert not [line for line in lines if 'shared' in line], lines
-
-    # purlin: states PROOF-180
-    def test_a_required_anchor_that_is_not_global_is_shared_too(self,
-                                                                project):
-        _requiring_api(project)
-        lines = _status_lines(project.root)
-        assert _cell_under(lines, 'login', 'Rules') == '2 (+1 shared)', lines
-
-    # purlin: states PROOF-181
-    def test_every_cell_starts_at_its_headings_left_edge(self, project):
-        _requiring_api(project)
-        # Every proof marked, one test passing and one failing, so under every
-        # heading one row's cell is narrower than its column.
-        _write(os.path.join(project.root, 'tests', 'test_login.py'),
-               _marked_tests('PROOF-1', 'PROOF-2'))
-        _write(os.path.join(project.root, 'tests', 'test_api.py'),
-               _marked_tests('PROOF-1', feature='api'))
-        _git(project.root, 'add', '-A')
-        _git(project.root, 'commit', '-q', '-m', 'test: marked tests')
-        project.evidence([_entry('PROOF-1', 'RULE-1'),
-                          _entry('PROOF-2', 'RULE-2', status='fail')])
-        lines = _status_lines(project.root)
-        header = _header(lines)
-        rows = _table_rows(lines)
-        assert len(rows) == 2, rows
-        for heading in header.split():
-            at = header.index(heading)
-            widths = [len(row[at:].split('  ')[0]) for row in rows]
-            assert min(widths) < max(widths + [len(heading)]), (heading, rows)
-        for heading in header.split():
-            at = header.index(heading)
-            for row in rows:
-                assert row[at] != ' ' and (at == 0 or row[at - 1] == ' '), (
-                    heading, header, row)
 
     @staticmethod
     def _one_of_two_passing(project):
@@ -2402,18 +2288,18 @@ class TestStatusTable:
         lines = text.splitlines()
         rules_at, tests_at = header.index('Rules'), header.index('Tests')
         top = lines.index(header) + 1
-        rows = lines[top + 1:lines.index(lines[top], top + 1)]
+        rows = [row for row in lines[top + 1:lines.index(lines[top], top + 1)]
+                if row not in (purlin_status.ANCHORS, purlin_status.SPECS)]
         stems = sorted(name[:-3] for _, dirs, files in os.walk(
             os.path.join(PROJECT_ROOT, 'specs')) for name in files
             if name.endswith('.md'))
         named = sorted(row.split()[0] for row in rows)
         assert named == stems, (named, stems)
         for row in rows:
-            owned = re.match(r'(\d+)(?: \(\+(\d+) shared\))?', row[rules_at:])
+            owned = re.match(r'(\d+)(?:  |$)', row[rules_at:])
             tests = re.match(r'(\d+) of (\d+)(?:  |$| ·)', row[tests_at:])
             assert owned and tests, row
-            assert int(tests.group(2)) == int(owned.group(1)) + int(
-                owned.group(2) or 0), row
+            assert int(tests.group(2)) == int(owned.group(1)), row
             assert int(tests.group(1)) <= int(tests.group(2)), row
 
 
@@ -2919,3 +2805,186 @@ class TestTheAnchorLines:
     def test_a_source_refused_names_the_reason(self):
         lines = _anchored_status('--upload-pack=/bin/echo', 'abc1234')
         assert 'policy: (source rejected: begins with "-")' in lines, lines
+
+
+# ---------------------------------------------------------------------------
+# Anchors: counted once, audited alone, listed first
+# ---------------------------------------------------------------------------
+
+# An anchor pinned from another repository, of one rule no test shows.
+PINNED_ANCHOR = (
+    '# Anchor: policy\n\n'
+    '> Source: https://github.com/acme/policies.git\n'
+    '> Pinned: abc1234\n\n'
+    '## Rules\n\n- RULE-1: Card numbers are stored encrypted\n\n'
+    '## Proof\n\n- PROOF-1 (RULE-1): A stored card number reads as '
+    'ciphertext in the database\n')
+NO_CARD_DATA = 'the project stores no card data'
+
+
+def _spec_of(heading, count, scope=None):
+    """A spec of `count` rules, each proved by one proof of the same number."""
+    meta = '> Scope: %s\n\n' % scope if scope else ''
+    rules = ''.join('- RULE-%d: Rule %d holds\n' % (n, n)
+                    for n in range(1, count + 1))
+    proofs = ''.join('- PROOF-%d (RULE-%d): Case %d reads %d\n' % (n, n, n, n)
+                     for n in range(1, count + 1))
+    return '%s\n\n%s## Rules\n\n%s\n## Proof\n\n%s' % (
+        heading, meta, rules, proofs)
+
+
+def _all_passing(made, feature, count):
+    """A current section passing every proof of a spec of `count` rules."""
+    made.evidence([_entry('PROOF-%d' % n, 'RULE-%d' % n, feature=feature,
+                          test_file='tests/test_%s.py' % feature)
+                   for n in range(1, count + 1)], feature=feature)
+
+
+class TestAnchors:
+
+    @staticmethod
+    def _eleven_beside_eight():
+        """`login` of 11 passing rules beside the anchor `security` of 8."""
+        made = Project(spec=_spec_of('# Feature: login', 11, 'src/login.py'))
+        made.spec(_spec_of('# Anchor: security', 8), name='security',
+                  category='_anchors')
+        _git(made.root, 'add', '-A')
+        _git(made.root, 'commit', '-q', '-m', 'anchor(security): create')
+        _all_passing(made, 'login', 11)
+        _all_passing(made, 'security', 8)
+        return made
+
+    @staticmethod
+    def _cells(made, name, *headings):
+        lines = purlin_status.sync_status(made.root).splitlines()
+        return tuple(_cell_under(lines, name, heading) for heading in headings)
+
+    # purlin: states PROOF-238
+    def test_a_feature_counts_its_own_rules_only(self):
+        made = self._eleven_beside_eight()
+        try:
+            assert self._cells(made, 'login', 'Rules', 'Tests') == (
+                '11', '11 of 11')
+        finally:
+            made.close()
+
+    # purlin: states PROOF-239
+    def test_an_anchor_counts_its_rules_in_its_own_row(self):
+        made = self._eleven_beside_eight()
+        try:
+            assert self._cells(made, 'security', 'Rules', 'Tests') == (
+                '8', '8 of 8')
+        finally:
+            made.close()
+
+    @staticmethod
+    def _anchor_measured_at_40():
+        """At `strong`, mutation on with a minimum of 80, the anchor
+        `security`'s one rule passes, is audited with nothing found, and its
+        evidence stores a strength of 40."""
+        made = Project(gate='strong', extra_config={
+            'mutation_engine': 'auto', 'min_strength': 80})
+        made.spec(SECURITY_ANCHOR, name='security', category='_anchors')
+        _git(made.root, 'add', '-A')
+        _git(made.root, 'commit', '-q', '-m', 'anchor(security): create')
+        made.evidence([_entry('PROOF-1', 'RULE-1', feature='security',
+                              test_file='tests/test_security.py')],
+                      feature='security', strength=40)
+        made.audit('RULE-1', feature='security')
+        return made
+
+    # purlin: states PROOF-240
+    def test_the_audit_alone_judges_an_anchors_tests(self):
+        made = self._anchor_measured_at_40()
+        try:
+            cell = made.cell('RULE-1', 'strong', feature='security')
+            assert (cell['word'], cell['reasons']) == (
+                'strong', ["the AI audit alone judges an anchor's tests"]), cell
+        finally:
+            made.close()
+
+    # purlin: states PROOF-241
+    def test_an_anchors_strong_cell_shows_no_strength(self):
+        made = self._anchor_measured_at_40()
+        try:
+            assert self._cells(made, 'security', 'Strong') == ('1 of 1',)
+        finally:
+            made.close()
+
+    # purlin: states PROOF-242
+    def test_the_anchors_are_listed_first_under_their_label(self, project):
+        project.spec(SECURITY_ANCHOR, name='security', category='_anchors')
+        rows = _table_rows(_status_lines(project.root))
+        assert [row.split()[0] for row in rows] == [
+            'Anchors', 'security', 'Specs', 'login'], rows
+        assert rows[0] == 'Anchors' and rows[2] == 'Specs', rows
+
+    # purlin: states PROOF-243
+    def test_a_project_with_no_anchor_has_no_label_line(self, project):
+        lines = _status_lines(project.root)
+        assert not [line for line in lines
+                    if line.strip() in ('Anchors', 'Specs')], lines
+
+    @staticmethod
+    def _signed_as_not_applying():
+        """At `signed`, beside `login`, the pinned anchor `policy`'s rule,
+        which no test shows, signed in a signed commit as not applying."""
+        made = Project(gate='signed')
+        made.sign_commits()
+        _write(os.path.join(made.root, 'README.md'), 'A ledger.\n')
+        made.spec(PINNED_ANCHOR, name='policy', category='_anchors')
+        _git(made.root, 'add', '-A')
+        _git(made.root, 'commit', '-q', '-m', 'anchor(policy): pin')
+        made.signature('RULE-1', feature='policy', category='_anchors',
+                       does_not_apply=NO_CARD_DATA)
+        return made
+
+    # purlin: states PROOF-244
+    def test_a_rule_signed_as_not_applying_reads_so_in_every_cell(self):
+        made = self._signed_as_not_applying()
+        try:
+            rule = made.rule('RULE-1', feature='policy')
+            reason = ['by jane@acme.com: the project stores no card data']
+            assert {name: (cell['word'], cell['reasons'])
+                    for name, cell in rule['cells'].items()} == {
+                name: ('does not apply', reason)
+                for name in ('passed', 'strong', 'signed')}, rule['cells']
+            assert rule['does_not_apply']['why'] == NO_CARD_DATA, rule
+            assert rule['does_not_apply']['signer'] == 'jane@acme.com', rule
+        finally:
+            made.close()
+
+    # purlin: states PROOF-245
+    def test_the_row_counts_the_rule_that_does_not_apply(self):
+        made = self._signed_as_not_applying()
+        try:
+            lines = purlin_status._table(made.payload())
+            assert _cell_under(lines, 'policy', 'Tests') == (
+                '1 of 1 · 1 does not apply'), lines
+        finally:
+            made.close()
+
+    # purlin: states PROOF-246
+    def test_nothing_is_left_for_a_rule_that_does_not_apply(self):
+        made = self._signed_as_not_applying()
+        try:
+            data = made.payload()
+            assert _listed(data, 'RULE-1', 'policy')['left'] is None
+            assert sum(item['count'] for item in data['left']) == sum(
+                1 for rule in _feature(data)['rules'] if rule['left']), (
+                data['left'])
+        finally:
+            made.close()
+
+    # purlin: states PROOF-247
+    def test_a_change_to_the_project_leaves_it_to_confirm(self):
+        made = self._signed_as_not_applying()
+        try:
+            _write(os.path.join(made.root, 'README.md'), 'A ledger, v2.\n')
+            _git(made.root, 'commit', '-q', '-am', 'docs: readme')
+            data = made.payload()
+            assert _listed(data, 'RULE-1', 'policy')['left'] == 'to_confirm'
+            assert ('1 rule to confirm as not applying: purlin:sign'
+                    in purlin_summary.left_lines(data)), data['left']
+        finally:
+            made.close()

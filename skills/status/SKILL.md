@@ -24,26 +24,26 @@ Call `sync_status` with `project_root` set to the project root, the top folder o
 
 ## Step 2: print the table
 
-The tool opens with `Purlin status: <project>, plugin <version>, gate <gate>`, then the table.
-Every spec and every anchor gets a row, sorted attention first: the most rules with work left
-at the top. Anchors carry `(anchor)` after the name. Columns exist only when the gate
-creates the cell behind them, so a project at `passed` has no strong and no signed column.
-The table is the dashboard's board, rendered as text: the same columns, the same text in
-each cell. A reader who has learned one has learned the other.
+The tool opens with `Purlin status: <project>, plugin <version>, gate <gate>`, then the table: a
+row per spec, most work left first, the anchors under `Anchors` above the rest under `Specs`, and
+a column only where the gate creates its cell. It is the dashboard's board as text, cell for cell.
 
 ```
-  Spec               Rules           Proofs          Tests
-  ─────────────────────────────────────────────────────────────────────────────────
-  billing            14 (+6 shared)  22 · 2 no test  15 of 20 · 1 partial · 1 failing
-  security (anchor)  6               6               6 of 6
+  Spec                            Rules  Proofs          Tests
+  ─────────────────────────────────────────────────────────────
+  Anchors
+  security_no_dangerous_patterns  8      91              8 of 8
+  Specs
+  billing                         14     22 · 2 no test  12 of 14 · 1 partial · 1 failing
+  login                           11     20              11 of 11
+  ─────────────────────────────────────────────────────────────
 ```
 
-`Rules` counts the spec's own rules, then ` (+<k> shared)` for those it proves from an anchor.
-`Proofs` counts every proof line and appends `· <k> no test` when no test in the source carries
-a proof's marker, run or not; at `passed` the column is there only where the project writes a proof line.
-`Tests` is `<passed> of <rules>`, then `· <k> partial` and `· <k> failing` when either is not
-zero; `partial` means the tests pass on one operating system and not on another. `Strong` reads
-`<n> of <rules>`, then `· <strength>%` where strength was measured; `Signed` reads `<n> of <rules>`.
+`Rules` counts the spec's rules. `Proofs` counts every proof line, then `· <k> no test` where no
+test carries a proof's marker; at `passed` it shows only where a proof line is written. `Tests` is
+`<passed> of <rules>`, then `· <k> does not apply`, `· <k> partial` and `· <k> failing` where not
+zero; `partial` means the tests pass on one operating system and not another. `Strong` reads
+`<n> of <rules>`, then `· <strength>%` where measured; `Signed` reads `<n> of <rules>`.
 
 ## Step 3: print the summary and `Left to do`
 
@@ -56,9 +56,9 @@ Left to do:
   10 rules to sign: purlin:sign
 ```
 
-The sentence names the steps up to the gate, each containing the next. `Left to do` holds one
-line per kind of work, in the order it is done, with its count and its command. When nothing
-is left, `Nothing left to do.` follows the sentence instead, at `signed` with the tag's push.
+The sentence names the steps up to the gate, each containing the next. `Left to do` holds one line
+per kind of work, in the order it is done, with its count and its command. When nothing is left,
+`Nothing left to do.` follows the sentence instead, at `signed` with the tag's push.
 Print the sentence and the `Left to do` lines `sync_status` returned. Never recount them: the
 command line and the dashboard must show one answer from one computation.
 
@@ -95,6 +95,6 @@ The next step is the first line of `Left to do`. Add no line of your own; a
 | `<n> rules to test on <systems>` | `→ Run: purlin:test --remote` |
 | `<n> rules to audit` | `→ Run: purlin:audit` |
 | `<n> rules to measure` | `→ Run: purlin:audit` |
-| `<n> rules to test by hand`, `to sign`, or `the version to tag` | `→ Run: purlin:sign` |
+| `<n> rules to test by hand`, `to confirm as not applying`, `to sign`, or `the version to tag` | `→ Run: purlin:sign` |
 | `Nothing left to do. Push the tag to release it: ...` | `→ Run: git push origin signed/<version>` |
 | `Nothing left to do.` | None: every rule reached every step the gate asks. |

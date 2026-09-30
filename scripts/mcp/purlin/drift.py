@@ -513,8 +513,7 @@ def _eng_view(project_root, rng, changed, data, raw_features, markers,
         if not hits:
             continue
         scoped.update(hits)
-        rules = [rule['id'] for rule in feature.get('rules', [])
-                 if rule.get('label') == 'own']
+        rules = [rule['id'] for rule in feature.get('rules', [])]
         code_changed.append({'feature': feature['name'], 'files': hits,
                              'rules': sorted(rules, key=_rule_number)})
 
@@ -529,8 +528,7 @@ def _eng_view(project_root, rng, changed, data, raw_features, markers,
         (rule['feature'], rule['id'])
         for feature in data.get('features', [])
         for rule in feature.get('rules', [])
-        if rule.get('label') == 'own'
-        and ((rule.get('cells') or {}).get('passed') or {}).get('word')
+        if ((rule.get('cells') or {}).get('passed') or {}).get('word')
         == 'no test')
 
     anchors = pin_report(project_root, raw_features, network=network)

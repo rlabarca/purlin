@@ -46,7 +46,7 @@ run_suite "E2E Init (wiring)" bash "$SCRIPT_DIR/test_init_e2e_wiring.sh"
 # The dog-food external reference repo; idempotent, creates it once.
 bash "$SCRIPT_DIR/setup-external-refs.sh"
 run_suite "E2E External Refs" bash "$SCRIPT_DIR/test_e2e_external_refs.sh"
-run_suite "E2E Required Rules" bash "$SCRIPT_DIR/test_e2e_required_rules.sh"
+run_suite "E2E Anchor Rules" bash "$SCRIPT_DIR/test_e2e_anchor_rules.sh"
 run_suite "E2E Anchor Authority" bash "$SCRIPT_DIR/test_e2e_anchor_authority.sh"
 else
   echo "--fast: skipping the shell suites"

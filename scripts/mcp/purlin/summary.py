@@ -6,8 +6,9 @@ status table ends on them, a test run and an audit end on the status table,
 the same two, the evidence package copies the counts, and the dashboard reads
 the payload keys this module fills. No surface composes the text itself.
 
-The sentence counts each rule once, under the feature that owns it, and names
-the steps up to the gate, each containing the next:
+The sentence counts each rule once, under the spec that owns it, anchors'
+included, and names the steps up to the gate, each containing the next; a
+rule that does not apply counts as reaching every step:
 
     40 rules. 35 pass their tests. 30 are strong. 20 are signed.
 
@@ -58,6 +59,8 @@ KINDS = (
      'purlin:test --remote'),
     ('to_test_by_hand', 'rule to test by hand', 'rules to test by hand',
      'purlin:sign'),
+    ('to_confirm', 'rule to confirm as not applying',
+     'rules to confirm as not applying', 'purlin:sign'),
     ('to_audit', 'rule to audit', 'rules to audit', 'purlin:audit'),
     ('to_measure', 'rule to measure', 'rules to measure', 'purlin:audit'),
     ('to_strengthen', 'rule to strengthen', 'rules to strengthen',
@@ -70,9 +73,9 @@ KINDS = (
 
 KIND_NAMES = tuple(kind[0] for kind in KINDS)
 
-# The two kinds that wait for a person, which the sign walk and drift's view
-# for QA print.
-FOR_A_PERSON = ('to_test_by_hand', 'to_sign')
+# The kinds that wait for a person, which the sign walk and drift's view for
+# QA print.
+FOR_A_PERSON = ('to_test_by_hand', 'to_confirm', 'to_sign')
 
 LEFT_TO_DO = 'Left to do:'
 NOTHING_LEFT = 'Nothing left to do.'
@@ -88,15 +91,23 @@ def _words(one, many, count):
     return one if count == 1 else many
 
 
-def rule_kind(rule, gate, here_os, incomplete=None):
+def rule_kind(rule, gate, here_os, incomplete=None, to_confirm=False):
     """The one kind of work a rule waits for under `gate`, or None.
 
-    `rule` is a payload rule entry, read for its `cells`, its `proofs` and
-    its `hand_checked`. `here_os` is this machine's system, `windows`,
-    `macos` or `linux`. `incomplete` is true, or the reason, when the spec
-    that owns the rule names no files. The first kind that applies wins, in
-    the order of `KINDS`. Every rule carries every cell up to the gate.
+    `rule` is a payload rule entry, read for its `cells`, its `proofs`, its
+    `hand_checked` and its `does_not_apply`. `here_os` is this machine's
+    system, `windows`, `macos` or `linux`. `incomplete` is true, or the
+    reason, when the spec that owns the rule names no files. `to_confirm` is
+    true when the last signature for the rule said it does not apply and no
+    counting signature binds it; that kind comes before any other. A rule
+    signed as not applying waits for nothing. Otherwise the first kind that
+    applies wins, in the order of `KINDS`. Every rule carries every cell up
+    to the gate.
     """
+    if to_confirm:
+        return 'to_confirm'
+    if rule.get('does_not_apply'):
+        return None
     cells = rule.get('cells') or {}
     passed = cells.get('passed') or {}
     word = passed.get('word')
@@ -167,6 +178,10 @@ def steps(own_rules, gate):
     """
     reached = {'passed': 0, 'strong': 0, 'signed': 0}
     for rule in own_rules or ():
+        if rule.get('does_not_apply'):
+            for name in reached:
+                reached[name] += 1
+            continue
         cells = rule.get('cells') or {}
         if (cells.get('passed') or {}).get('word') != 'passed':
             continue
@@ -221,7 +236,7 @@ def left(features, gate, here_os, tag=None, corrections=0):
     """`[{kind, count, text, command}]`: the work left, in the order it is done.
 
     `features` is the payload's feature entries; each rule is counted once,
-    under the feature that owns it, so only a rule labelled `own` is read.
+    under the spec that owns it and lists it.
     `tag` is the payload's `tag`, the `signed/*` tag on HEAD or None.
     `corrections` is how many comments above tests name something no spec
     has or a rule that has proofs, at every gate. A kind at zero is left out. At the gate `signed`, with no
@@ -233,9 +248,8 @@ def left(features, gate, here_os, tag=None, corrections=0):
     systems = set()
     for feature in features or ():
         for rule in feature.get('rules') or ():
-            if rule.get('label', 'own') != 'own':
-                continue
-            kind = rule_kind(rule, gate, here_os, feature.get('incomplete'))
+            kind = rule_kind(rule, gate, here_os, feature.get('incomplete'),
+                             rule.get('left') == 'to_confirm')
             if kind is None:
                 continue
             counts[kind] = counts.get(kind, 0) + 1

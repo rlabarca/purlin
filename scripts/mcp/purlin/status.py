@@ -4,9 +4,10 @@ The table is the dashboard's board, rendered as text. Its columns are the
 board's columns and its cells are the board's cells, character for character,
 because a reader who learns one should not have to learn the other:
 `scripts/mcp/purlin/board.py` renders both. A row says how many rules the
-spec owns and how many it proves from an anchor, as `15 (+6 shared)`, how
-many proofs it writes and how many of those have no test, and how many rules
-pass their tests. At `strong` the row adds how many rules are
+spec has, how many proofs it writes and how many of those have no test, and
+how many rules pass their tests. Where the project has an anchor, the line
+`Anchors` heads the anchors' rows and the line `Specs` every other spec's,
+as the dashboard lists anchors above the spec table. At `strong` the row adds how many rules are
 strong and the test strength; at `signed` it adds how many are signed. The
 table scales with the gate: a `passed` project is never shown a strength or a
 signature it did not ask for, and is shown a proof count only where it writes
@@ -153,12 +154,20 @@ def _update_pending(project_root):
 # The table
 # ---------------------------------------------------------------------------
 
+# The label lines of the table's two groups, where the project has an anchor.
+ANCHORS = 'Anchors'
+SPECS = 'Specs'
+
+
 def _row(feature, gate, proofs=1):
-    """One spec's row, rendered by the module the board renders from."""
-    name = feature['name'] + (' (anchor)' if feature['is_anchor'] else '')
-    return board_module.row_cells(
-        name, feature['rollup'], gate, proofs,
-        board_module.shared_counts(feature.get('rules')))
+    """One spec's row, rendered by the module the board renders from.
+
+    The `Tests` cell names how many of the spec's rules do not apply, read
+    from its rules, as the board reads them.
+    """
+    rollup = dict(feature['rollup'], does_not_apply=sum(
+        1 for rule in feature.get('rules') or () if rule.get('does_not_apply')))
+    return board_module.row_cells(feature['name'], rollup, gate, proofs)
 
 
 def _proof_lines(data):
@@ -174,12 +183,20 @@ def _table(data):
     # opens on the work rather than on the alphabet.
     features = sorted(data['features'],
                       key=lambda f: (-_left_count(f), f['name']))
-    rows = [_row(feature, gate, proofs) for feature in features]
+    anchors = [_row(f, gate, proofs) for f in features if f.get('is_anchor')]
+    specs = [_row(f, gate, proofs) for f in features if not f.get('is_anchor')]
+    rows = anchors + specs
     widths = [max(len(columns[i]), max((len(r[i]) for r in rows), default=0))
               for i in range(len(columns))]
     rule = '─' * (sum(widths) + 2 * (len(widths) - 1))
     lines = [_line(columns, widths, columns), rule]
-    lines.extend(_line(row, widths, columns) for row in rows)
+    if anchors:
+        # The anchors first, under their label line, then every other spec
+        # under its own; with no anchor there is no label line.
+        lines.append(ANCHORS)
+        lines.extend(_line(row, widths, columns) for row in anchors)
+        lines.append(SPECS)
+    lines.extend(_line(row, widths, columns) for row in specs)
     lines.append(rule)
     return lines
 
@@ -192,9 +209,9 @@ def _left_count(feature):
 def _line(cells, widths, columns):
     """One table line, every cell set from its column's left edge.
 
-    A `Rules` cell reads `15 (+6 shared)` beside one that reads `6`, and
-    a count and its words line up only from the left, as they do on the
-    board.
+    A `Tests` cell reads `12 of 14 · 1 failing` beside one that reads
+    `11 of 11`, and a count and its words line up only from the left, as they
+    do on the board.
     """
     return '  '.join(cell.ljust(widths[index])
                      for index, cell in enumerate(cells)).rstrip()

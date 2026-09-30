@@ -34,16 +34,17 @@ TAG = {'name': 'signed/1.4.0', 'commit': 'a' * 40}
 
 
 def rule(passed='passed', strong=None, signed=None, proofs=1, manual=False,
-         missing_env=(), hand_checked=False, label='own', feature='login',
-         strong_reasons=()):
+         missing_env=(), hand_checked=False, feature='login',
+         strong_reasons=(), left=None):
     """One payload rule entry with the cells named; a cell left None is absent,
-    as it is above the gate."""
+    as it is above the gate. `left` is what the builder gave the rule, read
+    here only for `to_confirm`."""
     cells = {'passed': {'word': passed, 'missing_env': list(missing_env)}}
     if strong:
         cells['strong'] = {'word': strong, 'reasons': list(strong_reasons)}
     if signed:
         cells['signed'] = {'word': signed}
-    return {'feature': feature, 'label': label, 'cells': cells,
+    return {'feature': feature, 'left': left, 'cells': cells,
             'hand_checked': hand_checked,
             'proofs': [{'id': 'PROOF-%d' % (index + 1), 'manual': manual}
                        for index in range(proofs)]}
@@ -61,8 +62,7 @@ def feature(rules, name='login', incomplete=None):
 
 def payload(features, gate, tag=None, here=HERE, corrections=0):
     """The part of a payload the ending reads, composed as the builder does."""
-    own = [entry for item in features for entry in item['rules']
-           if entry.get('label') == 'own']
+    own = [entry for item in features for entry in item['rules']]
     counted = {'rules': len(own), 'steps': summary.steps(own, gate)}
     counted['sentence'] = summary.sentence(counted, gate)
     left = summary.left(features, gate, here, tag, corrections)
@@ -107,12 +107,10 @@ class TestTheSentence:
 
     # purlin: summary PROOF-4
     def test_an_anchor_rule_is_counted_once_under_its_owner(self):
-        anchor = rule(feature='security')
         features = [
-            feature([anchor], name='security'),
-            feature([rule(), dict(anchor, label='global')], name='login'),
-            feature([rule(feature='export'), dict(anchor, label='global')],
-                    name='export'),
+            feature([rule(feature='security')], name='security'),
+            feature([rule()], name='login'),
+            feature([rule(feature='export')], name='export'),
         ]
         made = payload(features, 'passed')
         assert made['summary']['sentence'] == '3 rules. 3 pass their tests.'
@@ -187,6 +185,29 @@ class TestTheLines:
             '  2 rules to tie to their files: purlin:spec',
             '  2 rules to sign: purlin:sign',
         ]
+
+    # purlin: summary PROOF-38
+    def test_a_rule_to_confirm_stands_between_the_hand_and_the_signature(
+            self):
+        # A rule to confirm reads its cells as usual; its `left` says the
+        # last signature for it said it does not apply.
+        rules = [rule(strong='strong', signed='unsigned'),
+                 rule(strong='strong', signed='unsigned', left='to_confirm'),
+                 rule(manual=True, strong='manual test', signed='unsigned')]
+        assert ending(rules, 'signed')[1:] == [
+            'Left to do:',
+            '  1 rule to test by hand: purlin:sign',
+            '  1 rule to confirm as not applying: purlin:sign',
+            '  1 rule to sign: purlin:sign']
+
+    # purlin: summary PROOF-39
+    def test_two_rules_to_confirm_read_plural(self):
+        rules = [rule(passed='no test', strong='waiting', signed='waiting',
+                      proofs=0, left='to_confirm'),
+                 rule(strong='strong', signed='unsigned', left='to_confirm')]
+        assert ending(rules, 'signed')[1:] == [
+            'Left to do:',
+            '  2 rules to confirm as not applying: purlin:sign']
 
     # purlin: summary PROOF-9
     def test_one_rule_to_tie_reads_its_files(self):
