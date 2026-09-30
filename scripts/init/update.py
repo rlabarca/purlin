@@ -388,11 +388,8 @@ def _ask_mutation(root, framework, assume_yes, out):
     if assume_yes:
         return 'none'
     question = init.MUTATION_QUESTION % init.ENGINE_NAMES.get(engine, engine)
-    # The prompt ends `[y/N] ` whether or not setup's own words carry it.
-    if not question.endswith('[y/N]'):
-        question += ' [y/N]'
     try:
-        answer = input('%s ' % question)
+        answer = input('%s [y/N] ' % question)
     except (EOFError, KeyboardInterrupt):
         return 'none'
     if not answer.strip().lower().startswith('y'):
@@ -418,9 +415,8 @@ def _ask_gate(default, assume_yes):
         return default
     if typed.lower() in _gate().GATES:
         return typed.lower()
-    # The answer as JSON writes it, `"whenever"`, quoted once.
-    value = typed if '"%s"' in init.NOT_A_GATE else json.dumps(typed)
-    print(init.NOT_A_GATE % (value, default))
+    # The answer as JSON writes it, `"whenever"`, as setup quotes it.
+    print(init.NOT_A_GATE % (init.as_json(typed), default))
     return default
 
 def _tests_setting(root, old):

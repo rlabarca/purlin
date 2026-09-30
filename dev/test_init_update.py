@@ -582,10 +582,8 @@ def test_the_gate_question_takes_the_answer_you_type(tmp_path, capsys,
     asked = _answers(monkeypatch, [('Gate [', 'signed')])
     _apply(root, argv=())
     printed = capsys.readouterr().out
-    # The question is setup's own; its words are held by setup's proofs.
-    assert scaffold.GATE_QUESTION.startswith(
-        'What must be true of every rule before a version is ')
-    assert scaffold.GATE_QUESTION in printed.splitlines(), printed
+    assert ('What must be true of every rule before a version is finished?'
+            in printed.splitlines()), printed
     assert len([prompt for prompt in asked if prompt.startswith('Gate [')]) == 1
     assert _config(root)['gate'] == 'signed'
 
@@ -599,13 +597,8 @@ def test_an_answer_that_is_not_a_gate_leaves_the_default(tmp_path, capsys,
     printed = capsys.readouterr().out.splitlines()
     # Setup's line, the answer in it quoted once, as JSON writes it.
     refusal = [line for line in printed if 'whenever' in line]
-    assert len(refusal) == 1, printed
-    assert refusal[0].count('"whenever"') == 1, refusal
-    assert '""' not in refusal[0], refusal
-    assert refusal[0].lower().endswith('reading it as passed.'), refusal
-    if 'is not accepted for gate' in scaffold.NOT_A_GATE:
-        assert refusal == ['"whenever" is not accepted for gate; it takes '
-                           'passed, strong or signed. Reading it as passed.']
+    assert refusal == ['"whenever" is not accepted for gate; it takes '
+                       'passed, strong or signed. Reading it as passed.'], printed
     assert _config(root)['gate'] == 'passed'
 
 
@@ -1323,8 +1316,9 @@ def test_a_spec_with_no_scope_is_named_and_left_alone(tmp_path, capsys):
         'specs/_anchors/unscoped_anchor.md': UNSCOPED_ANCHOR})
     _apply(root)
     printed = capsys.readouterr().out
-    assert SCOPE_ADVICE.startswith(
-        '1 spec names no files, so its tests run every time: nowhere.')
+    assert SCOPE_ADVICE == ('1 spec names no files, so its tests run every '
+                            'time: nowhere. Run purlin:spec nowhere to add its '
+                            '> Scope: line.')
     assert '  ' + SCOPE_ADVICE in printed.splitlines(), printed
     assert 'unscoped_anchor' not in printed, printed
     assert _read(root, 'specs/core/nowhere.md') == UNSCOPED
@@ -1352,8 +1346,9 @@ def test_two_specs_with_no_scope_are_named_in_one_line(tmp_path, capsys):
     _apply(root)
     printed = capsys.readouterr().out.splitlines()
     line = status_module.incomplete_line(['elsewhere', 'nowhere'])
-    assert line.startswith('2 specs name no files, so their tests run every '
-                           'time: elsewhere, nowhere.'), line
+    assert line == ('2 specs name no files, so their tests run every time: '
+                    'elsewhere, nowhere. Run purlin:spec with each name to add '
+                    'its > Scope: line.'), line
     assert '  ' + line in printed, printed
 
 
