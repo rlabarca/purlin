@@ -597,3 +597,39 @@ def test_no_second_copy_of_the_version_row_exists(tmp_path):
               encoding='utf-8') as f:
         f.write('\n| `version` | `"0.9.0"` |\n')
     assert second_copies(str(tmp_path)) == ['skills/init/SKILL.md']
+
+
+# --- RULE-16: the marketplace manifest ------------------------------------
+
+MARKETPLACE = os.path.join(PROJECT_ROOT, '.claude-plugin', 'marketplace.json')
+
+
+def marketplace_problems(manifest):
+    """What keeps a marketplace manifest from reading `purlin`, with one
+    plugin, `purlin`, whose source is the repository root."""
+    problems = []
+    if manifest.get('name') != 'purlin':
+        problems.append('the marketplace is named %r' % manifest.get('name'))
+    plugins = manifest.get('plugins') or []
+    if [plugin.get('name') for plugin in plugins] != ['purlin']:
+        problems.append('the plugins are %r'
+                        % [plugin.get('name') for plugin in plugins])
+    elif plugins[0].get('source') != './':
+        problems.append('the source is %r' % plugins[0].get('source'))
+    return problems
+
+
+# purlin: purlin_version PROOF-38
+def test_the_marketplace_lists_one_plugin_from_the_repository_root():
+    with open(MARKETPLACE, encoding='utf-8') as f:
+        manifest = json.load(f)
+    assert marketplace_problems(manifest) == []
+    # A second plugin, and a source other than the root, are found.
+    assert marketplace_problems(
+        {'name': 'purlin', 'plugins': [{'name': 'purlin', 'source': './'},
+                                       {'name': 'other', 'source': './'}]}
+    ) == ["the plugins are ['purlin', 'other']"]
+    assert marketplace_problems(
+        {'name': 'purlin', 'plugins': [{'name': 'purlin',
+                                        'source': './plugin'}]}
+    ) == ["the source is './plugin'"]

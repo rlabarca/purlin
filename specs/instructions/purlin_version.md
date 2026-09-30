@@ -6,9 +6,9 @@
 >   that fails when a derived location disagrees. Nobody edits a version
 >   literal by hand, and a document that describes the version field names the
 >   file rather than restating a number, so no table can go stale.
-> Scope: VERSION, .claude-plugin/plugin.json, .purlin/config.json, scripts/mcp/purlin/__init__.py, scripts/mcp/purlin/server.py, dev/bump_version.sh, references/drift_criteria.md, skills/init/SKILL.md, scripts/init/scaffold.py, scripts/init/update.py
+> Scope: VERSION, .claude-plugin/plugin.json, .claude-plugin/marketplace.json, .purlin/config.json, scripts/mcp/purlin/__init__.py, scripts/mcp/purlin/server.py, dev/bump_version.sh, references/drift_criteria.md, skills/init/SKILL.md, scripts/init/scaffold.py, scripts/init/update.py
 > Stack: python/stdlib for the reader, bash for the propagation script, json for the derived locations
-> Highest-Rule: 15
+> Highest-Rule: 16
 
 ## Rules
 
@@ -25,6 +25,7 @@
 - RULE-13: `dev/bump_version.sh` refuses an argument that is not semver before writing anything
 - RULE-14: `dev/bump_version.sh --check` exits non-zero naming each location that disagrees while still reporting the ones that match
 - RULE-15: No second copy of the config `version` row lives anywhere under `skills/` or `references/`
+- RULE-16: The plugin's marketplace manifest, `.claude-plugin/marketplace.json`, is named `purlin` and lists one plugin, `purlin`, whose source is the repository root
 
 ## Proof
 
@@ -53,3 +54,4 @@
 - PROOF-33 (RULE-14): In a temporary project with its own copy of the bump script, its files at `2.0.0` and no `.purlin/config.json`, `--check` exits 0; its line for `.purlin/config.json` reads `absent`, and its line for `.claude-plugin/plugin.json` reads `ok 2.0.0`
 - PROOF-8 (RULE-8): In `references/drift_criteria.md` at least one table row has `version` as its first cell, and every such row names the `VERSION` file and holds no version of three whole numbers joined by dots
 - PROOF-34 (RULE-15): No Markdown file under `skills/` or `references/` other than `references/drift_criteria.md` holds a table row whose first cell is `version`
+- PROOF-38 (RULE-16): The plugin's marketplace manifest reads the name `purlin` and holds one plugin entry, named `purlin`, whose source is `./`, the repository root
