@@ -8,12 +8,19 @@ It reports facts and judges nothing.
 
 Three role views come out of the same range:
 
-`pm`      rules added, rules changed, rules removed
+`pm`      rules added, rules changed, rules removed; proofs added, changed
+          and moved
 `eng`     code changed and the rules behind it, changed files under no spec's
           scope, rules with no test, anchors behind their source, features
           whose evidence is out of date
-`qa`      test files changed and the features they cover, and the lines of
+`qa`      proofs added, changed and moved, test files changed and the
+          features they cover, the signatures that ended, and the lines of
           `Left to do` that wait for a person: to test by hand and to sign
+
+Every view then names each number a spec of this checkout writes twice, with
+the line that keeps it, and each test comment whose proof's wording changed
+since the comment was written. Drift reads only this checkout: it never
+fetches, and it says how old its copy of the default branch is.
 
 Each view is a list of lines, the first naming the range, beside the facts
 each line was built from.
@@ -24,14 +31,16 @@ import os
 import re
 import subprocess
 import sys
+import time
 
 _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 from config_engine import config_problem
-from purlin import (fingerprint as fingerprint_module, payload as payload_module,
-                    specs as specs_module, summary as summary_module)
+from purlin import (fingerprint as fingerprint_module, markers as markers_module,
+                    payload as payload_module, specs as specs_module,
+                    summary as summary_module)
 
 ROLES = ('pm', 'eng', 'qa')
 
@@ -447,8 +456,8 @@ def _rule_count(grouped):
 # The views
 # ---------------------------------------------------------------------------
 
-def _rule_map(project_root, ref, paths):
-    """`{feature: {RULE-N: text}}` for the specs among `paths` at `ref`."""
+def _spec_map(project_root, ref, paths):
+    """`{feature: parsed spec}` for the specs among `paths` at `ref`."""
     found = {}
     if not ref:
         return found
@@ -458,19 +467,20 @@ def _rule_map(project_root, ref, paths):
         if not content:
             continue
         name = os.path.splitext(os.path.basename(path))[0]
-        found[name] = specs_module._parse_spec(name, path, content)['rules']
+        found[name] = specs_module._parse_spec(name, path, content)
     return found
 
 
-def _pm_view(project_root, rng, changed):
-    spec_paths = [path for path in changed
-                  if path.startswith(_SPECS_DIR) and path.endswith('.md')]
-    before = _rule_map(project_root, rng['from'], spec_paths)
-    after = _rule_map(project_root, rng['to'], spec_paths)
+def _spec_paths(changed):
+    return [path for path in changed
+            if path.startswith(_SPECS_DIR) and path.endswith('.md')]
+
+
+def _pm_view(rng, before, after, proofs):
     added, changed_rules, removed = [], [], []
     for name in sorted(set(before) | set(after)):
-        old = before.get(name, {})
-        new = after.get(name, {})
+        old = before.get(name, {}).get('rules', {})
+        new = after.get(name, {}).get('rules', {})
         for rule_id in new:
             if rule_id not in old:
                 added.append((name, rule_id))
@@ -492,6 +502,60 @@ def _pm_view(project_root, rng, changed):
     if not lines:
         lines.append('No rule was added, changed or removed %s.'
                      % rng['phrase'])
+    proofs_view, proof_lines = proofs
+    view.update(proofs_view)
+    return view, lines + proof_lines
+
+
+def _proof_texts(parsed):
+    return {proof_id: proof['text']
+            for proof_id, proof in (parsed or {}).get('proofs', {}).items()}
+
+
+def _proofs_view(before, after):
+    """The proofs the range added, changed and moved, and their lines.
+
+    A proof moved when its text at the range's start is, unchanged, under
+    another id of the same spec at its end, an id that did not hold that
+    text at the start. An id whose text differs between the two ends is
+    changed; one absent at the start and not a move is added.
+    """
+    added, changed, moved = [], [], []
+    for name in sorted(set(before) | set(after)):
+        old = _proof_texts(before.get(name))
+        new = _proof_texts(after.get(name))
+        targets = set()
+        for proof_id in sorted(old, key=_rule_number):
+            text = old[proof_id]
+            if new.get(proof_id) == text:
+                continue
+            to = [other for other in sorted(new, key=_rule_number)
+                  if other != proof_id and new[other] == text
+                  and old.get(other) != text and other not in targets]
+            if to:
+                targets.add(to[0])
+                moved.append({'feature': name, 'from': proof_id, 'to': to[0]})
+        for proof_id in sorted(new, key=_rule_number):
+            if proof_id not in old:
+                if proof_id not in targets:
+                    added.append((name, proof_id))
+            elif old[proof_id] != new[proof_id]:
+                changed.append({'feature': name, 'id': proof_id,
+                                'old': old[proof_id], 'new': new[proof_id]})
+
+    view = {'proofs_added': _by_feature(added), 'proofs_changed': changed,
+            'proofs_moved': moved}
+    lines = []
+    if view['proofs_added']:
+        lines.append('%s added: %s.' % (
+            _plural(_rule_count(view['proofs_added']), 'proof'),
+            _rules_text(view['proofs_added'])))
+    for entry in changed:
+        lines.append('%s %s changed: it read "%s" and now reads "%s".' % (
+            entry['feature'], entry['id'], entry['old'], entry['new']))
+    for entry in moved:
+        lines.append('%s %s moved to %s.' % (entry['feature'], entry['from'],
+                                             entry['to']))
     return view, lines
 
 
@@ -624,27 +688,264 @@ def _anchor_line(row):
             % (name, row.get('reason') or row.get('error'), name))
 
 
-def _qa_view(data, changed, markers):
+def _qa_view(data, changed, markers, proofs):
     covering = {}
     for feature, paths in markers.items():
         for path in paths:
             covering.setdefault(path, set()).add(feature)
     test_files = [path for path in changed if path in covering]
     covered = sorted({name for path in test_files for name in covering[path]})
+    ended = _ended_lines(data)
 
+    proofs_view, lines = proofs
     view = {
         'tests_changed': {'files': test_files, 'features': covered},
         'left': [item for item in data.get('left') or ()
                  if item.get('kind') in summary_module.FOR_A_PERSON],
+        'signatures_ended': ended,
     }
+    view.update(proofs_view)
 
-    lines = []
+    lines = list(lines)
     if test_files:
         lines.append('%s changed, covering %s.' % (
             _plural(len(test_files), 'test file'), ', '.join(covered)))
+    lines.extend(ended)
     # The rules that wait for a person, in the words the status prints them.
     lines.extend(summary_module.left_lines(data, summary_module.FOR_A_PERSON))
     return view, lines
+
+
+def _ended_lines(data):
+    """The status's line for each signature that ended, in its order."""
+    ended_lines = getattr(summary_module, 'ended_lines', None)
+    return list(ended_lines(data)) if ended_lines else []
+
+
+# ---------------------------------------------------------------------------
+# This checkout against its copy of the default branch
+# ---------------------------------------------------------------------------
+
+_REMOTES = 'refs/remotes/'
+
+NUMBER_KEPT = ('%s: %s is written twice. The line on %s keeps %s; renumber '
+               'the other to %s and move its test comments with it: "%s".')
+NUMBER_NEITHER = ('%s: %s is written twice, and neither line is on %s. The one '
+                  'that reaches %s first keeps %s; renumber the other to %s '
+                  'and move its test comments with it.')
+NUMBER_ON_DEFAULT = ('%s: %s is written twice on %s itself. Renumber the '
+                     'second to %s and move its test comments with it: "%s".')
+NUMBER_NO_DEFAULT = ('%s: %s is written twice, and this checkout has no copy '
+                     'of a default branch to say which line keeps it. Renumber '
+                     'the one not yet merged to %s and move its test comments '
+                     'with it.')
+AGE_KNOWN = ('%s was last fetched %s ago, and drift does not fetch. Run git '
+             'fetch, then purlin:drift again.')
+AGE_UNKNOWN = ('%s has no record of when it was last fetched, and drift does '
+               'not fetch. Run git fetch, then purlin:drift again.')
+COMMENT_CHANGED = ('%s:%d names %s %s, whose wording changed since the comment '
+                   'was written in %s: it read "%s" and now reads "%s". ')
+COMMENT_CHECK = 'Check the test still shows it, or run purlin:build %s.'
+COMMENT_MOVE = 'Its old wording is now %s: move the comment there.'
+
+
+def default_branch(project_root):
+    """The default branch as this checkout knows it, as `origin/main`, or None.
+
+    `origin/HEAD` where git recorded it, else the first of `origin/main` and
+    `origin/master` that exists. Nothing is fetched.
+    """
+    ref = _git(project_root, ['symbolic-ref', '--quiet',
+                              _REMOTES + 'origin/HEAD'])
+    if ref.startswith(_REMOTES):
+        return ref[len(_REMOTES):]
+    for name in ('origin/main', 'origin/master'):
+        if _git(project_root, ['rev-parse', '--verify', '-q',
+                               _REMOTES + name]):
+            return name
+    return None
+
+
+def fetched_age(project_root, ref):
+    """Seconds since this checkout last updated `ref`, or None.
+
+    The newest entry of the ref's own log, else the time `FETCH_HEAD` was
+    written, else unknown.
+    """
+    if not ref:
+        return None
+    # `%gd` under `--date=unix` names the entry's own time, `<ref>@{<secs>}`;
+    # `%ct` would name the time of the commit the entry points at.
+    entry = _git(project_root, ['reflog', 'show', '-1', '--date=unix',
+                                '--format=%gd', _REMOTES + ref, '--'])
+    when = entry[entry.rfind('{') + 1:-1] if entry.endswith('}') else ''
+    if when.isdigit():
+        return max(0, int(time.time()) - int(when))
+    path = _git(project_root, ['rev-parse', '--git-path', 'FETCH_HEAD'])
+    if path:
+        try:
+            written = os.path.getmtime(os.path.join(project_root, path))
+        except OSError:
+            return None
+        return max(0, int(time.time() - written))
+    return None
+
+
+def _age_words(seconds):
+    """`under a minute`, then whole minutes, hours or days, rounded down."""
+    if seconds < 60:
+        return 'under a minute'
+    for size, word in ((86400, 'day'), (3600, 'hour'), (60, 'minute')):
+        if seconds >= size:
+            return _plural(seconds // size, word)
+    return 'under a minute'
+
+
+def _age_line(ref, age):
+    if age is None:
+        return AGE_UNKNOWN % ref
+    return AGE_KNOWN % (ref, _age_words(age))
+
+
+def _text_of(parsed, item_id):
+    """The text `parsed` holds for a rule or proof id, or None."""
+    if item_id.startswith('RULE-'):
+        return parsed.get('rules', {}).get(item_id)
+    proof = parsed.get('proofs', {}).get(item_id)
+    return proof['text'] if proof else None
+
+
+def _written_twice(parsed):
+    """The ids `parsed` writes twice, rules first, each in first-written order."""
+    doubled = parsed.get('doubled_lines') or {}
+    rules = [item for item in parsed.get('doubled_rules') or ()
+             if item in doubled]
+    proofs = [item for item in parsed.get('doubled_proofs') or ()
+              if item in doubled]
+    rest = [item for item in doubled if item not in rules + proofs]
+    return rules + proofs + sorted(rest, key=lambda item: (
+        not item.startswith('RULE-'), _rule_number(item)))
+
+
+def _next_free(parsed, kind, taken):
+    """`max(highest, every number of the kind in the spec) + 1`, past `taken`."""
+    highest = parsed.get('highest_rule' if kind == 'RULE' else 'highest_proof')
+    ids = parsed.get('rules' if kind == 'RULE' else 'proofs', {})
+    numbers = [_rule_number(item) for item in ids]
+    numbers += [_rule_number(item) for item in parsed.get('doubled_lines') or {}
+                if item.startswith(kind + '-')]
+    number = max([highest or 0] + numbers + taken.get(kind, [])) + 1
+    taken.setdefault(kind, []).append(number)
+    return '%s-%d' % (kind, number)
+
+
+def numbers_twice(project_root, features, ref):
+    """One entry per number a spec of this checkout writes twice.
+
+    `features` is `specs.scan_specs`'s answer. The line whose text equals the
+    id's text on `ref`, the default branch, keeps the number; the other
+    moves to the next free number of its kind.
+    """
+    found = []
+    for name in sorted(features):
+        info = features[name]
+        taken = {}
+        default = None
+        if ref:
+            content = _git(project_root, ['show', '--end-of-options',
+                                          '%s:%s' % (ref, info['spec_path'])])
+            default = (specs_module._parse_spec(name, info['spec_path'],
+                                                content) if content else {})
+        for item in _written_twice(info):
+            written = info['doubled_lines'][item]
+            to = _next_free(info, item.split('-')[0], taken)
+            entry = {'feature': name, 'id': item, 'to': to, 'text': None}
+            if default is None:
+                entry['line'] = NUMBER_NO_DEFAULT % (name, item, to)
+            elif item in (default.get('doubled_lines') or {}):
+                entry['text'] = written[-1]['text']
+                entry['line'] = NUMBER_ON_DEFAULT % (name, item, ref, to,
+                                                     entry['text'])
+            else:
+                kept = _text_of(default, item)
+                keeper = next((index for index, line in enumerate(written)
+                               if kept is not None and line['text'] == kept),
+                              None)
+                if keeper is None:
+                    entry['line'] = NUMBER_NEITHER % (name, item, ref, ref,
+                                                      item, to)
+                else:
+                    other = next(line for index, line in enumerate(written)
+                                 if index != keeper)
+                    entry['text'] = other['text']
+                    entry['line'] = NUMBER_KEPT % (name, item, ref, item, to,
+                                                   entry['text'])
+            found.append(entry)
+    return found
+
+
+def _blamed_commit(project_root, path, line):
+    """The commit that last wrote one line of a file, or None where the line
+    is not committed. The path follows `--`, so it is never read as an
+    option."""
+    out = _git(project_root, ['blame', '--porcelain', '-L', '%d,%d' % (line, line),
+                              '--', path])
+    sha = out.split(' ', 1)[0] if out else ''
+    return sha if sha and sha.strip('0') else None
+
+
+def comments_changed(project_root, rng, changed, features, before, after):
+    """One entry per test comment whose proof's wording changed since it was
+    written.
+
+    The comments read are those naming a proof whose text differs between
+    the range's two ends, and those in a test file the range changed. The
+    proof's text in the spec at the commit that last wrote the comment's
+    line is compared with its text now.
+    """
+    differs = set()
+    for name in set(before) | set(after):
+        old = _proof_texts(before.get(name))
+        new = _proof_texts(after.get(name))
+        differs.update((name, item) for item in new if old.get(item) != new[item])
+    changed = set(changed)
+    found = []
+    specs_at = {}
+    scanned = markers_module.scan(project_root, tracked_only=True)
+    for path in sorted(scanned):
+        for marker in scanned[path].markers:
+            key = (marker.feature, marker.id)
+            info = features.get(marker.feature)
+            if (not marker.id.startswith('PROOF-') or info is None
+                    or (path not in changed and key not in differs)):
+                continue
+            now = _text_of(info, marker.id)
+            sha = _blamed_commit(project_root, path, marker.line)
+            if now is None or sha is None:
+                continue
+            spec_key = (sha, info['spec_path'])
+            if spec_key not in specs_at:
+                content = _git(project_root, ['show', '--end-of-options',
+                                              '%s:%s' % spec_key])
+                specs_at[spec_key] = (specs_module._parse_spec(
+                    marker.feature, info['spec_path'], content)
+                    if content else {})
+            then = _text_of(specs_at[spec_key], marker.id)
+            if then is None or then == now:
+                continue
+            now_under = next((item for item in sorted(info.get('proofs', {}),
+                                                      key=_rule_number)
+                              if item != marker.id
+                              and _text_of(info, item) == then), None)
+            line = COMMENT_CHANGED % (path, marker.line, marker.feature,
+                                      marker.id, sha[:7], then, now)
+            line += (COMMENT_MOVE % now_under if now_under
+                     else COMMENT_CHECK % marker.feature)
+            found.append({'file': path, 'line': marker.line,
+                          'feature': marker.feature, 'id': marker.id,
+                          'commit': sha[:7], 'old': then, 'new': now,
+                          'now_under': now_under, 'text': line})
+    return found
 
 
 def _specs_uncommitted(project_root):
@@ -676,20 +977,39 @@ def compute_drift(project_root, since=None, network=True, data=None):
     markers = fingerprint_module.marker_index(project_root)
     uncommitted = _specs_uncommitted(project_root)
 
+    spec_paths = _spec_paths(changed)
+    before = _spec_map(project_root, rng['from'], spec_paths)
+    after = _spec_map(project_root, rng['to'], spec_paths)
+    proofs = _proofs_view(before, after)
+
+    ref = default_branch(project_root)
+    branch = ({'ref': ref, 'age_seconds': fetched_age(project_root, ref)}
+              if ref else None)
+    twice = numbers_twice(project_root, raw_features, ref)
+    comments = comments_changed(project_root, rng, changed, raw_features,
+                                before, after)
+    shared = [entry['line'] for entry in twice]
+    shared += [entry['text'] for entry in comments]
+    if twice and ref:
+        shared.append(_age_line(ref, branch['age_seconds']))
+
     built = {
-        'pm': _pm_view(project_root, rng, changed),
+        'pm': _pm_view(rng, before, after, proofs),
         'eng': _eng_view(project_root, rng, changed, data, raw_features,
                          markers, network),
-        'qa': _qa_view(data, changed, markers),
+        'qa': _qa_view(data, changed, markers, proofs),
     }
     roles = {}
     for role in ROLES:
         view, lines = built[role]
-        lines = [rng['line']] + lines
+        lines = [rng['line']] + lines + shared
         if uncommitted:
             lines.append('%s changes that are not committed.' % (
                 '1 spec file has' if uncommitted == 1
                 else '%d spec files have' % uncommitted))
+        view['numbers_twice'] = twice
+        view['comments_changed'] = comments
+        view['default_branch'] = branch
         view['specs_uncommitted'] = uncommitted
         view['lines'] = lines
         roles[role] = view

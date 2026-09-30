@@ -1,4 +1,4 @@
-> Criteria-Version: 10
+> Criteria-Version: 11
 
 # Drift criteria
 
@@ -40,8 +40,9 @@ Since your last pull, 14 hours ago (a1b2c3d..4f5e6a7, 9 commits).
 ## The three role views
 
 Each view is a list of lines, the first naming the range, beside the facts each line was built
-from. Every view ends with `<n> spec files have changes that are not committed.` when a spec file
-under `specs/` differs from HEAD or is not tracked, read from `git status --porcelain -- specs/`.
+from. After its own lines every view prints the lines of "Every view" below. Every view ends
+with `<n> spec files have changes that are not committed.` when a spec file under `specs/`
+differs from HEAD or is not tracked, read from `git status --porcelain -- specs/`.
 
 ### `pm`
 
@@ -55,6 +56,15 @@ and kept its rules changed nothing.
 | `rules_changed` | `2 rules changed: login RULE-3, billing RULE-1.` |
 | `rules_removed` | `1 rule removed: cart RULE-4.` |
 | none of the three | `No rule was added, changed or removed since your last pull.` |
+| `proofs_added` | `2 proofs added: sample_age PROOF-5, PROOF-6; stability PROOF-3.` |
+| `proofs_changed` | `sample_age PROOF-1 changed: it read "<old>" and now reads "<new>".` |
+| `proofs_moved` | `sample_age PROOF-4 moved to PROOF-6.` |
+
+The proof lines follow the rule lines, and read the same two ends of each spec file. A proof
+**moved** when its text at the range's start is, unchanged, under another id of the same spec at
+HEAD, an id that did not hold that text at the start. An id whose text differs between the two
+ends is **changed**, and one absent at the start and not a move is **added**. Texts are quoted
+whole, without their tags. A proof removed is not listed.
 
 ### `eng`
 
@@ -75,7 +85,11 @@ exclusions.
 
 | Key | From | Line |
 |-----|------|------|
+| `proofs_added` | The proofs added, as in `pm`, printed first | As in `pm` |
+| `proofs_changed` | The proofs changed, as in `pm` | As in `pm` |
+| `proofs_moved` | The proofs moved, as in `pm` | As in `pm` |
 | `tests_changed` | The changed test files that carry a marker, and the features those markers name | `6 test files changed, covering export, login.` |
+| `signatures_ended` | The status's own line for each signature that ended, in its order | `sample_age RULE-2: the signature by quinn.qa@labconnect.example ended because a test file behind it changed: tests/test_age.py.` |
 | `left` | The status's own items of `Left to do` of the kinds `to_test_by_hand` and `to_sign` | The lines below |
 
 After those lines the view prints the two lines of `Left to do` that wait for a person, in the
@@ -83,6 +97,42 @@ words the status prints them:
 `2 rules to test by hand: purlin:sign` and `5 rules to sign: purlin:sign`. Either is left out at
 zero, and no other line of `Left to do` is printed. At the gate `passed` only a rule to test by
 hand can wait for a person.
+
+### Every view
+
+Drift reads only this checkout: it never fetches, pulls or reaches the host. Each view, after
+its own lines and before the spec files not committed, prints these for every spec of the
+checkout, in this order.
+
+| Key | From | Line |
+|-----|------|------|
+| `numbers_twice` | Each rule or proof id a spec writes on two lines, compared with the spec on the default branch | `sample_age: PROOF-4 is written twice. The line on origin/main keeps PROOF-4; renumber the other to PROOF-7 and move its test comments with it: "<its text>".` |
+| `comments_changed` | Each test comment naming a proof whose text differs between the range's two ends, or sitting in a test file the range changed, whose proof read otherwise at the commit `git blame` names for the comment's line | `tests/test_age.py:14 names sample_age PROOF-4, whose wording changed since the comment was written in a1b2c3d: it read "<old>" and now reads "<new>". Check the test still shows it, or run purlin:build sample_age.` |
+| `default_branch` | The default branch and the seconds since this checkout last updated it, printed only after a `numbers_twice` line | `origin/main was last fetched 3 days ago, and drift does not fetch. Run git fetch, then purlin:drift again.` |
+
+**The default branch** is the one `git symbolic-ref --quiet refs/remotes/origin/HEAD` names, else
+the first of `origin/main` and `origin/master` that exists, else none. **Its age** is now less
+the time of the newest entry of that ref's own log,
+`git reflog show -1 --date=unix refs/remotes/<ref>`, else less the time `FETCH_HEAD` was
+written, else unknown. It reads
+`under a minute`, then whole minutes, hours or days, rounded down. Unknown reads
+`origin/main has no record of when it was last fetched, and drift does not fetch. Run git fetch, then purlin:drift again.`
+
+**A number written twice.** The line whose text equals that id's text on the default branch
+keeps the number; the other moves to the next free number, one above the spec's
+`> Highest-Rule:` or `> Highest-Proof:` and above every number of that kind the spec holds.
+Where one spec writes several numbers twice, each takes the next number after the one before.
+
+| Case | Line |
+|------|------|
+| One line is on the default branch | `sample_age: PROOF-4 is written twice. The line on origin/main keeps PROOF-4; renumber the other to PROOF-7 and move its test comments with it: "<its text>".` |
+| Neither line is on the default branch | `sample_age: PROOF-7 is written twice, and neither line is on origin/main. The one that reaches origin/main first keeps PROOF-7; renumber the other to PROOF-8 and move its test comments with it.` |
+| The default branch writes it twice too | `sample_age: PROOF-4 is written twice on origin/main itself. Renumber the second to PROOF-7 and move its test comments with it: "<its text>".` |
+| No default branch | `sample_age: PROOF-4 is written twice, and this checkout has no copy of a default branch to say which line keeps it. Renumber the one not yet merged to PROOF-7 and move its test comments with it.` |
+
+**A test comment whose proof's wording changed** ends `Its old wording is now PROOF-6: move the
+comment there.` in place of the check, where a proof of the same spec now holds the old text
+exactly. A comment line not yet committed is not read.
 
 ## Anchors behind
 

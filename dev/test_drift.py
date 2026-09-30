@@ -12,10 +12,12 @@ import shutil
 import stat
 import subprocess
 import sys
+import time
 
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp'))
+sys.path.insert(0, os.path.dirname(__file__))
 from purlin import drift as purlin_drift
 
 
@@ -508,7 +510,9 @@ class TestPmView:
                 'login', {'RULE-1': 'Signs a person in with a passkey',
                           'RULE-2': 'Refuses a wrong password',
                           'RULE-3': 'Locks after five tries'},
-                scope='src/auth/'),
+                scope='src/auth/',
+                proofs={'PROOF-1': ('RULE-1', 'Call it and see 1'),
+                        'PROOF-2': ('RULE-2', 'Call it and see 1')}),
               'specs/shop/cart.md': _spec('cart', {'RULE-1': 'Holds items'})}])
         report = _report(checkout)
 
@@ -1324,17 +1328,31 @@ class TestReportShape:
         assert sorted(report['roles']) == ['eng', 'pm', 'qa']
 
     # purlin: drift PROOF-49
-    def test_each_view_carries_its_fixed_keys(self, tmp_path):
+    def test_the_pm_view_carries_its_fixed_keys(self, tmp_path):
         report = _report(_pulled_source_change(tmp_path))
 
         assert sorted(report['roles']['pm']) == [
-            'lines', 'rules_added', 'rules_changed', 'rules_removed',
-            'specs_uncommitted']
+            'comments_changed', 'default_branch', 'lines', 'numbers_twice',
+            'proofs_added', 'proofs_changed', 'proofs_moved', 'rules_added',
+            'rules_changed', 'rules_removed', 'specs_uncommitted']
+
+    # purlin: drift PROOF-79
+    def test_the_engineer_view_carries_its_fixed_keys(self, tmp_path):
+        report = _report(_pulled_source_change(tmp_path))
+
         assert sorted(report['roles']['eng']) == [
-            'anchors_behind', 'code_changed', 'lines', 'out_of_date',
+            'anchors_behind', 'code_changed', 'comments_changed',
+            'default_branch', 'lines', 'numbers_twice', 'out_of_date',
             'rules_without_test', 'specs_uncommitted', 'unscoped']
+
+    # purlin: drift PROOF-80
+    def test_the_qa_view_carries_its_fixed_keys(self, tmp_path):
+        report = _report(_pulled_source_change(tmp_path))
+
         assert sorted(report['roles']['qa']) == [
-            'left', 'lines', 'specs_uncommitted', 'tests_changed']
+            'comments_changed', 'default_branch', 'left', 'lines',
+            'numbers_twice', 'proofs_added', 'proofs_changed', 'proofs_moved',
+            'signatures_ended', 'specs_uncommitted', 'tests_changed']
 
     # purlin: drift PROOF-50
     def test_the_qa_role_narrows_the_answer_to_its_view(self, tmp_path,
@@ -1418,3 +1436,267 @@ class TestNoCommit:
         assert answer == {'error': 'no commits',
                           'reason': 'drift reads git, and HEAD names no commit '
                                     'here'}, answer
+
+
+# ---------------------------------------------------------------------------
+# RULE-28, RULE-29 and RULE-30: proofs added, changed and moved
+# ---------------------------------------------------------------------------
+
+def _login_with(proofs):
+    """`login` of 2 rules whose proofs are `{PROOF-N: text}`, each of RULE-1."""
+    return _spec('login', {'RULE-1': 'Signs a person in',
+                           'RULE-2': 'Refuses a wrong password'},
+                 scope='src/auth/',
+                 proofs={pid: ('RULE-1', text) for pid, text in proofs.items()})
+
+
+FOUR = {'PROOF-1': 'An age of 150 minutes', 'PROOF-2': 'Two',
+        'PROOF-3': 'Three', 'PROOF-4': 'Four'}
+
+
+def _pulled_proofs(tmp_path, proofs):
+    """The report of a checkout that pulled `login`'s proofs from FOUR to `proofs`."""
+    _up, checkout, _before = _pulled(
+        tmp_path, {'specs/auth/login.md': _login_with(FOUR)},
+        [{'specs/auth/login.md': _login_with(proofs)}])
+    return _report(checkout)
+
+
+class TestProofsChanged:
+
+    # purlin: drift PROOF-67
+    def test_proofs_added(self, tmp_path):
+        report = _pulled_proofs(tmp_path, dict(FOUR, **{'PROOF-5': 'Five',
+                                                        'PROOF-6': 'Six'}))
+        for role in ('pm', 'qa'):
+            assert '2 proofs added: login PROOF-5, PROOF-6.' in _lines(
+                report, role), (role, _lines(report, role))
+        assert report['roles']['pm']['proofs_added'] == {
+            'login': ['PROOF-5', 'PROOF-6']}
+
+    # purlin: drift PROOF-68
+    def test_a_proof_changed(self, tmp_path):
+        report = _pulled_proofs(
+            tmp_path, dict(FOUR, **{'PROOF-1': 'An age of 90 minutes'}))
+        line = ('login PROOF-1 changed: it read "An age of 150 minutes" and '
+                'now reads "An age of 90 minutes".')
+        for role in ('pm', 'qa'):
+            assert line in _lines(report, role), (role, _lines(report, role))
+        assert report['roles']['qa']['proofs_changed'] == [{
+            'feature': 'login', 'id': 'PROOF-1',
+            'old': 'An age of 150 minutes', 'new': 'An age of 90 minutes'}]
+
+    # purlin: drift PROOF-69
+    def test_a_proof_moved(self, tmp_path):
+        report = _pulled_proofs(
+            tmp_path, dict(FOUR, **{'PROOF-4': 'Another four',
+                                    'PROOF-5': 'Five', 'PROOF-6': 'Four'}))
+        for role in ('pm', 'qa'):
+            lines = _lines(report, role)
+            assert 'login PROOF-4 moved to PROOF-6.' in lines, (role, lines)
+            assert '1 proof added: login PROOF-5.' in lines, (role, lines)
+        assert report['roles']['pm']['proofs_moved'] == [
+            {'feature': 'login', 'from': 'PROOF-4', 'to': 'PROOF-6'}]
+
+
+# ---------------------------------------------------------------------------
+# RULE-31 and RULE-32: a number written twice, and the default branch's age
+# ---------------------------------------------------------------------------
+
+LOGIN_TWICE = _spec('login', {'RULE-1': 'Signs a person in'},
+                    proofs={'PROOF-1': ('RULE-1', 'One'),
+                            'PROOF-2': ('RULE-1', 'Two'),
+                            'PROOF-3': ('RULE-1', 'Three')})
+
+
+def _with_proof(spec, *lines):
+    return spec + ''.join('- %s\n' % line for line in lines)
+
+
+def _every_view_holds(report, line):
+    for role in ('pm', 'eng', 'qa'):
+        assert line in report['roles'][role]['lines'], (
+            role, report['roles'][role]['lines'])
+
+
+def _merged_twice(tmp_path):
+    """A checkout whose merge of `origin/main` left `login` writing
+    `PROOF-4` twice: `A` from `origin/main`, `B` from its own commit."""
+    upstream = _repo(str(tmp_path / 'upstream'),
+                     {'specs/auth/login.md': LOGIN_TWICE})
+    checkout = _clone(upstream, str(tmp_path / 'checkout'))
+    _change(upstream, {'specs/auth/login.md': _with_proof(
+        LOGIN_TWICE, 'PROOF-4 (RULE-1): A')})
+    _change(checkout, {'specs/auth/login.md': _with_proof(
+        LOGIN_TWICE, 'PROOF-4 (RULE-1): B')})
+    stopped = _git(['pull', '-q', '--no-edit'], checkout, check=False)
+    assert stopped.returncode != 0, stopped
+    _write(os.path.join(checkout, 'specs', 'auth', 'login.md'), _with_proof(
+        LOGIN_TWICE, 'PROOF-4 (RULE-1): A', 'PROOF-4 (RULE-1): B'))
+    _git(['add', '-A'], checkout)
+    _git(['commit', '-q', '--no-edit'], checkout)
+    return checkout
+
+
+class TestNumbersWrittenTwice:
+
+    # purlin: drift PROOF-70
+    def test_the_line_on_the_default_branch_keeps_the_number(self, tmp_path):
+        report = _report(_merged_twice(tmp_path))
+        _every_view_holds(report, (
+            'login: PROOF-4 is written twice. The line on origin/main keeps '
+            'PROOF-4; renumber the other to PROOF-5 and move its test '
+            'comments with it: "B".'))
+
+    # purlin: drift PROOF-71
+    def test_neither_line_on_the_default_branch(self, tmp_path):
+        upstream = _repo(str(tmp_path / 'upstream'),
+                         {'specs/auth/login.md': LOGIN_TWICE})
+        checkout = _clone(upstream, str(tmp_path / 'checkout'))
+        _change(checkout, {'specs/auth/login.md': _with_proof(
+            LOGIN_TWICE, 'PROOF-4 (RULE-1): Four', 'PROOF-5 (RULE-1): Five',
+            'PROOF-6 (RULE-1): Six', 'PROOF-7 (RULE-1): X',
+            'PROOF-7 (RULE-1): Y')})
+        _every_view_holds(_report(checkout), (
+            'login: PROOF-7 is written twice, and neither line is on '
+            'origin/main. The one that reaches origin/main first keeps '
+            'PROOF-7; renumber the other to PROOF-8 and move its test '
+            'comments with it.'))
+
+    # purlin: drift PROOF-72
+    def test_no_default_branch(self, tmp_path):
+        root = _repo(str(tmp_path / 'proj'), {
+            'specs/auth/login.md': _with_proof(
+                LOGIN_TWICE, 'PROOF-4 (RULE-1): A', 'PROOF-4 (RULE-1): B')})
+        report = _report(root)
+        _every_view_holds(report, (
+            'login: PROOF-4 is written twice, and this checkout has no copy '
+            'of a default branch to say which line keeps it. Renumber the one '
+            'not yet merged to PROOF-5 and move its test comments with it.'))
+        assert report['roles']['pm']['default_branch'] is None
+
+    # purlin: drift PROOF-73
+    def test_the_age_of_the_default_branch(self, tmp_path):
+        checkout = _merged_twice(tmp_path)
+        when = int(time.time()) - 3 * 86400 - 120
+        fetched = _sha(checkout, 'refs/remotes/origin/main')
+        # Git logs a ref's update only when its value moves, so the ref steps
+        # back one commit and forward again, both at that time.
+        for sha in (_sha(checkout, fetched + '^'), fetched):
+            _git(['update-ref', '-m', 'fetch: long ago',
+                  'refs/remotes/origin/main', sha],
+                 checkout, env={'GIT_COMMITTER_DATE': '@%d +0000' % when})
+        report = _report(checkout)
+        _every_view_holds(report, (
+            'origin/main was last fetched 3 days ago, and drift does not '
+            'fetch. Run git fetch, then purlin:drift again.'))
+        assert report['roles']['qa']['default_branch']['ref'] == 'origin/main'
+
+    # purlin: drift PROOF-74
+    def test_drift_does_not_fetch(self, tmp_path):
+        host = str(tmp_path / 'host.git')
+        seed = _repo(str(tmp_path / 'seed'), LOGIN_FILES)
+        _git(['clone', '-q', '--bare', seed, host], str(tmp_path))
+        mine = _clone(host, str(tmp_path / 'mine'))
+        theirs = _clone(host, str(tmp_path / 'theirs'))
+        _change(theirs, {'src/auth/login.py': 'x = 2\n'})
+        _git(['push', '-q', 'origin', 'HEAD:main'], theirs)
+        before = _sha(mine, 'refs/remotes/origin/main')
+
+        report = _report(mine)
+
+        assert _sha(mine, 'refs/remotes/origin/main') == before
+        assert _sha(host, 'main') != before
+        assert report['roles']['eng']['default_branch']['ref'] == 'origin/main'
+
+
+# ---------------------------------------------------------------------------
+# RULE-33: a test comment whose proof's wording changed
+# ---------------------------------------------------------------------------
+
+def _comment_pulled(tmp_path, proofs_after, test_after=None):
+    """A checkout that pulled `login`'s proofs from `PROOF-4` reading `A`
+    to `proofs_after`; its test file names `login PROOF-4` on line 1.
+    `(report, sha7 of the commit that wrote the comment)`."""
+    before = {'PROOF-1': 'One', 'PROOF-4': 'A'}
+    change = {'specs/auth/login.md': _login_with(proofs_after)}
+    if test_after is not None:
+        change['tests/test_login.py'] = test_after
+    upstream, checkout, start = _pulled(
+        tmp_path, {'specs/auth/login.md': _login_with(before),
+                   'tests/test_login.py': ('# purlin: login PROOF-4\n'
+                                           'def test_four():\n    pass\n')},
+        [change])
+    return _report(checkout), start[:7]
+
+
+class TestCommentsChanged:
+
+    # purlin: drift PROOF-75
+    def test_a_comment_whose_proof_was_reworded(self, tmp_path):
+        report, sha = _comment_pulled(tmp_path, {'PROOF-1': 'One',
+                                                 'PROOF-4': 'B'})
+        _every_view_holds(report, (
+            'tests/test_login.py:1 names login PROOF-4, whose wording changed '
+            'since the comment was written in %s: it read "A" and now reads '
+            '"B". Check the test still shows it, or run purlin:build login.'
+            % sha))
+
+    # purlin: drift PROOF-76
+    def test_a_comment_whose_old_wording_moved(self, tmp_path):
+        report, sha = _comment_pulled(tmp_path, {
+            'PROOF-1': 'One', 'PROOF-4': 'B', 'PROOF-6': 'A'})
+        _every_view_holds(report, (
+            'tests/test_login.py:1 names login PROOF-4, whose wording changed '
+            'since the comment was written in %s: it read "A" and now reads '
+            '"B". Its old wording is now PROOF-6: move the comment there.'
+            % sha))
+
+    # purlin: drift PROOF-77
+    def test_a_comment_whose_proof_is_unchanged(self, tmp_path):
+        report, _sha7 = _comment_pulled(
+            tmp_path, {'PROOF-1': 'One', 'PROOF-4': 'A'},
+            test_after=('# purlin: login PROOF-1\ndef test_one():\n'
+                        '    assert 1\n'))
+        assert report['roles']['qa']['tests_changed']['files'] == [
+            'tests/test_login.py']
+        for role in ('pm', 'eng', 'qa'):
+            assert not [line for line in report['roles'][role]['lines']
+                        if line.startswith('tests/test_login.py:')], role
+            assert report['roles'][role]['comments_changed'] == []
+
+
+# ---------------------------------------------------------------------------
+# RULE-34: the signatures that ended
+# ---------------------------------------------------------------------------
+
+class TestSignaturesEnded:
+
+    # purlin: drift PROOF-78
+    def test_the_qa_view_prints_an_ended_signature(self):
+        from mcp_project import Project
+        made = Project(gate='signed')
+        try:
+            made.sign_commits()
+            test_file = os.path.join(made.root, 'tests', 'test_login.py')
+            _write(test_file, '# purlin: login PROOF-1\ndef test_one():\n'
+                              '    pass\n')
+            _commit(made.root, 'test: login')
+            made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                            'status': 'pass'}], ci=True, strength=90)
+            made.audit('RULE-1')
+            made.signature('RULE-1')
+            assert made.cell('RULE-1', 'signed')['word'] == 'signed'
+            _write(test_file, '# purlin: login PROOF-1\ndef test_one():\n'
+                              '    assert True\n')
+            _commit(made.root, 'test: login again')
+
+            qa = _report(made.root, since='1')['roles']['qa']
+
+            line = ('login RULE-1: the signature by jane@acme.com ended '
+                    'because a test file behind it changed: '
+                    'tests/test_login.py.')
+            assert line in qa['lines'], qa['lines']
+            assert line in qa['signatures_ended'], qa['signatures_ended']
+        finally:
+            made.close()

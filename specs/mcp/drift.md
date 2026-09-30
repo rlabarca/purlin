@@ -5,12 +5,14 @@
 >   what changed between where HEAD stood before it and HEAD: rules added,
 >   changed and removed for the PM; code changed, rules with no test, anchors
 >   behind and evidence out of date for the engineer; tests changed, and the
->   rules waiting for someone to test by hand or to sign, for QA. It reports
->   facts and judges nothing.
+>   rules waiting for someone to test by hand or to sign, for QA; proofs added,
+>   changed and moved for the PM and QA. Every view names a number a spec
+>   writes twice and a test comment whose proof's wording changed. It reads
+>   only this checkout, reports facts and judges nothing.
 > Scope: scripts/mcp/purlin/drift.py
 > Stack: python/stdlib, json, re, subprocess (list-only)
-> Highest-Rule: 27
-> Highest-Proof: 66
+> Highest-Rule: 34
+> Highest-Proof: 80
 
 ## Rules
 
@@ -40,6 +42,13 @@
 - RULE-25: A role argument narrows the answer to exactly `since`, `role` and `view`
 - RULE-26: In a repository whose HEAD names no commit, drift's answer is the error `no commits` with the reason `drift reads git, and HEAD names no commit here`, in place of the report
 - RULE-27: A drift call writes no file and leaves HEAD and the working tree as they were
+- RULE-28: The PM and QA views name the proofs the range added, in one count line by feature
+- RULE-29: The PM and QA views name each proof whose wording the range changed, quoting its text at both ends
+- RULE-30: The PM and QA views name each proof whose text the range moved, unchanged, to another id of the same spec
+- RULE-31: Every view names each number a spec of this checkout writes twice: the line whose text is the one on the default branch keeps it, and the other is renumbered to the next free number
+- RULE-32: Where a view names a number written twice, it says how long ago this checkout last fetched the default branch, and drift itself fetches nothing
+- RULE-33: Every view names each test comment whose proof's wording changed since the commit that last wrote the comment's line, quoting both wordings
+- RULE-34: The QA view prints the status's line for each signature that ended
 
 ## Proof
 
@@ -99,7 +108,9 @@
 - PROOF-48 (RULE-17): An edited spec and a new one are both committed; no view prints a line about spec files not committed, and each view's count of them reads 0
 - PROOF-60 (RULE-17): On Windows, with `core.autocrlf` set to `true`, an edited spec and a new one are both committed; no view prints a line about spec files not committed, and each view's count of them reads 0 @env(windows)
 - PROOF-27 (RULE-18): After a pull, the report carries exactly `since` and `roles`; `since` carries exactly `action`, `commits`, `from`, `line`, `to` and `when`, and `roles` exactly `eng`, `pm` and `qa`
-- PROOF-49 (RULE-23): After a pull, the PM view carries exactly `lines`, `rules_added`, `rules_changed`, `rules_removed` and `specs_uncommitted`; the engineer view exactly `anchors_behind`, `code_changed`, `lines`, `out_of_date`, `rules_without_test`, `specs_uncommitted` and `unscoped`; the QA view exactly `left`, `lines`, `specs_uncommitted` and `tests_changed`
+- PROOF-49 (RULE-23): After a pull, the PM view carries exactly `comments_changed`, `default_branch`, `lines`, `numbers_twice`, `proofs_added`, `proofs_changed`, `proofs_moved`, `rules_added`, `rules_changed`, `rules_removed` and `specs_uncommitted`
+- PROOF-79 (RULE-23): After a pull, the engineer view carries exactly `anchors_behind`, `code_changed`, `comments_changed`, `default_branch`, `lines`, `numbers_twice`, `out_of_date`, `rules_without_test`, `specs_uncommitted` and `unscoped`
+- PROOF-80 (RULE-23): After a pull, the QA view carries exactly `comments_changed`, `default_branch`, `left`, `lines`, `numbers_twice`, `proofs_added`, `proofs_changed`, `proofs_moved`, `signatures_ended`, `specs_uncommitted` and `tests_changed`
 - PROOF-50 (RULE-25): After a pull, drift is asked for the `qa` role; the answer carries exactly `since`, `role` and `view`, its role reads `qa`, and its `since` and `view` are those of the whole report
 - PROOF-34 (RULE-24): The status leaves `3 rules to audit` and `2 rules to sign`; the QA view's `left` holds exactly the one item `{"kind": "to_sign", "count": 2, "text": "2 rules to sign", "command": "purlin:sign"}`
 - PROOF-28 (RULE-19): After one committed change, the report text is indented nowhere, puts no space after the `:` and `,` that separate its keys and values, reads back as a report carrying exactly `since` and `roles`, and is shorter than the same report laid out with an indent of 2
@@ -108,3 +119,15 @@
 - PROOF-58 (RULE-21): A project's `.purlin/config.json` holds a comma after its last setting; drift's whole answer is `.purlin/config.json cannot be read: <the JSON reader's message> at line <n>. Fix the file by hand; nothing ran and nothing was saved.`, and no process starts
 - PROOF-61 (RULE-26): In a repository made with `git init` and no commit, drift is asked for its report; the answer is the error `no commits` with the reason `drift reads git, and HEAD names no commit here`
 - PROOF-66 (RULE-27): In a checkout that has just pulled a change to a scoped file, the `pm`, `eng` and `qa` views are asked for in turn; HEAD, `git status --porcelain` and the bytes of every file outside `.git` read the same after as before
+- PROOF-67 (RULE-28): A pull adds `PROOF-5` and `PROOF-6` to `login`; the PM and QA views each hold `2 proofs added: login PROOF-5, PROOF-6.`
+- PROOF-68 (RULE-29): A pull changes `login`'s `PROOF-1` from `An age of 150 minutes` to `An age of 90 minutes`; the PM and QA views each hold `login PROOF-1 changed: it read "An age of 150 minutes" and now reads "An age of 90 minutes".`
+- PROOF-69 (RULE-30): A pull moves the text of `login`'s `PROOF-4` to `PROOF-6` and gives `PROOF-4` a new text; the PM and QA views each hold `login PROOF-4 moved to PROOF-6.`
+- PROOF-70 (RULE-31): After a merge, `login` writes `PROOF-4` twice, its line on `origin/main` reading `A` and the branch's `B`; every view holds `login: PROOF-4 is written twice. The line on origin/main keeps PROOF-4; renumber the other to PROOF-5 and move its test comments with it: "B".`
+- PROOF-71 (RULE-31): `login` writes `PROOF-7` twice and `origin/main` holds neither line; every view holds `login: PROOF-7 is written twice, and neither line is on origin/main. The one that reaches origin/main first keeps PROOF-7; renumber the other to PROOF-8 and move its test comments with it.`
+- PROOF-72 (RULE-31): In a checkout with no remote, `login` writes `PROOF-4` twice; every view holds `login: PROOF-4 is written twice, and this checkout has no copy of a default branch to say which line keeps it. Renumber the one not yet merged to PROOF-5 and move its test comments with it.`
+- PROOF-73 (RULE-32): `login` writes `PROOF-4` twice and `origin/main` was last updated three days ago; every view holds `origin/main was last fetched 3 days ago, and drift does not fetch. Run git fetch, then purlin:drift again.`
+- PROOF-74 (RULE-32): Another clone pushes a commit to the bare repository this checkout was cloned from; after drift runs here, `origin/main` names the commit it named before
+- PROOF-75 (RULE-33): A test comment naming `login PROOF-4` is committed while `PROOF-4` reads `A`, and a pull rewords it `B`; every view holds `tests/test_login.py:1 names login PROOF-4, whose wording changed since the comment was written in <sha7>: it read "A" and now reads "B". Check the test still shows it, or run purlin:build login.`
+- PROOF-76 (RULE-33): A test comment naming `login PROOF-4` is committed while `PROOF-4` reads `A`, and a pull rewords it `B` and puts `A` under `PROOF-6`; the comment's line ends `it read "A" and now reads "B". Its old wording is now PROOF-6: move the comment there.`
+- PROOF-77 (RULE-33): A pull edits a test file whose comment names `login PROOF-1`, whose wording has not changed; no view holds a line naming that comment
+- PROOF-78 (RULE-34): Under the gate `signed`, `login RULE-1` is signed by `jane@acme.com`, then its test file is edited and committed; the QA view holds the status's line `login RULE-1: the signature by jane@acme.com ended because a test file behind it changed: tests/test_login.py.`

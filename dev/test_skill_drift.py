@@ -70,6 +70,22 @@ class TestSkillDrift:
             'With no role, infer one from the files the session has touched',
             'Say which you chose before the view']) == []
 
+    # RULE-11 and RULE-12: this checkout alone, and a number written twice.
+
+    # purlin: skill_drift PROOF-37
+    def test_it_says_drift_reads_only_this_checkout(self):
+        assert carries(SKILL, [
+            'Drift reads only this checkout: it never fetches, pulls or '
+            'reaches the host',
+            "says how old this checkout's copy of the default branch is"]) == []
+
+    # purlin: skill_drift PROOF-38
+    def test_it_says_which_line_keeps_a_number_written_twice(self):
+        assert carries(SKILL, [
+            'The line already on the default branch keeps the number; the '
+            'other line moves to the number drift names',
+            'move the test comments that name it']) == []
+
     # RULE-2: the tool, the lines as they come, and the criteria.
 
     # purlin: skill_drift PROOF-2
@@ -260,6 +276,13 @@ OUTCOME_ROWS = {
     'out_of_date': 'A feature out of date',
     'tests_changed': 'A test file changed',
     'left': 'A rule to test by hand or to sign',
+    'proofs_added': 'A proof added, changed or moved',
+    'proofs_changed': 'A proof added, changed or moved',
+    'proofs_moved': 'A proof added, changed or moved',
+    'signatures_ended': 'A signature that ended',
+    'numbers_twice': 'A number written twice',
+    'comments_changed': "A test comment whose proof's wording changed",
+    'default_branch': 'How old the copy of the default branch is',
     'specs_uncommitted': 'Spec files not committed',
 }
 

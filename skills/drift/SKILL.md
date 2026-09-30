@@ -35,6 +35,16 @@ that stopped on conflicts counts once you commit it, `commit (merge)` in git's l
 range starts where HEAD stood before that action, so it shows what the action brought in and what
 you committed since.
 
+Drift reads only this checkout: it never fetches, pulls or reaches the host. When it names a
+number written twice it also says how old this checkout's copy of the default branch is. If that
+copy is old, run `git fetch`, then run drift again.
+
+## A number written twice
+
+The line already on the default branch keeps the number; the other line moves to the number
+drift names. Renumber that line with `purlin:spec <feature>`, move the test comments that name it,
+and tell the person whose line moved so the comments on their branch move with it.
+
 ## Step 1: get the data
 
 ```
@@ -70,6 +80,11 @@ One line per kind of thing the view showed, in the order below, then stop.
 | An anchor behind its source | `→ Run: purlin:anchor sync <name>` |
 | A feature out of date | `→ Run: purlin:test <feature>; the next run clears it.` |
 | A test file changed | `→ Run: purlin:test <feature>` |
+| A proof added, changed or moved | `→ Run: purlin:build <feature>` |
+| A signature that ended | `→ Run: purlin:sign` |
 | A rule to test by hand or to sign | `→ Run: purlin:sign` |
+| A number written twice | `→ Run: purlin:spec <feature>` |
+| A test comment whose proof's wording changed | `→ Run: purlin:build <feature>` |
+| How old the copy of the default branch is | `→ Run git fetch, then purlin:drift again.` |
 | Spec files not committed | `→ Commit the spec files, then run purlin:drift again.` |
 | Only the first line, or only `No rule was added, ...` | `→ Nothing changed that the specs, the tests or the signatures need. Run: purlin:status` |
