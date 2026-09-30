@@ -24,7 +24,7 @@
 - RULE-11: `> Note:` is free text addressed to whoever reads the spec; the parser ignores it, it never reaches the description or displaces `> Source:`, and a spec may carry more than one
 - RULE-12: The two section headings are matched without regard to case, so `## rules` and `## PROOF` are read as `## Rules` and `## Proof`
 - RULE-13: Two specs with one file name in different folders are warned of: only one is read, and the warning names both files, the one read, and the `git mv` that renames the other
-- RULE-14: A `> Scope:` entry that finds no file git tracks is warned of, naming the spec, the entry and `purlin:spec`, where the spec's other entries reach files; a spec none of whose entries finds a file is reported only as naming no files
+- RULE-14: A `> Scope:` entry that finds no file git tracks is warned of, naming the spec, the entry and `purlin:spec`, where the spec's other entries reach files; a spec none of whose entries finds a file is reported only as a `> Scope:` that finds no file in git yet
 - RULE-15: A spec carrying a heading the format does not name still parses, its rules are still read, and nothing is reported about the extra heading
 - RULE-16: A line under `## Rules` carrying no id is reported as a warning saying it is not numbered
 - RULE-17: A rule number written twice is warned of, and the rule is read once, with the text of its second line
@@ -101,7 +101,7 @@
 - PROOF-52 (RULE-13): A project holding `specs/auth/login.md` and `specs/admin/login.md` is reported with `specs/auth/login.md and specs/admin/login.md are both named login; only specs/auth/login.md is read. Rename one: git mv specs/admin/login.md specs/admin/<new name>.md`
 - PROOF-53 (RULE-14): In a project whose git tracks `src/app.py`, a spec `login` scoped `src/app.py, src/gone.py` is reported with `login: > Scope: names src/gone.py, which finds no file in git. Run purlin:spec login.`
 - PROOF-54 (RULE-14): In a project whose git tracks `src/app.py` and not `src/new.py`, which is on the disk, a spec `login` scoped `src/app.py, src/new.py` is reported with `login: > Scope: names src/new.py, which finds no file in git. Run purlin:spec login.`
-- PROOF-55 (RULE-14): In a project whose git tracks `src/app.py`, a spec `login` scoped `src/gone.py` alone is reported with `1 spec names no files, so its tests run every time: login. Run purlin:spec login to add its > Scope: line.` and with no line saying `which finds no file in git`
+- PROOF-55 (RULE-14): In a project whose git tracks `src/app.py`, a spec `login` scoped `src/gone.py` alone is reported with `1 spec's > Scope: finds no file in git yet, so its tests run every time: login. Commit the files it names, or run purlin:spec login to correct it.` and with no line saying `which finds no file in git`
 - PROOF-61 (RULE-26): A spec holding `RULE-1`, `RULE-2` and `RULE-3` and the line `> Highest-Rule: 12` is read with exactly three rules, `RULE-1`, `RULE-2` and `RULE-3`
 - PROOF-62 (RULE-26): A spec carrying `> Highest-Rule: 12` has the same fingerprint, all three parts, as the same spec with that line taken out
 - PROOF-63 (RULE-26): A spec whose `> Description: Signing in.` stands directly above `> Highest-Rule: 12` is read with the description `Signing in.`, the same as with no such line
