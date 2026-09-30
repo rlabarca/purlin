@@ -5,6 +5,7 @@
 >   returned, and how they name the next step.
 > Scope: skills/status/SKILL.md
 > Stack: markdown, Claude Code skill definition
+> Highest-Rule: 11
 
 ## Rules
 
@@ -17,6 +18,7 @@
 - RULE-4: The whole of `skills/status/SKILL.md` is at most 100 lines
 - RULE-5: The skill tells the agent what to print for `purlin:status <name>` and what to do when several specs or none match
 - RULE-9: `references/purlin_commands.md` names the form `purlin:status [name]`
+- RULE-11: The skill tells the agent to call `sync_status` with the project root, the top folder of the git checkout, as `project_root`
 
 ## Proof
 
@@ -33,3 +35,4 @@
 - PROOF-5 (RULE-5): The status skill's usage shows `purlin:status <name>` on one line with `One spec: its rules and their cells`, and the skill says `Naming a spec shows its rules and their standing.`
 - PROOF-31 (RULE-5): The status skill's section `With a name` says that when several specs match it will `list them and ask which one`, that when none does it will `print the whole table`, and that otherwise it will `print its path, its header, and one line per rule with the cells the gate creates`
 - PROOF-29 (RULE-9): The plugin's command reference names the command `purlin:status [name]`
+- PROOF-35 (RULE-11): The status skill's first call of `sync_status`, in Step 1, reads ``Call `sync_status` with `project_root` set to the project root, the top folder of the git checkout.``

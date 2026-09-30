@@ -20,7 +20,7 @@ Plain language reaches the same place: "where are we", "what is left", "show the
 
 ## Step 1: call the tool
 
-Call `sync_status()`.
+Call `sync_status` with `project_root` set to the project root, the top folder of the git checkout.
 
 ## Step 2: print the table
 

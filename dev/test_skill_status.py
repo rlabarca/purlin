@@ -108,6 +108,34 @@ class TestPrintWhatTheToolReturned:
              "does not carry 'Print the sentence and the `Left to do` lines"),
         ]) == []
 
+FIRST_CALL = ('Call `sync_status` with `project_root` set to the project root, '
+              'the top folder of the git checkout.')
+
+
+class TestTheFirstCall:
+
+    # purlin: skill_status PROOF-35
+    def test_the_first_call_names_the_project_root(self, monkeypatch):
+        assert first_call_problems() == []
+        assert refusals(monkeypatch, first_call_problems, [
+            (REL, replace(FIRST_CALL, 'Call `sync_status()`.'),
+             'Step 1 does not carry %r' % FIRST_CALL),
+        ]) == []
+
+
+def first_call_problems():
+    """The first `sync_status` in the skill is the call in Step 1, and it
+    names the project root."""
+    text = read(REL)
+    body = flat(section(text, r'^Step 1\b') or '')
+    problems = []
+    if FIRST_CALL not in body:
+        problems.append('Step 1 does not carry %r' % FIRST_CALL)
+    elif flat(text).index('`sync_status`') != flat(text).index(FIRST_CALL) + 5:
+        problems.append('%s calls `sync_status` before Step 1' % REL)
+    return problems
+
+
 def status_number_problems():
     return carries(REL, [
         PRINTS + ' Never recount them: the command line and the dashboard '
