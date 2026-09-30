@@ -313,7 +313,7 @@ def build_sample(base):
                       '--yes'))
     write(other, 'specs/shop/cart.md', CART_SPEC)
     write(other, 'src/cart.py', CART_CODE)
-    write(other, 'tests/test_cart.py', CART_TESTS)
+    write(other, 'tests/cart_check.rb', CART_TESTS)
     commit(other, 'the cart')
     printed['no-tool'] = test_run(other, '--feature', 'cart')
     return printed
