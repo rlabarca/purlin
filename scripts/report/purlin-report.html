@@ -54,7 +54,6 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .os.none{border-color:var(--border-hairline);color:var(--text-muted)}
 .btn{display:inline-flex;align-items:center;gap:var(--space-2);font-size:var(--ui-sm);letter-spacing:.01em;padding:6px 16px;border-radius:var(--radius-pill);border:1.5px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;transition:background var(--duration-fast) var(--ease-standard)}
 .btn:hover{background:var(--hover-tint)}
-.btn.glyph{padding:4px 12px;font-size:var(--ui-base);line-height:1}
 .panel{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);padding:var(--space-6)}
 .notice{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4) var(--space-6);background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);margin-bottom:var(--space-5);font-size:var(--ui-base);color:var(--text-primary)}
 .notice-text{min-width:0}
@@ -162,8 +161,7 @@ function logoSrc() {
 }
 function themeButton() {
   var next = currentTheme() === 'light' ? 'Dark theme' : 'Light theme';
-  return '<button class="btn glyph" data-act="theme" title="' + next
-    + '" aria-label="' + next + '">\u25d0</button>';
+  return '<button class="btn" data-act="theme">' + next + '</button>';
 }
 var VERSION_KINDS = ['to_tag', 'to_correct'];
 function leftLabel(item) {
@@ -396,7 +394,7 @@ function proofsToggle(rule, shown) {
 function proofsUnder(rule) {
   var proofs = rule.proofs || [];
   var body = proofs.length ? proofs.map(function (proof) {
-    return '<div class="proof">' + proofDetail(proof) + '</div>';
+    return '<div class="proof">' + proofDetail(proof, rule.feature) + '</div>';
   }).join('')
     : (rule.tests || []).length ? '<div class="proof"><dl class="kv">'
       + '<dt>Tests</dt><dd class="ptests">' + testLines(rule.tests)
@@ -492,7 +490,7 @@ function auditPanel(rule) {
   var findings = (audit && audit.findings) || [];
   var answer = audit ? audit['verdict'] : null;
   if (!audit) {
-    lines.push(line('No audit has read this rule\u2019s text, proof and '
+    lines.push(line("No audit has read this rule's text, proof and "
       + 'test yet.'));
   } else if (answer === 'strong' && !findings.length) {
     lines.push(line('Strong. It found nothing.'));
@@ -504,7 +502,7 @@ function auditPanel(rule) {
   }
   findings.forEach(function (text) { lines.push(line(text)); });
   if (cell.strength != null) {
-    lines.push(line('Test strength ' + Math.round(cell.strength) + '%, against '
+    lines.push(line('Test strength ' + Math.floor(cell.strength) + '%, against '
       + 'a minimum of ' + minStrength() + '%.'));
   }
   if (audit) {
@@ -551,13 +549,19 @@ function signPanel(feature, rule) {
   }
   var hand = rule.left === 'to_test_by_hand';
   return '<div class="panel"><h2>' + (hand ? 'Hand check' : 'Signature')
-    + '</h2><p><span class="cmd">' + esc('purlin:sign ' + feature.name + ' '
-      + rule.id) + '</span> <span class="sec">from Claude Code</span></p>'
+    + '</h2>' + typeLine('purlin:sign ' + feature.name + ' ' + rule.id, '')
     + '<p class="sec">' + (hand ? 'A hand check is you checking the rule and '
         + 'signing it in one act; purlin:sign asks what you saw and records '
         + 'it. The page shows it once it is committed.'
       : 'A signature is a signed commit that names its signer; the page '
         + 'shows it once it is committed.') + '</p></div>';
+}
+function typeLine(command, before) {
+  return '<p class="sec"><span>' + esc(before) + 'Type <span class="cmd">'
+    + esc(command) + '</span> in Claude Code.</span></p>';
+}
+function noTestLine(owner) {
+  return typeLine('purlin:build ' + owner, 'No test yet. ');
 }
 var TEST_WORDS = {pass: 'passed', fail: 'failed', missing: 'not run',
   'not run': 'not run'};
@@ -574,12 +578,13 @@ function testLines(tests) {
       + esc(t.name).split('::').join('::<wbr>') + '</span></p>';
   }).join('');
 }
-function proofDetail(proof) {
+function proofDetail(proof, owner) {
   var tags = (proof.manual ? ['@manual'] : [])
     .concat(proof.env ? ['@env(' + proof.env + ')'] : []);
-  var tests = testLines(proof.tests) || '<p class="sec">'
-    + (proofWord(proof) === 'not run' ? 'No run has listed its tests yet.'
-      : 'No test yet.') + '</p>';
+  var tests = testLines(proof.tests)
+    || (proofWord(proof) === 'not run'
+      ? '<p class="sec">No run has listed its tests yet.</p>'
+      : noTestLine(owner));
   return '<dl class="kv">'
     + '<dt>' + esc(proof.id) + '</dt><dd>' + esc(proof.text) + '</dd>'
     + '<dt>Result</dt><dd>' + pill(proofWord(proof)) + '</dd>'
@@ -587,18 +592,18 @@ function proofDetail(proof) {
       : '')
     + '<dt>Tests</dt><dd class="ptests">' + tests + '</dd></dl>';
 }
-function proofPanel(proof) {
-  return '<div class="panel">' + proofDetail(proof) + '</div>';
+function proofPanel(proof, owner) {
+  return '<div class="panel">' + proofDetail(proof, owner) + '</div>';
 }
 function testsSection(rule) {
   var tests = rule.tests || [];
   if (!tests.length && showsProofs()) { return ''; }
-  var lines = testLines(tests) || '<p class="sec">No test yet.</p>';
+  var lines = testLines(tests) || noTestLine(rule.feature);
   return '<section><p class="eyebrow">Tests</p><div class="panel tests">'
     + lines + '</div></section>';
 }
 function backLink() {
-  return '<button class="btn" data-act="close">← Board</button>';
+  return '<button class="btn" data-act="close">Back to the board</button>';
 }
 function renderRule() {
   var found = ruleInView();
@@ -629,7 +634,9 @@ function renderRule() {
     + auditPanel(rule) + signPanel(feature, rule) + '</section>'
     + (showsProofs() ? '<section><p class="eyebrow">Proofs</p>'
       + '<div class="stack">' + ((rule.proofs || []).length
-        ? rule.proofs.map(proofPanel).join('')
+        ? rule.proofs.map(function (proof) {
+          return proofPanel(proof, rule.feature);
+        }).join('')
         : '<div class="panel sec">No proof written.</div>')
       + '</div></section>' : '')
     + testsSection(rule);
