@@ -9,8 +9,8 @@ other page points here rather than defining it again.
 - **spec**: one Markdown file under `specs/<category>/<name>.md`, with a `## Rules` section and
   a `## Proof` section. **feature**: what a spec describes, named by its file. **scope**: the
   `> Scope:` line, the files the feature's code lives in. It is optional below the gate
-  `signed` and required at `signed`, where a rule of a spec that names no files cannot be
-  signed.
+  `signed` and required at `signed`, where a rule of a spec that names no files is signed and
+  its signature does not count.
 - **rule**: one line in a spec saying what must be true, `RULE-<n>`.
 - **proof**: one line in a spec saying in plain language how a rule is shown to hold,
   `PROOF-<n> (RULE-<n>)`. QA writes and reviews proofs, and AI may draft them against the
@@ -111,13 +111,16 @@ other page points here rather than defining it again.
   `@env` for a system this machine is not. What it runs is in `references/hard_gates.md`,
   "Where a runner runs". **remote
   run**: `purlin:test --remote`, which pushes a **run branch**, `run/<branch>-<sha7>`, waits
-  for the runner and pulls its evidence back. **tag run**: the run a pushed `signed/*` tag
+  for the runner and pulls its evidence back. **runner file**: the file setup writes for the
+  git host, `.github/workflows/purlin.yml` or `azure-pipelines.yml`, with one job for each
+  system a proof is tagged `@env` for that the machine running setup is not. **tag run**: the run a pushed `signed/*` tag
   starts, which runs the tests and nothing else.
 - **drift**: `purlin:drift`, the facts your last pull, merge, rebase, checkout, clone or reset
   brought in, in one view per role: `pm`, `eng` or `qa`.
 - **role**: product, developer or QA. There are no others.
 - **anchor**: a spec for something shared across features, under `specs/_anchors/`, a folder
-  created with the first anchor. **pinned anchor**: a local copy of an anchor from another
+  created with the first anchor. A feature spec names the anchors whose rules apply to it with
+  `> Requires:`; `> Requires:` names anchors only. **pinned anchor**: a local copy of an anchor from another
   repository, tied to a commit by `> Pinned:`. **anchor repo**: a repository that holds anchors
   for one or more projects.
 

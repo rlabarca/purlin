@@ -20,9 +20,9 @@ Three commands carry the three steps: `purlin:test` runs the tests and writes wh
 `references/hard_gates.md` says which steps a project asks for. **The folder an evidence file
 sits in is its source**: `purlin:test` and `purlin:audit` write yours under
 `.purlin/evidence/local/`, and commit it only with `--commit`; the CI job runs the same run
-script in an arm of its own and writes its section under `.purlin/evidence/ci/`, which it
-always commits. That arm is the workflow's to pass and nobody types it. Both sources count at
-every gate, `signed` included.
+script and writes its section under `.purlin/evidence/ci/`, which it always commits. That job
+is the workflow's to run and nobody types it. Both sources count at every gate, `signed`
+included.
 
 ## Core
 
@@ -30,7 +30,7 @@ every gate, `signed` included.
 |---------|---------|------------------------|
 | `purlin:spec <name>` | Turn a requirement in any form into rules and proofs | A developer's agent, or product or QA in Claude Code, at intake and whenever a rule turns out to be wrong |
 | `purlin:build [name]` | Load a spec's rules, write the code and the marked tests, commit the changeset | A developer, on every change. With no name it reads `sync_status` and names the specs with rules that have no passing test. It repairs a marker comment that is nearly right, and ends by running `purlin:test` |
-| `purlin:test [feature ...] [--all]` | Run the marked tests and print each rule's passed cell | A developer, constantly. Seconds; tests only. The first run in a project with no test command suggests one for each test tool it recognises and runs once you confirm it. It writes the evidence, commits it with `--commit`, and never pushes |
+| `purlin:test [feature ...] [--all] [--arm-timeout <seconds>]` | Run the marked tests and print each rule's passed cell | A developer, constantly. Seconds; tests only. The first run in a project with no test command suggests one for each test tool it recognises and runs once you confirm it. It writes the evidence, commits it with `--commit`, and never pushes |
 | `purlin:audit [feature ...] [--all] [--arm-timeout <seconds>]` | Run the tests, the breaks where mutation testing is on, and the AI audit, then write what it found into the evidence | A developer, any time. It writes the evidence, commits it with `--commit`, and never pushes |
 | `purlin:sign [feature] [RULE-N ...] [--all]` | Sign a rule, a feature or every rule that waits for a person, as a signed commit | Anyone with a key to sign with; the signature names them. With no argument it walks the rules waiting for someone to test by hand or to sign. It works at every gate |
 | `purlin:drift [role]` | Report what changed since your last pull, by role | Everyone, after a pull, a merge, a rebase, a checkout, a clone or a reset |
@@ -39,7 +39,7 @@ every gate, `signed` included.
 
 | Command | Purpose | Who runs it, and when |
 |---------|---------|------------------------|
-| `purlin:init` | Set a project up for Purlin, and change the gate later | A developer, once. Two questions at most: the gate, and at `strong` and `signed` whether to break the code on purpose |
+| `purlin:init` | Set a project up for Purlin, and change the gate later | A developer, once. Three questions at most: the gate, at `strong` and `signed` whether to break the code on purpose, and whether to commit what it wrote |
 | `purlin:anchor <cmd>` | Create anchors, pull them from another repository, and keep the pins current | A developer, or product in Claude Code |
 | `purlin:status [name]` | Show every rule's cells and what blocks the gate | Anyone with a checkout, any time; with a name, to see one spec's rules |
 | `purlin:export` | Write the evidence package for a version, the data file a regulated system of record reviews | Anyone, any time, at any gate; at the gate `signed`, `purlin:sign` writes it too, into the commit the tag names |
@@ -111,7 +111,7 @@ Purlin
 | `purlin:audit` | The same section, plus what the audit found under `audit`, in `.purlin/evidence/local/<feature>.json`, which `--commit` commits in the same two commits; it never pushes |
 | `purlin:sign` | `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, in a signed commit, one file per feature an anchor's rule applies to. Proof lines in a spec when the walk adds a case. `VERSION` when you name the version and agree to write it. At the gate `signed` alone, the signed tag `signed/<version>` when nothing is left to do and every result came from committed work, on a signed commit carrying the evidence package `.purlin/evidence/package/<version>.json`, which a person pushes |
 | `purlin:export` | `.purlin/evidence/package/<version>.json`, which `--commit` commits as `purlin: evidence at <sha7>`; it never pushes |
-| `purlin:init` | `.purlin/`, `specs/`, `.purlin/config.json` with an empty `tests` setting, a block in `.gitignore`, `.purlin/evidence/` with its README, `purlin-report.html` at the project root, mutmut's config block where mutation testing is on, and the workflow when a proof names another system and the git host is GitHub or Azure DevOps. It commits nothing. `--update` commits what it applied as `chore(update): migrate to <VERSION> (<ids>)` |
+| `purlin:init` | `.purlin/`, `specs/`, `.purlin/config.json` with an empty `tests` setting, a block in `.gitignore`, `.purlin/evidence/` with its README, `purlin-report.html` at the project root, mutmut's config block where mutation testing is on, and the workflow when a proof names another system and the git host is GitHub or Azure DevOps. It commits the files it wrote in one commit, `chore(init): set up Purlin at the gate <gate>`, once you agree or with `--yes`. `--update` commits what it applied as `chore(update): migrate to <VERSION> (<ids>)` |
 | `purlin:anchor` | `specs/_anchors/<name>.md`, creating `specs/_anchors/` with the first anchor |
 | `purlin:status` | `.purlin/report-data.js`, the data the dashboard reads, which git ignores |
 | `purlin:drift` | Nothing |
@@ -152,7 +152,9 @@ A run that stops before running anything writes nothing and names the command th
   tool, then for each tool it recognises `Suggested for <name>: <run>` followed by what that
   tool needs added where it needs something, then
   `Suggested tests setting: <the entries as one JSON array on one line>`.
-- `No test command is set in .purlin/config.json, and no test tool Purlin knows was found, so nothing ran. Run purlin:test to have one proposed.`
+- `No test command is set and no test tool Purlin knows was found, so nothing ran. The agent reads the project and proposes a command for you to confirm.`
+- `purlin:test --remote waits for the run with the GitHub CLI, gh, which is not installed, so nothing was pushed. Install gh, then run purlin:test --remote again.`
+- `purlin:test --remote waits for the run with the Azure CLI, az, which is not installed, so nothing was pushed. Install az with its azure-devops extension, then run purlin:test --remote again.`
 
 A run names each rule where it reports the problem:
 

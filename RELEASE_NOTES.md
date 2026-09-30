@@ -37,7 +37,7 @@ anything in your test suite: a test is any test in your own suite with one comme
 - **A run covers what the change touched.** `purlin:test` with no feature named runs only the
   features that are out of date or have no run on this operating system, and prints what it
   selected and why, `Selected 2 of 34 features: login (code changed since a1b2c3d), invoice (no
-  run on macos yet).` `purlin:test --all` runs everything.
+  run on macOS yet).` `purlin:test --all` runs everything.
 - **The audit calls a model.** `purlin:audit` runs the tests, then one model call per rule,
   four at a time by default (`audit_parallel`, 1 to 16), and writes what it found into the
   evidence with the model's name on every finding. From the gate `strong` up a finding makes
@@ -85,6 +85,13 @@ anything in your test suite: a test is any test in your own suite with one comme
   naming the spec, the mistake and the command that fixes it, and carry on: a `> Scope:` entry
   that finds no file, two specs with one name, a rule number written twice, a proof line that
   cannot be read, and a first heading that names another feature.
+- `> Requires:` names anchors only. A name that is a feature's spec is warned of, and its rules do not apply.
+- A spec records the highest rule number it has held in `> Highest-Rule:`, so a deleted number is never used again. The spec format is at version 19.
+- `purlin:init` asks whether it may commit the files it wrote, and with `--yes` commits them as `chore(init): set up Purlin at the gate <gate>`.
+- `purlin:test --remote` with no `gh` on GitHub or no `az` on Azure DevOps pushes nothing and names the program to install.
+- The first test run keeps running examples inside a function's documentation where the project's own test command ran them.
+- At the gate `signed`, signing a rule whose spec names no files says, on that rule's line, that the signature does not count until the spec names them.
+- Every system a person reads is written `Windows`, `macOS` or `Linux/Unix`.
 
 ### What changed, and what you do differently
 
@@ -198,9 +205,9 @@ The run goes in this order:
     xUnit logger for you to edit by hand.
 13. It commits everything it changed in one commit,
     `chore(update): migrate to 0.10.0 (<ids>)`.
-14. It names each spec with no `> Scope:` line, `2 specs have no > Scope: line: a, b. Run
-    purlin:spec <name> to add one. The line is optional below the gate signed and required at
-    signed.`, and changes none.
+14. It names each spec with no `> Scope:` line,
+    `2 specs name no files, so their tests run every time: a, b. Run purlin:spec with each name to add its > Scope: line.`,
+    and changes none.
 15. It ends as `purlin:status` does, on the summary and `Left to do`.
 
 After it, run `purlin:test`. The receipts and `@manual` stamps 0.9.5 wrote do not carry

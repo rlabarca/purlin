@@ -19,7 +19,7 @@ to this page rather than restating it.
 A rule goes through up to three steps, `passed`, `strong` and `signed`, each containing the one
 before, and the answer to each is a **cell**. `gate` in `.purlin/config.json` says how many of
 the three the project asks, and every rule is asked what the gate asks. `purlin:init` asks the one
-question that sets it: `What must be true of every rule before a version is proven?`
+question that sets it: `What must be true of every rule before a version is finished?`
 
 | Gate | Who it fits | Cells that exist | What every rule must have |
 |------|-------------|------------------|---------------------------|
@@ -243,8 +243,8 @@ what moves it is `purlin:audit`, not a person.
 - Committing without running an audit.
 - A rule whose passed cell reads `out of date`. The spec, the code or the tests moved; the next
   run clears it.
-- A proof tagged `@env` for a system this machine is not. It is listed as `<os>: no run yet`,
-  and a remote run proves it.
+- A proof tagged `@env` for a system this machine is not. It is listed as
+  `<System>: no run yet`, and a remote run proves it.
 - Pushing a branch. A push is a person's act, to any branch, and Purlin runs nothing at push
   time or at commit time.
 
@@ -257,8 +257,9 @@ source and when it ran, and the cell's own word rolls them up. Where two systems
 a current section disagree the cell reads `partial`: a rule whose tests pass on Linux/Unix and
 fail on Windows is neither passed nor failed, `partial` is not met, and the rule is left to do
 as `to fix`, as a failure is. A system a proof is tagged `@env` for with no current section
-makes the cell read `not run`, with the reason `<os>: no run yet`. Test strength does not depend
-on the system: the paragraph under the gate table says how it is measured.
+makes the cell read `not run`, with the reason `<System>: no run yet`, for example
+`Windows: no run yet`. Test strength does not depend on the system: the paragraph under the
+gate table says how it is measured.
 
 ## What stands behind an instruction
 

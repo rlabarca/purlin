@@ -15,7 +15,8 @@ its findings for each rule it reached"). First person never appears. The product
 "we".
 
 **Casing.** Sentence case for titles, buttons and body. Uppercase is reserved for state badges
-("PASSED", "STRONG", "SIGNED"). Command names are always lowercase with the colon:
+("PASSED", "STRONG", "SIGNED"). On the dashboard the design also sets small labels in capitals,
+such as `563 RULES TOTAL`. Command names are always lowercase with the colon:
 `purlin:audit`, never `Purlin Audit`.
 
 **What is, not what was.** A page says what the software does now. It does not say what an
