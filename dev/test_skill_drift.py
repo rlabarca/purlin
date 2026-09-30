@@ -62,6 +62,14 @@ class TestSkillDrift:
             (COMMAND_REF, replace(row, ROW_START + ' |'), NO_ROW),
             (COMMAND_REF, removed, NO_ROW)]) == []
 
+    # RULE-10: the role, inferred and named.
+
+    # purlin: skill_drift PROOF-36
+    def test_it_infers_the_role_and_says_which(self):
+        assert carries(SKILL, [
+            'With no role, infer one from the files the session has touched',
+            'Say which you chose before the view']) == []
+
     # RULE-2: the tool, the lines as they come, and the criteria.
 
     # purlin: skill_drift PROOF-2

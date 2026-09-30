@@ -4,6 +4,7 @@
 >   pull, in one view per role, `pm`, `eng` and `qa`, and it writes nothing.
 > Scope: skills/drift/SKILL.md
 > Stack: markdown, Claude Code skill definition
+> Highest-Rule: 10
 
 ## Rules
 
@@ -12,6 +13,7 @@
 - RULE-3: The last section of `skills/drift/SKILL.md` names the next step in a table that gives, for each kind of line the three views print and for a view that shows no change, the `→` directive to print when the view shows it
 - RULE-4: The whole of `skills/drift/SKILL.md` is at most 150 lines
 - RULE-5: `references/purlin_commands.md` carries a row for `purlin:drift` in its command table, with its purpose
+- RULE-10: The skill tells the agent to infer the role from the files the session touched and to say which it chose
 
 ## Proof
 
@@ -27,3 +29,4 @@
 - PROOF-4 (RULE-4): The drift skill, counted line by line, is at most 150 lines long
 - PROOF-34 (RULE-4): A copy of the drift skill lengthened with lines of prose to exactly 150 lines is reported as having no problem
 - PROOF-35 (RULE-4): A copy of the drift skill lengthened with lines of prose to 151 lines is reported as being 151 lines against its ceiling of 150
+- PROOF-36 (RULE-10): The drift skill, read across its line breaks, says `With no role, infer one from the files the session has touched` and `Say which you chose before the view`
