@@ -122,8 +122,9 @@ anything in your test suite: a test is any test in your own suite with one comme
   is named in the warnings.
 - **Rule tags.** Nothing reads `(deferred)`, `(assumed ...)` or `(confirmed)`; the text stays
   in the rule's words, and a rule that carried `(deferred)` needs a test like any other.
-- **`> Scope:`** is required at the gate `signed`, where a spec that names no files cannot be
-  signed. Below `signed` it is optional; a spec without one runs on every `purlin:test`.
+- **`> Scope:`** is required at the gate `signed`, where a rule of a spec that names no files is
+  signed and its signature does not count. Below `signed` it is optional; a spec without one
+  runs on every `purlin:test`.
 - **The dashboard** refreshes when `purlin:test`, `purlin:audit`, `purlin:sign` or
   `purlin:status` finishes, and at no other time. Its data, `.purlin/report-data.js`, is not
   committed. It opens from disk.

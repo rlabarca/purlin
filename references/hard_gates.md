@@ -198,8 +198,8 @@ This is the one definition of the tag. Every other page points here.
 At the tagged commit nothing is left to do at the gate `signed`: every rule's passed cell is
 met over evidence current for its spec, its code and its tests, every rule's strong cell is
 met, and every rule has a counting signature. At the gate `signed` a rule whose spec names no
-files in `> Scope:` cannot be signed, because a signature cannot be tied to the code it
-governs.
+files in `> Scope:` is signed and its signature does not count, because a signature cannot be
+tied to the code it governs.
 
 `purlin:sign` writes the tag only at the gate `signed`, as a signed tag (`git tag -s`), and
 never over a tag that is already there. It writes it only when both hold:

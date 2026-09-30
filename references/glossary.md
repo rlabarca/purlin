@@ -112,7 +112,7 @@ other page points here rather than defining it again.
   "Where a runner runs". **remote
   run**: `purlin:test --remote`, which pushes a **run branch**, `run/<branch>-<sha7>`, waits
   for the runner and pulls its evidence back. **runner file**: the file setup writes for the
-  git host, `.github/workflows/purlin.yml` or `azure-pipelines.yml`, with one job for each
+  git host, `.github/workflows/purlin.yml` or `purlin.azure-pipelines.yml`, with one job for each
   system a proof is tagged `@env` for that the machine running setup is not. **tag run**: the run a pushed `signed/*` tag
   starts, which runs the tests and nothing else.
 - **drift**: `purlin:drift`, the facts your last pull, merge, rebase, checkout, clone or reset
