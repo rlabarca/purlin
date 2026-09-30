@@ -28,7 +28,8 @@ def brand():
     svg = svg.replace('width="670" height="330"', 'aria-label="Purlin" style="width:106px; height:52px"')
     return ('<div style="position:absolute; right:128px; top:80px; width:260px; display:flex; align-items:center; '
             'justify-content:flex-end; gap:16px">%s<p style="font-size:36px; font-weight:600; color:#E4DDD4">Purlin</p></div>' % svg)
-def slide(sid, eyebrow, headline, rows, closing, notes, lead='', width=620, gap=20, pad=18):
+# numbers=False drops the count at the start of each row: a slide with one case has nothing to count.
+def slide(sid, eyebrow, headline, rows, closing, notes, lead='', width=620, gap=20, pad=18, numbers=True):
     out = [SECTION % (sid, gap),
            '<p style="font-size:24px; letter-spacing:3px; text-transform:uppercase; color:#C0793F">%s</p>' % eyebrow,
            '<h2 style="font-size:64px; font-weight:600; line-height:1.1">%s</h2>' % headline]
@@ -38,7 +39,7 @@ def slide(sid, eyebrow, headline, rows, closing, notes, lead='', width=620, gap=
     for i, row in enumerate(rows, 1):
         name, what, parts = row[0], row[1], row[2] if len(row) > 2 else ()
         head = CMD % (width, name.strip('`'))
-        lines = [LINE % (NUM % i + head + WHAT % what)]
+        lines = [LINE % ((NUM % i if numbers else '') + head + WHAT % what)]
         lines += [PART % (width, part, said) for part, said in parts]
         out.append(CARD % (pad, ''.join(lines)))
     out.append('<div style="flex:1"></div>')
@@ -127,7 +128,7 @@ slide('remote', 'Remote runners', 'When does Purlin use a remote runner in your 
  'One reason and no other. Where a runner exists it runs on a pushed signed tag and on the run '
  'branch purlin:test --remote creates, waits on and deletes. A result counts wherever it ran, and '
  'each records the machine and the operating system it came from.',
- lead='A remote runner is a machine your git host starts to run a job, as GitHub Actions does.')
+ lead='A remote runner is a machine your git host starts to run a job, as GitHub Actions does.', numbers=False)
 slide('regulated', 'Regulated work', 'Purlin supplies evidence. It does not claim compliance.', [
     ('Purlin produces', 'Evidence for each rule: its tests and their results, what the audit found, and who signed.'),
     ('You hand over', 'The evidence package: one file for the version, made by %s.' % m('purlin:export')),
