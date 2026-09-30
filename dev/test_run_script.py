@@ -1359,8 +1359,9 @@ class TestTheAuditCallsTheModel:
         """The warning is printed once, with the status table, as every
         warning resolving the settings raised is."""
         lines = output.splitlines()
-        warning = ('"audit_parallel" is %s, which is not a whole number from '
-                   '1 to 16; reading it as 4' % shown)
+        warning = ('%s is not accepted for audit_parallel in '
+                   '.purlin/config.json; it takes a whole number from 1 to 16. '
+                   'Reading it as 4; fix the file by hand.' % shown)
         assert lines.count(warning) == 1, output
         assert lines.index(warning) > lines.index(next(
             line for line in lines if line.startswith('Purlin status:'))), \
@@ -1399,7 +1400,7 @@ class TestTheAuditCallsTheModel:
     def test_a_word_reads_as_four_with_the_warning(
             self, tmp_path, evidence_run, claude, capsys):
         self._warned(self._five_rules_at(tmp_path, evidence_run, capsys,
-                                         'four'), "'four'")
+                                         'four'), '"four"')
 
     # purlin: run_script PROOF-72
     def test_the_line_is_printed_before_the_first_call(
@@ -2355,7 +2356,8 @@ class TestARunCoversWhatTheChangeTouched:
         assert code == 0, output
         purlin_run = _load_run_script()
         assert _selection(output) == {
-            'invoice': 'no run on %s yet' % purlin_run.host_os()}, output
+            'invoice': 'no run on %s yet' % purlin_evidence.os_word(
+                purlin_run.host_os())}, output
         assert ('Skipped 2 features whose spec, code and tests match their '
                 'evidence: export, login. purlin:test --all runs them too.'
                 in output), output
