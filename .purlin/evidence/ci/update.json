@@ -2,15 +2,15 @@
   "feature": "update",
   "platforms": {
     "windows": {
-      "at": "2026-09-29T23:37:52Z",
-      "commit": "f17c92d391ea71379c8537f7305ac5e634d133c9",
+      "at": "2026-09-30T00:38:21Z",
+      "commit": "d8216d8e91544ea3395083eb19ccd9efaf8c0deb",
       "dirty": false,
       "fingerprint": {
         "code": "4f7b411615431184e0c2b23c2626794ce05894274d29e4b10e4975d9d21a7845",
-        "spec": "b328044f83b0752da999f04ddf033ab18e8834598e55d0294c0b7355b6bed45f",
-        "tests": "edcc019cff5311023afbaaa3a4fea6d036a107723d2d7e780e97b2813c427f82"
+        "spec": "8fb104619b5695eff020f29ec3bc1279da5b5149d84c4e7326fbb329bb068a8a",
+        "tests": "9c4beceef5817cae324bdd92de130536f0032f1f5485a80757b0ee4055acaad5"
       },
-      "hostname": "runnervm99s1a",
+      "hostname": "runnervmfi6oq",
       "machine": "remote runner, Windows",
       "proofs": [
         {
@@ -41,7 +41,7 @@
           "env": "windows",
           "id": "PROOF-121",
           "manual": false,
-          "result": "fail",
+          "result": "pass",
           "rule": "RULE-18",
           "test": "dev/test_init_update.py::test_nothing_is_left_uncommitted_but_the_backups"
         },
@@ -96,7 +96,7 @@
       ],
       "rules": {
         "RULE-13": "passed",
-        "RULE-18": "failed",
+        "RULE-18": "passed",
         "RULE-23": "passed",
         "RULE-24": "passed",
         "RULE-28": "passed",

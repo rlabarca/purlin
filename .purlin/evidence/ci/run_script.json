@@ -2,22 +2,22 @@
   "feature": "run_script",
   "platforms": {
     "windows": {
-      "at": "2026-09-29T23:37:51Z",
-      "commit": "f17c92d391ea71379c8537f7305ac5e634d133c9",
+      "at": "2026-09-30T00:38:20Z",
+      "commit": "d8216d8e91544ea3395083eb19ccd9efaf8c0deb",
       "dirty": false,
       "fingerprint": {
-        "code": "1978b9a4e0ca5800dbf585e520b02d54ac309c08c206149c165fbc2c30161509",
+        "code": "090ffefdc96faa54354367ce11d729a88dff7c86f0bd9a7a8b08e26015526190",
         "spec": "eddd8edcecb075ecad1b514db534445ed983a9966fd3c2165b10e43e02ddd86f",
         "tests": "ef08e22a92dcb6f28e5e24dd42dd357bc1eda13ce6a6c35903ee26d37e45561f"
       },
-      "hostname": "runnervm99s1a",
+      "hostname": "runnervmfi6oq",
       "machine": "remote runner, Windows",
       "proofs": [
         {
           "env": "windows",
           "id": "PROOF-225",
           "manual": false,
-          "result": "missing",
+          "result": "pass",
           "rule": "RULE-4",
           "test": "dev/test_run_script.py::TestTheTestArmRunsEachSuite::test_a_sql_script_whose_statements_succeed_passes"
         },
@@ -99,7 +99,7 @@
         "RULE-12": "passed",
         "RULE-21": "passed",
         "RULE-39": "passed",
-        "RULE-4": "not run",
+        "RULE-4": "passed",
         "RULE-40": "passed",
         "RULE-43": "passed",
         "RULE-55": "passed",
