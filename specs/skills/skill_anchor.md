@@ -25,7 +25,6 @@
 - RULE-13: The skill tells the agent that an anchor repository is for rules two or more projects must share, and that one project keeps its anchors in `specs/_anchors/`
 - RULE-14: The skill tells the agent to commit a new anchor with the `anchor(<name>): create` prefix
 - RULE-15: The skill tells the agent that an anchor carries no `> Scope:`, since its rules cover the whole project, and that a rule not checkable across the whole project goes in the spec of each feature that needs it
-- RULE-16: The skill tells the agent that a rule of a pinned anchor that does not apply to this project is signed as not applying, with the reason, and that a rule of the project's own anchor that does not apply is deleted
 
 ## Proof
 
@@ -46,4 +45,3 @@
 - PROOF-35 (RULE-14): The anchor skill's section on `create`, read across its line breaks, says to commit the new anchor with the `anchor(<name>): create` prefix
 - PROOF-36 (RULE-15): The anchor skill's section on `create`, read across its line breaks, says ``An anchor carries no `> Scope:`: its rules cover the whole project``, and the only other metadata lines it names are `> Description:` and `> Type:`
 - PROOF-37 (RULE-15): The anchor skill's section on `create`, read across its line breaks, says a rule that cannot be checked across the whole project is not an anchor's and is written in the spec of each feature that needs it, with `purlin:spec <feature>`
-- PROOF-38 (RULE-16): The anchor skill's section `Changing a pinned rule`, read across its line breaks, says a rule of a pinned anchor that does not apply here is signed as not applying with `--does-not-apply "<why>"`, and a rule of the project's own anchor that does not apply is deleted

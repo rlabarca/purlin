@@ -6,7 +6,7 @@ description: Create anchors, pull them from another repository, and keep the pin
 # purlin:anchor
 
 An anchor is a set of rules for the whole project: a security policy, an API contract, a brand
-rule. Its tests check the whole project, and each of its rules is counted, audited and signed
+rule. Its tests check the whole project, and each of its rules is counted and audited
 once. No spec names an anchor.
 
 **Paths.** Every `references/` and `scripts/` path below is inside the plugin and is reached
@@ -74,8 +74,7 @@ Without `--check`, sync rewrites the local copy, advances the pin and prints wha
 `security_baseline: RULE-3 changed, RULE-6 added. Pin advanced from abc1234 to 9f8e7d6. Commit
 it as anchor(security_baseline): sync (9f8e7d6), then run purlin:test.` It commits nothing:
 commit the copy in one commit with the `anchor(<name>):` prefix, so the diff shows exactly
-which rules moved. A signature on a rule whose text moved ends, and the rule is back to
-`to sign`.
+which rules moved.
 
 ## Changing a pinned rule
 
@@ -87,17 +86,12 @@ A rule that belongs only to this project goes in a local anchor of its own when 
 the whole project, and in the spec of each feature it holds for when it does not. The pinned
 copy stays untouched.
 
-A rule of a pinned anchor that no test in this project can show, because it does not apply here,
-is signed by a person in the project as not applying, with the reason:
-`purlin:sign <anchor> RULE-N --does-not-apply "<why>"`. A rule of the project's own anchor that
-does not apply is deleted.
-
 ## When you are done
 
 Name the next step from the state:
 
 - Anchor created: `→ Run: purlin:build <name>`, which writes tests that check the whole project
-- Anchor added or synced, rules changed: `→ Run: purlin:test`, whose `Left to do` names what
-  the change sent back to be audited or signed.
+- Anchor added or synced, rules changed: `→ Run: purlin:test`, whose `Left to do` names the
+  rules the change left to test or fix.
 - Pin current and nothing moved: say so in one line, `→ Run: purlin:status`
 - Anchor refused, its source not a spec: `→ Run: purlin:anchor create <name>`

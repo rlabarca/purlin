@@ -171,8 +171,8 @@ ENDINGS = (
     ('1', 'Rules whose existing tests now carry their comments: '
           '`→ Run: purlin:test`'),
     ('2', 'Rules with no test at all: `→ Run: purlin:build <name>`'),
-    ('3', 'At the gate `passed`, with every rule passing and the team '
-          'wanting the paper trail: `→ Run: purlin:init --gate strong`'),
+    ('3', 'With every rule passing and the team wanting to know what its '
+          'tests are worth: `→ Run: purlin:audit`'),
 )
 
 
@@ -212,7 +212,8 @@ class TestWhenYouAreDone:
              'applies' % SKILL),
             (SKILL, swap_first('1. Rules whose', '2. Rules with'),
              '%s closing section has no step 1. %s' % (SKILL, ENDINGS[0][1])),
-            (SKILL, replace('3. At the gate `passed`, with', '3. With'),
+            (SKILL, replace('`→ Run: purlin:audit`',
+                            '`→ Run: purlin:init --gate signed`'),
              '%s closing section has no step 3. %s' % (SKILL, ENDINGS[2][1])),
             (SKILL, replace('`→ Run: purlin:build <name>`',
                             '`purlin:build <name>`'),

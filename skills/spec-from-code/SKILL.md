@@ -105,7 +105,7 @@ and note the behaviour in `> Description:`.
 - Do not copy an implementation into a rule. "Uses a Redis sorted set" is not a claim about
   the software's behaviour; "rejects the 61st request in a minute" is.
 - Do not write evidence or signatures. `purlin:test` and `purlin:audit` write the evidence,
-  and `purlin:sign` writes signatures.
+  and `purlin:sign` signs a release.
 
 ## When you are done
 
@@ -115,5 +115,5 @@ Report the counts, then name the first of these that applies:
    the test command and runs them.
 2. Rules with no test at all: `→ Run: purlin:build <name>` on the feature with the most of
    them.
-3. At the gate `passed`, with every rule passing and the team wanting the paper trail:
-   `→ Run: purlin:init --gate strong`.
+3. With every rule passing and the team wanting to know what its tests are worth:
+   `→ Run: purlin:audit`.

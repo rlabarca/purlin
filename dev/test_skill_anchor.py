@@ -138,8 +138,7 @@ class TestTheCeiling:
 class TestThePin:
     """RULE-5: a pin is a commit. RULE-10: a pinned rule is never edited
     here. RULE-11: a change goes upstream. RULE-12: a rule of this project
-    alone goes in a local anchor or in each feature's spec. RULE-16: a pinned
-    rule that does not apply is signed as not applying."""
+    alone goes in a local anchor or in each feature's spec."""
 
     # purlin: skill_anchor PROOF-5
     def test_a_pin_is_a_commit_never_a_branch(self, monkeypatch):
@@ -179,24 +178,6 @@ class TestThePin:
             (REL, replace('in the spec of each feature it holds for',
                           'in the pinned copy'),
              "Changing a pinned rule section does not carry %r" % LOCAL_RULE),
-        ]) == []
-
-    # purlin: skill_anchor PROOF-38
-    def test_a_pinned_rule_that_does_not_apply_is_signed_so(
-            self, monkeypatch):
-        assert does_not_apply_problems() == []
-        assert refusals(monkeypatch, does_not_apply_problems, [
-            (REL, replace(' --does-not-apply "<why>"', ' --note "<why>"'),
-             "Changing a pinned rule section does not carry %r"
-             % DOES_NOT_APPLY[1]),
-            (REL, replace('is signed by a person in the project as not '
-                          'applying', 'is edited in place'),
-             "Changing a pinned rule section does not carry %r"
-             % DOES_NOT_APPLY[0]),
-            (REL, replace("anchor that\ndoes not apply is deleted.",
-                          "anchor that\ndoes not apply is kept."),
-             "Changing a pinned rule section does not carry %r"
-             % DOES_NOT_APPLY[2]),
         ]) == []
 
 
@@ -288,11 +269,6 @@ PULL_REQUEST = 'a pull request against the source repository'
 LOCAL_RULE = ('A rule that belongs only to this project goes in a local anchor '
               'of its own when it holds across the whole project, and in the '
               'spec of each feature it holds for when it does not.')
-DOES_NOT_APPLY = ('is signed by a person in the project as not applying, with '
-                  'the reason',
-                  '`purlin:sign <anchor> RULE-N --does-not-apply "<why>"`',
-                  "A rule of the project's own anchor that does not apply is "
-                  'deleted.')
 NO_SCOPE = ('An anchor carries no `> Scope:`: its rules cover the whole '
             'project')
 EACH_FEATURE = ("A rule that cannot be checked across the whole project is not "
@@ -370,12 +346,6 @@ def changing_problems(needle):
         return []
     return ['%s Changing a pinned rule section does not carry %r'
             % (REL, needle)]
-
-
-def does_not_apply_problems():
-    body = changing_body()
-    return ['%s Changing a pinned rule section does not carry %r'
-            % (REL, needle) for needle in DOES_NOT_APPLY if needle not in body]
 
 
 def create_body():

@@ -12,7 +12,7 @@
 
 - RULE-1: `skills/spec-from-code/SKILL.md` opens with a frontmatter block whose `name` is `spec-from-code` and whose `description` is one non-empty line
 - RULE-2: Before its procedure, the skill tells the agent to call `sync_status` with `project_root` set to the project root, the top folder of the git checkout, and to run `purlin:init` first when the project carries no `.purlin/config.json`
-- RULE-3: The last section of `skills/spec-from-code/SKILL.md` tells the agent to name the first of three next steps that applies, in this order: `→ Run: purlin:test` for rules whose existing tests now carry their comments, `→ Run: purlin:build <name>` for rules with no test, and `→ Run: purlin:init --gate strong` at the gate `passed`
+- RULE-3: The last section of `skills/spec-from-code/SKILL.md` tells the agent to name the first of three next steps that applies, in this order: `→ Run: purlin:test` for rules whose existing tests now carry their comments, `→ Run: purlin:build <name>` for rules with no test, and `→ Run: purlin:audit` once every rule passes
 - RULE-4: The whole of `skills/spec-from-code/SKILL.md` is at most 130 lines
 - RULE-6: In its paragraph on an existing test that already shows what a proof asks, the skill tells the agent to offer to add the marker comment `purlin: <feature> PROOF-<n>` above that test and to write no new test
 - RULE-7: The skill tells the agent to end the report on the source files that got no rule, for a person or an agent to decide
@@ -45,7 +45,7 @@
 - PROOF-1 (RULE-1): The spec-from-code skill's file begins with a frontmatter block between two `---` lines; the block reads `name: spec-from-code` and carries a `description:` whose text sits whole on that same line
 - PROOF-125 (RULE-11): Purlin's command reference carries a table row whose first cell is the command `purlin:spec-from-code` with its arguments and whose second cell is not empty
 - PROOF-2 (RULE-2): The skill's section `Before you start`, placed before `Procedure`, says ``Call `sync_status` with `project_root` set to the project root, the top folder of the git checkout.`` and ``When the project has no `.purlin/config.json`, run `purlin:init` first.``
-- PROOF-3 (RULE-3): The skill's last section says `name the first of these that applies:` and lists, numbered 1 to 3 in this order, `→ Run: purlin:test`, `→ Run: purlin:build <name>` and `→ Run: purlin:init --gate strong`, the third beside ``At the gate `passed` ``
+- PROOF-3 (RULE-3): The skill's last section says `name the first of these that applies:` and lists, numbered 1 to 3 in this order, `→ Run: purlin:test`, `→ Run: purlin:build <name>` and `→ Run: purlin:audit`, the third beside `With every rule passing`
 - PROOF-4 (RULE-4): The spec-from-code skill's file, counted line by line, is at most 130 lines long
 - PROOF-141 (RULE-4): A copy of the skill padded with lines of prose to exactly 130 lines is accepted
 - PROOF-6 (RULE-6): The skill's paragraph on a test that `already shows what a proof asks` says `offer to add the marker comment above that test`, gives the marker `purlin: <feature> PROOF-<n>` and says `write no new test`
