@@ -17,7 +17,8 @@ through `${CLAUDE_PLUGIN_ROOT}`. A project carries none of them.
 purlin:build [<name>]
 ```
 
-With no name, call `sync_status` and read the state:
+With no name, call `sync_status` with `project_root` set to the project root, the top folder of
+the git checkout, and read the state:
 
 | What the state says | What you do |
 |---------------------|-------------|
@@ -94,15 +95,14 @@ purlin:test <name>
 ```
 
 Never run the test framework directly. `purlin:test` runs the project's own test command, ties
-each result to the marker above its test, writes the evidence and prints the state of each
-rule; where no test command is set it suggests one for each test tool it recognises and writes
-them once the person confirms, so write no entry yourself. It names every marker it could not
-tie to exactly one test, by file and line; fix each before going on. Iterate until every rule
-the feature owns has a passing test. A proof tagged `@env` for another operating system is not
-run here: the run counts such proofs in one line per system that names `purlin:test --remote`.
-
-Never write evidence or a signature by hand. `purlin:test` and `purlin:audit` write the
-evidence, `purlin:sign` writes signatures and the tag.
+each result to the marker above its test, writes the evidence and prints the state of each rule;
+where no test command is set it suggests one for each test tool it recognises and writes them
+once the person confirms, so write no entry yourself. It names every marker it could not tie to
+exactly one test, by file and line; fix each before going on. Iterate until every rule the
+feature owns has a passing test. A proof tagged `@env` for another operating system is not run
+here: the run counts such proofs in one line per system that names `purlin:test --remote`. Never
+write evidence or a signature by hand. `purlin:test` and `purlin:audit` write the evidence,
+`purlin:sign` writes signatures and the tag.
 
 ## Committing
 

@@ -5,6 +5,7 @@
 >   text decides what a commit says about which rule each change serves.
 > Scope: skills/build/SKILL.md
 > Stack: markdown, Claude Code skill definition
+> Highest-Rule: 17
 
 ## Rules
 
@@ -21,6 +22,7 @@
 - RULE-11: The skill tells the agent to leave Decisions out when every rule had one obvious implementation and Review out when nothing needs a second pass, as `references/commit_conventions.md` says
 - RULE-12: The skill tells the agent that a test's marker is one comment on the line above it, `purlin: <feature> PROOF-<n>`
 - RULE-13: The skill tells the agent that where a rule has no proof the marker names the rule's own id
+- RULE-17: The skill tells the agent to call `sync_status` with `project_root` set to the project root, the top folder of the git checkout
 
 ## Proof
 
@@ -38,3 +40,4 @@
 - PROOF-41 (RULE-13): One sentence of the build skill says that where a rule has no proof the marker names the rule, as in `purlin: login RULE-2`
 - PROOF-9 (RULE-8): The build skill gives, in a fenced block, the line `sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin/markers.py" --near-misses --project-root .`, in a section before the one on running the tests, and one sentence says to show each `fix` beside its `why`, ask, and make the edits accepted
 - PROOF-11 (RULE-9): The build skill's section on running the tests says that where no test command is set `purlin:test` suggests one for each test tool it recognises and writes them once the person confirms, and says `write no entry yourself`; nowhere does the skill name the `purlin_config` tool
+- PROOF-46 (RULE-17): The build skill's section on choosing what to build says ``call `sync_status` with `project_root` set to the project root, the top folder of the git checkout``

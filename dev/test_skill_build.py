@@ -10,7 +10,7 @@ import re
 
 from skill_checks import (carries, closing_outcomes, flat, frontmatter_problems,
                           frontmatter_refusals, in_order, next_step_problems,
-                          read, refusals, replace, section, sections,
+                          read, refusals, replace, resub, section, sections,
                           sentence_with, skill_ceiling_problems, skill_path,
                           table_rows, undirected_outcome_problems)
 
@@ -42,8 +42,9 @@ class TestSkillBuild:
             (SKILL, replace('```bash\npurlin:build [<name>]\n```',
                             '```bash\nnpx jest\n```'),
              "%s gives the test framework's own command: npx jest" % SKILL),
-            (SKILL, replace('call `sync_status` and read the state',
-                            'read the state'),
+            (SKILL, resub(r'call `sync_status` with `project_root` set to the '
+                          r'project root, the top folder of\nthe git checkout, '
+                          r'and read the state', 'read the state'),
              '%s does not read the state with sync_status before it chooses '
              'what to build' % SKILL),
         ]) == []
@@ -150,6 +151,16 @@ class TestSkillBuild:
              "'it names the rule: `purlin: login RULE-2`'" % SKILL),
         ]) == []
 
+    # purlin: skill_build PROOF-46
+    def test_it_reads_the_state_at_the_project_root(self, monkeypatch):
+        assert root_problems() == []
+        assert refusals(monkeypatch, root_problems, [
+            (SKILL, resub(r' with `project_root` set to the project root, the '
+                          r'top folder of\nthe git checkout,'),
+             '%s section on choosing what to build does not carry %r'
+             % (SKILL, ROOT_CALL)),
+        ]) == []
+
     # purlin: skill_build PROOF-9
     def test_it_repairs_the_comments_that_are_nearly_markers(
             self, monkeypatch):
@@ -212,6 +223,18 @@ def build_command_problems():
                 problems.append("%s gives the test framework's own command: %s"
                                 % (SKILL, line))
     return problems
+
+
+ROOT_CALL = ('call `sync_status` with `project_root` set to the project root, '
+             'the top folder of the git checkout')
+
+
+def root_problems():
+    body = flat(section(read(SKILL), r'choosing what to build') or '')
+    if ROOT_CALL in body:
+        return []
+    return ['%s section on choosing what to build does not carry %r'
+            % (SKILL, ROOT_CALL)]
 
 
 def command_setting_problems():
