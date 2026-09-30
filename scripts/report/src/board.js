@@ -279,7 +279,7 @@ function proofsToggle(rule, shown) {
 function proofsUnder(rule) {
   var proofs = rule.proofs || [];
   var body = proofs.length ? proofs.map(function (proof) {
-    return '<div class="proof">' + proofDetail(proof, rule.feature) + '</div>';
+    return '<div class="proof">' + proofDetail(proof, rule) + '</div>';
   }).join('')
     : (rule.tests || []).length ? '<div class="proof"><dl class="kv">'
       + '<dt>Tests</dt><dd class="ptests">' + testLines(rule.tests)

@@ -113,6 +113,13 @@ function showsProofs() {
 
 function minStrength() { return (DATA.gate && DATA.gate.min_strength) || 0; }
 
+/* Mutation testing is off where the settings name no engine, `none`: no
+   breaks run, so no minimum strength is compared. */
+function mutationOff() {
+  var engine = (DATA.gate || {}).mutation_engine;
+  return String(engine || 'none').trim().toLowerCase() === 'none';
+}
+
 /* --- marks the screens share ----------------------------------------- */
 
 function esc(value) {
@@ -282,7 +289,8 @@ function platformLines(feature) {
 }
 
 /* Where the newest audit came from, how old it is, and the strength this
-   gate asks for. The strength itself is in the cell beside it. Each rule
+   gate asks for, or with mutation testing off that none applies. The
+   strength itself is in the cell beside it. Each rule
    carries its own audit, so the newest of them answers for the spec. */
 function auditLines(feature) {
   var newest = null;
@@ -295,7 +303,8 @@ function auditLines(feature) {
   return [newest ? 'audit' + DOT + sourceOf(newest.path) + DOT
       + ageText(newest.at).text
     : 'No audit has read a rule here.',
-    'minimum strength ' + minStrength() + '%'];
+    mutationOff() ? 'no minimum strength applies: mutation testing is off'
+      : 'minimum strength ' + minStrength() + '%'];
 }
 
 /* The source an evidence file belongs to: the folder it sits in. */

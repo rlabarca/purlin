@@ -195,13 +195,18 @@ function testLines(tests) {
    tags, which name the operating system it asks for, and its tests with
    what each found. The board draws it under a rule and the rule screen in
    its Proofs section, from this one function, so the two never disagree.
-   `owner` is the spec that owns the rule, whose build writes a missing
-   test. */
-function proofDetail(proof, owner) {
+   A `@manual` proof no test carries is checked by hand, and names the
+   command that records the check until a signature does. `rule.feature` is
+   the spec that owns the rule, whose build writes a missing test. */
+function proofDetail(proof, rule) {
+  var owner = rule.feature;
   var tags = (proof.manual ? ['@manual'] : [])
     .concat(proof.env ? ['@env(' + proof.env + ')'] : []);
   var tests = testLines(proof.tests)
-    || (proofWord(proof) === 'not run'
+    || (proof.manual ? (rule.hand_checked
+      ? '<p class="sec">Checked by hand.</p>'
+      : typeLine('purlin:sign ' + owner + ' ' + rule.id, 'Checked by hand. '))
+    : proofWord(proof) === 'not run'
       ? '<p class="sec">No run has listed its tests yet.</p>'
       : noTestLine(owner));
   return '<dl class="kv">'
@@ -212,8 +217,8 @@ function proofDetail(proof, owner) {
     + '<dt>Tests</dt><dd class="ptests">' + tests + '</dd></dl>';
 }
 
-function proofPanel(proof, owner) {
-  return '<div class="panel">' + proofDetail(proof, owner) + '</div>';
+function proofPanel(proof, rule) {
+  return '<div class="panel">' + proofDetail(proof, rule) + '</div>';
 }
 
 /* The tests marked with the rule's own id, one line each with its result.
@@ -263,7 +268,7 @@ function renderRule() {
     + (showsProofs() ? '<section><p class="eyebrow">Proofs</p>'
       + '<div class="stack">' + ((rule.proofs || []).length
         ? rule.proofs.map(function (proof) {
-          return proofPanel(proof, rule.feature);
+          return proofPanel(proof, rule);
         }).join('')
         : '<div class="panel sec">No proof written.</div>')
       + '</div></section>' : '')

@@ -2629,3 +2629,75 @@ def test_an_open_rule_gone_from_the_data_says_so(browser, tmp_path):
     assert page.inner_text('.wrap .empty') == (
         'That rule is not in this data. Go back to the board and pick one.')
     page.close()
+
+
+# purlin: purlin_report PROOF-199
+def test_with_mutation_testing_off_no_minimum_strength_applies(browser,
+                                                               tmp_path):
+    payload = payload_named('regulated')
+    payload['gate']['mutation_engine'] = 'none'
+    page = open_board(browser, tmp_path, payload)
+    strong = box_hovers(page)['Strong']
+    every = page.eval_on_selector_all(
+        '[title]', "els => els.map(e => e.getAttribute('title'))")
+    page.close()
+    assert strong.split('\n')[-1] == (
+        'no minimum strength applies: mutation testing is off'), strong
+    assert not any('minimum strength 80%' in title for title in every)
+
+
+def hand_check_rule(payload):
+    """The regulated sample's invoice `RULE-3`, whose `@manual` proof no
+    test carries and nobody has checked."""
+    invoice = next(f for f in payload['features'] if f['name'] == 'invoice')
+    rule = next(r for r in invoice['rules'] if r['id'] == 'RULE-3')
+    assert rule['proofs'][0]['manual'] and rule['proofs'][0]['tests'] == []
+    assert rule['hand_checked'] is False
+    return rule
+
+
+# purlin: purlin_report PROOF-200
+def test_a_manual_proof_under_its_row_names_the_sign(browser, tmp_path):
+    payload = payload_named('regulated')
+    hand_check_rule(payload)
+    page = open_board(browser, tmp_path, payload)
+    page.click('[data-act="feature"][data-feature="invoice"]')
+    page.click(toggle_for('invoice', 'RULE-3'))
+    tests = page.inner_text('.rule-proofs .ptests').strip()
+    face = page.eval_on_selector('.rule-proofs .ptests .cmd',
+                                 'el => getComputedStyle(el).fontFamily')
+    command = page.inner_text('.rule-proofs .ptests .cmd')
+    page.close()
+    assert tests == ('Checked by hand. Type purlin:sign invoice RULE-3 in '
+                     'Claude Code.'), tests
+    assert command == 'purlin:sign invoice RULE-3'
+    assert 'courier' in face.lower()
+
+
+# purlin: purlin_report PROOF-201
+def test_a_manual_proof_on_the_rule_screen_names_the_sign(browser, tmp_path):
+    payload = payload_named('regulated')
+    hand_check_rule(payload)
+    page = open_board(browser, tmp_path, payload)
+    open_rule(page, 'invoice', 'RULE-3')
+    found = texts(page, '.ptests')
+    page.close()
+    assert found == ['Checked by hand. Type purlin:sign invoice RULE-3 in '
+                     'Claude Code.'], found
+
+
+# purlin: purlin_report PROOF-202
+def test_a_signed_manual_proof_reads_checked_by_hand(browser, tmp_path):
+    payload = payload_named('regulated')
+    rule = hand_check_rule(payload)
+    rule['hand_checked'] = True
+    rule['left'] = None
+    rule['cells']['signed'].update(
+        {'word': 'signed', 'signer': 'jane@acme.com', 'signer_name': 'Jane Doe',
+         'at': '2026-09-12T10:02:00Z', 'reasons': []})
+    page = open_board(browser, tmp_path, payload)
+    page.click('[data-act="feature"][data-feature="invoice"]')
+    page.click(toggle_for('invoice', 'RULE-3'))
+    tests = page.inner_text('.rule-proofs .ptests').strip()
+    page.close()
+    assert tests == 'Checked by hand.', tests

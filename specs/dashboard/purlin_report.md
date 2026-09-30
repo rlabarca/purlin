@@ -12,8 +12,8 @@
 >   tests render.
 > Scope: scripts/report/src/page.html, scripts/report/src/styles.css, scripts/report/src/theme.js, scripts/report/src/filters.js, scripts/report/src/board.js, scripts/report/src/rule.js, scripts/report/src/app.js, scripts/report/purlin-report.html, scripts/mcp/purlin/report_data.py, dev/build_report.py, dev/capture_doc_screenshots.py
 > Stack: html/css/javascript, no framework and no build-time dependency, design tokens inlined by a python assembler
-> Highest-Rule: 60
-> Highest-Proof: 198
+> Highest-Rule: 62
+> Highest-Proof: 202
 
 ## Rules
 
@@ -70,6 +70,8 @@
 - RULE-58: A theme chosen with the toggle is the theme the page opens in after a reload
 - RULE-59: Where a hover or a screen has nothing to show, it says so in one sentence: a spec no counting run has covered, a spec no audit has read, a spec nobody has signed, a commit with no signed tag, a filter no rule is left under, a rule with no test, a proof no run has listed tests for, and an open rule the data no longer holds
 - RULE-60: Each warning the data carries is drawn on the board as a notice of its own above the boxes, after the notice of an uncommitted working tree
+- RULE-61: With mutation testing off, the `Strong` cell's hover and the `Strong` box's hover read `no minimum strength applies: mutation testing is off` in place of the minimum strength
+- RULE-62: A `@manual` proof no test carries reads under its tests, on the board's unfolded row and on the rule's screen alike, `Checked by hand. Type purlin:sign <feature> <RULE-N> in Claude Code.`, the command in the monospace face, and `Checked by hand.` alone once a signature records the rule's hand check
 
 ## Proof
 
@@ -251,3 +253,7 @@
 - PROOF-195 (RULE-59): Open the regulated sample's board after export `RULE-1`'s proof, reading `not run`, is given no test, open export and unfold `RULE-1`; its proof's tests read `No run has listed its tests yet.`
 - PROOF-196 (RULE-59): Open the regulated sample on login `RULE-1`'s screen, take that rule out of the data file and press the freshness line; after the reload the screen reads `That rule is not in this data. Go back to the board and pick one.`
 - PROOF-198 (RULE-60): Open the board with the regulated sample, whose data reports an uncommitted working tree and one spec warning; the notices read, in order, the uncommitted-tree sentence and that warning's text whole, and both stand above the first box
+- PROOF-199 (RULE-61): Open the board with the regulated sample after its mutation testing is set to off; the `Strong` box's hover ends on the line `no minimum strength applies: mutation testing is off`, and no hover on the board holds `minimum strength 80%`
+- PROOF-200 (RULE-62): Open the regulated sample's board, open invoice and unfold `RULE-3`, whose `@manual` proof nobody has checked; its proof's tests read `Checked by hand. Type purlin:sign invoice RULE-3 in Claude Code.`, `purlin:sign invoice RULE-3` in a Courier face
+- PROOF-201 (RULE-62): Open the regulated sample's invoice `RULE-3`, whose `@manual` proof nobody has checked; in its Proofs section the proof's tests read `Checked by hand. Type purlin:sign invoice RULE-3 in Claude Code.`
+- PROOF-202 (RULE-62): Open the regulated sample's board after invoice `RULE-3` is signed as checked by hand, open invoice and unfold `RULE-3`; its proof's tests read `Checked by hand.` alone
