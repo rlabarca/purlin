@@ -17,8 +17,13 @@ Suggested tests setting: [{"name": "pytest", ...}, {"name": "vitest", ...}]
 
 A framework that needs something added before it can write that report gets one more line,
 right after its own, saying what. `purlin:test` shows you each command, asks once, writes the
-suggested setting under `tests` and runs again. Where the run detects none, `purlin:test`
-reads the project and proposes an entry instead.
+suggested setting under `tests` and runs again. Where the run detects none, it prints:
+
+```
+No test command is set and no test tool Purlin knows was found, so nothing ran. The agent reads the project and proposes a command for you to confirm.
+```
+
+and `purlin:test` reads the project and proposes an entry instead.
 
 On Windows the pytest entry's command starts `py -3 -m pytest` in place of
 `python3 -m pytest`, and the rest of it is the same.
@@ -29,7 +34,7 @@ On Windows the pytest entry's command starts `py -3 -m pytest` in place of
 |-----------|-------------|-------------|
 | pytest | `conftest.py` or `pytest.ini` at the root, or `[tool.pytest` in `pyproject.toml` | nothing; `--junitxml` is pytest's own |
 | vitest | `vitest` under `dependencies` or `devDependencies` in `package.json`, or a `vitest.config.*` file | nothing; the `junit` reporter is Vitest's own |
-| jest | `jest` under `dependencies` or `devDependencies` in `package.json`, or a `jest.config.*` file | the package `jest-junit`: `npm install --save-dev jest-junit` |
+| jest | `jest` under `dependencies` or `devDependencies` in `package.json`, or a `jest.config.*` file | the package `jest-junit`: `yarn add --dev jest-junit` where the root holds `yarn.lock`, `pnpm add --save-dev jest-junit` where it holds `pnpm-lock.yaml`, and `npm install --save-dev jest-junit` otherwise |
 | dotnet | a `*.csproj` referencing xUnit, NUnit, MSTest or the test SDK | nothing; the `trx` logger ships with `dotnet test` |
 | go | `go.mod` at the root and a `*_test.go` file | nothing; `-json` is `go test`'s own |
 | sql | a `test_*.sql`, `*_test.sql` or `*.test.sql` file | the `sqlite3` command; a test fails by raising an error, and another engine is a change to `run` |
@@ -43,7 +48,8 @@ suite per entry under `tests`.
 
 Each entry is written under `tests` in `.purlin/config.json`. `{report}` is where Purlin wants
 the report, and `{files}` is replaced by the test files of the features a run covers, or by
-nothing when it runs them all.
+nothing when it runs them all. In the jest entry `{files}` comes before `--reporters`, because
+jest reads every word after that option as another reporter.
 
 ### pytest
 
@@ -59,6 +65,17 @@ nothing when it runs them all.
   ]
 }
 ```
+
+Where a file git lists, outside `specs/` and `.purlin/`, holds the text `--doctest-modules`, the
+project's own test command runs the examples inside its functions' documentation, and the
+suggested command keeps running them:
+`python3 -m pytest --doctest-modules --ignore=mutants {files} --junitxml={report}`.
+
+mutmut switches a break on only in a module imported by its full dotted name, so a test that
+imports a file through a `sys.path` entry never switches one on; import by the dotted path.
+mutmut runs on Linux/Unix and macOS. A test that reads git state or the source text sees the
+copy mutmut makes under `mutants/`, so name such tests in `pytest_add_cli_args` with
+`--deselect`.
 
 ### vitest
 
@@ -90,7 +107,7 @@ nothing when it runs them all.
 ```json
 {
   "name": "jest",
-  "run": "JEST_JUNIT_OUTPUT_FILE={report} JEST_JUNIT_ADD_FILE_ATTRIBUTE=true JEST_JUNIT_CLASSNAME='{classname}' JEST_JUNIT_TITLE='{title}' JEST_JUNIT_ANCESTOR_SEPARATOR=' > ' npx jest --ci --reporters=default --reporters=jest-junit {files}",
+  "run": "JEST_JUNIT_OUTPUT_FILE={report} JEST_JUNIT_ADD_FILE_ATTRIBUTE=true JEST_JUNIT_CLASSNAME='{classname}' JEST_JUNIT_TITLE='{title}' JEST_JUNIT_ANCESTOR_SEPARATOR=' > ' npx jest --ci {files} --reporters=default --reporters=jest-junit",
   "report": ".purlin/runtime/reports/jest.xml",
   "format": "junit",
   "files": [

@@ -5,6 +5,7 @@
                   [--arm-timeout SECONDS] [--project-root DIR]
     purlin_run.py [--feature NAME ... | --all] --audit [--commit]
                   [--arm-timeout SECONDS] [--project-root DIR]
+    purlin_run.py --help | -h
 
 **Before anything runs.** With no `.purlin/config.json` the run says so,
 names `purlin:init`, writes nothing and exits 1. A settings file that cannot
@@ -13,8 +14,8 @@ project Purlin 0.9.5 set up and nobody upgraded (`set_up_by_095`) it names
 `purlin:init --update` the same way. With the `tests` setting empty it
 writes nothing and exits 1: where it detects test tools it knows, it prints
 each tool's command and the whole `tests` setting to add
-(`frameworks.suggest`), and otherwise it asks for `purlin:test`, which
-reads the project and proposes one.
+(`frameworks.suggest`), and otherwise it says that the agent reads the
+project and proposes a command.
 
 **Which features run.** `--feature` names them and `--all` runs every one.
 With neither, `--test` and `--audit` run the features the change touched:
@@ -93,8 +94,9 @@ test failed or did not run, evidence is missing, a marker names nothing a
 spec has, there is no settings file or it cannot be read, an older Purlin
 set the project up and it was not upgraded, no test command is set, or, for
 `--audit` above the gate `passed`, a rule it read is weak or could not be
-audited; 2 the command line was wrong. `--ci` exits 1 only when a test
-tied to a proof tagged for its system failed or could not run.
+audited; 2 the command line was wrong. `--help` and `-h` print the usage
+to stdout and exit 0. `--ci` exits 1 only when a test tied to a proof
+tagged for its system failed or could not run.
 
 The flow is one pass. Resolve the configuration and the suites, scan the
 specs and the markers, run each suite, then check two things no test
@@ -151,7 +153,7 @@ USAGE = (
 # The one line `purlin:test --remote` gets. A remote runner runs the tests,
 # so the flag belongs to the test and nowhere else.
 REMOTE_IS_A_TEST = ('a remote runner runs the tests, so --remote belongs to '
-                    '--test. Run: purlin:test --remote')
+                    '--test. Run purlin:test --remote')
 
 # What the run says about the proofs tagged for an operating system it is
 # not on, one line per system, each in the words a person reads. A proof
@@ -163,7 +165,8 @@ NEEDS_MANY = ('%d proofs need %s; this machine is %s. Run purlin:test '
 # The one line `--commit` gets anywhere but `--test` and `--audit`. A runner
 # always commits, and a remote run commits nothing here.
 COMMIT_IS_A_PERSONS = ('--commit belongs to --test and --audit; a remote run '
-                       'commits on the runner')
+                       'commits on the runner. Run purlin:test --remote without '
+                       '--commit')
 
 # How long one arm may take before it is killed. An hour is longer than any
 # shipped suite and far shorter than a hosted runner's six-hour job limit, so
@@ -192,9 +195,33 @@ NO_TEST_COMMAND = ('No test command is set in .purlin/config.json, so nothing '
                    'ran.')
 SUGGESTED_FOR = 'Suggested for %s: %s'
 SUGGESTED_SETTING = 'Suggested tests setting: %s'
-NO_TEST_TOOL = ('No test command is set in .purlin/config.json, and no test '
-                'tool Purlin knows was found, so nothing ran. Run purlin:test '
-                'to have one proposed.')
+NO_TEST_TOOL = ('No test command is set and no test tool Purlin knows was '
+                'found, so nothing ran. The agent reads the project and '
+                'proposes a command for you to confirm.')
+
+# A spec named on the command line that the project does not have.
+NO_SUCH_SPEC = ('purlin: no spec named %s under specs/. Run purlin:status to '
+                'see the specs this project has.')
+
+# A problem in the `tests` setting, then the step that puts it right.
+SUITE_PROBLEM = ('purlin: %s. Fix the tests setting in .purlin/config.json, '
+                 'then run purlin:test.')
+
+# What the run says of each piece of evidence it could not take, after
+# `Evidence is missing: `, each with the step that puts it right. The
+# timeouts name the command the run was started by, `test` or `audit`.
+TIMED_OUT_ON = ('the %s suite timed out after %d s on %s. Run purlin:%s '
+                '--arm-timeout <seconds> to give it longer.')
+TIMED_OUT_AFTER = ('the %s suite timed out after %d s. Run purlin:%s '
+                   '--arm-timeout <seconds> to give it longer.')
+NO_REPORT = ('the %s suite %s. Check its command and report in the tests '
+             'setting of .purlin/config.json, then run purlin:test.')
+ONE_MARKER_MISSING = ('1 marker has no passing or failing result: %s. Check '
+                      'that its test ran and was not skipped, then run '
+                      'purlin:test.')
+MARKERS_MISSING = ('%d markers have no passing or failing result: %s. Check '
+                   'that their tests ran and were not skipped, then run '
+                   'purlin:test.')
 
 # What the run says about each rule of the features it ran that fails or
 # has no test, before the status.
@@ -222,6 +249,7 @@ class Args(object):
         self.commit = False
         self.arm_timeout = ARM_TIMEOUT_DEFAULT
         self.project_root = '.'
+        self.help = False
         self.error = None
 
 
@@ -231,6 +259,9 @@ def parse_args(argv):
     index = 0
     while index < len(argv):
         token = argv[index]
+        if token in ('--help', '-h'):
+            args.help = True
+            return args
         if token == '--feature':
             index += 1
             if index >= len(argv):
@@ -398,6 +429,11 @@ def bash_command():
     return 'bash'
 
 
+def command_line(command):
+    """The line the run log names a command by, before its output."""
+    return '$ %s' % ' '.join(command)
+
+
 def _run(command, project_root, log, timeout, environment=None,
          keep_stdout=False):
     """Run one command in the project root, echoing it and its output.
@@ -409,7 +445,7 @@ def _run(command, project_root, log, timeout, environment=None,
     `keep_stdout` the answer is `(code, stdout)`, for a suite whose report
     is its standard output.
     """
-    log.append('$ %s' % ' '.join(command))
+    log.append(command_line(command))
     stdout = ''
     try:
         result = subprocess.run([*command], cwd=project_root,
@@ -467,17 +503,29 @@ class SuiteRun(object):
         self.failed_tests = False  # it ran, and at least one test failed
         self.problems = []
         self.log = ''
+        self.output = ''
+
+    def keep_log(self, entries, commands):
+        """Keep what the suite's commands logged: `log` whole, and `output`
+        without the line naming each of `commands`, so the tail a failing
+        suite prints is what the suite itself printed."""
+        named = {command_line(command) for command in commands}
+        self.log = '\n'.join(entries)
+        self.output = '\n'.join(entry for entry in entries
+                                if entry not in named)
 
 
 def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
-              marked=None):
+              marked=None, action='test'):
     """Run one suite and read what it saw. A `SuiteRun`.
 
     `files` is the test files to hand `{files}`, or empty for the whole
     suite. An `exit` suite runs its command once per file, `{files}` being
     that one file, and every file it matches when `files` is empty; each
     file passes when the command exits 0. Any other suite runs once and its
-    report is read and tied to the markers in `marked`.
+    report is read and tied to the markers in `marked`. `action` is the
+    command the run was started by, `test` or `audit`, which a timeout
+    names as the one to run again with a longer limit.
     """
     done = SuiteRun(suite)
     mark = len(log)
@@ -485,31 +533,32 @@ def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
         paths = list(files) or sorted(markers_module.test_files(
             project_root, [suite]))
         failed = []
+        ran = []
         for path in paths:
-            command = reports_module.command_for(suite, [path])
-            code = _run([bash_command(), '-c', command], project_root, log,
-                        timeout)
+            command = [bash_command(), '-c',
+                       reports_module.command_for(suite, [path])]
+            ran.append(command)
+            code = _run(command, project_root, log, timeout)
             if code == TIMED_OUT:
-                done.failures.append('the %s suite timed out after %d s on '
-                                     '%s' % (suite.name, timeout, path))
+                done.failures.append(TIMED_OUT_ON % (suite.name, timeout, path,
+                                                     action))
                 continue
             done.file_results[path] = (reports_module.PASS if code == 0
                                        else reports_module.FAIL)
             if code != 0:
                 failed.append(path)
         done.failed_tests = bool(failed)
-        done.log = '\n'.join(log[mark:])
+        done.keep_log(log[mark:], ran)
         return done
 
     report = suite.report_path()
     reports_module.clear_report(project_root, report)
-    command = reports_module.command_for(suite, files, report)
-    code, stdout = _run([bash_command(), '-c', command], project_root, log,
-                        timeout, keep_stdout=True)
-    done.log = '\n'.join(log[mark:])
+    command = [bash_command(), '-c',
+               reports_module.command_for(suite, files, report)]
+    code, stdout = _run(command, project_root, log, timeout, keep_stdout=True)
+    done.keep_log(log[mark:], [command])
     if code == TIMED_OUT:
-        done.failures.append('the %s suite timed out after %d s'
-                             % (suite.name, timeout))
+        done.failures.append(TIMED_OUT_AFTER % (suite.name, timeout, action))
     done.failed_tests = code not in (0, TIMED_OUT)
     cases, problem = reports_module.read_report(suite.format, project_root,
                                                 report, stdout)
@@ -517,7 +566,7 @@ def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
         # Loud failure A: the suite ran and there is no report to read. A
         # suite that exits non-zero over a report it wrote has only failing
         # tests, which the report itself says.
-        done.failures.append('the %s suite %s' % (suite.name, problem))
+        done.failures.append(NO_REPORT % (suite.name, problem))
         return done
     here = {path: found for path, found in (marked or {}).items()
             if markers_module.suite_of(path, [suite]) is suite}
@@ -701,7 +750,8 @@ def rule_problems(features, sections, index):
     Read from the words this run's sections give each rule, so the lines,
     the evidence and the exit code say the same. A failing rule names each
     of its tests that failed here. A rule that has no test names each of
-    its proofs no test is tied to, where another of its proofs has one.
+    its proofs no test is tied to; only a rule with no proof, and no test
+    marked with its own id, reads `has no test.` alone.
     """
     lines = []
     for name, section in sections.items():
@@ -729,7 +779,7 @@ def rule_problems(features, sections, index):
                 for entry in listed:
                     if not entry.get('test') and entry['id'] not in untested:
                         untested.append(entry['id'])
-                if untested and any(entry.get('test') for entry in listed):
+                if untested:
                     lines.append(RULE_HAS_NO_TEST_FOR % (
                         name, rule_id, ', '.join(untested), name))
                 else:
@@ -795,6 +845,9 @@ def main(argv=None):
     # so a hosted runner's log shows where a long run got to.
     console_module.force_utf8_stdio(line_buffering=True)
     args = parse_args(list(sys.argv[1:] if argv is None else argv))
+    if args.help:
+        print(USAGE)
+        return 0
     if args.error:
         print('purlin: %s.' % args.error, file=sys.stderr)
         print(USAGE, file=sys.stderr)
@@ -826,7 +879,7 @@ def main(argv=None):
         return 1
     suites, suite_problems = markers_module.read_suites(project_root, config)
     for problem in suite_problems:
-        print('purlin: %s.' % problem)
+        print(SUITE_PROBLEM % problem)
     if not suites:
         for line in no_test_command_lines(project_root):
             print(line)
@@ -839,8 +892,7 @@ def main(argv=None):
         selected = [name for name in args.features if name in features]
         unknown = [name for name in args.features if name not in features]
         for name in unknown:
-            print('purlin: no spec named %s under specs/.' % name,
-                  file=sys.stderr)
+            print(NO_SUCH_SPEC % name, file=sys.stderr)
         if unknown:
             return 2
     else:
@@ -880,11 +932,11 @@ def main(argv=None):
         # is while it is still running.
         print('Running the %s suite.' % suite.name)
         done = run_suite(project_root, suite, files, log, args.arm_timeout,
-                         scan)
+                         scan, 'audit' if args.action == 'audit' else 'test')
         runs.append(done)
         failures.extend(done.failures)
         if done.failures or done.failed_tests:
-            print_arm_output(suite.name, done.log)
+            print_arm_output(suite.name, done.output)
         for problem in done.problems:
             print(problem)
 
@@ -930,9 +982,9 @@ def main(argv=None):
         shown = ', '.join(missing[:5])
         more = ('' if len(missing) <= 5
                 else ', and %d more' % (len(missing) - 5))
-        failures.append('%s no passing or failing result: %s%s'
-                        % ('1 marker has' if len(missing) == 1
-                           else '%d markers have' % len(missing), shown, more))
+        failures.append(ONE_MARKER_MISSING % (shown + more)
+                        if len(missing) == 1
+                        else MARKERS_MISSING % (len(missing), shown + more))
     ran = [done.suite.name for done in runs]
 
     print('Ran %s on %s.'
@@ -962,7 +1014,7 @@ def main(argv=None):
     if failures:
         print('')
         for failure in failures:
-            print('Evidence is missing: %s.' % failure)
+            print('Evidence is missing: %s' % failure)
 
     work = None
     if args.commit:
@@ -1070,8 +1122,8 @@ def no_test_command_lines(project_root):
     Where test tools Purlin knows are detected, each tool's command, then
     what that tool needs added before it can write its report where it
     needs something, then every entry as one JSON array on one line, the
-    `tests` setting to write; otherwise `purlin:test`, which reads the
-    project and proposes one.
+    `tests` setting to write; otherwise the line saying that the agent reads
+    the project and proposes one.
     """
     entries = frameworks_module.suggest(project_root)
     if not entries:
@@ -1079,7 +1131,7 @@ def no_test_command_lines(project_root):
     lines = [NO_TEST_COMMAND]
     for entry in entries:
         lines.append(SUGGESTED_FOR % (entry['name'], entry['run']))
-        needs = frameworks_module.NEEDS.get(entry['name'])
+        needs = frameworks_module.needs(project_root, entry['name'])
         if needs:
             lines.append(needs)
     lines.append(SUGGESTED_SETTING % json.dumps(entries))

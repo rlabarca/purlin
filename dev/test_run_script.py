@@ -178,7 +178,9 @@ class TestTheCommandLine:
 
     # purlin: run_script PROOF-1
     def test_no_action_is_refused(self, tmp_path):
-        _refused(tmp_path)
+        output = _refused(tmp_path)
+        assert ('purlin: name exactly one of --test, --audit and --ci.'
+                in output.splitlines()), output
 
     # purlin: run_script PROOF-144
     def test_two_actions_are_refused(self, tmp_path):
@@ -186,21 +188,65 @@ class TestTheCommandLine:
 
     # purlin: run_script PROOF-145
     def test_all_and_a_feature_together_are_refused(self, tmp_path):
-        _refused(tmp_path, '--all', '--feature', 'x', '--test')
+        output = _refused(tmp_path, '--all', '--feature', 'x', '--test')
+        assert ('purlin: name features or --all, not both.'
+                in output.splitlines()), output
 
     # purlin: run_script PROOF-146
     def test_audit_remote_is_refused_and_names_the_test_command(
             self, tmp_path):
         output = _refused(tmp_path, '--all', '--audit', '--remote')
-        assert 'purlin:test --remote' in output, output
+        assert ('purlin: a remote runner runs the tests, so --remote belongs '
+                'to --test. Run purlin:test --remote.'
+                in output.splitlines()), output
 
     # purlin: run_script PROOF-147
     def test_a_flag_the_run_does_not_know_is_refused(self, tmp_path):
-        _refused(tmp_path, '--all', '--test', '--nonsense')
+        output = _refused(tmp_path, '--all', '--test', '--nonsense')
+        assert 'purlin: unknown argument --nonsense.' in output.splitlines(), \
+            output
 
     # purlin: run_script PROOF-148
     def test_feature_with_no_name_after_it_is_refused(self, tmp_path):
-        _refused(tmp_path, '--all', '--test', '--feature')
+        output = _refused(tmp_path, '--all', '--test', '--feature')
+        assert 'purlin: --feature needs a name.' in output.splitlines(), output
+
+    # purlin: run_script PROOF-238
+    def test_an_arm_timeout_that_is_not_a_number_is_refused(self, tmp_path):
+        output = _refused(tmp_path, '--all', '--test', '--arm-timeout', 'soon')
+        assert ('purlin: --arm-timeout needs a whole number of seconds.'
+                in output.splitlines()), output
+
+    # purlin: run_script PROOF-239
+    def test_a_project_root_with_no_folder_after_it_is_refused(
+            self, tmp_path):
+        output = _refused(tmp_path, '--all', '--test', '--project-root')
+        assert ('purlin: --project-root needs a directory.'
+                in output.splitlines()), output
+
+    @staticmethod
+    def _asked_for_help(tmp_path, flag):
+        """Run with `flag` alone. `(exit code, stdout, stderr)`."""
+        result = subprocess.run(
+            [sys.executable, RUN_SCRIPT, flag], capture_output=True,
+            encoding='utf-8', cwd=str(_project(tmp_path)))
+        return result.returncode, result.stdout, result.stderr
+
+    def _helped(self, tmp_path, flag):
+        code, stdout, stderr = self._asked_for_help(tmp_path, flag)
+        assert code == 0, stdout + stderr
+        assert stdout.splitlines()[0].startswith('Usage: purlin_run.py'), \
+            stdout
+        assert not [line for line in (stdout + stderr).splitlines()
+                    if line.startswith('purlin:')], stdout + stderr
+
+    # purlin: run_script PROOF-235
+    def test_help_prints_the_usage_and_exits_0(self, tmp_path):
+        self._helped(tmp_path, '--help')
+
+    # purlin: run_script PROOF-236
+    def test_h_prints_the_usage_and_exits_0(self, tmp_path):
+        self._helped(tmp_path, '-h')
 
     # purlin: run_script PROOF-149
     def test_ci_with_commit_is_refused(self, tmp_path):
@@ -209,6 +255,14 @@ class TestTheCommandLine:
     # purlin: run_script PROOF-150
     def test_test_remote_with_commit_is_refused(self, tmp_path):
         _refused(tmp_path, '--all', '--test', '--remote', '--commit')
+
+    # purlin: run_script PROOF-237
+    def test_a_remote_run_with_commit_names_the_command_without_it(
+            self, tmp_path):
+        output = _refused(tmp_path, '--all', '--test', '--remote', '--commit')
+        assert ('purlin: --commit belongs to --test and --audit; a remote run '
+                'commits on the runner. Run purlin:test --remote without '
+                '--commit.' in output.splitlines()), output
 
     # purlin: run_script PROOF-151
     def test_test_remote_is_accepted(self, tmp_path):
@@ -228,7 +282,9 @@ class TestTheCommandLine:
         _spec(root, 'feat')
         code, output = _run(root, '--feature', 'nosuch', '--test')
         assert code == 2
-        assert 'no spec named nosuch' in output
+        assert ('purlin: no spec named nosuch under specs/. Run purlin:status '
+                'to see the specs this project has.'
+                in output.splitlines()), output
 
     # purlin: run_script PROOF-154
     def test_a_missing_project_root_exits_two(self, tmp_path):
@@ -426,6 +482,23 @@ class TestLoudFailureB:
         assert ('1 marker has no passing or failing result: '
                 'feat PROOF-2 at tests/test_feat.py:7') in output, output
         assert 'feat PROOF-1 at' not in output, output
+
+    # purlin: run_script PROOF-244
+    def test_one_marker_with_no_result_names_the_check_to_make(
+            self, tmp_path):
+        root = _pytest_project(tmp_path, body=(
+            'import pytest\n\n'
+            '# purlin: feat PROOF-1\n'
+            '@pytest.mark.skip(reason="no tool here")\n'
+            'def test_skipped():\n'
+            '    assert True\n'))
+        _spec(root, 'feat')
+        code, output = _run(root, '--all', '--test')
+        assert code == 1, output
+        assert ('Evidence is missing: 1 marker has no passing or failing '
+                'result: feat PROOF-1 at tests/test_feat.py:3. Check that its '
+                'test ran and was not skipped, then run purlin:test.'
+                in output.splitlines()), output
 
     # purlin: run_script PROOF-9
     def test_a_marker_for_an_unselected_feature_is_not_named(self, tmp_path):
@@ -633,6 +706,66 @@ class TestEveryRunEndsOnTheSummary:
         code, output = _run(root, '--all', '--test')
         assert 'No specs found under specs/' in output
         assert code == 1
+
+
+class TestTheLinesARunPrints:
+    """What a run says about its suites before the status table."""
+
+    # purlin: run_script PROOF-245
+    def test_a_suite_with_no_report_names_its_setting(self, tmp_path):
+        root = _pytest_project(tmp_path)
+        _config(root, tests=[{
+            'name': 'pytest', 'run': 'true',
+            'report': '.purlin/runtime/reports/pytest.xml', 'format': 'junit',
+            'files': ['**/test_*.py']}])
+        _spec(root, 'feat')
+        code, output = _run(root, '--all', '--test')
+        assert code == 1, output
+        assert ('Evidence is missing: the pytest suite wrote no report at '
+                '.purlin/runtime/reports/pytest.xml. Check its command and '
+                'report in the tests setting of .purlin/config.json, then run '
+                'purlin:test.' in output.splitlines()), output
+
+    # purlin: run_script PROOF-246
+    def test_a_problem_in_the_setting_names_its_fix(self, tmp_path):
+        root = _pytest_project(tmp_path)
+        _config(root, tests=[suites.pytest_suite(),
+                             {'name': 'extra', 'format': 'junit',
+                              'files': ['**/test_*.py']}])
+        _spec(root, 'feat')
+        code, output = _run(root, '--all', '--test')
+        lines = output.splitlines()
+        assert ('purlin: the extra suite names no run command. Fix the tests '
+                'setting in .purlin/config.json, then run purlin:test.'
+                in lines), output
+        assert 'Running the pytest suite.' in lines, output
+        assert code == 0, output
+
+    @staticmethod
+    def _lines(tmp_path):
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat')
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        return output.splitlines()
+
+    # purlin: run_script PROOF-247
+    def test_the_first_line_names_the_suite_it_starts(self, tmp_path):
+        assert self._lines(tmp_path)[0] == 'Running the pytest suite.'
+
+    # purlin: run_script PROOF-248
+    def test_the_markers_are_counted_next(self, tmp_path):
+        lines = self._lines(tmp_path)
+        after = [line for line in lines[1:] if line.strip()]
+        assert after[0] == 'Markers: 1 tied to a test, 0 not tied.', lines
+
+    # purlin: run_script PROOF-249
+    def test_the_suites_run_are_named_before_the_table(self, tmp_path):
+        lines = self._lines(tmp_path)
+        at = lines.index('Markers: 1 tied to a test, 0 not tied.')
+        assert lines[at + 1] == 'Ran pytest on 1 feature.', lines
+        assert at + 1 < lines.index(next(
+            line for line in lines if line.startswith('Purlin status:')))
 
 
 # ---------------------------------------------------------------------------
@@ -1939,6 +2072,63 @@ class TestAFailingSuiteStatesItsReason:
         assert (output.index('--- shell output (last 60 lines) ---')
                 < output.index('Purlin status:')), output
 
+    # purlin: run_script PROOF-240
+    def test_a_suite_that_printed_nothing_says_so(self, tmp_path):
+        root = _project(tmp_path, tests=[suites.shell_suite()])
+        _spec(root, 'feat')
+        (root / 'tests').mkdir()
+        _script(root / 'tests' / 'quiet.test.sh',
+                '# purlin: feat PROOF-1\nexit 1\n')
+        code, output = _run(root, '--all', '--test')
+        assert code == 1, output
+        assert _tail(output, 'shell') == ['The shell suite printed nothing.'], \
+            output
+        assert (output.index('--- shell output (last 60 lines) ---')
+                < output.index('Purlin status:')), output
+
+    @staticmethod
+    def _slow_shell(tmp_path):
+        """A project whose one shell test prints `started`, then sleeps past
+        a suite time limit of 1 second."""
+        root = _project(tmp_path, tests=[suites.shell_suite()])
+        _spec(root, 'feat')
+        (root / 'tests').mkdir()
+        _script(root / 'tests' / 'slow.test.sh',
+                '# purlin: feat PROOF-1\necho started\nsleep 5\n')
+        return root
+
+    # purlin: run_script PROOF-241
+    def test_a_killed_test_file_names_the_longer_limit_to_run(self, tmp_path):
+        code, output = _run(self._slow_shell(tmp_path), '--all', '--test',
+                            '--arm-timeout', '1')
+        assert code == 1, output
+        assert ('Evidence is missing: the shell suite timed out after 1 s on '
+                'tests/slow.test.sh. Run purlin:test --arm-timeout <seconds> '
+                'to give it longer.' in output.splitlines()), output
+
+    # purlin: run_script PROOF-242
+    def test_a_killed_suite_names_the_longer_limit_to_run(self, tmp_path):
+        root = _pytest_project(tmp_path, body=(
+            'import time\n\n'
+            '# purlin: feat PROOF-1\n'
+            'def test_slow():\n'
+            '    time.sleep(5)\n'))
+        _spec(root, 'feat')
+        code, output = _run(root, '--all', '--test', '--arm-timeout', '1')
+        assert code == 1, output
+        assert ('Evidence is missing: the pytest suite timed out after 1 s. '
+                'Run purlin:test --arm-timeout <seconds> to give it longer.'
+                in output.splitlines()), output
+
+    # purlin: run_script PROOF-243
+    def test_a_killed_audit_names_the_audit_to_run(self, tmp_path, claude):
+        code, output = _run(self._slow_shell(tmp_path), '--all', '--audit',
+                            '--arm-timeout', '1')
+        assert code == 1, output
+        assert ('Evidence is missing: the shell suite timed out after 1 s on '
+                'tests/slow.test.sh. Run purlin:audit --arm-timeout <seconds> '
+                'to give it longer.' in output.splitlines()), output
+
     # purlin: run_script PROOF-170
     def test_an_arm_that_passed_prints_no_tail(self, tmp_path):
         root = _pytest_project(tmp_path)
@@ -2004,7 +2194,8 @@ class TestAnEmptyProjectRootIsRefused:
             capture_output=True, encoding='utf-8', cwd=str(root))
         output = result.stdout + result.stderr
         assert result.returncode == 2, output
-        assert '--project-root' in output, output
+        assert ('purlin: --project-root needs a directory, not an empty '
+                'value.' in output.splitlines()), output
         assert not (root / REPORTS_REL).exists(), output
 
 
@@ -2548,9 +2739,9 @@ class TestNoTestCommand:
         root = _no_command(tmp_path)
         code, output = _run(root, '--all', '--test')
         assert output.strip().splitlines()[-1] == (
-            'No test command is set in .purlin/config.json, and no test tool '
-            'Purlin knows was found, so nothing ran. Run purlin:test to have '
-            'one proposed.'), output
+            'No test command is set and no test tool Purlin knows was found, '
+            'so nothing ran. The agent reads the project and proposes a '
+            'command for you to confirm.'), output
         assert _purlin_files(root) == [
             os.path.join('.purlin', 'config.json')], output
         assert code == 1, output
@@ -2656,13 +2847,90 @@ class TestNoTestCommand:
                  for block in page.split('```json\n')[1:]]
         assert shown == [suggestions[name] for name in ORDER]
 
-    # purlin: run_script PROOF-134
-    def test_jest_is_told_it_needs_jest_junit(self, tmp_path):
-        _code, output = _run(_no_command(tmp_path, 'jest'), '--all', '--test')
+    @staticmethod
+    def _jest_needs(tmp_path, lock=None):
+        """The line after `Suggested for jest:` in a jest project whose root
+        holds the lock file `lock`, or none."""
+        root = _no_command(tmp_path, 'jest')
+        if lock:
+            (root / lock).write_text('\n', encoding='utf-8')
+        _code, output = _run(root, '--all', '--test')
         lines = output.strip().splitlines()
         assert lines[-3].startswith('Suggested for jest: '), output
-        assert lines[-2] == ('jest needs the package jest-junit to write its '
-                             'report: run npm install --save-dev jest-junit')
+        return lines[-2]
+
+    # purlin: run_script PROOF-134
+    def test_jest_is_told_it_needs_jest_junit(self, tmp_path):
+        assert self._jest_needs(tmp_path) == (
+            'jest needs the package jest-junit to write its report: run npm '
+            'install --save-dev jest-junit')
+
+    # purlin: run_script PROOF-250
+    def test_a_yarn_project_is_told_the_yarn_command(self, tmp_path):
+        assert self._jest_needs(tmp_path, 'yarn.lock') == (
+            'jest needs the package jest-junit to write its report: run yarn '
+            'add --dev jest-junit')
+
+    # purlin: run_script PROOF-251
+    def test_a_pnpm_project_is_told_the_pnpm_command(self, tmp_path):
+        assert self._jest_needs(tmp_path, 'pnpm-lock.yaml') == (
+            'jest needs the package jest-junit to write its report: run pnpm '
+            'add --save-dev jest-junit')
+
+    # purlin: run_script PROOF-252
+    def test_jest_is_handed_the_files_before_its_reporters(
+            self, tmp_path, monkeypatch):
+        # A stand-in `npx` on PATH writes each word it was handed, one per
+        # line, so the command line jest would get is read back.
+        bin_dir = tmp_path / 'bin'
+        bin_dir.mkdir()
+        _script(bin_dir / 'npx',
+                '#!/usr/bin/env bash\nprintf "%s\\n" "$@" > npx-args.txt\n')
+        os.chmod(str(bin_dir / 'npx'), 0o755)
+        monkeypatch.setenv('PATH', str(bin_dir) + os.pathsep
+                           + os.environ.get('PATH', ''))
+        root = _project(tmp_path, tests=[frameworks.entry_for('jest')])
+        (root / 'test').mkdir()
+        for name in ('feat', 'other'):
+            _spec(root, name)
+            (root / 'test' / ('%s.test.js' % name)).write_text(
+                '// purlin: %s PROOF-1\ntest("ok", () => {});\n' % name,
+                encoding='utf-8')
+        _run(root, '--feature', 'feat', '--test')
+        words = (root / 'npx-args.txt').read_text(
+            encoding='utf-8').splitlines()
+        assert words[words.index('--ci'):] == [
+            '--ci', 'test/feat.test.js', '--reporters=default',
+            '--reporters=jest-junit'], words
+
+    @staticmethod
+    def _pytest_run_suggested(tmp_path, rel):
+        """The pytest command suggested in a committed project holding a
+        `conftest.py`, where the file `rel` ends on a line naming
+        `--doctest-modules`."""
+        root = _no_command(tmp_path, 'pytest')
+        path = root.joinpath(*rel.split('/'))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(str(path), 'a', encoding='utf-8') as handle:
+            handle.write('\n[pytest]\naddopts = --doctest-modules\n')
+        _git_repo(root)
+        _code, output = _run(root, '--all', '--test')
+        (entry,) = _suggested(output)
+        return entry['run']
+
+    START = ('py -3 -m pytest' if os.name == 'nt' else 'python3 -m pytest')
+
+    # purlin: run_script PROOF-253
+    def test_a_project_that_runs_its_doctests_keeps_running_them(
+            self, tmp_path):
+        assert self._pytest_run_suggested(tmp_path, 'tox.ini') == (
+            self.START + ' --doctest-modules --ignore=mutants {files} '
+            '--junitxml={report}')
+
+    # purlin: run_script PROOF-254
+    def test_a_spec_naming_the_option_adds_nothing(self, tmp_path):
+        assert self._pytest_run_suggested(tmp_path, 'specs/a/feat.md') == (
+            self.START + ' --ignore=mutants {files} --junitxml={report}')
 
     # purlin: run_script PROOF-135
     def test_sql_is_told_it_runs_through_sqlite3(self, tmp_path):
@@ -2843,9 +3111,22 @@ class TestEachRuleThatFailsOrHasNoTest:
             ('PROOF-2', 'RULE-2', ' @env(%s)' % other)))
         _code, output = _run(root, '--all', '--test')
         lines = output.splitlines()
-        assert 'feat RULE-2 has no test. Run purlin:build feat.' in lines, \
-            output
+        assert ('feat RULE-2 has no test for PROOF-2. Run purlin:build feat.'
+                in lines), output
         assert not [text for text in lines if ' need' in text], output
+
+    # purlin: run_script PROOF-255
+    def test_a_rule_whose_only_proof_has_no_test_names_that_proof(
+            self, tmp_path):
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat', rules=2, proofs=(('PROOF-1', 'RULE-1', ''),
+                                             ('PROOF-2', 'RULE-2', '')))
+        _code, output = _run(root, '--all', '--test')
+        line = 'feat RULE-2 has no test for PROOF-2. Run purlin:build feat.'
+        lines = output.splitlines()
+        assert line in lines, output
+        assert lines.index(line) < lines.index(
+            next(text for text in lines if text.startswith('Purlin status:')))
 
     # purlin: run_script PROOF-141
     def test_a_feature_not_run_is_not_named(self, tmp_path):
