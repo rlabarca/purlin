@@ -7,15 +7,13 @@ because a reader who learns one should not have to learn the other:
 spec has, how many proofs it writes and how many of those have no test, and
 how many rules pass their tests. Where the project has an anchor, the line
 `Anchors` heads the anchors' rows and the line `Specs` every other spec's,
-as the dashboard lists anchors above the spec table. At `strong` the row adds how many rules are
-strong and the test strength; at `signed` it adds how many are signed. The
-table scales with the gate: a `passed` project is never shown a strength or a
-signature it did not ask for, and is shown a proof count only where it writes
-a proof line.
+as the dashboard lists anchors above the spec table. Where the audit found any
+rule strong or weak, the row adds how many rules it found strong and the test
+strength, at either gate. A `passed` project is shown a proof count only where
+it writes a proof line.
 
-Below the table come the specs that name no files, the anchors whose pin is
-not current, and one line per signature that ended, naming the rule, the
-signer and why. The report ends on the summary sentence and `Left to do`, which
+Below the table come the specs that name no files and the anchors whose pin
+is not current. The report ends on the summary sentence and `Left to do`, which
 `scripts/mcp/purlin/summary.py` writes for every surface, with `→ Run:
 purlin:init --update` above them while an upgrade is pending.
 
@@ -85,9 +83,9 @@ def no_spec_lines(project_root):
     return ['No specs found under specs/.', second]
 
 
-def columns_for(gate, proofs=1):
+def columns_for(gate, proofs=1, audited=False):
     """The table's columns under `gate`, left to right: the board's own."""
-    return board_module.columns_for(gate, proofs)
+    return board_module.columns_for(gate, proofs, audited)
 
 
 def sync_status(project_root):
@@ -124,11 +122,6 @@ def sync_status(project_root):
     if pin_lines:
         lines.append('')
         lines.extend(pin_lines)
-
-    ended = summary_module.ended_lines(data)
-    if ended:
-        lines.append('')
-        lines.extend(ended)
 
     uncommitted = _uncommitted_specs(project_root)
     if uncommitted:
@@ -171,15 +164,10 @@ ANCHORS = 'Anchors'
 SPECS = 'Specs'
 
 
-def _row(feature, gate, proofs=1):
-    """One spec's row, rendered by the module the board renders from.
-
-    The `Tests` cell names how many of the spec's rules do not apply, as
-    the board reads them off the rules themselves.
-    """
-    rollup = dict(feature['rollup'], does_not_apply=sum(
-        1 for rule in feature.get('rules') or () if rule.get('does_not_apply')))
-    return board_module.row_cells(feature['name'], rollup, gate, proofs)
+def _row(feature, gate, proofs=1, audited=False):
+    """One spec's row, rendered by the module the board renders from."""
+    return board_module.row_cells(feature['name'], feature['rollup'], gate,
+                                  proofs, audited)
 
 
 def _proof_lines(data):
@@ -190,13 +178,17 @@ def _proof_lines(data):
 def _table(data):
     gate = data['gate']['gate']
     proofs = _proof_lines(data)
-    columns = columns_for(gate, proofs)
+    audited = board_module.shows_strong(
+        (data.get('summary') or {}).get('audit'))
+    columns = columns_for(gate, proofs, audited)
     # The feature with the most rules left to do reads first: the table
     # opens on the work rather than on the alphabet.
     features = sorted(data['features'],
                       key=lambda f: (-_left_count(f), f['name']))
-    anchors = [_row(f, gate, proofs) for f in features if f.get('is_anchor')]
-    specs = [_row(f, gate, proofs) for f in features if not f.get('is_anchor')]
+    anchors = [_row(f, gate, proofs, audited)
+               for f in features if f.get('is_anchor')]
+    specs = [_row(f, gate, proofs, audited)
+             for f in features if not f.get('is_anchor')]
     rows = anchors + specs
     widths = [max(len(columns[i]), max((len(r[i]) for r in rows), default=0))
               for i in range(len(columns))]

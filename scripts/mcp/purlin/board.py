@@ -14,11 +14,10 @@ The columns, left to right:
     Rules    how many rules the spec has
     Proofs   how many proof lines it writes, and how many have no test; at
              `passed` only where the project writes a proof line at all
-    Tests    how many rules pass, and how many do not apply, are partial or
-             are failing
-    Strong   how many of its rules are strong, and the test strength where
-             one was measured, at `strong` and above
-    Signed   how many of its rules are signed, at `signed`
+    Tests    how many rules pass, and how many are partial or are failing
+    Strong   how many of its rules the audit found strong, and the test
+             strength where one was measured, at either gate, wherever the
+             audit found any rule of the project strong or weak
 
 Every when, who and platform detail lives in a hover on the dashboard and on
 the rule screen; a cell here carries counts and nothing else.
@@ -26,31 +25,40 @@ the rule screen; a cell here carries counts and nothing else.
 
 DOT = ' · '
 
-# The six columns, and which gate each one appears at.
-COLUMNS = ('Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed')
+# The five columns, left to right.
+COLUMNS = ('Spec', 'Rules', 'Proofs', 'Tests', 'Strong')
 STRONG_COLUMNS = ('Strong',)
-SIGNED_COLUMNS = ('Signed',)
+
 
 def shows_proofs(gate, proofs):
     """Whether the Proofs column and the proof count are shown.
 
     Proofs are optional at `passed`, so a project there that writes none is
-    shown no count of them; from `strong` up every rule needs one.
+    shown no count of them; at `signed` every rule needs one.
     """
     return gate != 'passed' or bool(proofs)
 
 
-def columns_for(gate, proofs=1):
+def shows_strong(audit):
+    """Whether the Strong column is shown: the audit found a rule strong or weak.
+
+    `audit` is the payload's `summary.audit`. A project the audit has not
+    read is shown no count of what it found.
+    """
+    audit = audit or {}
+    return bool((audit.get('strong') or 0) + (audit.get('weak') or 0))
+
+
+def columns_for(gate, proofs=1, audited=False):
     """The columns under `gate`, left to right.
 
-    `proofs` is how many proof lines the project writes.
+    `proofs` is how many proof lines the project writes; `audited` is
+    `shows_strong`'s answer.
     """
     columns = [name for name in COLUMNS[:4]
                if name != 'Proofs' or shows_proofs(gate, proofs)]
-    if gate in ('strong', 'signed'):
+    if audited:
         columns.extend(STRONG_COLUMNS)
-    if gate == 'signed':
-        columns.extend(SIGNED_COLUMNS)
     return tuple(columns)
 
 
@@ -58,8 +66,9 @@ def passing(rollup):
     """How many of a spec's rules pass their tests.
 
     A rule is counted in exactly one bucket, so the rules that pass are the
-    ones left after the three that do not: untested, failing, and partial. Reading it this way means the six counts always add up to the
-    rule total, whatever the gate.
+    ones left after the three that do not: untested, failing, and partial.
+    Reading it this way means the four buckets always add up to the rule
+    total.
     """
     total = rollup.get('rules') or 0
     short = sum(rollup.get(key) or 0
@@ -68,13 +77,8 @@ def passing(rollup):
 
 
 def strong_met(rollup):
-    """How many of a spec's rules meet the strong cell."""
-    return (rollup.get('strong') or 0) + (rollup.get('signed') or 0)
-
-
-def signed_met(rollup):
-    """How many of a spec's rules meet the signed cell."""
-    return rollup.get('signed') or 0
+    """How many of a spec's rules the audit found strong."""
+    return rollup.get('strong') or 0
 
 
 def rules_cell(rollup):
@@ -97,15 +101,8 @@ def proofs_cell(rollup):
 
 
 def tests_cell(rollup):
-    """`<passed> of <rules>`, then `· <k> does not apply`, `· <k> partial`
-    and `· <k> failing`.
-
-    A rule that does not apply is counted among the rules that pass;
-    `does_not_apply` in `rollup` is how many of the spec's rules carry it.
-    """
+    """`<passed> of <rules>`, then `· <k> partial` and `· <k> failing`."""
     text = '%d of %d' % (passing(rollup), rollup.get('rules') or 0)
-    if rollup.get('does_not_apply'):
-        text += '%s%d does not apply' % (DOT, rollup['does_not_apply'])
     if rollup.get('partial'):
         text += '%s%d partial' % (DOT, rollup['partial'])
     if rollup.get('failing'):
@@ -129,26 +126,15 @@ def strong_cell(rollup):
     return text
 
 
-def signed_cell(rollup):
-    """`<n> of <rules>`, or empty for a spec with no rules."""
-    total = rollup.get('rules') or 0
-    if not total:
-        return ''
-    return '%d of %d' % (signed_met(rollup), total)
-
-
-def row_cells(name, rollup, gate, proofs=1):
+def row_cells(name, rollup, gate, proofs=1, audited=False):
     """One spec's row under `gate`, as the tuple the columns describe.
 
-    `proofs` is how many proof lines the project writes, as `columns_for`
-    reads it.
+    `proofs` and `audited` are read as `columns_for` reads them.
     """
     cells = [name, rules_cell(rollup)]
     if shows_proofs(gate, proofs):
         cells.append(proofs_cell(rollup))
     cells.append(tests_cell(rollup))
-    if gate in ('strong', 'signed'):
+    if audited:
         cells.append(strong_cell(rollup))
-    if gate == 'signed':
-        cells.append(signed_cell(rollup))
     return tuple(cells)

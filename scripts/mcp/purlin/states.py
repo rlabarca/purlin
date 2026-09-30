@@ -1,8 +1,6 @@
-"""The three steps of a rule.
+"""The two cells of a rule.
 
-One rule, read top to bottom. Each row below is a cell, and the gate decides
-how many rows exist: every rule carries every cell up to the gate, and a
-cell above the gate is absent, not empty.
+One rule, read top to bottom. Every rule carries both cells at both gates.
 
     passed  Met when every proof has a passing test in an evidence section
             that is current: its spec, code and tests fingerprint equals the
@@ -15,68 +13,40 @@ cell above the gate is absent, not empty.
             cell carries `platforms`, one entry per operating system a
             current section covers, and reads `partial` where two systems
             that each have a current section disagree. `partial` is not met.
+            A `@manual` proof is read out of it, so a rule whose every proof
+            is `@manual` reads `passed` with no test.
 
-    strong  Met when the tests are worth trusting: the AI audit read the
-            rule's current text, proof and test and found nothing, and, where
-            mutation testing is on and measured a score, the score reaches the
-            project minimum. `strong`, `weak`, `not audited`, `manual test`,
-            and `no proof` for a rule whose passing test answers no proof:
-            proofs are optional at the gate `passed` and required above it.
-            `waiting` while the passed cell is not met, because the audit
-            reads a test that passes; `weak` means only that the audit found
-            fault or, with mutation testing on, the strength fell under the
-            minimum or was not measured.
+    strong  What the AI audit found, and nothing waits on it. `strong`,
+            `weak`, `not audited`, `manual test`, and `no proof` for a rule
+            whose passing test answers no proof. `waiting` while the passed
+            cell is not met, because the audit reads a test that passes. The
+            word comes from the audit entry's `verdict` alone. Its reasons:
+            the audit's findings where weak; the strength where the breaks
+            measured one, `strength 84%`; `strength not measured: <why>`
+            where the engine is on and measured nothing.
 
-    signed  Met when a person signed what the rule is now: its text, its
-            proof, its test, its feature's code, what the audit found and
-            the machines its tests ran on. `signed` or `unsigned`, and
-            `waiting` where no signature binds the rule and the strong cell
-            is not met, other than by a hand check, which a person signs. A
-            signature that no longer binds the rule is read as none, and
-            where it was the newest that counted the cell reads `unsigned`
-            with `ENDED`, naming the signer and each cause. At the
-            gate `signed` a rule whose spec names no files in `> Scope:`
-            reads `unsigned` whatever was signed, because a signature cannot
-            be tied to the code it governs; while it reads `waiting` it
-            still waits for the audit.
-
-A proof marked `@manual` is checked by a person, who signs the rule: a
-signature that counts and binds the rule's current hashes is its hand check,
-with or without a note, and stands for the test, the audit and the
-signature. `hand_checked` says so.
-
-Every rule is listed once, under the spec that owns it, and an anchor's
-rule is signed once, over the whole project. No code is broken on purpose
-for an anchor, so where its strong cell is met the one reason says the AI
-audit alone judges its tests, at every mutation setting.
+An anchor's rule is listed once, under the anchor. No code is broken on
+purpose for an anchor, so where its strong cell is met the one reason says
+the AI audit alone judges its tests, at every mutation setting.
 
 Every rule of a spec that writes a rule or proof number twice, or holds a
 line left from a merge conflict, reads `failed` with the reasons
-`spec_broken` names, before any signature is read; the cells above wait.
-
-A rule that a counting signature carrying `does_not_apply` binds reads
-`does not apply` in every cell up to the gate, each met, each with the one
-reason `by <signer>: <why>`: a person signed that a pinned anchor's rule
-does not apply to the project. Once that signature ends, and while the last
-signature for the rule carried `does_not_apply`, the rule reads its cells as
-usual and `to_confirm` says it waits for a person to confirm it again.
+`spec_broken` names; the strong cell waits.
 
 Each cell carries its reasons, so a surface never has to work out why a word
 reads the way it does.
 
-`rule_cells(inp, cfg)` takes one rule's evidence and the resolved gate, and
-returns:
+`rule_cells(inp, cfg)` takes one rule's evidence and the resolved settings,
+and returns:
 
     {'cells': {'passed': {...}, 'strong': {...}},
-     'bucket': 'strong',
-     'hand_checked': False,
-     'does_not_apply': None,
-     'to_confirm': False,
+     'bucket': 'passed',
      'flags': {'failing': False, 'partial': False, 'manual': False,
                'not_audited': False, 'out_of_date': False,
-               'no_proof': False}}
+               'no_proof': False, 'strong': True, 'weak': False}}
 
-A rule's **bucket** is the one tile it is counted in.
+A rule's **bucket** is the one tile it is counted in; the rollup counts the
+flags `strong`, `weak`, `not_audited` and `manual` beside the buckets.
 """
 
 import os
@@ -88,20 +58,18 @@ if _MCP_DIR not in sys.path:
 
 from purlin import evidence as evidence_module
 
-# The three cells, in the order the chain reads them. A gate value names the
-# deepest cell that exists, so the names are the gate values.
-CELLS = ('passed', 'strong', 'signed')
+# The two cells, in the order the chain reads them. Every rule carries both
+# at both gates.
+CELLS = ('passed', 'strong')
 
-# The strong cell's word for a rule a person checks by hand, and the one
-# for a rule no audit has read.
-HAND_CHECK_WORDS = ('manual test',)
+# The strong cell's word for a rule no audit has read.
 NOT_AUDITED = 'not audited'
 
 # A `@manual` proof's own word: a person checks it by hand.
 HAND_CHECK = 'hand check'
 
 # The flags a rollup counts, beside the buckets and never instead of them.
-COUNTED_FLAGS = ('manual', 'not_audited')
+COUNTED_FLAGS = ('strong', 'weak', 'not_audited', 'manual')
 
 # The strong cell's reasons for what the audit said and could not say.
 NOT_AUDITED_REASON = 'no audit has run on this code'
@@ -113,10 +81,9 @@ NO_SCORE = 'no mutation score measured'
 # code is broken on purpose for an anchor.
 AUDIT_ALONE = "the AI audit alone judges an anchor's tests"
 
-# The word every cell of a rule reads once a person signed that it does not
-# apply to the project, and the one reason each cell gives.
-DOES_NOT_APPLY = 'does not apply'
-DOES_NOT_APPLY_REASON = 'by %s: %s'
+# The strong cell's reason where the breaks measured a strength, the
+# whole-number part as every surface shows a share.
+STRENGTH = 'strength %d%%'
 
 # The strong cell's reason where mutation testing is on and measured nothing
 # for the rule's feature: the engine's own sentence, or the spec naming no
@@ -138,12 +105,10 @@ SOURCES = ('ci', 'local')
 
 OUT_OF_DATE = 'out of date'
 
-# The word a cell reads while the cell below it is not met: the strong cell
-# while the tests have not passed, the signed cell while the audit has not
-# cleared the rule. It is never met.
+# The word the strong cell reads while the tests have not passed. It is
+# never met.
 WAITING = 'waiting'
 WAITING_FOR_TESTS = 'waiting for its tests to pass'
-WAITING_FOR_AUDIT = 'waiting for the audit'
 
 # The order a person reads systems in, whatever order the evidence names
 # them.
@@ -157,44 +122,18 @@ NO_PROOF_WRITTEN = 'no proof written'
 NO_PROOF = 'no proof'
 NO_PROOF_REASON = 'the rule has a test and no proof'
 
-# The reason the signed cell gives, at the gate `signed`, for a rule whose
-# own spec names no files in `> Scope:`.
-NAMES_NO_FILES = ('the spec names no files in > Scope:, so a signature cannot '
-                  'be tied to the code it governs')
-
-# A signature that ended: the rule's newest counting signature, which no
-# longer binds it while no other counting signature does. The signed cell's
-# one reason, the line the status prints, and each cause, one per field that
-# differs, joined `; `.
-ENDED = 'the signature by %s ended because %s'
-ENDED_LINE = '%s %s: the signature by %s ended because %s.'
-CAUSE_RULE = "the rule's wording changed"
-CAUSE_PROOF = "a proof's wording changed"
-CAUSE_TEST = 'a test file behind it changed: %s'
-CAUSE_CODE = 'a file its spec names changed'
-CAUSE_PROJECT = 'a file of the project changed'
-CAUSE_AUDIT = 'what the audit found changed'
-CAUSE_MACHINE = 'the results on %s now come from %s, not %s'
-CAUSE_GONE = '%s has no results any more'
-# The cause of a test file change for a rule that names no test file now.
-NO_TEST_FILE = 'none'
+# The buckets a rollup counts, one per rule.
+BUCKETS = ('untested', 'failing', 'partial', 'passed')
 
 
-def cells_for(gate):
-    """The cells that exist under `gate`, `passed` first."""
-    if gate not in CELLS:
-        gate = CELLS[0]
-    return CELLS[:CELLS.index(gate) + 1]
+def cells_for():
+    """The cells every rule carries, `passed` first."""
+    return CELLS
 
 
-def bucket_keys(gate):
-    """The bucket names a rollup counts under `gate`."""
-    keys = ['untested', 'failing', 'partial', 'passed']
-    if gate in ('strong', 'signed'):
-        keys.append('strong')
-    if gate == 'signed':
-        keys.append('signed')
-    return keys
+def bucket_keys():
+    """The bucket names a rollup counts."""
+    return list(BUCKETS)
 
 
 def rule_cells(inp, cfg):
@@ -211,11 +150,6 @@ def rule_cells(inp, cfg):
     `sections`      every evidence section of the rule's own feature, each
                     `{source, os, path, section, current, out_of_date}` as
                     `evidence.checked_sections` gives them
-    `signatures`    every signature file for this rule, each carrying `counts`
-                    and `count_reason` from `signatures.counts`
-    `applies_to`, `rule_hash`, `proof_hash`, `test_hash`, `code_hash`,
-    `machines`      what a signature is made over, beside `audit_hash`
-    `audit_hash`    the hash of what the audit found
     `anchor`        true for a rule of an anchor, whose strong cell, where
                     it is met, reads `AUDIT_ALONE` and never a strength
     `audit`         the evidence's audit entry for this rule's current
@@ -227,213 +161,54 @@ def rule_cells(inp, cfg):
                     for the feature, or '' where nothing is said
     `feature`       the feature that owns the rule, named in the reason a
                     spec with no code files gives
-    `incomplete`    why the rule's own spec names no files, or None; at the
-                    gate `signed` the signed cell then reads `unsigned` with
-                    `NAMES_NO_FILES`, because a signature cannot be tied to
-                    the code it governs, unless it reads `waiting`
+    `incomplete`    why the rule's own spec names no files, or None
     `spec_broken`   why every rule of the rule's own spec reads `failed`, as
                     `specs.broken_reasons` gives it: a number written twice,
                     a line left from a merge conflict; [] for a sound spec
-    `test_hash_kind` what the rule's test hash is taken from now
-
-    The result also carries `ended`: `{signer, causes, reason, line}` for
-    the signature that ended, or None.
     """
-    gate = cfg.gate if cfg and cfg.gate in CELLS else CELLS[0]
     proofs = inp.get('proofs') or []
-
-    signatures = list(inp.get('signatures') or ())
-    current = [sig for sig in signatures if _binds(sig, inp)]
-    counting = [sig for sig in current if sig.get('counts')]
-    ended = _ended(inp, signatures, counting)
     if inp.get('spec_broken'):
-        return _broken(inp, cfg, gate, ended)
-    newest = _newest(counting)
-    if newest is not None and newest.get('does_not_apply'):
-        return _does_not_apply(inp, cfg, gate, newest)
-    last = _newest(signatures)
+        return _broken(inp, cfg)
 
     passed = _passed_cell(inp, cfg)
-    strong = _strong_cell(inp, cfg, passed, counting)
-    signed = _signed_cell(current, counting)
-    if (signed['word'] == 'unsigned' and not current
-            and not cell_is_met('strong', strong)
-            and strong['word'] not in HAND_CHECK_WORDS):
-        # A signature binds what the audit found, so a rule the audit has
-        # not cleared has nothing to sign yet. A hand check is signed by a
-        # person, so it waits on a person and not on the audit.
-        signed = dict(signed, word=WAITING, reasons=[WAITING_FOR_AUDIT])
-    if ended is not None and not current and signed['word'] == 'unsigned':
-        # A signature that ended says why. While the cell waits for the
-        # audit it keeps saying so; a newer signature that binds and does
-        # not count gives its own reason.
-        signed = dict(signed, reasons=[ended['reason']])
-    if (inp.get('incomplete') and gate == CELLS[-1]
-            and signed['word'] != WAITING):
-        # The override stands once the strong cell is met, or a person
-        # checks the rule by hand; before that the cell waits for the audit.
-        signed = dict(signed, word='unsigned', reasons=[NAMES_NO_FILES])
+    strong = _strong_cell(inp, cfg, passed)
+    return {
+        'cells': {'passed': passed, 'strong': strong},
+        'bucket': _bucket(passed),
+        'flags': _flags(passed, strong, proofs),
+    }
 
-    cells = {}
-    for name, cell in (('passed', passed), ('strong', strong),
-                       ('signed', signed)):
-        if name in cells_for(gate):
-            cells[name] = cell
 
-    flags = {
+def _flags(passed, strong, proofs):
+    """The flags of one rule, read off its two cells."""
+    return {
         'failing': passed['word'] == 'failed',
         'partial': passed['word'] == 'partial',
         'out_of_date': passed['word'] == OUT_OF_DATE,
-        'manual': 'strong' in cells and strong['word'] == 'manual test',
-        'not_audited': 'strong' in cells and strong['word'] == NOT_AUDITED,
+        'manual': strong['word'] == 'manual test',
+        'not_audited': strong['word'] == NOT_AUDITED,
         'no_proof': not proofs,
-    }
-
-    return {
-        'cells': cells,
-        'bucket': _bucket(gate, passed, strong, signed),
-        'hand_checked': bool(counting) and any(
-            proof.get('manual') for proof in proofs),
-        'flags': flags,
-        'does_not_apply': None,
-        # The last signature said the rule does not apply, and it no longer
-        # binds: a person confirms it again.
-        'to_confirm': bool(last is not None and last.get('does_not_apply')
-                           and not counting),
-        'ended': ended,
+        'strong': strong['word'] == 'strong',
+        'weak': strong['word'] == 'weak',
     }
 
 
-def _broken(inp, cfg, gate, ended):
+def _broken(inp, cfg):
     """The cells of a rule whose own spec writes a number twice or holds a
     line left from a merge conflict.
 
-    No signature is read: the passed cell reads `failed` with the reasons
-    `spec_broken` gives, the cells above it wait as for any failed rule, and
-    the rule is counted `failing`. The tests still run, so the source is the
-    one the evidence gives.
+    The passed cell reads `failed` with the reasons `spec_broken` gives, the
+    strong cell waits as for any failed rule, and the rule is counted
+    `failing`. The tests still run, so the source is the one the evidence
+    gives.
     """
     passed = dict(_passed_cell(inp, cfg), word='failed', current=True,
                   counts=True, reasons=list(inp.get('spec_broken')))
-    strong = _strong_cell(inp, cfg, passed, [])
-    signed = dict(_signed_cell([], []), word=WAITING,
-                  reasons=[WAITING_FOR_AUDIT])
-    made = {'passed': passed, 'strong': strong, 'signed': signed}
+    strong = _strong_cell(inp, cfg, passed)
     return {
-        'cells': {name: made[name] for name in cells_for(gate)},
+        'cells': {'passed': passed, 'strong': strong},
         'bucket': 'failing',
-        'hand_checked': False,
-        'flags': {'failing': True, 'partial': False, 'out_of_date': False,
-                  'manual': False, 'not_audited': False,
-                  'no_proof': not inp.get('proofs')},
-        'does_not_apply': None,
-        'to_confirm': False,
-        'ended': ended,
-    }
-
-
-def _ended(inp, signatures, counting):
-    """`{signer, causes, reason, line}` for the signature that ended, or None.
-
-    A signature ended when it is the rule's newest counting signature by its
-    `timestamp`, it no longer binds, no counting signature binds the rule,
-    and it carries no `does_not_apply`, which is `to_confirm`'s. One cause
-    per field that differs from the rule's own, in the order a signature is
-    made over them; a hand check compares the wording alone.
-    """
-    if counting:
-        return None
-    newest = None
-    for signature in signatures or ():
-        if not signature.get('counts'):
-            continue
-        if newest is None or str(signature.get('timestamp') or '') > str(
-                newest.get('timestamp') or ''):
-            newest = signature
-    if (newest is None or newest.get('does_not_apply')
-            or _binds(newest, inp)):
-        return None
-    causes = _causes(newest, inp)
-    if not causes:
-        return None
-    signer = newest.get('signer')
-    joined = '; '.join(causes)
-    return {'signer': signer, 'causes': causes,
-            'reason': ENDED % (signer, joined),
-            'line': ENDED_LINE % (inp.get('feature'), inp.get('rule_id'),
-                                  signer, joined)}
-
-
-def _causes(signature, inp):
-    """Why a signature no longer binds the rule, one cause per field that differs."""
-    def differs(key):
-        return str(signature.get(key) or '') != str(inp.get(key) or '')
-
-    causes = []
-    if differs('rule_hash'):
-        causes.append(CAUSE_RULE)
-    if differs('proof_hash'):
-        causes.append(CAUSE_PROOF)
-    if (inp.get('test_hash_kind') or signature.get('test_hash_kind')) == 'manual':
-        # A hand check is bound to the wording of its rule and proofs alone.
-        return causes
-    if differs('test_hash'):
-        files = sorted({test.get('file') for proof in inp.get('proofs') or ()
-                        for test in proof.get('tests') or ()
-                        if isinstance(test, dict) and test.get('file')})
-        causes.append(CAUSE_TEST % (', '.join(files) or NO_TEST_FILE))
-    if differs('code_hash'):
-        causes.append(CAUSE_PROJECT if inp.get('anchor') else CAUSE_CODE)
-    if differs('audit_hash'):
-        causes.append(CAUSE_AUDIT)
-    signed_on = signature.get('machines') or {}
-    now = inp.get('machines') or {}
-    for name in sorted(signed_on):
-        if name not in now:
-            causes.append(CAUSE_GONE % system_word(name))
-        elif now[name] != signed_on[name]:
-            causes.append(CAUSE_MACHINE % (system_word(name), now[name],
-                                           signed_on[name]))
-    return causes
-
-
-def _newest(signatures):
-    """The signature made last among `signatures`, or None for none."""
-    newest = None
-    for signature in signatures or ():
-        if newest is None or str(_signature_at(signature) or '') > str(
-                _signature_at(newest) or ''):
-            newest = signature
-    return newest
-
-
-def _does_not_apply(inp, cfg, gate, signature):
-    """Every cell up to the gate of a rule signed as not applying.
-
-    Each cell reads `does not apply`, is met, and gives the one reason
-    naming the signer and why. The rule's bucket is the gate's own step, it
-    carries no flag, and `does_not_apply` holds the reason, the signer and
-    when it was signed.
-    """
-    why = str(signature.get('does_not_apply') or '')
-    reasons = [DOES_NOT_APPLY_REASON % (signature.get('signer'), why)]
-    signed = _signed_cell([signature], [signature])
-    made = {'passed': dict(_passed_cell(inp, cfg)),
-            'strong': {'strength': None, 'findings': [], 'evidence': None},
-            'signed': signed}
-    cells = {name: dict(made[name], word=DOES_NOT_APPLY, reasons=list(reasons))
-             for name in cells_for(gate)}
-    return {
-        'cells': cells,
-        'bucket': gate,
-        'hand_checked': False,
-        'flags': {name: False for name in ('failing', 'partial', 'out_of_date',
-                                           'manual', 'not_audited',
-                                           'no_proof')},
-        'does_not_apply': {'why': why, 'signer': signature.get('signer'),
-                           'at': _signature_at(signature)},
-        'to_confirm': False,
-        'ended': None,
+        'flags': _flags(passed, strong, inp.get('proofs')),
     }
 
 
@@ -459,8 +234,8 @@ def _passed_cell(inp, cfg):
     A `@manual` proof declares that no test is written for it and no proof
     entry is ever produced, so the passed cell has no question to ask of it:
     it is read out here and the question moves to the strong cell, where
-    `manual test` is the honest word and a person's signature is the
-    evidence.
+    `manual test` is the honest word. A person checks it in the walk of
+    `purlin:sign` when a release is signed.
     """
     written = inp.get('proofs') or []
     cell = {'word': 'no test', 'source': None, 'current': False,
@@ -785,22 +560,21 @@ def _section_passes(proofs, current):
 # The strong cell
 # ---------------------------------------------------------------------------
 
-def _strong_cell(inp, cfg, passed, counting_signatures):
-    """The strong cell: whether the tests behind a met passed cell are worth trusting.
+def _strong_cell(inp, cfg, passed):
+    """The strong cell: what the AI audit found in the tests behind a met passed cell.
 
-    The AI audit decides it. An entry for the rule's current text, proof and
-    test whose `verdict` is `strong` meets the cell; `weak` carries each
-    finding as a reason; `undecided` is build work too, and reads `weak` with
-    the audit's own sentence. With mutation testing on and a score measured,
-    the score must also reach `min_strength`; with it on and nothing measured,
-    because the engine said why or the spec names no code files, the cell
-    reads `weak` with `strength not measured: <why>`. With it off, or with an
-    engine that cannot run here and so gave no reason, the audit alone
-    decides and the cell says no score was measured. A rule the audit has not
-    read reads `not audited`.
+    Nothing waits on it. The word comes from the audit entry for the rule's
+    current text, proof and test: `strong`, or `weak` carrying each finding
+    as a reason; `undecided` reads `weak` with the audit's own sentence. With
+    mutation testing on, a measured strength is one more reason,
+    `strength 84%`, and no minimum is read; where the engine measured
+    nothing, because it said why or the spec names no code files, the reason
+    is `strength not measured: <why>` and the word stays the audit's. With it
+    off, or with an engine that cannot run here and so gave no reason, a
+    strong cell says no score was measured. A rule the audit has not read
+    reads `not audited`.
     """
     strength = inp.get('test_strength')
-    gate = cfg.gate if cfg else None
     cell = {'word': 'weak', 'strength': strength, 'findings': [],
             'evidence': None, 'reasons': []}
 
@@ -813,9 +587,8 @@ def _strong_cell(inp, cfg, passed, counting_signatures):
         return cell
 
     if not inp.get('proofs'):
-        # Proofs are optional at `passed` and required above it: a passing
-        # test marked with the rule's own id answers no proof, so the audit
-        # has nothing to read it against.
+        # A passing test marked with the rule's own id answers no proof, so
+        # the audit has nothing to read it against.
         cell['word'] = NO_PROOF
         cell['reasons'] = [NO_PROOF_REASON]
         return cell
@@ -828,13 +601,7 @@ def _strong_cell(inp, cfg, passed, counting_signatures):
 
     if any(proof.get('manual') for proof in inp.get('proofs') or ()):
         # A `@manual` proof has no test for the audit to read. A person
-        # checks it and signs, and a signature that counts for the current
-        # hashes is what meets the cell, with or without a note.
-        if counting_signatures:
-            cell['word'] = 'strong'
-            cell['reasons'] = ['hand check by %s'
-                               % counting_signatures[0].get('signer')]
-            return cell
+        # checks it in the walk of `purlin:sign` when a release is signed.
         cell['word'] = 'manual test'
         cell['reasons'] = ['manual proof']
         return cell
@@ -854,80 +621,27 @@ def _strong_cell(inp, cfg, passed, counting_signatures):
                         for line in cell['findings']] or [COULD_NOT_DECIDE])
 
     mutation_on = bool(cfg) and (cfg.mutation_engine or 'none') != 'none'
-    min_strength = cfg.min_strength if cfg else None
     anchor = bool(inp.get('anchor'))
-    if (mutation_on and not anchor and strength is not None
-            and min_strength is not None and strength < min_strength):
-        # The whole-number part, as every surface shows a share: 69.6
-        # under 70 reads 69%, never the minimum itself.
-        reasons.append('strength %d%% under %d%%'
-                       % (int(strength), min_strength))
-    if anchor:
-        # No code is broken on purpose for an anchor, so no strength speaks
-        # for its tests: the audit alone does.
+    if anchor or not mutation_on:
+        # No code is broken on purpose for an anchor, and none with the
+        # breaks off, so no strength speaks for the tests.
         pass
-    elif (mutation_on and strength is None and gate in ('strong', 'signed')
-            and inp.get('incomplete')):
-        # Nothing names the code to break, so nothing was measured, and
-        # with breaking on nothing measured is not strong.
+    elif strength is not None:
+        reasons.append(STRENGTH % int(strength))
+    elif inp.get('incomplete'):
+        # Nothing names the code to break, so nothing was measured.
         reasons.append(NOT_MEASURED % (NO_CODE_FILES % inp.get('feature')))
-    elif mutation_on and strength is None and inp.get('strength_missing'):
+    elif inp.get('strength_missing'):
         reasons.append(NOT_MEASURED % inp.get('strength_missing'))
 
-    if reasons:
-        cell['word'] = 'weak'
-        cell['reasons'] = reasons
-        return cell
-    cell['word'] = 'strong'
-    if anchor:
+    cell['word'] = 'strong' if answered == 'strong' else 'weak'
+    if cell['word'] == 'strong' and anchor:
         cell['strength'] = None
-        cell['reasons'] = [AUDIT_ALONE]
-    elif not mutation_on or strength is None:
-        cell['reasons'] = [NO_SCORE]
+        reasons = [AUDIT_ALONE]
+    elif cell['word'] == 'strong' and not reasons:
+        reasons = [NO_SCORE]
+    cell['reasons'] = reasons
     return cell
-
-
-# ---------------------------------------------------------------------------
-# The signed cell
-# ---------------------------------------------------------------------------
-
-def _signature_at(signature):
-    """When a signature was made: the commit date, else the file's own stamp."""
-    return signature.get('committed_at') or signature.get('timestamp')
-
-
-def _signed_cell(current, counting):
-    """The signed cell: what the signature files say, whatever the cells below read.
-
-    A signature is a fact about committed files. This cell is computed from
-    those files alone and reads `signed` or `unsigned`, and names the
-    signer, their name, the key's fingerprint and when. A signature that no
-    longer binds the rule is read as none: the rule is back to `unsigned`,
-    and `rule_cells` gives the reason where that signature ended.
-    """
-    cell = {'word': 'unsigned', 'signer': None, 'signer_name': None,
-            'key_fingerprint': None, 'at': None, 'path': None, 'reasons': []}
-    signature = (counting or current or [None])[0]
-    if signature is None:
-        return cell
-    cell.update({'signer': signature.get('signer'),
-                 'signer_name': signature.get('signer_name'),
-                 'key_fingerprint': signature.get('key_fingerprint'),
-                 'at': _signature_at(signature),
-                 'path': signature.get('path')})
-    if counting:
-        cell['word'] = 'signed'
-        cell['reasons'] = ['by %s' % signature.get('signer')]
-        return cell
-    reason = signature.get('count_reason')
-    cell['reasons'] = [reason] if reason else []
-    return cell
-
-
-def _binds(signature, inp):
-    """True when a signature still binds the rule `inp` describes."""
-    from purlin import signatures as signatures_module
-    return signatures_module.is_current(signature, dict(inp))
 
 
 # ---------------------------------------------------------------------------
@@ -935,47 +649,39 @@ def _binds(signature, inp):
 # ---------------------------------------------------------------------------
 
 def cell_is_met(name, cell):
-    """True when one cell reads the word that meets it, or `does not apply`."""
+    """True when one cell reads the word that meets it."""
     if not cell:
         return False
-    return cell['word'] in (name, DOES_NOT_APPLY)
+    return cell['word'] == name
 
 
-def _bucket(gate, passed, strong, signed):
-    """The one tile a rule is counted in: the deepest cell it met, up to the gate."""
+def _bucket(passed):
+    """The one tile a rule is counted in, read off its passed cell."""
     if passed['word'] == 'failed':
         return 'failing'
     if passed['word'] == 'partial':
         return 'partial'
     if not cell_is_met('passed', passed):
         return 'untested'
-    if gate == 'passed' or not cell_is_met('strong', strong):
-        return 'passed'
-    if gate == 'strong' or not cell_is_met('signed', signed):
-        return 'strong'
-    return 'signed'
+    return 'passed'
 
 
 # ---------------------------------------------------------------------------
 # Rollups
 # ---------------------------------------------------------------------------
 
-def feature_rollup(rule_results, gate='passed', test_strength=None):
+def feature_rollup(rule_results, test_strength=None):
     """One feature's rollup over `{rule_ref: rule_cells result}`.
 
-    Carries how many rules the feature has, one count per bucket the gate
-    reaches, the manual and not-audited counts, and the test strength.
+    Carries how many rules the feature has, one count per bucket, the
+    `strong`, `weak`, `not_audited` and `manual` counts, and the test
+    strength.
     """
-    keys = bucket_keys(gate)
-    counts = {key: 0 for key in keys}
+    counts = {key: 0 for key in BUCKETS}
     flagged = {name: 0 for name in COUNTED_FLAGS}
     for result in rule_results.values():
         bucket = result.get('bucket') or 'untested'
-        if bucket not in counts:
-            # A bucket above the gate cannot be reached, so it is not counted
-            # under a name the rollup does not carry.
-            bucket = keys[-1]
-        counts[bucket] += 1
+        counts[bucket if bucket in counts else 'untested'] += 1
         flags = result.get('flags') or {}
         for name in COUNTED_FLAGS:
             flagged[name] += 1 if flags.get(name) else 0
@@ -986,9 +692,9 @@ def feature_rollup(rule_results, gate='passed', test_strength=None):
     return rollup
 
 
-def project_rollup(feature_rollups, gate='passed'):
+def project_rollup(feature_rollups):
     """The project's summary: the same counts, plus how many features there are."""
-    keys = ['rules'] + bucket_keys(gate) + list(COUNTED_FLAGS)
+    keys = ['rules'] + list(BUCKETS) + list(COUNTED_FLAGS)
     summary = {'features': len(feature_rollups)}
     for key in keys:
         summary[key] = sum(rollup.get(key, 0)
