@@ -11,8 +11,8 @@
 >   audit tries again. It writes no file; the run writes what it found into the evidence.
 > Scope: scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
-> Highest-Rule: 30
-> Highest-Proof: 92
+> Highest-Rule: 31
+> Highest-Proof: 93
 
 ## Rules
 
@@ -23,7 +23,7 @@
 - RULE-5: An answer that settled with no finding is `strong`, one that settled with findings is `weak` with each line a finding, and one that did not settle is `undecided` with its lines as the reason; an answer that says neither is no answer
 - RULE-6: Each answer names the model the command's JSON reports, the one that wrote the most where several are named, or `unknown` where none is, and carries the sha256 of the criteria as they were sent
 - RULE-7: With no `claude` on the path the model cannot be reached: no call is made and the answer is only the reason `claude is not on PATH`
-- RULE-8: What the audit reads for a rule names each marked test's file, its name and its source, and the feature's test strength beside the project minimum
+- RULE-8: What the audit reads for a rule names each marked test's file, its name and its source, and the feature's test strength
 - RULE-9: A `@manual` proof's test entry reads `manual` true and names no test file and no source
 - RULE-10: When several tests back one proof, each test shows its own source; a test whose source cannot be found shows none rather than another test's
 - RULE-11: The test source is read out of JavaScript and TypeScript by balancing the brackets of the test's call, with strings, comments and regex literals stepped over, so a nested options object, an apostrophe in a title, a regex literal, a comment or a division never cuts a body short or drops a test
@@ -31,31 +31,32 @@
 - RULE-13: `ai_audit.py --help` exits 0, an unknown option or a missing `--feature` exits 2, a feature with no rule in the project exits 1, a rule the project does not hold prints only `<feature> <RULE-N> is not a rule any spec has. Run purlin:status <feature> to see its rules.` and exits 1, and the command calls no model
 - RULE-14: `ai_audit.py --feature <name>` prints what the audit reads for one rule named with `--rule`, or for every rule of the feature without it
 - RULE-16: The lines an answer holds under `notes:` are its notes, where the prompt asks for a proof longer than 60 words or holding more than one case, and a note never makes the answer `weak`
-- RULE-17: For each rule `ai_audit.py` prints, it shows the rule, its proofs, each test or `No test yet. Run purlin:build <feature>.` where it has none, the test strength's whole-number part beside the minimum where one was measured and nothing of strength where none was, and what the last audit found, in the words every surface uses, then the model and the time that read it, then each note, starting `Note:`
+- RULE-17: For each rule `ai_audit.py` prints, it shows the rule, its proofs, each test or `No test yet. Run purlin:build <feature>.` where it has none, the test strength's whole-number part where one was measured and nothing of strength where none was, and what the last audit found, in the words every surface uses, then the model and the time that read it, then each note, starting `Note:`
 - RULE-18: When `claude` exits with an error the model cannot be reached, and the answer is only the reason `claude exited with an error`
 - RULE-19: When `claude` runs past its limit the model cannot be reached, and the answer is only the reason `claude timed out after <n> s`
 - RULE-20: An answer with no settled line is asked for once more, and when the second has none either the model cannot be reached and the answer is only the reason `claude answered without a settled line`
 - RULE-21: When `.purlin/config.json` cannot be read, `ai_audit.py` prints the sentence saying why, prints no rule, writes nothing and exits 1
 - RULE-29: `ai_audit.py` run with a `--project-root` that is not a directory prints `ai_audit.py: <path> is not a directory.` and exits 2
 - RULE-30: The prompt of an anchor's rule ends on `Anchor: its rules cover the whole project, so its tests must check the whole project. No test strength is measured for an anchor.` in place of the test strength
+- RULE-31: The prompt states the feature's measured test strength as `Test strength <p>%.` and names no minimum
 
 ## Proof
 
-- PROOF-1 (RULE-1): In a project under the gate `strong`, `RULE-2` has one proof, its test passed, so its passed cell reads `passed`, and it has no audit entry; the audit reads it
-- PROOF-2 (RULE-1): In a project under the gate `strong`, the test of `RULE-2` failed, so its passed cell reads `failed`; the audit does not read it
-- PROOF-48 (RULE-1): In a project under the gate `strong`, the one proof of `RULE-2` is tagged `@manual`, its passed cell reads `passed` and it has no audit entry; the audit does not read it
-- PROOF-49 (RULE-1): In a project under the gate `strong`, `login` is an anchor under `specs/_anchors/` whose two rules pass with no audit entry, beside the feature `portal`; the audit reads each of the two once, as a rule of `login`
+- PROOF-1 (RULE-1): `RULE-2` has one proof, its test passed, so its passed cell reads `passed`, and it has no audit entry; the audit reads it
+- PROOF-2 (RULE-1): The test of `RULE-2` failed, so its passed cell reads `failed`; the audit does not read it
+- PROOF-48 (RULE-1): The one proof of `RULE-2` is tagged `@manual`, its passed cell reads `passed` and it has no audit entry; the audit does not read it
+- PROOF-49 (RULE-1): `login` is an anchor under `specs/_anchors/` whose two rules pass with no audit entry, beside the feature `portal`; the audit reads each of the two once, as a rule of `login`
 - PROOF-3 (RULE-1): In a project under the gate `passed`, `RULE-2` has one proof, its test passed and it has no audit entry; the audit reads it
 - PROOF-50 (RULE-1): In a project under the gate `signed`, `RULE-2` has one proof, its test passed and it has no audit entry; the audit reads it
-- PROOF-4 (RULE-1): In a project under the gate `strong`, `RULE-2` passes and carries an audit entry reading `strong`, recorded for its current text, proof and test; the audit does not read it
-- PROOF-51 (RULE-1): In a project under the gate `strong`, `RULE-2` passes and carries an audit entry for its current text, proof and test; asked to read again, the audit reads it
-- PROOF-52 (RULE-1): In a project under the gate `strong`, `RULE-2` carries an audit entry; its text is changed from `return 401 and the body` to `return 401 with the body` and its test passes again; it now carries no audit entry and the audit reads it
-- PROOF-53 (RULE-1): In a project under the gate `strong`, `RULE-2` carries an audit entry; its proof is changed from `verify 401 and the body "denied"` to `verify 401 and the body reads "denied"` and its test passes again; it now carries no audit entry and the audit reads it
-- PROOF-54 (RULE-1): In a project under the gate `strong`, `RULE-2` carries an audit entry; its test's line is changed from `login("ada", "wrong")` to `login("ada", "bad")` and passes again; the rule now carries no audit entry and the audit reads it
-- PROOF-11 (RULE-2): Under the gate `strong`, the prompt for `RULE-2` begins with the text of `references/review_criteria.md`, byte for byte; after it come `login RULE-2`, the rule's text, its proof `POST /login with a bad password; verify 401 and the body "denied"`, the test `test_a_bad_password_is_denied`, its line `assert login("ada", "wrong") == 401` and `Test strength: 90 percent (minimum 70)`
-- PROOF-12 (RULE-2): Under the gate `strong`, the prompt for `RULE-2` asks for what was observed and bars a recommendation, a grade and a score: it holds `settled: yes`, `one line per observation`, `Do not recommend a change`, `do not grade the rule` and `do not score it`
-- PROOF-79 (RULE-2): Under the gate `strong`, with evidence that measured no test strength, the prompt for `RULE-2` carries the line `Test strength: not measured` and no other line beginning `Test strength:`
-- PROOF-13 (RULE-3): Under the gate `strong`, the audit asks `claude` about `RULE-2`; `claude` is started exactly once, with exactly the arguments `-p`, `--output-format` and `json`, none of which holds the rule's text; it reads the whole prompt from its standard input, to the end, and the answer reads `strong`
+- PROOF-4 (RULE-1): `RULE-2` passes and carries an audit entry reading `strong`, recorded for its current text, proof and test; the audit does not read it
+- PROOF-51 (RULE-1): `RULE-2` passes and carries an audit entry for its current text, proof and test; asked to read again, the audit reads it
+- PROOF-52 (RULE-1): `RULE-2` carries an audit entry; its text is changed from `return 401 and the body` to `return 401 with the body` and its test passes again; it now carries no audit entry and the audit reads it
+- PROOF-53 (RULE-1): `RULE-2` carries an audit entry; its proof is changed from `verify 401 and the body "denied"` to `verify 401 and the body reads "denied"` and its test passes again; it now carries no audit entry and the audit reads it
+- PROOF-54 (RULE-1): `RULE-2` carries an audit entry; its test's line is changed from `login("ada", "wrong")` to `login("ada", "bad")` and passes again; the rule now carries no audit entry and the audit reads it
+- PROOF-11 (RULE-2): The prompt for `RULE-2` begins with the text of `references/review_criteria.md`, byte for byte; after it come `login RULE-2`, the rule's text, its proof `POST /login with a bad password; verify 401 and the body "denied"`, the test `test_a_bad_password_is_denied`, its line `assert login("ada", "wrong") == 401` and `Test strength 90%.`
+- PROOF-12 (RULE-2): The prompt for `RULE-2` asks for what was observed and bars a recommendation, a grade and a score: it holds `settled: yes`, `one line per observation`, `Do not recommend a change`, `do not grade the rule` and `do not score it`
+- PROOF-79 (RULE-2): With evidence that measured no test strength, the prompt for `RULE-2` carries the line `Test strength: not measured` and no other line beginning `Test strength:`
+- PROOF-13 (RULE-3): The audit asks `claude` about `RULE-2`; `claude` is started exactly once, with exactly the arguments `-p`, `--output-format` and `json`, none of which holds the rule's text; it reads the whole prompt from its standard input, to the end, and the answer reads `strong`
 - PROOF-14 (RULE-3): The audit asks about `RULE-2` with `claude` found at `/bin/claude`; the program started is exactly `/bin/claude -p --output-format json`, it is given 300 seconds, the prompt is handed over as the whole of its standard input, and no other standard input is left open to it
 - PROOF-82 (RULE-3): On Windows, with `claude.cmd` on the search path, the audit asks `claude` about `RULE-2`; it is started exactly once, with the arguments `-p`, `--output-format` and `json`, reads the whole question from its input, and the answer reads `strong` @env(windows)
 - PROOF-15 (RULE-4): The audit is handed six rules to ask about four at a time, and each `claude` call takes 0.4 seconds to answer `settled: yes`; `claude` is started 6 times, 6 answers come back reading `strong`, and at most 4 calls run at the same moment, with 4 running together at one moment
@@ -80,7 +81,7 @@
 - PROOF-26 (RULE-20): `claude` answers every question about `RULE-2` with `It looks fine to me.`; it is asked exactly 2 times, and the audit's answer is only the reason `claude answered without a settled line`
 - PROOF-62 (RULE-20): `claude` answers the first question about `RULE-2` with `It looks fine to me.` and the second with `settled: yes`; it is asked exactly 2 times, and the audit's answer reads `strong`
 - PROOF-5 (RULE-8): In a project whose evidence names the test `test_valid_credentials_return_200` for `RULE-1`, what the audit reads for `RULE-1` names the file `tests/test_login.py`, that test, and carries its line `assert login("ada", "secret") == 200`
-- PROOF-8 (RULE-8): Under the gate `strong`, with evidence that measured the feature's test strength at 90 and a project minimum of 70, what the audit reads for `RULE-2` carries the strength 90 beside the minimum 70
+- PROOF-8 (RULE-8): With evidence that measured the feature's test strength at 90, what the audit reads for `RULE-2` carries the strength 90
 - PROOF-6 (RULE-9): The proof of `RULE-1` is tagged `@manual` while the project's test file still holds a test marked for that proof; what the audit reads for `RULE-1` has a test entry reading `manual` true, with no test file and no source
 - PROOF-34 (RULE-10): The tests `test_valid_credentials_return_200` and `test_a_token_comes_back` in one file are both marked for `PROOF-1` and both passed; what the audit reads for `RULE-1` lists exactly those two, the first shown with its own source, `== 200`, and the second with its own, `token`, neither holding the other's
 - PROOF-35 (RULE-10): The evidence names a third test for `PROOF-1`, `test_renamed_away`, which the test file no longer holds; what the audit reads for `RULE-1` shows no source under `test_renamed_away`, and still shows `def test_valid_credentials_return_200` under that test and `def test_a_token_comes_back` under that one
@@ -95,9 +96,9 @@
 - PROOF-69 (RULE-11): A TypeScript test file holds a test that builds the pattern `/\/)}/`, then a second test; both are found, and the first's source holds its `expect(` and stops before the second
 - PROOF-70 (RULE-11): A TypeScript test file holds a test with a `}` and a `)` in a `//` comment and again in a `/* */` comment, then a second test; both are found, and the first's source holds its `expect(` and stops before the second
 - PROOF-71 (RULE-11): A TypeScript test file holds two one-line tests, the first dividing `4 / 2` and the second `8 / 4`; both are found, and each one's source holds its own `expect(` and not the other's
-- PROOF-27 (RULE-12): In a project under the gate `strong`, what the audit reads for `RULE-2` is taken; afterwards every file under `.purlin/`, `.purlin/runtime/` included, holds the same bytes as before, and no file is added
-- PROOF-72 (RULE-12): In a project under the gate `strong`, `claude` is asked about `RULE-2` and answers `settled: yes`; afterwards every file under `.purlin/`, `.purlin/runtime/` included, holds the same bytes as before, and no file is added
-- PROOF-73 (RULE-12): In a project under the gate `strong`, the command run for the feature `login` exits 0 and prints both rules; afterwards every file under `.purlin/`, `.purlin/runtime/` included, holds the same bytes as before, and no file is added
+- PROOF-27 (RULE-12): What the audit reads for `RULE-2` is taken; afterwards every file under `.purlin/`, `.purlin/runtime/` included, holds the same bytes as before, and no file is added
+- PROOF-72 (RULE-12): `claude` is asked about `RULE-2` and answers `settled: yes`; afterwards every file under `.purlin/`, `.purlin/runtime/` included, holds the same bytes as before, and no file is added
+- PROOF-73 (RULE-12): The command run for the feature `login` exits 0 and prints both rules; afterwards every file under `.purlin/`, `.purlin/runtime/` included, holds the same bytes as before, and no file is added
 - PROOF-30 (RULE-13): The command run with `--help` exits 0 and prints its usage, `ai_audit.py --feature <f> [--rule RULE-N] [--project-root DIR]`
 - PROOF-74 (RULE-13): The command run with `--nope` exits 2 and prints `ai_audit.py: unexpected argument --nope`
 - PROOF-75 (RULE-13): The command run with no argument exits 2 and prints `ai_audit.py: --feature is required.`
@@ -107,20 +108,21 @@
 - PROOF-7 (RULE-13): What the audit reads for `RULE-99`, which the spec of `login` does not declare, is nothing at all, not a reading with an empty rule
 - PROOF-32 (RULE-14): The command run for `--feature login --rule RULE-1` exits 0 and prints `login RULE-1` and not `login RULE-2`
 - PROOF-78 (RULE-14): The command run for `--feature login` alone exits 0 and prints both `login RULE-1` and `login RULE-2`
-- PROOF-29 (RULE-17): Under the gate `strong`, the audit entry of `RULE-2` finds `PROOF-2 asserts the status but never the body the rule names.`; the command for that rule prints `login RULE-2`, its rule, proof and test line, `Test strength 90%, against a minimum of 70%.`, `  Weak.`, the finding and `  Read by unknown at 2026-09-13T12:05:00Z.`, and no `Note:` line
-- PROOF-77 (RULE-17): Under the gate `strong`, with no audit entry for `RULE-2`, the command run for that rule prints, under `What the audit found`, `  No audit has read this rule's text, proof and test yet.` and no line naming who read it
-- PROOF-80 (RULE-17): Under the gate `strong`, with an audit entry for `RULE-2` holding the finding `PROOF-2 asserts the status but never the body the rule names.` and the note `PROOF-2 holds two cases.`, the command run for that rule prints the finding's line, then `  Read by unknown at 2026-09-13T12:05:00Z.`, then `  Note: PROOF-2 holds two cases.`
-- PROOF-84 (RULE-17): Under the gate `strong`, with an audit entry for `RULE-2` reading `strong` with no finding, the command run for that rule prints, under `What the audit found`, `  Strong. It found nothing.` and then `  Read by unknown at 2026-09-13T12:05:00Z.`
-- PROOF-85 (RULE-17): Under the gate `strong`, with an audit entry for `RULE-2` reading `strong` and holding the finding `PROOF-2 names no body.`, the command run for that rule prints, under `What the audit found`, `  Strong.`, then `  PROOF-2 names no body.`
-- PROOF-86 (RULE-17): Under the gate `strong`, with an audit entry for `RULE-2` reading `undecided` with the line `The body of PROOF-2 is not shown.`, the command run for that rule prints `  Undecided. The AI audit could not decide, so the rule reads weak until its proof or test changes.`, then `  The body of PROOF-2 is not shown.`
-- PROOF-87 (RULE-17): Under the gate `strong`, the one proof of `RULE-3` has no test marked for it; the command run for that rule prints, under `Test`, `  No test yet. Run purlin:build login.`
-- PROOF-88 (RULE-17): Under the gate `strong`, the one proof of `RULE-2` is tagged `@manual`; the command run for that rule prints, under `Test`, `  PROOF-2  manual`
-- PROOF-89 (RULE-17): Under the gate `strong`, with evidence that measured the feature's test strength at 85.7 and a project minimum of 70, the command run for `RULE-2` prints `Test strength 85%, against a minimum of 70%.`
-- PROOF-63 (RULE-17): Under the gate `strong`, with evidence that measured no test strength, the command run for `RULE-2` prints `login RULE-2` and no line naming test strength
+- PROOF-29 (RULE-17): The audit entry of `RULE-2` finds `PROOF-2 asserts the status but never the body the rule names.`; the command for that rule prints `login RULE-2`, its rule, proof and test line, `Test strength 90%, against a minimum of 70%.`, `  Weak.`, the finding and `  Read by unknown at 2026-09-13T12:05:00Z.`, and no `Note:` line
+- PROOF-77 (RULE-17): With no audit entry for `RULE-2`, the command run for that rule prints, under `What the audit found`, `  No audit has read this rule's text, proof and test yet.` and no line naming who read it
+- PROOF-80 (RULE-17): With an audit entry for `RULE-2` holding the finding `PROOF-2 asserts the status but never the body the rule names.` and the note `PROOF-2 holds two cases.`, the command run for that rule prints the finding's line, then `  Read by unknown at 2026-09-13T12:05:00Z.`, then `  Note: PROOF-2 holds two cases.`
+- PROOF-84 (RULE-17): With an audit entry for `RULE-2` reading `strong` with no finding, the command run for that rule prints, under `What the audit found`, `  Strong. It found nothing.` and then `  Read by unknown at 2026-09-13T12:05:00Z.`
+- PROOF-85 (RULE-17): With an audit entry for `RULE-2` reading `strong` and holding the finding `PROOF-2 names no body.`, the command run for that rule prints, under `What the audit found`, `  Strong.`, then `  PROOF-2 names no body.`
+- PROOF-86 (RULE-17): With an audit entry for `RULE-2` reading `undecided` with the line `The body of PROOF-2 is not shown.`, the command run for that rule prints `  Undecided. The AI audit could not decide, so the rule reads weak until its proof or test changes.`, then `  The body of PROOF-2 is not shown.`
+- PROOF-87 (RULE-17): The one proof of `RULE-3` has no test marked for it; the command run for that rule prints, under `Test`, `  No test yet. Run purlin:build login.`
+- PROOF-88 (RULE-17): The one proof of `RULE-2` is tagged `@manual`; the command run for that rule prints, under `Test`, `  PROOF-2  manual`
+- PROOF-89 (RULE-17): With evidence that measured the feature's test strength at 85.7, the command run for `RULE-2` prints `Test strength 85%.`
+- PROOF-63 (RULE-17): With evidence that measured no test strength, the command run for `RULE-2` prints `login RULE-2` and no line naming test strength
 - PROOF-37 (RULE-16): `claude` answers the question about `RULE-2` with `settled: yes`, then `notes:` and the line `- PROOF-2 holds two cases.`; the audit's answer reads `strong`, with no finding and the one note `PROOF-2 holds two cases.`
 - PROOF-38 (RULE-16): `claude` answers the question about `RULE-2` with `settled: yes`, the line `- PROOF-2 asserts the status but never the body the rule names.`, then `notes:` and `- PROOF-2 holds two cases.`; the answer reads `weak`, with that one finding and that one note
-- PROOF-39 (RULE-16): Under the gate `strong`, the prompt for `RULE-2` shows a `notes:` line in the shape of the answer, and holds the words `a note, under notes:, for a proof longer than 60 words or one holding more than one case`
+- PROOF-39 (RULE-16): The prompt for `RULE-2` shows a `notes:` line in the shape of the answer, and holds the words `a note, under notes:, for a proof longer than 60 words or one holding more than one case`
 - PROOF-81 (RULE-21): In a project whose `.purlin/config.json` holds a comma after its last setting, the command run for `--feature login` exits 1, prints only `.purlin/config.json cannot be read: <the JSON reader's message> at line <n>. Fix the file by hand; nothing ran and nothing was saved.`, and every file under `.purlin/` keeps its bytes
 - PROOF-90 (RULE-29): The command run with a `--project-root` that names no folder on disk exits 2 and prints `ai_audit.py: <that path> is not a directory.`, with the path as it was given
-- PROOF-91 (RULE-30): Under the gate `strong`, `login` is an anchor under `specs/_anchors/` whose evidence measured a test strength of 90; the last line of the prompt for `RULE-2` reads `Anchor: its rules cover the whole project, so its tests must check the whole project. No test strength is measured for an anchor.`
-- PROOF-92 (RULE-30): Under the gate `strong`, with `login` that anchor, its evidence measuring a test strength of 90, the prompt for `RULE-2` holds no line beginning `Test strength:`
+- PROOF-91 (RULE-30): `login` is an anchor under `specs/_anchors/` whose evidence measured a test strength of 90; the last line of the prompt for `RULE-2` reads `Anchor: its rules cover the whole project, so its tests must check the whole project. No test strength is measured for an anchor.`
+- PROOF-92 (RULE-30): With `login` that anchor, its evidence measuring a test strength of 90, the prompt for `RULE-2` holds no line beginning `Test strength`
+- PROOF-93 (RULE-31): With evidence that measured the feature's test strength at 84, the prompt for `RULE-2` holds the line `Test strength 84%.`, and no line of it after the criteria holds the word `minimum`

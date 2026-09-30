@@ -5,8 +5,8 @@
 >   prints the passed cell of every rule and ends on the summary and `Left to do`.
 > Scope: skills/test/SKILL.md
 > Stack: markdown, Claude Code skill definition
-> Highest-Rule: 20
-> Highest-Proof: 49
+> Highest-Rule: 21
+> Highest-Proof: 50
 
 ## Rules
 
@@ -30,6 +30,7 @@
 - RULE-18: The skill tells the agent that `purlin:test --remote` with no `gh` on GitHub or no `az` on Azure DevOps pushes nothing and names the program to install
 - RULE-19: The skill tells the agent to pass `--arm-timeout <seconds>` on to the run when the person gives it
 - RULE-20: The skill tells the agent to call `sync_status` with `project_root` set to the project root, the top folder of the git checkout
+- RULE-21: The skill names `purlin:test --release [<version>]` as the run that tags a release
 
 ## Proof
 
@@ -59,3 +60,4 @@
 - PROOF-47 (RULE-18): In the `purlin:test` skill file as shipped, Step 1 carries, its line wrapping ignored, the sentence `With no gh on GitHub or no az on Azure DevOps it pushes nothing and names the program to install; a failed run, no run found or the wait over exits 1.`
 - PROOF-48 (RULE-19): In the `purlin:test` skill file as shipped, the usage block has the line `purlin:test --arm-timeout <seconds>  Give each suite longer than an hour`, and Step 1 carries, its line wrapping ignored, ``Add `--arm-timeout <seconds>` when the person gave it.``
 - PROOF-49 (RULE-20): In the `purlin:test` skill file as shipped, the first `sync_status` is followed, its line wrapping ignored, by ``with `project_root` set to the project root, the top folder of the git checkout``
+- PROOF-50 (RULE-21): A reader of the test skill finds `purlin:test --release [<version>]  Run every test, commit the evidence and the package, and tag the release at the gate passed` as a line of its usage block
