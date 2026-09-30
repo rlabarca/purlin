@@ -1277,6 +1277,22 @@ def test_the_working_tree_notice_shows_on_the_board(browser, tmp_path):
     page.close()
 
 
+# purlin: purlin_report PROOF-198
+def test_each_warning_is_a_notice_after_the_working_tree_one(browser,
+                                                             tmp_path):
+    payload = payload_named('regulated')
+    [warning] = payload['warnings']
+    page = open_board(browser, tmp_path, payload)
+    assert texts(page, '.notice-text') == [
+        'The working tree has uncommitted changes, so what is on this board '
+        'is not what a commit would carry.', warning]
+    lowest_notice = max(box['y'] + box['height'] for box in (
+        notice.bounding_box() for notice in page.query_selector_all('.notice')))
+    first_box = page.query_selector('.tile').bounding_box()
+    page.close()
+    assert lowest_notice <= first_box['y']
+
+
 # purlin: purlin_report PROOF-22
 def test_the_working_tree_notice_is_not_on_a_rule_screen(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))

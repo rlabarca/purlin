@@ -12,7 +12,7 @@
 >   tests render.
 > Scope: scripts/report/src/page.html, scripts/report/src/styles.css, scripts/report/src/theme.js, scripts/report/src/filters.js, scripts/report/src/board.js, scripts/report/src/rule.js, scripts/report/src/app.js, scripts/report/purlin-report.html, scripts/mcp/purlin/report_data.py, dev/build_report.py, dev/capture_doc_screenshots.py
 > Stack: html/css/javascript, no framework and no build-time dependency, design tokens inlined by a python assembler
-> Highest-Rule: 59
+> Highest-Rule: 60
 
 ## Rules
 
@@ -68,6 +68,7 @@
 - RULE-57: With an uncommitted working tree the board reads `The working tree has uncommitted changes, so what is on this board is not what a commit would carry.`
 - RULE-58: A theme chosen with the toggle is the theme the page opens in after a reload
 - RULE-59: Where a hover or a screen has nothing to show, it says so in one sentence: a spec no counting run has covered, a spec no audit has read, a spec nobody has signed, a commit with no signed tag, a filter no rule is left under, a rule with no test, a proof no run has listed tests for, and an open rule the data no longer holds
+- RULE-60: Each warning the data carries is drawn on the board as a notice of its own above the boxes, after the notice of an uncommitted working tree
 
 ## Proof
 
@@ -248,3 +249,4 @@
 - PROOF-194 (RULE-59): Open the solo sample with every proof line taken out, and open login `RULE-3`, which has no test; its Tests section reads `No test yet. Type purlin:build login in Claude Code.`
 - PROOF-195 (RULE-59): Open the regulated sample's board after export `RULE-1`'s proof, reading `not run`, is given no test, open export and unfold `RULE-1`; its proof's tests read `No run has listed its tests yet.`
 - PROOF-196 (RULE-59): Open the regulated sample on login `RULE-1`'s screen, take that rule out of the data file and press the freshness line; after the reload the screen reads `That rule is not in this data. Go back to the board and pick one.`
+- PROOF-198 (RULE-60): Open the board with the regulated sample, whose data reports an uncommitted working tree and one spec warning; the notices read, in order, the uncommitted-tree sentence and that warning's text whole, and both stand above the first box
