@@ -80,12 +80,13 @@ MANUAL_TEST_FILE = TEST_FILE.split('\n\n\n# purlin: login PROOF-2')[0] + '\n'
 # ---------------------------------------------------------------------------
 
 def section(made, proofs, rules, source='local', os_name='linux', email=DANA,
-            machine=MACHINE, at=AT, commit=None, feature='login'):
+            machine=MACHINE, at=AT, commit=None, feature='login', kept=None):
     """One evidence section, as the run writes it, over the project as it stands.
 
     `proofs` is `[(id, rule, result, test name or None, reason or None)]`;
     `rules` is `{RULE-N: word}`. A section has the same fields under either
-    source.
+    source. `kept` is `{PROOF-N: where its test really ran}`, for a slow
+    result a plain run kept.
     """
     entries = []
     for proof_id, rule, result, name, reason in proofs:
@@ -95,6 +96,8 @@ def section(made, proofs, rules, source='local', os_name='linux', email=DANA,
                  else ''}
         if reason is not None:
             entry['reason'] = reason
+        if proof_id in (kept or {}):
+            entry['kept'] = dict(kept[proof_id])
         entries.append(entry)
     found = {'commit': commit or made.head(), 'dirty': False, 'at': at,
              'runner': email.split('@')[0], 'email': email,
@@ -109,7 +112,8 @@ def section(made, proofs, rules, source='local', os_name='linux', email=DANA,
     except (IOError, OSError, ValueError):
         data = {'schema': purlin_evidence.SCHEMA, 'feature': feature,
                 'source': source,
-                'spec': 'specs/auth/%s.md' % feature if feature == 'login'
+                'spec': 'specs/auth/%s.md' % feature
+                if feature in ('login', 'feat')
                 else 'specs/_anchors/%s.md' % feature,
                 'platforms': {}}
     data['platforms'][os_name] = found
@@ -562,7 +566,8 @@ class TestTheContent:
         made = made_project(strong=('RULE-1',), weak=('RULE-2',))
         try:
             assert signed_package(made)['audit'] == {
-                'strong': 1, 'weak': 1, 'not_audited': 0}
+                'strong': 1, 'weak': 1, 'spot_checked': 0, 'out_of_date': 0,
+                'not_audited': 0}
         finally:
             made.close()
 
@@ -651,6 +656,31 @@ WINDOWS_TEST_FILE = TEST_FILE + (
     '    assert login("ada", "secret") == 200\n')
 
 
+# `feat`, whose second proof is slow.
+FEAT_SPEC = (
+    '# Feature: feat\n\n'
+    '> Description: A feature with a slow proof.\n'
+    '> Scope: src/feat.py\n\n'
+    '## Rules\n\n'
+    '- RULE-1: The feature answers 1\n'
+    '- RULE-2: The feature settles against the sandbox\n\n'
+    '## Proof\n\n'
+    '- PROOF-1 (RULE-1): Call it; verify 1\n'
+    '- PROOF-2 (RULE-2): Settle against the sandbox; verify `paid` @slow\n')
+FEAT_TEST = (
+    'from src.feat import feat\n'
+    '\n'
+    '\n'
+    '# purlin: feat PROOF-1\n'
+    'def test_feat():\n'
+    '    assert feat() == 1\n'
+    '\n'
+    '\n'
+    '# purlin: feat PROOF-2\n'
+    'def test_slow():\n'
+    '    assert feat() == 1\n')
+
+
 class TestTheRuns:
 
     # purlin: package PROOF-65
@@ -718,6 +748,71 @@ class TestTheRuns:
             'code, %s: login on Linux/Unix. Run purlin:test --all --commit, '
             'then purlin:sign.' % before[:7]])
         assert project.head() == before
+
+    # purlin: package PROOF-77
+    def test_a_changed_test_command_after_the_run_is_refused(self, project):
+        project.config(tests=[{'name': 'pytest', 'run': 'pytest -x {files}',
+                               'report': None, 'format': 'junit',
+                               'files': ['tests/test_*.py']}])
+        commit_all(project, 'chore: the test command')
+        assert changed_in_head(project.root) == ['.purlin/config.json']
+        before = project.head()
+        code, lines = sign(project)
+        assert len(lines) == 1, lines
+        assert lines[0].startswith('No sign-off: these results were not '
+                                   'taken on this version of the code'), lines
+        assert (code, project.head()) == (1, before)
+
+    # purlin: package PROOF-78
+    def test_results_from_a_commit_head_does_not_hold_are_refused(
+            self, project):
+        git(project.root, 'switch', '-q', '-c', 'other')
+        git(project.root, 'commit', '-q', '--allow-empty', '-m',
+            'chore: another branch')
+        elsewhere = project.head()
+        git(project.root, 'switch', '-q', 'main')
+        assert git(project.root, 'diff', '--name-only', elsewhere,
+                   'HEAD').stdout == ''
+        assert git(project.root, 'merge-base', '--is-ancestor', elsewhere,
+                   'HEAD').returncode == 1
+        passing(project, commit=elsewhere)
+        commit_all(project)
+        before = project.head()
+        code, lines = sign(project)
+        assert len(lines) == 1, lines
+        assert lines[0].startswith('No sign-off: these results were not '
+                                   'taken on this version of the code'), lines
+        assert (code, project.head()) == (1, before)
+
+    # purlin: package PROOF-79
+    def test_a_slow_result_kept_from_an_earlier_run_is_refused(
+            self, project, capsys):
+        write(os.path.join(project.root, 'specs', 'auth', 'feat.md'),
+              FEAT_SPEC)
+        write(os.path.join(project.root, 'src', 'feat.py'),
+              'def feat():\n    return 1\n')
+        write(os.path.join(project.root, 'tests', 'test_feat.py'), FEAT_TEST)
+        commit_all(project, 'feat(feat): the feature')
+        ran_at = project.head()
+        write(os.path.join(project.root, 'README.md'), '# Login\n')
+        commit_all(project, 'docs: a readme')
+        passing(project)
+        section(project, [('PROOF-1', 'RULE-1', 'pass', 'test_feat', None),
+                          ('PROOF-2', 'RULE-2', 'pass', 'test_slow', None)],
+                {'RULE-1': 'passed', 'RULE-2': 'passed'}, feature='feat',
+                kept={'PROOF-2': {'commit': ran_at,
+                                  'at': '2026-09-13T11:00:00Z',
+                                  'machine': MACHINE, 'email': DANA}})
+        commit_all(project)
+        feat = next(entry for entry in project.payload()['features']
+                    if entry['name'] == 'feat')
+        assert [rule['cells']['passed']['word'] for rule in feat['rules']] \
+            == ['passed', 'passed']
+        code = sign_module.main(['--show', '--project-root', project.root])
+        assert (code, capsys.readouterr().out.splitlines()) == (1, [
+            'No sign-off: these results were not taken on this version of the '
+            'code, %s: feat on Linux/Unix. Run purlin:test --all --commit, '
+            'then purlin:sign.' % project.head()[:7]])
 
     # purlin: package PROOF-69
     def test_the_project_is_named_by_its_own_files(self, tmp_path):
@@ -834,6 +929,18 @@ class TestTheFingerprint:
             assert check(path, capsys) == (
                 1, ['The package does not match its fingerprint: the file is '
                     'not UTF-8 JSON.']), name
+
+    # purlin: package PROOF-80
+    def test_check_names_bytes_not_in_the_canonical_form(self, signed, capsys):
+        path = os.path.join(signed.root, *PACKAGE.split('/'))
+        with open(path, 'rb') as handle:
+            data = handle.read()
+        assert b'\r' not in data
+        with open(path, 'wb') as handle:
+            handle.write(data.replace(b'\n', b'\r\n'))
+        assert check(path, capsys) == (1, [
+            CHECK_FAILED % 'the fingerprint matches the content, but the '
+                           'bytes are not in the canonical form'])
 
     # purlin: package PROOF-46
     def test_check_names_another_schema(self, signed, capsys):

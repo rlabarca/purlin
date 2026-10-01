@@ -6,15 +6,25 @@ so two signers never conflict:
     .purlin/evidence/package/<version>.signoffs/<signer-slug>.json
 
 The slug is the signer's email local part, lowercased, with every
-non-alphanumeric character replaced by `-`. Every file in the folder was
-written by a person, through `purlin:sign`: a run writes no sign-off, ever.
-The file, field by field, is in `references/formats/signature_format.md`.
+non-alphanumeric character replaced by `-`; a second signer whose slug
+another address holds takes `<signer-slug>-2.json`, then `-3`. Every file in
+the folder was written by a person, through `purlin:sign`: a run writes no
+sign-off, ever. The file, field by field, is in
+`references/formats/signature_format.md`.
+
+**A sign-off is read as HEAD holds it.** The files are listed and read from
+HEAD's tree, never from the working tree, so a file git does not track is no
+sign-off and an edit not committed is not read.
 
 A sign-off **counts** when the last commit that touched its file carries a
 signature, that signature verifies over the commit, made with any key, and
-its `package_hash` equals the `fingerprint` of the package HEAD holds for its
-version. The key is not compared with the signer: who signed is recorded, not
-checked.
+its `package_hash` equals the fingerprint computed over the package HEAD
+holds for its version. The key is not compared with the signer: who signed is
+recorded, not checked.
+
+**Where the status reads `signed`.** `standing` decides it and nothing else
+does: `signed/<version>` names a commit that holds the package for that
+version, and a sign-off of it counts.
 """
 
 import base64
@@ -28,6 +38,7 @@ import sys
 import tempfile
 
 _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_EXPORT_DIR = os.path.join(os.path.dirname(_MCP_DIR), 'export')
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
@@ -54,50 +65,84 @@ def package_rel(version):
     return '%s/%s.json' % (PACKAGE_DIR, version)
 
 
-def committed_fingerprint(project_root, version):
-    """The `fingerprint` of the package HEAD's tree holds for `version`, or None."""
+def _package_module():
+    """`scripts/export/package.py`, which imports this module at its top."""
+    if _EXPORT_DIR not in sys.path:
+        sys.path.insert(0, _EXPORT_DIR)
+    import package
+    return package
+
+
+def _at_head(project_root, rel_path, ref='HEAD'):
+    """The bytes `ref`'s tree holds at a path, or None where it holds none."""
     try:
         result = subprocess.run(
-            ['git', 'show', 'HEAD:%s' % package_rel(version)],
+            ['git', 'show', '%s:%s' % (ref, rel_path)],
             capture_output=True, cwd=project_root, timeout=10)
     except (subprocess.SubprocessError, OSError):
         return None
-    if result.returncode != 0:
-        return None
+    return result.stdout if result.returncode == 0 else None
+
+
+def _names_at_head(project_root, rel_dir):
+    """The names HEAD's tree holds directly under a folder, sorted."""
     try:
-        package = json.loads(result.stdout.decode('utf-8'))
-    except (UnicodeDecodeError, ValueError):
+        result = subprocess.run(
+            ['git', '-c', 'core.quotepath=false', 'ls-tree', '--name-only',
+             'HEAD', '%s/' % rel_dir],
+            capture_output=True, cwd=project_root, timeout=10)
+    except (subprocess.SubprocessError, OSError):
+        return []
+    if result.returncode != 0:
+        return []
+    listed = result.stdout.decode('utf-8', 'replace').splitlines()
+    return sorted(line.strip().strip('"').rsplit('/', 1)[-1]
+                  for line in listed if line.strip())
+
+
+def committed_fingerprint(project_root, version):
+    """The fingerprint computed over the package HEAD's tree holds for `version`.
+
+    It is computed from the package's content; the `fingerprint` the file
+    stores is not taken on trust. None where HEAD holds no package for the
+    version, or holds one that does not match its own fingerprint.
+    """
+    data = _at_head(project_root, package_rel(version))
+    if data is None:
         return None
-    return package.get('fingerprint') if isinstance(package, dict) else None
+    package = _package_module()
+    if package.check_bytes(data) is not None:
+        return None
+    return package.fingerprint_of(json.loads(data.decode('utf-8')))
 
 
 def load_signoffs(project_root, version):
-    """Every sign-off of `version`, oldest first by `timestamp`.
+    """Every sign-off of `version` HEAD holds, oldest first by `timestamp`.
 
-    Each is the file's dict plus `path`, project-relative, `counts` and
-    `count_reason`, as `counts` answers them for the commit and as the
-    committed package's fingerprint answers them for `package_hash`. A file
-    that is not a JSON object is left out.
+    Each is the file's dict as HEAD's tree holds it, plus `path`,
+    project-relative, `counts` and `count_reason`, as `counts` answers them
+    for the commit and as the committed package's fingerprint answers them
+    for `package_hash`. The working tree is not read. A file that is not a
+    JSON object is left out.
     """
     rel_dir = signoffs_dir(version)
-    directory = os.path.join(project_root, *rel_dir.split('/'))
-    if not os.path.isdir(directory):
+    names = [name for name in _names_at_head(project_root, rel_dir)
+             if name.endswith('.json')]
+    if not names:
         return []
     fingerprint = committed_fingerprint(project_root, version)
     found = []
-    for basename in sorted(os.listdir(directory)):
-        if not basename.endswith('.json'):
-            continue
-        path = os.path.join(directory, basename)
+    for basename in names:
+        rel = '%s/%s' % (rel_dir, basename)
+        raw = _at_head(project_root, rel)
         try:
-            with open(path, 'r', encoding='utf-8') as handle:
-                data = json.load(handle)
-        except (IOError, OSError, UnicodeDecodeError, ValueError):
+            data = json.loads(raw.decode('utf-8')) if raw is not None else None
+        except (UnicodeDecodeError, ValueError):
             continue
         if not isinstance(data, dict):
             continue
         data = dict(data)
-        data['path'] = '%s/%s' % (rel_dir, basename)
+        data['path'] = rel
         ok, reason = counts(project_root, data)
         if ok and (not fingerprint or data.get('package_hash') != fingerprint):
             ok, reason = False, OTHER_PACKAGE
@@ -106,6 +151,36 @@ def load_signoffs(project_root, version):
     found.sort(key=lambda item: (str(item.get('timestamp') or ''),
                                  item['path']))
     return found
+
+
+# Why a `signed/<version>` tag is passed over, each one warning: the tag and
+# the version, or the tag, the version and why no sign-off of it counts.
+NO_PACKAGE_AT_TAG = ('%s: it names a commit that holds no evidence package for %s, so it '
+                     'is not a sign-off. Delete it: git tag -d %s.')
+NO_SIGNOFF_COUNTS = ('%s: no sign-off of %s counts: %s. Restore the files as they were '
+                     'signed, or sign this code: purlin:sign --version <version>.')
+# Why none counts where HEAD holds no sign-off file for the version at all.
+NONE_AT_HEAD = 'HEAD holds none'
+
+
+def standing(project_root, version):
+    """`(True, '')` where the status may read `signed <version>`, else `(False, why)`.
+
+    It may where `signed/<version>` names a commit that holds the package
+    for that version, and `load_signoffs` gives a sign-off that counts.
+    `why` is the warning: `NO_PACKAGE_AT_TAG`, or `NO_SIGNOFF_COUNTS` with
+    the reason the oldest sign-off does not count.
+    """
+    tag = facts_module.TAG_PREFIX + version
+    commit = facts_module.git_line(project_root, 'rev-list', '-n', '1', tag)
+    if not commit or _at_head(project_root, package_rel(version),
+                              commit) is None:
+        return False, NO_PACKAGE_AT_TAG % (tag, version, tag)
+    signoffs = load_signoffs(project_root, version)
+    if any(item['counts'] for item in signoffs):
+        return True, ''
+    reason = signoffs[0]['count_reason'] if signoffs else NONE_AT_HEAD
+    return False, NO_SIGNOFF_COUNTS % (tag, version, reason)
 
 
 # The reasons a signature does not count.
@@ -235,9 +310,6 @@ def _verifies(project_root, sha, payload, block):
 # The key a signer signs with
 # ---------------------------------------------------------------------------
 
-_KEY_LITERAL = 'key::'
-
-
 def home_folder():
     """The home folder as git finds it: `HOME`, then `USERPROFILE`, then Python's.
 
@@ -263,8 +335,8 @@ def expand_home(path):
 def key_fingerprint(project_root):
     """`SHA256:<base64>` of the SSH key `user.signingkey` names, or None.
 
-    `user.signingkey` is a `key::` literal, the path of a public key, or the
-    path of a private key whose public half sits beside it as `<path>.pub`.
+    `user.signingkey` is the path of a public key, or the path of a private
+    key whose public half sits beside it as `<path>.pub`.
     The fingerprint is the unpadded base64 of the sha256 of the key blob,
     as `ssh-keygen -l` prints it. None when no SSH key can be read.
     """
@@ -277,8 +349,6 @@ def key_fingerprint(project_root):
     named = result.stdout.strip() if result.returncode == 0 else ''
     if not named:
         return None
-    if named.startswith(_KEY_LITERAL):
-        return _fingerprint_of(named[len(_KEY_LITERAL):])
     path = expand_home(named)
     if not os.path.isabs(path):
         path = os.path.join(project_root, path)
@@ -307,32 +377,20 @@ def _fingerprint_of(public_key):
 def hand_notes(project_root):
     """`{(feature, rule): [reason]}` from the newest sign-off holding a note on each rule.
 
-    Every sign-off file of every version is read, whatever code it was taken
-    on. Each note becomes `states.HAND_NOTE`: the version, the signer, how
-    far HEAD is from the signed commit, the note. The signed commit is the
-    one `signed/<version>` names, or the commit that added the file.
+    Every sign-off HEAD holds, of every version, is read, whatever code it
+    was taken on, and only one that counts is shown. Each note becomes
+    `states.HAND_NOTE`: the version, the signer, how far HEAD is from the
+    signed commit, the note. The signed commit is the one `signed/<version>`
+    names, or the commit that added the file.
     """
-    folder = os.path.join(project_root, *PACKAGE_DIR.split('/'))
-    try:
-        versions = sorted(name for name in os.listdir(folder)
-                          if name.endswith('.signoffs'))
-    except OSError:
-        return {}
     signoffs = []
-    for name in versions:
-        directory = os.path.join(folder, name)
-        for basename in sorted(os.listdir(directory)):
-            if not basename.endswith('.json'):
-                continue
-            try:
-                full = os.path.join(directory, basename)
-                with open(full, 'r', encoding='utf-8') as handle:
-                    data = json.load(handle)
-            except (IOError, OSError, UnicodeDecodeError, ValueError):
-                continue
-            if isinstance(data, dict) and isinstance(data.get('notes'), list):
-                rel = '%s/%s/%s' % (PACKAGE_DIR, name, basename)
-                signoffs.append((str(data.get('timestamp') or ''), rel, data))
+    for name in _names_at_head(project_root, PACKAGE_DIR):
+        if not name.endswith('.signoffs'):
+            continue
+        for data in load_signoffs(project_root, name[:-len('.signoffs')]):
+            if data['counts'] and isinstance(data.get('notes'), list):
+                signoffs.append((str(data.get('timestamp') or ''),
+                                 data['path'], data))
     found = {}
     distances = {}
     for _at, rel, data in sorted(signoffs, key=lambda item: item[:2],

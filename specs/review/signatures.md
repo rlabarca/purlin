@@ -7,10 +7,10 @@
 >   a signed commit. The walk names who ran the tests, where and when, gives an overview and the
 >   audit's findings, and stops only at hand checks. The first sign-off of a version commits the
 >   package with it and writes the tag `signed/<version>`; later ones are added beside it.
-> Scope: scripts/mcp/purlin/signatures.py, scripts/review/sign.py
+> Scope: scripts/mcp/purlin/signatures.py, scripts/review/sign.py, scripts/mcp/purlin/facts.py
 > Stack: python/stdlib (json, subprocess), git signed commits, SSH keys
-> Highest-Rule: 129
-> Highest-Proof: 251
+> Highest-Rule: 134
+> Highest-Proof: 265
 
 ## Rules
 
@@ -22,7 +22,7 @@
 - RULE-97: A sign-off's commit counts only when the signature on it verifies over that commit; otherwise it does not count, with the reason `the signature on the commit that added it does not verify`
 - RULE-102: The command refuses, with one line naming the cause and the command to run, nothing written and exit 1, when tracked files are changed and not committed, evidence is written and not committed, a result was not taken on this version of the code, a result was taken while files were changed and not committed, or a rule does not pass
 - RULE-106: The sign-off file records the package's fingerprint as `package_hash`, and under `shown` the overview, the runs, each hand check walked and whether the audit's list was opened, with every note typed, an empty answer recorded as `no note`, and no answer word
-- RULE-108: A sign-off counts only while its `package_hash` equals the fingerprint of the package `HEAD` holds for its version
+- RULE-108: A sign-off counts only while its `package_hash` equals the fingerprint computed over the package `HEAD` holds for its version, and a later sign-off is refused, with one line and nothing written, where that package does not match its own fingerprint
 - RULE-109: `stop` at any stop, and any answer but yes to the last question, write nothing and exit 0
 - RULE-110: `--show` prints the run lines, the overview, the audit's findings and every stop, then `Answer each stop, then run purlin:sign --answers <file>.`, asks nothing, writes nothing and needs no key to sign with
 - RULE-111: `--answers FILE` walks with the answers the file gives, printing each after its question, and refuses with nothing written when a stop has no answer
@@ -33,11 +33,16 @@
 - RULE-121: The sign-off fetches nothing and pushes nothing, and goes ahead when the checkout holds commits the host lacks
 - RULE-122: `--check <file>` prints `The package matches its fingerprint.` and exits 0 for a package as written, and `The package does not match its fingerprint: <why>.` and exits 1 for one changed after
 - RULE-124: The command refuses, with one line naming the cause and the command to run, nothing written and exit 1, when `signed/<version>` is on a commit this checkout does not hold, the code changed since `signed/<version>`, or the branch's copy on the host, as last fetched, holds commits `HEAD` lacks
-- RULE-125: Every other refusal of the command prints one line naming what is wrong and what to do, writes nothing and exits 1: no version stated or named, the signer already signed this package, or git not making the sign-off commit
+- RULE-125: Every other refusal of the command prints one line naming what is wrong and what to do, writes nothing and exits 1: no version stated or named, the signer already signed this package, git not making the sign-off commit, or a `.purlin/config.json` that cannot be read
 - RULE-126: A hand check's stop shows the rule, each proof with its tag and the tests tied to it, the results on each system with any proof that found nothing to check and its reason, the audit's findings where it found the rule weak, and asks what the person saw
-- RULE-127: The walk opens with one line per run of the counted results, naming who ran it, on which machine, when, on which commit and how many rules, then `Signing <version> at <sha7>.`, then an overview counting per system the rules that pass and the hand checks, and the audit's strong, weak and not audited
+- RULE-127: The walk opens with one line per run of the counted results, naming who ran it, on which machine, when, on which commit and how many rules, then `Signing <version> at <sha7>.`, then an overview counting per system the rules that pass and the hand checks, and what the audit found, as the status counts it: strong, weak, spot-checked, out of date and not audited, a count of zero left out but strong
 - RULE-128: A rule with no test stops the sign-off, a rule with no proof and no test among them: the command prints one line naming each such rule and `purlin:build`, writes nothing and exits 1
 - RULE-129: A hand check's stop shows, under `Last note`, each note of the newest sign-off that holds one for the rule, worded as the dashboard words it: `noted at the sign-off of <version> by <signer>, <at this commit | 1 commit since | <n> commits since>: <note>`; where no sign-off has noted the rule the stop shows neither
+- RULE-130: The sign-off reads `signed <version>` only where `signed/<version>` names a commit holding the package for that version and a sign-off of it counts; a tag that does not is passed over, with one warning naming the tag and why, and the sign-off reads `not signed` where no tag is left
+- RULE-131: Where the sign-off's commit is made and git cannot write `signed/<version>`, the command prints one line naming the tag and git's reason and exits 1, and the next `purlin:sign` writes the tag on that commit and adds no second sign-off
+- RULE-132: The command refuses in the same way while a rule has no result that counts, naming each: a rule never run, a slow proof not run, a rule with no result on a system one of its proofs is tagged for, the rules of a spec that holds a number twice or a merge-conflict line, and each test comment to correct
+- RULE-133: A sign-off is read as `HEAD` holds it: a file not tracked, or changed and not committed, does not count, and no note of a sign-off that does not count is shown
+- RULE-134: Two signers whose addresses differ each keep a sign-off of one version: the second takes a file name of its own, and the first signer's file is left as it was
 
 ## Proof
 
@@ -93,3 +98,17 @@
 - PROOF-249 (RULE-129): `quinn.qa@labconnect.example` signs `0.1.0` with the note `the tube is red` at the hand check `login RULE-2`; for a second signer, `--show` ends that stop on `Last note`, then `  noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, at this commit: the tube is red`
 - PROOF-250 (RULE-129): After that sign-off three commits each change `NOTES` and a fourth commits new results; `--show --version 0.2.0` prints, last in the stop of `login RULE-2`, `  noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red`
 - PROOF-251 (RULE-129): Before any sign-off, `--show` ends the stop of the hand check `login RULE-2` on `Results` and `  Linux/Unix: passed on dana-laptop`, with no line `Last note`
+- PROOF-252 (RULE-130): A project with committed evidence that passes carries the tag `signed/9.9.9`, written by hand with `git tag`, and no file under `.purlin/evidence/package/`; the sign-off reads `not signed`, and the warnings hold one line starting `signed/9.9.9: it names a commit that holds no evidence package for 9.9.9`
+- PROOF-253 (RULE-130): The walk signs `2.1.0`, then a commit made with no signature changes the sign-off file's note; the sign-off reads `not signed`, and the warnings hold one line starting `signed/2.1.0: no sign-off of 2.1.0 counts: the commit that added it is not signed`
+- PROOF-254 (RULE-108): The walk signs `2.1.0`, then the committed package's first `"passed"` is changed to `"failed"` with `fingerprint` left as it was, and committed; the sign-off no longer counts, and a second signer's walk prints only one line beginning `No sign-off: .purlin/evidence/package/2.1.0.json does not match its fingerprint:`, and exits 1
+- PROOF-255 (RULE-131): With a file at `.git/refs/tags/signed`, so git can write no tag under it, the first sign-off of `2.1.0` makes its commit, prints a line beginning `No tag: git could not write signed/2.1.0:` and exits 1; with that file removed, `purlin:sign` run again exits 0, `signed/2.1.0` names that commit, and no commit was added
+- PROOF-256 (RULE-132): `login RULE-2` has `PROOF-2` tagged `@env(windows)`, and the evidence committed at `HEAD` holds results for Linux/Unix alone, all passing; the walk prints only one line beginning `No sign-off: 1 rule does not pass at` and naming `login RULE-2`, and exits 1
+- PROOF-257 (RULE-132): `login RULE-2` has `PROOF-2` tagged `@slow`, and the evidence committed at `HEAD` was written by `purlin:test` with no `--all`, every other rule passing; the walk prints only one line beginning `No sign-off: 1 rule does not pass at` and naming `login RULE-2`, and exits 1
+- PROOF-258 (RULE-132): `specs/auth/login.md` holds two lines numbered `RULE-2`, and its results are committed at `HEAD`; the walk prints one line beginning `No sign-off:` and naming `login RULE-2`, writes no file and exits 1
+- PROOF-259 (RULE-133): After `quinn.qa@labconnect.example` signs `0.1.0` with the note `the tube is red`, the file's note is edited to `the tube is blue` and not committed; `login RULE-2`'s strong cell carries the reason holding `the tube is red` and none holding `the tube is blue`
+- PROOF-260 (RULE-134): `jane@acme.com` signs `2.1.0`, then `jane@labs.org` signs it; the folder `2.1.0.signoffs` holds `jane.json`, reading the signer `jane@acme.com` with its bytes unchanged, and `jane-2.json`, reading `jane@labs.org`
+- PROOF-261 (RULE-102): With committed evidence that passes, the `version` in `.purlin/config.json` is changed and not committed; the walk prints only `No sign-off: 1 file is changed and not committed. Commit it or set it aside, then run purlin:sign again.` and exits 1
+- PROOF-262 (RULE-126): `login RULE-2` has `PROOF-2` marked `@manual` and `PROOF-3` tested, and the audit found it weak with the finding `PROOF-3 reads the status alone.`; its stop holds, before the question, `What the audit found` and then `  PROOF-3 reads the status alone.`
+- PROOF-263 (RULE-126): `login RULE-2`, a hand check, has `PROOF-3` tagged `@env(windows)`, run under the source `ci` on the machine `build-7`; its stop holds the two lines `  Linux/Unix: passed on dana-laptop` and `  Windows: passed on build-7`, in that order
+- PROOF-264 (RULE-111): An answers file gives `login RULE-2` a note and holds `"sign": "yes"`, a string and not `true`; `--answers` prints `Nothing was signed.`, exits 0 and adds no commit and no file
+- PROOF-265 (RULE-125): With `.purlin/config.json` holding `{"version": "0.10.0",`, the walk prints only `.purlin/config.json cannot be read: Expecting property name enclosed in double quotes at line 1. Fix the file by hand; nothing ran and nothing was saved.`, adds no commit and exits 1

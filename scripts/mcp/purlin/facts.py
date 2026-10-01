@@ -4,8 +4,10 @@ Every surface states both in these words: the status opens on them, the
 dashboard's two boxes read them from the payload, and a test run ends on the
 status. `Tests: met` where no work left is of a blocking kind;
 `Sign-off: signed 0.1.0 at a1b2c3d` where the newest `signed/*` tag on HEAD
-or an ancestor of it sits on code nothing has changed since, else
-`signed 0.1.0, 4 commits since`, or `not signed` where there is no such tag.
+or an ancestor of it whose sign-off counts sits on code nothing has changed
+since, else `signed 0.1.0, 4 commits since`, or `not signed` where there is
+no such tag. `signatures.standing` decides whether a tag's sign-off counts; a
+tag written by hand is passed over, with one warning.
 """
 
 import os
@@ -39,25 +41,32 @@ def tests_fact(payload):
 
 
 def signoff_fact(project_root):
-    """{'word','version','commit','since'} for the newest signed/* tag on HEAD or an
-    ancestor of it, numbered versions compared as numbers: SIGNED_AT where
-    package.only_records_between(tag commit, HEAD), else SIGNED_SINCE with the count of
-    commits from the tag to HEAD; word NOT_SIGNED and the rest None where there is none."""
-    none = {'word': NOT_SIGNED, 'version': None, 'commit': None, 'since': None}
+    """{'word','version','commit','since','warnings'} for the newest signed/* tag on
+    HEAD or an ancestor of it for which `signatures.standing` holds, numbered versions
+    compared as numbers: SIGNED_AT where package.only_records_between(tag commit, HEAD),
+    else SIGNED_SINCE with the count of commits from the tag to HEAD; word NOT_SIGNED
+    and the rest None where there is none. `warnings` holds one line per tag passed
+    over on the way, newest first: the tag and why it is no sign-off."""
+    from purlin import signatures
+    warnings = []
+    none = {'word': NOT_SIGNED, 'version': None, 'commit': None, 'since': None,
+            'warnings': warnings}
     tags = git_line(project_root, 'tag', '--merged', 'HEAD', '--list', TAG_PREFIX + '*')
-    if not tags:
-        return none
-    name = sorted(tags.split(), key=version_order)[-1]
-    commit = git_line(project_root, 'rev-list', '-n', '1', name)
-    if not commit:
-        return none
-    version = name[len(TAG_PREFIX):]
-    since = commits_since(project_root, commit)
-    if records_only_since(project_root, commit):
-        word = SIGNED_AT % (version, commit[:7])
-    else:
-        word = since_word(version, since)
-    return {'word': word, 'version': version, 'commit': commit, 'since': since}
+    for name in sorted(tags.split(), key=version_order, reverse=True):
+        version = name[len(TAG_PREFIX):]
+        stands, why = signatures.standing(project_root, version)
+        if not stands:
+            warnings.append(why)
+            continue
+        commit = git_line(project_root, 'rev-list', '-n', '1', name)
+        since = commits_since(project_root, commit)
+        if records_only_since(project_root, commit):
+            word = SIGNED_AT % (version, commit[:7])
+        else:
+            word = since_word(version, since)
+        return {'word': word, 'version': version, 'commit': commit, 'since': since,
+                'warnings': warnings}
+    return none
 
 
 def is_signed_here(signoff):

@@ -20,19 +20,22 @@ the last question it writes one file in one signed commit:
 The first sign-off of a version commits the package with it,
 `.purlin/evidence/package/<version>.json`, and writes the signed tag
 `signed/<version>` on that commit; a later sign-off adds its own file alone
-and the tag does not move. `references/formats/signature_format.md` holds the
-sign-off field by field, and `package_format.md` the package.
+and the tag does not move. Where git could not write the tag, the next run
+writes it on that commit, and a signer who already signed gets the tag alone.
+`references/formats/signature_format.md` holds the sign-off field by field,
+and `package_format.md` the package.
 
 **Refusals**, in this order, each one line with nothing written and exit 1:
-tracked files are changed and not committed; the evidence is written and not
-committed; no version is stated or named; `signed/<version>` is on a commit
-this checkout does not hold, or the code changed since it; a result was not
-taken on this version of the code; a result was taken while files were
-changed and not committed; a rule has no test; a rule does not pass; the
-branch's copy on the host, as this checkout last fetched it, holds commits
-HEAD lacks; the signer already signed this package. Then,
-for the walk and `--answers`, no key to sign with. Nothing is fetched and
-nothing is pushed.
+tracked files outside the evidence are changed and not committed; the
+evidence is written and not committed; no version is stated or named;
+`signed/<version>` is on a commit this checkout does not hold, or the code
+changed since it; the committed package does not match its fingerprint; a
+result was not taken on this version of the code, a slow result kept from an
+earlier run among them; a result was taken while files were changed and not
+committed; a rule has no test; a rule does not pass; the branch's copy on the
+host, as this checkout last fetched it, holds commits HEAD lacks; the signer
+already signed this package. Then, for the walk and `--answers`, no key to
+sign with. Nothing is fetched and nothing is pushed.
 
 `--show` prints what the walk shows, asks nothing, writes nothing and needs
 no key. `--answers FILE` walks with the answers a JSON file gives, for an
@@ -85,6 +88,8 @@ NO_SIGNOFF_ELSEWHERE = ('No sign-off: %s is at %s, which this checkout does not 
                         'Pull, then run purlin:sign.')
 NO_SIGNOFF_MOVED = ('No sign-off: %s is at %s, and the code has changed since. To sign this '
                     'code, name a new version: purlin:sign --version <version>.')
+NO_SIGNOFF_PACKAGE = ('No sign-off: %s does not match its fingerprint: %s. Restore it as it '
+                      'was signed, or name a new version: purlin:sign --version <version>.')
 NO_SIGNOFF_NOT_THIS_CODE = ('No sign-off: these results were not taken on this version of '
                             'the code, %s: %s. Run %s, then purlin:sign.')
 NO_SIGNOFF_DIRTY = ('No sign-off: these results were taken while files were changed and '
@@ -98,7 +103,12 @@ ALREADY_SIGNED = '%s has already signed %s over this package; nothing was writte
 NOT_MADE = 'The sign-off commit was not made: %s. Nothing was signed; run purlin:sign again.'
 NOT_WRITTEN = ('The evidence package was not written: %s. Nothing was signed; run '
                'purlin:sign again.')
-NO_TAG_GIT = 'No tag: git could not write %s: %s.'
+NO_TAG_GIT = ('No tag: git could not write %s: %s. Fix that, then run purlin:sign again '
+              'to write it.')
+# What `--show` prints where the signer has signed and the tag is missing:
+# the tag, the signer, the version, the sha7 of the signed commit.
+TAG_NOT_WRITTEN = ('%s is not written yet: %s signed %s at %s. Run purlin:sign to write '
+                   'the tag.')
 
 # What runs a result again, by the source it came from. `%s` is the systems
 # of the `ci` results named.
@@ -116,7 +126,7 @@ SIGNING_SETUP = (
 # The walk.
 OVERVIEW = 'Signing %s at %s.'
 OVERVIEW_RULES = '  %s on %s: %s, %s.'
-OVERVIEW_AUDIT = '  The audit: %d strong, %d weak, %d not audited.'
+OVERVIEW_AUDIT = '  The audit: %s.'             # summary.audit_words
 AUDIT_ASK = "The audit's findings: %s. list / go on: "
 AUDIT_SHOWN = "The audit's findings: %s."
 AUDIT_LIST = '  %s %s   %s'
@@ -150,6 +160,9 @@ ANSWERS_MISSING = ('No sign-off: %s has no answer in %s. Answer every stop, '
 ANSWERS_UNREAD = 'No sign-off: %s cannot be read: %s.'
 
 NOT_A_DIRECTORY = 'sign.py: %s is not a directory.'
+
+# The records a sign-off does not count as changed files.
+EVIDENCE_DIR = '.purlin/evidence/'
 
 EXIT_OK = 0
 EXIT_NOTHING = 1
@@ -203,10 +216,11 @@ def _first_line(result):
 
 
 def uncommitted_work(project_root):
-    """How many tracked files outside `.purlin/` are changed and not committed.
+    """How many tracked files outside `.purlin/evidence/` are changed and not
+    committed, the settings file among them.
 
     A file git does not track is not counted: it is in no commit, so it is
-    in nothing the sign-off signs.
+    in nothing the sign-off signs. The evidence has its own refusal.
     """
     result = _git(project_root, 'status', '--porcelain', '-z',
                   '--untracked-files=no')
@@ -220,7 +234,7 @@ def uncommitted_work(project_root):
             continue
         if field[0] in 'RC' and fields:
             fields.pop(0)
-        if not field[3:].startswith('.purlin/'):
+        if not field[3:].startswith(EVIDENCE_DIR):
             count += 1
     return count
 
@@ -265,9 +279,9 @@ def tag_exists(project_root, name):
                 'refs/tags/%s' % name).returncode == 0
 
 
-def write_tag(project_root, name, message):
-    """Write a signed annotated tag on HEAD. `(ok, git's first line)`."""
-    made = _git(project_root, 'tag', '-s', name, '-m', message)
+def write_tag(project_root, name, message, at):
+    """Write a signed annotated tag on the commit `at`. `(ok, git's first line)`."""
+    made = _git(project_root, 'tag', '-s', name, '-m', message, at)
     if made.returncode != 0:
         return False, _first_line(made)
     return True, ''
@@ -401,14 +415,48 @@ def _signer(project_root):
 
 
 def committed_package(project_root, version):
-    """The package HEAD's tree holds for `version`, or None."""
-    text = _git_out(project_root, 'show',
-                    'HEAD:%s' % signatures_module.package_rel(version))
+    """`(package, why)` for the package HEAD's tree holds for `version`.
+
+    `(None, None)` where HEAD holds none; `(None, why)` where the one it
+    holds does not match its own fingerprint, as `package.check_bytes` reads
+    its bytes.
+    """
+    held = _git_bytes(project_root, 'show',
+                      'HEAD:%s' % signatures_module.package_rel(version))
+    if held is None:
+        return None, None
+    why = package_module.check_bytes(held)
+    if why:
+        return None, why
+    return json.loads(held.decode('utf-8')), None
+
+
+def _git_bytes(project_root, *args):
+    """What a git command prints, as bytes, or None when it fails."""
     try:
-        package = json.loads(text) if text else None
-    except ValueError:
+        done = subprocess.run(['git'] + list(args), capture_output=True,
+                              cwd=project_root, timeout=60)
+    except (subprocess.SubprocessError, OSError):
         return None
-    return package if isinstance(package, dict) else None
+    return done.stdout if done.returncode == 0 else None
+
+
+def unwritten_tag_at(project_root, version):
+    """The commit a missing `signed/<version>` belongs on, or None.
+
+    That is the commit that added the package HEAD holds for the version,
+    where the code has not changed since: a sign-off was committed there and
+    git could not write its tag.
+    """
+    rel = signatures_module.package_rel(version)
+    if _git(project_root, 'cat-file', '-e', 'HEAD:%s' % rel).returncode != 0:
+        return None
+    at = _git_out(project_root, 'log', '-n', '1', '--diff-filter=A',
+                  '--format=%H', '--', rel)
+    if not at or not package_module.only_records_between(project_root, at,
+                                                         'HEAD'):
+        return None
+    return at
 
 
 def refusal(project_root, name=None):
@@ -416,8 +464,10 @@ def refusal(project_root, name=None):
 
     `lines` is empty when nothing does, and `info` then holds what the walk
     reads: `version`, `tag`, `first` (no tag is written yet), `package`,
-    `written` (the package is to be written with the sign-off), `head` and
-    `email`.
+    `written` (the package is to be written with the sign-off), `head`,
+    `email`, `tag_at` (the commit a tag git could not write belongs on, or
+    None) and `tag_only` (the signer already signed, and only the tag is
+    left to write).
     """
     changed = uncommitted_work(project_root)
     if changed:
@@ -432,14 +482,23 @@ def refusal(project_root, name=None):
     head = _git_out(project_root, 'rev-parse', 'HEAD')
     tag = package_module.tag_name(version)
     first = not tag_exists(project_root, tag)
-    if not first:
+    tag_at = None
+    if first:
+        tag_at = unwritten_tag_at(project_root, version)
+    else:
         at = _git_out(project_root, 'rev-parse', '%s^{commit}' % tag)
         if _git(project_root, 'merge-base', '--is-ancestor', at,
                 'HEAD').returncode != 0:
             return [NO_SIGNOFF_ELSEWHERE % (tag, at[:7])], EXIT_NOTHING, None
         if not package_module.only_records_between(project_root, at, 'HEAD'):
             return [NO_SIGNOFF_MOVED % (tag, at[:7])], EXIT_NOTHING, None
-    package = None if first else committed_package(project_root, version)
+    package = None
+    if tag_at or not first:
+        package, why = committed_package(project_root, version)
+        if why:
+            return ([NO_SIGNOFF_PACKAGE % (
+                signatures_module.package_rel(version), why)],
+                EXIT_NOTHING, None)
     written = package is None
     if written:
         try:
@@ -467,29 +526,54 @@ def refusal(project_root, name=None):
         return ([NO_SIGNOFF_BEHIND % (ref, behind_words(count), head[:7])],
                 EXIT_NOTHING, None)
     email = _signer(project_root)
-    if already_signed(project_root, version, email, package):
+    signed = already_signed(project_root, version, email, package)
+    if signed and not tag_at:
         return [ALREADY_SIGNED % (email, version)], EXIT_NOTHING, None
     return [], EXIT_OK, {'version': version, 'tag': tag, 'first': first,
                          'package': package, 'written': written,
-                         'head': head, 'email': email}
+                         'head': head, 'email': email, 'tag_at': tag_at,
+                         'tag_only': bool(signed and tag_at)}
 
 
-def signoff_rel(version, email):
-    """Where one signer's sign-off of `version` goes, `/` separated."""
-    return '%s/%s.json' % (signatures_module.signoffs_dir(version),
-                           signatures_module.signer_slug(email))
+def _held_signoff(project_root, rel):
+    """The sign-off HEAD's tree holds at a path: a dict, {} for a file that
+    is not one, or None where HEAD holds no such file."""
+    held = _git_bytes(project_root, 'show', 'HEAD:%s' % rel)
+    if held is None:
+        return None
+    try:
+        data = json.loads(held.decode('utf-8'))
+    except (UnicodeDecodeError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def signoff_rel(project_root, version, email):
+    """Where one signer's sign-off of `version` goes, `/` separated.
+
+    `<slug>.json`, or `<slug>-2.json`, `-3` and on where HEAD holds that
+    name for another `signer`, so two signers never share a file. Addresses
+    are compared with their case set aside.
+    """
+    folder = signatures_module.signoffs_dir(version)
+    slug = signatures_module.signer_slug(email)
+    number = 1
+    while True:
+        rel = '%s/%s%s.json' % (folder, slug,
+                                '' if number == 1 else '-%d' % number)
+        held = _held_signoff(project_root, rel)
+        if held is None or (str(held.get('signer') or '').lower()
+                            == str(email or '').lower()):
+            return rel
+        number += 1
 
 
 def already_signed(project_root, version, email, package):
     """True when HEAD holds this signer's sign-off over this very package."""
-    text = _git_out(project_root, 'show',
-                    'HEAD:%s' % signoff_rel(version, email))
-    try:
-        earlier = json.loads(text) if text else None
-    except ValueError:
-        return False
-    return (isinstance(earlier, dict)
-            and earlier.get('package_hash') == package.get('fingerprint'))
+    earlier = _held_signoff(project_root,
+                            signoff_rel(project_root, version, email))
+    return bool(earlier) and (earlier.get('package_hash')
+                              == package.get('fingerprint'))
 
 
 # ---------------------------------------------------------------------------
@@ -512,7 +596,9 @@ def _hand_check(rule):
 
 
 def _weak(rule):
-    return (rule.get('audit') or {}).get('verdict') == 'weak'
+    """True where the rule's strong cell reads `weak`."""
+    strong = (rule.get('statuses') or {}).get('strong') or {}
+    return strong.get('word') == 'weak'
 
 
 def _chosen_results(rule):
@@ -567,13 +653,12 @@ def plan(package, notes=None):
                           'last_notes': list(notes.get(
                               (feature, rule.get('id'))) or ())})
     audit = package.get('audit') or {}
-    audited = any(audit.get(key) for key in ('strong', 'weak'))
+    keys = [key for key, _word in summary_module.AUDIT_WORDS]
+    audited = any(audit.get(key) for key in keys if key != 'not_audited')
     overview = {
         'systems': [dict(per_system[name], os=name)
                     for name in _systems(per_system)],
-        'audit': ({'strong': audit.get('strong') or 0,
-                   'weak': audit.get('weak') or 0,
-                   'not_audited': audit.get('not_audited') or 0}
+        'audit': ({key: audit.get(key) or 0 for key in keys}
                   if audited else None)}
     return {'overview': overview, 'weak': weak, 'stops': stops}
 
@@ -595,8 +680,7 @@ def overview_lines(info, shown):
                         system['hand_checks'])))
     audit = shown['overview']['audit']
     if audit:
-        lines.append(OVERVIEW_AUDIT % (audit['strong'], audit['weak'],
-                                       audit['not_audited']))
+        lines.append(OVERVIEW_AUDIT % summary_module.audit_words(audit))
     return lines
 
 
@@ -698,6 +782,10 @@ def show(project_root, name=None, out=None):
     if lines:
         _say(lines, out)
         return code
+    if info['tag_only']:
+        print(TAG_NOT_WRITTEN % (info['tag'], info['email'], info['version'],
+                                 info['tag_at'][:7]), file=out)
+        return EXIT_OK
     shown = plan(info['package'], last_notes(project_root))
     _say(overview_lines(info, shown), out)
     if shown['weak']:
@@ -732,6 +820,8 @@ def walk(project_root, name=None, ask=None, out=None):
     if not signing_configured(project_root):
         _say(no_key_lines(), out)
         return EXIT_NOTHING
+    if info['tag_only']:
+        return _tag_alone(project_root, info, out)
     return _walk(project_root, info, ask, out)
 
 
@@ -864,7 +954,7 @@ def _sign(project_root, info, record, notes, out):
     except (package_module.PackageError, IOError, OSError) as error:
         print(NOT_WRITTEN % str(error).rstrip('.'), file=out)
         return EXIT_NOTHING
-    rel = signoff_rel(version, email)
+    rel = signoff_rel(project_root, version, email)
     path = os.path.join(project_root, *rel.split('/'))
     try:
         kept[rel] = _read_bytes(path)
@@ -886,21 +976,36 @@ def _sign(project_root, info, record, notes, out):
     key = signatures_module.key_fingerprint(project_root) or ''
     print(SIGNED_AS % (version, email, key[-4:]), file=out)
     tag = info['tag']
-    branch = _branch(project_root)
     code = EXIT_OK
     if info['first']:
-        ok, said = write_tag(project_root, tag, tag_message(version, package))
-        if ok:
-            print(TAGGED % (tag, sha[:7]), file=out)
-            print(SIGNED_PUSH % ' '.join(part for part in (branch, tag) if part),
-                  file=out)
-        else:
-            print(NO_TAG_GIT % (tag, said), file=out)
-            code = EXIT_NOTHING
+        code = _tag(project_root, info, info['tag_at'] or sha, out)
     else:
+        branch = _branch(project_root)
         at = _git_out(project_root, 'rev-parse', '%s^{commit}' % tag)
         print(TAG_STAYS % (tag, at[:7], ' ' + branch if branch else ''),
               file=out)
+    report_data.refresh(project_root)
+    return code
+
+
+def _tag(project_root, info, at, out):
+    """Write `signed/<version>` on the commit `at` and say so. The exit code."""
+    tag = info['tag']
+    ok, said = write_tag(project_root, tag,
+                         tag_message(info['version'], info['package']), at)
+    if not ok:
+        print(NO_TAG_GIT % (tag, said), file=out)
+        return EXIT_NOTHING
+    print(TAGGED % (tag, at[:7]), file=out)
+    print(SIGNED_PUSH % ' '.join(part for part in (_branch(project_root), tag)
+                                 if part), file=out)
+    return EXIT_OK
+
+
+def _tag_alone(project_root, info, out):
+    """The signer already signed and git could not write the tag then: write
+    it on the signed commit, and sign nothing twice."""
+    code = _tag(project_root, info, info['tag_at'], out)
     report_data.refresh(project_root)
     return code
 
@@ -968,6 +1073,8 @@ def walk_with_answers(project_root, path, name=None, out=None):
     if not signing_configured(project_root):
         _say(no_key_lines(), out)
         return EXIT_NOTHING
+    if info['tag_only']:
+        return _tag_alone(project_root, info, out)
     answers, why = read_answers(path)
     if answers is None:
         print(ANSWERS_UNREAD % (path, why), file=out)

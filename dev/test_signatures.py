@@ -13,9 +13,11 @@ What each group holds:
 *the key*        the fingerprint of the key a signer signs with, and the
                  lines to print when there is none
 *what counts*    a sign-off's commit, signed and verified, and its package
+*signed*         where the status reads `signed`, and a tag passed over
 *the refusals*   what stops a sign-off
 *the walk*       the run lines, the overview, the audit's findings, the stops
-*the sign-off*   the file, its commit, the tag, a second signer
+*the sign-off*   the file, its commit, the tag, a second signer, a tag git
+                 could not write
 *the last note*  what a hand check's stop shows of the sign-off before
 *the agent*      `--show`, `--answers` and `--check`
 """
@@ -407,6 +409,29 @@ class TestWhatCounts:
         assert counted(signed) == [
             (False, 'it signs another evidence package than the one committed')]
 
+    # purlin: signatures PROOF-254
+    def test_a_package_edited_after_signing_ends_the_sign_off(self, signed):
+        assert walked(signed, ['y'])[0] == 0
+        assert counted(signed) == [(True, '')]
+        path = os.path.join(signed.root, *PACKAGE.split('/'))
+        with open(path, 'rb') as handle:
+            data = handle.read()
+        edited = data.replace(b'"passed"', b'"failed"', 1)
+        assert edited != data
+        with open(path, 'wb') as handle:
+            handle.write(edited)
+        commit_all(signed, 'chore: the package edited')
+        assert json.loads(edited)['fingerprint'] == \
+            json.loads(data)['fingerprint']
+        assert [item[0] for item in counted(signed)] == [False]
+        before = signed.head()
+        code, lines, _asked = sign_as(signed, 'pat@acme.com', 'Pat')
+        assert len(lines) == 1, lines
+        assert lines[0].startswith(
+            'No sign-off: .purlin/evidence/package/2.1.0.json does not match '
+            'its fingerprint:'), lines
+        assert (code, signed.head(), status(signed.root)) == (1, before, '')
+
     # purlin: signatures PROOF-192
     def test_a_signature_block_changed_does_not_verify(self, signed):
         assert walked(signed, ['y'])[0] == 0
@@ -422,6 +447,54 @@ class TestWhatCounts:
             os.remove(os.path.join(signed.root, '.git', name))
         git(signed.root, 'config', '--unset', 'user.signingkey')
         assert counted(signed) == [(True, '')]
+
+
+# ---------------------------------------------------------------------------
+# Where the status reads `signed`
+# ---------------------------------------------------------------------------
+
+def signoff_and_warnings(made):
+    """The payload's `signoff.word`, and its warnings that name a tag."""
+    payload = made.payload()
+    return (payload['signoff']['word'],
+            [line for line in payload['warnings']
+             if line.startswith('signed/')])
+
+
+class TestWhereItReadsSigned:
+
+    # purlin: signatures PROOF-252
+    def test_a_tag_typed_by_hand_is_no_sign_off(self, signed):
+        git(signed.root, 'tag', 'signed/9.9.9')
+        assert not os.path.exists(os.path.join(
+            signed.root, '.purlin', 'evidence', 'package'))
+        word, warned = signoff_and_warnings(signed)
+        assert word == 'not signed'
+        assert warned == [
+            'signed/9.9.9: it names a commit that holds no evidence package '
+            'for 9.9.9, so it is not a sign-off. Delete it: git tag -d '
+            'signed/9.9.9.']
+
+    # purlin: signatures PROOF-253
+    def test_a_sign_off_changed_in_an_unsigned_commit_is_no_sign_off(
+            self, hand_checked):
+        assert walked(hand_checked, ['go on', 'the tube is red', 'y'])[0] == 0
+        assert signoff_and_warnings(hand_checked) == (
+            'signed 2.1.0 at %s' % hand_checked.head()[:7], [])
+        rel = '%s/jane.json' % SIGNOFFS
+        body = read_json(hand_checked.root, rel)
+        body['notes'][0]['note'] = 'the tube is blue'
+        write(os.path.join(hand_checked.root, *rel.split('/')),
+              json.dumps(body, indent=2) + '\n')
+        commit_all(hand_checked, 'chore: the note edited')
+        assert 'gpgsig' not in git(hand_checked.root, 'cat-file', 'commit',
+                                   'HEAD').stdout
+        word, warned = signoff_and_warnings(hand_checked)
+        assert word == 'not signed'
+        assert len(warned) == 1, warned
+        assert warned[0].startswith(
+            'signed/2.1.0: no sign-off of 2.1.0 counts: the commit that added '
+            'it is not signed'), warned
 
 
 # ---------------------------------------------------------------------------
@@ -444,7 +517,85 @@ AUDIT_TEST = (
     '    assert True\n')
 
 
+# `login RULE-2`'s one proof, tagged for Windows and tagged slow.
+WINDOWS_SPEC = SPEC.replace('verify 401 and the body "denied"\n',
+                            'verify 401 and the body "denied" @env(windows)\n')
+SLOW_SPEC = SPEC.replace('verify 401 and the body "denied"\n',
+                         'verify 401 and the body "denied" @slow\n')
+# Two lines numbered `RULE-2`.
+TWICE_SPEC = SPEC.replace(
+    '\n\n## Proof', '\n- RULE-2: A locked account returns 423\n\n## Proof')
+
+
+def second_proof_not_run(spec):
+    """`login` under `spec`, its results committed at HEAD: `PROOF-1` passes
+    and the test of `PROOF-2` was left out of the run."""
+    made = Project(spec=spec)
+    write(os.path.join(made.root, 'VERSION'), VERSION + '\n')
+    commit_all(made, 'chore: version')
+    section(made, [('PROOF-1', 'RULE-1', 'pass', TEST_NAMES['PROOF-1'], None),
+                   ('PROOF-2', 'RULE-2', 'not run', TEST_NAMES['PROOF-2'],
+                    None)],
+            {'RULE-1': 'passed', 'RULE-2': 'not run'})
+    commit_all(made)
+    key(made.root)
+    return made
+
+
 class TestTheRefusals:
+
+    # purlin: signatures PROOF-256
+    def test_a_rule_with_no_result_on_its_system_is_named(self, capsys):
+        made = second_proof_not_run(WINDOWS_SPEC)
+        try:
+            assert run_main(made, capsys) == (1, [
+                'No sign-off: 1 rule does not pass at %s: login RULE-2. Run '
+                'purlin:status to see what is left, then purlin:sign.'
+                % made.head()[:7]])
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-257
+    def test_a_slow_proof_not_run_is_named(self, capsys):
+        made = second_proof_not_run(SLOW_SPEC)
+        try:
+            assert run_main(made, capsys) == (1, [
+                'No sign-off: 1 rule does not pass at %s: login RULE-2. Run '
+                'purlin:status to see what is left, then purlin:sign.'
+                % made.head()[:7]])
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-258
+    def test_a_spec_that_holds_a_number_twice_is_refused(self, capsys):
+        made = ready(spec=TWICE_SPEC)
+        try:
+            code, lines = run_main(made, capsys)
+            assert len(lines) == 1, lines
+            assert lines[0].startswith('No sign-off:'), lines
+            assert 'login RULE-' in lines[0] and 'RULE-2' in lines[0], lines
+            assert (code, status(made.root)) == (1, '')
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-261
+    def test_the_settings_file_changed_and_not_committed_is_refused(
+            self, signed, capsys):
+        signed.config(version='0.0.1')
+        assert status(signed.root) == ' M .purlin/config.json\n'
+        assert run_main(signed, capsys) == (1, [
+            'No sign-off: 1 file is changed and not committed. Commit it or '
+            'set it aside, then run purlin:sign again.'])
+
+    # purlin: signatures PROOF-265
+    def test_a_settings_file_that_cannot_be_read_stops_the_command(
+            self, signed, capsys):
+        write(os.path.join(signed.root, '.purlin', 'config.json'),
+              '{"version": "0.10.0",')
+        assert run_main(signed, capsys) == (1, [
+            '.purlin/config.json cannot be read: Expecting property name '
+            'enclosed in double quotes at line 1. Fix the file by hand; '
+            'nothing ran and nothing was saved.'])
 
     # purlin: signatures PROOF-206
     def test_a_rule_that_fails_is_named(self, capsys):
@@ -673,6 +824,23 @@ def nineteen():
     made.close()
 
 
+def hand_check_with_a_test(tag=''):
+    """`login RULE-2` has `PROOF-2` marked `@manual` and `PROOF-3`, tied to
+    `test_lockout_page` and carrying `tag`; `VERSION` is committed."""
+    spec = SPEC.replace(
+        'verify 401 and the body "denied"\n',
+        'verify 401 and the body "denied" @manual\n'
+        '- PROOF-3 (RULE-2): After three bad passwords; verify the lockout '
+        'page%s\n' % tag)
+    made = Project(spec=spec)
+    made.edit_test(MANUAL_TEST_FILE + ('\n\n# purlin: login PROOF-3\n'
+                                       'def test_lockout_page():\n'
+                                       '    assert True\n'))
+    write(os.path.join(made.root, 'VERSION'), VERSION + '\n')
+    commit_all(made, 'chore: version')
+    return made
+
+
 class TestTheWalk:
 
     # purlin: signatures PROOF-227
@@ -756,6 +924,46 @@ class TestTheWalk:
                          if line.startswith('  PROOF-3'))
             assert stop[proof + 1] == ('    tied to tests/test_login.py::'
                                        'test_lockout_page')
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-262
+    def test_a_weak_hand_check_shows_the_audits_finding_at_its_stop(self):
+        made = hand_check_with_a_test()
+        try:
+            section(made, [('PROOF-1', 'RULE-1', 'pass',
+                            TEST_NAMES['PROOF-1'], None),
+                           ('PROOF-3', 'RULE-2', 'pass', 'test_lockout_page',
+                            None)],
+                    {'RULE-1': 'passed', 'RULE-2': 'passed'})
+            made.audit('RULE-2', findings=['PROOF-3 reads the status alone.'])
+            commit_all(made)
+            key(made.root)
+            code, lines, asked = walked(made, ['go on'])
+            stop = stop_lines(lines, 'login RULE-2   hand check')
+            found = stop.index('What the audit found')
+            assert stop[found + 1] == '  PROOF-3 reads the status alone.'
+            assert asked[-1].startswith('login RULE-2   what did you see')
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-263
+    def test_a_stop_names_each_system_and_the_machine_it_ran_on(self):
+        made = hand_check_with_a_test(tag=' @env(windows)')
+        try:
+            section(made, [('PROOF-1', 'RULE-1', 'pass',
+                            TEST_NAMES['PROOF-1'], None)],
+                    {'RULE-1': 'passed', 'RULE-2': 'passed'})
+            section(made, [('PROOF-3', 'RULE-2', 'pass', 'test_lockout_page',
+                            None)], {'RULE-2': 'passed'}, source='ci',
+                    os_name='windows', email=RUNNER, machine='build-7')
+            commit_all(made)
+            key(made.root)
+            stop = stop_lines(walked(made, [])[1], 'login RULE-2   hand check')
+            results = stop.index('Results')
+            assert stop[results + 1:results + 3] == [
+                '  Linux/Unix: passed on dana-laptop',
+                '  Windows: passed on build-7']
         finally:
             made.close()
 
@@ -959,6 +1167,50 @@ class TestTheSignOff:
                                                'FETCH_HEAD'))
 
 
+    # purlin: signatures PROOF-255
+    def test_a_tag_git_could_not_write_is_written_by_the_next_run(
+            self, signed):
+        in_the_way = os.path.join(signed.root, '.git', 'refs', 'tags',
+                                  'signed')
+        write(in_the_way, '')
+        before = signed.head()
+        code, lines, _asked = walked(signed, ['y'])
+        signed_at = signed.head()
+        assert signed_at != before
+        assert git(signed.root, 'log', '-1', '--format=%s').stdout.strip() \
+            == 'sign(2.1.0): jane@acme.com'
+        assert [line for line in lines if line.startswith(
+            'No tag: git could not write signed/2.1.0:')], lines
+        assert code == 1
+        os.remove(in_the_way)
+        code, lines, asked = walked(signed, [])
+        assert (code, asked) == (0, []), lines
+        assert git(signed.root, 'rev-parse',
+                   'signed/2.1.0^{commit}').stdout.strip() == signed_at
+        assert signed.head() == signed_at
+        assert lines == ['Tagged signed/2.1.0 at %s.' % signed_at[:7],
+                         'Push the branch and the tag: git push origin main '
+                         'signed/2.1.0']
+
+    # purlin: signatures PROOF-260
+    def test_two_signers_who_share_a_name_each_keep_a_sign_off(self, signed):
+        assert walked(signed, ['y'])[0] == 0
+        folder = os.path.join(signed.root, *SIGNOFFS.split('/'))
+        with open(os.path.join(folder, 'jane.json'), 'rb') as handle:
+            first = handle.read()
+        code, lines, _asked = sign_as(signed, 'jane@labs.org', 'Jane',
+                                      file='jane-labs')
+        assert code == 0, lines
+        assert sorted(os.listdir(folder)) == ['jane-2.json', 'jane.json']
+        with open(os.path.join(folder, 'jane.json'), 'rb') as handle:
+            assert handle.read() == first
+        assert json.loads(first)['signer'] == 'jane@acme.com'
+        assert read_json(signed.root, SIGNOFFS + '/jane-2.json')['signer'] \
+            == 'jane@labs.org'
+        assert status(signed.root).replace('?? .purlin/report-data.js\n',
+                                           '') == ''
+
+
 QUINN = 'quinn.qa@labconnect.example'
 STOP_HEAD = 'login RULE-2   hand check'
 
@@ -1025,6 +1277,26 @@ class TestTheLastNote:
             made.close()
 
 
+    # purlin: signatures PROOF-259
+    def test_a_note_edited_and_not_committed_is_not_shown(self):
+        made = noted_by_quinn()
+        try:
+            rel = '.purlin/evidence/package/0.1.0.signoffs/quinn-qa.json'
+            path = os.path.join(made.root, *rel.split('/'))
+            with open(path, encoding='utf-8') as handle:
+                text = handle.read()
+            assert text.count('the tube is red') == 1
+            write(path, text.replace('the tube is red', 'the tube is blue'))
+            assert status(made.root).splitlines()[0] == ' M ' + rel
+            reasons = made.rule('RULE-2')['cells']['strong']['reasons']
+            assert [reason for reason in reasons
+                    if 'the tube is red' in reason], reasons
+            assert not [reason for reason in reasons
+                        if 'the tube is blue' in reason], reasons
+        finally:
+            made.close()
+
+
 # ---------------------------------------------------------------------------
 # The agent's walk and the check
 # ---------------------------------------------------------------------------
@@ -1074,6 +1346,23 @@ class TestTheAgent:
         assert signed_off(hand_checked)['notes'] == [
             {'feature': 'login', 'rule': 'RULE-2',
              'note': 'the lockout page read 401'}]
+
+    # purlin: signatures PROOF-264
+    def test_answers_that_do_not_say_true_sign_nothing(self, hand_checked,
+                                                       capsys):
+        path = os.path.join(hand_checked.root, *ANSWERS.split('/'))
+        write(path, json.dumps({
+            'audit': 'go on',
+            'stops': {'login RULE-2': {'answer': 'note',
+                                       'note': 'the lockout page read 401'}},
+            'sign': 'yes'}))
+        before = hand_checked.head()
+        code = sign_module.main(['--answers', path, '--project-root',
+                                 hand_checked.root])
+        lines = capsys.readouterr().out.splitlines()
+        assert lines[-1] == 'Nothing was signed.'
+        assert (code, hand_checked.head(), status(hand_checked.root)) == (
+            0, before, '')
 
     # purlin: signatures PROOF-222
     def test_a_stop_with_no_answer_is_refused(self, hand_checked, capsys,

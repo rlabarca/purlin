@@ -36,8 +36,10 @@ that field set to the empty string.
 
 **The same version of the code.** A result counts for a sign-off only where
 every commit from the one its tests ran at to the package's `commit` changes
-nothing but files under `.purlin/`: `same_code`, read by
-`only_records_between`.
+nothing but files under `.purlin/` and leaves the `tests` setting of
+`.purlin/config.json` as it was, read by `only_records_between`, and where no
+proof of the rule holds a slow result a plain run kept from an earlier run:
+`same_code`.
 
 `references/formats/package_format.md` holds every field.
 """
@@ -72,6 +74,8 @@ from purlin import (PURLIN_VERSION,                            # noqa: E402
 SCHEMA = 'purlin-package/4'
 PACKAGE_DIR = signatures_module.PACKAGE_DIR
 RECORDS_DIR = '.purlin/'
+# The settings file, whose `tests` setting is part of the code.
+CONFIG_PATH = '.purlin/config.json'
 
 # The top-level keys in the order the file carries them. Whether the tests
 # are met is what a reader sees first after the schema.
@@ -151,9 +155,27 @@ def evidence_commit(project_root, start='HEAD'):
         sha = parent
 
 
+def _tests_setting(project_root, ref):
+    """The `tests` setting of `.purlin/config.json` as the commit `ref` holds it.
+
+    The value of the key `tests`, as parsed JSON; None where the commit holds
+    no settings file or the file holds no such key. A file that cannot be
+    parsed answers with its own text, so two that differ read as different.
+    """
+    held = _git(project_root, 'show', '%s:%s' % (ref, CONFIG_PATH))
+    if held.returncode != 0:
+        return None
+    try:
+        settings = json.loads(held.stdout)
+    except ValueError:
+        return ('unreadable', held.stdout)
+    return settings.get('tests') if isinstance(settings, dict) else None
+
+
 def only_records_between(project_root, older, newer):
     """True when `older` is `newer`, or an ancestor of it from which every commit up
-    to `newer` changes only paths under `.purlin/`."""
+    to `newer` changes only paths under `.purlin/` and the `tests` setting reads the
+    same at both ends."""
     older = _commit_of(project_root, older)
     newer = _commit_of(project_root, newer)
     if older is None or newer is None:
@@ -167,9 +189,14 @@ def only_records_between(project_root, older, newer):
                   '%s..%s' % (older, newer))
     if listed.returncode != 0:
         return False
-    return all(path.startswith(RECORDS_DIR)
-               for path in (line.strip() for line in listed.stdout.splitlines())
-               if path)
+    paths = {line.strip() for line in listed.stdout.splitlines()
+             if line.strip()}
+    if not all(path.startswith(RECORDS_DIR) for path in paths):
+        return False
+    if CONFIG_PATH not in paths:
+        return True
+    return (_tests_setting(project_root, older)
+            == _tests_setting(project_root, newer))
 
 
 def same_code(project_root, section_commit, head=None):
@@ -493,8 +520,19 @@ def _nothing_to_check(section, ids):
     return out
 
 
+def _kept(section, ids):
+    """True where a proof entry of the rule carries `kept`: a slow result a
+    plain run carried over, whose test did not run in this section's run."""
+    return any(entry.get('kept')
+               for entries in _entries(section, ids).values()
+               for entry in entries)
+
+
 def _results(rule_id, proofs, sections, same):
-    """One entry per section: what that run saw for this rule, by operating system."""
+    """One entry per section: what that run saw for this rule, by operating system.
+
+    `same_code` is false for a section taken on other code, and for one that
+    holds a kept result for the rule, whatever commit that result names."""
     ids = {proof.get('id') for proof in proofs} or {rule_id}
     out = []
     for entry in sections:
@@ -509,7 +547,8 @@ def _results(rule_id, proofs, sections, same):
                     'machine': section.get('machine'),
                     'current': bool(entry['current']),
                     'out_of_date': sorted(entry['out_of_date']),
-                    'same_code': bool(same.get(section.get('commit') or '')),
+                    'same_code': (bool(same.get(section.get('commit') or ''))
+                                  and not _kept(section, ids)),
                     'nothing_to_check': _nothing_to_check(section, ids)})
     out.sort(key=lambda item: (item['os'], item['source']))
     return out
@@ -521,10 +560,11 @@ def _by(entry):
 
 
 def _audit(rule, loaded, code=''):
-    """What the audit found for the rule's current hashes, or None.
+    """What the audit last found for the rule, or None where no audit read it.
 
     `code` is the `code` part of the feature's fingerprint taken now, the
-    fourth hash an entry is checked on."""
+    fourth hash an entry is checked on. `out_of_date` names the parts that
+    changed since the entry was written, `[]` for a current one."""
     summary = rule.get('audit')
     if not summary:
         return None
@@ -533,6 +573,9 @@ def _audit(rule, loaded, code=''):
         rule.get('test_hash'), code) or {}
     return {'verdict': summary.get('verdict'),
             'findings': [str(line) for line in summary.get('findings') or ()],
+            'no_bug': [str(line) for line in entry.get('no_bug') or ()],
+            'out_of_date': [str(part) for part in
+                            entry.get('out_of_date') or ()],
             'notes': [str(line) for line in summary.get('notes') or ()],
             'explanation': [str(line) for line in entry.get('explanation') or ()],
             'breaks': dict(entry.get('breaks') or {}),
@@ -543,15 +586,20 @@ def _audit(rule, loaded, code=''):
             'source': entry.get('source')}
 
 
+# The key a rule is counted under, by its strong cell's word.
+_AUDIT_KEYS = {word: key for key, word in summary_module.AUDIT_WORDS}
+
+
 def audit_counts(entries):
-    """`{strong, weak, not_audited}` over every rule: the verdict its audit
-    gives, and `not_audited` where no audit answers for it."""
-    counts = {'strong': 0, 'weak': 0, 'not_audited': 0}
+    """`{strong, weak, spot_checked, out_of_date, not_audited}` over every rule.
+
+    A rule is counted by its strong cell's word, and under `not_audited`
+    where that word is none of the audit's own: no audit answers for it."""
+    counts = {key: 0 for key, _word in summary_module.AUDIT_WORDS}
     for feature in entries:
         for rule in feature['rules']:
-            verdict = (rule['audit'] or {}).get('verdict')
-            counts[verdict if verdict in ('strong', 'weak')
-                   else 'not_audited'] += 1
+            word = (rule['statuses'].get('strong') or {}).get('word')
+            counts[_AUDIT_KEYS.get(word, 'not_audited')] += 1
     return counts
 
 

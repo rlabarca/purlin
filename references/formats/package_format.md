@@ -1,4 +1,4 @@
-> Format-Version: 10
+> Format-Version: 11
 
 # Package format
 
@@ -56,8 +56,9 @@ write it to a VERSION file.`, writes nothing and exits 1.
 
 The package is built from a checkout of one commit, so it describes only what
 git holds. `purlin:sign` refuses while tracked files are changed and not
-committed, while evidence is written and not committed, and over a result
-whose section reads `dirty`, taken while files were changed and not committed.
+committed, `.purlin/config.json` among them, while evidence is written and
+not committed, and over a result whose section reads `dirty`, taken while
+files were changed and not committed.
 
 That commit is the one the evidence was taken at: `HEAD`, stepping back over
 any commit that changed nothing but files under `.purlin/evidence/package/`,
@@ -73,7 +74,8 @@ built at the tag again reads the same commit.
   "met": true,
   "rules": 42,
   "steps": {"passed": 42},
-  "audit": {"not_audited": 8, "strong": 32, "weak": 2},
+  "audit": {"not_audited": 4, "out_of_date": 1, "spot_checked": 3,
+            "strong": 32, "weak": 2},
   "left": [
     {"command": "purlin:build", "count": 2, "kind": "to_strengthen",
      "text": "2 rules to strengthen"}
@@ -108,7 +110,7 @@ Whether the tests are met is the first thing a reader sees after the schema.
 | `met` | bool | true when no line of `left` is of a kind that stops the tests being met. See "Met" |
 | `rules` | int | the rules of the project, each counted once under the feature that owns it |
 | `steps` | object | `{"passed": p}`: the rules whose tests pass, a hand check included |
-| `audit` | object | `{"strong", "weak", "not_audited"}`: over every rule, the verdict the audit gave, and `not_audited` where no audit answers for the rule's current words, proof and test |
+| `audit` | object | `{"strong", "weak", "spot_checked", "out_of_date", "not_audited"}`: every rule counted once, by the word its `strong` status reads: `strong`, `weak`, `spot-checked` or `out of date`, and under `not_audited` for any other word, since no audit answers for the rule |
 | `left` | array | the lines of `Left to do`, in the order the work is done: `{kind, count, text, command}` each. See "What is left" |
 | `purlin_version` | string | the version of Purlin that wrote the package |
 | `project` | string | the name the project's own files give it, read when the package is built: `name` under `[project]` or `[tool.poetry]` in `pyproject.toml`, `name` in `package.json`, the first root `*.csproj` file's name, the last segment of the `origin` remote, else the folder's name |
@@ -157,8 +159,8 @@ A feature entry holds exactly these five fields.
 | `proofs` | array | `{id, text, manual, env}` per proof: `manual` is whether the proof is a hand check (`@manual`), `env` the operating system its `@env` names, or null |
 | `tests` | array | `{proof, file, name}` per test backing a proof, then per test marked with the rule's own id, whose `proof` is then the `RULE-N` |
 | `results` | array | one entry per evidence section that holds a result for the rule, ordered by operating system then source. See below |
-| `audit` | object or null | what the audit found for the rule's current words, proof and test. Null where no audit has |
-| `statuses` | object | `{"passed": {word, reasons}, "strong": {word, reasons}}`. `strong` is what the audit found, and nothing waits on it |
+| `audit` | object or null | what the audit last found for the rule, which may be out of date. Null where no audit has read it |
+| `statuses` | object | `{"passed": {word, reasons}, "strong": {word, reasons}}`. `strong` is what the audit found, and nothing waits on it: its word reads `strong`, `weak`, `spot-checked`, `out of date`, `not audited`, `checked at sign-off`, `no proof` or `waiting` |
 | `authors` | object | who wrote and last changed the rule, its proofs and its tests. See "Authors" |
 
 Each `results` entry:
@@ -174,15 +176,17 @@ Each `results` entry:
 | `machine` | string or null | the machine the tests ran on, as the evidence section records it: the host's name |
 | `current` | bool | whether the section's fingerprint matches the spec, code and tests at the package's own `commit` |
 | `out_of_date` | array of strings | the parts that differ, of `code`, `spec` and `tests`; empty when current |
-| `same_code` | bool | true when every commit from the run's `commit` to the package's `commit` changes only files under `.purlin/`. A result counts for a sign-off only where it is true |
+| `same_code` | bool | true when every commit from the run's `commit` to the package's `commit` changes only files under `.purlin/` and leaves the `tests` setting of `.purlin/config.json` as it was, and no proof of the rule holds a result `kept` from an earlier run, as `evidence_format.md` gives it. A result counts for a sign-off only where it is true |
 | `nothing_to_check` | array | `{proof, reason}` per proof whose every tied test skipped with a reason beginning `nothing to check:`, the reason the text after it |
 
 `audit`:
 
 | Field | Type | What it holds |
 |---|---|---|
-| `verdict` | string | `strong` or `weak` |
+| `verdict` | string | `strong`, `weak` or `spot-checked`: the entry's last result, which may be out of date |
 | `findings` | array of strings | one sentence per finding |
+| `no_bug` | array of strings | one sentence per proof no planted bug was caught for, saying why |
+| `out_of_date` | array of strings | the parts that changed since the audit read the rule, of `rule`, `proof`, `test` and `code`; `[]` for a current entry |
 | `notes` | array of strings | the model's notes, where it gave some |
 | `explanation` | array of strings | the model's reading of the rule's tests |
 | `breaks` | object | the planted bug per proof, as the evidence file's audit entry holds it; `{}` for an anchor |
