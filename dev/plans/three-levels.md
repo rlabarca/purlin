@@ -1537,8 +1537,6 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **The band's progress bar goes from the dashboard** (decision 109 said a count and no bar);
       `<passing> of <rules> rules pass` stays.
     - The deck gains the slide `Slow tests stay out of your way`, published as version 88.
-    - **The dashboard's header line shows the time in the viewer's own timezone and names it**,
-      as in `main at a1b2c3d, written 06:42 EDT` (the owner, 2026-10-01).
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
