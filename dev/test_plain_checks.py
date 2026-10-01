@@ -329,6 +329,22 @@ def test_a_value_held_in_a_data_file_the_test_names(tmp_path):
     assert findings(tmp_path, path, 'test_age', AGE_PROOF) == []
 
 
+# purlin: plain_checks PROOF-32
+def test_an_empty_pair_of_backticks_names_no_value(tmp_path):
+    write(tmp_path, 'src/intake.py', APP)
+    path = write(tmp_path, 'tests/test_intake.py', '''
+        import pytest
+        from src.intake import intake
+
+        def test_an_empty_barcode_is_refused():
+            with pytest.raises(ValueError, match="barcode is required"):
+                intake("")
+    ''')
+    proof = {'id': 'PROOF-1', 'text': 'an empty barcode `` is handed in; it is refused '
+                                      'with `barcode is required`'}
+    assert findings(tmp_path, path, 'test_an_empty_barcode_is_refused', proof) == []
+
+
 def project(root, features, files):
     """A git project whose specs are `features` ({name: [proof text]}) and whose test files
     are `files` ({path: text}), with the tests setting given."""

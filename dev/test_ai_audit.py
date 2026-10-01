@@ -10,11 +10,12 @@ What each group holds:
 
 *reading*   which rules the audit reads
 *prompt*    the criteria file verbatim, then the rule, its proofs, each test's
-            source and the findings of the spot tests and the planted bugs
-*call*      one call per rule, the prompt on stdin and never in the arguments
+            source, the spot tests' findings and the proofs a bug is asked for
+*call*      one call per rule, with no tools, in an empty folder, the request
+            on stdin and never in the arguments
 *answer*    the model and the criteria named; the explanation and the notes
 *verdict*   the spot tests and the planted bugs alone set it; the last line
-*failure*   the three ways the model cannot be reached, each with its reason
+*failure*   the ways the model cannot be reached, each with its reason
 *writing*   reading, asking and printing a rule write no file
 *command*   the command line: its exits and what it prints
 """
@@ -187,17 +188,44 @@ def entry_of(project, rule='RULE-2'):
         return json.load(handle)['audit']['rules'][rule]
 
 
-def bug_calls(directory):
-    """The calls that asked the fake for a planted bug."""
-    first = audit_module.BUG_INSTRUCTION[0]
-    return [call for call in fake_claude.calls(directory)
-            if call['prompt'].startswith(first)]
+def asked_for(call):
+    """The proofs one call asked a planted bug for."""
+    found = re.findall(r'^Plant one bug for each of: (.*)\.$', call['prompt'],
+                       re.M)
+    return [name.strip() for name in found[-1].split(',')] if found else []
 
 
-def reading_calls(directory):
-    """The calls that asked the fake to read a rule."""
-    return [call for call in fake_claude.calls(directory)
-            if call['prompt'].startswith(criteria_text())]
+def break_key_of(project, rule, proof):
+    """The key a planted bug for `proof` carries for its test and code now."""
+    tests = [{'file': test['file'], 'name': test['name'],
+              'source': test['body']}
+             for test in read(project, rule)['tests']
+             if test['proof'] == proof]
+    return audit_module.break_key(
+        audit_run.test_source_hash(tests),
+        purlin_fingerprint.code_part(project.root, {'scope': ['src/login.py']}))
+
+
+def settle(project, rule, result='caught', findings=()):
+    """An audit entry for `rule` as it stands now, with a planted bug on
+    record for each of its proofs, so the audit has nothing left to read."""
+    rel = project.audit(rule, findings=findings)
+    path = os.path.join(project.root, *rel.split('/'))
+    with open(path, encoding='utf-8') as handle:
+        data = json.load(handle)
+    data['audit']['rules'][rule]['breaks'] = {
+        proof['id']: {'file': 'src/login.py', 'line': 12,
+                      'before': '    return 401', 'after': '    return 200',
+                      'result': result, 'why': '',
+                      'break_key': break_key_of(project, rule, proof['id'])}
+        for proof in project.rule(rule)['proofs']}
+    write(path, json.dumps(data, indent=2, sort_keys=True))
+    return rel
+
+
+def code_of(project):
+    return purlin_fingerprint.code_part(project.root,
+                                        {'scope': ['src/login.py']})
 
 
 def command(project, capsys, *args):
@@ -226,7 +254,7 @@ class TestWhichRulesAreRead:
     # purlin: ai_audit PROOF-4
     def test_a_rule_with_an_entry_for_its_text_proof_test_and_code_is_not_read(
             self, project):
-        project.audit('RULE-2')
+        settle(project, 'RULE-2')
         rule = project.rule('RULE-2')
         assert rule['cells']['passed']['word'] == 'passed', rule
         assert rule['audit']['verdict'] == 'strong', rule
@@ -238,23 +266,45 @@ class TestWhichRulesAreRead:
     def test_a_rule_whose_feature_code_changed_since_its_entry_is_read(self):
         source = LOGIN_SOURCE
         with passing_project(source=source) as made:
-            made.audit('RULE-2')
+            settle(made, 'RULE-2')
             assert ('login', 'RULE-2') not in to_read(made)
             write(os.path.join(made.root, 'src', 'login.py'), source.replace(
                 '    return 401\n', '    return 403 if locked else 401\n'))
             made.evidence()
             rule = made.rule('RULE-2')
             assert rule['cells']['passed']['word'] == 'passed', rule
-            assert rule['audit'], rule
+            entry = audit_run.audit_entry(made.root, 'login', rule,
+                                          code_of(made))
+            assert entry['out_of_date'] == ['code'], entry
             assert ('login', 'RULE-2') in to_read(made)
 
     # purlin: ai_audit PROOF-51
     def test_a_rule_with_a_current_entry_is_read_when_asked_again(
             self, project):
-        project.audit('RULE-2')
+        settle(project, 'RULE-2')
         assert project.rule('RULE-2')['audit']
         assert ('login', 'RULE-2') not in to_read(project)
         assert ('login', 'RULE-2') in to_read(project, again=True)
+
+    # purlin: ai_audit PROOF-122
+    def test_a_rule_the_model_was_not_reached_for_is_read_again(self, claude):
+        install, directory = claude
+        install(exit_code=1)
+        with passing_project(source=LOGIN_SOURCE) as made:
+            settle(made, 'RULE-1')
+            audit(made)
+            entry = entry_of(made)
+            assert entry['verdict'] == 'spot-checked', entry
+            assert entry['no_bug'] == [
+                'No bug was planted: the model could not be reached: claude '
+                'exited with an error.'], entry
+            # Nothing has changed since, and the model now answers.
+            assert to_read(made) == [('login', 'RULE-2')]
+            install()
+            code, printed = audit(made)
+        assert code == 0, printed
+        assert 'login RULE-2' in printed, printed
+        assert len(fake_claude.calls(directory)) == 1
 
 
 # ---------------------------------------------------------------------------
@@ -284,14 +334,32 @@ class TestThePrompt:
             self, claude):
         _install, directory = claude
         with passing_project(test_file=CHECKS_NOTHING_TEST) as made:
-            made.audit('RULE-1')
+            settle(made, 'RULE-1')
             audit(made)
-        readings = reading_calls(directory)
-        assert len(readings) == 1, fake_claude.calls(directory)
+        readings = fake_claude.calls(directory)
+        assert len(readings) == 1, readings
         prompt = readings[0]['prompt']
         assert 'login RULE-2' in prompt
         source = prompt.index('def test_a_bad_password_is_denied')
         assert prompt.index(CHECKS_NOTHING, source) > source, prompt[-600:]
+
+    # purlin: ai_audit PROOF-114
+    def test_the_request_holds_the_scopes_files_and_no_other(self, claude):
+        _install, directory = claude
+        with passing_project(source=LOGIN_SOURCE) as made:
+            write(os.path.join(made.root, '.env'), 'KEY=s3cret\n')
+            git(made.root, 'add', '-A')
+            git(made.root, 'commit', '-q', '-m', 'chore: a settings file')
+            settle(made, 'RULE-1')
+            audit(made)
+        calls = fake_claude.calls(directory)
+        assert len(calls) == 1, calls
+        prompt = calls[0]['prompt']
+        assert 'login RULE-2' in prompt
+        assert asked_for(calls[0]) == ['PROOF-2'], prompt[-900:]
+        assert 'File: src/login.py\n' + LOGIN_SOURCE in prompt, prompt[-900:]
+        assert 's3cret' not in prompt
+        assert prompt.count('\nFile: ') == 1, prompt[-900:]
 
 
 # ---------------------------------------------------------------------------
@@ -319,7 +387,8 @@ class TestTheCall:
         calls = fake_claude.calls(directory)
         assert found.get('explanation') == ['read to the end'], found
         assert len(calls) == 1, calls
-        assert calls[0]['argv'] == ['-p', '--output-format', 'json']
+        assert calls[0]['argv'][:7] == ['-p', '--output-format', 'json',
+                                        '--max-turns', '1', '--tools', '']
         # The fake reads its standard input to the end before it answers.
         assert calls[0]['prompt'] == audit_module.model_prompt(
             project.root, reading, criteria_text())
@@ -327,7 +396,7 @@ class TestTheCall:
                        for part in calls[0]['argv'])
 
     # purlin: ai_audit PROOF-14
-    def test_a_call_is_given_300_seconds_and_stdin_closes_after_the_prompt(
+    def test_the_call_is_bare_given_300_seconds_and_the_request_on_stdin(
             self, project):
         seen = []
 
@@ -344,12 +413,48 @@ class TestTheCall:
                                runner=runner)
         assert len(seen) == 1, seen
         command, kwargs = seen[0]
-        assert command == ['/bin/claude', '-p', '--output-format', 'json']
+        assert command == [
+            '/bin/claude', '-p', '--output-format', 'json', '--max-turns',
+            '1', '--tools', '', '--strict-mcp-config', '--safe-mode',
+            '--setting-sources', '', '--disable-slash-commands',
+            '--no-session-persistence', '--system-prompt',
+            "You review software tests for Purlin's audit. You have no "
+            "tools. Answer in exactly the shape the request gives, and with "
+            "nothing else."]
         assert kwargs['timeout'] == 300
         # `input=` writes the prompt and closes stdin behind it.
         assert kwargs['input'] == audit_module.model_prompt(
             project.root, read(project, 'RULE-2'), 'criteria')
         assert 'stdin' not in kwargs
+
+    # purlin: ai_audit PROOF-112
+    def test_claude_is_started_in_an_empty_folder_outside_the_project(
+            self, claude):
+        _install, directory = claude
+        with passing_project(source=LOGIN_SOURCE) as made:
+            settle(made, 'RULE-1')
+            root = os.path.realpath(made.root)
+            code, printed = audit(made)
+        assert code == 0, printed
+        calls = fake_claude.calls(directory)
+        assert len(calls) == 1, calls
+        assert 'login RULE-2' in calls[0]['prompt']
+        folder = os.path.realpath(calls[0]['cwd'])
+        assert folder != root and not folder.startswith(root + os.sep), folder
+        assert calls[0]['listing'] == [], calls[0]['listing']
+        assert calls[0]['env'] == '1', calls[0]
+        assert not os.path.exists(calls[0]['cwd'])
+
+    # purlin: ai_audit PROOF-113
+    def test_one_call_holds_the_bugs_of_all_three_proofs(self, claude):
+        _install, directory = claude
+        with proofs_project(3) as made:
+            assert to_read(made) == [('login', 'RULE-1')]
+            code, printed = audit(made)
+        assert code == 0, printed
+        calls = fake_claude.calls(directory)
+        assert len(calls) == 1, calls
+        assert asked_for(calls[0]) == ['PROOF-1', 'PROOF-2', 'PROOF-3']
 
     # purlin: ai_audit PROOF-55
     def test_six_rules_six_calls_each_answer_beside_its_rule(self, project):
@@ -504,8 +609,9 @@ def _rules_tests(count):
     return text
 
 
-def _rules_evidence(project, results):
-    """A local section naming `test_step_<n>` with `results[n - 1]`."""
+def _rules_evidence(project, results, rule_of=None):
+    """A local section naming `test_step_<n>` with `results[n - 1]`, each
+    proof under the rule of its own number, or under `rule_of`."""
     rel = '.purlin/evidence/local/login.json'
     os_name = purlin_evidence.host_os()
     data = {'schema': purlin_evidence.SCHEMA, 'feature': 'login',
@@ -518,7 +624,8 @@ def _rules_evidence(project, results):
                 'fingerprint': purlin_fingerprint.fingerprint(project.root,
                                                               'login'),
                 'rules': {},
-                'proofs': [{'id': 'PROOF-%d' % n, 'rule': 'RULE-%d' % n,
+                'proofs': [{'id': 'PROOF-%d' % n,
+                            'rule': rule_of or 'RULE-%d' % n,
                             'result': result, 'env': None, 'manual': False,
                             'test': 'tests/test_login.py::test_step_%d' % n}
                            for n, result in enumerate(results, 1)]}}}
@@ -537,14 +644,70 @@ def rules_project(results, weak=(), strong=()):
         made.edit_test(_rules_tests(len(results)))
         _rules_evidence(made, results)
         for rule in weak:
-            made.audit(rule, findings=['%s: the test checks nothing.' % rule])
+            settle(made, rule, findings=['%s: the test checks nothing.' % rule])
         for rule in strong:
-            made.audit(rule)
+            settle(made, rule)
         git(made.root, 'add', '-A')
         git(made.root, 'commit', '-q', '-m', 'purlin: audit at abc1234')
         yield made
     finally:
         made.close()
+
+
+# `step(n)` answers `n`, each on a line of its own.
+STEPS_SOURCE = ('def step(n):\n'
+                '    if n == 1:\n'
+                '        return 1\n'
+                '    if n == 2:\n'
+                '        return 2\n'
+                '    return n\n')
+
+
+@contextlib.contextmanager
+def proofs_project(count):
+    """A project whose one rule, `RULE-1`, has `count` proofs, each with a
+    passing test of its own that calls `step`."""
+    lines = ['# Feature: login', '', '> Description: Signing in, in steps.',
+             '> Scope: src/login.py', '', '## Rules', '',
+             '- RULE-1: Every step holds', '', '## Proof', '']
+    lines += ['- PROOF-%d (RULE-1): Take step %d; verify it returns %d'
+              % (n, n, n) for n in range(1, count + 1)]
+    tests = 'from src.login import step\n'
+    for n in range(1, count + 1):
+        tests += ('\n\n# purlin: login PROOF-%d\n'
+                  'def test_step_%d():\n'
+                  '    assert step(%d) == %d\n' % (n, n, n, n))
+    made = Project(spec='\n'.join(lines) + '\n',
+                   config={'tests': [suites.pytest_suite()]})
+    try:
+        write(os.path.join(made.root, 'src', 'login.py'), STEPS_SOURCE)
+        write(os.path.join(made.root, 'src', '__init__.py'), '')
+        made.edit_test(tests)
+        _rules_evidence(made, ['pass'] * count, rule_of='RULE-1')
+        yield made
+    finally:
+        made.close()
+
+
+WINDOWS_SPEC = (
+    '# Feature: login\n\n'
+    '> Description: Signing in on Windows.\n'
+    '> Scope: src/login.py\n\n'
+    '## Rules\n\n'
+    '- RULE-8: A path with a drive letter is accepted\n\n'
+    '## Proof\n\n'
+    '- PROOF-38 (RULE-8): Sign in from `C:\\Users\\ada`; verify 200 '
+    '@env(windows)\n'
+)
+
+WINDOWS_TEST = (
+    'from src.login import login\n'
+    '\n'
+    '\n'
+    '# purlin: login PROOF-38\n'
+    'def test_a_drive_letter_is_accepted():\n'
+    '    assert login("C:\\\\Users\\\\ada", "secret") == 200\n'
+)
 
 
 class TestTheVerdict:
@@ -553,29 +716,29 @@ class TestTheVerdict:
     def test_a_spot_finding_makes_the_rule_weak_though_its_bug_was_caught(
             self, claude):
         install, directory = claude
-        install(answers=[bug('    return 401',
-                             '    raise RuntimeError("planted")'),
-                         '- The test calls login.'])
+        install(answers=[{'PROOF-2': bug('    return 401',
+                                         '    raise RuntimeError("planted")'),
+                          'reading': '- The test calls login.'}])
         with passing_project(source=LOGIN_SOURCE,
                              test_file=CHECKS_NOTHING_TEST) as made:
-            made.audit('RULE-1')
+            settle(made, 'RULE-1')
             code, printed = audit(made)
             entry = entry_of(made)
         assert code == 0, printed
         assert entry['breaks']['PROOF-2']['result'] == 'caught', entry
         assert entry['verdict'] == 'weak', entry
         assert CHECKS_NOTHING in entry['findings'], entry
-        assert len(bug_calls(directory)) == 1
+        assert len(fake_claude.calls(directory)) == 1
 
     # purlin: ai_audit PROOF-96
     def test_a_bug_that_survives_makes_the_rule_weak_with_its_finding(
             self, claude):
         install, _directory = claude
-        install(answers=[bug('    return 401', '    return 200'),
-                         '- The test reads no status.'])
+        install(answers=[{'PROOF-2': bug('    return 401', '    return 200'),
+                          'reading': '- The test reads no status.'}])
         with passing_project(source=LOGIN_SOURCE,
                              test_file=NOT_NONE_TEST) as made:
-            made.audit('RULE-1')
+            settle(made, 'RULE-1')
             code, printed = audit(made)
             entry = entry_of(made)
         assert code == 0, printed
@@ -589,27 +752,45 @@ class TestTheVerdict:
     def test_no_spot_finding_and_every_bug_caught_is_strong_whatever_claude_says(
             self, claude):
         install, directory = claude
-        install(answers=[bug('    return 401', '    return 200'),
-                         '- This rule is weak.'])
+        install(answers=[{'PROOF-2': bug('    return 401', '    return 200'),
+                          'reading': '- This rule is weak.'}])
         with passing_project(source=LOGIN_SOURCE) as made:
-            made.audit('RULE-1')
+            settle(made, 'RULE-1')
             code, printed = audit(made)
             entry = entry_of(made)
         assert code == 0, printed
-        assert len(reading_calls(directory)) == 1
+        assert len(fake_claude.calls(directory)) == 1
         assert entry['breaks']['PROOF-2']['result'] == 'caught', entry
         assert entry['findings'] == [], entry
+        assert entry['no_bug'] == [], entry
         assert entry['explanation'] == ['This rule is weak.'], entry
         assert entry['verdict'] == 'strong', entry
+
+    # purlin: ai_audit PROOF-118
+    def test_no_spot_finding_and_no_bug_to_plant_is_spot_checked(self, claude):
+        install, _directory = claude
+        install(answers=[{'PROOF-2': 'no break: the proof names no value the '
+                                     'code computes'}])
+        with passing_project(source=LOGIN_SOURCE) as made:
+            settle(made, 'RULE-1')
+            code, printed = audit(made)
+            entry = entry_of(made)
+        assert code == 0, printed
+        assert entry['findings'] == [], entry
+        assert entry['verdict'] == 'spot-checked', entry
+        assert entry['no_bug'] == [
+            'No bug was planted: the model found no change that would break '
+            'PROOF-2: the proof names no value the code computes.'], entry
 
     # purlin: ai_audit PROOF-98
     def test_the_findings_and_the_explanation_are_kept_apart(self, claude):
         install, _directory = claude
-        install(answers=['no break: the proof names no value the code '
-                         'computes',
-                         '- The test calls login and reads no status.'])
+        install(answers=[{'PROOF-2': 'no break: the proof names no value the '
+                                     'code computes',
+                          'reading': '- The test calls login and reads no '
+                                     'status.'}])
         with passing_project(test_file=CHECKS_NOTHING_TEST) as made:
-            made.audit('RULE-1')
+            settle(made, 'RULE-1')
             audit(made)
             entry = entry_of(made)
         assert entry['findings'] == [CHECKS_NOTHING], entry
@@ -624,7 +805,8 @@ class TestTheVerdict:
             code, printed = audit(made)
         assert code == 0, printed
         assert printed.splitlines()[-1] == (
-            'The audit found 4 of 5 rules strong (80%).'), printed
+            'The audit found 4 of 5 rules strong (80%): 4 strong, 1 weak.'), \
+            printed
 
     # purlin: ai_audit PROOF-104
     def test_a_rule_whose_test_fails_is_not_counted(self, claude):
@@ -635,30 +817,16 @@ class TestTheVerdict:
             code, printed = audit(made)
         assert code == 0, printed
         assert printed.splitlines()[-1] == (
-            'The audit found 3 of 4 rules strong (75%).'), printed
+            'The audit found 3 of 4 rules strong (75%): 3 strong, 1 weak.'), \
+            printed
 
     # purlin: ai_audit PROOF-100
     def test_a_caught_bug_is_kept_while_its_test_and_code_stand(self, claude):
         _install, directory = claude
         with passing_project(source=LOGIN_SOURCE) as made:
             # The bug planted for PROOF-2 was caught, for this test and code.
-            rel = made.audit('RULE-2')
-            reading = read(made, 'RULE-2')
-            tests = [{'file': t['file'], 'name': t['name'],
-                      'source': t['body']} for t in reading['tests']]
-            key = audit_module.break_key(
-                audit_run.test_source_hash(tests),
-                purlin_fingerprint.code_part(
-                    made.root, {'scope': ['src/login.py']}))
-            path = os.path.join(made.root, *rel.split('/'))
-            with open(path, encoding='utf-8') as handle:
-                data = json.load(handle)
-            data['audit']['rules']['RULE-2']['breaks'] = {'PROOF-2': {
-                'file': 'src/login.py', 'line': 12, 'before': '    return 401',
-                'after': '    return 200', 'result': 'caught', 'why': '',
-                'break_key': key}}
-            write(path, json.dumps(data, indent=2, sort_keys=True))
-            made.audit('RULE-1')
+            settle(made, 'RULE-2')
+            settle(made, 'RULE-1')
             # Only RULE-2's text changes, so the audit reads it again.
             made.spec(SPEC.replace('return 401 and the body',
                                    'return 401 with the body'))
@@ -667,24 +835,134 @@ class TestTheVerdict:
             code, printed = audit(made)
             entry = entry_of(made)
         assert code == 0, printed
-        assert bug_calls(directory) == []
-        assert len(reading_calls(directory)) == 1
+        calls = fake_claude.calls(directory)
+        assert len(calls) == 1, calls
+        assert asked_for(calls[0]) == [], calls[0]['prompt'][-600:]
         assert entry['breaks']['PROOF-2']['result'] == 'caught', entry
+        assert entry['breaks']['PROOF-2']['after'] == '    return 200', entry
+
+    # purlin: ai_audit PROOF-115
+    def test_a_changed_test_has_its_bug_asked_for_again(self, claude):
+        _install, directory = claude
+        with passing_project(source=LOGIN_SOURCE) as made:
+            settle(made, 'RULE-2')
+            settle(made, 'RULE-1')
+            before = entry_of(made)['breaks']['PROOF-2']['break_key']
+            assert to_read(made) == []
+            made.edit_test(TEST_FILE.replace('== 401', '== 403'))
+            made.evidence()
+            code, printed = audit(made)
+            entry = entry_of(made)
+        assert code == 0, printed
+        calls = fake_claude.calls(directory)
+        assert len(calls) == 1, calls
+        assert 'login RULE-2' in calls[0]['prompt']
+        assert asked_for(calls[0]) == ['PROOF-2']
+        after = entry['breaks']['PROOF-2']['break_key']
+        assert after and after != before, entry
 
     # purlin: ai_audit PROOF-102
     def test_an_anchors_rule_gets_no_planted_bug(self, claude):
         _install, directory = claude
         with passing_project() as made:
             as_anchor(made)
-            made.audit('RULE-1')
+            made.audit('RULE-1', no_bug=[
+                "No bug was planted: no bug is planted for an anchor's "
+                "rule."])
             assert made.rule('RULE-2')['cells']['passed']['word'] == 'passed'
             assert to_read(made) == [('login', 'RULE-2')]
             code, printed = audit(made)
             entry = entry_of(made)
         assert code == 0, printed
-        assert bug_calls(directory) == []
-        assert entry['verdict'] == 'strong', entry
+        calls = fake_claude.calls(directory)
+        assert len(calls) == 1, calls
+        assert asked_for(calls[0]) == [], calls[0]['prompt'][-600:]
+        assert entry['verdict'] == 'spot-checked', entry
+        assert entry['no_bug'] == [
+            "No bug was planted: no bug is planted for an anchor's rule."], \
+            entry
         assert entry['breaks'] == {}, entry
+
+    # purlin: ai_audit PROOF-116
+    def test_a_proof_tagged_for_another_system_gets_no_planted_bug(
+            self, claude, monkeypatch):
+        _install, directory = claude
+        if purlin_evidence.host_os() == 'windows':
+            # The case is a machine that is not Windows.
+            monkeypatch.setattr(purlin_evidence, 'host_os', lambda: 'linux')
+        here = purlin_evidence.os_word(purlin_evidence.host_os())
+        made = Project(spec=WINDOWS_SPEC,
+                       config={'tests': [suites.pytest_suite()]})
+        try:
+            made.edit_test(WINDOWS_TEST)
+            rel = '.purlin/evidence/local/login.json'
+            write(os.path.join(made.root, *rel.split('/')), json.dumps({
+                'schema': purlin_evidence.SCHEMA, 'feature': 'login',
+                'source': 'local', 'spec': 'specs/auth/login.md',
+                'audit': {'rules': {}},
+                'platforms': {'windows': {
+                    'commit': made.head(), 'dirty': False,
+                    'at': '2026-09-13T12:00:00Z', 'runner': 'ada',
+                    'email': 'ada@example.com', 'machine': 'build-7',
+                    'fingerprint': purlin_fingerprint.fingerprint(made.root,
+                                                                  'login'),
+                    'rules': {},
+                    'proofs': [{'id': 'PROOF-38', 'rule': 'RULE-8',
+                                'result': 'pass', 'env': 'windows',
+                                'manual': False,
+                                'test': 'tests/test_login.py::'
+                                        'test_a_drive_letter_is_accepted'}]}}},
+                indent=2, sort_keys=True))
+            git(made.root, 'add', '-A')
+            git(made.root, 'commit', '-q', '-m', 'purlin: evidence at abc1234')
+            assert made.rule('RULE-8')['cells']['passed']['word'] == 'passed'
+            assert to_read(made) == [('login', 'RULE-8')]
+            code, printed = audit(made)
+            entry = entry_of(made, 'RULE-8')
+        finally:
+            made.close()
+        assert code == 0, printed
+        calls = fake_claude.calls(directory)
+        assert len(calls) == 1, calls
+        assert asked_for(calls[0]) == [], calls[0]['prompt'][-600:]
+        assert entry['verdict'] == 'spot-checked', entry
+        assert entry['breaks'] == {}, entry
+        assert entry['no_bug'] == [
+            'No bug was planted: PROOF-38 needs Windows, and this machine is '
+            '%s.' % here], entry
+
+    # purlin: ai_audit PROOF-120
+    def test_a_proof_the_reply_leaves_out_has_no_bug_and_the_other_is_planted(
+            self, claude):
+        install, directory = claude
+        install(answers=[{'PROOF-1': bug('        return 1',
+                                         '        return 0'),
+                          'reading': '- The first step is checked.'}])
+        with proofs_project(2) as made:
+            code, printed = audit(made)
+            entry = entry_of(made, 'RULE-1')
+        assert code == 0, printed
+        calls = fake_claude.calls(directory)
+        assert asked_for(calls[0]) == ['PROOF-1', 'PROOF-2']
+        assert entry['verdict'] == 'strong', entry
+        assert entry['breaks']['PROOF-1']['result'] == 'caught', entry
+        assert entry['no_bug'] == [
+            "No bug was planted: the model's answer for PROOF-2 could not be "
+            "used: it holds none."], entry
+
+    # purlin: ai_audit PROOF-121
+    def test_the_calls_are_counted_first_and_their_cost_printed_after(
+            self, claude):
+        install, _directory = claude
+        install(cost=0.05)
+        with passing_project(source=LOGIN_SOURCE) as made:
+            assert to_read(made) == [('login', 'RULE-1'), ('login', 'RULE-2')]
+            code, printed = audit(made)
+        assert code == 0, printed
+        lines = printed.splitlines()
+        assert lines[0] == 'The audit reads 2 rules: 2 model calls.', printed
+        assert lines[-2] == ('The model was asked 2 times for 2 rules: $0.10 '
+                             'in all, $0.05 a rule.'), printed
 
 
 # ---------------------------------------------------------------------------
@@ -732,24 +1010,41 @@ class TestWhenTheModelCannotBeReached:
             return (json.load(handle).get('audit') or {}).get('rules') or {}
 
     # purlin: ai_audit PROOF-108
-    def test_a_rule_that_passed_the_spot_tests_alone_stays_not_audited(
+    def test_a_rule_that_passed_the_spot_tests_alone_is_spot_checked(
             self, claude):
         install, directory = claude
         install(exit_code=1, answers=['- The test reads the status.'])
         with passing_project(source=LOGIN_SOURCE) as made:
-            made.audit('RULE-1')
+            settle(made, 'RULE-1')
             assert to_read(made) == [('login', 'RULE-2')]
             code, printed = audit(made)
             entries = self._entries(made)
-            strong = made.rule('RULE-2')['cells']['strong']['word']
         assert code == 0, printed
         assert fake_claude.calls(directory), 'the fake claude was not asked'
-        assert sorted(entries) == ['RULE-1'], entries
-        assert strong == 'not audited'
+        assert sorted(entries) == ['RULE-1', 'RULE-2'], entries
+        assert entries['RULE-2']['verdict'] == 'spot-checked', entries
+        assert entries['RULE-2']['breaks'] == {}, entries
         lines = printed.splitlines()
-        assert 'login RULE-2   not audited' in lines, printed
-        assert [line for line in lines if 'could not be reached' in line] == [
-            self.UNREACHED % ' 1 rule stays not audited.'], printed
+        assert 'login RULE-2   spot-checked' in lines, printed
+        assert [line for line in lines if 'could not be reached' in line
+                and not line.startswith(' ')] == [
+            self.UNREACHED % ' 1 rule is spot-checked alone.'], printed
+
+    # purlin: ai_audit PROOF-117
+    def test_a_claude_that_answers_nothing_is_the_model_not_reached(
+            self, claude):
+        install, directory = claude
+        install(raw='')
+        with passing_project(source=LOGIN_SOURCE) as made:
+            settle(made, 'RULE-1')
+            code, printed = audit(made)
+            entry = entry_of(made)
+        assert code == 0, printed
+        assert len(fake_claude.calls(directory)) == 1
+        assert entry['verdict'] == 'spot-checked', entry
+        assert ('The model could not be reached: claude gave no answer. 1 '
+                'rule is spot-checked alone. Run purlin:audit again.'
+                ) in printed.splitlines(), printed
 
     # purlin: ai_audit PROOF-109
     def test_a_spot_finding_is_still_written_weak(self, claude):
@@ -757,7 +1052,7 @@ class TestWhenTheModelCannotBeReached:
         install(exit_code=1, answers=['- The test calls login.'])
         with passing_project(source=LOGIN_SOURCE,
                              test_file=CHECKS_NOTHING_TEST) as made:
-            made.audit('RULE-1')
+            settle(made, 'RULE-1')
             code, printed = audit(made)
             entry = entry_of(made)
         assert code == 0, printed
@@ -767,11 +1062,12 @@ class TestWhenTheModelCannotBeReached:
         assert entry['model'] == 'unknown', entry
         lines = printed.splitlines()
         assert 'login RULE-2   weak' in lines, printed
-        assert [line for line in lines if 'could not be reached' in line] == [
+        assert [line for line in lines if 'could not be reached' in line
+                and not line.startswith(' ')] == [
             self.UNREACHED % ''], printed
 
     # purlin: ai_audit PROOF-110
-    def test_two_rules_stay_not_audited_and_none_is_counted_strong(
+    def test_two_rules_are_spot_checked_and_none_is_counted_strong(
             self, claude):
         install, _directory = claude
         install(exit_code=1, answers=['- The test reads the status.'])
@@ -780,11 +1076,30 @@ class TestWhenTheModelCannotBeReached:
             code, printed = audit(made)
             entries = self._entries(made)
         assert code == 0, printed
-        assert entries == {}, entries
+        assert {rule: entry['verdict'] for rule, entry in entries.items()} == {
+            'RULE-1': 'spot-checked', 'RULE-2': 'spot-checked'}, entries
         lines = printed.splitlines()
-        assert [line for line in lines if 'could not be reached' in line] == [
-            self.UNREACHED % ' 2 rules stay not audited.'], printed
-        assert lines[-1] == 'The audit found 0 of 2 rules strong (0%).', printed
+        assert [line for line in lines if 'could not be reached' in line
+                and not line.startswith(' ')] == [
+            self.UNREACHED % ' 2 rules are spot-checked alone.'], printed
+        assert lines[-1] == ('The audit found 0 of 2 rules strong (0%): 0 '
+                             'strong, 2 spot-checked.'), printed
+
+    # purlin: ai_audit PROOF-119
+    def test_a_kept_bug_that_survived_still_makes_the_rule_weak(self, claude):
+        install, _directory = claude
+        install(exit_code=1)
+        with passing_project(source=LOGIN_SOURCE,
+                             test_file=NOT_NONE_TEST) as made:
+            settle(made, 'RULE-1')
+            settle(made, 'RULE-2', result='survived')
+            code, printed = audit(made, again=True)
+            entry = entry_of(made)
+        assert code == 0, printed
+        assert entry['verdict'] == 'weak', entry
+        assert entry['findings'] == [
+            'PROOF-2: the test still passes when src/login.py:12 reads '
+            '"return 200"'], entry
 
 
 # ---------------------------------------------------------------------------

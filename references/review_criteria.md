@@ -2,10 +2,10 @@
 
 What the audit reads on one rule, and what a person reads after. `purlin:audit` runs when a
 person asks, and nothing waits on it. For each rule it reads it takes three steps: the heuristic
-spot tests, then one planted bug per proof, then the model's reading. The spot tests and the
-planted bugs set the rule's verdict; the model explains what they found and decides nothing. The
-model's prompt opens with this file verbatim, so every sentence here is written to be read by a
-person and by a model.
+spot tests, then one model call for the rule's planted bugs and its reading, then each bug
+planted and its proof's test run. The spot tests and the planted bugs set the rule's verdict; the
+model's reading explains the tests and decides nothing. The model's request opens with this file
+verbatim, so every sentence here is written to be read by a person and by a model.
 
 ## Which rules the audit reads
 
@@ -14,8 +14,8 @@ The audit reads a rule when all of these hold:
 - the rule is its feature's own;
 - at least one of its proofs has a test;
 - its tests pass;
-- it has no audit entry for its current rule, proofs and tests, or its feature's code changed
-  since that entry.
+- it has no audit entry, or its entry is out of date because the rule, its proofs, its tests or
+  its feature's code changed since, or a proof it plants a bug for has no result recorded.
 
 An anchor's rules are read once, as the anchor's. `purlin:audit --all` reads every rule that
 passes its tests again. A rule whose every proof is `@manual` has no test to read, so it is not
@@ -23,13 +23,13 @@ read.
 
 ## The verdict
 
-A rule reads `weak` when a spot test fires on one of its tests or a planted bug survived, and
-`strong` when no spot test fires and every planted bug was caught or not made. Nothing else sets
-it: the model's reading is asked after the verdict is set and never changes it.
+A rule reads `weak` when a spot test fires on one of its tests or a planted bug survived. It
+reads `strong` when none did and a planted bug was caught by its proof's test. It reads
+`spot-checked` when none did and no bug was planted and caught; the entry then says why. Nothing
+else sets it: the model's reading never changes it.
 
-`strong` means the model part of the audit ran. When the model cannot be reached for a rule, for
-a planted bug or for its reading, the spot tests still report what they find as `weak`, and a rule
-that passed them alone gets no audit entry and stays not audited.
+When the model cannot be reached for a rule, the spot tests still report what they find as
+`weak`, and a rule that passed them is written `spot-checked` and read again by the next audit.
 
 ## Heuristic spot tests
 
@@ -137,8 +137,9 @@ people do ([an empirical study of coding agents, 2026](https://arxiv.org/pdf/260
 values in backticks, as in "has an age of `90` minutes"; if `90` appears nowhere in the test's
 file, the test cannot be checking it.
 
-**Does not flag** a proof that names no value in backticks; the same number written another way
-(`90` and `90.0`); a value the test reads from a data file its own file names.
+**Does not flag** a proof that names no value in backticks; an empty pair of backticks, which
+marks an empty value and names nothing to look for; the same number written another way (`90` and
+`90.0`); a value the test reads from a data file its own file names.
 
 **Finding:** `tests/test_age.py::test_age: the proof expects 90 and the test never checks it.`
 
@@ -168,12 +169,14 @@ expected value, written by a person; a test that never mentions it is checking s
 
 ## The planted bug
 
-The audit's second step runs each proof's own test against a small change to the code. For a
-proof whose test or whose feature's code changed since its last planted bug, the model is asked
-for the smallest change to one file the feature covers that would break what the proof says. It
-answers with the file, the exact lines to change and what they become:
+The audit runs each proof's own test against a small change to the code. For a proof whose test
+or whose feature's code changed since its last planted bug, the model is asked for the smallest
+change to one file the feature covers that would break what the proof says. Its one reply for
+the rule holds a part for each such proof, under a line naming the proof: the file, the exact
+lines to change and what they become,
 
 ```
+=== PROOF-1 ===
 file: src/age.py
 before:
 <the exact lines>
@@ -181,38 +184,44 @@ after:
 <the lines>
 ```
 
-or `no break: <why>` when no change to those files can break what the proof says. The change is
-made in a copy of the project, never in the project itself; only the proof's own tests run there,
-and the copy is deleted after.
+or, under the same line, `no break: <why>` when no change to those files can break what the
+proof says. The change is made in a copy of the project, never in the project itself. Only the
+proof's own tests run there, once before the change and once with it in place, and the copy is
+deleted after.
 
-- **Caught.** A test fails, errors, cannot be collected or runs past its limit with the change in
-  place. The test noticed.
+- **Caught.** A test of the proof ran and failed with the change in place. The test noticed.
 - **Survived.** Every one of the proof's own tests still passes with the change in place. The
   rule reads `weak`, with the finding
   `PROOF-1: the test still passes when src/age.py:12 reads "return 0"`.
-- **Not made.** The answer named no change, or a change that does not match its file exactly
-  once, or a file the feature does not cover. The test is not run, the audit prints
-  `PROOF-1: no bug was planted: <why>.`, and it is not a finding. Where the model could not be
-  reached, nothing is recorded for the proof and its bug is asked for at the next audit.
+- **Not run.** The test was skipped, could not be collected or ran past its limit with the
+  change in place. That decides nothing: the bug was neither caught nor missed.
+- **Not made.** The reply held no part for the proof, or the part named no change, or a change
+  that does not match its file exactly once, or a file the feature does not cover, or a file that
+  holds one of the proof's tests, or the proof's test does not pass in the copy before any
+  change. The test is not run against a bug, the audit prints `No bug was planted: <why>.`, and it
+  is not a finding. Where the model could not be reached, nothing is recorded for the proof and
+  its bug is asked for at the next audit.
 
 A proof keeps its last result while its tests and its feature's code are unchanged, and no bug is
-planted for it again. No bug is planted for an anchor's proof or a `@manual` proof. When a file of
-the project changes while a bug is planted, the audit stops and writes nothing.
+planted for it again. No bug is planted for an anchor's proof, a `@manual` proof or a proof tagged
+for a system this machine is not. When a file of the project changes while the audit runs, the
+audit stops and writes nothing.
 
 ## What the model is sent, and what it decides
 
-After the spot tests and the planted bugs, the model reads each rule once: this file, then the
-rule's text, its proofs, the source of each test that backs them, and under `Findings:` each
-finding of the spot tests and the planted bugs, or `none`. The verdict is already set. The model
-decides nothing; it explains.
+The model is asked once for each rule: this file, then the rule's text, its proofs, the source of
+each test, and under `Findings:` each finding of the spot tests, or `none`; then the proofs to
+plant a bug for and the text of each file the feature covers. It answers with one part for each of
+those proofs and then its reading. The model decides nothing; its reading explains.
 
-**The answer.** One sentence per line, each opening `- `: what each test observes against what
-its proof names, and why each finding holds or what it misses. Then, where there is one, a line
+**The reading.** Under a line `=== reading ===`, one sentence per line, each opening `- `: what
+each test observes against what its proof names, and why each finding holds or what it misses. Then, where there is one, a line
 `notes:` and one sentence per note, each opening `- ` and naming the proof. Nothing else: no
 recommendation, no grade, no score, no verdict. A person reads what the model wrote beside the
 findings and decides.
 
 ```
+=== reading ===
 - PROOF-2: the test calls login and reads no status, so a wrong status still passes.
 notes:
 - PROOF-2 holds two cases.
@@ -248,19 +257,30 @@ it, in at most 60 words, as `references/spec_quality_guide.md`, "One proof, one 
 proof longer than 60 words, or one holding a second case, such as a refusal beside the case that
 is allowed, is written under `notes:`, one sentence naming the proof.
 
-**The call.** `claude -p --output-format json`, the prompt on its standard input, one call per
-rule, four at once, 300 seconds each. Each answer names the model that gave it and the sha256 of
-this file as it was sent. When `claude` is not on the path, exits with an error or runs past its
-300 seconds, no explanation is recorded and the audit prints one line naming the reason,
-`claude is not on PATH`, `claude exited with an error` or `claude timed out after 300 s`:
-`The model could not be reached: claude is not on PATH. 2 rules stay not audited. Run purlin:audit again.`
-A rule on which a spot test fired is still written `weak`; no rule is written `strong`.
+**The call.** One call per rule, four at once, 300 seconds each, the request on its standard
+input:
+
+```
+claude -p --output-format json --max-turns 1 --tools "" --strict-mcp-config --safe-mode \
+  --setting-sources "" --disable-slash-commands --no-session-persistence \
+  --system-prompt "<the audit's own>"
+```
+
+The model is given no tools and is started in an empty folder, so it can read and change nothing.
+It is started with `DISABLE_PROMPT_CACHING=1`, with no MCP server, no plugin, no skill, no
+project instructions and none of the person's settings. Each answer names the model that gave it
+and the sha256 of this file as it was sent. When `claude` is not on the path, exits with an error,
+runs past its 300 seconds or gives no answer, no explanation is recorded and the audit prints one
+line naming the reason, `claude is not on PATH`, `claude exited with an error`,
+`claude timed out after 300 s` or `claude gave no answer`:
+`The model could not be reached: claude is not on PATH. 2 rules are spot-checked alone. Run purlin:audit again.`
+A rule on which a spot test fired is still written `weak`; any other is written `spot-checked`.
 
 ## Anchors and rules with no proof
 
 An anchor's rule covers the whole project. Its test is strong only when it checks every file of
 the project the rule speaks of, not a sample of them and not one feature's files. No bug is
-planted for an anchor, so its verdict comes from the spot tests alone.
+planted for an anchor, so its rule reads `spot-checked` where the spot tests find nothing.
 
 A rule no proof line names has no proof to read its test against, and the audit does not read
 it. Whether a proof line is there is all the status reads; what a proof is worth is the audit's
@@ -270,22 +290,25 @@ question.
 
 The audit reports. It recommends nothing.
 
+- **How many model calls it will make**, the first line, one for each rule it reads:
+  `The audit reads 12 rules: 12 model calls.`
 - **Each rule it read**, its verdict, then each finding: the spot tests' sentences and each
-  planted bug that survived. A planted bug that was not made is printed with its reason and is
-  not a finding.
+  planted bug that survived. Then one sentence for each proof no bug was caught for, which is not
+  a finding. Under a `spot-checked` rule those sentences follow `The spot tests found nothing.`
 - **What the model was asked and what it cost**, the line before the last, where an answer
-  carried a cost: `The model was asked 31 times for 12 rules: $1.87 in all, $0.16 a rule.`
-- **The share of rules found strong**, the last line: `The audit found 4 of 5 rules strong (80%).`,
-  counted over the rules that pass their tests, a rule with a hand check counted where it also has
-  a tested proof. A team can set its own target, such as 80 percent, and check it here.
+  carried a cost: `The model was asked <n> times for <n> rules: $<total> in all, $<per rule> a rule.`
+- **The share of rules found strong**, the last line:
+  `The audit found 34 of 40 rules strong (85%): 34 strong, 4 weak, 2 spot-checked.`, counted over
+  the rules that pass their tests, a rule with a hand check counted where it also has a tested
+  proof. A team can set its own target, such as 80 percent, and check it here.
 
-Each rule read with the model reached gets one entry in its feature's evidence, under
-`audit.rules`: the hashes of its
-rule, proofs and tests, the `verdict`, the `findings`, each planted bug under `breaks` with its
-file, line, the lines before and after, and its result, the model's `explanation` and `notes`,
-the `model`, the sha256 of these `criteria`, the time and the commit. A person reads it beside
-the rule, each proof and the source of each test, which is what the audit read. What the model
-cost is written to `.purlin/runtime/audit_run.json`, which git ignores.
+Each rule read gets one entry in its feature's evidence, under `audit.rules`: the hashes of its
+rule, proofs, tests and code, the `verdict`, the `findings`, under `no_bug` one sentence for each
+proof no bug was caught for, each planted bug under `breaks` with its file, line, the lines
+before and after, and its result, the model's `explanation` and `notes`, the `model`, the sha256
+of these `criteria`, the time and the commit. A person reads it beside the rule, each proof and
+the source of each test, which is what the audit read. What the model cost is written to
+`.purlin/runtime/audit_run.json`, which git ignores.
 
 A rule the audit found weak shows under `Left to do` as a rule to strengthen, and `purlin:build`
 works on it. A case the test is missing is fixed by writing its proof line; the next

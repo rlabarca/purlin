@@ -1,49 +1,54 @@
 # Feature: ai_audit
 
 > Description: The audit `purlin:audit` runs on each rule it reads, when a person asks, and
->   nothing waits on it. For each rule it runs the heuristic spot tests, then one planted bug
->   per proof, then the model's reading: a rule is `weak` when a spot test fires on one of its
->   tests or a planted bug survives, and `strong` when none fires and every planted bug was
->   caught or not made. The model's reading, one call per rule and four at once, sets the rule,
->   its proofs, the source of each test and the findings beside `references/review_criteria.md`
->   and becomes the explanation under the findings; it decides nothing. Each answer names the
->   model that gave it and a fingerprint of the criteria it was sent. The audit's last line is
->   the share of rules it found strong.
+>   nothing waits on it. For each rule it runs the heuristic spot tests, then asks the model once
+>   for the rule's planted bugs and its reading, then plants each bug and runs its proof's test:
+>   a rule is `weak` when a spot test fires on one of its tests or a planted bug survives,
+>   `strong` when none does and a planted bug was caught, and `spot-checked` when none does and
+>   no bug was planted and caught. The model's reading becomes the explanation; it decides
+>   nothing. Each answer names the model that gave it and a fingerprint of the criteria it was
+>   sent. The audit's last line is the share of rules it found strong.
 > Scope: scripts/review/audit_run.py, scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
-> Highest-Rule: 43
-> Highest-Proof: 111
+> Highest-Rule: 45
+> Highest-Proof: 122
 
 ## Rules
 
-- RULE-1: The audit reads a rule that is its feature's own, has at least one proof with a test, whose passed cell reads `passed` and that has no audit entry for its current rule, proof and test, or whose feature's code changed since that entry, and reading again ignores an existing entry
-- RULE-2: The prompt is `references/review_criteria.md` verbatim, then the rule's text, its proofs, the source of each test and each finding of the spot tests and the planted bugs
-- RULE-3: The call is `claude -p --output-format json` with the prompt written to its standard input, which is closed after the prompt, and never on the command line, and it is given 300 seconds
-- RULE-4: One call is made per rule, each rule is asked about exactly once, and the answers come back in the rules' order
+- RULE-1: The audit reads a rule that is its feature's own, has at least one proof with a test, whose passed cell reads `passed`, and that has no audit entry, an entry out of date, or a proof it plants a bug for with no result recorded; reading again ignores an existing entry
+- RULE-2: The request opens with `references/review_criteria.md` verbatim, then the rule's text, its proofs, the source of each test and each finding of the spot tests; where a bug is to be planted it names each such proof and holds the text of every file the feature's scope reaches, and of no other file
+- RULE-3: The call is `claude -p --output-format json --max-turns 1 --tools "" --strict-mcp-config --safe-mode --setting-sources "" --disable-slash-commands --no-session-persistence --system-prompt <the audit's own>`, started in an empty folder outside the project with `DISABLE_PROMPT_CACHING=1`, the request written to its standard input, which is then closed, and given 300 seconds
+- RULE-4: One call is made per rule, holding its planted bugs and its reading together; each rule is asked about exactly once, four at once, and the answers come back in the rules' order
 - RULE-6: Each answer names the model the command's JSON reports, the one that wrote the most where several are named, or `unknown` where none is, and carries the sha256 of the criteria as they were sent
 - RULE-11: The test source is read out of JavaScript and TypeScript by balancing the brackets of the test's call, with strings, comments and regex literals stepped over, so a nested options object, an apostrophe in a title, a regex literal, a comment or a division never cuts a body short or drops a test
 - RULE-12: Reading a rule, asking the model and printing the result write no file anywhere under `.purlin/`
-- RULE-33: A rule's verdict comes from the spot tests and the planted bugs alone: `weak` when a spot test fires on one of its tests or a planted bug survives, else `strong` when every planted bug was caught or not made
-- RULE-35: The audit's last line is `The audit found <s> of <n> rules strong (<p>%).`, counted over the rules that pass their tests, a rule with a hand check counted where it also has a tested proof
+- RULE-33: A rule's verdict comes from the spot tests and the planted bugs alone: `weak` when a spot test fires on one of its tests or a planted bug survives; else `strong` when a planted bug was caught; else `spot-checked`; and the entry records under `no_bug` one sentence for each proof no bug was caught for
+- RULE-35: The audit's last line is `The audit found <s> of <n> rules strong (<p>%): ` and the counts as the status words them, counted over the rules that pass their tests, a rule with a hand check counted where it also has a tested proof
 - RULE-36: A proof whose test and whose feature's code are unchanged since its last planted bug keeps that bug's result, and no bug is planted for it again
-- RULE-37: No bug is planted for a proof of an anchor's rule; the rule's verdict comes from the spot tests alone
+- RULE-37: No bug is planted, and the model is asked for none, for a proof of an anchor's rule or a proof tagged `@env` for a system this machine is not, and the entry's `no_bug` says which
 - RULE-38: The model's answer is written into the rule's audit entry as `explanation`, one sentence per line starting `- `, beside the `findings` it explains, and the lines under `notes:` are its notes; the answer sets no verdict
-- RULE-39: When the model cannot be reached, because `claude` is not on the path, exits with an error or runs past its 300 seconds, no explanation is recorded and the answer is only the reason: `claude is not on PATH`, `claude exited with an error` or `claude timed out after <n> s`
+- RULE-39: When the model cannot be reached, because `claude` is not on the path, exits with an error, runs past its 300 seconds, or answers nothing or a JSON that reports an error, no explanation is recorded and the answer is only the reason: `claude is not on PATH`, `claude exited with an error`, `claude timed out after <n> s` or `claude gave no answer`
 - RULE-40: What the audit reads for a rule names each marked test's file, its name and its own source, matched by the name the runner records; a test whose source cannot be found shows none rather than another test's
 - RULE-41: Each refusal of `ai_audit.py` names what is wrong, and the command or file that fixes it where there is one, and writes nothing: an unknown option, a missing `--feature` or a `--project-root` that is not a folder exits 2; an unknown feature or rule, or an unreadable `.purlin/config.json`, exits 1
 - RULE-42: `ai_audit.py --feature <name>` prints, for the rule named with `--rule` or for every rule of the feature, its proofs, each test or `No test yet. Run purlin:build <feature>.`, and what the last audit found with the model and the time that read it, and starts no `claude`
-- RULE-43: `strong` means the model part of the audit ran: when the model cannot be reached for a rule, for a planted bug or for its reading, a rule on which a spot test fired or whose kept planted bug survived is still written `weak`, any other rule is written no audit entry and stays `not audited`, and the audit prints one line, `The model could not be reached: <why>. <n> rules stay not audited. Run purlin:audit again.`, the middle sentence left out where no rule stays not audited
+- RULE-43: When the model cannot be reached for a rule, the spot tests and the bugs kept from earlier audits set its verdict; a rule left `spot-checked` records `No bug was planted: the model could not be reached: <why>.`, and the audit prints `The model could not be reached: <why>. <n> rules are spot-checked alone. Run purlin:audit again.`, the middle sentence left out for none
+- RULE-44: The reply holds one part per proof asked for, under `=== PROOF-N ===`, and the reading under `=== reading ===`; a proof whose part is missing or names no usable change has no bug planted, with the reason recorded, and the other proofs' bugs are planted
+- RULE-45: Before its first call the audit prints `The audit reads <n> rules: <n> model calls.`, and after its last, where `claude` reported a cost, `The model was asked <n> times for <n> rules: $<total> in all, $<per rule> a rule.`, the sum of what each call reported
 
 ## Proof
 
 - PROOF-4 (RULE-1): `RULE-2` passes and carries an audit entry reading `strong`, recorded for its current text, proof, test and code; the audit does not read it
 - PROOF-103 (RULE-1): `RULE-2` carries an audit entry; a line of `src/login.py`, a file its feature covers, is changed from `return 401` to `return 403 if locked else 401` and its test passes again; the audit reads it
 - PROOF-51 (RULE-1): `RULE-2` passes and carries an audit entry for its current text, proof and test; asked to read again, the audit reads it
+- PROOF-122 (RULE-1): `RULE-2`'s entry reads `spot-checked` because the model could not be reached, and nothing has changed since; the audit run again, with a `claude` that answers, reads `RULE-2` and starts `claude` exactly `1` time
 - PROOF-11 (RULE-2): The prompt for `RULE-2` begins with the text of `references/review_criteria.md`, byte for byte; after it come `login RULE-2`, the rule's text, its proof `POST /login with a bad password; verify 401 and the body "denied"`, the test `test_a_bad_password_is_denied` and its line `assert login("ada", "wrong") == 401`
 - PROOF-106 (RULE-2): The spot tests found `tests/test_login.py::test_a_bad_password_is_denied: the test checks nothing.` for `RULE-2`; the prompt for `RULE-2` holds that line after the test's source
-- PROOF-14 (RULE-3): The audit asks about `RULE-2` with `claude` found at `/bin/claude`; the program started is exactly `/bin/claude -p --output-format json`, it is given 300 seconds, the prompt is handed over as the whole of its standard input, and no other standard input is left open to it
-- PROOF-82 (RULE-3): On Windows, with `claude.cmd` on the search path, the audit asks `claude` about `RULE-2`; it is started exactly once, with the arguments `-p`, `--output-format` and `json`, reads the whole question from its input, and the explanation reads `read to the end` @env(windows)
+- PROOF-114 (RULE-2): The project holds `.env` with `KEY=s3cret` and the scope of `login` names `src/login.py` alone; the request for `RULE-2` holds the text of `src/login.py` and does not hold `s3cret`
+- PROOF-14 (RULE-3): The audit asks about `RULE-2` with `claude` found at `/bin/claude`; the program started is exactly `/bin/claude -p --output-format json --max-turns 1 --tools "" --strict-mcp-config --safe-mode --setting-sources "" --disable-slash-commands --no-session-persistence --system-prompt` and the audit's system prompt, it is given 300 seconds, and the request is the whole of its standard input
+- PROOF-82 (RULE-3): On Windows, with `claude.cmd` on the search path, the audit asks `claude` about `RULE-2`; it is started exactly once, its arguments beginning `-p`, `--output-format`, `json`, `--max-turns`, `1`, `--tools` and an empty argument, reads the whole question from its input, and the explanation reads `read to the end` @env(windows)
+- PROOF-112 (RULE-3): The audit asks about `RULE-2` of the project at `<root>`; `claude` is started in a folder that is neither `<root>` nor under it and holds no file, with `DISABLE_PROMPT_CACHING` reading `1`, and that folder is gone when the audit ends
 - PROOF-55 (RULE-4): The audit is handed `RULE-1` to `RULE-6`, and the later the rule, the sooner its answer comes back; each rule is asked about exactly once, and the answers come back in the rules' order, `saw RULE-1` first and `saw RULE-6` last
+- PROOF-113 (RULE-4): `RULE-1` has three proofs, each with a test and none with a planted bug on record; the audit reads `RULE-1`, and `claude` is started exactly `1` time, its request naming `PROOF-1`, `PROOF-2` and `PROOF-3`
 - PROOF-20 (RULE-6): `claude` answers the question about `RULE-2` with JSON naming the model `claude-opus-4-1-20250805`; the audit's answer names that model and carries the sha256 of the text of `references/review_criteria.md` it was sent
 - PROOF-58 (RULE-6): `claude` answers the question about `RULE-2` with JSON that names no model; the audit's answer names the model `unknown`
 - PROOF-21 (RULE-6): `claude` answers with JSON naming `claude-haiku-3-5` with 12 output tokens and then `claude-opus-4-1` with 900; the audit's answer names `claude-opus-4-1`
@@ -55,15 +60,19 @@
 - PROOF-95 (RULE-33): The spot tests find `tests/test_login.py::test_a_bad_password_is_denied: the test checks nothing.` and the bug planted for `PROOF-2` is caught; the audit entry of `RULE-2` reads `weak`, with that sentence among its `findings`
 - PROOF-96 (RULE-33): No spot test fires on the test of `RULE-2`, and the bug planted for `PROOF-2` survives; the audit entry reads `weak` with the finding `PROOF-2: the test still passes when src/login.py:12 reads "return 200"`
 - PROOF-97 (RULE-33): No spot test fires on the tests of `RULE-2`, the bug planted for each proof is caught, and `claude` answers `- This rule is weak.`; the audit entry of `RULE-2` reads `strong`
-- PROOF-99 (RULE-35): Five rules pass their tests; the audit finds four `strong` and one `weak`; its last line reads `The audit found 4 of 5 rules strong (80%).`
-- PROOF-104 (RULE-35): Four rules pass their tests, three of them found `strong`, and a fifth rule's test fails; the audit's last line reads `The audit found 3 of 4 rules strong (75%).`
-- PROOF-100 (RULE-36): A bug planted for `PROOF-2` was caught; only `RULE-2`'s text changes, so the audit reads the rule again; no bug is planted for `PROOF-2`, the model is asked for none, and its result still reads `caught`
-- PROOF-102 (RULE-37): `login` is an anchor under `specs/_anchors/` whose `RULE-2` passes; the audit reads it, the model is asked for no planted bug, and the audit entry of `RULE-2` reads `strong` with no planted bug recorded
+- PROOF-118 (RULE-33): No spot test fires on the test of `RULE-2`, and the model answers `no break: the proof names no value the code computes` for `PROOF-2`; the entry reads `spot-checked`, its `no_bug` exactly `No bug was planted: the model found no change that would break PROOF-2: the proof names no value the code computes.`
+- PROOF-99 (RULE-35): Five rules pass their tests; the audit finds four `strong` and one `weak`; its last line reads `The audit found 4 of 5 rules strong (80%): 4 strong, 1 weak.`
+- PROOF-104 (RULE-35): Four rules pass their tests, three of them found `strong` and one `weak`, and a fifth rule's test fails; the audit's last line reads `The audit found 3 of 4 rules strong (75%): 3 strong, 1 weak.`
+- PROOF-100 (RULE-36): A bug planted for `PROOF-2` was caught; only `RULE-2`'s text changes, so the audit reads the rule again; the request asks for no bug, none is planted for `PROOF-2`, and its result still reads `caught`
+- PROOF-115 (RULE-36): A bug planted for `PROOF-2` was caught; the body of its test changes from `== 401` to `== 403`; the next request asks for a bug for `PROOF-2`, and the entry's `break_key` differs from the one before
+- PROOF-102 (RULE-37): `login` is an anchor under `specs/_anchors/` whose `RULE-2` passes; the audit reads it, the request asks for no bug, and the entry of `RULE-2` reads `spot-checked` with the one `no_bug` sentence `No bug was planted: no bug is planted for an anchor's rule.`
+- PROOF-116 (RULE-37): On a machine that is not Windows, `RULE-8` passes on a Windows result and its one proof, `PROOF-38`, is tagged `@env(windows)`; the audit reads it, the request asks for no bug, and the entry reads `spot-checked` with `No bug was planted: PROOF-38 needs Windows, and this machine is <its system>.`
 - PROOF-98 (RULE-38): The spot tests find `tests/test_login.py::test_a_bad_password_is_denied: the test checks nothing.` and `claude` answers `- The test calls login and reads no status.`; the entry's `findings` hold only the first sentence and its `explanation` only the second
 - PROOF-38 (RULE-38): `claude` answers the question about `RULE-2` with `- The test reads the status.`, then `notes:` and `- PROOF-2 holds two cases.`; the explanation is `The test reads the status.` and the one note is `PROOF-2 holds two cases.`
 - PROOF-23 (RULE-39): With the path set to an empty folder, so that no `claude` can be found, the audit is handed two rules; each answer is only the reason `claude is not on PATH`, and no `claude` is started
 - PROOF-24 (RULE-39): `claude` exits with the code 1 when asked about `RULE-2`; the audit's answer is only the reason `claude exited with an error`, with no explanation
 - PROOF-25 (RULE-39): With the limit lowered to 1 second and a `claude` that takes 3 seconds to answer, the audit's answer about `RULE-2` is only the reason `claude timed out after 1 s`
+- PROOF-117 (RULE-39): `claude` exits `0` and prints nothing at every call, and no spot test fires on the test of `RULE-2`; its entry reads `spot-checked`, and the audit prints `The model could not be reached: claude gave no answer. 1 rule is spot-checked alone. Run purlin:audit again.`
 - PROOF-34 (RULE-40): The tests `test_valid_credentials_return_200` and `test_a_token_comes_back` in one file are both marked for `PROOF-1` and both passed; what the audit reads for `RULE-1` lists exactly those two, the first shown with its own source, `== 200`, and the second with its own, `token`, neither holding the other's
 - PROOF-35 (RULE-40): The evidence names a third test for `PROOF-1`, `test_renamed_away`, which the test file no longer holds; what the audit reads for `RULE-1` shows no source under `test_renamed_away`, and still shows `def test_valid_credentials_return_200` under that test and `def test_a_token_comes_back` under that one
 - PROOF-65 (RULE-40): A C# test file holds two tests marked for one proof, `Allowed` and `Denied`; the source read for the name a runner records as `Acme.LoginTests.Denied(user: "x")` is `Denied`'s own, not `Allowed`'s
@@ -74,6 +83,9 @@
 - PROOF-87 (RULE-42): The one proof of `RULE-3` has no test marked for it; the command run for that rule prints, under `Test`, `  No test yet. Run purlin:build login.`
 - PROOF-33 (RULE-42): The command run as its own process for `--feature login --rule RULE-1` exits 0 and prints `login RULE-1`, and no `claude` is started
 - PROOF-111 (RULE-42): The audit entry of `RULE-2` reads `weak` with the finding `PROOF-2 asserts the status but never the body the rule names.` and the explanation `The test calls login and reads no status.`; the command for that rule prints `    The test calls login and reads no status.` on the line after the finding and before `  Read by unknown at 2026-09-13T12:05:00Z.`
-- PROOF-108 (RULE-43): `claude` exits with the code 1 at every call and no spot test fires on the test of `RULE-2`, the one rule the audit reads; no audit entry is written for `RULE-2`, and the audit prints `login RULE-2   not audited` and, once, `The model could not be reached: claude exited with an error. 1 rule stays not audited. Run purlin:audit again.`
+- PROOF-108 (RULE-43): `claude` exits with the code 1 at every call and no spot test fires on the test of `RULE-2`, the one rule read; its entry reads `spot-checked`, and the audit prints `login RULE-2   spot-checked` and, once, `The model could not be reached: claude exited with an error. 1 rule is spot-checked alone. Run purlin:audit again.`
 - PROOF-109 (RULE-43): `claude` exits with the code 1 at every call and the spot tests find `tests/test_login.py::test_a_bad_password_is_denied: the test checks nothing.` for `RULE-2`; the audit entry of `RULE-2` reads `weak` with that one finding, no planted bug and the model `unknown`, and the audit prints `The model could not be reached: claude exited with an error. Run purlin:audit again.`
-- PROOF-110 (RULE-43): `claude` exits with the code 1 at every call and the audit reads two rules that pass, with no spot test firing on either; no audit entry is written, the audit prints `The model could not be reached: claude exited with an error. 2 rules stay not audited. Run purlin:audit again.` once, and its last line reads `The audit found 0 of 2 rules strong (0%).`
+- PROOF-110 (RULE-43): `claude` exits with the code 1 at every call and the audit reads two rules that pass, with no spot test firing on either; both entries read `spot-checked`, the audit prints `The model could not be reached: claude exited with an error. 2 rules are spot-checked alone. Run purlin:audit again.` once, and its last line reads `The audit found 0 of 2 rules strong (0%): 0 strong, 2 spot-checked.`
+- PROOF-119 (RULE-43): A bug kept for `PROOF-2` reads `survived`, and `claude` exits `1` at every call; the audit entry of `RULE-2` reads `weak` with the finding `PROOF-2: the test still passes when src/login.py:12 reads "return 200"`
+- PROOF-120 (RULE-44): `RULE-1` has `PROOF-1` and `PROOF-2`; the reply holds a part for `PROOF-1`, whose bug is caught, and none for `PROOF-2`; the entry reads `strong`, `PROOF-1` reads `caught`, and `no_bug` is exactly `No bug was planted: the model's answer for PROOF-2 could not be used: it holds none.`
+- PROOF-121 (RULE-45): The audit reads 2 rules and each call reports `total_cost_usd` `0.05`; it prints `The audit reads 2 rules: 2 model calls.` before the first call and, after the last, `The model was asked 2 times for 2 rules: $0.10 in all, $0.05 a rule.`

@@ -6,7 +6,9 @@ tests", gives, and a check fires only on a pattern that is wrong in every
 case. Python is read by its syntax tree; JavaScript, TypeScript, C#, Go and
 shell by the token reading `markers` already uses. A check a language cannot
 be read for is answered as `(check, None)`, and the audit prints `NOT_READ`
-once per check and language. No model is called and no file is written.
+once per check and language. A marked test whose source cannot be found is
+read by no check, and the audit prints `NOT_FOUND` once for it. No model is
+called and no file is written.
 
     check(project_root, feature, proof, test)      one tied test
     check_project(project_root, features, out)     every marked test of a project
@@ -38,6 +40,7 @@ CHECKS = ('The test checks nothing', 'The check cannot fail', 'The test swallows
           'The test checks the code against itself', 'The test replaces what it is testing',
           'The test never checks the result the proof expects')
 NOT_READ = '%s is not read in %s tests.'                 # check, 'shell'
+NOT_FOUND = '%s::%s: its source was not found, so the spot tests did not read it.'
 
 NOTHING, CANNOT_FAIL, SWALLOWS, ITSELF, MOCKS, NEVER = CHECKS
 
@@ -87,7 +90,9 @@ _ASSERTS['TypeScript'] = _ASSERTS['JavaScript']
 _DATA_FILE_RE = re.compile(r'["\'`]([^"\'`\s]+\.(?:json|ya?ml|csv|tsv|txt|xml|toml|ini))["\'`]')
 _NUMBER_RE = re.compile(r'^-?\d+(?:\.\d+)?$')
 _NUMBERS_RE = re.compile(r'-?\d+(?:\.\d+)?')
-_BACKTICK_RE = re.compile(r'`([^`]+)`')
+# Backticks pair left to right, and an empty pair is a pair: it marks an empty
+# value and names nothing to look for.
+_BACKTICK_RE = re.compile(r'`([^`]*)`')
 _PAIR_RE = re.compile(r'^([A-Za-z_][\w-]*)(?:=|: )(\S+)$')
 _PLACEHOLDER_RE = re.compile(r'<[a-z][^<>]*>')
 _CALL_NAME_RE = re.compile(r'([A-Za-z_$][\w$]*)\s*\(')
@@ -275,7 +280,8 @@ def _helper_elsewhere_asserts(project_root, path, language, names):
 
 def _value_never_checked(project_root, path, text, proof_text):
     """The first value the proof marks in backticks, where the test's file and the data
-    files it names hold none of them; else None."""
+    files it names hold none of them; else None. Only a pair of backticks that holds
+    text names a value."""
     values = [v.strip() for v in _BACKTICK_RE.findall(proof_text or '') if v.strip()]
     if not values:
         return None

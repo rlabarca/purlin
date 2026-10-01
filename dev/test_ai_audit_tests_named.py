@@ -3,10 +3,12 @@
 A proof may be backed by more than one test, and the AI audit, and a person
 reading what it read, see the source shown under each test's name. These tests
 hold that the source under a name is that test's own, whatever form of the
-name a runner records. The throwaway project is `dev/sign_project.py`'s, with a
+name a runner records, and that the audit names a test whose source it cannot
+find. The throwaway project is `dev/sign_project.py`'s, with a
 second test marked for the same proof.
 """
 
+import io
 import json
 import os
 import sys
@@ -20,6 +22,7 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 
 import ai_audit as audit_module  # noqa: E402
+import audit_run  # noqa: E402
 import marked_tests  # noqa: E402
 from sign_project import TEST_FILE, Project, write  # noqa: E402
 
@@ -93,6 +96,17 @@ class TestEachTestShowsItsOwnSource:
             tests['test_valid_credentials_return_200']['body']
         assert 'def test_a_token_comes_back' in \
             tests['test_a_token_comes_back']['body']
+
+    # purlin: plain_checks PROOF-31
+    def test_a_test_whose_source_is_not_found_is_named_once(self, project):
+        _two_tests(project, names=NAMES + ('test_renamed_away',))
+        out = io.StringIO()
+        assert audit_run.run(project.root, None, ['login'], out=out) == 0
+        lines = out.getvalue().splitlines()
+        assert 'login RULE-1   spot-checked' in lines, lines
+        assert lines.count(
+            'tests/test_login.py::test_renamed_away: its source was not '
+            'found, so the spot tests did not read it.') == 1, lines
 
 
 class TestANameFromARecordFindsItsSource:

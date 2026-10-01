@@ -1,8 +1,8 @@
 """The planted bug: one change per proof, in a copy of the project.
 
-The audit's second step. For one proof the model is asked for the smallest
-change to one file the feature covers that would break what the proof says,
-and answers exactly
+The audit's third step. The model's one reply for a rule holds a part for each
+proof a bug is asked for: the smallest change to one file the feature covers
+that would break what the proof says, exactly
 
     file: src/age.py
     before:
@@ -13,19 +13,23 @@ and answers exactly
 or `no break: <why>`. The change is made in a copy of the project, built from
 `git ls-files -co --exclude-standard -z` under a folder named `purlin-break-*`
 in the system's temporary folder, never in the project. Only the proof's own
-tests run there, through their suite's own `run` command; the copy is removed
-whatever they do.
+tests run there, through their suite's own `run` command, once before the
+change and once with it in place; the copy is removed whatever they do.
 
     survived   every one of the proof's own tests still passes with the bug in place
-    caught     any other outcome: a failure, an error, a test not collected, a timeout
-    not made   the answer named no change, the change cannot be applied exactly once to a
-               file the feature's `> Scope:` reaches, it would write outside the copy,
-               or the model could not be reached
+    caught     a test of the proof's own ran and failed with the bug in place
+    not run    anything else with the bug in place: a skip, a test not collected, a
+               timeout. It is neither caught nor survived
+    not made   the part is missing or names no change, the change cannot be applied
+               exactly once to a file the feature's `> Scope:` reaches, it names a file
+               that holds one of the proof's tests, it would write outside the copy, or
+               the proof's tests do not pass in the copy before the change
 
-Before and after each bug the project's `git status --porcelain -z`, and the
-hash of every file it lists, are taken; a difference raises `ProjectChanged`,
-and the audit prints `STOPPED` and exits 1. This module writes nothing in the
-project.
+`snapshot` takes the project's `git status --porcelain -z` and the hash of
+every file it lists; the audit takes one before it asks the model and compares
+it after each rule's bugs (`check_unchanged`). A difference raises
+`ProjectChanged`, and the audit prints `STOPPED` and exits 1. This module
+writes nothing in the project.
 """
 
 import hashlib
@@ -42,7 +46,7 @@ for _path in (os.path.join(_SCRIPTS, 'mcp'), os.path.join(_SCRIPTS, 'run')):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
-STOPPED = ('The audit stopped: %s changed while a bug was planted. Nothing in the '
+STOPPED = ('The audit stopped: %s changed while the audit ran. Nothing in the '
            'project was written by the audit.')
 SURVIVED = '%s: the test still passes when %s:%d reads "%s"'   # PROOF-N, file, line, the changed line
 
@@ -54,6 +58,16 @@ NO_FILE = '%s is not in the project'
 NOT_FOUND = 'the lines before the change are not in %s'
 FOUND_MORE = 'the lines before the change are in %s %d times, not once'
 NO_DIFFERENCE = 'the change leaves %s as it was'
+TEST_FILE = "%s holds one of the proof's tests"
+NO_PART = 'it holds none'
+BASELINE = 'the test does not pass in a copy of the project'
+
+# Why no bug was planted, which the audit picks its sentence by.
+MODEL_FOUND_NONE = 'model found none'
+ANSWER_UNUSABLE = 'answer unusable'
+TEST_DOES_NOT_PASS = 'test does not pass'
+_OWN_WORDS = (NO_CHANGE, OUTSIDE, NOT_IN_SCOPE, NO_FILE, NOT_FOUND, FOUND_MORE,
+              NO_DIFFERENCE, TEST_FILE, NO_PART)
 
 _NO_BREAK_RE = re.compile(r'^\s*no break:\s*(.*?)\s*$', re.S)
 _CHANGE_RE = re.compile(r'^file:[ \t]*(?P<file>[^\n]+?)[ \t]*\nbefore:[ \t]*\n(?P<before>.*?)\n'
@@ -91,47 +105,41 @@ def parse_answer(text):
             found.group('after').rstrip('\n'))
 
 
-def break_proof(project_root, feature, proof, tests, scope_files, ask, timeout=None):
-    """One planted bug for one proof. `tests` is the proof's own tied tests. `ask(request)`
-    is given {'feature','rule','rule_text','proof','proof_text','tests','files'} and
-    answers the model's text, or raises ModelUnreachable(reason).
-    Returns {'proof','file','line','before','after','result','why','finding'}:
-    result 'caught' | 'survived' | 'not made'; finding is SURVIVED filled, or None.
+def cause_of(why):
+    """The cause a `not made` result's `why` names: `'test does not pass'` for
+    `BASELINE`, `'answer unusable'` for this module's own words, and
+    `'model found none'` for any other, which is the model's own reason."""
+    why = str(why or '')
+    if why == BASELINE:
+        return TEST_DOES_NOT_PASS
+    for words in _OWN_WORDS:
+        pattern = re.escape(words).replace('%s', '.+').replace('%d', r'\d+')
+        if re.fullmatch(pattern, why, re.S):
+            return ANSWER_UNUSABLE
+    return MODEL_FOUND_NONE
 
-    `proof` is `{'id', 'text', 'rule', 'rule_text'}`; each of `tests` is
-    `{'file', 'name', 'source'}`. `timeout` bounds the tests' run, in seconds,
-    as `--arm-timeout` does. Raises `ProjectChanged` when a file of the project
-    changed while the bug was planted.
+
+def break_proof(project_root, feature, proof, tests, scope_files, answer, timeout=None):
+    """One planted bug for one proof. `tests` is the proof's own tied tests. `answer` is
+    the proof's part of the model's reply, or None where the reply holds none.
+    Returns {'proof','file','line','before','after','result','why','cause','finding'}:
+    result 'caught' | 'survived' | 'not run' | 'not made'; `cause` is '' or, for
+    'not made', 'model found none', 'answer unusable' or 'test does not pass';
+    finding is SURVIVED filled, or None.
+
+    `proof` is `{'id', 'text'}` or its id; each of `tests` is `{'file', 'name',
+    'source'}`. `timeout` bounds each run of the tests, in seconds, as
+    `--arm-timeout` does.
     """
-    before = snapshot(project_root)
-    try:
-        result = _plant(project_root, feature, proof, tests or [], scope_files or [], ask,
-                        timeout)
-    finally:
-        changed = _difference(before, snapshot(project_root))
-        if changed is not None:
-            raise ProjectChanged(changed)
-    return result
+    return _plant(project_root, feature, proof, tests or [], scope_files or [], answer,
+                  timeout)
 
 
-def break_proofs(project_root, jobs, ask, out=None, timeout=None):
-    """Plant one bug for each of `jobs`, in order: `(results, exit code)`.
-
-    Each job is `{'feature', 'proof', 'tests', 'scope_files'}`, as `break_proof`
-    takes them. Where the project changes while a bug is planted, `STOPPED` is
-    printed to `out`, the jobs after it are not run, and the code is 1; else 0.
-    """
-    out = out or sys.stdout
-    results = []
-    for job in jobs:
-        try:
-            results.append(break_proof(project_root, job['feature'], job['proof'],
-                                       job.get('tests'), job.get('scope_files'), ask,
-                                       timeout=timeout))
-        except ProjectChanged as stopped:
-            print(STOPPED % stopped.path, file=out)
-            return results, 1
-    return results, 0
+def check_unchanged(project_root, before):
+    """Raise `ProjectChanged` where the project differs from the snapshot `before`."""
+    changed = _difference(before, snapshot(project_root))
+    if changed is not None:
+        raise ProjectChanged(changed)
 
 
 # ---------------------------------------------------------------------------
@@ -141,22 +149,16 @@ def break_proofs(project_root, jobs, ask, out=None, timeout=None):
 def _result(proof_id, result, why='', change=None, line=None, finding=None):
     change = change or (None, None, None)
     return {'proof': proof_id, 'file': change[0], 'line': line, 'before': change[1],
-            'after': change[2], 'result': result, 'why': why, 'finding': finding}
+            'after': change[2], 'result': result, 'why': why,
+            'cause': cause_of(why) if result == 'not made' else '', 'finding': finding}
 
 
-def _plant(project_root, feature, proof, tests, scope_files, ask, timeout):
+def _plant(project_root, feature, proof, tests, scope_files, answer, timeout):
     if isinstance(proof, str):
         proof = {'id': proof}
     proof_id = proof.get('id')
-    request = {'feature': feature, 'rule': proof.get('rule'),
-               'rule_text': proof.get('rule_text'), 'proof': proof_id,
-               'proof_text': proof.get('text'), 'tests': tests, 'files': list(scope_files)}
-    try:
-        answer = ask(request)
-    except Exception as error:   # noqa: BLE001 -- ModelUnreachable lives in ai_audit
-        if type(error).__name__ != 'ModelUnreachable':
-            raise
-        return _result(proof_id, 'not made', str(error.args[0] if error.args else error))
+    if answer is None:
+        return _result(proof_id, 'not made', NO_PART)
     parsed = parse_answer(answer)
     if parsed is None:
         return _result(proof_id, 'not made', NO_CHANGE)
@@ -168,6 +170,9 @@ def _plant(project_root, feature, proof, tests, scope_files, ask, timeout):
     normal = os.path.normpath(rel).replace(os.sep, '/')
     if os.path.isabs(rel) or normal == '..' or normal.startswith('../'):
         return _result(proof_id, 'not made', OUTSIDE % path, change)
+    own = {os.path.normpath(t['file']).replace(os.sep, '/') for t in tests if t.get('file')}
+    if normal in own:
+        return _result(proof_id, 'not made', TEST_FILE % path, change)
     scope = {os.path.normpath(p).replace(os.sep, '/') for p in scope_files}
     if normal not in scope:
         return _result(proof_id, 'not made', NOT_IN_SCOPE % path, change)
@@ -187,17 +192,24 @@ def _plant(project_root, feature, proof, tests, scope_files, ask, timeout):
             return _result(proof_id, 'not made', FOUND_MORE % (path, count), change)
         if old == new:
             return _result(proof_id, 'not made', NO_DIFFERENCE % path, change)
+        if _run_tests(copy, feature, proof_id, tests, timeout) != 'pass':
+            return _result(proof_id, 'not made', BASELINE, change)
         at = text.index(old)
         changed = text[:at] + new + text[at + len(old):]
         try:
+            stamp = os.stat(_inside(copy, normal)).st_mtime
             _write_in(copy, normal, changed)
-        except _Refused:
+            # The tests already ran here once: the changed file must read as newer,
+            # or a cache keyed by time and size, such as Python's, serves the old code.
+            os.utime(_inside(copy, normal), (stamp + 2, stamp + 2))
+        except (_Refused, OSError):
             return _result(proof_id, 'not made', OUTSIDE % path, change)
         line, words = _changed_line(changed, at, old, new)
-        if _all_pass(copy, feature, proof_id, tests, timeout):
+        ran = _run_tests(copy, feature, proof_id, tests, timeout)
+        if ran == 'pass':
             return _result(proof_id, 'survived', '', change, line,
                            SURVIVED % (proof_id, path, line, words))
-        return _result(proof_id, 'caught', '', change, line)
+        return _result(proof_id, 'caught' if ran == 'fail' else 'not run', '', change, line)
     finally:
         shutil.rmtree(copy, ignore_errors=True)
 
@@ -271,8 +283,9 @@ def _copy_project(project_root, copy):
 # The proof's own tests, run in the copy
 # ---------------------------------------------------------------------------
 
-def _all_pass(copy, feature, proof_id, tests, timeout):
-    """True only when every one of the proof's own tests reads `pass`."""
+def _run_tests(copy, feature, proof_id, tests, timeout):
+    """`fail` where a test of the proof's own ran and failed; `pass` where every one
+    reads `pass` and no suite reported a failure; else `not run`."""
     import purlin_run
     from purlin import markers as markers_module
     suites, _problems = markers_module.read_suites(copy)
@@ -284,10 +297,10 @@ def _all_pass(copy, feature, proof_id, tests, timeout):
     for path in wanted_files:
         suite = markers_module.suite_of(path, suites)
         if suite is None:
-            return False
+            return 'not run'
         by_suite.setdefault(suite.name, (suite, []))[1].append(path)
     if not by_suite:
-        return False
+        return 'not run'
     log = []
     runs = []
     for name in sorted(by_suite):
@@ -301,9 +314,12 @@ def _all_pass(copy, feature, proof_id, tests, timeout):
         own = [e for e in entries if (e['test_file'], e['test_name']) in named]
         files = {t['file'] for t in tests}
         entries = own or [e for e in entries if e['test_file'] in files]
-    if any(run.failures for run in runs):
-        return False
-    return bool(entries) and all(e['status'] == 'pass' for e in entries)
+    if any(e['status'] == 'fail' for e in entries):
+        return 'fail'
+    if entries and all(e['status'] == 'pass' for e in entries) and not any(
+            run.failures for run in runs):
+        return 'pass'
+    return 'not run'
 
 
 # ---------------------------------------------------------------------------

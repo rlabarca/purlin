@@ -9,8 +9,8 @@
 >   named once. No model is called.
 > Scope: scripts/review/plain_checks.py
 > Stack: python/stdlib (ast, re)
-> Highest-Rule: 9
-> Highest-Proof: 30
+> Highest-Rule: 10
+> Highest-Proof: 32
 
 ## Rules
 
@@ -19,9 +19,10 @@
 - RULE-3: A `try` around the code under test whose `except` or `catch` does nothing and neither asserts nor re-raises reads `<file>::<test>: the test swallows the error the code raises.`; a handler that asserts on the error, or a `try` used only for cleanup, is not flagged
 - RULE-4: An assertion whose expected value is computed by the same function whose result it checks reads `<file>::<test>: the expected value comes from <function>(), the code under test.`; an expected value from a different function, a library or a literal is not flagged
 - RULE-5: A mock, patch, stub or fake whose target is the same function whose result the test asserts on reads `<file>::<test>: the test mocks <function>(), the function it checks.`; a mock of something the code depends on is not flagged
-- RULE-6: A test whose file holds none of the values its proof marks in backticks reads `<file>::<test>: the proof expects <value> and the test never checks it.`; a proof with no value in backticks, the same number written another way, or a value held in a data file the test's file names, is not flagged
+- RULE-6: A test whose file holds none of the values its proof marks in backticks reads `<file>::<test>: the proof expects <value> and the test never checks it.`; a proof with no value in backticks, an empty pair of backticks, the same number written another way, or a value held in a data file the test's file names, is not flagged
 - RULE-7: A check that cannot be read in a test's language is skipped, and the audit prints `<check> is not read in <language> tests.` once per check and language
 - RULE-9: The spot tests start no `claude`
+- RULE-10: A marked test whose source cannot be found is named once, as `<file>::<test>: its source was not found, so the spot tests did not read it.`
 
 ## Proof
 
@@ -43,5 +44,7 @@
 - PROOF-25 (RULE-6): `PROOF-1` reads "has an age of `90` minutes" and `tests/test_age.py` holds no `90`; the finding is `tests/test_age.py::test_age: the proof expects 90 and the test never checks it.`
 - PROOF-26 (RULE-6): `PROOF-1` reads "has an age of `90` minutes" and `tests/test_age.py` holds `assert minutes == 90.0`; nothing is found
 - PROOF-27 (RULE-6): `PROOF-1` reads "has an age of `90` minutes"; `tests/test_age.py` holds no `90` but names `tests/data/ages.json`, which holds `90`; nothing is found
+- PROOF-32 (RULE-6): `PROOF-1` reads "an empty barcode `` is handed in; it is refused with `barcode is required`", and `tests/test_intake.py` holds `barcode is required`; nothing is found
 - PROOF-28 (RULE-7): A project's marked tests are two shell tests; the audit prints `The test replaces what it is testing is not read in shell tests.` exactly once
 - PROOF-30 (RULE-9): With a `claude` on the path that records each start, the spot tests read every marked test of a project of three features; `claude` is started `0` times
+- PROOF-31 (RULE-10): The evidence names `test_renamed_away` for `PROOF-1`, which `tests/test_login.py` no longer holds; the audit prints `tests/test_login.py::test_renamed_away: its source was not found, so the spot tests did not read it.` exactly once

@@ -6,21 +6,39 @@
 (and `claude.cmd` beside it, for Windows) into `directory`. Put that
 directory first on PATH and every call the audit makes lands here instead of
 on the model. Each call appends one JSON line to `calls.jsonl` beside the
-fake: the arguments it was given, the prompt it read on stdin, and when it
-started and finished, so a test can read how many calls were made, what they
-carried and how many ran at once.
+fake: the arguments it was given, the prompt it read on stdin, the folder it
+was started in (`cwd`) and what that folder held (`listing`), the value of
+`DISABLE_PROMPT_CACHING` (`env`), and when it started and finished, so a test
+can read how many calls were made, what they carried and how many ran at once.
+
+The audit asks once per rule, and the reply holds one part per proof it asks
+a bug for and then the reading (`reply`):
+
+    === PROOF-2 ===
+    no break: the fake model plants no bug
+
+    === reading ===
+    - The test reads the status.
 
 What the fake answers is set in `fake_claude.json` beside it:
 
-    answers   the `result` texts, one per call in order; the last one repeats
+    answers   one per call in order; the last one repeats. Each is
+              - null: a part reading `no break: the fake model plants no bug`
+                for each proof the request asks a bug for, and an empty reading;
+              - an object `{"PROOF-2": <part>, "reading": <lines>}`: the part
+                of each proof the request asks for and the object names, then
+                the reading, so one object answers several rules;
+              - a string: the `result`, exactly as given
     exit      the exit code every call ends with, 0 by default
     sleep     seconds each call waits before it answers
     model     the model the JSON names under `modelUsage`, or null for none
+    cost      the `total_cost_usd` the JSON reports, or null for none
+    writes    `[path, text]`: text the fake appends to that file as it answers
     raw       printed as-is instead of the JSON, when set
 
 `dev/conftest.py` puts one fake first on PATH for every test in the session,
-answering `no break: the fake model plants no bug`. A test that wants another answer installs its own
-into its own directory and puts that first.
+answering null. A test that wants another answer installs its own into its
+own directory and puts that first.
 """
 
 import json
@@ -53,9 +71,27 @@ try:
 except ImportError:
     index = 0
 time.sleep(float(setup.get('sleep') or 0))
-answers = setup.get('answers') or ['']
+answers = setup.get('answers') or [None]
 answer = answers[min(index, len(answers) - 1)]
-line = json.dumps({'argv': sys.argv[1:], 'prompt': prompt,
+if not isinstance(answer, str):
+    import re
+    asked = re.findall(r'^Plant one bug for each of: (.*)\.$', prompt, re.M)
+    asked = [name.strip() for name in asked[-1].split(',')] if asked else []
+    given = answer if isinstance(answer, dict) else dict(
+        (name, setup['default']) for name in asked)
+    parts = []
+    for name in asked:
+        if name in given:
+            parts.extend(['=== %%s ===' %% name, given[name].rstrip('\n'), ''])
+    parts.extend(['=== reading ===', given.get('reading') or ''])
+    answer = '\n'.join(parts) + '\n'
+if setup.get('writes'):
+    with open(setup['writes'][0], 'a', encoding='utf-8') as touched:
+        touched.write(setup['writes'][1])
+cwd = os.getcwd()
+line = json.dumps({'argv': sys.argv[1:], 'prompt': prompt, 'cwd': cwd,
+                   'listing': sorted(os.listdir(cwd)),
+                   'env': os.environ.get('DISABLE_PROMPT_CACHING'),
                    'start': started, 'end': time.time()})
 with open(os.path.join(here, 'calls.jsonl'), 'a', encoding='utf-8') as log:
     log.write(line + '\n')
@@ -66,20 +102,34 @@ else:
             'result': answer, 'duration_ms': 5}
     if setup.get('model'):
         body['modelUsage'] = {setup['model']: {'outputTokens': 10}}
+    if setup.get('cost') is not None:
+        body['total_cost_usd'] = setup['cost']
     sys.stdout.write(json.dumps(body))
 sys.exit(int(setup.get('exit') or 0))
 '''
 
 
-def install(directory, answers=(DEFAULT_ANSWER,), exit_code=0, sleep=0,
-            model=DEFAULT_MODEL, raw=None):
+def reply(parts=None, reading=''):
+    """A reply in the audit's shape: `parts` is `{'PROOF-N': its part}`, and
+    `reading` the lines under `=== reading ===`."""
+    lines = []
+    for proof, text in (parts or {}).items():
+        lines.extend(['=== %s ===' % proof, str(text).rstrip('\n'), ''])
+    lines.extend(['=== reading ===', reading or ''])
+    return '\n'.join(lines) + '\n'
+
+
+def install(directory, answers=(None,), exit_code=0, sleep=0,
+            model=DEFAULT_MODEL, raw=None, cost=None, writes=None):
     """Write the fake into `directory`. The directory, to put first on PATH."""
     directory = str(directory)
     os.makedirs(directory, exist_ok=True)
     with open(os.path.join(directory, 'fake_claude.json'), 'w',
               encoding='utf-8') as handle:
         json.dump({'answers': list(answers), 'exit': exit_code,
-                   'sleep': sleep, 'model': model, 'raw': raw}, handle)
+                   'sleep': sleep, 'model': model, 'raw': raw, 'cost': cost,
+                   'writes': list(writes) if writes else None,
+                   'default': DEFAULT_ANSWER}, handle)
     script = os.path.join(directory, 'claude')
     with open(script, 'w', encoding='utf-8') as handle:
         handle.write(_SCRIPT % {'python': sys.executable})
