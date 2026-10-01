@@ -119,20 +119,26 @@ def _changed(before, after):
 
 # --- RULE-1 -----------------------------------------------------------------
 
+def _three_parts(found):
+    assert sorted(found) == ['code', 'spec', 'tests']
+    for value in found.values():
+        assert len(value) == 64 and all(c in '0123456789abcdef' for c in value)
+
+
 # purlin: evidence PROOF-1
-# purlin: evidence PROOF-71
 def test_a_fingerprint_is_three_parts_of_64_hex_characters(project):
+    _three_parts(project.fp('login'))
+
+
+# purlin: evidence PROOF-71
+def test_a_crlf_checkout_takes_the_code_part_of_the_commit(project):
     project.check_out_again('false')
     assert b'\r' not in project.read_bytes('src/login.py')
     plain = project.fp('login')
     project.check_out_again('true')
     assert b'\r\n' in project.read_bytes('src/login.py')
     converted = project.fp('login')
-    for first in (plain, converted):
-        assert sorted(first) == ['code', 'spec', 'tests']
-        for value in first.values():
-            assert len(value) == 64 and all(
-                c in '0123456789abcdef' for c in value)
+    _three_parts(converted)
     assert converted['code'] == plain['code']
 
 
