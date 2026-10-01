@@ -1,7 +1,7 @@
 # Feature: skill_audit
 
 > Description: What `skills/audit/SKILL.md` must name. The audit is run by hand: it runs the
->   tests, the heuristic spot tests, one planted bug per proof and the model's reading, writes
+>   tests, the heuristic spot tests, one model call per rule and one planted bug per proof, writes
 >   what it found into the evidence and reports the share of rules it found strong. The skill
 >   names the commands and the files a reader needs to run it and to act on what it found.
 > Scope: skills/audit/SKILL.md
