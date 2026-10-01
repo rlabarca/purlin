@@ -442,8 +442,6 @@ def unknown_tag_warning(features):
             % (count, ', '.join(tags), ', '.join(shown), more))
 
 
-SCOPE_FINDS_NOTHING = ('%s: > Scope: names %s, which finds no file in git. '
-                       'Run purlin:spec %s.')
 SAME_NAME = ('%s and %s are both named %s; only %s is read. Rename one: '
              'git mv %s %s/<new name>.md')
 RULE_WRITTEN_TWICE = ('%s: %s is written twice; the second is read. '
@@ -482,31 +480,17 @@ def spec_mistakes(project_root, features):
     `features` is `scan_specs`' answer. The lines are warned of; a number
     written twice and a line left from a merge conflict also make every rule
     of the spec read `failed` (`broken_reasons`). They come in the order of
-    the mistakes, each sorted by feature: a `> Scope:` entry that finds no
-    tracked file, two specs with one name, a rule id written twice, a proof
-    id written twice, the lines left from a merge conflict (one line per
-    spec), a line under `## Proof` that is not a
+    the mistakes, each sorted by feature: two specs with one name, a rule id
+    written twice, a proof id written twice, the lines left from a merge
+    conflict (one line per spec), a line under `## Proof` that is not a
     proof line, a first line naming another feature, then the fields Purlin
     does not read: every `> Requires:`, then every `> Global:`, then every
     anchor's `> Scope:`. A pinned anchor carrying any of the three has one
     line naming them all and its source, sorted with the `> Scope:` lines.
-    A spec whose every scope entry finds nothing has the one line
-    `incomplete_reason` gives and none here.
+    A `> Scope:` entry naming a file git does not have is no mistake: the
+    status names it as information (`status.not_written_lines`).
     """
-    # Imported here: `fingerprint` imports this module.
-    from purlin import fingerprint as fingerprint_module
     lines = []
-    for name in sorted(features):
-        scope = [entry for entry in features[name].get('scope') or ()
-                 if entry.strip()]
-        if not scope:
-            continue
-        files, unmatched = fingerprint_module.expand_scope(project_root, scope)
-        if not files:
-            continue
-        for entry in unmatched:
-            lines.append(SCOPE_FINDS_NOTHING % (name, entry, name))
-
     by_name = {}
     for spec_path in spec_files(project_root):
         rel_path = os.path.relpath(spec_path, project_root).replace(os.sep, '/')

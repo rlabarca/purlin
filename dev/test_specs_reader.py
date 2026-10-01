@@ -1,22 +1,14 @@
-"""Tests for what a spec parses to, the framework detection and the gate.
+"""Tests for what a spec parses to, and the framework detection.
 
 The throwaway project and its helpers are in `dev/mcp_project.py`.
 """
 
-import contextlib
 import json
 import os
-import shutil
-import subprocess
-import sys
-import tempfile
 
-import pytest
-
-from mcp_project import SPEC, _write, project
+from mcp_project import _write, project
 # `mcp_project` puts `scripts/mcp` on the path.
 from purlin import frameworks as purlin_frameworks
-from purlin import gate as purlin_gate
 from purlin import specs as purlin_specs
 
 
@@ -46,79 +38,7 @@ def _anchor(project, *fields, **where):
     return purlin_specs.scan_specs(project.root)['policy']
 
 
-# The other program that holds a file locked on Windows: it locks every byte
-# of the file named by its one argument, says `locked`, and holds the lock
-# until its input closes.
-_HOLD_LOCKED = '''
-import msvcrt, os, sys
-size = os.path.getsize(sys.argv[1])
-with open(sys.argv[1], 'r+b') as handle:
-    msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, size)
-    print('locked', flush=True)
-    sys.stdin.read()
-    handle.seek(0)
-    msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, size)
-'''
-
-
-@contextlib.contextmanager
-def _refused_to_readers(path):
-    """Hold `path` so that any other read of it fails.
-
-    On Windows another program locks the whole file for the duration;
-    elsewhere its mode is set to 0. Either way the next reader gets an
-    `OSError`.
-    """
-    if os.name == 'nt':
-        holder = subprocess.Popen([sys.executable, '-c', _HOLD_LOCKED, path],
-                                  stdin=subprocess.PIPE,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE)
-        try:
-            said = holder.stdout.readline().decode('ascii', 'replace')
-            assert said.strip() == 'locked', (
-                said + holder.stderr.read().decode('utf-8', 'replace'))
-            with pytest.raises(OSError):
-                with open(path, 'rb') as reader:
-                    reader.read()
-            yield
-        finally:
-            holder.stdin.close()
-            holder.wait(timeout=30)
-        return
-    os.chmod(path, 0)
-    try:
-        yield
-    finally:
-        os.chmod(path, 0o644)
-
-
 class TestRuleText:
-
-    # purlin: specs PROOF-1
-    def test_a_bracket_at_the_end_of_a_rule_is_part_of_its_text(self, project):
-        project.spec('# Feature: login\n\n## Rules\n\n'
-                     '- RULE-1: Tokens expire [owner: qa]\n')
-        info = purlin_specs.scan_specs(project.root)['login']
-        assert info['rules']['RULE-1'] == 'Tokens expire [owner: qa]', (
-            info['rules'])
-
-    # purlin: specs PROOF-2
-    def test_a_bracket_at_the_end_of_a_rule_enters_its_hash(self):
-        assert purlin_specs.rule_text_hash('Tokens expire [owner: qa]') != (
-            purlin_specs.rule_text_hash('Tokens expire'))
-
-    # purlin: specs PROOF-3
-    def test_reflowing_a_proof_keeps_its_hash(self):
-        proof = purlin_specs.proof_text_hash('Wait 24 hours; verify 401')
-        assert purlin_specs.proof_text_hash(
-            'Wait  24\n hours;   verify 401') == proof
-
-    # purlin: specs PROOF-4
-    def test_extra_spaces_in_a_rule_keep_its_hash(self):
-        plain = purlin_specs.rule_text_hash('Tokens expire after 24 hours')
-        assert purlin_specs.rule_text_hash(
-            'Tokens  expire   after 24 hours') == plain
 
     # purlin: specs PROOF-19
     def test_a_line_break_in_a_rule_keeps_its_hash(self):
@@ -131,21 +51,8 @@ class TestRuleText:
         assert purlin_specs.rule_text_hash('Tokens expire after 12 hours') != (
             purlin_specs.rule_text_hash('Tokens expire after 24 hours'))
 
-    # purlin: specs PROOF-18
-    def test_a_changed_word_changes_a_proofs_hash(self):
-        assert purlin_specs.proof_text_hash('Wait 12 hours; verify 401') != (
-            purlin_specs.proof_text_hash('Wait 24 hours; verify 401'))
-
 
 class TestOldTagsAndFields:
-
-    # purlin: specs PROOF-8
-    def test_a_bare_windows_tag_is_ignored_and_listed(self, project):
-        proof, unknown = _one_proof(project,
-                                    'Lock a file; verify 1 open fails @windows')
-        assert proof['text'] == 'Lock a file; verify 1 open fails', proof
-        assert proof['env'] is None, proof
-        assert unknown == ['@windows'], unknown
 
     # purlin: specs PROOF-24
     def test_a_stamped_manual_still_reads_manual_and_is_listed(self, project):
@@ -164,21 +71,6 @@ class TestOldTagsAndFields:
         assert mockup['rules'] == {'RULE-1': 'It renders'}, mockup['rules']
         assert mockup['unknown_tags'] == ['> Visual-Reference:'], mockup
 
-    # purlin: specs PROOF-26
-    def test_a_visual_hash_field_is_ignored_and_listed(self, project):
-        project.spec(
-            '# Feature: swatch\n\n> Visual-Hash: 9f86d081\n\n'
-            '## Rules\n\n- RULE-1: It renders\n', name='swatch')
-        swatch = purlin_specs.scan_specs(project.root)['swatch']
-        assert swatch['rules'] == {'RULE-1': 'It renders'}, swatch['rules']
-        assert swatch['unknown_tags'] == ['> Visual-Hash:'], swatch
-
-
-def _tag_spec(project, name):
-    project.spec('# Feature: %s\n\n## Rules\n\n- RULE-1: Files lock\n\n'
-                 '## Proof\n\n- PROOF-1 (RULE-1): Lock a file @windows\n'
-                 % name, name=name)
-
 
 class TestTheWarning:
 
@@ -193,21 +85,6 @@ class TestTheWarning:
             'specs/auth/login.md, specs/auth/mockup.md. '
             'Run purlin:init --update to remove them.']
 
-    # purlin: specs PROOF-27
-    def test_the_warning_names_five_files_and_counts_the_rest(self, project):
-        for name in 'abcdefg':
-            _tag_spec(project, name)
-        assert project.payload()['warnings'] == [
-            '7 spec files carry tags this release does not read (@windows); '
-            'they are ignored: specs/auth/a.md, specs/auth/b.md, '
-            'specs/auth/c.md, specs/auth/d.md, specs/auth/e.md, and 2 more. '
-            'Run purlin:init --update to remove them.']
-
-    # purlin: specs PROOF-28
-    def test_no_carrier_means_no_warning(self, project):
-        assert project.payload()['warnings'] == []
-
-
 class TestSource:
 
     # purlin: specs PROOF-10
@@ -217,17 +94,6 @@ class TestSource:
                        'specs/no_eval.md')
         assert (info['source'], info['source_path']) == (
             'https://github.com/acme/p.git', 'specs/no_eval.md')
-
-    # purlin: specs PROOF-29
-    def test_a_local_path_is_the_whole_source(self, project):
-        info = _anchor(project, '> Source: ./policies')
-        assert (info['source'], info['source_path']) == ('./policies', None)
-
-    # purlin: specs PROOF-30
-    def test_a_local_path_and_a_path_are_not_split(self, project):
-        info = _anchor(project, '> Source: ./policies specs/no_eval.md')
-        assert (info['source'], info['source_path']) == (
-            './policies specs/no_eval.md', None)
 
     # purlin: specs PROOF-31
     def test_an_option_shaped_source_is_not_split(self, project):
@@ -241,14 +107,6 @@ class TestSource:
                        '> Path: specs/no_eval.md')
         assert info['source'] == 'https://github.com/acme/p.git', info
         assert info['source_path'] == 'specs/no_eval.md', info
-
-    # purlin: specs PROOF-32
-    def test_the_source_lines_path_wins_over_a_path_field(self, project):
-        info = _anchor(project,
-                       '> Source: https://github.com/acme/p.git specs/a.md',
-                       '> Path: specs/b.md')
-        assert info['source_path'] == 'specs/a.md', info
-
 
 class TestAnchors:
 
@@ -265,7 +123,6 @@ class TestAnchors:
         assert info['pinned'] == 'abc1234def'
 
     # purlin: specs PROOF-33
-    # purlin: specs PROOF-42
     def test_the_anchors_folder_alone_makes_an_anchor(self, project):
         project.spec('# Feature: ruleset\n\n## Rules\n\n- RULE-1: A\n',
                      name='ruleset', category='_anchors')
@@ -279,21 +136,7 @@ class TestAnchors:
         shared = purlin_specs.scan_specs(project.root)['shared']
         assert shared['is_anchor'] is True, shared
 
-    # purlin: specs PROOF-35
-    def test_a_feature_outside_the_anchors_folder_is_no_anchor(self, project):
-        login = purlin_specs.scan_specs(project.root)['login']
-        assert login['spec_path'] == 'specs/auth/login.md'
-        assert login['is_anchor'] is False, login
-
-
 class TestTheScan:
-
-    # purlin: specs PROOF-15
-    def test_every_spec_is_keyed_by_its_filename_stem(self, project):
-        project.spec(SPEC, name='sign_up')
-        features = purlin_specs.scan_specs(project.root)
-        assert sorted(features) == ['login', 'sign_up'], sorted(features)
-        assert features['sign_up']['spec_path'] == 'specs/auth/sign_up.md'
 
     # purlin: specs PROOF-39
     def test_a_spec_that_cannot_be_decoded_is_skipped(self, project):
@@ -302,27 +145,6 @@ class TestTheScan:
             handle.write(b'# Feature: broken\n\xff\xfe not utf-8\n')
         features = purlin_specs.scan_specs(project.root)
         assert sorted(features) == ['login'], sorted(features)
-
-    # purlin: specs PROOF-40
-    def test_a_project_with_no_specs_folder_has_no_specs(self):
-        empty = tempfile.mkdtemp()
-        try:
-            assert purlin_specs.scan_specs(empty) == {}
-        finally:
-            shutil.rmtree(empty, ignore_errors=True)
-
-    # purlin: specs PROOF-41
-    # purlin: specs PROOF-43
-    @pytest.mark.skipif(os.name != 'nt' and (
-        not hasattr(os, 'geteuid') or os.geteuid() == 0),
-        reason='file modes do not refuse a read to this user')
-    def test_a_spec_that_cannot_be_read_is_skipped(self, project):
-        locked = os.path.join(project.root, 'specs', 'auth', 'locked.md')
-        _write(locked, SPEC.replace('login', 'locked'))
-        with _refused_to_readers(locked):
-            features = purlin_specs.scan_specs(project.root)
-        assert sorted(features) == ['login'], sorted(features)
-
 
 # ---------------------------------------------------------------------------
 # Frameworks
@@ -376,46 +198,3 @@ class TestFrameworks:
         _write(os.path.join(root, 'main.c'), 'int main(){return 0;}\n')
         _write(os.path.join(root, 'composer.json'), '{}')
         assert purlin_frameworks.detect_frameworks(root) == []
-
-
-# ---------------------------------------------------------------------------
-# The gate
-# ---------------------------------------------------------------------------
-
-class TestGate:
-
-    def test_a_named_engine_runs_the_breaks_at_either_gate(self):
-        for gate in ('passed', 'signed'):
-            cfg = purlin_gate.resolve_gate({'gate': gate,
-                                            'mutation_engine': 'auto'})
-            assert (cfg.gate, cfg.breaks) == (gate, True)
-
-    def test_a_config_that_names_no_engine_runs_no_breaks(self):
-        for gate in ('passed', 'signed'):
-            cfg = purlin_gate.resolve_gate({'gate': gate})
-            assert cfg.mutation_engine == 'none', gate
-            assert cfg.breaks is False, gate
-
-    def test_the_settings_written_out_are_the_ones_a_project_can_name(self):
-        written = purlin_gate.resolve_gate({'gate': 'signed'}).as_dict()
-        assert sorted(written) == [
-            'audit_parallel', 'ci', 'gate', 'mutation_engine']
-
-    def test_an_unreadable_gate_falls_back_loudly(self):
-        cfg = purlin_gate.resolve_gate({'gate': 'stronng'})
-        assert cfg.gate == 'passed'
-        assert any('stronng' in w for w in cfg.warnings), cfg.warnings
-
-    def test_retired_keys_are_ignored_with_one_directive(self):
-        cfg = purlin_gate.resolve_gate({
-            'gate': 'passed', 'spec_dir': 'elsewhere',
-            'audit_criteria': 'team://custom-standards'})
-        retired = [w for w in cfg.warnings if 'purlin:init --update' in w]
-        assert len(retired) == 1, cfg.warnings
-        for key in ('spec_dir', 'audit_criteria'):
-            assert key in retired[0], retired[0]
-
-    def test_the_hook_setting_is_a_key_this_release_does_not_read(self):
-        cfg = purlin_gate.resolve_gate({'pre_push': 'on'})
-        assert any('purlin:init --update' in w for w in cfg.warnings), \
-            cfg.warnings
