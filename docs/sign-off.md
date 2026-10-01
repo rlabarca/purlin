@@ -81,13 +81,15 @@ one line naming the cause and the command to run, writes nothing and exits 1:
 
 | What it prints | Why |
 |---|---|
-| `No sign-off: the working tree holds changes that are not committed. Commit them, run purlin:test --all --commit, then purlin:sign.` | files are changed and not committed: commit them or set them aside |
+| `No sign-off: 2 files are changed and not committed. Commit them or set them aside, then run purlin:sign again.` | tracked files are changed and not committed; for one it reads `1 file is`. A file git does not track stops nothing |
 | `No sign-off: the evidence is written and not committed. Run purlin:test --commit, then purlin:sign.` | a run wrote results that are not in git |
 | `No version: nothing in this project states one. Run purlin:sign --version <version>, or write it to a VERSION file.` | no version is stated and none is named |
 | `No sign-off: signed/2.1.0 is at 8de0b6e, which this checkout does not hold. Pull, then run purlin:sign.` | the version is already signed on a commit you have not pulled |
 | `No sign-off: signed/2.1.0 is at 8de0b6e, and the code has changed since. To sign this code, name a new version: purlin:sign --version <version>.` | the version is already signed, over other code; a tag that exists is never moved |
 | `No sign-off: these results were not taken on this version of the code, 1cf829e: audit on Windows. Run purlin:test --remote, then purlin:sign.` | a result was taken before the code last changed; the line names the features and the system, and the run that takes them again |
-| `No sign-off: 1 rule does not pass at 1cf829e: login RULE-2. Run purlin:status to see what is left, then purlin:sign.` | a rule fails, has not run, or has no test, with or without a proof line |
+| `No sign-off: these results were taken while files were changed and not committed: login on Linux/Unix. Run purlin:test --all --commit, then purlin:sign.` | a committed result was taken over files that were changed and not committed |
+| `No sign-off: 1 rule has no test at 1cf829e: login RULE-3. Run purlin:build login, then purlin:sign.` | a rule has no test, with or without a proof line |
+| `No sign-off: 1 rule does not pass at 1cf829e: login RULE-2. Run purlin:status to see what is left, then purlin:sign.` | a rule fails or has not run |
 | `No sign-off: origin/main holds 1 commit that 1cf829e does not, as this checkout last fetched it. Pull, then run purlin:sign.` | the branch's copy on the host holds commits the checkout lacks; `purlin:sign` fetches nothing |
 | `quinn.qa@labconnect.example has already signed 0.1.0 over this package; nothing was written.` | one sign-off per signer per package |
 

@@ -270,8 +270,9 @@ has no audit of its current rule, proof and test in the evidence, or whose code 
 A rule is `weak` when a spot test fired on one of its tests or a planted bug was not caught,
 and `strong` otherwise. `strong` means the model's part of the audit ran: where the model
 cannot be reached, the spot tests still report what they find as `weak`, a rule that passed
-them alone stays `not audited`, and the audit prints one line saying that the model could not
-be reached and to run `purlin:audit` again. A finding is one line:
+them alone stays `not audited`, and the audit prints one line, such as
+`The model could not be reached: claude is not on PATH. 2 rules stay not audited. Run purlin:audit again.`
+A finding is one line:
 
 ```
 tests/test_age.py::test_age: the test checks nothing.

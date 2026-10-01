@@ -60,11 +60,13 @@ Each is one line, nothing written, exit 1. The person signs results taken on thi
 of the code, so most name the run that takes them again:
 
 ```
-No sign-off: the working tree holds changes that are not committed. Commit them, run purlin:test --all --commit, then purlin:sign.
+No sign-off: 2 files are changed and not committed. Commit them or set them aside, then run purlin:sign again.
 No sign-off: the evidence is written and not committed. Run purlin:test --commit, then purlin:sign.
 No sign-off: signed/2.1.0 is at 3c9d2e1, which this checkout does not hold. Pull, then run purlin:sign.
 No sign-off: signed/2.1.0 is at 3c9d2e1, and the code has changed since. To sign this code, name a new version: purlin:sign --version <version>.
 No sign-off: these results were not taken on this version of the code, 8de0b6e: sample_age, stability on Linux/Unix; visit_window on Windows. Run purlin:test --all --commit and purlin:test --remote, then purlin:sign.
+No sign-off: these results were taken while files were changed and not committed: sample_age on Linux/Unix. Run purlin:test --all --commit, then purlin:sign.
+No sign-off: 1 rule has no test at 8de0b6e: sample_age RULE-3. Run purlin:build sample_age, then purlin:sign.
 No sign-off: 1 rule does not pass at 8de0b6e: sample_age RULE-2. Run purlin:status to see what is left, then purlin:sign.
 No sign-off: origin/main holds 1 commit that 8de0b6e does not, as this checkout last fetched it. Pull, then run purlin:sign.
 quinn.qa@labconnect.example has already signed 0.1.0 over this package; nothing was written.
@@ -73,8 +75,10 @@ quinn.qa@labconnect.example has already signed 0.1.0 over this package; nothing 
 With no version stated it prints
 `No version: nothing in this project states one. Run purlin:sign --version <version>, or write it to a VERSION file.`:
 ask the person for the version, offer to write it to a `VERSION` file, and run the walk again. The
-script never fetches. Run what a refusal names only when the person asks: `purlin:test --all
---commit` for this machine's results, `purlin:test --remote` for another system's.
+script never fetches. The first line counts tracked files alone, `1 file is` for one; a file git
+does not track stops nothing. Run what a refusal names only when the person asks: `purlin:test
+--all --commit` for this machine's results, `purlin:test --remote` for another system's,
+`purlin:build <feature>` for a rule with no test.
 
 ## Step 3: a key to sign with
 

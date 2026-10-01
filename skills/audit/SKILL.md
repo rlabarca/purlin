@@ -84,8 +84,10 @@ The audit found 4 of 5 rules strong (80%).
   test did not catch: add the case that tells the right behaviour from that change.
 - A line `PROOF-N: no bug was planted: <why>.` is not a finding and does not make the rule weak.
 - `<check> is not read in <language> tests.` says a spot test does not read that language.
-- `<n> rules were read without the model's explanation: <why>. Run purlin:audit --all once it can
-  be reached.` means `claude` could not be reached; the verdicts stand on the spot tests alone.
+- `The model could not be reached: <why>. <n> rules stay not audited. Run purlin:audit again.`
+  means `claude` could not be reached. A rule a spot test fired on is still written `weak`; any
+  other rule prints `<feature> RULE-N   not audited` and gets no audit entry, since `strong`
+  means the model's part of the audit ran.
 - `The audit stopped: <file> changed while a break ran. Nothing in the project was written by the
   audit.` means a file changed under the run: leave the project alone while the audit runs, then
   run it again.

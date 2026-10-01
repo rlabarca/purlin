@@ -175,9 +175,10 @@ A sign-off counts when two things are true:
   `the signature on the commit that added it does not verify`.
 - Its `package_hash` equals the `fingerprint` of the package committed for that version.
 
-**The sign-off walk.** `purlin:sign` refuses, and writes nothing, while the working tree holds
-uncommitted changes, the evidence is written and not committed, a result was not taken on this
-version of the code, a rule does not pass, the version's tag is on other code, or the branch's
+**The sign-off walk.** `purlin:sign` refuses, and writes nothing, while tracked files are
+changed and not committed, the evidence is written and not committed, a result was not taken on
+this version of the code or was taken while files were changed and not committed, a rule has no
+test, a rule does not pass, the version's tag is on other code, or the branch's
 copy on the host holds commits the checkout lacks. Otherwise it names who ran the tests, where
 and when, shows an overview, offers the audit's findings as a list where a rule reads weak, and
 stops only at hand checks, where the signer may type what they saw; an empty answer is recorded

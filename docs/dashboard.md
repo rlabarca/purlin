@@ -11,8 +11,9 @@ The page is `purlin-report.html` at the project root. It is kept out of git, so 
 has its own copy. Open it in any browser. It reads `.purlin/report-data.js`, which
 `purlin:status`, `purlin:test`, `purlin:audit` and `purlin:sign` each write as they finish.
 Whenever one of those commands writes the data, it also writes the page where the project's
-copy is missing or differs from the plugin's, so the page and its data always come from the
-same version of Purlin.
+copy differs from the plugin's, so the page and its data always come from the same version of
+Purlin. A checkout with no page yet, a fresh clone for one, gets it the same way, as long as git
+ignores the page, which `purlin:init` sets up.
 
 The data is a snapshot of the last of those four commands. Nothing writes it in the background,
 so an edit you make with no Purlin command shows up after the next of them. With no data file,
@@ -106,8 +107,11 @@ written twice in the spec`, whatever its tests found.
 
 Once the audit has found any rule strong or weak, the **Audit** panel follows:
 `Strong. It found nothing.`, or `Weak.` followed by each finding in the sentence the audit
-wrote, then the model's explanation and each planted bug a test missed, with its file, its line
-and the line as the bug left it. A rule no audit has read says
+wrote. The model's explanation follows the findings, each sentence on its own line, for a
+strong rule and a weak one alike. Then comes each planted bug the rule's tests missed, as
+`PROOF-2: its tests missed a bug planted at src/billing/invoice.py:12.`, with the lines before
+the bug under `Before` and the lines after it under `After`. A planted bug the tests caught is
+not shown. A rule no audit has read says
 `No audit has read this rule's text, proof and test yet.` In a project no audit has read, the
 page says nothing of the audit at all.
 
