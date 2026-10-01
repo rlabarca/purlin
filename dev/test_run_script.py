@@ -630,7 +630,9 @@ class TestEveryRunEndsOnTheSummary:
         assert 'Purlin status:' in output
         assert 'Tests' in output
         assert output.strip().splitlines()[-2:] == [
-            '1 rule. 1 passes its tests.', 'Nothing left to do.'], output
+            '1 rule. 1 passes its tests.',
+            'Nothing left to do. To release a version: purlin:test --release'],\
+            output
         assert code == 0, output
 
     # purlin: run_script PROOF-103
@@ -2508,7 +2510,9 @@ class TestARunCoversWhatTheChangeTouched:
         assert {name: _file(root, '.purlin/evidence/local/%s.json' % name)
                 for name in ('login', 'export')} == before
         assert [line for line in output.splitlines() if line.strip()][-2:] == [
-            '2 rules. 2 pass their tests.', 'Nothing left to do.'], output
+            '2 rules. 2 pass their tests.',
+            'Nothing left to do. To release a version: purlin:test --release'],\
+            output
 
     # purlin: run_script PROOF-112
     def test_nothing_changed_over_a_failing_test_exits_one(self, tmp_path):
