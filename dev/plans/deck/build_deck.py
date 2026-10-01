@@ -187,6 +187,20 @@ slide('regulated', 'Regulated work', 'Purlin supplies evidence. It does not clai
  'and proof and last changed each test, read from git. Each sign-off records who signed, when, with '
  'which key, what they were shown and every note they typed. A requirement number such as (URS-042) '
  'reaches it as a note in the rule\'s own words.')
+slide('manual', 'Judgment calls', 'Pass or fail. What about judgment calls?', [
+    ('A proof is pass or fail', 'It names what is done, what is seen and the value that settles it, such as the message %s.' % m('Account locked')),
+    ('A judgment call is not', 'It looks good. It is easy to use. No test can settle these, and an AI\'s opinion is a judgment too.'),
+    ('Tag it %s' % '@manual', 'Write the proof and add %s to its end. No test runs for it, so it never slows a build.' % m('@manual')),
+    ('`purlin:sign`', 'The sign-off stops at each one. A person checks it and types what they saw, and the note is kept in the signed evidence.'),
+], '<b>Not everything is a rule.</b> Look and feel that nobody signs for is judged outside Purlin.',
+ 'A proof a test carries out ends in pass or fail, settled by a value the proof names. A claim '
+ 'that is a judgment, such as it looks good or it is easy to use, is not a test\'s to settle. '
+ 'For now the way to sign off on one is a hand check: a proof tagged manual, which the status '
+ 'shows as checked at sign-off until someone signs. The walk shows the last note with the version '
+ 'it was signed at and how many commits have come since, so the signer can judge whether it '
+ 'still holds. An AI may help a person look, but a test does not pass or fail on an AI\'s '
+ 'opinion; a test may ask a model a question with one right answer.',
+ lead='A test settles a proof with a value. Some things only a person can judge.', width=560, pad=16)
 slide('anchors', 'Shared rules', 'Anchors: rules the whole project must follow', [
     ('They can be in this project', 'Write a rule once, such as no secret in the code. Tests across the whole project prove it, and no feature names it.'),
     ('They can be owned elsewhere', 'Security, GRC / GxP, Design, etc. keep their rules in their own repository. Each project brings in the ones it must follow.', [
@@ -203,9 +217,9 @@ slide('anchors', 'Shared rules', 'Anchors: rules the whole project must follow',
  lead='An anchor is a set of rules for the whole project, proven by tests that run across all of it.', width=560, pad=16)
 deck = {"v": 4, "createdOnFiles": {"v": 1, "at": "2026-09-26T18:00:00Z"},
         "title": "Purlin workflows",
-        "order": ["why", "compare", "touches", "start", "fromcode", "together", "slow", "anchors", "audit", "signoff", "remote", "regulated"],
+        "order": ["why", "compare", "touches", "start", "fromcode", "together", "slow", "manual", "anchors", "audit", "signoff", "remote", "regulated"],
         "sections": {"s1": {"description": "What Purlin is for, how little it changes in a project and a workflow, and how to start in under ten minutes or from code you already have", "start": "why"},
-                     "s2": {"description": "Working together while the specs change, slow tests that stay out of the way, anchors that carry rules for the whole project, the audit that checks the tests are any good, and the sign-off when everyone is done", "start": "together"},
+                     "s2": {"description": "Working together while the specs change, slow tests that stay out of the way, judgment calls a person signs for, anchors that carry rules for the whole project, the audit that checks the tests are any good, and the sign-off when everyone is done", "start": "together"},
                      "s3": {"description": "How a project tests on other platforms while Purlin itself only works locally, and where Purlin stops in regulated work", "start": "remote"}},
         "faces": {}, "designSystems": []}
 with open(os.path.join(ROOT, 'deck.json'), 'w', encoding='utf-8') as h:
