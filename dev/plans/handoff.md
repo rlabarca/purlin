@@ -1,3 +1,170 @@
+# Handoff, 2026-10-01: decisions 118 and 119 are built
+
+This section is the newest. The integration report is `dev/plans/d119-reports/integration.md`;
+each lane's report is beside it. `main` is local only: nothing was pushed, tagged, signed or
+audited.
+
+- **Built:** decision 118 (slow proofs, the section below) and decision 119. Purlin runs the
+  tests where you are. `purlin:test --remote`, the runner file, its two templates, the reading of
+  the git host and the waiting on a run are gone, with the spec `host` and its tests.
+  `scripts/run/purlin_run.py --ci --commit` is what a project's own run on another system
+  starts: it runs the tests of the proofs tagged for that system, writes that system's section
+  under `.purlin/evidence/ci/` and commits those files alone. This repository's own Windows run
+  is `.github/workflows/windows.yml` and `python3 dev/windows_run.py`. An anchor another
+  repository owns is a remote anchor. The docs are in the slides' words.
+- **Formats:** evidence 9, package 10; marker 4 and anchor 12 reworded only; the dashboard's
+  data stays at schema 14.
+
+### The numbers
+
+| | Result |
+|---|---|
+| `bash dev/run_tests.sh` | 816 passed, 0 failed, 9 skipped; 4 suites passed, 0 failed |
+| `purlin_run.py --test` | 820 markers tied, 0 not tied; 385 of 410 rules pass; left: 5 slow proofs, 20 rules to test on Windows |
+| `purlin_run.py --test --all --commit` | 820 markers tied, 0 not tied; 39 specs, 410 rules, 820 proofs; 390 rules pass; committed as `purlin: evidence at b4aac49` |
+| Appendix A's script over every `dev/test_*` | `0 gone, 5 reworded, 815 right as they stand.` |
+
+The 9 skipped are tests only a Windows machine can show: `config_engine PROOF-39`,
+`evidence PROOF-75`, `package PROOF-39`, `scaffold PROOF-130`, `132`, `136`, `update PROOF-117`,
+`118`, `120`. Nothing skipped for a missing tool. 816 is the plan's 815 and one test with no
+test comment, added at integration (`dev/test_windows_run.py`, an argument is refused).
+
+The 5 the script calls reworded are `install PROOF-2` to `PROOF-5` and `collaboration PROOF-1`.
+Their words did not change: decision 118 added the tag `@slow` to each line, and the script
+compares the tag with the words. With the tag left out it prints
+`0 gone, 0 reworded, 820 right as they stand.` The run itself names no test comment to correct.
+
+The `--all` run ends:
+
+```
+410 rules. 390 pass their tests.
+Left to do:
+  20 rules to test on Windows: run purlin:test on Windows
+```
+
+The anchor `security_no_dangerous_patterns` covers every file, so the commit of this handoff
+put its 8 rules out of date. A plain `purlin_run.py --test --commit` after that commit brings
+them back, and its evidence commit is the newest commit on `main`; its ending is the one above.
+
+The real `claude` ran once, in the install test of the `--all` run. The runs removed
+`.purlin/evidence/local/host.json` and `.purlin/evidence/ci/host.json`. The built dashboard page
+and the two docs screenshots came out the same bytes, so neither was committed again.
+
+### The section 8 greps
+
+All empty, with two changes written into `dev/plans/d119-plan.md`:
+`dev/fixtures/reports/vitest/vitest.xml` is left out, since its `hostname` is an attribute
+vitest writes into its own report; and `remote run\b` reads `remote runs?([^a-z]|$)`, since git
+on macOS does not read `\b` under `-E`. The fourth grep prints one line that is not a path,
+`< /dev/null` in `skills/init/SKILL.md`.
+
+### Fixed at integration
+
+- `python3 dev/windows_run.py <anything>` started a real run. It now prints
+  `--help is not an argument of python3 dev/windows_run.py, which takes none, so nothing was pushed. Run python3 dev/windows_run.py.`
+  and exits 2.
+- `agents/purlin.md`, NEVER 3, said the agent never pushes, and `skills/test/SKILL.md` Step 5
+  has it start the project's own run on a yes. It now reads: `Never push on your own, ...` and
+  `One case has the person's yes: a project's own run on another system (skills/test/SKILL.md,
+  Step 5). After the person says yes to that run, run the project's own start command, and what
+  it pushes is part of that run. Nothing stops you but this line, so a push you make without
+  that yes is a push nobody asked for.`
+- The deck's source: the sign-off slide reads `the run on Windows included`; the `touches`
+  slide's row 5 reads `You commit and push as before. Purlin commits only when you ask, and adds
+  no git hook, no background job and no pipeline.` Both checks pass. The live deck is not
+  published.
+- Checked and found right, nothing changed: the docs link to
+  `evidence_and_signoff.md#a-run-on-another-system` resolves (`purlin_docs PROOF-17` passes);
+  `README.md`'s command table equals the purpose sentences of `references/purlin_commands.md`;
+  no file names `purlin.yml`; `dev/manual/` holds two checks and names no Azure check.
+- The dashboard draws no `Left to do` line and no command, so `run purlin:test on Windows`
+  shows in the terminal alone. No page source changed. No spec was edited.
+
+### Every line a person reads that a lane chose
+
+**Lane `run`** chose none new. `--ci --commit` outside a git repository prints the existing
+`Evidence written; there is no git repository to commit it to.` In
+`references/formats/evidence_format.md` the `runner` row reads
+`the slug of email, made from its part before the @; unknown where there is none`.
+
+**Lane `surfaces`:**
+
+- `Run purlin:test on Linux/Unix and Windows, then purlin:sign.`: two systems in the sign-off's
+  refusal are joined with ` and `; printed by `scripts/review/sign.py`.
+- The report fixtures' machine names, `build-7` for Linux/Unix, `build-8` for Windows, `build-9`
+  for macOS; shown in the dashboard's per-system boxes.
+
+**Lane `own`**, all printed by `dev/windows_run.py`:
+
+- `This checkout is not on a branch, so there is nothing to push. Make one with git switch -c <name>, then run python3 dev/windows_run.py again.`
+- `python3 dev/windows_run.py waits for the run with the GitHub CLI, gh, which is not installed, so nothing was pushed. Install gh, then run python3 dev/windows_run.py again.`
+- `The push failed, so no run was started. Check that git push origin works from this checkout, then run python3 dev/windows_run.py again.`
+- `No run registered for <run branch> within 60 seconds, so the run branch was deleted and nothing came back. Check that GitHub runs .github/workflows/windows.yml on a push to run/*, then run python3 dev/windows_run.py again.`
+- `dev/manual/README.md`: `Two checks a person runs.`, `Run them from the repository root, in this order:` and `these two are none of those.`
+
+**Lane `words`:**
+
+- `skills/test/SKILL.md`, opening: `The hand-off to a sign-off is purlin:test --all --commit, and the project's own run for the proofs tagged for another operating system (Step 5).`
+- `skills/sign/SKILL.md`: `There is one Tests run by line per run the results come from, this machine's first. The audit's line shows only where the audit read a rule.`
+- `skills/init/SKILL.md`: `Setup sets up no signing: purlin:sign checks for a key to sign with and, when there is none, shows the commands that set one up.`
+- `agents/purlin.md`, NEVER 3: `No Purlin command pushes.`
+- `references/purlin_commands.md`: `No Purlin command pushes. Every push is yours: a sign-off ends on a line starting Push, with the git push origin command, and pushing is your act.` and `the project's own run on another system writes its section under .purlin/evidence/ci/. Both sources count.`
+- `references/evidence_and_signoff.md`: `A run on another system writes its own section under .purlin/evidence/ci/ and commits it with --commit.`; `ci, written by a project's own run on another system`; `the machine, which is the host's name under both sources.`; `A result from a run on another system counts on the same terms.`; `every test, here and through the project's own run for any other system, then the commit of the results that come back.`
+- `references/glossary.md`: `the machine it ran on, the host's name.`
+- `references/spec_quality_guide.md`: `in a remote anchor the tag is written in its source.` and `on a remote anchor's rule it is never allowed`.
+- `RELEASE_NOTES.md`: `Your project's own run on another system writes .purlin/evidence/ci/<feature>.json.` and `A remote anchor is copied as its source holds it.`
+
+**Lane `anchors`:**
+
+- `skills/anchor/SKILL.md`: the heading `Changing a remote anchor's rule`; `Never edit a remote anchor's rule in place.`; `The remote anchor's copy stays untouched.`; `An anchor brought in this way is a remote anchor: its copy is pinned to one version of its source.`
+- `references/formats/anchor_format.md`: the heading `Editing a remote anchor`; `Such an anchor is a remote anchor: its copy is pinned to one version of its source.`
+- Printed by the tests: `drift names the remote anchor behind and leaves the local one out`, `a sync replaces the remote anchor's copy and never the local anchor`, `the remote anchor still counts the rules its copy holds`, `--- 7: a remote anchor's source that carries > Scope: ---`, `--- 8: a source with no pin ---`.
+
+**Lane `docs-a`:**
+
+- `docs/specs-and-anchors.md`: the headings `An anchor in this project` and `A remote anchor`; `A remote anchor is owned elsewhere. The team that owns the rules keeps them in its own repository, and your project keeps a copy of the ones it must follow.`; `This kind is a remote anchor.`; `A proof a test settles carries no @manual, whatever that test needs to run. A test may ask a model a question with one right answer, such as which commands it offers after an install.`
+- `docs/sign-off.md`: `A judgment call takes a proof tagged @manual. It is a hand check, and the walk stops at it.`; the opening table in the sign-off slide's rows; `Beside a regulated system` opening with the regulated slide's rows, `such as Veeva` added to the third.
+- `docs/running-and-evidence.md`: `[Testing on another system](#testing-on-another-system) says how a project gets that run.`; the exit codes as a table; `A result stops counting when the rule, the test or the code changes, until the tests are run again.`
+- `docs/index.md`: `The spec format, judgment calls, slow tests, operating systems, ids across branches, and the two kinds of anchor`.
+
+**Lane `docs-b`:**
+
+- `docs/audit.md`: the headings `What it does not do` and `Fast enough to run every day`; step 2's example `such as a sample age off by one hour`; `only in changed code`, `a few targeted ones`, `Purlin follows both`.
+- `docs/dashboard.md`: no heading changed; the band reads `▼ BILLING 2 specs 4 of 5 rules pass`; `the model and the time, in your timezone like the header line`.
+
+### What is left
+
+1. **The reading pass** (plan section 8, step 8), then the sweep and the run again.
+2. **The first real Windows run**, `python3 dev/windows_run.py`, by the coordinator. It pushes a
+   run branch. The 15 files under `.purlin/evidence/ci/` still read
+   `remote runner, Windows` and carry `hostname` until it rewrites them.
+3. **The real-skills QA check** and **measuring the planted-bug audit**: neither was run.
+4. **The owner's review** of the docs, the slides and the differences from 0.9.5.
+
+### Open calls for the owner
+
+- The docs example clones Purlin at the tag `v0.10.0`, which exists once the release is pushed.
+- Appendix A's script counts a tag added to a proof line as a rewording; the five slow proofs
+  read `reworded` by it until their tests next change.
+- `dev/windows_run.py` exits 2 for an argument and 1 for every other refusal; no rule of
+  `windows_run` names the argument refusal, and its test carries no test comment.
+- The sign-off walk's line for a run under `ci` and the upgrade's line
+  `removed 1 workflow that committed proof files` have no proof.
+- `skills/sign/SKILL.md` and `skills/status/SKILL.md` show `purlin:test on <System>` where a
+  command is expected; it is an instruction, not a command line the run script reads.
+- `README.md` and `docs/getting-started.md` say `no git hook`; the `touches` slide now adds
+  `no background job and no pipeline`. The reading pass may bring the pages in line.
+- The plain-language pass over the references went as far as the lines the plan names.
+- `docs/dashboard.md` is not shorter after its pass; whether it should lose detail is a call
+  about what a reader needs.
+- `docs/dashboard.md` and the spec name `Strong. It found nothing.` and `Weak.` only; the page
+  also draws `Strong.` with findings, and the audit file's path under `Read by`.
+- `dev/test_drift.py` keeps the helper `_pinned_project`, and the anchor shell test keeps `the
+  local anchor was reported as pinned`: read as the verb, they may be read as the kind.
+- A run that fails on GitHub before the test step leaves no commit; the script prints the
+  failure line and the table and exits 1.
+- At 390 pixels a long test name on a rule's page breaks across lines inside a word.
+
 # Handoff, 2026-10-01: decision 118, slow proofs, is built
 
 This section is the newest. The full report is `dev/plans/d115-reports/d118.md`.
