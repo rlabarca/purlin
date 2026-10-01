@@ -1,14 +1,50 @@
 """Config resolver for Purlin projects.
 
-A project has one settings file, `.purlin/config.json`, committed to git.
-resolve_config reads it whole; update_config sets one top-level key in it
-and keeps every other key it held. A file that exists and cannot be read is
-never read as empty: both raise ConfigUnreadable with the sentence
+A project has one settings file, `.purlin/config.json`, committed to git. It
+holds `version` and `tests` and nothing else; the project's name is read from
+the project's own files each time (`purlin.project.project_name`) and never
+written. resolve_config reads the file whole; update_config sets one top-level
+key in it and keeps every other key it held. A file that exists and cannot be
+read is never read as empty: both raise ConfigUnreadable with the sentence
 config_problem gives, so a save never overwrites a file a person can still fix.
+settings_warnings names every other key the file carries, in one line.
 """
 
 import json
 import os
+
+
+# The keys `.purlin/config.json` holds, in the order setup writes them.
+KNOWN_KEYS = ('version', 'tests')
+
+# The keys an earlier Purlin wrote, each of which `purlin:init --update`
+# takes out of the file: the ones 0.9.5 wrote, then the ones a 0.10 build
+# before this one wrote.
+UPGRADE_KEYS = ('test_framework', 'spec_dir', 'pre_push', 'report', 'digest',
+                'audit_criteria', 'min_strength', 'gate', 'mutation_engine',
+                'audit_parallel', 'ci', 'project_name')
+
+SETTINGS_NOT_READ = '.purlin/config.json carries %s, which this version does not read. '
+SETTINGS_RUN_UPDATE = 'Run purlin:init --update.'
+SETTINGS_REMOVE = 'Remove it from .purlin/config.json.'
+SETTINGS_REMOVE_MANY = 'Remove them from .purlin/config.json.'
+
+
+def settings_warnings(config):
+    """The one warning naming every key `config` holds but `version` and `tests`.
+
+    `[]` when it holds no other key. The keys are joined `, ` in the file's
+    order. The line ends on `purlin:init --update` where the upgrade takes out
+    every key it names, else on removing it by hand.
+    """
+    others = [key for key in (config or {}) if key not in KNOWN_KEYS]
+    if not others:
+        return []
+    if all(key in UPGRADE_KEYS for key in others):
+        fix = SETTINGS_RUN_UPDATE
+    else:
+        fix = SETTINGS_REMOVE if len(others) == 1 else SETTINGS_REMOVE_MANY
+    return [SETTINGS_NOT_READ % ', '.join(others) + fix]
 
 
 # How `resolve_project_root` found the root it returned, in the order it
