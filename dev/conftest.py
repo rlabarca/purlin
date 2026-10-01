@@ -15,7 +15,7 @@ def no_real_model():
 
     `purlin:audit` calls the model through the `claude` command. No test may
     reach the real one, so every test, and every process a test starts,
-    finds this fake first. It answers `settled: yes`; a test that wants
+    finds this fake first. It answers that it plants no bug; a test that wants
     another answer installs its own fake and puts it in front of this one.
     """
     directory = fake_claude.install(tempfile.mkdtemp(prefix='purlin-claude-'))

@@ -7,7 +7,6 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
-mutants/
 .venv/
 env/
 venv/
@@ -35,7 +34,7 @@ dev/external-refs/
 # Claude Code per-user settings (machine-specific)
 .claude/settings.local.json
 
-# Dashboard HTML (copied by purlin:init and by dev/build_report.py)
+# Dashboard HTML (written with its data, and by dev/build_report.py)
 /purlin-report.html
 
 # Credential files (must never be committed)

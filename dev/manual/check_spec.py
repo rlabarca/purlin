@@ -6,8 +6,8 @@ the real `claude` CLI, so it costs money and its answer is a model's, not a
 fixture's. One prompt per run, one hard timeout, one transcript on disk.
 
 The project is a fresh git repository set up through
-`scripts/init/scaffold.py --gate passed --yes`, which is what `purlin:init`
-answers `passed` runs. The prompt is two sentences of requirements, and the
+`scripts/init/scaffold.py --yes`, which is what `purlin:init` runs and which
+commits the files it wrote. The prompt is two sentences of requirements, and the
 checks read the spec the model wrote.
 
 Exit codes: 0 the CLI ran and every check passed, 1 a check failed, 2 `claude`
@@ -60,7 +60,7 @@ def write(path, text):
 
 
 def new_project(label):
-    """A fresh git repository with Purlin set up at the `passed` gate."""
+    """A fresh git repository with Purlin set up, its files committed."""
     root = os.path.join(TMP_BASE, '%s-%s' % (label, time.strftime('%H%M%S')))
     shutil.rmtree(root, ignore_errors=True)
     os.makedirs(root)
@@ -75,13 +75,11 @@ def new_project(label):
     run(['git', 'commit', '-qm', 'seed'], root)
     code, out = run([sys.executable,
                      os.path.join(PLUGIN_ROOT, 'scripts', 'init', 'scaffold.py'),
-                     '--gate', 'passed', '--yes',
+                     '--yes',
                      '--project-root', root, '--plugin-root', PLUGIN_ROOT], root)
     if code != 0:
         sys.stderr.write(out)
         raise SystemExit('scaffold.py exited %d; nothing to check' % code)
-    run(['git', 'add', '-A'], root)
-    run(['git', 'commit', '-qm', 'purlin: set up at the passed gate'], root)
     return root
 
 

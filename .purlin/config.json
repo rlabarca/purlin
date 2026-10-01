@@ -3,7 +3,7 @@
   "tests": [
     {
       "name": "pytest",
-      "run": "python3 -m pytest -q -p no:cacheprovider --ignore=mutants {files} --junitxml={report}",
+      "run": "python3 -m pytest -q -p no:cacheprovider {files} --junitxml={report}",
       "report": ".purlin/runtime/reports/pytest.xml",
       "format": "junit",
       "files": [
