@@ -4,30 +4,32 @@
 >   operating system's section of `.purlin/evidence/local/<feature>.json` for every feature
 >   they covered, merged into the file already on disk. They write and do not commit; `--commit`
 >   makes two commits under the person's own identity, the specs, marked tests and settings the
->   results describe and then the results, and nothing ever pushes. Every file is tracked,
+>   results describe and then the results, and nothing ever pushes. A project's own run on another system, `--ci`, writes that
+>   system's section of `.purlin/evidence/ci/<feature>.json` the same way and, with `--commit`,
+>   commits those files alone. Every file is tracked,
 >   because the point of them is that somebody who did not make the run can read them.
 >   This feature covers the section a run writes, the result each rule reads, the merge, the
 >   files a run removes, the two commits, and the audit's entries.
 > Scope: scripts/run/evidence.py, references/formats/evidence_format.md, templates/gitignore.purlin
 > Stack: python/stdlib (json, subprocess, datetime, platform), git
-> Highest-Rule: 32
-> Highest-Proof: 94
+> Highest-Rule: 33
+> Highest-Proof: 96
 
 ## Rules
 
-- RULE-1: A `--test` run writes `.purlin/evidence/local/<feature>.json` for every feature it covered, carrying `schema` `purlin-evidence/2`, the `feature`, the `source` `local` and the `spec` path, and one section keyed by the operating system the run is on, which carries the full `commit` the working tree was on, `dirty`, the `at` time in ISO 8601 UTC, the `runner` slug of the person's email, in a `local` section the `email` RULE-27 gives, the `machine`, the `fingerprint` taken over the tree the run saw, a `rules` object and a `proofs` array
-- RULE-27: A `local` section carries `email`, the person's `git config user.email`, or `unknown` where git has none; it is kept and never compared
-- RULE-16: Each section names where its tests ran: on a person's machine `machine` reads the host's name, or `unknown` where the host reports none, and a `ci` section carries `hostname` as well, the name the host lent the runner
+- RULE-1: A `--test` run writes `.purlin/evidence/local/<feature>.json` for every feature it covered, carrying `schema` `purlin-evidence/2`, the `feature`, the `source` `local` and the `spec` path, and one section keyed by the operating system the run is on, which carries the full `commit` the working tree was on, `dirty`, the `at` time in ISO 8601 UTC, the `runner` slug of the person's email, the `email` RULE-27 gives, the `machine`, the `fingerprint` taken over the tree the run saw, a `rules` object and a `proofs` array
+- RULE-27: Every section carries `email`, the `git config user.email` of the checkout the run was made in, or `unknown` where git has none; it is kept and never compared
+- RULE-16: Each section names where its tests ran: `machine` reads the host's name, or `unknown` where the host reports none, under either source
 - RULE-2: `rules` holds one entry per rule the spec writes, and a `ci` section one per rule a proof it lists proves, read from those proofs alone: `failed` where a tied test of a proof that could run here failed; else `no test` where any proof that is not `@manual`, tagged or not, has no test tied to it; else `not run` where a tied test did not run or a proof is tagged `@env` for another operating system; else `passed`
 - RULE-30: A rule whose proofs are all `@manual` reads `passed` in a run's section, because no run was ever going to observe one, and a `@manual` proof beside a proof whose test failed leaves the rule `failed`
 - RULE-15: A rule with no proof is answered by the tests marked with its own id: each is listed in `proofs` with that id as both its `id` and its `rule`, and the rule reads `passed` when every one passed, `failed` when one failed, and `no test` when none is marked
-- RULE-3: `proofs` holds one entry per proof and test tied to it, and a `ci` section lists only the proofs tagged `@env` for the runner's own system, each entry naming its `id`, its `rule`, a `result`, its `env`, whether it is `manual`, and the `test` as `<file>::<name>`; the `result` is `pass` or `fail` where the test ran, `nothing to check` as RULE-29 says, and `missing` where it did not, and a proof tagged `@env` for another operating system reads `not run` whatever its tied test did; a proof no test is tied to has one entry with that same `result` and an empty `test`
+- RULE-3: `proofs` holds one entry per proof and test tied to it, and a `ci` section lists only the proofs tagged `@env` for this machine's own system, each entry naming its `id`, its `rule`, a `result`, its `env`, whether it is `manual`, and the `test` as `<file>::<name>`; the `result` is `pass` or `fail` where the test ran, `nothing to check` as RULE-29 says, and `missing` where it did not, and a proof tagged `@env` for another operating system reads `not run` whatever its tied test did; a proof no test is tied to has one entry with that same `result` and an empty `test`
 - RULE-29: A proof whose every tied test skipped with a reason starting `nothing to check:` reads the result `nothing to check` with that `reason`; in an anchor's section its rule reads `passed`, and in any other spec's section its rule reads `not run`, the reason kept
 - RULE-4: A run reads the file on disk and replaces only its own operating system's section: a section another operating system wrote and the `audit` object stay byte for byte as they were, apart from the entries of rules the spec no longer carries, which RULE-5 drops
 - RULE-5: Every write drops the `rules` entries and the `audit.rules` entries of rules the spec no longer carries
 - RULE-6: Every run deletes the evidence files under `local/` and `ci/` whose feature no spec defines, and prints `Removed <path>: no spec defines <feature>.` for each
 - RULE-31: A section that saw the same results over the same fingerprint, on the same machine, as the one on disk leaves the file byte for byte as it was, `at` included, where every commit since the one the section names changes only paths under `.purlin/`, so a second run finds nothing new to commit; any other section replaces it, with its own `at`, `commit`, `dirty` and `email`
-- RULE-17: A section that differs from the one on disk in its `machine` alone replaces it, and a `ci` section that differs in its `hostname` alone leaves the file byte for byte as it was
+- RULE-17: A section that differs from the one on disk in its `machine` alone replaces it
 - RULE-23: A test run over a feature whose evidence file was resolved to either side of a merge rewrites that system's section
 - RULE-26: A test run over a feature whose evidence file a merge left conflicted writes the file afresh and keeps, from both sides, each audit entry whose rule, proof and test are the rule's current ones
 - RULE-9: `--test` and `--audit` write the evidence and commit nothing without `--commit`, and print `Evidence written to .purlin/evidence/local/<feature>.json.`, or `to .purlin/evidence/local/ for <n> features.` where several ran
@@ -36,6 +38,7 @@
 - RULE-13: The evidence is not gitignored: in a project `purlin:init` set up, git ignores no file under `.purlin/evidence`
 - RULE-12: `--audit` writes one `audit.rules` entry for each rule the audit read, carrying the rule, proof and test hashes it read, its `verdict`, its `findings`, its `breaks`, one per proof, its `explanation`, the `model` that answered, the sha256 of the `criteria` it was sent, `at` and `commit`, and leaves every other rule's entry as it was
 - RULE-14: An audit entry that repeats the one already there, with the same hashes, `verdict`, `findings`, `model` and `criteria`, is left as it was, `at` and `commit` included; an entry that differs in any of them, the model that answered included, replaces it
+- RULE-33: With `--commit` a `--ci` run makes one commit, carrying the files under `.purlin/evidence/ci/` and any evidence file the run removed and nothing else, under the git identity set in that checkout, with the subject `purlin: evidence at <sha7>` naming HEAD when the run started, and prints `Evidence committed.`; where nothing is new it prints `Evidence unchanged.` and makes no commit; it never pushes
 
 ## Proof
 
@@ -44,7 +47,7 @@
 - PROOF-17 (RULE-1): In a git checkout where a tracked source file has been changed and not committed, a `--all --test` run writes a section whose `dirty` is true
 - PROOF-90 (RULE-27): In a git checkout whose git email is `dana.dev@labconnect.example`, a `--all --test` run writes a section whose `email` reads `dana.dev@labconnect.example`
 - PROOF-41 (RULE-16): A `--all --test` run on this machine writes a section whose `machine` reads this machine's host name
-- PROOF-78 (RULE-16): The section a `--ci` run builds on this machine carries `hostname`, reading this machine's host name
+- PROOF-78 (RULE-16): In a git checkout whose git email is `runner@example.com`, the section a `--all --ci` run writes holds exactly `commit`, `dirty`, `at`, `runner`, `email`, `machine`, `fingerprint`, `rules` and `proofs`, its `machine` this machine's host name and its `email` `runner@example.com`
 - PROOF-18 (RULE-2): A run in which a rule has two proofs, one whose test passed and one whose test failed, writes a section reading the rule `failed`
 - PROOF-77 (RULE-2): A run in which a rule has two proofs, PROOF-1 whose test passed and PROOF-2 tied to no test, writes a section reading the rule `no test`
 - PROOF-25 (RULE-2): A run in which a rule's one proof is tied to two tests, one that passed and one that was skipped, writes a section reading the rule `not run`, not `passed`
@@ -64,7 +67,6 @@
 - PROOF-92 (RULE-31): After `--all --test --commit`, a change to `README.md`, which no scope names, is committed; `--all --test` again writes `feat`'s section with the new HEAD as its `commit` and a new `at`, its results and fingerprint as they were
 - PROOF-60 (RULE-31): A section over the same fingerprint as the one on disk that saw the test fail, at `2030-01-02T00:00:00Z` on another commit, is written; the file's section reads the failure, that `at` and that commit
 - PROOF-43 (RULE-17): A section that saw the same results over the same fingerprint as the one on disk, taken on the machine `build-2` where the file names `build-1`, replaces it: the file's section reads `build-2`
-- PROOF-44 (RULE-17): A `ci` section that differs from the one on disk only in its `hostname`, `fv-az456` where the file holds `fv-az123`, leaves the file byte for byte as it was
 - PROOF-85 (RULE-23): Two branches each commit a section for this system into `feat`'s evidence file, one naming the machine `build-8` and one `build-9`; their merge conflicts and is resolved to the `build-9` side; a `--all --test` run then rewrites that section, which names this machine
 - PROOF-88 (RULE-26): Two branches each commit `feat`'s evidence with an audit entry for `RULE-1` over its current rule, proof and test, and their merge conflicts in that file; after a `--all --test` run the file reads as JSON and its audit holds the `RULE-1` entry
 - PROOF-89 (RULE-26): In that conflicted file one side's audit entry for `RULE-1` was made before `RULE-1`'s text changed; after a `--all --test` run the file holds no audit entry for `RULE-1`
@@ -80,3 +82,5 @@
 - PROOF-14 (RULE-14): An audit entry for `RULE-1`, answered by `claude-a`, is on file with the time `2026-09-01T00:00:00Z` and its commit; the same entry from the same model, written again at `2026-09-02T00:00:00Z` on another commit, leaves the file reading the first time and the first commit
 - PROOF-64 (RULE-14): An audit entry for `RULE-1` answered by `claude-a` is on file; the same entry answered by `claude-b`, written at `2026-09-02T00:00:00Z` on another commit, replaces it: the file reads the `model` `claude-b`, that time and that commit
 - PROOF-65 (RULE-14): An audit entry for `RULE-1` is on file; an entry that differs from it in its rule hash alone, written at `2026-09-02T00:00:00Z` on another commit, replaces it: the file reads the new rule hash, that time and that commit
+- PROOF-95 (RULE-33): In a git checkout whose git name is `Runner` and email `runner@example.com`, with one proof tagged for this machine's system and an edit to `README.md` not committed, `--all --ci --commit` prints `Evidence committed.`; the newest commit, authored by `Runner`, reads `purlin: evidence at <sha7>`, naming HEAD before the run, and changes exactly `.purlin/evidence/ci/feat.json`
+- PROOF-96 (RULE-33): In a git checkout whose `main` has been pushed to a remote on disk, `--all --ci --commit` made a second time prints `Evidence unchanged.` and adds no commit, and the remote's `main` is still the commit pushed before

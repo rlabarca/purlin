@@ -5,9 +5,8 @@
 >   those. It writes the settings file with `version` and an empty `tests`,
 >   `specs/`, the evidence folder and its README, the `.gitignore` block and
 >   the dashboard copy, names every file in the summary, writes nothing into
->   the project's test suite, installs no git hook, and leaves the runner
->   file to the first `purlin:test --remote`. A project it sets up runs its
->   tests, commits the evidence and signs it off.
+>   the project's test suite and installs no git hook. A project it sets up
+>   runs its tests, commits the evidence and signs it off.
 > Scope: scripts/init/scaffold.py, templates/config.json, templates/gitignore.purlin, templates/evidence-readme.md
 > Stack: python3 (stdlib only, 3.9 floor)
 > Highest-Rule: 83
@@ -27,7 +26,6 @@
 - RULE-67: A new project's `.gitignore` keeps out what a run writes locally: `/purlin-report.html` and `.purlin/runtime/`
 - RULE-68: Setup commits only on `y`, `yes` or `--yes`, in one commit `chore(init): set up Purlin`, the project's first where it has none; any other answer, an empty one or the end of input commits nothing
 - RULE-70: The commit carries only the files setup wrote or changed that git does not ignore: a file the project had already staged stays staged and out of it
-- RULE-81: Setup leaves the runner file to the first `purlin:test --remote`: a project on a GitHub remote with a proof tagged `@env` for a system this machine is not is set up with no `.github/workflows/purlin.yml`
 - RULE-82: Each refusal of setup names what is wrong and what fixes it, and writes nothing more: a folder that is not a git repository exits 2, a `.purlin/config.json` that cannot be read exits 1, and a commit git refuses leaves the files staged with git's own message
 - RULE-83: Setup asks one question, `Commit the files setup wrote? [y/N] `, and nothing about how the tests run, and writes a settings file holding exactly `version`, the plugin's `VERSION` file, and `tests`, an empty list where the project carried none
 
@@ -59,7 +57,6 @@
 - PROOF-158 (RULE-68): A pytest project is set up with `--yes`; no commit question is shown, its last commit's subject is `chore(init): set up Purlin`, and the output has `Committed <sha7>, the files setup wrote:`, then `  .purlin/config.json`, `  .gitignore` and `  .purlin/evidence/README.md`
 - PROOF-160 (RULE-68): A git project with no commit yet is set up with `--yes`; afterwards it has one commit, `chore(init): set up Purlin`
 - PROOF-159 (RULE-70): A project with `notes.txt` staged is set up with `--yes`; the commit setup makes holds exactly `.gitignore`, `.purlin/config.json` and `.purlin/evidence/README.md`, and `notes.txt` is still staged
-- PROOF-173 (RULE-81): A pytest project whose remote is `git@github.com:acme/demo.git`, one of whose proofs is tagged `@env` for a system this machine is not, is set up with `--yes`; afterwards there is no `.github/workflows/purlin.yml`, and no summary line names it
 - PROOF-31 (RULE-82): Init with `--yes` in an empty folder that is not a git repository exits 2, its error output is the one line `This is not a git repository. Run git init, then purlin:init.`, and the folder is still empty
 - PROOF-128 (RULE-82): A project whose `.purlin/config.json` holds a comma after its last value is set up; it exits 1, prints `.purlin/config.json cannot be read: <the JSON reader's own message> at line <n>. Fix the file by hand; nothing ran and nothing was saved.`, and every file reads as before
 - PROOF-161 (RULE-82): A project whose git has no author email, with guessing it turned off, is set up with `--yes`; it prints `The files setup wrote are staged and not committed: no email was given and auto-detection is disabled.`, and `.purlin/config.json` is staged

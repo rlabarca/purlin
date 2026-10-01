@@ -46,11 +46,11 @@ emission:**
 | File | What it governs |
 |------|-----------------|
 | `spec_format.md` | The 2-section spec, parsed by `sync_status` |
-| `anchor_format.md` | The anchor, local and pinned, parsed by `sync_status` and `purlin:anchor sync` |
+| `anchor_format.md` | The anchor, local and remote, parsed by `sync_status` and `purlin:anchor sync` |
 | `marker_format.md` | The marker comment above a test, the `tests` setting, the four report formats and the tie, read by `purlin_run.py` and `sync_status` |
 | `signature_format.md` | The sign-off `purlin:sign` writes over the evidence package, read by `purlin:sign` and `sync_status` |
 | `package_format.md` | The evidence package `purlin:sign` builds, commits and checks, handed to a regulated sign-off system as evidence |
-| `evidence_format.md` | The evidence file per feature per source and its fingerprint, written by `purlin:test`, `purlin:audit` and a remote run, read by `sync_status` and `purlin:sign` |
+| `evidence_format.md` | The evidence file per feature per source and its fingerprint, written by `purlin:test`, `purlin:audit` and a project's own run on another system, read by `sync_status` and `purlin:sign` |
 
 ## Skill and reference deduplication
 
@@ -83,7 +83,7 @@ The version string lives in one file: `VERSION` at the root. Never hand-edit any
 
 1. `bash dev/bump_version.sh <semver>` writes `VERSION` and propagates it everywhere.
 2. Commit `VERSION` and every file the script touched in the same commit.
-3. Run `purlin:test --all --commit` and `purlin:test --remote`, then `purlin:sign`. The first
+3. Run `purlin:test --all --commit` and `python3 dev/windows_run.py`, then `purlin:sign`. The first
    sign-off writes the signed tag `signed/<version>`.
 4. The owner pushes the tag: `git push origin signed/<version>`.
 

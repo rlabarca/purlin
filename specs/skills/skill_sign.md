@@ -11,9 +11,9 @@
 
 ## Rules
 
-- RULE-35: The skill names the commands and files the agent runs, reads or hands on: `purlin:sign`, `--show`, `--answers`, `--check`, `--version`, `purlin:test --all --commit`, `purlin:test --remote`, `git push origin`, `scripts/review/sign.py`, `.purlin/runtime/signoff-answers.json`, `.purlin/evidence/package/<version>.json` and `VERSION`
+- RULE-35: The skill names the commands and files the agent runs, reads or hands on: `purlin:sign`, `--show`, `--answers`, `--check`, `--version`, `purlin:test --all --commit`, `git push origin`, `scripts/review/sign.py`, `.purlin/runtime/signoff-answers.json`, `.purlin/evidence/package/<version>.json` and `VERSION`
 
 ## Proof
 
-- PROOF-63 (RULE-35): The sign skill's text holds each of `purlin:sign`, `--show`, `--answers`, `--check`, `--version`, `purlin:test --all --commit`, `purlin:test --remote` and `git push origin`, and the check of the commands it must name lists no problem
+- PROOF-63 (RULE-35): The sign skill's text holds each of `purlin:sign`, `--show`, `--answers`, `--check`, `--version`, `purlin:test --all --commit` and `git push origin`, and the check of the commands it must name lists no problem
 - PROOF-64 (RULE-35): The sign skill's text holds each of `scripts/review/sign.py`, `.purlin/runtime/signoff-answers.json`, `.purlin/evidence/package/<version>.json` and `VERSION`, and the check of the paths it must name lists no problem

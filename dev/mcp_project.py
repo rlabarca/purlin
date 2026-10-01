@@ -120,8 +120,9 @@ class Project(object):
         `proofs` is `[{'id', 'rule', 'status'}]`, what the run saw. The
         section carries the fingerprint taken now, so it is current until the
         spec, the scoped code or the tests change. `source` is `ci` or
-        `local` and defaults to `ci` when `ci=True`, so a test that wanted
-        a runner's evidence gets the runner's own folder and machine.
+        `local` and defaults to `ci` when `ci=True`. A `ci` section is the
+        one a project's own run on another system writes: machine `build-7`,
+        email `runner@example.com`, runner `runner`.
         `claimed_source` writes a different word into the file,
         which is how a test makes the two disagree. With `audited` the file
         carries an `audit`.
@@ -139,8 +140,8 @@ class Project(object):
         data['source'] = claimed_source or source
         data['platforms'][os_name] = {
             'commit': self.head(), 'dirty': False, 'at': at,
-            'runner': runner, 'machine': _machine(source, os_name),
-            'hostname': 'host-1',
+            'runner': CI_RUNNER if source == 'ci' else runner,
+            'machine': _machine(source),
             'fingerprint': fingerprint or purlin_fingerprint.fingerprint(
                 self.root, feature),
             'rules': {},
@@ -149,6 +150,8 @@ class Project(object):
                         'manual': False,
                         'test': _test_of(entry, feature)}
                        for entry in proofs]}
+        if source == 'ci':
+            data['platforms'][os_name]['email'] = CI_EMAIL
         if audited:
             data.setdefault('audit', {'rules': {}})
         _write(path, json.dumps(data, indent=2, sort_keys=True))
@@ -238,11 +241,16 @@ def _listed(data, rule_id, feature='login', listed_under=None):
                 if r['id'] == rule_id and r['feature'] == feature)
 
 
-def _machine(source, os_name):
-    """The `machine` a section names: a runner by its kind, a person's by name."""
-    if source == 'ci':
-        return 'remote runner, ' + purlin_evidence.os_word(os_name)
-    return 'dev-machine'
+# What a `ci` section records: the machine of a project's own run on another
+# system, and the git identity set there.
+CI_MACHINE = 'build-7'
+CI_EMAIL = 'runner@example.com'
+CI_RUNNER = 'runner'
+
+
+def _machine(source):
+    """The `machine` a section names, the host's name under either source."""
+    return CI_MACHINE if source == 'ci' else 'dev-machine'
 
 
 def _test_of(entry, feature):

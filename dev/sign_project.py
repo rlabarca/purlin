@@ -69,15 +69,16 @@ TEST_NAMES = {'PROOF-1': 'test_valid_credentials_return_200',
               'PROOF-2': 'test_a_bad_password_is_denied'}
 
 
-# The name a section records beside the machine, logged and never compared.
-HOSTNAME = 'runner-17'
+# What a `ci` section records: the machine of a project's own run on another
+# system, and the git identity set there.
+CI_MACHINE = 'build-7'
+CI_EMAIL = 'runner@example.com'
+CI_RUNNER = 'runner'
 
 
-def machine_of(source, os_name):
-    """The machine a section records: a runner by its kind, a person's host by name."""
-    if source == 'ci':
-        return 'remote runner, %s' % purlin_evidence.os_word(os_name)
-    return 'jane-laptop'
+def machine_of(source):
+    """The machine a section records, the host's name under either source."""
+    return CI_MACHINE if source == 'ci' else 'jane-laptop'
 
 
 def sha256(text):
@@ -170,10 +171,12 @@ class Project(object):
         data = self._read_evidence(rel, source)
         data['platforms'][os_name] = {
             'commit': self.head(), 'dirty': False, 'at': at,
-            'runner': runner, 'machine': machine_of(source, os_name),
-            'hostname': HOSTNAME,
+            'runner': CI_RUNNER if source == 'ci' else runner,
+            'machine': machine_of(source),
             'fingerprint': purlin_fingerprint.fingerprint(self.root, 'login'),
             'rules': {}, 'proofs': proofs}
+        if source == 'ci':
+            data['platforms'][os_name]['email'] = CI_EMAIL
         if audited:
             data.setdefault('audit', {'rules': {}})
         write(os.path.join(self.root, *rel.split('/')),
@@ -247,13 +250,13 @@ def commit_all(root, message='purlin: evidence at abc1234'):
 
 
 def signing_project(signer='jane@acme.com'):
-    """A project whose two rules pass on a runner and carry an audit reading
+    """A project whose two rules pass under the source `ci` and carry an audit reading
     strong, ready for a sign-off.
 
     The signer's key is set up last.
     """
     made = Project()
-    made.evidence(runner='ci', commit_it=False, source='ci')
+    made.evidence(commit_it=False, source='ci')
     made.audit('RULE-1')
     made.audit('RULE-2')
     commit_all(made.root)

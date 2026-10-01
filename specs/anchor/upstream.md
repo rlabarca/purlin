@@ -30,7 +30,7 @@
 - RULE-23: A sync keeps every `> Note:` line the local copy carried, in order, beside the tracking fields it rewrites, because a note is the consumer's own text
 - RULE-35: `sync <name>` makes no commit: the anchor copy whose pin it advances is left changed and not committed
 - RULE-25: `sync --check`, `sync <name>` and `sync` with no name report an anchor whose `> Source:` names no repository as `error` with the line `<name>: its source, <source>, is not a spec in Purlin's format kept in a git repository, so it cannot be checked. Run purlin:spec <name> to take out its > Source: and > Pinned: lines and keep it as this project's own anchor.`, start no process for it, write nothing and exit 2
-- RULE-36: The check the status and drift make of a pinned anchor reads its source's head and pulls nothing: the anchor copy is left byte for byte as it was, whether its pin is current or behind
+- RULE-36: The check the status and drift make of a remote anchor reads its source's head and pulls nothing: the anchor copy is left byte for byte as it was, whether its pin is current or behind
 
 ## Proof
 
@@ -61,5 +61,5 @@
 - PROOF-23 (RULE-23): An anchor's copy carries the notes `run the setup script first` and `the pin moves on each release` under its tracking lines; after a new version is published and the anchor is synced, the copy carries the new pin and both `> Note:` lines, each once and in that order
 - PROOF-59 (RULE-35): An added `no_eval` is committed, a new version is published, and `sync no_eval` advances the pin; HEAD is the commit it was before, and git reads the anchor copy as changed and not committed
 - PROOF-43 (RULE-25): The anchor `refunds` carries `> Source: policy.txt`, a file in the project; `sync --check` exits 2 and prints the one line the rule names, with `refunds` as the name and `policy.txt` as the source, starts no process, and changes no file
-- PROOF-45 (RULE-25): Two anchors are pinned from one repository, a third, `refunds`, carries `> Source: policy.txt`, a file in the project, and a new version is published; `sync` with no name exits 2, the two pinned anchors read `synced`, `refunds` reads `error`, no process it starts names `policy.txt`, and the copy of `refunds` is unchanged
+- PROOF-45 (RULE-25): Two anchors are pinned from one repository, a third, `refunds`, carries `> Source: policy.txt`, a file in the project, and a new version is published; `sync` with no name exits 2, the two remote anchors read `synced`, `refunds` reads `error`, no process it starts names `policy.txt`, and the copy of `refunds` is unchanged
 - PROOF-60 (RULE-36): The anchor `no_eval` is pinned, a new version of it is published, and the status is read; it prints `no_eval: the pin <first sha7> is behind its source, now <new sha7>. Run purlin:anchor sync no_eval.`, and `specs/_anchors/no_eval.md` is byte for byte as it was
