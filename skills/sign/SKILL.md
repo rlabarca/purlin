@@ -76,8 +76,9 @@ With no version stated it prints
 ask the person for the version, offer to write it to a `VERSION` file, and run the walk again. The
 script never fetches. The first line counts tracked files alone, `1 file is` for one; a file git
 does not track stops nothing. Run what a refusal names only when the person asks: `purlin:test
---all --commit` for this machine's results, `purlin:test on <System>` for another system's,
-`purlin:build <feature>` for a rule with no test.
+--all --commit` for this machine's results, `purlin:build <feature>` for a rule with no test.
+`purlin:test on <System>` is an instruction, not a command line: for another system's results,
+do as `skills/test/SKILL.md`, Step 5 says.
 
 ## Step 3: a key to sign with
 
@@ -103,8 +104,8 @@ or a rule not audited never blocks the sign-off and is no stop.
 
 The walk stops only at hand checks, one at a time, in the order printed. Each stop opens on its
 head, such as `accession_screen RULE-1   hand check`, then `Rule`, `Proof`, `Results` and, where
-the audit read it, `What the audit found`. Show the stop as printed; add nothing of your own to
-what it says. Then ask what the walk asks:
+the audit found the rule weak, `What the audit found`. Show the stop as printed; add nothing of
+your own to what it says. Then ask what the walk asks:
 `accession_screen RULE-1   what did you see, in one line, or Enter for no note, or stop:`
 
 | The person's answer | What it does |
@@ -178,7 +179,8 @@ fingerprint.` and exits 0, or `The package does not match its fingerprint: <why>
 | `signed/<version> stays at <sha>; this sign-off is added after it.` | `→ Run: git push origin <branch>` |
 | `Stopped at <feature> <RULE-N>:` | `→ Run: purlin:build <feature>, then purlin:test --all --commit` |
 | `Nothing was signed.` | `→ Run: purlin:sign` when the person is ready |
-| `No sign-off:` naming `purlin:test --all --commit`, `purlin:test --commit` or `purlin:test on <System>` | `→ Run:` the command it names |
+| `No sign-off:` naming `purlin:test --all --commit` or `purlin:test --commit` | `→ Run:` the command it names |
+| `No sign-off:` naming `purlin:test on <System>` | `→ Run purlin:test on <System>`, as `skills/test/SKILL.md`, Step 5 says, then `purlin:sign` |
 | `No sign-off:` naming `purlin:status` | `→ Run: purlin:status` |
 | `No sign-off:` ending `Pull, then run purlin:sign.` | `→ Pull, then run: purlin:sign` |
 | `No sign-off:` naming `purlin:sign --version <version>` | `→ Ask the person for the new version, then run: purlin:sign --version <version>` |

@@ -37,11 +37,10 @@ checked across the whole project is not an anchor's: write it in the spec of eac
 needs it, with `purlin:spec <feature>`. Rules and proofs follow the grammar in
 `references/formats/spec_format.md`.
 
-A test of an anchor that finds nothing to check in this project skips, through the test tool's
-own skip, with a reason starting `nothing to check:`, as in `nothing to check: this project has
-no screens`. The rule then passes, and `purlin:status` prints the reason.
 `references/spec_quality_guide.md`, "A good anchor", is the checklist for an anchor's rules and
-proofs, the `@slow` tag for a long whole-project check and the `@manual` tag among them.
+proofs: the skip with a reason starting `nothing to check:` where a test finds nothing to check
+in this project, which `purlin:status` then prints, the `@slow` tag for a long whole-project
+check and the `@manual` tag among them.
 
 Commit it with the `anchor(<name>): create` prefix from `references/commit_conventions.md`.
 
@@ -88,14 +87,14 @@ which rules moved.
 
 ## Changing a remote anchor's rule
 
-**Never edit a remote anchor's rule in place.** The next sync overwrites it and the change is lost with
-no trace. A change to the rule is a pull request against the source repository, made in a
-checkout of it; once it merges, `sync` brings it here.
+**Never edit a remote anchor's rule in place.** The next sync overwrites it and the change is
+lost with no trace. A change to the rule is a pull request against the source repository, made
+in a checkout of it; once it merges, `sync` brings it here. The remote anchor's copy stays
+untouched.
 
-A rule that belongs only to this project goes in a local anchor of its own when it holds across
-the whole project, and in the spec of each feature it holds for when it does not. The remote
-anchor's copy stays untouched. A pulled rule that fails here is a problem to raise with its authors: the
-project has no way to set a pulled rule aside.
+`references/formats/anchor_format.md`, "Editing a remote anchor", says where a rule goes that
+belongs only to this project. A pulled rule that fails here is a problem to raise with its
+authors: the project has no way to set a pulled rule aside.
 
 ## When you are done
 

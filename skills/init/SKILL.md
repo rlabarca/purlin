@@ -14,9 +14,8 @@ the git checkout you are working in.
 
 Setup asks one question and nothing else: `Commit the files setup wrote? [y/N]`. The default is
 no; a yes commits them in one commit, `chore(init): set up Purlin`. It asks nothing about how the
-tests run, which git host the project is on or what the project is called: the first `purlin:test`
-suggests the test commands, and the git host and the project's name are read from the project
-each time they are needed.
+tests run or what the project is called: the first `purlin:test` suggests the test commands, and
+the project's name is read from the project's own files each time it is needed.
 
 ## Run it
 
@@ -40,7 +39,7 @@ A second run writes no file: what is there is kept.
 It writes `.purlin/` and `specs/`; `.purlin/config.json`; a block in `.gitignore`; and
 `.purlin/evidence/` with one README saying what the folder holds. The folder for anchors,
 `specs/_anchors/`, is made when the first anchor is written. It installs nothing in the project's
-tests and no git hook. The `.gitignore` block covers `.purlin/runtime/`, where a run's reports
+tests, and adds no git hook, no background job and no pipeline. The `.gitignore` block covers `.purlin/runtime/`, where a run's reports
 land, `.purlin/report-data.js`, and `purlin-report.html`, the dashboard page, which opens from
 disk. `.purlin/evidence/` stays tracked. It prints every file it wrote, kept or copied, one per
 line, then asks its question.
@@ -81,13 +80,16 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scrip
 
 `--update` reads the layout Purlin 0.9.5 leaves in a project and lists each pending migration
 with the files it touches. It asks before each one, with a question ending `[y/N]`, and a
-declined one is left pending. Between them the migrations: rewrite or remove each line 0.9.5
-wrote into a spec that this version does not read; remove the files 0.9.5 kept that this version
-does not use, and its two git hooks; rewrite `.purlin/config.json` to `version` and `tests`,
-writing `tests` from the frameworks the old settings named and naming every key they drop; write
-`.purlin/evidence/` with its README; replace the dashboard page at the project root; rewrite each
-0.9.5 marker as one comment above the same test; and remove the wiring 0.9.5 put in the project's
-test configuration.
+declined one is left pending. Between them the migrations:
+
+- rewrite or remove each line 0.9.5 wrote into a spec that this version does not read;
+- remove the files 0.9.5 kept that this version does not use, and its two git hooks;
+- rewrite `.purlin/config.json` to `version` and `tests`, writing `tests` from the frameworks
+  the old settings named and naming every key they drop;
+- write `.purlin/evidence/` with its README;
+- replace the dashboard page at the project root;
+- rewrite each 0.9.5 marker as one comment above the same test;
+- remove the wiring 0.9.5 put in the project's test configuration.
 
 Every file it rewrites is backed up beside the original as `<name>.local-<sha8>.bak`. It
 commits what it applied in one commit, `chore(update): migrate to <version> (<migrations>)`.

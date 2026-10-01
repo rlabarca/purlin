@@ -4,7 +4,7 @@ description: Show the two facts, every rule's cells and what is left to do
 ---
 
 Show where every feature stands: whether the tests are met, whether this code is signed, how many
-rules reached each step, what is left to do, and what to do next. This skill writes no file you
+rules pass their tests, what is left to do, and what to do next. This skill writes no file you
 commit; it refreshes the dashboard's data, which git ignores.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
@@ -103,6 +103,7 @@ The next step is the first line of `Left to do`. Add no line of your own; a
 | `<n> test comments to correct` | `→ Run: purlin:build` |
 | `<n> rules to fix`, `to write a test for` or `to strengthen` | `→ Run: purlin:build` |
 | `<n> rules to test` | `→ Run: purlin:test` |
-| `<n> rules to test on <systems>` | `→ On <systems>: purlin:test`, then as `skills/test/SKILL.md`, Step 5 says |
+| `<n> slow proofs to run` | `→ Run: purlin:test --all` |
+| `<n> rules to test on <systems>` | `→ Run purlin:test on <systems>`. It is an instruction, not a command line: do as `skills/test/SKILL.md`, Step 5 says |
 | `<n> features whose results are not committed` | `→ Run: purlin:test --commit` |
 | `Every rule passes its tests on the committed evidence. To sign it: purlin:sign` | `→ Run: purlin:sign`, when a person chooses to sign |

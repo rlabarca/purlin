@@ -21,7 +21,7 @@ follow `references/purlin_commands.md#pending-migrations` before doing this skil
 purlin:audit                    Run what the change touched, audit, write the evidence
 purlin:audit <feature> [...]    One feature, or several
 purlin:audit --all              Run every feature, and read every passing rule again
-purlin:audit --commit           Commit the evidence the run wrote
+purlin:audit --commit           Commit the work and the evidence the run wrote
 purlin:audit --arm-timeout <seconds>  Give each suite, and each planted bug's test run, longer
 ```
 
@@ -59,10 +59,8 @@ The run writes each feature's section and its `audit` into `.purlin/evidence/loc
 and prints `Evidence written to .purlin/evidence/local/<feature>.json.` It commits nothing unless
 you add `--commit`, which commits under your own identity, and it never pushes.
 
-Exit codes: `0` everything asked happened; `1` a tied test failed or did not run, evidence is
-missing, a marker names nothing a spec has, `.purlin/config.json` is missing or cannot be read,
-the project was set up by 0.9.5 and not upgraded, no test command is set, or a file of the project
-changed while a bug was planted; `2` the command line was wrong. What the audit found never sets
+The exit codes are in `references/purlin_commands.md`, "Exit codes": those of a test run, and
+`1` where a file of the project changed while a bug was planted. What the audit found never sets
 the code: a weak rule is listed, not failed.
 
 ## Step 2: read what came back

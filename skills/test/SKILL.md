@@ -18,7 +18,7 @@ follow `references/purlin_commands.md#pending-migrations` before doing this skil
 
 ```
 purlin:test                     Run the features your change touched
-purlin:test --all               Run every feature
+purlin:test --all               Run every feature, slow proofs included
 purlin:test <feature> [...]     Run one feature, or several
 purlin:test --commit            Commit the work and the evidence the run wrote
 purlin:test --all --commit      The hand-off: run every feature and commit the results
@@ -31,23 +31,29 @@ purlin:test --arm-timeout <seconds>  Give each suite longer than an hour
 sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --test --project-root .
 ```
 
-Add `--all` for `purlin:test --all` and `--feature <name>` for each feature named. With neither,
-the run selects each feature with no run on this operating system, whose spec, code or tests
-changed since its evidence, with an untracked file under its `> Scope:` or beside its tests, or
-whose spec names no files, and runs only the test files carrying its markers: each suite of the
-`tests` setting gets them as its `{files}`. It first prints `Selected <n> of <m> features: login
-(code changed since a1b2c3d), ...`, the skipped ones ending `purlin:test --all runs them too.`,
-and a line per untracked file. With nothing selected it prints `Nothing to run: every feature's
-spec, code and tests match its evidence. purlin:test --all runs them anyway.` and exits 1 only
-where the evidence holds a failing test. Add `--arm-timeout <seconds>` when the person gave it.
+Add `--all` for `purlin:test --all` and `--feature <name>` for each feature named. Add
+`--arm-timeout <seconds>` when the person gave it.
+
+With neither `--all` nor a feature, the run selects a feature in any of these cases:
+
+- it has no run on this operating system;
+- its spec, code or tests changed since its evidence;
+- an untracked file sits under its `> Scope:` or beside its tests;
+- its spec names no files.
+
+It runs only the test files carrying those features' markers: each suite of the `tests` setting
+gets them as its `{files}`. It first prints `Selected <n> of <m> features: login (code changed
+since a1b2c3d), ...`, the skipped ones ending `purlin:test --all runs them too.`, and a line per
+untracked file. With nothing selected it prints `Nothing to run: every feature's spec, code and
+tests match its evidence. purlin:test --all runs them anyway.` and exits 1 only where the
+evidence holds a failing test.
+
 Without `--all` the run never starts a slow proof's test and prints `Left out <n> slow proofs`,
 naming each; `references/purlin_commands.md` says what each run starts, and the status then
 lists `<n> slow proofs to run: purlin:test --all`.
 
-Exit codes: `0` everything asked happened; `1` a tied test failed or did not run, evidence is
-missing, a marker names nothing a spec has, there is no settings file, the settings file cannot be
-read, an older Purlin set the project up, or no test command is set; `2` the command line was
-wrong. A test comment to correct changes no exit code; it makes the tests read `not met`.
+The exit codes are in `references/purlin_commands.md`, "Exit codes". A test comment to correct
+changes no exit code; it makes the tests read `not met`.
 
 ## Step 2: when the run stops before any test
 
@@ -85,16 +91,12 @@ The run prints `Markers: <n> tied to a test, <k> not tied.`, then each test comm
 then `Ran <suite> on <n> features.`, then one line per rule that fails or has no test,
 `<feature> RULE-<n> fails: <file>::<test>. Run purlin:build <feature>.`, `<feature> RULE-<n> has
 no test. Run purlin:build <feature>.` or `<feature> <RULE-N> has no test for <PROOF-N>[,
-<PROOF-M>...]. Run purlin:build <feature>.`, then the status `purlin:status` builds. The `Tests`
-column counts the words a passed cell can read:
+<PROOF-M>...]. Run purlin:build <feature>.`, then the status `purlin:status` builds. For a
+failed test the run also prints the last 60 lines of the suite's own output.
 
-| Word | What it means |
-|------|---------------|
-| `passed` | Every test marked with the rule's proofs ran here and passed. An anchor's rule whose every test skipped with `nothing to check: <reason>` passes too, and the status says so |
-| `failed` | A marked test ran and failed; the run prints the last 60 lines of the suite's own output |
-| `no test` | No test carries the proof's marker, or, with the reason `no proof written`, the rule has neither |
-| `not run` | A test carries the marker and no counting run reached it; with the reason `slow: runs with purlin:test --all`, it is a slow proof's |
-| `out of date` | The spec, the code or the tests changed since the run; the reason names which |
+The `Tests` column counts the words a passed cell can read: `passed`, `partial`, `failed`,
+`no test`, `not run` and `out of date`. `references/spec_quality_guide.md`, "When a rule is
+stuck", says what each word means, with its reasons, and what moves it.
 
 A test comment to correct reads `<file>:<line> names <feature> <PROOF-N>, whose wording changed
 after the test was last changed in <sha7>: ...`, and clears once the test itself changes: run
@@ -107,7 +109,9 @@ it, or no test follows it. A marker naming nothing a spec has reads `<file>:<lin
 
 A proof tagged `@env(windows)`, `@env(macos)` or `@env(linux)` runs only on that operating system.
 On a machine that does not match, the run prints one line per system, `<n> proofs need <System>;
-this machine is <System>. Run purlin:test on <System>.` An untagged proof runs anywhere. A system
+this machine is <System>. Run purlin:test on <System>.` That is an instruction, not a command
+line: `purlin:test` on a machine of that system meets it, and so does the project's own run
+there. An untagged proof runs anywhere. A system
 that is neither Windows nor macOS is `linux`, shown as `Linux/Unix`. A rule reads `partial` where
 two systems that each ran disagree.
 
