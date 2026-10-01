@@ -2,12 +2,12 @@
   "feature": "install",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T20:33:10Z",
-      "commit": "b4aac4921b55618a6f011bf390fd38650d621c44",
+      "at": "2026-10-01T20:52:10Z",
+      "commit": "d4d43accf1a28503dc6f9cd8eac7b6c830afa3e6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "513dcb3612d5fe2066b893f04237b7cbb6ee12eb2c1d693c96443c08d42be2d8",
+        "code": "91b487f1fac7a06bc2b05ac51af4e1ec50a201cf6ccf3b4b7638208f32a1596e",
         "spec": "57c4530829b6585103130a56f43158a5fd4c8d787262c0f9a1e4f9672ca03a81",
         "tests": "02874c77a1675cbeab768a795151ed96a656a62858885c5730e685b4cd9f0825"
       },
@@ -25,7 +25,7 @@
           "env": null,
           "id": "PROOF-2",
           "manual": false,
-          "result": "pass",
+          "result": "not run",
           "rule": "RULE-2",
           "test": "dev/test_install.py::test_the_pages_commands_leave_purlin_installed_and_enabled"
         },
@@ -33,7 +33,7 @@
           "env": null,
           "id": "PROOF-3",
           "manual": false,
-          "result": "pass",
+          "result": "not run",
           "rule": "RULE-3",
           "test": "dev/test_install.py::test_every_skill_of_this_checkout_landed_byte_for_byte"
         },
@@ -41,7 +41,7 @@
           "env": null,
           "id": "PROOF-4",
           "manual": false,
-          "result": "pass",
+          "result": "not run",
           "rule": "RULE-4",
           "test": "dev/test_install.py::test_claude_code_offers_every_purlin_skill_to_the_model"
         },
@@ -49,17 +49,17 @@
           "env": null,
           "id": "PROOF-5",
           "manual": false,
-          "result": "pass",
+          "result": "not run",
           "rule": "RULE-5",
           "test": "dev/test_install.py::test_the_persons_own_claude_code_reads_the_same_afterwards"
         }
       ],
       "rules": {
         "RULE-1": "passed",
-        "RULE-2": "passed",
-        "RULE-3": "passed",
-        "RULE-4": "passed",
-        "RULE-5": "passed"
+        "RULE-2": "not run",
+        "RULE-3": "not run",
+        "RULE-4": "not run",
+        "RULE-5": "not run"
       },
       "runner": "rich-labarca"
     }

@@ -2,12 +2,12 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T20:26:51Z",
-      "commit": "b4aac4921b55618a6f011bf390fd38650d621c44",
+      "at": "2026-10-01T20:52:10Z",
+      "commit": "d4d43accf1a28503dc6f9cd8eac7b6c830afa3e6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "81de25cb0f03356f917a609e7c7b3622f7606e355dd2194a99ca34858bd641ec",
+        "code": "15b87cd1d25554911cd759d9a2b2e444e1b11fb07020e9a3a781bfb0bb5b124f",
         "spec": "ace24c4eee23e5e128f30a35b9b5f32b1a678542a9ed41a56e2dcb26f740727c",
         "tests": "6363c325828c1471efd05340d0c5c79dfd560cb9a0a4a7b6dad133841cabce29"
       },

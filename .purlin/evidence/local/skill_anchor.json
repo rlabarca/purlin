@@ -2,12 +2,12 @@
   "feature": "skill_anchor",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T20:26:52Z",
-      "commit": "b4aac4921b55618a6f011bf390fd38650d621c44",
+      "at": "2026-10-01T20:52:10Z",
+      "commit": "d4d43accf1a28503dc6f9cd8eac7b6c830afa3e6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "4c53a4c5e93fb7f4b737db23a1b811404cbca5f3aa3b14d2169a9e402520ea6f",
+        "code": "f5c714d62526c54b92b08808706d04c93b80fd5449de166896d85f3fbc3dc73f",
         "spec": "50a282b46333d9153e56618046d8bbc8300efcc7ee61921d990eea250ff29880",
         "tests": "118c257e998b255aee17b4404b026de8df8bcf505f823a0ec6c6c91d51d28d31"
       },
