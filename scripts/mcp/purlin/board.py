@@ -12,11 +12,10 @@ The columns, left to right:
 
     Spec     the spec's name
     Rules    how many rules the spec has
-    Proofs   how many proof lines it writes, and how many have no test; at
-             `passed` only where the project writes a proof line at all
+    Proofs   how many proof lines it writes, and how many have no test;
+             only where the project writes a proof line at all
     Tests    how many rules pass, and how many are partial or are failing
-    Strong   how many of its rules the audit found strong, and the test
-             strength where one was measured, at either gate, wherever the
+    Strong   how many of its rules the audit found strong, wherever the
              audit found any rule of the project strong or weak
 
 Every when, who and platform detail lives in a hover on the dashboard and on
@@ -30,13 +29,12 @@ COLUMNS = ('Spec', 'Rules', 'Proofs', 'Tests', 'Strong')
 STRONG_COLUMNS = ('Strong',)
 
 
-def shows_proofs(gate, proofs):
+def shows_proofs(proofs):
     """Whether the Proofs column and the proof count are shown.
 
-    Proofs are optional at `passed`, so a project there that writes none is
-    shown no count of them; at `signed` every rule needs one.
+    A project that writes no proof line is shown no count of them.
     """
-    return gate != 'passed' or bool(proofs)
+    return bool(proofs)
 
 
 def shows_strong(audit):
@@ -49,14 +47,14 @@ def shows_strong(audit):
     return bool((audit.get('strong') or 0) + (audit.get('weak') or 0))
 
 
-def columns_for(gate, proofs=1, audited=False):
-    """The columns under `gate`, left to right.
+def columns_for(proofs=1, audited=False):
+    """The columns, left to right.
 
     `proofs` is how many proof lines the project writes; `audited` is
     `shows_strong`'s answer.
     """
     columns = [name for name in COLUMNS[:4]
-               if name != 'Proofs' or shows_proofs(gate, proofs)]
+               if name != 'Proofs' or shows_proofs(proofs)]
     if audited:
         columns.extend(STRONG_COLUMNS)
     return tuple(columns)
@@ -111,28 +109,23 @@ def tests_cell(rollup):
 
 
 def strong_cell(rollup):
-    """`<n> of <rules>`, then `· <strength>%` where a strength was measured.
+    """`<n> of <rules>`: how many of the spec's rules the audit found strong.
 
-    Where nothing measured one the cell says nothing of strength, rather than
-    printing a stand-in. Empty for a spec with no rules.
+    Empty for a spec with no rules.
     """
     total = rollup.get('rules') or 0
     if not total:
         return ''
-    text = '%d of %d' % (strong_met(rollup), total)
-    strength = rollup.get('test_strength')
-    if strength is not None:
-        text += '%s%d%%' % (DOT, int(strength))
-    return text
+    return '%d of %d' % (strong_met(rollup), total)
 
 
-def row_cells(name, rollup, gate, proofs=1, audited=False):
-    """One spec's row under `gate`, as the tuple the columns describe.
+def row_cells(name, rollup, proofs=1, audited=False):
+    """One spec's row, as the tuple the columns describe.
 
     `proofs` and `audited` are read as `columns_for` reads them.
     """
     cells = [name, rules_cell(rollup)]
-    if shows_proofs(gate, proofs):
+    if shows_proofs(proofs):
         cells.append(proofs_cell(rollup))
     cells.append(tests_cell(rollup))
     if audited:

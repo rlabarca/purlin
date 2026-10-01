@@ -1,4 +1,11 @@
-"""The status table: one row per spec, one cell per step.
+"""The status report: the two facts, one row per spec, and what is left.
+
+The report opens on three lines, the project and the two facts, which
+`scripts/mcp/purlin/summary.py` writes for every surface:
+
+    Purlin status: labconnect, plugin 0.10.0
+    Tests: not met
+    Sign-off: signed 0.1.0, 4 commits since
 
 The table is the dashboard's board, rendered as text. Its columns are the
 board's columns and its cells are the board's cells, character for character,
@@ -8,13 +15,13 @@ spec has, how many proofs it writes and how many of those have no test, and
 how many rules pass their tests. Where the project has an anchor, the line
 `Anchors` heads the anchors' rows and the line `Specs` every other spec's,
 as the dashboard lists anchors above the spec table. Where the audit found any
-rule strong or weak, the row adds how many rules it found strong and the test
-strength, at either gate. A `passed` project is shown a proof count only where
-it writes a proof line.
+rule strong or weak, the row adds how many rules it found strong. A project is
+shown a proof count only where it writes a proof line.
 
-Below the table come the specs that name no files and the anchors whose pin
-is not current. The report ends on the summary sentence and `Left to do`, which
-`scripts/mcp/purlin/summary.py` writes for every surface, with `→ Run:
+Below the table come each anchor rule that passes with nothing to check here,
+the specs that name no files, one line per spec whose `> Scope:` names files
+not written yet, and the anchors whose pin is not current. The report ends on
+the summary sentence, `Left to do` and the last line, with `→ Run:
 purlin:init --update` above them while an upgrade is pending.
 
 Copy follows `references/writing_style.md`: sentence case, second person for what you
@@ -38,6 +45,16 @@ from purlin import (board as board_module, drift as drift_module,
 
 ARROW = '→'
 DOT = board_module.DOT
+
+# An anchor rule whose proof found nothing to check: the anchor, the rule,
+# the reason after `nothing to check: `.
+NOTHING_LINE = '%s %s passes with nothing to check here: %s.'
+
+# A spec ahead of its code: one line for the spec, as information.
+NOT_WRITTEN_ONE = ('%s: 1 file its scope names is not written yet: %s. Run purlin:build %s, '
+                   'or correct the path with purlin:spec %s.')
+NOT_WRITTEN_MANY = ('%s: %d files its scope names are not written yet: %s. Run purlin:build '
+                    '%s, or correct the path with purlin:spec %s.')
 
 # What a tree holds that counts as code, for a project with no spec yet: a
 # file git lists, tracked or not ignored, outside these folders, with one of
@@ -83,9 +100,9 @@ def no_spec_lines(project_root):
     return ['No specs found under specs/.', second]
 
 
-def columns_for(gate, proofs=1, audited=False):
-    """The table's columns under `gate`, left to right: the board's own."""
-    return board_module.columns_for(gate, proofs, audited)
+def columns_for(proofs=1, audited=False):
+    """The table's columns, left to right: the board's own."""
+    return board_module.columns_for(proofs, audited)
 
 
 def sync_status(project_root):
@@ -104,19 +121,20 @@ def sync_status(project_root):
     if not data['features']:
         return '\n'.join(no_spec_lines(project_root))
 
-    lines = []
-    lines.append('Purlin status: %s, plugin %s, gate %s'
-                 % (data['project'], data['version'], data['gate']['gate']))
+    lines = summary_module.opening(data)
     lines.append('')
     lines.extend(_table(data))
+    nothing = nothing_lines(data)
+    if nothing:
+        lines.append('')
+        lines.extend(nothing)
     names = incomplete_names(data)
-    unfound = unfound_names(data)
-    if names or unfound:
+    information = data.get('information') or []
+    if names or information:
         lines.append('')
     if names:
         lines.append(incomplete_line(names))
-    if unfound:
-        lines.append(unfound_line(unfound))
+    lines.extend(information)
 
     pin_lines = _pin_lines(project_root)
     if pin_lines:
@@ -164,9 +182,9 @@ ANCHORS = 'Anchors'
 SPECS = 'Specs'
 
 
-def _row(feature, gate, proofs=1, audited=False):
+def _row(feature, proofs=1, audited=False):
     """One spec's row, rendered by the module the board renders from."""
-    return board_module.row_cells(feature['name'], feature['rollup'], gate,
+    return board_module.row_cells(feature['name'], feature['rollup'],
                                   proofs, audited)
 
 
@@ -176,18 +194,17 @@ def _proof_lines(data):
 
 
 def _table(data):
-    gate = data['gate']['gate']
     proofs = _proof_lines(data)
     audited = board_module.shows_strong(
         (data.get('summary') or {}).get('audit'))
-    columns = columns_for(gate, proofs, audited)
+    columns = columns_for(proofs, audited)
     # The feature with the most rules left to do reads first: the table
     # opens on the work rather than on the alphabet.
     features = sorted(data['features'],
                       key=lambda f: (-_left_count(f), f['name']))
-    anchors = [_row(f, gate, proofs, audited)
+    anchors = [_row(f, proofs, audited)
                for f in features if f.get('is_anchor')]
-    specs = [_row(f, gate, proofs, audited)
+    specs = [_row(f, proofs, audited)
              for f in features if not f.get('is_anchor')]
     rows = anchors + specs
     widths = [max(len(columns[i]), max((len(r[i]) for r in rows), default=0))
@@ -233,14 +250,6 @@ def incomplete_names(data):
                   == fingerprint_module.NO_SCOPE_LINE)
 
 
-def unfound_names(data):
-    """The feature specs whose `> Scope:` finds no file in git, sorted."""
-    return sorted(feature['name'] for feature in data['features']
-                  if feature.get('incomplete')
-                  and feature.get('incomplete_reason')
-                  != fingerprint_module.NO_SCOPE_LINE)
-
-
 def incomplete_line(names):
     """The one line for the feature specs that name no files, with its step.
 
@@ -255,20 +264,45 @@ def incomplete_line(names):
             % (len(names), ', '.join(names)))
 
 
-def unfound_line(names):
-    """The one line for the feature specs whose `> Scope:` finds no file yet.
+def nothing_lines(data):
+    """`NOTHING_LINE` for each anchor rule that passes with nothing to check here."""
+    lines = []
+    for feature in data.get('features') or ():
+        if not feature.get('is_anchor'):
+            continue
+        for rule in feature.get('rules') or ():
+            passed = (rule.get('cells') or {}).get('passed') or {}
+            if passed.get('word') != 'passed':
+                continue
+            for item in passed.get('nothing_to_check') or ():
+                lines.append(NOTHING_LINE % (feature['name'], rule['id'],
+                                             item['reason']))
+    return lines
 
-    The files it names may be written and not yet committed, so the line
-    names both steps.
+
+def not_written_lines(project_root, features):
+    """One line per feature spec whose `> Scope:` names files git does not have.
+
+    Writing a spec before its code is the normal order, so the line is
+    information: it names the files, `purlin:build` to write them, then
+    `purlin:spec` to correct a path. By spec name.
     """
-    if len(names) == 1:
-        return ("1 spec's > Scope: finds no file in git yet, so its tests run "
-                'every time: %s. Commit the files it names, or run '
-                'purlin:spec %s to correct it.' % (names[0], names[0]))
-    return ("%d specs' > Scope: lines find no file in git yet, so their tests "
-            'run every time: %s. Commit the files they name, or run '
-            'purlin:spec with each name to correct them.'
-            % (len(names), ', '.join(names)))
+    lines = []
+    for name in sorted(features or {}):
+        info = features[name]
+        if info.get('is_anchor'):
+            continue
+        scope = [entry.strip() for entry in info.get('scope') or ()
+                 if entry.strip()]
+        if not scope:
+            continue
+        _files, unmatched = fingerprint_module.expand_scope(project_root, scope)
+        if len(unmatched) == 1:
+            lines.append(NOT_WRITTEN_ONE % (name, unmatched[0], name, name))
+        elif unmatched:
+            lines.append(NOT_WRITTEN_MANY % (name, len(unmatched),
+                                             ', '.join(unmatched), name, name))
+    return lines
 
 
 def ending_lines(data, project_root):

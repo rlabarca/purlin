@@ -1,6 +1,6 @@
 """The two cells of a rule.
 
-One rule, read top to bottom. Every rule carries both cells at both gates.
+One rule, read top to bottom.
 
     passed  Met when every proof has a passing test in an evidence section
             that is current: its spec, code and tests fingerprint equals the
@@ -14,20 +14,20 @@ One rule, read top to bottom. Every rule carries both cells at both gates.
             current section covers, and reads `partial` where two systems
             that each have a current section disagree. `partial` is not met.
             A `@manual` proof is read out of it, so a rule whose every proof
-            is `@manual` reads `passed` with no test.
+            is `@manual` reads `passed` with no test. An anchor's proof whose
+            every tied test skipped with `nothing to check:` counts as
+            passed, its reason kept; on any other spec it reads `not run`.
 
     strong  What the AI audit found, and nothing waits on it. `strong`,
-            `weak`, `not audited`, `manual test`, and `no proof` for a rule
-            whose passing test answers no proof. `waiting` while the passed
-            cell is not met, because the audit reads a test that passes. The
-            word comes from the audit entry's `verdict` alone. Its reasons:
-            the audit's findings where weak; the strength where the breaks
-            measured one, `strength 84%`; `strength not measured: <why>`
-            where the engine is on and measured nothing.
+            `weak`, `not audited`, `checked at sign-off` for a rule with a
+            hand check, and `no proof` for a rule whose passing test answers
+            no proof. `waiting` while the passed cell is not met, because the
+            audit reads a test that passes. The word comes from the audit
+            entry's `verdict` alone; a weak entry gives its findings as the
+            reasons. A hand check carries the notes of the newest sign-off
+            that holds one.
 
-An anchor's rule is listed once, under the anchor. No code is broken on
-purpose for an anchor, so where its strong cell is met the one reason says
-the AI audit alone judges its tests, at every mutation setting.
+An anchor's rule is listed once, under the anchor.
 
 Every rule of a spec that writes a rule or proof number twice, or holds a
 line left from a merge conflict, reads `failed` with the reasons
@@ -36,8 +36,7 @@ line left from a merge conflict, reads `failed` with the reasons
 Each cell carries its reasons, so a surface never has to work out why a word
 reads the way it does.
 
-`rule_cells(inp, cfg)` takes one rule's evidence and the resolved settings,
-and returns:
+`rule_cells(inp)` takes one rule's evidence and returns:
 
     {'cells': {'passed': {...}, 'strong': {...}},
      'bucket': 'passed',
@@ -58,8 +57,7 @@ if _MCP_DIR not in sys.path:
 
 from purlin import evidence as evidence_module
 
-# The two cells, in the order the chain reads them. Every rule carries both
-# at both gates.
+# The two cells, in the order the chain reads them. Every rule carries both.
 CELLS = ('passed', 'strong')
 
 # The strong cell's word for a rule no audit has read.
@@ -71,25 +69,21 @@ HAND_CHECK = 'hand check'
 # The flags a rollup counts, beside the buckets and never instead of them.
 COUNTED_FLAGS = ('strong', 'weak', 'not_audited', 'manual')
 
-# The strong cell's reasons for what the audit said and could not say.
+# The strong cell's reasons for a rule the audit has not read.
 NOT_AUDITED_REASON = 'no audit has run on this code'
 COULD_NOT_RUN = 'the AI audit could not run: %s'
-COULD_NOT_DECIDE = 'the AI audit could not decide'
-NO_SCORE = 'no mutation score measured'
 
-# The strong cell's one reason, where it is met, for an anchor's rule: no
-# code is broken on purpose for an anchor.
-AUDIT_ALONE = "the AI audit alone judges an anchor's tests"
+# The strong cell's word for a rule with a hand check, and the reason each
+# note of the newest sign-off holding one gives it: the version, the signer,
+# `at this commit`, `1 commit since` or `4 commits since`, the note.
+CHECKED_AT_SIGNOFF = 'checked at sign-off'
+HAND_NOTE = 'noted at the sign-off of %s by %s, %s: %s'
+EARLIER_WEAK = 'the last audit, before the rule or its tests changed, found it weak: %s'
 
-# The strong cell's reason where the breaks measured a strength, the
-# whole-number part as every surface shows a share.
-STRENGTH = 'strength %d%%'
-
-# The strong cell's reason where mutation testing is on and measured nothing
-# for the rule's feature: the engine's own sentence, or the spec naming no
-# code files for it to break.
-NOT_MEASURED = 'strength not measured: %s'
-NO_CODE_FILES = 'the spec names no code files: run purlin:spec %s'
+# The reason an anchor's proof gives where its every tied test skipped with
+# `nothing to check:`: the proof, then the reason after those words.
+NOTHING_TO_CHECK = '%s: %s'                                       # PROOF-3, the reason
+NOTHING_RESULT = 'nothing to check'
 
 # The passed cell's reason for the proofs of a rule no test backs.
 NO_TEST_FOR = 'no test for %s'
@@ -136,7 +130,7 @@ def bucket_keys():
     return list(BUCKETS)
 
 
-def rule_cells(inp, cfg):
+def rule_cells(inp):
     """The cells, the bucket and the flags of one rule.
 
     `inp` carries:
@@ -150,33 +144,76 @@ def rule_cells(inp, cfg):
     `sections`      every evidence section of the rule's own feature, each
                     `{source, os, path, section, current, out_of_date}` as
                     `evidence.checked_sections` gives them
-    `anchor`        true for a rule of an anchor, whose strong cell, where
-                    it is met, reads `AUDIT_ALONE` and never a strength
+    `anchor`        true for a rule of an anchor, whose proof a test skipped
+                    with `nothing to check:` counts as passed
     `audit`         the evidence's audit entry for this rule's current
                     hashes, carrying its `path`, or None
     `could_not_run` why the last audit could not reach the model for this
                     rule's current hashes, or None
-    `test_strength` an integer percent, or None when nothing measured it
-    `strength_missing` why the engine the settings chose measured nothing
-                    for the feature, or '' where nothing is said
-    `feature`       the feature that owns the rule, named in the reason a
-                    spec with no code files gives
-    `incomplete`    why the rule's own spec names no files, or None
+    `hand_notes`    the reasons the newest sign-off holding a note on this
+                    rule gives it, `HAND_NOTE` filled; [] before any
     `spec_broken`   why every rule of the rule's own spec reads `failed`, as
                     `specs.broken_reasons` gives it: a number written twice,
                     a line left from a merge conflict; [] for a sound spec
     """
+    inp = dict(inp, sections=read_sections(inp.get('sections'),
+                                           inp.get('anchor')))
     proofs = inp.get('proofs') or []
     if inp.get('spec_broken'):
-        return _broken(inp, cfg)
+        return _broken(inp)
 
-    passed = _passed_cell(inp, cfg)
-    strong = _strong_cell(inp, cfg, passed)
+    passed = _passed_cell(inp)
+    strong = _strong_cell(inp, passed)
     return {
         'cells': {'passed': passed, 'strong': strong},
         'bucket': _bucket(passed),
         'flags': _flags(passed, strong, proofs),
     }
+
+
+def read_sections(sections, anchor=False):
+    """The sections with each proof's word read once, as `results`.
+
+    `pass`, `fail` or `not run` per proof id. A proof whose every tied test
+    skipped with `nothing to check:` reads `pass` on an anchor and `not run`
+    on any other spec, its reason under `nothing`.
+    """
+    out = []
+    for entry in sections or ():
+        if 'results' in entry:
+            out.append(entry)
+            continue
+        results, nothing = {}, {}
+        for proof_id, (word, reason) in section_results(
+                entry.get('section')).items():
+            if word == NOTHING_RESULT:
+                nothing[proof_id] = reason or ''
+                word = 'pass' if anchor else 'not run'
+            results[proof_id] = word
+        out.append(dict(entry, results=results, nothing=nothing))
+    return out
+
+
+def section_results(section):
+    """`{proof id: (word, reason)}` for one section, as `evidence.proof_results` reads it.
+
+    The word is `pass`, `fail`, `not run` or `nothing to check`; the reason
+    is the text a skip gave, or None.
+    """
+    out = {}
+    for proof_id, found in evidence_module.proof_results(section).items():
+        if isinstance(found, dict):
+            out[proof_id] = (found.get('result'), found.get('reason'))
+        else:
+            out[proof_id] = (found, None)
+    return out
+
+
+def _results(entry):
+    """`{proof id: pass | fail | not run}` for one section."""
+    if 'results' not in entry:
+        entry = read_sections([entry])[0]
+    return entry['results']
 
 
 def _flags(passed, strong, proofs):
@@ -185,7 +222,7 @@ def _flags(passed, strong, proofs):
         'failing': passed['word'] == 'failed',
         'partial': passed['word'] == 'partial',
         'out_of_date': passed['word'] == OUT_OF_DATE,
-        'manual': strong['word'] == 'manual test',
+        'manual': any(proof.get('manual') for proof in proofs or ()),
         'not_audited': strong['word'] == NOT_AUDITED,
         'no_proof': not proofs,
         'strong': strong['word'] == 'strong',
@@ -193,7 +230,7 @@ def _flags(passed, strong, proofs):
     }
 
 
-def _broken(inp, cfg):
+def _broken(inp):
     """The cells of a rule whose own spec writes a number twice or holds a
     line left from a merge conflict.
 
@@ -202,9 +239,9 @@ def _broken(inp, cfg):
     `failing`. The tests still run, so the source is the one the evidence
     gives.
     """
-    passed = dict(_passed_cell(inp, cfg), word='failed', current=True,
+    passed = dict(_passed_cell(inp), word='failed', current=True,
                   counts=True, reasons=list(inp.get('spec_broken')))
-    strong = _strong_cell(inp, cfg, passed)
+    strong = _strong_cell(inp, passed)
     return {
         'cells': {'passed': passed, 'strong': strong},
         'bucket': 'failing',
@@ -216,7 +253,7 @@ def _broken(inp, cfg):
 # The passed cell
 # ---------------------------------------------------------------------------
 
-def _passed_cell(inp, cfg):
+def _passed_cell(inp):
     """The passed cell: every proof has a passing test in a current section.
 
     Only a section whose fingerprint equals the one taken now decides the
@@ -229,18 +266,19 @@ def _passed_cell(inp, cfg):
     system, and each answer goes in `platforms`. Where those answers disagree
     the cell reads `partial`, because a rule whose tests pass on Linux and
     fail on Windows is neither passed nor failed; `partial` is not met, so it
-    blocks the gate exactly as a failure does.
+    stops the tests being met exactly as a failure does.
 
-    A `@manual` proof declares that no test is written for it and no proof
-    entry is ever produced, so the passed cell has no question to ask of it:
-    it is read out here and the question moves to the strong cell, where
-    `manual test` is the honest word. A person checks it in the walk of
-    `purlin:sign` when a release is signed.
+    A `@manual` proof declares that no test is written for it, so the passed
+    cell has no question to ask of it: it is read out here, and a person
+    checks it at the sign-off.
+
+    `nothing_to_check` lists `{proof, reason}` for each proof whose every
+    tied test in a current section skipped with `nothing to check:`.
     """
     written = inp.get('proofs') or []
     cell = {'word': 'no test', 'source': None, 'current': False,
             'counts': False, 'missing_env': [], 'platforms': {},
-            'reasons': []}
+            'nothing_to_check': [], 'reasons': []}
 
     if not written:
         # A rule with no proof is answered by the tests marked with its own
@@ -279,6 +317,8 @@ def _passed_cell(inp, cfg):
     # operating system its `@env` proof does not name, still says which
     # systems ran, so it is what names the one the rule is waiting for.
     ran = [entry for entry in inp.get('sections') or () if entry.get('current')]
+    nothing = _nothing_to_check(proofs, current)
+    cell['nothing_to_check'] = nothing
     platforms = _platforms(proofs, current)
     cell['platforms'] = platforms
     # Only systems that each have a current section can disagree: a system
@@ -314,6 +354,11 @@ def _passed_cell(inp, cfg):
         # One system passed and another ran the tests without passing them.
         return _partial(cell, platforms)
 
+    # Where a proof found nothing to check, its reason is the cell's: on an
+    # anchor the proof passed with it, on any other spec it is not run.
+    said = ([NOTHING_TO_CHECK % (item['proof'], item['reason'])
+             for item in nothing] if inp.get('anchor')
+            else [item['reason'] for item in nothing])
     passes, missing_env, used = _section_passes(proofs, ran)
     if passes or missing_env:
         cell['source'] = _named_source(entry['source'] for entry in used)
@@ -323,9 +368,10 @@ def _passed_cell(inp, cfg):
             cell['word'] = 'not run'
             cell['missing_env'] = list(missing_env)
             cell['reasons'] = [NO_RUN_YET % system_word(env)
-                               for env in missing_env]
+                               for env in missing_env] + said
             return cell
         cell['word'] = 'passed'
+        cell['reasons'] = said
         return cell
 
     # A test the evidence names, or a marker tied to a test in the source,
@@ -333,7 +379,21 @@ def _passed_cell(inp, cfg):
     marked = inp.get('marked') or ()
     if any(proof.get('tests') or proof.get('id') in marked for proof in proofs):
         cell['word'] = 'not run'
+        cell['reasons'] = said
     return cell
+
+
+def _nothing_to_check(proofs, current):
+    """`[{proof, reason}]` for the proofs a current section found nothing to check for."""
+    found = []
+    for proof in proofs:
+        for entry in current:
+            reason = entry.get('nothing', {}).get(proof.get('id'))
+            if reason is not None and (not proof.get('env')
+                                       or proof.get('env') == entry['os']):
+                found.append({'proof': proof.get('id'), 'reason': reason})
+                break
+    return found
 
 
 def _partial(cell, platforms):
@@ -362,7 +422,7 @@ def _untested(proofs, current, marked):
                         for entry in current or ())]
 
 
-def proof_result(proof, sections, marked=()):
+def proof_result(proof, sections, marked=(), anchor=False):
     """One proof's own word, read the way the passed cell reads the rule.
 
     `hand check` for a `@manual` proof, which no test answers. Otherwise the
@@ -375,8 +435,8 @@ def proof_result(proof, sections, marked=()):
     if proof.get('manual'):
         return HAND_CHECK
     env = proof.get('env')
-    seen = [evidence_module.proof_results(entry['section']).get(proof.get('id'))
-            for entry in sections or ()
+    seen = [_results(entry).get(proof.get('id'))
+            for entry in read_sections(sections, anchor)
             if entry.get('current') and (not env or entry.get('os') == env)]
     if 'fail' in seen:
         return 'failed'
@@ -396,9 +456,7 @@ def _rule_marked(sections, rule_id):
 
 def _word_of(proofs, entry):
     """One section's word for a rule, or None when it has nothing to say."""
-    return _word_from_statuses(proofs,
-                               evidence_module.proof_results(entry['section']),
-                               entry['os'])
+    return _word_from_statuses(proofs, _results(entry), entry['os'])
 
 
 def _platforms(proofs, current):
@@ -510,7 +568,7 @@ def _failing_where(proofs, current):
     """
     where = []
     for entry in current:
-        statuses = evidence_module.proof_results(entry['section'])
+        statuses = _results(entry)
         for proof in proofs or ():
             if proof.get('env') and proof.get('env') != entry['os']:
                 continue
@@ -545,7 +603,7 @@ def _section_passes(proofs, current):
         candidates = by_os[env] if env else current
         proved = False
         for entry in candidates:
-            statuses = evidence_module.proof_results(entry['section'])
+            statuses = _results(entry)
             if statuses.get(proof.get('id')) == 'pass':
                 proved = True
                 if entry not in used:
@@ -560,23 +618,18 @@ def _section_passes(proofs, current):
 # The strong cell
 # ---------------------------------------------------------------------------
 
-def _strong_cell(inp, cfg, passed):
+def _strong_cell(inp, passed):
     """The strong cell: what the AI audit found in the tests behind a met passed cell.
 
     Nothing waits on it. The word comes from the audit entry for the rule's
     current text, proof and test: `strong`, or `weak` carrying each finding
-    as a reason; `undecided` reads `weak` with the audit's own sentence. With
-    mutation testing on, a measured strength is one more reason,
-    `strength 84%`, and no minimum is read; where the engine measured
-    nothing, because it said why or the spec names no code files, the reason
-    is `strength not measured: <why>` and the word stays the audit's. With it
-    off, or with an engine that cannot run here and so gave no reason, a
-    strong cell says no score was measured. A rule the audit has not read
-    reads `not audited`.
+    as a reason. A rule with a `@manual` proof reads `checked at sign-off`
+    unless its audit reads `weak`, with one reason per note of the newest
+    sign-off holding one. A rule the audit has not read reads `not audited`,
+    saying why.
     """
-    strength = inp.get('test_strength')
-    cell = {'word': 'weak', 'strength': strength, 'findings': [],
-            'evidence': None, 'reasons': []}
+    cell = {'word': NOT_AUDITED, 'findings': [], 'evidence': None,
+            'reasons': []}
 
     if passed['word'] != 'passed':
         # The audit reads a test that passes, so until the tests pass there
@@ -594,53 +647,33 @@ def _strong_cell(inp, cfg, passed):
         return cell
 
     audit = inp.get('audit') or None
-    if audit:
+    verdict = audit.get('verdict') if audit else None
+    if verdict in ('strong', 'weak'):
         cell['evidence'] = audit.get('path')
         cell['findings'] = [str(line) for line in
                             (audit.get('findings') or ())]
+    else:
+        # A verdict the format does not name decides nothing.
+        audit = None
+
+    if verdict == 'weak':
+        cell['word'] = 'weak'
+        cell['reasons'] = list(cell['findings'])
+        return cell
 
     if any(proof.get('manual') for proof in inp.get('proofs') or ()):
-        # A `@manual` proof has no test for the audit to read. A person
-        # checks it in the walk of `purlin:sign` when a release is signed.
-        cell['word'] = 'manual test'
-        cell['reasons'] = ['manual proof']
+        # A `@manual` proof has no test for the audit to read: a person
+        # checks it at the sign-off, and the newest note says what they saw.
+        cell['word'] = CHECKED_AT_SIGNOFF
+        cell['reasons'] = list(inp.get('hand_notes') or ())
         return cell
 
     if not audit:
-        cell['word'] = NOT_AUDITED
         why = inp.get('could_not_run')
         cell['reasons'] = [COULD_NOT_RUN % why if why else NOT_AUDITED_REASON]
         return cell
 
-    answered = audit.get('verdict')
-    reasons = []
-    if answered == 'weak':
-        reasons.extend(cell['findings'])
-    elif answered != 'strong':
-        reasons.extend(['%s: %s' % (COULD_NOT_DECIDE, line)
-                        for line in cell['findings']] or [COULD_NOT_DECIDE])
-
-    mutation_on = bool(cfg) and (cfg.mutation_engine or 'none') != 'none'
-    anchor = bool(inp.get('anchor'))
-    if anchor or not mutation_on:
-        # No code is broken on purpose for an anchor, and none with the
-        # breaks off, so no strength speaks for the tests.
-        pass
-    elif strength is not None:
-        reasons.append(STRENGTH % int(strength))
-    elif inp.get('incomplete'):
-        # Nothing names the code to break, so nothing was measured.
-        reasons.append(NOT_MEASURED % (NO_CODE_FILES % inp.get('feature')))
-    elif inp.get('strength_missing'):
-        reasons.append(NOT_MEASURED % inp.get('strength_missing'))
-
-    cell['word'] = 'strong' if answered == 'strong' else 'weak'
-    if cell['word'] == 'strong' and anchor:
-        cell['strength'] = None
-        reasons = [AUDIT_ALONE]
-    elif cell['word'] == 'strong' and not reasons:
-        reasons = [NO_SCORE]
-    cell['reasons'] = reasons
+    cell['word'] = 'strong'
     return cell
 
 
@@ -670,12 +703,11 @@ def _bucket(passed):
 # Rollups
 # ---------------------------------------------------------------------------
 
-def feature_rollup(rule_results, test_strength=None):
+def feature_rollup(rule_results):
     """One feature's rollup over `{rule_ref: rule_cells result}`.
 
-    Carries how many rules the feature has, one count per bucket, the
-    `strong`, `weak`, `not_audited` and `manual` counts, and the test
-    strength.
+    Carries how many rules the feature has, one count per bucket, and the
+    `strong`, `weak`, `not_audited` and `manual` counts.
     """
     counts = {key: 0 for key in BUCKETS}
     flagged = {name: 0 for name in COUNTED_FLAGS}
@@ -688,7 +720,6 @@ def feature_rollup(rule_results, test_strength=None):
     rollup = {'rules': len(rule_results)}
     rollup.update(counts)
     rollup.update(flagged)
-    rollup['test_strength'] = test_strength
     return rollup
 
 

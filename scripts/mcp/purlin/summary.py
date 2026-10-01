@@ -1,36 +1,41 @@
-"""The summary sentence and `Left to do`, written once.
+"""The status's opening lines, its sentence, `Left to do` and its last line, written once.
 
 Every surface that says where a project stands says it in these words: the
-status table ends on them, a test run and an audit end on the status table,
+status opens and ends on them, a test run and an audit end on the status,
 the evidence package copies the counts, and the dashboard reads the payload
 keys this module fills. No surface composes the text itself.
 
-The sentence counts each rule once, under the spec that owns it, anchors'
-included, and how many pass their tests; where the audit read any rule that
-passes, it says what the audit found:
+The status opens on the project and the two facts:
 
-    40 rules. 35 pass their tests. The audit found 30 strong and 2 weak.
+    Purlin status: labconnect, plugin 0.10.0
+    Tests: not met
+    Sign-off: signed 0.1.0, 4 commits since
+
+It ends on one sentence, counting each rule once under the spec that owns
+it, anchors' included, and how many pass their tests; where the audit read a
+rule that passes, it gives the share it found strong:
+
+    50 rules. 50 pass their tests. The audit found 42 of 50 rules strong (84%).
 
 `Left to do` follows it: one line per kind of work, in the order the work is
 done, each with its count and the command that clears it. A kind at zero is
 left out, and each rule is counted under one kind, the first that applies;
-`specs to repair` counts specs and `test comments to correct` comments above
-tests, not rules. Every kind is work: nothing here waits on a person or on
-the audit.
+`specs to repair` counts specs, `test comments to correct` comments above
+tests and `features whose results are not committed` features, not rules.
+`rules to write a proof for` and `rules to strengthen` are not blocking: the
+tests read `met` beside them.
 
     Left to do:
       1 rule to fix: purlin:build
       2 rules to strengthen: purlin:build
 
-When nothing is left, the line after the sentence names the release step:
-`Nothing left to do. To release a version: purlin:test --release`, with
-`, then purlin:sign` at the gate `signed`, or, where HEAD carries a
-`passed/*` or `signed/*` tag, `Nothing left to do. Push the tag to release
-it: git push origin <tag>`.
+Where the tests are met and this code is not signed, the last line names the
+sign-off: `Every rule passes its tests on the committed evidence. To sign it:
+purlin:sign`.
 
 `payload.build_payload` is the one caller of `rule_kind`, `steps`,
-`audit_counts`, `left` and `last_line`. Everything else reads the payload
-they fill, through `left_lines` and `ending`.
+`audit_counts`, `sentence`, `left` and `last_line`. Everything else reads the
+payload they fill, through `opening`, `left_lines` and `ending`.
 """
 
 import os
@@ -40,15 +45,15 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from purlin import states                                      # noqa: E402
+from purlin import facts, states                               # noqa: E402
 
 # The kinds of work left, in the order the work is done and the lines read.
 # Each is `(kind, one, many, command)`: the words after the count for one
 # and for any other count, and the command that clears it. `%s` in the
 # words of `to_test_remote` is the systems it waits for. `to_repair` counts
 # the specs that write a number twice or hold a line left from a merge
-# conflict, `to_correct` the comments above tests that name something no
-# spec has or a rule that has proofs; every other kind counts rules.
+# conflict, `to_correct` the comments above tests, `to_commit` the features
+# whose results are written and not committed; every other kind counts rules.
 KINDS = (
     ('to_repair', 'spec to repair', 'specs to repair', 'purlin:spec'),
     ('no_proof', 'rule to write a proof for', 'rules to write a proof for',
@@ -61,24 +66,25 @@ KINDS = (
     ('to_test', 'rule to test', 'rules to test', 'purlin:test'),
     ('to_test_remote', 'rule to test on %s', 'rules to test on %s',
      'purlin:test --remote'),
+    ('to_commit', 'feature whose results are not committed',
+     'features whose results are not committed', 'purlin:test --commit'),
     ('to_strengthen', 'rule to strengthen', 'rules to strengthen',
      'purlin:build'),
 )
 
 KIND_NAMES = tuple(kind[0] for kind in KINDS)
 
-# The kinds that stop a release: a rule whose tests do not pass here, or a
-# spec or a test comment the run cannot read.
+# The kinds that stop the tests being met. A rule with no proof line, or one
+# the audit found weak, still lets them read `met`.
 BLOCKING = ('to_repair', 'to_correct', 'to_fix', 'no_test', 'to_test',
-            'to_test_remote')
+            'to_test_remote', 'to_commit')
 
+OPENING = 'Purlin status: %s, plugin %s'
+TESTS_LINE = 'Tests: %s'
+SIGNOFF_LINE = 'Sign-off: %s'
 LEFT_TO_DO = 'Left to do:'
-NOTHING_LEFT = 'Nothing left to do.'
-TO_RELEASE = NOTHING_LEFT + ' To release a version: purlin:test --release'
-TO_RELEASE_SIGNED = (NOTHING_LEFT + ' To release a version: '
-                     'purlin:test --release, then purlin:sign')
-RELEASE = NOTHING_LEFT + ' Push the tag to release it: git push origin %s'
-AUDIT_FOUND = 'The audit found %d strong and %d weak.'
+AUDIT_SHARE = 'The audit found %d of %d rules strong (%d%%).'
+LAST_LINE = 'Every rule passes its tests on the committed evidence. To sign it: purlin:sign'
 
 # The order systems are named in, whatever order the rules name them.
 SYSTEM_ORDER = states.SYSTEM_ORDER
@@ -88,16 +94,17 @@ def _words(one, many, count):
     return one if count == 1 else many
 
 
-def rule_kind(rule, gate, here_os, broken=None):
-    """The one kind of work a rule waits for under `gate`, or None.
+def rule_kind(rule, here_os, broken=None):
+    """The one kind of work a rule waits for, or None.
 
     `rule` is a payload rule entry, read for its `cells` and its `proofs`.
     `here_os` is this machine's system, `windows`, `macos` or `linux`.
     `broken`, the reasons the rule's own spec is broken, gives `to_repair`
-    first. Otherwise the first kind that applies wins, in the order of
-    `KINDS`: a proof is asked for at the gate `signed` alone, and a rule the
-    audit found weak is `to_strengthen`. A `@manual` proof adds no kind, and
-    neither does a rule no audit has read.
+    first. Otherwise the first that applies: a passed cell reading `failed`
+    or `partial`, `no test`, `out of date` or `not run` where this machine
+    can run part of it, `not run` for other systems only, no proof line with
+    its tests passing, a weak audit. A hand check adds no kind, and neither
+    does a rule no audit has read.
     """
     if broken:
         return 'to_repair'
@@ -105,8 +112,6 @@ def rule_kind(rule, gate, here_os, broken=None):
     passed = cells.get('passed') or {}
     word = passed.get('word')
 
-    if gate == 'signed' and not (rule.get('proofs') or []):
-        return 'no_proof'
     if word in ('failed', 'partial'):
         return 'to_fix'
     if word == 'no test':
@@ -119,6 +124,8 @@ def rule_kind(rule, gate, here_os, broken=None):
     if word != 'passed':
         # `out of date`: the next run here clears it.
         return 'to_test'
+    if not (rule.get('proofs') or []):
+        return 'no_proof'
     if (cells.get('strong') or {}).get('word') == 'weak':
         return 'to_strengthen'
     return None
@@ -142,7 +149,7 @@ def audit_counts(own_rules):
     """`{"strong": s, "weak": w, "not_audited": u}` over the rules that pass.
 
     Each counts the rules whose passed cell reads `passed` and whose strong
-    cell reads that word.
+    cell reads that word, so a rule checked by hand alone is in none.
     """
     counts = {'strong': 0, 'weak': 0, 'not_audited': 0}
     names = {'strong': 'strong', 'weak': 'weak',
@@ -157,7 +164,7 @@ def audit_counts(own_rules):
 
 
 def sentence(summary):
-    """`<N> rules. <p> pass their tests.`, then what the audit found where it read a rule."""
+    """`<N> rules. <p> pass their tests.`, then the audit's share where it read a rule."""
     total = summary.get('rules') or 0
     count = (summary.get('steps') or {}).get('passed') or 0
     parts = ['%d %s.' % (total, _words('rule', 'rules', total)),
@@ -165,9 +172,10 @@ def sentence(summary):
                                         'pass their tests', count))]
     audit = summary.get('audit') or {}
     strong = audit.get('strong') or 0
-    weak = audit.get('weak') or 0
-    if strong + weak > 0:
-        parts.append(AUDIT_FOUND % (strong, weak))
+    read = strong + (audit.get('weak') or 0)
+    if read > 0:
+        over = read + (audit.get('not_audited') or 0)
+        parts.append(AUDIT_SHARE % (strong, over, strong * 100 // over))
     return ' '.join(parts)
 
 
@@ -180,13 +188,15 @@ def systems_text(systems):
     return states.systems_text(systems)
 
 
-def left(features, gate, here_os, corrections=0):
+def left(features, here_os, corrections=0, uncommitted=()):
     """`[{kind, count, text, command}]`: the work left, in the order it is done.
 
     `features` is the payload's feature entries; each rule is counted once,
     under the spec that owns it and lists it. `corrections` is how many
-    comments above tests name something no spec has or a rule that has
-    proofs, at every gate. A kind at zero is left out.
+    comments above tests name something no spec has, a rule that has
+    proofs, or a proof reworded since the test last changed. `uncommitted`
+    names the features whose results are written and not committed, counted
+    once no other work stops the tests being met. A kind at zero is left out.
     """
     counts = {}
     if corrections:
@@ -195,7 +205,7 @@ def left(features, gate, here_os, corrections=0):
     to_repair = set()
     for feature in features or ():
         for rule in feature.get('rules') or ():
-            kind = rule_kind(rule, gate, here_os, feature.get('broken'))
+            kind = rule_kind(rule, here_os, feature.get('broken'))
             if kind is None:
                 continue
             if kind == 'to_repair':
@@ -207,6 +217,8 @@ def left(features, gate, here_os, corrections=0):
             if kind == 'to_test_remote':
                 systems.update(((rule.get('cells') or {}).get('passed')
                                 or {}).get('missing_env') or ())
+    if uncommitted and not any(kind in BLOCKING for kind in counts):
+        counts['to_commit'] = len(set(uncommitted))
     out = []
     for kind, one, many, command in KINDS:
         count = counts.get(kind)
@@ -220,18 +232,25 @@ def left(features, gate, here_os, corrections=0):
     return out
 
 
-def last_line(left_items, gate, tag=None):
-    """The line after the sentence when nothing is left, or None while work is.
+def last_line(left_items, signoff):
+    """`LAST_LINE` where the tests are met and this code is not signed, else None.
 
-    `RELEASE` naming the tag where HEAD carries a `passed/*` or `signed/*`
-    tag; otherwise the release step, with `purlin:sign` after it at the gate
-    `signed`.
+    `signoff` is `facts.signoff_fact`'s answer: the line is left out where it
+    reads `signed <version> at <sha7>`.
     """
-    if left_items:
+    if any(item.get('kind') in BLOCKING for item in left_items or ()):
         return None
-    if tag and tag.get('name'):
-        return RELEASE % tag['name']
-    return TO_RELEASE_SIGNED if gate == 'signed' else TO_RELEASE
+    if facts.is_signed_here(signoff):
+        return None
+    return LAST_LINE
+
+
+def opening(payload):
+    """The status's three opening lines: the project, the tests, the sign-off."""
+    word = facts.TESTS_MET if payload.get('met') else facts.TESTS_NOT_MET
+    signoff = (payload.get('signoff') or {}).get('word') or facts.NOT_SIGNED
+    return [OPENING % (payload.get('project'), payload.get('version')),
+            TESTS_LINE % word, SIGNOFF_LINE % signoff]
 
 
 def left_lines(payload, kinds=None):
@@ -246,11 +265,11 @@ def left_lines(payload, kinds=None):
 
 
 def ending(payload):
-    """The sentence, then `Left to do:` and its lines, or the nothing-left line."""
+    """The sentence, then `Left to do:` and its lines, then the last line where there is one."""
     lines = [(payload.get('summary') or {}).get('sentence') or '']
     if payload.get('left'):
         lines.append(LEFT_TO_DO)
         lines.extend('  ' + line for line in left_lines(payload))
-    elif payload.get('last_line'):
+    if payload.get('last_line'):
         lines.append(payload['last_line'])
     return '\n'.join(lines)

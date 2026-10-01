@@ -1,4 +1,4 @@
-"""The structured project payload, schema 13.
+"""The structured project payload, schema 14.
 
 One reader assembles specs and evidence into the cells of every rule, and
 every surface renders that: the status table, the dashboard, the evidence
@@ -6,22 +6,21 @@ package and the drift report. A surface that parsed the rendered table would
 be coupled to a layout; this is the shape they all read instead.
 
     {
-      "schema_version": 13,
-      "generated_at": "2026-09-13T12:00:00Z",
+      "schema_version": 14,
+      "generated_at": "2026-10-01T12:00:00Z",
       "generated_by": "sync_status",
-      "project": "purlin",
+      "project": "labconnect",
       "version": "<the VERSION file>",
-      "commit": "<sha>",
+      "branch": "main",
+      "commit": "<40 hex>",
       "dirty": false,
-      "gate": {"gate": "signed", "mutation_engine": "auto",
-               "audit_parallel": 4, "ci": ...},
       "summary": {"rules": 8, "features": 4, "failing": 0,
                   "partial": 1, "untested": 2, "passed": 5, "strong": 3,
                   "weak": 1, "not_audited": 1, "manual": 0,
                   "incomplete": 0,
                   "steps": {"passed": 5},
                   "audit": {"strong": 3, "weak": 1, "not_audited": 1},
-                  "sentence": "8 rules. 5 pass their tests. The audit found 3 strong and 1 weak."},
+                  "sentence": "8 rules. 5 pass their tests. The audit found 3 of 5 rules strong (60%)."},
       "features": [
         {"name": "login", "category": "auth", "spec_path": "specs/auth/login.md",
          "is_anchor": false, "source": null, "pinned": null,
@@ -29,11 +28,9 @@ be coupled to a layout; this is the shape they all read instead.
          "incomplete_reason": null, "broken": [],
          "rollup": {"rules": 2, "untested": 0, "failing": 0, "partial": 0,
                     "passed": 2, "strong": 1, "weak": 1, "not_audited": 0,
-                    "manual": 0, "test_strength": 86, "proofs": 6,
-                    "proofs_without_test": 1,
+                    "manual": 0, "proofs": 6, "proofs_without_test": 1,
                     "proofs_without_test_ids": ["PROOF-4"],
                     "incomplete": false},
-         "test_strength": 86,
          "current": true,
          "evidence": {"local": {"path": ".purlin/evidence/local/login.json",
                                 "committed": true,
@@ -43,11 +40,10 @@ be coupled to a layout; this is the shape they all read instead.
          "rules": [
            {"id": "RULE-1", "feature": "login", "text": "...",
             "rule_hash": "<sha256>", "proof_hash": "<sha256>",
-            "test_hash": "<sha256>", "test_hash_kind": "file",
+            "test_hash": "<sha256>", "test_hash_kind": "test",
             "machines": {"macos": "jane-laptop"},
             "left": "to_strengthen",
             "audit": {"verdict": "weak", "findings": ["..."], "notes": [],
-                      "strength": 86,
                       "model": "<model>", "at": "...", "commit": "<sha>",
                       "path": ".purlin/evidence/local/login.json"},
             "bucket": "passed", "flags": {...},
@@ -62,8 +58,10 @@ be coupled to a layout; this is the shape they all read instead.
       ],
       "left": [{"kind": "to_strengthen", "count": 1,
                 "text": "1 rule to strengthen", "command": "purlin:build"}],
-      "finished": false,
-      "last_line": null,
+      "met": true,
+      "signoff": {"word": "signed 0.1.0, 4 commits since", "version": "0.1.0",
+                  "commit": "<40 hex>", "since": 4},
+      "last_line": "Every rule passes its tests on the committed evidence. To sign it: purlin:sign",
       "os_words": {"windows": {"word": "Windows", "short": "Win"},
                    "macos": {"word": "macOS", "short": "Mac"},
                    "linux": {"word": "Linux/Unix", "short": "Lin"}},
@@ -71,10 +69,14 @@ be coupled to a layout; this is the shape they all read instead.
                                                  "result": "pass",
                                                  "current": true,
                                                  "path": ...}}}},
-      "tag": {"name": "passed/1.4.0", "commit": "<sha>"},
       "remote_url": "https://github.com/acme/ledger.git",
+      "information": ["..."],
       "warnings": ["..."]
     }
+
+`branch` is the branch HEAD is on, or null on a detached HEAD; `commit` is
+HEAD's full sha. `project` is read from the project's own files each time
+(`project.project_name`).
 
 `rules[].tests` lists the tests marked with the rule's own id, which is how
 a rule with no proof names its tests: `[{"file": "tests/test_login.py",
@@ -90,28 +92,23 @@ current run lists it.
 A spec's `rules` holds its own rules and no other, anchors' included. Each
 carries `feature`, the name of the spec that owns it, so a rule is always
 addressed by its owner and its id: two features' `RULE-1` are two rules. An
-anchor's entry carries `scope: []`, `incomplete: false` and `test_strength:
-null`, since no code is broken on purpose for an anchor.
+anchor's entry carries `scope: []` and `incomplete: false`.
 
-Every rule carries both cells, `passed` and `strong`, at both gates.
-
-A feature spec that names no files, with no `> Scope:` line or a scope that
-reaches no tracked file, carries `incomplete: true` and `incomplete_reason`
-(`no > Scope: line` or `> Scope: names nothing that exists`), its rollup
-carries `incomplete: true`, and `summary.incomplete` counts such specs. An
-anchor is never incomplete. Every cell reads as usual; with mutation testing
-on and no strength measured, the strong cell says the spec names no code
-files.
+A feature spec with no `> Scope:` line, or a scope that reaches no tracked
+file, carries `incomplete: true` and `incomplete_reason` (`no > Scope: line`
+or `> Scope: names nothing that exists`), its rollup carries `incomplete:
+true`, and `summary.incomplete` counts such specs. An anchor is never
+incomplete. Every cell reads as usual.
 
 `summary.steps` counts the rules that pass their tests, `summary.audit` what
 the audit found among them, and `summary.sentence` says it in one line.
 `left` is the work left, one entry per kind in the order it is done, each
 with its count, its text and the command that clears it, `to_correct`
-counting the comments above tests that name something no spec has or a rule
-that has proofs; `finished` is true when `left` is empty, and `last_line` is
-then the line said in its place. Each rule carries its own `left`, the one
-kind it is counted under, or null. `scripts/mcp/purlin/summary.py` is the
-one place those words are written.
+counting test comments and `to_commit` features; `met` is true where no
+entry of `left` is of a blocking kind; `signoff` is `facts.signoff_fact`'s
+answer; `last_line` is the status's last line, or null where it prints none.
+Each rule carries its own `left`, the one kind it is counted under, or null.
+`scripts/mcp/purlin/summary.py` is the one place those words are written.
 
 A rule carries `rule_hash`, `proof_hash`, `test_hash` and `test_hash_kind`,
 what the audit entry and the evidence package are read against, and
@@ -123,8 +120,10 @@ written twice, a line left from a merge conflict; `[]` for a sound spec.
 Each rule of a broken spec has the `left` `to_repair`, and `Left to do`
 counts such specs, not their rules.
 
-`tag` is the newest `passed/*` or `signed/*` tag pointing at HEAD, at
-either gate, or null.
+`information` holds one line per spec whose `> Scope:` names files git does
+not have yet, as `status.not_written_lines` words it. `warnings` holds every
+other line: an evidence file left out, a spec mistake, each test comment to
+correct as `wording.stale_comments` words it.
 
 `write_report_data` writes the payload to `.purlin/report-data.js` as
 `const PURLIN_DATA = {...};`, which is gitignored and is what the local
@@ -145,13 +144,16 @@ if _MCP_DIR not in sys.path:
 from config_engine import resolve_config
 from purlin import (PURLIN_VERSION,
                     evidence as evidence_module,
+                    facts as facts_module,
                     fingerprint as fingerprint_module,
-                    gate as gate_module,
                     markers as markers_module,
+                    project as project_module,
+                    signatures as signatures_module,
                     specs as specs_module, states,
-                    summary as summary_module)
+                    summary as summary_module,
+                    wording as wording_module)
 
-SCHEMA_VERSION = 13
+SCHEMA_VERSION = 14
 REPORT_DATA_PATH = os.path.join('.purlin', 'report-data.js')
 _PREFIX = 'const PURLIN_DATA = '
 
@@ -164,9 +166,9 @@ def now_iso():
 
 def build_payload(project_root, generated_by='sync_status', config=None):
     """The whole payload for a project root."""
+    from purlin import status as status_module
     config = resolve_config(project_root) if config is None else config
-    cfg = gate_module.resolve_gate(config)
-    warnings = list(cfg.warnings)
+    warnings = []
 
     features = specs_module.scan_specs(project_root)
     tag_warning = specs_module.unknown_tag_warning(features)
@@ -189,37 +191,34 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     # section decides a cell only while it is current, so this is read once
     # here rather than once per rule.
     evidence = _read_evidence(project_root, features, warnings)
-    # Why each feature spec names no files, where it names none. Its rules'
-    # cells are read as usual, but for the strong cell's reason where
-    # mutation testing is on and measured nothing.
     incomplete = {name: fingerprint_module.incomplete_reason(
         project_root, name, features) for name in sorted(features)}
     could_not_run = evidence_module.could_not_run(project_root)
     head = head_sha(project_root)
     here_os = evidence_module.host_os()
-    tag = release_tag(project_root, head)
+    hand_notes = _hand_notes(project_root)
 
-    blob_cache = {}
-    feature_entries = []
-    rollups = {}
-    # The project summary counts every spec's rules once, anchors' included.
-    own_results = {}
     # Which proofs have a test is read from the markers in the test files,
     # not from the evidence: a marked test that has not run yet is a test.
     suites = markers_module.read_suites(project_root, config)[0]
     scanned = markers_module.scan(project_root, suites)
     tied = markers_module.tied_ids(project_root, scanned)
-    # Every comment above a test that names nothing a spec has, or names a
-    # rule that has proofs, fails the run, so `Left to do` counts it too.
-    corrections = len(markers_module.marker_problems(scanned, features))
+    # Every comment above a test that names nothing a spec has, names a rule
+    # that has proofs, or names a proof reworded since the test last changed
+    # is counted under `to_correct`; the reworded ones are warned of here.
+    stale = wording_module.stale_comments(project_root, features, scanned)
+    warnings.extend(entry['text'] for entry in stale)
+    corrections = (len(markers_module.marker_problems(scanned, features))
+                   + len(stale))
+    sources = {'suites': suites, 'tests': {}, 'blobs': {}}
 
+    feature_entries = []
+    own_results = {}
     for name in sorted(features):
-        info = features[name]
-        entry, rollup = _feature_entry(
-            project_root, name, info, evidence, cfg, blob_cache, own_results,
-            could_not_run, incomplete, tied, here_os)
+        entry, _rollup = _feature_entry(
+            project_root, name, features[name], evidence, sources,
+            own_results, could_not_run, incomplete, tied, here_os, hand_notes)
         feature_entries.append(entry)
-        rollups[name] = rollup
 
     summary = states.project_rollup({'': states.feature_rollup(own_results)})
     summary['features'] = len(features)
@@ -229,32 +228,37 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     summary['steps'] = summary_module.steps(own_rules)
     summary['audit'] = summary_module.audit_counts(own_rules)
     summary['sentence'] = summary_module.sentence(summary)
-    left = summary_module.left(feature_entries, cfg.gate, here_os,
-                               corrections)
+    uncommitted = [entry['name'] for entry in feature_entries
+                   if any(found and not found.get('committed')
+                          for found in (entry['evidence'] or {}).values())]
+    left = summary_module.left(feature_entries, here_os, corrections,
+                               uncommitted)
+    signoff = facts_module.signoff_fact(project_root)
 
     payload = {
         'schema_version': SCHEMA_VERSION,
         'generated_at': now_iso(),
         'generated_by': generated_by,
-        'project': config.get('project_name') or os.path.basename(
-            os.path.abspath(project_root)),
+        'project': project_module.project_name(project_root),
         'version': PURLIN_VERSION,
+        'branch': branch_name(project_root),
         'commit': head,
         'dirty': _is_dirty(project_root),
-        'gate': cfg.as_dict(),
         'summary': summary,
         'features': feature_entries,
         'left': left,
-        'finished': not left,
-        'last_line': summary_module.last_line(left, cfg.gate, tag),
+        'met': None,
+        'signoff': signoff,
+        'last_line': summary_module.last_line(left, signoff),
         'os_words': {name: {'word': evidence_module.os_word(name),
                             'short': evidence_module.os_short(name)}
                      for name in evidence_module.PLATFORMS},
         'evidence': _evidence_map(evidence),
-        'tag': tag,
         'remote_url': _remote_url(project_root),
+        'information': status_module.not_written_lines(project_root, features),
         'warnings': warnings,
     }
+    payload['met'] = facts_module.tests_fact(payload) == facts_module.TESTS_MET
     return payload
 
 
@@ -291,16 +295,12 @@ def proof_counts(rule_entries, tied=None):
             'proofs_without_test_ids': without}
 
 
-def _feature_entry(project_root, name, info, evidence, cfg, blob_cache,
+def _feature_entry(project_root, name, info, evidence, sources,
                    own_results=None, could_not_run=None, incomplete=None,
-                   tied=None, here_os=None):
+                   tied=None, here_os=None, hand_notes=None):
     incomplete = incomplete or {}
     anchor = bool(info.get('is_anchor'))
     own = evidence.get(name) or _no_evidence(name)
-    # No code is broken on purpose for an anchor, so it carries no strength
-    # whatever its evidence holds.
-    mutation = None if anchor else evidence_module.mutation(own['loaded'])
-    test_strength = mutation.get('score') if mutation else None
 
     rule_entries = []
     rule_results = {}
@@ -308,16 +308,15 @@ def _feature_entry(project_root, name, info, evidence, cfg, blob_cache,
     broken = spec_broken(info)
     for rule_id in info.get('rule_order') or ():
         result = _rule_entry(
-            project_root, name, info, rule_id, own, cfg, blob_cache,
-            mutation, could_not_run, incomplete.get(name), marked, here_os,
-            broken)
+            project_root, name, info, rule_id, own, sources, could_not_run,
+            marked, here_os, broken, (hand_notes or {}).get((name, rule_id)))
         rule_entries.append(result)
         summary = {'bucket': result['bucket'], 'flags': result['flags']}
         rule_results[(name, rule_id)] = summary
         if own_results is not None:
             own_results[(name, rule_id)] = summary
 
-    rollup = states.feature_rollup(rule_results, test_strength=test_strength)
+    rollup = states.feature_rollup(rule_results)
     rollup.update(proof_counts(rule_entries, tied))
     rollup['incomplete'] = bool(incomplete.get(name))
 
@@ -335,7 +334,6 @@ def _feature_entry(project_root, name, info, evidence, cfg, blob_cache,
         'source_path': info.get('source_path'),
         'pinned': info.get('pinned'),
         'rollup': rollup,
-        'test_strength': test_strength,
         'current': own['current'],
         'evidence': own['summary'],
         'rules': rule_entries,
@@ -447,7 +445,8 @@ def _evidence_map(evidence):
     out = {}
     for name in sorted(evidence):
         for entry in evidence[name]['sections']:
-            results = evidence_module.proof_results(entry['section'])
+            results = {proof: word for proof, (word, _reason) in
+                       states.section_results(entry['section']).items()}
             out.setdefault(name, {}).setdefault(entry['source'], {})[
                 entry['os']] = {
                     'commit': entry['section'].get('commit'),
@@ -460,11 +459,10 @@ def _evidence_map(evidence):
 
 
 def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
-                cfg, blob_cache, mutation=None, could_not_run=None,
-                incomplete=None, marked=None, here_os=None, broken=None):
+                sources, could_not_run=None, marked=None, here_os=None,
+                broken=None, hand_notes=None):
     text = owner_info['rules'].get(rule_id, '')
     anchor = bool(owner_info.get('is_anchor'))
-    test_strength = None if anchor else (mutation or {}).get('score')
     proof_ids = owner_info.get('proofs_by_rule', {}).get(rule_id, [])
     sections = owner_evidence['sections']
 
@@ -481,13 +479,13 @@ def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
                        'result': ran.get((f, n), 'not run')}
                       for f, n in _backing_tests(sections, proof_id)],
         }
-        entry['result'] = states.proof_result(entry, sections, marked)
+        entry['result'] = states.proof_result(entry, sections, marked, anchor)
         proof_dicts.append(entry)
 
     rule_hash = specs_module.rule_text_hash(text)
     proof_hash = specs_module.proof_text_hash(
         '\n'.join('%s %s' % (p['id'], p['text']) for p in proof_dicts))
-    test_hash = _test_hash(project_root, proof_dicts, blob_cache)
+    test_hash, hash_kind = _test_hash(project_root, proof_dicts, sources)
     # The machine each system's results came from, which the evidence
     # package records beside them.
     machines = _machines(sections, proof_dicts, rule_id)
@@ -498,7 +496,6 @@ def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
     audit = evidence_module.audit_entry(owner_evidence['loaded'], rule_id,
                                         rule_hash, proof_hash, test_hash)
     result = states.rule_cells({
-        # An anchor's rule: the audit alone judges its tests.
         'anchor': anchor,
         'proofs': proof_dicts,
         'rule_id': rule_id,
@@ -508,22 +505,14 @@ def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
         # which is what the strong cell says while it reads `not audited`.
         'could_not_run': evidence_module.why_not_audited(
             could_not_run, owner, rule_id, rule_hash, proof_hash, test_hash),
-        # The feature's strength stands for every rule in it: a break engine
-        # measures a scope, not one rule.
-        'test_strength': test_strength,
-        # Why the engine the settings chose measured nothing for the
-        # feature, where it said.
-        'strength_missing': ('' if anchor
-                             else (mutation or {}).get('missing') or ''),
-        'feature': owner,
-        # Why the rule's own spec names no files, or None.
-        'incomplete': incomplete,
         # The owner's proof and rule ids a marker ties to a test declaration,
         # so a marked test that has not run reads `not run`, not `no test`.
         'marked': marked or set(),
+        # What the newest sign-off holding a note on this rule noted.
+        'hand_notes': list(hand_notes or ()),
         # Why the rule's own spec is broken, which fails it.
         'spec_broken': list(broken or ()),
-    }, cfg)
+    })
 
     entry = {
         'id': rule_id,
@@ -532,38 +521,31 @@ def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
         'rule_hash': rule_hash,
         'proof_hash': proof_hash,
         'test_hash': test_hash,
-        'test_hash_kind': test_hash_kind(proof_dicts),
+        'test_hash_kind': hash_kind,
         'machines': machines,
-        'audit': audit_summary(audit, test_strength),
+        'audit': audit_summary(audit),
         'cells': result['cells'],
         'bucket': result['bucket'],
         'flags': result['flags'],
         'proofs': proof_dicts,
         'tests': _rule_tests(sections, rule_id),
     }
-    entry['left'] = summary_module.rule_kind(entry, cfg.gate, here_os, broken)
+    entry['left'] = summary_module.rule_kind(entry, here_os, broken)
     return entry
 
 
-# What a rule's test hash is taken from, the first that applies.
-TEST_HASH_KINDS = ('manual', 'file')
-
-
-def test_hash_kind(proofs):
+def test_hash_kind(proofs, kinds=()):
     """What the test hash was taken from, which the evidence package records.
 
-    `file` is a test file git tracks, which is what a hash over the tests
-    reads. `manual` is a proof with no test at all, checked by hand. `none`
-    is a rule with nothing behind it yet.
+    `manual` is a proof with no test at all, checked by hand. `file` is a
+    test covered by its whole file: one of an `exit` suite, or one not found
+    by its name. `test` is a test covered by its own source. `none` is a
+    rule with nothing behind it yet. `kinds` holds `file` and `test` as the
+    hash read them; the first that applies wins.
     """
-    kinds = set()
-    for proof in proofs or ():
-        if proof.get('manual'):
-            kinds.add('manual')
-            continue
-        if proof.get('tests'):
-            kinds.add('file')
-    for kind in TEST_HASH_KINDS:
+    if any(proof.get('manual') for proof in proofs or ()):
+        return 'manual'
+    for kind in ('file', 'test'):
         if kind in kinds:
             return kind
     return 'none'
@@ -588,7 +570,8 @@ def _machines(sections, proofs, rule_id):
         machine = section.get('machine')
         if not machine:
             continue
-        results = evidence_module.proof_results(section)
+        results = {proof: word for proof, (word, _reason) in
+                   states.section_results(section).items()}
         if not any(results.get(proof_id) in ('pass', 'fail')
                    and (not env or env == entry['os'])
                    for proof_id, env in wanted):
@@ -600,20 +583,18 @@ def _machines(sections, proofs, rule_id):
     return {name: found[name][1] for name in sorted(found)}
 
 
-def audit_summary(audit, strength):
+def audit_summary(audit):
     """`rules[].audit`: what the audit found for the current hashes, or None.
 
-    The `verdict` and the findings, the feature's test strength, the model
-    that read the rule, when and at which commit, and the evidence file the
-    entry sits in. Present at every gate, so a surface reads when the audit
-    ran without working it out.
+    The `verdict` and the findings, the notes, the model that read the rule,
+    when and at which commit, and the evidence file the entry sits in. An
+    entry whose verdict the format does not name answers nothing.
     """
-    if not audit:
+    if not audit or audit.get('verdict') not in ('strong', 'weak'):
         return None
     return {'verdict': audit.get('verdict'),
             'findings': [str(line) for line in audit.get('findings') or ()],
             'notes': [str(line) for line in audit.get('notes') or ()],
-            'strength': strength,
             'model': audit.get('model') or 'unknown',
             'at': audit.get('at'),
             'commit': audit.get('commit'),
@@ -702,71 +683,136 @@ def _rule_tests(sections, rule_id):
     return []
 
 
-def _test_hash(project_root, proof_dicts, blob_cache):
-    """The test hash: the blob ids of the test files, with their names.
+def _test_hash(project_root, proof_dicts, sources):
+    """`(test hash, kind)`: the tests tied to the rule's proofs, each by its own source.
 
-    Reading the file's blob id rather than one function's body is coarse on
-    purpose: a test file is the unit version control tracks, and a hash over it
-    moves whenever the test that backs a rule changes, so an audit entry
-    taken over the old test no longer answers. `test_hash_kind` names what
-    was read beside the hash.
-    Which tests back each proof is `_backing_tests`'s answer, read from the
-    evidence so it does not depend on the machine.
+    One line per test, `<file> <test name> <sha256 of the test's source>`,
+    the source as its marker bounds it with line ends read as `\n`, so
+    editing another test of the same file leaves the hash where it was. A
+    test of an `exit` suite, or one not found by its name, gives
+    `<file> <test name> <blob id>` and the kind `file`. Which tests back each
+    proof is `_backing_tests`' answer, read from the evidence so it does not
+    depend on the machine.
     """
     parts = []
+    kinds = set()
     for proof in proof_dicts:
         for test in proof['tests']:
-            path = test['file']
-            if path not in blob_cache:
-                blob_cache[path] = fingerprint_module.blob_id(
+            path, name = test['file'], test['name']
+            own = _test_sources(project_root, path, sources).get(name)
+            if own is not None:
+                kinds.add('test')
+                parts.append('%s %s %s' % (path, name, own))
+                continue
+            kinds.add('file')
+            if path not in sources['blobs']:
+                sources['blobs'][path] = fingerprint_module.blob_id(
                     project_root, path)
-            parts.append('%s %s %s' % (path, test['name'], blob_cache[path]))
+            parts.append('%s %s %s' % (path, name, sources['blobs'][path]))
     digest = hashlib.sha256()
     digest.update('\n'.join(sorted(parts)).encode('utf-8'))
-    return digest.hexdigest()
+    return digest.hexdigest(), test_hash_kind(proof_dicts, kinds)
 
 
-def release_tag(project_root, head=None):
-    """`{name, commit}` for the newest `passed/*` or `signed/*` tag on HEAD, or None.
+def _test_sources(project_root, path, sources):
+    """`{test name: sha256 of its source}` for one test file; `{}` for a file run whole."""
+    cache = sources['tests']
+    if path in cache:
+        return cache[path]
+    cache[path] = {}
+    suite = markers_module.suite_of(path, sources['suites'] or ())
+    if suite is not None and suite.format == 'exit':
+        return cache[path]
+    try:
+        with open(os.path.join(project_root, *path.split('/')), 'r',
+                  encoding='utf-8', newline='') as handle:
+            text = handle.read()
+    except (IOError, OSError, UnicodeDecodeError):
+        return cache[path]
+    declared = markers_module.declared_tests(
+        text, os.path.splitext(path)[1].lower()) or ()
+    for test in declared:
+        bounds = wording_module.test_source(path, text, test)
+        if bounds is None:
+            continue
+        name = markers_module.test_name(path, test)
+        cache[path].setdefault(name, hashlib.sha256(
+            bounds[2].encode('utf-8')).hexdigest())
+    return cache[path]
 
-    A release tag marks the commit whose evidence package it names, so a
-    surface that shows one commit's standing shows whether that commit
-    carries one, at either gate. Only a tag pointing at HEAD counts: a tag
-    two commits back says nothing about this code. Where several point at
-    the same commit the newest version wins, read as numbers where the name
-    is numeric and as text where it is not, so `signed/1.10.0` sorts after
-    `signed/1.9.0`.
-    """
+
+def branch_name(project_root):
+    """The branch HEAD is on, or None on a detached HEAD or outside git."""
     try:
         result = subprocess.run(
-            ['git', 'tag', '--points-at', 'HEAD', 'passed/*', 'signed/*'],
-            capture_output=True, text=True, cwd=project_root, timeout=15)
+            ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+            capture_output=True, text=True, cwd=project_root, timeout=10)
     except (subprocess.SubprocessError, OSError):
         return None
-    if result.returncode != 0:
-        return None
-    names = [line.strip() for line in result.stdout.splitlines()
-             if line.strip()]
-    if not names:
-        return None
-    names.sort(key=_tag_order)
-    return {'name': names[-1], 'commit': head or head_sha_of(project_root)}
+    name = result.stdout.strip() if result.returncode == 0 else ''
+    return name if name and name != 'HEAD' else None
 
 
-def _tag_order(name):
-    """A sort key for a tag name: its numeric parts first, then the name."""
-    parts = str(name).split('/', 1)[-1].replace('-', '.').split('.')
-    numbers = []
-    for part in parts:
-        if not part.isdigit():
-            break
-        numbers.append(int(part))
-    return (len(numbers) > 0, numbers, str(name))
+def _hand_notes(project_root):
+    """`{(feature, rule): [reason]}` from the newest sign-off holding a note on each rule.
+
+    Every sign-off file of every version is read, whatever code it was taken
+    on. Each note becomes `states.HAND_NOTE`: the version, the signer, how
+    far HEAD is from the signed commit, the note. The signed commit is the
+    one `signed/<version>` names, or the commit that added the file.
+    """
+    folder = os.path.join(project_root, *signatures_module.PACKAGE_DIR.split('/'))
+    try:
+        versions = sorted(name for name in os.listdir(folder)
+                          if name.endswith('.signoffs'))
+    except OSError:
+        return {}
+    signoffs = []
+    for name in versions:
+        directory = os.path.join(folder, name)
+        for basename in sorted(os.listdir(directory)):
+            if not basename.endswith('.json'):
+                continue
+            try:
+                with open(os.path.join(directory, basename), 'r',
+                          encoding='utf-8') as handle:
+                    data = json.load(handle)
+            except (IOError, OSError, UnicodeDecodeError, ValueError):
+                continue
+            if isinstance(data, dict) and isinstance(data.get('notes'), list):
+                rel = '%s/%s/%s' % (signatures_module.PACKAGE_DIR, name, basename)
+                signoffs.append((str(data.get('timestamp') or ''), rel, data))
+    found = {}
+    distances = {}
+    for _at, rel, data in sorted(signoffs, key=lambda item: item[:2],
+                                 reverse=True):
+        version = str(data.get('version') or '')
+        held = {}
+        for note in data['notes']:
+            if isinstance(note, dict) and note.get('feature') and note.get('rule'):
+                held.setdefault((note['feature'], note['rule']), []).append(
+                    str(note.get('note') or ''))
+        for key, notes in held.items():
+            if key in found:
+                continue
+            if rel not in distances:
+                distances[rel] = _distance(project_root, version, rel)
+            found[key] = [states.HAND_NOTE % (version, data.get('signer'),
+                                              distances[rel], note)
+                          for note in notes]
+    return found
 
 
-def head_sha_of(project_root):
-    """The sha at HEAD, read once more where the caller had none to hand."""
-    return head_sha(project_root)
+def _distance(project_root, version, rel):
+    """How far HEAD is from the commit a sign-off signed, as a note says it."""
+    commit = facts_module.git_line(project_root, 'rev-list', '-n', '1',
+                               facts_module.TAG_PREFIX + version)
+    if not commit:
+        commit = facts_module.git_line(project_root, 'log', '-n', '1',
+                                   '--diff-filter=A', '--format=%H', '--', rel)
+    if not commit:
+        return facts_module.AT_THIS_COMMIT
+    return facts_module.distance(project_root, commit)
 
 
 def head_sha(project_root):
