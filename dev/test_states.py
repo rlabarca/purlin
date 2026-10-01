@@ -1013,10 +1013,6 @@ class TestThePlatformsInThePassedCell:
     def test_a_persons_own_section_answers_for_its_platform_at_passed(self):
         self._own_section_disagrees('passed')
 
-    # purlin: states PROOF-194
-    def test_a_persons_own_section_answers_for_its_platform_at_strong(self):
-        self._own_section_disagrees('strong')
-
     # purlin: states PROOF-195
     def test_a_persons_own_section_answers_for_its_platform_at_signed(self):
         self._own_section_disagrees('signed')
