@@ -699,14 +699,20 @@ the first run after the build, and the first Windows run rewrites the rest.
 4. Appendix A's script of `dev/plans/d115-plan.md` over every `dev/test_*`: `0 gone, 0 reworded`.
 5. The greps, each empty:
    ```
-   git grep -n -i -E -e '--remote|commit[-_]runner|remote runner|remote run\b|runner file|run branch|purlin\.yml|purlin\.azure-pipelines|run_remote|ensure_runner|hostname' -- . \
+   git grep -n -i -E -e '--remote|commit[-_]runner|remote runner|remote runs?([^a-z]|$)|runner file|run branch|purlin\.yml|purlin\.azure-pipelines|run_remote|ensure_runner|hostname' -- . \
      ':!dev/plans' ':!.purlin/evidence' ':!dev/windows_run.py' ':!dev/test_windows_run.py' \
      ':!.github/workflows' ':!specs/instructions/windows_run.md' ':!dev/fixtures/upgrade-0.9.5' \
-     ':!scripts/report/purlin-report.html' ':!RELEASE_NOTES.md'
+     ':!scripts/report/purlin-report.html' ':!RELEASE_NOTES.md' \
+     ':!dev/fixtures/reports/vitest/vitest.xml'
    git grep -n -i -E 'pinned (anchor|rule|copy|source)' -- . ':!dev/plans' ':!dev/fixtures/upgrade-0.9.5' ':!.purlin'
    sed -n '/^## Unreleased/,/^## 0\.9\.5/p' RELEASE_NOTES.md | grep -n -i -E -e '--remote|remote runner|runner file'
    git grep -n -E 'dev/|specs/(run|mcp|init|review|export|skills|instructions)/' -- skills agents references
    ```
+   Changed at integration, 2026-10-01. `dev/fixtures/reports/vitest/vitest.xml` is left out of
+   the first grep: its `hostname` is an attribute vitest writes into its own report, and the
+   fixture is that report as the tool wrote it. `remote run\b` reads `remote runs?([^a-z]|$)`:
+   git on macOS does not read `\b` under `-E`, so the first form matched nothing. The fourth
+   grep prints one line that is not a path, `< /dev/null` in `skills/init/SKILL.md`.
 6. The screenshots are retaken with `dev/capture_doc_screenshots.py` where a fixture's words
    show in one.
 7. `dev/plans/deck/build_deck.py`, line 156: `the remote run for Windows included` reads `the
