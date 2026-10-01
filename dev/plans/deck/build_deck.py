@@ -85,7 +85,7 @@ slide('touches', 'Your project and your workflow', 'Purlin workflows don\'t chan
     ('Your specs', 'Markdown files you write, under %s. Each holds the rules of one feature.' % m('specs/')),
     ('One comment per test', '%s above the test. The test itself does not change.' % m('# purlin: login PROOF-4')),
     ('Your test command', 'Purlin runs your tests the way you already do. Nothing is installed in your test suite.'),
-    ('Your workflow', 'You commit and push as before. Purlin commits only when you ask, and adds no git hook and no background job.'),
+    ('Your workflow', 'You commit and push as before. Purlin commits only when you ask, and adds no git hook, no background job and no pipeline.'),
 ], '',
  'Purlin reads the report your test framework already writes and ties each result to its comment by '
  'the name of the test. A test with no comment runs as always and is ignored. A test Purlin wrote '
@@ -153,7 +153,7 @@ slide('audit', 'Are the tests any good?', 'The audit: would your tests catch a b
  'the docs.',
  lead='A passing test is not proof that it checks anything. The audit tries to make each test fail.', width=560, pad=16)
 slide('signoff', 'The sign-off', 'When everyone is done, a person signs the evidence once', [
-    ('Run and commit', 'A developer runs every test on the version to sign, the remote run for Windows included, and commits the results.'),
+    ('Run and commit', 'A developer runs every test on the version to sign, the run on Windows included, and commits the results.'),
     ('`purlin:sign`', 'Opens with who ran the tests, where and when. Stops at each hand check, shows what the audit found, and asks for one signature.', [
         ('The package', 'One file: every rule, its proofs, its tests, the results, the audit, who wrote what, who signed.'),
         ('The tag', 'The first sign-off tags the version %s. Later sign-offs are added beside it.' % m('signed/1.4.0'))]),
