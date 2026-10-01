@@ -1,33 +1,29 @@
 # Purlin runs here, on a clean machine, for one reason: a rule that must hold
 # on an operating system your machine is not.
 #
-# purlin:init writes this file only when a proof in specs/ is tagged @env for
-# such a system. The matrix holds one job for each operating system a proof in
-# specs/ is tagged @env for that the machine running setup is not, and no
-# other. A project whose tags name only the system it is developed on gets no
-# workflow at all: at the gate signed purlin:sign writes the tag, you push it,
-# and nothing runs remotely.
+# The first purlin:test --remote writes this file where a proof in specs/ is
+# tagged @env for such a system. The matrix holds one job for each operating
+# system a proof in specs/ is tagged @env for that the machine writing the file
+# is not, and no other.
 #
-# Two things start a run and nothing else does: a push to a `run/*` branch,
-# which is the branch purlin:test --remote creates and deletes around one run,
-# and a push of a `signed/*` tag, which purlin:sign writes at the gate signed
-# when nothing is left to do. A push to any other branch starts nothing, and
-# a pull request starts nothing.
+# One thing starts a run and nothing else does: a push to a `run/*` branch,
+# which is the branch purlin:test --remote creates and deletes around one run.
+# A push to any other branch starts nothing, a tag starts nothing, and a pull
+# request starts nothing.
 #
-# A run branch run runs the marked tests a runner runs (references/hard_gates.md
-# in the Purlin plugin, "Where a runner runs"), writes its own operating
-# system's section of .purlin/evidence/ci/<feature>.json for every feature,
-# and commits it on that branch, where purlin:test --remote pulls it home.
-# Each job writes its own section, merged into the file at the branch's head,
-# so two jobs never overwrite each other. A tag run runs the same tests and
-# writes nothing.
+# A run runs the marked tests of the proofs tagged @env for the runner's own
+# operating system, writes that system's section of
+# .purlin/evidence/ci/<feature>.json for every feature it covered, and commits
+# it on the run branch, where purlin:test --remote pulls it home. Each job
+# writes its own section, merged into the file at the branch's head, so two
+# jobs never overwrite each other.
 #
 # The test step is the last step. It ends by printing the summary and Left to
 # do, and its exit code is the job's: the job fails only when a test fails or
-# could not run. A rule not yet audited or signed never fails it.
+# could not run.
 #
 # No breaks and no AI audit run here. purlin:audit does both on a person's
-# machine, and the evidence either source wrote counts at every gate.
+# machine.
 #
 # The job is capped at 90 minutes. GitHub cancels a job at 6 hours and
 # keeps nothing, so a run that stops for something cannot be read; 90 minutes
@@ -38,7 +34,6 @@ name: purlin
 on:
   push:
     branches: ['run/**']
-    tags: ['signed/**']
 
 permissions:
   contents: write
@@ -97,28 +92,6 @@ jobs:
             python3 -m playwright install --with-deps chromium
           fi
           if [ -f package.json ]; then npm ci; fi
-
-      # A Windows runner has no sqlite3, the program a test command that runs
-      # SQL scripts starts. Where a tracked file other than this one names
-      # sqlite3, this installs it through chocolatey, which the image carries,
-      # and puts the folder holding sqlite3.exe on the search path of the
-      # steps after it. On Linux and macOS, and where sqlite3 is already
-      # found, it installs nothing.
-      - name: Install sqlite3 on Windows
-        shell: bash
-        run: |
-          if [ "$RUNNER_OS" = Windows ] && ! command -v sqlite3 >/dev/null 2>&1 \
-              && git grep -qIw sqlite3 -- . ':(exclude).github/workflows/purlin.yml'; then
-            choco install sqlite -y --no-progress
-            lib="$(cygpath -u "${ChocolateyInstall:-C:/ProgramData/chocolatey}")/lib"
-            exe=$(find "$lib" -iname sqlite3.exe -print -quit)
-            if [ -z "$exe" ]; then
-              echo "The sqlite install finished and no sqlite3.exe is under $lib."
-              exit 1
-            fi
-            cygpath -w "$(dirname "$exe")" >> "$GITHUB_PATH"
-            "$exe" -version
-          fi
 
       - name: Run the tests
         shell: bash

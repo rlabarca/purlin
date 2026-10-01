@@ -20,9 +20,9 @@ runner never overwrites what another wrote.
 
 **Where CI commits.** On a run branch, and nowhere else. A run branch is what
 `purlin:test --remote` creates for one run and deletes afterwards, so the
-evidence it writes is pulled home by the command that asked for it. The other
-run CI does is the tag run, and that one runs the tests and writes nothing.
-`commits_here()` is the one question the run asks.
+evidence it writes is pulled home by the command that asked for it. A run on
+any other ref runs the tests and writes nothing. `commits_here()` is the one
+question the run asks.
 """
 
 import base64
@@ -50,10 +50,6 @@ EVIDENCE_PATHSPEC = '.purlin/evidence'
 # a git host's own branch variable carries.
 RUN_BRANCH_PREFIX = 'run/'
 REF_HEADS = 'refs/heads/'
-REF_TAGS = 'refs/tags/'
-# The tag `purlin:sign` writes when nothing is left to do, and the one ref
-# besides a run branch that starts a CI run.
-SIGNED_TAG_PREFIX = 'signed/'
 
 # The tree entry's file-permission key and value, spelled the way GitHub's
 # Git Data API expects them. The key is assembled rather than written out
@@ -161,43 +157,24 @@ def current_branch(project_root):
     return '' if branch == 'HEAD' else branch
 
 
-def is_a_tag_run():
-    """True when this run was started by a tag push rather than a branch push.
-
-    A tag run is the one `purlin:sign` asks for by writing `signed/<version>`,
-    which it does at the gate `signed` alone, and a person pushing it. It runs
-    the tests on a clean machine and writes nothing. Only that tag counts: a
-    release tag a project pushes for its own reasons is not a ref Purlin reads
-    anything into.
-    """
-    signing = REF_TAGS + SIGNED_TAG_PREFIX
-    for name in ('GITHUB_REF', 'BUILD_SOURCEBRANCH'):
-        if (os.environ.get(name) or '').strip().startswith(signing):
-            return True
-    return False
-
-
 def commits_here(project_root):
     """True when a CI run on this ref writes its evidence into the tree.
 
     A run branch is the only ref CI commits on: `purlin:test --remote`
-    created it for one run, pulls the evidence home and deletes it. A tag run
-    runs the tests and commits nothing.
+    created it for one run, pulls the evidence home and deletes it. A run on
+    any other ref runs the tests and commits nothing.
 
     Off a runner the answer is True: there is no branch rule to speak for,
     and a test suite driving the arm asked for this commit by name.
     """
     if not detect_host():
         return True
-    if is_a_tag_run():
-        return False
     return current_branch(project_root).startswith(RUN_BRANCH_PREFIX)
 
 
 # The lines a CI run prints where it commits nothing, one per reason.
-TAG_RUN = 'Tag run: nothing is written. This run reruns the tests on %s.'
-NOT_A_RUN_REF = ('This run is on %s, which is neither a run branch nor a '
-                 'signed tag: the tests ran and nothing is written.')
+NOT_A_RUN_REF = ('This run is on %s, which is not a run branch: the tests '
+                 'ran and nothing is written.')
 NO_BRANCH = ('No branch could be read from the git host or from git, so the '
              'results were not committed.')
 
@@ -205,13 +182,10 @@ NO_BRANCH = ('No branch could be read from the git host or from git, so the '
 def no_commit_line(project_root):
     """The one line a CI run prints where it commits nothing.
 
-    A tag run reruns the tests on the signed tag. Any other ref that is not a
-    run branch says so by name, and a run that can name no ref at all says
-    that no branch could be read.
+    A ref that is not a run branch says so by name, and a run that can name
+    no ref at all says that no branch could be read.
     """
     ref = current_branch(project_root)
-    if is_a_tag_run():
-        return TAG_RUN % (ref or 'this ref')
     if not ref:
         return NO_BRANCH
     return NOT_A_RUN_REF % ref

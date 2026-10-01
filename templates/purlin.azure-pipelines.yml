@@ -1,30 +1,29 @@
 # Purlin runs here, on a clean machine, for one reason: a rule that must hold
 # on an operating system your machine is not.
 #
-# purlin:init writes this file for a project whose git host is Azure DevOps,
-# and only when a proof in specs/ is tagged @env for such a system. The
-# matrix holds one job for each operating system a proof in specs/ is tagged
-# @env for that the machine running setup is not, and no other. A project
-# whose tags name only the system it is developed on gets no pipeline at all.
+# The first purlin:test --remote writes this file for a project whose git
+# host is Azure DevOps, where a proof in specs/ is tagged @env for such a
+# system. The matrix holds one job for each operating system a proof in
+# specs/ is tagged @env for that the machine writing the file is not, and no
+# other.
 #
-# Two things start a run and nothing else does: a push to a `run/*` branch,
-# which is the branch purlin:test --remote creates and deletes around one run,
-# and a push of a `signed/*` tag, which purlin:sign writes at the gate signed
-# when nothing is left to do. A pull request starts nothing.
+# One thing starts a run and nothing else does: a push to a `run/*` branch,
+# which is the branch purlin:test --remote creates and deletes around one run.
+# A tag starts nothing, and a pull request starts nothing.
 #
-# A run branch run runs the marked tests a runner runs (references/hard_gates.md
-# in the Purlin plugin, "Where a runner runs"), writes its own operating
-# system's section of .purlin/evidence/ci/<feature>.json for every feature,
-# and commits it on that branch. The build service writes it with
+# A run runs the marked tests of the proofs tagged @env for the agent's own
+# operating system, writes that system's section of
+# .purlin/evidence/ci/<feature>.json for every feature it covered, and commits
+# it on the run branch. The build service writes it with
 # $(System.AccessToken), and nothing on the host has to be configured for
-# that. A tag run runs the same tests and writes nothing.
+# that.
 #
 # The test step is the last step. It ends by printing the summary and Left to
 # do, and its exit code is the job's: the job fails only when a test fails or
-# could not run. A rule not yet audited or signed never fails it.
+# could not run.
 #
 # No breaks and no AI audit run here. purlin:audit does both on a person's
-# machine, and the evidence either source wrote counts at every gate.
+# machine.
 #
 # The job is capped at 90 minutes, which is longer than any suite this
 # runs and short enough to leave a log worth reading when a run stops for
@@ -33,9 +32,6 @@ trigger:
   branches:
     include:
       - run/*
-  tags:
-    include:
-      - signed/*
 
 pr: none
 
@@ -92,27 +88,6 @@ jobs:
           fi
           if [ -f package.json ]; then npm ci; fi
         displayName: Set up the test framework
-
-      # A Windows agent has no sqlite3, the program a test command that runs
-      # SQL scripts starts. Where a tracked file other than this one names
-      # sqlite3, this installs it through chocolatey, which the image carries,
-      # and puts the folder holding sqlite3.exe on the search path of the
-      # steps after it. On Linux and macOS, and where sqlite3 is already
-      # found, it installs nothing.
-      - bash: |
-          if [ "$AGENT_OS" = Windows_NT ] && ! command -v sqlite3 >/dev/null 2>&1 \
-              && git grep -qIw sqlite3 -- . ':(exclude)purlin.azure-pipelines.yml'; then
-            choco install sqlite -y --no-progress
-            lib="$(cygpath -u "${ChocolateyInstall:-C:/ProgramData/chocolatey}")/lib"
-            exe=$(find "$lib" -iname sqlite3.exe -print -quit)
-            if [ -z "$exe" ]; then
-              echo "The sqlite install finished and no sqlite3.exe is under $lib."
-              exit 1
-            fi
-            echo "##vso[task.prependpath]$(cygpath -w "$(dirname "$exe")")"
-            "$exe" -version
-          fi
-        displayName: Install sqlite3 on Windows
 
       - bash: python3 "$PURLIN_ROOT/scripts/run/purlin_run.py" --all --ci
         displayName: Run the tests

@@ -3,9 +3,8 @@ nothing else.
 
 A run branch run commits its evidence through the git host's API, and that
 is the whole of what CI publishes. It posts no comment and uploads no
-artifact: the two runs this release starts are a remote run, whose evidence
-`purlin:test --remote` pulls home, and a tag run, which writes nothing at all.
-There is no pull request run to comment on.
+artifact: the one run this release starts is a remote run, whose evidence
+`purlin:test --remote` pulls home. There is no pull request run to comment on.
 
 A run refuses a project that is not the project root the job checked out. A
 test suite that drives a run over a fixture project inherits the runner's

@@ -6,10 +6,15 @@ runner and brings back what that runner wrote. The evidence is the git host's,
 because the commit is the git host's.
 
 What comes back is what the runner committed on the run branch: its own
-operating system's section of `.purlin/evidence/ci/<feature>.json`, at every
-gate. The run pulls that commit onto this branch, so a proof tagged `@env`
-for an operating system nobody here has ends up with its own platform's pass
-in the tree.
+operating system's section of `.purlin/evidence/ci/<feature>.json`. The run
+pulls that commit onto this branch, so a proof tagged `@env` for an operating
+system nobody here has ends up with its own system's result in the tree.
+
+**The runner file is written on first need.** The git host is read from
+`origin` each time (`workflow.host_of`). Where the project has no runner file
+for that host, the first `--remote` writes it, shows it, pushes nothing and
+ends; `--remote --commit-runner` commits that file alone and then runs
+(`ensure_runner`).
 
 **This is the one push Purlin makes.** Everywhere else a push is a person's
 act. Here the push is the point of the command, and it goes to a branch of
@@ -17,7 +22,7 @@ its own, `run/<branch>-<sha7>`, which this module creates, waits on, pulls
 back from and deletes. The working branch is never pushed, so nothing reaches
 the git host that a person did not send there.
 
-A detached head has no branch to name and a dirty tree would run the workflow
+A detached head has no branch to name and a dirty tree would run the tests
 against something other than what is on disk, so both are refused before
 anything is pushed.
 
@@ -25,10 +30,10 @@ On both git hosts the run is found by the branch it was started for, retried
 while the run registers, which takes a few seconds, and then that one run is
 waited on. On GitHub `gh run watch <id>` waits; the id is named because `gh
 run watch` with no id prompts for one and errors where there is no terminal.
-On Azure DevOps the Azure CLI's
-`azure-devops` extension finds the run and `az pipelines runs show` is asked
-for its status until it completes. Either way the run ends the same: pull the
-runner's commit, delete the run branch, print the table.
+On Azure DevOps the Azure CLI's `azure-devops` extension finds the run and
+`az pipelines runs show` is asked for its status until it completes. Either
+way the run ends the same: pull the runner's commit, delete the run branch,
+print the table.
 
 No process started here asks for anything: stdin is closed, git is told not
 to prompt for a credential, and the Azure CLI is told not to offer to install
@@ -48,23 +53,38 @@ PLUGIN_ROOT = os.path.dirname(os.path.dirname(_RUN_DIR))
 _MCP_DIR = os.path.join(PLUGIN_ROOT, 'scripts', 'mcp')
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
+if _RUN_DIR not in sys.path:
+    sys.path.insert(0, _RUN_DIR)
+
+import workflow  # noqa: E402
 
 WORKFLOW = 'purlin.yml'
 REMOTE = 'origin'
 RUN_BRANCH_PREFIX = 'run/'
 
-# The `ci` setting of a project with no supported git host, and the one line
-# `--remote` prints there.
-NO_CI = 'none'
-CI_NONE = ('purlin:test --remote needs a GitHub or Azure DevOps remote, and '
-           '.purlin/config.json says ci: none. Add one with git remote add '
-           'origin <url>, then run purlin:init.')
+NOT_A_HOST = ('purlin:test --remote needs a GitHub or Azure DevOps remote, '
+              'and origin is neither. Set one with git remote set-url origin '
+              '<url>, then run purlin:test --remote again.')
 NOT_ON_A_BRANCH = ('This checkout is not on a branch, so there is nothing to '
                    'push. Make one with git switch -c <name>, then run '
                    'purlin:test --remote again.')
+NOT_COMMITTED = ('This checkout has changes that are not committed, so a run '
+                 'would prove something other than what is here. Commit them, '
+                 'then run purlin:test --remote again.')
 PUSH_FAILED = ('The push failed, so no run was started. Check that git push '
                'origin works from this checkout, then run purlin:test --remote '
                'again.')
+
+# The runner file, written where origin's git host has none.
+RUNNER_WRITTEN = 'Purlin wrote %s, the runner for %s, to run the proofs tagged for %s:'
+RUNNER_NEXT = 'Commit it and run: purlin:test --remote --commit-runner'
+RUNNER_COMMITTED = 'Committed %s, the runner for %s.'
+RUNNER_SUBJECT = 'ci: the Purlin runner for %s'
+NO_SYSTEM = ('No proof in specs/ is tagged @env for a system, so there is no '
+             'runner to write and nothing was pushed. Tag a proof @env(<system>) '
+             'with purlin:spec, then run purlin:test --remote again.')
+NOT_MADE = ('The runner file %s was not committed: %s. Nothing was pushed; '
+            'run purlin:test --remote --commit-runner again.')
 
 # The program each git host's run is waited on with, and the line printed
 # before any push where it is missing: without it the run branch would be
@@ -127,35 +147,89 @@ def run_branch_name(project_root, branch):
     return '%s%s-%s' % (RUN_BRANCH_PREFIX, branch, sha[:7])
 
 
-def run_remote(project_root, args=None, cfg=None):
-    """Push a run branch, wait for CI, pull it back, delete it. Exit code.
+def ensure_runner(project_root, commit=False, out=None, host=None):
+    """`(path, written)` for the runner file of `origin`'s git host.
 
-    A project whose settings file cannot be read, or whose settings say
-    `ci: none`, pushes nothing: the first prints why the file cannot be read,
-    the second that no git host here runs a workflow. Neither does a project
-    whose git host's program, `gh` or `az`, is not on the search path: the
-    run could not be waited on, so the check comes before the push.
+    With no runner file for that host: write it, print `RUNNER_WRITTEN`, the
+    file and, unless `commit`, `RUNNER_NEXT`. With `commit=True`, a runner
+    file that is not committed is committed alone as
+    `ci: the Purlin runner for <GitHub|Azure DevOps>` and `RUNNER_COMMITTED`
+    is printed. `path` is None where nothing could be written or committed;
+    the reason is printed.
+
+    The matrix holds the systems some proof in `specs/` is tagged `@env` for
+    that this machine is not, or, where every tag names this machine's own
+    system, every system tagged.
     """
-    from config_engine import config_problem, resolve_config
+    out = out or sys.stdout
+    host = host or workflow.host_of(project_root)
+    rel = workflow.workflow_path(host)
+    word = workflow.host_word(host)
+    full = os.path.join(project_root, *rel.split('/'))
+    written = False
+    if not os.path.isfile(full):
+        from purlin import PURLIN_VERSION
+        from purlin import evidence as evidence_reader
+        tags = workflow.env_tags_in_specs(project_root)
+        systems = workflow.foreign_tags(tags, evidence_reader.host_os()) or tags
+        if not workflow.runners_for(systems):
+            print(NO_SYSTEM, file=out)
+            return None, False
+        text = workflow.render_workflow(host, systems, 'v' + PURLIN_VERSION)
+        os.makedirs(os.path.dirname(full) or project_root, exist_ok=True)
+        with open(full, 'w', encoding='utf-8', newline='\n') as handle:
+            handle.write(text)
+        written = True
+        print(RUNNER_WRITTEN % (rel, word, workflow.systems_words(systems)),
+              file=out)
+        print(text.rstrip('\n'), file=out)
+        if not commit:
+            print(RUNNER_NEXT, file=out)
+            return rel, True
+    if commit and _capture(project_root,
+                           ['git', 'status', '--porcelain', '--', rel]).strip():
+        for argv in (['git', 'add', '--', rel],
+                     ['git', 'commit', '-q', '-m', RUNNER_SUBJECT % word,
+                      '--', rel]):
+            if _run(project_root, argv) != 0:
+                print(NOT_MADE % (rel, 'git %s failed' % argv[1]), file=out)
+                return None, written
+        print(RUNNER_COMMITTED % (rel, word), file=out)
+    return rel, written
+
+
+def run_remote(project_root, args=None):
+    """Push a run branch, wait for the runner, pull it back, delete it.
+
+    Answers the exit code. Refused before anything is pushed, each with the
+    one line saying why: a settings file that cannot be read, an `origin`
+    that is neither GitHub nor Azure DevOps or is an Azure DevOps URL in no
+    form this reads, a checkout on no branch or with changes not committed,
+    and a git host whose program, `gh` or `az`, is not on the search path.
+    Where `origin`'s git host has no runner file it is written first and,
+    without `args.commit_runner`, nothing is pushed and the answer is 0.
+    """
+    from config_engine import config_problem
+    commit_runner = bool(getattr(args, 'commit_runner', False))
     problem = config_problem(project_root)
     if problem:
         print(problem)
         return 1
-    if resolve_config(project_root).get('ci') == NO_CI:
-        print(CI_NONE)
+    host = workflow.host_of(project_root)
+    if host is None:
+        print(NOT_A_HOST)
         return 1
-    host = _host(project_root)
     branch = _branch(project_root)
     if not branch or branch == 'HEAD':
         print(NOT_ON_A_BRANCH)
         return 1
-    if _dirty(project_root):
-        print('This checkout has changes that are not committed, so a run '
-              'would prove something other than what is here. Commit them, '
-              'then run purlin:test --remote again.')
+    # The runner file itself is what `--commit-runner` commits, so it is the
+    # one change the tree may carry then.
+    if _dirty(project_root,
+              workflow.workflow_path(host) if commit_runner else None):
+        print(NOT_COMMITTED)
         return 1
 
-    run_branch = run_branch_name(project_root, branch)
     where = None
     if host == 'azure':
         # Read before the push, so a remote in no Azure DevOps form leaves
@@ -165,9 +239,17 @@ def run_remote(project_root, args=None, cfg=None):
         if where is None:
             print(NO_AZURE_REMOTE % (remote or '(none)', REMOTE))
             return 1
+    path, written = ensure_runner(project_root, commit=commit_runner,
+                                  host=host)
+    if path is None:
+        return 1
+    if written and not commit_runner:
+        return 0
     if not _have(PROGRAM[host]):
         print(NO_PROGRAM[host])
         return 1
+
+    run_branch = run_branch_name(project_root, branch)
     print('Pushing %s as %s.' % (branch, run_branch))
     if _push(project_root, run_branch) != 0:
         print(PUSH_FAILED)
@@ -179,12 +261,11 @@ def run_remote(project_root, args=None, cfg=None):
 
 
 def _github(project_root, run_branch):
-    from workflow import workflow_path
     print('Waiting for the %s workflow on %s.' % (WORKFLOW, run_branch))
     run_id = find_run(project_root, run_branch)
     if not run_id:
         print(NO_RUN_FOUND % (run_branch, FIND_SECONDS,
-                              workflow_path('github')))
+                              workflow.workflow_path('github')))
         _delete(project_root, run_branch)
         return 1
     watched = _run(project_root,
@@ -381,10 +462,20 @@ def _delete(project_root, run_branch):
               '--delete %s' % (run_branch, REMOTE, REMOTE, run_branch))
 
 
-def _dirty(project_root):
-    """True when the working tree carries a change no commit holds."""
-    status = _capture(project_root, ['git', 'status', '--porcelain'])
-    return bool((status or '').strip())
+def _dirty(project_root, besides=None):
+    """True when the working tree carries a change no commit holds.
+
+    `besides`, a path relative to the project root, is a change that does
+    not count. Untracked files are listed one by one, so a new folder holding
+    that path alone counts as nothing else.
+    """
+    status = _capture(project_root, ['git', 'status', '--porcelain',
+                                     '--untracked-files=all'])
+    lines = [line for line in (status or '').splitlines() if line.strip()]
+    if besides:
+        lines = [line for line in lines
+                 if line[3:].strip().strip('"') != besides]
+    return bool(lines)
 
 
 def _remote_url(project_root):
@@ -395,13 +486,6 @@ def _remote_url(project_root):
 def _table(project_root):
     from purlin import status as status_module
     return status_module.sync_status(project_root)
-
-
-def _host(project_root):
-    remote = _remote_url(project_root).lower()
-    if 'dev.azure.com' in remote or 'visualstudio.com' in remote:
-        return 'azure'
-    return 'github'
 
 
 def _branch(project_root):

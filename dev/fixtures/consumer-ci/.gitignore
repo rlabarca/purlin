@@ -1,8 +1,0 @@
-# Purlin runtime: the test reports and the run log, never committed
-.purlin/runtime/
-
-# Dashboard HTML (copied by purlin:init and refreshed by purlin:init --update)
-/purlin-report.html
-
-# Dashboard data, regenerated locally, never committed
-.purlin/report-data.js

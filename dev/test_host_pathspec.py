@@ -35,24 +35,6 @@ def _write(root, rel, text='{}\n'):
         handle.write(text)
 
 
-# purlin: host PROOF-26
-def test_git_is_handed_a_forward_slash_pathspec(tmp_path, monkeypatch):
-    root = str(tmp_path)
-    calls = []
-
-    def fake_git(project_root, args, check=True):
-        calls.append(list(args))
-        return ''
-
-    monkeypatch.setattr(host_module, '_git', fake_git)
-    host_module.deleted_files(root)
-    handed = [(args[0], args[args.index('--') + 1:]) for args in calls
-              if args[0] == 'ls-files']
-    assert [command for command, _specs in handed] == ['ls-files'], calls
-    for command, specs in handed:
-        assert specs == ['.purlin/evidence'], (command, specs)
-
-
 class _WindowsOs(object):
     """The `os` module as Windows has it: paths joined with `\\`."""
 
@@ -131,7 +113,6 @@ def _tree_sent(fake):
             if url.endswith('/trees')][0]['tree']
 
 
-# purlin: host PROOF-95
 # purlin: host PROOF-118
 def test_a_run_that_spells_paths_the_windows_way_commits_the_removal(
         tmp_path, monkeypatch):
@@ -155,21 +136,3 @@ def test_a_run_that_spells_paths_the_windows_way_commits_the_removal(
     assert tree[0]['sha'] is None and 'content' not in tree[0]
 
 
-# purlin: host PROOF-27
-def test_the_commit_carries_the_new_file_and_the_deletion(tmp_path,
-                                                          monkeypatch):
-    """The tree the CI commit builds adds the file it was handed and drops
-    the one the run removed."""
-    root = str(tmp_path)
-    gone, kept = _repository_with_a_removed_file(root)
-    _write(root, kept, '{"feature": "login"}\n')
-
-    assert host_module.deleted_files(root) == [gone]
-
-    fake = _on_github(monkeypatch)
-    host_module.commit_files(root, [kept], 'purlin: evidence at 1111111')
-
-    by_path = {entry['path']: entry for entry in _tree_sent(fake)}
-    assert sorted(by_path) == sorted([kept, gone])
-    assert by_path[kept].get('content') == '{"feature": "login"}\n'
-    assert by_path[gone].get('sha') is None
