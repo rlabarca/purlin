@@ -1515,6 +1515,28 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       `purlin:audit` again.
     - **The sign-off refuses while files are changed and not committed**, with one line: commit
       them or set them aside, then run `purlin:sign` again.
+    - **The dashboard's header line shows the time in the viewer's own timezone and names it**, as
+      in `main at a1b2c3d, written 06:42 EDT` (the owner, 2026-10-01).
+118. **Slow proofs: tests that stay out of the way until the whole project is checked** (added
+    2026-10-01). Engineers want a final integration test that does not bog down quick build
+    iterations, and Purlin stays light: one tag, no new command.
+    - **A proof tagged `@slow` is a proof like any other**, with one test and its comment. The tag
+      stands at the end of the proof line, beside `@manual` and `@env`. It is for a proof whose
+      tests take a long time, like integration tests.
+    - **`purlin:test` never starts a slow proof's test**, with a feature named or not.
+      **`purlin:test --all` runs every test, slow ones included**; that is the run a developer
+      makes and commits before handing a version over. A remote run counts as a full run.
+    - **Purlin remembers it.** A slow proof with no counting result reads `not run`, and the
+      status and every run list it under `Left to do`, as `1 slow proof to run: purlin:test --all`.
+      The tests read `met` only after every slow proof has passed on committed evidence. Its
+      result goes out of date as any other does, when what its spec covers changes.
+    - **An anchor may tag a proof `@slow`**, so a check across the whole project that takes long
+      stays out of every build run.
+    - **In this repository** the install test's proofs and the three-person collaboration proof
+      are slow proofs; the collaboration test may grow over time.
+    - **The band's progress bar goes from the dashboard** (decision 109 said a count and no bar);
+      `<passing> of <rules> rules pass` stays.
+    - The deck gains the slide `Slow tests stay out of your way`, published as version 88.
     - **The dashboard's header line shows the time in the viewer's own timezone and names it**,
       as in `main at a1b2c3d, written 06:42 EDT` (the owner, 2026-10-01).
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no

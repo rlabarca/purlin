@@ -122,6 +122,20 @@ slide('together', 'Working together', 'Product, QA and developers improve the sp
  'same rule or proof number, the number already on the default branch keeps it, and the helper '
  'shows its renumbering plan before changing anything. A test comment whose proof was reworded '
  'since the test last changed is named on every run.', width=560, pad=16)
+slide('slow', 'Slow tests', 'Slow tests stay out of your way', [
+    ('Mark it once', 'Add %s to the end of a proof whose tests take a long time, like integration tests.' % m('@slow')),
+    ('`purlin:test`', 'While you build. It runs what changed and skips every slow test.'),
+    ('`purlin:test --all`', 'When you want to check the whole project. It runs everything, slow tests included.'),
+    ('Purlin remembers it', 'When a slow test is due, every status says so: %s' % m('1 slow proof to run: purlin:test --all')),
+], '<b>Nothing to remember.</b> The tests read %s only after every slow test has passed.' % m('met'),
+ 'A slow proof is a proof like any other: one sentence saying how a rule is shown, and one test '
+ 'with a comment above it. The tag changes only when its test runs. A plain purlin:test, or one '
+ 'that names a feature, never starts it. purlin:test --all does, and that is the run a developer '
+ 'makes and commits before handing a version over. Once a file the spec covers changes, the slow '
+ 'proof reads not run and the status lists it, so a person who never knew the test existed is '
+ 'told when it is due and which command runs it. An anchor can use it too: a check across the '
+ 'whole project that takes minutes is tagged slow and stays out of every build run.',
+ lead='Tag a proof %s. Its test is skipped while you build and runs when you check the whole project.' % m('@slow'), width=560, pad=16)
 slide('audit', 'Are the tests any good?', 'The audit: would your tests catch a bug?', [
     ('Heuristic spot tests', 'Purlin flags tests that check nothing, check the code against itself, or never check the result the proof expects.'),
     ('Plant one bug', 'For each proof, an AI puts one small bug in a throwaway copy of your code, such as a sample age off by one hour.'),
@@ -181,7 +195,7 @@ slide('anchors', 'Shared rules', 'Anchors: rules the whole project must follow',
  lead='An anchor is a set of rules for the whole project, proven by tests that run across all of it.', width=560, pad=16)
 deck = {"v": 4, "createdOnFiles": {"v": 1, "at": "2026-09-26T18:00:00Z"},
         "title": "Purlin workflows",
-        "order": ["why", "compare", "touches", "start", "fromcode", "together", "audit", "signoff", "remote", "regulated", "anchors"],
+        "order": ["why", "compare", "touches", "start", "fromcode", "together", "slow", "audit", "signoff", "remote", "regulated", "anchors"],
         "sections": {"s1": {"description": "What Purlin is for, how little it changes in a project and a workflow, and how to start in under ten minutes or from code you already have", "start": "why"},
                      "s2": {"description": "Working together while the specs change, the audit that checks the tests are any good, and the sign-off when everyone is done", "start": "together"},
                      "s3": {"description": "The one case where Purlin uses a remote runner, where Purlin stops in regulated work, and how anchors carry rules for the whole project", "start": "remote"}},
