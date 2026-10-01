@@ -813,7 +813,9 @@ class TestTheCommandLine:
                     if line.strip().startswith('Note:')], printed
 
     # purlin: ai_audit PROOF-87
-    def test_a_rule_with_no_test_names_the_command(self, capsys):
+    def test_a_proof_with_no_marked_test_prints_no_test_yet_under_test(
+            self, capsys):
+        # RULE-3's one proof, PROOF-3, has no test marked for it.
         spec = SPEC.replace(
             '- RULE-2:', '- RULE-3: A session ends after an hour\n- RULE-2:'
         ) + '- PROOF-3 (RULE-3): A session an hour old is refused\n'
