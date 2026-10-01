@@ -10,7 +10,7 @@ When everyone is done, a person signs the evidence once.
 |---|---|
 | Run and commit | A developer runs every test on the version to sign, the run on Windows included, and commits the results. |
 | `purlin:sign` | Opens with who ran the tests, where and when. Stops at each hand check, shows what the audit found, and asks for one signature. |
-| The package | One file: every rule, its proofs, its tests, the results, the audit, who wrote what, who signed. |
+| The package | One file: every rule, its proofs, its tests, the results, the audit, who wrote what. Each sign-off is a file beside it. |
 | The tag | The first sign-off tags the version `signed/1.4.0`. Later sign-offs are added beside it. |
 | `git push` | You publish the branch and the tag. |
 
@@ -96,7 +96,7 @@ one line naming the cause and the command to run. It writes nothing and exits 1.
 | `No version: nothing in this project states one. Run purlin:sign --version <version>, or write it to a VERSION file.` | no version is stated and none is named |
 | `No sign-off: signed/2.1.0 is at 8de0b6e, which this checkout does not hold. Pull, then run purlin:sign.` | the version is already signed on a commit you have not pulled |
 | `No sign-off: signed/2.1.0 is at 8de0b6e, and the code has changed since. To sign this code, name a new version: purlin:sign --version <version>.` | the version is already signed, over other code; a tag that exists is never moved |
-| `No sign-off: these results were not taken on this version of the code, 1cf829e: audit on Windows. Run purlin:test on Windows, then purlin:sign.` | a result was taken before the code last changed; the line names the features and the system, and the run that takes them again |
+| `No sign-off: these results were not taken on this version of the code, 1cf829e: login on Windows. Run purlin:test on Windows, then purlin:sign.` | a result was taken before the code last changed; the line names the features and the system, and the run that takes them again |
 | `No sign-off: these results were taken while files were changed and not committed: login on Linux/Unix. Run purlin:test --all --commit, then purlin:sign.` | a committed result was taken over files that were changed and not committed |
 | `No sign-off: 1 rule has no test at 1cf829e: login RULE-3. Run purlin:build login, then purlin:sign.` | a rule has no test, with or without a proof line |
 | `No sign-off: 1 rule does not pass at 1cf829e: login RULE-2. Run purlin:status to see what is left, then purlin:sign.` | a rule fails or has not run |

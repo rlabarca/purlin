@@ -21,7 +21,7 @@ the top bar. The product surface replaces both with the slate ramp `#0F172A` to 
 
 **Ink and accent.** Cream `#E4DDD4` is the ink. Blush `#E6BEB0` labels. Slate-blue `#93AEB8`
 annotates: list numerals and secondary machine text. Copper `#C0793F` is the only accent, used
-for eyebrows, gate names and one emphasis per view. There is no second accent, no gradient and
+for eyebrows and one emphasis per view. There is no second accent, no gradient and
 no purple.
 
 **State.** Four hues, one meaning each, on every surface:
@@ -45,7 +45,7 @@ call-out.
 ## Type
 
 Two faces, Arial and Courier New, and no display face or serif. Anything the machine produced,
-commands, rule ids, file paths, shas, gates and transcripts, is set in Courier New. Anything a
+commands, rule ids, file paths, shas, cell words and transcripts, is set in Courier New. Anything a
 person wrote is set in Arial. Readers use the typeface to tell whose claim they are reading.
 Bold is reserved for dashboard metrics and group titles; hierarchy otherwise comes from size and
 letter-spacing.

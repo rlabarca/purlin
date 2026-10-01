@@ -18,8 +18,8 @@ For a developer putting Purlin on a project, who wants it to stay out of the way
   makes the tool write a report. The entries are written once you confirm them.
 - **A commit when you ask for one.** A test run commits its results only with `--commit`.
   `purlin:spec` and `purlin:build` commit the spec and the code you asked them for.
-- **Nothing running unless you ran it.** No git hook, and no Purlin process left running after
-  a command ends.
+- **Nothing running unless you ran it.** No git hook, no background job and no pipeline, and
+  no Purlin process left running after a command ends.
 - **Nothing added to your test suite.** No plugin, no import, no fixture. The one exception is
   the test tool's own: jest needs `jest-junit` to write its report. The first test run prints
   the command that installs it.

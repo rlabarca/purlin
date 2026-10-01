@@ -24,7 +24,7 @@ a test is any test in your own suite with one comment above it.
 - **The evidence package records who wrote and last changed each rule, proof and test**, from git.
 - **The dashboard names the branch and commit its data describes**, and its page is written with its data.
 - **A Purlin tool call names its folder**; a call that names none is refused with the fix.
-- **Cut:** mutation testing, purlin:export, the gate, the release step, .purlin/tests.md, drift's role views, setup's questions but one, and most settings.
+- **Cut:** drift's role views, setup's questions but one, and most settings.
 - **The formats** stand at spec 23, anchor 12, evidence 9, signature 15, package 10 and marker 4,
   the drift criteria at 13, and the dashboard's data at schema 14.
 

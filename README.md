@@ -27,8 +27,8 @@ happens in a regulated system, Purlin's evidence package is an input to it.
   that makes it write a report, and you confirm it.
 - A commit when you agree to one. Setup asks before it commits the files it wrote. A test run
   commits its results only with `--commit`.
-- Nothing running unless you ran it: no git hook, and no Purlin process left running after a
-  command ends.
+- Nothing running unless you ran it: no git hook, no background job and no pipeline, and no
+  Purlin process left running after a command ends.
 - Nothing added to your test suite.
 
 ## Install

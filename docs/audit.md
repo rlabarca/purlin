@@ -35,7 +35,7 @@ The audit found 42 of 50 rules strong (84%).
 - **Your code is never changed.** Every bug is planted in a copy, and the copy is thrown away.
 - **Nothing waits on it.** A weak rule is work to do, listed as `to strengthen`. The tests still
   read `met`, and a sign-off goes ahead.
-- **`strong` means a bug was planted and caught.** If the AI cannot be reached, a rule the spot
+- **`strong` needs the AI.** If the AI cannot be reached, a rule the spot
   tests flag is still `weak`. Every other rule stays `not audited`, and the audit tells you to
   run `purlin:audit` again.
 - **It stays fast.** Only proofs whose test or code changed since the last audit get a new bug.

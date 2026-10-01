@@ -225,8 +225,9 @@ line per system. They are neither a pass nor a failure:
 ```
 
 Their rules' passed cells read `not run`, with the reason `Windows: no run yet`. `Left to do`
-carries `1 rule to test on Windows: run purlin:test on Windows`.
-[Testing on another system](#testing-on-another-system) says how a project gets that run.
+carries `1 rule to test on Windows: run purlin:test on Windows`. That is an instruction, not a
+command you type here: run `purlin:test` on a Windows machine, or start your project's own run
+there. [Testing on another system](#testing-on-another-system) says how a project gets that run.
 
 Three details:
 
@@ -287,7 +288,7 @@ Left to do:
 purlin:audit                    Run what the change touched, audit, write the evidence
 purlin:audit <feature> [...]    One feature, or several
 purlin:audit --all              Run every feature, and read every rule again
-purlin:audit --commit           Commit the evidence the run wrote
+purlin:audit --commit           Commit the work and the evidence the run wrote
 purlin:audit --arm-timeout <seconds>  Give each suite, and each planted bug's run, longer
 ```
 
