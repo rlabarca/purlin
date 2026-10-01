@@ -1195,6 +1195,24 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **A hand check at the gate `passed` is listed as not checked** (answered on the plan's Q1):
       the release goes ahead, prints one line naming those rules, and the package lists them as
       not checked.
+104. **A team's collaboration is a rule** (added 2026-10-01). Purlin's success needs three
+    people working concurrently through git to reach a signed release. In the owner's words:
+    "we can just test if we successfuly complete the collaboration without getting stuck or have
+    errors or coruption". Smoothness is not judged.
+    - **One rule, one scripted proof.** Product, QA and dev work in three clones of one repository
+      on branches, with collisions forced (a number taken on two branches, a test marked against
+      a proof whose number then moves), merged in both orders, and reach a release signed at the
+      gate `signed`. A script drives the people; it runs in every sweep.
+    - **What completes means, each checked by the script:** the release carries
+      `signed/<version>`, and the committed evidence package describes the tagged commit and
+      checks intact; no step stops for anything Purlin's output and docs do not give; no command
+      fails unexpectedly and every warning raised along the way is resolved by the end; no spec
+      holds a number twice or a merge-conflict line, every test comment is tied, each test's proof
+      has the wording it was marked against, each spec's highest-number lines cover its numbers,
+      and the package lists every rule.
+    - **The run with real AI sessions stays a sanity check the owner runs on demand**, as decision
+      94 placed it; it is not a proof.
+    - Planned after the second QA and product check reports, so its findings shape the scenario.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
