@@ -25,19 +25,20 @@ PART = ('<div style="display:flex; align-items:center; gap:32px; padding:0 0 0 8
 def brand():
     svg = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'design', 'assets', 'logo.svg'), encoding='utf-8').read()
     svg = re.sub(r'<metadata>.*?</metadata>', '', svg, flags=re.S).replace(' xmlns:c2pa="http://c2pa.org/manifest"', '')
-    svg = svg.replace('width="670" height="330"', 'aria-label="Purlin" style="width:300px; height:148px"')
-    # The mark runs a little off the right edge; the name sits under it, on the right margin.
-    return ('<div style="position:absolute; right:-80px; top:40px; width:300px; height:148px; opacity:0.9">%s</div>'
-            '<p style="position:absolute; right:128px; top:196px; width:200px; text-align:right; font-size:32px; '
-            'font-weight:600; color:#E4DDD4">Purlin</p>' % svg)
+    svg = svg.replace('width="670" height="330"', 'aria-label="Purlin" style="width:260px; height:128px"')
+    # The mark touches the top edge of the slide, its right side on the right margin, and the
+    # name sits centred under it: one column, the same on every slide.
+    return ('<div style="position:absolute; right:128px; top:0px; width:260px; display:flex; '
+            'flex-direction:column; align-items:center; gap:8px">%s'
+            '<p style="font-size:32px; font-weight:600; color:#E4DDD4; text-align:center">Purlin</p></div>' % svg)
 # numbers=False drops the count at the start of each row: a slide with one case has nothing to count.
 def slide(sid, eyebrow, headline, rows, closing, notes, lead='', width=620, gap=20, pad=18, numbers=True):
     # One label width and one card padding on every slide, so every text column starts in the same place.
     width, pad = 560, 16
     out = [SECTION % (sid, gap),
-           '<h2 style="font-size:64px; font-weight:600; line-height:1.1; width:1440px">%s</h2>' % headline]
+           '<h2 style="font-size:64px; font-weight:600; line-height:1.1; width:1360px">%s</h2>' % headline]
     if lead:
-        out.append('<p style="font-size:32px; color:#BFCED5; width:1440px">%s</p>' % lead)
+        out.append('<p style="font-size:32px; color:#BFCED5; width:1360px">%s</p>' % lead)
     out.append('<div style="flex:1"></div>')
     for i, row in enumerate(rows, 1):
         name, what, parts = row[0], row[1], row[2] if len(row) > 2 else ()
