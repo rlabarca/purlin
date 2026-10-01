@@ -40,10 +40,9 @@ On Windows the pytest entry's command starts `py -3 -m pytest` in place of
 | sql | a `test_*.sql`, `*_test.sql` or `*.test.sql` file | the `sqlite3` command; a test fails by raising an error, and another engine is a change to `run` |
 | shell | a `*.test.sh` file | nothing |
 
-Detection descends the tree, skipping dot directories, `node_modules`, `bin`, `obj` and
-`mutants/`. It also skips every folder named `fixtures`, `fixture`, `samples`, `sample`,
+Detection descends the tree, skipping dot directories, `node_modules`, `bin` and `obj`. It also skips every folder named `fixtures`, `fixture`, `samples`, `sample`,
 `testdata`, `test_data` or `test-data`, at any depth: a project kept there to test against is
-not a tool this project uses, so setup and the first test run name only the project's own. A
+not a tool this project uses, so the first test run names only the project's own. A
 project that carries several frameworks is suggested an entry for each, one suite per entry
 under `tests`.
 
@@ -68,17 +67,6 @@ jest reads every word after that option as another reporter.
   ]
 }
 ```
-
-Where a file git lists, outside `specs/` and `.purlin/`, holds the text `--doctest-modules`, the
-project's own test command runs the examples inside its functions' documentation, and the
-suggested command keeps running them:
-`python3 -m pytest --doctest-modules --ignore=mutants {files} --junitxml={report}`.
-
-mutmut switches a break on only in a module imported by its full dotted name, so a test that
-imports a file through a `sys.path` entry never switches one on; import by the dotted path.
-mutmut runs on Linux/Unix and macOS. A test that reads git state or the source text sees the
-copy mutmut makes under `mutants/`, so name such tests in `pytest_add_cli_args` with
-`--deselect`.
 
 ### vitest
 
@@ -178,10 +166,6 @@ the stream `go test -json` prints on Go 1.27.1.
   ]
 }
 ```
-
-A Windows runner on GitHub or Azure DevOps has no `sqlite3`. The runner file `purlin:init`
-writes installs it there through chocolatey when a tracked file other than the runner file
-names `sqlite3`.
 
 ### shell
 

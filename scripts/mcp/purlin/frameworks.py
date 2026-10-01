@@ -6,9 +6,8 @@ whose `tests` setting is empty suggests the entry of every framework it
 detects, in the order of `ENTRIES`, with the report flag already in each
 command, and says in one line what each framework needs added before it can
 write a report. On Windows the pytest entry starts `py -3 -m pytest` in
-place of `python3 -m pytest`, and where a file of the project names
-`--doctest-modules` the pytest entry carries it too. Where it detects none,
-the agent reads the project and proposes an entry.
+place of `python3 -m pytest`. Where it detects none, the agent reads the
+project and proposes an entry.
 
 Nothing of Purlin is installed in a project's test suite: every entry below
 runs the project's own test command and reads the report that command writes.
@@ -18,7 +17,6 @@ runs the project's own test command and reads the report that command writes.
 import json
 import os
 import re
-import subprocess
 import sys
 
 _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -102,7 +100,7 @@ NEEDS = {
 # Directory names detection never descends into: dot directories are tool
 # state, and `node_modules` is other people's code, where a vendored package's
 # own fixtures are not this project's frameworks.
-_SKIP_DIRS = ('node_modules', 'bin', 'obj', 'mutants')
+_SKIP_DIRS = ('node_modules', 'bin', 'obj')
 
 # Folders of test fixtures, samples and test data, at any depth: a project
 # kept there to test against is not a tool this project uses.
@@ -267,56 +265,18 @@ def entries_for(frameworks):
 PYTHON_COMMAND = 'python3 -m pytest'
 WINDOWS_PYTHON_COMMAND = 'py -3 -m pytest'
 
-# The pytest option that runs the examples inside a function's documentation,
-# and the folders whose files do not count as the project naming it: specs
-# describe the project, and `.purlin/` is Purlin's own.
-DOCTEST_OPTION = '--doctest-modules'
-_DOCTEST_SKIP = ('specs/', '.purlin/')
-
-
-def runs_doctests(project_root):
-    """True when a file git lists, outside `specs/` and `.purlin/`, holds the
-    text `--doctest-modules`: the project's own test command runs the
-    examples inside its functions' documentation, so the suggested one keeps
-    running them. Outside a git repository nothing is listed."""
-    try:
-        listed = subprocess.run(['git', 'ls-files', '-z'], cwd=project_root,
-                                capture_output=True, timeout=60)
-    except (OSError, subprocess.SubprocessError):
-        return False
-    if listed.returncode != 0:
-        return False
-    for raw in listed.stdout.split(b'\0'):
-        rel = raw.decode('utf-8', 'replace')
-        if not rel or rel.startswith(_DOCTEST_SKIP):
-            continue
-        path = os.path.join(project_root, *rel.split('/'))
-        try:
-            with open(path, encoding='utf-8', errors='replace') as handle:
-                if DOCTEST_OPTION in handle.read():
-                    return True
-        except (IOError, OSError):
-            continue
-    return False
-
-
 def suggest(project_root, os_name=None):
     """The `tests` entries the first test run suggests, as a list.
 
     The entry of every framework detected, in registry order; empty where
     none is detected. `os_name` is `windows` for a Windows machine, and with
     none given it is read from this one: there the pytest entry's command
-    starts `py -3 -m pytest`. Where the project runs the examples inside its
-    functions' documentation (`runs_doctests`), the pytest command carries
-    `--doctest-modules` after `-m pytest`.
+    starts `py -3 -m pytest`.
     """
     windows = (os_name == 'windows' if os_name is not None
                else os.name == 'nt')
     entries = entries_for(detect_frameworks(project_root))
     for entry in entries:
-        if entry['name'] == 'pytest' and runs_doctests(project_root):
-            entry['run'] = entry['run'].replace(
-                PYTHON_COMMAND, '%s %s' % (PYTHON_COMMAND, DOCTEST_OPTION), 1)
         if windows and entry['run'].startswith(PYTHON_COMMAND):
             entry['run'] = (WINDOWS_PYTHON_COMMAND
                             + entry['run'][len(PYTHON_COMMAND):])
