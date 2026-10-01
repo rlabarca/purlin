@@ -9,11 +9,17 @@ person and by a model.
 
 ## Which rules the audit reads
 
-A rule is read when it is its feature's own, at least one of its proofs has a test, its tests
-pass, and it has no audit entry for its current rule, proofs and tests, or its feature's code
-changed since that entry. An anchor's rules are read once, as the anchor's. `purlin:audit --all`
-reads every rule that passes its tests again. A rule whose every proof is `@manual` has no test
-to read and is not read.
+The audit reads a rule when all of these hold:
+
+- the rule is its feature's own;
+- at least one of its proofs has a test;
+- its tests pass;
+- it has no audit entry for its current rule, proofs and tests, or its feature's code changed
+  since that entry.
+
+An anchor's rules are read once, as the anchor's. `purlin:audit --all` reads every rule that
+passes its tests again. A rule whose every proof is `@manual` has no test to read, so it is not
+read.
 
 ## The verdict
 
@@ -157,8 +163,8 @@ expected value, written by a person; a test that never mentions it is checking s
 
 - Each check has a rule and proofs, with tests that show it firing on a wrong test and staying
   silent on a right one, in Python, JavaScript or TypeScript, and C#.
-- Before a release, the checks run over Purlin's own tests. Every finding is read by a person
-  and either fixed in the test or, if the check was wrong, the check is narrowed.
+- Before a release of Purlin, run the checks over Purlin's own tests. A person reads every
+  finding. Fix the test or, where the check was wrong, narrow the check.
 
 ## The planted bug
 

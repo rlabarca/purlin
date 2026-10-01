@@ -69,41 +69,55 @@ It writes nothing and names what is missing:
 
 ## Step 3: the evidence, written and committed when asked
 
-The run writes this operating system's section of `.purlin/evidence/local/<feature>.json`: the
-commit of the code it describes, the time, who ran it and on which machine, the fingerprint of the
-spec, code and tests it saw, each rule's word, each proof's result and test. It prints `Evidence
-written to .purlin/evidence/local/<feature>.json.`, or the folder and a count for several
-features, and commits nothing. With `--commit` it makes two commits under your own git identity.
-The first, `purlin: specs, tests and settings for <feature>`, holds the specs of the features run,
-the test files carrying their markers and `.purlin/config.json`, and the run prints `Committed
-<sha7>, the work these results describe:` and each path. The second, `purlin: evidence at <sha7>`,
-holds the evidence and names the first; the run prints `Evidence committed.`, or `Evidence
-unchanged.` when nothing new was seen. It never pushes. `references/formats/evidence_format.md` is
-the contract.
+The run writes this operating system's section of `.purlin/evidence/local/<feature>.json`. The
+section holds:
 
-The tests read `met` only on committed evidence, and a sign-off counts only results taken on this
-version of the code. So before a person signs, run `purlin:test --all --commit`: every feature,
-on the code as committed, and the results committed after it.
+- the commit of the code it describes, and the time;
+- who ran it, and on which machine;
+- the fingerprint of the spec, code and tests it saw;
+- each rule's word, and each proof's result and test.
+
+It prints `Evidence written to .purlin/evidence/local/<feature>.json.`, or the folder and a count
+for several features. It commits nothing.
+
+With `--commit` it makes two commits under your own git identity: the work, then the evidence
+that names it. It never pushes. `references/commit_conventions.md`, "The two commits of a run",
+says what each commit holds. `references/formats/evidence_format.md` is the contract for the file
+and for the lines the run prints.
+
+The tests read `met` only on committed evidence. A sign-off counts only results taken on this
+version of the code. So before a person signs, run `purlin:test --all --commit`. It runs every
+feature on the code as committed, then commits the results.
 
 ## Step 4: read what the run found
 
-The run prints `Markers: <n> tied to a test, <k> not tied.`, then each test comment to correct,
-then `Ran <suite> on <n> features.`, then one line per rule that fails or has no test,
-`<feature> RULE-<n> fails: <file>::<test>. Run purlin:build <feature>.`, `<feature> RULE-<n> has
-no test. Run purlin:build <feature>.` or `<feature> <RULE-N> has no test for <PROOF-N>[,
-<PROOF-M>...]. Run purlin:build <feature>.`, then the status `purlin:status` builds. For a
-failed test the run also prints the last 60 lines of the suite's own output.
+The run prints, in this order:
+
+1. `Markers: <n> tied to a test, <k> not tied.`
+2. Each test comment to correct.
+3. `Ran <suite> on <n> features.`
+4. One line per rule that fails or has no test. It is one of:
+   - `<feature> RULE-<n> fails: <file>::<test>. Run purlin:build <feature>.`
+   - `<feature> RULE-<n> has no test. Run purlin:build <feature>.`
+   - `<feature> <RULE-N> has no test for <PROOF-N>[, <PROOF-M>...]. Run purlin:build <feature>.`
+5. The status `purlin:status` builds.
+
+For a failed test the run also prints the last 60 lines of the suite's own output.
 
 The `Tests` column counts the words a passed cell can read: `passed`, `partial`, `failed`,
 `no test`, `not run` and `out of date`. `references/spec_quality_guide.md`, "When a rule is
 stuck", says what each word means, with its reasons, and what moves it.
 
 A test comment to correct reads `<file>:<line> names <feature> <PROOF-N>, whose wording changed
-after the test was last changed in <sha7>: ...`, and clears once the test itself changes: run
-`purlin:build <feature>`. Loud failures come first: `Evidence is missing: <what>.` means a suite
-left no readable report, or a marker has no pass or fail: its test was skipped, the report lacks
-it, or no test follows it. A marker naming nothing a spec has reads `<file>:<line> names
-<feature> <ID>, which no spec has.`
+after the test was last changed in <sha7>: ...`. It clears once the test itself changes: run
+`purlin:build <feature>`.
+
+Loud failures come first. `Evidence is missing: <what>.` means one of two things:
+
+- a suite left no readable report;
+- a marker has no pass or fail: its test was skipped, the report lacks it, or no test follows it.
+
+A marker naming nothing a spec has reads `<file>:<line> names <feature> <ID>, which no spec has.`
 
 ## Step 5: another operating system
 

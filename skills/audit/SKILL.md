@@ -38,22 +38,16 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scrip
 Add `--arm-timeout <seconds>` when the person gave it. Add `--all` for `purlin:audit --all` and
 `--feature <name>` for each feature named; with neither, the run covers the features `purlin:test`
 would select. It runs the tests, then reads each rule whose tests pass, that has a proof with a
-test, and whose text, proofs, tests or covered code changed since its last audit:
+test, and whose text, proofs, tests or covered code changed since its last audit. It takes three
+steps for each rule:
 
-1. **The heuristic spot tests**, with no model: a test that checks nothing, a check that cannot
-   fail, a swallowed error, a test that checks the code against itself, a test that replaces what
-   it is testing, and a test that never checks the result the proof expects.
-2. **One planted bug per proof** whose test or covered code changed since its last one. The model
-   names the smallest change to the code that would break the proof; the change is made in a copy
-   of the project, never in the project itself; the proof's own tests run there; the copy is
-   removed. A test that still passes is weak, with the change as the evidence. No bug is planted
-   for an anchor's proof or a `@manual` proof.
-3. **The model's reading**, one `claude -p` call per rule, which explains what the first two found
-   and decides nothing.
+1. The heuristic spot tests.
+2. One planted bug per proof.
+3. The model's reading.
 
 A rule reads `weak` when a spot test fires on one of its tests or a planted bug survived, else
-`strong`. `references/review_criteria.md` is the one home of each check, the research behind it
-and what the model is sent.
+`strong`. `references/review_criteria.md` is the one home of each step: its checks, the research
+behind them and what the model is sent.
 
 The run writes each feature's section and its `audit` into `.purlin/evidence/local/<feature>.json`
 and prints `Evidence written to .purlin/evidence/local/<feature>.json.` It commits nothing unless

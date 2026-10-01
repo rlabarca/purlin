@@ -45,28 +45,44 @@ purlin: specs, tests and settings for <feature>, <feature>
 purlin: evidence at <commit7>
 ```
 
-The first carries each spec of the features the run covered, the test files carrying their
-markers and `.purlin/config.json`, where any of them changed. The run prints
-`Committed <sha7>, the work these results describe:` and then each path on a line of its own,
-indented two spaces. With nothing to commit there is no first commit.
+Both commits are yours, made under your own git identity. Neither is pushed for you.
+`references/formats/evidence_format.md`, "The two commits", gives the lines the run prints.
 
-A run that selected nothing to run still commits, in the first commit, every spec, every test
+**The first commit** holds whichever of these changed:
+
+- each spec of the features the run covered;
+- the test files carrying their markers;
+- `.purlin/config.json`.
+
+With nothing to commit there is no first commit.
+
+A run that selected nothing to run still makes the first commit. It holds every spec, every test
 file carrying a marker and `.purlin/config.json` that changed. Its subject names each feature
-whose spec or marked tests it holds, and reads `purlin: specs, tests and settings` where it
-holds only the settings.
+whose spec or marked tests it holds. Where it holds only the settings, the subject is
+`purlin: specs, tests and settings`.
 
-The second carries the files under `.purlin/evidence/local/` and any
-evidence file the run removed because its feature has no spec, and nothing else. `<commit7>`
-is the first seven characters of the first commit, or of HEAD when there was nothing to commit:
-the commit of the code the results describe, not the evidence commit itself. Each section records
-that same commit, and a sign-off counts a result only when nothing but Purlin's own records under
-`.purlin/` changed after it. Never fold it into a
-`feat(...)` commit, because the evidence must be able to say which commit the tests ran
-against. The run prints `Evidence committed.`, or `Evidence unchanged.` when nothing new was
-seen. Both commits are yours, made under your own git identity, and neither is pushed for you.
+**The second commit** holds the evidence and nothing else:
 
-A run on another system commits its own files under `.purlin/evidence/ci/` with the same subject,
-under the git identity its checkout sets. No run writes a sign-off, so an evidence commit never carries one.
+- the files under `.purlin/evidence/local/`;
+- any evidence file the run removed because its feature has no spec.
+
+`<commit7>` is the first seven characters of the first commit, or of HEAD when there was nothing
+to commit. It names the commit of the code the results describe, not the evidence commit itself.
+Each section of the evidence records that same commit. A sign-off counts a result only when
+nothing but Purlin's own records under `.purlin/` changed after it.
+
+Never fold the evidence into a `feat(...)` commit. The evidence must be able to say which commit
+the tests ran against.
+
+A run on another system with `--commit` makes the second commit alone:
+
+- It holds that run's files under `.purlin/evidence/ci/` and any evidence file the run removed,
+  and nothing else.
+- Its subject is the same, and `<commit7>` names HEAD when the run started.
+- It is made under the git identity its checkout sets.
+- The run itself pushes nothing.
+
+No run writes a sign-off, so an evidence commit never carries one.
 
 ## The sign-off commit
 

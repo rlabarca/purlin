@@ -112,8 +112,16 @@ leaves its number vacant and the rules that remain keep the numbers they had,
 so a gap in the sequence is legal and the parser reports nothing for it.
 Renumbering by hand would silently repoint every test comment that already
 names the old id.
-A new rule takes one more than the highest of `> Highest-Rule:` and every rule number the spec holds, and `> Highest-Rule:` is raised to it, so a number is never used again.
-When two branches take the same number, the number already on the default branch keeps it, and the rule or proof from the branch not yet merged moves to the next free number. A moved rule's audit is read again; `purlin:spec` renumbers it and its test comments when you say yes.
+
+A new rule takes one more than the highest of `> Highest-Rule:` and every
+rule number the spec holds. `> Highest-Rule:` is raised to that number, so a
+number is never used again.
+
+Two branches can take the same number. The rule or proof already on the
+default branch keeps it. The one from the branch not yet merged moves to the
+next free number, and a moved rule's audit is read again. `purlin:spec`
+renumbers it and its test comments when you say yes.
+
 Unnumbered lines under `## Rules` are reported. A rule id written twice is
 warned of; the rule is read once, with the text of its second line, and every
 rule of the spec reads `failed`, with the reason `RULE-N is written twice in the

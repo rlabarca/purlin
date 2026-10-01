@@ -114,19 +114,19 @@ answers only for the proofs tagged `@env` for the system it was taken on:
 its `proofs` list those proofs alone, and its `rules` the rules they prove.
 A feature with no such proof gets no `ci` file from that run.
 
-Each `rules` value:
+Each `rules` value is one word. The rows are read from the top, and the
+first that holds gives the word:
 
-| Word | What it means |
+| Word | When it holds |
 |---|---|
-| `failed` | a tied test of a proof that could run here failed, or a test marked with the rule's id failed |
-| `no test` | else, a proof of the rule that is not `@manual`, tagged `@env` or not, has no test tied to it; or no proof names the rule and no test is marked with its id |
-| `not run` | else, a tied test did not run, a proof of the rule is tagged `@env` for another operating system, so this machine could not answer, or the run left out the test of a proof tagged `@slow` |
-| `passed` | else: every test tied to every proof of the rule that could run here ran and passed; for a rule with no proof, every test marked with the rule's own id passed |
+| `failed` | a tied test of a proof that could run here failed; or a test marked with the rule's id failed |
+| `no test` | a proof of the rule that is not `@manual` has no test tied to it, whether it is tagged `@env` or not; or no proof names the rule and no test is marked with its id |
+| `not run` | a tied test did not run; or a proof of the rule is tagged `@env` for another operating system, so this machine could not answer; or the run left out the test of a proof tagged `@slow` |
+| `passed` | none of the rows above holds: every test tied to every proof of the rule that could run here ran and passed. For a rule with no proof, every test marked with the rule's own id passed |
 
-The words are read in that order. A rule whose proofs are all `@manual`
-reads `passed`, since no run was ever going to observe one. A proof that
-reads `nothing to check` counts as passed in an anchor's section and as not
-run in any other.
+A rule whose proofs are all `@manual` reads `passed`, since no run was ever
+going to observe one. A proof that reads `nothing to check` counts as passed
+in an anchor's section and as not run in any other.
 
 Each `proofs` entry:
 
@@ -141,20 +141,27 @@ Each `proofs` entry:
 | `reason` | string | present only where `result` is `nothing to check`: the text after `nothing to check: ` in the reason the test's tool gave for its skip |
 
 A test is tied to its proof by the marker comment above it, as
-`references/formats/marker_format.md` says. A proof whose test was skipped, or
-that no case in the report is, reads `missing` with the test named. A proof
-whose every tied test skipped with a reason starting exactly `nothing to
-check:` reads `nothing to check` instead, each entry carrying its `reason`;
-in an anchor's section its rule reads `passed`, and in any other spec's
-section `not run`. A proof
-tagged `@env` for another operating system than the section's reads `not run`
-whatever its tied test did there: a test carrying a Mac proof's marker and a
-Windows proof's marker runs on the Mac and proves only the Mac proof. A proof
-no test is tied to has one entry with an empty `test`, reading the same way.
-A proof tagged `@slow` whose test the run left out reads `not run` with the
-test named, unless the section the run replaces was taken over the same
-fingerprint and holds a result for that test: then the entry keeps that
-result.
+`references/formats/marker_format.md` says. Besides `pass` and `fail`, an
+entry reads:
+
+- **`missing`**, with the test named, where the test was skipped or the
+  report holds no case for it.
+- **`nothing to check`** instead, where every test tied to the proof skipped
+  with a reason starting exactly `nothing to check:`. Each entry carries its
+  `reason`. The proof's rule reads `passed` in an anchor's section and
+  `not run` in any other spec's section.
+- **`not run`** where the proof is tagged `@env` for another operating system
+  than the section's, whatever its tied test did there. A test carrying a Mac
+  proof's marker and a Windows proof's marker runs on the Mac and proves only
+  the Mac proof.
+- **`not run`**, with the test named, where the proof is tagged `@slow` and
+  the run left its test out. One case differs: the section the run replaces
+  was taken over the same fingerprint and holds a result for that test. The
+  entry then keeps that result.
+
+A proof no test is tied to has one entry with an empty `test`. It reads
+`missing`, or `not run` where the proof is tagged `@env` for another
+operating system.
 
 A reader takes a proof's result in a section as the worst of its entries:
 `fail` where one failed, else `not run` where one reads `missing` or `not
@@ -274,42 +281,23 @@ section replaces it, with its own `at`, `commit`, `dirty` and `email`.
 
 ## The two commits
 
-`purlin:test` and `purlin:audit` write the files and do not commit them. With `--commit` they make two commits in one step, under the
-person's own identity. The first carries the work the results describe: the
-spec of each feature run, the test files carrying their markers and
-`.purlin/config.json`, where any of them changed:
+`purlin:test` and `purlin:audit` write the files and do not commit them. With
+`--commit` a run makes two commits, the work and then the evidence.
+`references/commit_conventions.md`, "The two commits of a run", says what each
+commit holds and how its subject reads. This section gives what the run
+prints:
 
-```
-purlin: specs, tests and settings for <feature>[, <feature>...]
-```
+| When | The run prints |
+|---|---|
+| It made the first commit | `Committed <sha7>, the work these results describe:`, then each file that commit changed, one per line, indented two spaces |
+| No spec, test file or setting changed, so it made no first commit | nothing |
+| It made the evidence commit | `Evidence committed.` |
+| No evidence file changed, so there was nothing to commit | `Evidence unchanged.` |
 
-The run prints `Committed <sha7>, the work these results describe:` and then
-each file that commit changed, one per line, indented two spaces. Where none
-changed it makes no such commit and prints nothing.
+`<sha7>` is the first seven characters of the first commit.
 
-A run that selected nothing to run still makes the first commit, of every
-spec, every test file carrying a marker and `.purlin/config.json` that
-changed. Its subject names each feature whose spec or marked tests it holds;
-where it holds only the settings, the subject is:
+A `--ci` run writes its `ci/` files and does not commit them. With `--commit`
+it makes the evidence commit alone, and prints `Evidence committed.` or
+`Evidence unchanged.` the same way.
 
-```
-purlin: specs, tests and settings
-```
-
-The second carries the files under `local/` and any file the run removed:
-
-```
-purlin: evidence at <sha7>
-```
-
-where `<sha7>` is the first seven characters of the first commit, or of
-`HEAD` when there was nothing to commit first. The run prints `Evidence
-committed.`, or `Evidence unchanged.` when no file changed and there was
-nothing to commit. Neither command ever pushes.
-
-A `--ci` run writes its `ci/` files and does not commit them. With
-`--commit` it makes one commit, of the files under `ci/` and any evidence
-file the run removed and nothing else, under the git identity set in that
-checkout, with the same subject, where `<sha7>` names `HEAD` when the run
-started. It prints `Evidence committed.` or `Evidence unchanged.` the same
-way, and it never pushes.
+No run ever pushes.

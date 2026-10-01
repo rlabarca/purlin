@@ -131,7 +131,16 @@ spellings parse the same. A pin is always a commit, never a branch: a branch
 moves, and an anchor whose content changed under a project without a diff is
 what pinning exists to prevent.
 
-The file at the path is a spec in this format that holds at least one rule. `purlin:anchor add` refuses any other source, a file on disk, a description in words or a file with no rule, and writes nothing. A copy whose `> Source:` names no repository reads `error` in `purlin:drift` and in `purlin:anchor sync --check`. A local anchor carries no `> Source:` and is never checked.
+The file at the path is a spec in this format that holds at least one rule.
+`purlin:anchor add` refuses any other source and writes nothing:
+
+- a file on disk;
+- a description in words;
+- a file with no rule.
+
+A copy whose `> Source:` names no repository reads `error` in `purlin:drift`
+and in `purlin:anchor sync --check`. A local anchor carries no `> Source:` and
+is never checked.
 
 The status and `purlin:drift` check a pin against its source and pull nothing:
 one cached `git ls-remote` per source per run reads the source's head, and the

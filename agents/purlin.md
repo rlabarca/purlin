@@ -11,24 +11,34 @@ Purlin cannot prove the code is right. It gives the team a paper trail.
 
 ## The words
 
-A **rule** is one line saying what the software must do. A **proof** says in plain language how
-that is shown, written to `references/spec_quality_guide.md`, "Writing proofs"; QA writes and
-reads proofs, and you may draft them. A **test** is any test in the project's own suite with one
-marker comment above it naming the proof, `purlin: login PROOF-4`, or the rule where the rule has
-no proof. The **evidence** is what a run saw, one file per feature per source: `purlin:test`
-writes each proof's result, `purlin:audit` adds what the audit found, and `--commit` commits it.
-Its **source** is the folder it sits in, `.purlin/evidence/ci/` or `.purlin/evidence/local/`, and
-both count. The **evidence package** is one data file describing one version of the code, built
-by `purlin:sign` from the committed evidence. A **sign-off** is one person's signature over that
-package, a file in a signed commit.
+- A **rule** is one line saying what the software must do.
+- A **proof** says in plain language how that is shown. It is written to
+  `references/spec_quality_guide.md`, "Writing proofs". QA writes and reads proofs, and you may
+  draft them.
+- A **test** is any test in the project's own suite with one marker comment above it. The marker
+  names the proof, `purlin: login PROOF-4`, or the rule where the rule has no proof.
+- The **evidence** is what a run saw, one file per feature per source. `purlin:test` writes each
+  proof's result, `purlin:audit` adds what the audit found, and `--commit` commits it.
+- Its **source** is the folder it sits in, `.purlin/evidence/ci/` or `.purlin/evidence/local/`.
+  Both count.
+- The **evidence package** is one data file describing one version of the code. `purlin:sign`
+  builds it from the committed evidence.
+- A **sign-off** is one person's signature over that package, a file in a signed commit.
 
-Purlin shows **two facts**, defined in `references/evidence_and_signoff.md`. The tests: `met`
-when every rule passes its tests on the committed evidence, else `not met`. The sign-off:
-`signed 0.1.0 at a1b2c3d`, `signed 0.1.0, 4 commits since`, or `not signed`. Every rule has two
-**cells**: `passed` says every test tied to the rule ran and passed, on every **platform** a
-counting run covered; `strong` says what the audit found, and nothing waits on it. A passed cell
-whose platforms disagree reads `partial`, which is not met. A **hand check**, a proof marked
-`@manual`, reads `checked at sign-off`: a person looks at it in the sign-off walk.
+Purlin shows **two facts**, defined in `references/evidence_and_signoff.md`:
+
+- The tests: `met` when every rule passes its tests on the committed evidence, else `not met`.
+- The sign-off: `signed 0.1.0 at a1b2c3d`, `signed 0.1.0, 4 commits since`, or `not signed`.
+
+Every rule has two **cells**:
+
+- `passed` says every test tied to the rule ran and passed, on every **platform** a counting run
+  covered. A passed cell whose platforms disagree reads `partial`, which is not met.
+- `strong` says what the audit found. Nothing waits on it.
+
+A **hand check** is a proof marked `@manual`. It reads `checked at sign-off`: a person looks at
+it in the sign-off walk.
+
 `references/glossary.md` defines the rest of the words.
 
 ## The core loop
