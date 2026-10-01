@@ -7,7 +7,7 @@
 # project's settings. A human edits nothing by hand:
 #
 #   bash dev/bump_version.sh 0.10.1     # set VERSION, propagate everywhere
-#   bash dev/bump_version.sh --check    # verify, exit 1 on drift (CI gate)
+#   bash dev/bump_version.sh --check    # verify, exit 1 on drift (run by CI)
 #
 # DERIVED LOCATIONS: the complete list. Add a row here when a new file starts
 # carrying a version literal, and `--check` starts guarding it in the same edit.
@@ -19,7 +19,7 @@
 #   scripts/mcp/purlin/__init__.py  reads VERSION at runtime via _read_version()
 #   skills/init/SKILL.md          documents the field, never restates a number
 #
-# Governed by specs/instructions/purlin_version.md (RULE-5, 6, 7, 12, 13 and 14).
+# Governed by specs/instructions/purlin_version.md (RULE-5, 6, 12 and 14).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -144,6 +144,6 @@ case "$1" in
       fi
     done
     echo ""
-    echo "Next: commit VERSION and every file above in ONE commit, then tag v$NEW."
+    echo "Next: commit VERSION and every file above in one commit."
     ;;
 esac

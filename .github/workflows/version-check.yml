@@ -10,10 +10,10 @@ name: version-check
 # That writes VERSION and propagates it to every file that carries a literal.
 # Nothing else should ever be hand-edited. The authoritative list of derived
 # locations lives in the header comment of `dev/bump_version.sh`. This job runs
-# that same script in `--check` mode, so the list cannot drift away from the gate
-# that enforces it.
+# that same script in `--check` mode, so the list cannot drift away from the
+# check that enforces it.
 #
-# Governed by specs/instructions/purlin_version.md (RULE-5, 6, 7, 12, 13 and 14).
+# Governed by specs/instructions/purlin_version.md (RULE-5, 6, 12 and 14).
 
 on:
   push:
