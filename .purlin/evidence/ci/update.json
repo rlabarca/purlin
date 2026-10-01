@@ -2,16 +2,16 @@
   "feature": "update",
   "platforms": {
     "windows": {
-      "at": "2026-09-30T05:20:26Z",
-      "commit": "babd6aeeca3c60254b51d4b26e3d6361d0aeb2b9",
+      "at": "2026-10-01T21:12:53Z",
+      "commit": "9b203040de3c5565ee4f338285d2c3abf33c82ae",
       "dirty": false,
+      "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "694dcbb409c7d9e12af959db9d7a3215fd10c130fe3a8d79bc47e688b573899f",
-        "spec": "4588bca7edfc4a932afc2d7a5a1ca3552a72d6fff5b5e882e36ab1038a239c95",
-        "tests": "31cddbcb8c70ea9ebc87590368b02cdbabe6c261df2972fe5f0befa186dd720c"
+        "code": "1fbc86515e84910d2aae9a5b2b04d36a96f06f47e3ebd5a31fdf9761ffab7966",
+        "spec": "7714b54cc073a2e13eeae2dc59071a8ace661b2d14eda941a5010404864ccd84",
+        "tests": "65bf3af90de60b89a06a0614fc68ff9ac04c8da92ef17afe9a717eecc75a20ea"
       },
-      "hostname": "runnervmfi6oq",
-      "machine": "remote runner, Windows",
+      "machine": "runnervmfi6oq",
       "proofs": [
         {
           "env": "windows",
@@ -19,7 +19,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_init_update.py::test_running_yes_twice_changes_nothing_the_second_time"
+          "test": "dev/test_init_update.py::test_on_windows_a_second_run_finds_nothing_and_changes_nothing"
         },
         {
           "env": "windows",
@@ -27,63 +27,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_init_update.py::test_every_backed_up_file_keeps_its_bytes_from_before_the_run"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-124",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_init_update.py::test_the_retired_windows_tag_becomes_env"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-121",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_init_update.py::test_nothing_is_left_uncommitted_but_the_backups"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-125",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-23",
-          "test": "dev/test_init_update.py::test_an_env_tag_after_the_kind_of_test_is_kept"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-126",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-24",
-          "test": "dev/test_init_update.py::test_the_picture_reference_of_the_feature_is_removed"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-122",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-28",
-          "test": "dev/test_init_update.py::test_the_evidence_folder_gets_its_readme"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-123",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-29",
-          "test": "dev/test_init_update.py::test_the_shell_harness_calls_become_one_comment"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-119",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-34",
-          "test": "dev/test_init_update.py::test_a_committed_cache_is_deleted_from_git_and_from_disk"
+          "test": "dev/test_init_update.py::test_on_windows_every_backup_keeps_the_bytes_from_before"
         },
         {
           "env": "windows",
@@ -91,22 +35,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-35",
-          "test": "dev/test_init_update.py::test_a_conftest_holding_more_keeps_the_rest"
+          "test": "dev/test_init_update.py::test_on_windows_the_conftest_keeps_import_os_and_its_ending"
         }
       ],
       "rules": {
-        "RULE-13": "passed",
-        "RULE-18": "passed",
-        "RULE-23": "passed",
-        "RULE-24": "passed",
-        "RULE-28": "passed",
-        "RULE-29": "passed",
-        "RULE-34": "passed",
         "RULE-35": "passed",
         "RULE-5": "passed",
         "RULE-7": "passed"
       },
-      "runner": "ci"
+      "runner": "41898282-github-actions-bot"
     }
   },
   "schema": "purlin-evidence/2",

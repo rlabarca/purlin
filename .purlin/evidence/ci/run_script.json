@@ -2,49 +2,17 @@
   "feature": "run_script",
   "platforms": {
     "windows": {
-      "at": "2026-09-30T12:59:40Z",
-      "commit": "c98fe7be7e22a4548b2a347e02bf6e86d754acde",
+      "at": "2026-10-01T21:12:52Z",
+      "commit": "9b203040de3c5565ee4f338285d2c3abf33c82ae",
       "dirty": false,
+      "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "614392c913c0394574070f066cbdb021a80d1556810378d6977591a04067e34d",
-        "spec": "eaf0463a889b50d3f683167d404733185a2caa8958b0d828d189efb666f8f198",
-        "tests": "6ad6017e2a15752bc654667e6be0e7b5033869f65db6f856586820418349f6e8"
+        "code": "15b87cd1d25554911cd759d9a2b2e444e1b11fb07020e9a3a781bfb0bb5b124f",
+        "spec": "ace24c4eee23e5e128f30a35b9b5f32b1a678542a9ed41a56e2dcb26f740727c",
+        "tests": "6363c325828c1471efd05340d0c5c79dfd560cb9a0a4a7b6dad133841cabce29"
       },
-      "hostname": "runnervm99s1a",
-      "machine": "remote runner, Windows",
+      "machine": "runnervmfi6oq",
       "proofs": [
-        {
-          "env": "windows",
-          "id": "PROOF-225",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_run_script.py::TestTheTestArmRunsEachSuite::test_a_sql_script_whose_statements_succeed_passes"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-226",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_run_script.py::TestEnvScopedProofs::test_a_foreign_env_proof_is_listed_as_needing_its_os"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-227",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_run_script.py::TestTheCiArmCommitsItsSection::test_the_ci_arm_writes_its_section_and_commits"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-228",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-21",
-          "test": "dev/test_run_script.py::TestHostOs::test_this_windows_machine_reads_windows"
-        },
         {
           "env": "windows",
           "id": "PROOF-229",
@@ -52,61 +20,12 @@
           "result": "pass",
           "rule": "RULE-39",
           "test": "dev/test_run_script.py::TestTheConsoleCodecNeverEndsTheRun::test_a_cp1252_console_gets_the_glyphs_and_no_traceback"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-230",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-40",
-          "test": "dev/test_run_script.py::TestAFailingSuiteStatesItsReason::test_a_killed_suite_prints_its_tail"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-231",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-43",
-          "test": "dev/test_run_script.py::TestTheMutmutCopy::test_the_copy_mutmut_leaves_is_never_collected"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-232",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-55",
-          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_an_untracked_file_selects_the_feature_and_is_named"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-233",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-58",
-          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_a_named_feature_runs_only_its_test_files"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-234",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-63",
-          "test": "dev/test_run_script.py::TestNoTestCommand::test_pytest_is_suggested_its_own_entry"
         }
       ],
       "rules": {
-        "RULE-10": "passed",
-        "RULE-12": "passed",
-        "RULE-21": "passed",
-        "RULE-39": "passed",
-        "RULE-4": "passed",
-        "RULE-40": "passed",
-        "RULE-43": "passed",
-        "RULE-55": "passed",
-        "RULE-58": "passed",
-        "RULE-63": "passed"
+        "RULE-39": "passed"
       },
-      "runner": "ci"
+      "runner": "41898282-github-actions-bot"
     }
   },
   "schema": "purlin-evidence/2",

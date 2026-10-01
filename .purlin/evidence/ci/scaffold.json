@@ -2,40 +2,24 @@
   "feature": "scaffold",
   "platforms": {
     "windows": {
-      "at": "2026-09-30T12:59:40Z",
-      "commit": "c98fe7be7e22a4548b2a347e02bf6e86d754acde",
+      "at": "2026-10-01T21:12:52Z",
+      "commit": "9b203040de3c5565ee4f338285d2c3abf33c82ae",
       "dirty": false,
+      "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "a268af0b63bec7492f208834a619f0c1a8e1b61e6943c3b0b2ec9e9ea807cdde",
-        "spec": "e1a789b9d6d2d0a807fa2cda9d765f6dabca89c96d935f7e28a37b301afa9036",
-        "tests": "9026679fb860dd31f15f69c1de336d07f997e90e64200ca11c3b23b253e2ad9d"
+        "code": "fc679d0b35578ce4678b3fe46ac565929e3f739d75c022df1cf320041914b961",
+        "spec": "615ca2dcf59ce9a57bddafbd210e12e99034c1264490d9e5b57cff123521da59",
+        "tests": "c089693bfd4418b5f17c6ea9349055fde0140b8912730bfa2535b190842c5185"
       },
-      "hostname": "runnervm99s1a",
-      "machine": "remote runner, Windows",
+      "machine": "runnervmfi6oq",
       "proofs": [
-        {
-          "env": "windows",
-          "id": "PROOF-129",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_at_passed_the_reason_names_the_test"
-        },
         {
           "env": "windows",
           "id": "PROOF-130",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-19",
-          "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_the_gitignore_block_is_added_once"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-131",
-          "manual": false,
-          "result": "pass",
           "rule": "RULE-20",
-          "test": "dev/test_init_scaffold.py::TestTheGateMoves::test_a_second_run_at_the_same_gate_changes_nothing"
+          "test": "dev/test_init_scaffold.py::TestTheIgnoreFile::test_on_windows_a_crlf_gitignore_is_the_same_after_a_second_run"
         },
         {
           "env": "windows",
@@ -43,31 +27,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-21",
-          "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_nothing_a_project_holds_names_the_plugin"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-133",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_the_copy_sets_a_project_up_the_same_way"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-134",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-23",
-          "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_no_project_file_points_at_the_repository_s_own_dev_folder"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-135",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-60",
-          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_gh_installed_is_named_and_the_workflow_written"
+          "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_on_windows_no_file_names_the_copy"
         },
         {
           "env": "windows",
@@ -75,20 +35,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-47",
-          "test": "dev/test_init_scaffold.py::TestTheEvidenceFolder::test_the_first_run_writes_the_readme"
+          "test": "dev/test_init_scaffold.py::TestTheEvidenceFolder::test_on_windows_the_readme_is_the_bytes_purlin_ships"
         }
       ],
       "rules": {
-        "RULE-13": "passed",
-        "RULE-19": "passed",
         "RULE-20": "passed",
         "RULE-21": "passed",
-        "RULE-22": "passed",
-        "RULE-23": "passed",
-        "RULE-47": "passed",
-        "RULE-60": "passed"
+        "RULE-47": "passed"
       },
-      "runner": "ci"
+      "runner": "41898282-github-actions-bot"
     }
   },
   "schema": "purlin-evidence/2",

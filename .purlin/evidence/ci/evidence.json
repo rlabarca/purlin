@@ -2,16 +2,16 @@
   "feature": "evidence",
   "platforms": {
     "windows": {
-      "at": "2026-09-30T05:20:24Z",
-      "commit": "babd6aeeca3c60254b51d4b26e3d6361d0aeb2b9",
+      "at": "2026-10-01T21:12:52Z",
+      "commit": "9b203040de3c5565ee4f338285d2c3abf33c82ae",
       "dirty": false,
+      "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "b3fca56fb17f51c6097d8e59090feabaa8987ca78395232810580dd33742c810",
-        "spec": "fb3b2e78a38d65d769628b2e9e8efc5d4bd184b9579dc653d720889c80fad68c",
-        "tests": "42b5bb0c6fc7fe6f5b173ffc2dd7ca7176749b704369025c33fc3066c5c0d460"
+        "code": "cc45e782652ebc7688387228cd6ee54f16f16c438570af5116b6e355feefc62d",
+        "spec": "efb8f45a792d2caa43528407e748df09921bd7a1398f03b8b2b72fc1950085ec",
+        "tests": "0f40ffe7aed80d756b8d7e6c17253fda730a89c95dfc3875db5fb2daa77c6885"
       },
-      "hostname": "runnervmfi6oq",
-      "machine": "remote runner, Windows",
+      "machine": "runnervmfi6oq",
       "proofs": [
         {
           "env": "windows",
@@ -19,31 +19,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_fingerprint.py::test_a_fingerprint_is_three_parts_of_64_hex_characters"
+          "test": "dev/test_fingerprint.py::test_a_crlf_checkout_takes_the_code_part_of_the_commit"
         },
         {
           "env": "windows",
-          "id": "PROOF-73",
+          "id": "PROOF-84",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_fingerprint.py::test_a_javascript_marker_is_counted"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-74",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_fingerprint.py::test_untracked_files_in_the_scope_or_beside_a_marker_file_are_listed"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-72",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-24",
-          "test": "dev/test_fingerprint.py::test_a_scoped_folder_reaches_a_tracked_file_one_folder_down"
+          "rule": "RULE-32",
+          "test": "dev/test_fingerprint.py::test_an_anchors_code_part_is_the_blob_ids_the_commit_holds"
         },
         {
           "env": "windows",
@@ -56,12 +40,10 @@
       ],
       "rules": {
         "RULE-1": "passed",
-        "RULE-24": "passed",
         "RULE-27": "passed",
-        "RULE-7": "passed",
-        "RULE-8": "passed"
+        "RULE-32": "passed"
       },
-      "runner": "ci"
+      "runner": "41898282-github-actions-bot"
     }
   },
   "schema": "purlin-evidence/2",

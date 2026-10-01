@@ -2,16 +2,16 @@
   "feature": "server",
   "platforms": {
     "windows": {
-      "at": "2026-09-30T05:20:25Z",
-      "commit": "babd6aeeca3c60254b51d4b26e3d6361d0aeb2b9",
+      "at": "2026-10-01T21:12:52Z",
+      "commit": "9b203040de3c5565ee4f338285d2c3abf33c82ae",
       "dirty": false,
+      "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "20491ffe9297600ba5c17558531e0cacd5ed7f6f77104b7d8598aa9f7490a754",
-        "spec": "6a29206cbb394ec3114efbd55b378e3514d6141966a5b9ba21c9be59c6a0aa72",
-        "tests": "38e446c2855ad4fd9170e3f5d3d2fd22c43404a48590583ec8fec4a48cf357ac"
+        "code": "64e625cd4afab2447a4d45bb2223d24a464b0a951e23e1ff682698e945e96cd7",
+        "spec": "48ca664b7ea570a417f443a65af208508599988b01445828d6a636ca2458c359",
+        "tests": "1d8c713698583e0b0f3437707736d0baf0f8b2afc59477de519d4de09a09ef74"
       },
-      "hostname": "runnervmfi6oq",
-      "machine": "remote runner, Windows",
+      "machine": "runnervmfi6oq",
       "proofs": [
         {
           "env": "windows",
@@ -19,7 +19,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_mcp_server.py::TestTransport::test_stdout_holds_the_answer_alone_and_the_startup_line_is_on_stderr"
+          "test": "dev/test_mcp_server.py::TestTransport::test_on_windows_the_answer_is_one_line_and_the_startup_line_is_on_stderr"
         },
         {
           "env": "windows",
@@ -27,23 +27,14 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_workspace_named_from_the_home_folder_is_found"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-161",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_mcp_server.py::TestThePluginManifest::test_the_manifest_command_starts_a_server_that_answers"
+          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_on_windows_a_workspace_named_from_the_home_folder_is_found"
         }
       ],
       "rules": {
-        "RULE-22": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed"
       },
-      "runner": "ci"
+      "runner": "41898282-github-actions-bot"
     }
   },
   "schema": "purlin-evidence/2",

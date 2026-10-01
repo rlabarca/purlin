@@ -2,16 +2,16 @@
   "feature": "ai_audit",
   "platforms": {
     "windows": {
-      "at": "2026-09-30T05:20:24Z",
-      "commit": "babd6aeeca3c60254b51d4b26e3d6361d0aeb2b9",
+      "at": "2026-10-01T21:12:52Z",
+      "commit": "9b203040de3c5565ee4f338285d2c3abf33c82ae",
       "dirty": false,
+      "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "20037cf21bf323041fdb9915d06f1f033bdf631e6ada3b506b60691b1010d685",
-        "spec": "d09dff6bb4a26ecf07166f5d2231f8d5ca4540dad3e494ef62e9ea672d7c34a6",
-        "tests": "35ea94b49209e6a2e8fdeadcee7f4498398558725bf24327754f565f27023f43"
+        "code": "e12760e4ccc422c21d6998d6bce8fc899357365534a12193b98e41f063efc130",
+        "spec": "1e358f472aaa2ecb7e7a2003b9ee5c81812e828c6ede5c76e084d53b4fc85098",
+        "tests": "9a109617f0c9c74c449e0dda00319e547101c7d87625371532841f2442e5c9c5"
       },
-      "hostname": "runnervmfi6oq",
-      "machine": "remote runner, Windows",
+      "machine": "runnervmfi6oq",
       "proofs": [
         {
           "env": "windows",
@@ -19,22 +19,13 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_ai_audit.py::TestTheCall::test_the_prompt_goes_on_stdin_and_never_in_the_arguments"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-83",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-19",
-          "test": "dev/test_ai_audit.py::TestWhenTheModelCannotBeReached::test_a_call_past_its_limit_is_named"
+          "test": "dev/test_ai_audit.py::TestTheCall::test_the_prompt_goes_on_stdin_and_the_answer_is_read_to_the_end"
         }
       ],
       "rules": {
-        "RULE-19": "passed",
         "RULE-3": "passed"
       },
-      "runner": "ci"
+      "runner": "41898282-github-actions-bot"
     }
   },
   "schema": "purlin-evidence/2",

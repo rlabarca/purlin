@@ -2,16 +2,16 @@
   "feature": "upstream",
   "platforms": {
     "windows": {
-      "at": "2026-09-30T05:20:26Z",
-      "commit": "babd6aeeca3c60254b51d4b26e3d6361d0aeb2b9",
+      "at": "2026-10-01T21:12:53Z",
+      "commit": "9b203040de3c5565ee4f338285d2c3abf33c82ae",
       "dirty": false,
+      "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "4e2f27b1d210bd71b21cbefb873b4923d00f33185612cc5ee5906615fd82536e",
-        "spec": "2b946057bcca672560522bfdbc09879a4d87c54f9dcafcf2d9c9eea1280b0ab6",
-        "tests": "ca0a5e0f01f263c07b9ada71a7055b7c378029824f6b75d22bcda40a253189e8"
+        "code": "c4a619054314ae1fa8200385064c513b7ae5015973925843cda097a7fc397480",
+        "spec": "8cb53aeadfd091fd9f8650084640ccd2418ebeebd7728448b94605fbd9465f91",
+        "tests": "29d396655f6ae446c083e36fd9d48b65cd2ad5d7b93dc79ddce6d690b898139d"
       },
-      "hostname": "runnervmfi6oq",
-      "machine": "remote runner, Windows",
+      "machine": "runnervmfi6oq",
       "proofs": [
         {
           "env": "windows",
@@ -20,14 +20,6 @@
           "result": "pass",
           "rule": "RULE-1",
           "test": "dev/test_upstream.py::test_an_added_anchor_keeps_the_author_text_under_source_and_pin"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-47",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_upstream.py::test_with_no_name_the_anchor_is_named_after_its_file"
         },
         {
           "env": "windows",
@@ -44,33 +36,14 @@
           "result": "pass",
           "rule": "RULE-11",
           "test": "dev/test_upstream.py::test_sync_advances_the_pin_and_names_the_rule_delta"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-51",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_upstream.py::test_nothing_is_written_outside_the_project_root"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-49",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-27",
-          "test": "dev/test_upstream.py::test_check_exits_2_when_the_source_is_gone"
         }
       ],
       "rules": {
         "RULE-1": "passed",
         "RULE-11": "passed",
-        "RULE-22": "passed",
-        "RULE-27": "passed",
-        "RULE-3": "passed",
         "RULE-8": "passed"
       },
-      "runner": "ci"
+      "runner": "41898282-github-actions-bot"
     }
   },
   "schema": "purlin-evidence/2",

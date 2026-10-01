@@ -2,41 +2,17 @@
   "feature": "states",
   "platforms": {
     "windows": {
-      "at": "2026-09-30T05:20:26Z",
-      "commit": "babd6aeeca3c60254b51d4b26e3d6361d0aeb2b9",
+      "at": "2026-10-01T21:12:52Z",
+      "commit": "9b203040de3c5565ee4f338285d2c3abf33c82ae",
       "dirty": false,
+      "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "eaa1faa8f21802166bf6b1faef2f10f2be84a8ba6f7939495e051386870974aa",
-        "spec": "d22a54ca56c5d07f7ec23a58039e68747afe21055e54a9e1bbb945b514eb216f",
-        "tests": "ddf4182a2cd049dfab685129e02f779d2ee386503c16a9b8735d22f79f6c1071"
+        "code": "01f7960ebf2367da1e3c9d6025206ef2f05ab91357ec07ca9720e735682c2b63",
+        "spec": "1aee035ab311f5a99fbbe6dfce74291eb9337b20dab7ba5d1761aa7aa0fc90b0",
+        "tests": "c1ee0cf9d52b7ef5c9a684d770b8140e82954625471883c8555f4d6b29af04db"
       },
-      "hostname": "runnervmfi6oq",
-      "machine": "remote runner, Windows",
+      "machine": "runnervmfi6oq",
       "proofs": [
-        {
-          "env": "windows",
-          "id": "PROOF-217",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-47",
-          "test": "dev/test_states.py::TestPayload::test_the_signed_cell_carries_when_it_was_signed"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-215",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-28",
-          "test": "dev/test_states.py::TestPayload::test_a_feature_with_no_evidence_names_its_spec"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-216",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-32",
-          "test": "dev/test_states.py::TestPayload::test_the_data_file_is_a_const_assignment_and_round_trips"
-        },
         {
           "env": "windows",
           "id": "PROOF-218",
@@ -47,12 +23,9 @@
         }
       ],
       "rules": {
-        "RULE-28": "passed",
-        "RULE-32": "passed",
-        "RULE-47": "passed",
         "RULE-90": "passed"
       },
-      "runner": "ci"
+      "runner": "41898282-github-actions-bot"
     }
   },
   "schema": "purlin-evidence/2",
