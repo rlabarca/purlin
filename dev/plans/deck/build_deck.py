@@ -5,6 +5,8 @@ MONO = "font-family:'Courier New', monospace"
 # A command or a file name inside a sentence: the viewer keeps the colour and drops the face.
 def m(text):
     return '<span style="%s; color:#E6BEB0; white-space:nowrap">%s</span>' % (MONO, text)
+def mw(text):
+    return '<span style="%s; color:#E6BEB0">%s</span>' % (MONO, text)
 def mt(text):
     return '<span style="color:#C0793F">%s</span>' % text
 SECTION = ('<section id="%s" data-transition="fade" style="background:#0C3444; color:#E4DDD4; '
@@ -64,7 +66,22 @@ slide('why', 'What Purlin is for', 'Why use Purlin?', [
  'rules together, and Purlin keeps two facts: whether every rule\'s tests pass, and whether the '
  'evidence is signed. The audit and the sign-off are optional. Purlin cannot prove your code is '
  'correct, and it makes no claim of compliance.',
- lead='Purlin shows, rule by rule, that your software does what you said it must.', width=700)
+ lead='Purlin shows, rule by rule, that your software does what you said it must.', width=700, numbers=False)
+slide('example', 'One requirement', 'One requirement, from words to evidence', [
+    ('The requirement', 'URS-042: lock the account after five failed sign-ins.'),
+    ('The rule', mw('RULE-3: Lock the account for 15 minutes after 5 consecutive failures (URS-042)')),
+    ('The proof', 'A wrong password is entered five times. The sixth attempt is refused with the message %s.' % m('Account locked')),
+    ('The test', '%s above your own test. %s runs it and records pass or fail, where and when.' % (m('# purlin: login PROOF-4'), m('purlin:test'))),
+    ('The evidence', 'The package lists the rule in its own words with its proof, its test and the result, so URS-042 traces to all of them.'),
+], '<b>Purlin does not learn your system.</b> People say what it must do, and your own tests show it.',
+ 'This is the chain a validation reader looks for: requirement, test case with its expected result, '
+ 'execution, evidence. People write the requirement as a rule; a requirement number written into '
+ 'the rule travels with it, and Purlin does nothing else with the number. The proof is the test '
+ 'case in plain words, with the exact expected result. Purlin touches the system only through the '
+ 'project\'s own tests. It has no approval step before a test runs: approval of the proofs is a '
+ 'required review when they are merged, or the system of record\'s. Purlin records who wrote and '
+ 'last changed each proof, and a result stops counting when its proof is reworded.',
+ lead='Purlin ties each requirement to the test that shows it, and keeps the result.', width=560, pad=16)
 slide('compare', 'How Purlin differs', 'What the popular tools leave out', [
     ('GitHub Spec Kit', 'Turns a spec into a plan and code with an AI agent. <b>Missing:</b> tests tied to each requirement, evidence, a sign-off.'),
     ('Kiro', 'Turns requirements into code and generated tests, in its own editor. <b>Missing:</b> team work in git, evidence, a sign-off.'),
@@ -79,7 +96,7 @@ slide('compare', 'How Purlin differs', 'What the popular tools leave out', [
  'make plain-language scenarios executable. Purlin is the one that pairs each requirement with its '
  'test, plants a bug to check that test, and keeps the evidence and sign-off in the repository, '
  'with product, QA and developers working in git.',
- lead='Each solves part of the problem. None of them ties requirements, tests that catch bugs and evidence together.', width=420, pad=16)
+ lead='Each solves part of the problem. None of them ties requirements, tests that catch bugs and evidence together.', width=420, pad=16, numbers=False)
 slide('touches', 'Your project and your workflow', 'Purlin workflows don\'t change your project much', [
     ('A settings file', '%s holds your test command. Also a folder for evidence and a few lines in %s.' % (m('.purlin/config.json'), m('.gitignore'))),
     ('Your specs', 'Markdown files you write, under %s. Each holds the rules of one feature.' % m('specs/')),
@@ -90,7 +107,7 @@ slide('touches', 'Your project and your workflow', 'Purlin workflows don\'t chan
  'Purlin reads the report your test framework already writes and ties each result to its comment by '
  'the name of the test. A test with no comment runs as always and is ignored. A test Purlin wrote '
  'and a test you wrote differ in nothing but who typed them. Setup also copies the dashboard page '
- 'into the project, where git ignores it, and each command that writes its data keeps it current.', pad=16)
+ 'into the project, where git ignores it, and each command that writes its data keeps it current.', pad=16, numbers=False)
 slide('start', 'Getting started', 'Start in under ten minutes', [
     ('Install the plugin', 'Two lines in a terminal, from the README: add the marketplace, then %s.' % m('claude plugin install')),
     ('`purlin:init`', 'Sets the project up. It asks one thing: whether it may commit what it wrote.'),
@@ -113,10 +130,10 @@ slide('fromcode', 'An existing codebase', 'Starting from code you already have',
  'halfway resumes at the next feature. Rules with no test go to purlin:build.',
  lead='%s is run once. It turns a codebase with no rules into one whose rules can be proven.' % m('purlin:spec-from-code'), width=560, pad=16)
 slide('together', 'Working together', 'Product, QA and developers improve the specs together', [
-    ('`purlin:spec`', 'Anyone writes or sharpens rules and proofs, in plain words with the AI or by hand.'),
+    ('`purlin:spec`', 'Anyone writes or sharpens rules and proofs, with help from AI or by hand.'),
     ('`purlin:build`', 'Writes the code and the tests, with one comment above each test naming its proof.'),
     ('`purlin:test`', 'Runs what changed and states the first fact, %s, or what fails.' % m('Tests: met')),
-    ('`purlin:drift`', 'After a pull: which rules and proofs changed, and any number two branches both took, with a fix you accept by answering %s.' % m('y')),
+    ('`purlin:drift`', 'After a pull: which rules and proofs changed, and any number two branches both took. %s then shows the fix and asks before it changes anything.' % m('purlin:spec')),
 ], '<b>Nothing is signed while the work goes on.</b> Purlin has no roles: whoever knows the answer edits the spec.',
  'Purlin keeps two facts: whether every rule\'s tests pass on the committed evidence, and whether that '
  'evidence is signed. Nothing waits on a person while the specs change. When two branches take the '
@@ -136,11 +153,11 @@ slide('slow', 'Slow tests', 'Slow tests stay out of your way', [
  'proof reads not run and the status lists it, so a person who never knew the test existed is '
  'told when it is due and which command runs it. An anchor can use it too: a check across the '
  'whole project that takes minutes is tagged slow and stays out of every build run.',
- lead='Tag a proof %s. Its test is skipped while you build and runs when you check the whole project.' % m('@slow'), width=560, pad=16)
+ lead='Tag a proof %s. Its test is skipped while you build and runs when you check the whole project.' % m('@slow'), width=560, pad=16, numbers=False)
 slide('audit', 'Are the tests any good?', 'The audit: would your tests catch a bug?', [
     ('Heuristic spot tests', 'Purlin flags tests that check nothing, check the code against itself, or never check the result the proof expects.'),
     ('Plant one bug', 'For each proof, an AI puts one small bug in a throwaway copy of your code, such as a sample age off by one hour.'),
-    ('Run that proof\'s test', 'The test fails: the rule is %s. The test still passes: the rule is %s, and you see the bug it missed.' % (m('strong'), m('weak'))),
+    ('Run that proof\'s test', 'The test still passes: the rule is %s, and you see the bug it missed. The test fails and the spot tests found nothing: the rule is %s.' % (m('weak'), m('strong'))),
     ('`purlin:audit`', 'Tell the agent: <i>"Build and audit until 80% of rules are strong."</i>'),
 ], 'Why: AI-written tests often check what the code does, not what was asked (<a href="https://arxiv.org/pdf/2410.21136" style="color:#E6BEB0">Konstantinou et al., 2024</a>), and planting bugs is the most reliable test of a test (<a href="https://homes.cs.washington.edu/~mernst/pubs/mutation-effectiveness-fse2014.pdf" style="color:#E6BEB0">Just et al., FSE 2014</a>).',
  'A passing test only shows the code did what the test checked. The audit asks the harder '
@@ -187,7 +204,7 @@ slide('regulated', 'Regulated work', 'Purlin supplies evidence. It does not clai
  'where it ran and who ran it, what the audit found and which model was asked, and who wrote each rule '
  'and proof and last changed each test, read from git. Each sign-off records who signed, when, with '
  'which key, what they were shown and every note they typed. A requirement number such as (URS-042) '
- 'reaches it in the rule\'s own words.')
+ 'reaches it in the rule\'s own words.', numbers=False)
 slide('manual', 'Judgment calls', 'Pass or fail. What about judgment calls?', [
     ('A proof is pass or fail', 'A test checks an exact result, like the message %s.' % m('Account locked')),
     ('A judgment call is not', '"It looks good." "It is easy to use." A test cannot decide these, and neither can an AI.', [
@@ -215,11 +232,11 @@ slide('anchors', 'Shared rules', 'Anchors: rules the whole project must follow',
  'anchor another team owns, such as security, GRC, GxP or design standards. For a remote anchor, '
  'purlin:anchor sync brings in the newer version, the status says when the source has moved on, '
  'and the copy is never edited in place; a change is made at the source.',
- lead='An anchor is a set of rules for the whole project, proven by tests that run across all of it.', width=560, pad=16)
+ lead='An anchor is a set of rules for the whole project, proven by tests that run across all of it.', width=560, pad=16, numbers=False)
 deck = {"v": 4, "createdOnFiles": {"v": 1, "at": "2026-09-26T18:00:00Z"},
         "title": "Purlin workflows",
-        "order": ["why", "compare", "touches", "start", "fromcode", "together", "slow", "manual", "anchors", "audit", "signoff", "remote", "regulated"],
-        "sections": {"s1": {"description": "What Purlin is for, how little it changes in a project and a workflow, and how to start in under ten minutes or from code you already have", "start": "why"},
+        "order": ["why", "example", "compare", "touches", "start", "fromcode", "together", "slow", "manual", "anchors", "audit", "signoff", "remote", "regulated"],
+        "sections": {"s1": {"description": "What Purlin is for, one requirement followed from words to evidence, how little it changes in a project and a workflow, and how to start in under ten minutes or from code you already have", "start": "why"},
                      "s2": {"description": "Working together while the specs change, slow tests that stay out of the way, judgment calls a person signs for, anchors that carry rules for the whole project, the audit that checks the tests are any good, and the sign-off when everyone is done", "start": "together"},
                      "s3": {"description": "How a project tests on other platforms while Purlin itself only works locally, and where Purlin stops in regulated work", "start": "remote"}},
         "faces": {}, "designSystems": []}
