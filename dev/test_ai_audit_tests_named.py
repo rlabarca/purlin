@@ -77,8 +77,10 @@ class TestEachTestShowsItsOwnSource:
         assert '== 200' in first, first
         assert 'def test_a_token_comes_back' not in first, first
         assert 'def test_a_token_comes_back' in second, second
-        assert 'token' in second, second
+        assert 'token.startswith("tok-")' in second, second
         assert 'def test_valid_credentials_return_200' not in second, second
+        assert '== 200' not in second, second
+        assert 'tok-' not in first, first
 
     # purlin: ai_audit PROOF-35
     def test_a_name_the_evidence_holds_and_the_file_does_not_shows_no_source(
