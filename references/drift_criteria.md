@@ -43,12 +43,13 @@ Since your last pull, 14 hours ago (a1b2c3d..4f5e6a7, 9 commits).
 
 The view is a list of lines, the first naming the range, beside the facts each line was built
 from. The report carries exactly `since` and `view`. `since` carries `action`, `commits`, `from`,
-`line`, `to` and `when`; the view carries exactly the eleven keys below. Lines the status already
-prints, such as the work left to do or the spec files not committed, are not repeated here.
+`line`, `to` and `when`; the view carries exactly eleven keys: `lines`, every line in the order
+of the table below after the one naming the range, and the ten keys of the table, each the facts
+its lines were built from. Lines the status already prints, such as the work left to do or the
+spec files not committed, are not repeated here.
 
 | Key | Line |
 |-----|------|
-| `lines` | Every line, in the order of this table |
 | `rules_added` | `3 rules added: login RULE-7, RULE-8; export RULE-2.` |
 | `rules_changed` | `2 rules changed: login RULE-3, billing RULE-1.` |
 | `rules_removed` | `1 rule removed: cart RULE-4.` |

@@ -414,12 +414,14 @@ def _empty_tree(project_root):
                 stdin='')
 
 
-def _changed_files(project_root, rng):
-    """Every path the range added, modified or deleted, sorted."""
+def _changed_files(project_root, rng, paths):
+    """The paths under `paths` the range added, modified or deleted, sorted."""
+    if not paths:
+        return []
     base = rng['from'] or _empty_tree(project_root)
     return sorted(_lines(_git(project_root, [
         'diff', '--name-only', '--no-renames', '--end-of-options',
-        base, rng['to'], '--'], timeout=30)))
+        base, rng['to'], '--'] + list(paths), timeout=30)))
 
 
 # ---------------------------------------------------------------------------
@@ -791,7 +793,7 @@ def _blamed_commit(project_root, path, line, rev=None):
     return sha if sha and sha.strip('0') else None
 
 
-def comments_changed(project_root, changed, features, before, after):
+def comments_changed(project_root, rng, features, before, after):
     """`wording.stale_comments`' entries the range touches: each test comment
     whose proof's wording changed after its test was last changed, where the
     range changed that proof or that test's file. By file, then line."""
@@ -800,9 +802,9 @@ def comments_changed(project_root, changed, features, before, after):
         old = _proof_texts(before.get(name))
         new = _proof_texts(after.get(name))
         differs.update((name, item) for item in new if old.get(item) != new[item])
-    changed = set(changed)
-    scanned = {path: listing for path, listing in
-               markers_module.scan(project_root, tracked_only=True).items()
+    marked = markers_module.scan(project_root, tracked_only=True)
+    changed = set(_changed_files(project_root, rng, sorted(marked)))
+    scanned = {path: listing for path, listing in marked.items()
                if path in changed
                or any(marker.key() in differs for marker in listing.markers)}
     if not scanned:
@@ -823,10 +825,9 @@ def compute_drift(project_root, since=None, network=True):
     if 'error' in rng:
         return rng
 
-    changed = _changed_files(project_root, rng)
     features = specs_module.scan_specs(project_root)
 
-    spec_paths = _spec_paths(changed)
+    spec_paths = _spec_paths(_changed_files(project_root, rng, [_SPECS_DIR]))
     before = _spec_map(project_root, rng['from'], spec_paths)
     after = _spec_map(project_root, rng['to'], spec_paths)
     view, lines = _rules_view(rng, before, after)
@@ -838,7 +839,7 @@ def compute_drift(project_root, since=None, network=True):
     branch = ({'ref': ref, 'age_seconds': fetched_age(project_root, ref)}
               if ref else None)
     twice = numbers_twice(project_root, features, ref)
-    comments = comments_changed(project_root, changed, features, before, after)
+    comments = comments_changed(project_root, rng, features, before, after)
     lines += [entry['line'] for entry in twice]
     lines += [entry['text'] for entry in comments]
     if twice and ref:
