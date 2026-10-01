@@ -1,19 +1,20 @@
-# Decisions 104 to 109: one plan
+# Decisions 104 to 110: one plan
 
 Written by the planning agent on 2026-10-01 against `main` at `1ded32dd1`. It builds, as one
 round: decision 104 (a team's collaboration is a rule with a scripted proof), 105 (the second
 check's answers), 106 (Purlin keeps the evidence and the sign-off and tracks no release), 107 (an
 anchor rule with nothing to check passes and says so), 108 (no gate: two facts, the tests and the
-sign-off) and 109 (the scope review's answers, `scope-review.md`). Where they differ, the later
+sign-off), 109 (the scope review's answers, `scope-review.md`) and 110 (plain checks and one
+targeted break per proof). Where they differ, the later
 decision holds. Everything a decision cuts is a clean release (decision 44): deleted outright
 with its rules, proofs, tests, docs lines and settings; `RELEASE_NOTES.md` alone keeps history;
 only the upgrade from 0.9.5 keeps what it needs.
 
-Eighteen lanes run at once on this Mac, each in a worktree
+Twenty lanes run at once on this Mac, each in a worktree
 `/Users/richlabarca/LocalCode/purlin-wt/d105-<lane>` on branch `lane/d105-<lane>` made from
 `main` at the stubs commit of section 1, each owning files no other lane writes. One integration
 agent merges them in the order of section 5. Section 2 is the contract; no lane chooses. Section 7
-holds the question the decisions leave open.
+holds what the decisions leave open.
 
 **The owner's answers, built to as written:**
 
@@ -26,6 +27,8 @@ holds the question the decisions leave open.
 - A skip whose reason starts `nothing to check:` counts as met for an anchor's rule only; on a
   project's own rule it reads `not run`, its reason kept (the earlier plan's Q2, answered (a)).
 - Every cut, keep and change of decision 109, as section 2 gives them.
+- A hand check always shows its last note, with the version it was signed at and how many
+  commits have come since (this plan's earlier Q1, answered (b); decision 110).
 
 ## 1. Rules for every lane
 
@@ -153,6 +156,18 @@ called by `purlin:sign` alone; `package.check_file(path)` by `purlin:sign --chec
   "reason"}]` (C15). A rule's audit carries no `strength`. `hand_checks[].checked` is
   `"in the sign-offs"`.
 - `project` is `project.project_name(project_root)`.
+- **Who did what, from git (110):** each rule entry gains `authors`:
+  ```json
+  "authors": {"rule": {"written_by": "pat.product@labconnect.example", "commit": "<40 hex>"},
+              "proofs": [{"id": "PROOF-1", "written_by": "...", "written_commit": "...",
+                          "changed_by": "...", "changed_commit": "..."}],
+              "tests": [{"file": "tests/test_age.py", "name": "test_age", "changed_by": "...",
+                          "changed_commit": "..."}]}
+  ```
+  `written` is the oldest commit whose diff adds a line `- <id>` to that spec
+  (`git log --reverse -G` on the spec, first match); `changed` is the commit `git blame` names for
+  the id's line now; a test's `changed` is `wording.test_last_change` (C5). Emails are git's
+  author emails. Nobody does anything extra.
 - Moved here from `release.py`: `project_version` and its readers, `uncommitted_work`,
   `behind_host`, `behind_words`. New: `time_words(at)` (`2026-10-01 12:17 UTC`), `run_lines`,
   `off_code(package, project_root)` → `[(system words, source, [features])]`.
@@ -264,6 +279,8 @@ def stale_comments(project_root, features, scanned=None):
 
 Cost: one `git blame --porcelain` per marked test file and per spec, cached; one `git show` per
 (commit, spec) compared; `sync_status` here at most 3 seconds slower than at `1ded32dd1`.
+`wording.test_last_change(project_root, path, marker_line, end_line)` → `(sha, author email)` or
+None is the one home of "the commit that last changed a test", read by C3's `authors` too.
 Readers: the payload (`warnings`, counted under `to_correct`), the run (C1.5), drift, the
 renumber helper (moves a comment to `now_under`).
 
@@ -333,8 +350,10 @@ Sign-off: signed 0.1.0, 4 commits since
 - A new blocking kind `('to_commit', 'feature whose results are not committed', 'features whose
   results are not committed', 'purlin:test --commit')`.
 - `no_proof` (`rule to write a proof for`) is listed for every project, not blocking.
-- **A hand check** reads `checked at sign-off` in the strong cell (in place of `manual test`); its
-  reason, once a sign-off covers this code, `<signer>: <note>` for each note.
+- **A hand check** reads `checked at sign-off` in the strong cell (in place of `manual test`), with
+  one reason per note of the newest sign-off that holds one, whatever code it was taken on:
+  `HAND_NOTE = 'noted at the sign-off of %s by %s, %s: %s'` (version, signer, `at this commit`,
+  `1 commit since` or `4 commits since`, the note); none before any sign-off.
 - **N1:** a hand check whose audit reads weak or undecided reads `weak`, reasons the findings then
   `checked at sign-off`, `left` `to_strengthen`.
 - **No strength:** the strong cell's `strength`, `STRENGTH`, `NOT_MEASURED` and every mutation
@@ -411,9 +430,9 @@ model, under 120 seconds.
 
 | File | Now | After | Why |
 |---|---|---|---|
-| `package_format.md` | 7 | 8 | `met` for `state`; `gate`, `mutation_engine`, `strength` gone; `runs`; each result's `same_code` and `nothing_to_check`; written and checked by `purlin:sign` |
+| `package_format.md` | 7 | 8 | `met` for `state`; `gate`, `mutation_engine`, `strength` gone; `runs`; each result's `same_code` and `nothing_to_check`; each rule's `authors`; written and checked by `purlin:sign` |
 | `signature_format.md` | 14 | 15 | `shown` holds `overview`, `runs`, `hand_checks`, `audit_list_opened`; `no note`; the package in the same commit |
-| `evidence_format.md` | 7 | 8 | a section's `commit` is its code; `email`; retention over the same code; `test_hash` per test; `audit.mutation` gone; the table gone; a proof's `nothing to check` result and `reason` |
+| `evidence_format.md` | 7 | 8 | a section's `commit` is its code; `email`; retention over the same code; `test_hash` per test; `audit.mutation` gone; the table gone; a proof's `nothing to check` result and `reason`; an audit entry's `breaks` and `explanation`, `undecided` gone (C17) |
 | `marker_format.md` | 3 | 4 | each report format's skip message read as the case's reason; `nothing to check:` |
 | `anchor_format.md` | 11 | 12 | "for every X in the project, Y holds"; the `nothing to check:` skip; drift and the status check the source and do not pull; the table leaves the records |
 | `spec_format.md` | 21 | 22 | `> Scope:` and every proof rule stated without a gate; `@manual` reads `checked at sign-off` |
@@ -508,13 +527,109 @@ each it disagrees with, fixed before the sweep.
 `docs/how-purlin-works.md`, `getting-started.md`, `specs-and-anchors.md`,
 `running-and-evidence.md`, `working-together.md`, `sign-off.md` (new: the sign-off with QA and
 regulated use; from `review-and-signing.md`, `qa-guide.md`, `regulated-workflow.md`),
-`upgrading.md` (renamed from `raising-the-gate-and-upgrading.md`, 0.9.5 only), `dashboard.md`
+`upgrading.md` (renamed from `raising-the-gate-and-upgrading.md`, 0.9.5 only), `audit.md` (new,
+110: what the audit checks, why, the research and the reasoning, with the sources of section 2's
+C18), `dashboard.md`
 (lane `dashboard`), and `index.md` as the list of them. Deleted: `review-and-signing.md`,
 `qa-guide.md`, `regulated-workflow.md`, `team-workflow.md`, `spec-from-code.md`,
 `raising-the-gate-and-upgrading.md`. `spec-from-code` is named on no core page; its skill teaches
 itself. `references/hard_gates.md` becomes `references/evidence_and_signoff.md` (lane `skills`):
 the one home of the two facts, which evidence counts for a sign-off, when a sign-off counts, what
 `signed/<version>` means; `CLAUDE.md`'s table row follows.
+
+### C18. The audit page's sources, lane `docs`
+
+`docs/audit.md` cites, each by title and link, and says in one sentence what each shows:
+Inozemtseva and Holmes, ICSE 2014, coverage and test suite effectiveness
+(https://cs.uwaterloo.ca/news/professor-reid-holmes-and-graduate-student-laura-inozemtseva);
+Just et al., FSE 2014, mutants as a valid substitute for real faults
+(https://homes.cs.washington.edu/~mernst/pubs/mutation-effectiveness-fse2014-abstract.html);
+Petrovic et al., Google, TSE 2021, mutation testing in practice at scale, on changed code
+(https://arxiv.org/pdf/2102.11378); Meta's ACH, FSE 2025, mutation-guided test generation
+(https://arxiv.org/pdf/2501.12862); LLMorpheus, model-written mutants
+(https://arxiv.org/abs/2404.09952v2); https://arxiv.org/pdf/1807.05030;
+https://arxiv.org/html/2606.19544v1; tautological tests
+(https://specstory.com/learning/test-quality/tautological-test); https://arxiv.org/html/2602.00409v1.
+The lane reads each source before writing its sentence and names in its report any it could not
+read; it fetches nothing at test time, and no test reaches the network.
+
+### C17. The audit, lanes `audit`, `plain`, `break` (110)
+
+`purlin:audit` runs only when a person asks; nothing blocks on it. `purlin_run.py --audit` runs
+the tests as now, then calls, in the new `scripts/review/audit_run.py` (lane `audit`):
+
+```python
+def run(project_root, features, selected, out=None):
+    """For each rule read: the plain checks, the targeted breaks, then the model's
+    reading as the explanation. Writes audit.rules entries; prints the findings and
+    the share. Returns 0 always (1 only for a bad command line)."""
+```
+
+**Plain checks** (lane `plain`, new `scripts/review/plain_checks.py`, no model):
+
+```python
+CHECKS = ('no assertion', 'cannot fail', 'error swallowed', 'expected value computed by the code',
+          'mocks what the rule is about', 'proof value missing')
+def check(project_root, feature, proof, test):
+    """[(check, sentence)] for one tied test, from its source and the proof's text."""
+```
+
+Each sentence names the test and what it lacks, as
+`tests/test_age.py::test_age: no assertion.`,
+`tests/test_age.py::test_age: the proof names 90 and the test does not hold it.`.
+Python by `ast`; JavaScript, TypeScript, C#, Go and shell by the token reading `markers` already
+does; a check a language cannot read is skipped and named once:
+`<check> is not read in <language> tests.`
+
+**The targeted break** (lane `break`, new `scripts/review/targeted_break.py`):
+
+```python
+def break_proof(project_root, feature, proof, test, scope_files, ask=None):
+    """One break: the model is asked for the smallest change to one scoped file that
+    would violate the proof; it is applied in a copy of the project; the proof's own
+    test runs there; the copy is deleted. Returns {'proof', 'file', 'before', 'after',
+    'result': 'caught' | 'survived' | 'not made', 'why'}."""
+```
+
+- **The user's code is never changed.** The copy is made with `git ls-files -co
+  --exclude-standard -z` into `tempfile.mkdtemp(prefix='purlin-break-')`; the change is applied
+  there alone, by an exact replacement of `before` with `after` that must match once; the test
+  runs with that copy as its working directory, through the suite's own `run` command; the copy
+  is removed in a `finally`. Every write goes through one function that refuses a path not under
+  the copy. Before and after each break the module takes `git status --porcelain -z` and the
+  hash of every file it lists in the project; a difference stops the audit with
+  `The audit stopped: <path> changed while a break ran. Nothing in the project was written by the audit.`
+  and exit 1, and the lane's test proves both lines never fire in a normal run.
+- **The model's answer** is exactly:
+  ```
+  file: src/age.py
+  before:
+  <the exact lines>
+  after:
+  <the lines>
+  ```
+  or `no break: <why>` (`result` `not made`). Anything else is `not made` with
+  `the answer named no change`.
+- **Which proofs:** one break per proof whose test or covered code changed since the audit last
+  read it: the audit entry keeps, per proof, `break_key` = sha256 of the test's source hash and
+  the feature's `code` fingerprint part; a proof whose key is unchanged keeps its break.
+- **No real model in a test:** every test of `break`, `plain` and `audit` runs with
+  `dev/conftest.py`'s fake first on `PATH`, installs its own `dev/fake_claude.py` with the
+  answers it needs, and asserts `shutil.which('claude')` resolves under its own `tmp_path` before
+  the first call. The deliberate break of each lane runs only that way.
+
+**The verdict:** a rule reads `weak` when any plain check fires on one of its tests or any break
+`survived`; `strong` when none fires and every break was `caught` or `not made`; the model's
+reading, asked once per rule as now, becomes the explanation under each finding and decides
+nothing (`undecided` goes). Evidence format 8: each `audit.rules` entry holds `verdict`,
+`findings` (the plain checks' sentences and each survived break as
+`PROOF-1: the test still passes when src/age.py:12 reads "return 0"`), `breaks`
+(`{PROOF-N: {file, before, after, result, break_key}}`), `explanation` (the model's sentences),
+`model`, `criteria`, `at`, `commit`, and the three hashes.
+
+**The share:** the audit's last line, and the status sentence's audit clause:
+`AUDIT_SHARE = 'The audit found %d of %d rules strong (%d%%).'` over the rules that pass their
+tests, a hand check counted where it has a tested proof. Nothing compares it with a target.
 
 ## 3. The lanes
 
@@ -529,7 +644,9 @@ the one home of the two facts, which evidence counts for a sign-off, when a sign
 | L7 `signoff` | `scripts/review/sign.py`; `scripts/mcp/purlin/signatures.py`; `specs/review/signatures.md`; `dev/test_signatures.py`; `references/formats/signature_format.md`; `skills/sign/SKILL.md`; `specs/skills/skill_sign.md`; `dev/test_skill_sign.py` |
 | L8 `run` | `scripts/run/purlin_run.py`; `scripts/mcp/purlin/frameworks.py`; `references/supported_frameworks.md`; `specs/run/run_script.md`; `dev/test_run_script.py`; `skills/test/SKILL.md`; `specs/skills/skill_test.md`; `dev/test_skill_test.py`; `dev/fixtures/reports/**` |
 | L9 `evidence` | `scripts/run/{evidence,reports}.py`; `scripts/mcp/purlin/{evidence,fingerprint,markers}.py`; `references/formats/{evidence_format,marker_format}.md`; `specs/run/{evidence_writer,reports}.md`; `specs/mcp/evidence.md`; `dev/test_{evidence_writer,evidence_reader,fingerprint,reports}.py` |
-| L10 `audit` | `scripts/review/{ai_audit,marked_tests}.py`; `scripts/run/mutation/**`; `references/review_criteria.md`; `specs/review/ai_audit.md`; `specs/run/mutation.md`; `dev/test_{ai_audit,ai_audit_tests_named,mutation_adapters}.py`; `dev/fixtures/mutation/**`; `skills/audit/SKILL.md`; `specs/skills/skill_audit.md`; `dev/test_skill_audit.py` |
+| L10 `audit` | new `scripts/review/audit_run.py`; `scripts/review/{ai_audit,marked_tests}.py`; `scripts/run/mutation/**`; `references/review_criteria.md`; `specs/review/ai_audit.md`; `specs/run/mutation.md`; `dev/test_{ai_audit,ai_audit_tests_named,mutation_adapters}.py`; `dev/fixtures/mutation/**`; `skills/audit/SKILL.md`; `specs/skills/skill_audit.md`; `dev/test_skill_audit.py` |
+| L10b `plain` | new `scripts/review/plain_checks.py`; new `specs/review/plain_checks.md`; new `dev/test_plain_checks.py` |
+| L10c `break` | new `scripts/review/targeted_break.py`; new `specs/review/targeted_break.md`; new `dev/test_targeted_break.py` |
 | L11 `remote` | `scripts/run/{host,remote,workflow,ci}.py`; `templates/purlin.yml`; `templates/purlin.azure-pipelines.yml`; `.github/workflows/purlin.yml`; `specs/run/host.md`; `dev/test_{host,remote,host_pathspec,consumer_ci}.py`; `dev/fixtures/consumer-ci/**` |
 | L12 `anchors` | `scripts/anchor/upstream.py`; `specs/anchor/upstream.md`; `dev/test_{upstream,upstream_notes}.py`; `dev/test_e2e_anchor_{authority,rules}.sh`; `dev/test_e2e_external_refs.sh`; `dev/setup-external-refs.sh`; `skills/anchor/SKILL.md`; `specs/skills/skill_anchor.md`; `dev/test_skill_anchor.py`; `references/formats/anchor_format.md` |
 | L13 `dashboard` | `scripts/report/src/**`; `scripts/mcp/purlin/report_data.py`; `dev/build_report.py`; `dev/capture_doc_screenshots.py`; `dev/browser_launch.py`; `specs/dashboard/purlin_report.md`; `dev/test_purlin_report.py`; `dev/test_purlin_report_board_layout.py`; `dev/test_report_refresh.py`; `dev/fixtures/report/*.json`; `docs/dashboard.md` |
@@ -617,7 +734,8 @@ C6, C8 (with `facts.py`), C15's cell and status line. Status skill trimmed.
   is warned and counted (PROOF-269; PROOF-270 cleared). RULE-113, the project from its files
   (PROOF-271). RULE-114, `EARLIER_WEAK` (PROOF-272). RULE-39 reworded (PROOF-273). RULE-115, an
   anchor rule with nothing to check (PROOF-274 cell; PROOF-275 `NOTHING_LINE`). RULE-116, a hand
-  check reads `checked at sign-off` (PROOF-276), with the note once signed (PROOF-277).
+  check reads `checked at sign-off` (PROOF-276), with its last note and `4 commits since`
+  (PROOF-277). RULE-117, the status sentence's audit clause is `AUDIT_SHARE` (PROOF-278).
 - `specs/mcp/summary.md` (R19 P47; next RULE-20, PROOF-48): RULE-18 reworded to C8's last line
   (PROOF-44 rewritten; PROOF-45, PROOF-46 deleted). RULE-20, the opening lines (PROOF-48 `Tests:
   met`; PROOF-49 `Sign-off: signed 0.1.0 at <sha7>`; PROOF-50 `signed 0.1.0, 1 commit since`;
@@ -636,9 +754,11 @@ C2, C3; `release.py`, `release.md`, `test_tag.py`, `skills/export/`, `skill_expo
   RULE-32 `runs` (PROOF-65, PROOF-66 with a `ci` group). RULE-33 `same_code` (PROOF-67 true after
   a `.purlin/`-only commit; PROOF-68 false after a code commit). RULE-34 `project` (PROOF-69).
   RULE-35, the version from the project (PROOF-70 `VERSION`; PROOF-71 `pyproject.toml`).
-  RULE-36 `nothing_to_check` (PROOF-72).
+  RULE-36 `nothing_to_check` (PROOF-72). RULE-37, `authors` from git (PROOF-73 the rule's
+  writer; PROOF-74 a proof changed by another person; PROOF-75 a test's last change).
 
-Break: let `same_code` pass a code commit; PROOF-68 fails. Waits on: PROOF-69 (`settings`).
+Break: let `same_code` pass a code commit; PROOF-68 fails. Waits on: PROOF-69 (`settings`),
+PROOF-75 (`drift`'s `test_last_change`).
 
 ### L7 `signoff`
 
@@ -664,6 +784,7 @@ Break: drop the ancestor check behind `ELSEWHERE`; PROOF-224 fails. Waits on: re
 ### L8 `run`
 
 C1 (1, 4, 5, 6), C9's call (`remote.ensure_runner`), `--release` and every mutation flag gone.
+`_audit` is replaced by the call to `audit_run.run` (C17); its rules move to lane `audit`'s spec.
 The test skill: the hand-off, `--remote` and its first-run runner; trimmed spec.
 
 - `specs/run/run_script.md` (R94 P269; next RULE-95, PROOF-270): every `--release`, mutation,
@@ -692,13 +813,44 @@ Break: keep a section on old code; PROOF-92 fails. Waits on: PROOF-91/92 (`packa
 
 ### L10 `audit`
 
-Mutation deleted whole (C13); `ai_audit.py` loses strength and `min`; `AUDIT_PARALLEL = 4`;
-`review_criteria.md` without strength; the audit skill: optional, out of the main path; trimmed.
+Mutation deleted whole (C13). `audit_run.py` (C17): the order, the verdict, the entry, the share;
+`ai_audit.py` becomes the model's reading as the explanation and the break's request (its prompt
+in `review_criteria.md`, rewritten: the model writes the break in C17's answer shape, and
+explains findings; it decides nothing); `AUDIT_PARALLEL = 4`; the audit skill: run by hand, what
+it checks, the share and a target such as 80% as the person's own, within 105; trimmed spec.
 
-- `specs/review/ai_audit.md` (R31 P93; next RULE-32, PROOF-94): strength rules deleted;
-  RULE-32, four calls at once, no setting (PROOF-94).
+- `specs/review/ai_audit.md` (R31 P93; next RULE-32, PROOF-94), scope adds `audit_run.py`:
+  strength and `undecided` rules deleted. RULE-32, four calls at once (PROOF-94). RULE-33, the
+  verdict from checks and breaks alone (PROOF-95 a fired check, weak; PROOF-96 a survived break,
+  weak; PROOF-97 all caught, strong, the model's answer `weak` changing nothing). RULE-34, the
+  explanation is stored under the finding (PROOF-98). RULE-35, `AUDIT_SHARE` (PROOF-99). RULE-36,
+  a proof whose break key is unchanged is not broken again (PROOF-100).
 
-Break: read `audit_parallel` from the file; PROOF-94 fails. Waits on: none.
+Break: let the model's answer set the verdict; PROOF-97 fails. Waits on: `plain`, `break` (its
+tests call them through stubs it writes in its own test file until they merge).
+
+### L10b `plain`
+
+C17's plain checks, one rule each, in a new spec `specs/review/plain_checks.md`
+(`> Scope: scripts/review/plain_checks.py`, ids from 1): RULE-1 to RULE-6, one per check, each
+with a Python proof and a JavaScript proof where the token reading carries it; RULE-7, a check a
+language cannot read is named once; RULE-8, a clean test fires nothing. No model is called.
+
+Break: let `assert True` pass `cannot fail`; that proof fails. Waits on: none.
+
+### L10c `break`
+
+C17's targeted break, in a new spec `specs/review/targeted_break.md`
+(`> Scope: scripts/review/targeted_break.py`, ids from 1): RULE-1 the change is made in a copy
+(PROOF-1 the project's files hash the same after a break); RULE-2 a surviving test reads
+`survived` with the change (PROOF-2); RULE-3 a caught one `caught` (PROOF-3); RULE-4 an answer
+that matches nothing, or matches twice, is `not made` (PROOF-4, PROOF-5); RULE-5 a write outside
+the copy is refused (PROOF-6); RULE-6 the project changing during a break stops the audit with
+its line (PROOF-7, a test that edits the project from its fake's answer hook); RULE-7 the copy is
+removed when the test command fails or times out (PROOF-8); RULE-8 no test reaches a real model
+(PROOF-9, `claude` resolves under `tmp_path`).
+
+Break: apply the change in the project instead of the copy; PROOF-1 fails. Waits on: none.
 
 ### L11 `remote`
 
@@ -768,7 +920,7 @@ Break: let an emoji through; the kept no-emoji proof fails. Waits on: none.
 
 ### L16 `docs`
 
-C16's pages, in section 6's words; each page no longer names a gate, a release, the table,
+C16's pages, `docs/audit.md` with C18's sources among them, in section 6's words; each page no longer names a gate, a release, the table,
 mutation, export, drift roles or the cut dashboard parts. `specs/instructions/purlin_docs.md`
 (R13 P18; next RULE-14, PROOF-19): kept to the eight pages and their links resolving (PROOF-19).
 
@@ -825,7 +977,7 @@ docstring naming a gate or a release. Anything else goes to the owner.
 
 ### Merge order
 
-`drift`, `evidence`, `package`, `counting`, `signoff`, `audit`, `remote`, `run`, `anchors`,
+`drift`, `evidence`, `package`, `counting`, `signoff`, `plain`, `break`, `audit`, `remote`, `run`, `anchors`,
 `setup`, `upgrade`, `settings`, `dashboard`, `skills`, `checks`, `docs`, `deck`, `team`. Each by
 fast-forward after a rebase on the merged line and a rerun of its files.
 
@@ -880,29 +1032,32 @@ rewritten; `dev/test_collaboration.py` until last.
 | The walk's refusals (C4) | as C4 gives them, filled: `No sign-off: these results were not taken on this version of the code, 1cf829e: sample_age, stability on Linux/Unix; visit_window on Windows. Run purlin:test --all --commit and purlin:test --remote, then purlin:sign.` and the rest |
 | After a sign-off (C4) | `Tagged signed/0.1.0 at e0deb2e.`; `Push the branch and the tag: git push origin main signed/0.1.0`; `signed/0.1.0 stays at e0deb2e; this sign-off is added after it. Push it: git push origin main` |
 | A test comment to correct (C5) | `tests/test_age.py:33 names sample_age PROOF-5, whose wording changed after the test was last changed in 495698f: it read "<old>" and now reads "<new>". Run purlin:build sample_age to make the test show it; the line clears once the test changes.` |
+| A hand check's note (C8) | `noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red` |
+| The audit (C17) | `tests/test_age.py::test_age: no assertion.`; `tests/test_age.py::test_age: the proof names 90 and the test does not hold it.`; `PROOF-1: the test still passes when src/age.py:12 reads "return 0"`; `The audit found 42 of 50 rules strong (84%).`; `The audit stopped: src/age.py changed while a break ran. Nothing in the project was written by the audit.` |
 | Nothing to check (C15) | `security_no_dangerous_patterns RULE-3 passes with nothing to check here: this project has no screens.` |
 | The runner (C9) | `Purlin wrote .github/workflows/purlin.yml, the runner for GitHub, to run the proofs tagged for Windows:`; `Commit it and run: purlin:test --remote --commit-runner`; `Committed .github/workflows/purlin.yml, the runner for GitHub.` |
 | Settings (C7) | `.purlin/config.json carries gate, mutation_engine, which this version does not read. Run purlin:init --update.`; `gate is not a setting; .purlin/config.json holds version and tests. Nothing was saved.` |
 | Dashboard (L13) | the boxes `Tests` / `met` and `Sign-off` / `signed 0.1.0 at a1b2c3d`; `Back to the board`; `Data from 2026-10-01 12:17 UTC` |
-| `RELEASE_NOTES.md` 0.10.0 | `**Two facts, no gate.** The status and the dashboard say whether the tests are met on the committed evidence, and whether this code is signed.`; `**The hand-off is run and commit**: purlin:test --all --commit, and purlin:test --remote for other systems.`; `**purlin:sign builds the evidence package and signs it**, at any time, in any project; it stops only at hand checks, whose note is optional, and refuses results not taken on this code.`; `**An anchor rule with nothing to check passes, and says so.**`; `**A test comment whose proof was reworded is caught** until the test changes.`; `**The audit is an optional tool and reads a rule again only when its own test changes.**`; `**Cut:** mutation testing, purlin:export, the gate, the release step, .purlin/tests.md, drift's role views, setup's questions but one, and most settings.`; the format numbers of C12 |
+| `RELEASE_NOTES.md` 0.10.0 | `**Two facts, no gate.** The status and the dashboard say whether the tests are met on the committed evidence, and whether this code is signed.`; `**The hand-off is run and commit**: purlin:test --all --commit, and purlin:test --remote for other systems.`; `**purlin:sign builds the evidence package and signs it**, at any time, in any project; it stops only at hand checks, whose note is optional, and refuses results not taken on this code.`; `**An anchor rule with nothing to check passes, and says so.**`; `**A test comment whose proof was reworded is caught** until the test changes.`; `**The audit checks tests in code and breaks the code once per changed proof**, in a copy of the project: plain checks for hollow tests, then one model-written break the proof's test must catch; it reports the share of rules it found strong. Run it by hand; nothing blocks on it.`; `**The evidence package records who wrote and last changed each rule, proof and test**, from git.`; `**Cut:** mutation testing, purlin:export, the gate, the release step, .purlin/tests.md, drift's role views, setup's questions but one, and most settings.`; the format numbers of C12 |
 
-## 7. Question for the owner
+## 7. Questions for the owner
 
-**Q1. When the code moves after a sign-off, what should a hand check say?**
+**Q1 (answered (b)).** A hand check always shows its last note, with its version and how many
+commits since: C8's `HAND_NOTE`.
 
-Root: a hand check is a proof a person checks by eye at the sign-off, such as "the tube colour
-is red on an expired sample". Decision 108 says it reads `checked at sign-off` until someone
-signs. Once a version is signed and then more commits land, the person's note describes older
-code.
+**Q2. What does the targeted break do with code that only one proof's test can reach?**
 
-- **(a) It keeps reading `checked at sign-off`, and shows the last note with its version only
-  while the sign-off fact reads `signed <v> at <sha>`, recommended.** Consequence: a note is
-  never shown against code it was not written for; after new commits the rule simply waits for
-  the next sign-off.
-- **(b) It always shows the last note, marked with its version and `N commits since`.**
-  Consequence: the reader sees what was last observed, and must judge whether it still holds.
+Root: decision 110 breaks the code once per changed proof and runs that proof's own test. A
+test written for another proof of the same rule may also catch the break, which would show the
+code is covered, though not by this proof's test.
 
-The plan is written to (a): C8's hand-check bullet.
+- **(a) Only the proof's own test counts, recommended.** Consequence: each proof is shown to have
+  a test that guards it; a rule whose second test does the work reads weak until the first is
+  fixed or the proofs are merged.
+- **(b) Any test of the same rule counts.** Consequence: fewer weak findings, but a proof can
+  pass the audit with a test that does not show it.
+
+The plan is written to (a): C17's "the proof's own test runs".
 
 ## 8. Calls this plan makes
 
@@ -917,5 +1072,9 @@ The plan is written to (a): C8's hand-check bullet.
 - `--arm-timeout` stays: it bounds every suite, not only mutation.
 - gotest stays (decision 109 cut nothing of the report formats).
 - The audit runs four calls at once, fixed.
+- The break runs in a copy of the project, never in the checkout, and a check before and after
+  each break stops the audit if the project changed.
+- Who wrote a rule or proof is the oldest commit adding its line; renumbering moves that line, so
+  the helper's commit becomes the writer of a moved id.
 - Times read UTC with the date.
 - Every audit entry written before C6 stops answering once.
