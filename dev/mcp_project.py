@@ -161,8 +161,9 @@ class Project(object):
         return rel
 
     def audit(self, rule_id, feature='login', settled=True, observations=(),
-              source='local', word=None, **extra):
-        """Write the audit entry for a rule's current rule, proof and test hashes.
+              source='local', word=None, no_bug=(), **extra):
+        """Write the audit entry for a rule's current rule, proof and test
+        hashes, and the feature's `code` part taken now.
 
         `settled` with no observation is `strong`, with one `weak`, and not
         settled is `undecided`; `word` names another outright. `extra`
@@ -182,9 +183,11 @@ class Project(object):
         entry = {'rule_hash': rule['rule_hash'],
                  'proof_hash': rule['proof_hash'],
                  'test_hash': rule['test_hash'],
+                 'code_hash': purlin_fingerprint.fingerprint(
+                     self.root, feature)['code'],
                  'verdict': word or ('undecided' if not settled else
                                      'weak' if observations else 'strong'),
-                 'findings': list(observations),
+                 'findings': list(observations), 'no_bug': list(no_bug),
                  'at': '2026-09-13T12:05:00Z', 'commit': self.head()}
         entry.update(extra)
         audit['rules'][rule_id] = entry

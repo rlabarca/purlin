@@ -89,6 +89,12 @@ TESTS_LINE = 'Tests: %s'
 SIGNOFF_LINE = 'Sign-off: %s'
 LEFT_TO_DO = 'Left to do:'
 AUDIT_SHARE = 'The audit found %d of %d rules strong (%d%%).'
+# The audit's five counts, in the order they are said: the key each is
+# counted under, and its word. `AUDIT_LINE` is the share followed by them.
+AUDIT_WORDS = (('strong', 'strong'), ('weak', 'weak'),
+               ('spot_checked', 'spot-checked'),
+               ('out_of_date', 'out of date'), ('not_audited', 'not audited'))
+AUDIT_LINE = 'The audit found %d of %d rules strong (%d%%): %s.'
 LAST_LINE = 'Every rule passes its tests on the committed evidence. To sign it: purlin:sign'
 
 # The order systems are named in, whatever order the rules name them.
@@ -194,6 +200,25 @@ def audit_counts(own_rules):
         if word in names:
             counts[names[word]] += 1
     return counts
+
+
+def audit_words(counts):
+    """`34 strong, 4 weak, 2 spot-checked`: `strong` always, each other count
+    only where it is not zero, in AUDIT_WORDS' order."""
+    counts = counts or {}
+    return ', '.join('%d %s' % (counts.get(key) or 0, word)
+                     for key, word in AUDIT_WORDS
+                     if key == 'strong' or counts.get(key))
+
+
+def audit_line(counts):
+    """AUDIT_LINE over the five counts: strong, their sum, the whole per cent
+    rounded down, `audit_words(counts)`."""
+    counts = counts or {}
+    strong = counts.get('strong') or 0
+    over = sum(counts.get(key) or 0 for key, _word in AUDIT_WORDS)
+    return AUDIT_LINE % (strong, over, strong * 100 // over if over else 0,
+                         audit_words(counts))
 
 
 def sentence(summary):

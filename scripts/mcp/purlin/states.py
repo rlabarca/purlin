@@ -73,7 +73,6 @@ COUNTED_FLAGS = ('strong', 'weak', 'not_audited', 'manual')
 
 # The strong cell's reasons for a rule the audit has not read.
 NOT_AUDITED_REASON = 'no audit has run on this code'
-COULD_NOT_RUN = 'the AI audit could not run: %s'
 
 # The strong cell's word for a rule with a hand check, and the reason each
 # note of the newest sign-off holding one gives it: the version, the signer,
@@ -154,8 +153,6 @@ def rule_cells(inp):
                     with `nothing to check:` counts as passed
     `audit`         the evidence's audit entry for this rule's current
                     hashes, carrying its `path`, or None
-    `could_not_run` why the last audit could not reach the model for this
-                    rule's current hashes, or None
     `hand_notes`    the reasons the newest sign-off holding a note on this
                     rule gives it, `HAND_NOTE` filled; [] before any
     `spec_broken`   why every rule of the rule's own spec reads `failed`, as
@@ -686,8 +683,7 @@ def _strong_cell(inp, passed):
         return cell
 
     if not audit:
-        why = inp.get('could_not_run')
-        cell['reasons'] = [COULD_NOT_RUN % why if why else NOT_AUDITED_REASON]
+        cell['reasons'] = [NOT_AUDITED_REASON]
         return cell
 
     cell['word'] = 'strong'

@@ -380,9 +380,12 @@ def _features(tree, payload, features, commit, seen):
         name = feature.get('name')
         loaded = evidence_module.load(tree, name)
         sections = []
+        # The feature's `code` part, which an audit entry is checked on.
+        code = ''
         if any(loaded['files'].values()):
             now = fingerprint_module.fingerprint(tree, name, features, index)
             sections = evidence_module.checked_sections(loaded, now)
+            code = now['code']
         for entry in sections:
             sha = entry['section'].get('commit') or ''
             if sha not in same:
@@ -402,13 +405,13 @@ def _features(tree, payload, features, commit, seen):
             'scope': [] if anchor else list(feature.get('scope') or ()),
             'anchor': anchor,
             'rules': [_rule(rule, loaded, sections, same,
-                            authors.of(name, spec, rule))
+                            authors.of(name, spec, rule), code)
                       for rule in own],
         })
     return out
 
 
-def _rule(rule, loaded, sections, same, authors):
+def _rule(rule, loaded, sections, same, authors, code=''):
     rule_id = rule.get('id')
     proofs = rule.get('proofs') or ()
     return {
@@ -420,7 +423,7 @@ def _rule(rule, loaded, sections, same, authors):
                     'env': proof.get('env')} for proof in proofs],
         'tests': _tests(rule),
         'results': _results(rule_id, proofs, sections, same),
-        'audit': _audit(rule, loaded),
+        'audit': _audit(rule, loaded, code),
         'statuses': {name: _status(rule, name) for name in CELLS
                      if name in (rule.get('cells') or {})},
         'authors': authors,
@@ -517,14 +520,17 @@ def _by(entry):
     return str(entry['section'].get('email') or 'unknown')
 
 
-def _audit(rule, loaded):
-    """What the audit found for the rule's current hashes, or None."""
+def _audit(rule, loaded, code=''):
+    """What the audit found for the rule's current hashes, or None.
+
+    `code` is the `code` part of the feature's fingerprint taken now, the
+    fourth hash an entry is checked on."""
     summary = rule.get('audit')
     if not summary:
         return None
     entry = evidence_module.audit_entry(
         loaded, rule.get('id'), rule.get('rule_hash'), rule.get('proof_hash'),
-        rule.get('test_hash')) or {}
+        rule.get('test_hash'), code) or {}
     return {'verdict': summary.get('verdict'),
             'findings': [str(line) for line in summary.get('findings') or ()],
             'notes': [str(line) for line in summary.get('notes') or ()],

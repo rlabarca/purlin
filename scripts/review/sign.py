@@ -538,7 +538,7 @@ def _systems(names):
 def last_notes(project_root):
     """`{(feature, rule): [line]}`: each hand check's last note, from the same
     source and in the same words as the dashboard shows it."""
-    return payload_module.hand_notes(project_root)
+    return signatures_module.hand_notes(project_root)
 
 
 def plan(package, notes=None):

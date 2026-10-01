@@ -1,4 +1,4 @@
-> Format-Version: 9
+> Format-Version: 10
 
 # Evidence format
 
@@ -66,7 +66,8 @@ operating system that ran the feature, one section each.
   "audit": {
     "rules": {
       "RULE-1": {"rule_hash": "<sha256>", "proof_hash": "<sha256>",
-                 "test_hash": "<sha256>", "verdict": "strong", "findings": [],
+                 "test_hash": "<sha256>", "code_hash": "<sha256>",
+                 "verdict": "strong", "findings": [], "no_bug": [],
                  "breaks": {"PROOF-1": {"file": "src/login.py", "line": 12,
                                         "before": "return check(password)",
                                         "after": "return True",
@@ -182,9 +183,11 @@ Each `audit.rules` entry:
 | `rule_hash` | string | sha256 of the rule text the audit read |
 | `proof_hash` | string | sha256 of the proof texts the audit read |
 | `test_hash` | string | sha256 of the sorted lines `<file> <test name> <sha256 of the test's source>`, one per test tied to the rule's proofs, the source as the marker format bounds it with line ends read as `\n`; a test of an `exit` suite, or one not found by its name, gives `<file> <test name> <blob id>` |
-| `verdict` | string | `strong` or `weak` |
+| `code_hash` | string | the `code` part of the feature's fingerprint when the audit read the rule |
+| `verdict` | string | `strong`, `weak` or `spot-checked` |
 | `findings` | array of strings | one sentence per finding; empty when the audit found nothing |
-| `breaks` | object | `PROOF-N` to the bug the audit planted for that proof: `file`, `line`, `before`, `after`, `result` (`caught`, `survived` or `not made`), `why` (empty where there is no reason) and `break_key`, the sha256 that says whether the proof needs a new bug. `{}` for an anchor's rule |
+| `no_bug` | array of strings | one sentence for each proof no bug was caught for, saying why; empty where a bug was caught for every proof |
+| `breaks` | object | `PROOF-N` to the bug the audit planted for that proof: `file`, `line`, `before`, `after`, `result` (`caught`, `survived`, `not made` or `not run`), `why` (empty where there is no reason) and `break_key`, the sha256 that says whether the proof needs a new bug. A proof the model could not be reached for, or one tagged for another system, has no entry. `{}` for an anchor's rule |
 | `explanation` | array of strings | the model's reading of the rule's tests, one sentence per line. It sets no verdict |
 | `model` | string | the model that answered, its name and version as the `claude` command's JSON reports them, or `unknown` where it reports none |
 | `criteria` | string | sha256 of `references/review_criteria.md` as it was sent to the model |
@@ -193,28 +196,38 @@ Each `audit.rules` entry:
 | `notes` | array of strings | optional: one sentence per proof the audit found longer than the standard or holding two cases. Present only when there are some. A note does not make the rule weak |
 
 `verdict` is `weak` when a heuristic spot test fired on one of the rule's
-tests or a planted bug survived, each finding one sentence, and `strong`
-otherwise. `strong` is written only where the model was reached. A rule the
-model could not be reached for, for a planted bug or for its reading, gets no
-entry at all, so the next audit reads it again, unless a spot test fired on
-one of its tests or a kept planted bug survived: it is then written `weak`,
-with the model `unknown` and no bug recorded for a proof the model was not
-reached for.
+tests or a planted bug survived, each finding one sentence. It is `strong`
+when none did and a planted bug was caught by its proof's test. It is
+`spot-checked` when none did and no bug was planted and caught, and `no_bug`
+then says why.
+
+A break's `result` is `caught` when the proof's test ran and failed with the
+bug in place, `survived` when it still passed, `not made` when the change
+could not be made, and `not run` when the test did not run with the bug in
+place, which is neither caught nor survived.
+
+A rule the model could not be reached for is written with the model `unknown`
+and no bug recorded for a proof the model was not reached for, so the next
+audit reads it again.
 
 `model` and `criteria` name the model that gave the explanation and the
 instructions it was given. The evidence package carries each rule's
 `verdict`, `findings`, `breaks` and `explanation` as they stand at the commit
 it describes.
 
-Two entries are the same when their three hashes, `verdict`, `findings`,
-`model` and `criteria` are: an audit that repeats the entry on file leaves it
+Two entries are the same when their four hashes, `verdict`, `findings`,
+`no_bug`, `model` and `criteria` are: an audit that repeats the entry on file leaves it
 as it was, `at` and `commit` included, and one that differs in any of them
 replaces it.
 
-An audit entry answers a rule while its `rule_hash`, `proof_hash` and
-`test_hash` all equal the rule's current ones. `commit` and `at` are shown and
-not compared, so an entry taken at an earlier commit still answers. Where both
-sources hold an entry that answers, the later `at` is read.
+An audit entry is **current** while its `rule_hash`, `proof_hash`,
+`test_hash` and `code_hash` all equal the ones taken now: the rule's text, its
+proofs' text, its tests' source and the `code` part of the feature's
+fingerprint. Otherwise it is out of date on each part that differs, `rule`,
+`proof`, `test` or `code`, and it stays in the file. `commit` and `at` are
+shown and not compared, so an entry taken at an earlier commit is still
+current. Where both sources hold an entry, a current one is read before one
+out of date, and then the later `at`.
 
 ## The fingerprint
 

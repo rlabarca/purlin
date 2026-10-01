@@ -469,24 +469,6 @@ class TestTheStrongCell:
         assert cell['word'] == 'not audited', cell
         assert cell['findings'] == [], cell
 
-    # purlin: states PROOF-71
-    def test_a_rule_the_model_could_not_be_reached_for_says_why(self,
-                                                               project):
-        project.evidence([{'id': 'PROOF-2', 'rule': 'RULE-2',
-                           'status': 'pass'}], source='ci')
-        rule = project.rule('RULE-2')
-        _write(os.path.join(project.root, '.purlin', 'runtime',
-                            'audit_could_not_run.json'),
-               json.dumps({'login': {'RULE-2': {
-                   'rule_hash': rule['rule_hash'],
-                   'proof_hash': rule['proof_hash'],
-                   'test_hash': rule['test_hash'],
-                   'why': 'claude is not on PATH'}}}))
-        cell = project.cell('RULE-2', 'strong')
-        assert cell['word'] == 'not audited', cell
-        assert cell['reasons'] == [
-            'the AI audit could not run: claude is not on PATH'], cell
-
     # purlin: states PROOF-19
     def test_before_any_sign_off_a_manual_rule_is_checked_at_sign_off(self):
         result = purlin_states.rule_cells({

@@ -31,6 +31,8 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
+from purlin import facts as facts_module, states               # noqa: E402
+
 # Where a version's evidence package and its sign-offs sit.
 PACKAGE_DIR = '.purlin/evidence/package'
 
@@ -300,3 +302,65 @@ def _fingerprint_of(public_key):
         return None
     digest = base64.b64encode(hashlib.sha256(blob).digest()).decode('ascii')
     return 'SHA256:' + digest.rstrip('=')
+
+
+def hand_notes(project_root):
+    """`{(feature, rule): [reason]}` from the newest sign-off holding a note on each rule.
+
+    Every sign-off file of every version is read, whatever code it was taken
+    on. Each note becomes `states.HAND_NOTE`: the version, the signer, how
+    far HEAD is from the signed commit, the note. The signed commit is the
+    one `signed/<version>` names, or the commit that added the file.
+    """
+    folder = os.path.join(project_root, *PACKAGE_DIR.split('/'))
+    try:
+        versions = sorted(name for name in os.listdir(folder)
+                          if name.endswith('.signoffs'))
+    except OSError:
+        return {}
+    signoffs = []
+    for name in versions:
+        directory = os.path.join(folder, name)
+        for basename in sorted(os.listdir(directory)):
+            if not basename.endswith('.json'):
+                continue
+            try:
+                full = os.path.join(directory, basename)
+                with open(full, 'r', encoding='utf-8') as handle:
+                    data = json.load(handle)
+            except (IOError, OSError, UnicodeDecodeError, ValueError):
+                continue
+            if isinstance(data, dict) and isinstance(data.get('notes'), list):
+                rel = '%s/%s/%s' % (PACKAGE_DIR, name, basename)
+                signoffs.append((str(data.get('timestamp') or ''), rel, data))
+    found = {}
+    distances = {}
+    for _at, rel, data in sorted(signoffs, key=lambda item: item[:2],
+                                 reverse=True):
+        version = str(data.get('version') or '')
+        held = {}
+        for note in data['notes']:
+            if isinstance(note, dict) and note.get('feature') and note.get('rule'):
+                held.setdefault((note['feature'], note['rule']), []).append(
+                    str(note.get('note') or ''))
+        for key, notes in held.items():
+            if key in found:
+                continue
+            if rel not in distances:
+                distances[rel] = _distance(project_root, version, rel)
+            found[key] = [states.HAND_NOTE % (version, data.get('signer'),
+                                              distances[rel], note)
+                          for note in notes]
+    return found
+
+
+def _distance(project_root, version, rel):
+    """How far HEAD is from the commit a sign-off signed, as a note says it."""
+    commit = facts_module.git_line(project_root, 'rev-list', '-n', '1',
+                                   facts_module.TAG_PREFIX + version)
+    if not commit:
+        commit = facts_module.git_line(project_root, 'log', '-n', '1',
+                                       '--diff-filter=A', '--format=%H', '--', rel)
+    if not commit:
+        return facts_module.AT_THIS_COMMIT
+    return facts_module.distance(project_root, commit)

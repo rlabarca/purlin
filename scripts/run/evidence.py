@@ -434,9 +434,9 @@ def merge_audit(data, source, feature, spec_path, entries, rule_ids):
     """`data` with `audit.rules[R]` replaced for each entry given.
 
     `audit` holds `rules` alone. An entry that repeats the one there, with
-    the same three hashes, `verdict`, `findings`, `model` and `criteria`,
-    keeps its `at` and `commit`, so reading a rule again finds nothing new
-    to commit.
+    the same four hashes, `verdict`, `findings`, `no_bug`, `model` and
+    `criteria`, keeps its `at` and `commit`, so reading a rule again finds
+    nothing new to commit.
     """
     merged = json.loads(json.dumps(data)) if data else empty_file(
         source, feature, spec_path)
@@ -456,19 +456,24 @@ def merge_audit(data, source, feature, spec_path, entries, rule_ids):
 def audit_entry(rule, found, commit, at=None):
     """The `audit.rules` entry for one rule the audit read.
 
-    `rule` is the payload's rule entry, whose three hashes key the entry.
-    `found` holds verdict, findings, breaks, explanation, model, criteria,
-    notes: the `verdict` (`strong` or `weak`), the `findings`, the `breaks`,
-    one per proof a bug was planted for, the model's reading as
-    `explanation`, the `model` that answered, the sha256 of the `criteria`
-    it was sent, and any `notes`, which enter no comparison and are written
-    only when there are some.
+    `rule` is the payload's rule entry, whose three hashes key the entry
+    with `found`'s `code_hash`, the `code` part of the feature's fingerprint
+    when the audit read the rule. `found` holds code_hash, verdict, findings,
+    no_bug, breaks, explanation, model, criteria, notes: the `verdict`
+    (`strong`, `weak` or `spot-checked`), the `findings`, under `no_bug` one
+    sentence for each proof no bug was caught for, the `breaks`, one per
+    proof a bug was planted for, the model's reading as `explanation`, the
+    `model` that answered, the sha256 of the `criteria` it was sent, and any
+    `notes`, which enter no comparison and are written only when there are
+    some.
     """
     entry = {'rule_hash': rule.get('rule_hash'),
              'proof_hash': rule.get('proof_hash'),
              'test_hash': rule.get('test_hash'),
+             'code_hash': found.get('code_hash') or '',
              'verdict': found.get('verdict'),
              'findings': [str(line) for line in found.get('findings') or ()],
+             'no_bug': [str(line) for line in found.get('no_bug') or ()],
              'breaks': {str(proof): dict(made) for proof, made
                         in (found.get('breaks') or {}).items()},
              'explanation': [str(line)
@@ -483,36 +488,9 @@ def audit_entry(rule, found, commit, at=None):
 
 
 def _same_audit(one, other):
-    keys = ('rule_hash', 'proof_hash', 'test_hash', 'verdict', 'findings',
-            'model', 'criteria')
+    keys = ('rule_hash', 'proof_hash', 'test_hash', 'code_hash', 'verdict',
+            'findings', 'no_bug', 'model', 'criteria')
     return all(one.get(key) == other.get(key) for key in keys)
-
-
-def write_could_not_run(project_root, failures, cleared):
-    """Record the rules whose model call failed, for the strong cell to name.
-
-    `failures` is `{(feature, rule): {rule_hash, proof_hash, test_hash,
-    why}}` from this audit, and `cleared` the `(feature, rule)` pairs it
-    read. What an earlier audit left there stays for every other rule. The
-    file sits under `.purlin/runtime/`, which is never committed: nothing
-    about a rule the model could not read goes into the evidence.
-    """
-    table = reader.could_not_run(project_root)
-    for feature, rule in cleared or ():
-        (table.get(feature) or {}).pop(rule, None)
-    for (feature, rule), entry in (failures or {}).items():
-        table.setdefault(feature, {})[rule] = dict(entry)
-    table = {feature: rules for feature, rules in table.items() if rules}
-    path = full_path(project_root, reader.COULD_NOT_RUN_PATH)
-    if not table:
-        try:
-            os.remove(path)
-        except OSError:
-            pass
-        return
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, 'w', encoding='utf-8', newline='\n') as handle:
-        handle.write(dump(table))
 
 
 def drop_removed_rules(data, rule_ids):

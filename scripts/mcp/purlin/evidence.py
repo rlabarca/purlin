@@ -20,13 +20,6 @@ system.
 A file that cannot be read, is not JSON, carries another schema, or names a
 source other than its folder is ignored, and the reader says so once per file
 in `warnings`, naming the run that writes it again.
-
-One more file is read here and is not evidence: `.purlin/runtime/
-audit_could_not_run.json`, which `purlin:audit` leaves behind for the rules
-whose model call could not be made. Nothing is written into the evidence for
-such a rule, so the next audit tries it again; this file only lets the strong
-cell say why it still reads `not audited`. It sits under `runtime/`, which is
-never committed.
 """
 
 import json
@@ -43,7 +36,10 @@ SCHEMA = 'purlin-evidence/2'
 SOURCES = ('local', 'ci')
 PLATFORMS = ('windows', 'macos', 'linux')
 EVIDENCE_DIR = '.purlin/evidence'
-COULD_NOT_RUN_PATH = '.purlin/runtime/audit_could_not_run.json'
+
+# The parts an audit entry is checked on, each with the key that stores it.
+AUDIT_PARTS = (('rule', 'rule_hash'), ('proof', 'proof_hash'),
+               ('test', 'test_hash'), ('code', 'code_hash'))
 
 # A proof whose every tied test skipped with a reason starting with these
 # words reads this result, its reason the text after them.
@@ -229,15 +225,14 @@ def newest(loaded):
     return best
 
 
-def audit_entry(loaded, rule_id, rule_hash, proof_hash, test_hash):
-    """The audit entry for a rule whose three hashes match, or `None`.
-
-    An entry answers only while its `rule_hash`, `proof_hash` and
-    `test_hash` all equal the ones given; its `commit` and `at` do not
-    matter. Where both sources hold a matching entry the later `at` wins.
-    The entry comes back as a copy carrying `source` and `path`.
-    """
-    best = None
+def audit_entry(loaded, rule_id, rule_hash, proof_hash, test_hash, code_hash):
+    """The rule's audit entry, or None: a current one before one out of date,
+    then the later `at`. A copy carrying `source`, `path` and `out_of_date`,
+    the parts of `rule`, `proof`, `test` and `code` whose stored hash differs
+    from the one given, in that order; [] for a current entry."""
+    given = {'rule_hash': rule_hash, 'proof_hash': proof_hash,
+             'test_hash': test_hash, 'code_hash': code_hash}
+    best = best_rank = None
     for source in SOURCES:
         data = loaded['files'].get(source)
         audit = data.get('audit') if data else None
@@ -245,40 +240,14 @@ def audit_entry(loaded, rule_id, rule_hash, proof_hash, test_hash):
         entry = rules.get(rule_id) if isinstance(rules, dict) else None
         if not isinstance(entry, dict):
             continue
-        if (entry.get('rule_hash'), entry.get('proof_hash'),
-                entry.get('test_hash')) != (rule_hash, proof_hash, test_hash):
-            continue
-        if best is None or _text(entry.get('at')) > _text(best.get('at')):
-            best = dict(entry, source=source, path=loaded['paths'][source])
+        parts = [part for part, key in AUDIT_PARTS
+                 if entry.get(key) != given[key]]
+        rank = (not parts, _text(entry.get('at')))
+        if best is None or rank > best_rank:
+            best_rank = rank
+            best = dict(entry, source=source, path=loaded['paths'][source],
+                        out_of_date=parts)
     return best
-
-
-def could_not_run(project_root):
-    """`{feature: {rule: {rule_hash, proof_hash, test_hash, why}}}`, or `{}`.
-
-    What the last audit could not do: the rules whose model call failed,
-    each keyed by the hashes it would have read. A file that is missing or
-    cannot be read is the same as an empty one.
-    """
-    path = os.path.join(project_root, *COULD_NOT_RUN_PATH.split('/'))
-    try:
-        with open(path, 'r', encoding='utf-8') as handle:
-            data = json.load(handle)
-    except (IOError, OSError, UnicodeDecodeError, ValueError):
-        return {}
-    return data if isinstance(data, dict) else {}
-
-
-def why_not_audited(table, feature, rule_id, rule_hash, proof_hash,
-                    test_hash):
-    """Why the last audit could not read this rule's current hashes, or None."""
-    entry = ((table or {}).get(feature) or {}).get(rule_id)
-    if not isinstance(entry, dict):
-        return None
-    if (entry.get('rule_hash'), entry.get('proof_hash'),
-            entry.get('test_hash')) != (rule_hash, proof_hash, test_hash):
-        return None
-    return entry.get('why') or None
 
 
 # A proof's result in one section is the worst of its tests', in this order.

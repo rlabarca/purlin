@@ -198,10 +198,9 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     evidence = _read_evidence(project_root, features, warnings)
     incomplete = {name: fingerprint_module.incomplete_reason(
         project_root, name, features) for name in sorted(features)}
-    could_not_run = evidence_module.could_not_run(project_root)
     head = head_sha(project_root)
     here_os = evidence_module.host_os()
-    notes = hand_notes(project_root)
+    notes = signatures_module.hand_notes(project_root)
 
     # Which proofs have a test is read from the markers in the test files,
     # not from the evidence: a marked test that has not run yet is a test.
@@ -222,7 +221,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     for name in sorted(features):
         entry, _rollup = _feature_entry(
             project_root, name, features[name], evidence, sources,
-            own_results, could_not_run, incomplete, tied, here_os, notes)
+            own_results, incomplete, tied, here_os, notes)
         feature_entries.append(entry)
 
     summary = states.project_rollup({'': states.feature_rollup(own_results)})
@@ -239,6 +238,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     left = summary_module.left(feature_entries, here_os, corrections,
                                uncommitted)
     signoff = facts_module.signoff_fact(project_root)
+    warnings.extend(signoff.pop('warnings', None) or ())
 
     payload = {
         'schema_version': SCHEMA_VERSION,
@@ -300,8 +300,8 @@ def proof_counts(rule_entries, tied=None):
 
 
 def _feature_entry(project_root, name, info, evidence, sources,
-                   own_results=None, could_not_run=None, incomplete=None,
-                   tied=None, here_os=None, hand_notes=None):
+                   own_results=None, incomplete=None, tied=None,
+                   here_os=None, hand_notes=None):
     incomplete = incomplete or {}
     anchor = bool(info.get('is_anchor'))
     own = evidence.get(name) or _no_evidence(name)
@@ -312,8 +312,8 @@ def _feature_entry(project_root, name, info, evidence, sources,
     broken = spec_broken(info)
     for rule_id in info.get('rule_order') or ():
         result = _rule_entry(
-            project_root, name, info, rule_id, own, sources, could_not_run,
-            marked, here_os, broken, (hand_notes or {}).get((name, rule_id)))
+            project_root, name, info, rule_id, own, sources, marked, here_os,
+            broken, (hand_notes or {}).get((name, rule_id)))
         rule_entries.append(result)
         summary = {'bucket': result['bucket'], 'flags': result['flags']}
         rule_results[(name, rule_id)] = summary
@@ -355,9 +355,10 @@ def spec_broken(info):
 # ---------------------------------------------------------------------------
 
 def _read_evidence(project_root, features, warnings):
-    """`{feature: {loaded, sections, current, summary}}` for every spec.
+    """`{feature: {loaded, sections, code, current, summary}}` for every spec.
 
-    `sections` is every section of the feature's two files, each checked
+    `code` is the `code` part of the fingerprint taken now, which an audit
+    entry is checked on, `''` where the feature has no evidence. `sections` is every section of the feature's two files, each checked
     against a fingerprint taken now; `current` says the newest of them is
     current; `summary` is the `features[].evidence` object. A file the
     reader ignores adds its warning once.
@@ -371,10 +372,12 @@ def _read_evidence(project_root, features, warnings):
             if warning not in warnings:
                 warnings.append(warning)
         sections = []
+        code = ''
         if any(loaded['files'].values()):
             now = fingerprint_module.fingerprint(project_root, name, features,
                                                  markers)
             sections = evidence_module.checked_sections(loaded, now)
+            code = now['code']
         newest = None
         for entry in sections:
             if newest is None or str(entry['section'].get('at') or '') > str(
@@ -395,7 +398,7 @@ def _read_evidence(project_root, features, warnings):
                                   'current': entry['current']}
                     for entry in sections if entry['source'] == source},
             }
-        out[name] = {'loaded': loaded, 'sections': sections,
+        out[name] = {'loaded': loaded, 'sections': sections, 'code': code,
                      'current': bool(newest and newest['current']),
                      'summary': summary}
     return out
@@ -405,7 +408,7 @@ def _no_evidence(name):
     """What `_read_evidence` answers for a feature that has no spec of its own."""
     return {'loaded': {'feature': name, 'files': {'local': None, 'ci': None},
                        'paths': {}, 'warnings': []},
-            'sections': [], 'current': False,
+            'sections': [], 'code': '', 'current': False,
             'summary': {'local': None, 'ci': None}}
 
 
@@ -463,8 +466,8 @@ def _evidence_map(evidence):
 
 
 def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
-                sources, could_not_run=None, marked=None, here_os=None,
-                broken=None, hand_notes=None):
+                sources, marked=None, here_os=None, broken=None,
+                hand_notes=None):
     text = owner_info['rules'].get(rule_id, '')
     anchor = bool(owner_info.get('is_anchor'))
     proof_ids = owner_info.get('proofs_by_rule', {}).get(rule_id, [])
@@ -495,21 +498,20 @@ def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
     # package records beside them.
     machines = _machines(sections, proof_dicts, rule_id)
 
-    # The audit entry for this rule's current hashes, in either source. An
-    # entry taken over other text, another proof or another test does not
-    # answer, which is what keeps the strong cell honest.
-    audit = evidence_module.audit_entry(owner_evidence['loaded'], rule_id,
-                                        rule_hash, proof_hash, test_hash)
+    # The rule's audit entry, in either source, checked against the rule,
+    # the proof, the test and the feature's code as they are now. An entry
+    # out of date is read as none.
+    audit = evidence_module.audit_entry(
+        owner_evidence['loaded'], rule_id, rule_hash, proof_hash, test_hash,
+        owner_evidence.get('code') or '')
+    if audit and audit['out_of_date']:
+        audit = None
     result = states.rule_cells({
         'anchor': anchor,
         'proofs': proof_dicts,
         'rule_id': rule_id,
         'sections': sections,
         'audit': audit,
-        # Why the last audit could not reach the model for these hashes,
-        # which is what the strong cell says while it reads `not audited`.
-        'could_not_run': evidence_module.why_not_audited(
-            could_not_run, owner, rule_id, rule_hash, proof_hash, test_hash),
         # The owner's proof and rule ids a marker ties to a test declaration,
         # so a marked test that has not run reads `not run`, not `no test`.
         'marked': marked or set(),
@@ -764,68 +766,6 @@ def branch_name(project_root):
         return None
     name = result.stdout.strip() if result.returncode == 0 else ''
     return name if name and name != 'HEAD' else None
-
-
-def hand_notes(project_root):
-    """`{(feature, rule): [reason]}` from the newest sign-off holding a note on each rule.
-
-    Every sign-off file of every version is read, whatever code it was taken
-    on. Each note becomes `states.HAND_NOTE`: the version, the signer, how
-    far HEAD is from the signed commit, the note. The signed commit is the
-    one `signed/<version>` names, or the commit that added the file.
-    """
-    folder = os.path.join(project_root, *signatures_module.PACKAGE_DIR.split('/'))
-    try:
-        versions = sorted(name for name in os.listdir(folder)
-                          if name.endswith('.signoffs'))
-    except OSError:
-        return {}
-    signoffs = []
-    for name in versions:
-        directory = os.path.join(folder, name)
-        for basename in sorted(os.listdir(directory)):
-            if not basename.endswith('.json'):
-                continue
-            try:
-                full = os.path.join(directory, basename)
-                with open(full, 'r', encoding='utf-8') as handle:
-                    data = json.load(handle)
-            except (IOError, OSError, UnicodeDecodeError, ValueError):
-                continue
-            if isinstance(data, dict) and isinstance(data.get('notes'), list):
-                rel = '%s/%s/%s' % (signatures_module.PACKAGE_DIR, name, basename)
-                signoffs.append((str(data.get('timestamp') or ''), rel, data))
-    found = {}
-    distances = {}
-    for _at, rel, data in sorted(signoffs, key=lambda item: item[:2],
-                                 reverse=True):
-        version = str(data.get('version') or '')
-        held = {}
-        for note in data['notes']:
-            if isinstance(note, dict) and note.get('feature') and note.get('rule'):
-                held.setdefault((note['feature'], note['rule']), []).append(
-                    str(note.get('note') or ''))
-        for key, notes in held.items():
-            if key in found:
-                continue
-            if rel not in distances:
-                distances[rel] = _distance(project_root, version, rel)
-            found[key] = [states.HAND_NOTE % (version, data.get('signer'),
-                                              distances[rel], note)
-                          for note in notes]
-    return found
-
-
-def _distance(project_root, version, rel):
-    """How far HEAD is from the commit a sign-off signed, as a note says it."""
-    commit = facts_module.git_line(project_root, 'rev-list', '-n', '1',
-                               facts_module.TAG_PREFIX + version)
-    if not commit:
-        commit = facts_module.git_line(project_root, 'log', '-n', '1',
-                                   '--diff-filter=A', '--format=%H', '--', rel)
-    if not commit:
-        return facts_module.AT_THIS_COMMIT
-    return facts_module.distance(project_root, commit)
 
 
 def head_sha(project_root):

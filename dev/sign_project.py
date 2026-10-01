@@ -197,11 +197,12 @@ class Project(object):
                     'platforms': {}}
 
     def audit(self, rule, findings=(), settled=True, source='local',
-              feature='login'):
-        """Write the audit entry for a rule's current rule, proof and test hashes.
+              feature='login', no_bug=()):
+        """Write the audit entry for a rule's current rule, proof and test
+        hashes, and the feature's `code` part taken now.
 
-        An entry answers only while the rule, the proof and the test all
-        stand as they were when the audit read them. `settled` with no
+        An entry is current only while the rule, the proof, the test and the
+        code all stand as they were when the audit read them. `settled` with no
         finding is `strong`, with a finding `weak`, and not settled is
         `undecided`.
         """
@@ -214,8 +215,12 @@ class Project(object):
         audit['rules'][rule] = {
             'rule_hash': entry['rule_hash'],
             'proof_hash': entry['proof_hash'],
-            'test_hash': entry['test_hash'], 'verdict': word,
-            'findings': list(findings), 'at': '2026-09-13T12:05:00Z',
+            'test_hash': entry['test_hash'],
+            'code_hash': purlin_fingerprint.fingerprint(
+                self.root, feature)['code'],
+            'verdict': word,
+            'findings': list(findings), 'no_bug': list(no_bug),
+            'at': '2026-09-13T12:05:00Z',
             'commit': self.head()}
         write(os.path.join(self.root, *rel.split('/')),
               json.dumps(data, indent=2, sort_keys=True))
