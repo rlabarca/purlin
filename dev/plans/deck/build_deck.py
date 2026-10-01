@@ -4,7 +4,7 @@ ROOT = os.environ.get('DECK_ROOT') or os.path.join(os.path.dirname(os.path.abspa
 MONO = "font-family:'Courier New', monospace"
 # A command or a file name inside a sentence: the viewer keeps the colour and drops the face.
 def m(text):
-    return '<span style="%s; color:#E6BEB0">%s</span>' % (MONO, text)
+    return '<span style="%s; color:#E6BEB0; white-space:nowrap">%s</span>' % (MONO, text)
 def mt(text):
     return '<span style="color:#C0793F">%s</span>' % text
 SECTION = ('<section id="%s" data-transition="fade" style="background:#0C3444; color:#E4DDD4; '
@@ -25,16 +25,17 @@ PART = ('<div style="display:flex; align-items:center; gap:32px; padding:0 0 0 8
 def brand():
     svg = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'design', 'assets', 'logo.svg'), encoding='utf-8').read()
     svg = re.sub(r'<metadata>.*?</metadata>', '', svg, flags=re.S).replace(' xmlns:c2pa="http://c2pa.org/manifest"', '')
-    svg = svg.replace('width="670" height="330"', 'aria-label="Purlin" style="width:106px; height:52px"')
-    return ('<div style="position:absolute; right:128px; top:80px; width:260px; display:flex; align-items:center; '
-            'justify-content:flex-end; gap:16px">%s<p style="font-size:36px; font-weight:600; color:#E4DDD4">Purlin</p></div>' % svg)
+    svg = svg.replace('width="670" height="330"', 'aria-label="Purlin" style="width:440px; height:217px"')
+    # The mark runs off the right edge: a third of it bleeds past the canvas, top aligned with the headline.
+    return ('<div style="position:absolute; right:-130px; top:44px; width:440px; height:217px; opacity:0.9">%s</div>' % svg)
 # numbers=False drops the count at the start of each row: a slide with one case has nothing to count.
 def slide(sid, eyebrow, headline, rows, closing, notes, lead='', width=620, gap=20, pad=18, numbers=True):
+    # One label width and one card padding on every slide, so every text column starts in the same place.
+    width, pad = 560, 16
     out = [SECTION % (sid, gap),
-           '<p style="font-size:24px; letter-spacing:3px; text-transform:uppercase; color:#C0793F">%s</p>' % eyebrow,
-           '<h2 style="font-size:64px; font-weight:600; line-height:1.1">%s</h2>' % headline]
+           '<h2 style="font-size:64px; font-weight:600; line-height:1.1; width:1440px">%s</h2>' % headline]
     if lead:
-        out.append('<p style="font-size:32px; color:#BFCED5">%s</p>' % lead)
+        out.append('<p style="font-size:32px; color:#BFCED5; width:1440px">%s</p>' % lead)
     out.append('<div style="flex:1"></div>')
     for i, row in enumerate(rows, 1):
         name, what, parts = row[0], row[1], row[2] if len(row) > 2 else ()
@@ -60,6 +61,21 @@ slide('why', 'What Purlin is for', 'Why use Purlin?', [
  'evidence is signed. The audit and the sign-off are optional. Purlin cannot prove your code is '
  'correct, and it makes no claim of compliance.',
  lead='Purlin shows, rule by rule, that your software does what you said it must.', width=700)
+slide('compare', 'How Purlin differs', 'What the popular tools leave out', [
+    ('GitHub Spec Kit', 'Turns a spec into a plan and code with an AI agent. <b>Missing:</b> tests tied to each requirement, evidence, a sign-off.'),
+    ('Kiro', 'Turns requirements into code and generated tests, in its own editor. <b>Missing:</b> team work in git, evidence, a sign-off.'),
+    ('Ketryx', 'Traces requirements to tests and collects signatures for regulated releases. <b>Missing:</b> help writing tests, or checking they catch bugs.'),
+    ('Cucumber', 'Requirements as scenarios that run as tests. <b>Missing:</b> a check that tests catch bugs, evidence, a sign-off.'),
+], '<b>Only Purlin does all three:</b> ties each requirement to its test, checks the test catches bugs, and keeps evidence a person can sign.',
+ 'GitHub Spec Kit (github.com/github/spec-kit) is the most used spec-driven workflow for AI agents; '
+ 'it checks that tasks are done, not that tests show each requirement. Kiro (kiro.dev) generates '
+ 'property-based tests from EARS requirements, inside its own IDE. Ketryx (ketryx.com) is a '
+ 'commercial compliance platform for life-science software, with Part 11 signatures over Jira and '
+ 'GitHub; it is a system of record, which Purlin hands evidence to. Cucumber and other BDD tools '
+ 'make plain-language scenarios executable. Purlin is the one that pairs each requirement with its '
+ 'test, plants a bug to check that test, and keeps the evidence and sign-off in the repository, '
+ 'with product, QA and developers working in git.',
+ lead='Each solves part of the problem. None of them ties requirements, tests that catch bugs and evidence together.', width=420, pad=16)
 slide('touches', 'Your project and your workflow', 'Purlin workflows don\'t change your project much', [
     ('A settings file', '%s holds your test command. Also a folder for evidence and a few lines in %s.' % (m('.purlin/config.json'), m('.gitignore'))),
     ('Your specs', 'Markdown files you write, under %s. Each holds the rules of one feature.' % m('specs/')),
@@ -128,7 +144,7 @@ slide('signoff', 'The sign-off', 'When everyone is done, a person signs the evid
  'who. The sign-off refuses when a result was taken on other code than the version being signed, '
  'and names what to run again. One signature covers the whole package, over its fingerprint, in a '
  'signed commit. The tag itself is signed.', pad=16)
-slide('remote', 'Remote runners', 'When does Purlin use a remote runner in your repository?', [
+slide('remote', 'Remote runners', 'Purlin can use remote runners if needed', [
     ('A rule must hold on another operating system', 'You work on a Mac and a rule must hold on Windows. %s runs those tests on a runner and brings the results back.' % m('purlin:test --remote')),
     ('Set up the first time it is needed', 'The first remote run writes the runner file for your git host, GitHub or Azure DevOps, shows it, and asks before committing it.'),
     ('What the runner does', 'It runs the tests and saves the results. Its job fails only when a test fails.'),
@@ -136,7 +152,7 @@ slide('remote', 'Remote runners', 'When does Purlin use a remote runner in your 
  'One reason and no other. The runner runs only on the run branch purlin:test --remote creates, waits '
  'on and deletes. Each result records the machine and the operating system it came from, and the '
  'sign-off counts it only when it was taken on the version being signed.',
- lead='A remote runner is a machine your git host starts to run a job, as GitHub Actions does.', numbers=False)
+ lead='A remote runner is a machine your git host starts to run a job, as GitHub Actions does.')
 slide('regulated', 'Regulated work', 'Purlin supplies evidence. It does not claim compliance.', [
     ('Purlin produces', 'Evidence for each rule: its tests and their results, what the audit found, who wrote what, who ran the tests and who signed.'),
     ('You hand over', 'The evidence package: one file for the version, made by %s, with its sign-offs.' % m('purlin:sign')),
@@ -151,7 +167,7 @@ slide('anchors', 'Shared rules', 'Anchors: rules the whole project must follow',
     ('Written in this project', 'Write a rule once, such as no secret in the code. Tests across the whole project prove it, and no feature names it.'),
     ('Owned by another department', 'Security, GRC or GxP keep their rules in their own repository. Each project brings in the ones it must follow.'),
     ('Kept in step', '%s updates the copy. The status says when the source has moved on.' % m('purlin:anchor sync')),
-    ('Design standards too', 'Design publishes its standards as an anchor. Tests across every screen prove them; a project with no screens has nothing to check.'),
+    ('Design standards too', 'Design publishes its standards as an anchor, proven by tests across every screen.'),
 ], '<b>A rule only some features need</b> goes in those features\' own specs.',
  'Every anchor covers the whole project, and each of its rules is counted and audited once. An '
  'anchor\'s rule is written as "for every X in the project, Y holds", so a project with no X has '
@@ -160,7 +176,7 @@ slide('anchors', 'Shared rules', 'Anchors: rules the whole project must follow',
  lead='An anchor is a set of rules for the whole project, proven by tests that run across all of it.', width=560, pad=16)
 deck = {"v": 4, "createdOnFiles": {"v": 1, "at": "2026-09-26T18:00:00Z"},
         "title": "Purlin gate workflows",
-        "order": ["why", "touches", "start", "fromcode", "together", "audit", "signoff", "remote", "regulated", "anchors"],
+        "order": ["why", "compare", "touches", "start", "fromcode", "together", "audit", "signoff", "remote", "regulated", "anchors"],
         "sections": {"s1": {"description": "What Purlin is for, how little it changes in a project and a workflow, and how to start in under ten minutes or from code you already have", "start": "why"},
                      "s2": {"description": "Working together while the specs change, the audit that checks the tests are any good, and the sign-off when everyone is done", "start": "together"},
                      "s3": {"description": "The one case where Purlin uses a remote runner, where Purlin stops in regulated work, and how anchors carry rules for the whole project", "start": "remote"}},
