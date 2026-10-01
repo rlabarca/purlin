@@ -176,7 +176,7 @@
 - PROOF-56 (RULE-41): In a project with one spec and no data file, run `purlin:status`; the data file now exists and lists the one spec, `login`
 - PROOF-57 (RULE-41): In a project with one spec whose one test passes and no data file, run `purlin:test`; the data file now exists and reads that rule's passed cell as `passed`
 - PROOF-58 (RULE-41): In the same project after `purlin:test`, delete the data file and run `purlin:audit` with a stand-in AI that finds nothing; the data file exists again and reads the rule's audit as `strong`
-- PROOF-59 (RULE-41): In a project at the gate `signed` whose two rules pass and read strong, with its evidence package committed by `purlin:test --release 1.0.0`, delete the data file and sign it off with `purlin:sign --answers`; the data file exists again and names the tag `signed/1.0.0`
+- PROOF-59 (RULE-41): In a project at the gate `signed` whose two rules pass and read strong, with its evidence package committed by `purlin:test --release 1.0.0`, delete the data file and sign it off with `purlin:sign --answers <file> --release 1.0.0`; the data file exists again and names the tag `signed/1.0.0`
 - PROOF-60 (RULE-42): Run `purlin:status` in a project with 2 rules, then add a third rule to the spec, change the code and commit both with no Purlin command; the data file's bytes and modification time are the ones `purlin:status` left, and it still lists 2 rules
 - PROOF-151 (RULE-42): In that project, with the third rule committed by hand, run `purlin:status` again; the data file now lists 3 rules
 - PROOF-61 (RULE-42): In a directory holding a spec and no Purlin settings file, run `purlin:status`; no data file is written

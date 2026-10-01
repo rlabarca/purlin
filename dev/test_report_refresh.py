@@ -116,7 +116,7 @@ def test_a_sign_off_writes_the_data_file(capsys):
         os.makedirs(os.path.dirname(answers), exist_ok=True)
         with open(answers, 'w', encoding='utf-8') as handle:
             json.dump({'strong': 'go on', 'stops': {}, 'sign': True}, handle)
-        code = sign_module.main(['--answers', answers,
+        code = sign_module.main(['--answers', answers, '--release', '1.0.0',
                                  '--project-root', made.root])
         assert code == 0, capsys.readouterr().out
         data = _data(made.root)

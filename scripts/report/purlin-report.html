@@ -59,9 +59,7 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .notice-text{min-width:0}
 .nowrap{white-space:nowrap}
 .pill{display:inline-flex;align-items:center;justify-content:center;font-size:var(--ui-sm);font-weight:var(--weight-bold);letter-spacing:.08em;padding:4px 12px;border-radius:var(--radius-pill);border:1.5px solid currentColor;white-space:nowrap}
-.pill.solid{background:currentColor}
 .pill b{font-weight:var(--weight-bold)}
-.pill.solid b{color:var(--canvas-deep)}
 pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-height:1.55;color:var(--text-primary);padding:var(--space-5);background:var(--surface-sunken);border:1px solid var(--border-default);border-radius:var(--radius-sm);overflow-x:auto;white-space:pre-wrap}
 .strip{display:grid;grid-template-columns:1fr;gap:var(--space-4)}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:var(--space-4)}
@@ -129,7 +127,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .cmd{font-family:var(--font-mono);font-size:var(--ui-base);color:var(--text-secondary);white-space:nowrap}
 .panel p{margin:0 0 var(--space-3)}
 .panel p:last-child{margin-bottom:0}
-@media (max-width:1023px){.topbar{column-gap:var(--space-4);padding:var(--space-3) var(--space-5)}.topbar .spacer{flex-basis:100%;height:0}.tabs{flex-wrap:wrap;column-gap:var(--space-6);padding:0 var(--space-5)}.wrap{padding:var(--space-6) var(--space-5)}.strip{grid-template-columns:repeat(4,minmax(0,1fr))}.tiles{display:contents}.tbl.specs{display:block}.specs .th{display:none}.specs .tr{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--space-6);row-gap:var(--space-2);padding:var(--space-4) var(--space-5)}.specs .tr>div{flex:none}.specs .tr>div:first-child{flex-basis:100%}.specs .tr>div:empty{display:none}.tr>div[data-label]{display:inline-flex;align-items:baseline;gap:var(--space-2);white-space:nowrap}.tr>div[data-label]::before{content:attr(data-label);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}.rule{grid-template-columns:auto 1fr;gap:var(--space-2) var(--space-4);padding:var(--space-3) var(--space-5)}.rule .rt{grid-row:2;grid-column:1/-1}.rule .rm{grid-column:1/-1}.rule .rp{justify-content:flex-start}.rule-proofs,.specs>.desc{padding:var(--space-4) var(--space-5)}.group{padding:var(--space-4) var(--space-5)}.group .gr{margin-left:0;flex-basis:100%}.kv{grid-template-columns:1fr;gap:var(--space-1) 0}.kv dd{margin-bottom:var(--space-3)}}
+@media (max-width:1023px){.topbar{column-gap:var(--space-4);padding:var(--space-3) var(--space-5)}.topbar .spacer{flex-basis:100%;height:0}.tabs{flex-wrap:wrap;column-gap:var(--space-6);padding:0 var(--space-5)}.wrap{padding:var(--space-6) var(--space-5)}.strip{grid-template-columns:repeat(3,minmax(0,1fr))}.tiles{display:contents}.tbl.specs{display:block}.specs .th{display:none}.specs .tr{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--space-6);row-gap:var(--space-2);padding:var(--space-4) var(--space-5)}.specs .tr>div{flex:none}.specs .tr>div:first-child{flex-basis:100%}.specs .tr>div:empty{display:none}.tr>div[data-label]{display:inline-flex;align-items:baseline;gap:var(--space-2);white-space:nowrap}.tr>div[data-label]::before{content:attr(data-label);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}.rule{grid-template-columns:auto 1fr;gap:var(--space-2) var(--space-4);padding:var(--space-3) var(--space-5)}.rule .rt{grid-row:2;grid-column:1/-1}.rule .rm{grid-column:1/-1}.rule .rp{justify-content:flex-start}.rule-proofs,.specs>.desc{padding:var(--space-4) var(--space-5)}.group{padding:var(--space-4) var(--space-5)}.group .gr{margin-left:0;flex-basis:100%}.kv{grid-template-columns:1fr;gap:var(--space-1) 0}.kv dd{margin-bottom:var(--space-3)}}
 @media (max-width:599px){.strip{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:var(--space-5) var(--space-4)}}
 </style>
 </head>
@@ -166,8 +164,8 @@ function themeButton() {
     + '" aria-label="' + next + '">' + (light ? '◑' : '◐')
     + '</button>';
 }
-var VERSION_KINDS = ['to_tag', 'to_correct'];
-var SHORT_LABELS = {to_confirm: 'To confirm', to_repair: 'To repair'};
+var COMMENT_KINDS = ['to_correct'];
+var SHORT_LABELS = {to_repair: 'To repair'};
 function leftLabel(item) {
   if (SHORT_LABELS[item.kind]) { return SHORT_LABELS[item.kind]; }
   var text = String(item.text || '');
@@ -186,7 +184,7 @@ function chosenItem() {
 function visibleRules(feature) {
   var rules = feature.rules || [];
   var item = chosenItem();
-  if (!item || VERSION_KINDS.indexOf(item.kind) >= 0) {
+  if (!item || COMMENT_KINDS.indexOf(item.kind) >= 0) {
     return rules;
   }
   return rules.filter(function (rule) {
@@ -211,25 +209,25 @@ function filtersMarkup() {
 }
 function statStrip() {
   var summary = DATA.summary || {};
-  var steps = summary.steps || {};
   var total = summary.rules || 0;
   var project = wholeProject();
   var boxes = [];
-  if (level('strong')) {
+  if (level('signed')) {
     var missing = noProofLines();
     var count = missing.reduce(function (sum, pair) { return sum + pair[1]; },
                                0);
     boxes.push(box(NO_PROOF, count, count ? 'warn' : 'pass',
       missing.map(function (pair) { return pair[0] + DOT + pair[1]; })));
   }
-  GATE_LEVELS.filter(level).forEach(function (step) {
-    var reached = steps[step] || 0;
-    boxes.push(box(STEP_LABELS[step], reached,
-                   reached === total ? 'pass' : 'warn',
-                   stepHover(step, project),
-                   step === 'passed' ? total + (total === 1 ? ' rule total'
-                     : ' rules total') : null));
-  });
+  var passing = (summary.steps || {}).passed || 0;
+  boxes.push(box(PASSING, passing, passing === total ? 'pass' : 'warn',
+                 platformLines(project),
+                 total + (total === 1 ? ' rule total' : ' rules total')));
+  if (audited()) {
+    var strong = (summary.audit || {}).strong || 0;
+    boxes.push(box(STRONG, strong, strong === total ? 'pass' : 'warn',
+                   auditLines(project), null));
+  }
   return '<div class="strip"><div class="tiles">' + boxes.join('')
     + '</div></div>';
 }
@@ -239,11 +237,6 @@ function box(label, count, hue, lines, under) {
     + '</div><div class="tile-l">' + esc(label) + '</div>'
     + (under ? '<div class="tile-l tile-t">' + esc(under) + '</div>' : '')
     + '</div>';
-}
-function stepHover(step, project) {
-  if (step === 'passed') { return platformLines(project); }
-  if (step === 'strong') { return auditLines(project); }
-  return signerLines(project);
 }
 function noProofLines() {
   var byFeature = {};
@@ -263,11 +256,8 @@ function boardColumns() {
     columns.push({label: COLUMNS[2], width: '2fr'});
   }
   columns.push({label: COLUMNS[3], width: '2fr'});
-  if (level('strong')) {
+  if (audited()) {
     columns.push({label: COLUMNS[4], width: '1.5fr'});
-  }
-  if (level('signed')) {
-    columns.push({label: COLUMNS[5], width: '1.1fr'});
   }
   return columns;
 }
@@ -289,10 +279,8 @@ function testsCell(feature) {
     var word = cellWord(rule, 'passed');
     found[word] = (found[word] || 0) + 1;
   });
-  var dna = found[WORDS.does_not_apply] || 0;
   return '<span' + hover(platformLines(feature)) + '>'
-    + counts([share((found.passed || 0) + dna, rules.length),
-      [dna, WORDS.does_not_apply, 'neutral'],
+    + counts([share(found.passed || 0, rules.length),
       [found.partial || 0, WORDS.partial, 'warn'],
       [found.failed || 0, WORDS.failing, 'fail']]) + '</span>';
 }
@@ -306,27 +294,18 @@ function strongCell(feature) {
   if (!rules.length) { return ''; }
   var value = feature.is_anchor ? null : rollup.test_strength == null
     ? feature.test_strength : rollup.test_strength;
-  var parts = [share(reading(rules, 'strong'), rules.length)];
+  var strong = rules.filter(function (rule) {
+    return cellWord(rule, 'strong') === 'strong';
+  }).length;
+  var parts = [share(strong, rules.length)];
   if (value != null) {
     var pct = Math.floor(value);
-    parts.push([pct + '%', '', value >= minStrength() ? 'pass' : 'fail',
+    parts.push([pct + '%', '', '',
       ['Test strength: the tests caught ' + pct + ' of every 100 deliberate '
         + 'breaks of the code.']]);
   }
   var cell = counts(parts);
   return '<span' + hover(auditLines(feature)) + '>' + cell + '</span>';
-}
-function signedCell(feature) {
-  var rules = feature.rules || [];
-  if (!rules.length) { return ''; }
-  return '<span' + hover(signerLines(feature)) + '>'
-    + counts([share(reading(rules, 'signed'), rules.length)]) + '</span>';
-}
-function reading(rules, name) {
-  return rules.filter(function (rule) {
-    var word = cellWord(rule, name);
-    return word === name || word === WORDS.does_not_apply;
-  }).length;
 }
 function noScope(feature) {
   if (!feature.incomplete) { return ''; }
@@ -344,8 +323,7 @@ function featureRow(feature, columns) {
   cells.push(rulesCell(feature));
   if (showsProofs()) { cells.push(proofsCell(feature)); }
   cells.push(testsCell(feature));
-  if (level('strong')) { cells.push(strongCell(feature)); }
-  if (level('signed')) { cells.push(signedCell(feature)); }
+  if (audited()) { cells.push(strongCell(feature)); }
   var row = '<div class="tr" data-act="feature" data-feature="'
     + esc(feature.name) + '">' + cells.map(function (cell, index) {
       return '<div' + (index ? ' data-label="' + esc(columns[index].label)
@@ -479,16 +457,11 @@ function platformBoxes(cell) {
 }
 function cellRow(rule, name) {
   var cell = cellOf(rule, name);
-  if (!cell) { return ''; }
+  if (!cell || (name === 'strong' && !audited())) { return ''; }
   var reasons = (cell.reasons || []).filter(function (text) {
-    return text !== 'by ' + cell.signer
-      && (showsProofs() || text !== 'no proof written');
+    return showsProofs() || text !== 'no proof written';
   }).join('; ');
-  var beside = name === 'passed' ? platformBoxes(cell)
-    : name === 'signed' && cell.signer && cell.word === 'signed'
-      ? '<span class="mono sec">'
-      + unbroken(cell.signer) + ' \u00b7 ' + unbroken(when(cell.at))
-      + '</span>' : '';
+  var beside = name === 'passed' ? platformBoxes(cell) : '';
   return '<dt>' + esc(CELL_LABELS[name]) + '</dt><dd>' + pill(cell.word)
     + (beside ? ' ' + beside : '')
     + (reasons ? ' <span class="sec">' + esc(reasons) + '</span>' : '')
@@ -496,7 +469,7 @@ function cellRow(rule, name) {
 }
 function auditPanel(rule) {
   var cell = cellOf(rule, 'strong');
-  if (!cell) { return ''; }
+  if (!cell || !audited()) { return ''; }
   var audit = rule.audit;
   var lines = [];
   var findings = (audit && audit.findings) || [];
@@ -514,8 +487,7 @@ function auditPanel(rule) {
   }
   findings.forEach(function (text) { lines.push(line(text)); });
   if (cell.strength != null) {
-    lines.push(line('Test strength ' + Math.floor(cell.strength) + '%, against '
-      + 'a minimum of ' + minStrength() + '%.'));
+    lines.push(line('Test strength ' + Math.floor(cell.strength) + '%.'));
   }
   if (audit) {
     lines.push('<p class="sec">Read by <span class="mono">'
@@ -531,52 +503,6 @@ function line(text) { return '<p class="sec">' + esc(text) + '</p>'; }
 function unbroken(text) {
   return '<span class="nowrap">' + esc(text) + '</span>';
 }
-function signaturesFor(feature, rule) {
-  return (feature.signatures || []).filter(function (path) {
-    return path.split('/').pop().indexOf(rule.id + '.') === 0;
-  });
-}
-function signPanel(feature, rule) {
-  var cell = cellOf(rule, 'signed');
-  if (!level('signed') || !cell) { return ''; }
-  var dna = rule.does_not_apply;
-  if (dna && cell.word === WORDS.does_not_apply) {
-    var signer = dna.signer || cell.signer;
-    var name = cell.signer_name ? cell.signer_name + ' (' + signer + ')'
-      : signer;
-    return '<div class="panel"><h2>Signed</h2><p class="sec">'
-      + esc('Does not apply to this project: ' + dna.why + '. Signed by '
-        + name + ' at ') + unbroken(moment(dna.at || cell.at)) + '.</p></div>';
-  }
-  if (cell.word === 'signed') {
-    var who = [cell.signer_name, cell.signer].filter(Boolean).join(', ')
-      || 'a person';
-    var key = String(cell.key_fingerprint || '');
-    var first = '<p class="sec">' + esc('Signed by ' + who
-      + (cell.signer_name ? ',' : '') + ' on ') + unbroken(moment(cell.at))
-      + esc(key ? ' with the key ending ...' + key.slice(-4) + '.' : '.')
-      + '</p>';
-    var lines = [];
-    var machines = rule.machines || {};
-    Object.keys(machines).sort().forEach(function (os) {
-      lines.push('On ' + systemWords(os).word + ' the tests ran on '
-        + machines[os] + '.');
-    });
-    lines.push('The signature covers the rule, its proof, its test, the '
-      + 'code the spec lists, what the audit found and the machine the '
-      + 'tests ran on, as this screen shows them.');
-    return '<div class="panel"><h2>Signed</h2>' + first
-      + lines.map(line).join('') + '</div>';
-  }
-  var hand = rule.left === 'to_test_by_hand';
-  return '<div class="panel"><h2>' + (hand ? 'Hand check' : 'Signature')
-    + '</h2>' + typeLine('purlin:sign ' + feature.name + ' ' + rule.id, '')
-    + '<p class="sec">' + (hand ? 'A hand check is you checking the rule and '
-        + 'signing it in one act; purlin:sign asks what you saw and records '
-        + 'it. The page shows it once it is committed.'
-      : 'A signature is a signed commit that names its signer; the page '
-        + 'shows it once it is committed.') + '</p></div>';
-}
 function typeLine(command, before) {
   return '<p class="sec"><span>' + esc(before) + 'Type <span class="cmd">'
     + esc(command) + '</span> in Claude Code.</span></p>';
@@ -588,7 +514,13 @@ var TEST_WORDS = {pass: 'passed', fail: 'failed', missing: 'not run',
   'not run': 'not run'};
 function proofWord(proof) {
   var word = proof.result || 'not run';
-  return word === 'hand check' && !level('strong') ? 'manual' : word;
+  return word === 'hand check' && !level('signed') ? 'manual' : word;
+}
+function handCheckLine() {
+  return '<p class="sec">' + esc(level('signed')
+    ? 'Checked by hand when a release is signed, in the walk of purlin:sign.'
+    : 'Checked by hand. A release at the gate passed lists it as not '
+      + 'checked.') + '</p>';
 }
 function testLines(tests) {
   return (tests || []).map(function (t) {
@@ -604,9 +536,7 @@ function proofDetail(proof, rule) {
   var tags = (proof.manual ? ['@manual'] : [])
     .concat(proof.env ? ['@env(' + proof.env + ')'] : []);
   var tests = testLines(proof.tests)
-    || (proof.manual ? (rule.hand_checked
-      ? '<p class="sec">Checked by hand.</p>'
-      : typeLine('purlin:sign ' + owner + ' ' + rule.id, 'Checked by hand. '))
+    || (proof.manual ? handCheckLine()
     : proofWord(proof) === 'not run'
       ? '<p class="sec">No run has listed its tests yet.</p>'
       : noTestLine(owner));
@@ -638,17 +568,10 @@ function renderRule() {
   }
   var feature = found.feature;
   var rule = found.rule;
-  var rows = [];
-  GATE_LEVELS.forEach(function (name) { rows.push(cellRow(rule, name)); });
+  var rows = [cellRow(rule, 'passed'), cellRow(rule, 'strong')];
   rows.push('<dt>Spec</dt><dd>' + hostLink(feature.spec_path, feature.spec_path)
     + '</dd>');
   rows.push('<dt>Last run</dt><dd>' + runLine(feature) + '</dd>');
-  var signatures = cellOf(rule, 'signed') ? signaturesFor(feature, rule) : [];
-  if (signatures.length) {
-    rows.push('<dt>Signatures</dt><dd>' + signatures.map(function (path) {
-      return hostLink(path, path.split('/').pop());
-    }).join('<br>') + '</dd>');
-  }
   return backLink()
     + '<section style="margin-top:var(--space-6)">'
     + '<p class="eyebrow">' + esc(feature.name) + '</p>'
@@ -656,7 +579,7 @@ function renderRule() {
     + '<p class="sec">' + esc(rule.text) + '</p></section>'
     + '<section class="stack"><div class="panel"><dl class="kv">'
     + rows.join('') + '</dl></div>'
-    + auditPanel(rule) + signPanel(feature, rule) + '</section>'
+    + auditPanel(rule) + '</section>'
     + (showsProofs() ? '<section><p class="eyebrow">Proofs</p>'
       + '<div class="stack">' + ((rule.proofs || []).length
         ? rule.proofs.map(function (proof) {
@@ -669,23 +592,23 @@ function renderRule() {
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null,
             features: {}, groups: {}, filter: null, proofs: {}};
-var SCHEMA = 12;
+var SCHEMA = 13;
 var REFRESH_AFTER = 60;
-var GATE_LEVELS = ['passed', 'strong', 'signed'];
-var STEP_LABELS = {passed: 'Passing', strong: 'Strong', signed: 'Signed'};
+var GATE_LEVELS = ['passed', 'signed'];
+var PASSING = 'Passing';
+var STRONG = 'Strong';
 var NO_PROOF = 'No proof';
-var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong', 'Signed'];
+var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong'];
 var DOT = ' \u00b7 ';
 var WORDS = {of: 'of', no_test: 'no test', partial: 'partial',
              failing: 'failing', passed: 'passed', failed: 'failed',
-             not_run: 'not run', does_not_apply: 'does not apply'};
+             not_run: 'not run'};
 var CELL_TONES = {'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
   'out of date': 'warn', 'strong': 'pass', 'weak': 'warn',
-  'waiting': 'neutral', 'does not apply': 'neutral',
-  'manual test': 'warn', 'not audited': 'idle', 'no proof': 'warn',
-  'signed': 'pass', 'unsigned': 'warn'};
-var CELL_LABELS = {passed: 'Passed', strong: 'Strong', signed: 'Signed'};
+  'waiting': 'neutral', 'manual test': 'warn', 'not audited': 'idle',
+  'no proof': 'warn'};
+var CELL_LABELS = {passed: 'Passed', strong: 'Strong'};
 function loadData(callback) {
   var frame = document.createElement('iframe');
   var done = false;
@@ -719,12 +642,11 @@ function level(name) {
   return GATE_LEVELS.indexOf(gateName()) >= GATE_LEVELS.indexOf(name);
 }
 function showsProofs() {
-  return level('strong') || ((DATA && DATA.summary) || {}).proofs > 0;
+  return level('signed') || ((DATA && DATA.summary) || {}).proofs > 0;
 }
-function minStrength() { return (DATA.gate && DATA.gate.min_strength) || 0; }
-function mutationOff() {
-  var engine = (DATA.gate || {}).mutation_engine;
-  return String(engine || 'none').trim().toLowerCase() === 'none';
+function audited() {
+  var found = ((DATA && DATA.summary) || {}).audit || {};
+  return (found.strong || 0) + (found.weak || 0) > 0;
 }
 function esc(value) {
   return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
@@ -733,8 +655,7 @@ function esc(value) {
 }
 function tone(word) { return CELL_TONES[word] || 'idle'; }
 function pill(word) {
-  return '<span class="pill' + (word === 'signed' ? ' solid' : '')
-    + '" style="color:var(--state-' + tone(word) + ')"><b>'
+  return '<span class="pill" style="color:var(--state-' + tone(word) + ')"><b>'
     + esc(String(word).toUpperCase()) + '</b></span>';
 }
 function systemWords(os) {
@@ -838,27 +759,11 @@ function auditLines(feature) {
   });
   return [newest ? 'audit' + DOT + sourceOf(newest.path) + DOT
       + ageText(newest.at).text
-    : 'No audit has read a rule here.',
-    mutationOff() ? 'no minimum strength applies: mutation testing is off'
-      : 'minimum strength ' + minStrength() + '%'];
+    : 'No audit has read a rule here.'];
 }
 function sourceOf(path) {
   var parts = String(path || '').split('/');
   return parts.length > 1 ? parts[parts.length - 2] : 'local';
-}
-function signerLines(feature) {
-  var byWho = {};
-  var names = [];
-  (feature.rules || []).forEach(function (rule) {
-    var cell = (rule.cells || {}).signed || {};
-    if ((cell.word !== 'signed' && cell.word !== WORDS.does_not_apply)
-        || !cell.signer) { return; }
-    if (!byWho[cell.signer]) { byWho[cell.signer] = ''; names.push(cell.signer); }
-    if (newer(cell.at, byWho[cell.signer])) { byWho[cell.signer] = cell.at; }
-  });
-  var out = names.sort().map(function (who) { return who + DOT + when(byWho[who]); });
-  if (!out.length) { out.push('Nobody has signed a rule here.'); }
-  return out;
 }
 function runLine(feature) {
   var run = newestRun(feature);
@@ -907,14 +812,10 @@ function cellWord(rule, name) {
 function reachedSteps(rule) {
   var out = [];
   if (cellWord(rule, 'passed') !== 'passed') { return out; }
-  var manual = (rule.proofs || []).some(function (proof) {
-    return proof.manual;
-  });
-  if (manual && !rule.hand_checked) { return out; }
   out.push('passed');
-  if (cellWord(rule, 'strong') !== 'strong') { return out; }
-  out.push('strong');
-  if (cellWord(rule, 'signed') === 'signed') { out.push('signed'); }
+  if (audited() && cellWord(rule, 'strong') === 'strong') {
+    out.push('strong');
+  }
   return out;
 }
 function testFailed(rule) {
@@ -926,9 +827,6 @@ function testFailed(rule) {
   });
 }
 function badges(rule) {
-  if (cellWord(rule, 'passed') === WORDS.does_not_apply) {
-    return pill(WORDS.does_not_apply);
-  }
   return reachedSteps(rule).map(pill).join('')
     + (testFailed(rule) ? pill('failed') : '');
 }
@@ -956,9 +854,9 @@ function tagChip() {
   var found = signedTag();
   if (!found) {
     return '<span class="tag plain"'
-      + hover(['This commit carries no signed tag. purlin:sign writes '
-        + 'signed/<version> once nothing is left to do at the gate signed, '
-        + 'and a person pushes it.']) + '>no signed tag</span>';
+      + hover(['This commit carries no signed tag. The first purlin:sign '
+        + 'after purlin:test --release writes signed/<version>, and a person '
+        + 'pushes it.']) + '>no signed tag</span>';
   }
   return '<span class="tag"' + hover(['The signed tag on this commit'
       + (found.at ? DOT + found.at : '')]) + '>'
