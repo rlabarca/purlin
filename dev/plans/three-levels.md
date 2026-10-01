@@ -1404,6 +1404,31 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **The docs become about eight pages** (how it works, getting started, specs and anchors,
       running and evidence, working together, the sign-off with QA and regulated use, upgrading,
       the dashboard) **and the deck is rebuilt** for the two facts.
+110. **How Purlin shows that tests work: plain checks and one targeted break per proof**
+    (added 2026-10-01), after research the owner asked for: coverage tells little (Inozemtseva and
+    Holmes, ICSE 2014); breaking the code on purpose tracks real faults (Just et al., FSE 2014);
+    at scale it is done only on what changed (Google, Petrovic et al., TSE 2021) and with few,
+    targeted, model-written breaks (Meta's ACH, FSE 2025; LLMorpheus); a model judging a test is
+    the weakest signal; tests written by an AI are often tautological.
+    - **`purlin:audit` holds all of it and is run by hand.** In the owner's words: someone "can use
+      only spec and build for a while, and then say.. iterate with build and audit until you get
+      strong proofs and tests for 80% of rules or more". The audit reports the share of rules it
+      found strong, so such a target can be checked. Nothing blocks on it.
+    - **Plain checks, in code:** a test with no assertion; an assertion that cannot fail; an error
+      swallowed; an expected value computed by the code under test; a mock of the very thing the
+      rule is about; and, from the spec, a concrete value the proof names that the test does not
+      hold. 0.9.5's hollow-test checks return as code, not as words to a model.
+    - **One targeted break per proof:** for each proof whose test or covered code changed since
+      the audit last read it, the model makes the smallest change to the code that would violate
+      the proof, the proof's own test runs against it, and the code is restored. A test that still
+      passes is weak, with the break as the evidence. No mutation tool, any language.
+    - **The model's reading becomes the explanation** of a finding, not the evidence alone.
+    - **The docs gain a page on the audit**: what it checks, why, the research and the reasoning
+      behind this path, with the sources.
+    - **The evidence package records who did what, from git:** who wrote each rule and proof, who
+      last changed each proof and each test, with commits. Nobody does anything extra.
+    - **A hand check always shows its last note**, with the version it was signed at and how many
+      commits have come since; the reader judges whether it still holds.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
