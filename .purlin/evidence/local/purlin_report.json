@@ -2,14 +2,14 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T18:13:43Z",
-      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
+      "at": "2026-10-01T18:32:12Z",
+      "commit": "3ba8ee6dc29b92bdc50f9ef562d6175d69f3901b",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "88ac7170a4603ca185beb760c82d627ccc17cb95873f15e3f22590b02d33b428",
-        "spec": "eef63bf88cbf5094920c5ed8d5877d563404a7b0c51b38f0dc4df81614f91118",
-        "tests": "3a67ba31f1de11bf64b76b1687d5612c2a90f2c291eb7c1678a77d7741f5d67e"
+        "code": "066906ed008e9833a77d542a88c37f39852a0db6efefe14412ef3384c8587a7e",
+        "spec": "a8960f27187af3d9e9c4d552e10db9b4d249e58f8cca63f1bdd88fd6d98963d8",
+        "tests": "220841427b73dec644c42911521c182a83a807ecc6bd393c851565a86453d4f6"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -532,6 +532,14 @@
           "result": "pass",
           "rule": "RULE-77",
           "test": "dev/test_report_refresh.py::test_status_names_the_branch_and_the_commit_it_ran_on"
+        },
+        {
+          "env": null,
+          "id": "PROOF-237",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-77",
+          "test": "dev/test_purlin_report.py::test_a_browser_set_to_utc_reads_the_time_in_utc"
         },
         {
           "env": null,
