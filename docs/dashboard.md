@@ -185,8 +185,8 @@ page opens in the theme you chose the next time it loads. The logo changes with 
 
 The light theme is ink on paper: a paper tan ground, cards one step lighter, and navy text.
 Every text on it, in any colour, measures at least 7 to 1 against the ground under it. Green,
-amber, red and teal are darkened to reach that. In the dark theme every neutral text measures at
-least 7 to 1.
+amber, red and teal are darkened to reach that. The dark theme meets the same 7 to 1: its green,
+amber, red, teal and copper text are lightened to reach it.
 
 ## Next
 

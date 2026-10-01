@@ -1065,10 +1065,8 @@ def test_a_passing_test_marked_with_the_rules_id_shows_passed(browser,
 
 # Every element that draws a text node of its own, its colour, the ground under
 # it composited through each translucent background up to the page, and the
-# WCAG contrast ratio of the two. With `everyColour` false, text in one of the
-# four state colours or the accent, and text on a ground filled with a state
-# colour, is left out; with it true every text is measured, whatever its colour.
-NEUTRAL_CONTRAST = """(everyColour) => {
+# WCAG contrast ratio of the two. Every text is measured, whatever its colour.
+TEXT_CONTRAST = """() => {
   function parse(c) {
     const m = c.match(/rgba?\\(([^)]+)\\)/); if (!m) { return null; }
     const p = m[1].split(/[ ,\\/]+/).filter(Boolean).map(Number);
@@ -1097,16 +1095,6 @@ NEUTRAL_CONTRAST = """(everyColour) => {
     for (let i = layers.length - 1; i >= 0; i--) { base = over(layers[i], base); }
     return base;
   }
-  const root = getComputedStyle(document.documentElement);
-  const probe = document.createElement('span');
-  document.body.appendChild(probe);
-  const resolve = name => { probe.style.color = root.getPropertyValue(name).trim();
-    return getComputedStyle(probe).color; };
-  const states = new Set(['--state-pass', '--state-warn', '--state-fail',
-    '--state-neutral'].map(resolve));
-  const coloured = new Set([...states, resolve('--accent'),
-    resolve('--text-accent')]);
-  probe.remove();
   const out = [];
   const seen = new Set();
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -1119,10 +1107,8 @@ NEUTRAL_CONTRAST = """(everyColour) => {
     const box = el.getBoundingClientRect();
     const style = getComputedStyle(el);
     if (!box.width || !box.height || style.visibility === 'hidden') { continue; }
-    if (!everyColour && coloured.has(style.color)) { continue; }
     const under = ground(el);
     const fill = 'rgb(' + under.slice(0, 3).map(Math.round).join(', ') + ')';
-    if (!everyColour && states.has(fill)) { continue; }
     let ink = parse(style.color);
     if (ink[3] < 1) { ink = over(ink, under); }
     out.push([node.textContent.trim().slice(0, 40), style.color, fill,
@@ -1132,15 +1118,10 @@ NEUTRAL_CONTRAST = """(everyColour) => {
 }"""
 
 
-def neutral_text(page):
-    """`[(text, colour, ground, ratio)]` for every neutral text on screen."""
-    return page.evaluate(NEUTRAL_CONTRAST, False)
-
-
 def every_text(page):
     """`[(text, colour, ground, ratio)]` for every text on screen, in any
     colour."""
-    return page.evaluate(NEUTRAL_CONTRAST, True)
+    return page.evaluate(TEXT_CONTRAST)
 
 
 def open_in_theme(browser, tmp_path, payload, theme):
@@ -1152,49 +1133,18 @@ def open_in_theme(browser, tmp_path, payload, theme):
     return page
 
 
-def _contrast_in(browser, tmp_path, theme):
+def _every_text_in(browser, tmp_path, theme):
     """Every sample in one theme, on the board with its first spec open and
-    then on its first rule's screen: how many neutral texts were measured,
-    and those under 7:1."""
-    checked = 0
-    low = []
-    for process in PROCESSES:
-        page = open_in_theme(browser, tmp_path / process,
-                             payload_named(process), theme)
-        page.click('.tr')
-        assert page.query_selector('.rule'), process
-        found = neutral_text(page)
-        page.click('.rule')
-        page.wait_for_selector('h1', timeout=10000)
-        found += neutral_text(page)
-        page.close()
-        low += [(process, item) for item in found if item[3] < 7]
-        checked += len(found)
-    return checked, low
-
-
-# purlin: purlin_report PROOF-66
-def test_neutral_text_measures_7_to_1_in_the_dark_theme(browser, tmp_path):
-    """The three samples, each on the board with its first spec open and
-    then on its first rule's screen."""
-    checked, low = _contrast_in(browser, tmp_path, 'dark')
-    assert low == [], low
-    assert checked > 100, checked
-
-
-# purlin: purlin_report PROOF-104
-def test_every_text_measures_7_to_1_in_the_light_theme(browser, tmp_path):
-    """The three samples, each on the board with its first spec open and
-    then on the screen of each of that spec's rules; every text node's
-    computed colour against the ground under it, state colours and the
-    accent included."""
+    then on the screen of each of that spec's rules: how many texts were
+    measured, those under 7:1, and whether the four state colours and the
+    accent are among what was measured."""
     checked = 0
     low = []
     tones = set()
     measured = set()
     for process in PROCESSES:
         page = open_in_theme(browser, tmp_path / process,
-                             payload_named(process), 'light')
+                             payload_named(process), theme)
         page.click('.tr')
         found = every_text(page)
         count = len(page.query_selector_all('.rule'))
@@ -1212,9 +1162,30 @@ def test_every_text_measures_7_to_1_in_the_light_theme(browser, tmp_path):
         low += [(process, item) for item in found if item[3] < 7]
         checked += len(found)
         measured |= {item[1] for item in found}
+    return checked, low, tones, measured
+
+
+# purlin: purlin_report PROOF-66
+def test_every_text_measures_7_to_1_in_the_dark_theme(browser, tmp_path):
+    """The three samples, each on the board with its first spec open and
+    then on the screen of each of that spec's rules; every text node's
+    computed colour against the ground under it, state colours and the
+    accent included."""
+    checked, low, tones, measured = _every_text_in(browser, tmp_path, 'dark')
     assert low == [], low
     assert checked > 300, checked
-    # The state colours and the accent are among what was measured.
+    assert tones & measured == tones, (tones, measured)
+
+
+# purlin: purlin_report PROOF-104
+def test_every_text_measures_7_to_1_in_the_light_theme(browser, tmp_path):
+    """The three samples, each on the board with its first spec open and
+    then on the screen of each of that spec's rules; every text node's
+    computed colour against the ground under it, state colours and the
+    accent included."""
+    checked, low, tones, measured = _every_text_in(browser, tmp_path, 'light')
+    assert low == [], low
+    assert checked > 300, checked
     assert tones & measured == tones, (tones, measured)
 
 
