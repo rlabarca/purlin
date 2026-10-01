@@ -72,13 +72,17 @@ quinn.qa@labconnect.example has already signed 0.1.0 over this package; nothing 
 ```
 
 With no version stated it prints
-`No version: nothing in this project states one. Run purlin:sign --version <version>, or write it to a VERSION file.`:
-ask the person for the version, offer to write it to a `VERSION` file, and run the walk again. The
-script never fetches. The first line counts tracked files alone, `1 file is` for one; a file git
-does not track stops nothing. Run what a refusal names only when the person asks: `purlin:test
---all --commit` for this machine's results, `purlin:build <feature>` for a rule with no test.
-`purlin:test on <System>` is an instruction, not a command line: for another system's results,
-do as `skills/test/SKILL.md`, Step 5 says.
+`No version: nothing in this project states one. Run purlin:sign --version <version>, or write it to a VERSION file.`
+Ask the person for the version, offer to write it to a `VERSION` file, and run the walk again.
+
+- The script never fetches.
+- The first line counts tracked files alone, and reads `1 file is` for one. A file git does not
+  track stops nothing.
+- Run what a refusal names only when the person asks.
+- `purlin:test --all --commit` takes this machine's results again.
+- `purlin:build <feature>` writes the test for a rule with no test.
+- `purlin:test on <System>` is an instruction, not a command line. For another system's results,
+  do as `skills/test/SKILL.md`, Step 5 says.
 
 ## Step 3: a key to sign with
 
@@ -104,8 +108,10 @@ or a rule not audited never blocks the sign-off and is no stop.
 
 The walk stops only at hand checks, one at a time, in the order printed. Each stop opens on its
 head, such as `accession_screen RULE-1   hand check`, then `Rule`, `Proof`, `Results` and, where
-the audit found the rule weak, `What the audit found`. Show the stop as printed; add nothing of
-your own to what it says. Then ask what the walk asks:
+the audit found the rule weak, `What the audit found`. Where an earlier sign-off noted the rule,
+the stop ends on `Last note` and that note, with the version it was signed at and how many
+commits have come since. Show the stop as printed; add nothing of your own to what it says. Then
+ask what the walk asks:
 `accession_screen RULE-1   what did you see, in one line, or Enter for no note, or stop:`
 
 | The person's answer | What it does |

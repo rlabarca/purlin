@@ -132,9 +132,18 @@ shows:
 - the rule;
 - each proof, with the tests tied to it;
 - the result on each system, with the machine it ran on;
-- what the audit found, where it found the rule weak.
+- what the audit found, where it found the rule weak;
+- the rule's last note, where an earlier sign-off holds one.
 
-Then it asks what you saw:
+The last note names the version it was signed at and how many commits have come since. You
+judge whether it still holds:
+
+```text
+Last note
+  noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red
+```
+
+Then the walk asks what you saw:
 
 ```text
 login RULE-2   hand check
@@ -270,6 +279,13 @@ carries:
 It records no judgment and no answer word.
 [signature_format.md](../references/formats/signature_format.md) holds every field.
 
+**How each is checked.** The package is checkable alone, by its fingerprint:
+`purlin:sign --check <file>`. The sign-off file is not. It carries no hash of itself and no
+signature inside it. It names the package's fingerprint, and the signed commit that added it
+binds the sign-off, the package and the code.
+[evidence_and_signoff.md](../references/evidence_and_signoff.md#when-a-sign-off-counts) is the
+one definition.
+
 **The signed tag**, `signed/<version>`, is written by the first sign-off on its commit, with
 the key `user.signingkey` names. It pins the code, every evidence file, the package and the
 sign-offs under one name. It is never moved.
@@ -299,6 +315,19 @@ Purlin supplies evidence. It does not claim compliance.
 **What you hand over.** The package and its sign-offs, from the tagged commit. The package's
 `met` comes second, after the schema. The receiving system decides how the package is shown,
 read and filed. It also decides which signers were entitled.
+
+**The signed commit is the record.** The package is checkable alone, with
+`purlin:sign --check <file>`. A sign-off file is not: take the signed commit that added it as
+the record. The sign-off records no approve or reject answer and no stated meaning of the
+signature.
+
+**Approval before a test runs.** Purlin has no approval step before a test runs. It signs once,
+at the end. Approval of the proofs is a required review when they are merged, or your system of
+record's. Purlin does record two things:
+
+- who wrote and who last changed each proof, read from git into the evidence package;
+- that a result stops counting when its proof is reworded. The rule reads `out of date` until
+  its tests run again.
 
 **What a Purlin sign-off is.** An engineering attestation. A person was shown the evidence
 package of one version and looked at each hand check. They typed what they saw where they had

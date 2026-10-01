@@ -16,6 +16,7 @@ What each group holds:
 *the refusals*   what stops a sign-off
 *the walk*       the run lines, the overview, the audit's findings, the stops
 *the sign-off*   the file, its commit, the tag, a second signer
+*the last note*  what a hand check's stop shows of the sign-off before
 *the agent*      `--show`, `--answers` and `--check`
 """
 
@@ -956,6 +957,72 @@ class TestTheSignOff:
         assert git(host, 'rev-parse', 'main').stdout.strip() == hosted
         assert not os.path.exists(os.path.join(signed.root, '.git',
                                                'FETCH_HEAD'))
+
+
+QUINN = 'quinn.qa@labconnect.example'
+STOP_HEAD = 'login RULE-2   hand check'
+
+
+def manual_results(made):
+    """Commit `login`'s results over the code as it stands, `RULE-2` by hand."""
+    section(made, [('PROOF-1', 'RULE-1', 'pass', TEST_NAMES['PROOF-1'], None)],
+            {'RULE-1': 'passed', 'RULE-2': 'passed'})
+    commit_all(made)
+
+
+def noted_by_quinn():
+    """`login RULE-2` is a hand check, and Quinn signed `0.1.0` with a note."""
+    made = ready(spec=MANUAL_SPEC, test_file=MANUAL_TEST_FILE, version='0.1.0',
+                 signer=False)
+    assert sign_as(made, QUINN, 'Quinn', answers=('the tube is red', 'y'))[0] == 0
+    return made
+
+
+def shown_stop(made, name=None):
+    """The lines of `login RULE-2`'s stop, as `--show` prints them."""
+    out = _Out()
+    assert sign_module.show(made.root, name, out=out) == 0, out.text()
+    return stop_lines(out.text().splitlines(), STOP_HEAD)
+
+
+class TestTheLastNote:
+
+    # purlin: signatures PROOF-249
+    def test_a_second_signer_sees_the_note_at_this_commit(self):
+        made = noted_by_quinn()
+        try:
+            key(made.root, email='pat.product@labconnect.example', name='Pat',
+                file='pat')
+            assert shown_stop(made)[-2:] == [
+                'Last note',
+                '  noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, '
+                'at this commit: the tube is red']
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-250
+    def test_four_commits_later_the_note_says_so(self):
+        made = noted_by_quinn()
+        try:
+            for number in range(3):
+                write(os.path.join(made.root, 'NOTES'), 'note %d\n' % number)
+                commit_all(made, 'docs: note %d' % number)
+            manual_results(made)
+            assert shown_stop(made, '0.2.0')[-1] == (
+                '  noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, '
+                '4 commits since: the tube is red')
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-251
+    def test_before_any_sign_off_the_stop_ends_on_its_results(self):
+        made = ready(spec=MANUAL_SPEC, test_file=MANUAL_TEST_FILE)
+        try:
+            stop = shown_stop(made)
+            assert stop[-2:] == ['Results', '  Linux/Unix: passed on dana-laptop']
+            assert 'Last note' not in stop
+        finally:
+            made.close()
 
 
 # ---------------------------------------------------------------------------

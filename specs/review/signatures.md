@@ -9,8 +9,8 @@
 >   package with it and writes the tag `signed/<version>`; later ones are added beside it.
 > Scope: scripts/mcp/purlin/signatures.py, scripts/review/sign.py
 > Stack: python/stdlib (json, subprocess), git signed commits, SSH keys
-> Highest-Rule: 128
-> Highest-Proof: 248
+> Highest-Rule: 129
+> Highest-Proof: 251
 
 ## Rules
 
@@ -37,6 +37,7 @@
 - RULE-126: A hand check's stop shows the rule, each proof with its tag and the tests tied to it, the results on each system with any proof that found nothing to check and its reason, the audit's findings where it found the rule weak, and asks what the person saw
 - RULE-127: The walk opens with one line per run of the counted results, naming who ran it, on which machine, when, on which commit and how many rules, then `Signing <version> at <sha7>.`, then an overview counting per system the rules that pass and the hand checks, and the audit's strong, weak and not audited
 - RULE-128: A rule with no test stops the sign-off, a rule with no proof and no test among them: the command prints one line naming each such rule and `purlin:build`, writes nothing and exits 1
+- RULE-129: A hand check's stop shows, under `Last note`, each note of the newest sign-off that holds one for the rule, worded as the dashboard words it: `noted at the sign-off of <version> by <signer>, <at this commit | 1 commit since | <n> commits since>: <note>`; where no sign-off has noted the rule the stop shows neither
 
 ## Proof
 
@@ -89,3 +90,6 @@
 - PROOF-227 (RULE-127): `dana.dev@labconnect.example` ran 19 rules' tests on `dana-laptop`, a Linux machine, at 12:17 UTC on 2026-10-01 at `1cf829e`; the walk's first line reads `Tests run by dana.dev@labconnect.example on dana-laptop at 2026-10-01 12:17 UTC on 1cf829e: 19 rules on Linux/Unix.`
 - PROOF-232 (RULE-127): Over 19 rules on Linux/Unix that pass, one a hand check, with 17 audited strong, 1 weak and 1 not audited, the overview prints `  19 rules on Linux/Unix: 19 pass their tests, 1 has a hand check.` and `  The audit: 17 strong, 1 weak, 1 not audited.`
 - PROOF-247 (RULE-128): `login` has a third rule, `RULE-3`, with no proof and no test, beside two rules whose tests pass on committed evidence; the walk prints only `No sign-off: 1 rule has no test at <sha7>: login RULE-3. Run purlin:build login, then purlin:sign.` and exits 1
+- PROOF-249 (RULE-129): `quinn.qa@labconnect.example` signs `0.1.0` with the note `the tube is red` at the hand check `login RULE-2`; for a second signer, `--show` ends that stop on `Last note`, then `  noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, at this commit: the tube is red`
+- PROOF-250 (RULE-129): After that sign-off three commits each change `NOTES` and a fourth commits new results; `--show --version 0.2.0` prints, last in the stop of `login RULE-2`, `  noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red`
+- PROOF-251 (RULE-129): Before any sign-off, `--show` ends the stop of the hand check `login RULE-2` on `Results` and `  Linux/Unix: passed on dana-laptop`, with no line `Last note`

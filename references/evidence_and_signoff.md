@@ -194,6 +194,16 @@ A sign-off counts when two things are true:
   `the signature on the commit that added it does not verify`.
 - Its `package_hash` equals the `fingerprint` of the package committed for that version.
 
+**How each is checked.**
+
+- The evidence package is checkable alone, by its fingerprint: `purlin:sign --check <file>`
+  reads the one file and needs no key.
+- The sign-off file is not. It carries no hash of itself and no signature inside it.
+- The sign-off names the package's fingerprint. The signed commit that added it binds the
+  sign-off, the package and the code.
+- A receiving system takes the signed commit as the record.
+- The sign-off records no approve or reject answer and no stated meaning of the signature.
+
 **The sign-off walk.** `purlin:sign` refuses, and writes nothing, in each of these cases:
 
 - tracked files are changed and not committed;
@@ -211,8 +221,8 @@ audited never blocks the sign-off. The first sign-off of a version is one signed
 the package and the sign-off; a later one adds its own file alone.
 
 **A hand check** reads `checked at sign-off` everywhere else. Once a sign-off holds a note for
-it, the rule also shows its last note, with the version it was signed at and how many commits
-have come since, as in
+it, the rule also shows its last note, there and in its stop of the next walk, with the version
+it was signed at and how many commits have come since, as in
 `noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red`;
 the reader judges whether it still holds.
 

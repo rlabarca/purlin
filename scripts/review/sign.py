@@ -11,7 +11,8 @@ at HEAD, builds the evidence package for the version and walks it with a
 person: who ran the tests, where and when; an overview counting per system
 the rules that pass and the hand checks, and what the audit found; the
 audit's findings as a list the signer may open; then one stop per hand check,
-where the person types what they saw or presses Enter for no note. On yes to
+which shows the rule's last note where a sign-off holds one, and where the
+person types what they saw or presses Enter for no note. On yes to
 the last question it writes one file in one signed commit:
 
     .purlin/evidence/package/<version>.signoffs/<signer-slug>.json
@@ -62,6 +63,7 @@ import package as package_module                               # noqa: E402
 from purlin import report_data                                 # noqa: E402
 from purlin import (console as console_module,                 # noqa: E402
                     evidence as evidence_module,
+                    payload as payload_module,
                     signatures as signatures_module,
                     states as states_module,
                     summary as summary_module)
@@ -140,6 +142,7 @@ NOTHING = '; nothing to check for %s: %s'
 TIED_TO = '    tied to %s'
 TIED_TO_NONE = '    tied to no test'
 AUDIT_WEAK = 'What the audit found'
+LAST_NOTE = 'Last note'
 
 # The agent's walk.
 ANSWERS_MISSING = ('No sign-off: %s has no answer in %s. Answer every stop, '
@@ -532,8 +535,17 @@ def _systems(names):
                      if name not in states_module.SYSTEM_ORDER))
 
 
-def plan(package):
-    """What the walk shows: the overview's numbers, the weak rules and the stops."""
+def last_notes(project_root):
+    """`{(feature, rule): [line]}`: each hand check's last note, from the same
+    source and in the same words as the dashboard shows it."""
+    return payload_module._hand_notes(project_root)
+
+
+def plan(package, notes=None):
+    """What the walk shows: the overview's numbers, the weak rules and the stops.
+
+    `notes` is what `last_notes` gives; each stop carries its rule's lines."""
+    notes = notes or {}
     rules = package_rules(package)
     per_system = {}
     weak, stops = [], []
@@ -551,7 +563,9 @@ def plan(package):
                          'entry': rule})
         if _hand_check(rule):
             stops.append({'feature': feature, 'rule': rule.get('id'),
-                          'entry': rule})
+                          'entry': rule,
+                          'last_notes': list(notes.get(
+                              (feature, rule.get('id'))) or ())})
     audit = package.get('audit') or {}
     audited = any(audit.get(key) for key in ('strong', 'weak'))
     overview = {
@@ -637,8 +651,8 @@ def result_lines(entry):
 
 def render_stop(stop):
     """One hand check's stop: its head, the rule, each proof with its tests,
-    the results on each system and the audit's findings where it found the
-    rule weak."""
+    the results on each system, the audit's findings where it found the rule
+    weak, and its last note where a sign-off holds one."""
     entry = stop['entry']
     lines = [STOP_HEAD % (stop['feature'], stop['rule']),
              'Rule', '  %s' % (entry.get('text') or ''), 'Proof']
@@ -653,6 +667,9 @@ def render_stop(stop):
         lines.append(AUDIT_WEAK)
         lines.extend('  %s' % finding for finding in
                      (entry.get('audit') or {}).get('findings') or ())
+    if stop.get('last_notes'):
+        lines.append(LAST_NOTE)
+        lines.extend('  %s' % note for note in stop['last_notes'])
     return lines
 
 
@@ -681,7 +698,7 @@ def show(project_root, name=None, out=None):
     if lines:
         _say(lines, out)
         return code
-    shown = plan(info['package'])
+    shown = plan(info['package'], last_notes(project_root))
     _say(overview_lines(info, shown), out)
     if shown['weak']:
         print(AUDIT_SHOWN % _weak_words(shown['weak']), file=out)
@@ -719,7 +736,7 @@ def walk(project_root, name=None, ask=None, out=None):
 
 
 def _walk(project_root, info, ask, out):
-    shown = plan(info['package'])
+    shown = plan(info['package'], last_notes(project_root))
     _say(overview_lines(info, shown), out)
     list_opened = False
     if shown['weak']:
