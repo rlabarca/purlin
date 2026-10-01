@@ -247,13 +247,14 @@ def panel_lines(page, head):
 # purlin: purlin_report PROOF-122
 def test_the_page_at_the_project_root_is_the_built_page(page_text):
     assert os.path.isfile(os.path.join(ROOT, 'purlin-report.html'))
-    assert read(os.path.join(ROOT, 'purlin-report.html')) == page_text
+    built = read(os.path.join(ROOT, *'scripts/report/purlin-report.html'.split('/')))
+    assert read(os.path.join(ROOT, 'purlin-report.html')) == built == page_text
 
 
 # purlin: purlin_report PROOF-3
 def test_no_colour_is_written_as_hex_outside_the_token_block():
     inside, outside = token_block(build_page())
-    assert '--canvas' in inside
+    assert re.search(r'--canvas\s*:', inside)
     assert re.findall(r'#[0-9a-fA-F]{3,8}\b', outside) == []
 
 
@@ -680,6 +681,8 @@ def test_the_rule_screen_shows_the_rule_its_proof_and_its_cells(browser,
     assert 'PROOF-1' in body
     assert 'tests/test_login.py :: test_sign_in' in body
     assert 'PASSED' in body and 'STRONG' in body
+    # The row's own word, not its label: the label `Passed` is drawn in capitals too.
+    assert rows['Passed'].startswith('PASSED'), rows
     assert rows['Strong'] == 'STRONG', rows
     page.close()
 
@@ -839,7 +842,7 @@ def missed_bug(payload):
 # label and the lines of each row beneath it.
 BUGS = """() => Array.from(document.querySelectorAll('.bug')).map(b => [
   b.querySelector('p').innerText.trim()].concat(Array.from(
-    b.querySelectorAll('dt, dd')).map(e => e.innerText.trim())))"""
+    b.querySelectorAll('dt, dd')).map(e => e.textContent.trim())))"""
 
 
 # purlin: purlin_report PROOF-235
@@ -853,7 +856,7 @@ def test_a_planted_bug_the_tests_missed_is_shown_with_its_lines(browser,
             'src/billing/invoice.py:12.') in lines, lines
     assert bugs == [['PROOF-2: its tests missed a bug planted at '
                      'src/billing/invoice.py:12.',
-                     'BEFORE', 'return total', 'AFTER', 'return 0']], bugs
+                     'Before', 'return total', 'After', 'return 0']], bugs
 
 
 # purlin: purlin_report PROOF-236
