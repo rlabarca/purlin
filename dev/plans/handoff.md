@@ -1,6 +1,34 @@
+# Handoff, 2026-10-01: decision 118, slow proofs, is built
+
+This section is the newest. The full report is `dev/plans/d115-reports/d118.md`.
+
+- **Built:** a proof may end `@slow`; `purlin:test` never starts its test and names it,
+  `purlin:test --all` runs everything; the status lists `<n> slow proofs to run: purlin:test --all`
+  until each has passed on committed evidence. In this repository `install PROOF-2` to `PROOF-5`
+  and `collaboration PROOF-1` are slow. The band's progress bar is gone from the dashboard. The
+  quality guide gained "A good anchor". The light theme is ink on a paper tan ground, every
+  text at least 7 to 1.
+- **Numbers:** `bash dev/run_tests.sh` on the final code: 854 passed, 0 failed, 10 skipped (the
+  Windows-only tests), 3 shell suites passed. `purlin_run.py --test --all`: 860 markers tied, 0
+  not tied; 39 specs, 423 rules, 860 proofs; 401 rules pass; left: 22 rules to test on Windows.
+  The real `claude` ran once.
+- **Formats:** spec 23, package 9; the dashboard's data stays at schema 14.
+- **Left for the owner:**
+  - The dashboard's data gained a field, `slow`, on each proof and its schema number stayed 14.
+  - A vitest, jest or go test in a file with no test comment that shares a slow test's name is
+    left out with it, and Purlin does not see it.
+  - An NUnit `TestCase` tagged slow is not left out by the dotnet filter; it runs and counts,
+    and the run still names its proof as left out.
+  - `purlin:audit` without `--all` leaves slow tests out too.
+  - The dark theme's coloured text measures under 7 to 1 (fail 3.03, copper 3.80, pass 5.01,
+    warn 5.32); its proof still measures neutral text only.
+  - In the light theme the four state colours and the copper are all dark inks: they differ by
+    hue more than by brightness, and amber and copper are close.
+  - Nothing was pushed, signed or audited.
+
 # Handoff, 2026-10-01: decisions 100 to 117 are built
 
-This section is the newest; everything under "Handoff, 2026-09-30" below describes the tree before the build and is kept until the owner has read this. The same text is `dev/plans/d115-reports/round2.md`; round 1 is `round1.md` beside it, and each lane's report is there too.
+Everything under "Handoff, 2026-09-30" below describes the tree before the build and is kept until the owner has read this. The same text is `dev/plans/d115-reports/round2.md`; round 1 is `round1.md` beside it, and each lane's report is there too.
 
 `main` is local only. The code, the tests, the skills, the docs and the dashboard meet the specs: 39 specs, 417 rules, 845 proofs.
 

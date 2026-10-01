@@ -2,14 +2,14 @@
   "feature": "summary",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T18:13:44Z",
-      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
+      "at": "2026-10-01T19:20:58Z",
+      "commit": "1b8e8319d6dcd5fb57cc1e9f861a2b150c6b9623",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "208faeb99a9572c90fd074716815dd755a7935afee708376d1fc1bfddd98c3a3",
-        "spec": "edf40b3cf54138ef505ebbd4898d3682ff1d5e68617a7babc8cb9bf1a8c5920d",
-        "tests": "b5fa7e69bbf6f2a4ebf06bd6abd310f3e2860ac285076dfa15e79a402cc9b039"
+        "code": "cbefda0dea108bcc8a6033fbd46e563a9109530f904050c2cb7bbf0d56ed4ab6",
+        "spec": "cd63bcff811cf93e2d95160ad5a46f96fc88a66eadb870804166edb19341aa0d",
+        "tests": "e065ae51bf5faebc61d6d297c55057514b4ca8c83479a9b5004efd84f4f791f6"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -135,6 +135,22 @@
         },
         {
           "env": null,
+          "id": "PROOF-55",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_summary.py::TestSlowProofsToRun::test_one_slow_proof_not_run_is_the_one_line_and_stops_the_sign_off"
+        },
+        {
+          "env": null,
+          "id": "PROOF-56",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_summary.py::TestSlowProofsToRun::test_a_slow_proof_tagged_for_windows_is_the_remote_runs"
+        },
+        {
+          "env": null,
           "id": "PROOF-44",
           "manual": false,
           "result": "pass",
@@ -149,6 +165,7 @@
         "RULE-21": "passed",
         "RULE-22": "passed",
         "RULE-23": "passed",
+        "RULE-24": "passed",
         "RULE-8": "passed"
       },
       "runner": "rich-labarca"

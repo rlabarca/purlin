@@ -2,8 +2,8 @@
   "feature": "host",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T18:13:43Z",
-      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
+      "at": "2026-10-01T19:27:26Z",
+      "commit": "1b8e8319d6dcd5fb57cc1e9f861a2b150c6b9623",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {

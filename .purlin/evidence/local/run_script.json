@@ -2,14 +2,14 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T18:13:43Z",
-      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
+      "at": "2026-10-01T19:20:58Z",
+      "commit": "1b8e8319d6dcd5fb57cc1e9f861a2b150c6b9623",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "444cacf6880a547ce2180751ad32d84f88c464294dbccc3f5779dfb19789ee8c",
-        "spec": "00ad78e4fa16ec2df7079069542fb3f44d90609c1466456fc43752bef9edfcf2",
-        "tests": "47b9800dadb6bb772a12d986872b22c3f1423906a0eef1822dbff1b1fa210853"
+        "code": "44a1fa2e93e22bc9b8e26c3f0e3637fe8d2de19e3b34be4b80a12bdb2af11e2a",
+        "spec": "3dba83965d7dcc7fe45048b5049946dae5a85269fef4b31810239436a0734c9e",
+        "tests": "f22435eb0d2e7b3bfd7d58ad7de1709b6787cbe8333a4cd1804b98c728838d64"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -431,6 +431,54 @@
         },
         {
           "env": null,
+          "id": "PROOF-275",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-104",
+          "test": "dev/test_run_script.py::TestSlowProofs::test_a_plain_run_leaves_the_slow_test_out_and_says_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-276",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-104",
+          "test": "dev/test_run_script.py::TestSlowProofs::test_all_starts_the_slow_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-277",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-105",
+          "test": "dev/test_run_script.py::TestSlowProofs::test_each_tool_is_given_its_own_option"
+        },
+        {
+          "env": null,
+          "id": "PROOF-278",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-105",
+          "test": "dev/test_run_script.py::TestSlowProofs::test_a_command_that_cannot_leave_a_test_out_starts_it_and_says_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-279",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-106",
+          "test": "dev/test_run_script.py::TestSlowProofs::test_a_plain_run_keeps_the_slow_result_that_still_counts"
+        },
+        {
+          "env": null,
+          "id": "PROOF-280",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-106",
+          "test": "dev/test_run_script.py::TestSlowProofs::test_a_code_change_puts_the_slow_proof_back_on_the_list"
+        },
+        {
+          "env": null,
           "id": "PROOF-98",
           "manual": false,
           "result": "pass",
@@ -508,6 +556,9 @@
         "RULE-101": "passed",
         "RULE-102": "passed",
         "RULE-103": "passed",
+        "RULE-104": "passed",
+        "RULE-105": "passed",
+        "RULE-106": "passed",
         "RULE-11": "passed",
         "RULE-12": "passed",
         "RULE-17": "passed",

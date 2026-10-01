@@ -2,14 +2,14 @@
   "feature": "states",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T18:13:44Z",
-      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
+      "at": "2026-10-01T19:20:58Z",
+      "commit": "1b8e8319d6dcd5fb57cc1e9f861a2b150c6b9623",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "8a1b0f888f06ae7aabe151e76a5ca3198352d8a4ca051c9081670f864159244a",
-        "spec": "ad458ddad95e75dccac02ca69d237d6e29542779df8ec8f01a210473fa4c3bd7",
-        "tests": "78cd160b4f9e2f0adf10c2c7971d24b493481a6d64a93bfebb64fbf447bd9033"
+        "code": "01f7960ebf2367da1e3c9d6025206ef2f05ab91357ec07ca9720e735682c2b63",
+        "spec": "1aee035ab311f5a99fbbe6dfce74291eb9337b20dab7ba5d1761aa7aa0fc90b0",
+        "tests": "c1ee0cf9d52b7ef5c9a684d770b8140e82954625471883c8555f4d6b29af04db"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -583,6 +583,38 @@
         },
         {
           "env": null,
+          "id": "PROOF-282",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-124",
+          "test": "dev/test_states.py::TestASlowProof::test_a_slow_proof_no_run_answered_reads_not_run_with_its_reason"
+        },
+        {
+          "env": null,
+          "id": "PROOF-283",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-124",
+          "test": "dev/test_states.py::TestASlowProof::test_a_slow_proof_passes_and_goes_out_of_date_like_any_other"
+        },
+        {
+          "env": null,
+          "id": "PROOF-284",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-124",
+          "test": "dev/test_states.py::TestASlowProof::test_an_anchors_slow_proof_reads_not_run_with_the_same_reason"
+        },
+        {
+          "env": null,
+          "id": "PROOF-285",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-125",
+          "test": "dev/test_states.py::TestATestCommentToCorrect::test_adding_slow_to_a_proof_names_no_test_comment"
+        },
+        {
+          "env": null,
           "id": "PROOF-279",
           "manual": false,
           "result": "pass",
@@ -615,6 +647,8 @@
         "RULE-121": "passed",
         "RULE-122": "passed",
         "RULE-123": "passed",
+        "RULE-124": "passed",
+        "RULE-125": "passed",
         "RULE-14": "passed",
         "RULE-16": "passed",
         "RULE-23": "passed",

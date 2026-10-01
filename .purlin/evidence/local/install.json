@@ -2,13 +2,13 @@
   "feature": "install",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T18:26:33Z",
-      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
+      "at": "2026-10-01T19:27:26Z",
+      "commit": "1b8e8319d6dcd5fb57cc1e9f861a2b150c6b9623",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "ebe9395a4d0e88ac57039a5a5ff2de7b09c1b6ec0b5a5b4b066578bd99187c1f",
-        "spec": "42b151c15222dc1a9f6410b04a49fc75104a87e440de186a9a8c5534d1f19c40",
+        "code": "cf5cc8a1b863136dc4694d458bbe628cec1341bd81ebbf78bde9817b017cd8aa",
+        "spec": "57c4530829b6585103130a56f43158a5fd4c8d787262c0f9a1e4f9672ca03a81",
         "tests": "02874c77a1675cbeab768a795151ed96a656a62858885c5730e685b4cd9f0825"
       },
       "machine": "Richs-MacBook-Pro.local",

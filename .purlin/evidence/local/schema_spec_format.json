@@ -2,14 +2,14 @@
   "feature": "schema_spec_format",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T18:13:43Z",
-      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
+      "at": "2026-10-01T19:20:58Z",
+      "commit": "1b8e8319d6dcd5fb57cc1e9f861a2b150c6b9623",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "6cd37d897f59a073cebee212d175daa33ece33a772e3fcceda261611d184ca8c",
-        "spec": "b6bc1808a1ee6cb711f4c29446590b9b8846a501cf45dd6a7ed5bd7844e2268b",
-        "tests": "3b3cc673719618e621caf09c9362b1108e0f952d43e490e0e0568bfe3893c197"
+        "code": "8c482f4f8bb594f99f8c80c9f4401f945ea71559fd2e499daf4b89274c6d8b94",
+        "spec": "daf0814e01f18aeb693c83091c6b49d8754760aae6624ad8ad5bd213f42e2da2",
+        "tests": "815e97ad109838d8db6e20cb313891b990bcc6928f0674c3d035f8a2f8c9beeb"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -68,6 +68,14 @@
           "result": "pass",
           "rule": "RULE-9",
           "test": "dev/test_schema_spec_format.py::test_a_trailing_manual_tag_is_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-86",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_schema_spec_format.py::test_slow_with_env_is_read_as_slow_on_that_system"
         },
         {
           "env": null,
@@ -164,6 +172,14 @@
           "result": "pass",
           "rule": "RULE-38",
           "test": "dev/test_schema_spec_format.py::test_a_pinned_anchor_carrying_a_scope_line_names_its_source"
+        },
+        {
+          "env": null,
+          "id": "PROOF-87",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-38",
+          "test": "dev/test_schema_spec_format.py::test_slow_with_manual_is_warned_of_and_read_as_manual"
         },
         {
           "env": null,

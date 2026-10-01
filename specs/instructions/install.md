@@ -5,9 +5,9 @@
 >   program, in a fresh project, with the marketplace address swapped for this checkout so the
 >   code under test is the code being installed. It then checks, with no model, that the plugin
 >   is installed and enabled and that every skill landed, and, with one call to the smallest
->   model, that Claude Code offers every Purlin skill. The model call runs only when the pages,
->   the plugin's manifest or a skill changed since it last passed, as any test does when a run
->   names no feature.
+>   model, that Claude Code offers every Purlin skill. The proofs whose test starts the real
+>   `claude` are slow proofs: `purlin:test --all` runs them, and their results go out of date
+>   when the pages, the plugin's manifest or a skill changes.
 > Scope: README.md, docs/getting-started.md, .claude-plugin/plugin.json, .claude-plugin/marketplace.json, skills/*/SKILL.md
 > Highest-Rule: 6
 > Highest-Proof: 6

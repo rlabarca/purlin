@@ -2,12 +2,12 @@
   "feature": "evidence_writer",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T18:13:43Z",
-      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
+      "at": "2026-10-01T19:20:57Z",
+      "commit": "1b8e8319d6dcd5fb57cc1e9f861a2b150c6b9623",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "4e407560144c32dc0718e006609eb37bd2265c127253a69e1a28940d425d47f8",
+        "code": "e85fedf3bce29d5979f20d4c4808016279e85b3e34a526e13328b6c73f79e678",
         "spec": "7c32e10798ab63dace46869b905bafbf9f1b6bf100ff9c97ca8f8068fe1c6e34",
         "tests": "7ce43e1378032726955f3c2b4cbde28ef44bf7614e4951c3807c22aee93641b1"
       },
