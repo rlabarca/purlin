@@ -218,7 +218,9 @@ committed evidence. So `purlin:test --all --commit` is the run a developer makes
 a version over.
 
 Once a slow test has passed, a plain `purlin:test` leaves its result alone, and it keeps
-counting. When a file the spec covers changes, the result goes out of date as any other does.
+counting. A slow result a plain run kept is marked `kept` in the evidence, with the commit, the
+time, the machine and the person of the run that took it. The status counts it. The sign-off
+does not: it asks for `purlin:test --all --commit`. When a file the spec covers changes, the result goes out of date as any other does.
 The proof reads `not run` again and the status lists it. A person who never knew the test
 existed is told when it is due and which command runs it.
 
@@ -393,8 +395,12 @@ one version of its source.
 **add** fetches the anchor and writes your copy under `specs/_anchors/`:
 
 ```
-purlin:anchor add <url> --path <file>
+purlin:anchor add <url> --path <file> [--name <name>]
 ```
+
+Your copy takes its name from the file. `--name` gives it another, in letters, digits and `_`.
+A name an anchor in the project already holds is refused, and the refusal names
+`purlin:anchor sync <name>`.
 
 ```
 security_baseline: written to specs/_anchors/security_baseline.md, pinned 71abd36

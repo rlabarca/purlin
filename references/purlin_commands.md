@@ -49,7 +49,7 @@ folder of the git checkout you are working in. A call that names none is refused
 | `purlin:spec <name>` | Turn a requirement in any form into rules and proofs | A developer's agent, or product or QA in Claude Code, at intake and whenever a rule turns out to be wrong |
 | `purlin:build [name]` | Load a spec's rules, write the code and the marked tests, commit the changeset | A developer, on every change. With no name it reads `sync_status` and names the specs with rules that have no passing test. It repairs a marker comment that is nearly right, corrects a test whose proof was reworded, and ends by running `purlin:test` |
 | `purlin:test [feature ...] [--all] [--commit] [--arm-timeout <seconds>]` | Run the marked tests and print each rule's passed cell | A developer, constantly. Seconds; tests only, and never a slow proof's without `--all`. The first run in a project with no test command suggests one for each test tool it recognises and runs once you confirm it. It writes the evidence, commits it with `--commit`, and never pushes. `purlin:test --all --commit` is the hand-off to a sign-off |
-| `purlin:audit [feature ...] [--all] [--commit] [--arm-timeout <seconds>]` | Run the tests, the heuristic spot tests, one planted bug per proof and the model's reading, then write what it found into the evidence | A developer, by hand, any time. It writes the evidence, commits it with `--commit`, and never pushes. Nothing waits on it |
+| `purlin:audit [feature ...] [--all] [--commit] [--arm-timeout <seconds>]` | Run the tests, the heuristic spot tests, one model call per rule and one planted bug per proof, then write what it found into the evidence | A developer, by hand, any time. It writes the evidence, commits it with `--commit`, and never pushes. Nothing waits on it |
 | `purlin:sign [--version <version>]` | Build the evidence package from the committed evidence, walk its hand checks with a person, then sign it in a signed commit | Anyone with a key to sign with, in any project, at any time, after the hand-off; the sign-off names them, and several people may sign. The first sign-off of a version writes `signed/<version>` |
 | `purlin:drift` | Report what changed since your last pull | Everyone, after a pull, a merge, a rebase, a checkout, a clone or a reset |
 
@@ -84,7 +84,7 @@ Purlin
 
   Proving
   ──────
-  purlin:audit [feature ...]      Tests, spot tests, planted bugs and the model's reading, into the evidence
+  purlin:audit [feature ...]      Tests, spot tests, one model call per rule and planted bugs, into the evidence
   purlin:audit --all              The same, reading every passing rule again
   purlin:audit --commit           The same, then commit the work and the evidence
   purlin:audit --arm-timeout <seconds>  Give each suite, and each planted bug's test run, longer
@@ -109,7 +109,7 @@ Purlin
   purlin:init                     Set the project up
   purlin:init --update            Bring a 0.9.5 project up to the installed plugin
   purlin:anchor create <name>     A local anchor
-  purlin:anchor add <url> --path <file>   Pin an anchor from another repository
+  purlin:anchor add <url> --path <file> [--name <name>]   Pin an anchor from another repository
   purlin:anchor sync [name|--all] [--check]   Advance a pin
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -133,7 +133,7 @@ Purlin
 
 | Command | 0 | 1 | 2 |
 |---------|---|---|---|
-| `scripts/run/purlin_run.py --test`, `--audit` | everything asked happened | a tied test failed or did not run; evidence is missing; a marker names nothing a spec has; a spec under `specs/` writes a number twice or holds a line left from a merge conflict, after every test ran; no settings file; the settings file cannot be read; a project set up by 0.9.5 and not upgraded; no test command; for `--audit`, a file of the project changed while a bug was planted. A weak or unaudited rule never exits 1, and neither does a test comment to correct | a bad command line |
+| `scripts/run/purlin_run.py --test`, `--audit` | everything asked happened | a tied test failed or did not run; evidence is missing; a marker names nothing a spec has; a spec under `specs/` writes a number twice or holds a line left from a merge conflict, after every test ran; no settings file; the settings file cannot be read; a project set up by 0.9.5 and not upgraded; no test command; for `--audit`, a file of the project changed while the audit ran. A weak or unaudited rule never exits 1, and neither does a test comment to correct | a bad command line |
 | `scripts/run/purlin_run.py --ci` | the tests tied to the proofs tagged for this machine's system passed | one of those failed or could not run, and nothing else | a bad command line |
 | `scripts/review/sign.py` | signed, shown, checked and matching, stopped, or answered no | a refusal: tracked files changed and not committed, evidence not committed, no version, the version's tag on a commit this checkout does not hold or on other code, results not taken on this version of the code, results taken while files were changed and not committed, a rule with no test, a rule that does not pass, the branch's copy on the host holding commits HEAD lacks, the signer has already signed, or a stop with no answer in the answers file; no key; the package was not written; the commit was not made; git could not write the tag; `--check` did not match | a bad command line |
 | `scripts/review/ai_audit.py` | a rule was printed | the rule is not in the project; the settings file cannot be read | a bad command line |

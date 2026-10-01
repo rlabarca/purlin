@@ -47,12 +47,16 @@ Commit it with the `anchor(<name>): create` prefix from `references/commit_conve
 ## add
 
 ```bash
-sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/anchor/upstream.py" add <git-url> --path <file>
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/anchor/upstream.py" add <git-url> --path <file> [--name <name>]
 ```
 
 Fetches the anchor from another repository and writes the local copy under
 `specs/_anchors/`, with two tracking lines the author's own file does not carry. An anchor
 brought in this way is a remote anchor: its copy is pinned to one version of its source.
+
+The copy takes its name from the file. `--name <name>` gives it another, in letters, digits and
+`_`. A name an anchor in the project already holds is refused, with nothing written, and the
+refusal names `purlin:anchor sync <name>`.
 
 ```markdown
 > Source: https://github.com/acme/policies.git specs/no_eval.md

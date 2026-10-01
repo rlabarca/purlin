@@ -10,14 +10,25 @@ and no test runs, so this step is free. The six checks are in
 [the heuristic spot tests reference](../references/review_criteria.md#heuristic-spot-tests).
 
 **2. Plant one bug.** For each proof, an AI puts one small bug in a throwaway copy of your code,
-such as a sample age off by one hour. The bug is aimed at what the proof says.
+such as a sample age off by one hour. The bug is aimed at what the proof says. The AI is asked
+once for each rule.
 
-**3. Run that proof's test.** The test fails: the rule is `strong`. The test still passes: the
+**3. Run that proof's test.** The test fails: the bug was caught. The test still passes: the
 rule is `weak`, and you see the bug it missed:
 
 ```
 PROOF-1: the test still passes when src/age.py:12 reads "return minutes + 60"
 ```
+
+A rule reads `strong` when the spot tests found nothing and a planted bug was caught. Where
+no bug could be planted, the rule reads `spot-checked`, and the audit says why:
+
+```
+The spot tests found nothing. No bug was planted: PROOF-3 needs Windows, and this machine is macOS.
+```
+
+One caught bug makes a rule `strong`. Each of its proofs with no caught bug is named under it,
+with the reason.
 
 **4. `purlin:audit`.** Run it whenever you like. Or tell the agent:
 
@@ -27,7 +38,7 @@ The agent strengthens the weak tests and audits again until 80% of rules are str
 ends on that share:
 
 ```
-The audit found 42 of 50 rules strong (84%).
+The audit found 42 of 50 rules strong (84%): 42 strong, 8 weak.
 ```
 
 ## What you can count on
@@ -35,9 +46,13 @@ The audit found 42 of 50 rules strong (84%).
 - **Your code is never changed.** Every bug is planted in a copy, and the copy is thrown away.
 - **Nothing waits on it.** A weak rule is work to do, listed as `to strengthen`. The tests still
   read `met`, and a sign-off goes ahead.
-- **`strong` needs the AI.** If the AI cannot be reached, a rule the spot
-  tests flag is still `weak`. Every other rule stays `not audited`, and the audit tells you to
-  run `purlin:audit` again.
+- **`strong` means a bug was caught.** If the AI cannot be reached, a rule the spot tests flag
+  is still `weak`. Every other rule reads `spot-checked`, with the reason, and the next
+  `purlin:audit` reads it again.
+- **A result goes out of date.** When a rule, its proof, its test or the code it covers changes,
+  the rule reads `out of date`, with its last result and date, until the audit reads it again.
+- **The AI is given no tools.** It is started with no tools, no plugins and none of your
+  settings, in an empty folder. It can read and change nothing.
 - **It stays fast.** Only proofs whose test or code changed since the last audit get a new bug.
 - **Nothing to install.** Any test Purlin can run, it can audit. No extra tool per language.
 - **What it found is kept.** Each finding and each planted bug goes into the evidence. The
@@ -47,7 +62,12 @@ The audit found 42 of 50 rules strong (84%).
 
 - It does not prove your tests catch every bug. It tests what each proof says, one bug at a time.
 - It reads only rules whose tests pass. A failing test is fixed first.
-- It plants no bug for an anchor's rule. The spot tests alone decide that rule.
+- It plants no bug for an anchor's rule, so an anchor's rule reads `spot-checked`, never
+  `strong`.
+- It plants no bug for a proof tagged for another system. The test cannot show it on this
+  machine.
+- A test that is skipped, cannot be collected or runs past its limit with the bug in place
+  decides nothing. Only a test that ran and failed caught the bug.
 - A rule with no proof has nothing to plant a bug against.
 
 ## Why this works
@@ -87,9 +107,10 @@ bug. The test run decides.
 |---|---|---|
 | An AI reads it | Fast | An opinion |
 | Plant bugs everywhere | Minutes to hours, and a tool per language | Objective, across all the code |
-| **Spot tests, then one planted bug per proof** | **Free, then one AI call and one test run per changed proof** | **Objective, aimed at what the proof says** |
+| **Spot tests, then one planted bug per proof** | **Free, then one AI call per changed rule and one test run per changed proof** | **Objective, aimed at what the proof says** |
 
-Purlin takes the last row.
+Purlin takes the last row. The audit prints how many AI calls it will make before it starts, and
+what the run cost when it ends.
 
 ## Sources
 

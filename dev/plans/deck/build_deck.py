@@ -58,7 +58,7 @@ def slide(sid, eyebrow, headline, rows, closing, notes, lead='', width=620, gap=
 os.makedirs(os.path.join(ROOT, 'slides'), exist_ok=True)
 slide('why', 'What Purlin is for', 'Why use Purlin?', [
     ('Tests pass. Do they cover what was asked?', 'You write each requirement as a rule. Purlin ties every rule to the tests that show it, and calls out every rule that doesn\'t have a test.'),
-    ('AI writes code &amp; tests fast. Are they any good?', 'The audit plants a small bug for each proof and checks that the test catches it.'),
+    ('AI writes code &amp; tests fast. Are they any good?', 'The audit plants a small bug for each proof and runs its test. Caught: strong. Missed: weak. No bug planted: spot-checked.'),
     ('Something changed. Is the result still true?', 'A result stops counting when the rule, the test or the code changes, until the tests are run again.'),
     ('Someone has to sign it off.', 'When everyone is done, a person signs the evidence once and the version gets a signed tag. The evidence package is one file you hand over.'),
 ], '',
@@ -157,14 +157,15 @@ slide('slow', 'Slow tests', 'Slow tests stay out of your way', [
 slide('audit', 'Are the tests any good?', 'The audit: would your tests catch a bug?', [
     ('Heuristic spot tests', 'Purlin flags tests that check nothing, check the code against itself, or never check the result the proof expects.'),
     ('Plant one bug', 'For each proof, an AI puts one small bug in a throwaway copy of your code, such as a sample age off by one hour.'),
-    ('Run that proof\'s test', 'The test still passes: the rule is %s, and you see the bug it missed. The test fails and the spot tests found nothing: the rule is %s.' % (m('weak'), m('strong'))),
+    ('Run that proof\'s test', 'The test fails and the spot tests found nothing: the rule is %s. The test still passes: the rule is %s, and you see the bug it missed. No bug could be planted: the rule is %s, and you see why.' % (m('strong'), m('weak'), m('spot-checked'))),
     ('`purlin:audit`', 'Tell the agent: <i>"Build and audit until 80% of rules are strong."</i>'),
 ], 'Why: AI-written tests often check what the code does, not what was asked (<a href="https://arxiv.org/pdf/2410.21136" style="color:#E6BEB0">Konstantinou et al., 2024</a>), and planting bugs is the most reliable test of a test (<a href="https://homes.cs.washington.edu/~mernst/pubs/mutation-effectiveness-fse2014.pdf" style="color:#E6BEB0">Just et al., FSE 2014</a>).',
  'A passing test only shows the code did what the test checked. The audit asks the harder '
  'question: if the code were wrong, would the test notice? It plants one small bug per proof, aimed '
  'at the exact claim the proof makes, in a copy of the project that is thrown away, and runs only '
  'that proof\'s test. Your code is never changed. Only proofs whose test or code changed since the '
- 'last audit are tried again, so it stays fast, and nothing waits on it. Google plants bugs only in '
+ 'last audit are tried again, so it stays fast, and nothing waits on it. One AI call per rule, '
+ 'with no tools: it can read and change nothing. Google plants bugs only in '
  'changed code (Petrovic et al., TSE 2021) and Meta has a model write a few targeted ones (Foster '
  'et al., FSE 2025); Purlin follows both. The full reasoning and sources are on the audit page of '
  'the docs.',
@@ -216,7 +217,7 @@ slide('manual', 'Judgment calls', 'Pass or fail. What about judgment calls?', [
  'For now the way to sign off on one is a hand check: a proof tagged manual, which the status '
  'shows as checked at sign-off until someone signs. After a sign-off the status and the dashboard '
  'show the last note with the version it was signed at and how many commits have come since, so '
- 'a reader can judge whether it still holds. An AI may help a person look, but a test does not pass or fail on an AI\'s '
+ 'a reader can judge whether it still holds. The next walk shows that note at the rule\'s stop. An AI may help a person look, but a test does not pass or fail on an AI\'s '
  'opinion; a test may ask a model a question with one right answer.',
  lead='A test can check a result. Only a person can make a judgment call.', width=560, pad=16, numbers=False)
 slide('anchors', 'Shared rules', 'Anchors: rules the whole project must follow', [

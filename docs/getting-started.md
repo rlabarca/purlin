@@ -230,7 +230,8 @@ check. Then it takes one signature in a signed commit. The first sign-off writes
 
 **The audit is a tool you run when you want it.** `purlin:audit` runs heuristic spot tests over
 your tests. Then it plants one bug per proof in a copy of the project and sees whether the
-proof's own test catches it. A finding makes the rule `weak`, left to do as `to strengthen`.
+proof's own test catches it. A caught bug and no finding make the rule `strong`. A finding
+makes it `weak`, left to do as `to strengthen`.
 Nothing waits on it. [audit.md](audit.md) says what it checks and why.
 
 ## Where to go next

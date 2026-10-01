@@ -31,15 +31,15 @@ ancestor of it:
 |----------|------|
 | `signed 0.1.0 at a1b2c3d` | the tag's commit is this code: every commit since it changes only Purlin's own records under `.purlin/` |
 | `signed 0.1.0, 4 commits since` | the code has changed since the tag, by that many commits; for one, `1 commit since` |
-| `not signed` | no `signed/*` tag is on `HEAD` or behind it |
+| `not signed` | no `signed/*` tag on `HEAD` or behind it has a sign-off that counts |
 
 Neither fact is a bar a rule clears, and no setting changes what either means. Any project may
 run `purlin:sign` whenever it chooses.
 
 **Every rule has two cells.** The passed cell says whether every test tied to the rule ran and
 passed, each current section answering for the proofs it lists. The strong cell says what the
-audit found: `strong`, `weak`, `not audited`, `checked at sign-off` for a hand check, `no proof`,
-or `waiting` while the passed cell is not met. Nothing waits on the strong cell.
+audit found: `strong`, `weak`, `spot-checked`, `out of date`, `not audited`, `checked at sign-off`
+for a hand check, `no proof`, or `waiting` while the passed cell is not met. Nothing waits on the strong cell.
 
 ## What is left to do
 
@@ -47,7 +47,7 @@ The terminal, the dashboard and the evidence package say what is left the same w
 summary and `Left to do`:
 
 ```
-40 rules. 35 pass their tests. The audit found 30 of 35 rules strong (85%).
+40 rules. 35 pass their tests. The audit found 30 of 35 rules strong (85%): 30 strong, 2 weak, 3 spot-checked.
 Left to do:
   3 rules to fix: purlin:build
   2 rules to write a test for: purlin:build
@@ -56,8 +56,9 @@ Left to do:
 
 **The summary** is `<N> rules. <p> pass their tests.`, where `p` counts the rules whose passed
 cell reads `passed`, a rule whose every proof is `@manual` among them. Where the audit has read a
-rule that passes, ` The audit found <s> of <p> rules strong (<n>%).` follows. A rule is counted
-once, under the spec that owns it.
+rule that passes, ` The audit found <s> of <p> rules strong (<n>%): <s> strong` follows, then
+`, <n> weak`, `, <n> spot-checked`, `, <n> out of date` and `, <n> not audited`, each only where
+it is not zero. A rule is counted once, under the spec that owns it.
 
 **`Left to do`** lists only work. It gives each rule at most one kind, the first that applies, in
 this order. A line carries a count and a command and names no rule; a run names each rule where it
@@ -112,12 +113,15 @@ sources.
 `> Scope:` covers and the tests, is the one taken now. A pass that is not current makes the passed
 cell read `out of date`, naming what changed, and the next run clears it. An anchor's code is
 every file of the project but Purlin's own records under `.purlin/evidence/`, so any other change
-to the project makes its results out of date.
+to the project makes its results out of date. Changing a test command in `.purlin/config.json`
+ends the results, as changing the code does. Changing `version` alone does not.
 
 **For a sign-off**, a result counts only when it was taken on this exact version of the code: its
 section is current, the run saw no uncommitted change, and every commit from the section's commit
-to `HEAD` changes only paths under `.purlin/`. A result from a run on another system counts on the
-same terms. Where one does not, `purlin:sign` refuses and names the run that takes it again:
+to `HEAD` changes only paths under `.purlin/` and leaves the test commands as they were. A plain
+run keeps an earlier slow result while nothing its spec covers changed. The status counts it.
+The sign-off does not: run `purlin:test --all --commit` before `purlin:sign`. A result from a run
+on another system counts on the same terms. Where one does not, `purlin:sign` refuses and names the run that takes it again:
 `purlin:test --all --commit` for this machine's results, and `purlin:test on <System>` for
 another system's, the same instruction as in `Left to do`. The developer's hand-off is therefore
 run and commit: every test, here and through the project's own run for any other system, then
@@ -192,7 +196,13 @@ A sign-off counts when two things are true:
   with `git verify-commit`. Otherwise it does not count, with
   `the commit that added it is not signed` or
   `the signature on the commit that added it does not verify`.
-- Its `package_hash` equals the `fingerprint` of the package committed for that version.
+- Its `package_hash` equals the fingerprint computed over the package `HEAD` holds for that
+  version. A package changed after it was signed no longer matches.
+
+A sign-off is read as `HEAD` holds it. A sign-off file changed and not committed does not count.
+
+The status reads `signed` only where the tag names a commit that holds the package and a
+sign-off of it counts. A tag written by hand reads `not signed`, with one warning.
 
 **How each is checked.**
 
@@ -208,16 +218,17 @@ A sign-off counts when two things are true:
 
 - tracked files are changed and not committed;
 - the evidence is written and not committed;
-- a result was not taken on this version of the code, or was taken while files were changed
-  and not committed;
+- a result was not taken on this version of the code, a slow result kept from an earlier run
+  among them, or was taken while files were changed and not committed;
+- the committed package was changed after it was signed;
 - a rule has no test, or a rule does not pass;
 - the version's tag is on other code;
 - the branch's copy on the host holds commits the checkout lacks.
 
 Otherwise it names who ran the tests, where and when, and shows an overview. Where a rule reads
 weak it offers the audit's findings as a list. It stops only at hand checks, where the signer
-may type what they saw; an empty answer is recorded as `no note`. A weak rule or a rule not
-audited never blocks the sign-off. The first sign-off of a version is one signed commit carrying
+may type what they saw; an empty answer is recorded as `no note`. What the audit found never
+blocks the sign-off, whatever its word. The first sign-off of a version is one signed commit carrying
 the package and the sign-off; a later one adds its own file alone.
 
 **A hand check** reads `checked at sign-off` everywhere else. Once a sign-off holds a note for
@@ -235,7 +246,8 @@ This is the one definition of the tag. Every other page points here.
 every spec could be counted, every rule's tests passed on committed results taken on that exact
 version of the code, and at least one person signed the package. The tag binds the signing alone:
 it says what was signed and by whom, and makes no claim about who was entitled to sign. A later
-sign-off adds its file after the tag, and the tag does not move.
+sign-off adds its file after the tag, and the tag does not move. Where git cannot write the tag,
+the next `purlin:sign` writes it on the signed commit and adds no second sign-off.
 
 Its message names the version and the commit the package describes:
 
@@ -254,7 +266,8 @@ signed under a new version. Nothing is pushed: a person pushes the branch and th
 - Writing code without invoking a skill.
 - Writing a test with no marker comment above it. It runs; `sync_status` does not count it.
 - Committing without running an audit. The audit is a tool; nothing waits on it.
-- A weak rule, or a rule the audit has not read.
+- A weak rule, a `spot-checked` rule, a rule whose audit is out of date, or a rule the audit has
+  not read.
 - A rule whose passed cell reads `out of date`. The spec, the code or the tests moved; the next
   run clears it.
 - Pushing a branch. A push is a person's act, to any branch, and Purlin runs nothing at push time

@@ -59,7 +59,7 @@ operating system and not another. A `Strong` column shows only where the audit r
 The tool ends on one sentence and `Left to do`, the words every command ends on in the terminal:
 
 ```
-40 rules. 35 pass their tests. The audit found 30 of 35 rules strong (85%).
+40 rules. 35 pass their tests. The audit found 30 of 35 rules strong (85%): 30 strong, 2 weak, 3 spot-checked.
 Left to do:
   3 rules to write a test for: purlin:build
   2 rules to test: purlin:test

@@ -46,7 +46,7 @@ other page points here rather than defining it again.
   in the chain below.
 - **summary**: the sentence every run, every audit and `purlin:status` end on:
   `40 rules. 35 pass their tests.`, and, where the audit has read a rule that passes,
-  `40 rules. 35 pass their tests. The audit found 30 of 35 rules strong (85%).` A rule is counted
+  `40 rules. 35 pass their tests. The audit found 30 of 35 rules strong (85%): 30 strong, 2 weak, 3 spot-checked.` A rule is counted
   once, under the spec that owns it.
 - **Left to do**: the list under the summary, one line per kind of remaining work, in the order
   the work is done, each with its count and the command that does it; a kind at zero is left
@@ -77,7 +77,9 @@ other page points here rather than defining it again.
   writes a section. **current**: a section whose fingerprint matches the tree now. **out of
   date**: the passed cell's word when the newest section is not current, naming what changed,
   `code changed since <sha7>`, `spec changed since ...` or `tests changed since ...`. The next
-  run clears it. `purlin:test` with no feature named runs the features that are out of date or
+  run clears it. It is also the strong cell's word when the rule, its proof, its test or its
+  code changed since the audit read it: the last result stays on screen until the audit reads
+  the rule again. `purlin:test` with no feature named runs the features that are out of date or
   have no run on this system.
 - **this version of the code**: the code at a commit, whatever Purlin's own records under
   `.purlin/` say after it. A result counts for a sign-off only when it was taken on it.
@@ -85,8 +87,8 @@ other page points here rather than defining it again.
   to check and skips with a reason starting `nothing to check:`. The rule passes, and the reason
   is shown.
 - **audit**: `purlin:audit`, run by hand. It runs the tests, then for each rule that passes it
-  takes three steps: the heuristic spot tests, one planted bug per proof, and the **model's
-  reading**. It writes what it found into each feature's evidence and ends on the share of
+  takes three steps: the heuristic spot tests, one model call for the rule, and each planted
+  bug's test run. It writes what it found into each feature's evidence and ends on the share of
   rules it found strong. `references/review_criteria.md` is its one home.
 - **heuristic spot test**: one of six checks that read a test as text, with no model, and flag
   a test that cannot fail.
@@ -95,8 +97,13 @@ other page points here rather than defining it again.
 - **finding**: one line saying what a spot test flagged or which planted bug a test did not
   catch. A finding makes the rule `weak`. A weak rule is left to do as `to strengthen`, and
   stops nothing.
-- **explanation**: the model's reading of what was found. It decides nothing.
-- **strong**: what the audit found a rule's tests to be. **waiting**: the word the strong cell
+- **explanation**: the model's reading of the rule's tests. It decides nothing.
+- **strong**: the spot tests found nothing and a planted bug was caught by its proof's test.
+- **spot-checked**: the spot tests found nothing and no bug was planted and caught; the audit
+  entry says why.
+- **kept**: a slow proof's result a plain run carried over from an earlier run; the status
+  counts it and the sign-off does not.
+- **waiting**: the word the strong cell
   reads while the passed cell is not met, `waiting for its tests to pass`. It is not `weak`.
 - **hand check**: a proof marked `@manual`, which no test runs. It reads `checked at sign-off`:
   a person looks at it in the sign-off walk and may type what they saw. What they type is a
@@ -144,7 +151,7 @@ For one rule, top to bottom. Each row is a cell, and every rule has both.
 | Cell | Met when | Words the cell can read |
 |------|----------|-------------------------|
 | passed | every proof of the rule, or the rule itself where it has no proof, has a test in a current section, and every test tied to it ran and passed, each current section answering for the proofs it lists | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date` |
-| strong | passed, and the audit of the current rule, proofs and tests found nothing; nothing waits on it | `strong`, `weak`, `waiting`, `not audited`, `checked at sign-off`, `no proof` |
+| strong | passed, the spot tests found nothing and a planted bug was caught; nothing waits on it | `strong`, `weak`, `spot-checked`, `out of date`, `waiting`, `not audited`, `checked at sign-off`, `no proof` |
 
 A rule with neither a proof nor a marked test reads `no test` with the reason
 `no proof written`. A rule with a test and no proof reads `no proof` in its strong cell. A

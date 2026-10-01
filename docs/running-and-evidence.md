@@ -79,6 +79,9 @@ over every feature runs every suite whole.
 Every other run lists it under `Left to do`, as
 [Slow proofs](specs-and-anchors.md#slow-proofs) says.
 
+A plain run keeps an earlier slow result while nothing its spec covers changed. The status
+counts it. The sign-off does not: run `purlin:test --all --commit` before `purlin:sign`.
+
 ### What a run prints
 
 The run takes three steps:
@@ -299,28 +302,35 @@ An audit runs the tests as `purlin:test` does. Then it reads a rule when all of 
 - the rule is its feature's own or an anchor's;
 - it has at least one proof with a test;
 - its passed cell reads `passed`;
-- the evidence holds no audit of its current rule, proof and test, or its code changed since.
+- it has no audit entry, its entry is out of date, or a proof still waits for its bug.
 
 `--all` reads every such rule again. For each rule the audit takes three steps, in this order:
 
 1. **The heuristic spot tests**, in code, with no model: six checks over each test's source
    and its proof's words. [review_criteria.md](../references/review_criteria.md#heuristic-spot-tests)
    is their one home.
-2. **One planted bug per proof** whose test or covered code changed since the audit last read
-   it. The model writes the smallest change to the code that would break what the proof says.
-   Purlin plants it in a copy of the project, runs the proof's own tests there, and removes the
-   copy. A test that still passes did not catch the bug. An anchor's proof and a `@manual`
-   proof get no bug.
-3. **The model's reading**, once per rule: an explanation of the findings, stored beside them.
-   It sets no verdict.
+2. **One model call for the rule**: a small bug for each proof, and the model's reading. A bug
+   is the smallest change to the code that would break what the proof says. A proof whose test
+   and covered code are as the audit last read them keeps its result and gets no new bug. The
+   reading explains the tests and sets no verdict. The model is started with no tools, no
+   plugins and none of your settings, in an empty folder.
+3. **Each bug planted** in a copy of the project, and that proof's own test run. A test that
+   still passes did not catch the bug. A test that is skipped, is not collected or runs past its
+   limit decides nothing. The copy is then removed.
 
-A rule is `weak` when a spot test fired on one of its tests or a planted bug was not caught.
-Otherwise it is `strong`.
+A rule reads:
 
-`strong` means the model's part of the audit ran. Where the model cannot be reached, the spot
-tests still report what they find as `weak`. A rule that passed them alone stays
-`not audited`. The audit prints one line, such as
-`The model could not be reached: claude is not on PATH. 2 rules stay not audited. Run purlin:audit again.`
+- `weak` when a spot test fires on one of its tests or a planted bug survived;
+- `strong` when none did and a planted bug was caught by its proof's test;
+- `spot-checked` when none did and no bug was planted and caught. The audit says why.
+
+One caught bug makes a rule `strong`. Each of its proofs with no caught bug is named under it,
+with the reason. No bug is planted for an anchor's proof, a `@manual` proof or a proof tagged
+for another system. So an anchor's rule reads `spot-checked`.
+
+Where the model cannot be reached, the audit prints one line, such as
+`The model could not be reached: claude is not on PATH. 2 rules are spot-checked alone. Run purlin:audit again.`
+A rule a spot test fired on is still `weak`, and the next `purlin:audit` reads the others again.
 
 A finding is one line:
 
@@ -333,21 +343,25 @@ The audit writes what it found under `audit` in `.purlin/evidence/local/<feature
 planted bug is there with its file, its line, the change and whether it was caught. The audit
 commits only with `--commit`, in the same two commits as a test run.
 
-It prints each rule it found weak with its findings, then what the model calls cost, and last
-the share of rules it found strong:
+It prints how many model calls it will make, then each rule with what it found, then what the
+calls cost, and last the share of rules it found strong:
 
 ```
+The audit reads 12 rules: 12 model calls.
 login RULE-2   weak
-  PROOF-2: the test still passes when src/auth.py:31 reads "return True"
-The model was asked 31 times for 12 rules: $1.87 in all, $0.16 a rule.
-The audit found 4 of 5 rules strong (80%).
+  tests/test_login.py::test_wrong_password: the test checks nothing.
+  PROOF-2: the test still passes when src/auth.py:12 reads "return 200"
+login RULE-3   spot-checked
+  The spot tests found nothing. No bug was planted: PROOF-3 needs Windows, and this machine is macOS.
+The model was asked <n> times for <n> rules: $<total> in all, $<per rule> a rule.
+The audit found 4 of 6 rules strong (66%): 4 strong, 1 weak, 1 spot-checked.
 ```
 
 The run then ends on the status, as every run does. The sentence carries the audit's share, and
 each weak rule is left to strengthen:
 
 ```
-5 rules. 5 pass their tests. The audit found 4 of 5 rules strong (80%).
+6 rules. 6 pass their tests. The audit found 4 of 6 rules strong (66%): 4 strong, 1 weak, 1 spot-checked.
 Left to do:
   1 rule to strengthen: purlin:build
 ```
@@ -355,9 +369,9 @@ Left to do:
 An audit exits 1 when a test it ran failed or did not run, and 0 whatever it found. The audit
 is a tool, and nothing waits on it.
 
-Your code is never changed by a planted bug. Where a file of the project changes while a bug's
-tests run, the audit stops and says so:
-`The audit stopped: src/age.py changed while a bug was planted. Nothing in the project was written by the audit.`
+Your code is never changed by a planted bug. Where a file of the project changes while the
+audit runs, the audit stops and says so:
+`The audit stopped: src/age.py changed while the audit ran. Nothing in the project was written by the audit.`
 [audit.md](audit.md) gives the reasoning and the research behind these steps.
 
 ### The flow
@@ -371,7 +385,7 @@ flowchart TD
     M --> C["with --commit, commit the specs,<br>the marked tests and the settings"]
     C --> W["write .purlin/evidence/<br>local/#lt;feature#gt;.json"]
     W --> Q{"purlin:audit?"}
-    Q -->|yes| A["the spot tests, one planted<br>bug per changed proof, the<br>model's reading, into the same file"]
+    Q -->|yes| A["the spot tests, one model call<br>per rule, one planted bug per<br>changed proof, into the same file"]
     Q -->|"no, purlin:test"| T
     A --> T["commit the evidence with --commit,<br>print the status"]
 ```
@@ -406,13 +420,16 @@ Each section carries:
 
 A proof's result is `pass`, `fail`, `missing`, `not run` or `nothing to check`, the last with
 its reason. The `audit` object carries, per rule, the hashes the audit read, its `verdict`, its
-findings, each planted bug, the model's explanation and the model.
+findings, each planted bug, why a proof had no bug caught, the model's explanation and the
+model.
 
 **A result stops counting when the rule, the test or the code changes, until the tests are run
 again.** A section is current while its fingerprint equals one taken now, committed or not.
 When the spec, the covered code or the tests change, the passed cell reads `out of date` and
 names what changed: `code changed since <sha7>`, `spec changed since <sha7>` or
-`tests changed since <sha7>`. The next run clears it.
+`tests changed since <sha7>`. The next run clears it. A test command in `.purlin/config.json`
+is part of the tests: changing one ends the results, as changing the code does. Changing
+`version` alone does not.
 
 Outside tools read these files and the evidence package, whose formats are versioned for them.
 People inside the project read the status and the dashboard.

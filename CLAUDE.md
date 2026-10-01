@@ -112,5 +112,5 @@ install carries `scripts/`, `dev/`, `specs/`, `references/`, `docs/`, `skills/`,
 - **`dev/`** holds this repository's own maintenance, build and release scripts and its proofs.
   A path into `dev/`, or into this repository's own `specs/`, never appears in a prose line of a
   skill, an agent definition or a reference: a consumer's checkout has neither, so such a citation
-  is an instruction that cannot be followed. No proof checks this line across those files; the
-  review of each change holds it.
+  is an instruction that cannot be followed. `purlin_agent` RULE-23 checks the `dev/` half of
+  this line across those files; the review of each change holds the `specs/` half.

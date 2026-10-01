@@ -368,7 +368,9 @@ whose row says what moves both.
 | strong | `weak`, with `PROOF-N: the test still passes when <file>:<line> reads "<line>"` | The audit planted that bug in a copy of the project and the proof's own test still passed. | Add the case that tells the right behaviour from that change. `purlin:build`, then `purlin:audit`. |
 | strong | `no proof` | The rule's test passes and no proof says what it shows, so the audit has nothing to read the test against. | Write the proof with `purlin:spec`, then `purlin:audit`. |
 | strong | `checked at sign-off` | The proof is `@manual`, so no test can be written and a person checks it. | Nothing: the sign-off walk of `purlin:sign` shows it and asks what the person saw. |
-| strong | `not audited` | No audit has read this rule, proof and test, so the evidence holds no audit entry for the current hashes. Nothing waits on it. | `purlin:audit`, when you want one, which writes the entry into the evidence. |
+| strong | `not audited` | No audit has read this rule. | `purlin:audit`, when you want one, which writes the entry into the evidence. |
+| strong | `spot-checked` | The spot tests found nothing and no bug was planted and caught. The reason follows the word. | Fix what the reason names, where there is something to fix, then `purlin:audit`. |
+| strong | `out of date` | The rule, its proof, its test or its code changed since the audit read it. | `purlin:audit`, when you want one. |
 
 ## When a test fails, fix the code
 

@@ -73,7 +73,8 @@ cell carrying the reasons behind its word. `out of date` means the spec, the cod
 moved since the run, and the next run clears it.
 
 Every run ends on the summary,
-`40 rules. 35 pass their tests. The audit found 30 of 35 rules strong (85%).`, and `Left to do`,
+`40 rules. 35 pass their tests. The audit found 30 of 35 rules strong (85%): 30 strong, 2 weak, 3 spot-checked.`,
+and `Left to do`,
 one line per kind of work with its count and its command. The first line of `Left to do` is the
 next step: say which, and say why. A project whose tests are met ends on
 `Every rule passes its tests on the committed evidence. To sign it: purlin:sign`.

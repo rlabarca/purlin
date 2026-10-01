@@ -97,14 +97,16 @@ one line naming the cause and the command to run. It writes nothing and exits 1.
 | `No sign-off: signed/2.1.0 is at 8de0b6e, which this checkout does not hold. Pull, then run purlin:sign.` | the version is already signed on a commit you have not pulled |
 | `No sign-off: signed/2.1.0 is at 8de0b6e, and the code has changed since. To sign this code, name a new version: purlin:sign --version <version>.` | the version is already signed, over other code; a tag that exists is never moved |
 | `No sign-off: these results were not taken on this version of the code, 1cf829e: login on Windows. Run purlin:test on Windows, then purlin:sign.` | a result was taken before the code last changed; the line names the features and the system, and the run that takes them again |
+| `No sign-off: these results were not taken on this version of the code, 1cf829e: login on macOS. Run purlin:test --all --commit, then purlin:sign.` | a slow result kept from an earlier run: a plain run carried it over, and `purlin:test --all --commit` takes it on this version |
 | `No sign-off: these results were taken while files were changed and not committed: login on Linux/Unix. Run purlin:test --all --commit, then purlin:sign.` | a committed result was taken over files that were changed and not committed |
 | `No sign-off: 1 rule has no test at 1cf829e: login RULE-3. Run purlin:build login, then purlin:sign.` | a rule has no test, with or without a proof line |
 | `No sign-off: 1 rule does not pass at 1cf829e: login RULE-2. Run purlin:status to see what is left, then purlin:sign.` | a rule fails or has not run |
 | `No sign-off: origin/main holds 1 commit that 1cf829e does not, as this checkout last fetched it. Pull, then run purlin:sign.` | the branch's copy on the host holds commits the checkout lacks; `purlin:sign` fetches nothing |
+| `No sign-off: .purlin/evidence/package/2.1.0.json does not match its fingerprint: <why>. Restore it as it was signed, or name a new version: purlin:sign --version <version>.` | the committed package was changed after it was signed |
 | `quinn.qa@labconnect.example has already signed 0.1.0 over this package; nothing was written.` | one sign-off per signer per package |
 
-Three things are listed in the package and stop no sign-off: a rule the audit found weak, a
-rule never audited, and a rule whose tests pass with no proof line.
+Two things are listed in the package and stop no sign-off: what the audit found, whatever its
+word, and a rule whose tests pass with no proof line.
 
 A rule with no test stops it, and `purlin:build` writes the test. A signed version means every
 rule had a passing test or a hand check.
@@ -118,7 +120,7 @@ Then it shows an overview of the package:
 Tests run by dana.dev@labconnect.example on dana-laptop at 2026-10-01 12:17 UTC on 1cf829e: 19 rules on Linux/Unix.
 Signing 0.1.0 at 1cf829e.
   19 rules on Linux/Unix: 19 pass their tests, 1 has a hand check.
-  The audit: 17 strong, 1 weak, 1 not audited.
+  The audit: 17 strong, 1 weak, 1 spot-checked.
 The audit's findings: 1 weak. list / go on: 
 ```
 
@@ -185,6 +187,10 @@ commit.
 Any other answer prints `Nothing was signed.` and writes nothing. Where git cannot make the
 commit, the walk prints
 `The sign-off commit was not made: <git's message>. Nothing was signed; run purlin:sign again.`
+
+Where the commit is made and git cannot write the tag, the walk prints
+`No tag: git could not write signed/0.1.0: <git's reason>. Fix that, then run purlin:sign again to write it.`
+The next `purlin:sign` writes the tag on the signed commit and signs nothing twice.
 
 You push the branch and the tag. Purlin pushes nothing. The status then reads
 `Sign-off: signed 0.1.0 at e0deb2e`. After the next change to the code it reads
@@ -290,6 +296,12 @@ one definition.
 the key `user.signingkey` names. It pins the code, every evidence file, the package and the
 sign-offs under one name. It is never moved.
 
+The status reads `signed` only where the tag names a commit that holds the package and a
+sign-off of it counts. A tag written by hand reads `not signed`, with one warning.
+
+Changing a test command in `.purlin/config.json` ends the results, as changing the code does.
+Changing `version` alone does not.
+
 ## When a sign-off counts
 
 A sign-off counts when all of these hold, each read from git or from the file:
@@ -297,7 +309,10 @@ A sign-off counts when all of these hold, each read from git or from the file:
 - the last commit that touched its file carries a signature, made with any key;
 - that signature verifies over the commit; where it does not, the reason reads
   `the signature on the commit that added it does not verify`;
-- its package hash equals the fingerprint of the package committed for that version.
+- its package hash equals the fingerprint of the package committed for that version, computed
+  over the package as it stands. A package changed after it was signed no longer matches.
+
+A sign-off is read as `HEAD` holds it. A sign-off file changed and not committed does not count.
 
 The key is not compared with the signer. Purlin records who signed and the fingerprint of the
 key they signed with. Anyone with an SSH key can sign.

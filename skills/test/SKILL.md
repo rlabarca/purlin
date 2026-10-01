@@ -50,7 +50,9 @@ evidence holds a failing test.
 
 Without `--all` the run never starts a slow proof's test and prints `Left out <n> slow proofs`,
 naming each; `references/purlin_commands.md` says what each run starts, and the status then
-lists `<n> slow proofs to run: purlin:test --all`.
+lists `<n> slow proofs to run: purlin:test --all`. A plain run keeps an earlier slow result
+while nothing its spec covers changed. The status counts it. The sign-off does not: run
+`purlin:test --all --commit` before `purlin:sign`.
 
 The exit codes are in `references/purlin_commands.md`, "Exit codes". A test comment to correct
 changes no exit code; it makes the tests read `not met`.

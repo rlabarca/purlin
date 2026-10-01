@@ -74,14 +74,14 @@ states: 3 files its scope names are not written yet: facts.py, project.py, wordi
   project writes at least one proof line.
 - `Passing` counts the rules whose tests pass, a hand check included. The project's total is
   beneath it, as `11 RULES TOTAL`.
-- `Strong` counts the rules the audit found strong. It is there once the audit has found any
-  rule strong or weak.
+- `Strong` counts the rules the audit found strong. It is there once any rule has an audit
+  entry.
 
 A box is green once its count is complete, and amber until then. `No proof` is complete at zero.
 
 **Columns.** `Spec`, `Rules` and `Tests` are always there. `Proofs` sits between `Rules` and
-`Tests` wherever the project writes at least one proof line. `Strong` comes last once the audit
-has found any rule strong or weak. A column the project does not reach is absent, not empty.
+`Tests` wherever the project writes at least one proof line. `Strong` comes last once any rule has
+an audit entry. A column the project does not reach is absent, not empty.
 
 | Column | What it reads | What its hover says |
 |---|---|---|
@@ -125,11 +125,19 @@ Press a rule to open its screen. A rule is named by its spec and its id together
 
 `Back to the board` at the top returns to the board. Below it are the feature, the rule id and
 the rule's text. Then come four rows: `Passed`, `Strong`, `Spec` and `Last run`. The `Strong` row
-is there once the audit has found any rule of the project strong or weak. `Spec` is the spec's
+is there once any rule of the project has an audit entry. `Spec` is the spec's
 path. `Last run` is the newest run's source and age.
 
 **The `Passed` and `Strong` rows.** Each carries the cell's word as a badge, then its reasons:
 `failing: Linux/Unix, local`, `Windows: no run yet` or `code changed since 9f8e7d6`.
+
+The `Strong` row reads `STRONG`, `WEAK`, `SPOT-CHECKED` or `OUT OF DATE`:
+
+- `SPOT-CHECKED`: the spot tests found nothing and no bug was planted and caught. The reason
+  says why, as `The spot tests found nothing. No bug was planted: no bug is planted for an anchor's rule.`
+- `OUT OF DATE`: the rule, its proof, its test or its code changed since the audit read it. The
+  reasons name what changed and the last result: `code changed since a1b2c3d`, then
+  `the last audit found it strong on 2026-09-13`.
 
 The `Passed` row adds one box per operating system a counting run covered: `Lin`, `Mac` or
 `Win`. A box is green where the rule passed and red where it failed. Its hover gives the system,
@@ -144,10 +152,11 @@ Three cases to know:
 - **A spec to repair.** Every rule of it reads `failed` with the reason, such as
   `PROOF-2 is written twice in the spec`, whatever its tests found.
 
-**The Audit panel.** It is there once the audit has found any rule strong or weak. It reads, in
-this order:
+**The Audit panel.** It is there once any rule has an audit entry. It reads, in this order:
 
-1. `Strong. It found nothing.`, or `Weak.` and each finding in the sentence the audit wrote.
+1. `Strong. It found nothing.`, or `Weak.` and each finding in the sentence the audit wrote, or
+   `Spot-checked.`, then `The spot tests found nothing.` and why no bug was caught. An entry out
+   of date opens the panel with `Out of date:` and the row's reasons.
 2. The model's explanation, each sentence on its own line. A strong rule has one too.
 3. Each planted bug the rule's tests missed, as
    `PROOF-2: its tests missed a bug planted at src/billing/invoice.py:12.` The lines before the
@@ -155,7 +164,7 @@ this order:
    shown.
 4. `Read by`, the model and the time, in your timezone like the header line.
 
-A rule no audit has read says `No audit has read this rule's text, proof and test yet.` In a
+A rule no audit has read says `No audit has read this rule yet.` In a
 project no audit has read, the page says nothing of the audit at all.
 
 **The proofs.** They come last. Each shows:

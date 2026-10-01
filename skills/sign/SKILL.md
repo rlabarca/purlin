@@ -46,7 +46,7 @@ overview, the audit's findings and every stop, and last `Answer each stop, then 
 Tests run by dana.dev@labconnect.example on dana-laptop at 2026-10-01 12:17 UTC on 1cf829e: 19 rules on Linux/Unix.
 Signing 0.1.0 at 1cf829e.
   19 rules on Linux/Unix: 19 pass their tests, 1 has a hand check.
-  The audit: 17 strong, 1 weak, 1 not audited.
+  The audit: 17 strong, 1 weak, 1 spot-checked.
 The audit's findings: 1 weak.
 ```
 
@@ -68,6 +68,7 @@ No sign-off: these results were taken while files were changed and not committed
 No sign-off: 1 rule has no test at 8de0b6e: sample_age RULE-3. Run purlin:build sample_age, then purlin:sign.
 No sign-off: 1 rule does not pass at 8de0b6e: sample_age RULE-2. Run purlin:status to see what is left, then purlin:sign.
 No sign-off: origin/main holds 1 commit that 8de0b6e does not, as this checkout last fetched it. Pull, then run purlin:sign.
+No sign-off: .purlin/evidence/package/2.1.0.json does not match its fingerprint: <why>. Restore it as it was signed, or name a new version: purlin:sign --version <version>.
 quinn.qa@labconnect.example has already signed 0.1.0 over this package; nothing was written.
 ```
 
@@ -80,6 +81,9 @@ Ask the person for the version, offer to write it to a `VERSION` file, and run t
   track stops nothing.
 - Run what a refusal names only when the person asks.
 - `purlin:test --all --commit` takes this machine's results again.
+- A slow result kept from an earlier run reads `not taken on this version of the code`. A slow
+  result must be taken on the version being signed, and `purlin:test --all --commit` takes it.
+- A package that does not match its fingerprint was changed after it was signed.
 - `purlin:build <feature>` writes the test for a rule with no test.
 - `purlin:test on <System>` is an instruction, not a command line. For another system's results,
   do as `skills/test/SKILL.md`, Step 5 says.
@@ -103,8 +107,8 @@ offer to run them, and once they say yes and the commands ran, carry on with the
 
 Show the person the opening lines as printed. Where a rule reads weak the walk asks `The audit's
 findings: 1 weak. list / go on:`; ask the person which. `list` shows each weak rule with its
-findings, one line each, and records that they opened it; `go on` leaves it closed. A weak rule
-or a rule not audited never blocks the sign-off and is no stop.
+findings, one line each, and records that they opened it; `go on` leaves it closed. What the
+audit found never blocks the sign-off and is no stop.
 
 The walk stops only at hand checks, one at a time, in the order printed. Each stop opens on its
 head, such as `accession_screen RULE-1   hand check`, then `Rule`, `Proof`, `Results` and, where
@@ -166,6 +170,9 @@ tag where it is:
 Pushing is a person's act; this skill never pushes. Hand over the `git push origin` line as
 printed.
 
+Where git could not write the tag, the script says so and exits 1. Fix what git named and run
+`purlin:sign` again: it writes the tag on the signed commit and signs nothing twice.
+
 `references/evidence_and_signoff.md`, "When a sign-off counts", says what makes a sign-off count.
 
 ## Checking a package
@@ -195,4 +202,5 @@ fingerprint.` and exits 0, or `The package does not match its fingerprint: <why>
 | `No version:` | `→ Write the version the person gives to VERSION, then run: purlin:sign` |
 | `No key to sign with.` | `→ Run the commands it printed, then run: purlin:sign` |
 | `The sign-off commit was not made:` or `The evidence package was not written:` | `→ Fix what it named, then run: purlin:sign` |
-| `No tag: git could not write signed/<version>:` | `→ Fix what git named, then write the tag: git tag -s signed/<version>` |
+| `No tag: git could not write signed/<version>:` | `→ Fix what git named, then run: purlin:sign` |
+| `signed/<version> is not written yet:` | `→ Run: purlin:sign` |

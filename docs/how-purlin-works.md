@@ -78,9 +78,9 @@ write into `.purlin/evidence/local/`.
 The developer's hand-off is run and commit: `purlin:test --all --commit`, and your project's
 own run for a proof tagged for another operating system.
 
-**An audit writes into the same evidence.** For each rule it says whether it found the tests
-`strong` or `weak`, with each finding and each bug it planted. You run `purlin:audit` when you
-want it, and nothing waits on it. [audit.md](audit.md) says what it checks and why.
+**An audit writes into the same evidence.** For each rule it says what it found: `strong`,
+`weak` or `spot-checked`, with each finding and each bug it planted. You run `purlin:audit` when
+you want it, and nothing waits on it. [audit.md](audit.md) says what it checks and why.
 
 **A sign-off is a person's signature over the evidence package.** `purlin:sign` reads the
 committed evidence and builds the package, `.purlin/evidence/package/<version>.json`. It stops
@@ -152,12 +152,16 @@ The rule reads `no test`, with the reason `no proof written`, only when neither 
 marked test names it. A rule whose tests pass and that has no proof is left to do as a rule to
 write a proof for, with `purlin:spec`.
 
-**What is the difference between `not audited` and `weak`?**
+**What do `strong`, `weak`, `spot-checked` and `not audited` mean?**
 
-- `not audited`: the evidence holds no audit entry for the rule's current text, proof and
-  test. `purlin:audit` writes one when you run it.
-- `weak`: the audit ran, and a spot test fired on one of the rule's tests or a planted bug was
-  not caught. The rule is left to do as `to strengthen`, with `purlin:build`.
+- `strong`: the spot tests found nothing, and a planted bug was caught by the proof's test.
+- `weak`: a spot test fired on one of the rule's tests, or a planted bug was not caught. The
+  rule is left to do as `to strengthen`, with `purlin:build`.
+- `spot-checked`: the spot tests found nothing, and no bug was planted and caught. The audit
+  says why.
+- `not audited`: no audit has read the rule. `purlin:audit` reads it when you run it.
+- `out of date`: the rule, its proof, its test or its code changed since the audit read it. Its
+  last result stays on screen.
 - `waiting`: the rule's tests have not passed, so it reads neither.
 
 **What is a hand check?** A proof tagged `@manual`: a judgment call, which only a person can

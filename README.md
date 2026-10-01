@@ -129,7 +129,7 @@ The whole loop runs on one machine.
 | `purlin:spec <name>` | Turn a requirement in any form into rules and proofs |
 | `purlin:build [name]` | Load a spec's rules, write the code and the marked tests, commit the changeset |
 | `purlin:test [feature ...] [--all] [--commit] [--arm-timeout <seconds>]` | Run the marked tests and print each rule's passed cell |
-| `purlin:audit [feature ...] [--all] [--commit] [--arm-timeout <seconds>]` | Run the tests, the heuristic spot tests, one planted bug per proof and the model's reading, then write what it found into the evidence |
+| `purlin:audit [feature ...] [--all] [--commit] [--arm-timeout <seconds>]` | Run the tests, the heuristic spot tests, one model call per rule and one planted bug per proof, then write what it found into the evidence |
 | `purlin:sign [--version <version>]` | Build the evidence package from the committed evidence, walk its hand checks with a person, then sign it in a signed commit |
 | `purlin:status [name]` | Show the two facts, every rule's cells and what is left to do |
 | `purlin:drift` | Report what changed since your last pull |
