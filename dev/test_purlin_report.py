@@ -1133,11 +1133,13 @@ def open_in_theme(browser, tmp_path, payload, theme):
     return page
 
 
-def _every_text_in(browser, tmp_path, theme):
+def _every_text_in(browser, tmp_path, theme, relaxed=None):
     """Every sample in one theme, on the board with its first spec open and
     then on the screen of each of that spec's rules: how many texts were
-    measured, those under 7:1, and whether the four state colours and the
-    accent are among what was measured."""
+    measured, those under their least ratio, and whether the four state
+    colours and the accent are among what was measured. The least ratio is
+    7:1, but `relaxed` gives a colour token its own."""
+    relaxed = relaxed or {}
     checked = 0
     low = []
     tones = set()
@@ -1158,8 +1160,11 @@ def _every_text_in(browser, tmp_path, theme):
         for name in ('--state-pass', '--state-warn', '--state-fail',
                      '--state-neutral', '--text-accent'):
             tones.add(resolved(page, name))
+        least = {resolved(page, name): ratio
+                 for name, ratio in relaxed.items()}
         page.close()
-        low += [(process, item) for item in found if item[3] < 7]
+        low += [(process, item) for item in found
+                if item[3] < least.get(item[1], 7)]
         checked += len(found)
         measured |= {item[1] for item in found}
     return checked, low, tones, measured
@@ -1169,9 +1174,11 @@ def _every_text_in(browser, tmp_path, theme):
 def test_every_text_measures_7_to_1_in_the_dark_theme(browser, tmp_path):
     """The three samples, each on the board with its first spec open and
     then on the screen of each of that spec's rules; every text node's
-    computed colour against the ground under it, state colours and the
-    accent included."""
-    checked, low, tones, measured = _every_text_in(browser, tmp_path, 'dark')
+    computed colour against the ground under it: 7:1, and 4.5:1 for text in
+    the fail colour and the accent colour."""
+    checked, low, tones, measured = _every_text_in(
+        browser, tmp_path, 'dark',
+        {'--state-fail': 4.5, '--text-accent': 4.5})
     assert low == [], low
     assert checked > 300, checked
     assert tones & measured == tones, (tones, measured)

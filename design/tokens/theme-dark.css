@@ -1,6 +1,7 @@
 /* Default theme: Purlin dark. Semantic aliases only — never use raw palette in components.
-   The four state hues and the copper text are lightened until each measures 7:1 on a
-   hovered card; outlines keep the brand copper. */
+   Green, amber and teal text are lightened until each measures 7:1 on a hovered card.
+   Red and copper text measure 4.5:1 on every ground, so red still reads as red and
+   copper as copper; outlines keep the brand copper. */
 :root{
   --color-scheme:dark;
 
@@ -14,7 +15,7 @@
   --text-primary:var(--purlin-cream-050);
   --text-secondary:var(--purlin-blush-100);
   --text-muted:var(--purlin-slate-100);
-  --text-accent:var(--purlin-copper-200);
+  --text-accent:var(--purlin-copper-300);
   --text-inverse:var(--purlin-navy-900);
 
   --border-hairline:rgba(228,221,212,.18);
@@ -29,7 +30,7 @@
   --state-pass-soft:rgba(34,197,93,.14);
   --state-warn:var(--amber-200);
   --state-warn-soft:rgba(245,158,12,.14);
-  --state-fail:var(--red-200);
+  --state-fail:var(--red-300);
   --state-fail-soft:rgba(239,68,68,.14);
   --state-neutral:var(--teal-200);
   --state-neutral-soft:rgba(45,212,191,.14);
@@ -37,7 +38,7 @@
 
   --focus-ring:var(--purlin-blush-200);
   --link:var(--purlin-blush-100);
-  --link-hover:var(--purlin-copper-200);
+  --link-hover:var(--purlin-copper-300);
 }
 
 /* Product surfaces sit on the cool slate ramp; brand surfaces on the warm one. */

@@ -67,10 +67,11 @@ darkened to `#5E3513`, and the four state hues are darkened to `#0A4A20`, `#6532
 and `#00464B`, so green, amber, red and teal still read as pass, warn, fail and neutral. The
 logo's light colourway keeps its own copper, `#8F5626`: it is a mark, not text.
 
-In both themes every text, the state hues and the copper included, measures at least 7:1 by the
-WCAG contrast formula against every ground it is drawn on. In the dark theme the state hues are
-lightened for it to `#6EF5A0`, `#FFD861`, `#FFD0D4` and `#62F5E0` and the copper text to
-`#FFD3AE`; outlines and the logo keep the copper `#C0793F`.
+In both themes every text measures at least 7:1 by the WCAG contrast formula against every
+ground it is drawn on, but the dark theme's red and copper text, `#FF9F9F` and `#FFA459`, which
+measure at least 4.5:1: a red that reaches 7:1 on navy no longer reads as red. The dark theme's
+green, amber and teal text are `#6EF5A0`, `#FFD861` and `#62F5E0`; outlines and the logo keep the
+copper `#C0793F`.
 
 ## Icons
 

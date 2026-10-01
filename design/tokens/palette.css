@@ -35,12 +35,12 @@
   --red-500:#EF4444;
   --teal-400:#2DD4BF;
 
-  /* --- Ink on navy: every one 7:1 on a hovered card, the lightest ground coloured text sits on -- */
+  /* --- Ink on navy: green, amber and teal 7:1 on a hovered card; red and copper 4.5:1 on a band -- */
   --green-200:#6EF5A0;
   --amber-200:#FFD861;
-  --red-200:#FFD0D4;
+  --red-300:#FF9F9F;
   --teal-200:#62F5E0;
-  --purlin-copper-200:#FFD3AE;
+  --purlin-copper-300:#FFA459;
 
   /* --- Ink on paper tan: every one 7:1 on the darkest tan ground -- */
   --green-900:#0A4A20;

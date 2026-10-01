@@ -79,3 +79,74 @@ to `main` and the page rebuilt, `PROOF-66`'s test fails and `PROOF-104`'s passes
 - `PROOF-66` does not hover; the hovered figures above come from the scratch script.
 - Integration rebuilds `scripts/report/purlin-report.html`; it is not committed here.
 - No edit is needed in a file this lane does not own.
+
+## Revision: the owner's exception for red and copper (same day)
+
+The owner chose: every text at 7 to 1, but the dark theme's fail red and accent copper text at
+4.5 to 1. This replaces what the sections above say of red and copper; green, amber, teal and the
+neutral text are as built.
+
+### What changed
+
+- `design/tokens/palette.css`: `--red-200` and `--purlin-copper-200` are gone; `--red-300:#FF9F9F`
+  and `--purlin-copper-300:#FFA459` are new. Each keeps its brand tone's hue (`#EF4444`, `#C0793F`)
+  and is the most saturated tone of that hue that measures 4.5 to 1 on the lightest dark ground,
+  a group band, `rgb(45, 78, 90)`. `#C0793F` itself measures 3.29 on a hovered button, so it
+  could not be kept for text.
+- `design/tokens/theme-dark.css`: `--state-fail` is `--red-300`; `--text-accent` and
+  `--link-hover` are `--purlin-copper-300`.
+- `dev/test_purlin_report.py`: `PROOF-66`'s test holds text in `--state-fail` and
+  `--text-accent` to 4.5 and every other text to 7.
+
+### Rule and proof, reworded, same numbers
+
+- `purlin_report RULE-75`: The page reads on every screen from 390 to 1500 pixels wide, in both
+  themes, on the board and a rule's screen: the page never scrolls sideways, no count, label, box
+  or rule id breaks onto two lines, and every text drawn, in any colour, measures at least 7:1 by
+  the WCAG contrast formula against the ground beneath it, read through every translucent layer,
+  in both themes, but the dark theme's fail red and accent copper, which measure at least 4.5:1
+- `purlin_report PROOF-66 (RULE-75)`: In the dark theme, open the solo, team and regulated
+  samples in turn, each on the board with its first spec open and then on the screen of each of
+  that spec's rules; every text measures at least 7:1 against the ground under it, and text in
+  the fail colour or the accent colour at least 4.5:1
+
+### Lines a person reads
+
+- `design/readme.md`: "In both themes every text measures at least 7:1 by the WCAG contrast
+  formula against every ground it is drawn on, but the dark theme's red and copper text,
+  `#FF9F9F` and `#FFA459`, which measure at least 4.5:1: a red that reaches 7:1 on navy no longer
+  reads as red. The dark theme's green, amber and teal text are `#6EF5A0`, `#FFD861` and
+  `#62F5E0`; outlines and the logo keep the copper `#C0793F`."
+- `docs/dashboard.md`: "The dark theme meets the same 7 to 1, but its red and copper text, which
+  measure at least 4.5 to 1: a red that reaches 7 to 1 on the dark ground no longer reads as red."
+
+### Measured, final
+
+Lowest ratio per tone, dark theme, 2,682 measurements as before:
+
+| Tone | Token value | Not hovered | Hovered |
+|---|---|---|---|
+| fail | `#FF9F9F` | 5.82 | 5.03 |
+| copper | `#FFA459` | 6.73 | 5.82 |
+| pass | `#6EF5A0` | 8.28 | 7.16 |
+| warn | `#FFD861` | 8.29 | 7.16 |
+| neutral | `#62F5E0` | 11.33 | 11.33 |
+| muted | `#E2E9EC` | 7.27 | 7.27 |
+| secondary | `#F6E8E2` | 7.47 | 7.47 |
+| primary | `#F1ECE5` | 7.60 | 7.60 |
+| idle | `#E1E5EB` | 9.03 | 7.80 |
+
+On a group band, where no red or copper text is drawn today, both would measure 4.56.
+
+### Tests
+
+The three test files: 72 passed. With `--red-300` set to `#EF4444` and the page rebuilt,
+`PROOF-66`'s test fails; with `--green-200` set to `#22C55D`, it fails; `PROOF-104`'s passes each
+time.
+
+### Left open
+
+- Red is a salmon red, `#FF9F9F`, not the brand's `#EF4444`: 4.5 to 1 on these grounds needs that
+  much lightness. Held to the hovered card only, the lightest ground red sits on today, it could
+  be about `#FF9494`; the difference is small.
+- The first two points under "Left open" above no longer hold for red and copper.
