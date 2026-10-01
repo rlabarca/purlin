@@ -66,8 +66,8 @@ The audit found 42 of 50 rules strong (84%): 42 strong, 8 weak.
   `strong`.
 - It plants no bug for a proof tagged for another system. The test cannot show it on this
   machine.
-- A test that is skipped, cannot be collected or runs past its limit with the bug in place
-  decides nothing. Only a test that ran and failed caught the bug.
+- A test that is skipped, cannot be collected, runs past its limit or ends in an error with the
+  bug in place decides nothing. Only a test that ran and failed caught the bug.
 - A rule with no proof has nothing to plant a bug against.
 
 ## Why this works

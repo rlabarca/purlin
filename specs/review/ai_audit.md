@@ -11,7 +11,7 @@
 > Scope: scripts/review/audit_run.py, scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
 > Highest-Rule: 45
-> Highest-Proof: 122
+> Highest-Proof: 124
 
 ## Rules
 
@@ -61,8 +61,10 @@
 - PROOF-96 (RULE-33): No spot test fires on the test of `RULE-2`, and the bug planted for `PROOF-2` survives; the audit entry reads `weak` with the finding `PROOF-2: the test still passes when src/login.py:12 reads "return 200"`
 - PROOF-97 (RULE-33): No spot test fires on the tests of `RULE-2`, the bug planted for each proof is caught, and `claude` answers `- This rule is weak.`; the audit entry of `RULE-2` reads `strong`
 - PROOF-118 (RULE-33): No spot test fires on the test of `RULE-2`, and the model answers `no break: the proof names no value the code computes` for `PROOF-2`; the entry reads `spot-checked`, its `no_bug` exactly `No bug was planted: the model found no change that would break PROOF-2: the proof names no value the code computes.`
+- PROOF-124 (RULE-33): The bug planted for `PROOF-2` makes its test end in an error and not a failure, so its result reads `not run`; the entry reads `spot-checked`, its `no_bug` exactly `A bug was planted for PROOF-2 and its test ended in an error, not a failure.`
 - PROOF-99 (RULE-35): Five rules pass their tests; the audit finds four `strong` and one `weak`; its last line reads `The audit found 4 of 5 rules strong (80%): 4 strong, 1 weak.`
 - PROOF-104 (RULE-35): Four rules pass their tests, three of them found `strong` and one `weak`, and a fifth rule's test fails; the audit's last line reads `The audit found 3 of 4 rules strong (75%): 3 strong, 1 weak.`
+- PROOF-123 (RULE-35): `claude` exits with the code 1 at every call and the audit reads two rules that pass, with no spot test firing on either; its last line reads `The audit found 0 of 2 rules strong (0%): 0 strong, 2 spot-checked.`
 - PROOF-100 (RULE-36): A bug planted for `PROOF-2` was caught; only `RULE-2`'s text changes, so the audit reads the rule again; the request asks for no bug, none is planted for `PROOF-2`, and its result still reads `caught`
 - PROOF-115 (RULE-36): A bug planted for `PROOF-2` was caught; the body of its test changes from `== 401` to `== 403`; the next request asks for a bug for `PROOF-2`, and the entry's `break_key` differs from the one before
 - PROOF-102 (RULE-37): `login` is an anchor under `specs/_anchors/` whose `RULE-2` passes; the audit reads it, the request asks for no bug, and the entry of `RULE-2` reads `spot-checked` with the one `no_bug` sentence `No bug was planted: no bug is planted for an anchor's rule.`
@@ -85,7 +87,7 @@
 - PROOF-111 (RULE-42): The audit entry of `RULE-2` reads `weak` with the finding `PROOF-2 asserts the status but never the body the rule names.` and the explanation `The test calls login and reads no status.`; the command for that rule prints `    The test calls login and reads no status.` on the line after the finding and before `  Read by unknown at 2026-09-13T12:05:00Z.`
 - PROOF-108 (RULE-43): `claude` exits with the code 1 at every call and no spot test fires on the test of `RULE-2`, the one rule read; its entry reads `spot-checked`, and the audit prints `login RULE-2   spot-checked` and, once, `The model could not be reached: claude exited with an error. 1 rule is spot-checked alone. Run purlin:audit again.`
 - PROOF-109 (RULE-43): `claude` exits with the code 1 at every call and the spot tests find `tests/test_login.py::test_a_bad_password_is_denied: the test checks nothing.` for `RULE-2`; the audit entry of `RULE-2` reads `weak` with that one finding, no planted bug and the model `unknown`, and the audit prints `The model could not be reached: claude exited with an error. Run purlin:audit again.`
-- PROOF-110 (RULE-43): `claude` exits with the code 1 at every call and the audit reads two rules that pass, with no spot test firing on either; both entries read `spot-checked`, the audit prints `The model could not be reached: claude exited with an error. 2 rules are spot-checked alone. Run purlin:audit again.` once, and its last line reads `The audit found 0 of 2 rules strong (0%): 0 strong, 2 spot-checked.`
+- PROOF-110 (RULE-43): `claude` exits with the code 1 at every call and the audit reads two rules that pass, with no spot test firing on either; both entries read `spot-checked`, and the audit prints `The model could not be reached: claude exited with an error. 2 rules are spot-checked alone. Run purlin:audit again.` once
 - PROOF-119 (RULE-43): A bug kept for `PROOF-2` reads `survived`, and `claude` exits `1` at every call; the audit entry of `RULE-2` reads `weak` with the finding `PROOF-2: the test still passes when src/login.py:12 reads "return 200"`
 - PROOF-120 (RULE-44): `RULE-1` has `PROOF-1` and `PROOF-2`; the reply holds a part for `PROOF-1`, whose bug is caught, and none for `PROOF-2`; the entry reads `strong`, `PROOF-1` reads `caught`, and `no_bug` is exactly `No bug was planted: the model's answer for PROOF-2 could not be used: it holds none.`
 - PROOF-121 (RULE-45): The audit reads 2 rules and each call reports `total_cost_usd` `0.05`; it prints `The audit reads 2 rules: 2 model calls.` before the first call and, after the last, `The model was asked 2 times for 2 rules: $0.10 in all, $0.05 a rule.`

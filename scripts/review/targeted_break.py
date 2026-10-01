@@ -61,6 +61,8 @@ NO_DIFFERENCE = 'the change leaves %s as it was'
 TEST_FILE = "%s holds one of the proof's tests"
 NO_PART = 'it holds none'
 BASELINE = 'the test does not pass in a copy of the project'
+# Why a test that did not pass with the bug in place is still not a caught bug.
+ERRORED = 'the test ended in an error, not a failure'
 
 # Why no bug was planted, which the audit picks its sentence by.
 MODEL_FOUND_NONE = 'model found none'
@@ -209,7 +211,10 @@ def _plant(project_root, feature, proof, tests, scope_files, answer, timeout):
         if ran == 'pass':
             return _result(proof_id, 'survived', '', change, line,
                            SURVIVED % (proof_id, path, line, words))
-        return _result(proof_id, 'caught' if ran == 'fail' else 'not run', '', change, line)
+        if ran == 'fail':
+            return _result(proof_id, 'caught', '', change, line)
+        return _result(proof_id, 'not run', ERRORED if ran == 'error' else '',
+                       change, line)
     finally:
         shutil.rmtree(copy, ignore_errors=True)
 
@@ -284,8 +289,10 @@ def _copy_project(project_root, copy):
 # ---------------------------------------------------------------------------
 
 def _run_tests(copy, feature, proof_id, tests, timeout):
-    """`fail` where a test of the proof's own ran and failed; `pass` where every one
-    reads `pass` and no suite reported a failure; else `not run`."""
+    """`fail` where a test of the proof's own ran and failed; `error` where one
+    reads `fail` and each that does ended in an error its tool does not report
+    as a failure; `pass` where every one reads `pass` and no suite reported a
+    failure; else `not run`."""
     import purlin_run
     from purlin import markers as markers_module
     suites, _problems = markers_module.read_suites(copy)
@@ -314,8 +321,9 @@ def _run_tests(copy, feature, proof_id, tests, timeout):
         own = [e for e in entries if (e['test_file'], e['test_name']) in named]
         files = {t['file'] for t in tests}
         entries = own or [e for e in entries if e['test_file'] in files]
-    if any(e['status'] == 'fail' for e in entries):
-        return 'fail'
+    failed = [e for e in entries if e['status'] == 'fail']
+    if failed:
+        return 'error' if all(e.get('errored') for e in failed) else 'fail'
     if entries and all(e['status'] == 'pass' for e in entries) and not any(
             run.failures for run in runs):
         return 'pass'

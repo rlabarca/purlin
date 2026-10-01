@@ -10,8 +10,8 @@
 >   listed with the marker it meant, for `purlin:build` to repair.
 > Scope: scripts/run/reports.py, scripts/mcp/purlin/markers.py, references/formats/marker_format.md
 > Stack: python/stdlib (xml.etree, json, tokenize, ast, re, shlex), pytest, jest, vitest, dotnet, go, bash, sqlite3
-> Highest-Rule: 38
-> Highest-Proof: 120
+> Highest-Rule: 39
+> Highest-Proof: 122
 
 ## Rules
 
@@ -28,6 +28,7 @@
 - RULE-34: A suite that leaves no report to read, or a report the run cannot read in its suite's format, makes the run print `Evidence is missing: the <suite> suite <problem>.`, naming the report's path and why, and exit 1
 - RULE-7: A `junit` report is read case by case: a case with a `failure` or `error` child fails, one with a `skipped` child is skipped, and any other passes; its `classname`, `name` and `file` are what the tie reads
 - RULE-8: A `trx` report is read result by result, each joined through its `testId` to the class and method it ran: `Passed`, `Warning`, `Completed` and `PassedButRunAborted` pass, `Failed`, `Error`, `Timeout` and `Aborted` fail, and any other outcome is skipped
+- RULE-39: A failed case its tool reports as an error and not as a failure, a `junit` case with an `error` child and no `failure` child or a `trx` result of `Error`, `Timeout` or `Aborted`, still fails its test, and is marked an error for the audit's planted bug to read apart
 - RULE-9: A `gotest` report is the JSON stream a Go test run prints on its standard output, read event by event: an event naming a test whose action is `pass`, `fail` or `skip` is that test's result, and every other event, and every line that is not JSON, is left alone
 - RULE-15: In an `exit` suite each test file is one test: the command runs once per file, with `{files}` that one file, and the file passes when the command exits 0; every marker in the file takes the file's result
 - RULE-10: A case's file is its `file` attribute where the report writes one, else its class name where that is a path, else the Python module its dotted class name names among the suite's marked files; a `trx` case is found by its class chain, narrowed by namespace, and a `gotest` case by its package, read against the module line of `go.mod`
@@ -67,6 +68,8 @@
 - PROOF-7 (RULE-7): The JUnit report written by running four Python tests, one passing, one failing an assertion, one skipped and one whose setup raises an error, reads as four cases in that order: `test_passes` `pass`, `test_fails` `fail`, `test_skipped` `skip` and `test_errors` `fail`, each with the class name `tests.test_login`
 - PROOF-8 (RULE-8): The TRX report `dotnet test --logger trx` wrote reads, in its order, as `GreetsByName` `pass`, `Param` `pass` for the row `x: 2`, `Param` `fail` for the row `x: 1`, `Skipped` `skip` from `NotExecuted`, `Inner` `pass` in `App.Tests.GreetingTests+Nested`, and `GreetsByName` `fail` in `Other.Tests.GreetingTests`, the first four in `App.Tests.GreetingTests`
 - PROOF-59 (RULE-8): A TRX report of four results whose outcomes are `Error`, `Timeout`, `Aborted` and `Inconclusive` reads as `fail`, `fail`, `fail` and `skip`
+- PROOF-121 (RULE-39): The JUnit report written by running two Python tests, `test_fails` failing an assertion and `test_errors` whose fixture raises an error, reads both as `fail`; `test_errors` is marked an error and `test_fails` is not
+- PROOF-122 (RULE-39): A `trx` document holds the results `E` `Error`, `T` `Timeout`, `B` `Aborted` and `F` `Failed`; all four read `fail`, `E`, `T` and `B` are marked an error, and `F` is not
 - PROOF-9 (RULE-9): The stream `go test -json` printed for two packages reads as exactly eight cases: `TestRate` `pass` and `TestLookupPanics` `fail` in `example.com/shop/tax`, then `TestTotal` `pass`, `TestParse/empty` `fail`, `TestParse/one` `pass`, `TestParse` `fail`, `TestDiscount` `skip` and `TestTotalIsWrong` `fail` in `example.com/shop/cart`
 - PROOF-15 (RULE-15): An `exit` suite covers `tests/good.sh`, which carries two markers and exits 0, and `tests/bad.sh`, which carries one and exits 3; the evidence reads `pass` for both markers of the first, under `tests/good.sh::good.sh`, and `fail` for the second's, under `tests/bad.sh::bad.sh`; the run exits 1 and never says `Evidence is missing`
 - PROOF-80 (RULE-15): With the same two scripts, the suite's command, which also writes down the files it is given, ran exactly twice: once given `tests/bad.sh` alone and once given `tests/good.sh` alone

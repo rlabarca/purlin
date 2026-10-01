@@ -83,6 +83,7 @@ UNREACHED = 'the model could not be reached: %s'                         # ai_au
 ANCHOR = "no bug is planted for an anchor's rule"
 OTHER_SYSTEM = '%s needs %s, and this machine is %s'                     # PROOF-N, Windows, macOS
 NOT_RUN = 'A bug was planted for %s and its test did not run.'           # a whole sentence
+ERRORED = 'A bug was planted for %s and its test ended in an error, not a failure.'
 NO_PART = targeted_break.NO_PART
 SPOT_CHECKED = ai_audit.SPOT_CHECKED   # the `no_bug` sentences joined by one space
 
@@ -295,6 +296,8 @@ def no_bug_sentence(proof_id, made):
     the bug was caught or survived."""
     result = made.get('result')
     if result == 'not run':
+        if made.get('why') == targeted_break.ERRORED:
+            return ERRORED % proof_id
         return NOT_RUN % proof_id
     if result != 'not made':
         return None

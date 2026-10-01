@@ -218,7 +218,9 @@ then says why.
 A break's `result` is `caught` when the proof's test ran and failed with the
 bug in place, `survived` when it still passed, `not made` when the change
 could not be made, and `not run` when the test did not run with the bug in
-place, which is neither caught nor survived.
+place, or ended in an error its tool does not report as a failure, which is
+neither caught nor survived. For such an error `why` reads
+`the test ended in an error, not a failure`.
 
 A rule the model could not be reached for is written with the model `unknown`
 and no bug recorded for a proof the model was not reached for, so the next

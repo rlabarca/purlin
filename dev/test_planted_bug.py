@@ -191,6 +191,38 @@ def test_a_test_that_can_no_longer_be_collected_reads_not_run(tmp_path):
     assert result['finding'] is None
 
 
+# A fixture every test takes, which calls the code before the test's body runs.
+SETUP = ('import pytest\nfrom src.age import minutes\n\n\n'
+         '@pytest.fixture(autouse=True)\ndef stamped():\n'
+         '    return minutes("2026-01-01")\n')
+RAISES = ('file: src/age.py\nbefore:\n    return 90\nafter:\n'
+          '    raise ValueError(stamp)\n')
+
+
+# purlin: planted_bug PROOF-20
+def test_a_test_that_ends_in_an_error_reads_not_run(tmp_path):
+    root = project(tmp_path, {'PROOF-1': STRONG}, extra=SETUP)
+    result = targeted_break.break_proof(root, 'age', PROOF, own_test(), SCOPE, RAISES)
+    assert result['after'] == '    raise ValueError(stamp)', result
+    assert (result['result'], result['why']) == (
+        'not run', 'the test ended in an error, not a failure'), result
+    assert result['result'] != 'caught'
+    assert result['finding'] is None
+
+
+# A change that keeps the file's size: a cache keyed by time and size cannot tell.
+SAME_SIZE = 'file: src/age.py\nbefore:\n    return 90\nafter:\n    return 91\n'
+
+
+# purlin: planted_bug PROOF-21
+def test_a_change_that_keeps_the_files_size_is_still_run(tmp_path):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    result = targeted_break.break_proof(root, 'age', PROOF, own_test(), SCOPE, SAME_SIZE)
+    assert (result['before'], result['after']) == ('    return 90', '    return 91')
+    assert result['result'] == 'caught', result
+    assert result['result'] != 'survived'
+
+
 # purlin: planted_bug PROOF-6
 def test_a_file_outside_the_copy_is_not_made(tmp_path):
     root = project(tmp_path, {'PROOF-1': STRONG})

@@ -193,8 +193,9 @@ deleted after.
 - **Survived.** Every one of the proof's own tests still passes with the change in place. The
   rule reads `weak`, with the finding
   `PROOF-1: the test still passes when src/age.py:12 reads "return 0"`.
-- **Not run.** The test was skipped, could not be collected or ran past its limit with the
-  change in place. That decides nothing: the bug was neither caught nor missed.
+- **Not run.** The test was skipped, could not be collected, ran past its limit or ended in an
+  error its tool does not report as a failure, with the change in place. That decides nothing:
+  the bug was neither caught nor missed.
 - **Not made.** The reply held no part for the proof, or the part named no change, or a change
   that does not match its file exactly once, or a file the feature does not cover, or a file that
   holds one of the proof's tests, or the proof's test does not pass in the copy before any

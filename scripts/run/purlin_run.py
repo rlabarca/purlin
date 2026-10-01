@@ -610,7 +610,8 @@ def marker_results(scan, suites, runs, held=()):
 
     Each entry is `{status, test_file, test_name, line, reason, held}`,
     `status` being `pass`, `fail` or `not run`, and `reason` the text a test
-    that was skipped gave, or None. A marker no test follows gets no entry:
+    that was skipped gave, or None. A test of a report also carries
+    `errored`, true where it reads `fail` on an error and no failure. A marker no test follows gets no entry:
     the run reports it by file and line instead. `held` is the `(path, test
     line)` pairs of the slow tests the run left out, the line None for a
     file that is one test: each has its entry whether its suite started or
@@ -643,9 +644,8 @@ def marker_results(scan, suites, runs, held=()):
             left_out = (path, test.line) in held
             if done is None and not left_out:
                 continue
-            status = reports_module.result_of(
-                done.outcomes.get((path, test.line), [])
-                if done else [])
+            cases = done.outcomes.get((path, test.line), []) if done else []
+            status = reports_module.result_of(cases)
             left_out = left_out and status == reports_module.NOT_RUN
             reason = None if left_out or done is None else reason_of(
                 status, done.reasons.get((path, test.line)))
@@ -655,7 +655,8 @@ def marker_results(scan, suites, runs, held=()):
                     'test_name': reports_module.test_name(path, test,
                                                           suite.format),
                     'line': marker.line, 'reason': reason,
-                    'held': left_out})
+                    'held': left_out,
+                    'errored': reports_module.errored(cases)})
     return index
 
 

@@ -85,6 +85,15 @@ NOT_NONE_TEST = TEST_FILE.replace(
     '    assert login("ada", "wrong") is not None\n')
 
 
+# The same tests under a fixture each takes, which calls `login` with a wrong
+# password before the test's body runs.
+SETUP_CALLS_LOGIN_TEST = TEST_FILE.replace(
+    'from src.login import login\n',
+    'from src.login import login\n\n\n'
+    '@pytest.fixture(autouse=True)\ndef refused():\n'
+    '    return login("ada", "wrong")\n', 1)
+
+
 def bug(before, after, path='src/login.py'):
     """The model's answer naming one planted bug."""
     return 'file: %s\nbefore:\n%s\nafter:\n%s\n' % (path, before, after)
@@ -782,6 +791,24 @@ class TestTheVerdict:
             'No bug was planted: the model found no change that would break '
             'PROOF-2: the proof names no value the code computes.'], entry
 
+    # purlin: ai_audit PROOF-124
+    def test_a_test_that_ends_in_an_error_leaves_the_rule_spot_checked(
+            self, claude):
+        install, _directory = claude
+        install(answers=[{'PROOF-2': bug('    return 401',
+                                         '    raise KeyError(user)')}])
+        with passing_project(source=LOGIN_SOURCE,
+                             test_file=SETUP_CALLS_LOGIN_TEST) as made:
+            settle(made, 'RULE-1')
+            code, printed = audit(made)
+            entry = entry_of(made)
+        assert code == 0, printed
+        assert entry['breaks']['PROOF-2']['result'] == 'not run', entry
+        assert entry['verdict'] == 'spot-checked', entry
+        assert entry['no_bug'] == [
+            'A bug was planted for PROOF-2 and its test ended in an error, '
+            'not a failure.'], entry
+
     # purlin: ai_audit PROOF-98
     def test_the_findings_and_the_explanation_are_kept_apart(self, claude):
         install, _directory = claude
@@ -1082,8 +1109,18 @@ class TestWhenTheModelCannotBeReached:
         assert [line for line in lines if 'could not be reached' in line
                 and not line.startswith(' ')] == [
             self.UNREACHED % ' 2 rules are spot-checked alone.'], printed
-        assert lines[-1] == ('The audit found 0 of 2 rules strong (0%): 0 '
-                             'strong, 2 spot-checked.'), printed
+
+    # purlin: ai_audit PROOF-123
+    def test_two_spot_checked_rules_are_counted_and_none_strong(self, claude):
+        install, _directory = claude
+        install(exit_code=1, answers=['- The test reads the status.'])
+        with passing_project(source=LOGIN_SOURCE) as made:
+            assert to_read(made) == [('login', 'RULE-1'), ('login', 'RULE-2')]
+            code, printed = audit(made)
+        assert code == 0, printed
+        assert printed.splitlines()[-1] == (
+            'The audit found 0 of 2 rules strong (0%): 0 strong, '
+            '2 spot-checked.'), printed
 
     # purlin: ai_audit PROOF-119
     def test_a_kept_bug_that_survived_still_makes_the_rule_weak(self, claude):

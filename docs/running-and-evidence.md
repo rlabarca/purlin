@@ -315,8 +315,8 @@ An audit runs the tests as `purlin:test` does. Then it reads a rule when all of 
    reading explains the tests and sets no verdict. The model is started with no tools, no
    plugins and none of your settings, in an empty folder.
 3. **Each bug planted** in a copy of the project, and that proof's own test run. A test that
-   still passes did not catch the bug. A test that is skipped, is not collected or runs past its
-   limit decides nothing. The copy is then removed.
+   still passes did not catch the bug. A test that is skipped, is not collected, runs past its
+   limit or ends in an error decides nothing. The copy is then removed.
 
 A rule reads:
 

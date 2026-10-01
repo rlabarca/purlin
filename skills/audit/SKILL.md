@@ -53,8 +53,8 @@ A rule reads:
 - `spot-checked` when none did and no bug was planted and caught. The audit says why.
 
 One caught bug makes a rule `strong`. Each of its proofs with no caught bug is named under it,
-with the reason. A test that is skipped, is not collected or runs past its limit with the bug in
-place is not a caught bug. An anchor's rule reads `spot-checked`: no bug is planted for one. No
+with the reason. A test that is skipped, is not collected, runs past its limit or ends in an
+error with the bug in place is not a caught bug. An anchor's rule reads `spot-checked`: no bug is planted for one. No
 bug is planted on this machine for a proof tagged for another system.
 
 The model is started with no tools, no plugins and none of your settings, in an empty folder.

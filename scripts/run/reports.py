@@ -63,6 +63,8 @@ AMBIGUOUS = ("The report's %s matches %d tests in %s, so its result is not "
 # The outcomes TRX writes that mean the test ran and did not pass, and those
 # that mean the test itself ran and passed; any other outcome is a skip.
 _TRX_FAIL = ('failed', 'error', 'timeout', 'aborted')
+# Those of them that are an error and not a failure: the test stopped.
+_TRX_ERROR = ('error', 'timeout', 'aborted')
 _TRX_PASS = ('passed', 'passedbutrunaborted', 'warning', 'completed')
 
 
@@ -70,18 +72,22 @@ class Case(object):
     """One test result from a report.
 
     `reason` is the text the test tool gave for a skipped case, or None.
+    `error` is true for a failed case its tool reports as an error and not
+    as a failure: the test stopped, in its setup say, before it could fail.
     """
 
-    __slots__ = ('file', 'classname', 'name', 'outcome', 'package', 'reason')
+    __slots__ = ('file', 'classname', 'name', 'outcome', 'package', 'reason',
+                 'error')
 
     def __init__(self, name, outcome, classname='', file=None, package=None,
-                 reason=None):
+                 reason=None, error=False):
         self.name = name
         self.outcome = outcome
         self.classname = classname or ''
         self.file = file
         self.package = package
         self.reason = reason
+        self.error = bool(error)
 
     def __repr__(self):
         return 'Case(%s %s %s %s)' % (self.file or self.classname,
@@ -91,11 +97,12 @@ class Case(object):
 
 class Outcome(str):
     """One case's outcome as `tie` gives it: `pass`, `fail` or `skip`,
-    carrying the case's `reason`."""
+    carrying the case's `reason` and whether it is an `error`."""
 
-    def __new__(cls, outcome, reason=None):
+    def __new__(cls, outcome, reason=None, error=False):
         made = str.__new__(cls, outcome)
         made.reason = reason
+        made.error = bool(error)
         return made
 
 
@@ -139,7 +146,9 @@ def read_junit(text):
                 cases.append(Case(child.get('name') or '', outcome,
                                   child.get('classname') or '',
                                   child.get('file') or suite_file,
-                                  reason=reason))
+                                  reason=reason,
+                                  error=('error' in kinds
+                                         and 'failure' not in kinds)))
     if _local(root.tag) == 'testcase':
         wrapper = ElementTree.Element('testsuite')
         wrapper.append(root)
@@ -177,7 +186,8 @@ def read_trx(text):
             # A result with no definition names its test in full.
             full = re.sub(r'\(.*\)$', '', node.get('testName') or '')
             classname, _, name = full.rpartition('.')
-        cases.append(Case(name, result, classname, reason=reason))
+        cases.append(Case(name, result, classname, reason=reason,
+                          error=outcome in _TRX_ERROR))
     return cases
 
 
@@ -505,7 +515,7 @@ def tie(project_root, suite, cases, marked):
         if len(found) == 1:
             path, test = found[0]
             outcomes.setdefault((path, test.line), []).append(
-                Outcome(case.outcome, case.reason))
+                Outcome(case.outcome, case.reason, case.error))
         elif len(found) > 1:
             line = AMBIGUOUS % (case.name, len(found),
                                 ', '.join(sorted({path for path, _t in found})))
@@ -527,6 +537,15 @@ def result_of(outcomes):
     if all(outcome == PASS for outcome in outcomes):
         return PASS
     return NOT_RUN
+
+
+def errored(outcomes):
+    """True where a case of the test failed and every case that failed is an
+    error: the test stopped before it could fail. A normal run reads such a
+    test as `fail` all the same; the audit's planted bug reads it apart."""
+    failed = [outcome for outcome in outcomes or () if outcome == FAIL]
+    return bool(failed) and all(getattr(outcome, 'error', False)
+                                for outcome in failed)
 
 
 def reason_of(outcomes):

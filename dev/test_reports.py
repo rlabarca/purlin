@@ -315,6 +315,26 @@ class TestTheReports:
             ('A.T', 'E', 'fail'), ('A.T', 'T', 'fail'), ('A.T', 'B', 'fail'),
             ('A.T', 'I', 'skip')]
 
+    # purlin: reports PROOF-121
+    def test_a_fixture_that_raises_is_marked_an_error_and_a_failure_is_not(
+            self, tmp_path):
+        _root, cases = _pytest_run(tmp_path, (
+            'import pytest\n\n'
+            'def test_fails():\n    assert 1 == 2\n\n'
+            '@pytest.fixture\ndef broken():\n    raise RuntimeError("x")\n\n'
+            'def test_errors(broken):\n    pass\n'))
+        assert [(c.name, c.outcome, c.error) for c in cases] == [
+            ('test_fails', 'fail', False), ('test_errors', 'fail', True)]
+
+    # purlin: reports PROOF-122
+    def test_a_trx_error_timeout_or_abort_is_marked_an_error(self):
+        cases = reports.read_trx(_trx([
+            ('A.T', 'E', 'Error'), ('A.T', 'T', 'Timeout'),
+            ('A.T', 'B', 'Aborted'), ('A.T', 'F', 'Failed')]))
+        assert [(c.name, c.outcome, c.error) for c in cases] == [
+            ('E', 'fail', True), ('T', 'fail', True), ('B', 'fail', True),
+            ('F', 'fail', False)]
+
     # purlin: reports PROOF-9
     def test_the_stream_go_test_prints(self):
         cases = reports.read_gotest(_go_stream())
