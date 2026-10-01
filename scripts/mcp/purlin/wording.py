@@ -206,7 +206,7 @@ class _Reader(object):
         if len(tied) > 1:
             # Commits made in the same second: the one the others lead to.
             sha = (self._git('rev-list', '--topo-order', '--max-count=1',
-                             *tied) or sha).strip() or sha
+                             '--end-of-options', *tied) or sha).strip() or sha
         email = next(who for line_sha, _when, who in span if line_sha == sha)
         return sha, email
 
@@ -237,7 +237,7 @@ class _Reader(object):
     def words_at(self, sha, spec_path):
         key = (sha, spec_path)
         if key not in self.specs:
-            text = self._git('show', '%s:%s' % (sha, spec_path))
+            text = self._git('show', '--end-of-options', '%s:%s' % (sha, spec_path))
             if text is None:
                 text = self._moved(sha, spec_path)
             self.specs[key] = proof_words(text)
@@ -249,7 +249,7 @@ class _Reader(object):
         name = spec_path.rsplit('/', 1)[-1]
         for path in (listed or '').splitlines():
             if path.rsplit('/', 1)[-1] == name:
-                return self._git('show', '%s:%s' % (sha, path))
+                return self._git('show', '--end-of-options', '%s:%s' % (sha, path))
         return None
 
 
