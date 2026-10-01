@@ -911,7 +911,10 @@ class TestTheAgent:
         assert not any('what did you see' in line for line in lines[head:])
         assert lines[-1] == ('Answer each stop, then run purlin:sign '
                              '--answers <file>.')
-        assert any(line.startswith('Signing 2.1.0 at ') for line in lines)
+        at = lines.index('Signing 2.1.0 at %s.' % hand_checked.head()[:7])
+        assert lines[at + 1:at + 3] == [
+            '  2 rules on Linux/Unix: 2 pass their tests, 1 has a hand check.',
+            '  The audit: 0 strong, 1 weak, 1 not audited.']
         assert (code, status(hand_checked.root)) == (0, '')
 
     # purlin: signatures PROOF-228
@@ -955,6 +958,7 @@ class TestTheAgent:
             'No sign-off: login RULE-2 has no answer in %s. Answer every stop, '
             'then run purlin:sign --answers %s again.' % (ANSWERS, ANSWERS)]
         assert (code, hand_checked.head()) == (1, before)
+        assert status(hand_checked.root) == ''
 
     # purlin: signatures PROOF-240
     def test_check_passes_the_committed_package(self, signed, capsys):
