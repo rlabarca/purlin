@@ -18,7 +18,7 @@ whatever they do.
 
     survived   every one of the proof's own tests still passes with the bug in place
     caught     any other outcome: a failure, an error, a test not collected, a timeout
-    not made   the answer named no change, the change does not apply exactly once to a
+    not made   the answer named no change, the change cannot be applied exactly once to a
                file the feature's `> Scope:` reaches, it would write outside the copy,
                or the model could not be reached
 
@@ -253,7 +253,7 @@ def _listed(project_root):
                           capture_output=True, cwd=project_root, timeout=120)
     if done.returncode != 0:
         return []
-    return [p for p in done.stdout.decode('utf-8', 'surrogateescape').split('\0') if p]
+    return [p for p in os.fsdecode(done.stdout).split('\0') if p]
 
 
 def _copy_project(project_root, copy):
@@ -316,7 +316,7 @@ def snapshot(project_root):
                           cwd=project_root, timeout=120)
     status = done.stdout
     paths = []
-    parts = status.decode('utf-8', 'surrogateescape').split('\0')
+    parts = os.fsdecode(status).split('\0')
     index = 0
     while index < len(parts):
         entry = parts[index]
@@ -337,7 +337,7 @@ def _hash(full):
         for dirpath, dirnames, filenames in os.walk(full):
             dirnames.sort()
             for name in sorted(filenames):
-                digest.update(name.encode('utf-8', 'surrogateescape'))
+                digest.update(os.fsencode(name))
                 digest.update(_hash(os.path.join(dirpath, name)).encode())
         return digest.hexdigest()
     try:
