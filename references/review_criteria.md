@@ -42,7 +42,7 @@ The audit's first step reads each marked test as text, without running it, and f
   ([Panichella et al., EMSE 2022](https://pure.tudelft.nl/ws/portalfiles/portal/137994226/s10664_022_10207_5.pdf)).
   So every check below is narrow: it fires on a pattern that is wrong in every case, and stays
   silent where a reasonable test could look similar. A missed case is left to the planted bug,
-  the audit's second step, which runs the test for real.
+  the audit's third step, which runs the test for real.
 - **A finding never blocks anything.** It is reported, with the test's file and name and one
   sentence on why, and the rule reads `weak` until the test changes.
 - **Each check is about whether the test can fail, not about style.** Smells about readability

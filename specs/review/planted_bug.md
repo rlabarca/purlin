@@ -1,6 +1,6 @@
 # Feature: planted_bug
 
-> Description: One planted bug per proof, the audit's second step. For a proof whose test or
+> Description: One planted bug per proof, the audit's third step. For a proof whose test or
 >   covered code changed since the audit last read it, the model is asked for the smallest change
 >   to one file the feature covers that would break what the proof says. The change is made in a
 >   copy of the project, never in the project itself, and only the proof's own test runs against
