@@ -85,9 +85,6 @@ CELLS = ('passed', 'strong')
 # sign-offs beside the package.
 CHECKED = 'in the sign-offs'
 
-# Who ran a remote runner's results.
-REMOTE_RUNNER = 'a remote runner'
-
 # The prefix a test's skip reason carries when it found nothing to check.
 NOTHING_TO_CHECK = 'nothing to check'
 
@@ -516,9 +513,7 @@ def _results(rule_id, proofs, sections, same):
 
 
 def _by(entry):
-    """Who ran a section: `a remote runner`, else the email it records."""
-    if entry['source'] == 'ci':
-        return REMOTE_RUNNER
+    """Who ran a section: the email it records, under either source."""
     return str(entry['section'].get('email') or 'unknown')
 
 
@@ -617,7 +612,6 @@ def time_words(at):
 
 
 RUN_LINE = 'Tests run by %s on %s at %s on %s: %s on %s.'
-RUN_REMOTE_LINE = 'Tests run by a remote runner at %s on %s: %s on %s.'
 
 
 def _rules_words(count):
@@ -631,15 +625,8 @@ def run_lines(package):
         at = time_words(str(run.get('at') or ''))
         commit = str(run.get('commit') or '')[:7]
         system = evidence_module.os_word(run.get('os'))
-        if run.get('source') == 'ci':
-            lines.append(RUN_REMOTE_LINE % (at, commit,
-                                            _rules_words(run.get('rules') or 0),
-                                            system))
-        else:
-            lines.append(RUN_LINE % (run.get('by'), run.get('machine'), at,
-                                     commit,
-                                     _rules_words(run.get('rules') or 0),
-                                     system))
+        lines.append(RUN_LINE % (run.get('by'), run.get('machine'), at, commit,
+                                 _rules_words(run.get('rules') or 0), system))
     return lines
 
 

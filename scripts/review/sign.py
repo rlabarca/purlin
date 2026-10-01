@@ -98,8 +98,9 @@ NOT_WRITTEN = ('The evidence package was not written: %s. Nothing was signed; ru
                'purlin:sign again.')
 NO_TAG_GIT = 'No tag: git could not write %s: %s.'
 
-# What runs a result again, by the source it came from.
-RUN_AGAIN = {'local': 'purlin:test --all --commit', 'ci': 'purlin:test --remote'}
+# What runs a result again, by the source it came from. `%s` is the systems
+# of the `ci` results named.
+RUN_AGAIN = {'local': 'purlin:test --all --commit', 'ci': 'purlin:test on %s'}
 
 # The key a signer signs with, and the commands that set one up.
 NO_KEY = 'No key to sign with. These commands set one up:'
@@ -373,9 +374,11 @@ def _results_fill(found):
     """`(what, commands)` for `[(system words, source, [features])]`, or None."""
     if not found:
         return None
-    by_system, sources = [], set()
+    by_system, sources, elsewhere = [], set(), []
     for words, source, names in found:
         sources.add(source)
+        if source == 'ci' and words not in elsewhere:
+            elsewhere.append(words)
         known = next((item for item in by_system if item[0] == words), None)
         if known is None:
             by_system.append((words, list(names)))
@@ -383,7 +386,9 @@ def _results_fill(found):
             known[1].extend(name for name in names if name not in known[1])
     what = '; '.join('%s on %s' % (', '.join(sorted(names)), words)
                      for words, names in by_system)
-    commands = ' and '.join(RUN_AGAIN[source] for source in ('local', 'ci')
+    fill = {'local': RUN_AGAIN['local'],
+            'ci': RUN_AGAIN['ci'] % ' and '.join(elsewhere)}
+    commands = ' and '.join(fill[source] for source in ('local', 'ci')
                             if source in sources)
     return what, commands
 
@@ -509,7 +514,7 @@ def _weak(rule):
 
 def _chosen_results(rule):
     """`{os: result}`: per system, a current result before one that is not,
-    then a remote runner's before a person's."""
+    then one under the source `ci` before one under `local`."""
     chosen = {}
     for result in rule.get('results') or ():
         system = result.get('os')

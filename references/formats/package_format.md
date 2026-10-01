@@ -1,4 +1,4 @@
-> Format-Version: 9
+> Format-Version: 10
 
 # Package format
 
@@ -123,8 +123,8 @@ Each `runs` entry, local first, then by system in the order `linux`, `macos`,
 
 | Field | Type | What it holds |
 |---|---|---|
-| `by` | string | the email the evidence section records, or `a remote runner` for a result of the source `ci` |
-| `machine` | string or null | the machine the section records |
+| `by` | string | the email the evidence section records, or `unknown` where it records none |
+| `machine` | string or null | the host's name, as the section records it |
 | `os` | string | `windows`, `macos` or `linux` |
 | `source` | string | `local` or `ci` |
 | `at` | string | when the newest of the group's sections finished |
@@ -166,8 +166,8 @@ Each `results` entry:
 | `result` | string | `passed`, `failed`, `no test` or `not run`, what that run saw for the rule |
 | `at` | string | when the run finished |
 | `commit` | string | the full sha the run's tests ran at |
-| `runner` | string | who ran it: the slug of the runner's email, or `ci` |
-| `machine` | string or null | the machine the tests ran on, as the evidence section records it: the host's name, or for a remote runner its kind, such as `remote runner, Windows` |
+| `runner` | string | who ran it: the slug of the email the section records |
+| `machine` | string or null | the machine the tests ran on, as the evidence section records it: the host's name |
 | `current` | bool | whether the section's fingerprint matches the spec, code and tests at the package's own `commit` |
 | `out_of_date` | array of strings | the parts that differ, of `code`, `spec` and `tests`; empty when current |
 | `same_code` | bool | true when every commit from the run's `commit` to the package's `commit` changes only files under `.purlin/`. A result counts for a sign-off only where it is true |
@@ -243,7 +243,7 @@ proof tagged `@slow` that reads `not run`:
 | `no_test` | `1 rule to write a test for`, `<n> rules to write a test for` | `purlin:build` |
 | `to_test` | `1 rule to test`, `<n> rules to test` | `purlin:test` |
 | `to_run_slow` | `1 slow proof to run`, `<n> slow proofs to run` | `purlin:test --all` |
-| `to_test_remote` | `1 rule to test on <systems>`, `<n> rules to test on <systems>` | `purlin:test --remote` |
+| `to_test_remote` | `1 rule to test on <systems>`, `<n> rules to test on <systems>` | `run purlin:test on <systems>` |
 | `to_strengthen` | `1 rule to strengthen`, `<n> rules to strengthen` | `purlin:build` |
 
 `<systems>` names each system in the words `Linux/Unix`, `macOS` and

@@ -57,6 +57,8 @@ DANA = 'dana.dev@labconnect.example'
 QUINN = 'quinn.qa@labconnect.example'
 PAT = 'pat.product@labconnect.example'
 MACHINE = 'dana-laptop'
+# The git email a project's own run on another system set.
+RUNNER = 'runner@example.com'
 AT = '2026-09-13T12:00:00Z'
 PACKAGE = '.purlin/evidence/package/2.1.0.json'
 
@@ -82,7 +84,8 @@ def section(made, proofs, rules, source='local', os_name='linux', email=DANA,
     """One evidence section, as the run writes it, over the project as it stands.
 
     `proofs` is `[(id, rule, result, test name or None, reason or None)]`;
-    `rules` is `{RULE-N: word}`. A remote runner's section names no email.
+    `rules` is `{RULE-N: word}`. A section has the same fields under either
+    source.
     """
     entries = []
     for proof_id, rule, result, name, reason in proofs:
@@ -94,14 +97,10 @@ def section(made, proofs, rules, source='local', os_name='linux', email=DANA,
             entry['reason'] = reason
         entries.append(entry)
     found = {'commit': commit or made.head(), 'dirty': False, 'at': at,
-             'runner': 'ci' if source == 'ci' else email.split('@')[0],
+             'runner': email.split('@')[0], 'email': email,
              'machine': machine,
              'fingerprint': purlin_fingerprint.fingerprint(made.root, feature),
              'rules': dict(rules), 'proofs': entries}
-    if source == 'ci':
-        found['hostname'] = 'runner-17'
-    else:
-        found['email'] = email
     rel = '.purlin/evidence/%s/%s.json' % (source, feature)
     path = os.path.join(made.root, *rel.split('/'))
     try:
@@ -498,23 +497,23 @@ class TestTheContent:
             made.close()
 
     # purlin: package PROOF-25
-    def test_a_remote_runners_result_names_its_machine(self):
+    def test_a_result_under_ci_names_its_machine(self):
         made = Project()
         try:
             write(os.path.join(made.root, 'VERSION'), '2.1.0\n')
             commit_all(made, 'chore: version')
             here = purlin_evidence.host_os()
-            machine = 'remote runner, %s' % purlin_evidence.os_word(here)
             ran_at = made.head()
-            passing(made, source='ci', os_name=here, machine=machine)
+            passing(made, source='ci', os_name=here, email=RUNNER,
+                    machine='build-7')
             commit_all(made, 'purlin: results pulled home')
             key(made.root)
             [result] = rule_of(signed_package(made), 'RULE-2')['results']
             assert (result['source'], result['result'], result['runner'],
                     result['at'], result['current'], result['os'],
                     result['machine'], result['commit']) == (
-                'ci', 'passed', 'ci', '2026-09-13T12:00:00Z', True, here,
-                machine, ran_at)
+                'ci', 'passed', 'runner', '2026-09-13T12:00:00Z', True, here,
+                'build-7', ran_at)
         finally:
             made.close()
 
@@ -664,7 +663,7 @@ class TestTheRuns:
                          'rules': 2}]
 
     # purlin: package PROOF-66
-    def test_a_remote_run_follows_the_local_one(self):
+    def test_a_run_under_ci_follows_the_local_one(self):
         made = Project(spec=WINDOWS_SPEC)
         try:
             made.edit_test(WINDOWS_TEST_FILE)
@@ -680,13 +679,15 @@ class TestTheRuns:
             section(made, [('PROOF-3', 'RULE-1', 'pass',
                             'test_windows_sign_in', None)],
                     {'RULE-1': 'passed'}, source='ci', os_name='windows',
-                    machine='remote runner, Windows')
+                    email=RUNNER, machine='build-7')
             commit_all(made)
             key(made.root)
             runs = signed_package(made)['runs']
-            assert [(run['by'], run['source'], run['os']) for run in runs] == [
-                (DANA, 'local', 'linux'), ('a remote runner', 'ci', 'windows')]
-            assert runs[1]['rules'] == 1
+            assert len(runs) == 2
+            assert (runs[0]['by'], runs[0]['source']) == (DANA, 'local')
+            assert (runs[1]['by'], runs[1]['machine'], runs[1]['source'],
+                    runs[1]['os'], runs[1]['rules']) == (
+                'runner@example.com', 'build-7', 'ci', 'windows', 1)
         finally:
             made.close()
 
@@ -695,7 +696,7 @@ class TestTheRuns:
         ran_at = git(project.root, 'rev-parse', 'HEAD~1').stdout.strip()
         section(project, [('PROOF-1', 'RULE-1', 'pass', TEST_NAMES['PROOF-1'],
                            None)], {'RULE-1': 'passed'}, source='ci',
-                os_name='windows', machine='remote runner, Windows',
+                os_name='windows', email=RUNNER, machine='build-7',
                 commit=ran_at)
         commit_all(project, 'purlin: results pulled home')
         assert changed_in_head(project.root) == [

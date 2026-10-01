@@ -439,22 +439,6 @@ class TestNoHookIsInstalled:
         assert read(project.path('.git/hooks/pre-push')) == 'echo mine\n'
 
 
-class TestNoRunnerFile:
-
-    # purlin: scaffold PROOF-173
-    def test_a_foreign_proof_on_github_gets_no_runner_file(self):
-        made = Project('pytest', remote='git@github.com:acme/demo.git')
-        try:
-            tag_foreign(made)
-            output = made.run()
-            assert not made.has('.github/workflows/purlin.yml'), output
-            assert not made.has('.github'), output
-            assert [line for line in output.splitlines()
-                    if 'purlin.yml' in line] == [], output
-        finally:
-            made.close()
-
-
 # ---------------------------------------------------------------------------
 # The commit setup asks for
 # ---------------------------------------------------------------------------
@@ -705,7 +689,7 @@ GREETING_SPEC = """# Feature: greeting
 """
 
 # The greeting proof is tagged for the system this machine is, so a person's
-# run here proves it and nothing is left to run remotely.
+# run here proves it and nothing is left to run on another system.
 HERE_OS = evidence_module.host_os()
 
 # What each language's project holds before setup runs, the file its rule

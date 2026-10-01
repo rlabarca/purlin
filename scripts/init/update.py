@@ -498,8 +498,8 @@ def _detect_workflows(root):
 
     A v0.9.5 project ran its Windows proofs in a workflow that committed the
     proof file back beside the spec. This release writes no proof file, so
-    that workflow is removed; the first `purlin:test --remote` writes the
-    runner file a project needs.
+    that workflow is removed. Every other workflow or pipeline file is left
+    as it is.
     """
     hits = []
     for rel in _files_under(root, WORKFLOW_DIR, ('*.yml', '*.yaml')):
@@ -512,15 +512,14 @@ def _detect_workflows(root):
     return hits
 
 def _apply_workflows(root, files, args, out):
-    """The workflows go, and no runner file is written in their place."""
+    """The workflows go: backed up, untracked and removed."""
     for rel in files:
         out.kept(_back_up_copy(os.path.join(root, rel), rel))
         _untrack(root, rel)
         os.remove(os.path.join(root, rel))
         out.done(rel)
-    out.say('removed %d workflow%s that committed proof files; the first '
-            'purlin:test --remote writes the runner file' % (len(files),
-                                                            _s(files)))
+    out.say('removed %d workflow%s that committed proof files'
+            % (len(files), _s(files)))
 
 
 def _detect_evidence(root):

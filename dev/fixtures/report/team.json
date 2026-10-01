@@ -157,7 +157,7 @@
           "id": "RULE-1",
           "left": "to_strengthen",
           "machines": {
-            "linux": "remote runner, Linux/Unix"
+            "linux": "build-7"
           },
           "proof_hash": "prule1log",
           "proofs": [
@@ -233,7 +233,7 @@
           "id": "RULE-2",
           "left": null,
           "machines": {
-            "linux": "remote runner, Linux/Unix"
+            "linux": "build-7"
           },
           "proof_hash": "prule2log",
           "proofs": [
@@ -309,7 +309,7 @@
           "id": "RULE-3",
           "left": null,
           "machines": {
-            "linux": "remote runner, Linux/Unix"
+            "linux": "build-7"
           },
           "proof_hash": "prule3log",
           "proofs": [
@@ -435,7 +435,7 @@
           "id": "RULE-1",
           "left": null,
           "machines": {
-            "linux": "remote runner, Linux/Unix"
+            "linux": "build-7"
           },
           "proof_hash": "prule1inv",
           "proofs": [
@@ -611,7 +611,7 @@
           "id": "RULE-1",
           "left": null,
           "machines": {
-            "linux": "remote runner, Linux/Unix"
+            "linux": "build-7"
           },
           "proof_hash": "prule1rec",
           "proofs": [
@@ -731,7 +731,7 @@
           "id": "RULE-1",
           "left": "to_repair",
           "machines": {
-            "linux": "remote runner, Linux/Unix"
+            "linux": "build-7"
           },
           "proof_hash": "prule1ref",
           "proofs": [
@@ -801,7 +801,7 @@
           "id": "RULE-2",
           "left": "to_repair",
           "machines": {
-            "linux": "remote runner, Linux/Unix"
+            "linux": "build-7"
           },
           "proof_hash": "prule2ref",
           "proofs": [

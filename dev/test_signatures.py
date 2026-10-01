@@ -47,6 +47,8 @@ from sign_project import SPEC, TEST_FILE, TEST_NAMES, Project, _Out, git, write 
 EMAIL = 'jane@acme.com'
 DANA = 'dana.dev@labconnect.example'
 MACHINE = 'dana-laptop'
+# The git email a project's own run on another system set.
+RUNNER = 'runner@example.com'
 AT = '2026-10-01T12:17:13Z'
 VERSION = '2.1.0'
 PACKAGE = '.purlin/evidence/package/%s.json' % VERSION
@@ -66,7 +68,8 @@ def section(made, proofs, rules, source='local', os_name='linux',
     """One evidence section, as the run writes it, over the project as it stands.
 
     `proofs` is `[(id, rule, result, test name or None, reason or None)]`;
-    `rules` is `{RULE-N: word}`. A remote runner's section names no email.
+    `rules` is `{RULE-N: word}`. A section has the same fields under either
+    source.
     """
     entries = []
     for proof_id, rule, result, name, reason in proofs:
@@ -78,14 +81,10 @@ def section(made, proofs, rules, source='local', os_name='linux',
             entry['reason'] = reason
         entries.append(entry)
     found = {'commit': commit or made.head(), 'dirty': False, 'at': at,
-             'runner': 'ci' if source == 'ci' else email.split('@')[0],
+             'runner': email.split('@')[0], 'email': email,
              'machine': machine,
              'fingerprint': purlin_fingerprint.fingerprint(made.root, feature),
              'rules': dict(rules), 'proofs': entries}
-    if source == 'ci':
-        found['hostname'] = 'runner-17'
-    else:
-        found['email'] = email
     rel = '.purlin/evidence/%s/%s.json' % (source, feature)
     path = os.path.join(made.root, *rel.split('/'))
     try:
@@ -539,7 +538,7 @@ class TestTheRefusals:
             section(made, [('PROOF-1', 'RULE-1', 'pass',
                             'test_one_line_per_sign_in', None)],
                     {'RULE-1': 'passed'}, source='ci', os_name='windows',
-                    machine='remote runner, Windows', feature='audit')
+                    email=RUNNER, machine='build-7', feature='audit')
             commit_all(made, 'purlin: results pulled home')
             write(os.path.join(made.root, 'src', 'audit.py'), 'LINES = 2\n')
             commit_all(made, 'fix(audit): two lines')
@@ -550,7 +549,7 @@ class TestTheRefusals:
             commit_all(made)
             assert run_main(made, capsys) == (1, [
                 'No sign-off: these results were not taken on this version of '
-                'the code, %s: audit on Windows. Run purlin:test --remote, '
+                'the code, %s: audit on Windows. Run purlin:test on Windows, '
                 'then purlin:sign.' % made.head()[:7]])
         finally:
             made.close()

@@ -514,7 +514,7 @@ def _rules_evidence(project, results):
             'platforms': {os_name: {
                 'commit': project.head(), 'dirty': False,
                 'at': '2026-09-13T12:00:00Z', 'runner': 'ada',
-                'machine': 'jane-laptop', 'hostname': 'runner-17',
+                'email': 'ada@example.com', 'machine': 'jane-laptop',
                 'fingerprint': purlin_fingerprint.fingerprint(project.root,
                                                               'login'),
                 'rules': {},

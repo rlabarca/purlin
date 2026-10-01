@@ -13,9 +13,8 @@ It writes, in this order and naming every one in the summary: `.purlin/` and
 its README, and the dashboard. The settings file holds `version`, the
 plugin's `VERSION` file, and `tests`, an empty list where the project carried
 none: the first test run suggests the command. Nothing is written into the
-project's test suite or its test runner's configuration, no git hook is
-installed, and no runner file is written: the first `purlin:test --remote`
-writes it. On `y`, `yes` or `--yes` it commits exactly the files it wrote, in
+project's test suite or its test runner's configuration, and no git hook is
+installed. On `y`, `yes` or `--yes` it commits exactly the files it wrote, in
 one commit. It ends on the lines `purlin:status` ends on for the project as
 it now is.
 

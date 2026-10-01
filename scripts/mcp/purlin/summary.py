@@ -52,7 +52,7 @@ from purlin import facts, states                               # noqa: E402
 # The kinds of work left, in the order the work is done and the lines read.
 # Each is `(kind, one, many, command)`: the words after the count for one
 # and for any other count, and the command that clears it. `%s` in the
-# words of `to_test_remote` is the systems it waits for. `to_repair` counts
+# words and the command of `to_test_remote` is the systems it waits for. `to_repair` counts
 # the specs that write a number twice or hold a line left from a merge
 # conflict, `to_correct` the comments above tests, `to_run_slow` the proofs
 # tagged `@slow` that read `not run`, `to_commit` the features whose results
@@ -70,7 +70,7 @@ KINDS = (
     ('to_run_slow', 'slow proof to run', 'slow proofs to run',
      'purlin:test --all'),
     ('to_test_remote', 'rule to test on %s', 'rules to test on %s',
-     'purlin:test --remote'),
+     'run purlin:test on %s'),
     ('to_commit', 'feature whose results are not committed',
      'features whose results are not committed', 'purlin:test --commit'),
     ('to_strengthen', 'rule to strengthen', 'rules to strengthen',
@@ -264,6 +264,7 @@ def left(features, here_os, corrections=0, uncommitted=()):
         words = _words(one, many, count)
         if kind == 'to_test_remote':
             words = words % systems_text(systems)
+            command = command % systems_text(systems)
         out.append({'kind': kind, 'count': count,
                     'text': '%d %s' % (count, words), 'command': command})
     return out

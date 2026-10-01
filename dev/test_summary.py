@@ -179,7 +179,7 @@ class TestTheLines:
             '  2 rules to fix: purlin:build',
             '  2 rules to write a test for: purlin:build',
             '  2 rules to test: purlin:test',
-            '  2 rules to test on Windows: purlin:test --remote',
+            '  2 rules to test on Windows: run purlin:test on Windows',
             '  2 rules to strengthen: purlin:build',
         ]
 
@@ -257,7 +257,7 @@ class TestOneKindPerRule:
         finally:
             made.close()
         assert lines[-1] == ('  1 rule to test on Windows: '
-                             'purlin:test --remote'), lines
+                             'run purlin:test on Windows'), lines
 
 
 # ---------------------------------------------------------------------------
@@ -286,14 +286,14 @@ class TestSlowProofsToRun:
         assert 'purlin:sign' not in '\n'.join(lines)
 
     # purlin: summary PROOF-56
-    def test_a_slow_proof_tagged_for_windows_is_the_remote_runs(self):
+    def test_a_slow_proof_tagged_for_windows_is_to_test_on_windows(self):
         rules = [feature([slow_rule()], name='cart'),
                  feature([slow_rule()], name='checkout'),
                  feature([slow_rule(env='windows')], name='locks')]
         lines = summary.ending(payload(rules, here='macos')).splitlines()
         assert lines[2:] == [
             '  2 slow proofs to run: purlin:test --all',
-            '  1 rule to test on Windows: purlin:test --remote'], lines
+            '  1 rule to test on Windows: run purlin:test on Windows'], lines
 
 
 class TestWhatLetsTheTestsBeMet:

@@ -176,8 +176,8 @@
           "id": "RULE-1",
           "left": null,
           "machines": {
-            "linux": "remote runner, Linux/Unix",
-            "windows": "remote runner, Windows"
+            "linux": "build-7",
+            "windows": "build-8"
           },
           "proof_hash": "prule1log",
           "proofs": [
@@ -270,8 +270,8 @@
           "id": "RULE-2",
           "left": null,
           "machines": {
-            "linux": "remote runner, Linux/Unix",
-            "windows": "remote runner, Windows"
+            "linux": "build-7",
+            "windows": "build-8"
           },
           "proof_hash": "prule2log",
           "proofs": [
@@ -374,8 +374,8 @@
           "id": "RULE-3",
           "left": "to_strengthen",
           "machines": {
-            "linux": "remote runner, Linux/Unix",
-            "windows": "remote runner, Windows"
+            "linux": "build-7",
+            "windows": "build-8"
           },
           "proof_hash": "prule3log",
           "proofs": [
@@ -451,8 +451,8 @@
           "id": "RULE-4",
           "left": "to_fix",
           "machines": {
-            "linux": "remote runner, Linux/Unix",
-            "windows": "remote runner, Windows"
+            "linux": "build-7",
+            "windows": "build-8"
           },
           "proof_hash": "prule4log",
           "proofs": [
@@ -612,8 +612,8 @@
           "id": "RULE-1",
           "left": null,
           "machines": {
-            "linux": "remote runner, Linux/Unix",
-            "macos": "remote runner, macOS"
+            "linux": "build-7",
+            "macos": "build-9"
           },
           "proof_hash": "prule1inv",
           "proofs": [
@@ -713,8 +713,8 @@
           "id": "RULE-2",
           "left": "to_strengthen",
           "machines": {
-            "linux": "remote runner, Linux/Unix",
-            "macos": "remote runner, macOS"
+            "linux": "build-7",
+            "macos": "build-9"
           },
           "proof_hash": "prule2inv",
           "proofs": [
@@ -898,7 +898,7 @@
           "id": "RULE-1",
           "left": "to_strengthen",
           "machines": {
-            "linux": "remote runner, Linux/Unix"
+            "linux": "build-7"
           },
           "proof_hash": "prule1che",
           "proofs": [
@@ -1168,7 +1168,7 @@
           "id": "RULE-2",
           "left": null,
           "machines": {
-            "linux": "remote runner, Linux/Unix"
+            "linux": "build-7"
           },
           "proof_hash": "prule2exp",
           "proofs": [
