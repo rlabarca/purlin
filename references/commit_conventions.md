@@ -69,7 +69,8 @@ whose spec or marked tests it holds. Where it holds only the settings, the subje
 `<commit7>` is the first seven characters of the first commit, or of HEAD when there was nothing
 to commit. It names the commit of the code the results describe, not the evidence commit itself.
 Each section of the evidence records that same commit. A sign-off counts a result only when
-nothing but Purlin's own records under `.purlin/` changed after it.
+nothing but Purlin's own records under `.purlin/` changed after it and the `tests` setting is as
+it was.
 
 Never fold the evidence into a `feat(...)` commit. The evidence must be able to say which commit
 the tests ran against.

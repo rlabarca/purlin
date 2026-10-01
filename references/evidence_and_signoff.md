@@ -29,7 +29,7 @@ ancestor of it:
 
 | It reads | When |
 |----------|------|
-| `signed 0.1.0 at a1b2c3d` | the tag's commit is this code: every commit since it changes only Purlin's own records under `.purlin/` |
+| `signed 0.1.0 at a1b2c3d` | the tag's commit is this code: every commit since it changes only Purlin's own records under `.purlin/` and leaves the `tests` setting as it was |
 | `signed 0.1.0, 4 commits since` | the code has changed since the tag, by that many commits; for one, `1 commit since` |
 | `not signed` | no `signed/*` tag on `HEAD` or behind it has a sign-off that counts |
 

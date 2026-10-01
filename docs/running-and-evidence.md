@@ -457,7 +457,7 @@ result counts only when all three hold:
 - its section is current;
 - it was taken with no file changed and not committed;
 - it was taken on this version of the code: every commit from the one its tests ran at to
-  `HEAD` changes only files under `.purlin/`.
+  `HEAD` changes only files under `.purlin/` and leaves the `tests` setting as it was.
 
 So the developer's hand-off is run and commit:
 
@@ -561,8 +561,9 @@ the git email set there. `--commit` commits those files alone, as `purlin: evide
 It never pushes; the workflow's last step does. It exits 1 only when one of those tests failed
 or could not run, and a failed run's results come back too. No audit runs there.
 
-The commit that comes back changes only files under `.purlin/`, so its results were taken on
-the same version of the code as yours, and both count for a sign-off.
+The commit that comes back changes only files under `.purlin/` and leaves the `tests` setting
+as it was, so its results were taken on the same version of the code as yours, and both count
+for a sign-off.
 
 ### Azure DevOps, or any other git host
 
