@@ -24,7 +24,7 @@ No test waits on another lane.
 - **Rewritten, 6.** `run_script` PROOF-10, PROOF-12, PROOF-117, PROOF-17;
   `evidence_writer` PROOF-78; `evidence` PROOF-19. Helpers: `evidence_run` now runs the script in
   this process and returns the exit code alone (no fake `host` module, no `calls`), so the tests
-  of PROOF-209, PROOF-102, PROOF-109, PROOF-110 and PROOF-171 changed in how they call it and in
+  of PROOF-209, PROOF-102, PROOF-109, PROOF-87 and PROOF-171 changed in how they call it and in
   nothing they assert; `_FakeModule`, `commit_files` and `_mixed` are gone; `_section` in
   `dev/test_evidence_writer.py` writes `email` under either source and takes no `hostname`.
 - **Added, 2.** `evidence_writer` PROOF-95 and PROOF-96, with the helper `_runner_checkout`.
