@@ -3,6 +3,8 @@
 
     python3 dev/windows_run.py
 
+It takes no arguments, and with one it says so and starts nothing.
+
 A proof tagged `@env(windows)` cannot be proven on a Mac. Purlin starts no run
 on another machine, so this repository holds its own setup for one, as any
 project would: `.github/workflows/windows.yml`, which GitHub runs on
@@ -77,6 +79,11 @@ FAILED_ON_GITHUB = ('The run failed on GitHub. The table below is what came '
                     'back.')
 STILL_THERE = ('The run branch %s is still on %s. Delete it with: git push %s '
                '--delete %s')
+# A run costs a push and a wait, so a word the script does not read is refused
+# rather than ignored.
+NO_ARGUMENTS = ('%s is not an argument of python3 dev/windows_run.py, which '
+                'takes none, so nothing was pushed. Run python3 '
+                'dev/windows_run.py.')
 # How long one git command may take before it is abandoned.
 COMMAND_SECONDS = 300
 
@@ -253,5 +260,13 @@ def _capture(project_root, argv):
     return result.stdout if result.returncode == 0 else ''
 
 
+def main(argv, project_root=ROOT):
+    """Start the run, or refuse the command line and start nothing, exit 2."""
+    if argv:
+        print(NO_ARGUMENTS % argv[0])
+        return 2
+    return windows_run(project_root)
+
+
 if __name__ == '__main__':
-    sys.exit(windows_run(ROOT))
+    sys.exit(main(sys.argv[1:]))

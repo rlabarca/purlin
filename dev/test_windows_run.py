@@ -244,6 +244,25 @@ def test_one_uncommitted_file_exits_1_with_the_one_line_and_no_push(
     assert started == [], 'a tree with uncommitted changes started %r' % started
 
 
+def test_any_argument_is_refused_with_one_line_and_nothing_starts(
+        tmp_path, monkeypatch, capsys):
+    """No proof names this. `--help` would otherwise push a run branch."""
+    started = []
+
+    def record(*args, **_kwargs):
+        started.append(args)
+        raise AssertionError('a command line with an argument started %r'
+                             % (args,))
+    monkeypatch.setattr(subprocess, 'run', record)
+    monkeypatch.setattr(windows_run, 'windows_run', record)
+
+    assert windows_run.main(['--help'], str(tmp_path)) == 2
+    assert capsys.readouterr().out.splitlines() == [
+        '--help is not an argument of python3 dev/windows_run.py, which '
+        'takes none, so nothing was pushed. Run python3 dev/windows_run.py.']
+    assert started == []
+
+
 # ---------------------------------------------------------------------------
 # The workflow file
 # ---------------------------------------------------------------------------
