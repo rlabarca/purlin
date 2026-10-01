@@ -1498,6 +1498,11 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       the check is fixed or marked experimental before release.
     - **The build may spend up to $80 of cloud credits**, of the $121 of $250 left on 2026-10-01;
       $41 is kept for the real-skills check. Lanes past the budget run locally.
+    - **Answered on the build plan (`d115-plan.md`):** the line under `Left to do` that reminds a
+      person to commit their test results shows only once no other work stops the tests being
+      met; a spec naming a file not yet written is no longer listed among the spec mistakes
+      warned of (decision 113 holds); the dashboard's data gains the branch and the information
+      lines, eighteen keys where it held sixteen. The build's cloud lanes are planned at $78.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
