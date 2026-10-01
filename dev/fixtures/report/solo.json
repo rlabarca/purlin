@@ -70,9 +70,7 @@
       },
       "rules": [
         {
-          "applies_to": "login",
           "audit": null,
-          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -100,7 +98,6 @@
               "word": "not audited"
             }
           },
-          "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "feature": "login",
           "flags": {
             "failing": false,
@@ -141,9 +138,7 @@
           "text": "A person signs in with an email address and a password."
         },
         {
-          "applies_to": "login",
           "audit": null,
-          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bucket": "untested",
           "cells": {
             "passed": {
@@ -165,7 +160,6 @@
               "word": "waiting"
             }
           },
-          "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "feature": "login",
           "flags": {
             "failing": false,
@@ -198,9 +192,7 @@
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
-          "applies_to": "login",
           "audit": null,
-          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bucket": "untested",
           "cells": {
             "passed": {
@@ -224,7 +216,6 @@
               "word": "waiting"
             }
           },
-          "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "feature": "login",
           "flags": {
             "failing": false,
@@ -298,9 +289,7 @@
       },
       "rules": [
         {
-          "applies_to": "invoice",
           "audit": null,
-          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -328,7 +317,6 @@
               "word": "not audited"
             }
           },
-          "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -369,9 +357,7 @@
           "text": "An invoice totals its lines to the cent."
         },
         {
-          "applies_to": "invoice",
           "audit": null,
-          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -399,7 +385,6 @@
               "word": "not audited"
             }
           },
-          "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
           "feature": "invoice",
           "flags": {
             "failing": false,

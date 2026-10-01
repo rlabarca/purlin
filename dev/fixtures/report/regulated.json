@@ -109,7 +109,6 @@
       },
       "rules": [
         {
-          "applies_to": "login",
           "audit": {
             "at": "2026-09-12T09:15:40Z",
             "commit": "a1b2c3d",
@@ -120,7 +119,6 @@
             "strength": 86,
             "verdict": "strong"
           },
-          "audit_hash": "c7d5dc84330ceea2da7f4136129f0347e5ee65984c9e55505c094de4dddc3189",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -153,7 +151,6 @@
               "word": "strong"
             }
           },
-          "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "feature": "login",
           "flags": {
             "failing": false,
@@ -195,7 +192,6 @@
           "text": "A person signs in with an email address and a password."
         },
         {
-          "applies_to": "login",
           "audit": {
             "at": "2026-09-12T09:15:40Z",
             "commit": "a1b2c3d",
@@ -206,7 +202,6 @@
             "strength": 86,
             "verdict": "strong"
           },
-          "audit_hash": "c7d5dc84330ceea2da7f4136129f0347e5ee65984c9e55505c094de4dddc3189",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -239,7 +234,6 @@
               "word": "strong"
             }
           },
-          "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "feature": "login",
           "flags": {
             "failing": false,
@@ -281,7 +275,6 @@
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
-          "applies_to": "login",
           "audit": {
             "at": "2026-09-12T09:15:40Z",
             "commit": "a1b2c3d",
@@ -294,7 +287,6 @@
             "strength": 86,
             "verdict": "weak"
           },
-          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -330,7 +322,6 @@
               "word": "weak"
             }
           },
-          "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "feature": "login",
           "flags": {
             "failing": false,
@@ -372,9 +363,7 @@
           "text": "A locked account sends one notification email."
         },
         {
-          "applies_to": "login",
           "audit": null,
-          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bucket": "partial",
           "cells": {
             "passed": {
@@ -410,7 +399,6 @@
               "word": "waiting"
             }
           },
-          "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "feature": "login",
           "flags": {
             "failing": false,
@@ -521,7 +509,6 @@
       },
       "rules": [
         {
-          "applies_to": "invoice",
           "audit": {
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
@@ -532,7 +519,6 @@
             "strength": 64,
             "verdict": "strong"
           },
-          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -565,7 +551,6 @@
               "word": "strong"
             }
           },
-          "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -607,7 +592,6 @@
           "text": "An invoice totals its lines to the cent."
         },
         {
-          "applies_to": "invoice",
           "audit": {
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
@@ -620,7 +604,6 @@
             "strength": 64,
             "verdict": "weak"
           },
-          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -656,7 +639,6 @@
               "word": "weak"
             }
           },
-          "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -698,9 +680,7 @@
           "text": "An invoice with no lines totals zero."
         },
         {
-          "applies_to": "invoice",
           "audit": null,
-          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -722,7 +702,6 @@
               "word": "manual test"
             }
           },
-          "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -805,7 +784,6 @@
       },
       "rules": [
         {
-          "applies_to": "checkout_design",
           "audit": {
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
@@ -818,7 +796,6 @@
             "strength": null,
             "verdict": "undecided"
           },
-          "audit_hash": "9e0234b91cb67b7cc732ed426155abfcd337d8b475526678af23259ba26330d9",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -848,7 +825,6 @@
               "word": "weak"
             }
           },
-          "code_hash": "72d886c64599e86aaf3eb91d560ff85ae429a831f4ac5eb2f19958a3558bb72d",
           "feature": "checkout_design",
           "flags": {
             "failing": false,
@@ -929,9 +905,7 @@
       },
       "rules": [
         {
-          "applies_to": "security_baseline",
           "audit": null,
-          "audit_hash": null,
           "bucket": "untested",
           "cells": {
             "passed": {
@@ -955,7 +929,6 @@
               "word": "waiting"
             }
           },
-          "code_hash": "5b1e0c7a9d3f2e8b4a6c1d0e9f7a3b5c2d4e6f8a0b1c3d5e7f9a2b4c6d8e0f1a",
           "feature": "security_baseline",
           "flags": {
             "failing": false,
@@ -1036,9 +1009,7 @@
       },
       "rules": [
         {
-          "applies_to": "export",
           "audit": null,
-          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bucket": "untested",
           "cells": {
             "passed": {
@@ -1062,7 +1033,6 @@
               "word": "waiting"
             }
           },
-          "code_hash": "3e5c6ee720afe2c5032fcfbd87d637c0068d2155f85a1aea430d30bede475af0",
           "feature": "export",
           "flags": {
             "failing": false,
@@ -1101,9 +1071,7 @@
           "text": "A statement export lists every invoice of the month in date order."
         },
         {
-          "applies_to": "export",
           "audit": null,
-          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -1131,7 +1099,6 @@
               "word": "not audited"
             }
           },
-          "code_hash": "3e5c6ee720afe2c5032fcfbd87d637c0068d2155f85a1aea430d30bede475af0",
           "feature": "export",
           "flags": {
             "failing": false,

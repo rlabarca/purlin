@@ -101,7 +101,6 @@
       },
       "rules": [
         {
-          "applies_to": "login",
           "audit": {
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
@@ -114,7 +113,6 @@
             "strength": 71,
             "verdict": "undecided"
           },
-          "audit_hash": "982cc3f0f167264619ffe8b967431700bb24bccd6c585842e728bc38d9ccc6e2",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -145,7 +143,6 @@
               "word": "weak"
             }
           },
-          "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "feature": "login",
           "flags": {
             "failing": false,
@@ -186,7 +183,6 @@
           "text": "A person signs in with an email address and a password."
         },
         {
-          "applies_to": "login",
           "audit": {
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
@@ -197,7 +193,6 @@
             "strength": 71,
             "verdict": "strong"
           },
-          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -225,7 +220,6 @@
               "word": "strong"
             }
           },
-          "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "feature": "login",
           "flags": {
             "failing": false,
@@ -266,7 +260,6 @@
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
-          "applies_to": "login",
           "audit": {
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
@@ -277,7 +270,6 @@
             "strength": 71,
             "verdict": "strong"
           },
-          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -305,7 +297,6 @@
               "word": "strong"
             }
           },
-          "code_hash": "258bcd235f12af25127f42d32b402d07c36d4247a8b036ea8935520e44c8e280",
           "feature": "login",
           "flags": {
             "failing": false,
@@ -398,7 +389,6 @@
       },
       "rules": [
         {
-          "applies_to": "invoice",
           "audit": {
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
@@ -409,7 +399,6 @@
             "strength": 48,
             "verdict": "strong"
           },
-          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -437,7 +426,6 @@
               "word": "strong"
             }
           },
-          "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -478,9 +466,7 @@
           "text": "An invoice totals its lines to the cent."
         },
         {
-          "applies_to": "invoice",
           "audit": null,
-          "audit_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bucket": "untested",
           "cells": {
             "passed": {
@@ -502,7 +488,6 @@
               "word": "waiting"
             }
           },
-          "code_hash": "1c0365620f095ed3d18294ccdce74bd65dad7e96b5a6f3f2c041fc02138a22f8",
           "feature": "invoice",
           "flags": {
             "failing": false,
@@ -583,7 +568,6 @@
       },
       "rules": [
         {
-          "applies_to": "receipt",
           "audit": {
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
@@ -594,7 +578,6 @@
             "strength": 75,
             "verdict": "strong"
           },
-          "audit_hash": "a1f3c9d27e5b40c8a6f2e9d1b7c3a5e8f0d2b4c6a8e1f3d5b7c9a2e4f6d8b0c1",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -622,7 +605,6 @@
               "word": "strong"
             }
           },
-          "code_hash": "3af3c353c2169a3b9fbbba791d289f8c1baf8d8fe906be3ff597c89bf1b55c33",
           "feature": "receipt",
           "flags": {
             "failing": false,
@@ -715,9 +697,7 @@
       },
       "rules": [
         {
-          "applies_to": "refund",
           "audit": null,
-          "audit_hash": null,
           "bucket": "failing",
           "cells": {
             "passed": {
@@ -747,7 +727,6 @@
               "word": "waiting"
             }
           },
-          "code_hash": "3af3c353c2169a3b9fbbba791d289f8c1baf8d8fe906be3ff597c89bf1b55c33",
           "feature": "refund",
           "flags": {
             "failing": true,
@@ -788,9 +767,7 @@
           "text": "A refund returns the amount paid to the card it came from."
         },
         {
-          "applies_to": "refund",
           "audit": null,
-          "audit_hash": null,
           "bucket": "failing",
           "cells": {
             "passed": {
@@ -820,7 +797,6 @@
               "word": "waiting"
             }
           },
-          "code_hash": "3af3c353c2169a3b9fbbba791d289f8c1baf8d8fe906be3ff597c89bf1b55c33",
           "feature": "refund",
           "flags": {
             "failing": true,
@@ -911,7 +887,6 @@
       },
       "rules": [
         {
-          "applies_to": "checkout_design",
           "audit": {
             "at": "2026-09-12T09:14:02Z",
             "commit": "a1b2c3d",
@@ -922,7 +897,6 @@
             "strength": null,
             "verdict": "strong"
           },
-          "audit_hash": "f0771b5320b78e2385b46a63525e71a6e30975d1adfb8712011dc997da5493c4",
           "bucket": "passed",
           "cells": {
             "passed": {
@@ -950,7 +924,6 @@
               "word": "strong"
             }
           },
-          "code_hash": "72d886c64599e86aaf3eb91d560ff85ae429a831f4ac5eb2f19958a3558bb72d",
           "feature": "checkout_design",
           "flags": {
             "failing": false,
@@ -1031,9 +1004,7 @@
       },
       "rules": [
         {
-          "applies_to": "security_baseline",
           "audit": null,
-          "audit_hash": null,
           "bucket": "untested",
           "cells": {
             "passed": {
@@ -1057,7 +1028,6 @@
               "word": "waiting"
             }
           },
-          "code_hash": "5b1e0c7a9d3f2e8b4a6c1d0e9f7a3b5c2d4e6f8a0b1c3d5e7f9a2b4c6d8e0f1a",
           "feature": "security_baseline",
           "flags": {
             "failing": false,
