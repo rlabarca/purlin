@@ -1,0 +1,80 @@
+# This repository's own Windows run. It is here for one reason: the proofs in
+# specs/ tagged @env(windows), which the owner's Mac cannot prove. Purlin ships
+# no such file; this one is this project's own setup.
+#
+# One thing starts a run and nothing else does: a push to a `run/*` branch,
+# which is the branch `python3 dev/windows_run.py` creates and deletes around
+# one run. A push to any other branch starts nothing, a tag starts nothing,
+# and a pull request starts nothing.
+#
+# A run starts the tests of the proofs tagged @env(windows), writes the Windows
+# section of .purlin/evidence/ci/<feature>.json for every feature it covered,
+# and commits those files alone as `purlin: evidence at <sha7>`. The last step
+# pushes that commit to the run branch, after a failed run as after a passing
+# one, and dev/windows_run.py pulls it home. The push is made with the job's
+# own token, so it starts no further run.
+#
+# The job fails only when one of those tests failed or could not run.
+#
+# No breaks and no AI audit run here. purlin:audit does both on a person's
+# machine.
+#
+# The job is capped at 90 minutes. GitHub cancels a job at 6 hours and
+# keeps nothing, so a run that stops for something cannot be read; 90 minutes
+# is longer than any suite this runs and short enough to leave a log worth
+# reading. The run caps each test command at an hour of its own.
+name: windows
+
+on:
+  push:
+    branches: ['run/**']
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # What each framework needs before its tests run. A project with none of
+      # these files installs nothing and the step is a no-op. A project whose
+      # tests drive a browser through playwright also needs the browser:
+      # `--with-deps` installs the libraries a Linux/Unix runner lacks and does
+      # nothing on Windows and macOS.
+      - name: Set up the test framework
+        shell: bash
+        run: |
+          if [ -f requirements.txt ]; then
+            python3 -m pip install -r requirements.txt
+          fi
+          if [ -f conftest.py ] || [ -f pytest.ini ] || [ -f pyproject.toml ]; then
+            python3 -m pip install pytest
+          fi
+          if python3 -c "import playwright" 2>/dev/null; then
+            python3 -m playwright install --with-deps chromium
+          fi
+          if [ -f package.json ]; then npm ci; fi
+
+      # The commit --commit makes is an ordinary git commit, so it needs a name
+      # and an email. The email is also what each result records as who ran it.
+      - name: Run the tests tagged for Windows
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          python3 scripts/run/purlin_run.py --ci --commit
+
+      - name: Return the evidence
+        if: always()
+        shell: bash
+        run: git push origin "HEAD:${GITHUB_REF_NAME}"
