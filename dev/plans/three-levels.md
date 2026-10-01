@@ -1474,7 +1474,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     shared until work is merged. Three changes keep a person from reading one checkout's state as
     another's:
     - **The dashboard names the version it describes**: its header shows the branch and commit the
-      data was written for, and the time, as in `main at a1b2c3d, written 10:42`. The agent
+      data was written for, and the time, as in `main at a1b2c3d, written 06:42 EDT`. The agent
       definition tells Claude to run `purlin:status` in the main checkout after merging work from a
       worktree, so the main dashboard catches up.
     - **The tools refuse to guess the folder**: a Purlin tool call that names no checkout is
@@ -1515,6 +1515,8 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       `purlin:audit` again.
     - **The sign-off refuses while files are changed and not committed**, with one line: commit
       them or set them aside, then run `purlin:sign` again.
+    - **The dashboard's header line shows the time in the viewer's own timezone and names it**,
+      as in `main at a1b2c3d, written 06:42 EDT` (the owner, 2026-10-01).
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5

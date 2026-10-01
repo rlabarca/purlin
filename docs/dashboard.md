@@ -26,9 +26,13 @@ The page has two screens: the board, and one rule.
 
 - the logo;
 - the checkout state the data describes and when it was written, as
-  `main at a1b2c3d, written 10:42`: the branch, the first 7 characters of the commit the
-  command ran on, and the time in UTC. Its hover gives the date and time in full,
-  `2026-10-01 10:42 UTC`. On a detached `HEAD` it reads `detached at a1b2c3d, written 10:42`.
+  `main at a1b2c3d, written 06:42 EDT`: the branch, the first 7 characters of the commit the
+  command ran on, and the time, 24-hour, in your own timezone, which the line names by your
+  browser's short name for it, or by its offset, as `GMT+5:30`, where it has none. The data
+  keeps the time in UTC and the page converts it. Its hover gives the date and time in full,
+  then the UTC time, `2026-10-01 06:42 EDT (10:42 UTC)`. On a detached `HEAD` it reads
+  `detached at a1b2c3d, written 06:42 EDT`. The Audit panel's `Read by` line shows its time the
+  same way.
   Each checkout of a repository has its own page and data, and this line says which one you are
   reading;
 - the two facts, as two boxes. `Tests` reads `met` where every rule's tests pass on the

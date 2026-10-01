@@ -139,7 +139,7 @@ it as a test comment to correct, with `purlin:build`. It clears once the test it
 Each checkout of a repository, a worktree included, has its own results, its own status and its own dashboard. Nothing is shared until the work is merged. After you merge work from a worktree, run `purlin:status` in the main checkout: that brings its status and dashboard up to date.
 
 The dashboard's header names the branch and the commit its data was written for, as
-`main at a1b2c3d, written 10:42`, so a page is never read as another checkout's. A Purlin tool
+`main at a1b2c3d, written 06:42 EDT`, so a page is never read as another checkout's. A Purlin tool
 call names the folder it works in; a call that names none is refused with the fix.
 
 ## Next

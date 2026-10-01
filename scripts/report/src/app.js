@@ -297,12 +297,28 @@ function ageText(iso) {
 /* The date part of an ISO stamp, where a whole day is precise enough. */
 function when(iso) { return String(iso || '').slice(0, 10) || 'date unknown'; }
 
-/* The date and the minute of an ISO stamp, which is UTC wherever it was
-   written: `2026-09-12 10:02 UTC`. */
+/* An ISO stamp, which is UTC wherever it was written, as the person looking
+   at the page reads the clock: the date, the hour and minute, 24-hour, and
+   the browser's short name for their timezone at that moment, or its offset
+   where it has none, as `GMT+5:30`. Null where the stamp is no time. */
+function localParts(iso) {
+  var date = new Date(String(iso || ''));
+  if (isNaN(date.getTime())) { return null; }
+  var parts = {};
+  new Intl.DateTimeFormat('en-US', {year: 'numeric', month: '2-digit',
+    day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    timeZoneName: 'short'}).formatToParts(date).forEach(function (part) {
+    parts[part.type] = part.value;
+  });
+  return {day: parts.year + '-' + parts.month + '-' + parts.day,
+    time: parts.hour + ':' + parts.minute, zone: parts.timeZoneName};
+}
+
+/* The date and the minute of a stamp in the viewer's own timezone:
+   `2026-09-12 06:02 EDT`. */
 function moment(iso) {
-  var text = String(iso || '');
-  return text.length >= 16 ? text.slice(0, 10) + ' ' + text.slice(11, 16)
-    + ' UTC' : when(iso);
+  var local = localParts(iso);
+  return local ? local.day + ' ' + local.time + ' ' + local.zone : when(iso);
 }
 
 /* One cell of one rule, or null where the payload carries none. */
@@ -359,16 +375,22 @@ function featureNamed(name) {
 /* --- chrome and router ------------------------------------------------ */
 
 /* The checkout state the data describes and when it was written:
-   `main at a1b2c3d, written 10:42`, the branch, the first 7 characters of
-   the commit and the hour and minute in UTC, all three as the writing
-   command stamped them, so the line reads the same however long the page
-   stays open. On a detached HEAD the payload names no branch and the line
-   opens `detached`. The hover gives the date and time in full. */
+   `main at a1b2c3d, written 06:42 EDT`, the branch, the first 7 characters of
+   the commit, and the hour and minute the writing command stamped, shown in
+   the viewer's own timezone and naming it, so the line reads the same
+   however long the page stays open. On a detached HEAD the payload names no
+   branch and the line opens `detached`. The hover gives the date and time in
+   full in that zone, then the UTC time: `2026-10-01 06:42 EDT (10:42 UTC)`.
+   The line is two parts, the checkout state and the time, so a narrow
+   screen sets the time beneath the state and breaks neither. */
 function stampLine() {
   var at = String(DATA.generated_at || '');
-  return {text: (DATA.branch || 'detached') + ' at '
-      + String(DATA.commit || '').slice(0, 7) + ', written ' + at.slice(11, 16),
-    full: moment(at)};
+  var local = localParts(at);
+  return {where: (DATA.branch || 'detached') + ' at '
+      + String(DATA.commit || '').slice(0, 7) + ',',
+    written: 'written '
+      + (local ? local.time + ' ' + local.zone : at.slice(11, 16)),
+    full: local ? moment(at) + ' (' + at.slice(11, 16) + ' UTC)' : when(at)};
 }
 
 /* One of the top bar's two boxes: its label, then the payload's word in the
@@ -398,8 +420,9 @@ function topBar(readable) {
   var stamp = readable ? stampLine() : null;
   return '<header class="topbar"><span class="brand"><img id="brand-mark" src="'
     + logoSrc() + '" alt="Purlin"><span>purlin</span></span>'
-    + (stamp ? '<span class="stamp"' + hover([stamp.full]) + '>'
-      + esc(stamp.text) + '</span>' : '')
+    + (stamp ? '<span class="stamp"' + hover([stamp.full]) + '><span>'
+      + esc(stamp.where) + '</span> <span>' + esc(stamp.written)
+      + '</span></span>' : '')
     + '<span class="spacer"></span>' + (readable ? factBoxes() : '')
     + themeButton() + '</header>';
 }

@@ -118,8 +118,12 @@ def browser():
         instance.close()
 
 
-def open_board(browser, tmp_path, payload, viewport=None, clock_at=None):
+def open_board(browser, tmp_path, payload, viewport=None, clock_at=None,
+               timezone='UTC'):
     """The page, opened over file:// with this payload beside it.
+
+    The browser's timezone is `timezone`, never the machine's own, since the
+    page shows each time as the person looking at it reads the clock.
 
     `clock_at` hands the page a clock stopped at that moment, so a test can
     advance it and read what the page makes of the time passing.
@@ -132,7 +136,8 @@ def open_board(browser, tmp_path, payload, viewport=None, clock_at=None):
               encoding='utf-8') as handle:
         handle.write('const PURLIN_DATA = ' + json.dumps(payload) + ';\n')
     page = browser.new_page(viewport=viewport or {'width': 1440,
-                                                  'height': 1000})
+                                                  'height': 1000},
+                            timezone_id=timezone)
     if clock_at is not None:
         page.clock.install(time=clock_at)
     page.goto('file://' + os.path.join(root, 'purlin-report.html'))
@@ -1560,12 +1565,23 @@ def test_the_top_bar_names_the_branch_the_commit_and_when(browser, tmp_path):
     assert payload['generated_at'] == '2026-10-01T10:42:13Z'
     opened = datetime.datetime(2026, 10, 1, 10, 45, 0,
                                tzinfo=datetime.timezone.utc)
-    page = open_board(browser, tmp_path, payload, clock_at=opened)
+    page = open_board(browser, tmp_path, payload, clock_at=opened,
+                      timezone='America/New_York')
     first = stamp(page)
     page.clock.run_for(2 * 60 * 60 * 1000)
     later = stamp(page)
     page.close()
-    assert first == ['main at a1b2c3d, written 10:42',
-                     '2026-10-01 10:42 UTC'], first
+    assert first == ['main at a1b2c3d, written 06:42 EDT',
+                     '2026-10-01 06:42 EDT (10:42 UTC)'], first
     assert later == first, later
+
+
+# purlin: purlin_report PROOF-237
+def test_a_browser_set_to_utc_reads_the_time_in_utc(browser, tmp_path):
+    payload = payload_named('regulated')
+    assert payload['generated_at'] == '2026-10-01T10:42:13Z'
+    page = open_board(browser, tmp_path, payload, timezone='UTC')
+    line = stamp(page)[0]
+    page.close()
+    assert line == 'main at a1b2c3d, written 10:42 UTC', line
 

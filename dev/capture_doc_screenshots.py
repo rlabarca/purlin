@@ -75,7 +75,9 @@ def main():
         for name, fixture, clicks in SHOTS:
             root = tempfile.mkdtemp(prefix='purlin-report-')
             url = stage(root, fixture)
-            page = browser.new_page(viewport=VIEWPORT,
+            # A fixed timezone: the page shows its times as the viewer reads
+            # the clock, and the pictures are the same on any machine.
+            page = browser.new_page(viewport=VIEWPORT, timezone_id='UTC',
                                     device_scale_factor=SCALE)
             page.goto(url)
             page.wait_for_selector('.topbar', timeout=10000)

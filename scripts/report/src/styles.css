@@ -144,7 +144,9 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .bug .kv{grid-template-columns:1fr}
 }
 @media (max-width:599px){
-.panel .nowrap{white-space:normal}
+.stamp{white-space:normal;overflow:visible}
+.stamp>span{display:inline-block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+.bug .nowrap{white-space:normal}
 .facts{display:flex;flex-basis:100%}
 .fact{flex-direction:column;align-items:flex-start;gap:var(--space-1)}
 .fact b{max-width:100%}

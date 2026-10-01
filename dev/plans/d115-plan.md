@@ -945,7 +945,7 @@ No emoji. Name first, fix last, exact numbers, as `references/writing_style.md` 
 
 | Where | What it says | Held by |
 |---|---|---|
-| The dashboard's header | `main at a1b2c3d, written 10:42`; its hover `2026-10-01 10:42 UTC` | `purlin_report RULE-77`, `PROOF-232` |
+| The dashboard's header | `main at a1b2c3d, written 06:42 EDT` in a browser set to `America/New_York`, `written 10:42 UTC` in one set to `UTC`; its hover `2026-10-01 06:42 EDT (10:42 UTC)` | `purlin_report RULE-77`, `PROOF-232` |
 | A tool call that names no folder | `sync_status needs project_root: pass the top folder of the git checkout you are working in.` | `server RULE-37`, `PROOF-166` |
 | A spec ahead of its code | `states: 3 files its scope names are not written yet: facts.py, project.py, wording.py. Run purlin:build states, or correct the path with purlin:spec states.` and `login: 1 file its scope names is not written yet: src/gone.py. Run purlin:build login, or correct the path with purlin:spec login.` | `states RULE-123`, `PROOF-279`, `PROOF-280` |
 | The two facts, in the terminal | `Tests: met`, `Tests: not met`, `Sign-off: signed 0.1.0 at a1b2c3d`, `Sign-off: signed 0.1.0, 4 commits since`, `Sign-off: signed 0.1.0, 1 commit since`, `Sign-off: not signed` | `summary RULE-20` |
@@ -978,7 +978,7 @@ in its report.
 
 | Where | What it says | Lane |
 |---|---|---|
-| The dashboard's header on a detached `HEAD` | `detached at a1b2c3d, written 10:42` | `dashboard` |
+| The dashboard's header on a detached `HEAD` | `detached at a1b2c3d, written 06:42 EDT` | `dashboard` |
 | The dashboard, a spec ahead of its code | the line of `states RULE-123`, whole, as a notice in the neutral tone, below the warnings and above the boxes; no heading | `dashboard` |
 | The audit's cost, the line before its last | `The model was asked 31 times for 12 rules: $1.87 in all, $0.16 a rule.`; for one, `The model was asked 1 time for 1 rule: $0.16 in all, $0.16 a rule.`; left out where no answer carried a cost | `audit` |
 | A planted bug that could not be made | `PROOF-1: no bug was planted: the proof names no value the code computes.`, printed and not a finding | `audit` |
@@ -1069,7 +1069,7 @@ with `--audit` calling `audit_run.run`; `report_data.refresh` still called by `p
     rules to test on Windows left. Then the same with `--commit`.
 11. **The dashboard, looked at** with playwright from `.venv`, headless, in the dark and the
     light theme, at 1500, 1024 and 390 pixels wide, on this repository's own data and on the
-    three fixtures: the two boxes; the header line `<branch> at <commit>, written <hh:mm>`;
+    three fixtures: the two boxes; the header line `<branch> at <commit>, written <hh:mm> <zone>`;
     `Back to the board`; the information notices; nothing of K15; no value split across two
     lines; no sideways scroll; neutral text at least 7 to 1.
 12. `python3 dev/capture_doc_screenshots.py`: the two screenshots retaken from the rebuilt

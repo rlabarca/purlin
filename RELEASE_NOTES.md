@@ -142,7 +142,7 @@ In more words:
 - **`> Scope:`** is optional; a spec without one runs on every `purlin:test`.
 - **The dashboard** is written when `purlin:test`, `purlin:audit`, `purlin:sign` or
   `purlin:status` finishes, page and data together, and at no other time. Its header names the
-  branch, the commit and the time its data was written, as `main at a1b2c3d, written 10:42`.
+  branch, the commit and the time its data was written, in your own timezone, as `main at a1b2c3d, written 06:42 EDT`.
   Neither file is committed. It opens from disk.
 - **One settings file**, `.purlin/config.json`, committed, holding `version` and `tests`.
   `purlin:init` asks one question, whether to commit what it wrote. A settings file that cannot

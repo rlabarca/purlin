@@ -11,7 +11,7 @@
 > Scope: scripts/report/src/page.html, scripts/report/src/styles.css, scripts/report/src/theme.js, scripts/report/src/board.js, scripts/report/src/rule.js, scripts/report/src/app.js, scripts/report/purlin-report.html, scripts/mcp/purlin/report_data.py, dev/build_report.py
 > Stack: html/css/javascript, no framework and no build-time dependency, design tokens inlined by a python assembler
 > Highest-Rule: 78
-> Highest-Proof: 236
+> Highest-Proof: 237
 
 ## Rules
 
@@ -42,7 +42,7 @@
 - RULE-75: The page reads on every screen from 390 to 1500 pixels wide, in both themes, on the board and a rule's screen: the page never scrolls sideways, no count, label, box or rule id breaks onto two lines, and every text drawn in a neutral colour, any but the four state colours and the accent, measures at least 7:1 by the WCAG contrast formula against the ground beneath it, read through every translucent layer
 
 - RULE-76: Whenever a Purlin command writes the page's data file, it also writes the page itself where the project's copy differs from the plugin's, so the page and its data always come from the same version of Purlin
-- RULE-77: The top bar names the checkout state its data describes and when it was written, as `<branch> at <commit>, written <hh:mm>`, as in `main at a1b2c3d, written 10:42`: the branch and the first 7 characters of the commit the writing command ran on, and the time in UTC, its hover giving the date and time in full; the line is unchanged while the page is open
+- RULE-77: The top bar names the checkout state its data describes and when it was written, as `<branch> at <commit>, written <hh:mm> <zone>`, as in `main at a1b2c3d, written 06:42 EDT`: the branch and the first 7 characters of the commit the writing command ran on, and the time, 24-hour, in the timezone of the person looking at the page, named by the browser's short name for it or, where it has none, by its offset, as in `GMT+5:30`. Its hover gives the date and time in full in that zone, then the UTC time, as in `2026-10-01 06:42 EDT (10:42 UTC)`. The data keeps its stamp in UTC, and the line is unchanged while the page is open
 - RULE-78: Where the audit read a rule, its `Audit` panel shows the model's explanation after the findings, each sentence on its own line, whatever the audit found; then each planted bug the rule's tests missed, as `<PROOF-N>: its tests missed a bug planted at <file>:<line>.` with the lines before the bug under `Before` and the lines after it under `After`. A planted bug the tests caught is not shown
 ## Proof
 
@@ -109,8 +109,9 @@
 - PROOF-104 (RULE-75): In the light theme, open the solo, team and regulated samples in turn, each on the board with its first spec open and then on its first rule's screen; every text drawn in a neutral colour measures at least 7:1 against the ground under it
 - PROOF-230 (RULE-76): A project whose `purlin-report.html` is an older page that reads schema `11` gets, from one `purlin:status`, a page that is byte for byte the plugin's own, and opening it draws the board, not the notice naming a schema
 - PROOF-231 (RULE-76): A project whose page is already the plugin's own keeps its page's modification time after `purlin:status`
-- PROOF-232 (RULE-77): Open the board with the regulated sample, its data written on the branch `main` at the commit `a1b2c3d` and stamped `2026-10-01T10:42:13Z`; the top bar reads `main at a1b2c3d, written 10:42`, its hover reads `2026-10-01 10:42 UTC`, and after the page's clock runs on 2 hours the line reads the same
+- PROOF-232 (RULE-77): Open the board with the regulated sample, its data written on the branch `main` at the commit `a1b2c3d` and stamped `2026-10-01T10:42:13Z`, in a browser set to `America/New_York`; the top bar reads `main at a1b2c3d, written 06:42 EDT`, its hover reads `2026-10-01 06:42 EDT (10:42 UTC)`, and after the page's clock runs on 2 hours the line reads the same
 - PROOF-233 (RULE-77): In a project on the branch `feature/login`, run `purlin:status`; the data file names the branch `feature/login` and, as its commit, the first 7 characters of the commit git gives for `HEAD`
+- PROOF-237 (RULE-77): Open the board with the regulated sample, its data stamped `2026-10-01T10:42:13Z`, in a browser set to `UTC`; the top bar reads `main at a1b2c3d, written 10:42 UTC`
 - PROOF-234 (RULE-78): Open the regulated sample's login `RULE-1`, which the audit found strong, after its audit is given the explanation `The test signs in and reads the session cookie.`; its `Audit` panel reads `Strong. It found nothing.`, then that explanation on its own line
 - PROOF-235 (RULE-78): Open the regulated sample's invoice `RULE-2` after its audit is given one planted bug for `PROOF-2` that its tests missed, at line 12 of `src/billing/invoice.py`, changing `return total` to `return 0`; its `Audit` panel reads `PROOF-2: its tests missed a bug planted at src/billing/invoice.py:12.`, then `Before` with `return total` and `After` with `return 0`
 - PROOF-236 (RULE-78): Open the regulated sample's invoice `RULE-2` after its audit is given the same planted bug as one its tests caught; its `Audit` panel's first line reads `Weak.` and no line of it names a planted bug
