@@ -17,7 +17,7 @@ is `90` minutes old, the bug might make the age come out an hour off.
 still passes: the rule is `weak`, and you see the bug it missed:
 
 ```
-sample_age PROOF-1: the test still passes when src/age.py:12 adds an hour.
+PROOF-1: the test still passes when src/age.py:12 reads "return minutes + 60"
 ```
 
 **4. `purlin:audit`.** Run it whenever you like, or give the agent a target:
@@ -34,11 +34,15 @@ The audit found 42 of 50 rules strong (84%).
 ## What you can count on
 
 - **Your code is never changed.** Every planted bug lives in a copy that is thrown away.
-- **Nothing waits on it.** A weak rule is work to do, not a gate. It never stops a test run or a
-  sign-off.
+- **Nothing waits on it.** A weak rule is work to do, listed as `to strengthen`. The tests read
+  `met` with it, and a sign-off goes ahead.
+- **`strong` means a bug was planted and caught.** Where the AI cannot be reached, the spot
+  tests still report what they find as `weak`, a rule that passed them alone stays
+  `not audited`, and the audit says to run `purlin:audit` again.
 - **It stays fast.** Only proofs whose test or code changed since the last audit get a new bug.
 - **Nothing to install.** No extra tool for each language; any test Purlin can run, it can audit.
-- **What it found is kept.** It goes into the evidence, and the signer sees it at sign-off.
+- **What it found is kept.** Each finding and each planted bug goes into the evidence, and the
+  signer can read the findings at sign-off.
 
 What it does not do: prove your tests catch every possible bug. It tests the claim each proof
 makes, one bug at a time. A rule with no proof has nothing to plant a bug against.
@@ -79,14 +83,16 @@ but the test run decides.
 | How to judge a test | Speed | What it shows |
 |---|---|---|
 | An AI reads it | Fast | An opinion |
-| Plant bugs everywhere (classic mutation testing) | Minutes to hours, a tool per language | Objective, across all the code |
+| Plant bugs everywhere, with a tool per language | Minutes to hours, a tool per language | Objective, across all the code |
 | **Spot tests, then one planted bug per proof** | **Free, then one AI call and one test run per changed proof** | **Objective, aimed at what the requirement says** |
 
 Purlin takes the last row: real evidence where the requirement is, cheap enough to run every day.
 
 ## Sources
 
-The research behind Purlin's approach, each linked to the paper itself.
+The research behind Purlin's approach, each linked to the paper itself, and
+[the heuristic spot tests reference](../references/review_criteria.md#heuristic-spot-tests),
+which holds the six checks.
 
 **The audit as a whole**
 
