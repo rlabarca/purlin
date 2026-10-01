@@ -228,8 +228,8 @@ def newest(loaded):
 def audit_entry(loaded, rule_id, rule_hash, proof_hash, test_hash, code_hash):
     """The rule's audit entry, or None: a current one before one out of date,
     then the later `at`. A copy carrying `source`, `path` and `out_of_date`,
-    the parts of `rule`, `proof`, `test` and `code` whose stored hash differs
-    from the one given, in that order; [] for a current entry."""
+    the parts of `rule`, `proof`, `test` and `code` whose stored hash is not
+    the one given, in that order; [] for a current entry."""
     given = {'rule_hash': rule_hash, 'proof_hash': proof_hash,
              'test_hash': test_hash, 'code_hash': code_hash}
     best = best_rank = None
