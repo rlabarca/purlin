@@ -1350,6 +1350,10 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       signer sees the rule was not exercised.
     - **No project-side way to say a pulled rule does not apply.** A pulled rule that fails here is
       a problem to raise with its authors.
+    - **Only an anchor's rule counts a skip that starts `nothing to check:` as met**; on a project's
+      own rule the skip reads as not run, its reason kept (answered on the d105 plan's Q2).
+    - **Only the sign-off requires every result to be taken on this exact version of the code**;
+      the status keeps counting a result while nothing its feature covers changed (the plan's Q1).
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5

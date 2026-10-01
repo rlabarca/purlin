@@ -940,6 +940,8 @@ project's own spec could use the same skip for its own rules.
 The plan is written to (a): C15's "in an anchor's section". Under (b) lane `run` drops that
 condition and lane `counting`'s PROOF-274 holds for any spec.
 
+**Answered by the owner, 2026-10-01: Q1 (a), only the sign-off requires this exact code; Q2 (a), nothing to check counts for anchors only.** Every lane builds to these.
+
 ## 8. Calls this plan makes
 
 Not questions: each follows from decisions 104 to 106 or the code, and the owner may reverse any.
