@@ -72,7 +72,7 @@ reports the problem. A kind at zero is left out, and the first line is the next 
 | `no_test` | the passed cell reads `no test` | `<n> rules to write a test for` | `purlin:build` | yes |
 | `to_test` | the passed cell reads `not run` or `out of date`, and this machine can run it | `<n> rules to test` | `purlin:test` | yes |
 | `to_run_slow` | a proof tagged `@slow` reads `not run`: no run that starts its test has answered for the spec, code and tests as they stand; the line counts proofs, and a rule that waits for such proofs alone is counted here and not under `to_test` | `<n> slow proofs to run` | `purlin:test --all` | yes |
-| `to_test_remote` | the passed cell reads `not run` for a system this machine is not | `<n> rules to test on <systems>` | `purlin:test on <System>` | yes |
+| `to_test_remote` | the passed cell reads `not run` for a system this machine is not | `<n> rules to test on <systems>` | `run purlin:test on <systems>` | yes |
 | `to_commit` | a feature's results are written and not committed, once no other work stops the tests being met; the line counts features | `<n> features whose results are not committed` | `purlin:test --commit` | yes |
 | `to_strengthen` | the strong cell reads `weak` | `<n> rules to strengthen` | `purlin:build` | no |
 
@@ -80,6 +80,10 @@ A hand check adds no kind: a person looks at it in the sign-off walk. A count of
 `1 spec to repair`, `1 rule to fix`, `1 test comment to correct`,
 `1 feature whose results are not committed`, and so on. The systems read `Linux/Unix`, `macOS`
 and `Windows`, in that order, joined by `, ` and ` and `.
+
+`run purlin:test on <systems>` is an instruction, not a command line: no command takes a system.
+It is met by `purlin:test` on a machine of that system, or by the project's own run there
+("A run on another system", below).
 
 **When the tests are met and this code is not signed**, the status ends on one line:
 `Every rule passes its tests on the committed evidence. To sign it: purlin:sign`.
@@ -92,16 +96,17 @@ tests and writes the same section plus what the audit found, under `audit`, into
 Neither commits unless you add `--commit`, which makes two commits under your own identity: first
 the specs, the marked tests and the settings the results describe, then the evidence, naming the
 first (`references/commit_conventions.md`). Neither ever pushes. A run on another system writes
-its own section under `.purlin/evidence/ci/` and commits it with `--commit`. A teammate reads the files on the git
-host without running anything.
+its own section under `.purlin/evidence/ci/` and commits it with `--commit`. A teammate reads
+the files on the git host without running anything.
 
 **The folder is the source.** A file's own `source` field must say the same word as the folder it
 sits in, and a file where the two disagree is ignored with one warning naming it. Both sources
-count: `ci`, written by a project's own run on another system, and `local`, written by `purlin:test` and `purlin:audit`
-on anyone's machine.
+count: `ci`, written by a project's own run on another system, and `local`, written by
+`purlin:test` and `purlin:audit` on anyone's machine.
 
 **A result counts wherever it ran, and records where.** Each section names the commit of the code
-it describes, who ran it, as git's email, and the machine, which is the host's name under both sources.
+it describes, who ran it, as git's email, and the machine, which is the host's name under both
+sources.
 
 **For the status**, a section counts while its fingerprint, over the spec, the code the spec's
 `> Scope:` covers and the tests, is the one taken now. A pass that is not current makes the passed
@@ -113,9 +118,10 @@ to the project makes its results out of date.
 section is current, the run saw no uncommitted change, and every commit from the section's commit
 to `HEAD` changes only paths under `.purlin/`. A result from a run on another system counts on the
 same terms. Where one does not, `purlin:sign` refuses and names the run that takes it again:
-`purlin:test --all --commit` for this machine's results, `purlin:test on <System>` for another
-system's. The developer's hand-off is therefore run and commit: every test, here and through the
-project's own run for any other system, then the commit of the results that come back.
+`purlin:test --all --commit` for this machine's results, and `purlin:test on <System>` for
+another system's, the same instruction as in `Left to do`. The developer's hand-off is therefore
+run and commit: every test, here and through the project's own run for any other system, then
+the commit of the results that come back.
 
 **An anchor's rule with nothing to check passes, and says so.** Where every test tied to a proof
 of an anchor skipped with a reason starting `nothing to check:`, the rule reads `passed`, and the
@@ -188,16 +194,21 @@ A sign-off counts when two things are true:
   `the signature on the commit that added it does not verify`.
 - Its `package_hash` equals the `fingerprint` of the package committed for that version.
 
-**The sign-off walk.** `purlin:sign` refuses, and writes nothing, while tracked files are
-changed and not committed, the evidence is written and not committed, a result was not taken on
-this version of the code or was taken while files were changed and not committed, a rule has no
-test, a rule does not pass, the version's tag is on other code, or the branch's
-copy on the host holds commits the checkout lacks. Otherwise it names who ran the tests, where
-and when, shows an overview, offers the audit's findings as a list where a rule reads weak, and
-stops only at hand checks, where the signer may type what they saw; an empty answer is recorded
-as `no note`. A weak rule or a rule not audited never blocks the sign-off. The first sign-off of
-a version is one signed commit carrying the package and the sign-off; a later one adds its own
-file alone.
+**The sign-off walk.** `purlin:sign` refuses, and writes nothing, in each of these cases:
+
+- tracked files are changed and not committed;
+- the evidence is written and not committed;
+- a result was not taken on this version of the code, or was taken while files were changed
+  and not committed;
+- a rule has no test, or a rule does not pass;
+- the version's tag is on other code;
+- the branch's copy on the host holds commits the checkout lacks.
+
+Otherwise it names who ran the tests, where and when, and shows an overview. Where a rule reads
+weak it offers the audit's findings as a list. It stops only at hand checks, where the signer
+may type what they saw; an empty answer is recorded as `no note`. A weak rule or a rule not
+audited never blocks the sign-off. The first sign-off of a version is one signed commit carrying
+the package and the sign-off; a later one adds its own file alone.
 
 **A hand check** reads `checked at sign-off` everywhere else. Once a sign-off holds a note for
 it, the rule also shows its last note, with the version it was signed at and how many commits

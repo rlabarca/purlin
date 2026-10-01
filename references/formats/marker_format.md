@@ -89,12 +89,13 @@ list with one entry per suite:
 
 - `{report}` becomes the `report` path.
 - `{files}` becomes the test files, each quoted, that carry the markers of
-  the proofs the run selected; a `--ci` run selects the proofs tagged
-  `@env` for its own system. On a run over some
-  features these are their test files; on a run over every feature on your
-  own machine it becomes nothing, and the suite runs whole. A suite with no
-  `{files}` runs whole every time it runs. A run over some features starts no
-  suite with none of their test files.
+  the proofs the run selected.
+  - A run over some features gets their test files, and starts no suite
+    that holds none of them.
+  - A run over every feature on your own machine gets nothing, and the suite
+    runs whole.
+  - A `--ci` run selects the proofs tagged `@env` for its own system.
+  - A suite with no `{files}` runs whole every time it runs.
 
 `files` decides which suite a marked file belongs to, and only a file one
 suite's globs match is read for markers. `*` and `?` match within one path

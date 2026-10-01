@@ -13,23 +13,30 @@ command (`references/evidence_and_signoff.md`, "What is left to do").
 No Purlin command pushes. Every push is yours: a sign-off ends on a line starting `Push`, with
 the `git push origin` command, and pushing is your act.
 
-`purlin:test` runs the tests and writes what it saw. With or without a feature named it never
-starts the test of a slow proof, one tagged `@slow`: it prints `Left out <n> slow proofs`, naming
-each, and keeps the result a slow proof already has while that result still counts.
-`purlin:test --all` starts every test, slow ones included. A test carrying the comment of a proof that is not slow is
-started all the same, and so is a slow test a suite's command cannot leave out, which the run
-names; `references/supported_frameworks.md` says how each test tool leaves a test out.
-`purlin:audit` runs the tests the same way and adds what the audit found, a
-tool nothing waits on. The hand-off is `purlin:test --all --commit`, and the project's own run
-for the proofs tagged for another system (`references/evidence_and_signoff.md`, "A run on another
-system"); that run is `scripts/run/purlin_run.py --ci --commit`, which a pipeline runs and nobody
-types. `purlin:sign` builds the evidence package from the
-committed evidence, walks its hand checks with a person and signs it; the first sign-off of a
-version writes `signed/<version>`. `references/evidence_and_signoff.md` defines the two facts and
-the sign-off. **The folder an evidence file sits in is its source**: `purlin:test` and
-`purlin:audit` write yours under `.purlin/evidence/local/`, and commit it only with `--commit`;
-the project's own run on another system writes its section under `.purlin/evidence/ci/`. Both
-sources count.
+`purlin:test` runs the tests and writes what it saw. Which tests a run starts:
+
+- `purlin:test`, with or without a feature named, never starts the test of a slow proof, one
+  tagged `@slow`. It prints `Left out <n> slow proofs`, naming each, and keeps the result a slow
+  proof already has while that result still counts.
+- `purlin:test --all` starts every test, slow ones included.
+- A test that also carries the comment of a proof that is not slow is started all the same. So
+  is a slow test a suite's command cannot leave out, which the run names;
+  `references/supported_frameworks.md` says how each test tool leaves a test out.
+
+`purlin:audit` runs the tests the same way and adds what the audit found, a tool nothing waits
+on.
+
+The hand-off is `purlin:test --all --commit`, and the project's own run for the proofs tagged
+for another system (`references/evidence_and_signoff.md`, "A run on another system"). That run
+is `scripts/run/purlin_run.py --ci --commit`, which a pipeline runs and nobody types.
+
+`purlin:sign` builds the evidence package from the committed evidence, walks its hand checks
+with a person and signs it; the first sign-off of a version writes `signed/<version>`.
+`references/evidence_and_signoff.md` defines the two facts and the sign-off.
+
+**The folder an evidence file sits in is its source**: `purlin:test` and `purlin:audit` write
+yours under `.purlin/evidence/local/`, and commit it only with `--commit`; the project's own run
+on another system writes its section under `.purlin/evidence/ci/`. Both sources count.
 
 Every Purlin tool call, `sync_status`, `drift` and `purlin_config`, names `project_root`, the top
 folder of the git checkout you are working in. A call that names none is refused:

@@ -156,11 +156,9 @@ expected value, written by a person; a test that never mentions it is checking s
 ### How the checks are held to account
 
 - Each check has a rule and proofs, with tests that show it firing on a wrong test and staying
-  silent on a right one, in Python, JavaScript or TypeScript, and C#, which Purlin's runner
-  supports.
-- Before release, the checks run over Purlin's own roughly 2,300 tests. Every finding is read by a
-  person and either fixed in the test or, if the check was wrong, the check is narrowed. The count
-  of findings and of false alarms is reported in the release notes.
+  silent on a right one, in Python, JavaScript or TypeScript, and C#.
+- Before a release, the checks run over Purlin's own tests. Every finding is read by a person
+  and either fixed in the test or, if the check was wrong, the check is narrowed.
 
 ## The planted bug
 

@@ -40,11 +40,11 @@ On Windows the pytest entry's command starts `py -3 -m pytest` in place of
 | sql | a `test_*.sql`, `*_test.sql` or `*.test.sql` file | the `sqlite3` command; a test fails by raising an error, and another engine is a change to `run` |
 | shell | a `*.test.sh` file | nothing |
 
-Detection descends the tree, skipping dot directories, `node_modules`, `bin` and `obj`. It also skips every folder named `fixtures`, `fixture`, `samples`, `sample`,
-`testdata`, `test_data` or `test-data`, at any depth: a project kept there to test against is
-not a tool this project uses, so the first test run names only the project's own. A
-project that carries several frameworks is suggested an entry for each, one suite per entry
-under `tests`.
+Detection descends the tree, skipping dot directories, `node_modules`, `bin` and `obj`. It also
+skips every folder named `fixtures`, `fixture`, `samples`, `sample`, `testdata`, `test_data` or
+`test-data`, at any depth. A project kept there to test against is not a tool this project
+uses, so the first test run names only the project's own. A project that carries several
+frameworks is suggested an entry for each, one suite per entry under `tests`.
 
 ## The entry suggested
 
@@ -198,12 +198,19 @@ setting, after the files it names, or at its end where it names none.
 | go | `-skip`, with the slow tests' names; needs Go 1.20. It matches a name in every package, so a slow test that shares its name with a test that is not slow in another package is started |
 | sql, shell, any `exit` suite | the file is the test, and a slow file is not run |
 
-A slow test is started all the same, and the run says so in one line, as in
-`Started 1 slow test in the e2e suite: its command gives Purlin no way to leave one test out.`,
-where the suite's command is none of these tools', where it already carries that option, where
-it names no `{files}` and pipes, chains or redirects, and where the slow test shares its title or name as the table says. Its
-result counts like any other. A test left out by vitest or jest is in their report as skipped,
-and a test with the same title in a file that carries no test comment is left out with it.
+In four cases a slow test is started all the same:
+
+- the suite's command is none of these tools';
+- the command already carries that option;
+- the command names no `{files}` and pipes, chains or redirects;
+- the slow test shares its title or name with another test, as the table says.
+
+The run says so in one line, as in
+`Started 1 slow test in the e2e suite: its command gives Purlin no way to leave one test out.`
+Its result counts like any other.
+
+A test left out by vitest or jest is in their report as skipped. A test with the same title in
+a file that carries no test comment is left out with it.
 
 ## Any other framework
 

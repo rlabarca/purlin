@@ -52,7 +52,8 @@ other page points here rather than defining it again.
   the work is done, each with its count and the command that does it; a kind at zero is left
   out. It lists only work. The first line is the next step. The kinds, as printed:
   `to repair`, `to write a proof for`, `to correct`, `to fix`, `to write a test for`, `to test`,
-  `to test on <systems>`, `whose results are not committed` and `to strengthen`.
+  `slow proofs to run`, `to test on <systems>`, `whose results are not committed` and
+  `to strengthen`.
   `references/evidence_and_signoff.md` says when each applies and which stop the tests being met.
 - **test comment to correct**: a marker naming nothing a spec has, or naming a proof whose
   wording changed after the test was last changed. It is left to do with `purlin:build`, and
@@ -63,11 +64,12 @@ other page points here rather than defining it again.
 - **hand-off**: what a developer does before a sign-off: `purlin:test --all --commit`, and
   the project's own run for the proofs tagged for another system.
 - **evidence**: what runs saw, one file per feature per source,
-  `.purlin/evidence/<source>/<feature>.json`, with one **section** per system and, once the
+  `.purlin/evidence/<source>/<feature>.json`. It holds one **section** per system and, once the
   audit has read the feature, what the audit found. Each section names the commit of the code it
-  describes, who ran it and the **machine** it ran on, the host's name. A run writes it; `--commit` commits it, after
-  a commit of the specs, tests and settings it describes. **source**: the folder the file sits
-  in, `local` (a person's own run) or `ci` (a project's own run on another system). Both count.
+  describes, who ran it and the **machine** it ran on, the host's name. A run writes the file.
+  `--commit` commits it, after a commit of the specs, tests and settings it describes.
+  **source**: the folder the file sits in, `local` (a person's own run) or `ci` (a project's own
+  run on another system). Both count.
 - **platform**: one system a current section covered. **partial**: the passed cell's word when
   a rule's tests passed on one system and failed on another. It is not met. A system that has
   not run reads `not run`.
@@ -82,18 +84,20 @@ other page points here rather than defining it again.
 - **nothing to check**: what an anchor's rule reads when its test finds nothing in this project
   to check and skips with a reason starting `nothing to check:`. The rule passes, and the reason
   is shown.
-- **audit**: `purlin:audit`, run by hand: the tests, then for each rule that passes the
-  **heuristic spot tests**, one **planted bug** per proof, and the **model's reading**, written
-  into each feature's evidence. It ends on the share of rules it found strong.
-  `references/review_criteria.md` is its one home. **heuristic spot test**: one of six checks
-  that read a test as text, with no model, and flag a test that cannot fail. **planted bug**:
-  the smallest change to the code that would break one proof, made in a copy of the project to
-  see whether the proof's own test catches it. **finding**: one line saying what a spot test
-  flagged or which planted bug a test did not catch. A finding makes the rule `weak`, and a weak
-  rule is left to do as `to strengthen`; it stops nothing. **explanation**: the model's reading
-  of what was found; it decides nothing. **strong**: what the audit found a rule's tests to be.
-  **waiting**: the word the strong cell reads while the passed cell is not met,
-  `waiting for its tests to pass`. It is not `weak`.
+- **audit**: `purlin:audit`, run by hand. It runs the tests, then for each rule that passes it
+  takes three steps: the heuristic spot tests, one planted bug per proof, and the **model's
+  reading**. It writes what it found into each feature's evidence and ends on the share of
+  rules it found strong. `references/review_criteria.md` is its one home.
+- **heuristic spot test**: one of six checks that read a test as text, with no model, and flag
+  a test that cannot fail.
+- **planted bug**: the smallest change to the code that would break one proof, made in a copy
+  of the project to see whether the proof's own test catches it.
+- **finding**: one line saying what a spot test flagged or which planted bug a test did not
+  catch. A finding makes the rule `weak`. A weak rule is left to do as `to strengthen`, and
+  stops nothing.
+- **explanation**: the model's reading of what was found. It decides nothing.
+- **strong**: what the audit found a rule's tests to be. **waiting**: the word the strong cell
+  reads while the passed cell is not met, `waiting for its tests to pass`. It is not `weak`.
 - **hand check**: a proof marked `@manual`, which no test runs. It reads `checked at sign-off`:
   a person looks at it in the sign-off walk and may type what they saw. What they type is a
   **note**, kept in the sign-off; an empty answer is recorded as `no note`.
@@ -123,15 +127,15 @@ other page points here rather than defining it again.
   calls none; a project's own run on another system is written for the one it uses.
 - **drift**: `purlin:drift`, the facts your last pull, merge, rebase, checkout, clone or reset
   brought in, in one view.
-- **role**: product, developer or QA. There are no others.
+- **role**: product, developer or QA, the three words for who does the work. Purlin gives no
+  role a permission: whoever knows the answer edits the spec, and any role may sign.
 - **checkout**: one working copy of a repository, a **worktree** included. Each has its own
   results, status and dashboard; nothing is shared until the work is merged.
 - **anchor**: a set of rules for the whole project, kept under `specs/_anchors/` or opening
   `# Anchor:`. Its tests check the whole project, and each of its rules is counted and audited
   once. No spec names an anchor. **remote anchor**: a local copy of an anchor another repository
   owns. The copy is pinned to one version of its source, the commit `> Pinned:` names.
-  **anchor repo**: a repository that holds anchors
-  for one or more projects.
+  **anchor repo**: a repository that holds anchors for one or more projects.
 
 ## The chain
 

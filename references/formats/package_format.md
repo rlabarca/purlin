@@ -2,13 +2,17 @@
 
 # Package format
 
-The evidence package is one data file describing one version: whether every
-rule's tests pass, the total of rules, the count that pass, what the audit
-found, what is left to do and who ran the tests, where and when, then every
-rule's words, its proofs and its tests, each result on each operating system,
-what the audit found and who wrote and last changed each rule, proof and
-test, and last every hand check. It is written for a reviewer who cannot
-open the repository.
+The evidence package is one data file describing one version. It is written
+for a reviewer who cannot open the repository. It holds, in this order:
+
+- whether every rule's tests pass, the total of rules and the count that
+  pass;
+- what the audit found, and what is left to do;
+- who ran the tests, where and when;
+- every rule: its words, its proofs and its tests, each result on each
+  operating system, what the audit found, and who wrote and last changed the
+  rule, each proof and each test;
+- every hand check.
 
 ```
 .purlin/evidence/package/<version>.json

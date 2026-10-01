@@ -309,13 +309,14 @@ rewrite it. Name the flow, never the tool that drives it.
 
 ### The operating system
 
-Add `@env(windows)`, `@env(macos)` or `@env(linux)`, at most one per proof, where what the proof
-checks could differ on that operating system because of files or the operating system: a file
-lock the system holds, a console's default encoding, a filesystem that ignores case. Those three
-are the whole vocabulary. A rule that holds everywhere but could differ on Windows keeps its
-untagged proof and gains a second proof tagged `@env(windows)`, tied to the same test by a
-second marker comment; which run proves each is in
-[references/evidence_and_signoff.md](evidence_and_signoff.md), "A run on another system".
+Add `@env(windows)`, `@env(macos)` or `@env(linux)`, at most one per proof, where the result
+could differ on that operating system: a file lock the system holds, a console's default
+encoding, a filesystem that ignores case. Those three are the whole vocabulary.
+
+A rule that holds everywhere but could differ on Windows keeps its untagged proof and gains a
+second proof tagged `@env(windows)`. One test may carry both, with a second marker comment.
+Which run proves each is in [references/evidence_and_signoff.md](evidence_and_signoff.md),
+"A run on another system".
 
 ### A test that takes a long time
 
@@ -330,9 +331,9 @@ claim is the better proof. An anchor's check across the whole project is a natur
 
 ## Manual proofs
 
-A proof carries no `@manual` when a test settles it, whatever that test needs to run. Human judgment, such as
-visual polish, wording or brand voice, is the one case for `@manual`: "Read the error
-messages against the brand voice guide @manual".
+A proof carries no `@manual` when a test settles it, whatever that test needs to run. Human
+judgment, such as visual polish, wording or brand voice, is the one case for `@manual`: "Read
+the error messages against the brand voice guide @manual".
 
 Source files under `views/`, `pages/`, `templates/` or `layouts/`, components with
 layout logic, and code producing HTML are a signal that the proofs go through the running app

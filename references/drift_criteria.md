@@ -41,12 +41,16 @@ Since your last pull, 14 hours ago (a1b2c3d..4f5e6a7, 9 commits).
 
 ## The view
 
-The view is a list of lines, the first naming the range, beside the facts each line was built
-from. The report carries exactly `since` and `view`. `since` carries `action`, `commits`, `from`,
-`line`, `to` and `when`; the view carries exactly eleven keys: `lines`, every line in the order
-of the table below after the one naming the range, and the ten keys of the table, each the facts
-its lines were built from. Lines the status already prints, such as the work left to do or the
-spec files not committed, are not repeated here.
+The report carries exactly two keys, `since` and `view`.
+
+- `since` is the range: `action`, `commits`, `from`, `line`, `to` and `when`. `line` is the
+  sentence that names the range.
+- `view` carries exactly eleven keys. `lines` holds every sentence to print after the one naming
+  the range, in the order of the table below. The other ten are the keys of the table, each
+  holding the facts its lines were built from.
+
+Lines the status already prints, such as the work left to do or the spec files not committed,
+are not repeated here.
 
 | Key | Line |
 |-----|------|
@@ -143,8 +147,8 @@ somewhere else gets read before it is adopted.
 | `tests` | `purlin:test`, at the first run, once you confirm the command it suggests | `scripts/run/purlin_run.py`, which runs each suite's own command and reads its report; the fingerprint, which reads markers only from the files a suite names | `[]` in the template; see `references/formats/marker_format.md` |
 
 `purlin:init` is the only command that writes the settings unprompted. `purlin:test` writes
-`tests` once you confirm it, and every other command reads. The git host is read from the
-remote and the project's name from the project's own files each time; neither is a setting. Any
+`tests` once you confirm it, and every other command reads. The project's name is read from the
+project's own files each time; it is not a setting. Any
 other key is not read, and the status names it with its fix. This table must name every field
 `templates/config.json` carries: a field written into new projects but absent here has no owner
 on this page.
