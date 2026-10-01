@@ -1598,6 +1598,32 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **Removed:** stale evidence, the stashes, old worktrees and branches, the lane branches on
       the git host, and the plan files of finished rounds but `three-levels.md`, `handoff.md` and
       the deck.
+121. **What the review and the measurement found, and what the audit's result means** (added
+    2026-10-01). A read-only review (`dev/plans/d120-reports/coverage-review.md`) found the weight
+    pass removed few protections, and that the sign-off and the audit had gaps that were never
+    rules. A measurement of the planted-bug audit on 46 rules found $0.74 a rule against decision
+    116's $0.10, and 1 of 93 bugs irrelevant against 1 in 5.
+    - **Everything the review proposes for the evidence, the sign-off and the audit is built**,
+      each fix starting from a test that reproduces the fault: the status reads `signed` only
+      where a sign-off counts; a package is trusted by its content, not its stored fingerprint;
+      a marker inside a string is no marker; and the rest of its list.
+    - **A slow result counts at the sign-off only when taken on the version being signed.** The
+      refusal names `purlin:test --all --commit`.
+    - **The audit's result is one of four.** `strong`: the spot tests found nothing and a planted
+      bug was caught, on the code as it is. `weak`: a spot test fired or a planted bug survived.
+      `spot-checked`: the spot tests found nothing and no bug was planted and caught, with the
+      reason shown; in the owner's words, "There was SOME evaluation there". `not audited`: the
+      audit never read the rule. A rule the model could not be reached for reads `spot-checked`,
+      which replaces decision 117's `not audited` for that case.
+    - **An audit result reads `out of date` once its rule, proof, test or covered code changes**,
+      its last result and date kept.
+    - **A test that is skipped or errors is not a caught bug**, which reverses the build's earlier
+      call; a proof tagged for another system gets no bug planted on this one.
+    - **The model is started bare** for the audit: no tools, connectors, plugins or project
+      instructions, one call per rule. The cost is measured again after; over $0.10 a rule, the
+      planted bug is marked experimental.
+    - **A change to the test commands in the settings ends results**; a change to the version
+      alone does not.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
