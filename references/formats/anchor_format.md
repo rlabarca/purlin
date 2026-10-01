@@ -1,4 +1,4 @@
-> Format-Version: 11
+> Format-Version: 12
 
 # Anchor format
 
@@ -26,8 +26,8 @@ This document has two parts:
 
 ## Rules
 
-- RULE-1: <constraint that holds across the whole project>
-- RULE-2: <another constraint>
+- RULE-1: For every <X> in the project, <Y holds>
+- RULE-2: <another constraint, written the same way>
 
 ## Proof
 
@@ -60,13 +60,42 @@ it by repo URL plus path.
 
 Every rule of an anchor holds across the whole project, and its tests check the
 whole project. The project is every file git tracks but the records Purlin
-writes: the results of a run, the evidence package and its sign-offs under
-`.purlin/evidence/`, and the table `.purlin/tests.md`. Any change to the project
-ends an anchor's results. At the gate `signed` its rules are signed as part of
-the release, with every other rule. No code is broken on purpose for an anchor:
-the AI audit alone judges its tests. A rule that cannot be checked across the whole project
-is not an anchor's; write it in the spec of each feature that needs it, in that
-feature's words.
+writes: the results of a run, and the evidence package and its sign-offs under
+`.purlin/evidence/`. Any change to the project ends an anchor's results. Its
+rules are signed with every other rule, in the one sign-off over the evidence
+package. No bug is planted for an anchor's proof: the audit reads its tests with
+the spot tests and the model alone. A rule that cannot be checked across the
+whole project is not an anchor's; write it in the spec of each feature that
+needs it, in that feature's words.
+
+### Writing a rule that holds where there is nothing to check
+
+Write each rule as "for every X in the project, Y holds", so a project with no
+X has nothing to break it: `For every screen in the project, each input is
+escaped before it is shown`. A project with no screens then meets the rule.
+This matters most for an anchor other projects pull, since its author cannot
+know what each project holds.
+
+When the rule's test finds no X, it skips through its test tool's own skip,
+with a reason starting exactly `nothing to check:`:
+
+```python
+# purlin: security_baseline PROOF-3
+def test_every_screen_escapes_its_input():
+    screens = find_screens()
+    if not screens:
+        pytest.skip('nothing to check: this project has no screens')
+```
+
+The proof then reads `nothing to check` in the evidence, with the text after
+`nothing to check: ` as its reason, and on an anchor its rule counts as passed.
+The status, the dashboard and the evidence package show the reason, so a signer
+sees the rule was not exercised:
+`security_baseline RULE-3 passes with nothing to check here: this project has no screens.`
+Only an anchor's rule counts such a skip as passed; on any other spec's rule it
+reads as not run, its reason kept (`marker_format.md`). A project cannot set
+a pulled rule aside: a pulled rule that fails here is a problem to raise with
+its authors.
 
 An anchor carries no `> Scope:`, and no spec carries `> Requires:` or
 `> Global:`. Each such line is not read, and every status and test run warns of
@@ -98,10 +127,15 @@ what pinning exists to prevent.
 
 The file at the path is a spec in this format that holds at least one rule. `purlin:anchor add` refuses any other source, a file on disk, a description in words or a file with no rule, and writes nothing. A copy whose `> Source:` names no repository reads `error` in `purlin:drift` and in `purlin:anchor sync --check`. A local anchor carries no `> Source:` and is never checked.
 
-`purlin:drift` runs one cached `git ls-remote` per source per run and reports
-`anchor X: the pin <old7> is behind its source, now <new7>. Run purlin:anchor sync X.`
-`purlin:anchor sync X` shows the delta, updates the local copy and advances the
-pin, all in one commit.
+The status and `purlin:drift` check a pin against its source and pull nothing:
+one cached `git ls-remote` per source per run reads the source's head, and the
+anchor's copy, its pin and the checkout's git objects stay as they were. A pin
+behind its source reads, in the status,
+`X: the pin <old7> is behind its source, now <new7>. Run purlin:anchor sync X.`,
+and in drift the same line opening `anchor X:`. Only `purlin:anchor sync X`
+pulls: it shows the rule delta, rewrites the local copy from the source's new
+head, keeps every `> Note:` line, and advances the pin. It commits nothing; the
+copy is left changed for you to read and commit.
 
 A `> Source:` value is repository-supplied text, so it never reaches git in
 option position. A value that begins with `-` or names an `ext::` or `fd::`

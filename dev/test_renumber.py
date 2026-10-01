@@ -217,12 +217,17 @@ class TestComments:
             b'# purlin: login PROOF-4\n')
 
     # purlin: renumber PROOF-8
-    def test_a_comment_follows_its_old_wording(self, tmp_path):
+    def test_a_test_marked_while_proof_4_read_a_moves_to_proof_6_where_a_is_now(
+            self, tmp_path):
+        # The test is committed while PROOF-4 reads `A`, and is not changed
+        # again; a later commit rewords PROOF-4 to `B` and writes `A` under
+        # PROOF-6.
         root = _repo(str(tmp_path / 'proj'), {
             SPEC: _spec([RULE], [ONE, 'PROOF-4 (RULE-1): A'], 1, 4),
             'tests/test_login.py': _marker('PROOF-4')})
         _commit(root, {SPEC: _spec([RULE], [
-            ONE, 'PROOF-4 (RULE-1): B', 'PROOF-6 (RULE-1): A'], 1, 6)})
+            ONE, 'PROOF-4 (RULE-1): B', 'PROOF-6 (RULE-1): A'], 1, 6)},
+            'spec(login): PROOF-4 reworded, its old wording now PROOF-6')
         _code, lines = _renumber(root, '--dry-run')
         assert lines[0] == ('tests/test_login.py:1 names login PROOF-4 and '
                             'moves to PROOF-6, where its old wording is now.'), \

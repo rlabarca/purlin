@@ -143,7 +143,7 @@ advance_anchor_repo() {
 init_project() {
   local tmpdir="$1"
   mkdir -p "$tmpdir/.purlin" "$tmpdir/specs/_anchors"
-  printf '{"gate": "passed"}\n' > "$tmpdir/.purlin/config.json"
+  printf '{"version": "0.10.0", "tests": []}\n' > "$tmpdir/.purlin/config.json"
   printf '.purlin/runtime/\n' > "$tmpdir/.gitignore"
   (
     cd "$tmpdir"
@@ -219,7 +219,7 @@ drift_json=$(run_drift "$PROJECT")
 result=$(PURLIN_JSON="$drift_json" PURLIN_REMOTE="$NEW_SHA" python3 -c '
 import json, os
 data = json.loads(os.environ["PURLIN_JSON"])
-pins = data["roles"]["eng"]["anchors_behind"]
+pins = data["view"]["anchors_behind"]
 rows = {p["anchor"]: p for p in pins}
 if "ext_security" not in rows:
     print("no pin row: %s" % json.dumps(pins))
@@ -257,8 +257,8 @@ drift_json=$(run_drift "$PROJECT" 1)
 result=$(PURLIN_JSON="$drift_json" python3 -c '
 import json, os
 data = json.loads(os.environ["PURLIN_JSON"])
-pm = data["roles"]["pm"]
-pins = data["roles"]["eng"]["anchors_behind"]
+pm = data["view"]
+pins = data["view"]["anchors_behind"]
 problems = []
 if pm["rules_added"] != {"local_security": ["RULE-2"]}:
     problems.append("rules_added=%s" % json.dumps(pm["rules_added"]))
@@ -296,8 +296,8 @@ result=$(PURLIN_JSON="$drift_json" python3 -c '
 import json, os
 data = json.loads(os.environ["PURLIN_JSON"])
 behind = any(p.get("anchor") == "ext_security" and p.get("status") == "behind"
-             for p in data["roles"]["eng"]["anchors_behind"])
-added = data["roles"]["pm"]["rules_added"] == {"local_security": ["RULE-2"]}
+             for p in data["view"]["anchors_behind"])
+added = data["view"]["rules_added"] == {"local_security": ["RULE-2"]}
 print("ok" if behind and added else "behind=%s added=%s" % (behind, added))
 ')
 ok=true
@@ -346,7 +346,7 @@ drift_json=$(run_drift "$PROJECT")
 result=$(PURLIN_JSON="$drift_json" python3 -c '
 import json, os
 data = json.loads(os.environ["PURLIN_JSON"])
-names = sorted(p.get("anchor") for p in data["roles"]["eng"]["anchors_behind"])
+names = sorted(p.get("anchor") for p in data["view"]["anchors_behind"])
 print("ok" if names == ["ext_security"] else json.dumps(names))
 ')
 ok=true

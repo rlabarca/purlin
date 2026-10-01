@@ -112,7 +112,7 @@ advance_anchor_repo() {
 init_project() {
   local tmpdir="$1"
   mkdir -p "$tmpdir/.purlin" "$tmpdir/specs/_anchors"
-  printf '{"gate": "passed"}\n' > "$tmpdir/.purlin/config.json"
+  printf '{"version": "0.10.0", "tests": []}\n' > "$tmpdir/.purlin/config.json"
   printf '.purlin/runtime/\n' > "$tmpdir/.gitignore"
   (
     cd "$tmpdir"
@@ -301,7 +301,7 @@ drift_json=$(run_drift "$PROJECT5")
 result=$(PURLIN_JSON="$drift_json" PURLIN_REMOTE="$NEW5" python3 -c '
 import json, os
 data = json.loads(os.environ["PURLIN_JSON"])
-pins = data["roles"]["eng"]["anchors_behind"]
+pins = data["view"]["anchors_behind"]
 match = [p for p in pins if p.get("anchor") == "no_eval"]
 if not match:
     print("no pin row: %s" % json.dumps(pins))

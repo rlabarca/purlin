@@ -1,10 +1,10 @@
-> Criteria-Version: 12
+> Criteria-Version: 13
 
 # Drift criteria
 
-What the `drift` tool measures, what each of the three role views reports and from which git
-facts, and which config field belongs to which command. The tool reports facts and judges
-nothing; the `purlin:drift` skill prints the lines and names the next step.
+What the `drift` tool measures, what its one view reports and from which git facts, and which
+setting belongs to which command. The tool reports facts and judges nothing; the `purlin:drift`
+skill prints the lines and names the next step.
 
 ## Where the range starts
 
@@ -20,38 +20,35 @@ action is one of these:
 | merge | `merge <branch>: ...` | Where HEAD stood before the merge |
 | merge with conflicts | `commit (merge): ...`, the commit that finishes a merge once its conflicts are resolved | Where HEAD stood before that commit |
 | rebase | `rebase (finish): ...` | Where HEAD stood before the rebase's first step, `rebase (start)` |
-| checkout | `checkout: moving from <a> to <b>` | The commit HEAD left |
+| checkout | `checkout: moving from <a> to <b>`, where HEAD moved to another commit | The commit HEAD left |
 | reset | `reset: moving to <ref>` | Where HEAD stood before the reset |
 | clone | `clone: from <url>` | No commit before it: the last 20 commits |
 
 A pull that rebases is logged as several steps, `pull --rebase (start)` to `pull --rebase
-(finish)`, and is measured from before its first step, like a rebase. With no such entry at
-all, the range is the last 20 commits. With fewer than 20 commits, it is every commit.
+(finish)`, and is measured from before its first step, like a rebase. A checkout that leaves
+HEAD at the commit it stood at, as `git checkout -b topic` does, brought nothing in: drift passes
+over it to the entry before. With no such entry at all, the range is the last 20 commits. With
+fewer than 20 commits, it is every commit.
 
 `--since <N>` measures the last N commits and `--since <YYYY-MM-DD>` every commit made on or after
 that date. Either overrides the log. Any other value is refused before git runs.
 
-The first line of every view names the range in words a person recognises:
+The view's first line names the range in words a person recognises:
 
 ```
 Since your last pull, 14 hours ago (a1b2c3d..4f5e6a7, 9 commits).
 ```
 
-## The three role views
+## The view
 
-Each view is a list of lines, the first naming the range, beside the facts each line was built
-from. After its own lines every view prints the lines of "Every view" below. Every view ends
-with `<n> spec files have changes that are not committed.` when a spec file under `specs/`
-differs from HEAD or is not tracked, read from `git status --porcelain -- specs/`.
-
-### `pm`
-
-Every spec file the range changed is read at both ends with `git show <sha>:<path>`, and its map
-of rule id to rule text at the start is compared with the one at HEAD. A spec that moved folder
-and kept its rules changed nothing.
+The view is a list of lines, the first naming the range, beside the facts each line was built
+from. The report carries exactly `since` and `view`. `since` carries `action`, `commits`, `from`,
+`line`, `to` and `when`; the view carries exactly the eleven keys below. Lines the status already
+prints, such as the work left to do or the spec files not committed, are not repeated here.
 
 | Key | Line |
 |-----|------|
+| `lines` | Every line, in the order of this table |
 | `rules_added` | `3 rules added: login RULE-7, RULE-8; export RULE-2.` |
 | `rules_changed` | `2 rules changed: login RULE-3, billing RULE-1.` |
 | `rules_removed` | `1 rule removed: cart RULE-4.` |
@@ -59,54 +56,28 @@ and kept its rules changed nothing.
 | `proofs_added` | `2 proofs added: sample_age PROOF-5, PROOF-6; stability PROOF-3.` |
 | `proofs_changed` | `sample_age PROOF-1 changed: it read "<old>" and now reads "<new>".` |
 | `proofs_moved` | `sample_age PROOF-4 moved to PROOF-6.` |
+| `numbers_twice` | `sample_age: PROOF-4 is written twice. The line on origin/main keeps PROOF-4; renumber the other to PROOF-7 and move its test comments with it: "<its text>".` |
+| `comments_changed` | `tests/test_age.py:14 names sample_age PROOF-4, whose wording changed after the test was last changed in a1b2c3d: it read "<old>" and now reads "<new>". Run purlin:build sample_age to make the test show it; the line clears once the test changes.` |
+| `default_branch` | `origin/main was last fetched 3 days ago, and drift does not fetch. Run git fetch, then purlin:drift again.`, printed only after a `numbers_twice` line |
+| `anchors_behind` | `anchor proof_common: the pin 1a2b3c4 is behind its source, now 3c4d5e6. Run purlin:anchor sync proof_common.` |
+
+### Rules and proofs
+
+Every spec file the range changed is read at both ends with `git show <sha>:<path>`, and its map
+of rule id to rule text at the start is compared with the one at HEAD. A spec is matched by its
+name wherever its file lies, so a spec that moved folder and kept its rules changed nothing.
 
 The proof lines follow the rule lines, and read the same two ends of each spec file. A proof
 **moved** when its text at the range's start is, unchanged, under another id of the same spec at
 HEAD, an id that did not hold that text at the start. An id whose text differs between the two
 ends is **changed**, and one absent at the start and not a move is **added**. Texts are quoted
-whole, without their tags. A proof removed is not listed.
+whole, without their tags. A proof removed is not listed. A number a spec writes twice at either
+end is named as written twice, below, and never as added, changed or moved.
 
-### `eng`
+### Numbers written twice, and the default branch
 
-| Key | From | Line |
-|-----|------|------|
-| `code_changed` | The changed files, `git diff --name-only`, matched to each spec's `> Scope:` expanded to the files git tracks; `src/api/` reaches every file under it | `4 files changed under login's scope: RULE-1, RULE-2, RULE-5 are behind them. Run purlin:test login.` |
-| `unscoped` | The changed files no scope reaches, leaving out spec files, `.purlin/` and test files that carry a marker | `2 changed files are under no spec's scope: src/x.py, src/y.py. Add each to a spec's > Scope: line with purlin:spec.` |
-| `rules_without_test` | Rules whose passed cell reads `no test` | `5 rules have no test: login RULE-1, RULE-2. Run purlin:build.` |
-| `anchors_behind` | One `git ls-remote` per anchor source, below | `anchor proof_common: the pin 1a2b3c4 is behind its source, now 3c4d5e6. Run purlin:anchor sync proof_common.` |
-| `out_of_date` | Features that have evidence and whose evidence is not current | `3 features are out of date: login, export, cart. Run purlin:test.` |
-
-A file deleted in the range counts as changed. It joins `code_changed` under every spec whose
-`> Scope:` entry covers it: a file entry equal to its path, a folder entry it lies under, or a
-glob that matches it. A deleted file no entry covers joins `unscoped`, with that list's
-exclusions.
-
-### `qa`
-
-| Key | From | Line |
-|-----|------|------|
-| `proofs_added` | The proofs added, as in `pm`, printed first | As in `pm` |
-| `proofs_changed` | The proofs changed, as in `pm` | As in `pm` |
-| `proofs_moved` | The proofs moved, as in `pm` | As in `pm` |
-| `tests_changed` | The changed test files that carry a marker, and the features those markers name | `6 test files changed, covering export, login.` |
-| `left` | The status's own items of `Left to do` whose kinds stop a release | The lines below |
-
-After those lines the view prints the lines of `Left to do` that stop a release, in the words
-the status prints them, such as `2 rules to fix: purlin:build` and
-`1 spec to repair: purlin:spec`. Each is left out at zero, and no other line of `Left to do` is
-printed: a rule to strengthen or to write a proof for stops no release.
-
-### Every view
-
-Drift reads only this checkout: it never fetches, pulls or reaches the host. Each view, after
-its own lines and before the spec files not committed, prints these for every spec of the
-checkout, in this order.
-
-| Key | From | Line |
-|-----|------|------|
-| `numbers_twice` | Each rule or proof id a spec writes on two lines, compared with the spec on the default branch | `sample_age: PROOF-4 is written twice. The line on origin/main keeps PROOF-4; renumber the other to PROOF-7 and move its test comments with it: "<its text>".` |
-| `comments_changed` | Each test comment naming a proof whose text differs between the range's two ends, or sitting in a test file the range changed, whose proof read otherwise at the commit `git blame` names for the comment's line | `tests/test_age.py:14 names sample_age PROOF-4, whose wording changed since the comment was written in a1b2c3d: it read "<old>" and now reads "<new>". Check the test still shows it, or run purlin:build sample_age.` |
-| `default_branch` | The default branch and the seconds since this checkout last updated it, printed only after a `numbers_twice` line | `origin/main was last fetched 3 days ago, and drift does not fetch. Run git fetch, then purlin:drift again.` |
+Drift reads only this checkout: it never fetches, pulls or reaches the host. It reads every spec
+of the checkout for a number written twice, compared with the spec on the default branch.
 
 **The default branch** is the one `git symbolic-ref --quiet refs/remotes/origin/HEAD` names, else
 the first of `origin/main` and `origin/master` that exists, else none. **Its age** is now less
@@ -129,14 +100,23 @@ Where one spec writes several numbers twice, each takes the next number after th
 | The default branch writes it twice too | `sample_age: PROOF-4 is written twice on origin/main itself. Renumber the second to PROOF-7 and move its test comments with it: "<its text>".` |
 | No default branch | `sample_age: PROOF-4 is written twice, and this checkout has no copy of a default branch to say which line keeps it. Renumber the one not yet merged to PROOF-7 and move its test comments with it.` |
 
-**A test comment whose proof's wording changed** ends `Its old wording is now PROOF-6: move the
-comment there.` in place of the check, where a proof of the same spec now holds the old text
-exactly. A comment line not yet committed is not read.
+### Test comments to correct
+
+A test comment is named where its proof's wording, at the commit that last changed the test,
+differs from its wording now, and where the range changed that proof or that test's file. A
+test is last changed at the newest commit `git blame` names for the lines below its comment down
+to the test's last line, or for any line of its file when the file is run whole. A test with a
+line not yet committed is never named, and the line clears once the test itself changes. The
+check is `scripts/mcp/purlin/wording.py`'s, the same the status and every test run make.
+
+The line ends `Its old wording is now PROOF-6: move the comment there.` in place of the build,
+where a proof of the same spec now holds the old wording exactly.
 
 ## Anchors behind
 
 For every anchor carrying a `> Source:`, drift runs one cached `git ls-remote` against that
-source and compares its `> Pinned:` sha. A source that begins with `-`, names an `ext::` or an
+source and compares its `> Pinned:` sha. It reads the source's head and pulls nothing: the
+anchor's file, its pin and this checkout's git objects stay as they were. A source that begins with `-`, names an `ext::` or an
 `fd::` transport, or carries a NUL byte or a newline is refused before any process starts. A
 source that names no repository, a description in words or a file on disk, is reported without
 one: no process is handed it. An anchor with no `> Source:` is a local anchor and is not checked.
@@ -149,35 +129,31 @@ one: no process is handed it. An anchor with no `> Source:` is a local anchor an
 | The source cannot be read | `anchor <name>: the source could not be read (<error>). Check its > Source: line, then run purlin:anchor sync <name>.` |
 | The source names no repository: words, or a file on disk | `anchor <name>: its source, <source>, is not a spec in Purlin's format kept in a git repository, so it cannot be checked. Run purlin:spec <name> to take out its > Source: and > Pinned: lines and keep it as this project's own anchor.` |
 
-Drift never advances a pin on its own. A change that came from somewhere else gets read before
-it is adopted.
+Drift never advances a pin on its own; only `purlin:anchor sync` pulls. A change that came from
+somewhere else gets read before it is adopted.
 
 ## Config field ownership
 
-`.purlin/config.json`, and which command owns each field.
+`.purlin/config.json` holds two settings, and which command owns each.
 
 | Field | Written by | Read by | Default |
 |-------|-----------|---------|---------|
 | `version` | `purlin:init`, `purlin:init --update` | `purlin:init --update`, which compares it with the plugin's `VERSION` file to find an upgrade | From the plugin's `VERSION` file |
-| `gate` | `purlin:init`, `purlin:init --gate` | `sync_status`, every skill that names a next step | `passed` |
-| `mutation_engine` | `purlin:init`, which asks at the gate `signed` whether to break the code on purpose, and `purlin:init --mutation` at either gate | `scripts/run/purlin_run.py`, `sync_status` | `none` from init, and a yes writes `auto`; `none` where the key is absent. `none` turns mutation testing off, so no breaks run; any other value runs them when `purlin:audit` runs, and nothing waits on them |
-| `audit_parallel` | `purlin:init`, with no question | `scripts/run/purlin_run.py`, which makes that many AI audit calls at once | `4`; any value that is not a whole number from 1 to 16 is read as 4 with one warning |
 | `tests` | `purlin:test`, at the first run, once you confirm the command it suggests | `scripts/run/purlin_run.py`, which runs each suite's own command and reads its report; the fingerprint, which reads markers only from the files a suite names | `[]` in the template; see `references/formats/marker_format.md` |
-| `ci` | `purlin:init`, from the remote URL | `purlin:test --remote`, the workflow `purlin:init` writes | Detected: `github` or `azure`, and `none` with no remote or another host |
 
-`purlin:init` is the only command that writes config unprompted. `purlin:test` writes `tests`
-once you confirm it, and every other command reads. A field that is absent or set to `auto`
-leaves the reader to its own fallback. This table must name every field `templates/config.json`
-carries: a field written into new projects but absent here has no owner on this page.
+`purlin:init` is the only command that writes the settings unprompted. `purlin:test` writes
+`tests` once you confirm it, and every other command reads. The git host is read from the
+remote and the project's name from the project's own files each time; neither is a setting. Any
+other key is not read, and the status names it with its fix. This table must name every field
+`templates/config.json` carries: a field written into new projects but absent here has no owner
+on this page.
 
 ## Project root ownership
 
-No config field names the project root, because the root is what the reader of the config had to
-find first. `PURLIN_PROJECT_ROOT` owns that question: it is read before anything else, and a
-directory it names that exists wins over the `.purlin/` marker a climb from the working
-directory would otherwise find. With the variable unset the climb answers, and with no marker
-anywhere above the working directory the working directory itself is returned, which is a guess
-and is reported as one. Set the variable in the project's `.claude/settings.json` under `env`
-when the project root is not at the repository root; the tools also take a `project_root` argument
-that overrides it for one call. A tool that finds no `.purlin/config.json` at the root it chose
-says which directory it looked at and which mechanism chose it, and names the fix.
+No setting names the project root, because the root is what the reader of the settings had to
+find first. Every Purlin tool call names it: `project_root` is the top folder of the git
+checkout you are working in, and a call that names none is refused with that fix, so one
+checkout's state is never read as another's. A script run on the command line takes
+`--project-root`; without it, `PURLIN_PROJECT_ROOT` answers where it names a folder that exists,
+else the climb from the working directory to the first `.purlin/` folder. A tool that finds no
+`.purlin/config.json` at the root it was given says which folder it looked at and names the fix.

@@ -15,8 +15,9 @@ in the test files of this checkout:
 2. A test comment that names the moved id, where `git blame` says the
    comment was written when that id's text was the moving line's text. A
    comment not yet committed is named, not changed.
-3. A test comment whose proof's wording changed, where the old wording is
-   now another id of the same spec: the comment moves to that id.
+3. A test comment whose proof's wording changed after its test was last
+   changed, where the wording it had then is now another id of the same
+   spec: the comment moves to that id, the one `wording.py` names.
 4. `> Highest-Rule:` / `> Highest-Proof:` raised to the new number.
 5. Comments on other branches that name the moved id are named, never
    touched: every local branch but the current one, and every branch of a
@@ -45,7 +46,8 @@ if _MCP_DIR not in sys.path:
 from purlin import (console as console_module,                 # noqa: E402
                     drift as drift_module,
                     markers as markers_module,
-                    specs as specs_module)
+                    specs as specs_module,
+                    wording as wording_module)
 
 MOVES = '%s: %s at line %d becomes %s: "%s".'
 MOVES_NEITHER = ('%s: %s at line %d becomes %s: "%s". Neither line is on %s, '
@@ -152,11 +154,14 @@ def _comments(project_root, info, moved):
     """Steps 2 and 3: `(lines, file edits, the number of comments changed)`.
     A file edit is `(path, line number, function of the line)`."""
     name = info['name']
-    features = {name: info}
     cache = {}
     moves, follows, uncommitted, edits = [], [], [], []
     doubled = set(info.get('doubled_lines') or {})
     scanned = markers_module.scan(project_root)
+    # Step 3's comments, each read where its test was last changed.
+    stale = {(entry['file'], entry['line'], entry['id']): entry['now_under']
+             for entry in wording_module.stale_comments(
+                 project_root, {name: info}, scanned=scanned)}
     for path in sorted(scanned):
         for marker in scanned[path].markers:
             if marker.feature != name:
@@ -177,11 +182,9 @@ def _comments(project_root, info, moved):
                 moves.append(COMMENT_MOVES % (path, marker.line, name,
                                               marker.id, to))
             elif marker.id not in doubled:
-                entry = drift_module.comment_reworded(
-                    project_root, path, marker, features, cache)
-                if not entry or not entry['now_under']:
+                to = stale.get((path, marker.line, marker.id))
+                if not to:
                     continue
-                to = entry['now_under']
                 follows.append(COMMENT_FOLLOWS % (path, marker.line, name,
                                                   marker.id, to))
             else:
