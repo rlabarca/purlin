@@ -503,6 +503,54 @@ def test_nothing_is_written_outside_the_project_root(workspace):
         'policies.git', 'policies_work', 'project', 'project.git']
 
 
+# purlin: upstream PROOF-61
+def test_a_name_that_leads_out_of_the_anchor_folder_is_refused(workspace):
+    code, out = _cli(workspace, ['add', workspace.anchor_repo, '--path',
+                                 'specs/no_eval.md', '--name',
+                                 '../../outside', '--json'])
+    answer = json.loads(out)
+    assert (code, answer['status']) == (2, 'error')
+    assert answer['error'] == (
+        'not added. --name takes letters, digits and _ alone. Run '
+        'purlin:anchor add <source> --path <path> --name outside.')
+    assert _anchors_held(workspace) == []
+    around = os.path.dirname(workspace.root)
+    assert [os.path.join(folder, name)
+            for folder, _dirs, names in os.walk(around)
+            for name in names if name == 'outside.md'] == []
+
+
+OWN_ANCHOR = """# Anchor: no_eval
+
+> Description: This project's own rule on dynamic code.
+
+## Rules
+
+- RULE-1: No eval in scripts
+
+## Proof
+
+- PROOF-1 (RULE-1): Grep scripts/ for "eval("; verify zero matches
+"""
+
+
+# purlin: upstream PROOF-62
+def test_a_name_an_anchor_already_holds_is_refused(workspace):
+    path = upstream.anchor_path(workspace.root, 'no_eval')
+    _write(path, OWN_ANCHOR)
+    code, out = _cli(workspace, ['add', workspace.anchor_repo, '--path',
+                                 'specs/no_eval.md', '--name', 'no_eval',
+                                 '--json'])
+    answer = json.loads(out)
+    assert (code, answer['status']) == (2, 'error')
+    assert answer['error'] == (
+        'not added. specs/_anchors/no_eval.md already holds an anchor of '
+        'that name. Run purlin:anchor sync no_eval to update it, or add it '
+        'under another --name.')
+    with open(path, 'r', encoding='utf-8') as handle:
+        assert handle.read() == OWN_ANCHOR
+
+
 # ---------------------------------------------------------------------------
 # A source that is not a spec in Purlin's format kept in a git repository
 # ---------------------------------------------------------------------------

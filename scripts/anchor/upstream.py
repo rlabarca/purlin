@@ -22,7 +22,8 @@ Every command takes `--project-root DIR`; without it the root is the one
 `add` fetches the file at the source's default branch head and writes the local
 copy. The file is a spec in Purlin's format kept in a git repository: `add`
 refuses a file on disk, a description in words or a file that holds no rule,
-and writes nothing.
+and writes nothing. It also refuses a `--name` that is not letters, digits and
+`_`, and a name an anchor in the project already holds.
 
 `sync` names the rules that changed and advances the pin, fetching each distinct
 source once per run. `--check` changes nothing and exits 1 when a pin is behind,
@@ -260,6 +261,18 @@ NOT_A_SPEC = ("not added. %s is not a spec in Purlin's format kept in a git "
 
 WORDS_GIVEN = 'The description given'
 
+# The refusal of a name that is not letters, digits and `_`: a name with a
+# `/` or `..` in it would be written outside `specs/_anchors/`. The name the
+# line ends on is the one given with every other character taken out.
+NAME_REFUSED = ('not added. --name takes letters, digits and _ alone. Run '
+                'purlin:anchor add <source> --path <path> --name %s.')
+# The refusal of a name an anchor in the project already holds: the path of
+# that anchor, then its name.
+NAME_TAKEN = ('not added. %s already holds an anchor of that name. Run '
+              'purlin:anchor sync %s to update it, or add it under another '
+              '--name.')
+_NAME_RE = re.compile(r'[A-Za-z0-9_]+')
+
 
 def _default_name(source, path):
     base = path or source
@@ -276,6 +289,16 @@ def add(project_root, source, path=None, name=None):
     path = path.replace('\\', '/') if path else path
     name = name or _default_name(source, path)
     result = {'command': 'add', 'anchor': name, 'source': source, 'path': path}
+    # The name is checked before anything is fetched or written.
+    if not _NAME_RE.fullmatch(name):
+        result.update({'status': 'error',
+                       'error': NAME_REFUSED % _default_name(name, None)})
+        return result
+    if os.path.lexists(anchor_path(project_root, name)):
+        result.update({'status': 'error',
+                       'error': NAME_TAKEN % ('specs/_anchors/%s.md' % name,
+                                              name)})
+        return result
     safe, reason = drift_module.source_url_is_safe(source)
     if not safe:
         result.update({'status': 'error', 'error': 'source rejected: %s' % reason})

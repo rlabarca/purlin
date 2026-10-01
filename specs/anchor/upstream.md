@@ -10,8 +10,8 @@
 >   Purlin's format kept in a git repository.
 > Scope: scripts/anchor/upstream.py
 > Stack: python/stdlib, git plumbing over subprocess, no third-party package
-> Highest-Rule: 39
-> Highest-Proof: 60
+> Highest-Rule: 40
+> Highest-Proof: 62
 
 ## Rules
 
@@ -31,6 +31,7 @@
 - RULE-35: `sync <name>` makes no commit: the anchor copy whose pin it advances is left changed and not committed
 - RULE-25: `sync --check`, `sync <name>` and `sync` with no name report an anchor whose `> Source:` names no repository as `error` with the line `<name>: its source, <source>, is not a spec in Purlin's format kept in a git repository, so it cannot be checked. Run purlin:spec <name> to take out its > Source: and > Pinned: lines and keep it as this project's own anchor.`, start no process for it, write nothing and exit 2
 - RULE-36: The check the status and drift make of a remote anchor reads its source's head and pulls nothing: the anchor copy is left byte for byte as it was, whether its pin is current or behind
+- RULE-40: `add` refuses a name an anchor in the project already holds, writes nothing and names `purlin:anchor sync <name>`
 
 ## Proof
 
@@ -63,3 +64,5 @@
 - PROOF-43 (RULE-25): The anchor `refunds` carries `> Source: policy.txt`, a file in the project; `sync --check` exits 2 and prints the one line the rule names, with `refunds` as the name and `policy.txt` as the source, starts no process, and changes no file
 - PROOF-45 (RULE-25): Two anchors are pinned from one repository, a third, `refunds`, carries `> Source: policy.txt`, a file in the project, and a new version is published; `sync` with no name exits 2, the two remote anchors read `synced`, `refunds` reads `error`, no process it starts names `policy.txt`, and the copy of `refunds` is unchanged
 - PROOF-60 (RULE-36): The anchor `no_eval` is pinned, a new version of it is published, and the status is read; it prints `no_eval: the pin <first sha7> is behind its source, now <new sha7>. Run purlin:anchor sync no_eval.`, and `specs/_anchors/no_eval.md` is byte for byte as it was
+- PROOF-61 (RULE-22): The published anchor is added with `--name ../../outside`; it exits 2, the answer reads `error`, `specs/_anchors/` stays empty and no `outside.md` exists under the folder around the project
+- PROOF-62 (RULE-40): With `specs/_anchors/no_eval.md` holding the project's own rule `No eval in scripts`, the published anchor is added as `no_eval`; it exits 2, the answer reads `error`, and the file holds exactly its text from before
