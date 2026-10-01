@@ -9,7 +9,7 @@
 > Scope: scripts/mcp/purlin/states.py, scripts/mcp/purlin/payload.py, scripts/mcp/purlin/status.py, scripts/mcp/purlin/facts.py, scripts/mcp/purlin/project.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib, json, hashlib, subprocess (list-only)
 > Highest-Rule: 123
-> Highest-Proof: 280
+> Highest-Proof: 281
 
 ## Rules
 
@@ -45,7 +45,7 @@
 - RULE-49: The status table and the dashboard show one spec's row under the same column headings, and every cell after the spec's name reads the same characters in both
 - RULE-122: Each problem the status reports beside its table names what is wrong and the command or edit that fixes it: no specs found, a settings file that cannot be read (then nothing runs and nothing is saved), settings keys this version does not read, a spec with no `> Scope:` line or whose scope finds no file in git, a spec changed and not committed, and an anchor whose pin is behind its source or whose source cannot be read or is rejected
 - RULE-59: `signoff` carries `word`, `version`, `commit` and `since` for the newest `signed/*` tag on HEAD or an ancestor of it, numbered versions compared as numbers, `word` reading as the status's `Sign-off:` line does, and `word` reads `not signed` where no such tag exists
-- RULE-61: Every rule carries `audit`: the `verdict`, `findings` and `notes` of the audit entry for its current hashes, the `model` that answered or `unknown`, `at`, `commit` and the evidence file under `path`, or null where no entry answers
+- RULE-61: Every rule carries `audit`, nine fields: the `verdict`, `findings` and `notes` of the audit entry for its current hashes, its `explanation` and its `breaks` exactly as the entry holds them, `[]` and `{}` where it holds none, the `model` that answered or `unknown`, `at`, `commit` and the evidence file under `path`; or null where no entry answers
 - RULE-65: A rule no proof line names whose test is marked with the rule's own id reads its passed cell from that test, as a proof's test is read: `passed` where it passed in a current section and `failed` where it failed
 - RULE-71: Every proof in a rule's entry carries its own `result`: `hand check` for a `@manual` proof; otherwise, over the current sections from the operating system its `@env` names, or from every system where it names none, `failed` where one failed it and `passed` where one passed it; with no current answer, `not run` where a marker in the test files ties it to a test and `no test` where none does. Each test listed under a proof carries the `result` a current section gave it, `pass` or `fail`, and `not run` where no current section lists it
 - RULE-85: Every rule entry carries `machines`, `{system: machine}` over the current sections that speak for it, empty where none names a machine
@@ -62,7 +62,7 @@
 - PROOF-3 (RULE-3): A local section in which `PROOF-2` passes is written and not committed; `RULE-2`'s passed cell reads `passed` with the source `local`, `current` true and `counts` true
 - PROOF-151 (RULE-3): With a second proof, `PROOF-3`, added to `RULE-2` and a test marked for it, a current section in which `PROOF-2` alone passes leaves `RULE-2`'s passed cell reading `not run`, not `passed`
 - PROOF-5 (RULE-4): A current section in the folder `ci` in which `PROOF-2` passes makes `RULE-2`'s passed cell read `passed`, name `ci` as its source and carry `counts` true
-- PROOF-7 (RULE-4): With no evidence written, a test report under `.purlin/runtime/reports/` in which `PROOF-2`'s test passed leaves `RULE-2`'s passed cell reading `no test`
+- PROOF-7 (RULE-4): With no evidence written and one test marked for `PROOF-2`, a test report under `.purlin/runtime/reports/` in which that test passed leaves `RULE-2`'s passed cell reading `not run`
 - PROOF-50 (RULE-42): A file at `.purlin/evidence/ci/login.json` whose `source` field reads `local` passes `PROOF-1`; `RULE-1`'s passed cell reads `no test` with no source and no platform, and the payload's warnings carry exactly one line naming that path, which holds `it is ignored`
 - PROOF-51 (RULE-43): A `ci` section from `linux` run at `2026-09-13T12:00:00Z` and one from `windows` run at `2026-09-13T13:00:00Z` both pass every proof; `RULE-1`'s passed cell reads `passed` and its `platforms` lists exactly `linux` and `windows`, each with the word `passed`, the source `ci` and its own section's time
 - PROOF-52 (RULE-43): A rule has one proof with no tag and one tagged `@env(windows)`, and the only section is a passing `ci` section from `linux`; the passed cell's `platforms` lists `linux` with the word `passed` and `windows` with the word `not run`, no source and no time
@@ -115,7 +115,8 @@
 - PROOF-168 (RULE-59): Once the annotated tag `signed/1.2.0` is written on HEAD, `signoff` reads the version `1.2.0`, HEAD's own commit, and the word `signed 1.2.0 at <sha7>`
 - PROOF-169 (RULE-59): With `signed/1.2.0` written on HEAD and one more commit made after it changing only `.purlin/evidence/local/login.json`, `signoff.word` still reads `signed 1.2.0 at <sha7>`, the tagged commit
 - PROOF-170 (RULE-59): With `signed/1.9.0`, `signed/1.10.0` and `signed/beta` all on HEAD, `signoff.version` reads `1.10.0`
-- PROOF-73 (RULE-61): A rule whose audit entry reads `weak` with the finding `PROOF-2 reads 401 alone.` and names no model carries `audit` with exactly `verdict`, `findings`, `notes`, `model`, `at`, `commit` and `path`: `weak`, that finding, none, `unknown`, the entry's time and commit, and `.purlin/evidence/local/login.json`
+- PROOF-73 (RULE-61): A rule whose audit entry reads `weak` with the finding `PROOF-2 reads 401 alone.` and names no model carries `audit` with exactly `verdict`, `findings`, `notes`, `explanation`, `breaks`, `model`, `at`, `commit` and `path`: `weak`, that finding, no note, `[]`, `{}`, `unknown`, the entry's time and commit, and `.purlin/evidence/local/login.json`
+- PROOF-281 (RULE-61): The audit entry of `RULE-2` holds the explanation `The test calls login and reads no status.` and, under `breaks`, `PROOF-2` with the file `src/login.py`, the line 12, `before` `return 401`, `after` `return 200` and the result `survived`; the rule's `audit` carries `explanation` and `breaks` equal to the entry's, value for value
 - PROOF-77 (RULE-65): A spec of two rules has no proof line; a current section lists a passing test marked with `RULE-1` and a failing test marked with `RULE-2`; `RULE-1`'s passed cell reads `passed` and `RULE-2`'s reads `failed`
 - PROOF-176 (RULE-71): A current section passes `PROOF-1`'s test and fails `PROOF-2`'s; `PROOF-1` reads `passed` and lists exactly one test, `test_proof_1` in `tests/test_login.py`, reading `pass`, and `PROOF-2` reads `failed` with its one test reading `fail`
 - PROOF-85 (RULE-71): In the two-rule `login` spec, a test marked for `PROOF-1` is committed and nothing has run; `PROOF-1` reads `not run` with no test listed, and `PROOF-2`, which no marker names, reads `no test`

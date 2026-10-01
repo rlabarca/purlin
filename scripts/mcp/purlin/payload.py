@@ -44,6 +44,11 @@ be coupled to a layout; this is the shape they all read instead.
             "machines": {"macos": "jane-laptop"},
             "left": "to_strengthen",
             "audit": {"verdict": "weak", "findings": ["..."], "notes": [],
+                      "explanation": ["..."],
+                      "breaks": {"PROOF-1": {"file": "src/login.py", "line": 12,
+                                             "before": "...", "after": "...",
+                                             "result": "survived", "why": "",
+                                             "break_key": "<sha256>"}},
                       "model": "<model>", "at": "...", "commit": "<sha>",
                       "path": ".purlin/evidence/local/login.json"},
             "bucket": "passed", "flags": {...},
@@ -586,15 +591,23 @@ def _machines(sections, proofs, rule_id):
 def audit_summary(audit):
     """`rules[].audit`: what the audit found for the current hashes, or None.
 
-    The `verdict` and the findings, the notes, the model that read the rule,
-    when and at which commit, and the evidence file the entry sits in. An
-    entry whose verdict the format does not name answers nothing.
+    The `verdict` and the findings, the notes, the model's `explanation` and
+    the planted bugs under `breaks`, both exactly as the entry holds them, the
+    model that read the rule, when and at which commit, and the evidence file
+    the entry sits in. An entry that holds no `explanation` carries `[]` and
+    one that holds no `breaks` carries `{}`, which is what an entry with none
+    is written with. An entry whose verdict the format does not name answers
+    nothing.
     """
     if not audit or audit.get('verdict') not in ('strong', 'weak'):
         return None
+    explanation = audit.get('explanation')
+    breaks = audit.get('breaks')
     return {'verdict': audit.get('verdict'),
             'findings': [str(line) for line in audit.get('findings') or ()],
             'notes': [str(line) for line in audit.get('notes') or ()],
+            'explanation': [] if explanation is None else explanation,
+            'breaks': {} if breaks is None else breaks,
             'model': audit.get('model') or 'unknown',
             'at': audit.get('at'),
             'commit': audit.get('commit'),

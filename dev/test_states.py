@@ -196,13 +196,21 @@ class TestThePassedCell:
         assert cell['counts'] is True, cell
 
     # purlin: states PROOF-7
-    def test_a_test_report_with_no_evidence_leaves_no_test(self, project):
+    def test_a_test_report_with_no_evidence_leaves_not_run(self, project):
+        """A test marked for PROOF-2 and a report in which it passed: `not run`."""
+        marked = _marked_tests('PROOF-2')
+        name = marked.split('def ', 1)[1].split('(', 1)[0]
+        _write(os.path.join(project.root, 'tests', 'test_login.py'), marked)
+        assert project.cell('RULE-2', 'passed')['word'] == 'not run', (
+            'the marked test has not run')
         _write(os.path.join(project.root, '.purlin', 'runtime', 'reports',
                             'pytest.xml'),
-               '<testsuite><testcase classname="tests.test_login" '
-               'name="test_proof_2"/></testsuite>')
-        assert project.cell('RULE-2', 'passed')['word'] == 'no test', (
-            'a test report is not evidence')
+               '<testsuite tests="1" failures="0" errors="0">'
+               '<testcase classname="tests.test_login" name="%s" '
+               'file="tests/test_login.py"/></testsuite>' % name)
+        assert project.cell('RULE-2', 'passed')['word'] == 'not run', (
+            'a test report is not evidence: with it read, the cell would '
+            'read `passed`')
 
     WINDOWS_LOCK_SPEC = (
         '# Feature: login\n\n> Scope: src/login.py\n\n## Rules\n\n'
@@ -577,21 +585,40 @@ class TestAHandCheck:
 class TestTheAuditOnTheRule:
 
     # purlin: states PROOF-73
-    def test_a_weak_entry_naming_no_model_carries_exactly_seven_fields(
+    def test_a_weak_entry_naming_no_model_carries_exactly_nine_fields(
             self, project):
         project.evidence(PASSING)
         project.audit('RULE-2', observations=['PROOF-2 reads 401 alone.'])
         audit = project.rule('RULE-2')['audit']
         head = project.head()
-        assert sorted(audit) == ['at', 'commit', 'findings', 'model',
-                                 'notes', 'path', 'verdict'], audit
+        assert list(audit) == ['verdict', 'findings', 'notes', 'explanation',
+                               'breaks', 'model', 'at', 'commit',
+                               'path'], audit
         assert audit['verdict'] == 'weak', audit
         assert audit['findings'] == ['PROOF-2 reads 401 alone.']
         assert audit['notes'] == [], audit
+        assert audit['explanation'] == [], audit
+        assert audit['breaks'] == {}, audit
         assert audit['model'] == 'unknown', audit
         assert audit['path'] == '.purlin/evidence/local/login.json'
         assert audit['at'] == '2026-09-13T12:05:00Z', audit
         assert audit['commit'] == head, audit
+
+    # purlin: states PROOF-281
+    def test_the_explanation_and_the_planted_bug_are_carried_as_the_entry_holds_them(
+            self, project):
+        explanation = ['The test calls login and reads no status.']
+        breaks = {'PROOF-2': {'file': 'src/login.py', 'line': 12,
+                              'before': 'return 401', 'after': 'return 200',
+                              'result': 'survived', 'why': '',
+                              'break_key': 'a' * 64}}
+        project.evidence(PASSING)
+        project.audit('RULE-2', observations=[
+            'PROOF-2: the test still passes when src/login.py:12 reads '
+            '"return 200"'], explanation=explanation, breaks=breaks)
+        audit = project.rule('RULE-2')['audit']
+        assert audit['explanation'] == explanation, audit
+        assert audit['breaks'] == breaks, audit
 
 
 # ---------------------------------------------------------------------------
