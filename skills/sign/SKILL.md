@@ -1,6 +1,6 @@
 ---
 name: sign
-description: Sign a release's evidence package after walking what a person has to look at, as a signed commit
+description: Walk what a person has to look at in a release, then sign its evidence package in a signed commit
 ---
 
 Sign the evidence package of a release. At the gate `signed`, `purlin:test --release` commits the

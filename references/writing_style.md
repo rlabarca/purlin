@@ -40,8 +40,8 @@ whose claim they are reading.
 
 **Every output says what to do next.** An agent seeking a goal can read any output, know which
 rule is affected and what to do, and improve the project by doing it. A command's ending names
-the command to run next, except `Nothing left to do.`, which closes a finished project at the
-gates `passed` and `strong`.
+the command to run next; a finished project's `Nothing left to do.` names the release step
+after it.
 
 **Systems by their names.** Wherever a person reads an operating system it is `Windows`,
 `macOS` or `Linux/Unix`, and in the dashboard's small boxes `Win`, `Mac` or `Lin`. The stored
@@ -56,6 +56,6 @@ rhetorical questions, and no sentence that describes a benefit without naming th
 
 ## Sentence shapes
 
-- Definitions: "*Gate*: the one project setting, `passed`, `strong` or `signed`."
-- Consequences: "If the code changes, the signature ends and the rule is left to do as `to sign`."
+- Definitions: "*Gate*: the one project setting, `passed` or `signed`."
+- Consequences: "If the test fails, the rule is left to do as `to fix`."
 - Instructions: "Run it at the start of a session and before a release."
