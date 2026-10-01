@@ -16,7 +16,9 @@ import pytest
 from mcp_project import (NO_PROOF_SPEC, PROJECT_ROOT, Project, SPEC,
                          _commit_tests, _entry, _git, _listed, _marked_tests,
                          _write, project)
-# `mcp_project` puts `scripts/mcp` on the path.
+from sign_project import _Out, signing_key
+# `mcp_project` puts `scripts/mcp` on the path, `sign_project` `scripts/review`.
+import sign as sign_module
 from purlin import payload as purlin_payload
 from purlin import states as purlin_states
 from purlin import status as purlin_status
@@ -62,6 +64,26 @@ def _feature(payload, name='login'):
 def _commit(root, message):
     _git(root, 'add', '-A')
     _git(root, 'commit', '-q', '-m', message)
+
+
+def _ready_to_sign(made, proof_ids=('PROOF-1', 'PROOF-2'),
+                   signer='jane@acme.com'):
+    """Commit a marked test and a passing result for each proof, then set
+    up `signer`'s throwaway key, so the walk has nothing to refuse."""
+    _commit_tests(made, *proof_ids)
+    made.evidence([_entry(proof_id, proof_id.replace('PROOF', 'RULE'))
+                   for proof_id in proof_ids])
+    signing_key(made.root, signer)
+
+
+def _walk_signs(made, version, answers=('y',)):
+    """`purlin:sign --version <version>`, walked with `answers` in order:
+    the sign-off's commit and `signed/<version>` on it."""
+    left, out = list(answers), _Out()
+    code = sign_module.walk(
+        made.root, version, out=out,
+        ask=lambda _kind, _key, _prompt: left.pop(0) if left else None)
+    assert code == 0, out.text()
 
 
 def _listed_with_no_test(project, missing):
@@ -459,15 +481,17 @@ class TestTheStrongCell:
         assert found['findings'] == [
             'The test reads the status code alone.'], found
 
-    # purlin: states PROOF-160
-    def test_a_weak_entry_for_another_rule_hash_leaves_rule_2_not_audited(
-            self, project):
+    # purlin: states PROOF-290
+    def test_a_spot_checked_entry_says_why_no_bug_was_caught(self, project):
+        sentence = ('No bug was planted: the model could not be reached: '
+                    'claude is not on PATH.')
         project.evidence([_entry('PROOF-2', 'RULE-2')], source='ci')
-        project.audit('RULE-2', rule_hash='0' * 64,
-                      observations=['The test reads the status code alone.'])
+        project.audit('RULE-2', word='spot-checked', no_bug=[sentence])
         cell = project.cell('RULE-2', 'strong')
-        assert cell['word'] == 'not audited', cell
-        assert cell['findings'] == [], cell
+        assert cell['word'] == 'spot-checked', cell
+        assert cell['reasons'] == [
+            'The spot tests found nothing. No bug was planted: the model '
+            'could not be reached: claude is not on PATH.'], cell
 
     # purlin: states PROOF-19
     def test_before_any_sign_off_a_manual_rule_is_checked_at_sign_off(self):
@@ -508,6 +532,69 @@ class TestTheStrongCell:
         assert rule['left'] == 'to_strengthen', rule['left']
 
 
+# `RULE-1` of `login` proven by hand and by a test.
+HAND_AND_TEST_SPEC = (
+    '# Feature: login\n\n> Scope: src/login.py\n\n## Rules\n\n'
+    '- RULE-1: Valid credentials return 200 with a session token\n\n'
+    '## Proof\n\n'
+    '- PROOF-1 (RULE-1): Sign in on the screen; verify the name is shown '
+    '@manual\n'
+    '- PROOF-2 (RULE-1): POST /login with valid credentials; verify 200\n')
+
+
+class TestAnAuditOutOfDate:
+
+    # purlin: states PROOF-286
+    def test_code_rewritten_after_a_strong_audit_reads_out_of_date(
+            self, project):
+        project.evidence(PASSING)
+        project.audit('RULE-2')
+        audited_at = project.head()
+        _write(os.path.join(project.root, 'src', 'login.py'),
+               'def login():\n    return 401\n')
+        _commit(project.root, 'fix(login): deny')
+        project.evidence(PASSING)
+        rule = project.rule('RULE-2')
+        cell = rule['cells']['strong']
+        assert rule['cells']['passed']['word'] == 'passed', rule
+        assert cell['word'] == 'out of date', cell
+        assert cell['reasons'] == [
+            'code changed since %s' % audited_at[:7],
+            'the last audit found it strong on 2026-09-13'], cell
+
+    # purlin: states PROOF-287
+    def test_a_weak_entry_for_another_rule_text_is_out_of_date_and_kept(
+            self, project):
+        finding = 'The test reads the status code alone.'
+        project.evidence([_entry('PROOF-2', 'RULE-2')], source='ci')
+        project.audit('RULE-2', rule_hash='0' * 64, observations=[finding])
+        rule = project.rule('RULE-2')
+        cell = rule['cells']['strong']
+        assert cell['word'] == 'out of date', cell
+        assert cell['reasons'][0] == (
+            'rule changed since %s' % project.head()[:7]), cell
+        assert cell['findings'] == [finding], cell
+        assert rule['left'] is None, rule['left']
+
+
+class TestAHandCheckTheAuditFoundWeak:
+
+    # purlin: states PROOF-288
+    def test_a_hand_check_with_a_tested_proof_found_weak_reads_weak(self):
+        finding = 'PROOF-2 reads the status alone.'
+        made = Project(spec=HAND_AND_TEST_SPEC)
+        try:
+            made.evidence([_entry('PROOF-2', 'RULE-1')])
+            made.audit('RULE-1', observations=[finding])
+            rule = made.rule('RULE-1')
+        finally:
+            made.close()
+        cell = rule['cells']['strong']
+        assert cell['word'] == 'weak', cell
+        assert finding in cell['reasons'], cell
+        assert rule['left'] == 'to_strengthen', rule['left']
+
+
 # A hand check: `RULE-2` of `login` is proven by hand alone.
 MANUAL_SPEC = SPEC.replace('body "denied"\n', 'body "denied" @manual\n')
 QUINN = 'quinn.qa@labconnect.example'
@@ -515,17 +602,10 @@ QUINN = 'quinn.qa@labconnect.example'
 
 def _signed_with_a_note(made, note='the tube is red'):
     """`quinn.qa@labconnect.example` signs `0.1.0` at HEAD with `note` on
-    `login RULE-2`: the sign-off file committed and `signed/0.1.0` on it."""
-    folder = os.path.join(made.root, '.purlin', 'evidence', 'package')
-    _write(os.path.join(folder, '0.1.0.json'), '{}\n')
-    _write(os.path.join(folder, '0.1.0.signoffs', 'quinn-qa.json'),
-           json.dumps({'schema': 'purlin-signoff/1', 'version': '0.1.0',
-                       'package': '.purlin/evidence/package/0.1.0.json',
-                       'signer': QUINN, 'timestamp': '2026-10-01T12:30:00Z',
-                       'notes': [{'feature': 'login', 'rule': 'RULE-2',
-                                  'kind': 'hand check', 'note': note}]}))
-    _commit(made.root, 'sign(0.1.0): %s' % QUINN)
-    _git(made.root, 'tag', '-a', 'signed/0.1.0', '-m', 'Signed 0.1.0.')
+    `login RULE-2`, by the walk: the sign-off's commit and `signed/0.1.0`
+    on it."""
+    _ready_to_sign(made, ('PROOF-1',), signer=QUINN)
+    _walk_signs(made, '0.1.0', answers=(note, 'y'))
 
 
 class TestAHandCheck:
@@ -567,17 +647,19 @@ class TestAHandCheck:
 class TestTheAuditOnTheRule:
 
     # purlin: states PROOF-73
-    def test_a_weak_entry_naming_no_model_carries_exactly_nine_fields(
+    def test_a_weak_entry_naming_no_model_carries_exactly_eleven_fields(
             self, project):
         project.evidence(PASSING)
         project.audit('RULE-2', observations=['PROOF-2 reads 401 alone.'])
         audit = project.rule('RULE-2')['audit']
         head = project.head()
-        assert list(audit) == ['verdict', 'findings', 'notes', 'explanation',
-                               'breaks', 'model', 'at', 'commit',
-                               'path'], audit
+        assert list(audit) == ['verdict', 'findings', 'no_bug', 'notes',
+                               'explanation', 'breaks', 'model', 'at',
+                               'commit', 'path', 'out_of_date'], audit
         assert audit['verdict'] == 'weak', audit
         assert audit['findings'] == ['PROOF-2 reads 401 alone.']
+        assert audit['no_bug'] == [], audit
+        assert audit['out_of_date'] == [], audit
         assert audit['notes'] == [], audit
         assert audit['explanation'] == [], audit
         assert audit['breaks'] == {}, audit
@@ -658,9 +740,9 @@ class TestBuckets:
 class TestPayload:
 
     # purlin: states PROOF-31
-    def test_schema_fourteen_carries_exactly_the_seventeen_keys(self, project):
+    def test_schema_fifteen_carries_exactly_the_seventeen_keys(self, project):
         data = project.payload()
-        assert data['schema_version'] == 14
+        assert data['schema_version'] == 15
         assert sorted(data) == sorted((
             'schema_version', 'generated_at', 'generated_by', 'project',
             'version', 'branch', 'commit', 'dirty', 'summary', 'features',
@@ -1317,35 +1399,43 @@ class TestStatusTable:
 # ---------------------------------------------------------------------------
 
 class TestTheSignOff:
-    """The payload names the newest `signed/*` tag on HEAD or an ancestor."""
+    """The payload names the newest `signed/*` tag on HEAD or an ancestor
+    whose sign-off counts."""
 
     # purlin: states PROOF-168
-    def test_a_tag_on_head_reads_its_version_head_and_signed_at(self,
-                                                              project):
-        _git(project.root, 'tag', '-a', 'signed/1.2.0', '-m', 'Signed 1.2.0.')
+    def test_a_walk_at_head_reads_its_version_the_signed_commit_and_signed_at(
+            self, project):
+        _ready_to_sign(project)
+        _walk_signs(project, '1.2.0')
         signoff = project.payload()['signoff']
-        head = project.head()
+        signed = _git(project.root, 'rev-list', '-n', '1',
+                      'signed/1.2.0').stdout.strip()
+        assert signed == project.head(), signed
         assert signoff['version'] == '1.2.0', signoff
-        assert signoff['commit'] == head, signoff
-        assert signoff['word'] == 'signed 1.2.0 at %s' % head[:7], signoff
+        assert signoff['commit'] == signed, signoff
+        assert signoff['word'] == 'signed 1.2.0 at %s' % signed[:7], signoff
 
     # purlin: states PROOF-169
     def test_a_commit_of_evidence_alone_after_the_tag_still_reads_signed_at(
             self, project):
-        _git(project.root, 'tag', '-a', 'signed/1.2.0', '-m', 'Signed 1.2.0.')
+        _ready_to_sign(project)
+        _walk_signs(project, '1.2.0')
         tagged = project.head()
-        _write(os.path.join(project.root, '.purlin', 'evidence', 'local',
-                            'login.json'), '{}\n')
+        path = os.path.join(project.root, '.purlin', 'evidence', 'local',
+                            'login.json')
+        with open(path, encoding='utf-8') as handle:
+            text = handle.read()
+        _write(path, text + '\n')
         _commit(project.root, 'purlin: evidence at %s' % tagged[:7])
         assert project.head() != tagged
         signoff = project.payload()['signoff']
         assert signoff['word'] == 'signed 1.2.0 at %s' % tagged[:7], signoff
 
     # purlin: states PROOF-170
-    def test_of_three_tags_on_head_version_1_10_0_is_the_newest(self,
-                                                                project):
-        for name in ('signed/1.9.0', 'signed/1.10.0', 'signed/beta'):
-            _git(project.root, 'tag', '-a', name, '-m', name)
+    def test_of_three_versions_signed_1_10_0_is_the_newest(self, project):
+        _ready_to_sign(project)
+        for version in ('1.9.0', '1.10.0', 'beta'):
+            _walk_signs(project, version)
         assert project.payload()['signoff']['version'] == '1.10.0'
 
 

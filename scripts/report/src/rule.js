@@ -29,8 +29,8 @@ function platformBoxes(cell) {
   }).join(' ');
 }
 
-/* One row per cell the page draws, the strong cell only where the audit has
-   read the project: the word it reads, the passed cell's platforms, which
+/* One row per cell the page draws, the strong cell only where a rule of
+   the project has an audit entry: the word it reads, the passed cell's platforms, which
    the word alone leaves out, then the reasons, each already a sentence
    fragment the payload wrote. */
 function cellRow(rule, name) {
@@ -46,27 +46,46 @@ function cellRow(rule, name) {
     + '</dd>';
 }
 
+/* The audit's answer, as the terminal words it: the entry's `verdict`. */
+var VERDICT_LINES = {'strong': 'Strong.', 'weak': 'Weak.',
+  'spot-checked': 'Spot-checked.'};
+var STRONG_NOTHING = 'Strong. It found nothing.';
+var NO_AUDIT = 'No audit has read this rule yet.';
+var OUT_OF_DATE = 'Out of date: ';
+var SPOT_TESTS_NOTHING = 'The spot tests found nothing.';
+
 /* What the audit found, and nothing about what to do with it, drawn once
-   the audit has read the project: its answer, each finding on its own line
-   as the audit wrote it, each sentence of the model's explanation, each
-   planted bug the rule's tests missed, then the model that read the rule
-   and when. The answer is worded as the terminal words it. The audit writes
-   sentences, so there is no list of check names to render here. */
+   a rule of the project has an audit entry. Where the entry is out of date
+   the panel opens on `Out of date:` and the strong cell's reasons, what
+   changed since and what the audit found then, and still reads the entry
+   beneath. Then its answer; each finding on its own line as the audit wrote
+   it; each proof no bug was caught for, with its reason, which for a
+   spot-checked rule follow `The spot tests found nothing.` on one line;
+   each sentence of the model's explanation; each planted bug the rule's
+   tests missed; then the model that read the rule and when. The audit
+   writes sentences, so there is no list of check names to render here. */
 function auditPanel(rule) {
   var cell = cellOf(rule, 'strong');
   if (!cell || !audited()) { return ''; }
   var audit = rule.audit;
   var lines = [];
   var findings = (audit && audit.findings) || [];
+  var noBug = (audit && audit.no_bug) || [];
   if (!audit) {
-    lines.push(line("No audit has read this rule's text, proof and "
-      + 'test yet.'));
-  } else if (audit.verdict === 'strong' && !findings.length) {
-    lines.push(line('Strong. It found nothing.'));
+    lines.push(line(NO_AUDIT));
   } else {
-    lines.push(line(audit.verdict === 'strong' ? 'Strong.' : 'Weak.'));
+    if ((audit.out_of_date || []).length) {
+      lines.push(line(OUT_OF_DATE + (cell.reasons || []).join('; ')));
+    }
+    lines.push(line(audit.verdict === 'strong' && !findings.length
+      ? STRONG_NOTHING : VERDICT_LINES[audit.verdict] || ''));
   }
   findings.forEach(function (text) { lines.push(line(text)); });
+  if (audit && audit.verdict === 'spot-checked') {
+    lines.push(line([SPOT_TESTS_NOTHING].concat(noBug).join(' ')));
+  } else {
+    noBug.forEach(function (text) { lines.push(line(text)); });
+  }
   ((audit && audit.explanation) || []).forEach(function (text) {
     lines.push(line(text));
   });
@@ -76,7 +95,7 @@ function auditPanel(rule) {
       + esc(audit.model || 'unknown') + '</span> on '
       + unbroken(moment(audit.at)) + '</p>');
     if (audit.path) {
-      lines.push('<p class="sec mono">' + esc(audit.path) + '</p>');
+      lines.push('<p class="sec mono">' + pathText(audit.path) + '</p>');
     }
   }
   return '<div class="panel"><h2>Audit</h2>' + lines.join('') + '</div>';
@@ -240,8 +259,8 @@ function renderRule() {
   var feature = found.feature;
   var rule = found.rule;
   var rows = [cellRow(rule, 'passed'), cellRow(rule, 'strong')];
-  rows.push('<dt>Spec</dt><dd><span class="mono">' + esc(feature.spec_path)
-    + '</span></dd>');
+  rows.push('<dt>Spec</dt><dd><span class="mono">'
+    + pathText(feature.spec_path) + '</span></dd>');
   rows.push('<dt>Last run</dt><dd>' + runLine(feature) + '</dd>');
   return backLink()
     + '<section class="rule-head"><hgroup><p class="eyebrow">'

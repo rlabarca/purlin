@@ -4,8 +4,8 @@
 /* The boxes, in the order the work is done. Wherever the project writes a
    proof line the `No proof` box comes first, counting the rules that have
    none yet; then `Passing`, the payload's `summary.steps.passed`, carrying
-   the project's total under its label; then, where the audit found any rule
-   strong or weak, `Strong`, the payload's `summary.audit.strong`. A count is
+   the project's total under its label; then, where any rule has an audit
+   entry, `Strong`, the payload's `summary.audit.strong`. A count is
    green once it is complete, `No proof` at zero, and amber until then. Each
    box carries the hover its column carries, read over every spec. The
    terminal prints a summary sentence; the boxes carry the same counts, so

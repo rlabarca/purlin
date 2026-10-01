@@ -15,8 +15,8 @@ The columns, left to right:
     Proofs   how many proof lines it writes, and how many have no test;
              only where the project writes a proof line at all
     Tests    how many rules pass, and how many are partial or are failing
-    Strong   how many of its rules the audit found strong, wherever the
-             audit found any rule of the project strong or weak
+    Strong   how many of its rules the audit found strong, wherever a
+             rule of the project has an audit entry
 
 Every when, who and platform detail lives in a hover on the dashboard and on
 the rule screen; a cell here carries counts and nothing else.
@@ -38,13 +38,13 @@ def shows_proofs(proofs):
 
 
 def shows_strong(audit):
-    """Whether the Strong column is shown: the audit found a rule strong or weak.
+    """Whether the Strong column is shown: a rule has an audit entry.
 
-    `audit` is the payload's `summary.audit`. A project the audit has not
-    read is shown no count of what it found.
+    `audit` is the payload's `summary.audit`, read as `summary.has_audit`
+    reads it. A project no audit has read shows no Strong column.
     """
-    audit = audit or {}
-    return bool((audit.get('strong') or 0) + (audit.get('weak') or 0))
+    from purlin import summary
+    return summary.has_audit(audit)
 
 
 def columns_for(proofs=1, audited=False):

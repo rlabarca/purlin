@@ -85,6 +85,7 @@
       "name": "login",
       "pinned": null,
       "rollup": {
+        "audit_out_of_date": 0,
         "failing": 0,
         "incomplete": false,
         "manual": 0,
@@ -95,6 +96,7 @@
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
         "rules": 3,
+        "spot_checked": 0,
         "strong": 2,
         "untested": 0,
         "weak": 1
@@ -110,7 +112,9 @@
               "The test reads the status code and the cookie name; the proof also names a session cookie, and no assertion reads its expiry."
             ],
             "model": "example-model-1",
+            "no_bug": [],
             "notes": [],
+            "out_of_date": [],
             "path": ".purlin/evidence/ci/login.json",
             "verdict": "weak"
           },
@@ -145,12 +149,14 @@
           },
           "feature": "login",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": false,
             "weak": true
           },
@@ -190,7 +196,9 @@
             "explanation": [],
             "findings": [],
             "model": "example-model-1",
+            "no_bug": [],
             "notes": [],
+            "out_of_date": [],
             "path": ".purlin/evidence/ci/login.json",
             "verdict": "strong"
           },
@@ -221,12 +229,14 @@
           },
           "feature": "login",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": true,
             "weak": false
           },
@@ -266,7 +276,9 @@
             "explanation": [],
             "findings": [],
             "model": "example-model-1",
+            "no_bug": [],
             "notes": [],
+            "out_of_date": [],
             "path": ".purlin/evidence/ci/login.json",
             "verdict": "strong"
           },
@@ -297,12 +309,14 @@
           },
           "feature": "login",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": true,
             "weak": false
           },
@@ -367,6 +381,7 @@
       "name": "invoice",
       "pinned": null,
       "rollup": {
+        "audit_out_of_date": 0,
         "failing": 0,
         "incomplete": true,
         "manual": 0,
@@ -379,6 +394,7 @@
           "PROOF-2"
         ],
         "rules": 2,
+        "spot_checked": 0,
         "strong": 1,
         "untested": 1,
         "weak": 0
@@ -392,7 +408,9 @@
             "explanation": [],
             "findings": [],
             "model": "example-model-1",
+            "no_bug": [],
             "notes": [],
+            "out_of_date": [],
             "path": ".purlin/evidence/ci/invoice.json",
             "verdict": "strong"
           },
@@ -423,12 +441,14 @@
           },
           "feature": "invoice",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": true,
             "weak": false
           },
@@ -485,12 +505,14 @@
           },
           "feature": "invoice",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": false,
             "weak": false
           },
@@ -545,6 +567,7 @@
       "name": "receipt",
       "pinned": null,
       "rollup": {
+        "audit_out_of_date": 0,
         "failing": 0,
         "incomplete": false,
         "manual": 0,
@@ -555,6 +578,7 @@
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
         "rules": 1,
+        "spot_checked": 0,
         "strong": 1,
         "untested": 0,
         "weak": 0
@@ -568,7 +592,9 @@
             "explanation": [],
             "findings": [],
             "model": "example-model-1",
+            "no_bug": [],
             "notes": [],
+            "out_of_date": [],
             "path": ".purlin/evidence/ci/receipt.json",
             "verdict": "strong"
           },
@@ -599,12 +625,14 @@
           },
           "feature": "receipt",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": true,
             "weak": false
           },
@@ -671,6 +699,7 @@
       "name": "refund",
       "pinned": null,
       "rollup": {
+        "audit_out_of_date": 0,
         "failing": 2,
         "incomplete": false,
         "manual": 0,
@@ -681,6 +710,7 @@
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
         "rules": 2,
+        "spot_checked": 0,
         "strong": 0,
         "untested": 0,
         "weak": 0
@@ -719,12 +749,14 @@
           },
           "feature": "refund",
           "flags": {
+            "audit_out_of_date": false,
             "failing": true,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": false,
             "weak": false
           },
@@ -789,12 +821,14 @@
           },
           "feature": "refund",
           "flags": {
+            "audit_out_of_date": false,
             "failing": true,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": false,
             "weak": false
           },
@@ -859,6 +893,7 @@
       "name": "checkout_design",
       "pinned": null,
       "rollup": {
+        "audit_out_of_date": 0,
         "failing": 0,
         "incomplete": false,
         "manual": 0,
@@ -869,6 +904,7 @@
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
         "rules": 1,
+        "spot_checked": 0,
         "strong": 1,
         "untested": 0,
         "weak": 0
@@ -882,7 +918,9 @@
             "explanation": [],
             "findings": [],
             "model": "example-model-1",
+            "no_bug": [],
             "notes": [],
+            "out_of_date": [],
             "path": ".purlin/evidence/local/checkout_design.json",
             "verdict": "strong"
           },
@@ -913,12 +951,14 @@
           },
           "feature": "checkout_design",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": true,
             "weak": false
           },
@@ -971,6 +1011,7 @@
       "name": "security_baseline",
       "pinned": "4c1d9e2",
       "rollup": {
+        "audit_out_of_date": 0,
         "failing": 0,
         "incomplete": false,
         "manual": 0,
@@ -983,6 +1024,7 @@
           "PROOF-1"
         ],
         "rules": 1,
+        "spot_checked": 0,
         "strong": 0,
         "untested": 1,
         "weak": 0
@@ -1015,12 +1057,14 @@
           },
           "feature": "security_baseline",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": false,
             "weak": false
           },
@@ -1093,7 +1137,7 @@
     }
   },
   "project": "ledger",
-  "schema_version": 14,
+  "schema_version": 15,
   "signoff": {
     "commit": null,
     "since": null,
@@ -1103,9 +1147,12 @@
   "summary": {
     "audit": {
       "not_audited": 0,
+      "out_of_date": 0,
+      "spot_checked": 0,
       "strong": 5,
       "weak": 1
     },
+    "audit_out_of_date": 0,
     "failing": 2,
     "features": 6,
     "incomplete": 1,
@@ -1120,7 +1167,8 @@
       "PROOF-1"
     ],
     "rules": 10,
-    "sentence": "10 rules. 6 pass their tests. The audit found 5 of 6 rules strong (83%).",
+    "sentence": "10 rules. 6 pass their tests. The audit found 5 of 6 rules strong (83%): 5 strong, 1 weak.",
+    "spot_checked": 0,
     "steps": {
       "passed": 6
     },

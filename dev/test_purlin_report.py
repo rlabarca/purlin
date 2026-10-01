@@ -6,7 +6,7 @@ gradient, no request to anything outside the file. The second opens
 it in a headless browser over `file://` with a fixture payload beside it, one
 fixture per process, and reads what a person would see.
 
-The samples under `dev/fixtures/report/` are payloads at schema 14, written on
+The samples under `dev/fixtures/report/` are payloads at schema 15, written on
 the branch `main` at the commit `a1b2c3d` and stamped `2026-10-01T10:42:13Z`:
 solo, which no audit has read and no one has signed, with one rule failing
 its tests; team, with an audit, one spec to repair, which writes a proof
@@ -719,7 +719,7 @@ def test_data_of_another_schema_shows_one_notice_and_nothing_else(browser,
         payload['schema_version'] = 3
     page = open_sample(browser, tmp_path, 'team', marked_as_schema_3)
     assert texts(page, '.notice') == [
-        'This data was written for schema 3 and this page reads schema 14. '
+        'This data was written for schema 3 and this page reads schema 15. '
         'Run purlin:status to write it again.']
     assert page.query_selector_all('.tile') == []
     assert page.query_selector_all('.fact') == []
@@ -873,8 +873,79 @@ def test_a_planted_bug_the_tests_caught_is_not_shown(browser, tmp_path):
 def test_the_audit_panel_of_a_rule_no_audit_read(browser, tmp_path):
     lines = audit_lines(browser, tmp_path, payload_named('regulated'),
                         'export', 'RULE-2')
-    assert lines[0] == (
-        "No audit has read this rule's text, proof and test yet."), lines
+    assert lines[0] == 'No audit has read this rule yet.', lines
+
+
+ANCHOR_SENTENCE = "No bug was planted: no bug is planted for an anchor's rule."
+
+
+def spot_checked(payload):
+    """Give the regulated sample's export `RULE-1` a current audit entry
+    reading `spot-checked` with one `no_bug` sentence, as the payload
+    carries one: the rule passing, its strong cell reading the word with
+    its one reason, and the summary counting it."""
+    rule = rule_of(payload, 'export', 'RULE-1')
+    rule['cells']['passed'].update({'word': 'passed', 'reasons': []})
+    rule['cells']['strong'] = {
+        'word': 'spot-checked', 'findings': [],
+        'evidence': '.purlin/evidence/ci/export.json',
+        'reasons': ['The spot tests found nothing. ' + ANCHOR_SENTENCE]}
+    rule['audit'] = {
+        'verdict': 'spot-checked', 'findings': [],
+        'no_bug': [ANCHOR_SENTENCE], 'notes': [], 'explanation': [],
+        'breaks': {}, 'model': 'claude-opus-5-5',
+        'at': '2026-09-13T12:05:00Z', 'commit': 'a1b2c3d' + '0' * 33,
+        'path': '.purlin/evidence/ci/export.json', 'out_of_date': []}
+    rule['flags']['spot_checked'] = True
+    payload['summary']['audit']['spot_checked'] += 1
+
+
+# purlin: purlin_report PROOF-239
+def test_a_spot_checked_rule_reads_why_no_bug_was_caught(browser, tmp_path):
+    page = open_sample(browser, tmp_path, 'regulated', spot_checked)
+    open_rule(page, 'export', 'RULE-1')
+    strong = page.evaluate(KV_ROWS)['Strong']
+    lines = panel_lines(page, 'Audit')
+    page.close()
+    assert strong.startswith('SPOT-CHECKED'), strong
+    assert lines[:2] == [
+        'Spot-checked.',
+        'The spot tests found nothing. ' + ANCHOR_SENTENCE], lines
+
+
+OUT_OF_DATE_REASONS = ['code changed since a1b2c3d',
+                       'the last audit found it strong on 2026-09-13']
+
+
+def audit_out_of_date(payload):
+    """Mark the audit of the regulated sample's login `RULE-1` out of date
+    on `code` at `a1b2c3d`, as the payload carries it: the entry kept, its
+    strong cell reading `out of date` with the two reasons."""
+    rule = rule_of(payload, 'login', 'RULE-1')
+    assert rule['audit']['verdict'] == 'strong'
+    rule['audit'].update({'out_of_date': ['code'],
+                          'commit': 'a1b2c3d' + '0' * 33,
+                          'at': '2026-09-13T12:05:00Z'})
+    rule['cells']['strong'].update({'word': 'out of date',
+                                    'reasons': list(OUT_OF_DATE_REASONS)})
+    rule['flags'].update({'strong': False, 'audit_out_of_date': True})
+    payload['summary']['audit']['strong'] -= 1
+    payload['summary']['audit']['out_of_date'] += 1
+
+
+# purlin: purlin_report PROOF-240
+def test_an_audit_out_of_date_keeps_its_last_result_on_screen(browser,
+                                                             tmp_path):
+    page = open_sample(browser, tmp_path, 'regulated', audit_out_of_date)
+    open_rule(page, 'login', 'RULE-1')
+    strong = page.evaluate(KV_ROWS)['Strong']
+    lines = panel_lines(page, 'Audit')
+    page.close()
+    assert strong.startswith('OUT OF DATE'), strong
+    for reason in OUT_OF_DATE_REASONS:
+        assert reason in strong, strong
+    assert lines[0].startswith('Out of date:'), lines
+    assert lines[1] == 'Strong. It found nothing.', lines
 
 
 # purlin: purlin_report PROOF-64
@@ -969,8 +1040,9 @@ def words_shown(browser, tmp_path, payload, words):
 def test_a_project_no_audit_read_never_reads_strong_or_audit(browser,
                                                             tmp_path):
     payload = payload_named('solo')
-    assert payload['summary']['audit'] == {'strong': 0, 'weak': 0,
-                                           'not_audited': 2}
+    assert payload['summary']['audit'] == {
+        'strong': 0, 'weak': 0, 'spot_checked': 0, 'out_of_date': 0,
+        'not_audited': 2}
     found, statuses = words_shown(browser, tmp_path, payload, AUDIT_WORDS)
     assert found == [], found
     assert len(statuses) == 5, statuses

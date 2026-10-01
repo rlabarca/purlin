@@ -14,8 +14,8 @@ because a reader who learns one should not have to learn the other:
 spec has, how many proofs it writes and how many of those have no test, and
 how many rules pass their tests. Where the project has an anchor, the line
 `Anchors` heads the anchors' rows and the line `Specs` every other spec's,
-as the dashboard lists anchors above the spec table. Where the audit found any
-rule strong or weak, the row adds how many rules it found strong. A project is
+as the dashboard lists anchors above the spec table. Where any rule has an
+audit entry, the row adds how many rules the audit found strong. A project is
 shown a proof count only where it writes a proof line.
 
 Below the table come each anchor rule that passes with nothing to check here,

@@ -21,12 +21,16 @@ One rule, read top to bottom.
             passed, its reason kept; on any other spec it reads `not run`.
 
     strong  What the AI audit found, and nothing waits on it. `strong`,
-            `weak`, `not audited`, `checked at sign-off` for a rule with a
-            hand check, and `no proof` for a rule whose passing test answers
-            no proof. `waiting` while the passed cell is not met, because the
-            audit reads a test that passes. The word comes from the audit
-            entry's `verdict` alone; a weak entry gives its findings as the
-            reasons. A hand check carries the notes of the newest sign-off
+            `weak`, `spot-checked`, `out of date`, `not audited`, `checked
+            at sign-off` for a rule with a hand check, and `no proof` for a
+            rule whose passing test answers no proof. `waiting` while the
+            passed cell is not met, because the audit reads a test that
+            passes. The word comes from the rule's audit entry: its
+            `verdict` while the entry is current, a weak entry giving its
+            findings as the reasons and a spot-checked one saying why no bug
+            was caught; `out of date` once the rule, its proof, its test or
+            the code it covers changed since, naming each part and the last
+            result. A hand check carries the notes of the newest sign-off
             that holds one.
 
 An anchor's rule is listed once, under the anchor.
@@ -44,10 +48,13 @@ reads the way it does.
      'bucket': 'passed',
      'flags': {'failing': False, 'partial': False, 'manual': False,
                'not_audited': False, 'out_of_date': False,
-               'no_proof': False, 'strong': True, 'weak': False}}
+               'no_proof': False, 'strong': True, 'weak': False,
+               'spot_checked': False, 'audit_out_of_date': False}}
 
 A rule's **bucket** is the one tile it is counted in; the rollup counts the
-flags `strong`, `weak`, `not_audited` and `manual` beside the buckets.
+flags `strong`, `weak`, `spot_checked`, `audit_out_of_date`, `not_audited`
+and `manual` beside the buckets. `out_of_date` is the passed cell's;
+`audit_out_of_date` is the strong cell's.
 """
 
 import os
@@ -69,17 +76,30 @@ NOT_AUDITED = 'not audited'
 HAND_CHECK = 'hand check'
 
 # The flags a rollup counts, beside the buckets and never instead of them.
-COUNTED_FLAGS = ('strong', 'weak', 'not_audited', 'manual')
+COUNTED_FLAGS = ('strong', 'weak', 'spot_checked', 'audit_out_of_date',
+                 'not_audited', 'manual')
 
-# The strong cell's reasons for a rule the audit has not read.
-NOT_AUDITED_REASON = 'no audit has run on this code'
+# The strong cell's reason for a rule no audit has read.
+NOT_AUDITED_REASON = 'no audit has read this rule'
+
+# The verdicts an audit entry may hold, which are the strong cell's words
+# for a current entry. A verdict that is none of these decides nothing.
+VERDICTS = ('strong', 'weak', 'spot-checked')
+SPOT_CHECKED = 'spot-checked'
+# The one reason of a spot-checked rule: these words, then the entry's
+# `no_bug` sentences joined by one space.
+SPOT_TESTS_FOUND_NOTHING = 'The spot tests found nothing. %s'
+
+# The reasons of a strong cell whose audit entry is out of date: one per
+# part that differs, then the entry's last result and its date.
+CHANGED_SINCE = '%s changed since %s'              # rule, a1b2c3d
+LAST_AUDIT = 'the last audit found it %s on %s'    # strong, 2026-09-13
 
 # The strong cell's word for a rule with a hand check, and the reason each
 # note of the newest sign-off holding one gives it: the version, the signer,
 # `at this commit`, `1 commit since` or `4 commits since`, the note.
 CHECKED_AT_SIGNOFF = 'checked at sign-off'
 HAND_NOTE = 'noted at the sign-off of %s by %s, %s: %s'
-EARLIER_WEAK = 'the last audit, before the rule or its tests changed, found it weak: %s'
 
 # The reason an anchor's proof gives where its every tied test skipped with
 # `nothing to check:`: the proof, then the reason after those words.
@@ -151,8 +171,9 @@ def rule_cells(inp):
                     `evidence.checked_sections` gives them
     `anchor`        true for a rule of an anchor, whose proof a test skipped
                     with `nothing to check:` counts as passed
-    `audit`         the evidence's audit entry for this rule's current
-                    hashes, carrying its `path`, or None
+    `audit`         the rule's audit entry as `evidence.audit_entry` gives
+                    it, carrying its `path` and `out_of_date`, the parts
+                    that changed since it was written; or None
     `hand_notes`    the reasons the newest sign-off holding a note on this
                     rule gives it, `HAND_NOTE` filled; [] before any
     `spec_broken`   why every rule of the rule's own spec reads `failed`, as
@@ -230,6 +251,8 @@ def _flags(passed, strong, proofs):
         'no_proof': not proofs,
         'strong': strong['word'] == 'strong',
         'weak': strong['word'] == 'weak',
+        'spot_checked': strong['word'] == SPOT_CHECKED,
+        'audit_out_of_date': strong['word'] == OUT_OF_DATE,
     }
 
 
@@ -311,7 +334,7 @@ def _passed_cell(inp):
         cell['source'] = newest.get('source')
         cell['counts'] = True
         commit = str(newest['section'].get('commit') or '')[:7]
-        cell['reasons'] = ['%s changed since %s' % (part, commit)
+        cell['reasons'] = [CHANGED_SINCE % (part, commit)
                            for part in newest.get('out_of_date') or ()]
         return cell
 
@@ -635,12 +658,17 @@ def _section_passes(proofs, current):
 def _strong_cell(inp, passed):
     """The strong cell: what the AI audit found in the tests behind a met passed cell.
 
-    Nothing waits on it. The word comes from the audit entry for the rule's
-    current text, proof and test: `strong`, or `weak` carrying each finding
-    as a reason. A rule with a `@manual` proof reads `checked at sign-off`
-    unless its audit reads `weak`, with one reason per note of the newest
-    sign-off holding one. A rule the audit has not read reads `not audited`,
-    saying why.
+    Nothing waits on it. The word comes from the rule's audit entry. While
+    the entry is current it is the entry's verdict: `strong`; `weak`, each
+    finding a reason; or `spot-checked`, with the one reason
+    `SPOT_TESTS_FOUND_NOTHING` over the entry's `no_bug` sentences. Once the
+    rule, its proof, its test or the code it covers changed since the entry
+    was written the cell reads `out of date`, with one reason per part that
+    differs and last what the audit found and when; the entry's findings
+    stay under `findings`. A rule with a `@manual` proof reads `checked at
+    sign-off` unless a current entry reads `weak`, with one reason per note
+    of the newest sign-off holding one. A rule with no entry reads `not
+    audited`.
     """
     cell = {'word': NOT_AUDITED, 'findings': [], 'evidence': None,
             'reasons': []}
@@ -662,15 +690,16 @@ def _strong_cell(inp, passed):
 
     audit = inp.get('audit') or None
     verdict = audit.get('verdict') if audit else None
-    if verdict in ('strong', 'weak'):
+    if verdict in VERDICTS:
         cell['evidence'] = audit.get('path')
         cell['findings'] = [str(line) for line in
                             (audit.get('findings') or ())]
     else:
         # A verdict the format does not name decides nothing.
         audit = None
+    changed = list(audit.get('out_of_date') or ()) if audit else []
 
-    if verdict == 'weak':
+    if verdict == 'weak' and not changed:
         cell['word'] = 'weak'
         cell['reasons'] = list(cell['findings'])
         return cell
@@ -684,6 +713,22 @@ def _strong_cell(inp, passed):
 
     if not audit:
         cell['reasons'] = [NOT_AUDITED_REASON]
+        return cell
+
+    if changed:
+        # The entry stays in the evidence and on the page: the cell says
+        # what changed since it was written and what it found then.
+        commit = str(audit.get('commit') or '')[:7]
+        cell['word'] = OUT_OF_DATE
+        cell['reasons'] = [CHANGED_SINCE % (part, commit) for part in changed]
+        cell['reasons'].append(LAST_AUDIT % (
+            verdict, str(audit.get('at') or '')[:10]))
+        return cell
+
+    if verdict == SPOT_CHECKED:
+        cell['word'] = SPOT_CHECKED
+        cell['reasons'] = [SPOT_TESTS_FOUND_NOTHING % ' '.join(
+            str(line) for line in audit.get('no_bug') or ())]
         return cell
 
     cell['word'] = 'strong'
@@ -720,7 +765,7 @@ def feature_rollup(rule_results):
     """One feature's rollup over `{rule_ref: rule_cells result}`.
 
     Carries how many rules the feature has, one count per bucket, and the
-    `strong`, `weak`, `not_audited` and `manual` counts.
+    counts of `COUNTED_FLAGS`.
     """
     counts = {key: 0 for key in BUCKETS}
     flagged = {name: 0 for name in COUNTED_FLAGS}

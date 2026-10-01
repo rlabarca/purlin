@@ -69,3 +69,14 @@ def test_an_env_proof_failing_on_its_own_system_is_failed(project):
     assert one['flags']['failing'] is True, one
     assert one['cells']['passed']['reasons'] == [
         'failing: %s, ci' % _word(other)], one
+
+
+# purlin: states PROOF-289
+def test_a_failure_under_ci_is_not_hidden_by_a_later_local_pass(project):
+    project.evidence({'PROOF-1': 'fail', 'PROOF-2': 'pass'}, source='ci',
+                     os_name='linux', at='2026-09-01T00:00:00Z')
+    project.evidence({'PROOF-1': 'pass', 'PROOF-2': 'pass'}, source='local',
+                     os_name='linux', at='2026-09-02T00:00:00Z')
+    cell = project.rule('RULE-1')['cells']['passed']
+    assert cell['word'] == 'failed', cell
+    assert cell['reasons'] == ['failing: Linux/Unix, ci'], cell

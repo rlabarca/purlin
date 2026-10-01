@@ -10,7 +10,7 @@
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null,
             features: {}, groups: {}};
-var SCHEMA = 14;
+var SCHEMA = 15;
 
 /* The two facts the top bar states, as the payload gives them: whether the
    tests are met on the committed evidence, the payload's `met`, and whether
@@ -27,7 +27,7 @@ var NOT_SIGNED = 'not signed';
    wherever the project writes a proof line; `Passing` counts the rules whose
    tests pass now, the payload's `summary.steps.passed`; `Strong` counts the
    rules the audit found strong, the payload's `summary.audit.strong`, drawn
-   only where the audit found a rule strong or weak. */
+   only where a rule has an audit entry. */
 var PASSING = 'Passing';
 var STRONG = 'Strong';
 var NO_PROOF = 'No proof';
@@ -54,6 +54,7 @@ var WORDS = {of: 'of', no_test: 'no test', partial: 'partial',
 var CELL_TONES = {'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
   'out of date': 'warn', 'strong': 'pass', 'weak': 'warn',
+  'spot-checked': 'neutral',
   'waiting': 'neutral', 'checked at sign-off': 'neutral',
   'not audited': 'idle', 'no proof': 'warn'};
 
@@ -95,13 +96,16 @@ function showsProofs() {
   return ((DATA && DATA.summary) || {}).proofs > 0;
 }
 
-/* Whether the audit found any rule strong or weak. The audit is a tool a
+/* Whether any rule has an audit entry: the payload's `summary.audit` counts
+   a rule `strong`, `weak`, `spot_checked` or `out_of_date`, as
+   `board.shows_strong` reads it for the status table. The audit is a tool a
    person runs and nothing waits on it, so the `Strong` box,
    column, badge, cell and panel are drawn only where it has read a rule: a
    board that names a check nobody ran reads as a project falling short. */
 function audited() {
   var found = ((DATA && DATA.summary) || {}).audit || {};
-  return (found.strong || 0) + (found.weak || 0) > 0;
+  return (found.strong || 0) + (found.weak || 0) + (found.spot_checked || 0)
+    + (found.out_of_date || 0) > 0;
 }
 
 /* --- marks the screens share ----------------------------------------- */
@@ -447,6 +451,18 @@ function notices() {
     + (DATA.information || []).map(function (line) {
       return notice(line, 'neutral');
     }).join('');
+}
+
+/* A path, which a narrow screen may break after a `/` or a `_` and nowhere
+   else: each part between two such places is set on one line. A part over 32
+   characters is left to break where it must, so the page never scrolls
+   sideways. */
+function pathText(path) {
+  return (String(path == null ? '' : path).match(/[^\/_]*[\/_]|[^\/_]+$/g)
+    || []).map(function (part) {
+      return part.length > 32 ? esc(part)
+        : '<span class="nowrap">' + esc(part) + '</span>';
+    }).join('<wbr>');
 }
 
 /* One word of a notice. A path or a name never breaks inside itself, except

@@ -21,6 +21,9 @@ from purlin import status as purlin_status  # noqa: E402
 from purlin import summary  # noqa: E402
 from mcp_project import (NO_PROOF_SPEC, ONE_RULE_SPEC, SPEC,  # noqa: E402
                          Project, _commit_tests, _entry, _git, _write)
+from sign_project import _Out, signing_key  # noqa: E402
+# `sign_project` puts `scripts/review` on the path.
+import sign as sign_module  # noqa: E402
 
 HERE = 'macos'
 TWO_PROOFS_SPEC = (
@@ -107,10 +110,16 @@ class TestTheOpeningLines:
         assert lines[1] == 'Tests: not met', lines
 
     # purlin: summary PROOF-50
-    def test_a_commit_to_the_code_after_the_tag_reads_one_commit_since(self):
+    def test_a_commit_to_the_code_after_the_walk_reads_one_commit_since(self):
         made = Project()
         try:
-            _git(made.root, 'tag', '-a', 'signed/0.1.0', '-m', 'Signed 0.1.0.')
+            _commit_tests(made, 'PROOF-1', 'PROOF-2')
+            made.evidence(PASSING)
+            signing_key(made.root)
+            out = _Out()
+            assert sign_module.walk(
+                made.root, '0.1.0', out=out,
+                ask=lambda _kind, _key, _prompt: 'y') == 0, out.text()
             _write(os.path.join(made.root, 'src', 'age.py'),
                    'def age():\n    return 0\n')
             _git(made.root, 'add', '-A')
@@ -147,7 +156,15 @@ class TestTheSentence:
         rules = [rule(strong='strong')] * 42 + [rule(strong='weak')] * 8
         assert ending(rules)[0] == (
             '50 rules. 50 pass their tests. '
-            'The audit found 42 of 50 rules strong (84%).')
+            'The audit found 42 of 50 rules strong (84%): 42 strong, 8 weak.')
+
+    # purlin: summary PROOF-57
+    def test_forty_rules_read_each_count_that_is_not_zero(self):
+        rules = ([rule(strong='strong')] * 34 + [rule(strong='weak')] * 4
+                 + [rule(strong='spot-checked')] * 2)
+        assert ending(rules)[0] == (
+            '40 rules. 40 pass their tests. The audit found 34 of 40 rules '
+            'strong (85%): 34 strong, 4 weak, 2 spot-checked.')
 
 
 # ---------------------------------------------------------------------------

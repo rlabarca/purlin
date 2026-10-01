@@ -1,4 +1,4 @@
-"""The structured project payload, schema 14.
+"""The structured project payload, schema 15.
 
 One reader assembles specs and evidence into the cells of every rule, and
 every surface renders that: the status table, the dashboard, the evidence
@@ -6,7 +6,7 @@ package and the drift report. A surface that parsed the rendered table would
 be coupled to a layout; this is the shape they all read instead.
 
     {
-      "schema_version": 14,
+      "schema_version": 15,
       "generated_at": "2026-10-01T12:00:00Z",
       "generated_by": "sync_status",
       "project": "labconnect",
@@ -16,18 +16,21 @@ be coupled to a layout; this is the shape they all read instead.
       "dirty": false,
       "summary": {"rules": 8, "features": 4, "failing": 0,
                   "partial": 1, "untested": 2, "passed": 5, "strong": 3,
-                  "weak": 1, "not_audited": 1, "manual": 0,
+                  "weak": 1, "spot_checked": 0, "audit_out_of_date": 0,
+                  "not_audited": 1, "manual": 0,
                   "incomplete": 0,
                   "steps": {"passed": 5},
-                  "audit": {"strong": 3, "weak": 1, "not_audited": 1},
-                  "sentence": "8 rules. 5 pass their tests. The audit found 3 of 5 rules strong (60%)."},
+                  "audit": {"strong": 3, "weak": 1, "spot_checked": 0,
+                            "out_of_date": 0, "not_audited": 1},
+                  "sentence": "8 rules. 5 pass their tests. The audit found 3 of 5 rules strong (60%): 3 strong, 1 weak, 1 not audited."},
       "features": [
         {"name": "login", "category": "auth", "spec_path": "specs/auth/login.md",
          "is_anchor": false, "source": null, "pinned": null,
          "scope": ["src/auth/"], "incomplete": false,
          "incomplete_reason": null, "broken": [],
          "rollup": {"rules": 2, "untested": 0, "failing": 0, "partial": 0,
-                    "passed": 2, "strong": 1, "weak": 1, "not_audited": 0,
+                    "passed": 2, "strong": 1, "weak": 1, "spot_checked": 0,
+                    "audit_out_of_date": 0, "not_audited": 0,
                     "manual": 0, "proofs": 6, "proofs_without_test": 1,
                     "proofs_without_test_ids": ["PROOF-4"],
                     "incomplete": false},
@@ -43,14 +46,15 @@ be coupled to a layout; this is the shape they all read instead.
             "test_hash": "<sha256>", "test_hash_kind": "test",
             "machines": {"macos": "jane-laptop"},
             "left": "to_strengthen",
-            "audit": {"verdict": "weak", "findings": ["..."], "notes": [],
-                      "explanation": ["..."],
+            "audit": {"verdict": "weak", "findings": ["..."], "no_bug": [],
+                      "notes": [], "explanation": ["..."],
                       "breaks": {"PROOF-1": {"file": "src/login.py", "line": 12,
                                              "before": "...", "after": "...",
                                              "result": "survived", "why": "",
                                              "break_key": "<sha256>"}},
                       "model": "<model>", "at": "...", "commit": "<sha>",
-                      "path": ".purlin/evidence/local/login.json"},
+                      "path": ".purlin/evidence/local/login.json",
+                      "out_of_date": []},
             "bucket": "passed", "flags": {...},
             "cells": {"passed": {...}, "strong": {...}},
             "proofs": [{"id": "PROOF-1", "manual": false, "slow": false,
@@ -105,8 +109,13 @@ or `> Scope: names nothing that exists`), its rollup carries `incomplete:
 true`, and `summary.incomplete` counts such specs. An anchor is never
 incomplete. Every cell reads as usual.
 
-`summary.steps` counts the rules that pass their tests, `summary.audit` what
-the audit found among them, and `summary.sentence` says it in one line.
+`summary.steps` counts the rules that pass their tests, `summary.audit` the
+strong cell's word among them under `strong`, `weak`, `spot_checked`,
+`out_of_date` and `not_audited`, and `summary.sentence` says it in one line.
+A rule's `audit` is its audit entry, current or not: `verdict` is the
+entry's last result, and `out_of_date` names the parts of `rule`, `proof`,
+`test` and `code` that changed since it was written, `[]` for a current
+entry. The strong cell's word is what a surface counts a rule by.
 `left` is the work left, one entry per kind in the order it is done, each
 with its count, its text and the command that clears it, `to_correct`
 counting test comments and `to_commit` features; `met` is true where no
@@ -158,7 +167,7 @@ from purlin import (PURLIN_VERSION,
                     summary as summary_module,
                     wording as wording_module)
 
-SCHEMA_VERSION = 14
+SCHEMA_VERSION = 15
 REPORT_DATA_PATH = os.path.join('.purlin', 'report-data.js')
 _PREFIX = 'const PURLIN_DATA = '
 
@@ -500,12 +509,10 @@ def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
 
     # The rule's audit entry, in either source, checked against the rule,
     # the proof, the test and the feature's code as they are now. An entry
-    # out of date is read as none.
+    # out of date is kept, and names the parts that changed.
     audit = evidence_module.audit_entry(
         owner_evidence['loaded'], rule_id, rule_hash, proof_hash, test_hash,
         owner_evidence.get('code') or '')
-    if audit and audit['out_of_date']:
-        audit = None
     result = states.rule_cells({
         'anchor': anchor,
         'proofs': proof_dicts,
@@ -591,29 +598,32 @@ def _machines(sections, proofs, rule_id):
 
 
 def audit_summary(audit):
-    """`rules[].audit`: what the audit found for the current hashes, or None.
+    """`rules[].audit`: the rule's audit entry in eleven fields, or None.
 
-    The `verdict` and the findings, the notes, the model's `explanation` and
-    the planted bugs under `breaks`, both exactly as the entry holds them, the
-    model that read the rule, when and at which commit, and the evidence file
-    the entry sits in. An entry that holds no `explanation` carries `[]` and
-    one that holds no `breaks` carries `{}`, which is what an entry with none
-    is written with. An entry whose verdict the format does not name answers
-    nothing.
+    The `verdict`, the findings, the `no_bug` sentences and the notes, the
+    model's `explanation` and the planted bugs under `breaks`, both exactly
+    as the entry holds them, the model that read the rule, when and at which
+    commit, the evidence file the entry sits in, and `out_of_date`, the
+    parts that changed since the entry was written, `[]` for a current one.
+    An entry that holds no `explanation` carries `[]` and one that holds no
+    `breaks` carries `{}`, which is what an entry with none is written with.
+    An entry whose verdict the format does not name answers nothing.
     """
-    if not audit or audit.get('verdict') not in ('strong', 'weak'):
+    if not audit or audit.get('verdict') not in states.VERDICTS:
         return None
     explanation = audit.get('explanation')
     breaks = audit.get('breaks')
     return {'verdict': audit.get('verdict'),
             'findings': [str(line) for line in audit.get('findings') or ()],
+            'no_bug': [str(line) for line in audit.get('no_bug') or ()],
             'notes': [str(line) for line in audit.get('notes') or ()],
             'explanation': [] if explanation is None else explanation,
             'breaks': {} if breaks is None else breaks,
             'model': audit.get('model') or 'unknown',
             'at': audit.get('at'),
             'commit': audit.get('commit'),
-            'path': audit.get('path')}
+            'path': audit.get('path'),
+            'out_of_date': list(audit.get('out_of_date') or ())}
 
 
 def _backing_tests(sections, proof_id):

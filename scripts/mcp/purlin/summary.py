@@ -12,10 +12,11 @@ The status opens on the project and the two facts:
     Sign-off: signed 0.1.0, 4 commits since
 
 It ends on one sentence, counting each rule once under the spec that owns
-it, anchors' included, and how many pass their tests; where the audit read a
-rule that passes, it gives the share it found strong:
+it, anchors' included, and how many pass their tests; where a rule that
+passes has an audit entry, it gives the share the audit found strong and
+then each count:
 
-    50 rules. 50 pass their tests. The audit found 42 of 50 rules strong (84%).
+    40 rules. 40 pass their tests. The audit found 34 of 40 rules strong (85%): 34 strong, 4 weak, 2 spot-checked.
 
 `Left to do` follows it: one line per kind of work, in the order the work is
 done, each with its count and the command that clears it. A kind at zero is
@@ -88,7 +89,6 @@ OPENING = 'Purlin status: %s, plugin %s'
 TESTS_LINE = 'Tests: %s'
 SIGNOFF_LINE = 'Sign-off: %s'
 LEFT_TO_DO = 'Left to do:'
-AUDIT_SHARE = 'The audit found %d of %d rules strong (%d%%).'
 # The audit's five counts, in the order they are said: the key each is
 # counted under, and its word. `AUDIT_LINE` is the share followed by them.
 AUDIT_WORDS = (('strong', 'strong'), ('weak', 'weak'),
@@ -185,14 +185,13 @@ def steps(own_rules):
 
 
 def audit_counts(own_rules):
-    """`{"strong": s, "weak": w, "not_audited": u}` over the rules that pass.
+    """The five counts of `AUDIT_WORDS` over the rules that pass.
 
     Each counts the rules whose passed cell reads `passed` and whose strong
     cell reads that word, so a rule checked by hand alone is in none.
     """
-    counts = {'strong': 0, 'weak': 0, 'not_audited': 0}
-    names = {'strong': 'strong', 'weak': 'weak',
-             states.NOT_AUDITED: 'not_audited'}
+    counts = {key: 0 for key, _word in AUDIT_WORDS}
+    names = {word: key for key, word in AUDIT_WORDS}
     for rule in own_rules or ():
         if not _passes(rule):
             continue
@@ -221,19 +220,26 @@ def audit_line(counts):
                          audit_words(counts))
 
 
+def has_audit(counts):
+    """True where a rule that passes has an audit entry: the counts hold a
+    rule read `strong`, `weak`, `spot-checked` or `out of date`."""
+    counts = counts or {}
+    return any(counts.get(key) for key, _word in AUDIT_WORDS
+               if key != 'not_audited')
+
+
 def sentence(summary):
-    """`<N> rules. <p> pass their tests.`, then the audit's share where it read a rule."""
+    """`<N> rules. <p> pass their tests.`, then `audit_line` where a rule
+    that passes has an audit entry: one read `strong`, `weak`,
+    `spot-checked` or `out of date`."""
     total = summary.get('rules') or 0
     count = (summary.get('steps') or {}).get('passed') or 0
     parts = ['%d %s.' % (total, _words('rule', 'rules', total)),
              '%d %s.' % (count, _words('passes its tests',
                                         'pass their tests', count))]
     audit = summary.get('audit') or {}
-    strong = audit.get('strong') or 0
-    read = strong + (audit.get('weak') or 0)
-    if read > 0:
-        over = read + (audit.get('not_audited') or 0)
-        parts.append(AUDIT_SHARE % (strong, over, strong * 100 // over))
+    if has_audit(audit):
+        parts.append(audit_line(audit))
     return ' '.join(parts)
 
 

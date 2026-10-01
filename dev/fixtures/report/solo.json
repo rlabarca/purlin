@@ -52,6 +52,7 @@
       "name": "login",
       "pinned": null,
       "rollup": {
+        "audit_out_of_date": 0,
         "failing": 0,
         "incomplete": false,
         "manual": 0,
@@ -64,6 +65,7 @@
           "PROOF-2"
         ],
         "rules": 3,
+        "spot_checked": 0,
         "strong": 0,
         "untested": 2,
         "weak": 0
@@ -93,19 +95,21 @@
               "evidence": null,
               "findings": [],
               "reasons": [
-                "no audit has run on this code"
+                "no audit has read this rule"
               ],
               "word": "not audited"
             }
           },
           "feature": "login",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": true,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": false,
             "weak": false
           },
@@ -162,12 +166,14 @@
           },
           "feature": "login",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": false,
             "weak": false
           },
@@ -218,12 +224,14 @@
           },
           "feature": "login",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": true,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": false,
             "weak": false
           },
@@ -271,6 +279,7 @@
       "name": "invoice",
       "pinned": null,
       "rollup": {
+        "audit_out_of_date": 0,
         "failing": 1,
         "incomplete": false,
         "manual": 0,
@@ -281,6 +290,7 @@
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
         "rules": 2,
+        "spot_checked": 0,
         "strong": 0,
         "untested": 0,
         "weak": 0
@@ -310,19 +320,21 @@
               "evidence": null,
               "findings": [],
               "reasons": [
-                "no audit has run on this code"
+                "no audit has read this rule"
               ],
               "word": "not audited"
             }
           },
           "feature": "invoice",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": true,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": false,
             "weak": false
           },
@@ -387,12 +399,14 @@
           },
           "feature": "invoice",
           "flags": {
+            "audit_out_of_date": false,
             "failing": true,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": false,
             "weak": false
           },
@@ -467,7 +481,7 @@
     }
   },
   "project": "ledger",
-  "schema_version": 14,
+  "schema_version": 15,
   "signoff": {
     "commit": null,
     "since": null,
@@ -477,9 +491,12 @@
   "summary": {
     "audit": {
       "not_audited": 2,
+      "out_of_date": 0,
+      "spot_checked": 0,
       "strong": 0,
       "weak": 0
     },
+    "audit_out_of_date": 0,
     "failing": 1,
     "features": 2,
     "incomplete": 0,
@@ -494,6 +511,7 @@
     ],
     "rules": 5,
     "sentence": "5 rules. 2 pass their tests.",
+    "spot_checked": 0,
     "steps": {
       "passed": 2
     },

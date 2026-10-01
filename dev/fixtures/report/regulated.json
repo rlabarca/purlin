@@ -93,6 +93,7 @@
       "name": "login",
       "pinned": null,
       "rollup": {
+        "audit_out_of_date": 0,
         "failing": 0,
         "incomplete": false,
         "manual": 0,
@@ -103,6 +104,7 @@
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
         "rules": 4,
+        "spot_checked": 0,
         "strong": 2,
         "untested": 0,
         "weak": 1
@@ -128,7 +130,9 @@
             ],
             "findings": [],
             "model": "example-model-1",
+            "no_bug": [],
             "notes": [],
+            "out_of_date": [],
             "path": ".purlin/evidence/ci/login.json",
             "verdict": "strong"
           },
@@ -164,12 +168,14 @@
           },
           "feature": "login",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": true,
             "weak": false
           },
@@ -222,7 +228,9 @@
             ],
             "findings": [],
             "model": "example-model-1",
+            "no_bug": [],
             "notes": [],
+            "out_of_date": [],
             "path": ".purlin/evidence/ci/login.json",
             "verdict": "strong"
           },
@@ -258,12 +266,14 @@
           },
           "feature": "login",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": true,
             "weak": false
           },
@@ -320,7 +330,9 @@
               "PROOF-3: the test still passes when src/auth/lockout.py:27 reads \"return opened + timedelta(minutes=50)\""
             ],
             "model": "example-model-1",
+            "no_bug": [],
             "notes": [],
+            "out_of_date": [],
             "path": ".purlin/evidence/ci/login.json",
             "verdict": "weak"
           },
@@ -362,12 +374,14 @@
           },
           "feature": "login",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": false,
             "weak": true
           },
@@ -439,12 +453,14 @@
           },
           "feature": "login",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": true,
+            "spot_checked": false,
             "strong": false,
             "weak": false
           },
@@ -529,6 +545,7 @@
       "name": "invoice",
       "pinned": null,
       "rollup": {
+        "audit_out_of_date": 0,
         "failing": 0,
         "incomplete": false,
         "manual": 1,
@@ -539,6 +556,7 @@
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
         "rules": 3,
+        "spot_checked": 0,
         "strong": 1,
         "untested": 0,
         "weak": 1
@@ -564,7 +582,9 @@
             ],
             "findings": [],
             "model": "example-model-1",
+            "no_bug": [],
             "notes": [],
+            "out_of_date": [],
             "path": ".purlin/evidence/ci/invoice.json",
             "verdict": "strong"
           },
@@ -600,12 +620,14 @@
           },
           "feature": "invoice",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": true,
             "weak": false
           },
@@ -661,7 +683,9 @@
               "No proof of this rule names a rejection, an error or a boundary, so the test reads only the total it expects."
             ],
             "model": "example-model-1",
+            "no_bug": [],
             "notes": [],
+            "out_of_date": [],
             "path": ".purlin/evidence/ci/invoice.json",
             "verdict": "weak"
           },
@@ -701,12 +725,14 @@
           },
           "feature": "invoice",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": false,
             "weak": true
           },
@@ -762,12 +788,14 @@
           },
           "feature": "invoice",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": true,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": false,
             "weak": false
           },
@@ -824,6 +852,7 @@
       "name": "checkout_design",
       "pinned": null,
       "rollup": {
+        "audit_out_of_date": 0,
         "failing": 0,
         "incomplete": false,
         "manual": 0,
@@ -834,6 +863,7 @@
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
         "rules": 1,
+        "spot_checked": 0,
         "strong": 0,
         "untested": 0,
         "weak": 1
@@ -851,7 +881,9 @@
               "The test reads the text \"Total\" and the button \"Pay\" on the page; the proof names their order, and no assertion compares their positions."
             ],
             "model": "example-model-1",
+            "no_bug": [],
             "notes": [],
+            "out_of_date": [],
             "path": ".purlin/evidence/ci/checkout_design.json",
             "verdict": "weak"
           },
@@ -886,12 +918,14 @@
           },
           "feature": "checkout_design",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": false,
             "weak": true
           },
@@ -944,6 +978,7 @@
       "name": "security_baseline",
       "pinned": "4c1d9e2",
       "rollup": {
+        "audit_out_of_date": 0,
         "failing": 0,
         "incomplete": false,
         "manual": 0,
@@ -956,6 +991,7 @@
           "PROOF-1"
         ],
         "rules": 1,
+        "spot_checked": 0,
         "strong": 0,
         "untested": 1,
         "weak": 0
@@ -988,12 +1024,14 @@
           },
           "feature": "security_baseline",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": false,
             "weak": false
           },
@@ -1048,6 +1086,7 @@
       "name": "export",
       "pinned": null,
       "rollup": {
+        "audit_out_of_date": 0,
         "failing": 0,
         "incomplete": false,
         "manual": 0,
@@ -1058,6 +1097,7 @@
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
         "rules": 2,
+        "spot_checked": 0,
         "strong": 0,
         "untested": 1,
         "weak": 0
@@ -1090,12 +1130,14 @@
           },
           "feature": "export",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": false,
             "out_of_date": true,
             "partial": false,
+            "spot_checked": false,
             "strong": false,
             "weak": false
           },
@@ -1149,19 +1191,21 @@
               "evidence": null,
               "findings": [],
               "reasons": [
-                "no audit has run on this code"
+                "no audit has read this rule"
               ],
               "word": "not audited"
             }
           },
           "feature": "export",
           "flags": {
+            "audit_out_of_date": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
             "not_audited": true,
             "out_of_date": false,
             "partial": false,
+            "spot_checked": false,
             "strong": false,
             "weak": false
           },
@@ -1248,7 +1292,7 @@
     }
   },
   "project": "ledger",
-  "schema_version": 14,
+  "schema_version": 15,
   "signoff": {
     "commit": "9f8e7d6c5b4a39281706f5e4d3c2b1a098765432",
     "since": 4,
@@ -1258,9 +1302,12 @@
   "summary": {
     "audit": {
       "not_audited": 1,
+      "out_of_date": 0,
+      "spot_checked": 0,
       "strong": 3,
       "weak": 3
     },
+    "audit_out_of_date": 0,
     "failing": 0,
     "features": 5,
     "incomplete": 0,
@@ -1274,7 +1321,8 @@
       "PROOF-1"
     ],
     "rules": 11,
-    "sentence": "11 rules. 8 pass their tests. The audit found 3 of 7 rules strong (42%).",
+    "sentence": "11 rules. 8 pass their tests. The audit found 3 of 7 rules strong (42%): 3 strong, 3 weak, 1 not audited.",
+    "spot_checked": 0,
     "steps": {
       "passed": 8
     },
