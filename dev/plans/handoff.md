@@ -1,6 +1,178 @@
+# Handoff, 2026-10-01: decision 120 is built
+
+This section is the newest. The integration report is `dev/plans/d120-reports/integration.md`;
+each lane's report is beside it. `main` is local only: nothing was pushed, tagged, signed or
+audited.
+
+- **Built:** decision 120, the clean-up after decision 119, from four lanes (`leftovers`,
+  `signnote`, `prose`, `dark`) merged in that order, each rebased and fast-forwarded.
+  - A hand check's stop shows its last note (`signatures RULE-129`, `PROOF-249` to `251`).
+  - The docs say approval before a test runs stays outside Purlin, and that a sign-off file is
+    verified through its signed commit.
+  - Gone: `--ignore=mutants` from the suggested pytest command, `remote_url` from the
+    dashboard's data, the settings of unreleased 0.10 builds from the upgrade's list, and
+    `a break ran`.
+  - The dark theme: every text 7 to 1, but its fail red and accent copper text at 4.5 to 1,
+    the owner's exception.
+  - The two commits of a run are described in one home each, and eleven dense paragraphs are
+    short sentences and lists.
+- **Formats:** no `> Format-Version:` moved. The dashboard's data stays at schema 14, with
+  seventeen top-level keys.
+
+### The numbers
+
+| | Result |
+|---|---|
+| `bash dev/run_tests.sh` | 819 passed, 0 failed, 9 skipped; 4 suites passed, 0 failed |
+| `purlin_run.py --test` | 823 markers tied, 0 not tied; 400 of 411 rules pass; left: 5 slow proofs, 6 rules to test on Windows |
+| `purlin_run.py --test --all --commit` | 823 markers tied, 0 not tied; 39 specs, 411 rules, 823 proofs; 405 rules pass; committed as `purlin: evidence at e79e00d` |
+| Appendix A's script over every `dev/test_*` | `0 gone, 6 reworded, 817 right as they stand.` |
+
+The 9 skipped are the same nine tests only a Windows machine can show. 819 is 816 and the
+three tests of `signatures PROOF-249` to `251`.
+
+Of the 6 the script calls reworded, 5 are the slow proofs (`install PROOF-2` to `PROOF-5`,
+`collaboration PROOF-1`), as before: the script compares the tag `@slow` with the words. The
+sixth is `purlin_report PROOF-66`. Its test and its proof were both changed in the lane's second
+commit; the rebase gave the lane's two commits the same commit time, and the script picks the
+first of two equal times. The run itself names no test comment to correct.
+
+The `--all` run ends:
+
+```
+411 rules. 405 pass their tests.
+Left to do:
+  6 rules to test on Windows: run purlin:test on Windows
+```
+
+The real `claude` ran once, in the install test of the `--all` run.
+
+### Lines a person reads that the lanes chose
+
+Terminal:
+
+- `Suggested for pytest: python3 -m pytest {files} --junitxml={report}`
+- `The audit stopped: <path> changed while a bug was planted. Nothing in the project was written by the audit.`
+- `Last note`, then `  noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red`
+- `.purlin/config.json carries pre_push, digest, which this version does not read. Run purlin:init --update.`
+  A file that still holds a setting of an unreleased 0.10 build is told
+  `Remove it from .purlin/config.json.`
+
+The plugin's description: `Rule-proof spec-driven development: specs define rules, proofs say
+how each rule is shown, tests prove it`.
+
+`docs/sign-off.md`, "Beside a regulated system":
+
+> **Approval before a test runs.** Purlin has no approval step before a test runs. It signs once,
+> at the end. Approval of the proofs is a required review when they are merged, or your system of
+> record's. Purlin does record two things:
+>
+> - who wrote and who last changed each proof, read from git into the evidence package;
+> - that a result stops counting when its proof is reworded. The rule reads `out of date` until
+>   its tests run again.
+
+> **The signed commit is the record.** The package is checkable alone, with
+> `purlin:sign --check <file>`. A sign-off file is not: take the signed commit that added it as
+> the record. The sign-off records no approve or reject answer and no stated meaning of the
+> signature.
+
+`docs/sign-off.md`, "What is recorded":
+
+> **How each is checked.** The package is checkable alone, by its fingerprint:
+> `purlin:sign --check <file>`. The sign-off file is not. It carries no hash of itself and no
+> signature inside it. It names the package's fingerprint, and the signed commit that added it
+> binds the sign-off, the package and the code.
+> [evidence_and_signoff.md](../references/evidence_and_signoff.md#when-a-sign-off-counts) is the
+> one definition.
+
+`docs/sign-off.md`, "The walk": the bullet "the rule's last note, where an earlier sign-off holds
+one.", then "The last note names the version it was signed at and how many commits have come
+since. You judge whether it still holds:" and the two printed lines.
+
+`references/evidence_and_signoff.md`, "When a sign-off counts", the one home:
+
+> **How each is checked.**
+>
+> - The evidence package is checkable alone, by its fingerprint: `purlin:sign --check <file>`
+>   reads the one file and needs no key.
+> - The sign-off file is not. It carries no hash of itself and no signature inside it.
+> - The sign-off names the package's fingerprint. The signed commit that added it binds the
+>   sign-off, the package and the code.
+> - A receiving system takes the signed commit as the record.
+> - The sign-off records no approve or reject answer and no stated meaning of the signature.
+
+`references/evidence_and_signoff.md`, "A hand check": "there and in its stop of the next walk"
+added.
+
+`skills/sign/SKILL.md`, Step 4: "Where an earlier sign-off noted the rule, the stop ends on
+`Last note` and that note, with the version it was signed at and how many commits have come
+since."
+
+`design/readme.md`: "In both themes every text measures at least 7:1 by the WCAG contrast
+formula against every ground it is drawn on, but the dark theme's red and copper text,
+`#FF9F9F` and `#FFA459`, which measure at least 4.5:1: a red that reaches 7:1 on navy no longer
+reads as red. The dark theme's green, amber and teal text are `#6EF5A0`, `#FFD861` and
+`#62F5E0`; outlines and the logo keep the copper `#C0793F`."
+
+`docs/dashboard.md`: "The dark theme meets the same 7 to 1, but its red and copper text, which
+measure at least 4.5 to 1: a red that reaches 7 to 1 on the dark ground no longer reads as red."
+
+`references/review_criteria.md`, "How the checks are held to account": "Before a release of
+Purlin, run the checks over Purlin's own tests. A person reads every finding. Fix the test or,
+where the check was wrong, narrow the check."
+
+The `prose` lane reworded eleven more paragraphs and the two homes of the two commits. They are
+too long to repeat here; `dev/plans/d120-reports/prose.md` holds each one word for word, before
+and after: `references/formats/evidence_format.md` ("The two commits", the rule words, the
+paragraph after the `proofs` table), `references/commit_conventions.md` ("The two commits of a
+run"), `skills/audit/SKILL.md` (Step 1), `skills/test/SKILL.md` (Step 3, Step 4 first and last
+paragraphs), `skills/spec/SKILL.md` ("Ids"), `references/formats/spec_format.md` (taking the
+next number), `references/formats/anchor_format.md` (the file at the path),
+`references/review_criteria.md` ("Which rules the audit reads") and `agents/purlin.md`
+("The words").
+
+### Done at integration
+
+- `skills/audit/SKILL.md` quotes the stop with `changed while a bug was planted`.
+- `dev/run_project.py` gives the test projects `suites.pytest_suite()` with no extra argument;
+  the 136 tests of the two files that use the helper pass.
+- `payload._hand_notes` is `payload.hand_notes`, and `sign.last_notes` calls it.
+- Five files under `.purlin/evidence/ci/` that held `remote runner` are deleted: `reports`,
+  `drift`, `evidence_writer`, `signatures`, `specs`. None of the five specs has a proof tagged
+  `@env(windows)`. The ten files left each belong to a spec that has one.
+- `.purlin/evidence/README.md` held `remote runner` too; it is now the bytes of
+  `templates/evidence-readme.md`.
+- The dashboard page was rebuilt and committed once; the two docs screenshots changed and were
+  committed.
+
+### The dashboard, looked at
+
+This repository's own data, dark and light, 1500 and 390 pixels, the board with
+`security_no_dangerous_patterns` open and the screen of its `RULE-1`: 0 texts under their least
+ratio, the page never scrolls sideways, no count, label, box or rule id breaks. Copper text
+measures 6.73 in the dark theme and 7.38 in the light. This repository has no failing rule, so
+no red text is drawn; on the regulated sample the one red text measures 7.75 dark, 7.80 light.
+
+One thing found, not from decision 120 and not fixed: at 390 pixels a rule's `SPEC` path breaks
+inside a word, `specs/_anchors/security_no_dangero` then `us_patterns.md`, in both themes.
+`purlin_report RULE-75` does not name a path among what must not break.
+
+### What is left
+
+- The review's fixes: `dev/plans/d120-reports/coverage-review.md` (22 rules and 51 proofs
+  proposed, and questions for the owner).
+- The Windows run, `python3 dev/windows_run.py`, after those fixes: 6 rules wait on it.
+- The real-skills QA check.
+- The planted-bug measurement's result; it runs in its own clone.
+- From the lanes, for the owner: a note recorded as `no note` shows as `...: no note`;
+  `PROOF-66` does not hover; the dark red is a salmon red, `#FF9F9F`; the deck's `manual` slide
+  may add that the walk's stop shows the last note.
+- The lane worktrees and branches of decision 120 are removed. Nothing under `dev/plans/` was
+  deleted.
+
 # Handoff, 2026-10-01: decisions 118 and 119 are built
 
-This section is the newest. The integration report is `dev/plans/d119-reports/integration.md`;
+The integration report is `dev/plans/d119-reports/integration.md`;
 each lane's report is beside it. `main` is local only: nothing was pushed, tagged, signed or
 audited.
 
