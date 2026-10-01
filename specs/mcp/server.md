@@ -6,76 +6,46 @@
 >   what it is asked.
 > Scope: scripts/mcp/purlin/server.py, .claude-plugin/plugin.json, scripts/purlin_python.sh
 > Stack: python/stdlib, json
-> Highest-Rule: 34
+> Highest-Rule: 36
 > Highest-Proof: 165
 
 ## Rules
 
 - RULE-1: The server answers `initialize` with protocol version `2024-11-05`, the server name `purlin`, the version the `VERSION` file carries, and the tools capability a client needs in order to discover that this server serves tools
 - RULE-2: `tools/list` returns exactly three tools, `sync_status`, `purlin_config` and `drift`, and every one of them declares the optional `project_root`
-- RULE-3: A notification produces no response
-- RULE-4: An unknown tool name answers error code `-32601`
 - RULE-5: Stdout carries JSON-RPC responses and nothing else; the startup line naming the version and the root goes to stderr
-- RULE-6: A call may name its own project root with `project_root`, which is resolved, a leading `~` standing for the home folder
-- RULE-7: A tool called on a root holding no `.purlin/config.json` answers only `No Purlin project root at <root>: .purlin/config.json is not there. That root came from <source>.` and what to do, rather than reporting or writing a project there
+- RULE-6: A call may name its own project root with `project_root`, which is resolved, a leading `~` standing for the home folder; a call naming none uses the root the server resolved at startup, whatever an earlier call named
+- RULE-7: A tool called on a root holding no `.purlin/config.json`, or one that cannot be read, answers only what is wrong and what to do, and reports or writes nothing there
 - RULE-8: A tool that raises answers the text `Error running <tool>: <message>`, so one bad call never ends the session
-- RULE-9: The configuration tool reads the whole of `.purlin/config.json` or one named key, a key that is absent or stored as null answering `{"<key>": null}` in the shape a found key answers; a write sets that key in `.purlin/config.json`, and a save that fails answers `The setting was not saved: <cause>.`
-- RULE-10: A write naming no key answers that a key is required, leaving the config as it was
+- RULE-9: The configuration tool reads the whole of `.purlin/config.json` or one named key, a key that is absent or stored as null answering `{"<key>": null}`, and a write sets that key in `.purlin/config.json`
 - RULE-22: The plugin manifest starts the server through `sh` and the interpreter resolver, with `PURLIN_PYTHON_SOFT` set to `1`, and the last argument it passes names `scripts/mcp/purlin/server.py`
-- RULE-23: Input that is not JSON answers error code `-32700`
-- RULE-24: An unknown method answers error code `-32601`
-- RULE-25: A call naming no `project_root` uses the root the server resolved at startup, whatever an earlier call named
-- RULE-26: An action that is neither read nor write answers that the action is unknown, leaving the config as it was
-- RULE-27: A tool called on a workspace whose `.purlin/config.json` cannot be read answers only the sentence `.purlin/config.json cannot be read: <cause>. Fix the file by hand; nothing ran and nothing was saved.`
-- RULE-28: A write of `tests` that gives no value answers `A change needs a value; nothing was saved.` and leaves the file byte for byte as it was
-- RULE-29: A write of `tests` whose value is not a list answers `"<value>" is not accepted for tests; it takes a list. Nothing was saved.` and leaves the file byte for byte as it was
-- RULE-30: A write of `version` answers `version is written by purlin:init from Purlin's own version; nothing was saved.` and leaves the file byte for byte as it was
 - RULE-31: With no Python 3 found, the interpreter resolver writes its one line to standard error and exits 1, or exits 0 when `PURLIN_PYTHON_SOFT` is `1`
-- RULE-33: A write of any key but `version` and `tests` answers `<key> is not a setting; .purlin/config.json holds version and tests. Nothing was saved.` and leaves the file byte for byte as it was
-- RULE-34: The `drift` tool takes `since` and `project_root`; a call naming `role` is refused as an argument it does not take, and no drift report is returned
+- RULE-35: The server keeps to JSON-RPC 2.0: a notification gets no response, input that is not JSON answers error code `-32700`, and an unknown method or tool answers error code `-32601`
+- RULE-36: Each write the configuration tool refuses names why and leaves `.purlin/config.json` byte for byte as it was: a write with no key or no value, an action neither read nor write, a `tests` that is not a list, a write of `version`, and a write of any key but `version` and `tests`
 
 ## Proof
 
 - PROOF-1 (RULE-1): A client starts the server as its own process and sends `initialize`; the answer carries the protocol version `2024-11-05`, the server name `purlin`, a version equal to the text of the `VERSION` file, and `tools` among its capabilities
 - PROOF-2 (RULE-2): A client sends `tools/list`; the answer names exactly three tools, `drift`, `purlin_config` and `sync_status`, and each of the three lists `project_root` among the arguments it takes and not among those it requires
-- PROOF-3 (RULE-3): A client sends the notification `notifications/initialized`, which carries no id, and then a `tools/list` request with the id 9; exactly 1 response comes back, and its id is 9
-- PROOF-126 (RULE-3): A client sends the notification `notifications/cancelled`, which the server does not know, and then a `tools/list` request with the id 9; exactly 1 response comes back, and its id is 9
-- PROOF-4 (RULE-4): A client calls the tool `nope`, which the server does not serve; the answer is an error with the code `-32601` and the message `Unknown tool: nope`
-- PROOF-5 (RULE-5): A client starts the server as its own process in a workspace folder and sends `initialize`; stdout holds exactly 1 line, the JSON-RPC answer, and stderr holds the line `Purlin MCP server v<version> started (root: <root>, ...)`, the version being the text of the `VERSION` file and the root that folder
 - PROOF-138 (RULE-5): A client starts the server as its own process in a workspace and calls `sync_status`, `drift` and the configuration tool, with the ids 1, 2 and 3; stdout holds exactly 3 lines, each a JSON-RPC answer, with the ids 1, 2 and 3 in that order
 - PROOF-159 (RULE-5): On Windows, a client starts the server in a workspace folder and sends `initialize`; its output holds exactly 1 line, the answer, with no carriage return, and its error stream holds the line `Purlin MCP server v<version> started` @env(windows)
-- PROOF-6 (RULE-6): The server is started in an empty folder, and a client calls `sync_status` with `project_root` naming a workspace that holds the spec `login`; the answer is that workspace's status table, opening `Purlin status: ` and the workspace folder's name, and names `login`
 - PROOF-129 (RULE-6): The server is started in an empty folder, the home folder holds the workspace `ws` with the spec `login`, and a client calls `sync_status` with `project_root` written as `~/ws`; the answer is that workspace's status table, opening `Purlin status: ws,`, and names `login`
+- PROOF-128 (RULE-6): The server is started in an empty folder; a client calls `sync_status` naming a project root with `project_root`, then calls it again naming none; the second answer is for the empty startup folder and opens `No Purlin project root at` followed by that folder's path
 - PROOF-160 (RULE-6): On Windows, the server is started in an empty folder, the home folder holds the workspace `ws` with the spec `login`, and a client asks for status with the folder written as `~/ws`; the answer opens `Purlin status: ws,` and names `login` @env(windows)
-- PROOF-7 (RULE-7): The server is started in an empty folder, and a client calls `sync_status` with no arguments; the second line of the answer reads `→ Fix: pass project_root to this tool, or set PURLIN_PROJECT_ROOT to the project root (in .claude/settings.json "env" for the project), or run purlin:init there.`, and no status table follows
 - PROOF-162 (RULE-7): The server is started in an empty folder, and a client calls `sync_status` with no arguments; the first line of the answer reads `No Purlin project root at <that folder>: .purlin/config.json is not there. That root came from the working directory, with no .purlin/ marker in it or above it.`
-- PROOF-130 (RULE-7): The server is started in a project root, and a client calls `sync_status` with `project_root` naming an empty folder; the answer opens `No Purlin project root at <that folder>:` and says `That root came from the project_root argument.`
 - PROOF-131 (RULE-7): The server is started in an empty folder, and a client asks the configuration tool to write `tests` as an empty list; the answer opens `No Purlin project root at`, and the folder still holds no `.purlin/config.json`
-- PROOF-132 (RULE-7): The server is started in an empty folder, and a client calls `drift`; the answer opens `No Purlin project root at` followed by that folder's path
-- PROOF-8 (RULE-8): In a workspace where building the status table fails with the message `boom`, a client calls `sync_status`; the answer is a text answer, not an error, reading exactly `Error running sync_status: boom`
+- PROOF-141 (RULE-7): In a workspace whose `.purlin/config.json` holds `{` on one line and `  "tests": [],}` on the next, a client asks the configuration tool to write `tests` as `[]`; the answer is exactly `.purlin/config.json cannot be read: <the JSON reader's message> at line 2. Fix the file by hand; nothing ran and nothing was saved.`, and the file is unchanged
 - PROOF-133 (RULE-8): In a workspace where building the status table fails with `boom` the first time only, a client sends two `sync_status` calls in one session; 2 answers come back, with the ids 1 and 2, the first reading `Error running sync_status: boom` and the second the status table naming `login`
 - PROOF-9 (RULE-9): In a workspace whose settings hold `tests` as an empty list, a client asks the configuration tool to read the key `tests`; the answer is exactly `{"tests": []}`
 - PROOF-134 (RULE-9): In a project whose settings hold `tests` as an empty list, a client asks the configuration tool to write `tests` as `[{"name": "pytest"}]`; the answer reads exactly `tests is now [{"name": "pytest"}]; saved to .purlin/config.json.`, and `.purlin/config.json` then holds that `tests` and its `version` as it was
-- PROOF-135 (RULE-9): In a workspace whose settings hold `version` `0.10.0` and `tests` as an empty list, a client asks the configuration tool to read and names no key; the answer is exactly those two keys with those two values
 - PROOF-142 (RULE-9): In a workspace whose settings hold no `tests`, a client asks the configuration tool to read the key `tests`; the answer is the JSON `{"tests": null}`, indented over three lines as a found key's answer is
-- PROOF-143 (RULE-9): In a workspace whose settings hold `tests` as null, a client asks the configuration tool to read `tests`; the answer is the JSON `{"tests": null}`, indented over three lines as a found key's answer is
-- PROOF-144 (RULE-9): In a workspace whose settings hold `tests` as an empty list, a client asks the configuration tool to write `tests` as `[{"name": "pytest"}]` while the disk is full; the answer reads exactly `The setting was not saved: No space left on device.`, and `.purlin/config.json` is byte for byte as it was
-- PROOF-10 (RULE-10): A client asks the configuration tool to write the value `x` and names no key; the answer reads exactly `A change needs a key; nothing was saved.`, and `.purlin/config.json` is byte for byte as it was
-- PROOF-22 (RULE-22): The plugin manifest `.claude-plugin/plugin.json` starts the `purlin` server with the command `sh`; the first argument it passes ends in `scripts/purlin_python.sh` and the last ends in `scripts/mcp/purlin/server.py`
 - PROOF-137 (RULE-22): The command the plugin manifest gives for the `purlin` server, with the plugin's folder in place of `${CLAUDE_PLUGIN_ROOT}`, is run in a workspace and sent `initialize`; exactly 1 line comes back, an answer carrying the server name `purlin`
 - PROOF-158 (RULE-22): The plugin manifest's entry for the `purlin` server sets the environment variable `PURLIN_PYTHON_SOFT` to `1`, beside its command `sh` and its arguments
-- PROOF-161 (RULE-22): On Windows, the command the plugin gives for the `purlin` server, with the plugin's folder filled in, is run in a workspace and sent `initialize`; exactly 1 line comes back, an answer naming the server `purlin` @env(windows)
-- PROOF-125 (RULE-23): A client sends the line `not json`; exactly 1 response comes back, an error with the code `-32700`
-- PROOF-127 (RULE-24): A client sends a request for the method `nope/at/all`, which the server does not know; the answer is an error with the code `-32601` and the message `Unknown method: nope/at/all`
-- PROOF-128 (RULE-25): The server is started in an empty folder; a client calls `sync_status` naming a project root with `project_root`, then calls it again naming none; the second answer is for the empty startup folder and opens `No Purlin project root at` followed by that folder's path
-- PROOF-136 (RULE-26): A client asks the configuration tool for the action `delete` on the key `tests`; the answer reads exactly `Unknown action: delete. Use 'read' or 'write'.`, and `.purlin/config.json` is byte for byte as it was
-- PROOF-139 (RULE-27): In a workspace whose `.purlin/config.json` holds `{` on one line and `  "tests": [],}` on the next, a client calls `sync_status`; the answer is exactly `.purlin/config.json cannot be read: <the JSON reader's message> at line 2. Fix the file by hand; nothing ran and nothing was saved.`
-- PROOF-140 (RULE-27): In a workspace whose `.purlin/config.json` holds `{` on one line and `  "tests": [],}` on the next, a client calls `drift`; the answer is exactly `.purlin/config.json cannot be read: <the JSON reader's message> at line 2. Fix the file by hand; nothing ran and nothing was saved.`
-- PROOF-141 (RULE-27): In a workspace whose `.purlin/config.json` holds `{` on one line and `  "tests": [],}` on the next, a client asks the configuration tool to write `tests` as `[]`; the answer is exactly `.purlin/config.json cannot be read: <the JSON reader's message> at line 2. Fix the file by hand; nothing ran and nothing was saved.`, and the file is unchanged
-- PROOF-146 (RULE-28): A client asks the configuration tool to write `tests` and gives no value; the answer reads exactly `A change needs a value; nothing was saved.`, and `.purlin/config.json` is byte for byte as it was
-- PROOF-151 (RULE-29): A client asks the configuration tool to write `tests` as the text `pytest`; the answer reads exactly `"pytest" is not accepted for tests; it takes a list. Nothing was saved.`, and `.purlin/config.json` is byte for byte as it was
-- PROOF-155 (RULE-30): A client asks the configuration tool to write `version` as `9.9.9`; the answer reads exactly `version is written by purlin:init from Purlin's own version; nothing was saved.`, and `.purlin/config.json` is byte for byte as it was
 - PROOF-156 (RULE-31): The interpreter resolver is started by `/bin/sh` on the server's script with a search path holding no Python and no `py`, and `PURLIN_PYTHON` unset; it exits 1, prints nothing to standard output, and writes to standard error only `purlin: no Python 3 interpreter found; tried $PURLIN_PYTHON, python3, python and py -3. Set PURLIN_PYTHON to the one to use.`
 - PROOF-157 (RULE-31): The interpreter resolver is started by `/bin/sh` on the server's script with a search path holding no Python and no `py`, `PURLIN_PYTHON` unset and `PURLIN_PYTHON_SOFT` set to `1`; it exits 0 and writes to standard error only `purlin: no Python 3 interpreter found; tried $PURLIN_PYTHON, python3, python and py -3. Set PURLIN_PYTHON to the one to use.`
-- PROOF-164 (RULE-33): A client asks the configuration tool to write `gate` as `signed`; the answer reads exactly `gate is not a setting; .purlin/config.json holds version and tests. Nothing was saved.`, and `.purlin/config.json` is byte for byte as it was
-- PROOF-165 (RULE-34): A client calls `drift` with `role` set to `qa`; the answer names `role` as an argument `drift` does not take, and holds no drift report
+- PROOF-3 (RULE-35): A client sends the notification `notifications/initialized`, which carries no id, and then a `tools/list` request with the id 9; exactly 1 response comes back, and its id is 9
+- PROOF-125 (RULE-35): A client sends the line `not json`; exactly 1 response comes back, an error with the code `-32700`
+- PROOF-127 (RULE-35): A client sends a request for the method `nope/at/all`, which the server does not know; the answer is an error with the code `-32601` and the message `Unknown method: nope/at/all`
+- PROOF-155 (RULE-36): A client asks the configuration tool to write `version` as `9.9.9`; the answer reads exactly `version is written by purlin:init from Purlin's own version; nothing was saved.`, and `.purlin/config.json` is byte for byte as it was
+- PROOF-151 (RULE-36): A client asks the configuration tool to write `tests` as the text `pytest`; the answer reads exactly `"pytest" is not accepted for tests; it takes a list. Nothing was saved.`, and `.purlin/config.json` is byte for byte as it was
+- PROOF-164 (RULE-36): A client asks the configuration tool to write `gate` as `signed`; the answer reads exactly `gate is not a setting; .purlin/config.json holds version and tests. Nothing was saved.`, and `.purlin/config.json` is byte for byte as it was

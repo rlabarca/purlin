@@ -1438,6 +1438,25 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     In the owner's words: "make sure the skills are PRESENT in the AI based on the install
     commands.. make that as cheap as possible". Like any test, it reruns only when what it covers
     changed. The install leaves the person's own Claude Code settings as they were.
+112. **A weight pass on Purlin's own specs** (added 2026-10-01). After decisions 100 to 111 the
+    specs held about 700 rules and 1,800 proofs, heavy for the product. Each rule was kept only where
+    it protects the evidence, the sign-off, the collaboration, the audit's correctness, safety or
+    security; rules pinning the wording of one command's messages merged into one; cosmetic detail,
+    edge cases no user meets and repeats were deleted; each kept rule keeps one to three proofs.
+    The specs went from 698 rules to 408 and from 1,792 proofs to 823. The owner's calls:
+    - **One project-wide rule against emoji** in skills, the agent and output stands; each skill's
+      own no-emoji rule and its line limit go.
+    - **The dashboard's two look rules stay**: the design (brand colours, no shadow, no gradient,
+      the allowed glyphs) and readability (phone to wide screen, both themes, no sideways scroll, no
+      value split across lines, 7 to 1 contrast).
+    - **The audit's limit of four model calls at once is no longer a rule.**
+    - **Cut:** SQLite installed on the Windows runner, the doctest switch in the suggested Python
+      command, and runs outside a git repository.
+    - **As recommended:** the upgrade's printed advice and its no-scope warning, setup's closing
+      lines and drift's grouped network check are no longer rules; one Windows proof per rule where
+      Windows differs; the guard that never overwrites a person's signing key, a sign-off counting
+      after its key is deleted, and the status working in a project never set up all stay. The
+      drift skill's instructions lose the role views decision 109 removed.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5

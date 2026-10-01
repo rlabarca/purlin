@@ -19,7 +19,6 @@
 - RULE-3: After that install, every skill under `skills/` of this checkout is present in the installed plugin, word for word
 - RULE-4: After that install, Claude Code offers every Purlin skill to the model in that project
 - RULE-5: The install changes nothing outside the fresh project: the person's own Claude Code settings and installed plugins read the same before and after
-- RULE-6: A command the pages tell a person to type inside Claude Code has a command-line form the test runs, and the test names any it cannot run
 
 ## Proof
 
@@ -28,4 +27,3 @@
 - PROOF-3 (RULE-3): After the install of PROOF-2, the folder the installed plugin reads its skills from holds a `SKILL.md` for each folder under `skills/` of this checkout, each file the same bytes as the checkout's
 - PROOF-4 (RULE-4): After the install of PROOF-2, one prompt to the smallest model, run in that project with `claude -p`, asks it to list the slash commands that start `purlin:`; its answer names every skill folder under `skills/`
 - PROOF-5 (RULE-5): The list of installed plugins and marketplaces of the person's own Claude Code, read before and after PROOF-2's install, is the same, and the test's project folder is deleted afterwards
-- PROOF-6 (RULE-6): `/plugin install purlin@purlin` runs as `claude plugin install purlin@purlin --scope project`, and `/reload-plugins` is satisfied by starting a new `claude` process; a step typed inside Claude Code with no such form fails the test, naming the step

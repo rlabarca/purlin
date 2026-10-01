@@ -22,7 +22,6 @@
 - RULE-7: The spec's `> Highest-Rule:` or `> Highest-Proof:` line is raised to the new number
 - RULE-8: A comment on another branch that names the moved id is named with that branch, the file and the line, and that branch is not changed
 - RULE-9: A rule that moves takes with it each proof line naming it that is not on the default branch's copy, and a run without `--dry-run` makes the edits in the working tree and commits nothing
-- RULE-10: A moved rule is written after the spec's last `- RULE-` line, and a moved proof after its last `- PROOF-` line
 
 ## Proof
 
@@ -38,5 +37,3 @@
 - PROOF-10 (RULE-8): After the merge of PROOF-2, `origin/qa/age-proofs` holds a comment naming `login PROOF-4`, not merged here; the plan reads `origin/qa/age-proofs names login PROOF-4 at tests/test_qa.py:1, which this checkout does not change. If it means the line that moves, move it to PROOF-5 on that branch.`, and after the run that branch names the same commit
 - PROOF-11 (RULE-9): After a merge, `login` writes `RULE-2` twice, the branch's with its proof `PROOF-3` and `origin/main`'s with `PROOF-2`; the plan reads `login: PROOF-3 at line 16 now names RULE-3.` and names no line for `PROOF-2`, which after the run still names `RULE-2`
 - PROOF-12 (RULE-9): After the merge of PROOF-2, a run without `--dry-run` ends `Renumbered in login: 1 spec line and 1 test comment. Nothing is committed.`; HEAD names the commit it named before, and git lists the spec and `tests/test_b.py` as changed and not committed
-- PROOF-13 (RULE-10): After a merge, `login` writes `RULE-2` twice, the branch's line first, above `RULE-3` to `RULE-5`, with `> Highest-Rule: 5`; after the run the branch's line reads `- RULE-6:` and sits directly below `RULE-5`'s line, the spec's last rule line
-- PROOF-14 (RULE-10): After a merge, `login` writes `PROOF-2` twice, the branch's `- PROOF-2 (RULE-1): B` first, above `PROOF-3` and `PROOF-4`, with `> Highest-Proof: 4`; after the run the spec's last proof line reads `- PROOF-5 (RULE-1): B`, directly below `PROOF-4`'s line
