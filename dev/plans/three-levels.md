@@ -1240,6 +1240,31 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       items.
     - **Decision 104's scripted three-person test is built in the same round**, with these two
       cases in it: a test left on a moved proof, and a second signer. This round runs locally.
+106. **Purlin keeps the evidence and the sign-off, and tracks no release** (added 2026-10-01).
+    In the owner's words: "the only thing purlin cares about is creating the curent state of the
+    evidence, and the signing stage. everything else is just informative". This reverses the
+    release step of decisions 103 and 105.
+    - **No release step and no `passed/<version>` tag.** `purlin:test --release` goes. At the gate
+      `passed` the status and the dashboard say whether every rule's tests pass on the committed
+      evidence: met or not met. Nothing is called released or finished.
+    - **The developer's hand-off is run and commit.** The developer runs every test, on this
+      machine and the remote run for any other system, and commits the results that come back.
+      That commit is ready for sign-off. QA runs no tests.
+    - **The sign-off builds the package.** At the gate `signed`, `purlin:sign` reads the committed
+      evidence, refuses and names what to run again when a result was not taken on this exact
+      version of the code, opens by naming who ran the tests, where and when, builds the evidence
+      package, walks the stops, and takes one signature over the package. The first signature
+      writes `signed/<version>`, so anyone can find what was signed. Decision 105's "the signer
+      signs the run they are shown" holds, the run being the committed evidence.
+    - **Remote results count only when taken on the same version of the code** as the rest.
+    - **A hand check's note is asked for and not required**; an empty answer is recorded as
+      `no note`.
+    - **The committed test table `.purlin/tests.md` goes.** Outside tools read the raw evidence
+      files and the evidence package, whose formats are versioned for them; people inside the
+      project use the status and the dashboard.
+    - **The check for a test whose proof was reworded applies to every test now**: the build reads
+      and fixes the roughly 198 tests in this repository whose proof was reworded after the test
+      last changed, so the check starts clean.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
