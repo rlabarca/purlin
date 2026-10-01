@@ -10,8 +10,8 @@
 >   the page resolves to one block and both themes ship in the same file.
 > Scope: scripts/report/src/page.html, scripts/report/src/styles.css, scripts/report/src/theme.js, scripts/report/src/board.js, scripts/report/src/rule.js, scripts/report/src/app.js, scripts/report/purlin-report.html, scripts/mcp/purlin/report_data.py, dev/build_report.py
 > Stack: html/css/javascript, no framework and no build-time dependency, design tokens inlined by a python assembler
-> Highest-Rule: 75
-> Highest-Proof: 229
+> Highest-Rule: 76
+> Highest-Proof: 231
 
 ## Rules
 
@@ -41,6 +41,7 @@
 - RULE-74: An anchor's rule whose proof found nothing to check reads `passed`, and its screen's passed row carries the reason the test gave, as `<PROOF-N>: <reason>`, so a reader sees the rule was not exercised
 - RULE-75: The page reads on every screen from 390 to 1500 pixels wide, in both themes, on the board and a rule's screen: the page never scrolls sideways, no count, label, box or rule id breaks onto two lines, and every text drawn in a neutral colour, any but the four state colours and the accent, measures at least 7:1 by the WCAG contrast formula against the ground beneath it, read through every translucent layer
 
+- RULE-76: Whenever a Purlin command writes the page's data file, it also writes the page itself where the project's copy differs from the plugin's, so the page and its data always come from the same version of Purlin
 ## Proof
 
 - PROOF-122 (RULE-2): After a build, the page at the project root reads the same text, character for character, as the page written under `scripts/report/`
@@ -105,3 +106,5 @@
 - PROOF-75 (RULE-75): Open the regulated sample in the dark theme at 1500, 1280, 1024, 768 and 390 pixels wide, with login open, then `RULE-1`'s screen; on both screens at every width the page scrolls sideways 0 pixels, and no count, label, box or rule id sits on two lines
 - PROOF-66 (RULE-75): In the dark theme, open the solo, team and regulated samples in turn, each on the board with its first spec open and then on its first rule's screen; every text drawn in a neutral colour measures at least 7:1 against the ground under it
 - PROOF-104 (RULE-75): In the light theme, open the solo, team and regulated samples in turn, each on the board with its first spec open and then on its first rule's screen; every text drawn in a neutral colour measures at least 7:1 against the ground under it
+- PROOF-230 (RULE-76): A project whose `purlin-report.html` is an older page that reads schema `11` gets, from one `purlin:status`, a page that is byte for byte the plugin's own, and opening it draws the board, not the notice naming a schema
+- PROOF-231 (RULE-76): A project whose page is already the plugin's own keeps its page's modification time after `purlin:status`

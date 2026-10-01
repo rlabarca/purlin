@@ -1464,6 +1464,11 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     It names the build first and the spec second, since Purlin cannot tell a file not yet written
     from a typo. This replaces the per-file warning of decision 97 that sent the person to
     `purlin:spec`.
+114. **The dashboard page is refreshed with its data** (added 2026-10-01). Setup copied the page
+    once, so after an upgrade an old page could not read new data and showed a schema notice. Now
+    whenever a Purlin command writes the page's data, it also writes the page where the project's
+    copy differs from the plugin's, so the page and its data always come from one version. The
+    data stays a snapshot of the last command, with its time and the uncommitted-changes notice.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
