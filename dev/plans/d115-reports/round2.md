@@ -50,7 +50,7 @@ section 10), and step 10's state cannot be reached with `install` not run. The r
 skipped there and it read `4 rules to test`; the run with `--commit` made the one extra prompt.
 The later `--test --commit` did not select `install`.
 
-cloud spend: see the coordinator's report
+Cloud spend: $79 of the $80 decision 116 allowed ($48 in round 1 for six lanes, $31 in round 2 for four); $42 of $250 is left, expiring 2026-11-05. The final sweep on the last commit: 839 passed, 0 failed, 10 skipped (Windows only), 4 suites passed.
 
 ## The spot tests over this repository's own tests
 
