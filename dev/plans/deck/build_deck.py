@@ -146,7 +146,7 @@ slide('anchors', 'Shared rules', 'Anchors: rules that every project must follow'
     ('Owned by another department', 'Security, GRC or GxP keep their rules in their own repository. Each project brings in the ones it must follow.'),
     ('Kept in step', '%s shows what changed at the source and updates the project.' % m('purlin:anchor sync')),
     ('Design standards too', 'Design publishes its standards as an anchor. Every feature that produces a screen follows them, and proves it.'),
-], '<b>An anchor\'s rules count like any other:</b> each has its tests and its audit in every project that uses it, and is signed as part of the release.',
+], '<b>An anchor\'s rules count like any other:</b> tested and audited in every project, and signed with the release.',
  'An anchor is a spec for something shared. A feature names it with Requires, and an anchor marked '
  'Global applies to every feature without being named. Most projects keep their anchors in their own '
  'repository and sync nothing. A second repository is for rules two or more projects must share: '
