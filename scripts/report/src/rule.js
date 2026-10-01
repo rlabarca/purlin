@@ -186,15 +186,16 @@ function testLines(tests) {
   }).join('');
 }
 
-/* One proof: its id and words, its own result, its `@manual` and `@env`
-   tags, which name the operating system it asks for, and its tests with
-   what each found. A `@manual` proof no test carries is checked at the
+/* One proof: its id and words, its own result, its `@manual`, `@slow` and
+   `@env` tags, the last naming the operating system it asks for, and its
+   tests with what each found. A `@manual` proof no test carries is checked at the
    sign-off, and says so.
    `rule.feature` is the spec that owns the rule, whose build writes a
    missing test. */
 function proofDetail(proof, rule) {
   var owner = rule.feature;
   var tags = (proof.manual ? ['@manual'] : [])
+    .concat(proof.slow ? ['@slow'] : [])
     .concat(proof.env ? ['@env(' + proof.env + ')'] : []);
   var tests = testLines(proof.tests)
     || (proof.manual ? handCheckLines(rule)

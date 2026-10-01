@@ -1,4 +1,4 @@
-> Format-Version: 22
+> Format-Version: 23
 
 # Spec format
 
@@ -185,9 +185,35 @@ Append `@manual` to a proof that no test can settle:
 | (none) | A marked test settles the proof, whatever it needs to run |
 | `@manual` | A person's judgment is the only instrument. No test, so the rule reads `checked at sign-off` in its strong cell. A person checks it in the sign-off walk of `purlin:sign` and may type a one-line note of what they saw, which the sign-off records; Enter alone records `no note`. Once signed, the cell also carries the newest note, as `noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red` |
 
-`@manual` and `@env` are the only tags a proof line carries. Any other trailing
-`@<name>` is not a tag: it stays in the proof text. `purlin:test` runs every
-marked test of the features it runs.
+`@manual`, `@slow` and `@env` are the only tags a proof line carries, at most
+one of each, in any order. Any other trailing `@<name>` is not a tag: it stays
+in the proof text.
+
+### The slow tag
+
+Append `@slow` to a proof whose test takes a long time, like an integration
+test:
+
+```
+- PROOF-4 (RULE-4): A cart of three items is checked out against the payment sandbox, and the order reads `paid` @slow
+```
+
+It is a proof like any other: one test, one comment above it, and nothing in
+the test changes. The tag changes only when its test starts:
+`references/purlin_commands.md` says which run starts it, and
+`references/glossary.md` defines a slow proof. Until a run that starts it has
+passed it, the proof reads `not run`, its rule's passed cell reads `not run`
+with the reason `slow: runs with purlin:test --all`, and `Left to do` counts
+it as `1 slow proof to run: purlin:test --all`. Its result goes out of date as
+any other does. An anchor's proof takes the tag the same way.
+
+`@slow` may stand with `@env(...)`. With `@manual` it is a mistake: a hand
+check has no test to leave out, so the proof is read as `@manual` and the
+status warns `<spec>: PROOF-N is tagged @slow and @manual; a hand check has no
+test to leave out, so it is read as @manual. Run purlin:spec <spec>.`
+
+Adding or removing `@slow` is no change of a proof's wording, so it names no
+test comment as one to correct.
 
 ### Operating system tags
 

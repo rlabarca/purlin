@@ -21,7 +21,9 @@ rule that passes, it gives the share it found strong:
 done, each with its count and the command that clears it. A kind at zero is
 left out, and each rule is counted under one kind, the first that applies;
 `specs to repair` counts specs, `test comments to correct` comments above
-tests and `features whose results are not committed` features, not rules.
+tests, `slow proofs to run` the proofs tagged `@slow` that no run has
+answered for, and `features whose results are not committed` features, not
+rules.
 `rules to write a proof for` and `rules to strengthen` are not blocking: the
 tests read `met` beside them.
 
@@ -52,8 +54,9 @@ from purlin import facts, states                               # noqa: E402
 # and for any other count, and the command that clears it. `%s` in the
 # words of `to_test_remote` is the systems it waits for. `to_repair` counts
 # the specs that write a number twice or hold a line left from a merge
-# conflict, `to_correct` the comments above tests, `to_commit` the features
-# whose results are written and not committed; every other kind counts rules.
+# conflict, `to_correct` the comments above tests, `to_run_slow` the proofs
+# tagged `@slow` that read `not run`, `to_commit` the features whose results
+# are written and not committed; every other kind counts rules.
 KINDS = (
     ('to_repair', 'spec to repair', 'specs to repair', 'purlin:spec'),
     ('no_proof', 'rule to write a proof for', 'rules to write a proof for',
@@ -64,6 +67,8 @@ KINDS = (
     ('no_test', 'rule to write a test for', 'rules to write a test for',
      'purlin:build'),
     ('to_test', 'rule to test', 'rules to test', 'purlin:test'),
+    ('to_run_slow', 'slow proof to run', 'slow proofs to run',
+     'purlin:test --all'),
     ('to_test_remote', 'rule to test on %s', 'rules to test on %s',
      'purlin:test --remote'),
     ('to_commit', 'feature whose results are not committed',
@@ -77,7 +82,7 @@ KIND_NAMES = tuple(kind[0] for kind in KINDS)
 # The kinds that stop the tests being met. A rule with no proof line, or one
 # the audit found weak, still lets them read `met`.
 BLOCKING = ('to_repair', 'to_correct', 'to_fix', 'no_test', 'to_test',
-            'to_test_remote', 'to_commit')
+            'to_run_slow', 'to_test_remote', 'to_commit')
 
 OPENING = 'Purlin status: %s, plugin %s'
 TESTS_LINE = 'Tests: %s'
@@ -104,7 +109,8 @@ def rule_kind(rule, here_os, broken=None):
     or `partial`, `no test`, `out of date` or `not run` where this machine
     can run part of it, `not run` for other systems only, no proof line with
     its tests passing, a weak audit. A hand check adds no kind, and neither
-    does a rule no audit has read.
+    does a rule no audit has read. A rule that waits for slow proofs alone
+    answers `to_run_slow`, which `left` counts by proof and not by rule.
     """
     if broken:
         return 'to_repair'
@@ -120,15 +126,42 @@ def rule_kind(rule, here_os, broken=None):
         missing = passed.get('missing_env') or []
         if missing and here_os not in missing:
             return 'to_test_remote'
-        return 'to_test'
+        return 'to_run_slow' if _waits_for_slow_alone(rule, here_os) \
+            else 'to_test'
     if word != 'passed':
-        # `out of date`: the next run here clears it.
-        return 'to_test'
+        # `out of date`: the next run here clears it, unless slow proofs
+        # are all the rule has.
+        return 'to_run_slow' if _waits_for_slow_alone(rule, here_os) \
+            else 'to_test'
     if not (rule.get('proofs') or []):
         return 'no_proof'
     if (cells.get('strong') or {}).get('word') == 'weak':
         return 'to_strengthen'
     return None
+
+
+def _slow_here(proof, here_os):
+    """True for a `@slow` proof this machine's `purlin:test --all` answers for."""
+    return bool(proof.get('slow')) and proof.get('env') in (None, here_os)
+
+
+def _waits_for_slow_alone(rule, here_os):
+    """True when every proof of the rule that has not passed is a slow
+    proof this machine can run."""
+    waiting = [proof for proof in rule.get('proofs') or ()
+               if not proof.get('manual') and proof.get('result') != 'passed']
+    return bool(waiting) and all(_slow_here(proof, here_os)
+                                 for proof in waiting)
+
+
+def slow_to_run(features, here_os):
+    """`{(feature, proof id)}` for each `@slow` proof that reads `not run`
+    and is not tagged for another system than this machine's."""
+    return {(feature.get('name'), proof.get('id'))
+            for feature in features or ()
+            for rule in feature.get('rules') or ()
+            for proof in rule.get('proofs') or ()
+            if _slow_here(proof, here_os) and proof.get('result') == 'not run'}
 
 
 def _passes(rule):
@@ -196,17 +229,21 @@ def left(features, here_os, corrections=0, uncommitted=()):
     comments above tests name something no spec has, a rule that has
     proofs, or a proof reworded since the test last changed. `uncommitted`
     names the features whose results are written and not committed, counted
-    once no other work stops the tests being met. A kind at zero is left out.
+    once no other work stops the tests being met. `to_run_slow` counts the
+    slow proofs `slow_to_run` names. A kind at zero is left out.
     """
     counts = {}
     if corrections:
         counts['to_correct'] = corrections
+    slow = slow_to_run(features, here_os)
+    if slow:
+        counts['to_run_slow'] = len(slow)
     systems = set()
     to_repair = set()
     for feature in features or ():
         for rule in feature.get('rules') or ():
             kind = rule_kind(rule, here_os, feature.get('broken'))
-            if kind is None:
+            if kind is None or kind == 'to_run_slow':
                 continue
             if kind == 'to_repair':
                 # A broken spec is repaired once, whatever its rules count.

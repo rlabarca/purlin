@@ -170,9 +170,10 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
     is `{status, test_file, test_name, line, reason}`, `reason` the text a
     skipped test's tool gave or None. One `proofs` entry is written per
     (id, test) pair, and one with an empty `test` for a proof nothing
-    observed. A tied test that neither passed nor failed is `missing`, and a
+    observed. A tied test that neither passed nor failed is `missing`, a
     proof tagged for another operating system reads `not run` whatever its
-    tied test did here.
+    tied test did here, and so does a slow proof's test the run left out,
+    its entry carrying `held`.
 
     A proof whose every tied test skipped with a reason starting `nothing to
     check:` reads `nothing to check`, each entry carrying the `reason` after
@@ -239,7 +240,8 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
                 # marker runs on the Mac and proves the Mac proof alone.
                 listed.append(dict(base, result=(
                     status if status in ('pass', 'fail') and not foreign
-                    else unseen), test=test))
+                    else 'not run' if entry.get('held') else unseen),
+                    test=test))
             if not seen:
                 listed.append(dict(base, result=unseen, test=''))
     section = {

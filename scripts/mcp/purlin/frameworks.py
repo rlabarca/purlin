@@ -281,3 +281,133 @@ def suggest(project_root, os_name=None):
             entry['run'] = (WINDOWS_PYTHON_COMMAND
                             + entry['run'][len(PYTHON_COMMAND):])
     return entries
+
+
+# ---------------------------------------------------------------------------
+# Leaving a slow test out of a run
+# ---------------------------------------------------------------------------
+
+# A proof tagged `@slow` has a test `purlin:test` never starts. Nothing is
+# added to the test or to the project's suite: the test is left out through
+# its own tool's option, added to the command the settings hold. Each tool
+# is known by its command and the report format it writes.
+_TOOLS = (
+    ('pytest', 'junit', re.compile(r'\bpytest\b|\bpy\.test\b')),
+    ('vitest', 'junit', re.compile(r'\bvitest\b')),
+    ('jest', 'junit', re.compile(r'\bjest\b')),
+    ('dotnet', 'trx', re.compile(r'\bdotnet\s+test\b')),
+    ('go', 'gotest', re.compile(r'\bgo\s+test\b')),
+)
+
+# The option a command may already carry. A second one would replace or
+# fight the project's own, so its slow tests are started instead.
+_CARRIED = {
+    'vitest': re.compile(r'(?:^|\s)(?:-t|--testNamePattern)(?:[\s=]|$)'),
+    'jest': re.compile(r'(?:^|\s)(?:-t|--testNamePattern)(?:[\s=]|$)'),
+    'dotnet': re.compile(r'(?:^|\s)--filter(?:[\s=]|$)'),
+    'go': re.compile(r'(?:^|\s)-skip(?:[\s=]|$)'),
+}
+
+# A command with no `{files}` gets the option at its end, which a command
+# that pipes, chains or redirects does not allow.
+_SHELL_OPERATOR = re.compile(r'[|;&<>]')
+
+# What pytest exits with when every test it was given was deselected.
+PYTEST_NOTHING_COLLECTED = 5
+
+
+def tool_of(suite):
+    """`pytest`, `vitest`, `jest`, `dotnet` or `go` for a suite whose command
+    is that tool's and whose report is the one it writes, else None."""
+    for name, fmt, pattern in _TOOLS:
+        if suite.format == fmt and pattern.search(suite.run or ''):
+            return name
+    return None
+
+
+def _js_title(test):
+    """A JavaScript test's full title as jest and vitest match it: the
+    `describe` titles and its own, joined by one space."""
+    return ' '.join(list(test.scopes) + [test.name])
+
+
+def _js_regex(text):
+    """`text` with every character a JavaScript regular expression reads
+    specially escaped."""
+    return re.sub(r'([\\^$.*+?()\[\]{}|/])', r'\\\1', text)
+
+
+def _dotnet_name(test):
+    """A C# test's fully qualified name: namespace, classes joined by `+`,
+    method."""
+    owner = '+'.join(test.scopes)
+    parts = [part for part in (test.namespace, owner, test.name) if part]
+    return '.'.join(parts)
+
+
+def _dotnet_value(text):
+    """`text` with the characters a `dotnet test --filter` value reads
+    specially escaped."""
+    return re.sub(r'([\\()&|=!~])', r'\\\1', text)
+
+
+def leave_out(suite, slow, others=()):
+    """`(option, held, started)` for the slow tests of one suite.
+
+    `slow` is `[(path, test)]`, each test one whose every marker names a
+    proof tagged `@slow`, `test` None for a file of an `exit` suite; `others`
+    is the suite's marked tests that are not slow. `option` is the text to
+    add to the suite's command, '' where none is needed, `held` the tests it
+    leaves out and `started` those the command cannot leave out: the tool is
+    not one of `_TOOLS`, the command already carries the option or cannot
+    take one at its end, or the option would leave out a test of `others`
+    as well.
+    """
+    slow = list(slow)
+    if not slow:
+        return '', [], []
+    if suite.format == 'exit':
+        # The file is the test, and a file not handed to the command is a
+        # test not started.
+        return '', slow, []
+    tool = tool_of(suite)
+    carried = _CARRIED.get(tool)
+    if tool is None or (carried is not None and carried.search(suite.run)) \
+            or ('{files}' not in suite.run
+                and _SHELL_OPERATOR.search(suite.run)):
+        return '', [], slow
+    import shlex
+    if tool == 'pytest':
+        held = slow
+        option = ' '.join('--deselect %s' % shlex.quote(
+            '%s::%s' % (path, test.qualified('::'))) for path, test in held)
+        return option, held, []
+    if tool in ('vitest', 'jest'):
+        # Both match a pattern against the full title, whatever the file,
+        # so a test of the same title elsewhere would be left out with it.
+        taken = [_js_title(test).lower() for _path, test in others]
+        held, started = [], []
+        for path, test in slow:
+            title = _js_title(test).lower()
+            shared = any(other == title or other.endswith(' ' + title)
+                         for other in taken)
+            (started if shared or test.pattern is not None
+             else held).append((path, test))
+        if not held:
+            return '', [], started
+        titles = sorted({_js_regex(_js_title(test)) for _path, test in held})
+        return ('--testNamePattern %s' % shlex.quote(
+            '^(?!(?:.* )?(?:%s)$)' % '|'.join(titles))), held, started
+    if tool == 'dotnet':
+        names = sorted({_dotnet_value(_dotnet_name(test))
+                        for _path, test in slow})
+        return ('--filter %s' % shlex.quote('&'.join(
+            'FullyQualifiedName!=%s' % name for name in names))), slow, []
+    # go: `-skip` matches a test's name in every package.
+    taken = {test.name for _path, test in others}
+    held = [(path, test) for path, test in slow if test.name not in taken]
+    started = [(path, test) for path, test in slow if test.name in taken]
+    if not held:
+        return '', [], started
+    names = sorted({re.escape(test.name) for _path, test in held})
+    return '-skip %s' % shlex.quote('^(?:%s)$' % '|'.join(names)), held, started

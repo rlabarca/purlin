@@ -18,13 +18,14 @@ a test is any test in your own suite with one comment above it.
 - **The hand-off is run and commit**: purlin:test --all --commit, and purlin:test --remote for other systems.
 - **purlin:sign builds the evidence package and signs it**, at any time, in any project; it stops only at hand checks, whose note is optional, and refuses results not taken on this code.
 - **An anchor rule with nothing to check passes, and says so.**
+- **Slow proofs.** Tag a proof `@slow` and `purlin:test` never starts its test; `purlin:test --all` runs everything. Until it has passed, the status lists it: `1 slow proof to run: purlin:test --all`.
 - **A test comment whose proof was reworded is caught** until the test changes.
 - **The audit runs heuristic spot tests, then plants one bug per changed proof** in a copy of the project and sees whether the proof's own test catches it; it reports the share of rules it found strong. Run it by hand; nothing blocks on it.
 - **The evidence package records who wrote and last changed each rule, proof and test**, from git.
 - **The dashboard names the branch and commit its data describes**, and its page is written with its data.
 - **A Purlin tool call names its folder**; a call that names none is refused with the fix.
 - **Cut:** mutation testing, purlin:export, the gate, the release step, .purlin/tests.md, drift's role views, setup's questions but one, and most settings.
-- **The formats** stand at spec 22, anchor 12, evidence 8, signature 15, package 8 and marker 4,
+- **The formats** stand at spec 23, anchor 12, evidence 8, signature 15, package 9 and marker 4,
   the drift criteria at 13, and the dashboard's data at schema 14.
 
 In more words:

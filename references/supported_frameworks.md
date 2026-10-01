@@ -184,6 +184,27 @@ the stream `go test -json` prints on Go 1.27.1.
 An entry is yours to change once it is written: a different command, another report path,
 narrower globs.
 
+## Leaving a slow test out
+
+`purlin:test` without `--all` never starts the test of a proof tagged `@slow`. Nothing is added
+to the test or to your suite: Purlin adds the tool's own option to the command in the `tests`
+setting, after the files it names, or at its end where it names none.
+
+| Framework | How the test is left out |
+|-----------|--------------------------|
+| pytest | `--deselect <file>::<test>`, one per slow test |
+| vitest, jest | `--testNamePattern`, with a pattern every title but the slow tests' matches. Both match a title in every file, so a slow test that shares its full title with a test that is not slow is started |
+| dotnet | `--filter`, with `FullyQualifiedName!=<namespace>.<class>.<method>` for each slow test, joined by `&`. A test whose name carries its arguments, as NUnit's `TestCase` does, is not matched: it runs, and its result counts |
+| go | `-skip`, with the slow tests' names; needs Go 1.20. It matches a name in every package, so a slow test that shares its name with a test that is not slow in another package is started |
+| sql, shell, any `exit` suite | the file is the test, and a slow file is not run |
+
+A slow test is started all the same, and the run says so in one line, as in
+`Started 1 slow test in the e2e suite: its command gives Purlin no way to leave one test out.`,
+where the suite's command is none of these tools', where it already carries that option, where
+it names no `{files}` and pipes, chains or redirects, and where the slow test shares its title or name as the table says. Its
+result counts like any other. A test left out by vitest or jest is in their report as skipped,
+and a test with the same title in a file that carries no test comment is left out with it.
+
 ## Any other framework
 
 Any test runner that writes JUnit XML, the TRX `dotnet test` writes or the JSON stream

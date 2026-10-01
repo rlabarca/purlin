@@ -1,14 +1,14 @@
 # Feature: schema_spec_format
 
 > Description: The spec format: the two sections every spec carries, the rule and proof
->   grammar, the metadata fields, the `@manual` tag and the `@env` tag, and
+>   grammar, the metadata fields, the `@manual`, `@slow` and `@env` tags, and
 >   the mistakes it warns of. Every surface that reads a spec
 >   reads it through one parser, so a spec means the same thing to the status table, the
 >   dashboard and the evidence file.
 > Scope: scripts/mcp/purlin/specs.py, scripts/mcp/purlin/fingerprint.py, references/formats/spec_format.md, references/formats/anchor_format.md
 > Stack: python/stdlib, one regex parser in scripts/mcp/purlin/specs.py
 > Highest-Rule: 42
-> Highest-Proof: 85
+> Highest-Proof: 87
 
 ## Rules
 
@@ -16,14 +16,14 @@
 - RULE-3: A proof line reads `PROOF-N (RULE-N)`, and names several rules as `PROOF-N (RULE-A, RULE-B)` when one flow drives all of them; a list item under `## Proof` of any other form is not read as a proof
 - RULE-6: `> Scope:` is a comma-separated list of file paths, parsed into a list in the order written
 - RULE-7: The file name is the spec's name, whatever its first line says
-- RULE-9: A proof line carries at most one `@manual` tag and at most one `@env` tag, in either order, read off the end of the line
+- RULE-9: A proof line carries at most one `@manual` tag, at most one `@slow` tag and at most one `@env` tag, in any order, read off the end of the line; `@slow` says the proof's test takes a long time
 - RULE-10: `@env` takes `windows`, `macos` or `linux` and nothing else; any other value is returned in the unknown list and sets no environment, so a proof is never treated as owned by an operating system the release cannot name
-- RULE-40: Only `@manual` or `@env(...)` at the end of a proof line is read as a tag, and not when it follows a comma, `and` or `or`; any other trailing at-word with no value in brackets, a bare `@windows` apart, stops the reading, so the proof's text stays whole and the proof is neither manual nor tied to a system
+- RULE-40: Only `@manual`, `@slow` or `@env(...)` at the end of a proof line is read as a tag, and not when it follows a comma, `and` or `or`; any other trailing at-word with no value in brackets, a bare `@windows` apart, stops the reading, so the proof's text stays whole and the proof is neither manual, slow nor tied to a system
 - RULE-13: Two specs with one file name in different folders are warned of: only one is read, and the warning names both files, the one read, and the `git mv` that renames the other
 - RULE-15: A spec carrying a heading the format does not name still parses, its rules are still read, and nothing is reported about the extra heading
 - RULE-19: The code part of a feature spec's fingerprint hashes exactly the files `> Scope:` names, so an edit to any other file leaves it unchanged and a code change is told from a rule change
 - RULE-32: A `> Scope:` line on an anchor is not read: an anchor's scope is empty, because an anchor covers the whole project
-- RULE-38: Each mistake that leaves a spec readable is warned of in one line naming the spec, what is wrong and `Run purlin:spec <name>.`, and the faulty line alone is not read: a line under `## Rules` with no id, a list item under `## Proof` that is not a proof line, a first line naming another feature, a `> Requires:` or `> Global:` line, and a `> Scope:` line on an anchor; a pinned anchor's copy carrying such lines is instead warned of once, naming its source's owners as the ones to take them out
+- RULE-38: Each mistake that leaves a spec readable is warned of in one line naming the spec, what is wrong and `Run purlin:spec <name>.`, and the faulty line alone is not read: a line under `## Rules` with no id, a list item under `## Proof` that is not a proof line, a first line naming another feature, a `> Requires:` or `> Global:` line, a `> Scope:` line on an anchor, and a proof tagged both `@slow` and `@manual`, which is read as `@manual` alone; a pinned anchor's copy carrying such lines is instead warned of once, naming its source's owners as the ones to take them out
 - RULE-39: A rule or proof number written twice is warned of, naming the number and `purlin:spec`, and read once, with the text of its second line; a line left from a merge conflict is warned of with its line number
 - RULE-41: Rule and proof numbers are never reused: `> Highest-Rule:` and `> Highest-Proof:` record the highest number the spec has ever held, a new rule or proof takes one more than the highest of that line and every number the spec holds, and a gap in the numbers is reported as nothing
 - RULE-42: `> Stack:`, `> Highest-Rule:` and `> Highest-Proof:` change no part of a spec's fingerprint and no rule or proof count
@@ -38,6 +38,7 @@
 - PROOF-49 (RULE-7): A spec at `specs/test/login.md` whose first line reads `# Feature: checkout` is read as the feature `login`, and is reported with `login: the first line names checkout, but the file is login.md, so it is read as login. Run purlin:spec login.`
 - PROOF-26 (RULE-9): The proof text `Lock the file @env(windows) @manual`, the same two tags in the other order, is read exactly as `Lock the file @manual @env(windows)` is: `@manual` on `windows`, the text `Lock the file`, no tag it does not read
 - PROOF-9 (RULE-9): The proof text `Check it by hand @manual` is read as `@manual`, with no operating system, no tag it does not read, and the text `Check it by hand`
+- PROOF-86 (RULE-9): The proof text `Check out a cart of three items @slow @env(linux)` is read as slow, on `linux`, not `@manual`, with the text `Check out a cart of three items` and no tag it does not read
 - PROOF-10 (RULE-10): The proof text `Lock the file @env(windows)` is read on `windows`, not `@manual`, with the text `Lock the file` and no tag it does not read
 - PROOF-38 (RULE-10): The proof text `Lock the file @env(windows-2022)` is read with the text `Lock the file`, not `@manual`, with no operating system and one tag it does not read, `@env(windows-2022)`
 - PROOF-28 (RULE-40): The proof text `Lock the file @manual @smoke` is read whole: `@smoke` stops the reading, so the `@manual` before it stays in the text, and the proof is not `@manual`, with no operating system
@@ -50,6 +51,7 @@
 - PROOF-2 (RULE-38): A spec at `specs/test/test_feat.md` whose rules hold `RULE-1` and the line `- some constraint without RULE-N prefix` is reported with the warning line ``test_feat: 1 line under ## Rules is not numbered; a rule is `- RULE-N: <text>`. Run purlin:spec test_feat.``
 - PROOF-71 (RULE-38): A feature `login` carrying `> Requires: api` is reported with `login: > Requires: is not read, because every anchor covers the whole project. Run purlin:spec login.`
 - PROOF-78 (RULE-38): The pinned anchor `security_baseline`, its `> Source:` `https://github.com/acme/policies.git specs/baseline.md`, carries `> Scope: src/`; the status report carries `security_baseline: its source, https://github.com/acme/policies.git, carries > Scope:, which Purlin does not read on an anchor, so the line is read as nothing. Ask the owners of https://github.com/acme/policies.git to take it out, then run purlin:anchor sync security_baseline.`
+- PROOF-87 (RULE-38): A spec `checkout` whose `PROOF-2` ends `@manual @slow` is reported with `checkout: PROOF-2 is tagged @slow and @manual; a hand check has no test to leave out, so it is read as @manual. Run purlin:spec checkout.`, and its `PROOF-2` is read as `@manual` and not slow
 - PROOF-46 (RULE-39): A spec at `specs/test/login.md` whose rules read `RULE-1`, `RULE-2: Old text` and `RULE-2: New text` is reported with `login: RULE-2 is written twice; the second is read. Run purlin:spec login.`, and its rules read exactly `RULE-1` and `RULE-2`, with `RULE-2` reading `New text`
 - PROOF-81 (RULE-39): A spec `login` whose `## Proof` holds `PROOF-4 (RULE-1): Old text` and `PROOF-4 (RULE-2): New text` is reported with `login: PROOF-4 is written twice; the second is read. Run purlin:spec login.`, and its one `PROOF-4` reads `New text`
 - PROOF-82 (RULE-39): A spec `login` holding one line `=======`, at line 12, is reported with `login: 1 line is left from a merge conflict, at line 12: =======. Run purlin:spec login.`

@@ -20,7 +20,7 @@ the one command that pushes, and it pushes a run branch of its own ([Who pushes]
 
 ```
 purlin:test                     Run the features your change touched
-purlin:test --all               Run every feature
+purlin:test --all               Run every feature, slow tests included
 purlin:test <feature> [...]     Run one feature, or several
 purlin:test --commit            Commit the work and the evidence the run wrote
 purlin:test --remote            Let the git host's runner do the run
@@ -64,6 +64,9 @@ exits 1 only where the evidence it stands on holds a failing test.
 
 A run over some features hands each suite only the test files that carry their markers. A run
 over every feature runs every suite whole.
+
+Only `--all` starts the test of a proof tagged `@slow`; every other `purlin:test` skips it and
+lists it under `Left to do`, as [Slow proofs](specs-and-anchors.md#slow-proofs) says.
 
 ### What a run prints
 

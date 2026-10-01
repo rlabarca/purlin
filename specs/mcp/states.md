@@ -8,8 +8,8 @@
 >   output.
 > Scope: scripts/mcp/purlin/states.py, scripts/mcp/purlin/payload.py, scripts/mcp/purlin/status.py, scripts/mcp/purlin/facts.py, scripts/mcp/purlin/project.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib, json, hashlib, subprocess (list-only)
-> Highest-Rule: 123
-> Highest-Proof: 281
+> Highest-Rule: 125
+> Highest-Proof: 285
 
 ## Rules
 
@@ -54,8 +54,10 @@
 - RULE-112: Each test comment naming a proof whose wording changed after the test was last changed is named in the payload's warnings, one line each, and counted under `to_correct`; it clears once the test itself changes
 - RULE-113: The payload's `project` is the project's name read from its own files each time: `pyproject.toml`, `package.json`, a root `.csproj` file, the `origin` remote, then the folder's name
 - RULE-115: An anchor's proof whose every tied test skipped with a reason opening `nothing to check:` counts as passed: the rule reads `passed` with one reason `<PROOF-N>: <reason>` per such proof, and the status prints after the table `<anchor> <RULE-N> passes with nothing to check here: <reason>.`; on a project's own spec such a proof reads `not run`, its reason kept
-
+- RULE-124: A proof tagged `@slow` carries `slow` true in the payload and is read as any other proof is, on a feature's spec and an anchor's alike; while no current section holds a result for it, it reads `not run`, and its rule's passed cell reads `not run` with the reason `slow: runs with purlin:test --all`
+- RULE-125: Adding `@slow` to a proof, or taking it off, is no change of the proof's wording: its test comment is not named as one to correct
 - RULE-123: A spec whose `> Scope:` names files git does not have is reported in one line for the spec, as information and not as a warning: the files are named as not written yet, with `purlin:build` to write them first and `purlin:spec` to correct a path second, because writing a spec before its code is the normal order
+
 ## Proof
 
 - PROOF-1 (RULE-1): A spec has two rules and one proof line, which names `RULE-2`, and no test is marked for either rule; `RULE-1`'s passed cell reads `no test` with exactly the one reason `no proof written`, its proof list is empty and its `no_proof` flag is raised, while `RULE-2`'s `no_proof` flag is not raised
@@ -129,5 +131,9 @@
 - PROOF-271 (RULE-113): A project in the folder `work` whose `pyproject.toml` names `labconnect` under `[project]` reads `project` `labconnect`
 - PROOF-274 (RULE-115): The anchor `security_no_dangerous_patterns`, whose `PROOF-3` test skipped with `nothing to check: this project has no screens`, reads `passed` in `RULE-3`'s passed cell with the one reason `PROOF-3: this project has no screens`
 - PROOF-278 (RULE-115): A feature `login`, not an anchor, whose `PROOF-1` test skipped with `nothing to check: no screens here` reads `not run` in `RULE-1`'s passed cell, the reason `no screens here` kept
+- PROOF-282 (RULE-124): `login`'s `PROOF-2` is tagged `@slow` and has a marked test; a current section lists `PROOF-1` as `pass` and `PROOF-2` as `not run`. `PROOF-2` carries `slow` true and reads `not run`, and `RULE-2`'s passed cell reads `not run` with the one reason `slow: runs with purlin:test --all`
+- PROOF-283 (RULE-124): A current section passes that slow `PROOF-2`: `RULE-2`'s passed cell reads `passed` with no reason. Once `src/login.py` is rewritten and committed, the cell reads `out of date` and `PROOF-2` reads `not run`
+- PROOF-284 (RULE-124): The anchor `security`'s one proof is tagged `@slow`, has a marked test and no section; `RULE-1`'s passed cell reads `not run` with the one reason `slow: runs with purlin:test --all`
+- PROOF-285 (RULE-125): The test at `tests/test_age.py:3` is marked for `sample_age PROOF-1`; a later commit adds `@slow` to that proof's line and changes none of its words. The payload's warnings name no test comment, and `left` holds no `to_correct` entry
 - PROOF-279 (RULE-123): A spec `states` whose scope names `facts.py`, `project.py` and `wording.py`, none in git, makes the status print the one line `states: 3 files its scope names are not written yet: facts.py, project.py, wording.py. Run purlin:build states, or correct the path with purlin:spec states.`
 - PROOF-280 (RULE-123): A spec `login` whose scope names `src/login.py`, in git, and `src/gone.py`, not in git, makes the status print `login: 1 file its scope names is not written yet: src/gone.py. Run purlin:build login, or correct the path with purlin:spec login.`, and the dashboard shows that line among the information, not among the warnings

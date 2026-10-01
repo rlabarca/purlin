@@ -259,11 +259,13 @@ def rule_line(spec_path, rule_id, text):
 
 
 def proof_line(spec_path, proof_id, proof):
-    """`<spec> <PROOF-N> <rules> <text>`, then `@manual` and `@env(<os>)`."""
+    """`<spec> <PROOF-N> <rules> <text>`, then `@manual`, `@slow` and `@env(<os>)`."""
     parts = [spec_path, proof_id, ','.join(proof.get('rules') or ()),
              _normalise(proof.get('text'))]
     if proof.get('manual'):
         parts.append('@manual')
+    if proof.get('slow'):
+        parts.append('@slow')
     if proof.get('env'):
         parts.append('@env(%s)' % proof['env'])
     return ' '.join(parts)

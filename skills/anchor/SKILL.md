@@ -40,6 +40,8 @@ needs it, with `purlin:spec <feature>`. Rules and proofs follow the grammar in
 A test of an anchor that finds nothing to check in this project skips, through the test tool's
 own skip, with a reason starting `nothing to check:`, as in `nothing to check: this project has
 no screens`. The rule then passes, and `purlin:status` prints the reason.
+`references/spec_quality_guide.md`, "A good anchor", is the checklist for an anchor's rules and
+proofs, the `@slow` tag for a long whole-project check and the `@manual` tag among them.
 
 Commit it with the `anchor(<name>): create` prefix from `references/commit_conventions.md`.
 

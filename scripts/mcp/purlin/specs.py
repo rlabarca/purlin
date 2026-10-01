@@ -10,8 +10,8 @@ A rule line is its id and its text, and the text is everything after the id:
 
     - RULE-3: Expired tokens are rejected with 401
 
-Proof lines carry at most one operating system, and `@manual` where no test
-can settle the rule:
+Proof lines carry at most one operating system, `@manual` where no test
+can settle the rule, and `@slow` where the proof's test takes a long time:
 
     - PROOF-3 (RULE-3): POST /login with a token issued 25h ago; verify 401 @env(linux)
 
@@ -40,7 +40,7 @@ _PROOF_LINE_RE = re.compile(
     r'^-\s+(PROOF-\d+)\s*\((RULE-\d+(?:,\s*RULE-\d+)*)\):\s*(.+)')
 
 # A trailing tag is metadata appended after the description: ` @manual`,
-# ` @env(linux)`. It must not match a description whose prose merely ends in
+# ` @slow`, ` @env(linux)`. It must not match a description whose prose merely ends in
 # an @word, e.g. "verify the doc lists @manual, @env and @word", so the
 # tag may not follow a list connector (`,`, `and`, `or`).
 _PROOF_TAG_RE = re.compile(r'(?<!\band)(?<!\bor)(?<!,)\s+@(\w+)(?:\(([^)]*)\))?\s*$')
@@ -83,17 +83,19 @@ _SCOPE_LINE_RE = re.compile(r'^>[ \t]*Scope:', re.MULTILINE)
 # ---------------------------------------------------------------------------
 
 def split_proof_tags(desc):
-    """`(clean_desc, manual, env, unknown)` for one proof line's description.
+    """`(clean_desc, manual, env, unknown, slow)` for one proof line's description.
 
     Tags are read right to left. `@env(<os>)` names the operating system the
     proof must be proved on, at most once, one of `windows`, `macos`,
-    `linux`; `@manual` says no test settles the rule. Any other trailing
+    `linux`; `@manual` says no test settles the rule; `@slow` says the
+    proof's test takes a long time. Any other trailing
     `@<name>` is not a tag: reading stops there and it stays in the text.
     `unknown` lists the tags this release does not read, so the caller can
     name the file once rather than warning per line.
     """
     desc = desc.rstrip()
     manual = False
+    slow = False
     env = None
     unknown = []
     while True:
@@ -118,10 +120,12 @@ def split_proof_tags(desc):
             manual = manual or name == 'manual'
         elif name == 'manual':
             manual = True
+        elif name == 'slow':
+            slow = True
         else:
             break
         desc = desc[:m.start()].rstrip()
-    return desc, manual, env, unknown
+    return desc, manual, env, unknown, slow
 
 
 # ---------------------------------------------------------------------------
@@ -329,6 +333,7 @@ def _parse_spec(name, rel_path, content):
     proofs_by_rule = {}
     unread_proof_lines = []
     doubled_proofs = []
+    slow_and_manual = []
     proof_section = extract_section(content, '## Proof')
     if proof_section:
         first = _section_first_line(content, '## Proof')
@@ -340,14 +345,20 @@ def _parse_spec(name, rel_path, content):
                 continue
             proof_id = m.group(1)
             rule_ids = _split_list(m.group(2))
-            text, manual, env, unknown = split_proof_tags(m.group(3).strip())
+            text, manual, env, unknown, slow = split_proof_tags(
+                m.group(3).strip())
             unknown_tags.extend(unknown)
+            if slow and manual:
+                # A hand check has no test to leave out of a run.
+                slow = False
+                if proof_id not in slow_and_manual:
+                    slow_and_manual.append(proof_id)
             if proof_id in proofs and proof_id not in doubled_proofs:
                 doubled_proofs.append(proof_id)
             proof_lines.setdefault(proof_id, []).append(
                 {'line': first + offset, 'text': text})
             proofs[proof_id] = {'rules': rule_ids, 'text': text,
-                                'manual': manual, 'env': env}
+                                'manual': manual, 'env': env, 'slow': slow}
             proof_env[proof_id] = env
             for rule_id in rule_ids:
                 proofs_by_rule.setdefault(rule_id, []).append(proof_id)
@@ -416,6 +427,7 @@ def _parse_spec(name, rel_path, content):
         'highest_rule': _highest(_HIGHEST_RULE_RE, content),
         'highest_proof': _highest(_HIGHEST_PROOF_RE, content),
         'unread_proof_lines': unread_proof_lines,
+        'slow_and_manual': slow_and_manual,
         'heading_name': heading_match.group(1) if heading_match else None,
     }
 
@@ -460,6 +472,9 @@ DOUBLED_REASON = '%s is written twice in the spec'
 CONFLICT_REASON = 'the spec holds a line left from a merge conflict'
 HEADING_NAMES_OTHER = ('%s: the first line names %s, but the file is %s.md, so '
                        'it is read as %s. Run purlin:spec %s.')
+SLOW_AND_MANUAL = ('%s: %s is tagged @slow and @manual; a hand check has no '
+                   'test to leave out, so it is read as @manual. '
+                   'Run purlin:spec %s.')
 UNREAD_REQUIRES = ('%s: > Requires: is not read, because every anchor covers '
                    'the whole project. Run purlin:spec %s.')
 UNREAD_GLOBAL = ('%s: > Global: is not read, because every anchor covers the '
@@ -483,7 +498,8 @@ def spec_mistakes(project_root, features):
     the mistakes, each sorted by feature: two specs with one name, a rule id
     written twice, a proof id written twice, the lines left from a merge
     conflict (one line per spec), a line under `## Proof` that is not a
-    proof line, a first line naming another feature, then the fields Purlin
+    proof line, a first line naming another feature, a proof tagged both
+    `@slow` and `@manual`, then the fields Purlin
     does not read: every `> Requires:`, then every `> Global:`, then every
     anchor's `> Scope:`. A pinned anchor carrying any of the three has one
     line naming them all and its source, sorted with the `> Scope:` lines.
@@ -530,6 +546,9 @@ def spec_mistakes(project_root, features):
         other = features[name].get('heading_name')
         if other and other != name:
             lines.append(HEADING_NAMES_OTHER % (name, other, name, name, name))
+    for name in sorted(features):
+        for proof_id in features[name].get('slow_and_manual') or ():
+            lines.append(SLOW_AND_MANUAL % (name, proof_id, name))
     for field, line in (('Requires', UNREAD_REQUIRES), ('Global', UNREAD_GLOBAL)):
         for name in sorted(features):
             info = features[name]

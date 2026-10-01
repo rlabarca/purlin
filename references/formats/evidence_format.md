@@ -119,7 +119,7 @@ Each `rules` value:
 |---|---|
 | `failed` | a tied test of a proof that could run here failed, or a test marked with the rule's id failed |
 | `no test` | else, a proof of the rule that is not `@manual`, tagged `@env` or not, has no test tied to it; or no proof names the rule and no test is marked with its id |
-| `not run` | else, a tied test did not run, or a proof of the rule is tagged `@env` for another operating system, so this machine could not answer |
+| `not run` | else, a tied test did not run, a proof of the rule is tagged `@env` for another operating system, so this machine could not answer, or the run left out the test of a proof tagged `@slow` |
 | `passed` | else: every test tied to every proof of the rule that could run here ran and passed; for a rule with no proof, every test marked with the rule's own id passed |
 
 The words are read in that order. A rule whose proofs are all `@manual`
@@ -150,6 +150,10 @@ tagged `@env` for another operating system than the section's reads `not run`
 whatever its tied test did there: a test carrying a Mac proof's marker and a
 Windows proof's marker runs on the Mac and proves only the Mac proof. A proof
 no test is tied to has one entry with an empty `test`, reading the same way.
+A proof tagged `@slow` whose test the run left out reads `not run` with the
+test named, unless the section the run replaces was taken over the same
+fingerprint and holds a result for that test: then the entry keeps that
+result.
 
 A reader takes a proof's result in a section as the worst of its entries:
 `fail` where one failed, else `not run` where one reads `missing` or `not
@@ -236,7 +240,9 @@ each part that differs: `code changed since 4f1c2ab`, `spec changed since
 
 - A test run reads the file from disk and replaces `platforms[<this os>]`
   whole, so a run on another machine replaces the results of the one before.
-  Every other section and `audit` stay as they are.
+  Every other section and `audit` stay as they are. One result is carried
+  from the section replaced into the new one: that of a slow proof's test
+  the run left out, where both sections have the same fingerprint.
 - An audit run first makes the same test-run write. It then replaces
   `audit.rules[<rule>]` for each rule it read and leaves every other entry as
   it is.

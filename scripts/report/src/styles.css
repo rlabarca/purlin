@@ -78,8 +78,6 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .group .gs{font-size:var(--ui-base);color:var(--text-muted)}
 .group .gc{font-size:var(--ui-base);color:var(--text-secondary)}
 .group .gc b{font-family:var(--font-mono);font-weight:var(--weight-regular)}
-.group .bar{flex:none;width:80px;height:5px;background:var(--border-hairline);border-radius:var(--radius-pill);overflow:hidden;display:inline-block}
-.group .bar>span{display:block;height:100%;background:currentColor}
 .caret{color:var(--text-muted);font-size:var(--ui-sm);flex:none}
 .name{display:flex;align-items:center;gap:var(--space-4);min-width:0}
 .name .n{font-size:var(--ui-base);color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

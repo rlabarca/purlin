@@ -144,9 +144,8 @@ to write a proof for, with `purlin:spec`; the tests read `met` with it.
 
 ### Manual proofs
 
-A proof carries no tag when a test settles it, whatever that test needs to run: `purlin:test`
-runs every marked test of the features it runs. Tag a proof `@manual` when only a person's
-judgment settles it:
+A proof carries no `@manual` when a test settles it, whatever that test needs to run. Tag a
+proof `@manual` when only a person's judgment settles it:
 
 ```
 - PROOF-5 (RULE-2): Read the error messages against the brand voice guide @manual
@@ -158,6 +157,50 @@ and the signer may type, in one line, what they saw. After a sign-off the rule c
 note with the version it was signed at and how many commits have come since, as
 `noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red`,
 and the reader judges whether it still holds.
+
+### Slow proofs
+
+Some tests take a long time, like an integration test that drives a whole checkout. Add `@slow`
+to the end of the proof such a test shows, and the test stays out of your way while you build:
+
+```
+- PROOF-4 (RULE-4): A cart of three items is checked out against the payment sandbox, and the order reads `paid` @slow
+```
+
+A slow proof is a proof like any other: one sentence saying how a rule is shown, and one test
+with a comment above it. Nothing in the test changes. The tag changes only when the test runs.
+
+| You run | When | What it does |
+|---|---|---|
+| `purlin:test` | While you build | Runs what changed and skips every slow test, with a feature named or not |
+| `purlin:test --all` | When you want to check the whole project | Runs everything, slow tests included |
+
+A `purlin:test` that skipped the checkout test says so before it runs anything:
+
+```
+Left out 1 slow proof: checkout PROOF-4. purlin:test --all runs it too.
+```
+
+Purlin remembers it, so you have nothing to remember. Until the slow test has passed, its proof
+reads `not run` with the reason `slow: runs with purlin:test --all`, and every status and every
+run end on:
+
+```
+Left to do:
+  1 slow proof to run: purlin:test --all
+```
+
+The tests read `met` only after every slow test has passed on committed evidence, so
+`purlin:test --all --commit` is the run a developer makes before handing a version over. Once
+a slow test has passed, a plain `purlin:test` leaves its result alone and it keeps counting.
+When a file the spec covers changes, the result goes out of date as any other does: the proof
+reads `not run` again and the status lists it, so a person who never knew the test existed is
+told when it is due and which command runs it.
+
+`@slow` may stand with `@env(...)`, and a remote run runs the slow tests of the proofs it
+proves. `@slow` with `@manual` is a mistake the status warns of, since a hand check has no test
+to skip. [supported_frameworks.md](../references/supported_frameworks.md#leaving-a-slow-test-out)
+says how each test tool skips one test, and the few cases where a slow test runs all the same.
 
 ### Operating systems
 
@@ -238,6 +281,35 @@ security_no_dangerous_patterns RULE-3 passes with nothing to check here: this pr
 Only an anchor's rule passes this way. On a feature's own rule such a skip reads `not run`,
 with its reason kept. A pulled rule that fails in this project is a problem to raise with its
 authors.
+
+### A long check, and a check by hand
+
+An anchor's test reads the whole project, so it can take a long time. Tag such a proof `@slow`
+and it stays out of every build run: `purlin:test` skips it, `purlin:test --all` runs it, and
+the status lists it while it is due, as [Slow proofs](#slow-proofs) says. A rule no test can
+show takes a `@manual` proof and is checked by a person in the sign-off walk. One anchor with
+the three forms together, a fast check, a slow one and a hand check:
+
+```markdown
+# Anchor: privacy
+
+> Description: What every part of the project owes a person's data.
+
+## Rules
+
+- RULE-1: For every source file in the project, no line writes an email address to a log
+- RULE-2: For every table in the project that holds a person's data, deleting the account leaves no row of theirs
+- RULE-3: For every screen in the project that asks for a person's data, the words beside the field say why it is asked for
+
+## Proof
+
+- PROOF-1 (RULE-1): Every source file is searched for a logging call handed a value named `email`, and 0 are found
+- PROOF-2 (RULE-2): In a fresh database an account with one row in each such table is deleted, and each table then holds 0 rows of that account @slow
+- PROOF-3 (RULE-3): Open each such screen and read the words beside each field against the privacy notice @manual
+```
+
+[spec_quality_guide.md](../references/spec_quality_guide.md#a-good-anchor) holds the checklist
+for a good anchor.
 
 In the status table the anchors stand first, under the line `Anchors`, and every other spec
 follows under `Specs`. Each row counts its own rules, and the summary counts each rule once.

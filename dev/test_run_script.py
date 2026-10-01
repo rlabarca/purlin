@@ -1529,3 +1529,158 @@ class TestTheRunnerOnFirstNeed:
             output
         assert ('Committed .github/workflows/purlin.yml, the runner for '
                 'GitHub.' in output.splitlines()), output
+
+
+# ---------------------------------------------------------------------------
+# Slow proofs
+# ---------------------------------------------------------------------------
+
+SLOW_BODY = ('import pytest\n\n'
+             '# purlin: feat PROOF-1\n'
+             'def test_ok():\n'
+             '    assert True\n\n'
+             '# purlin: feat PROOF-2\n'
+             'def test_slow():\n'
+             "    open('started', 'a').close()\n")
+
+
+def _slow_project(tmp_path, tests=None):
+    """`feat` of two rules: PROOF-1's test passes, and the test of PROOF-2,
+    tagged `@slow`, writes the file `started` when it starts."""
+    root = _pytest_project(tmp_path, body=SLOW_BODY)
+    if tests is not None:
+        _config(root, tests=tests)
+    (root / 'src').mkdir()
+    (root / 'src' / 'feat.py').write_text('VALUE = 1\n', encoding='utf-8')
+    _spec(root, 'feat', rules=2, proofs=(('PROOF-1', 'RULE-1', ''),
+                                         ('PROOF-2', 'RULE-2', ' @slow')))
+    return root
+
+
+def _proof(root, proof_id, feature='feat'):
+    """`(result, test)` of the one entry the evidence lists for a proof."""
+    listed = [entry for entry in _proofs(root, feature)
+              if entry['id'] == proof_id]
+    assert len(listed) == 1, listed
+    return listed[0]['result'], listed[0]['test']
+
+
+def _slow_test(name, scopes=(), namespace=''):
+    markers = importlib.import_module('purlin.markers')
+    return markers.Test(name, 3, scopes, namespace=namespace)
+
+
+class TestSlowProofs:
+    """`purlin:test` never starts a slow proof's test; `--all` does."""
+
+    # purlin: run_script PROOF-275
+    def test_a_plain_run_leaves_the_slow_test_out_and_says_so(self, tmp_path):
+        root = _slow_project(tmp_path)
+        code, output = _run(root, '--feature', 'feat', '--test')
+        assert code == 0, output
+        assert ('Left out 1 slow proof: feat PROOF-2. purlin:test --all runs '
+                'it too.') in output.splitlines(), output
+        assert 'Evidence is missing' not in output, output
+        assert not (root / 'started').exists()
+        assert _proof(root, 'PROOF-2') == (
+            'not run', 'tests/test_feat.py::test_slow')
+
+    # purlin: run_script PROOF-276
+    def test_all_starts_the_slow_test(self, tmp_path):
+        root = _slow_project(tmp_path)
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        assert (root / 'started').exists()
+        assert 'Left out' not in output, output
+        assert _proof(root, 'PROOF-2')[0] == 'pass'
+
+    # purlin: run_script PROOF-277
+    def test_each_tool_is_given_its_own_option(self, tmp_path):
+        markers = importlib.import_module('purlin.markers')
+        reports = importlib.import_module('reports')
+
+        def command(tool, path, test):
+            entry = frameworks.entry_for(tool)
+            suite = markers.Suite(tool, entry['run'], entry['report'],
+                                  entry['format'], entry['files'])
+            option, held, started = frameworks.leave_out(suite,
+                                                         [(path, test)])
+            assert held == [(path, test)] and started == [], (tool, started)
+            return reports.command_for(suite, [], suite.report_path(), option)
+
+        pattern = "--testNamePattern '^(?!(?:.* )?(?:cart checks out)$)'"
+        assert ('--deselect tests/test_cart.py::TestCart::test_checkout'
+                in command('pytest', 'tests/test_cart.py',
+                           _slow_test('test_checkout', ['TestCart'])))
+        for tool in ('vitest', 'jest'):
+            assert pattern in command(
+                tool, 'tests/cart.test.js',
+                _slow_test('checks out', ['cart'])), tool
+        assert ("--filter 'FullyQualifiedName!=Shop.Tests.CartTests.ChecksOut'"
+                in command('dotnet', 'Shop.Tests/CartTests.cs',
+                           _slow_test('ChecksOut', ['CartTests'],
+                                      'Shop.Tests')))
+        assert "-skip '^(?:TestCheckout)$'" in command(
+            'go', 'cart/cart_test.go', _slow_test('TestCheckout'))
+
+        root = _project(tmp_path, tests=[suites.shell_suite()])
+        for name, proof_id in (('fast', 'PROOF-1'), ('slow', 'PROOF-2')):
+            _script(root / ('%s.test.sh' % name),
+                    '# purlin: feat %s\necho %s >> ran.txt\n'
+                    % (proof_id, name))
+        _spec(root, 'feat', rules=2, proofs=(('PROOF-1', 'RULE-1', ''),
+                                             ('PROOF-2', 'RULE-2', ' @slow')))
+        code, output = _run(root, '--feature', 'feat', '--test')
+        assert code == 0, output
+        assert (root / 'ran.txt').read_text(encoding='utf-8').split() == [
+            'fast'], output
+
+    # purlin: run_script PROOF-278
+    def test_a_command_that_cannot_leave_a_test_out_starts_it_and_says_so(
+            self, tmp_path):
+        runner = suites.pytest_suite(name='runner')
+        runner['run'] = '%s run.py {files} --junitxml={report}' % suites.PYTHON
+        root = _slow_project(tmp_path, tests=[runner])
+        (root / 'run.py').write_text(
+            'import sys\nimport pytest\n'
+            "sys.exit(pytest.main(['-q', '-p', 'no:cacheprovider']"
+            ' + sys.argv[1:]))\n', encoding='utf-8')
+        code, output = _run(root, '--feature', 'feat', '--test')
+        assert code == 0, output
+        assert (root / 'started').exists()
+        assert ('Started 1 slow test in the runner suite: its command gives '
+                'Purlin no way to leave one test out.') in output.splitlines()
+        assert _proof(root, 'PROOF-2')[0] == 'pass'
+
+    @staticmethod
+    def _after_a_full_run(tmp_path):
+        """A git checkout of the slow project after `--all --test` passed
+        PROOF-2, the file its test wrote taken away."""
+        root = _slow_project(tmp_path)
+        _git_repo(root)
+        code, output = _run(root, '--all', '--test')
+        assert code == 0 and _proof(root, 'PROOF-2')[0] == 'pass', output
+        (root / 'started').unlink()
+        return root
+
+    # purlin: run_script PROOF-279
+    def test_a_plain_run_keeps_the_slow_result_that_still_counts(
+            self, tmp_path):
+        root = self._after_a_full_run(tmp_path)
+        code, output = _run(root, '--feature', 'feat', '--test')
+        assert code == 0, output
+        assert not (root / 'started').exists()
+        assert _proof(root, 'PROOF-2')[0] == 'pass'
+        assert _passed_word(root, 'feat', 'RULE-2') == 'passed'
+
+    # purlin: run_script PROOF-280
+    def test_a_code_change_puts_the_slow_proof_back_on_the_list(
+            self, tmp_path):
+        root = self._after_a_full_run(tmp_path)
+        (root / 'src' / 'feat.py').write_text('VALUE = 2\n', encoding='utf-8')
+        code, output = _run(root, '--test')
+        assert code == 0, output
+        assert list(_selection(output)) == ['feat'], output
+        assert _proof(root, 'PROOF-2')[0] == 'not run'
+        assert output.rstrip().splitlines()[-1] == (
+            '  1 slow proof to run: purlin:test --all'), output

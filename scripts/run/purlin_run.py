@@ -28,6 +28,15 @@ that selected a feature; with nothing selected it says so and runs no test.
 `--ci` with no feature named runs every feature that has a proof tagged
 `@env` for the runner's system.
 
+**Slow proofs.** `--test` and `--audit` without `--all` never start a test
+whose every marker names a proof tagged `@slow` (`slow_plan`): the test is
+left out through its own tool's option (`frameworks.leave_out`), the run
+says which proofs it left out, lists each as `not run`, and keeps the
+result the section it replaces holds for it where that section was taken
+over the same spec, code and tests (`keep_slow_results`). `--all` and `--ci`
+start every test. A slow test a suite's command cannot leave out is started,
+and the run says so.
+
 **How the tests run.** The settings file names the project's own suites
 under `tests`, each with its command, where its report lands, the report's
 format and the globs its test files live under. The run runs each suite's
@@ -230,6 +239,14 @@ MARKERS_MISSING = ('%d markers have no passing or failing result: %s. Check '
 RULE_FAILS = '%s %s fails: %s. Run purlin:build %s.'
 RULE_HAS_NO_TEST = '%s %s has no test. Run purlin:build %s.'
 RULE_HAS_NO_TEST_FOR = '%s %s has no test for %s. Run purlin:build %s.'
+
+# What a run that left slow proofs' tests out says before it starts, and
+# what it says of each suite whose command could not leave them out.
+LEFT_OUT_ONE = 'Left out 1 slow proof: %s. purlin:test --all runs it too.'
+LEFT_OUT_MANY = ('Left out %d slow proofs: %s. purlin:test --all runs them '
+                 'too.')
+STARTED_SLOW = ('Started %s in the %s suite: its command gives Purlin no way '
+                'to leave one test out.')
 
 # The start of the reason an anchor's test skips with where the project has
 # nothing it checks (`reports RULE-32`).
@@ -529,7 +546,7 @@ class SuiteRun(object):
 
 
 def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
-              marked=None, action='test'):
+              marked=None, action='test', option='', held=()):
     """Run one suite and read what it saw. A `SuiteRun`.
 
     `files` is the test files to hand `{files}`, or empty for the whole
@@ -538,13 +555,16 @@ def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
     file passes when the command exits 0. Any other suite runs once and its
     report is read and tied to the markers in `marked`. `action` is the
     command the run was started by, `test` or `audit`, which a timeout
-    names as the one to run again with a longer limit.
+    names as the one to run again with a longer limit. `option` is the
+    tool's own option that leaves the slow tests out, and `held` the files
+    of an `exit` suite that are not run.
     """
     done = SuiteRun(suite)
     mark = len(log)
     if suite.format == 'exit':
-        paths = list(files) or sorted(markers_module.test_files(
-            project_root, [suite]))
+        paths = [path for path in list(files) or sorted(
+            markers_module.test_files(project_root, [suite]))
+            if path not in held]
         failed = []
         ran = []
         for path in paths:
@@ -567,12 +587,16 @@ def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
     report = suite.report_path()
     reports_module.clear_report(project_root, report)
     command = [bash_command(), '-c',
-               reports_module.command_for(suite, files, report)]
+               reports_module.command_for(suite, files, report, option)]
     code, stdout = _run(command, project_root, log, timeout, keep_stdout=True)
     done.keep_log(log[mark:], [command])
     if code == TIMED_OUT:
         done.failures.append(TIMED_OUT_AFTER % (suite.name, timeout, action))
     done.failed_tests = code not in (0, TIMED_OUT)
+    if option and code == frameworks_module.PYTEST_NOTHING_COLLECTED \
+            and frameworks_module.tool_of(suite) == 'pytest':
+        # Every test it was given was a slow one left out: nothing failed.
+        done.failed_tests = False
     cases, problem = reports_module.read_report(suite.format, project_root,
                                                 report, stdout)
     if problem:
@@ -616,13 +640,16 @@ def reason_of(status, reasons):
     return reasons[0] if len(set(reasons)) == 1 else None
 
 
-def marker_results(scan, suites, runs):
+def marker_results(scan, suites, runs, held=()):
     """`{(feature, id): [entry, ...]}` for every marker whose suite ran.
 
-    Each entry is `{status, test_file, test_name, line, reason}`, `status`
-    being `pass`, `fail` or `not run`, and `reason` the text a test that was
-    skipped gave, or None. A marker no test follows gets no entry: the run
-    reports it by file and line instead.
+    Each entry is `{status, test_file, test_name, line, reason, held}`,
+    `status` being `pass`, `fail` or `not run`, and `reason` the text a test
+    that was skipped gave, or None. A marker no test follows gets no entry:
+    the run reports it by file and line instead. `held` is the `(path, test
+    line)` pairs of the slow tests the run left out, the line None for a
+    file that is one test: each has its entry whether its suite started or
+    not, `held` true unless the test ran all the same.
     """
     by_name = {run.suite.name: run for run in runs}
     index = {}
@@ -630,29 +657,180 @@ def marker_results(scan, suites, runs):
         found = scan[path]
         suite = markers_module.suite_of(path, suites)
         done = by_name.get(suite.name) if suite else None
-        if done is None:
+        if suite is None:
             continue
         if found.whole:
-            status = done.file_results.get(path, reports_module.NOT_RUN)
+            left_out = (path, None) in held
+            if done is None and not left_out:
+                continue
+            status = (done.file_results.get(path, reports_module.NOT_RUN)
+                      if done else reports_module.NOT_RUN)
             for marker in found.markers:
                 index.setdefault(marker.key(), []).append({
                     'status': status, 'test_file': path,
                     'test_name': reports_module.test_name(path, None, 'exit'),
-                    'line': marker.line, 'reason': None})
+                    'line': marker.line, 'reason': None,
+                    'held': left_out and status == reports_module.NOT_RUN})
             continue
         for test in found.tests:
             if not test.markers:
                 continue
+            left_out = (path, test.line) in held
+            if done is None and not left_out:
+                continue
             status = reports_module.result_of(
-                done.outcomes.get((path, test.line), []))
-            reason = reason_of(status, done.reasons.get((path, test.line)))
+                done.outcomes.get((path, test.line), [])
+                if done else [])
+            left_out = left_out and status == reports_module.NOT_RUN
+            reason = None if left_out or done is None else reason_of(
+                status, done.reasons.get((path, test.line)))
             for marker in test.markers:
                 index.setdefault(marker.key(), []).append({
                     'status': status, 'test_file': path,
                     'test_name': reports_module.test_name(path, test,
                                                           suite.format),
-                    'line': marker.line, 'reason': reason})
+                    'line': marker.line, 'reason': reason,
+                    'held': left_out})
     return index
+
+
+# ---------------------------------------------------------------------------
+# Slow proofs
+# ---------------------------------------------------------------------------
+
+class SlowPlan(object):
+    """What a run does about the tests of the proofs tagged `@slow`.
+
+    `held` is the `(path, test line)` pairs it leaves out, the line None for
+    a file that is one test; `options` gives each suite's command the tool's
+    own option that leaves them out; `started` is `{suite name: [path]}`
+    for the slow tests a suite's command cannot leave out, one path per
+    test; `proofs` is the `(feature, proof id)` pairs the held tests carry.
+    """
+
+    def __init__(self):
+        self.held = set()
+        self.options = {}
+        self.started = {}
+        self.proofs = set()
+
+    def all_held(self, path, found):
+        """True for a file every test of which is left out."""
+        if found.whole:
+            return (path, None) in self.held
+        return bool(found.tests) and all((path, test.line) in self.held
+                                         for test in found.tests)
+
+
+def slow_plan(features, scan, suites):
+    """The `SlowPlan` of a run that starts no slow proof's test.
+
+    A test is a slow proof's when it carries a marker and every marker it
+    carries names a proof tagged `@slow`; a test that also carries another
+    proof's marker is that proof's too, and runs.
+    """
+    slow_ids = {(name, proof_id) for name, info in features.items()
+                for proof_id, proof in (info.get('proofs') or {}).items()
+                if proof.get('slow')}
+    plan = SlowPlan()
+    if not slow_ids:
+        return plan
+
+    def is_slow(markers):
+        return bool(markers) and all(marker.key() in slow_ids
+                                     for marker in markers)
+    for suite in suites:
+        slow, others = [], []
+        for path in sorted(scan):
+            found = scan[path]
+            if markers_module.suite_of(path, suites) is not suite:
+                continue
+            if found.whole:
+                (slow if is_slow(found.markers) else others).append(
+                    (path, None))
+                continue
+            for test in found.tests:
+                (slow if is_slow(test.markers) else others).append(
+                    (path, test))
+        option, held, started = frameworks_module.leave_out(suite, slow,
+                                                            others)
+        if option:
+            plan.options[suite.name] = option
+        if started:
+            plan.started[suite.name] = [path for path, _test in started]
+        for path, test in held:
+            plan.held.add((path, test.line if test is not None else None))
+            markers = scan[path].markers if test is None else test.markers
+            plan.proofs.update(marker.key() for marker in markers)
+    return plan
+
+
+def slow_lines(plan, selected, given):
+    """What a run says of the slow proofs before it starts a suite.
+
+    One line naming the proofs of the features it runs whose tests it left
+    out, then one per suite it starts that holds a slow test its command
+    cannot leave out. `given` is `{suite name: files}` for the suites the
+    run starts, the files empty for a suite run whole.
+    """
+    lines = []
+    named = ['%s %s' % key for key in sorted(plan.proofs)
+             if key[0] in selected]
+    if len(named) == 1:
+        lines.append(LEFT_OUT_ONE % named[0])
+    elif named:
+        lines.append(LEFT_OUT_MANY % (len(named), ', '.join(named)))
+    for name in sorted(plan.started):
+        if name not in given:
+            continue
+        count = len([path for path in plan.started[name]
+                     if not given[name] or path in given[name]])
+        if count:
+            lines.append(STARTED_SLOW % (
+                '1 slow test' if count == 1 else '%d slow tests' % count,
+                name))
+    return lines
+
+
+def keep_slow_results(project_root, name, os_name, fingerprint, entries):
+    """`entries` with each held test given the result the feature's local
+    section for this system already holds for it, where that section was
+    taken over the same fingerprint.
+
+    A slow proof's result counts until the feature's spec, code or tests
+    change, and a run that left its test out is no reason to drop it.
+    """
+    if not any(entry.get('held') for found in entries.values()
+               for entry in found):
+        return entries
+    data = evidence_writer.read_file(project_root, 'local', name) or {}
+    kept = (data.get('platforms') or {}).get(os_name)
+    if not isinstance(kept, dict) \
+            or kept.get('fingerprint') != dict(fingerprint):
+        return entries
+    known = {}
+    for listed in kept.get('proofs') or ():
+        if isinstance(listed, dict) and listed.get('result') in (
+                reports_module.PASS, reports_module.FAIL,
+                evidence_reader.NOTHING_TO_CHECK):
+            known[(listed.get('id'), listed.get('test'))] = listed
+    out = {}
+    for marker_id, found in entries.items():
+        out[marker_id] = []
+        for entry in found:
+            listed = known.get((marker_id, '%s::%s' % (
+                entry.get('test_file', ''), entry.get('test_name', ''))))
+            if not entry.get('held') or listed is None:
+                out[marker_id].append(entry)
+            elif listed['result'] == evidence_reader.NOTHING_TO_CHECK:
+                out[marker_id].append(dict(
+                    entry, held=False, reason='%s %s' % (
+                        evidence_reader.NOTHING_TO_CHECK_PREFIX,
+                        listed.get('reason') or '')))
+            else:
+                out[marker_id].append(dict(entry, held=False,
+                                           status=listed['result']))
+    return out
 
 
 def marked_files(scan, suite, selected, proofs=None):
@@ -761,10 +939,14 @@ def build_sections(project_root, args, features, selected, index, os_name,
             found = index.get((name, marker_id), [])
             if found:
                 entries[marker_id] = found
+        fingerprint = fingerprint_module.fingerprint(project_root, name,
+                                                     features, markers)
+        if args.action != 'ci':
+            entries = keep_slow_results(project_root, name, os_name,
+                                        fingerprint, entries)
         sections[name] = evidence_writer.build_section(
             info, entries, os_name, commit, dirty, runner,
-            fingerprint_module.fingerprint(project_root, name, features,
-                                           markers),
+            fingerprint,
             machine=machine,
             hostname=platform.node() if args.action == 'ci' else None,
             only=(None if proofs is None else
@@ -1052,23 +1234,43 @@ def main(argv=None):
     # suite the files that carry a marker of a proof it answers for.
     narrow = remote_proofs is not None or len(selected) < len(features)
     scan = markers_module.scan(project_root, suites)
+    # `--all` and a remote runner start every test; any other run leaves
+    # out the tests of the proofs tagged `@slow`.
+    plan = (SlowPlan() if args.all or args.action == 'ci'
+            else slow_plan(features, scan, suites))
     # The code the sections describe where `--commit` makes no commit.
     started = head_commit(project_root)
 
     log = []
     failures = []
     runs = []
+    given = {}
     for suite in suites:
         files = []
         if narrow:
-            files = marked_files(scan, suite, selected, remote_proofs)
+            # A file every test of which is left out is not handed over.
+            files = [path for path in marked_files(scan, suite, selected,
+                                                   remote_proofs)
+                     if not plan.all_held(path, scan[path])]
             if not files:
                 continue
+        given[suite.name] = files
+    said = slow_lines(plan, selected, given)
+    for line in said:
+        print(line)
+    if said:
+        print('')
+    held_files = {path for path, line in plan.held if line is None}
+    for suite in suites:
+        if suite.name not in given:
+            continue
+        files = given[suite.name]
         # One line per suite before it starts, so a job log says where a run
         # is while it is still running.
         print('Running the %s suite.' % suite.name)
         done = run_suite(project_root, suite, files, log, args.arm_timeout,
-                         scan, 'audit' if args.action == 'audit' else 'test')
+                         scan, 'audit' if args.action == 'audit' else 'test',
+                         plan.options.get(suite.name, ''), held_files)
         runs.append(done)
         failures.extend(done.failures)
         if done.failures or done.failed_tests:
@@ -1076,7 +1278,7 @@ def main(argv=None):
         for problem in done.problems:
             print(problem)
 
-    index = marker_results(scan, suites, runs)
+    index = marker_results(scan, suites, runs, plan.held)
     ran_suites = {done.suite.name for done in runs}
     missing = []
     for (feature, marker_id), entries in sorted(index.items()):
@@ -1088,6 +1290,10 @@ def main(argv=None):
         anchor = (features.get(feature) or {}).get('is_anchor')
         for entry in entries:
             if entry['status'] in (reports_module.PASS, reports_module.FAIL):
+                continue
+            if entry.get('held'):
+                # A slow proof's test this run left out: `purlin:test --all`
+                # runs it, and the status says so.
                 continue
             if anchor and nothing_to_check(entry):
                 continue

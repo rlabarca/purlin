@@ -42,7 +42,8 @@ ONE_TO_CORRECT = '1 test comment to correct.'
 MANY_TO_CORRECT = '%d test comments to correct.'
 
 # A proof line, read the same way at any commit: its id and its words after
-# the rule it proves, tags included.
+# the rule it proves, tags included, `@slow` apart: it says when the test
+# runs and nothing the test must show.
 _PROOF_RE = re.compile(r'^-\s+(PROOF-\d+)\s*\([^)]*\)[^:\n]*:[ \t]*(.*)$', re.M)
 _UNCOMMITTED = '0' * 40
 
@@ -101,9 +102,18 @@ def test_last_change(project_root, path, marker_line, end_line):
 
 
 def proof_words(text):
-    """`{PROOF-N: its words}` of a spec's text, whitespace folded."""
-    return {proof_id: ' '.join(words.split())
+    """`{PROOF-N: its words}` of a spec's text, whitespace folded, `@slow` left out."""
+    return {proof_id: _without_slow(' '.join(words.split()))
             for proof_id, words in _PROOF_RE.findall(text or '')}
+
+
+def _without_slow(words):
+    """A proof's words with its `@slow` tag taken out, every other tag kept."""
+    from purlin import specs as specs_module
+    text, _manual, _env, _unknown, slow = specs_module.split_proof_tags(words)
+    if not slow:
+        return words
+    return text + re.sub(r'\s+@slow\b', '', words[len(text):], count=1)
 
 
 def test_source(path, text, test):

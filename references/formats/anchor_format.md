@@ -101,6 +101,11 @@ An anchor carries no `> Scope:`, and no spec carries `> Requires:` or
 `> Global:`. Each such line is not read, and every status and test run warns of
 it with its fix.
 
+An anchor's proof takes the tags any proof takes (`spec_format.md`): `@manual`
+for a rule no test can show, `@slow` for a check across the whole project that
+takes a long time. `references/spec_quality_guide.md`, "A good anchor", is the
+checklist for writing one, with a worked anchor showing all three forms.
+
 ## Part 2: consumer tracking fields
 
 When a project pulls an anchor from somewhere else, `purlin:anchor` writes

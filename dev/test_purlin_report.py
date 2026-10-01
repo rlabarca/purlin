@@ -590,19 +590,9 @@ def test_the_group_band_says_what_its_numbers_are(browser, tmp_path):
     page.close()
 
 
-# Each band's two ends and its bar: where each sits, and how wide the bar is.
-BAND_ENDS = r"""els => els.map(e => {
-  const l = e.querySelector('.gl').getBoundingClientRect();
-  const r = e.querySelector('.gr').getBoundingClientRect();
-  const bar = e.querySelector('.bar').getBoundingClientRect();
-  const gap = e.querySelector('.gs').getBoundingClientRect().left
-    - e.querySelector('.gt').getBoundingClientRect().right;
-  return {sameLine: Math.abs(l.top - r.top) < 4, rightEdge: r.right,
-          boxRight: e.getBoundingClientRect().right, leftOfRight: r.left,
-          leftOfLeft: l.left, barWidth: bar.width, barRight: bar.right,
-          gap: gap, count: parseInt(e.querySelector('.gc b').textContent
-            .split(' of ')[1], 10)};
-})"""
+# How many rules each band counts: the second number of `3 of 4 rules pass`.
+BAND_COUNTS = r"""els => els.map(e => parseInt(
+  e.querySelector('.gc b').textContent.split(' of ')[1], 10))"""
 
 
 def anchor_rule_count(page, payload):
@@ -617,12 +607,12 @@ def test_the_bands_and_the_anchors_add_up_to_the_rules(browser, tmp_path):
     payload = payload_named('team')
     page = open_board(browser, tmp_path, payload,
                       viewport={'width': 1500, 'height': 900})
-    ends = page.eval_on_selector_all('.group', BAND_ENDS)
+    counts = page.eval_on_selector_all('.group', BAND_COUNTS)
     anchored = anchor_rule_count(page, payload)
     page.close()
     assert payload['summary']['rules'] == 10
     assert anchored == 2
-    assert sum(end['count'] for end in ends) + anchored == 10, ends
+    assert sum(counts) + anchored == 10, counts
 
 
 def _auth_band_closed_by_enter(browser, tmp_path):
@@ -904,6 +894,26 @@ def test_a_rule_out_of_date_reads_what_changed(browser, tmp_path):
     passed = reg.evaluate(KV_ROWS)['Passed']
     assert passed.startswith('OUT OF DATE'), passed
     assert 'code changed since 9f8e7d6' in passed
+    reg.close()
+
+
+# purlin: purlin_report PROOF-238
+def test_a_slow_proof_not_run_shows_its_tag_and_its_reason(browser, tmp_path):
+    payload = payload_named('regulated')
+    export = next(f for f in payload['features'] if f['name'] == 'export')
+    rule = next(r for r in export['rules'] if r['id'] == 'RULE-1')
+    assert [proof['id'] for proof in rule['proofs']] == ['PROOF-1']
+    rule['proofs'][0].update(slow=True, result='not run')
+    rule['cells']['passed'].update(
+        word='not run', reasons=['slow: runs with purlin:test --all'])
+    reg = open_board(browser, tmp_path, payload)
+    open_rule(reg, 'export', 'RULE-1')
+    passed = reg.evaluate(KV_ROWS)['Passed']
+    assert passed.startswith('NOT RUN'), passed
+    assert 'slow: runs with purlin:test --all' in passed
+    proof = reg.inner_text('.panel.proof')
+    assert 'PROOF-1' in proof and 'NOT RUN' in proof, proof
+    assert reg.inner_text('.panel.proof .tag').strip() == '@slow'
     reg.close()
 
 

@@ -117,6 +117,10 @@ Tag a proof `@manual` when only human judgment settles it. A `@manual` proof has
 person checks it in the sign-off walk of `purlin:sign` and may type what they saw. Until then
 it reads `checked at sign-off`.
 
+Tag a proof `@slow` when its test takes a long time, like an integration test;
+`references/spec_quality_guide.md`, "A test that takes a long time", says when, and
+`references/purlin_commands.md` which run starts it.
+
 Add `@env(windows)`, `@env(macos)` or `@env(linux)` when the claim can only be proved on one
 operating system. Those three are the whole vocabulary. A proof with no `@env` is satisfied by
 a run on any operating system; a proof with one has its passed cell met only when a run on

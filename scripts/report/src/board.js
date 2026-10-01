@@ -180,8 +180,7 @@ function description(feature) {
 /* The band over a category's specs, one row with two ends. At the left the
    glyph, the category's name, which is the strongest thing in the band, and
    how many specs it holds; at the right how many of their rules pass their
-   tests, `187 of 187 rules pass`, and a bar of one fixed width, so the bars
-   line up down the page. A band counts the rules of the specs it holds; an
+   tests, `187 of 187 rules pass`. A band counts the rules of the specs it holds; an
    anchor stands in the anchors' section above and in no band. The whole band
    is the control that folds the group, from the keyboard too, and says
    whether it is open.
@@ -194,8 +193,6 @@ function groupBand(name, features, columns) {
   var total = rules.length;
   var passing = rules.filter(function (rule) {
     return cellWord(rule, 'passed') === 'passed'; }).length;
-  var pct = total ? Math.round((passing / total) * 100) : 0;
-  var hue = total && passing === total ? 'pass' : passing ? 'warn' : 'idle';
   return '<div class="group" role="button" tabindex="0" aria-expanded="'
     + (open ? 'true' : 'false') + '" data-act="group" data-group="'
     + esc(name) + '"><span class="gl"><span class="caret" aria-hidden="true">'
@@ -204,8 +201,7 @@ function groupBand(name, features, columns) {
     + (features.length === 1 ? ' spec' : ' specs') + '</span></span>'
     + '<span class="gr"><span class="gc"><b>' + passing + ' ' + WORDS.of + ' '
     + total + '</b> ' + (total === 1 ? 'rule passes' : 'rules pass')
-    + '</span><i class="bar" style="color:var(--state-' + hue + ')"><span'
-    + ' style="width:' + pct + '%"></span></i></span></div>'
+    + '</span></span></div>'
     + (open ? features.map(function (feature) {
       return featureRow(feature, columns);
     }).join('') : '');

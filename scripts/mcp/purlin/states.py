@@ -14,7 +14,9 @@ One rule, read top to bottom.
             current section covers, and reads `partial` where two systems
             that each have a current section disagree. `partial` is not met.
             A `@manual` proof is read out of it, so a rule whose every proof
-            is `@manual` reads `passed` with no test. An anchor's proof whose
+            is `@manual` reads `passed` with no test. A `@slow` proof no
+            current section answers for reads `not run`, saying which run
+            starts its test. An anchor's proof whose
             every tied test skipped with `nothing to check:` counts as
             passed, its reason kept; on any other spec it reads `not run`.
 
@@ -85,6 +87,10 @@ EARLIER_WEAK = 'the last audit, before the rule or its tests changed, found it w
 NOTHING_TO_CHECK = '%s: %s'                                       # PROOF-3, the reason
 NOTHING_RESULT = 'nothing to check'
 
+# The passed cell's reason while a `@slow` proof has no result that counts:
+# `purlin:test` never starts its test, and this is the run that does.
+SLOW_REASON = 'slow: runs with purlin:test --all'
+
 # The passed cell's reason for the proofs of a rule no test backs.
 NO_TEST_FOR = 'no test for %s'
 
@@ -135,7 +141,7 @@ def rule_cells(inp):
 
     `inp` carries:
 
-    `proofs`        `[{'id', 'manual', 'env', 'text', 'tests'}, ...]`
+    `proofs`        `[{'id', 'manual', 'slow', 'env', 'text', 'tests'}, ...]`
     `rule_id`       the rule's own id, which a test may be marked with when
                     the rule has no proof
     `marked`        the proof and rule ids of the rule's feature that a
@@ -379,8 +385,19 @@ def _passed_cell(inp):
     marked = inp.get('marked') or ()
     if any(proof.get('tests') or proof.get('id') in marked for proof in proofs):
         cell['word'] = 'not run'
-        cell['reasons'] = said
+        cell['reasons'] = ([SLOW_REASON] if _slow_waiting(proofs, ran)
+                           else []) + said
     return cell
+
+
+def _slow_waiting(proofs, current):
+    """The ids of the `@slow` proofs no current section passes."""
+    return [proof.get('id') for proof in proofs
+            if proof.get('slow')
+            and not any(_results(entry).get(proof.get('id')) == 'pass'
+                        and (not proof.get('env')
+                             or proof.get('env') == entry['os'])
+                        for entry in current or ())]
 
 
 def _nothing_to_check(proofs, current):

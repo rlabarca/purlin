@@ -16,4 +16,4 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): Pat, Quinn and Dana work in three clones of one bare repository; two pairs of branches take the same numbers, one merged QA first and one dev first; a test stays marked on a proof whose number moved; Dana runs and commits; Quinn signs `0.1.0`, then Pat; every check of RULE-1 holds
+- PROOF-1 (RULE-1): Pat, Quinn and Dana work in three clones of one bare repository; two pairs of branches take the same numbers, one merged QA first and one dev first; a test stays marked on a proof whose number moved; Dana runs and commits; Quinn signs `0.1.0`, then Pat; every check of RULE-1 holds @slow

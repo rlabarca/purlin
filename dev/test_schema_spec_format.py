@@ -46,7 +46,7 @@ def _feature(root, name):
 def _read(desc):
     """One proof text read into its text, manual mark, environment and the
     tags it does not read."""
-    text, manual, env, unknown = purlin_specs.split_proof_tags(desc)
+    text, manual, env, unknown, _slow = purlin_specs.split_proof_tags(desc)
     return {'text': text, 'manual': manual, 'env': env, 'unknown': unknown}
 
 
@@ -288,6 +288,17 @@ def test_env_then_manual_reads_the_same_as_the_other_order():
             'unknown': []}
 
 
+# purlin: schema_spec_format PROOF-86
+def test_slow_with_env_is_read_as_slow_on_that_system():
+    text, manual, env, unknown, slow = purlin_specs.split_proof_tags(
+        'Check out a cart of three items @slow @env(linux)')
+    assert slow is True
+    assert env == 'linux'
+    assert manual is False
+    assert text == 'Check out a cart of three items'
+    assert unknown == []
+
+
 # ---------------------------------------------------------------------------
 # RULE-40: at-words that are no tag
 # ---------------------------------------------------------------------------
@@ -449,6 +460,24 @@ def test_a_requires_line_is_warned_of(tmp_path):
     assert ('login: > Requires: is not read, because every anchor covers the '
             'whole project. Run purlin:spec login.') \
         in result.splitlines(), result
+
+
+# purlin: schema_spec_format PROOF-87
+def test_slow_with_manual_is_warned_of_and_read_as_manual(tmp_path):
+    root = _project(tmp_path)
+    _write(root, 'specs/test/checkout.md',
+           '# Feature: checkout\n\n'
+           '## Rules\n- RULE-1: The cart checks out\n'
+           '- RULE-2: The receipt looks right\n\n'
+           '## Proof\n- PROOF-1 (RULE-1): Check out three items; verify 30.00\n'
+           '- PROOF-2 (RULE-2): Print the receipt and read it @manual @slow\n')
+    result = purlin_status.sync_status(str(root))
+    assert ('checkout: PROOF-2 is tagged @slow and @manual; a hand check has '
+            'no test to leave out, so it is read as @manual. Run purlin:spec '
+            'checkout.') in result.splitlines(), result
+    proof = purlin_specs.scan_specs(str(root))['checkout']['proofs']['PROOF-2']
+    assert proof['manual'] is True
+    assert proof['slow'] is False
 
 
 # purlin: schema_spec_format PROOF-76

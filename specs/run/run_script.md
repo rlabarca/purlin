@@ -14,8 +14,8 @@
 >   tool it knows.
 > Scope: scripts/run/purlin_run.py, scripts/mcp/purlin/frameworks.py, references/supported_frameworks.md
 > Stack: python/stdlib (subprocess, re, hashlib), bash, pytest, sqlite3
-> Highest-Rule: 103
-> Highest-Proof: 274
+> Highest-Rule: 106
+> Highest-Proof: 280
 
 ## Rules
 
@@ -45,6 +45,9 @@
 - RULE-101: Before it runs anything, a run with no feature named and no `--all` prints `Selected <n> of <m> features:` with each feature's reasons, then `Skipped <k> features whose spec, code and tests match their evidence:` with their names and `purlin:test --all runs them too.`, then one line for each untracked file that selected a feature, saying its content is not part of the evidence until it is added to git
 - RULE-100: When such a run selects nothing it prints `Nothing to run: every feature's spec, code and tests match its evidence. purlin:test --all runs them anyway.`, runs no test, writes no evidence, ends on the status, and exits 1 where a rule's tests fail in the evidence it stands on and 0 otherwise; with `--commit` it still commits the specs, marked tests and settings that changed, then the evidence an earlier run wrote
 - RULE-58: A run over fewer features than the project has gives each suite's `{files}` only the test files that carry a marker of a feature it runs, and starts no suite that has none; a run over every feature runs every suite whole
+- RULE-104: `--test` and `--audit` without `--all` never start a test whose every comment names a proof tagged `@slow`, whichever features they run, and `--all` and `--ci` start it like any other. The run prints `Left out 1 slow proof: <feature PROOF-N>. purlin:test --all runs it too.` or `Left out <n> slow proofs: <each>. purlin:test --all runs them too.`, lists each as `not run` in the evidence with its test named, and never names it under `Evidence is missing`
+- RULE-105: A test is left out through its own tool's option, with the test and the project's suite unchanged: pytest's `--deselect`, vitest's and jest's `--testNamePattern`, dotnet's `--filter`, go's `-skip`, and a file of an `exit` suite is not run. Where a suite's command is none of these tools', already carries that option, or the option would also leave out a test that is not slow, the slow test is started, its result counts, and the run prints `Started 1 slow test in the <suite> suite: its command gives Purlin no way to leave one test out.`, or `<n> slow tests` for any other count
+- RULE-106: A run that leaves a slow proof's test out keeps the result the section it replaces holds for that proof where that section was taken over the same spec, code and tests, so the proof keeps counting; where it was taken over others, the proof reads `not run`
 - RULE-59: `--all` runs every feature whatever its evidence says, and `--ci` with no feature named runs every feature that has a proof tagged for this runner's system
 - RULE-95: A section's `commit` names the code it describes: HEAD after the run's own commit of the specs, tests and settings where `--commit` made one, else HEAD when the run started
 - RULE-17: `--test` and `--audit` never commit through the git host's API, even with `--commit`, and write nothing under `.purlin/evidence/ci/`; only `--ci` commits through the API
@@ -106,6 +109,12 @@
 - PROOF-257 (RULE-100): In a git checkout of `feat` whose run is committed, with the spec, its marked test file and the settings edited and a `--test` run over them, `--test --commit` prints `Nothing to run`, commits exactly those three files as `purlin: specs, tests and settings for feat`, then `purlin: evidence at <sha7 of that commit>`
 - PROOF-191 (RULE-58): In a project whose one suite runs two shell scripts, one marked for `login` and one for `export`, each writing its feature's name to one shared file when it runs, `--feature login --test` exits 0 and leaves the file reading only `login`
 - PROOF-193 (RULE-58): In a project of two shell suites, `logins` holding only login's script and `exports` only export's, each script writing its feature's name to one shared file, `--feature login --test` prints `Running the logins suite.`, prints no `Running the exports suite.` line, and the shared file reads only `login`
+- PROOF-275 (RULE-104): `feat`'s PROOF-2 is tagged `@slow` and its pytest test writes the file `started`; `--feature feat --test` exits 0, prints `Left out 1 slow proof: feat PROOF-2. purlin:test --all runs it too.` and no `Evidence is missing`, writes no `started` file, and the evidence lists PROOF-2 as `not run` under `tests/test_feat.py::test_slow`
+- PROOF-276 (RULE-104): In that project `--all --test` exits 0, writes the file `started`, prints no `Left out` line, and the evidence lists PROOF-2 as `pass`
+- PROOF-277 (RULE-105): With one slow test in each, the commands a plain run starts carry pytest's `--deselect tests/test_cart.py::TestCart::test_checkout`, vitest's and jest's `--testNamePattern '^(?!(?:.* )?(?:cart checks out)$)'`, dotnet's `--filter 'FullyQualifiedName!=Shop.Tests.CartTests.ChecksOut'` and go's `-skip '^(?:TestCheckout)$'`, and a shell suite's slow file is not among the files it runs
+- PROOF-278 (RULE-105): The suite `runner` runs `python3 run.py {files} --junitxml={report}`, a script that calls the test tool; `--feature feat --test` writes the slow test's file `started`, prints `Started 1 slow test in the runner suite: its command gives Purlin no way to leave one test out.`, and the evidence lists PROOF-2 as `pass`
+- PROOF-279 (RULE-106): In a git checkout, after `--all --test` passes `feat`'s slow PROOF-2, `--feature feat --test` with nothing changed writes no `started` file again, the evidence still lists PROOF-2 as `pass`, and RULE-2's passed cell reads `passed`
+- PROOF-280 (RULE-106): In that checkout, after `src/feat.py` is then changed, `--test` with no feature named selects `feat`, the evidence lists PROOF-2 as `not run`, and the run ends on `  1 slow proof to run: purlin:test --all`
 - PROOF-98 (RULE-59): In a git checkout of `login` and `export` with committed evidence and nothing changed, `--all --test` exits 0, prints no `Selected` line and no `Nothing to run` line, prints `Running the pytest suite.`, and the suite's report holds both tests, `test_export` and `test_login`
 - PROOF-270 (RULE-95): In a git checkout where the spec `feat` was edited and not committed, `--all --test --commit` writes `feat`'s section with its `commit` the full sha of the commit `purlin: specs, tests and settings for feat`
 - PROOF-17 (RULE-17): In a git checkout, `--all --test --commit` hands the git host's API no commit, prints `Evidence committed.`, and writes nothing under `.purlin/evidence/ci/`

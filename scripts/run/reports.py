@@ -297,14 +297,20 @@ def _read(path):
 # The command
 # ---------------------------------------------------------------------------
 
-def command_for(suite, files, report=None):
+def command_for(suite, files, report=None, option=''):
     """The suite's `run` with `{files}` and `{report}` filled in.
 
     `files` is the list of test files to run, or empty for the whole suite.
-    Each path is quoted for the shell the command runs in.
+    Each path is quoted for the shell the command runs in. `option` is the
+    tool's own option that leaves the slow tests out, already quoted: it
+    goes after the files, or at the command's end where it names none.
     """
     joined = ' '.join(shlex.quote(path) for path in files or ())
+    if option and '{files}' in suite.run:
+        joined = (joined + ' ' + option).strip()
     text = suite.run.replace('{files}', joined)
+    if option and '{files}' not in suite.run:
+        text = text.rstrip() + ' ' + option
     if report and report != '-':
         text = text.replace('{report}', shlex.quote(report))
     return ' '.join(text.split()) if '\n' not in text else text

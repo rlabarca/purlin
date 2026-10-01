@@ -42,6 +42,9 @@ whose spec names no files, and runs only the test files carrying its markers: ea
 and a line per untracked file. With nothing selected it prints `Nothing to run: every feature's
 spec, code and tests match its evidence. purlin:test --all runs them anyway.` and exits 1 only
 where the evidence holds a failing test. Add `--arm-timeout <seconds>` when the person gave it.
+Without `--all` the run never starts a slow proof's test and prints `Left out <n> slow proofs`,
+naming each; `references/purlin_commands.md` says what each run starts, and the status then
+lists `<n> slow proofs to run: purlin:test --all`.
 
 Exit codes: `0` everything asked happened; `1` a tied test failed or did not run, evidence is
 missing, a marker names nothing a spec has, there is no settings file, the settings file cannot be
@@ -92,7 +95,7 @@ column counts the words a passed cell can read:
 | `passed` | Every test marked with the rule's proofs ran here and passed. An anchor's rule whose every test skipped with `nothing to check: <reason>` passes too, and the status says so |
 | `failed` | A marked test ran and failed; the run prints the last 60 lines of the suite's own output |
 | `no test` | No test carries the proof's marker, or, with the reason `no proof written`, the rule has neither |
-| `not run` | A test carries the marker and no counting run reached it |
+| `not run` | A test carries the marker and no counting run reached it; with the reason `slow: runs with purlin:test --all`, it is a slow proof's |
 | `out of date` | The spec, the code or the tests changed since the run; the reason names which |
 
 A test comment to correct reads `<file>:<line> names <feature> <PROOF-N>, whose wording changed

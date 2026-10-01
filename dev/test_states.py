@@ -978,6 +978,27 @@ class TestATestCommentToCorrect:
         assert 'to_correct' not in [item['kind'] for item in data['left']], \
             data['left']
 
+    # purlin: states PROOF-285
+    def test_adding_slow_to_a_proof_names_no_test_comment(self):
+        made = _age_project()
+        try:
+            assert AGE_SPEC.count('PROOF-1 (RULE-1)') == 1
+            lines = AGE_SPEC.splitlines(True)
+            made.spec(''.join(line.rstrip('\n') + ' @slow\n'
+                              if line.startswith('- PROOF-1 ') else line
+                              for line in lines),
+                      name='sample_age', category='lab')
+            _commit(made.root, 'spec(sample_age): PROOF-1 is slow')
+            data = made.payload()
+            slow = made.rule('RULE-1', 'sample_age')['proofs'][0]['slow']
+        finally:
+            made.close()
+        assert slow is True
+        assert not [line for line in data['warnings']
+                    if 'whose wording changed' in line], data['warnings']
+        assert 'to_correct' not in [item['kind'] for item in data['left']], \
+            data['left']
+
 
 # ---------------------------------------------------------------------------
 # Nothing to check
@@ -1028,6 +1049,61 @@ class TestNothingToCheck:
         cell = project.cell('RULE-1', 'passed')
         assert cell['word'] == 'not run', cell
         assert cell['reasons'] == ['no screens here'], cell
+
+
+# ---------------------------------------------------------------------------
+# A slow proof
+# ---------------------------------------------------------------------------
+
+SLOW_REASON = 'slow: runs with purlin:test --all'
+SLOW_SPEC = SPEC.replace('the body "denied"\n', 'the body "denied" @slow\n')
+SLOW_ANCHOR = SECURITY_ANCHOR.replace('verify 0 matches\n',
+                                      'verify 0 matches @slow\n')
+
+
+class TestASlowProof:
+
+    # purlin: states PROOF-282
+    def test_a_slow_proof_no_run_answered_reads_not_run_with_its_reason(
+            self, project):
+        project.spec(SLOW_SPEC)
+        _commit_tests(project, 'PROOF-1', 'PROOF-2')
+        project.evidence([_entry('PROOF-1', 'RULE-1'),
+                          _entry('PROOF-2', 'RULE-2', status='not run')],
+                         commit_it=False)
+        rule = project.rule('RULE-2')
+        proof = rule['proofs'][0]
+        assert proof['id'] == 'PROOF-2' and proof['slow'] is True, proof
+        assert proof['result'] == 'not run', proof
+        cell = rule['cells']['passed']
+        assert cell['word'] == 'not run', cell
+        assert cell['reasons'] == [SLOW_REASON], cell
+
+    # purlin: states PROOF-283
+    def test_a_slow_proof_passes_and_goes_out_of_date_like_any_other(
+            self, project):
+        project.spec(SLOW_SPEC)
+        _commit_tests(project, 'PROOF-1', 'PROOF-2')
+        project.evidence(PASSING)
+        cell = project.cell('RULE-2', 'passed')
+        assert cell['word'] == 'passed' and cell['reasons'] == [], cell
+        _write(os.path.join(project.root, 'src', 'login.py'),
+               'def login():\n    return 200  # rewritten\n')
+        _commit(project.root, 'refactor: login')
+        rule = project.rule('RULE-2')
+        assert rule['cells']['passed']['word'] == 'out of date', rule['cells']
+        assert rule['proofs'][0]['result'] == 'not run', rule['proofs']
+
+    # purlin: states PROOF-284
+    def test_an_anchors_slow_proof_reads_not_run_with_the_same_reason(
+            self, project):
+        project.spec(SLOW_ANCHOR, name='security', category='_anchors')
+        _write(os.path.join(project.root, 'tests', 'test_security.py'),
+               _marked_tests('PROOF-1', feature='security'))
+        _commit(project.root, 'anchor(security): create')
+        cell = project.cell('RULE-1', 'passed', 'security')
+        assert cell['word'] == 'not run', cell
+        assert cell['reasons'] == [SLOW_REASON], cell
 
 
 # ---------------------------------------------------------------------------

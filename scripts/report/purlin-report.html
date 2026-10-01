@@ -88,8 +88,6 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .group .gs{font-size:var(--ui-base);color:var(--text-muted)}
 .group .gc{font-size:var(--ui-base);color:var(--text-secondary)}
 .group .gc b{font-family:var(--font-mono);font-weight:var(--weight-regular)}
-.group .bar{flex:none;width:80px;height:5px;background:var(--border-hairline);border-radius:var(--radius-pill);overflow:hidden;display:inline-block}
-.group .bar>span{display:block;height:100%;background:currentColor}
 .caret{color:var(--text-muted);font-size:var(--ui-sm);flex:none}
 .name{display:flex;align-items:center;gap:var(--space-4);min-width:0}
 .name .n{font-size:var(--ui-base);color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -282,8 +280,6 @@ function groupBand(name, features, columns) {
   var total = rules.length;
   var passing = rules.filter(function (rule) {
     return cellWord(rule, 'passed') === 'passed'; }).length;
-  var pct = total ? Math.round((passing / total) * 100) : 0;
-  var hue = total && passing === total ? 'pass' : passing ? 'warn' : 'idle';
   return '<div class="group" role="button" tabindex="0" aria-expanded="'
     + (open ? 'true' : 'false') + '" data-act="group" data-group="'
     + esc(name) + '"><span class="gl"><span class="caret" aria-hidden="true">'
@@ -292,8 +288,7 @@ function groupBand(name, features, columns) {
     + (features.length === 1 ? ' spec' : ' specs') + '</span></span>'
     + '<span class="gr"><span class="gc"><b>' + passing + ' ' + WORDS.of + ' '
     + total + '</b> ' + (total === 1 ? 'rule passes' : 'rules pass')
-    + '</span><i class="bar" style="color:var(--state-' + hue + ')"><span'
-    + ' style="width:' + pct + '%"></span></i></span></div>'
+    + '</span></span></div>'
     + (open ? features.map(function (feature) {
       return featureRow(feature, columns);
     }).join('') : '');
@@ -449,6 +444,7 @@ function testLines(tests) {
 function proofDetail(proof, rule) {
   var owner = rule.feature;
   var tags = (proof.manual ? ['@manual'] : [])
+    .concat(proof.slow ? ['@slow'] : [])
     .concat(proof.env ? ['@env(' + proof.env + ')'] : []);
   var tests = testLines(proof.tests)
     || (proof.manual ? handCheckLines(rule)

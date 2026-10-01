@@ -71,6 +71,7 @@ reports the problem. A kind at zero is left out, and the first line is the next 
 | `to_fix` | the passed cell reads `failed` or `partial` | `<n> rules to fix` | `purlin:build` | yes |
 | `no_test` | the passed cell reads `no test` | `<n> rules to write a test for` | `purlin:build` | yes |
 | `to_test` | the passed cell reads `not run` or `out of date`, and this machine can run it | `<n> rules to test` | `purlin:test` | yes |
+| `to_run_slow` | a proof tagged `@slow` reads `not run`: no run that starts its test has answered for the spec, code and tests as they stand; the line counts proofs, and a rule that waits for such proofs alone is counted here and not under `to_test` | `<n> slow proofs to run` | `purlin:test --all` | yes |
 | `to_test_remote` | the passed cell reads `not run` for a system this machine is not | `<n> rules to test on <systems>` | `purlin:test --remote` | yes |
 | `to_commit` | a feature's results are written and not committed, once no other work stops the tests being met; the line counts features | `<n> features whose results are not committed` | `purlin:test --commit` | yes |
 | `to_strengthen` | the strong cell reads `weak` | `<n> rules to strengthen` | `purlin:build` | no |

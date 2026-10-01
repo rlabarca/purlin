@@ -14,7 +14,14 @@ command (`references/evidence_and_signoff.md`, "What is left to do").
 never the branch you are on. Every other push is yours: a sign-off ends on a line starting
 `Push`, with the `git push origin` command, and pushing is your act.
 
-`purlin:test` runs the tests and writes what it saw. `purlin:audit` adds what the audit found, a
+`purlin:test` runs the tests and writes what it saw. With or without a feature named it never
+starts the test of a slow proof, one tagged `@slow`: it prints `Left out <n> slow proofs`, naming
+each, and keeps the result a slow proof already has while that result still counts.
+`purlin:test --all` starts every test, slow ones included, and `purlin:test --remote` starts
+every test of the proofs it runs. A test carrying the comment of a proof that is not slow is
+started all the same, and so is a slow test a suite's command cannot leave out, which the run
+names; `references/supported_frameworks.md` says how each test tool leaves a test out.
+`purlin:audit` runs the tests the same way and adds what the audit found, a
 tool nothing waits on. The hand-off is `purlin:test --all --commit`, and `purlin:test --remote`
 for the proofs tagged for another system. `purlin:sign` builds the evidence package from the
 committed evidence, walks its hand checks with a person and signs it; the first sign-off of a
@@ -34,7 +41,7 @@ folder of the git checkout you are working in. A call that names none is refused
 |---------|---------|------------------------|
 | `purlin:spec <name>` | Turn a requirement in any form into rules and proofs | A developer's agent, or product or QA in Claude Code, at intake and whenever a rule turns out to be wrong |
 | `purlin:build [name]` | Load a spec's rules, write the code and the marked tests, commit the changeset | A developer, on every change. With no name it reads `sync_status` and names the specs with rules that have no passing test. It repairs a marker comment that is nearly right, corrects a test whose proof was reworded, and ends by running `purlin:test` |
-| `purlin:test [feature ...] [--all] [--commit] [--remote [--commit-runner]] [--arm-timeout <seconds>]` | Run the marked tests and print each rule's passed cell | A developer, constantly. Seconds; tests only. The first run in a project with no test command suggests one for each test tool it recognises and runs once you confirm it. It writes the evidence, commits it with `--commit`, and never pushes. `purlin:test --all --commit` is the hand-off to a sign-off |
+| `purlin:test [feature ...] [--all] [--commit] [--remote [--commit-runner]] [--arm-timeout <seconds>]` | Run the marked tests and print each rule's passed cell | A developer, constantly. Seconds; tests only, and never a slow proof's without `--all`. The first run in a project with no test command suggests one for each test tool it recognises and runs once you confirm it. It writes the evidence, commits it with `--commit`, and never pushes. `purlin:test --all --commit` is the hand-off to a sign-off |
 | `purlin:audit [feature ...] [--all] [--commit] [--arm-timeout <seconds>]` | Run the tests, the heuristic spot tests, one planted bug per proof and the model's reading, then write what it found into the evidence | A developer, by hand, any time. It writes the evidence, commits it with `--commit`, and never pushes. Nothing waits on it |
 | `purlin:sign [--version <version>]` | Build the evidence package from the committed evidence, walk its hand checks with a person, then sign it in a signed commit | Anyone with a key to sign with, in any project, at any time, after the hand-off; the sign-off names them, and several people may sign. The first sign-off of a version writes `signed/<version>` |
 | `purlin:drift` | Report what changed since your last pull | Everyone, after a pull, a merge, a rebase, a checkout, a clone or a reset |
@@ -64,7 +71,7 @@ Purlin
   purlin:build [name]             Write a spec's code and its marked tests
   purlin:test                     Run the features the change touched, write the evidence
   purlin:test <feature> [...]     The same, for the features named
-  purlin:test --all               The same, for every feature
+  purlin:test --all               The same, for every feature, slow proofs included
   purlin:test --commit            The same, then commit the work and the evidence
   purlin:test --all --commit      The hand-off: every feature, and the results committed
   purlin:test --remote            Let the git host's runner run the proofs tagged for another system

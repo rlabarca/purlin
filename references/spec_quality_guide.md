@@ -99,6 +99,43 @@ skip, with a reason starting `nothing to check:`, as in
 dashboard and the evidence package show the reason, so a signer sees the rule was not exercised.
 Only an anchor's rule passes this way; on a feature's own rule the same skip reads `not run`.
 
+#### A good anchor
+
+- Every rule holds across the whole project and is written as "for every X in the project, Y
+  holds", so a project with no X has nothing to break it.
+- Its test checks every X it finds and, finding none, skips with a reason starting
+  `nothing to check:`, so the rule passes and says it was not exercised.
+- A rule no test can show is given a `@manual` proof and is checked by a person in the sign-off
+  walk, never left with a test that cannot fail; in an anchor pulled from another repository the
+  tag is written in its source.
+- A check across the whole project that takes a long time is tagged `@slow`, so it stays out of
+  every build run and runs with `purlin:test --all`.
+- A rule only some features need is not an anchor's and goes in those features' own specs.
+- An anchor carries no `> Scope:`.
+
+One anchor showing the three forms together, a fast check, a slow one and a hand check:
+
+```markdown
+# Anchor: privacy
+
+> Description: What every part of the project owes a person's data.
+
+## Rules
+
+- RULE-1: For every source file in the project, no line writes an email address to a log
+- RULE-2: For every table in the project that holds a person's data, deleting the account leaves no row of theirs
+- RULE-3: For every screen in the project that asks for a person's data, the words beside the field say why it is asked for
+
+## Proof
+
+- PROOF-1 (RULE-1): Every source file is searched for a logging call handed a value named `email`, and 0 are found
+- PROOF-2 (RULE-2): In a fresh database an account with one row in each such table is deleted, and each table then holds 0 rows of that account @slow
+- PROOF-3 (RULE-3): Open each such screen and read the words beside each field against the privacy notice @manual
+```
+
+`purlin:test` runs PROOF-1's test on every build run and leaves PROOF-2's out; `purlin:test --all`
+runs both; PROOF-3 has no test and is checked in the sign-off walk.
+
 ## Writing proofs
 
 A proof is one line saying how a rule will be shown to hold: what is done, what is observed,
@@ -263,10 +300,20 @@ untagged proof and gains a second proof tagged `@env(windows)`, tied to the same
 second marker comment; which run proves each is in
 [references/evidence_and_signoff.md](evidence_and_signoff.md), "Where a runner runs".
 
+### A test that takes a long time
+
+Add `@slow` to a proof whose test takes a long time, like an integration test that starts a
+server, a browser or a real service. The proof and its test are written like any other, and
+nothing in the test changes. `purlin:test` then leaves that test out while you build, and
+`purlin:test --all` runs it; `references/purlin_commands.md` says exactly which run starts
+what. Tag a proof slow when its test is slow enough that you would stop running the tests
+between edits, and not before: a slow proof is checked less often, so a fast test of the same
+claim is the better proof. An anchor's check across the whole project is a natural one to tag.
+`@slow` may stand with `@env(...)`, and never with `@manual`, which has no test to leave out.
+
 ## Manual proofs
 
-A proof carries no `@manual` when a test settles it, whatever that test needs to run:
-`purlin:test` runs every marked test of the features it runs. Human judgment, such as
+A proof carries no `@manual` when a test settles it, whatever that test needs to run. Human judgment, such as
 visual polish, wording or brand voice, is the one case for `@manual`: "Read the error
 messages against the brand voice guide @manual".
 
@@ -294,6 +341,7 @@ whose row says what moves both.
 | passed | `failed` | A test for the rule failed. The reason names the file and the test. | Fix the code, or the test. See the next section. |
 | passed | `failed`, with `<RULE-N or PROOF-N> is written twice in the spec` or `the spec holds a line left from a merge conflict` | The spec writes a number twice or holds a line git left from a merge conflict, so every rule of it reads `failed` whatever its tests show. | `purlin:spec`, whose "Renumbering" moves the line from the branch not yet merged when you say yes, or take out the conflict lines. |
 | passed | `not run` | The rule's tests have no result in a current section. | Run `purlin:test`. |
+| passed | `not run`, with `slow: runs with purlin:test --all` | A proof of the rule is tagged `@slow`, and no run that starts its test has passed it on the spec, code and tests as they stand. `Left to do` counts it under `slow proofs to run`. | Run `purlin:test --all`. |
 | passed | `not run`, with `<System>: no run yet` | A proof carries `@env` for an operating system that has not run the rule's tests: no current section comes from it. | Run `purlin:test --remote`, whose runner file names that system, or drop the `@env` tag if any operating system could show it. |
 | passed | `not run`, with `<PROOF-N>: <reason>` | The proof's every test skipped with `nothing to check: <reason>`, and the rule is a feature's own. Only an anchor's rule passes that way. | Give the test something to check, or move the rule to an anchor if it holds across the whole project. |
 | passed | `partial` | The rule's tests passed on one operating system and failed on another. `partial` is not met. | Fix the code or the test for the system that failed, then run the tests there again. |

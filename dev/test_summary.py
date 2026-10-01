@@ -264,6 +264,38 @@ class TestOneKindPerRule:
 # The kinds that do not block, and the last line
 # ---------------------------------------------------------------------------
 
+def slow_rule(result='not run', env=None, passed='not run'):
+    """A rule whose one proof is tagged `@slow`, with the proof's own word."""
+    made = rule(passed, missing_env=[env] if env else ())
+    made['proofs'] = [{'id': 'PROOF-1', 'manual': False, 'slow': True,
+                       'env': env, 'result': result}]
+    return made
+
+
+class TestSlowProofsToRun:
+
+    # purlin: summary PROOF-55
+    def test_one_slow_proof_not_run_is_the_one_line_and_stops_the_sign_off(
+            self):
+        made = payload([feature([slow_rule()])])
+        lines = summary.ending(made).splitlines()
+        assert lines[1:] == ['Left to do:',
+                             '  1 slow proof to run: purlin:test --all'], lines
+        assert not [line for line in lines if 'to test' in line], lines
+        assert made['last_line'] is None
+        assert 'purlin:sign' not in '\n'.join(lines)
+
+    # purlin: summary PROOF-56
+    def test_a_slow_proof_tagged_for_windows_is_the_remote_runs(self):
+        rules = [feature([slow_rule()], name='cart'),
+                 feature([slow_rule()], name='checkout'),
+                 feature([slow_rule(env='windows')], name='locks')]
+        lines = summary.ending(payload(rules, here='macos')).splitlines()
+        assert lines[2:] == [
+            '  2 slow proofs to run: purlin:test --all',
+            '  1 rule to test on Windows: purlin:test --remote'], lines
+
+
 class TestWhatLetsTheTestsBeMet:
 
     # purlin: summary PROOF-47

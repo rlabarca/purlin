@@ -17,6 +17,11 @@ other page points here rather than defining it again.
   to do as `to write a proof for`. **`@manual`**: a proof a person carries out by hand, with no
   test.
   **`@env(<os>)`**: a proof that can only be shown on `windows`, `macos` or `linux`.
+- **slow proof**: a proof tagged `@slow`, whose test takes a long time, like an integration
+  test. It is a proof like any other, with one test and its comment; the tag changes only when
+  the test starts. `purlin:test` never starts it and `purlin:test --all` does. Until it has
+  passed on the spec, code and tests as they stand it reads `not run`, and it is left to do as
+  `1 slow proof to run: purlin:test --all`. An anchor's proof may be one.
 - **system**: an operating system. A spec, the evidence and the package store it as `windows`,
   `macos` or `linux`, and every system that is not Windows or macOS is `linux`. A person reads
   it as `Windows`, `macOS` or `Linux/Unix`, and in the dashboard's small boxes as `Win`, `Mac`

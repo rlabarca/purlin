@@ -23,7 +23,7 @@
 ## Proof
 
 - PROOF-1 (RULE-1): The fenced shell lines under "Install" in `README.md` and under step 1 of `docs/getting-started.md` are the same lines, and the address after `claude plugin marketplace add` reads `https://github.com/rlabarca/purlin.git`
-- PROOF-2 (RULE-2): In an empty project made by the test, the pages' commands run with the address replaced by this checkout's folder; `claude plugin list` then shows `purlin@purlin` installed and enabled for that project
-- PROOF-3 (RULE-3): After the install of PROOF-2, the folder the installed plugin reads its skills from holds a `SKILL.md` for each folder under `skills/` of this checkout, each file the same bytes as the checkout's
-- PROOF-4 (RULE-4): After the install of PROOF-2, one prompt to the smallest model, run in that project with `claude -p`, asks it to list the slash commands that start `purlin:`; its answer names every skill folder under `skills/`
-- PROOF-5 (RULE-5): The list of installed plugins and marketplaces of the person's own Claude Code, read before and after PROOF-2's install, is the same, and the test's project folder is deleted afterwards
+- PROOF-2 (RULE-2): In an empty project made by the test, the pages' commands run with the address replaced by this checkout's folder; `claude plugin list` then shows `purlin@purlin` installed and enabled for that project @slow
+- PROOF-3 (RULE-3): After the install of PROOF-2, the folder the installed plugin reads its skills from holds a `SKILL.md` for each folder under `skills/` of this checkout, each file the same bytes as the checkout's @slow
+- PROOF-4 (RULE-4): After the install of PROOF-2, one prompt to the smallest model, run in that project with `claude -p`, asks it to list the slash commands that start `purlin:`; its answer names every skill folder under `skills/` @slow
+- PROOF-5 (RULE-5): The list of installed plugins and marketplaces of the person's own Claude Code, read before and after PROOF-2's install, is the same, and the test's project folder is deleted afterwards @slow

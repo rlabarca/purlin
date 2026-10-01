@@ -1,4 +1,4 @@
-> Format-Version: 8
+> Format-Version: 9
 
 # Package format
 
@@ -218,7 +218,7 @@ Every time is ISO 8601 UTC with `Z`.
 | `met` | When |
 |---|---|
 | `true` | no line of `left` stops the tests being met: every rule's tests pass, and every spec and test comment can be read |
-| `false` | `left` holds a line of `to_repair`, `to_correct`, `to_fix`, `no_test`, `to_test` or `to_test_remote` |
+| `false` | `left` holds a line of `to_repair`, `to_correct`, `to_fix`, `no_test`, `to_test`, `to_run_slow` or `to_test_remote` |
 
 A weak rule (`to_strengthen`) and a rule with no proof (`no_proof`) are listed
 in `left` and leave `met` true. `purlin:sign` refuses while `met` is false,
@@ -231,7 +231,8 @@ package reads. Each rule is counted under one kind, the first that applies,
 and a kind at zero has no line. `to_repair` counts specs, not rules: a spec
 that writes a number twice or holds a line left from a merge conflict, whose
 every rule is counted there. `to_correct` counts test comments, not rules,
-and is carried by the project:
+and is carried by the project. `to_run_slow` counts proofs, not rules: each
+proof tagged `@slow` that reads `not run`:
 
 | `kind` | `text`, for one rule and for more | `command` |
 |---|---|---|
@@ -241,6 +242,7 @@ and is carried by the project:
 | `to_fix` | `1 rule to fix`, `<n> rules to fix` | `purlin:build` |
 | `no_test` | `1 rule to write a test for`, `<n> rules to write a test for` | `purlin:build` |
 | `to_test` | `1 rule to test`, `<n> rules to test` | `purlin:test` |
+| `to_run_slow` | `1 slow proof to run`, `<n> slow proofs to run` | `purlin:test --all` |
 | `to_test_remote` | `1 rule to test on <systems>`, `<n> rules to test on <systems>` | `purlin:test --remote` |
 | `to_strengthen` | `1 rule to strengthen`, `<n> rules to strengthen` | `purlin:build` |
 
