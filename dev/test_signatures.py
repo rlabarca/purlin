@@ -1183,6 +1183,11 @@ class TestTheSignOff:
             'No tag: git could not write signed/2.1.0:')], lines
         assert code == 1
         os.remove(in_the_way)
+        shown = _Out()
+        assert sign_module.show(signed.root, out=shown) == 0
+        assert shown.text().splitlines() == [
+            'signed/2.1.0 is not written yet: jane@acme.com signed 2.1.0 at '
+            '%s. Run purlin:sign to write the tag.' % signed_at[:7]]
         code, lines, asked = walked(signed, [])
         assert (code, asked) == (0, []), lines
         assert git(signed.root, 'rev-parse',
