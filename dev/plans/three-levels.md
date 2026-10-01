@@ -1503,6 +1503,18 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       met; a spec naming a file not yet written is no longer listed among the spec mistakes
       warned of (decision 113 holds); the dashboard's data gains the branch and the information
       lines, eighteen keys where it held sixteen. The build's cloud lanes are planned at $78.
+117. **The answers to what round 1 of the build left open** (added 2026-10-01).
+    - **A rule with no proof and no test stops the sign-off.** `purlin:sign` refuses, names the
+      rule and `purlin:build`. A signed version means every rule had a passing test or a hand
+      check.
+    - **The dashboard shows the audit's explanation and the planted bug a test missed**, on the
+      rule's own page. The data the dashboard reads carries both for each rule the audit read.
+    - **`strong` means the model part of the audit ran.** When the model cannot be reached, the
+      plain checks still report what they find as weak, a rule that passed them alone stays not
+      audited, and the audit prints one line saying the model could not be reached and to run
+      `purlin:audit` again.
+    - **The sign-off refuses while files are changed and not committed**, with one line: commit
+      them or set them aside, then run `purlin:sign` again.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
