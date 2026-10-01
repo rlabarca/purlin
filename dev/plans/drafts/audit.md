@@ -1,126 +1,102 @@
-# The audit: are your tests any good?
+# The audit: would your tests catch a bug?
 
 > Draft for `docs/audit.md`, written to decision 110 before it is built. The docs lane takes it over
 > and changes any line the build makes untrue.
 
-A passing test tells you the code did what the test checked. It does not tell you the test checked
-anything that matters. `purlin:audit` answers that second question, rule by rule, and tells you
-which tests to strengthen.
+A passing test is not proof that it checks anything. The audit tries to make each test fail.
 
-You run it when you choose. Nothing waits on it: a weak rule is listed as work, and it never stops a
-test run or a sign-off.
+## How it works
 
-## What it does
+**1. Heuristic spot tests.** Purlin flags tests that check nothing, check the code against
+itself, or never check the result the proof expects. It reads the tests as text, with no AI and
+without running them, so this step is free. The six checks, and the research behind each, are in
+[the spot tests reference](../references/review_criteria.md).
 
-For each rule, the audit takes three steps, cheapest first.
+**2. Plant one bug.** For each proof, an AI puts one small bug in a throwaway copy of your code,
+aimed at what the proof says. If the proof says a sample collected at 08:00 and received at 09:30
+is `90` minutes old, the bug might make the age come out an hour off.
 
-1. **Heuristic spot tests.** Code, with no model, reads each test and flags a test that:
-   - has no assertion, so it runs code and checks nothing;
-   - asserts something that cannot fail, such as `assert result is not None`;
-   - swallows an error around the code it tests;
-   - computes its expected value with the code under test, so a bug confirms itself;
-   - mocks the very thing the rule is about;
-   - does not hold the concrete value its proof names. A proof that reads "a sample collected at
-     08:00 and received at 09:30 has an age of `90` minutes" expects a test that holds `90`.
-2. **One planted bug per proof.** For each proof whose test or covered code changed since the
-   audit last read it, a model plants one small bug in the code that makes the proof's claim
-   false, for example an age off by one hour. The proof's own test runs against that change, in a
-   temporary copy of the project, and the copy is thrown away. If the test still passes, the rule
-   is weak, and the change is the evidence: `with the age off by an hour, the test still passed`.
-3. **An explanation.** The model says in one sentence why a weak test is weak, so the person fixing
-   it knows what to add.
+**3. Run that proof's test.** The test fails: it caught the bug, and the rule is `strong`. The test
+still passes: the rule is `weak`, and you see the bug it missed:
 
-The audit ends on one line you can aim at:
+```
+sample_age PROOF-1: the test still passes when src/age.py:12 adds an hour.
+```
+
+**4. `purlin:audit`.** Run it whenever you like, or give the agent a target:
+
+> Build and audit until 80% of rules are strong.
+
+The agent strengthens the weak tests and audits again until the share reaches 80%. The audit ends
+on that share:
 
 ```
 The audit found 42 of 50 rules strong (84%).
 ```
 
-## How you use it
+## What you can count on
 
-Write specs and build for a while with `purlin:spec` and `purlin:build`. When you want to know how
-good the tests are, run `purlin:audit`, or ask for a target:
+- **Your code is never changed.** Every planted bug lives in a copy that is thrown away.
+- **Nothing waits on it.** A weak rule is work to do, not a gate. It never stops a test run or a
+  sign-off.
+- **It stays fast.** Only proofs whose test or code changed since the last audit get a new bug.
+- **Nothing to install.** No extra tool for each language; any test Purlin can run, it can audit.
+- **What it found is kept.** It goes into the evidence, and the signer sees it at sign-off.
 
-> Iterate with build and audit until 80% of rules or more are strong.
+What it does not do: prove your tests catch every possible bug. It tests the claim each proof
+makes, one bug at a time. A rule with no proof has nothing to plant a bug against.
 
-The agent builds, audits, reads the findings, strengthens the tests, and audits again, until the
-share reaches the target. A rule whose test, proof and code have not changed is not read again, so
-each round costs only what changed.
+## Why this works
 
-What the audit found goes into the evidence, and into the evidence package when someone signs. The
-signer can read it at sign-off.
+**AI-written tests often check what the code does, not what was asked.** When a model writes a
+test, its expected answer tends to come from the code as written, so a bug is copied into the test
+([Konstantinou, Degiovanni and Papadakis, 2024](https://arxiv.org/pdf/2410.21136)). Model-written
+tests also often check nothing at all
+([Siddiq et al., EASE 2024](https://arxiv.org/pdf/2305.00418)) and lean on mocks
+([an empirical study of coding agents, 2026](https://arxiv.org/pdf/2602.00409)). The spot tests
+catch these, and the proof, written by a person, supplies the expected answer.
 
-## Why this design
+**Planting bugs is the most reliable test of a test.** Whether tests catch small deliberate bugs
+tracks whether they catch real ones
+([Just et al., FSE 2014](https://homes.cs.washington.edu/~mernst/pubs/mutation-effectiveness-fse2014.pdf)).
+Code coverage, how much code the tests run, does not
+([Inozemtseva and Holmes, ICSE 2014](https://cs.ubc.ca/~rtholmes/papers/icse_2014_inozemtseva.pdf)).
 
-### What the research says
+**Big companies plant few, targeted bugs, not thousands.** Google plants bugs only in the code a
+change touches and shows developers the few their tests missed
+([Petrović et al., TSE 2021](https://arxiv.org/pdf/2102.11378)). Meta has an AI write a few bugs
+aimed at one concern
+([Foster et al., FSE 2025](https://arxiv.org/pdf/2501.12862)), and AI-written bugs look more like
+real ones than tool-made ones ([Tip et al., LLMorpheus](https://arxiv.org/pdf/2404.09952)). Purlin
+does the same, one bug per proof.
 
-- **Coverage is a poor guide.** Whether a test runs a line says little about whether it would catch
-  a bug in it ([Inozemtseva and Holmes, ICSE 2014](https://cs.ubc.ca/~rtholmes/papers/icse_2014_inozemtseva.pdf)).
-- **Planting bugs on purpose is the best objective guide.** Whether tests catch small, deliberate
-  faults correlates with whether they catch real ones, independently of coverage ([Just et al.,
-  FSE 2014](https://homes.cs.washington.edu/~mernst/pubs/mutation-effectiveness-fse2014.pdf)).
-- **At scale, planting bugs everywhere is too slow, so the practice is targeted.** Google plants them only
-  in the lines a change touches, filters out uninteresting ones, and shows the few the tests missed in code
-  review, where developers act on them ([Petrović et al., TSE 2021](https://arxiv.org/pdf/2102.11378)).
-- **A model can write the bug.** Meta's ACH has a model write a few faults aimed at one concern,
-  then tests that catch them; engineers accepted 73% of those tests ([Foster et al., FSE 2025](https://arxiv.org/pdf/2501.12862)). Model-written
-  faults also resemble real bugs more than tool-made ones ([Tip et al., LLMorpheus](https://arxiv.org/pdf/2404.09952)).
-- **The crudest bug finds a lot.** Tests that still pass when a method's body is removed are common
-  even in well-tested projects ([Vera-Pérez et al.](https://arxiv.org/pdf/1807.05030)).
-- **Tests written by an AI check what the code does, not what was asked.** Their expected values
-  tend to capture the program's actual behaviour rather than its intended behaviour, so a bug is
-  written into the test ([Konstantinou, Degiovanni and Papadakis, 2024](https://arxiv.org/pdf/2410.21136)). Purlin's answer is the
-  proof: it states the expected value independently of the code, and the audit checks the test
-  holds it.
-- **AI-written tests carry known smells.** Empty tests and duplicated assertions are common in tests
-  generated by models ([Siddiq et al., EASE 2024](https://arxiv.org/pdf/2305.00418)), and coding agents add more mocks than people do
-  ([an empirical study of coding agents, 2026](https://arxiv.org/pdf/2602.00409)). The heuristic spot tests look for exactly these.
-- **AI-written tests need an executed check, not trust.** At Meta, only 25% of model-generated tests
-  improved coverage; the tool works because every test must clear filters that measure an
-  improvement before anyone sees it ([Alshahwan et al., FSE 2024](https://arxiv.org/pdf/2402.09171)). Measured, not judged, is the
-  principle the planted bug follows.
-- **A model's opinion alone is the weakest evidence.** Models are better at writing a test's check
-  than at judging someone else's ([Konstantinou et al., 2024](https://arxiv.org/pdf/2410.21136)), and model judges show bias and
-  inconsistency ([a large-scale evaluation of model judges, 2026](https://arxiv.org/pdf/2606.19544)).
+**An AI's opinion alone is not enough.** Asking a model whether a test looks good is the weakest
+check: models judge inconsistently
+([a large-scale evaluation of model judges, 2026](https://arxiv.org/pdf/2606.19544)). At Meta, AI
+tests only ship after a measured check
+([Alshahwan et al., FSE 2024](https://arxiv.org/pdf/2402.09171)). In Purlin the AI plants the bug,
+but the test run decides.
 
-### Speed against safety
+## Fast enough, safe enough
 
-There are three common ways to judge tests, and each sits at a different point:
-
-| Approach | Speed | What it can show |
+| How to judge a test | Speed | What it shows |
 |---|---|---|
-| A model reads the test | Fast, one call per rule | An opinion; misses what it does not notice |
-| Classic mutation testing | Slow, minutes to hours; a tool per language | Objective, across all the code |
-| Heuristic spot tests and one planted bug per proof | One call and one test run per changed proof | Objective where it matters: the proof the requirement states |
+| An AI reads it | Fast | An opinion |
+| Plant bugs everywhere (classic mutation testing) | Minutes to hours, a tool per language | Objective, across all the code |
+| **Spot tests, then one planted bug per proof** | **Free, then one AI call and one test run per changed proof** | **Objective, aimed at what the requirement says** |
 
-Purlin takes the third.
-
-- **It is safe where the requirement is.** The bug is aimed at the proof: the one claim a person
-  wrote down. A caught bug shows the test guards that claim.
-- **It is fast enough to run often.** Only proofs whose test or code changed get a bug, one
-  each, and the heuristic spot tests cost nothing.
-- **It needs nothing installed.** No mutation tool per language. Any language Purlin's runner can run
-  works.
-- **It never changes your code.** Every planted bug runs in a temporary copy that is thrown away, and the
-  audit checks the project is unchanged afterwards.
-- **It catches the AI's typical mistakes.** The heuristic spot tests catch tautological
-  tests, and the planted bug catches the test that asserts something but not the thing that matters.
-
-What it does not do: prove your tests catch every bug. One planted bug per proof tests the claim the proof
-makes, not every way the code could be wrong. A rule with no proof is not broken at all. The audit
-is evidence that tests guard what was asked, not proof that the code is correct.
+Purlin takes the last row: real evidence where the requirement is, cheap enough to run every day.
 
 ## Sources
 
-- Inozemtseva and Holmes, [Coverage Is Not Strongly Correlated with Test Suite Effectiveness](https://cs.ubc.ca/~rtholmes/papers/icse_2014_inozemtseva.pdf), ICSE 2014
+- Konstantinou, Degiovanni and Papadakis, [Do LLMs generate test oracles that capture the actual or the expected program behaviour?](https://arxiv.org/pdf/2410.21136), 2024
+- Siddiq et al., [Using Large Language Models to Generate JUnit Tests: An Empirical Study](https://arxiv.org/pdf/2305.00418), EASE 2024
+- [Are Coding Agents Generating Over-Mocked Tests? An Empirical Study](https://arxiv.org/pdf/2602.00409), 2026
 - Just et al., [Are Mutants a Valid Substitute for Real Faults in Software Testing?](https://homes.cs.washington.edu/~mernst/pubs/mutation-effectiveness-fse2014.pdf), FSE 2014
+- Inozemtseva and Holmes, [Coverage Is Not Strongly Correlated with Test Suite Effectiveness](https://cs.ubc.ca/~rtholmes/papers/icse_2014_inozemtseva.pdf), ICSE 2014
 - Petrović, Ivanković, Fraser and Just, [Practical Mutation Testing at Scale: A view from Google](https://arxiv.org/pdf/2102.11378), TSE 2021
 - Foster et al., [Mutation-Guided LLM-based Test Generation at Meta](https://arxiv.org/pdf/2501.12862), FSE 2025
 - Tip, Bell and Schäfer, [LLMorpheus: Mutation Testing using Large Language Models](https://arxiv.org/pdf/2404.09952)
-- Vera-Pérez et al., [A Comprehensive Study of Pseudo-tested Methods](https://arxiv.org/pdf/1807.05030), EMSE 2019
-- Konstantinou, Degiovanni and Papadakis, [Do LLMs generate test oracles that capture the actual or the expected program behaviour?](https://arxiv.org/pdf/2410.21136), 2024
-- Siddiq et al., [Using Large Language Models to Generate JUnit Tests: An Empirical Study](https://arxiv.org/pdf/2305.00418), EASE 2024
+- [Reliability without Validity: A Systematic, Large-Scale Evaluation of LLM-as-a-Judge Models](https://arxiv.org/pdf/2606.19544), 2026
 - Alshahwan et al., [Automated Unit Test Improvement using Large Language Models at Meta](https://arxiv.org/pdf/2402.09171), FSE 2024
 - Schäfer, Nadi, Eghbali and Tip, [An Empirical Evaluation of Using Large Language Models for Automated Unit Test Generation](https://arxiv.org/pdf/2302.06527), IEEE TSE 2024
-- [Are Coding Agents Generating Over-Mocked Tests? An Empirical Study](https://arxiv.org/pdf/2602.00409), 2026
-- [Reliability without Validity: A Systematic, Large-Scale Evaluation of LLM-as-a-Judge Models](https://arxiv.org/pdf/2606.19544), 2026

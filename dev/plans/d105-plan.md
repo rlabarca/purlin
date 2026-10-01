@@ -1061,6 +1061,18 @@ The plan is written to (a): C17's "the proof's own test runs".
 
 **Answered by the owner, 2026-10-01: Q2 (a), only the proof's own test counts when a break is caught; the call on authorship is reversed: the package names the first person to write a rule's or proof's wording, followed through renumbers.**
 
+**Owner's wording and drafts, 2026-10-01, override C17 and section 6 where they differ.**
+- The audit's first step is named **Heuristic spot tests** and its second **one planted bug per
+  proof**; "targeted break" and "plain checks" appear in nothing a person reads.
+- The six spot tests, their exact scope, what each does not flag, and their finding lines are as
+  `dev/plans/drafts/spot_tests.md` gives them, word for word. Lane `plain` implements them to it,
+  one rule each; lane `words` places its text in `references/review_criteria.md` in place of "In
+  the marked test body", with its research links, and removes what the code now does.
+- `docs/audit.md` is `dev/plans/drafts/audit.md`, taken over by lane `docs`, which changes only
+  what the build makes untrue and keeps every link to a paper.
+- Integration runs the spot tests over this repository's own tests, reads every finding, fixes
+  the test or narrows the check, and reports both counts.
+
 ## 8. Calls this plan makes
 
 - `references/hard_gates.md` is renamed `references/evidence_and_signoff.md`: its name carried
