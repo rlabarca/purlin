@@ -89,17 +89,18 @@ slide('touches', 'Your project and your workflow', 'Purlin workflows don\'t chan
  'Purlin reads the report your test framework already writes and ties each result to its comment by '
  'the name of the test. A test with no comment runs as always and is ignored. A test Purlin wrote '
  'and a test you wrote differ in nothing but who typed them. Setup also copies the dashboard page '
- 'into the project, where git ignores it.', pad=16)
+ 'into the project, where git ignores it, and each command that writes its data keeps it current.', pad=16)
 slide('start', 'Getting started', 'Start in under ten minutes', [
-    ('Install the plugin', 'Inside Claude Code: %s.' % m('/plugin install purlin@purlin')),
+    ('Install the plugin', 'Two lines in a terminal, from the README: add the marketplace, then %s.' % m('claude plugin install')),
     ('`purlin:init`', 'Sets the project up. It asks one thing: whether it may commit what it wrote.'),
     ('`purlin:spec`', 'Say in your own words what must be true. It writes the rules for you, one line each.'),
     ('`purlin:build`', 'Writes the code and its tests, or finds the tests you have. It adds one comment above each: %s.' % m('# purlin: cart PROOF-1')),
-    ('`purlin:test`', 'Runs your tests and prints %s' % m('Tests: met. 3 of 3 rules pass.')),
+    ('`purlin:test`', 'Runs your tests and prints %s' % m('3 rules. 3 pass their tests.')),
 ], '',
- 'You need git, Python 3.9 or later and Claude Code. The marketplace is added once per project with '
- 'claude plugin marketplace add. Setup reads the test framework from the project; where it finds '
- 'none it asks for the command that runs the tests.', pad=16)
+ 'You need git, Python 3.9 or later and Claude Code. In the project: claude plugin marketplace add '
+ 'https://github.com/rlabarca/purlin.git --scope project, then claude plugin install purlin@purlin '
+ '--scope project, then Claude Code is started there. The first test run '
+ 'suggests the test command for the framework it finds, and you confirm it once.', pad=16)
 slide('fromcode', 'An existing codebase', 'Starting from code you already have', [
     ('Reads the code', 'It surveys the project and proposes a list of features. You merge, split and rename until the list is right.'),
     ('Writes the rules', 'One file per feature. Each rule says what the code does today, with a plain sentence saying how that is shown.'),
@@ -145,7 +146,8 @@ slide('signoff', 'The sign-off', 'When everyone is done, a person signs the evid
 ], '<b>Signing is optional.</b> A project that never signs keeps its evidence all the same.',
  'Any role may sign, and several people may; Purlin creates evidence and enforces no policy about '
  'who. The sign-off refuses when a result was taken on other code than the version being signed, '
- 'and names what to run again. One signature covers the whole package, over its fingerprint, in a '
+ 'while files are changed and not committed, or while a rule has no test, and names what to run. '
+ 'One signature covers the whole package, over its fingerprint, in a '
  'signed commit. The tag itself is signed.', pad=16)
 slide('remote', 'Remote runners', 'Purlin can use remote runners if needed', [
     ('A rule must hold on another operating system', 'You work on a Mac and a rule must hold on Windows. %s runs those tests on a runner and brings the results back.' % m('purlin:test --remote')),
@@ -162,7 +164,7 @@ slide('regulated', 'Regulated work', 'Purlin supplies evidence. It does not clai
     ('Your system of record', 'The validated system your company uses for approval. It holds the document, decides who approves, and carries the approval that counts.'),
 ], '',
  'The package holds, for each rule: its words, its proofs, its tests, each result with when and '
- 'where it ran and who ran it, what the audit found and which model judged, and who wrote each rule '
+ 'where it ran and who ran it, what the audit found and which model was asked, and who wrote each rule '
  'and proof and last changed each test, read from git. Each sign-off records who signed, when, with '
  'which key, what they were shown and every note they typed. A requirement number such as (URS-042) '
  'reaches it as a note in the rule\'s own words.')
@@ -178,7 +180,7 @@ slide('anchors', 'Shared rules', 'Anchors: rules the whole project must follow',
  'reason shown. A pinned copy is never edited in place; a change is made at the source.',
  lead='An anchor is a set of rules for the whole project, proven by tests that run across all of it.', width=560, pad=16)
 deck = {"v": 4, "createdOnFiles": {"v": 1, "at": "2026-09-26T18:00:00Z"},
-        "title": "Purlin gate workflows",
+        "title": "Purlin workflows",
         "order": ["why", "compare", "touches", "start", "fromcode", "together", "audit", "signoff", "remote", "regulated", "anchors"],
         "sections": {"s1": {"description": "What Purlin is for, how little it changes in a project and a workflow, and how to start in under ten minutes or from code you already have", "start": "why"},
                      "s2": {"description": "Working together while the specs change, the audit that checks the tests are any good, and the sign-off when everyone is done", "start": "together"},
