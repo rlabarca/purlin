@@ -88,6 +88,8 @@ _DATA_FILE_RE = re.compile(r'["\'`]([^"\'`\s]+\.(?:json|ya?ml|csv|tsv|txt|xml|to
 _NUMBER_RE = re.compile(r'^-?\d+(?:\.\d+)?$')
 _NUMBERS_RE = re.compile(r'-?\d+(?:\.\d+)?')
 _BACKTICK_RE = re.compile(r'`([^`]+)`')
+_PAIR_RE = re.compile(r'^([A-Za-z_][\w-]*)(?:=|: )(\S+)$')
+_PLACEHOLDER_RE = re.compile(r'<[a-z][^<>]*>')
 _CALL_NAME_RE = re.compile(r'([A-Za-z_$][\w$]*)\s*\(')
 _KEYWORDS = frozenset((
     'if', 'for', 'while', 'switch', 'catch', 'return', 'function', 'typeof', 'new', 'await',
@@ -278,6 +280,9 @@ def _value_never_checked(project_root, path, text, proof_text):
     if not values:
         return None
     held = [text]
+    if language_of(path) == 'Python':
+        # A value written across adjacent string literals is one string to Python.
+        held.append(_python_strings(text))
     here = os.path.dirname(path)
     for named in _DATA_FILE_RE.findall(text):
         for candidate in (named, os.path.join(here, named)):
@@ -291,11 +296,32 @@ def _value_never_checked(project_root, path, text, proof_text):
     return values[0]
 
 
+def _python_strings(text):
+    """Every string a Python file holds, each as Python joins its adjacent literals."""
+    tree = _parsed(text)[0]
+    if tree is None:
+        return ''
+    return '\n'.join(repr(node.value) + '\n' + node.value for node in ast.walk(tree)
+                     if isinstance(node, ast.Constant) and isinstance(node.value, str))
+
+
 def _holds(body, value):
+    """True when `body` holds `value`: the same number written another way; the same
+    words; a `NAME=value` or `Name: value` pair whose two sides stand as two strings;
+    or, for a value with a `<placeholder>`, each of its other parts."""
     if _NUMBER_RE.match(value):
         wanted = float(value)
         return any(float(n) == wanted for n in _NUMBERS_RE.findall(body))
-    return value in body
+    if value in body:
+        return True
+    pair = _PAIR_RE.match(value)
+    if pair and all(repr(side) in body or '"%s"' % side in body
+                    for side in pair.group(1, 2)):
+        return True
+    parts = [part.strip() for part in _PLACEHOLDER_RE.split(value)]
+    if len(parts) > 1 and sum(len(part) for part in parts) >= 8:
+        return all(part in body for part in parts if part)
+    return False
 
 
 def _flat(text):
