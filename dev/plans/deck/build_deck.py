@@ -117,8 +117,8 @@ slide('audit', 'Are the tests any good?', 'The audit breaks the code the way eac
  'are broken. It does not show the tests catch every bug. The full reasoning and sources are on the '
  'audit page of the docs, with Siddiq et al. (EASE 2024) on the smells of model-written tests and '
  'Alshahwan et al. (FSE 2024) on why Meta lets no generated test through without a measured check.',
- lead='AI-written tests tend to check what the code does, not what was asked (Konstantinou et al., 2024). '
-      'Breaking the code on purpose is the strongest test of a test (Just et al., FSE 2014).', width=420, pad=16)
+ lead='AI-written tests tend to check what the code does, not what was asked (<a href="https://arxiv.org/pdf/2410.21136" style="color:#E6BEB0">Konstantinou et al., 2024</a>). '
+      'Breaking the code on purpose is the strongest test of a test (<a href="https://homes.cs.washington.edu/~mernst/pubs/mutation-effectiveness-fse2014.pdf" style="color:#E6BEB0">Just et al., FSE 2014</a>).', width=420, pad=16)
 slide('signoff', 'The sign-off', 'When everyone is done, a person signs the evidence once', [
     ('Run and commit', 'A developer runs every test on the version to sign, the remote run for Windows included, and commits the results.'),
     ('`purlin:sign`', 'Opens with who ran the tests, where and when. Stops at each hand check, shows what the audit found, and asks for one signature.', [
