@@ -84,11 +84,14 @@ merged work.
 2. **Never sign off on a person's behalf.** A sign-off is a person's signature over the package
    in a signed commit, and nothing checks who signed, so this line is the only thing that holds
    it. In the walk, every answer and every note is the person's own.
-3. **Never push, never write a tag yourself, never open a pull request, never delete or
-   rewrite a remote branch.** A push is a person's act: commit the work, say what it proves,
-   and leave `git push` to them. So is the tag: the first sign-off writes it in its own run, and
-   pushing it belongs to a person. No Purlin command pushes. Nothing stops you but this line, so a
-   push you make is a push nobody asked for.
+3. **Never push on your own, never write a tag yourself, never open a pull request, never
+   delete or rewrite a remote branch.** A push is a person's act: commit the work, say what it
+   proves, and leave `git push` to them. So is the tag: the first sign-off writes it in its own
+   run, and pushing it belongs to a person. No Purlin command pushes. One case has the person's
+   yes: a project's own run on another system (`skills/test/SKILL.md`, Step 5). After the person
+   says yes to that run, run the project's own start command, and what it pushes is part of that
+   run. Nothing stops you but this line, so a push you make without that yes is a push nobody
+   asked for.
 4. **Never call a thing by a name other than the one `references/glossary.md` gives it.**
    Among them: git host, hand check, evidence, evidence package, sign-off, tag and planted bug.
    No emoji anywhere, including command output.
