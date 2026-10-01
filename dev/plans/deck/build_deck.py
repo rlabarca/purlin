@@ -189,11 +189,11 @@ slide('regulated', 'Regulated work', 'Purlin supplies evidence. It does not clai
  'which key, what they were shown and every note they typed. A requirement number such as (URS-042) '
  'reaches it as a note in the rule\'s own words.')
 slide('manual', 'Judgment calls', 'Pass or fail. What about judgment calls?', [
-    ('A proof is pass or fail', 'It names what is done, what is seen and the value that settles it, such as the message %s.' % m('Account locked')),
-    ('A judgment call is not', 'It looks good. It is easy to use. No test can settle these, and an AI\'s opinion is a judgment too.', [
-        ('Tag it @manual', 'Write the proof and add %s to its end. No test runs for it, so it never slows a build.' % m('@manual')),
-        ('A person signs for it', '%s stops at each one. A person checks it and types what they saw, and the note is kept in the signed evidence.' % m('purlin:sign'))]),
-], '<b>Not everything is a rule.</b> Look and feel that nobody signs for is judged outside Purlin.',
+    ('A proof is pass or fail', 'A test checks an exact result, like the message %s.' % m('Account locked')),
+    ('A judgment call is not', '"It looks good." "It is easy to use." A test cannot decide these, and neither can an AI.', [
+        ('Tag it @manual', 'Add %s to the proof. No test runs for it.' % m('@manual')),
+        ('A person signs for it', '%s stops there. A person checks it and writes what they saw.' % m('purlin:sign'))]),
+], '<b>Not everything needs a rule.</b> Look and feel can stay outside Purlin.',
  'A proof a test carries out ends in pass or fail, settled by a value the proof names. A claim '
  'that is a judgment, such as it looks good or it is easy to use, is not a test\'s to settle. '
  'For now the way to sign off on one is a hand check: a proof tagged manual, which the status '
@@ -201,7 +201,7 @@ slide('manual', 'Judgment calls', 'Pass or fail. What about judgment calls?', [
  'it was signed at and how many commits have come since, so the signer can judge whether it '
  'still holds. An AI may help a person look, but a test does not pass or fail on an AI\'s '
  'opinion; a test may ask a model a question with one right answer.',
- lead='A test settles a proof with a value. Some things only a person can judge.', width=560, pad=16, numbers=False)
+ lead='A test can check a result. Only a person can make a judgment call.', width=560, pad=16, numbers=False)
 slide('anchors', 'Shared rules', 'Anchors: rules the whole project must follow', [
     ('They can be in this project', 'Write a rule once, such as no secret in the code. Tests across the whole project prove it, and no feature names it.'),
     ('They can be owned elsewhere', 'Security, GRC / GxP, Design, etc. keep their rules in their own repository. Each project brings in the ones it must follow.', [
