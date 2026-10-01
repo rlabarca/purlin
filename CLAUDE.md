@@ -49,7 +49,7 @@ emission:**
 | `anchor_format.md` | The anchor, local and pinned, parsed by `sync_status` and `purlin:anchor sync` |
 | `marker_format.md` | The marker comment above a test, the `tests` setting, the four report formats and the tie, read by `purlin_run.py` and `sync_status` |
 | `signature_format.md` | The sign-off `purlin:sign` writes over the evidence package, read by `purlin:sign` and `purlin:export` |
-| `package_format.md` | The evidence package `purlin:export` and `purlin:sign` write, handed to a regulated sign-off system as evidence |
+| `package_format.md` | The evidence package `purlin:test --release` and `purlin:export` write, handed to a regulated sign-off system as evidence |
 | `evidence_format.md` | The evidence file per feature per source and its fingerprint, written by `purlin:test`, `purlin:audit` and a remote run, read by `sync_status` and `purlin:export` |
 
 ## Skill and reference deduplication
