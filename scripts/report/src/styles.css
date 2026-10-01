@@ -9,16 +9,15 @@ button{font-family:inherit}
 .brand{display:inline-flex;align-items:center;gap:var(--space-3)}
 .brand img{display:block;height:24px;width:auto}
 .brand span{font-size:18px;line-height:1;letter-spacing:var(--tracking-hero);color:var(--text-primary)}
-.fresh{white-space:nowrap;display:inline-flex;align-items:center;gap:var(--space-3);font-size:var(--ui-base)}
+.stamp{min-width:0;font-family:var(--font-mono);font-size:var(--ui-base);color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.facts{display:inline-flex;flex-wrap:wrap;align-items:center;gap:var(--space-3);min-width:0;max-width:100%}
+.fact{display:inline-flex;align-items:baseline;gap:var(--space-3);min-width:0;max-width:100%;padding:5px 12px;border:1.5px solid currentColor;border-radius:var(--radius-sm);white-space:nowrap}
+.fact-l{flex:none;font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
+.fact b{min-width:0;font-family:var(--font-mono);font-size:var(--ui-base);font-weight:var(--weight-regular);overflow:hidden;text-overflow:ellipsis}
 .dot{width:9px;height:9px;border-radius:var(--radius-pill);background:currentColor;flex:none}
 .spacer{flex:1}
-.tabs{display:flex;gap:var(--space-8);padding:0 var(--space-8);background:var(--canvas-deep);border-bottom:1px solid var(--border-hairline)}
-.tabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--text-muted);font-size:var(--ui-base);padding:var(--space-4) 0;cursor:pointer}
-.tabs button[aria-current="page"]{color:var(--text-primary);border-bottom-color:var(--accent)}
 .wrap{max-width:1360px;margin:0 auto;padding:var(--space-8)}
 section{margin-bottom:var(--space-10)}
-.line{margin:0;font-size:var(--ui-base);font-weight:normal;line-height:inherit;color:var(--text-secondary)}
-.line b{font-family:var(--font-mono);font-weight:var(--weight-bold);color:var(--text-primary)}
 
 /* --- shared marks ---------------------------------------------------- */
 .eyebrow{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-accent);margin:0 0 var(--space-4)}
@@ -53,13 +52,6 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .tile-l.tile-t{margin-top:var(--space-1);white-space:nowrap}
 
 /* --- the spec table -------------------------------------------------- */
-.filters{display:flex;flex-wrap:wrap;gap:var(--space-3);margin-bottom:var(--space-5)}
-.chip{white-space:nowrap;font-size:var(--ui-sm);padding:5px 14px;border-radius:var(--radius-pill);border:1.5px solid var(--border-default);background:transparent;color:var(--text-secondary);cursor:pointer;transition:background var(--duration-fast) var(--ease-standard),color var(--duration-fast) var(--ease-standard)}
-.chip:hover{background:var(--hover-tint)}
-.chip b{font-family:var(--font-mono);font-weight:var(--weight-regular);margin-left:var(--space-2);color:var(--text-muted)}
-.chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
-.chip[aria-pressed="true"] b{color:var(--accent)}
-.cmdline,.lastline{margin:0 0 var(--space-5);font-size:var(--ui-base);color:var(--text-primary)}
 /* The spec table owns its tracks, the outer two being the row padding less
    one gap, and every heading and spec row takes them as a subgrid: one set
    of columns, so a heading starts where its cells start, and a value column
@@ -67,7 +59,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .tbl{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);overflow-x:auto;overflow-y:hidden}
 .tbl.specs{display:grid;grid-template-columns:calc(var(--space-6) - var(--space-3)) var(--cols) calc(var(--space-6) - var(--space-3));column-gap:var(--space-3)}
 .specs>*{grid-column:1/-1}
-.specs>.group,.specs>.rule,.specs>.rule-proofs{contain:inline-size}
+.specs>.group,.specs>.rule{contain:inline-size}
 .th,.tr{display:grid;grid-template-columns:subgrid;align-items:center;padding:var(--space-4) 0;border-bottom:1px solid var(--border-hairline)}
 .th>div:first-child,.tr>div:first-child{grid-column-start:2}
 .th>div,.tr>div{min-width:0;white-space:nowrap}
@@ -91,19 +83,12 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .caret{color:var(--text-muted);font-size:var(--ui-sm);flex:none}
 .name{display:flex;align-items:center;gap:var(--space-4);min-width:0}
 .name .n{font-size:var(--ui-base);color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.name .ns{flex:none;font-size:var(--ui-base);white-space:nowrap}
-.rule{display:grid;grid-template-columns:96px 1fr auto 104px;gap:var(--space-4);align-items:start;padding:var(--space-3) var(--space-6) var(--space-3) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);cursor:pointer;font-size:var(--ui-sm)}
+.rule{display:grid;grid-template-columns:96px 1fr auto;gap:var(--space-4);align-items:start;padding:var(--space-3) var(--space-6) var(--space-3) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);cursor:pointer;font-size:var(--ui-sm)}
 .rule:hover{background:var(--hover-tint)}
 .rule .rid{font-family:var(--font-mono);color:var(--text-primary)}
 .rule .rt{color:var(--text-secondary)}
 .rule .rp{display:inline-flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;justify-content:flex-end}
-.more{display:inline-flex;align-items:center;gap:var(--space-2);padding:0;border:0;background:none;font-family:var(--font-mono);font-size:var(--ui-sm);color:var(--text-secondary);cursor:pointer;white-space:nowrap}
-.more .caret{color:var(--text-secondary)}
-.more:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--radius-sm)}
-.rule-proofs{padding:var(--space-4) var(--space-6) var(--space-4) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);cursor:default}
-.rule-proofs>p{margin:0;font-size:var(--ui-sm)}
 .specs>.desc{margin:0;padding:var(--space-3) var(--space-6) var(--space-3) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);font-size:var(--ui-base);color:var(--text-secondary);contain:inline-size}
-.proof+.proof{margin-top:var(--space-4);padding-top:var(--space-4);border-top:1px solid var(--border-hairline)}
 .ptests p{margin:0 0 var(--space-2)}
 .ptests p:last-child{margin-bottom:0}
 .ptests p,.tests p{display:flex;align-items:flex-start;gap:var(--space-3)}
@@ -111,7 +96,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 /* The light theme's sunken ground is the darkest tan the page draws on, and
    the secondary and muted inks measure under 7 to 1 there, so text on it is
    set in the primary ink, which measures above. */
-[data-theme="light"] .specs>.rule,[data-theme="light"] .specs>.rule-proofs,[data-theme="light"] .specs>.desc,[data-theme="light"] pre.code{--text-secondary:var(--text-primary);--text-muted:var(--text-primary)}
+[data-theme="light"] .specs>.rule,[data-theme="light"] .specs>.desc,[data-theme="light"] pre.code{--text-secondary:var(--text-primary);--text-muted:var(--text-primary)}
 .empty{padding:var(--space-12);text-align:center;color:var(--text-secondary);font-size:var(--ui-lg)}
 
 /* --- the rule screen ------------------------------------------------- */
@@ -122,16 +107,21 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .cmd{font-family:var(--font-mono);font-size:var(--ui-base);color:var(--text-secondary);white-space:nowrap}
 .panel p{margin:0 0 var(--space-3)}
 .panel p:last-child{margin-bottom:0}
+.rule-head{margin-top:var(--space-6)}
+.rule-head hgroup{margin:0}
+.rule-head h1{white-space:nowrap}
+.bug{margin:var(--space-4) 0;padding-top:var(--space-4);border-top:1px solid var(--border-hairline)}
+.bug .kv{grid-template-columns:auto 1fr;align-items:start;margin-top:var(--space-3)}
+.bug pre.code{padding:var(--space-2) var(--space-4);white-space:pre}
 
 /* --- narrow screens -------------------------------------------------- */
 /* Under 1024 pixels the columns cannot all fit, and the page neither shrinks
    its text nor scrolls sideways. Each spec and each rule becomes a block: its
-   name first, then its values as labelled pairs that wrap whole. The boxes,
-   the filters and the top bar's chips wrap as whole items. */
+   name first, then its values as labelled pairs that wrap whole. The boxes
+   and the top bar's two boxes wrap as whole items. */
 @media (max-width:1023px){
 .topbar{column-gap:var(--space-4);padding:var(--space-3) var(--space-5)}
 .topbar .spacer{flex-basis:100%;height:0}
-.tabs{flex-wrap:wrap;column-gap:var(--space-6);padding:0 var(--space-5)}
 .wrap{padding:var(--space-6) var(--space-5)}
 .strip{grid-template-columns:repeat(3,minmax(0,1fr))}
 .tiles{display:contents}
@@ -145,15 +135,18 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .tr>div[data-label]::before{content:attr(data-label);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
 .rule{grid-template-columns:auto 1fr;gap:var(--space-2) var(--space-4);padding:var(--space-3) var(--space-5)}
 .rule .rt{grid-row:2;grid-column:1/-1}
-.rule .rm{grid-column:1/-1}
 .rule .rp{justify-content:flex-start}
-.rule-proofs,.specs>.desc{padding:var(--space-4) var(--space-5)}
+.specs>.desc{padding:var(--space-4) var(--space-5)}
 .group{padding:var(--space-4) var(--space-5)}
 .group .gr{margin-left:0;flex-basis:100%}
 .kv{grid-template-columns:1fr;gap:var(--space-1) 0}
 .kv dd{margin-bottom:var(--space-3)}
+.bug .kv{grid-template-columns:1fr}
 }
 @media (max-width:599px){
+.facts{display:flex;flex-basis:100%}
+.fact{flex-direction:column;align-items:flex-start;gap:var(--space-1)}
+.fact b{max-width:100%}
 .strip{grid-template-columns:repeat(2,minmax(0,1fr))}
 .wrap{padding:var(--space-5) var(--space-4)}
 }

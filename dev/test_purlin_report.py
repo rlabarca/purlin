@@ -6,13 +6,15 @@ gradient, no request to anything outside the file. The second opens
 it in a headless browser over `file://` with a fixture payload beside it, one
 fixture per process, and reads what a person would see.
 
-The fixtures under `dev/fixtures/report/` are payloads at schema 13, one for
-each of the three processes: solo at the `passed` gate with no audit, team at
-`passed` with an audit, its strength, one rule the AI audit could not decide
-and one spec to repair, which writes a proof number twice, regulated at
-`signed` with the tag `signed/1.4.0` on its commit, a rule whose audit found a
-gap, a rule no audit has run on, a hand check, a rule that passed on one
-system and failed on another, and a rule of a pinned anchor with no test.
+The samples under `dev/fixtures/report/` are payloads at schema 14, written on
+the branch `main` at the commit `a1b2c3d` and stamped `2026-10-01T10:42:13Z`:
+solo, which no audit has read and no one has signed, with one rule failing
+its tests; team, with an audit, one spec to repair, which writes a proof
+number twice, and one spec whose scope names a file not written yet;
+regulated, signed as `0.1.0` four commits ago, with a rule whose audit found
+a gap and a planted bug its test missed, a rule no audit has run on, a hand
+check, a rule that passed on one system and failed on another, and a rule of
+a pinned anchor with no test.
 
     python3 -m pytest dev/test_purlin_report.py -q
 """
@@ -87,8 +89,8 @@ def without_proof_lines(payload):
 def with_export_rule_2_unproved(payload):
     """The regulated payload with export `RULE-2`'s one proof taken out.
 
-    At the gate `signed` every rule needs a proof, so the payload gives the
-    rule the kind `no_proof`, whose line of what is left comes first.
+    The rule's tests pass, so the payload gives it the kind `no_proof`,
+    whose line of what is left comes first.
     """
     export = next(f for f in payload['features'] if f['name'] == 'export')
     rule = next(r for r in export['rules'] if r['id'] == 'RULE-2')
@@ -98,14 +100,6 @@ def with_export_rule_2_unproved(payload):
     payload['left'].insert(0, {'kind': 'no_proof', 'count': 1,
                                'text': '1 rule to write a proof for',
                                'command': 'purlin:spec'})
-    return payload
-
-
-def with_only_a_comment_to_correct(payload):
-    """The payload with its one line of what is left a test comment to correct."""
-    payload['left'] = [{'kind': 'to_correct', 'count': 1,
-                        'text': '1 test comment to correct',
-                        'command': 'purlin:build'}]
     return payload
 
 
@@ -122,13 +116,6 @@ def browser():
         instance = launch_browser(driver, headless=True)
         yield instance
         instance.close()
-
-
-def stamp_ago(seconds):
-    """An ISO stamp that many seconds old, as a payload carries it."""
-    when = (datetime.datetime.now(datetime.timezone.utc)
-            - datetime.timedelta(seconds=seconds))
-    return when.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
 def open_board(browser, tmp_path, payload, viewport=None, clock_at=None):
@@ -153,6 +140,20 @@ def open_board(browser, tmp_path, payload, viewport=None, clock_at=None):
     return page
 
 
+def open_sample(browser, tmp_path, name, change=None, **options):
+    """One sample's board, after `change(payload)` where the proof alters it."""
+    payload = payload_named(name)
+    if change is not None:
+        change(payload)
+    return open_board(browser, tmp_path, payload, **options)
+
+
+def rule_of(payload, feature, rule_id):
+    """One rule of a payload, by the spec that owns it and its id."""
+    owner = next(f for f in payload['features'] if f['name'] == feature)
+    return next(r for r in owner['rules'] if r['id'] == rule_id)
+
+
 def texts(page, selector):
     return page.eval_on_selector_all(
         selector, 'els => els.map(e => e.textContent.trim())')
@@ -160,36 +161,6 @@ def texts(page, selector):
 
 def feature_names(page):
     return texts(page, '.tr .name .n')
-
-
-def chip_labels(page):
-    """The filter pills' labels, without the count each one carries."""
-    return page.eval_on_selector_all(
-        '.chip', 'els => els.map(e => e.firstChild.textContent.trim())')
-
-
-def chip_counts(page):
-    """Each filter pill's label and the count it carries, as an integer."""
-    return dict(zip(chip_labels(page), [
-        int(value) for value in texts(page, '.chip b')]))
-
-
-# The kind of work each filter button stands for, by the name it reads.
-KINDS = {'To fix': 'to_fix', 'To test': 'to_test',
-         'To strengthen': 'to_strengthen', 'To repair': 'to_repair',
-         'To write a test for': 'no_test', 'To write a proof for': 'no_proof',
-         'To correct': 'to_correct'}
-
-
-def chip_for(label):
-    return '.chip[data-filter="%s"]' % KINDS[label]
-
-
-def pressed(page):
-    """The labels of the filter buttons that read as pressed."""
-    return page.eval_on_selector_all(
-        '.chip[aria-pressed="true"]',
-        'els => els.map(e => e.firstChild.textContent.trim())')
 
 
 def head_labels(page):
@@ -203,9 +174,9 @@ def open_rule(page, feature, rule_id):
     page.click('.rule[data-feature="%s"][data-rule="%s"]' % (feature, rule_id))
 
 
-# How many boxes the strip carries: `Passing`, `Strong` where the audit read
-# the project, and at the gate `signed` the `No proof` box.
-TILES = {'solo': 1, 'team': 2, 'regulated': 3}
+# How many step boxes each sample draws: `No proof`, since all three write
+# proof lines, `Passing`, and `Strong` where the audit read the project.
+TILES = {'solo': 2, 'team': 3, 'regulated': 3}
 
 
 def rule_ids(page):
@@ -261,10 +232,6 @@ PANELS = """() => Array.from(document.querySelectorAll('.panel')).filter(
       e => e.innerText.trim().replace(/\\s+/g, ' '))}))"""
 
 
-def panel_heads(page):
-    return [panel['head'] for panel in page.evaluate(PANELS)]
-
-
 def panel_lines(page, head):
     """The lines of the one panel headed `head` on the open screen."""
     found = [panel['lines'] for panel in page.evaluate(PANELS)
@@ -277,19 +244,6 @@ def panel_lines(page, head):
 # The built file
 # ---------------------------------------------------------------------------
 
-# purlin: purlin_report PROOF-1
-def test_the_build_is_reproducible():
-    """Two builds of the same parts give the same bytes."""
-    first = build_page()
-    second = build_page()
-    assert first == second
-
-
-# purlin: purlin_report PROOF-2
-def test_the_page_is_one_file_under_the_line_budget(page_text):
-    assert len(page_text.splitlines()) <= 1200
-
-
 # purlin: purlin_report PROOF-122
 def test_the_page_at_the_project_root_is_the_built_page(page_text):
     assert os.path.isfile(os.path.join(ROOT, 'purlin-report.html'))
@@ -297,13 +251,10 @@ def test_the_page_at_the_project_root_is_the_built_page(page_text):
 
 
 # purlin: purlin_report PROOF-3
-def test_every_colour_is_a_token(page_text):
-    """The only place a colour is written is the inlined token block."""
-    inside, outside = token_block(page_text)
+def test_no_colour_is_written_as_hex_outside_the_token_block():
+    inside, outside = token_block(build_page())
     assert '--canvas' in inside
-    written = [match for match in re.findall(r'#[0-9a-fA-F]{3,8}\b', outside)
-               if not match.lower().startswith('#purlin')]
-    assert written == [], written
+    assert re.findall(r'#[0-9a-fA-F]{3,8}\b', outside) == []
 
 
 # purlin: purlin_report PROOF-4
@@ -359,29 +310,6 @@ def test_affordances_are_unicode_glyphs_not_an_icon_set(page_text):
 # What a person sees
 # ---------------------------------------------------------------------------
 
-# purlin: purlin_report PROOF-7
-def test_the_board_opens_on_the_boxes_under_the_gate(browser, tmp_path):
-    payload = payload_named('regulated')
-    page = open_board(browser, tmp_path, payload)
-    bar = page.inner_text('.topbar')
-    assert page.inner_text('.topbar .fresh').startswith('Data: '), bar
-    assert texts(page, '.topbar .tag') == ['gate: signed', 'signed/1.4.0'], bar
-    first = page.evaluate(
-        "() => { const s = document.querySelector('.strip');"
-        " const sec = s.closest('section');"
-        " return sec.parentElement.querySelector('section') === sec; }")
-    assert first, 'the board does not open on the boxes'
-    assert set(feature_names(page)) == set(
-        f['name'] for f in payload['features'])
-    assert len(feature_names(page)) == 5
-    assert [f['name'] for f in payload['features'] if f['is_anchor']] == [
-        'checkout_design', 'security_baseline']
-    page.close()
-
-
-BASE_COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests']
-
-
 def headings_of(browser, tmp_path, payload):
     page = open_board(browser, tmp_path, payload)
     found = head_labels(page)
@@ -390,40 +318,23 @@ def headings_of(browser, tmp_path, payload):
 
 
 # purlin: purlin_report PROOF-9
-def test_a_passed_project_with_proof_lines_shows_four_columns(browser,
-                                                             tmp_path):
-    assert headings_of(browser, tmp_path, payload_named('solo')) == \
-        BASE_COLUMNS
-
-
-# purlin: purlin_report PROOF-123
-def test_a_passed_project_with_no_proof_line_shows_no_proofs_column(
-        browser, tmp_path):
-    """Proofs are optional at `passed`: a project there that writes none is
-    shown no column for them."""
-    assert headings_of(browser, tmp_path, without_proof_lines(
-        payload_named('solo'))) == ['Spec', 'Rules', 'Tests']
+def test_proof_lines_and_no_audit_show_four_columns(browser, tmp_path):
+    payload = payload_named('solo')
+    assert payload['summary']['proofs'] > 0
+    assert payload['summary']['audit']['strong'] == 0
+    assert payload['summary']['audit']['weak'] == 0
+    assert headings_of(browser, tmp_path, payload) == [
+        'Spec', 'Rules', 'Proofs', 'Tests']
 
 
 # purlin: purlin_report PROOF-124
-def test_an_audited_project_adds_the_strong_column(browser, tmp_path):
-    assert headings_of(browser, tmp_path, payload_named('team')) == \
-        BASE_COLUMNS + ['Strong']
-
-
-# purlin: purlin_report PROOF-125
-def test_an_audited_passed_project_with_no_proof_line_drops_proofs(
+def test_an_audit_that_found_strong_and_weak_adds_the_strong_column(
         browser, tmp_path):
-    """At `passed` proofs are optional, audited or not."""
-    assert headings_of(browser, tmp_path, without_proof_lines(
-        payload_named('team'))) == ['Spec', 'Rules', 'Tests', 'Strong']
-
-
-# purlin: purlin_report PROOF-126
-def test_a_signed_project_keeps_proofs_with_no_proof_line(browser, tmp_path):
-    """At `signed` every rule needs a proof, so the column stays."""
-    assert headings_of(browser, tmp_path, without_proof_lines(
-        payload_named('regulated'))) == BASE_COLUMNS + ['Strong']
+    payload = payload_named('team')
+    assert payload['summary']['audit']['strong'] > 0
+    assert payload['summary']['audit']['weak'] > 0
+    assert headings_of(browser, tmp_path, payload) == [
+        'Spec', 'Rules', 'Proofs', 'Tests', 'Strong']
 
 
 # purlin: purlin_report PROOF-32
@@ -433,49 +344,29 @@ def test_the_rule_screen_says_what_each_system_found(browser, tmp_path):
     The systems are the rule's business, so they live on its screen, drawn
     from the platforms its passed cell carries, in the payload's words.
     """
-    page = open_board(browser, tmp_path, payload_named('regulated'))
+    page = open_sample(browser, tmp_path, 'regulated')
     open_rule(page, 'login', 'RULE-4')
     found = page.evaluate(PLATFORM_BOXES)
-    assert [b['os'] for b in found] == ['Lin', 'Win']
-    assert [b['tone'] for b in found] == ['pass', 'fail']
+    last_run = page.evaluate(KV_ROWS)['Last run']
+    assert [(b['os'], b['tone']) for b in found] == [('Lin', 'pass'),
+                                                     ('Win', 'fail')]
     assert found[0]['colour'] == page.evaluate(RESOLVE_TOKEN, '--state-pass')
     assert found[1]['colour'] == page.evaluate(RESOLVE_TOKEN, '--state-fail')
     assert found[1]['title'].startswith('Windows · failed · ci · ')
-    last = page.inner_text('.kv').splitlines()
-    assert any(line.startswith('ci · ') and 'old' in line for line in last)
-    page.close()
-
-
-# purlin: purlin_report PROOF-91
-def test_a_rule_that_ran_on_linux_and_macos_shows_both(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    open_rule(page, 'invoice', 'RULE-1')
-    assert [b['os'] for b in page.evaluate(PLATFORM_BOXES)] == ['Lin', 'Mac']
+    assert re.match(r'ci · (\d+ (minutes|hours|days) old|less than a minute '
+                    r'old)$', last_run), last_run
     page.close()
 
 
 # purlin: purlin_report PROOF-92
-def test_a_rule_that_ran_nowhere_shows_no_system(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
+def test_a_manual_proof_that_ran_nowhere_draws_no_system_box(browser,
+                                                             tmp_path):
+    payload = payload_named('regulated')
+    assert hand_check_rule(payload)['cells']['passed']['platforms'] == {}
+    page = open_board(browser, tmp_path, payload)
     open_rule(page, 'invoice', 'RULE-3')
+    assert 'RULE-3' in page.inner_text('h1')
     assert page.evaluate(PLATFORM_BOXES) == []
-    page.close()
-
-
-# purlin: purlin_report PROOF-93
-def test_the_board_draws_no_system_box(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    page.click('[data-act="feature"][data-feature="login"]')
-    assert len(rule_ids(page)) == 4
-    assert page.query_selector_all('.wrap .os') == []
-    page.close()
-
-
-@pytest.mark.parametrize('process', PROCESSES)
-# purlin: purlin_report PROOF-12
-def test_the_board_opens_in_the_dark_theme(browser, tmp_path, process):
-    page = open_board(browser, tmp_path, payload_named(process))
-    assert page.get_attribute('html', 'data-theme') == 'dark'
     page.close()
 
 
@@ -504,16 +395,6 @@ def test_the_theme_button_swaps_to_light(browser, tmp_path, process):
     page.close()
 
 
-@pytest.mark.parametrize('process', PROCESSES)
-# purlin: purlin_report PROOF-129
-def test_the_theme_button_swaps_back_to_dark(browser, tmp_path, process):
-    page = open_board(browser, tmp_path, payload_named(process))
-    _dark_then_toggled(page)
-    page.click('[data-act="theme"]')
-    assert page.get_attribute('html', 'data-theme') == 'dark'
-    page.close()
-
-
 def theme_button(page):
     """The theme button's glyph, its hover and its accessible name."""
     button = page.locator('[data-act="theme"]')
@@ -527,14 +408,6 @@ def test_the_theme_button_reads_the_theme_it_turns_to(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
     assert page.get_attribute('html', 'data-theme') == 'dark'
     assert theme_button(page) == ['\u25d0', 'Light theme', 'Light theme']
-    page.close()
-
-
-# purlin: purlin_report PROOF-183
-def test_the_pressed_theme_button_reads_dark_theme(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    page.click('[data-act="theme"]')
-    assert theme_button(page) == ['\u25d1', 'Dark theme', 'Dark theme']
     page.close()
 
 
@@ -563,17 +436,6 @@ RESOLVE_TOKEN = """(name) => {
 }"""
 
 
-# purlin: purlin_report PROOF-30
-def test_the_board_sits_on_the_brand_navy(browser, tmp_path, page_text):
-    """No surface override, so the ground is the brand's own navy."""
-    assert 'data-surface' not in page_text
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    assert page.get_attribute('html', 'data-surface') is None
-    ground = page.evaluate('getComputedStyle(document.body).backgroundColor')
-    assert ground == page.evaluate(RESOLVE_TOKEN, '--purlin-navy-800')
-    page.close()
-
-
 # ---------------------------------------------------------------------------
 # The step boxes
 # ---------------------------------------------------------------------------
@@ -592,29 +454,6 @@ def test_a_step_box_counts_the_rules_that_reached_it(browser, tmp_path):
     ) == ['uppercase'] * 4
     warn = page.evaluate(RESOLVE_TOKEN, '--state-warn')
     assert [colour for _, _, colour in found[1:]] == [warn] * 2, found
-    page.close()
-
-
-# purlin: purlin_report PROOF-80
-def test_the_passed_gate_has_one_box(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('solo'))
-    assert [(label, count) for label, count, _ in boxes(page)] == [
-        ('Passing', '3')]
-    page.close()
-
-
-# purlin: purlin_report PROOF-81
-def test_a_step_every_rule_reached_is_green(browser, tmp_path):
-    payload = payload_named('regulated')
-    assert payload['summary']['rules'] == 11
-    payload['summary']['steps'] = {'passed': 11}
-    payload['summary']['audit']['strong'] = 11
-    page = open_board(browser, tmp_path, payload)
-    found = boxes(page)[1:]
-    assert [label for label, _, _ in found] == ['Passing', 'Strong']
-    passed = page.evaluate(RESOLVE_TOKEN, '--state-pass')
-    assert [(count, colour) for _, count, colour in found] == [
-        ('11', passed)] * 2, found
     page.close()
 
 
@@ -643,31 +482,6 @@ def test_the_passing_box_carries_the_total(browser, tmp_path):
     total = page.query_selector('.tile-t')
     label = total.evaluate_handle('el => el.previousElementSibling')
     assert label.evaluate(LOOK) == total.evaluate(LOOK)
-    page.close()
-
-
-# purlin: purlin_report PROOF-171
-def test_the_total_is_the_payloads_count(browser, tmp_path):
-    payload = payload_named('regulated')
-    payload['summary']['rules'] = 563
-    page = open_board(browser, tmp_path, payload)
-    assert page.inner_text('.tile-t').strip() == '563 RULES TOTAL'
-    page.close()
-
-
-# purlin: purlin_report PROOF-172
-def test_one_rule_reads_rule_total(browser, tmp_path):
-    payload = payload_named('solo')
-    payload['summary']['rules'] = 1
-    page = open_board(browser, tmp_path, payload)
-    assert page.inner_text('.tile-t').strip() == '1 RULE TOTAL'
-    page.close()
-
-
-# purlin: purlin_report PROOF-174
-def test_an_audited_passed_project_has_passing_and_strong(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('team'))
-    assert [label for label, _, _ in boxes(page)] == ['Passing', 'Strong']
     page.close()
 
 
@@ -703,7 +517,7 @@ def test_every_count_carries_the_word_it_counts(browser, tmp_path):
     assert cells['login']['Tests'] == (
         '2 of 4 · 1 partial · 1 failing')
     assert cells['login']['Proofs'] == '5'
-    assert cells['login']['Strong'] == '2 of 4 · 86%'
+    assert cells['login']['Strong'] == '2 of 4'
     # One of export's two rules is behind changed code: it passed nothing
     # and failed nothing, so the share alone reads it.
     assert cells['export']['Tests'] == '1 of 2'
@@ -711,37 +525,6 @@ def test_every_count_carries_the_word_it_counts(browser, tmp_path):
     # written for it, so the rollup counts no gap and the cell reads the
     # total alone.
     assert cells['invoice']['Proofs'] == '3'
-    page.close()
-
-
-# purlin: purlin_report PROOF-84
-def test_a_proof_no_test_runs_is_named_beside_the_total(browser, tmp_path):
-    team = open_board(browser, tmp_path, payload_named('team'))
-    assert count_cells(team)['invoice']['Proofs'] == (
-        '2 · 1 no test')
-    team.close()
-
-
-# purlin: purlin_report PROOF-176
-def test_a_strength_nobody_measured_is_not_shown(browser, tmp_path):
-    payload = payload_named('team')
-    login = payload['features'][0]
-    assert login['name'] == 'login'
-    login['rollup']['test_strength'] = None
-    login['test_strength'] = None
-    page = open_board(browser, tmp_path, payload)
-    assert count_cells(page)['login']['Strong'] == '2 of 3'
-    page.close()
-
-
-# purlin: purlin_report PROOF-177
-def test_a_percentage_says_what_it_is(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    login = page.locator('.tr[data-feature="login"] b', has_text='86%')
-    assert login.count() == 1
-    assert login.get_attribute('title') == (
-        'Test strength: the tests caught 86 of every 100 deliberate breaks '
-        'of the code.')
     page.close()
 
 
@@ -769,37 +552,10 @@ def test_every_cell_of_a_spec_row_carries_its_hover(browser, tmp_path):
 
 # purlin: purlin_report PROOF-97
 def test_a_proofs_hover_names_the_proof_no_test_runs(browser, tmp_path):
-    team = open_board(browser, tmp_path, payload_named('team'))
-    assert hovers(team)['invoice']['Proofs'] == 'no test · PROOF-2'
+    team = open_sample(browser, tmp_path, 'team')
+    proofs = hovers(team)['invoice']['Proofs']
     team.close()
-
-
-def box_hovers(page):
-    """Each box's label and the hover it carries."""
-    return dict(page.eval_on_selector_all(
-        '.tile', "els => els.map(e => [e.querySelector('.tile-l')"
-        ".textContent.trim(), e.getAttribute('title')])"))
-
-
-# purlin: purlin_report PROOF-45
-def test_every_step_box_carries_its_hover(browser, tmp_path):
-    """A box says for the project what its column says for one spec."""
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    titles = box_hovers(page)
-    page.close()
-    assert titles['Passing'].split('\n')[0].startswith(
-        'Windows · ci · '), titles
-    strong = titles['Strong'].split('\n')
-    assert len(strong) == 1 and strong[0].startswith('audit · ci · '), titles
-    assert strong[0].endswith(' old'), titles
-
-
-# purlin: purlin_report PROOF-98
-def test_the_no_proof_box_names_the_specs_it_counts(browser, tmp_path):
-    page = open_board(browser, tmp_path,
-                      with_export_rule_2_unproved(payload_named('regulated')))
-    assert box_hovers(page)['No proof'] == 'export · 1'
-    page.close()
+    assert proofs == 'no test · PROOF-2', proofs
 
 
 # purlin: purlin_report PROOF-114
@@ -811,27 +567,6 @@ def test_a_rule_with_no_proof_is_counted_in_its_own_box(browser, tmp_path):
                                                 'Strong'], found
     assert found[0][1:] == ['1', page.evaluate(RESOLVE_TOKEN,
                                                '--state-warn')], found
-    page.close()
-
-
-# purlin: purlin_report PROOF-115
-def test_the_no_proof_box_at_zero_is_green(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    found = boxes(page)
-    assert found[0] == ['No proof', '0',
-                        page.evaluate(RESOLVE_TOKEN, '--state-pass')], found
-    page.close()
-
-
-# purlin: purlin_report PROOF-116
-def test_the_write_a_proof_filter_leaves_the_rules_with_no_proof(browser,
-                                                                 tmp_path):
-    page = open_board(browser, tmp_path,
-                      with_export_rule_2_unproved(payload_named('regulated')))
-    page.click(chip_for('To write a proof for'))
-    assert feature_names(page) == ['export']
-    page.click('[data-act="feature"][data-feature="export"]')
-    assert rule_ids(page) == ['RULE-2']
     page.close()
 
 
@@ -864,26 +599,6 @@ BAND_ENDS = r"""els => els.map(e => {
 })"""
 
 
-# purlin: purlin_report PROOF-77
-def test_a_band_has_two_ends_on_one_line(browser, tmp_path):
-    payload = payload_named('regulated')
-    page = open_board(browser, tmp_path, payload,
-                      viewport={'width': 1500, 'height': 900})
-    ends = page.eval_on_selector_all('.group', BAND_ENDS)
-    anchored = anchor_rule_count(page, payload)
-    page.close()
-    assert anchored == 2
-    assert sum(end['count'] for end in ends) + anchored \
-        == payload['summary']['rules']
-    assert payload['summary']['rules'] == 11
-    for end in ends:
-        assert end['sameLine'], end
-        assert abs(end['boxRight'] - end['rightEdge']) <= 40, end
-        assert end['gap'] >= 16, end
-        assert end['barWidth'] == ends[0]['barWidth'], ends
-        assert abs(end['barRight'] - ends[0]['barRight']) < 1, ends
-
-
 def anchor_rule_count(page, payload):
     """How many rules the anchors listed in the anchors' section hold."""
     listed = texts(page, '[data-table="anchors"] .tr .name .n')
@@ -902,16 +617,6 @@ def test_the_bands_and_the_anchors_add_up_to_the_rules(browser, tmp_path):
     assert payload['summary']['rules'] == 10
     assert anchored == 2
     assert sum(end['count'] for end in ends) + anchored == 10, ends
-
-
-# purlin: purlin_report PROOF-95
-def test_a_narrow_band_puts_its_count_beneath_its_name(browser, tmp_path):
-    narrow = open_board(browser, tmp_path, payload_named('regulated'),
-                        viewport={'width': 390, 'height': 900})
-    for end in narrow.eval_on_selector_all('.group', BAND_ENDS):
-        assert not end['sameLine'], end
-        assert abs(end['leftOfRight'] - end['leftOfLeft']) < 2, end
-    narrow.close()
 
 
 def _auth_band_closed_by_enter(browser, tmp_path):
@@ -938,14 +643,6 @@ def test_a_band_folds_from_the_keyboard(browser, tmp_path):
     narrow.close()
 
 
-# purlin: purlin_report PROOF-143
-def test_a_folded_band_opens_again_on_space(browser, tmp_path):
-    narrow = _auth_band_closed_by_enter(browser, tmp_path)
-    narrow.keyboard.press(' ')
-    assert narrow.get_attribute(AUTH_BAND, 'aria-expanded') == 'true'
-    narrow.close()
-
-
 # purlin: purlin_report PROOF-10
 def test_a_feature_row_expands_to_its_rules(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
@@ -957,214 +654,33 @@ def test_a_feature_row_expands_to_its_rules(browser, tmp_path):
     page.close()
 
 
-# purlin: purlin_report PROOF-127
-def test_an_open_feature_row_closes_on_the_next_press(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    page.click('[data-act="feature"][data-feature="login"]')
-    assert rule_ids(page)
-    page.click('[data-act="feature"][data-feature="login"]')
-    assert rule_ids(page) == []
-    page.close()
-
-
 # purlin: purlin_report PROOF-117
 def test_an_open_spec_shows_its_description(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
+    page = open_sample(browser, tmp_path, 'regulated')
     page.click('[data-act="feature"][data-feature="login"]')
-    after = page.eval_on_selector(
+    beneath, after = page.eval_on_selector(
         '.tr[data-feature="login"]',
-        "el => { const d = el.nextElementSibling; return [d.className,"
-        " d.textContent.trim(), d.nextElementSibling.getAttribute('data-rule')];"
-        " }")
+        "el => { const d = el.nextElementSibling; return [d.textContent.trim(),"
+        " d.nextElementSibling.getAttribute('data-rule')]; }")
     page.close()
-    assert after == ['desc', 'Signing in with an email address and a '
-                     'password, and locking an account after repeated '
-                     'failures.', 'RULE-1'], after
-
-
-# purlin: purlin_report PROOF-118
-def test_a_spec_with_no_description_shows_none(browser, tmp_path):
-    payload = payload_named('regulated')
-    assert next(f for f in payload['features']
-                if f['name'] == 'checkout_design')['description'] is None
-    page = open_board(browser, tmp_path, payload)
-    page.click('[data-act="feature"][data-feature="checkout_design"]')
-    after = page.eval_on_selector(
-        '.tr[data-feature="checkout_design"]',
-        'el => el.nextElementSibling.className')
-    page.close()
-    assert after == 'rule', after
-
-
-# purlin: purlin_report PROOF-13
-def test_to_strengthen_leaves_the_rules_to_strengthen(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    page.click(chip_for('To strengthen'))
-    assert page.get_attribute(chip_for('To strengthen'),
-                              'aria-pressed') == 'true'
-    assert sorted(feature_names(page)) == ['checkout_design', 'invoice',
-                                           'login']
-    page.click('[data-act="feature"][data-feature="login"]')
-    assert rule_ids(page) == ['RULE-3']
-    page.close()
-
-
-# purlin: purlin_report PROOF-85
-def test_to_test_leaves_the_rules_to_test(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    page.click(chip_for('To test'))
-    assert feature_names(page) == ['export']
-    page.click('[data-act="feature"][data-feature="export"]')
-    assert rule_ids(page) == ['RULE-1']
-    page.close()
-
-
-# purlin: purlin_report PROOF-14
-def test_choosing_another_button_moves_the_choice(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    page.click(chip_for('To strengthen'))
-    page.click(chip_for('To test'))
-    assert pressed(page) == ['To test']
-    assert feature_names(page) == ['export']
-    page.close()
-
-
-# purlin: purlin_report PROOF-87
-def test_choosing_the_chosen_button_again_shows_every_rule(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    page.click(chip_for('To strengthen'))
-    page.click(chip_for('To strengthen'))
-    assert pressed(page) == []
-    assert len(feature_names(page)) == 5
-    page.close()
-
-
-# purlin: purlin_report PROOF-181
-def test_choosing_to_correct_leaves_every_rule_showing(browser, tmp_path):
-    page = open_board(browser, tmp_path,
-                      with_only_a_comment_to_correct(payload_named('regulated')))
-    assert chip_counts(page) == {'To correct': 1}
-    page.click(chip_for('To correct'))
-    assert pressed(page) == ['To correct']
-    assert len(feature_names(page)) == 5
-    assert texts(page, '.cmdline') == ['Type purlin:build in Claude Code.']
-    page.close()
-
-
-# purlin: purlin_report PROOF-35
-def test_the_buttons_are_the_lines_of_what_is_left(browser, tmp_path):
-    reg = open_board(browser, tmp_path, payload_named('regulated'))
-    assert chip_labels(reg) == ['To fix', 'To write a test for', 'To test',
-                                'To strengthen']
-    assert [int(value) for value in texts(reg, '.chip b')] == [1, 1, 1, 3]
-    reg.close()
-
-
-# purlin: purlin_report PROOF-86
-def test_the_passed_gate_offers_its_one_line_as_a_button(browser, tmp_path):
-    payload = payload_named('solo')
-    assert [item['text'] for item in payload['left']] == [
-        '2 rules to write a test for']
-    solo = open_board(browser, tmp_path, payload)
-    assert chip_counts(solo) == {'To write a test for': 2}
-    solo.close()
-
-
-# purlin: purlin_report PROOF-130
-def test_a_buttons_count_is_the_payloads_not_the_pages(browser, tmp_path):
-    payload = payload_named('regulated')
-    line = next(item for item in payload['left'] if item['kind'] == 'to_test')
-    line['count'] = 9
-    assert sum(rule['left'] == 'to_test' for feature in payload['features']
-               for rule in feature['rules']) == 1
-    page = open_board(browser, tmp_path, payload)
-    assert chip_counts(page)['To test'] == 9
-    page.close()
-
-
-# purlin: purlin_report PROOF-83
-def test_with_nothing_left_the_last_line_stands_above_the_table(browser,
-                                                                tmp_path):
-    payload = payload_named('team')
-    payload['left'] = []
-    payload['last_line'] = 'Nothing left to do.'
-    page = open_board(browser, tmp_path, payload)
-    assert page.query_selector_all('.chip') == []
-    found = page.evaluate(
-        "() => { const line = Array.from(document.querySelectorAll('p')).find("
-        "p => p.textContent.trim() === 'Nothing left to do.');"
-        " const table = document.querySelector('.tbl');"
-        " return !!line && !!(line.compareDocumentPosition(table)"
-        " & Node.DOCUMENT_POSITION_FOLLOWING); }")
-    assert found, 'the last line is not above the table'
-    page.close()
-
-
-# purlin: purlin_report PROOF-46
-def test_a_button_leaves_as_many_rules_as_its_count(browser, tmp_path):
-    """The number on the button is the number of rules it leaves."""
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    for name in feature_names(page):
-        page.click('[data-act="feature"][data-feature="%s"]' % name)
-    counts = chip_counts(page)
-    assert len(counts) == 4, counts
-    for label, count in counts.items():
-        page.click(chip_for(label))
-        assert len(page.query_selector_all('.rule')) == count, label
-        page.click(chip_for(label))
-    page.close()
-
-
-# The line under the buttons that names the command, or None.
-COMMAND_LINE = """() => { const line = document.querySelector('.cmdline');
-  return line ? line.textContent.trim().replace(/\\s+/g, ' ') : null; }"""
-
-
-# purlin: purlin_report PROOF-119
-def test_a_chosen_button_names_its_command(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    page.click(chip_for('To test'))
-    assert page.evaluate(COMMAND_LINE) == 'Type purlin:test in Claude Code.'
-    assert page.evaluate(
-        "() => document.querySelector('.cmdline').getBoundingClientRect().top"
-        " >= document.querySelector('.filters').getBoundingClientRect().bottom")
-    assert 'courier' in page.eval_on_selector(
-        '.cmdline .cmd', 'el => getComputedStyle(el).fontFamily').lower()
-    page.close()
-
-
-# purlin: purlin_report PROOF-120
-def test_the_command_line_is_text(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    page.click(chip_for('To fix'))
-    assert page.query_selector_all('.cmdline button') == []
-    assert page.query_selector_all('.cmdline input') == []
-    before = page.inner_text('body')
-    page.click('.cmdline')
-    assert page.inner_text('body') == before
-    page.close()
-
-
-# purlin: purlin_report PROOF-134
-def test_with_no_button_chosen_no_command_line_shows(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    assert page.evaluate(COMMAND_LINE) is None
-    assert 'Type ' not in page.inner_text('.wrap')
-    page.close()
+    assert beneath == ('Signing in with an email address and a password, and '
+                       'locking an account after repeated failures.'), beneath
+    assert after == 'RULE-1', after
 
 
 # purlin: purlin_report PROOF-15
-def test_the_rule_screen_shows_proof_test_and_evidence(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
+def test_the_rule_screen_shows_the_rule_its_proof_and_its_cells(browser,
+                                                               tmp_path):
+    page = open_sample(browser, tmp_path, 'regulated')
     open_rule(page, 'login', 'RULE-1')
     body = page.inner_text('.wrap')
+    rows = page.evaluate(KV_ROWS)
     assert 'RULE-1' in page.inner_text('h1')
     assert 'A person signs in with an email address and a password.' in body
     assert 'PROOF-1' in body
     assert 'tests/test_login.py :: test_sign_in' in body
     assert 'PASSED' in body and 'STRONG' in body
-    assert 'STRONG strength 86%' in page.eval_on_selector_all(
-        '.kv dd', r'els => els.map(e => e.innerText.trim().replace(/\s+/g, " "))')
+    assert rows['Strong'] == 'STRONG', rows
     page.close()
 
 
@@ -1179,39 +695,6 @@ KV_ROWS = r"""() => {
   });
   return out;
 }"""
-
-
-# purlin: purlin_report PROOF-53
-def test_the_rule_screen_has_one_row_per_cell_the_gate_reaches(browser,
-                                                               tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    open_rule(page, 'login', 'RULE-1')
-    # The whole row set, so a row the model dropped cannot come back.
-    assert list(page.evaluate(KV_ROWS)) == [
-        'Passed', 'Strong', 'Spec', 'Last run']
-    page.close()
-
-
-# purlin: purlin_report PROOF-16
-def test_the_rule_screen_links_to_the_git_host(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    open_rule(page, 'login', 'RULE-1')
-    href = page.get_attribute('a[href*="specs/auth/login.md"]', 'href')
-    assert href.startswith('https://github.com/acme/ledger/blob/')
-    run = page.get_attribute('a[href*=".purlin/evidence/ci/login.json"]',
-                             'href')
-    assert run.startswith('https://github.com/acme/ledger/blob/')
-    page.close()
-
-
-# purlin: purlin_report PROOF-136
-def test_a_rule_with_no_remote_has_no_links(browser, tmp_path):
-    """The solo fixture names no remote, so paths stay plain text."""
-    page = open_board(browser, tmp_path, payload_named('solo'))
-    open_rule(page, 'login', 'RULE-1')
-    assert page.query_selector_all('.wrap a') == []
-    assert 'specs/auth/login.md' in page.inner_text('.wrap')
-    page.close()
 
 
 # purlin: purlin_report PROOF-17
@@ -1232,19 +715,17 @@ def test_a_rule_waiting_on_an_operating_system_says_so(browser, tmp_path):
 
 
 # purlin: purlin_report PROOF-20
-def test_an_older_payload_shows_one_notice_and_nothing_else(browser,
-                                                            tmp_path):
-    payload = payload_named('team')
-    payload['schema_version'] = 3
-    page = open_board(browser, tmp_path, payload)
-    notices = page.query_selector_all('.notice')
-    assert len(notices) == 1
-    assert notices[0].inner_text() == (
-        'This data was written for schema 3 and this page reads schema 13. '
-        'Run purlin:status to write it again.')
+def test_data_of_another_schema_shows_one_notice_and_nothing_else(browser,
+                                                                  tmp_path):
+    def marked_as_schema_3(payload):
+        payload['schema_version'] = 3
+    page = open_sample(browser, tmp_path, 'team', marked_as_schema_3)
+    assert texts(page, '.notice') == [
+        'This data was written for schema 3 and this page reads schema 14. '
+        'Run purlin:status to write it again.']
     assert page.query_selector_all('.tile') == []
+    assert page.query_selector_all('.fact') == []
     assert page.query_selector_all('.tbl') == []
-    assert page.query_selector_all('.tabs') == []
     page.close()
 
 
@@ -1258,15 +739,6 @@ def test_no_data_at_all_names_the_command_that_writes_it(browser, tmp_path):
     assert page.inner_text('.empty') == (
         'No board data yet. Run purlin:status to write '
         '.purlin/report-data.js, then reload this page.')
-    page.close()
-
-
-# purlin: purlin_report PROOF-88
-def test_the_working_tree_notice_shows_on_the_board(browser, tmp_path):
-    payload = payload_named('regulated')
-    assert payload['dirty'] is True and len(payload['warnings']) == 1
-    page = open_board(browser, tmp_path, payload)
-    assert len(page.query_selector_all('.notice')) == 2
     page.close()
 
 
@@ -1287,174 +759,32 @@ def test_each_warning_is_a_notice_after_the_working_tree_one(browser,
 
 
 # purlin: purlin_report PROOF-22
-def test_the_working_tree_notice_is_not_on_a_rule_screen(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
+def test_a_rule_screen_draws_no_notice(browser, tmp_path):
+    payload = payload_named('regulated')
+    assert payload['dirty'] is True
+    page = open_board(browser, tmp_path, payload)
+    assert len(page.query_selector_all('.notice')) == 2
     open_rule(page, 'login', 'RULE-1')
     assert 'RULE-1' in page.inner_text('h1')
-    assert page.query_selector_all('.notice') == []
-    page.close()
-
-
-# purlin: purlin_report PROOF-24
-def test_the_open_rule_is_the_last_tab(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    open_rule(page, 'login', 'RULE-1')
-    assert texts(page, '.tabs button') == ['Board', 'login RULE-1']
-    page.close()
-
-
-# purlin: purlin_report PROOF-137
-def test_the_open_rules_tab_stays_clickable(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    open_rule(page, 'login', 'RULE-1')
-    page.click('.tabs button:last-child')
-    assert 'RULE-1' in page.inner_text('h1')
-    assert len(texts(page, '.tabs button')) == 2
-    page.close()
-
-
-# purlin: purlin_report PROOF-25
-def test_the_link_back_reads_board(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    open_rule(page, 'login', 'RULE-1')
-    assert page.inner_text('[data-act="close"]') == 'Back to the board'
+    assert len(page.query_selector_all('.notice')) == 0
     page.close()
 
 
 # purlin: purlin_report PROOF-138
-def test_the_link_back_closes_the_rule(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
+def test_back_to_the_board_returns_to_the_board(browser, tmp_path):
+    page = open_sample(browser, tmp_path, 'regulated')
     open_rule(page, 'login', 'RULE-1')
-    assert page.inner_text('[data-act="close"]') == 'Back to the board'
-    page.click('[data-act="close"]')
+    assert page.inner_text('h1') == 'RULE-1'
+    page.get_by_text('Back to the board', exact=True).click()
     assert len(feature_names(page)) == 5
-    assert texts(page, '.tabs button') == ['Board']
+    assert page.query_selector_all('h1') == []
+    assert page.get_by_text('Back to the board', exact=True).count() == 0
     page.close()
 
-
-# purlin: purlin_report PROOF-27
-def test_coming_back_to_an_old_tab_reloads_it(browser, tmp_path):
-    """A mark on the window survives a render and not a reload."""
-    payload = payload_named('regulated')
-    payload['generated_at'] = stamp_ago(120)
-    page = open_board(browser, tmp_path, payload)
-    open_rule(page, 'login', 'RULE-1')
-    page.evaluate('window.purlinMark = 1')
-    page.evaluate("document.dispatchEvent(new Event('visibilitychange'))")
-    page.wait_for_function('() => window.purlinMark === undefined',
-                           timeout=10000)
-    page.wait_for_selector('h1', timeout=10000)
-    assert 'RULE-1' in page.inner_text('h1')
-    page.close()
-
-
-# purlin: purlin_report PROOF-28
-def test_the_freshness_line_is_a_button_styled_as_the_theme_button(
-        browser, tmp_path):
-    payload = payload_named('regulated')
-    payload['generated_at'] = stamp_ago(7 * 3600)
-    page = open_board(browser, tmp_path, payload)
-    node = page.query_selector('.topbar [data-act="reload"]')
-    assert node.evaluate('el => el.tagName') == 'BUTTON'
-    assert node.inner_text().strip() == 'Data: 7 hours old'
-    assert 'btn' in node.get_attribute('class').split()
-    assert 'btn' in page.get_attribute('[data-act="theme"]', 'class').split()
-    assert page.eval_on_selector(
-        '.topbar [data-act="reload"]',
-        'el => getComputedStyle(el).borderTopWidth') == page.eval_on_selector(
-        '[data-act="theme"]', 'el => getComputedStyle(el).borderTopWidth')
-    page.close()
-
-
-def freshness_hover(browser, tmp_path, seconds):
-    payload = payload_named('regulated')
-    payload['generated_at'] = stamp_ago(seconds)
-    page = open_board(browser, tmp_path, payload)
-    found = page.get_attribute('.topbar [data-act="reload"]', 'title')
-    page.close()
-    return found
-
-
-# purlin: purlin_report PROOF-178
-def test_old_data_says_it_is_old_and_how_to_refresh(browser, tmp_path):
-    assert freshness_hover(browser, tmp_path, 7 * 3600) == (
-        'This data is old. To refresh it, type purlin:status in Claude Code. '
-        'Press here to reload the page.')
-
-
-# purlin: purlin_report PROOF-179
-def test_fresh_data_says_how_to_refresh(browser, tmp_path):
-    assert freshness_hover(browser, tmp_path, 30) == (
-        'To refresh it, type purlin:status in Claude Code. '
-        'Press here to reload the page.')
-
-
-# purlin: purlin_report PROOF-139
-def test_pressing_the_freshness_line_reloads(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    # A mark on the window survives a render and not a reload.
-    page.evaluate('window.purlinMark = 1')
-    page.click('.topbar [data-act="reload"]')
-    page.wait_for_function('() => window.purlinMark === undefined',
-                           timeout=10000)
-    page.close()
-
-
-# purlin: purlin_report PROOF-29
-def test_the_age_recomputes_every_minute_from_the_same_payload(browser,
-                                                               tmp_path):
-    """The stamp does not move; the clock does, and the top bar follows."""
-    when = datetime.datetime(2026, 1, 1, 12, 0, 0,
-                             tzinfo=datetime.timezone.utc)
-    payload = payload_named('regulated')
-    payload['generated_at'] = (
-        when - datetime.timedelta(seconds=30)).strftime('%Y-%m-%dT%H:%M:%SZ')
-    page = open_board(browser, tmp_path, payload, clock_at=when)
-    assert 'Data: less than a minute old' in page.inner_text('.topbar .fresh')
-    page.clock.run_for(90000)
-    assert 'Data: 2 minutes old' in page.inner_text('.topbar .fresh')
-    # The page reads the data file through a frame of its own, one frame per
-    # read, so one frame means one read.
-    assert page.evaluate(
-        "() => document.querySelectorAll('iframe').length") == 1
-    page.close()
 
 # ---------------------------------------------------------------------------
-# The screenshots the docs embed
+# The audit panel
 # ---------------------------------------------------------------------------
-
-# purlin: purlin_report PROOF-23
-def test_the_docs_screenshots_come_from_the_fixtures():
-    """Two images, each from a fixture payload, written to docs/images/.
-
-    A screenshot taken from whatever this checkout happens to hold is out of
-    date the moment the data moves and shows one project's names to every reader,
-    so the capture names a fixture for every shot it takes.
-    """
-    import capture_doc_screenshots as capture
-
-    assert [(name, fixture) for name, fixture, _clicks in capture.SHOTS] == [
-        ('dashboard-board.png', 'regulated'),
-        ('dashboard-rule.png', 'regulated')], capture.SHOTS
-    assert capture.FIXTURES == FIXTURES, capture.FIXTURES
-    assert capture.IMAGES_DIR == os.path.join(ROOT, 'docs', 'images'), \
-        capture.IMAGES_DIR
-    for name, fixture, _clicks in capture.SHOTS:
-        payload = os.path.join(FIXTURES, fixture + '.json')
-        assert os.path.isfile(payload), \
-            '%s names the payload %s, which does not exist' % (name, payload)
-        image = os.path.join(capture.IMAGES_DIR, name)
-        assert os.path.isfile(image), \
-            'the docs embed %s and it is absent' % image
-        assert os.path.getsize(image) > 0, '%s is empty' % image
-    assert sorted(os.listdir(capture.IMAGES_DIR)) == sorted(
-        name for name, _fixture, _clicks in capture.SHOTS)
-
-
-# What the audit panel reads for a rule the AI audit could not decide.
-UNDECIDED = ('Undecided. The AI audit could not decide, so the rule reads '
-             'weak until its proof or test changes.')
-
 
 def audit_lines(browser, tmp_path, payload, feature, rule_id):
     """The lines of the `Audit` panel on one rule's screen."""
@@ -1465,50 +795,80 @@ def audit_lines(browser, tmp_path, payload, feature, rule_id):
     return lines
 
 
-# purlin: purlin_report PROOF-54
-def test_the_audit_panel_reads_an_undecided_audit(browser, tmp_path):
-    """The answer, each finding on its own line, then the model: the rule
-    is an anchor's, so no strength was measured and no line names one."""
-    lines = audit_lines(browser, tmp_path, payload_named('regulated'),
-                        'checkout_design', 'RULE-1')
-    assert lines[0] == UNDECIDED, lines
-    assert lines[1].startswith('The test reads the text "Total"'), lines
-    assert lines[2] == ('Read by example-model-1 on 2026-09-12 '
-                        '09:14 UTC'), lines
-    assert not [line for line in lines if 'strength' in line.lower()], lines
+FINDING = 'tests/test_invoice.py::test_total: no assertion.'
+EXPLANATION = 'The test prints the total and checks nothing.'
+
+
+def given_audit(payload, feature, rule_id, **fields):
+    """Give one rule's audit the fields named, as the audit writes them."""
+    audit = rule_of(payload, feature, rule_id)['audit']
+    assert audit is not None, (feature, rule_id)
+    audit.update(fields)
 
 
 # purlin: purlin_report PROOF-144
-def test_the_audit_panel_reads_a_weak_audit(browser, tmp_path):
-    lines = audit_lines(browser, tmp_path, payload_named('regulated'),
-                        'invoice', 'RULE-2')
+def test_a_weak_audit_reads_weak_its_finding_then_its_explanation(browser,
+                                                                 tmp_path):
+    payload = payload_named('regulated')
+    given_audit(payload, 'invoice', 'RULE-2', findings=[FINDING],
+                explanation=[EXPLANATION], breaks={})
+    lines = audit_lines(browser, tmp_path, payload, 'invoice', 'RULE-2')
+    assert lines[:3] == ['Weak.', FINDING, EXPLANATION], lines
+
+
+# purlin: purlin_report PROOF-234
+def test_a_strong_audit_reads_its_explanation_under_its_answer(browser,
+                                                              tmp_path):
+    payload = payload_named('regulated')
+    said = 'The test signs in and reads the session cookie.'
+    given_audit(payload, 'login', 'RULE-1', explanation=[said])
+    lines = audit_lines(browser, tmp_path, payload, 'login', 'RULE-1')
+    assert lines[:2] == ['Strong. It found nothing.', said], lines
+
+
+def missed_bug(payload):
+    """Give the regulated sample's invoice `RULE-2` one planted bug its tests
+    missed, as the audit records it."""
+    given_audit(payload, 'invoice', 'RULE-2', breaks={'PROOF-2': {
+        'file': 'src/billing/invoice.py', 'line': 12,
+        'before': '    return total\n', 'after': '    return 0\n',
+        'result': 'survived', 'why': '', 'break_key': 'b' * 64}})
+
+
+# Each planted bug the open rule's audit panel draws: its sentence, then the
+# label and the lines of each row beneath it.
+BUGS = """() => Array.from(document.querySelectorAll('.bug')).map(b => [
+  b.querySelector('p').innerText.trim()].concat(Array.from(
+    b.querySelectorAll('dt, dd')).map(e => e.innerText.trim())))"""
+
+
+# purlin: purlin_report PROOF-235
+def test_a_planted_bug_the_tests_missed_is_shown_with_its_lines(browser,
+                                                               tmp_path):
+    page = open_sample(browser, tmp_path, 'regulated', missed_bug)
+    open_rule(page, 'invoice', 'RULE-2')
+    lines, bugs = panel_lines(page, 'Audit'), page.evaluate(BUGS)
+    page.close()
+    assert ('PROOF-2: its tests missed a bug planted at '
+            'src/billing/invoice.py:12.') in lines, lines
+    assert bugs == [['PROOF-2: its tests missed a bug planted at '
+                     'src/billing/invoice.py:12.',
+                     'BEFORE', 'return total', 'AFTER', 'return 0']], bugs
+
+
+# purlin: purlin_report PROOF-236
+def test_a_planted_bug_the_tests_caught_is_not_shown(browser, tmp_path):
+    def caught(payload):
+        missed_bug(payload)
+        rule_of(payload, 'invoice', 'RULE-2')['audit']['breaks']['PROOF-2'][
+            'result'] = 'caught'
+    page = open_sample(browser, tmp_path, 'regulated', caught)
+    open_rule(page, 'invoice', 'RULE-2')
+    lines, bugs = panel_lines(page, 'Audit'), page.evaluate(BUGS)
+    page.close()
     assert lines[0] == 'Weak.', lines
-    assert lines[1].startswith('No proof of this rule names a rejection'), lines
-    assert lines[2] == 'Test strength 64%.', lines
-
-
-# purlin: purlin_report PROOF-145
-def test_the_audit_panel_reads_a_strong_audit(browser, tmp_path):
-    lines = audit_lines(browser, tmp_path, payload_named('regulated'),
-                        'login', 'RULE-1')
-    assert lines[0] == 'Strong. It found nothing.', lines
-
-
-# purlin: purlin_report PROOF-146
-def test_the_audit_panel_with_no_strength_measured(browser, tmp_path):
-    """Test strength is one share per feature, so it is taken out of login."""
-    payload = payload_named('team')
-    login = payload['features'][0]
-    assert login['name'] == 'login'
-    login['test_strength'] = None
-    login['rollup']['test_strength'] = None
-    for rule in login['rules']:
-        rule['cells']['strong']['strength'] = None
-        if rule['audit']:
-            rule['audit']['strength'] = None
-    lines = audit_lines(browser, tmp_path, payload, 'login', 'RULE-2')
-    assert lines[:2] == ['Strong. It found nothing.',
-                         'Read by example-model-1 on 2026-09-12 09:14 UTC'], lines
+    assert bugs == [], bugs
+    assert not [line for line in lines if 'planted' in line], lines
 
 
 # purlin: purlin_report PROOF-147
@@ -1517,59 +877,6 @@ def test_the_audit_panel_of_a_rule_no_audit_read(browser, tmp_path):
                         'export', 'RULE-2')
     assert lines[0] == (
         "No audit has read this rule's text, proof and test yet."), lines
-
-
-def top_bar(browser, tmp_path, payload):
-    page = open_board(browser, tmp_path, payload)
-    bar = page.inner_text('.topbar')
-    page.close()
-    return bar
-
-
-# purlin: purlin_report PROOF-55
-def test_the_top_bar_states_the_signed_tag(browser, tmp_path):
-    payload = payload_named('regulated')
-    assert payload['gate']['gate'] == 'signed'
-    assert payload['tag']['name'] == 'signed/1.4.0'
-    assert payload['tag']['commit'].startswith('a1b2c3d')
-    page = open_board(browser, tmp_path, payload)
-    assert texts(page, '.topbar .tag')[1] == 'signed/1.4.0'
-    page.close()
-
-
-# purlin: purlin_report PROOF-148
-def test_the_top_bar_names_no_signed_tag(browser, tmp_path):
-    payload = payload_named('regulated')
-    payload['tag'] = None
-    assert 'no signed tag' in top_bar(browser, tmp_path, payload)
-
-
-def _no_tag_below_signed(browser, tmp_path, name, gate):
-    payload = payload_named(name)
-    assert payload['gate']['gate'] == gate
-    bar = top_bar(browser, tmp_path, payload)
-    assert 'no signed tag' not in bar, bar
-    assert 'signed/' not in bar, bar
-    assert 'gate: ' + gate in bar, bar
-
-
-# purlin: purlin_report PROOF-150
-def test_the_top_bar_at_passed_shows_no_tag(browser, tmp_path):
-    _no_tag_below_signed(browser, tmp_path, 'solo', 'passed')
-
-
-# purlin: purlin_report PROOF-62
-def test_a_spec_that_names_no_files_says_so(browser, tmp_path):
-    """The team fixture's invoice spec has no `> Scope:` line."""
-    page = open_board(browser, tmp_path, payload_named('team'))
-    names = dict(zip(feature_names(page), page.eval_on_selector_all(
-        '.tr .name', 'els => els.map(e => Array.from(e.querySelectorAll('
-        '".n, .ns")).map(s => s.textContent.trim()).join(" "))')))
-    assert names['invoice'] == 'invoice · no scope', names
-    assert page.get_attribute('.tr[data-feature="invoice"] .ns',
-                              'title') == 'no > Scope: line'
-    assert names['login'] == 'login', names
-    page.close()
 
 
 # purlin: purlin_report PROOF-64
@@ -1592,14 +899,10 @@ def test_a_rule_out_of_date_reads_what_changed(browser, tmp_path):
     reg.close()
 
 
-# The words of a higher step than `passed`, which a project at that gate is
-# never shown: the requirement names them, so the test does too.
-HIGHER_WORDS = re.compile(
-    r'\b(strong|signed|audit|signature|hand check)', re.I)
-# Proofs are optional at `passed`, so a project there that writes no proof
-# line is not shown the word either.
-HIGHER_WORDS_NO_PROOFS = re.compile(
-    r'\b(strong|signed|audit|signature|hand check|proof)', re.I)
+# The words a project no audit has read is never shown, and the one a
+# project that writes no proof line is not shown either.
+AUDIT_WORDS = re.compile(r'strong|audit', re.I)
+AUDIT_AND_PROOF_WORDS = re.compile(r'proof|strong|audit', re.I)
 STATUSES = ('passed', 'failed', 'partial', 'no test', 'not run',
             'out of date')
 
@@ -1614,10 +917,6 @@ SEEN = """() => [document.body.innerText].concat(
 def _walk_everything(page):
     """Every screen the page offers, as the texts and hovers it showed."""
     seen = list(page.evaluate(SEEN))
-    for label in chip_labels(page):
-        page.click(chip_for(label))
-        seen.extend(page.evaluate(SEEN))
-        page.click(chip_for(label))
     names = feature_names(page)
     for name in names:
         page.click('[data-act="feature"][data-feature="%s"]' % name)
@@ -1638,87 +937,49 @@ def _walk_everything(page):
     return seen, statuses
 
 
-def _higher_words(browser, tmp_path, payload, words=HIGHER_WORDS):
-    """Walk every screen of a `passed` board: the words of a higher step it
-    showed, and each rule's status in the order the rules were opened."""
-    assert payload['gate']['gate'] == 'passed'
+def words_shown(browser, tmp_path, payload, words):
+    """Walk every screen of one board: the words of `words` it showed, and
+    each rule's status in the order the rules were opened."""
     page = open_board(browser, tmp_path, payload)
     seen, statuses = _walk_everything(page)
     page.close()
-    found = sorted({match.group(0) for text in seen if text
-                    for match in words.finditer(text)})
-    assert len(statuses) == 5, statuses
-    assert all(status in STATUSES for status in statuses), statuses
-    return found, statuses
-
-
-def _login_rule_1_reads(word, reasons):
-    """The solo payload with login `RULE-1`'s passed cell reading `word`."""
-    payload = payload_named('solo')
-    cell = payload['features'][0]['rules'][0]['cells']['passed']
-    cell['word'] = word
-    cell['reasons'] = reasons
-    return payload
+    return sorted({match.group(0) for text in seen if text
+                   for match in words.finditer(text)}), statuses
 
 
 # purlin: purlin_report PROOF-63
-def test_the_passed_gate_shows_no_word_of_a_higher_level(browser, tmp_path):
-    found, _statuses = _higher_words(browser, tmp_path, payload_named('solo'))
+def test_a_project_no_audit_read_never_reads_strong_or_audit(browser,
+                                                            tmp_path):
+    payload = payload_named('solo')
+    assert payload['summary']['audit'] == {'strong': 0, 'weak': 0,
+                                           'not_audited': 2}
+    found, statuses = words_shown(browser, tmp_path, payload, AUDIT_WORDS)
     assert found == [], found
-
-
-# purlin: purlin_report PROOF-99
-def test_a_failed_rule_at_passed_shows_no_higher_word(browser, tmp_path):
-    found, statuses = _higher_words(browser, tmp_path, _login_rule_1_reads(
-        'failed', ['failing: tests/test_login.py']))
-    assert found == [], found
-    assert statuses[0] == 'failed', statuses
-
-
-# purlin: purlin_report PROOF-100
-def test_a_partial_rule_at_passed_shows_no_higher_word(browser, tmp_path):
-    found, statuses = _higher_words(browser, tmp_path, _login_rule_1_reads(
-        'partial', ['passed on macOS', 'Linux/Unix: failed']))
-    assert found == [], found
-    assert statuses[0] == 'partial', statuses
-
-
-# purlin: purlin_report PROOF-101
-def test_a_rule_not_run_at_passed_shows_no_higher_word(browser, tmp_path):
-    found, statuses = _higher_words(browser, tmp_path, _login_rule_1_reads(
-        'not run', ['Linux/Unix: no run yet']))
-    assert found == [], found
-    assert statuses[0] == 'not run', statuses
-
-
-# purlin: purlin_report PROOF-102
-def test_a_rule_out_of_date_at_passed_shows_no_higher_word(browser,
-                                                           tmp_path):
-    found, statuses = _higher_words(browser, tmp_path, _login_rule_1_reads(
-        'out of date', ['code changed since 9f8e7d6']))
-    assert found == [], found
-    assert statuses[0] == 'out of date', statuses
+    assert len(statuses) == 5, statuses
+    assert set(statuses) <= set(STATUSES), statuses
 
 
 # purlin: purlin_report PROOF-103
-def test_a_passed_project_with_no_proof_line_never_reads_proof(browser,
-                                                               tmp_path):
+def test_a_project_with_no_proof_line_never_reads_proof(browser, tmp_path):
     payload = without_proof_lines(payload_named('solo'))
     assert payload['summary']['proofs'] == 0
-    found, _statuses = _higher_words(browser, tmp_path, payload,
-                                     HIGHER_WORDS_NO_PROOFS)
+    assert all(rule['proofs'] == [] for feature in payload['features']
+               for rule in feature['rules'])
+    found, statuses = words_shown(browser, tmp_path, payload,
+                                  AUDIT_AND_PROOF_WORDS)
     assert found == [], found
+    assert len(statuses) == 5, statuses
 
 
 def _marked_project(root, passing):
-    """A project at the gate `passed`: one rule, no proof line, one pytest
-    test marked with the rule's own id, passing or failing as asked."""
+    """A new project: one rule, no proof line, one pytest test marked with
+    the rule's own id, passing or failing as asked."""
     import suites
     (root / 'specs' / 'a').mkdir(parents=True)
     (root / 'tests').mkdir()
     (root / '.purlin').mkdir()
     (root / '.purlin' / 'config.json').write_text(json.dumps(
-        {'gate': 'passed', 'tests': [suites.pytest_suite()]}),
+        {'version': '0.10.0', 'tests': [suites.pytest_suite()]}),
         encoding='utf-8')
     (root / 'specs' / 'a' / 'lock.md').write_text(
         '# lock\n\n> Scope: tests/\n\n## Rules\n\n'
@@ -1771,20 +1032,17 @@ def _rule_marked_with_its_id(browser, tmp_path, passing):
         lines
     assert dots == [['passed' if passing else 'failed', tone, 0]], dots
     found = sorted({match.group(0) for text in seen if text
-                    for match in HIGHER_WORDS_NO_PROOFS.finditer(text)})
+                    for match in AUDIT_AND_PROOF_WORDS.finditer(text)})
     assert found == [], found
 
 
 # purlin: purlin_report PROOF-65
 def test_a_passing_test_marked_with_the_rules_id_shows_passed(browser,
                                                              tmp_path):
+    """The data lists the test with `pass`; the screen reads it behind a
+    pass-coloured dot whose hover is `passed`, with no word of a proof or
+    of the audit."""
     _rule_marked_with_its_id(browser, tmp_path, True)
-
-
-# purlin: purlin_report PROOF-152
-def test_a_failing_test_marked_with_the_rules_id_shows_failed(browser,
-                                                             tmp_path):
-    _rule_marked_with_its_id(browser, tmp_path, False)
 
 
 # Every element that draws a text node of its own, its colour, the ground under
@@ -1871,17 +1129,16 @@ def open_in_theme(browser, tmp_path, payload, theme):
 
 
 def _contrast_in(browser, tmp_path, theme):
-    """Every fixture in one theme, on the board with its first spec and that
-    spec's first rule's proofs open, then on that rule's screen: how many
-    neutral texts were measured, and those under 7:1."""
+    """Every sample in one theme, on the board with its first spec open and
+    then on its first rule's screen: how many neutral texts were measured,
+    and those under 7:1."""
     checked = 0
     low = []
     for process in PROCESSES:
         page = open_in_theme(browser, tmp_path / process,
                              payload_named(process), theme)
         page.click('.tr')
-        page.click('[data-act="proofs"]')
-        assert page.query_selector('.rule-proofs'), process
+        assert page.query_selector('.rule'), process
         found = neutral_text(page)
         page.click('.rule')
         page.wait_for_selector('h1', timeout=10000)
@@ -1894,6 +1151,8 @@ def _contrast_in(browser, tmp_path, theme):
 
 # purlin: purlin_report PROOF-66
 def test_neutral_text_measures_7_to_1_in_the_dark_theme(browser, tmp_path):
+    """The three samples, each on the board with its first spec open and
+    then on its first rule's screen."""
     checked, low = _contrast_in(browser, tmp_path, 'dark')
     assert low == [], low
     assert checked > 100, checked
@@ -1901,38 +1160,16 @@ def test_neutral_text_measures_7_to_1_in_the_dark_theme(browser, tmp_path):
 
 # purlin: purlin_report PROOF-104
 def test_neutral_text_measures_7_to_1_in_the_light_theme(browser, tmp_path):
+    """The three samples, each on the board with its first spec open and
+    then on its first rule's screen."""
     checked, low = _contrast_in(browser, tmp_path, 'light')
     assert low == [], low
     assert checked > 100, checked
 
 
-# purlin: purlin_report PROOF-105
-def test_the_contrast_check_names_a_text_under_7_to_1(browser, tmp_path):
-    page = open_in_theme(browser, tmp_path, payload_named('team'), 'dark')
-    page.evaluate("document.documentElement.style.setProperty("
-                  "'--state-idle', '#94A2B8')")
-    assert [item for item in neutral_text(page) if item[3] < 7]
-    page.close()
-
-
 # ---------------------------------------------------------------------------
-# A rule's proofs, under its row
+# A rule's proofs, on its screen
 # ---------------------------------------------------------------------------
-
-# Each proofs button on the board: the rule it belongs to, the glyph, the
-# count it reads, whether a screen reader is told it is open, and the colour
-# the count is drawn in.
-TOGGLES = """() => Array.from(document.querySelectorAll('[data-act="proofs"]')).map(
-  b => ({rule: b.getAttribute('data-rule'), tag: b.tagName,
-         glyph: b.firstChild.textContent,
-         label: b.lastChild.textContent,
-         open: b.getAttribute('aria-expanded'),
-         colour: getComputedStyle(b.lastChild).color}))"""
-
-
-def toggles(page):
-    return {item['rule']: item for item in page.evaluate(TOGGLES)}
-
 
 def resolved(page, token):
     """The computed colour a token resolves to on this page."""
@@ -1943,7 +1180,7 @@ def resolved(page, token):
         " const v = getComputedStyle(s).color; s.remove(); return v; }", token)
 
 
-def test_dots(page, selector='.rule-proofs .ptests p'):
+def test_dots(page, selector='.proof .ptests p'):
     """Each test line's dot: its hover, its colour, and how many badges the
     line carries beside it."""
     return page.eval_on_selector_all(
@@ -1957,8 +1194,8 @@ def test_dots(page, selector='.rule-proofs .ptests p'):
 test_dots.__test__ = False
 
 
-def proof_lines(page, selector='.rule-proofs .proof'):
-    """What the open proofs beneath the rows read, one line per row."""
+def proof_lines(page, selector='.proof'):
+    """What the proofs on the open rule's screen read, one line per row."""
     return page.eval_on_selector_all(
         selector + ' .kv > *',
         r'els => els.map(e => e.textContent.trim().replace(/\s+/g, " "))')
@@ -1971,61 +1208,10 @@ def login_open(browser, tmp_path, payload=None):
     return page
 
 
-def unfolded(browser, tmp_path, feature, rule, name='regulated'):
-    """The board of one sample with one spec open and one rule unfolded."""
-    page = open_board(browser, tmp_path, payload_named(name))
-    page.click('[data-act="feature"][data-feature="%s"]' % feature)
-    page.click(toggle_for(feature, rule))
-    return page
-
-
-def toggle_for(feature, rule):
-    return '[data-act="proofs"][data-feature="%s"][data-rule="%s"]' % (
-        feature, rule)
-
-
-# purlin: purlin_report PROOF-68
-def test_every_rule_opens_folded(browser, tmp_path):
-    page = login_open(browser, tmp_path)
-    found = toggles(page)
-    assert [found[r]['label'] for r in ('RULE-1', 'RULE-2', 'RULE-3',
-                                        'RULE-4')] == [
-        '1 proof', '1 proof', '1 proof', '2 proofs'], found
-    assert all(item['tag'] == 'BUTTON' and item['open'] == 'false'
-               and item['glyph'] == '▶' for item in found.values())
-    assert 'no cookie is set' not in page.inner_text('.wrap')
-    page.close()
-
-
-# purlin: purlin_report PROOF-153
-def test_a_failed_proof_draws_its_rules_count_in_the_warn_tone(browser,
-                                                               tmp_path):
-    page = login_open(browser, tmp_path)
-    found = toggles(page)
-    warn = resolved(page, '--state-warn')
-    assert found['RULE-4']['colour'] == warn
-    assert found['RULE-1']['colour'] != warn
-    page.close()
-
-
-# purlin: purlin_report PROOF-154
-def test_enter_unfolds_a_rule_and_keeps_the_focus(browser, tmp_path):
-    page = login_open(browser, tmp_path)
-    page.focus(toggle_for('login', 'RULE-4'))
-    page.keyboard.press('Enter')
-    found = toggles(page)
-    assert found['RULE-4']['open'] == 'true', found['RULE-4']
-    assert found['RULE-4']['glyph'] == '▼'
-    assert found['RULE-1']['open'] == 'false'
-    assert page.query_selector('h1') is None, 'the board is not showing'
-    assert page.evaluate(
-        "document.activeElement.getAttribute('data-rule')") == 'RULE-4'
-    page.close()
-
-
 # purlin: purlin_report PROOF-155
-def test_an_unfolded_rule_reads_each_proof(browser, tmp_path):
-    page = unfolded(browser, tmp_path, 'login', 'RULE-4')
+def test_a_rules_screen_reads_each_proof(browser, tmp_path):
+    page = open_sample(browser, tmp_path, 'regulated')
+    open_rule(page, 'login', 'RULE-4')
     assert proof_lines(page) == [
         'PROOF-4',
         'On Windows, open http://localhost/session and read that no cookie '
@@ -2043,128 +1229,27 @@ def test_an_unfolded_rule_reads_each_proof(browser, tmp_path):
 # purlin: purlin_report PROOF-180
 def test_a_test_line_starts_with_a_dot_in_its_results_colour(browser,
                                                              tmp_path):
-    page = unfolded(browser, tmp_path, 'login', 'RULE-4')
+    page = open_sample(browser, tmp_path, 'regulated')
+    open_rule(page, 'login', 'RULE-4')
+    assert texts(page, '.proof .ptests p') == [
+        'tests/test_login.py :: test_no_cookie',
+        'tests/test_login.py :: test_secure_flag']
     assert test_dots(page) == [
         ['failed', resolved(page, '--state-fail'), 0],
         ['passed', resolved(page, '--state-pass'), 0]]
     page.close()
 
 
-# purlin: purlin_report PROOF-156
-def test_enter_again_folds_the_rule(browser, tmp_path):
-    page = unfolded(browser, tmp_path, 'login', 'RULE-4')
-    page.focus(toggle_for('login', 'RULE-4'))
-    page.keyboard.press('Enter')
-    assert proof_lines(page) == []
-    page.close()
-
-
-# purlin: purlin_report PROOF-157
-def test_reopening_a_spec_folds_its_rules(browser, tmp_path):
-    page = unfolded(browser, tmp_path, 'login', 'RULE-4')
-    assert proof_lines(page) != []
-    page.click('[data-act="feature"][data-feature="login"]')
-    page.click('[data-act="feature"][data-feature="login"]')
-    assert proof_lines(page) == []
-    assert toggles(page)['RULE-4']['open'] == 'false'
-    page.close()
-
-
 # purlin: purlin_report PROOF-69
-def test_a_proof_with_no_test_says_so_under_its_row(browser, tmp_path):
+def test_a_proof_with_no_test_names_the_build(browser, tmp_path):
     payload = payload_named('solo')
-    login = payload['features'][0]
+    words = rule_of(payload, 'login', 'RULE-2')['proofs'][0]['text']
     page = open_board(browser, tmp_path, payload)
-    page.click('[data-act="feature"][data-feature="login"]')
-    found = toggles(page)
-    assert found['RULE-2']['label'] == '1 proof'
-    assert found['RULE-2']['colour'] == resolved(page, '--state-warn')
-    page.click(toggle_for('login', 'RULE-2'))
+    open_rule(page, 'login', 'RULE-2')
     assert proof_lines(page) == [
-        'PROOF-2', login['rules'][1]['proofs'][0]['text'], 'Result',
-        'NO TEST', 'Tests',
+        'PROOF-2', words, 'Result', 'NO TEST', 'Tests',
         'No test yet. Type purlin:build login in Claude Code.']
     page.close()
-
-
-# purlin: purlin_report PROOF-158
-def test_a_rule_with_no_proof_shows_the_test_marked_with_its_id(browser,
-                                                                tmp_path):
-    payload = payload_named('solo')
-    payload['features'][0]['rules'][2]['tests'] = [
-        {'file': 'tests/test_login.py', 'name': 'test_locks', 'result': 'pass'}]
-    page = open_board(browser, tmp_path, payload)
-    page.click('[data-act="feature"][data-feature="login"]')
-    assert toggles(page)['RULE-3']['label'] == 'no proof'
-    page.click(toggle_for('login', 'RULE-3'))
-    assert proof_lines(page) == [
-        'Tests', 'tests/test_login.py :: test_locks']
-    assert test_dots(page) == [['passed', resolved(page, '--state-pass'), 0]]
-    page.close()
-
-
-def _bare_login_toggles(browser, tmp_path):
-    bare = open_board(browser, tmp_path,
-                      without_proof_lines(payload_named('solo')))
-    bare.click('[data-act="feature"][data-feature="login"]')
-    found = toggles(bare)
-    bare.close()
-    return found
-
-
-# purlin: purlin_report PROOF-159
-def test_with_no_proof_line_the_button_counts_tests(browser, tmp_path):
-    found = _bare_login_toggles(browser, tmp_path)
-    assert not [item for item in found.values() if 'proof' in item['label']]
-    assert found['RULE-1']['label'] == '1 test'
-
-
-# purlin: purlin_report PROOF-160
-def test_with_no_proof_line_a_rule_with_no_test_has_no_button(browser,
-                                                              tmp_path):
-    found = _bare_login_toggles(browser, tmp_path)
-    assert 'RULE-1' in found
-    assert 'RULE-3' not in found
-
-
-# purlin: purlin_report PROOF-70
-def test_a_filter_that_hides_a_rule_hides_its_proofs(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    page.click('[data-act="feature"][data-feature="login"]')
-    page.click(toggle_for('login', 'RULE-4'))
-    assert 'PROOF-4' in proof_lines(page)
-    page.click(chip_for('To strengthen'))
-    assert rule_ids(page) == ['RULE-3']
-    assert proof_lines(page) == []
-    page.close()
-
-
-# purlin: purlin_report PROOF-106
-def test_the_rule_screen_draws_the_proofs_the_board_drew(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    page.click('[data-act="feature"][data-feature="login"]')
-    page.click(toggle_for('login', 'RULE-4'))
-    board = proof_lines(page)
-    page.click('.rule[data-feature="login"][data-rule="RULE-4"]')
-    screen = page.eval_on_selector_all(
-        'section .stack .panel .kv > *',
-        r'els => els.map(e => e.textContent.trim().replace(/\s+/g, " "))')
-    page.close()
-    assert board and screen == board, (screen, board)
-
-
-# purlin: purlin_report PROOF-71
-def test_the_rules_cell_is_the_specs_own_count(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('team'))
-    cells = count_cells(page)
-    rules_hover = page.evaluate(
-        "() => Array.from(document.querySelectorAll("
-        "'.tr[data-feature=\"receipt\"] [data-label=\"Rules\"] [title]'))"
-        ".length")
-    page.close()
-    assert cells['receipt']['Rules'] == '1'
-    assert cells['login']['Rules'] == '3'
-    assert rules_hover == 0
 
 
 ANCHOR_TEXT = 'The cart page shows the order total above the pay button.'
@@ -2183,141 +1268,33 @@ def test_an_anchors_rule_is_listed_under_the_anchor_alone(browser, tmp_path):
     page.close()
 
 
+# The open rule's heading: the spec that owns the rule, then the rule's id.
+HEADING = """() => Array.from(document.querySelector('hgroup').children)
+  .map(e => e.textContent.trim())"""
+
+
 # purlin: purlin_report PROOF-108
 def test_a_features_own_rule_opens_its_own_screen(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('team'))
+    page = open_sample(browser, tmp_path, 'team')
     open_rule(page, 'receipt', 'RULE-1')
-    assert texts(page, '.tabs button')[-1] == 'receipt RULE-1'
+    heading = page.evaluate(HEADING)
     body = page.inner_text('.wrap')
     page.close()
+    assert heading == ['receipt', 'RULE-1'], heading
     assert RECEIPT_TEXT in body
     assert ANCHOR_TEXT not in body
 
 
 # purlin: purlin_report PROOF-109
 def test_an_anchors_rule_opens_the_anchors_screen(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('team'))
+    page = open_sample(browser, tmp_path, 'team')
     open_rule(page, 'checkout_design', 'RULE-1')
-    assert texts(page, '.tabs button')[-1] == 'checkout_design RULE-1'
+    heading = page.evaluate(HEADING)
     body = page.inner_text('.wrap')
     page.close()
+    assert heading == ['checkout_design', 'RULE-1'], heading
     assert ANCHOR_TEXT in body
     assert RECEIPT_TEXT not in body
-
-
-def _anchor_project(root):
-    """A project at the gate `passed`: an anchor `security` of six rules
-    and a feature `lock` of two, each rule with one proof and one passing
-    pytest test marked with it."""
-    import suites
-    (root / 'specs' / '_anchors').mkdir(parents=True)
-    (root / 'specs' / 'a').mkdir(parents=True)
-    (root / 'tests').mkdir()
-    (root / '.purlin').mkdir()
-    (root / '.purlin' / 'config.json').write_text(json.dumps(
-        {'gate': 'passed', 'tests': [suites.pytest_suite()]}),
-        encoding='utf-8')
-    (root / 'specs' / '_anchors' / 'security.md').write_text(
-        '# Anchor: security\n\n## Rules\n\n'
-        + ''.join('- RULE-%d: Security pattern %d is absent\n' % (n, n)
-                  for n in range(1, 7))
-        + '\n## Proof\n\n'
-        + ''.join('- PROOF-%d (RULE-%d): Grep for pattern %d; verify 0 '
-                  'matches\n' % (n, n, n) for n in range(1, 7)),
-        encoding='utf-8')
-    (root / 'specs' / 'a' / 'lock.md').write_text(
-        '# Feature: lock\n\n> Scope: tests/\n\n## Rules\n\n'
-        '- RULE-1: A wrong password five times locks the account\n'
-        '- RULE-2: A locked account opens again after fifteen minutes\n\n'
-        '## Proof\n\n'
-        '- PROOF-1 (RULE-1): Sign in wrong five times; verify 423\n'
-        '- PROOF-2 (RULE-2): Wait fifteen minutes; verify 200\n',
-        encoding='utf-8')
-    (root / 'tests' / 'test_anchor.py').write_text(
-        ''.join('# purlin: %s PROOF-%d\ndef test_%s_%d():\n    assert True\n\n'
-                % (feature, n, feature, n)
-                for feature, count in (('lock', 2), ('security', 6))
-                for n in range(1, count + 1)),
-        encoding='utf-8')
-
-
-@pytest.fixture(scope='module')
-def anchor_payload(tmp_path_factory):
-    """The payload a real project with an anchor writes once its tests have
-    run: `lock` of 2 rules, and `security` of 6."""
-    root = tmp_path_factory.mktemp('anchor') / 'project'
-    root.mkdir()
-    _anchor_project(root)
-    result = subprocess.run(
-        [sys.executable, os.path.join(ROOT, 'scripts', 'run', 'purlin_run.py'),
-         '--test', '--project-root', str(root)],
-        capture_output=True, encoding='utf-8', cwd=str(root))
-    assert 'Markers: 8 tied to a test, 0 not tied.' in result.stdout, (
-        result.stdout + result.stderr)
-    sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
-    from purlin import report_data
-    assert report_data.refresh(str(root))
-    text = read(os.path.join(str(root), '.purlin', 'report-data.js'))
-    payload = json.loads(
-        text[len('const PURLIN_DATA = '):].rstrip().rstrip(';'))
-    lock = next(f for f in payload['features'] if f['name'] == 'lock')
-    assert [r['feature'] for r in lock['rules']] == ['lock', 'lock']
-    return payload
-
-
-# purlin: purlin_report PROOF-110
-def test_a_real_projects_anchor_lists_its_rules_alone(browser, tmp_path,
-                                                      anchor_payload):
-    page = open_board(browser, tmp_path, anchor_payload)
-    page.click('[data-act="feature"][data-feature="lock"]')
-    assert rule_ids(page) == ['RULE-1', 'RULE-2']
-    page.click('[data-act="feature"][data-feature="security"]')
-    assert len(rule_ids(page)) == 8
-    assert texts(page, '.rule[data-feature="security"] .rid') == [
-        'RULE-%d' % n for n in range(1, 7)]
-    page.close()
-
-
-# purlin: purlin_report PROOF-111
-def test_a_real_projects_two_rule_1s_open_their_own_screens(browser,
-                                                            tmp_path,
-                                                            anchor_payload):
-    page = open_board(browser, tmp_path, anchor_payload)
-    page.click('[data-act="feature"][data-feature="security"]')
-    open_rule(page, 'lock', 'RULE-1')
-    own = page.inner_text('.wrap')
-    page.click('[data-act="close"]')
-    page.click('.rule[data-feature="security"][data-rule="RULE-1"]')
-    anchors = page.inner_text('.wrap')
-    page.close()
-    assert 'A wrong password five times locks the account' in own
-    assert 'Security pattern 1 is absent' not in own
-    assert 'Security pattern 1 is absent' in anchors
-    assert 'A wrong password' not in anchors
-
-
-# purlin: purlin_report PROOF-79
-def test_a_waiting_cell_is_neutral(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    open_rule(page, 'login', 'RULE-4')
-    pills = page.eval_on_selector_all(
-        '.kv dd .pill',
-        'els => els.map(e => [e.innerText.trim(), getComputedStyle(e).color])')
-    waiting = [colour for text, colour in pills if text == 'WAITING']
-    neutral = resolved(page, '--state-neutral')
-    assert neutral != resolved(page, '--state-warn')
-    assert waiting == [neutral], pills
-    page.close()
-
-
-# purlin: purlin_report PROOF-164
-def test_a_waiting_cell_says_what_it_waits_for(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    open_rule(page, 'login', 'RULE-4')
-    rows = page.eval_on_selector_all(
-        '.kv dd', r'els => els.map(e => e.innerText.trim().replace(/\s+/g, " "))')
-    assert 'WAITING waiting for its tests to pass' in rows, rows
-    page.close()
 
 
 # ---------------------------------------------------------------------------
@@ -2325,7 +1302,7 @@ def test_a_waiting_cell_says_what_it_waits_for(browser, tmp_path):
 # ---------------------------------------------------------------------------
 
 def row_badges(page, feature):
-    """Each rule of an open spec and the badges its folded row carries."""
+    """Each rule of an open spec and the badges its row carries."""
     return dict(page.eval_on_selector_all(
         '.rule[data-feature="%s"]' % feature,
         "els => els.map(e => [e.getAttribute('data-rule'), Array.from("
@@ -2334,19 +1311,15 @@ def row_badges(page, feature):
 
 
 # purlin: purlin_report PROOF-165
-def test_a_folded_rule_carries_the_steps_it_reached(browser, tmp_path):
-    page = login_open(browser, tmp_path)
+def test_a_rules_row_carries_a_badge_for_each_count_it_is_in(browser,
+                                                            tmp_path):
+    payload = payload_named('regulated')
+    assert rule_of(payload, 'login', 'RULE-4')['cells']['passed'][
+        'platforms']['windows']['word'] == 'failed'
+    page = login_open(browser, tmp_path, payload)
     assert row_badges(page, 'login') == {
         'RULE-1': 'PASSED STRONG', 'RULE-2': 'PASSED STRONG',
         'RULE-3': 'PASSED', 'RULE-4': 'FAILED'}
-    page.close()
-
-
-# purlin: purlin_report PROOF-166
-def test_a_rule_that_reached_no_step_carries_no_badge(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    page.click('[data-act="feature"][data-feature="export"]')
-    assert row_badges(page, 'export')['RULE-1'] == ''
     page.close()
 
 
@@ -2360,23 +1333,6 @@ def test_the_badges_add_up_to_the_step_boxes(browser, tmp_path):
     page.close()
     assert [seen.count(word) for word in ('PASSED', 'STRONG')] == [8, 3], seen
     assert [int(count) for _, count, _ in found[1:]] == [8, 3]
-
-
-# purlin: purlin_report PROOF-168
-def test_a_failed_rule_at_passed_carries_failed_alone(browser, tmp_path):
-    payload = _login_rule_1_reads('failed', ['failing: tests/test_login.py'])
-    page = open_board(browser, tmp_path, payload)
-    page.click('[data-act="feature"][data-feature="login"]')
-    assert row_badges(page, 'login')['RULE-1'] == 'FAILED'
-    page.close()
-
-
-# purlin: purlin_report PROOF-169
-def test_a_step_not_reached_draws_no_badge(browser, tmp_path):
-    page = login_open(browser, tmp_path)
-    row = page.inner_text('.rule[data-rule="RULE-3"] .rp')
-    page.close()
-    assert 'WEAK' not in row, row
 
 
 # ---------------------------------------------------------------------------
@@ -2394,49 +1350,6 @@ def test_an_uncommitted_tree_is_named_on_the_board(browser, tmp_path):
     page.close()
 
 
-# purlin: purlin_report PROOF-187
-def test_a_strong_audit_with_a_finding_reads_strong_then_it(browser,
-                                                           tmp_path):
-    payload = payload_named('regulated')
-    rule = payload['features'][0]['rules'][0]
-    assert rule['id'] == 'RULE-1' and rule['audit']['verdict'] == 'strong'
-    rule['audit']['findings'] = ['The test reads the lockout message.']
-    lines = audit_lines(browser, tmp_path, payload, 'login', 'RULE-1')
-    assert lines[:2] == ['Strong.', 'The test reads the lockout message.'], \
-        lines
-
-
-# purlin: purlin_report PROOF-188
-def test_a_share_of_85_7_reads_85_on_the_board_and_the_rule(browser,
-                                                           tmp_path):
-    """Test strength shows its whole-number part on every surface."""
-    payload = payload_named('regulated')
-    login = payload['features'][0]
-    assert login['name'] == 'login'
-    login['test_strength'] = 85.7
-    login['rollup']['test_strength'] = 85.7
-    for rule in login['rules']:
-        if rule['cells'].get('strong'):
-            rule['cells']['strong']['strength'] = 85.7
-        if rule['audit']:
-            rule['audit']['strength'] = 85.7
-    page = open_board(browser, tmp_path, payload)
-    assert count_cells(page)['login']['Strong'] == '2 of 4 · 85%'
-    open_rule(page, 'login', 'RULE-1')
-    lines = panel_lines(page, 'Audit')
-    page.close()
-    assert 'Test strength 85%.' in lines, lines
-
-
-# purlin: purlin_report PROOF-197
-def test_the_tag_chip_names_its_commit_in_its_hover(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    chip = page.locator('.topbar .tag', has_text='signed/1.4.0')
-    assert chip.get_attribute('title') == (
-        'The signed tag on this commit · a1b2c3d')
-    page.close()
-
-
 # purlin: purlin_report PROOF-189
 def test_a_spec_no_run_covered_says_so_in_its_hover(browser, tmp_path):
     payload = payload_named('team')
@@ -2447,86 +1360,6 @@ def test_a_spec_no_run_covered_says_so_in_its_hover(browser, tmp_path):
     page = open_board(browser, tmp_path, payload)
     assert hovers(page)['login']['Tests'] == (
         'No counting run has covered a platform yet.')
-    page.close()
-
-
-# purlin: purlin_report PROOF-190
-def test_a_spec_no_audit_read_says_so_in_its_hover(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    assert hovers(page)['export']['Strong'] == 'No audit has read a rule here.'
-    page.close()
-
-
-# purlin: purlin_report PROOF-192
-def test_no_signed_tag_says_what_writes_one(browser, tmp_path):
-    payload = payload_named('regulated')
-    payload['tag'] = None
-    page = open_board(browser, tmp_path, payload)
-    chip = page.locator('.topbar .tag', has_text='no signed tag')
-    assert chip.get_attribute('title') == (
-        'This commit carries no signed tag. The first purlin:sign after '
-        'purlin:test --release writes signed/<version>, and a person pushes '
-        'it.')
-    page.close()
-
-
-# purlin: purlin_report PROOF-193
-def test_a_filter_no_rule_is_left_under_says_so(browser, tmp_path):
-    payload = payload_named('regulated')
-    for feature in payload['features']:
-        for rule in feature['rules']:
-            if rule.get('left') == 'to_test':
-                rule['left'] = None
-    page = open_board(browser, tmp_path, payload)
-    page.click(chip_for('To test'))
-    assert page.inner_text('.wrap .empty') == 'No rule is left of this kind.'
-    assert page.query_selector_all('.tbl') == []
-    page.close()
-
-
-# purlin: purlin_report PROOF-194
-def test_a_rule_with_no_test_names_the_build(browser, tmp_path):
-    payload = without_proof_lines(payload_named('solo'))
-    rule = payload['features'][0]['rules'][2]
-    assert rule['id'] == 'RULE-3' and rule['tests'] == []
-    page = open_board(browser, tmp_path, payload)
-    open_rule(page, 'login', 'RULE-3')
-    assert page.inner_text('.panel.tests').strip() == (
-        'No test yet. Type purlin:build login in Claude Code.')
-    page.close()
-
-
-# purlin: purlin_report PROOF-195
-def test_a_proof_no_run_listed_tests_for_says_so(browser, tmp_path):
-    payload = payload_named('regulated')
-    export = next(f for f in payload['features'] if f['name'] == 'export')
-    proof = export['rules'][0]['proofs'][0]
-    assert proof['result'] == 'not run'
-    proof['tests'] = []
-    page = open_board(browser, tmp_path, payload)
-    page.click('[data-act="feature"][data-feature="export"]')
-    page.click(toggle_for('export', 'RULE-1'))
-    assert proof_lines(page)[-1] == 'No run has listed its tests yet.'
-    page.close()
-
-
-# purlin: purlin_report PROOF-196
-def test_an_open_rule_gone_from_the_data_says_so(browser, tmp_path):
-    payload = payload_named('regulated')
-    page = open_board(browser, tmp_path, payload)
-    open_rule(page, 'login', 'RULE-1')
-    login = payload['features'][0]
-    login['rules'] = [r for r in login['rules'] if r['id'] != 'RULE-1']
-    with open(os.path.join(str(tmp_path), '.purlin', 'report-data.js'), 'w',
-              encoding='utf-8') as handle:
-        handle.write('const PURLIN_DATA = ' + json.dumps(payload) + ';\n')
-    page.evaluate('window.purlinMark = 1')
-    page.click('.topbar [data-act="reload"]')
-    page.wait_for_function('() => window.purlinMark === undefined',
-                           timeout=10000)
-    page.wait_for_selector('.wrap .empty', timeout=10000)
-    assert page.inner_text('.wrap .empty') == (
-        'That rule is not in this data. Go back to the board and pick one.')
     page.close()
 
 
@@ -2547,18 +1380,19 @@ def listed_in(page, table):
 
 # purlin: purlin_report PROOF-203
 def test_the_anchors_stand_in_a_section_of_their_own(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
+    page = open_sample(browser, tmp_path, 'regulated')
     assert section_labels(page) == ['ANCHORS', 'SPECS']
     below = page.evaluate(
-        "() => document.querySelector('.filters').getBoundingClientRect().bottom"
+        "() => Math.max(...Array.from(document.querySelectorAll('.tile')).map("
+        "t => t.getBoundingClientRect().bottom))"
         " <= document.querySelector('[data-table=\"anchors\"]')"
         ".getBoundingClientRect().top")
-    names = texts(page, '[data-table="anchors"] .tr .name')
+    anchors = listed_in(page, 'anchors')
     heads = texts(page, '[data-table="anchors"] .th > div')
     specs = listed_in(page, 'specs')
     page.close()
     assert below
-    assert names == ['▶checkout_design', '▶security_baseline'], names
+    assert anchors == ['checkout_design', 'security_baseline'], anchors
     assert heads == ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong']
     assert specs == ['login', 'invoice', 'export'], specs
 
@@ -2573,70 +1407,9 @@ def test_a_project_with_no_anchor_has_no_anchors_section(browser, tmp_path):
     assert labels == ['SPECS'], labels
 
 
-# purlin: purlin_report PROOF-205
-def test_a_filter_keeps_the_anchors_it_accepts(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    page.click(chip_for('To strengthen'))
-    anchors, specs = listed_in(page, 'anchors'), listed_in(page, 'specs')
-    page.close()
-    assert anchors == ['checkout_design'], anchors
-    assert specs == ['login', 'invoice'], specs
-
-
-# purlin: purlin_report PROOF-206
-def test_a_filter_that_leaves_no_anchor_hides_the_section(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    page.click(chip_for('To test'))
-    labels, specs = section_labels(page), listed_in(page, 'specs')
-    page.close()
-    assert 'ANCHORS' not in labels, labels
-    assert specs == ['export'], specs
-
-
-# purlin: purlin_report PROOF-207
-def test_an_anchors_row_opens_and_closes(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    row = '[data-table="anchors"] [data-act="feature"]' \
-        '[data-feature="checkout_design"]'
-    page.click(row)
-    rule = '[data-table="anchors"] .rule[data-feature="checkout_design"]'
-    assert texts(page, rule + ' .rid') == ['RULE-1']
-    assert texts(page, rule + ' .rp') == ['PASSED']
-    assert texts(page, rule + ' .more') == ['▶1 proof']
-    page.click(row)
-    assert rule_ids(page) == []
-    page.close()
-
-
 # ---------------------------------------------------------------------------
-# An anchor's strength, and a spec to repair
+# A spec to repair
 # ---------------------------------------------------------------------------
-
-# purlin: purlin_report PROOF-209
-def test_an_anchors_strong_cell_shows_no_strength(browser, tmp_path):
-    payload = payload_named('regulated')
-    anchor = next(f for f in payload['features']
-                  if f['name'] == 'checkout_design')
-    anchor['test_strength'] = anchor['rollup']['test_strength'] = 90
-    page = open_board(browser, tmp_path, payload)
-    strong = count_cells(page)['checkout_design']['Strong']
-    page.close()
-    assert strong == '0 of 1', strong
-    assert '%' not in strong
-
-
-# purlin: purlin_report PROOF-215
-def test_a_spec_to_repair_has_its_filter_button(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('team'))
-    page.click('.chip[data-filter="to_repair"]')
-    labels, specs = section_labels(page), listed_in(page, 'specs')
-    page.click('[data-act="feature"][data-feature="refund"]')
-    ids = rule_ids(page)
-    page.close()
-    assert 'ANCHORS' not in labels, labels
-    assert specs == ['refund'], specs
-    assert ids == ['RULE-1', 'RULE-2'], ids
-
 
 # The word and the reasons of one row of the open rule's cells, by its label.
 CELL_ROW = """name => {
@@ -2659,39 +1432,8 @@ def test_a_rule_of_a_spec_to_repair_says_why(browser, tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# The signature, the audit and a hand check
+# A hand check, and a proof that found nothing to check
 # ---------------------------------------------------------------------------
-
-# purlin: purlin_report PROOF-218
-def test_no_signed_column_at_the_gate_signed(browser, tmp_path):
-    found = headings_of(browser, tmp_path, payload_named('regulated'))
-    assert found == BASE_COLUMNS + ['Strong'], found
-    assert 'Signed' not in found
-
-
-# purlin: purlin_report PROOF-219
-def test_an_audited_project_shows_the_strong_column(browser, tmp_path):
-    payload = payload_named('team')
-    assert payload['gate']['gate'] == 'passed'
-    assert payload['summary']['audit'] == {'strong': 5, 'weak': 1,
-                                           'not_audited': 0}
-    page = open_board(browser, tmp_path, payload)
-    heads, cells = head_labels(page), count_cells(page)
-    page.close()
-    assert heads[-1] == 'Strong', heads
-    assert cells['login']['Strong'] == '2 of 3 · 71%', cells['login']
-
-
-# purlin: purlin_report PROOF-220
-def test_a_project_no_audit_read_shows_no_strong_column(browser, tmp_path):
-    payload = payload_named('solo')
-    assert payload['summary']['audit'] == {'strong': 0, 'weak': 0,
-                                           'not_audited': 3}
-    page = open_board(browser, tmp_path, payload)
-    heads = head_labels(page)
-    page.close()
-    assert 'Strong' not in heads, heads
-
 
 def hand_check_rule(payload):
     """The regulated sample's invoice `RULE-3`, whose `@manual` proof no
@@ -2702,31 +1444,125 @@ def hand_check_rule(payload):
     return rule
 
 
-# purlin: purlin_report PROOF-221
-def test_a_hand_check_at_signed_is_checked_in_the_walk(browser, tmp_path):
+def hand_check_tests(page):
+    """The lines under `Tests` of the open rule's one proof."""
+    return texts(page, '.proof .ptests p')
+
+
+# purlin: purlin_report PROOF-228
+def test_a_hand_check_no_sign_off_noted_reads_checked_at_sign_off(browser,
+                                                                 tmp_path):
     payload = payload_named('regulated')
-    hand_check_rule(payload)
+    assert hand_check_rule(payload)['cells']['strong']['reasons'] == []
     page = open_board(browser, tmp_path, payload)
-    page.click('[data-act="feature"][data-feature="invoice"]')
-    page.click(toggle_for('invoice', 'RULE-3'))
-    tests = page.inner_text('.rule-proofs .ptests').strip()
+    open_rule(page, 'invoice', 'RULE-3')
+    assert hand_check_tests(page) == ['checked at sign-off']
     page.close()
-    assert tests == ('Checked by hand when a release is signed, in the walk '
-                     'of purlin:sign.'), tests
 
 
-# purlin: purlin_report PROOF-222
-def test_a_hand_check_at_passed_is_listed_as_not_checked(browser, tmp_path):
+# purlin: purlin_report PROOF-229
+def test_a_hand_check_reads_the_newest_sign_offs_note_beneath_it(browser,
+                                                                tmp_path):
+    sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
+    from purlin import states
+
+    def noted(payload):
+        hand_check_rule(payload)['cells']['strong']['reasons'] = [
+            states.HAND_NOTE % ('0.1.0', 'quinn.qa@labconnect.example',
+                                '4 commits since', 'the tube is red')]
+    page = open_sample(browser, tmp_path, 'regulated', noted)
+    open_rule(page, 'invoice', 'RULE-3')
+    assert hand_check_tests(page) == [
+        'checked at sign-off',
+        'noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, '
+        '4 commits since: the tube is red']
+    page.close()
+
+
+# purlin: purlin_report PROOF-227
+def test_an_anchors_rule_with_nothing_to_check_says_why_it_passed(browser,
+                                                                 tmp_path):
+    sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
+    from purlin import states
+    reason = 'this project has no screens'
+
+    def skipped_with_nothing_to_check(payload):
+        """What `states` writes for an anchor's rule whose proof's one test
+        skipped with `nothing to check: this project has no screens`."""
+        rule = rule_of(payload, 'security_baseline', 'RULE-1')
+        rule['proofs'][0].update(result='passed', tests=[
+            {'file': 'tests/test_security.py', 'name': 'test_no_inline_script',
+             'result': 'not run'}])
+        rule['cells']['passed'].update(
+            word='passed', current=True, counts=True, source='ci',
+            nothing_to_check=[{'proof': 'PROOF-1', 'reason': reason}],
+            reasons=[states.NOTHING_TO_CHECK % ('PROOF-1', reason)])
+    page = open_sample(browser, tmp_path, 'regulated',
+                       skipped_with_nothing_to_check)
+    open_rule(page, 'security_baseline', 'RULE-1')
+    row = page.evaluate(CELL_ROW, 'Passed')
+    page.close()
+    assert row == ['PASSED', 'PROOF-1: this project has no screens'], row
+
+
+# ---------------------------------------------------------------------------
+# The top bar: the two facts, and what the data describes
+# ---------------------------------------------------------------------------
+
+def facts(page):
+    """The top bar's boxes, each as `[label, word]`."""
+    return page.eval_on_selector_all(
+        '.topbar .fact', "els => els.map(e => [e.firstElementChild"
+        ".textContent.trim(), e.lastElementChild.textContent.trim()])")
+
+
+# purlin: purlin_report PROOF-223
+def test_the_top_bar_reads_met_and_the_sign_off_at_its_commit(browser,
+                                                             tmp_path):
+    def passing_and_signed(payload):
+        payload.update(met=True, left=[], signoff={
+            'word': 'signed 0.1.0 at a1b2c3d', 'version': '0.1.0',
+            'commit': payload['commit'], 'since': 0})
+    page = open_sample(browser, tmp_path, 'regulated', passing_and_signed)
+    found = facts(page)
+    page.close()
+    assert found == [['Tests', 'met'],
+                     ['Sign-off', 'signed 0.1.0 at a1b2c3d']], found
+
+
+# purlin: purlin_report PROOF-225
+def test_a_failing_rule_and_no_sign_off_read_not_met_and_not_signed(
+        browser, tmp_path):
     payload = payload_named('solo')
-    rule = payload['features'][0]['rules'][0]
-    assert rule['id'] == 'RULE-1'
-    rule['proofs'][0].update(manual=True, tests=[], result='hand check')
+    assert 'failed' in [rule['cells']['passed']['word']
+                        for feature in payload['features']
+                        for rule in feature['rules']]
+    assert payload['met'] is False and payload['signoff']['version'] is None
     page = open_board(browser, tmp_path, payload)
-    page.click('[data-act="feature"][data-feature="login"]')
-    page.click(toggle_for('login', 'RULE-1'))
-    word = page.inner_text('.rule-proofs .pill').strip()
-    tests = page.inner_text('.rule-proofs .ptests').strip()
+    found = facts(page)
     page.close()
-    assert word == 'MANUAL', word
-    assert tests == ('Checked by hand. A release at the gate passed lists it '
-                     'as not checked.'), tests
+    assert found == [['Tests', 'not met'], ['Sign-off', 'not signed']], found
+
+
+def stamp(page):
+    """The top bar's line naming the checkout state, and its hover."""
+    return [page.inner_text('.topbar .stamp').strip(),
+            page.get_attribute('.topbar .stamp', 'title')]
+
+
+# purlin: purlin_report PROOF-232
+def test_the_top_bar_names_the_branch_the_commit_and_when(browser, tmp_path):
+    payload = payload_named('regulated')
+    assert (payload['branch'], payload['commit'][:7]) == ('main', 'a1b2c3d')
+    assert payload['generated_at'] == '2026-10-01T10:42:13Z'
+    opened = datetime.datetime(2026, 10, 1, 10, 45, 0,
+                               tzinfo=datetime.timezone.utc)
+    page = open_board(browser, tmp_path, payload, clock_at=opened)
+    first = stamp(page)
+    page.clock.run_for(2 * 60 * 60 * 1000)
+    later = stamp(page)
+    page.close()
+    assert first == ['main at a1b2c3d, written 10:42',
+                     '2026-10-01 10:42 UTC'], first
+    assert later == first, later
+

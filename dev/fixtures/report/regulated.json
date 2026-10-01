@@ -1,4 +1,5 @@
 {
+  "branch": "main",
   "commit": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
   "dirty": true,
   "evidence": {
@@ -103,7 +104,6 @@
         "proofs_without_test_ids": [],
         "rules": 4,
         "strong": 2,
-        "test_strength": 86,
         "untested": 0,
         "weak": 1
       },
@@ -111,12 +111,25 @@
         {
           "audit": {
             "at": "2026-09-12T09:15:40Z",
+            "breaks": {
+              "PROOF-1": {
+                "after": "    if check_password(user, password):",
+                "before": "    if not check_password(user, password):",
+                "break_key": "91bb1f1332c41c8f9e26ce4d2db97de1ba1e53e1ee88d4654849ce40852db957",
+                "file": "src/auth/session.py",
+                "line": 41,
+                "result": "caught",
+                "why": ""
+              }
+            },
             "commit": "a1b2c3d",
+            "explanation": [
+              "The test signs in with the password the proof names and reads the status and the cookie."
+            ],
             "findings": [],
             "model": "example-model-1",
             "notes": [],
             "path": ".purlin/evidence/ci/login.json",
-            "strength": 86,
             "verdict": "strong"
           },
           "bucket": "passed",
@@ -125,6 +138,7 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "nothing_to_check": [],
               "platforms": {
                 "linux": {
                   "at": "2026-09-12T09:14:02Z",
@@ -144,10 +158,7 @@
             "strong": {
               "evidence": ".purlin/evidence/ci/login.json",
               "findings": [],
-              "reasons": [
-                "strength 86%"
-              ],
-              "strength": 86,
+              "reasons": [],
               "word": "strong"
             }
           },
@@ -194,12 +205,25 @@
         {
           "audit": {
             "at": "2026-09-12T09:15:40Z",
+            "breaks": {
+              "PROOF-2": {
+                "after": "    return attempts >= 6",
+                "before": "    return attempts >= 5",
+                "break_key": "642aaae6db996f6ed2ecfd3a2baeb21e6a21565184957b98ef10b23c23c3f55c",
+                "file": "src/auth/lockout.py",
+                "line": 18,
+                "result": "caught",
+                "why": ""
+              }
+            },
             "commit": "a1b2c3d",
+            "explanation": [
+              "The test sends five wrong passwords, then the right one, and reads 423."
+            ],
             "findings": [],
             "model": "example-model-1",
             "notes": [],
             "path": ".purlin/evidence/ci/login.json",
-            "strength": 86,
             "verdict": "strong"
           },
           "bucket": "passed",
@@ -208,6 +232,7 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "nothing_to_check": [],
               "platforms": {
                 "linux": {
                   "at": "2026-09-12T09:14:02Z",
@@ -227,10 +252,7 @@
             "strong": {
               "evidence": ".purlin/evidence/ci/login.json",
               "findings": [],
-              "reasons": [
-                "strength 86%"
-              ],
-              "strength": 86,
+              "reasons": [],
               "word": "strong"
             }
           },
@@ -277,14 +299,29 @@
         {
           "audit": {
             "at": "2026-09-12T09:15:40Z",
+            "breaks": {
+              "PROOF-3": {
+                "after": "    return opened + timedelta(minutes=50)",
+                "before": "    return opened + timedelta(minutes=15)",
+                "break_key": "96b307c30ba390cb1b2373673dfa08c7ee14d2b39373d2e7a9cd34049b94176d",
+                "file": "src/auth/lockout.py",
+                "line": 27,
+                "result": "survived",
+                "why": ""
+              }
+            },
             "commit": "a1b2c3d",
+            "explanation": [
+              "The test reads the status code of the locked sign-in.",
+              "It reads nothing about when the lock ends."
+            ],
             "findings": [
-              "PROOF-3 reads the status code alone; no test reads when the lock expires."
+              "PROOF-3 reads the status code alone; no test reads when the lock expires.",
+              "PROOF-3: the test still passes when src/auth/lockout.py:27 reads \"return opened + timedelta(minutes=50)\""
             ],
             "model": "example-model-1",
             "notes": [],
             "path": ".purlin/evidence/ci/login.json",
-            "strength": 86,
             "verdict": "weak"
           },
           "bucket": "passed",
@@ -293,6 +330,7 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "nothing_to_check": [],
               "platforms": {
                 "linux": {
                   "at": "2026-09-12T09:14:02Z",
@@ -312,13 +350,13 @@
             "strong": {
               "evidence": ".purlin/evidence/ci/login.json",
               "findings": [
-                "PROOF-3 reads the status code alone; no test reads when the lock expires."
+                "PROOF-3 reads the status code alone; no test reads when the lock expires.",
+                "PROOF-3: the test still passes when src/auth/lockout.py:27 reads \"return opened + timedelta(minutes=50)\""
               ],
               "reasons": [
                 "PROOF-3 reads the status code alone; no test reads when the lock expires.",
-                "strength 86%"
+                "PROOF-3: the test still passes when src/auth/lockout.py:27 reads \"return opened + timedelta(minutes=50)\""
               ],
-              "strength": 86,
               "word": "weak"
             }
           },
@@ -370,6 +408,7 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "nothing_to_check": [],
               "platforms": {
                 "linux": {
                   "at": "2026-09-12T09:14:02Z",
@@ -395,7 +434,6 @@
               "reasons": [
                 "waiting for its tests to pass"
               ],
-              "strength": 86,
               "word": "waiting"
             }
           },
@@ -459,8 +497,7 @@
       ],
       "source": null,
       "source_path": null,
-      "spec_path": "specs/auth/login.md",
-      "test_strength": 86
+      "spec_path": "specs/auth/login.md"
     },
     {
       "broken": [],
@@ -503,7 +540,6 @@
         "proofs_without_test_ids": [],
         "rules": 3,
         "strong": 1,
-        "test_strength": 64,
         "untested": 0,
         "weak": 1
       },
@@ -511,12 +547,25 @@
         {
           "audit": {
             "at": "2026-09-12T09:14:02Z",
+            "breaks": {
+              "PROOF-1": {
+                "after": "    return sum(line.amount for line in lines[1:])",
+                "before": "    return sum(line.amount for line in lines)",
+                "break_key": "7349e30bbbbc45ff1b4325dff1e1dba16a85f3b98694d267749e728f1e2e1b9c",
+                "file": "src/billing/invoice.py",
+                "line": 12,
+                "result": "caught",
+                "why": ""
+              }
+            },
             "commit": "a1b2c3d",
+            "explanation": [
+              "The test adds three lines and compares the total with the sum the proof names."
+            ],
             "findings": [],
             "model": "example-model-1",
             "notes": [],
             "path": ".purlin/evidence/ci/invoice.json",
-            "strength": 64,
             "verdict": "strong"
           },
           "bucket": "passed",
@@ -525,6 +574,7 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "nothing_to_check": [],
               "platforms": {
                 "linux": {
                   "at": "2026-09-12T09:14:02Z",
@@ -544,10 +594,7 @@
             "strong": {
               "evidence": ".purlin/evidence/ci/invoice.json",
               "findings": [],
-              "reasons": [
-                "strength 64%"
-              ],
-              "strength": 64,
+              "reasons": [],
               "word": "strong"
             }
           },
@@ -594,14 +641,28 @@
         {
           "audit": {
             "at": "2026-09-12T09:14:02Z",
+            "breaks": {
+              "PROOF-2": {
+                "after": "    if lines is None:",
+                "before": "    if not lines:",
+                "break_key": "0c923e86f72d6b0413768c46dd7390f7aba7bea102c2c989dbbdba5d4e8a2b39",
+                "file": "src/billing/invoice.py",
+                "line": null,
+                "result": "not made",
+                "why": "the lines before the change are in src/billing/invoice.py 2 times, not once"
+              }
+            },
             "commit": "a1b2c3d",
+            "explanation": [
+              "The test builds an empty invoice and reads its total.",
+              "It sends no invoice the code should reject."
+            ],
             "findings": [
               "No proof of this rule names a rejection, an error or a boundary, so the test reads only the total it expects."
             ],
             "model": "example-model-1",
             "notes": [],
             "path": ".purlin/evidence/ci/invoice.json",
-            "strength": 64,
             "verdict": "weak"
           },
           "bucket": "passed",
@@ -610,6 +671,7 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "nothing_to_check": [],
               "platforms": {
                 "linux": {
                   "at": "2026-09-12T09:14:02Z",
@@ -632,10 +694,8 @@
                 "No proof of this rule names a rejection, an error or a boundary, so the test reads only the total it expects."
               ],
               "reasons": [
-                "No proof of this rule names a rejection, an error or a boundary, so the test reads only the total it expects.",
-                "strength 64%"
+                "No proof of this rule names a rejection, an error or a boundary, so the test reads only the total it expects."
               ],
-              "strength": 64,
               "word": "weak"
             }
           },
@@ -687,6 +747,7 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "nothing_to_check": [],
               "platforms": {},
               "reasons": [],
               "source": null,
@@ -695,11 +756,8 @@
             "strong": {
               "evidence": null,
               "findings": [],
-              "reasons": [
-                "manual proof"
-              ],
-              "strength": 64,
-              "word": "manual test"
+              "reasons": [],
+              "word": "checked at sign-off"
             }
           },
           "feature": "invoice",
@@ -739,8 +797,7 @@
       ],
       "source": null,
       "source_path": null,
-      "spec_path": "specs/billing/invoice.md",
-      "test_strength": 64
+      "spec_path": "specs/billing/invoice.md"
     },
     {
       "broken": [],
@@ -778,7 +835,6 @@
         "proofs_without_test_ids": [],
         "rules": 1,
         "strong": 0,
-        "test_strength": null,
         "untested": 0,
         "weak": 1
       },
@@ -786,15 +842,18 @@
         {
           "audit": {
             "at": "2026-09-12T09:14:02Z",
+            "breaks": {},
             "commit": "a1b2c3d",
+            "explanation": [
+              "The test finds both elements on the page and compares neither position."
+            ],
             "findings": [
               "The test reads the text \"Total\" and the button \"Pay\" on the page; the proof names their order, and no assertion compares their positions."
             ],
             "model": "example-model-1",
             "notes": [],
             "path": ".purlin/evidence/ci/checkout_design.json",
-            "strength": null,
-            "verdict": "undecided"
+            "verdict": "weak"
           },
           "bucket": "passed",
           "cells": {
@@ -802,6 +861,7 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "nothing_to_check": [],
               "platforms": {
                 "linux": {
                   "at": "2026-09-12T09:14:02Z",
@@ -819,9 +879,8 @@
                 "The test reads the text \"Total\" and the button \"Pay\" on the page; the proof names their order, and no assertion compares their positions."
               ],
               "reasons": [
-                "the AI audit could not decide: The test reads the text \"Total\" and the button \"Pay\" on the page; the proof names their order, and no assertion compares their positions."
+                "The test reads the text \"Total\" and the button \"Pay\" on the page; the proof names their order, and no assertion compares their positions."
               ],
-              "strength": null,
               "word": "weak"
             }
           },
@@ -868,8 +927,7 @@
       "scope": [],
       "source": null,
       "source_path": null,
-      "spec_path": "specs/_anchors/checkout_design.md",
-      "test_strength": null
+      "spec_path": "specs/_anchors/checkout_design.md"
     },
     {
       "broken": [],
@@ -899,7 +957,6 @@
         ],
         "rules": 1,
         "strong": 0,
-        "test_strength": null,
         "untested": 1,
         "weak": 0
       },
@@ -912,6 +969,7 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "nothing_to_check": [],
               "platforms": {},
               "reasons": [
                 "no test for PROOF-1"
@@ -925,7 +983,6 @@
               "reasons": [
                 "waiting for its tests to pass"
               ],
-              "strength": null,
               "word": "waiting"
             }
           },
@@ -964,8 +1021,7 @@
       "scope": [],
       "source": "https://github.com/acme/policies.git",
       "source_path": "specs/_anchors/security_baseline.md",
-      "spec_path": "specs/_anchors/security_baseline.md",
-      "test_strength": null
+      "spec_path": "specs/_anchors/security_baseline.md"
     },
     {
       "broken": [],
@@ -1003,7 +1059,6 @@
         "proofs_without_test_ids": [],
         "rules": 2,
         "strong": 0,
-        "test_strength": 82,
         "untested": 1,
         "weak": 0
       },
@@ -1016,6 +1071,7 @@
               "counts": true,
               "current": false,
               "missing_env": [],
+              "nothing_to_check": [],
               "platforms": {},
               "reasons": [
                 "code changed since 9f8e7d6"
@@ -1029,7 +1085,6 @@
               "reasons": [
                 "waiting for its tests to pass"
               ],
-              "strength": 82,
               "word": "waiting"
             }
           },
@@ -1078,6 +1133,7 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "nothing_to_check": [],
               "platforms": {
                 "linux": {
                   "at": "2026-09-10T17:02:41Z",
@@ -1095,7 +1151,6 @@
               "reasons": [
                 "no audit has run on this code"
               ],
-              "strength": 82,
               "word": "not audited"
             }
           },
@@ -1144,19 +1199,12 @@
       ],
       "source": null,
       "source_path": null,
-      "spec_path": "specs/billing/export.md",
-      "test_strength": 82
+      "spec_path": "specs/billing/export.md"
     }
   ],
-  "finished": false,
-  "gate": {
-    "audit_parallel": 4,
-    "ci": "github",
-    "gate": "signed",
-    "mutation_engine": "auto"
-  },
-  "generated_at": "2026-09-13T08:30:00Z",
+  "generated_at": "2026-10-01T10:42:13Z",
   "generated_by": "sync_status",
+  "information": [],
   "last_line": null,
   "left": [
     {
@@ -1184,6 +1232,7 @@
       "text": "3 rules to strengthen"
     }
   ],
+  "met": false,
   "os_words": {
     "linux": {
       "short": "Lin",
@@ -1200,7 +1249,13 @@
   },
   "project": "ledger",
   "remote_url": "https://github.com/acme/ledger.git",
-  "schema_version": 13,
+  "schema_version": 14,
+  "signoff": {
+    "commit": "9f8e7d6c5b4a39281706f5e4d3c2b1a098765432",
+    "since": 4,
+    "version": "0.1.0",
+    "word": "signed 0.1.0, 4 commits since"
+  },
   "summary": {
     "audit": {
       "not_audited": 1,
@@ -1220,17 +1275,13 @@
       "PROOF-1"
     ],
     "rules": 11,
-    "sentence": "11 rules. 8 pass their tests. The audit found 3 strong and 3 weak.",
+    "sentence": "11 rules. 8 pass their tests. The audit found 3 of 7 rules strong (42%).",
     "steps": {
       "passed": 8
     },
     "strong": 3,
     "untested": 2,
     "weak": 3
-  },
-  "tag": {
-    "commit": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
-    "name": "signed/1.4.0"
   },
   "version": "0.10.0",
   "warnings": [

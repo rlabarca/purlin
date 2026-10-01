@@ -7,20 +7,19 @@ the data moves, and shows one project's names to every reader.
 
     python3 dev/build_report.py && python3 dev/capture_doc_screenshots.py
 
-    dashboard-board.png   the board at the signed gate: the `No proof`,
-                          `Passing` and `Strong` boxes, the filter buttons
-                          named as what is left to do, every column, and
-                          login open with its description and one rule
-                          unfolded beneath it
-    dashboard-rule.png    one strong rule: its cells, what the audit found
-                          and its proofs
+    dashboard-board.png   the board: the two facts in the top bar, the
+                          `No proof`, `Passing` and `Strong` boxes, every
+                          column, and login open with its description and
+                          its rules
+    dashboard-rule.png    one rule the audit found weak: its cells, what the
+                          audit found, the planted bug its test missed and
+                          its proofs
 
 Each is the dark theme at 1440 wide, captured at 2x so the type stays crisp.
 Uses dev/browser_launch.py, so it drives an installed Google Chrome when the
 bundled Chromium cannot be downloaded. Writes only to docs/images/.
 """
 
-import datetime
 import json
 import os
 import shutil
@@ -41,16 +40,13 @@ SCALE = 2
 
 # name -> (fixture, the clicks that reach the screen)
 SHOTS = (
-    # login open with RULE-4 unfolded beneath it: its two proofs, one failed
-    # on windows and one passed, which is what the folded count's warn tone
-    # stands for.
+    # login open: its description and its four rules with their badges.
     ('dashboard-board.png', 'regulated',
-     ('[data-act="feature"][data-feature="login"]',
-      '[data-act="proofs"][data-feature="login"][data-rule="RULE-4"]')),
-    # RULE-1 is a strong one: its cells show a platform box and what the
-    # audit found, which is the whole chain on one screen.
+     ('[data-act="feature"][data-feature="login"]',)),
+    # RULE-3 passes on two systems and the audit found it weak: its cells,
+    # the findings, the explanation and the planted bug its test missed.
     ('dashboard-rule.png', 'regulated',
-     ('[data-act="feature"][data-feature="login"]', '.rule[data-rule="RULE-1"]')),
+     ('[data-act="feature"][data-feature="login"]', '.rule[data-rule="RULE-3"]')),
 )
 
 
@@ -61,12 +57,6 @@ def stage(root, fixture):
     with open(os.path.join(FIXTURES, fixture + '.json'),
               encoding='utf-8') as handle:
         payload = json.load(handle)
-    # The fixtures carry a fixed stamp so the tests compare exact bytes; the
-    # screenshots would then age into "600 days old", so the capture stamps
-    # them at twelve minutes, which is what a working board looks like.
-    payload['generated_at'] = (
-        datetime.datetime.now(datetime.timezone.utc)
-        - datetime.timedelta(minutes=12)).strftime('%Y-%m-%dT%H:%M:%SZ')
     with open(os.path.join(root, '.purlin', 'report-data.js'), 'w',
               encoding='utf-8') as handle:
         handle.write('const PURLIN_DATA = ' + json.dumps(payload) + ';\n')
@@ -93,8 +83,7 @@ def main():
                 page.click(selector)
             # The pointer leaves the page, so no row is caught mid-hover.
             page.mouse.move(0, 0)
-            # The coverage bars fill over 420ms; capture them settled.
-            page.wait_for_timeout(700)
+            page.wait_for_timeout(300)
             page.screenshot(path=os.path.join(IMAGES_DIR, name),
                             full_page=True)
             page.close()

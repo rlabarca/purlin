@@ -1,6 +1,7 @@
 /* The Rule screen: one rule and its cells, what the audit found, the proofs
    that stand for it with the tests that carry them, and the tests marked
-   with the rule's own id. */
+   with the rule's own id. Its heading names the spec that owns the rule,
+   then the rule's id. */
 
 /* The open rule, by the spec that owns it and its id: opening
    `ai_audit RULE-1` and `security_no_dangerous_patterns RULE-1` opens two
@@ -45,46 +46,77 @@ function cellRow(rule, name) {
     + '</dd>';
 }
 
-/* What the audit found, and nothing about what to do with it, drawn at
-   either gate once the audit has read the project: its answer, each finding
-   on its own line as the audit wrote it, the test strength where one was
-   measured and nothing of strength where none was, then the model that read
-   the rule and when.
-   The answer is worded as the terminal words it, and the strength reads its
-   whole-number part, as the board's cell does, so 85.7 reads 85 on both.
-   The audit writes sentences, so there is no list of check names to render
-   here. */
+/* What the audit found, and nothing about what to do with it, drawn once
+   the audit has read the project: its answer, each finding on its own line
+   as the audit wrote it, each sentence of the model's explanation, each
+   planted bug the rule's tests missed, then the model that read the rule
+   and when. The answer is worded as the terminal words it. The audit writes
+   sentences, so there is no list of check names to render here. */
 function auditPanel(rule) {
   var cell = cellOf(rule, 'strong');
   if (!cell || !audited()) { return ''; }
   var audit = rule.audit;
   var lines = [];
   var findings = (audit && audit.findings) || [];
-  var answer = audit ? audit['verdict'] : null;
   if (!audit) {
     lines.push(line("No audit has read this rule's text, proof and "
       + 'test yet.'));
-  } else if (answer === 'strong' && !findings.length) {
+  } else if (audit.verdict === 'strong' && !findings.length) {
     lines.push(line('Strong. It found nothing.'));
-  } else if (answer === 'undecided') {
-    lines.push(line('Undecided. The AI audit could not decide, so the rule '
-      + 'reads weak until its proof or test changes.'));
   } else {
-    lines.push(line(answer === 'strong' ? 'Strong.' : 'Weak.'));
+    lines.push(line(audit.verdict === 'strong' ? 'Strong.' : 'Weak.'));
   }
   findings.forEach(function (text) { lines.push(line(text)); });
-  if (cell.strength != null) {
-    lines.push(line('Test strength ' + Math.floor(cell.strength) + '%.'));
-  }
+  ((audit && audit.explanation) || []).forEach(function (text) {
+    lines.push(line(text));
+  });
   if (audit) {
+    lines.push(missedBugs(audit.breaks));
     lines.push('<p class="sec">Read by <span class="mono">'
       + esc(audit.model || 'unknown') + '</span> on '
       + unbroken(moment(audit.at)) + '</p>');
     if (audit.path) {
-      lines.push('<p class="sec">' + hostLink(audit.path, audit.path) + '</p>');
+      lines.push('<p class="sec mono">' + esc(audit.path) + '</p>');
     }
   }
   return '<div class="panel"><h2>Audit</h2>' + lines.join('') + '</div>';
+}
+
+/* Each planted bug the rule's tests missed, by proof: the audit changed one
+   line of the code in a copy of the project, and the proof's own tests still
+   passed. One sentence names the proof, the file and the line; beneath it
+   the line as it was and as the bug left it. A bug the tests caught, and one
+   that could not be planted, draw nothing. `breaks` is the audit entry's
+   own map, `{proof: {file, line, before, after, result}}`. */
+function missedBugs(breaks) {
+  return Object.keys(breaks || {}).sort(function (one, two) {
+    return parseInt(one.split('-')[1], 10) - parseInt(two.split('-')[1], 10);
+  }).filter(function (proof) {
+    return breaks[proof] && breaks[proof].result === 'survived';
+  }).map(function (proof) {
+    var bug = breaks[proof];
+    return '<div class="bug"><p class="sec">' + esc(proof)
+      + ': its tests missed a bug planted at ' + unbroken(bug.file + ':'
+        + bug.line) + '.</p><dl class="kv"><dt>Before</dt><dd><pre class="code">'
+      + esc(codeLines(bug.before)) + '</pre></dd><dt>After</dt><dd>'
+      + '<pre class="code">' + esc(codeLines(bug.after))
+      + '</pre></dd></dl></div>';
+  }).join('');
+}
+
+/* The lines of a change as the audit recorded them, without the line ends
+   that close the last one and without the indent every line shares. A line
+   too long for its box scrolls inside it and never breaks. */
+function codeLines(text) {
+  var lines = String(text == null ? '' : text).replace(/[\r\n]+$/, '')
+    .split(/\r?\n/);
+  var indent = Math.min.apply(null, lines.filter(function (one) {
+    return one.trim();
+  }).map(function (one) { return one.length - one.replace(/^\s+/, '').length; })
+    .concat([Infinity]));
+  return lines.map(function (one) {
+    return isFinite(indent) ? one.slice(indent) : one;
+  }).join('\n');
 }
 
 function line(text) { return '<p class="sec">' + esc(text) + '</p>'; }
@@ -116,22 +148,28 @@ function noTestLine(owner) {
 var TEST_WORDS = {pass: 'passed', fail: 'failed', missing: 'not run',
   'not run': 'not run'};
 
-/* A proof's own word, as the payload wrote it. At the gate `passed` a
-   `@manual` proof reads `manual`, because nothing checks it by hand there. */
+/* A proof's own word. The payload writes `hand check` for a `@manual`
+   proof, which a person checks at the sign-off, and the page reads it as
+   the strong cell does: `checked at sign-off`. */
+var HAND_CHECK = 'hand check';
+var CHECKED_AT_SIGNOFF = 'checked at sign-off';
+
 function proofWord(proof) {
   var word = proof.result || 'not run';
-  return word === 'hand check' && !level('signed') ? 'manual' : word;
+  return word === HAND_CHECK ? CHECKED_AT_SIGNOFF : word;
 }
 
-/* What a `@manual` proof no test carries says under its tests. At the gate
-   `signed` a person checks it in the sign-off walk and types what they saw;
-   at `passed` nobody signs, and the release's evidence package lists it as
-   not checked. */
-function handCheckLine() {
-  return '<p class="sec">' + esc(level('signed')
-    ? 'Checked by hand when a release is signed, in the walk of purlin:sign.'
-    : 'Checked by hand. A release at the gate passed lists it as not '
-      + 'checked.') + '</p>';
+/* What a `@manual` proof no test carries says under its tests:
+   `checked at sign-off`, and beneath it each note of the newest sign-off
+   that holds one, `noted at the sign-off of <version> by <signer>, <since>:
+   <note>`, which the payload writes as the reasons of the rule's strong cell
+   while that cell reads `checked at sign-off`. */
+function handCheckLines(rule) {
+  var cell = cellOf(rule, 'strong') || {};
+  var notes = cell.word === CHECKED_AT_SIGNOFF ? cell.reasons || [] : [];
+  return [CHECKED_AT_SIGNOFF].concat(notes).map(function (text) {
+    return '<p class="sec"><span>' + esc(text) + '</span></p>';
+  }).join('');
 }
 
 /* Tests, one line each: a dot in the colour of the word its run gave it,
@@ -150,9 +188,8 @@ function testLines(tests) {
 
 /* One proof: its id and words, its own result, its `@manual` and `@env`
    tags, which name the operating system it asks for, and its tests with
-   what each found. The board draws it under a rule and the rule screen in
-   its Proofs section, from this one function, so the two never disagree.
-   A `@manual` proof no test carries is checked by hand, and says when.
+   what each found. A `@manual` proof no test carries is checked at the
+   sign-off, and says so.
    `rule.feature` is the spec that owns the rule, whose build writes a
    missing test. */
 function proofDetail(proof, rule) {
@@ -160,7 +197,7 @@ function proofDetail(proof, rule) {
   var tags = (proof.manual ? ['@manual'] : [])
     .concat(proof.env ? ['@env(' + proof.env + ')'] : []);
   var tests = testLines(proof.tests)
-    || (proof.manual ? handCheckLine()
+    || (proof.manual ? handCheckLines(rule)
     : proofWord(proof) === 'not run'
       ? '<p class="sec">No run has listed its tests yet.</p>'
       : noTestLine(owner));
@@ -173,12 +210,12 @@ function proofDetail(proof, rule) {
 }
 
 function proofPanel(proof, rule) {
-  return '<div class="panel">' + proofDetail(proof, rule) + '</div>';
+  return '<div class="panel proof">' + proofDetail(proof, rule) + '</div>';
 }
 
 /* The tests marked with the rule's own id, one line each with its result.
    Shown wherever a rule lists any, and always where the page shows no
-   proofs, so a rule at the gate `passed` shows the tests behind it. */
+   proofs, so a rule with no proof shows the tests behind it. */
 function testsSection(rule) {
   var tests = rule.tests || [];
   if (!tests.length && showsProofs()) { return ''; }
@@ -202,13 +239,12 @@ function renderRule() {
   var feature = found.feature;
   var rule = found.rule;
   var rows = [cellRow(rule, 'passed'), cellRow(rule, 'strong')];
-  rows.push('<dt>Spec</dt><dd>' + hostLink(feature.spec_path, feature.spec_path)
-    + '</dd>');
+  rows.push('<dt>Spec</dt><dd><span class="mono">' + esc(feature.spec_path)
+    + '</span></dd>');
   rows.push('<dt>Last run</dt><dd>' + runLine(feature) + '</dd>');
   return backLink()
-    + '<section style="margin-top:var(--space-6)">'
-    + '<p class="eyebrow">' + esc(feature.name) + '</p>'
-    + '<h1>' + esc(rule.id) + '</h1>'
+    + '<section class="rule-head"><hgroup><p class="eyebrow">'
+    + esc(feature.name) + '</p><h1>' + esc(rule.id) + '</h1></hgroup>'
     + '<p class="sec">' + esc(rule.text) + '</p></section>'
     + '<section class="stack"><div class="panel"><dl class="kv">'
     + rows.join('') + '</dl></div>'

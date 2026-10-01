@@ -9,27 +9,25 @@
 
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null,
-            features: {}, groups: {}, filter: null, proofs: {}};
-var SCHEMA = 13;
-/* The data file is rewritten when `purlin:status`, `purlin:test`,
-   `purlin:audit` or `purlin:sign` finishes, and a tab left open would never
-   notice. Coming back to the tab reloads it when what it holds is older than
-   this. */
-var REFRESH_AFTER = 60;
+            features: {}, groups: {}};
+var SCHEMA = 14;
 
-/* The two gates, lowest first. `passed`: every rule's tests pass. `signed`:
-   the same, and a person signs each release's evidence package, which is
-   where every rule needs a proof. Nothing on the page is signed rule by rule:
-   a sign-off covers the whole package, and the top bar names the tag the
-   first one writes. */
-var GATE_LEVELS = ['passed', 'signed'];
+/* The two facts the top bar states, as the payload gives them: whether the
+   tests are met on the committed evidence, the payload's `met`, and whether
+   this code is signed, the payload's `signoff`, whose `word` reads
+   `signed <version> at <commit>`, `signed <version>, <n> commits since` or
+   `not signed`. The page works out neither. */
+var TESTS = 'Tests';
+var SIGNOFF = 'Sign-off';
+var MET = 'met';
+var NOT_MET = 'not met';
+var NOT_SIGNED = 'not signed';
 
-/* The boxes: `Passing` counts the rules whose tests pass now, the payload's
-   `summary.steps.passed`; `Strong` counts the rules the audit found strong,
-   the payload's `summary.audit.strong`, drawn only where the audit found a
-   rule strong or weak. At the gate `signed`, where every rule needs a proof,
-   one more box counts the rules that have none: the kind `no_proof` the
-   payload gives a rule. */
+/* The boxes: `No proof` counts the rules of the kind `no_proof`, drawn
+   wherever the project writes a proof line; `Passing` counts the rules whose
+   tests pass now, the payload's `summary.steps.passed`; `Strong` counts the
+   rules the audit found strong, the payload's `summary.audit.strong`, drawn
+   only where the audit found a rule strong or weak. */
 var PASSING = 'Passing';
 var STRONG = 'Strong';
 var NO_PROOF = 'No proof';
@@ -56,8 +54,8 @@ var WORDS = {of: 'of', no_test: 'no test', partial: 'partial',
 var CELL_TONES = {'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
   'out of date': 'warn', 'strong': 'pass', 'weak': 'warn',
-  'waiting': 'neutral', 'manual test': 'warn', 'not audited': 'idle',
-  'no proof': 'warn'};
+  'waiting': 'neutral', 'checked at sign-off': 'neutral',
+  'not audited': 'idle', 'no proof': 'warn'};
 
 var CELL_LABELS = {passed: 'Passed', strong: 'Strong'};
 
@@ -89,29 +87,16 @@ function loadData(callback) {
   setTimeout(function () { finish(null); }, 3000);
 }
 
-/* --- the gate --------------------------------------------------------- */
-
-function gateName() {
-  var gate = DATA && DATA.gate ? DATA.gate.gate : null;
-  return GATE_LEVELS.indexOf(gate) >= 0 ? gate : GATE_LEVELS[0];
-}
-
-/* True when the project's gate is this one or above it: the `No proof` box
-   and the signed tag are drawn at the gate `signed` alone. */
-function level(name) {
-  return GATE_LEVELS.indexOf(gateName()) >= GATE_LEVELS.indexOf(name);
-}
-
-/* Whether the page names proofs at all. They are optional at `passed`, so a
-   project there that writes no proof line is shown no `Proofs` column, no
-   proofs section and no reason naming them; at `signed` every rule needs
-   one. `board.shows_proofs` answers the same for `purlin:status`. */
+/* Whether the page names proofs at all: a project that writes no proof line
+   is shown no `No proof` box, no `Proofs` column, no proofs section and no
+   reason naming them. `board.shows_proofs` answers the same for
+   `purlin:status`. */
 function showsProofs() {
-  return level('signed') || ((DATA && DATA.summary) || {}).proofs > 0;
+  return ((DATA && DATA.summary) || {}).proofs > 0;
 }
 
 /* Whether the audit found any rule strong or weak. The audit is a tool a
-   person runs at either gate and nothing waits on it, so the `Strong` box,
+   person runs and nothing waits on it, so the `Strong` box,
    column, badge, cell and panel are drawn only where it has read a rule: a
    board that names a check nobody ran reads as a project falling short. */
 function audited() {
@@ -265,9 +250,8 @@ function platformLines(feature) {
     });
 }
 
-/* Where the newest audit came from and how old it is. The strength itself
-   is in the cell beside it. Each rule carries its own audit, so the newest
-   of them answers for the spec. */
+/* Where the newest audit came from and how old it is. Each rule carries its
+   own audit, so the newest of them answers for the spec. */
 function auditLines(feature) {
   var newest = null;
   (feature.rules || []).forEach(function (rule) {
@@ -287,30 +271,13 @@ function sourceOf(path) {
   return parts.length > 1 ? parts[parts.length - 2] : 'local';
 }
 
-/* The evidence file of this spec's newest run, linked to the file on the
-   git host. Which platform found what is on the passed cell row above it. */
+/* This spec's newest run: where it came from and how old it is. Which
+   platform found what is on the passed cell row above it. */
 function runLine(feature) {
   var run = newestRun(feature);
   if (!run) { return '<span class="mono muted">\u2014</span>'; }
-  return hostLink(run.path, run.source + DOT + ageText(run.at).text);
-}
-
-/* A link to the file on the git host, when the payload names a remote this
-   page knows how to address. Anything else stays plain text. */
-function hostLink(path, text) {
-  var base = webRemote();
-  var label = esc(text || path);
-  if (!base || !path) { return '<span class="mono">' + label + '</span>'; }
-  return '<a class="mono" href="' + esc(base + '/blob/'
-    + (DATA.commit || 'HEAD') + '/' + path) + '">' + label + '</a>';
-}
-
-function webRemote() {
-  var remote = DATA && DATA.remote_url;
-  if (!remote) { return null; }
-  remote = String(remote).replace(/\.git$/, '')
-    .replace(/^git@([^:]+):/, 'https://$1/');
-  return remote.indexOf('github.com') >= 0 ? remote : null;
+  return '<span class="mono">' + esc(run.source + DOT + ageText(run.at).text)
+    + '</span>';
 }
 
 function ageText(iso) {
@@ -338,8 +305,7 @@ function moment(iso) {
     + ' UTC' : when(iso);
 }
 
-/* One cell of one rule, or null where the gate does not reach it: the key
-   is missing, not empty. */
+/* One cell of one rule, or null where the payload carries none. */
 function cellOf(rule, name) {
   return (rule.cells || {})[name] || null;
 }
@@ -392,80 +358,72 @@ function featureNamed(name) {
 
 /* --- chrome and router ------------------------------------------------ */
 
-/* How old the data is, the tone that age reads in, and what the hover says
-   to do about it. One function, so the minute tick and a full render agree
-   on the threshold. The line carries the age alone; the instruction is the
-   hover's. */
-function ageLine() {
-  var age = ageText(DATA && DATA.generated_at);
-  return {hue: age.old ? 'warn' : 'pass', text: 'Data: ' + age.text,
-    how: (age.old ? 'This data is old. ' : '')
-      + 'To refresh it, type purlin:status in Claude Code. '
-      + 'Press here to reload the page.'};
+/* The checkout state the data describes and when it was written:
+   `main at a1b2c3d, written 10:42`, the branch, the first 7 characters of
+   the commit and the hour and minute in UTC, all three as the writing
+   command stamped them, so the line reads the same however long the page
+   stays open. On a detached HEAD the payload names no branch and the line
+   opens `detached`. The hover gives the date and time in full. */
+function stampLine() {
+  var at = String(DATA.generated_at || '');
+  return {text: (DATA.branch || 'detached') + ' at '
+      + String(DATA.commit || '').slice(0, 7) + ', written ' + at.slice(11, 16),
+    full: moment(at)};
 }
 
-/* The tag this commit carries, which is the marker that a version was signed
-   off: at the gate `signed`, `purlin:test --release` commits the evidence
-   package and the first `purlin:sign` over it writes `signed/<version>`, which
-   a person pushes. Below `signed` the top bar shows no tag chip at all. The
-   payload's `tag` carries the tag's name and the commit it points at, and is
-   null where this commit carries none. */
-function signedTag() {
-  var found = DATA && DATA.tag;
-  if (!found || !found.name) { return null; }
-  return {name: String(found.name),
-          at: found.commit ? String(found.commit).slice(0, 7) : null};
+/* One of the top bar's two boxes: its label, then the payload's word in the
+   tone it reads in. */
+function factBox(label, word, hue) {
+  return '<span class="fact" style="color:var(--state-' + hue + ')">'
+    + '<span class="fact-l">' + esc(label) + '</span><b>' + esc(word)
+    + '</b></span>';
 }
 
-function tagChip() {
-  var found = signedTag();
-  if (!found) {
-    return '<span class="tag plain"'
-      + hover(['This commit carries no signed tag. The first purlin:sign '
-        + 'after purlin:test --release writes signed/<version>, and a person '
-        + 'pushes it.']) + '>no signed tag</span>';
-  }
-  return '<span class="tag"' + hover(['The signed tag on this commit'
-      + (found.at ? DOT + found.at : '')]) + '>'
-    + esc(found.name) + '</span>';
+/* The two boxes. The tests read in the pass tone once met and the warn tone
+   until then; the sign-off in the pass tone at the signed commit, the warn
+   tone once commits have followed it, and the neutral tone before any. */
+function factBoxes() {
+  var signoff = DATA.signoff || {};
+  var word = signoff.word || NOT_SIGNED;
+  var hue = !signoff.version ? 'neutral'
+    : / at [0-9a-f]+$/.test(word) ? 'pass' : 'warn';
+  return '<span class="facts">'
+    + factBox(TESTS, DATA.met ? MET : NOT_MET, DATA.met ? 'pass' : 'warn')
+    + factBox(SIGNOFF, word, hue) + '</span>';
 }
 
-function topBar() {
-  var line = ageLine();
-  var gate = DATA && DATA.gate ? DATA.gate.gate : null;
+/* The top bar. Over data the page cannot read it draws the mark and the
+   theme button alone, rather than fields it cannot read. */
+function topBar(readable) {
+  var stamp = readable ? stampLine() : null;
   return '<header class="topbar"><span class="brand"><img id="brand-mark" src="'
     + logoSrc() + '" alt="Purlin"><span>purlin</span></span>'
-    + '<button class="btn fresh" data-act="reload"' + hover([line.how])
-    + ' style="color:var(--state-'
-    + line.hue + ')"><span class="dot"></span><span class="age">'
-    + esc(line.text) + '</span></button><span class="spacer"></span>'
-    + (gate ? tag('gate: ' + gate, true) : '')
-    + (level('signed') ? tagChip() : '')
+    + (stamp ? '<span class="stamp"' + hover([stamp.full]) + '>'
+      + esc(stamp.text) + '</span>' : '')
+    + '<span class="spacer"></span>' + (readable ? factBoxes() : '')
     + themeButton() + '</header>';
 }
 
-/* The board, then the open rule. */
-function tabs() {
-  var open = VIEW.screen;
-  var items = [['board', 'Board']];
-  if (VIEW.rule) { items.push(['rule', VIEW.feature + ' ' + VIEW.rule]); }
-  return '<nav class="tabs">' + items.map(function (item) {
-    return '<button data-act="nav" data-screen="' + item[0] + '"'
-      + (open === item[0] ? ' aria-current="page"' : '') + '>'
-      + esc(item[1]) + '</button>';
-  }).join('') + '</nav>';
+/* One notice: a dot in its tone, then the line whole. */
+function notice(line, hue) {
+  return '<div class="notice"><span class="dot" '
+    + 'style="color:var(--state-' + hue + ')"></span><span class="notice-text">'
+    + line.split(' ').map(noticeWord).join(' ') + '</span></div>';
 }
 
+/* The notices above the boxes: the uncommitted working tree, then each
+   warning the data carries, in the warn tone; then each line of information,
+   one per spec whose scope names a file not written yet, in the neutral
+   tone. */
 function notices() {
   var lines = DATA.dirty
     ? ['The working tree has uncommitted changes, so what is on this board is '
        + 'not what a commit would carry.'] : [];
   (DATA.warnings || []).forEach(function (warning) { lines.push(warning); });
-  return lines.map(function (line) {
-    return '<div class="notice"><span class="dot" '
-      + 'style="color:var(--state-warn)"></span><span class="notice-text">'
-      + line.split(' ').map(noticeWord).join(' ') + '</span></div>';
-  }).join('');
+  return lines.map(function (line) { return notice(line, 'warn'); }).join('')
+    + (DATA.information || []).map(function (line) {
+      return notice(line, 'neutral');
+    }).join('');
 }
 
 /* One word of a notice. A path or a name never breaks inside itself, except
@@ -486,7 +444,7 @@ function render() {
     return;
   }
   if (DATA.schema_version !== SCHEMA) {
-    app.innerHTML = topBar() + '<div class="wrap"><div class="notice">'
+    app.innerHTML = topBar(false) + '<div class="wrap"><div class="notice">'
       + esc('This data was written for schema ' + DATA.schema_version
         + ' and this page reads schema ' + SCHEMA + '. Run purlin:status to '
         + 'write it again.') + '</div></div>';
@@ -497,7 +455,7 @@ function render() {
      carries them once rather than every screen repeating them. */
   var body = VIEW.screen === 'rule' ? renderRule()
     : notices() + renderBoard();
-  app.innerHTML = topBar() + tabs() + '<div class="wrap">' + body + '</div>';
+  app.innerHTML = topBar(true) + '<div class="wrap">' + body + '</div>';
 }
 
 function onClick(event) {
@@ -508,38 +466,15 @@ function onClick(event) {
   if (!node || node === document) { return; }
   var act = node.getAttribute('data-act');
   if (act === 'theme') { toggleTheme(); }
-  else if (act === 'reload') { reloadPage(); return; }
-  else if (act === 'nav') { VIEW.screen = node.getAttribute('data-screen'); }
   else if (act === 'close') {
     VIEW.screen = 'board';
     VIEW.rule = VIEW.feature = null;
-  } else if (act === 'filter') {
-    /* One line of what is left is chosen at a time; choosing it again
-       shows every rule. */
-    var id = node.getAttribute('data-filter');
-    VIEW.filter = VIEW.filter === id ? null : id;
   } else if (act === 'group') {
     var group = node.getAttribute('data-group');
     VIEW.groups[group] = VIEW.groups[group] === false;
   } else if (act === 'feature') {
     var name = node.getAttribute('data-feature');
     VIEW.features[name] = !VIEW.features[name];
-    /* A spec opens with every rule's proofs closed. */
-    Object.keys(VIEW.proofs).forEach(function (key) {
-      if (key.indexOf(name + ' ') === 0) { delete VIEW.proofs[key]; }
-    });
-  } else if (act === 'proofs') {
-    var key = node.getAttribute('data-feature') + ' '
-      + node.getAttribute('data-rule');
-    VIEW.proofs[key] = !VIEW.proofs[key];
-    render();
-    /* The page is drawn again, so the button a keyboard pressed takes the
-       focus back rather than dropping it on the page. */
-    var again = document.querySelector('[data-act="proofs"][data-feature="'
-      + CSS.escape(node.getAttribute('data-feature')) + '"][data-rule="'
-      + CSS.escape(node.getAttribute('data-rule')) + '"]');
-    if (again) { again.focus(); }
-    return;
   } else if (act === 'rule') {
     VIEW.feature = node.getAttribute('data-feature');
     VIEW.rule = node.getAttribute('data-rule');
@@ -548,64 +483,7 @@ function onClick(event) {
   render();
 }
 
-/* --- coming back to the tab ------------------------------------------- */
-
-/* The screen and the open rule ride across a reload, the way the theme rides
-   across one, so a refresh puts the reader back where they were. Every
-   storage call is guarded: a browser may refuse the whole store. */
-function restoreView() {
-  var saved = null;
-  try { saved = sessionStorage.getItem('purlin-view'); } catch (e) {}
-  try { sessionStorage.removeItem('purlin-view'); } catch (e) {}
-  try {
-    var value = JSON.parse(saved);
-    if (value && typeof value === 'object') { VIEW = value; }
-  } catch (e) {}
-  /* Every rule's proofs are closed when the page loads. */
-  VIEW.proofs = {};
-}
-
-function reloadPage() {
-  try { sessionStorage.setItem('purlin-view', JSON.stringify(VIEW)); }
-  catch (e) {}
-  location.reload();
-}
-
-/* The stamp does not move, but the clock does, so the top bar recomputes the
-   age every 60 seconds and rewrites that text alone. Nothing is read from
-   disk: the board below it is untouched. */
-function tickAge() {
-  var node = DATA && document.querySelector('.topbar .fresh');
-  var text = node && node.querySelector('.age');
-  if (!text) { return; }
-  var line = ageLine();
-  node.style.color = 'var(--state-' + line.hue + ')';
-  node.title = line.how;
-  text.textContent = line.text;
-}
-
-/* At most one reload per stamp: when the data file has not moved, the reload
-   would show the same board again, so the page asks once and then waits for
-   something new to arrive. */
-function refreshIfOld() {
-  var then = Date.parse((DATA && DATA.generated_at) || '');
-  if (!then || (Date.now() - then) / 1000 <= REFRESH_AFTER) { return; }
-  var stamp = String(DATA.generated_at);
-  var last = null;
-  try { last = sessionStorage.getItem('purlin-reloaded'); } catch (e) {}
-  if (last !== stamp) {
-    try { sessionStorage.setItem('purlin-reloaded', stamp); } catch (e) {}
-    reloadPage();
-  }
-}
-
 restoreTheme();
-restoreView();
-document.addEventListener('visibilitychange', function () {
-  if (document.visibilityState === 'visible') { refreshIfOld(); }
-});
-window.addEventListener('focus', refreshIfOld);
-setInterval(tickAge, REFRESH_AFTER * 1000);
 document.getElementById('app').addEventListener('click', onClick);
 /* A band is a control drawn as a row, so Enter and Space press it as they
    press a button, and the focus comes back to it once the page is drawn. */

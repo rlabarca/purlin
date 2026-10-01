@@ -1,4 +1,5 @@
 {
+  "branch": "main",
   "commit": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
   "dirty": false,
   "evidence": {
@@ -9,7 +10,7 @@
           "commit": "a1b2c3d",
           "current": true,
           "path": ".purlin/evidence/local/invoice.json",
-          "result": "pass"
+          "result": "fail"
         }
       }
     },
@@ -64,7 +65,6 @@
         ],
         "rules": 3,
         "strong": 0,
-        "test_strength": null,
         "untested": 2,
         "weak": 0
       },
@@ -77,6 +77,7 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "nothing_to_check": [],
               "platforms": {
                 "macos": {
                   "at": "2026-09-12T08:41:19Z",
@@ -94,7 +95,6 @@
               "reasons": [
                 "no audit has run on this code"
               ],
-              "strength": null,
               "word": "not audited"
             }
           },
@@ -145,6 +145,7 @@
               "counts": false,
               "current": false,
               "missing_env": [],
+              "nothing_to_check": [],
               "platforms": {},
               "reasons": [],
               "source": null,
@@ -156,7 +157,6 @@
               "reasons": [
                 "waiting for its tests to pass"
               ],
-              "strength": null,
               "word": "waiting"
             }
           },
@@ -199,6 +199,7 @@
               "counts": false,
               "current": false,
               "missing_env": [],
+              "nothing_to_check": [],
               "platforms": {},
               "reasons": [
                 "no proof written"
@@ -212,7 +213,6 @@
               "reasons": [
                 "waiting for its tests to pass"
               ],
-              "strength": null,
               "word": "waiting"
             }
           },
@@ -244,8 +244,7 @@
       ],
       "source": null,
       "source_path": null,
-      "spec_path": "specs/auth/login.md",
-      "test_strength": null
+      "spec_path": "specs/auth/login.md"
     },
     {
       "broken": [],
@@ -272,18 +271,17 @@
       "name": "invoice",
       "pinned": null,
       "rollup": {
-        "failing": 0,
+        "failing": 1,
         "incomplete": false,
         "manual": 0,
-        "not_audited": 2,
+        "not_audited": 1,
         "partial": 0,
-        "passed": 2,
+        "passed": 1,
         "proofs": 2,
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
         "rules": 2,
         "strong": 0,
-        "test_strength": null,
         "untested": 0,
         "weak": 0
       },
@@ -296,6 +294,7 @@
               "counts": true,
               "current": true,
               "missing_env": [],
+              "nothing_to_check": [],
               "platforms": {
                 "macos": {
                   "at": "2026-09-12T08:41:19Z",
@@ -313,7 +312,6 @@
               "reasons": [
                 "no audit has run on this code"
               ],
-              "strength": null,
               "word": "not audited"
             }
           },
@@ -358,46 +356,48 @@
         },
         {
           "audit": null,
-          "bucket": "passed",
+          "bucket": "failing",
           "cells": {
             "passed": {
               "counts": true,
               "current": true,
               "missing_env": [],
+              "nothing_to_check": [],
               "platforms": {
                 "macos": {
                   "at": "2026-09-12T08:41:19Z",
                   "source": "local",
-                  "word": "passed"
+                  "word": "failed"
                 }
               },
-              "reasons": [],
+              "reasons": [
+                "failing: macOS, local"
+              ],
               "source": "local",
-              "word": "passed"
+              "word": "failed"
             },
             "strong": {
               "evidence": null,
               "findings": [],
               "reasons": [
-                "no audit has run on this code"
+                "waiting for its tests to pass"
               ],
-              "strength": null,
-              "word": "not audited"
+              "word": "waiting"
             }
           },
           "feature": "invoice",
           "flags": {
-            "failing": false,
+            "failing": true,
             "manual": false,
             "no_proof": false,
-            "not_audited": true,
+            "not_audited": false,
             "out_of_date": false,
             "partial": false,
             "strong": false,
             "weak": false
           },
           "id": "RULE-2",
-          "left": null,
+          "left": "to_fix",
           "machines": {
             "macos": "jane-laptop"
           },
@@ -407,12 +407,12 @@
               "env": null,
               "id": "PROOF-2",
               "manual": false,
-              "result": "passed",
+              "result": "failed",
               "tests": [
                 {
                   "file": "tests/test_invoice.py",
                   "name": "test_empty",
-                  "result": "pass"
+                  "result": "fail"
                 }
               ],
               "text": "Build an invoice with zero lines and read the total 0.00."
@@ -430,21 +430,20 @@
       ],
       "source": null,
       "source_path": null,
-      "spec_path": "specs/billing/invoice.md",
-      "test_strength": null
+      "spec_path": "specs/billing/invoice.md"
     }
   ],
-  "finished": false,
-  "gate": {
-    "audit_parallel": 4,
-    "ci": "github",
-    "gate": "passed",
-    "mutation_engine": "auto"
-  },
-  "generated_at": "2026-09-13T08:30:00Z",
+  "generated_at": "2026-10-01T10:42:13Z",
   "generated_by": "sync_status",
+  "information": [],
   "last_line": null,
   "left": [
+    {
+      "command": "purlin:build",
+      "count": 1,
+      "kind": "to_fix",
+      "text": "1 rule to fix"
+    },
     {
       "command": "purlin:build",
       "count": 2,
@@ -452,6 +451,7 @@
       "text": "2 rules to write a test for"
     }
   ],
+  "met": false,
   "os_words": {
     "linux": {
       "short": "Lin",
@@ -468,35 +468,40 @@
   },
   "project": "ledger",
   "remote_url": null,
-  "schema_version": 13,
+  "schema_version": 14,
+  "signoff": {
+    "commit": null,
+    "since": null,
+    "version": null,
+    "word": "not signed"
+  },
   "summary": {
     "audit": {
-      "not_audited": 3,
+      "not_audited": 2,
       "strong": 0,
       "weak": 0
     },
-    "failing": 0,
+    "failing": 1,
     "features": 2,
     "incomplete": 0,
     "manual": 0,
-    "not_audited": 3,
+    "not_audited": 2,
     "partial": 0,
-    "passed": 3,
+    "passed": 2,
     "proofs": 4,
     "proofs_without_test": 1,
     "proofs_without_test_ids": [
       "PROOF-2"
     ],
     "rules": 5,
-    "sentence": "5 rules. 3 pass their tests.",
+    "sentence": "5 rules. 2 pass their tests.",
     "steps": {
-      "passed": 3
+      "passed": 2
     },
     "strong": 0,
     "untested": 2,
     "weak": 0
   },
-  "tag": null,
   "version": "0.10.0",
   "warnings": []
 }

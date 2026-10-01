@@ -1,22 +1,21 @@
 /* The Board: how many rules pass their tests and how many the audit found
-   strong, and which specs hold the rules that have not got there yet,
-   filtered by the work left to do. */
+   strong, and which specs hold the rules that have not got there yet. */
 
-/* The boxes, in the order the work is done. At the gate `signed`, where
-   every rule needs a proof, the `No proof` box comes first, counting the
-   rules that have none yet; then `Passing`, the payload's
-   `summary.steps.passed`, carrying the project's total under its label; then,
-   where the audit found any rule strong or weak, `Strong`, the payload's
-   `summary.audit.strong`. A count is green once every rule is in it and amber
-   until then. Each box carries the hover its column carries, read over every
-   spec. The terminal prints a summary sentence; the boxes carry the same
-   counts, so the page prints none. */
+/* The boxes, in the order the work is done. Wherever the project writes a
+   proof line the `No proof` box comes first, counting the rules that have
+   none yet; then `Passing`, the payload's `summary.steps.passed`, carrying
+   the project's total under its label; then, where the audit found any rule
+   strong or weak, `Strong`, the payload's `summary.audit.strong`. A count is
+   green once it is complete, `No proof` at zero, and amber until then. Each
+   box carries the hover its column carries, read over every spec. The
+   terminal prints a summary sentence; the boxes carry the same counts, so
+   the page prints none. */
 function statStrip() {
   var summary = DATA.summary || {};
   var total = summary.rules || 0;
   var project = wholeProject();
   var boxes = [];
-  if (level('signed')) {
+  if (showsProofs()) {
     var missing = noProofLines();
     var count = missing.reduce(function (sum, pair) { return sum + pair[1]; },
                                0);
@@ -130,40 +129,17 @@ function share(count, total) {
           total && count === total ? 'pass' : count ? 'warn' : 'idle'];
 }
 
-/* How many of the spec's rules the audit found strong, and beside it the
-   test strength of the newest record, where one was measured; where none
-   was, the cell says nothing of strength. The strength is a number to read,
-   compared with nothing, so it carries no tone. No code is broken on purpose
-   for an anchor, so an anchor's cell says nothing of strength whatever its
-   record holds. The percentage carries its own hover saying what it is. */
+/* How many of the spec's rules the audit found strong, as
+   `board.strong_cell` reads it. The hover says where the newest audit came
+   from and how old it is. */
 function strongCell(feature) {
-  var rollup = feature.rollup || {};
   var rules = feature.rules || [];
   if (!rules.length) { return ''; }
-  var value = feature.is_anchor ? null : rollup.test_strength == null
-    ? feature.test_strength : rollup.test_strength;
   var strong = rules.filter(function (rule) {
     return cellWord(rule, 'strong') === 'strong';
   }).length;
-  var parts = [share(strong, rules.length)];
-  if (value != null) {
-    var pct = Math.floor(value);
-    parts.push([pct + '%', '', '',
-      ['Test strength: the tests caught ' + pct + ' of every 100 deliberate '
-        + 'breaks of the code.']]);
-  }
-  var cell = counts(parts);
-  return '<span' + hover(auditLines(feature)) + '>' + cell + '</span>';
-}
-
-/* A spec that names no files: Purlin cannot tell which code it covers, so a
-   default `purlin:test` always runs it. The name says so, and the hover says
-   why. */
-function noScope(feature) {
-  if (!feature.incomplete) { return ''; }
-  return '<span class="sec ns"' + hover([feature.incomplete_reason
-      || 'no > Scope: line']) + '>' + esc(DOT.replace(/^ /, '') + 'no scope')
-    + '</span>';
+  return '<span' + hover(auditLines(feature)) + '>'
+    + counts([share(strong, rules.length)]) + '</span>';
 }
 
 function featureRow(feature, columns) {
@@ -172,7 +148,7 @@ function featureRow(feature, columns) {
   var cells = ['<span class="name"><span class="caret">'
     + (open ? '▼' : '▶') + '</span>'
     + '<span class="n"' + hover([feature.spec_path || feature.name]) + '>'
-    + esc(feature.name) + '</span>' + noScope(feature) + '</span>'];
+    + esc(feature.name) + '</span></span>'];
   cells.push(rulesCell(feature));
   if (showsProofs()) { cells.push(proofsCell(feature)); }
   cells.push(testsCell(feature));
@@ -185,15 +161,12 @@ function featureRow(feature, columns) {
         + '"' : '') + '>' + cell + '</div>';
     }).join('') + '</div>';
   if (!open) { return row; }
-  return row + description(feature) + visibleRules(feature).map(function (rule) {
-    var shown = !!VIEW.proofs[rule.feature + ' ' + rule.id];
+  return row + description(feature) + (feature.rules || []).map(function (rule) {
     return '<div class="rule" data-act="rule" data-feature="'
       + esc(rule.feature) + '" data-rule="' + esc(rule.id) + '">'
       + '<span class="rid">' + esc(rule.id) + '</span>'
       + '<span class="rt">' + esc(rule.text) + '</span>'
-      + '<span class="rp">' + badges(rule) + '</span>'
-      + '<span class="rm">' + proofsToggle(rule, shown) + '</span></div>'
-      + (shown ? proofsUnder(rule) : '');
+      + '<span class="rp">' + badges(rule) + '</span></div>';
   }).join('');
 }
 
@@ -202,54 +175,6 @@ function featureRow(feature, columns) {
 function description(feature) {
   return feature.description ? '<p class="desc">' + esc(feature.description)
     + '</p>' : '';
-}
-
-/* The control that opens a rule's proofs beneath its row. Closed, it says
-   how many proofs the rule has, `2 proofs`, in the warn tone when one of
-   them reads `failed` or `no test`, and `no proof` where it has none. A
-   project at `passed` that writes no proof line is told nothing about
-   proofs: the control opens the tests marked with the rule's own id,
-   `1 test`, and is absent where there are none. */
-function proofsToggle(rule, shown) {
-  var proofs = rule.proofs || [];
-  var tests = rule.tests || [];
-  var label;
-  var warn = false;
-  if (showsProofs()) {
-    label = proofs.length ? proofs.length + (proofs.length === 1 ? ' proof'
-      : ' proofs') : 'no proof';
-    warn = proofs.some(function (proof) {
-      var word = proofWord(proof);
-      return word === 'failed' || word === 'no test';
-    });
-  } else if (tests.length) {
-    label = tests.length + (tests.length === 1 ? ' test' : ' tests');
-    warn = tests.some(function (t) { return t.result === 'fail'; });
-  } else {
-    return '';
-  }
-  return '<button class="more" data-act="proofs" data-feature="'
-    + esc(rule.feature) + '" data-rule="' + esc(rule.id) + '" aria-expanded="'
-    + (shown ? 'true' : 'false') + '"><span class="caret" aria-hidden="true">'
-    + (shown ? '▼' : '▶') + '</span><span'
-    + (warn ? ' style="color:var(--state-warn)"' : '') + '>' + esc(label)
-    + '</span></button>';
-}
-
-/* A rule unfolded beneath its row: each proof as the rule screen draws it.
-   Why the rule has not reached a step, and what the audit found, are on the
-   rule's own screen. A rule with no proof shows the tests marked with its
-   own id the same way, and one with neither says no proof is written. */
-function proofsUnder(rule) {
-  var proofs = rule.proofs || [];
-  var body = proofs.length ? proofs.map(function (proof) {
-    return '<div class="proof">' + proofDetail(proof, rule) + '</div>';
-  }).join('')
-    : (rule.tests || []).length ? '<div class="proof"><dl class="kv">'
-      + '<dt>Tests</dt><dd class="ptests">' + testLines(rule.tests)
-      + '</dd></dl></div>'
-    : '<p class="sec">No proof written.</p>';
-  return '<div class="rule-proofs">' + body + '</div>';
 }
 
 /* The band over a category's specs, one row with two ends. At the left the
@@ -301,16 +226,13 @@ function specTable(label, columns, body) {
     }).join('') + '</div>' + body + '</div></section>';
 }
 
-/* The board opens on the step boxes, then the filters, which apply to both
-   tables beneath them: the anchors, where the project has one a filter
-   leaves showing, and then the specs, grouped by category. The anchors'
-   section says what they are, so they carry no band and no mark of their
-   own. */
+/* The board opens on the step boxes, then the two tables beneath them: the
+   anchors, where the project has one, and then the specs, grouped by
+   category. The anchors' section says what they are, so they carry no band
+   and no mark of their own. */
 function renderBoard() {
   var columns = boardColumns();
-  var shown = (DATA.features || []).filter(function (feature) {
-    return visibleRules(feature).length > 0;
-  });
+  var shown = DATA.features || [];
   var anchors = shown.filter(function (f) { return f.is_anchor; });
   var order = [];
   var groups = {};
@@ -320,13 +242,11 @@ function renderBoard() {
     if (!groups[name]) { groups[name] = []; order.push(name); }
     groups[name].push(feature);
   });
-  return '<section>' + statStrip() + '</section>' + filtersMarkup()
+  return '<section>' + statStrip() + '</section>'
     + (anchors.length ? specTable('Anchors', columns, anchors.map(
       function (feature) { return featureRow(feature, columns); }).join(''))
       : '')
     + (order.length ? specTable('Specs', columns, order.map(function (name) {
       return groupBand(name, groups[name], columns);
-    }).join('')) : anchors.length ? '' : '<section><p class="eyebrow">Specs'
-      + '</p><div class="panel empty">No rule is left of this kind.</div>'
-      + '</section>');
+    }).join('')) : '');
 }
