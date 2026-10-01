@@ -59,12 +59,18 @@ letter-spacing.
 `[data-surface="product"]` overrides the grounds and the text for the slate surface and composes
 with either theme. Reference the semantic aliases only, never a raw palette value.
 
-Both themes ship. The light theme is extrapolated from the warm half: paper grounds `#FBF8EC` to
-`#C8BFB3` from the cream, navy ink, copper darkened to `#8F5626` for contrast, and the four state
-hues dropped to their 700 steps so they clear 4.5:1 on paper.
+Both themes ship. The light theme is ink on paper, extrapolated from the warm half. Its page
+ground is a paper tan, `#E8DDC6`; cards and tables sit on it one step lighter, `#F5EFE1`, bands
+at `#EDE4D1`, sunken rows at `#E6DBC4`, and the top bar one step darker, `#E3D7BE`, each told
+from the next by its tone and a hairline, never a shadow. The ink is navy, the copper is
+darkened to `#5E3513`, and the four state hues are darkened to `#0A4A20`, `#653200`, `#7C1313`
+and `#00464B`, so green, amber, red and teal still read as pass, warn, fail and neutral. The
+logo's light colourway keeps its own copper, `#8F5626`: it is a mark, not text.
 
-Every neutral text token, in both themes, measures at least 7:1 by the WCAG contrast formula
-against every ground it is drawn on.
+In the light theme every text token, the state hues and the copper included, measures at least
+7:1 by the WCAG contrast formula against every ground it is drawn on. In the dark theme every
+neutral text token does; its state hues and its copper are brighter marks on navy and measure
+less.
 
 ## Icons
 

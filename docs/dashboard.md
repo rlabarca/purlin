@@ -139,6 +139,10 @@ The page opens dark until you choose. The theme button, `◐` or `◑`, switches
 light, and the page opens in the theme you chose the next time it loads. Every colour on the page
 is a token the theme redefines, and the logo swaps to the colourway that reads on the new ground.
 
+The light theme is ink on paper: a paper tan ground, cards one step lighter, navy text, and
+green, amber, red and teal darkened until every text on the page, in any colour, measures at
+least 7 to 1 against the ground under it. In the dark theme every neutral text does.
+
 ## Next
 
 - [running-and-evidence.md](running-and-evidence.md): what writes the data this page shows.

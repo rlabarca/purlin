@@ -1065,10 +1065,10 @@ def test_a_passing_test_marked_with_the_rules_id_shows_passed(browser,
 
 # Every element that draws a text node of its own, its colour, the ground under
 # it composited through each translucent background up to the page, and the
-# WCAG contrast ratio of the two. Text in one of the four state colours or the
-# accent, and text on a solid badge filled with a state colour, is left out:
-# its colour is its meaning.
-NEUTRAL_CONTRAST = """() => {
+# WCAG contrast ratio of the two. With `everyColour` false, text in one of the
+# four state colours or the accent, and text on a ground filled with a state
+# colour, is left out; with it true every text is measured, whatever its colour.
+NEUTRAL_CONTRAST = """(everyColour) => {
   function parse(c) {
     const m = c.match(/rgba?\\(([^)]+)\\)/); if (!m) { return null; }
     const p = m[1].split(/[ ,\\/]+/).filter(Boolean).map(Number);
@@ -1119,10 +1119,10 @@ NEUTRAL_CONTRAST = """() => {
     const box = el.getBoundingClientRect();
     const style = getComputedStyle(el);
     if (!box.width || !box.height || style.visibility === 'hidden') { continue; }
-    if (coloured.has(style.color)) { continue; }
+    if (!everyColour && coloured.has(style.color)) { continue; }
     const under = ground(el);
     const fill = 'rgb(' + under.slice(0, 3).map(Math.round).join(', ') + ')';
-    if (states.has(fill)) { continue; }
+    if (!everyColour && states.has(fill)) { continue; }
     let ink = parse(style.color);
     if (ink[3] < 1) { ink = over(ink, under); }
     out.push([node.textContent.trim().slice(0, 40), style.color, fill,
@@ -1134,7 +1134,13 @@ NEUTRAL_CONTRAST = """() => {
 
 def neutral_text(page):
     """`[(text, colour, ground, ratio)]` for every neutral text on screen."""
-    return page.evaluate(NEUTRAL_CONTRAST)
+    return page.evaluate(NEUTRAL_CONTRAST, False)
+
+
+def every_text(page):
+    """`[(text, colour, ground, ratio)]` for every text on screen, in any
+    colour."""
+    return page.evaluate(NEUTRAL_CONTRAST, True)
 
 
 def open_in_theme(browser, tmp_path, payload, theme):
@@ -1177,12 +1183,39 @@ def test_neutral_text_measures_7_to_1_in_the_dark_theme(browser, tmp_path):
 
 
 # purlin: purlin_report PROOF-104
-def test_neutral_text_measures_7_to_1_in_the_light_theme(browser, tmp_path):
+def test_every_text_measures_7_to_1_in_the_light_theme(browser, tmp_path):
     """The three samples, each on the board with its first spec open and
-    then on its first rule's screen."""
-    checked, low = _contrast_in(browser, tmp_path, 'light')
+    then on the screen of each of that spec's rules; every text node's
+    computed colour against the ground under it, state colours and the
+    accent included."""
+    checked = 0
+    low = []
+    tones = set()
+    measured = set()
+    for process in PROCESSES:
+        page = open_in_theme(browser, tmp_path / process,
+                             payload_named(process), 'light')
+        page.click('.tr')
+        found = every_text(page)
+        count = len(page.query_selector_all('.rule'))
+        assert count, process
+        for index in range(count):
+            page.query_selector_all('.rule')[index].click()
+            page.wait_for_selector('h1', timeout=10000)
+            found += every_text(page)
+            page.click('[data-act="close"]')
+            page.wait_for_selector('.rule', timeout=10000)
+        for name in ('--state-pass', '--state-warn', '--state-fail',
+                     '--state-neutral', '--text-accent'):
+            tones.add(resolved(page, name))
+        page.close()
+        low += [(process, item) for item in found if item[3] < 7]
+        checked += len(found)
+        measured |= {item[1] for item in found}
     assert low == [], low
-    assert checked > 100, checked
+    assert checked > 300, checked
+    # The state colours and the accent are among what was measured.
+    assert tones & measured == tones, (tones, measured)
 
 
 # ---------------------------------------------------------------------------

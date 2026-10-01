@@ -35,12 +35,21 @@
   --red-500:#EF4444;
   --teal-400:#2DD4BF;
 
-  /* --- State hues, light-surface variants ------------------------ */
-  --green-700:#15803D;
-  --amber-700:#B45309;
-  --red-700:#B91C1C;
-  --teal-700:#0F766E;
-  --copper-700:#8F5626;
+  /* --- Ink on paper tan: every one 7:1 on the darkest tan ground -- */
+  --green-900:#0A4A20;
+  --amber-900:#653200;
+  --red-900:#7C1313;
+  --teal-900:#00464B;
+  --copper-900:#5E3513;
+  --purlin-ink-800:#163F4E;  /* secondary ink on tan */
+  --purlin-ink-750:#2F4047;  /* muted and idle ink on tan */
+
+  /* --- Paper tan ramp: the light theme's grounds ------------------ */
+  --purlin-tan-050:#F5EFE1;  /* cards and tables, the lightest */
+  --purlin-tan-100:#EDE4D1;  /* bands */
+  --purlin-tan-200:#E8DDC6;  /* the page ground: paper tan */
+  --purlin-tan-250:#E6DBC4;  /* sunken rows and code */
+  --purlin-tan-300:#E3D7BE;  /* the top bar, the darkest */
 
   /* --- Warm light-surface ramp (extrapolated) -------------------- */
   --purlin-paper-050:#FBF8EC;  /* yellowish white: the light ground */
