@@ -32,7 +32,9 @@ whose every marker names a proof tagged `@slow` (`slow_plan`): the test is
 left out through its own tool's option (`frameworks.leave_out`), the run
 says which proofs it left out, lists each as `not run`, and keeps the
 result the section it replaces holds for it where that section was taken
-over the same spec, code and tests (`keep_slow_results`). `--all` and `--ci`
+over the same spec, code and tests, marked `kept` with the commit, time,
+machine and person of the run that took it (`keep_slow_results`). The
+status counts a kept result; the sign-off does not. `--all` and `--ci`
 start every test. A slow test a suite's command cannot leave out is started,
 and the run says so.
 
@@ -761,7 +763,11 @@ def keep_slow_results(project_root, name, os_name, fingerprint, entries):
     taken over the same fingerprint.
 
     A slow proof's result counts until the feature's spec, code or tests
-    change, and a run that left its test out is no reason to drop it.
+    change, and a run that left its test out is no reason to drop it. Each
+    such entry carries `kept`, the `commit`, `at`, `machine` and `email` of
+    the run that took the result: the ones the result was already kept
+    under, else that section's own. The status counts a kept result and the
+    sign-off does not.
     """
     if not any(entry.get('held') for found in entries.values()
                for entry in found):
@@ -771,6 +777,7 @@ def keep_slow_results(project_root, name, os_name, fingerprint, entries):
     if not isinstance(kept, dict) \
             or kept.get('fingerprint') != dict(fingerprint):
         return entries
+    taken = {key: kept.get(key) or '' for key in evidence_writer.KEPT_KEYS}
     known = {}
     for listed in kept.get('proofs') or ():
         if isinstance(listed, dict) and listed.get('result') in (
@@ -785,13 +792,16 @@ def keep_slow_results(project_root, name, os_name, fingerprint, entries):
                 entry.get('test_file', ''), entry.get('test_name', ''))))
             if not entry.get('held') or listed is None:
                 out[marker_id].append(entry)
-            elif listed['result'] == evidence_reader.NOTHING_TO_CHECK:
+                continue
+            earlier = listed.get('kept')
+            where = dict(earlier) if isinstance(earlier, dict) else dict(taken)
+            if listed['result'] == evidence_reader.NOTHING_TO_CHECK:
                 out[marker_id].append(dict(
-                    entry, held=False, reason='%s %s' % (
+                    entry, held=False, kept=where, reason='%s %s' % (
                         evidence_reader.NOTHING_TO_CHECK_PREFIX,
                         listed.get('reason') or '')))
             else:
-                out[marker_id].append(dict(entry, held=False,
+                out[marker_id].append(dict(entry, held=False, kept=where,
                                            status=listed['result']))
     return out
 

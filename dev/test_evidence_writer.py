@@ -683,6 +683,47 @@ def test_a_run_after_a_commit_outside_the_records_writes_the_new_head(
         before['rules'], before['proofs'], before['fingerprint'])
 
 
+# purlin: evidence_writer PROOF-97
+def test_a_run_over_a_tree_no_longer_changed_writes_dirty_false(tmp_path):
+    root = _project(tmp_path)
+    _spec(root)
+    _test_file(root)
+    _repo(root)
+    head = _head(root)
+    (root / 'notes.txt').write_text('a note\n', encoding='utf-8')
+    code, out = _run(root, '--all', '--test')
+    assert code == 0, out
+    assert _evidence(root)['platforms'][HERE]['dirty'] is True
+
+    (root / 'notes.txt').unlink()
+    code, out = _run(root, '--all', '--test')
+
+    assert code == 0, out
+    assert _head(root) == head
+    assert _evidence(root)['platforms'][HERE]['dirty'] is False
+
+
+# purlin: evidence_writer PROOF-98
+def test_a_commit_run_leaves_other_work_uncommitted_and_reads_dirty(tmp_path):
+    root = _project(tmp_path)
+    _spec(root)
+    _test_file(root)
+    (root / 'src' / 'other.py').write_text('OTHER = 1\n', encoding='utf-8')
+    _repo(root)
+    _spec(root, description='A feature, reworded.')
+    (root / 'src' / 'other.py').write_text('OTHER = 2\n', encoding='utf-8')
+
+    code, out = _run(root, '--all', '--test', '--commit')
+
+    assert code == 0, out
+    work = _git(root, 'rev-parse', 'HEAD^').strip()
+    assert _git(root, 'show', '--name-only', '--format=', work).split() == [
+        'specs/a/feat.md'], out
+    assert ' M src/other.py' in _git(root, 'status', '--porcelain'
+                                     ).splitlines(), out
+    assert _evidence(root)['platforms'][HERE]['dirty'] is True
+
+
 # purlin: evidence_writer PROOF-39
 def test_commit_carries_the_removal_and_pushes_nothing(tmp_path):
     root = _project(tmp_path)
@@ -930,7 +971,11 @@ def test_an_audit_adds_the_entry_it_read_and_keeps_the_others(tmp_path):
     assert held in path.read_text(encoding='utf-8')
 
 
-NOTHING_TO_CHANGE = 'no break: the code has nothing to change'
+# The model's reply for one rule: the part of `PROOF-1`, then its reading.
+NOTHING_TO_CHANGE = ('=== PROOF-1 ===\n'
+                     'no break: the code has nothing to change\n\n'
+                     '=== reading ===\n'
+                     '- The test adds 1 and 1 and checks the sum.\n')
 
 
 # purlin: evidence_writer PROOF-54
@@ -955,10 +1000,16 @@ def test_an_audit_run_writes_the_entry_for_the_rule_it_read(tmp_path):
     data = payload_module.build_payload(str(root))
     rule = next(r for f in data['features'] for r in f['rules']
                 if r['id'] == 'RULE-1')
-    assert (entry['rule_hash'], entry['proof_hash'], entry['test_hash']) == (
-        rule['rule_hash'], rule['proof_hash'], rule['test_hash']), out
-    assert entry['verdict'] == 'strong'
+    code_hash = fingerprint_module.fingerprint(str(root), 'feat')['code']
+    assert (entry['rule_hash'], entry['proof_hash'], entry['test_hash'],
+            entry['code_hash']) == (
+        rule['rule_hash'], rule['proof_hash'], rule['test_hash'],
+        code_hash), out
+    assert entry['verdict'] == 'spot-checked'
     assert entry['findings'] == []
+    assert entry['no_bug'] == [
+        'No bug was planted: the model found no change that would break '
+        'PROOF-1: the code has nothing to change.']
     assert entry['breaks']['PROOF-1']['result'] == 'not made'
     assert entry['model'] == 'claude-fake-1'
     with open(os.path.join(REPO, 'references', 'review_criteria.md'),
@@ -970,8 +1021,8 @@ def test_an_audit_run_writes_the_entry_for_the_rule_it_read(tmp_path):
 
 
 HASHES = {'rule_hash': 'r', 'proof_hash': 'p', 'test_hash': 't'}
-FOUND = {'verdict': 'strong', 'findings': [], 'model': 'claude-a',
-         'criteria': 'c' * 64}
+FOUND = {'code_hash': 'k', 'verdict': 'strong', 'findings': [],
+         'no_bug': [], 'model': 'claude-a', 'criteria': 'c' * 64}
 FIRST_AT, FIRST_COMMIT = '2026-09-01T00:00:00Z', 'a' * 40
 LATER_AT, LATER_COMMIT = '2026-09-02T00:00:00Z', 'b' * 40
 

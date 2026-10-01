@@ -12,7 +12,7 @@
 > Scope: scripts/mcp/purlin/fingerprint.py, scripts/mcp/purlin/evidence.py
 > Stack: python/stdlib, hashlib, json, subprocess (list-only)
 > Highest-Rule: 35
-> Highest-Proof: 85
+> Highest-Proof: 89
 
 ## Rules
 
@@ -21,7 +21,7 @@
 - RULE-34: The `code` part covers the tracked files the `> Scope:` entries reach, read from the working tree: an entry naming a file reaches that file, one naming a directory every tracked file under it, and one holding `*`, `?` or `[` is a glob; editing a file reached, committed or not, changes `code` and no other part
 - RULE-5: A scope entry that reaches no tracked file, because the path does not exist or the glob matches nothing, is listed as unmatched, and the fingerprint is still taken
 - RULE-6: A spec with no `> Scope:` line is reported incomplete with the reason `no > Scope: line`, and its fingerprint is still taken, with a `code` part that is the sha256 of the empty string
-- RULE-7: The `tests` part covers every tracked test file, one a suite of the `tests` setting names, carrying a marker for the feature; editing such a file changes `tests` and no other part; a marker for another feature is not counted
+- RULE-7: The `tests` part covers every tracked test file, one a suite of the `tests` setting names, carrying a marker for the feature, and the `tests` setting itself; editing such a file or that setting changes `tests` and no other part; a marker for another feature is not counted, and neither is the settings file's `version`
 - RULE-8: An untracked file changes no part of the fingerprint; an untracked file under the feature's scope or in the directory of one of its marker files is listed as untracked, and a file git ignores is not listed
 - RULE-30: An anchor's `code` part covers every file git tracks but the records Purlin writes, so an edit to any other tracked file changes it and an untracked file does not
 - RULE-31: Writing Purlin's records, the evidence under `.purlin/evidence/`, the evidence package and its sign-offs, leaves an anchor's `code` part as it was
@@ -30,7 +30,7 @@
 - RULE-35: An evidence file that is not valid JSON, is not a JSON object, carries a `schema` other than `purlin-evidence/2`, or whose `source` disagrees with the folder it sits in is ignored with exactly one warning naming its path, what is wrong and how to write it again
 - RULE-14: Each of the keys `windows`, `macos` and `linux` under `platforms` is one section, so a file holding two operating systems gives two sections; sections are listed `local` first, then in that operating system order, and any other key is skipped
 - RULE-15: A section is current when its stored `spec`, `code` and `tests` hashes all equal a fingerprint taken now; otherwise it is out of date and the reader names each part that differs, all three where the section stores no fingerprint
-- RULE-16: The audit entry for a rule is returned only while its `rule_hash`, `proof_hash` and `test_hash` all equal the ones asked for, whatever its `commit`
+- RULE-16: The audit entry for a rule is the one either source holds, a current one before one out of date and then the later `at`; it is current while its `rule_hash`, `proof_hash`, `test_hash` and `code_hash` all equal the ones asked for, whatever its `commit`, and otherwise names each part that differs, `rule`, `proof`, `test` or `code`
 - RULE-17: The newest section is the one with the latest `at` across both sources, and there is none when neither file holds a section
 - RULE-18: Reading evidence writes nothing: the evidence folder holds the same files with the same bytes after a load as before it
 - RULE-20: A section's result for a proof is the worst of the entries it lists against that proof: `fail` where one failed, else `not run` where one reads `missing` or `not run`, else `pass`, so a proof has passed only when every test tied to it ran and passed
@@ -50,6 +50,8 @@
 - PROOF-10 (RULE-6): `login` has no `> Scope:` line; it is reported incomplete with the reason `no > Scope: line`, and its fingerprint is taken with no error: `code` is `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`, the sha256 of the empty string, and `spec` and `tests` are 64 characters each
 - PROOF-11 (RULE-7): The committed file `tests/test_login.py`, named by a suite of the `tests` setting, carries `# purlin: login PROOF-1` above its test; editing it changes the fingerprint of `login` in `tests` alone
 - PROOF-43 (RULE-7): The committed file `tests/test_other.py`, named by a suite of the `tests` setting, carries a marker for `billing` and none for `login`; rewriting it leaves the fingerprint of `login` as it was
+- PROOF-88 (RULE-7): A `local` section of `login` stores the fingerprint taken now; the `run` command of the `tests` setting in `.purlin/config.json` is then changed; checked against a fingerprint taken again, the section reads out of date on exactly `tests`
+- PROOF-89 (RULE-7): A `local` section of `login` stores the fingerprint taken now; the `version` in `.purlin/config.json` is then changed from `0.10.0` to `0.10.1`; checked against a fingerprint taken again, the section reads current
 - PROOF-13 (RULE-8): `login` covers `src` and its marker file is `tests/test_login.py`; `src/new_token.py` and `tests/helper.py` are written and not added to git, and the fingerprint of `login` equals the one taken before
 - PROOF-46 (RULE-8): `login` covers `src` and its marker file is `tests/test_login.py`; `src/new_token.py`, `tests/helper.py` and `docs/notes.md` are written and not added to git; the files listed as untracked are exactly `src/new_token.py` and `tests/helper.py`
 - PROOF-47 (RULE-8): `login` covers `src`, `.gitignore` lists `src/*.log`, and `src/debug.log` and `src/new_token.py` are written and not added to git; the one file listed as untracked is `src/new_token.py`
@@ -67,8 +69,10 @@
 - PROOF-21 (RULE-15): A `local` `macos` section of `login` stores the fingerprint of `login` taken now; checked against a fingerprint taken again, it reads current, with no part out of date
 - PROOF-55 (RULE-15): A `local` `macos` section of `login` stores the fingerprint taken now, and `src/login.py` is then edited; checked against a fingerprint taken again, it reads out of date on exactly `code`
 - PROOF-57 (RULE-15): A `local` `macos` section of `login` stores no fingerprint; checked against a fingerprint taken now, it reads out of date on `spec`, `code` and `tests`
-- PROOF-22 (RULE-16): The `local` file holds an audit entry for RULE-1 with the hashes `r`, `p` and `t`, whose commit is not the repository's HEAD; asked for RULE-1 with `r`, `p` and `t`, the reader returns it, naming the source `local` and carrying that commit
-- PROOF-58 (RULE-16): The `local` file holds an audit entry for RULE-1 with the hashes `r`, `p` and `t`; asked for RULE-1 with `r`, `p` and `t2`, the reader returns no entry
+- PROOF-22 (RULE-16): The `local` file holds an audit entry for RULE-1 with the hashes `r`, `p`, `t` and `c`, whose commit is not the repository's HEAD; asked for RULE-1 with `r`, `p`, `t` and `c`, the reader returns it, naming the source `local` and carrying that commit
+- PROOF-58 (RULE-16): The `local` file holds an audit entry for RULE-1 with the hashes `r`, `p`, `t` and `c`; asked for RULE-1 with `r`, `p`, `t2` and `c`, the reader returns the entry as out of date on exactly `test`
+- PROOF-86 (RULE-16): Both files hold an entry for RULE-1 with the hashes `r`, `p`, `t` and `c`: `ci` reads `strong` at `2026-09-01T00:00:00Z` and `local` reads `weak` at `2026-09-02T00:00:00Z`; asked for RULE-1 with those hashes, the reader returns the `weak` entry, naming the source `local`
+- PROOF-87 (RULE-16): The `local` file holds an audit entry for RULE-1 with the hashes `r`, `p`, `t` and `c`; asked for RULE-1 with `r`, `p`, `t` and `c2`, the reader returns the entry as out of date on exactly `code`
 - PROOF-63 (RULE-17): The `local` file of `login` holds a `macos` section dated `2026-09-01T00:00:00Z`, and the `ci` file a `linux` section dated `2026-09-03T00:00:00Z`; the newest section is `ci` `linux`
 - PROOF-23 (RULE-17): Neither evidence file of `login` exists; the reader gives no newest section
 - PROOF-24 (RULE-18): The `local` file of `login` holds a section and an audit entry, and the `ci` file holds `{not json`; the evidence is loaded, its sections are checked against a fingerprint taken now, and an audit entry and the newest section are asked for; afterwards `.purlin/evidence/` holds the same files with the same bytes, none added and none removed

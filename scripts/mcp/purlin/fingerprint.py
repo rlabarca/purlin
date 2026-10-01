@@ -5,7 +5,8 @@ A fingerprint has three parts, each a sha256 hex string:
     spec   the spec's own rule and proof lines
     code   the files its `> Scope:` names; for an anchor, the project: every
            tracked file but `RECORDS`
-    tests  the test files that carry a marker for it
+    tests  the test files that carry a marker for it, and the `tests`
+           setting of `.purlin/config.json`
 
 Every file is read from the working tree through `git hash-object`, so an edit
 counts before it is committed. A file git does not track is left out of every
@@ -23,6 +24,7 @@ feature named runs.
 """
 
 import hashlib
+import json
 import os
 import subprocess
 import sys
@@ -308,9 +310,33 @@ def marker_files(project_root, feature, index=None):
     return list(index.get(feature, []))
 
 
+def tests_setting_line(project_root):
+    """`tests-setting <sha256>` for the `tests` setting of
+    `.purlin/config.json`, read from the working tree, or None where the
+    file holds no `tests`.
+
+    The sha256 is taken over the setting as JSON with sorted keys, so the
+    file's layout, and every other key of it, `version` included, change
+    nothing.
+    """
+    config = markers_module.load_config(project_root)
+    if 'tests' not in config:
+        return None
+    text = json.dumps(config['tests'], sort_keys=True, separators=(',', ':'))
+    return 'tests-setting %s' % hashlib.sha256(
+        text.encode('utf-8')).hexdigest()
+
+
 def tests_hash(project_root, feature, index=None):
-    """The `tests` part: sha256 over `<path> <blob>` for each marker file."""
-    return _files_part(project_root, marker_files(project_root, feature, index))
+    """The `tests` part: sha256 over `<path> <blob>` for each marker file
+    and, where the settings file holds `tests`, `tests_setting_line`."""
+    ids = blob_ids(project_root,
+                   sorted(set(marker_files(project_root, feature, index))))
+    lines = ['%s %s' % (path, ids[path]) for path in ids]
+    setting = tests_setting_line(project_root)
+    if setting is not None:
+        lines.append(setting)
+    return _hash_lines(lines)
 
 
 # ---------------------------------------------------------------------------

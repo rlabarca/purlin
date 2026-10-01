@@ -1,4 +1,4 @@
-> Format-Version: 10
+> Format-Version: 11
 
 # Evidence format
 
@@ -59,7 +59,12 @@ operating system that ran the feature, one section each.
          "manual": false, "test": "tests/test_login.py::test_rejects_a_wrong_password"},
         {"id": "PROOF-2", "rule": "RULE-2", "result": "nothing to check",
          "reason": "this project has no screens", "env": null, "manual": false,
-         "test": "tests/test_login.py::test_every_screen_has_a_title"}
+         "test": "tests/test_login.py::test_every_screen_has_a_title"},
+        {"id": "PROOF-3", "rule": "RULE-1", "result": "pass", "env": null,
+         "manual": false, "test": "tests/test_login.py::test_a_thousand_logins",
+         "kept": {"commit": "9b2e7c4d1a6f3e8b5c0d2a7f4e1b6c3d8a5f2e9b",
+                  "at": "2026-09-26T09:30:00Z", "machine": "jane-mbp",
+                  "email": "jane@example.com"}}
       ]
     }
   },
@@ -101,7 +106,7 @@ present only once an audit has run.
 | Field | Type | What it holds |
 |---|---|---|
 | `commit` | string | the full sha of the code the section describes: `HEAD` after the run's own commit of the specs, tests and settings where `--commit` made one, else `HEAD` when the run started |
-| `dirty` | bool | whether the working tree had changes that were not committed. It is shown and not compared: the fingerprint is what decides |
+| `dirty` | bool | whether the working tree had changes that were not committed, outside `.purlin/`. It decides no cell: the fingerprint does. A run over a tree whose `dirty` differs replaces the section |
 | `at` | string | ISO 8601 UTC with `Z`, when the run finished |
 | `runner` | string | the slug of `email`, made from its part before the `@`; `unknown` where there is none |
 | `email` | string | the `git config user.email` of the checkout the run was made in, or `unknown` where git has none. Kept and never compared |
@@ -140,6 +145,7 @@ Each `proofs` entry:
 | `manual` | bool | whether the proof is tagged `@manual` |
 | `test` | string | `<file>::<name>` for the test that observed the proof, `""` when nothing did. The name is the test's own, as the marker format spells it |
 | `reason` | string | present only where `result` is `nothing to check`: the text after `nothing to check: ` in the reason the test's tool gave for its skip |
+| `kept` | object | optional: present only on an entry whose result this run did not take, a slow proof's test it left out. It names the run that took the result: `commit`, the full sha, `at`, `machine` and `email`, as that run's section held them |
 
 A test is tied to its proof by the marker comment above it, as
 `references/formats/marker_format.md` says. Besides `pass` and `fail`, an
@@ -158,7 +164,15 @@ entry reads:
 - **`not run`**, with the test named, where the proof is tagged `@slow` and
   the run left its test out. One case differs: the section the run replaces
   was taken over the same fingerprint and holds a result for that test. The
-  entry then keeps that result.
+  entry then keeps that result and carries `kept`: the `commit`, `at`,
+  `machine` and `email` of the section the result was taken in, or the
+  `kept` that entry already carried. The section's own `commit`, `at`,
+  `machine` and `email` are this run's.
+
+A reader counts a kept `pass` as a `pass`, so the status keeps counting it.
+The sign-off counts no kept result, whatever commit it names: it asks for
+`purlin:test --all --commit`, which takes the result again and writes the
+entry with no `kept`.
 
 A proof no test is tied to has one entry with an empty `test`. It reads
 `missing`, or `not run` where the proof is tagged `@env` for another
@@ -239,7 +253,7 @@ so an edit counts before it is committed.
 |---|---|
 | `spec` | the spec's own rule and proof lines. A rule line is `<spec> <RULE-N> <text>`; a proof line is `<spec> <PROOF-N> <rules> <text>`, then `@manual`, `@slow` and `@env(<os>)` where the proof carries them. `> Description:` and the other metadata fields are not covered |
 | `code` | for a feature, the tracked files the `> Scope:` entries reach, each as `<path> <blob>`. A file names itself, a directory names every tracked file under it, and an entry holding `*`, `?` or `[` is a git glob, so `scripts/**/*.py` reaches every Python file under `scripts/`. For an anchor, every tracked file but the records Purlin writes: `.purlin/evidence/` whole, the results, the evidence package and its sign-offs. Any other change to the project changes it; writing a record does not |
-| `tests` | every tracked test file carrying a marker for the feature, each as `<path> <blob>`. A test file is one a suite of the `tests` setting names |
+| `tests` | every tracked test file carrying a marker for the feature, each as `<path> <blob>`, and, where `.purlin/config.json` holds `tests`, the line `tests-setting <sha256>`, the sha256 of that setting as JSON with sorted keys and no spaces. A test file is one a suite of the `tests` setting names. The setting is read from the working tree, so changing a suite's command puts every feature's sections out of date on `tests`; the file's layout and its other keys, `version` included, change nothing |
 
 A file git does not track is in no part: it would change the fingerprint on
 the one machine that holds it and nowhere else. It joins the fingerprint once
@@ -263,7 +277,8 @@ each part that differs: `code changed since 4f1c2ab`, `spec changed since
   whole, so a run on another machine replaces the results of the one before.
   Every other section and `audit` stay as they are. One result is carried
   from the section replaced into the new one: that of a slow proof's test
-  the run left out, where both sections have the same fingerprint.
+  the run left out, where both sections have the same fingerprint. Its
+  entry is marked `kept`.
 - An audit run first makes the same test-run write. It then replaces
   `audit.rules[<rule>]` for each rule it read and leaves every other entry as
   it is.
@@ -286,11 +301,16 @@ A file keeps the newest section per operating system and the newest audit
 entry per rule. The history is the file's `git log`. Nothing is pruned.
 
 A run that sees the same results over the same fingerprint on the same
-`machine` as the section already there leaves the file byte for byte as it
-was, `at`, `commit`, `dirty` and `email` included, where every
-commit from the one the section names to the run's own changes only paths
-under `.purlin/`, so a second run finds nothing new to commit. Any other
-section replaces it, with its own `at`, `commit`, `dirty` and `email`.
+`machine`, with the same `dirty`, as the section already there leaves the
+file byte for byte as it was, `at`, `commit` and `email` included, where
+every commit from the one the section names to the run's own changes only
+paths under `.purlin/`, so a second run finds nothing new to commit. Any
+other section replaces it, with its own `at`, `commit`, `dirty` and `email`.
+
+`kept` is left out of that comparison in one direction: a result the run
+carried over is the result the section on disk already holds, so the file
+stays as it was, with no `kept` in it. A result the run took itself
+replaces an entry the section on disk holds as `kept`.
 
 ## The two commits
 

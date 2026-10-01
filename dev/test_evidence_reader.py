@@ -178,6 +178,32 @@ def test_a_code_edit_puts_the_section_out_of_date_on_code(root):
     assert _state(root) == (False, ['code'])
 
 
+def _settings(root, version='0.10.0', run='python3 -m pytest {files}'):
+    """Write `.purlin/config.json`: `version`, and one pytest suite."""
+    _write(root, '.purlin/config.json', json.dumps({
+        'version': version,
+        'tests': [{'name': 'pytest', 'run': run, 'format': 'junit',
+                   'report': '.purlin/runtime/reports/pytest.xml',
+                   'files': ['tests/**/*.py']}]}, indent=2) + '\n')
+
+
+# purlin: evidence PROOF-88
+def test_a_changed_test_command_puts_the_section_out_of_date_on_tests(root):
+    _settings(root)
+    _stored_now(root)
+    assert _state(root) == (True, [])
+    _settings(root, run='python3 -m pytest -x {files}')
+    assert _state(root) == (False, ['tests'])
+
+
+# purlin: evidence PROOF-89
+def test_a_changed_version_leaves_the_section_current(root):
+    _settings(root, version='0.10.0')
+    _stored_now(root)
+    _settings(root, version='0.10.1')
+    assert _state(root) == (True, [])
+
+
 # purlin: evidence PROOF-57
 def test_a_section_with_no_fingerprint_is_out_of_date_on_all_three(root):
     section = _section()
@@ -186,29 +212,53 @@ def test_a_section_with_no_fingerprint_is_out_of_date_on_all_three(root):
     assert _state(root) == (False, ['spec', 'code', 'tests'])
 
 
-def _audit(at, commit='b' * 40, test_hash='t'):
+def _audit(at, commit='b' * 40, verdict='strong'):
     return {'rules': {'RULE-1': {
-        'rule_hash': 'r', 'proof_hash': 'p', 'test_hash': test_hash,
-        'verdict': 'strong', 'findings': [], 'at': at, 'commit': commit}}}
+        'rule_hash': 'r', 'proof_hash': 'p', 'test_hash': 't',
+        'code_hash': 'c', 'verdict': verdict, 'findings': [], 'no_bug': [],
+        'at': at, 'commit': commit}}}
 
 
 def _audited(root):
-    """The local file of `login` holds an entry for RULE-1: `r`, `p`, `t`."""
+    """The local file of `login` holds an entry for RULE-1: `r`, `p`, `t`
+    and `c`."""
     _put(root, 'local', _file('local', audit=_audit('2026-09-01T00:00:00Z')))
     return evidence.load(root, 'login')
 
 
 # purlin: evidence PROOF-22
-def test_an_audit_entry_answers_while_its_three_hashes_match(root):
-    entry = evidence.audit_entry(_audited(root), 'RULE-1', 'r', 'p', 't')
+def test_an_audit_entry_answers_while_its_four_hashes_match(root):
+    entry = evidence.audit_entry(_audited(root), 'RULE-1', 'r', 'p', 't', 'c')
     assert entry['source'] == 'local' and entry['verdict'] == 'strong'
+    assert entry['out_of_date'] == []
     head = _git(root, 'rev-parse', 'HEAD')
     assert entry['commit'] == 'b' * 40 != head
 
 
 # purlin: evidence PROOF-58
-def test_an_audit_entry_for_another_test_hash_does_not_answer(root):
-    assert evidence.audit_entry(_audited(root), 'RULE-1', 'r', 'p', 't2') is None
+def test_an_audit_entry_for_another_test_hash_is_out_of_date_on_test(root):
+    entry = evidence.audit_entry(_audited(root), 'RULE-1', 'r', 'p', 't2', 'c')
+    assert entry['verdict'] == 'strong' and entry['source'] == 'local'
+    assert entry['out_of_date'] == ['test']
+
+
+# purlin: evidence PROOF-87
+def test_an_audit_entry_for_another_code_hash_is_out_of_date_on_code(root):
+    entry = evidence.audit_entry(_audited(root), 'RULE-1', 'r', 'p', 't', 'c2')
+    assert entry['verdict'] == 'strong' and entry['source'] == 'local'
+    assert entry['out_of_date'] == ['code']
+
+
+# purlin: evidence PROOF-86
+def test_of_two_current_audit_entries_the_later_one_answers(root):
+    _put(root, 'ci', _file('ci', audit=_audit('2026-09-01T00:00:00Z')))
+    _put(root, 'local', _file('local', audit=_audit('2026-09-02T00:00:00Z',
+                                                    verdict='weak')))
+    entry = evidence.audit_entry(evidence.load(root, 'login'), 'RULE-1',
+                                 'r', 'p', 't', 'c')
+    assert entry['verdict'] == 'weak'
+    assert entry['source'] == 'local'
+    assert entry['at'] == '2026-09-02T00:00:00Z'
 
 
 # purlin: evidence PROOF-23
@@ -248,7 +298,7 @@ def test_loading_checking_and_asking_leaves_the_same_files_and_bytes(root):
     before = _snapshot(root)
     loaded = evidence.load(root, 'login')
     evidence.checked_sections(loaded, fingerprint.fingerprint(root, 'login'))
-    evidence.audit_entry(loaded, 'RULE-1', 'r', 'p', 't')
+    evidence.audit_entry(loaded, 'RULE-1', 'r', 'p', 't', 'c')
     evidence.newest(loaded)
     assert _snapshot(root) == before
 

@@ -10,12 +10,13 @@
 >   listed with the marker it meant, for `purlin:build` to repair.
 > Scope: scripts/run/reports.py, scripts/mcp/purlin/markers.py, references/formats/marker_format.md
 > Stack: python/stdlib (xml.etree, json, tokenize, ast, re, shlex), pytest, jest, vitest, dotnet, go, bash, sqlite3
-> Highest-Rule: 37
-> Highest-Proof: 118
+> Highest-Rule: 38
+> Highest-Proof: 120
 
 ## Rules
 
 - RULE-1: A marker is one whole-line comment, `purlin: <feature> PROOF-<n>` or `purlin: <feature> RULE-<n>`, after any of `#`, `//`, `--`, `;`, `%` and `'`, or inside a one-line `/* */` or `<!-- -->`; a `purlin:` comment of any other shape ties nothing
+- RULE-38: A marker-shaped line inside a string of a test file, or inside a here document of a shell file, is not a marker and ties nothing
 - RULE-3: Only a file one suite's `files` globs match is read for markers; `*` and `?` match within one path segment, `**` matches any number of segments, a glob with no `/` matches that file name in any directory, and a file two suites match belongs to the first
 - RULE-4: A marker belongs to the next test declared after it in its file: blank lines, decorators, attributes and other comments may sit between them, every marker between the previous test's declaration and this one belongs to this one, and the test's result counts for each of them
 - RULE-6: A test is declared by a Python function whose name starts with `test`, at module level or in a class; a JavaScript or TypeScript `it` or `test` call with a literal title, inside any number of `describe` calls; a C# method carrying `[Fact]`, `[Theory]`, `[Test]`, `[TestCase]`, `[TestCaseSource]`, `[TestMethod]`, `[DataTestMethod]`, `[SkippableFact]` or `[SkippableTheory]`; a Go `func TestX(t *testing.T)`
@@ -40,6 +41,7 @@
 
 - PROOF-1 (RULE-1): A file holds eight lines, each a marker of `login`: after `#`, `//`, `--`, `;`, `%` and `'`, inside `/* */` naming `RULE-7`, and inside `<!-- -->`; all eight read as markers, each with its feature, its id and its line, 1 to 8
 - PROOF-27 (RULE-1): In a plain text file, the line `x = 1  # purlin: login PROOF-1`, a marker after code on the same line, is not read as a marker
+- PROOF-119 (RULE-38): A Python test file holds `# purlin: login PROOF-1` on line 2, inside a triple-quoted string, and `# purlin: login PROOF-2` as a comment on line 5 above the passing `test_ok`; one marker is read, `PROOF-2` at line 5, and the evidence holds no `pass` for `PROOF-1`
 - PROOF-3 (RULE-3): Of the paths `dev/test_a.py`, `dev/sub/test_b.py` and `a/b/c.test.ts`, the glob `dev/test_*.py` matches `dev/test_a.py` alone, since `*` does not cross a `/`
 - PROOF-43 (RULE-3): Of the paths `dev/test_a.py`, `dev/sub/test_b.py` and `a/b/c.test.ts`, the glob `test_*.py`, which has no `/`, matches the first two and not the third
 - PROOF-47 (RULE-3): With a suite `first` on `tests/*.py` and then a suite `second` on `**/*.py`, `tests/test_a.py`, which both match, belongs to `first`, and `other/test_b.py`, which only `second` matches, belongs to `second`
@@ -51,6 +53,7 @@
 - PROOF-5 (RULE-33): A Python test file ends with the marker `login PROOF-3` on its line 9, with no test after it; the run prints `tests/test_login.py:9 names login PROOF-3 and no test follows it. Put the comment directly above a test, or run purlin:build to repair it.`, exits 1, and the evidence holds `PROOF-3` with no test and the result `missing`
 - PROOF-19 (RULE-33): Every rule of `login` has a passing test, and one more passing test, on line 13, is marked `purlin: nosuch PROOF-1`; the run prints `tests/test_login.py:13 names nosuch PROOF-1, which no spec has. Correct the comment, or run purlin:build to repair it.` and exits 1
 - PROOF-13 (RULE-33): A Python test file declares `test_x` twice, marked `login PROOF-1` and `login PROOF-2`, and its one case passes; the run prints `The report's test_x matches 2 tests in tests/test_login.py, so its result is not counted. Give the tests different names, then run purlin:test.` on a line of its own, the evidence holds both proofs `missing`, and it exits 1
+- PROOF-120 (RULE-33): `login`'s `RULE-1` has `PROOF-1`, and a passing test on line 3 is marked `purlin: login RULE-1`; the run prints `tests/test_login.py:3 names login RULE-1, which has proofs; a comment names one of its proofs. Correct the comment, or run purlin:build to repair it.`, exits 1, and the evidence holds no `pass` under `RULE-1`
 - PROOF-20 (RULE-35): Beside one complete suite, a `tests` entry `a` names no `run`; the run prints `purlin: the a suite names no run command. Fix the tests setting in .purlin/config.json, then run purlin:test.`, starts only the complete suite, printing `Running the pytest suite.` alone, and exits 0 when its tests pass
 - PROOF-88 (RULE-35): Beside one complete suite, a `tests` entry `b` names the format `tap`; the run prints `purlin: the b suite names the format "tap", which is not one of junit, trx, gotest, exit. Fix the tests setting in .purlin/config.json, then run purlin:test.`, starts only the complete suite, and exits 0 when its tests pass
 - PROOF-108 (RULE-35): A settings file whose `tests` holds `{}` is read as no suite, with the one suite problem `"tests" in .purlin/config.json is not a list`

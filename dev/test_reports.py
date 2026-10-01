@@ -586,6 +586,36 @@ class TestThroughARun:
             'PROOF-1': 'missing', 'PROOF-2': 'missing'}, out
         assert code == 1, out
 
+    # purlin: reports PROOF-120
+    def test_a_comment_naming_a_rule_that_has_proofs_exits_1(self, tmp_path):
+        code, out, results = _login_run(tmp_path, (
+            'import pytest\n\n'
+            '# purlin: login RULE-1\n'
+            'def test_ok():\n    pass\n'), _spec('login', 1))
+        assert ('tests/test_login.py:3 names login RULE-1, which has proofs; '
+                'a comment names one of its proofs. Correct the comment, or '
+                'run purlin:build to repair it.') in out.splitlines(), out
+        assert code == 1, out
+        section = _evidence(tmp_path / 'project')
+        assert section['rules']['RULE-1'] != 'passed', section
+        assert [entry['result'] for entry in section['proofs']
+                if entry['rule'] == 'RULE-1'] == ['missing'], section
+
+    # purlin: reports PROOF-119
+    def test_a_marker_inside_a_string_is_not_a_marker(self, tmp_path):
+        body = ('NOTE = """\n'
+                '# purlin: login PROOF-1\n'
+                '"""\n\n'
+                '# purlin: login PROOF-2\n'
+                'def test_ok():\n    pass\n')
+        code, out, results = _login_run(tmp_path, body, _spec('login', 2))
+        found = markers.scan(str(tmp_path / 'project'))
+        read = [(marker.id, marker.line)
+                for marker in found['tests/test_login.py'].markers]
+        assert read == [('PROOF-2', 5)], read
+        assert results == {('PROOF-1', ''): 'missing',
+                           ('PROOF-2', 'tests/test_login.py::test_ok'): 'pass'}
+
     # purlin: reports PROOF-77
     def test_a_test_whose_setup_errors_is_fail(self, five_outcomes):
         assert five_outcomes['PROOF-4'] == 'fail'

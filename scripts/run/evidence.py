@@ -14,8 +14,8 @@ home of the merge rules this module follows:
 - Every run deletes the files under `local/` and `ci/` whose feature has no
   spec.
 
-A run that saw the same thing over the same fingerprint on the same machine
-leaves the file as it was where every commit since the one its section names
+A run that saw the same thing over the same fingerprint on the same machine,
+with the same `dirty`, leaves the file as it was where every commit since the one its section names
 changes only paths under `.purlin/`, so running the tests twice has nothing
 new to commit.
 
@@ -167,7 +167,10 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
     marker of this feature, where `id` is a `PROOF-N`, or a `RULE-N` for a
     rule with no proof whose test is marked by the rule's own id. Each entry
     is `{status, test_file, test_name, line, reason}`, `reason` the text a
-    skipped test's tool gave or None. One `proofs` entry is written per
+    skipped test's tool gave or None, and `kept` where the result is one an
+    earlier run took and this run carried over: the `commit`, `at`,
+    `machine` and `email` of that run, written on the entry as it is given.
+    One `proofs` entry is written per
     (id, test) pair, and one with an empty `test` for a proof nothing
     observed. A tied test that neither passed nor failed is `missing`, a
     proof tagged for another operating system reads `not run` whatever its
@@ -229,15 +232,18 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
                 test = '%s::%s' % (entry.get('test_file', ''),
                                    entry.get('test_name', ''))
                 if nothing is not None:
-                    listed.append(dict(base, result=reader.NOTHING_TO_CHECK,
-                                       reason=nothing[index], test=test))
+                    listed.append(_with_kept(dict(
+                        base, result=reader.NOTHING_TO_CHECK,
+                        reason=nothing[index], test=test), entry))
                     continue
                 # A test carrying a Mac proof's marker and a Windows proof's
                 # marker runs on the Mac and proves the Mac proof alone.
-                listed.append(dict(base, result=(
-                    status if status in ('pass', 'fail') and not foreign
+                took = status in ('pass', 'fail') and not foreign
+                made = dict(base, result=(
+                    status if took
                     else 'not run' if entry.get('held') else unseen),
-                    test=test))
+                    test=test)
+                listed.append(_with_kept(made, entry) if took else made)
             if not seen:
                 listed.append(dict(base, result=unseen, test=''))
     return {
@@ -250,6 +256,18 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
         'rules': rules,
         'proofs': listed,
     }
+
+
+# What a kept result's `kept` names of the run that took it.
+KEPT_KEYS = ('commit', 'at', 'machine', 'email')
+
+
+def _with_kept(listed, entry):
+    """`listed` carrying `kept` where the run handed the entry one."""
+    kept = entry.get('kept')
+    if isinstance(kept, dict):
+        listed['kept'] = {key: kept.get(key) or '' for key in KEPT_KEYS}
+    return listed
 
 
 def _rule_marked_word(status, seen):
@@ -265,15 +283,33 @@ def _rule_marked_word(status, seen):
 
 
 def _same_observation(one, other):
-    """True when two sections saw the same thing over the same fingerprint.
+    """True when the section on disk, `one`, saw what the new one, `other`,
+    saw over the same fingerprint.
 
-    `commit`, `dirty` and `at` say when a run happened, not what it saw, and
-    `email` is kept and never compared. A run on another `machine` replaces
-    the section.
+    `commit` and `at` say when a run happened, not what it saw, and `email`
+    is kept and never compared. A run on another `machine`, or over a tree
+    whose `dirty` differs, replaces the section. A proof entry's `kept` is
+    left out, since a result this run carried over is the result the other
+    run took; but a result the new run took itself replaces one the section
+    on disk holds as kept.
     """
     def seen(section):
-        return {key: value for key, value in (section or {}).items()
-                if key not in ('commit', 'dirty', 'at', 'email')}
+        found = {key: value for key, value in (section or {}).items()
+                 if key not in ('commit', 'at', 'email')}
+        found['dirty'] = bool(found.get('dirty'))
+        if isinstance(found.get('proofs'), list):
+            found['proofs'] = [
+                {key: value for key, value in entry.items() if key != 'kept'}
+                if isinstance(entry, dict) else entry
+                for entry in found['proofs']]
+        return found
+
+    def kept(section):
+        return {(entry.get('id'), entry.get('test'))
+                for entry in (section or {}).get('proofs') or ()
+                if isinstance(entry, dict) and 'kept' in entry}
+    if kept(one) - kept(other):
+        return False
     return json.loads(json.dumps(seen(one))) == json.loads(json.dumps(
         seen(other)))
 
@@ -392,7 +428,8 @@ def merge_section(data, source, feature, spec_path, os_name, section,
     """`data` with `platforms[os_name]` replaced and removed rules dropped.
 
     A section that saw the same results over the same fingerprint on the
-    same machine as the one already there is left as it was, `at` and
+    same machine, with the same `dirty`, as the one already there is left
+    as it was, `at` and
     `commit` included, where it names the same commit or `same_code(<its
     commit>, <the new commit>)` holds: every commit between them changes
     only Purlin's own records. Returns a new dict.

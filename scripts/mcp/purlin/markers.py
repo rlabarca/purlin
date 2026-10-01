@@ -114,13 +114,15 @@ class Test(object):
     test sits in. `pattern` is set for a JavaScript title that a table fills
     in (`it.each`), and matches the titles the runner prints for it. `start`
     and `end` bound the declaration's source, as offsets into the file.
+    `rows` is true for a C# test NUnit names row by row, one declared under
+    `[TestCase]` or `[TestCaseSource]`.
     """
 
     __slots__ = ('name', 'line', 'scopes', 'markers', 'pattern', 'start',
-                 'end', 'namespace')
+                 'end', 'namespace', 'rows')
 
     def __init__(self, name, line, scopes=(), pattern=None, start=None,
-                 end=None, namespace=''):
+                 end=None, namespace='', rows=False):
         self.name = name
         self.line = line
         self.scopes = list(scopes)
@@ -129,6 +131,7 @@ class Test(object):
         self.start = start
         self.end = end
         self.namespace = namespace
+        self.rows = bool(rows)
 
     def qualified(self, separator):
         return separator.join(self.scopes + [self.name])
@@ -681,6 +684,11 @@ _CS_ATTRIBUTE_RE = re.compile(
     r'\[\s*(?:[\w.]+\.)?(?:Fact|Theory|Test|TestCase|TestCaseSource|'
     r'TestMethod|DataTestMethod|SkippableFact|SkippableTheory)'
     r'(?:Attribute)?\s*(?:\(|\]|,)')
+# The attributes under which NUnit runs a method once per row and names each
+# run with the row's arguments.
+_CS_ROWS_RE = re.compile(
+    r'(?:\[|,)\s*(?:[\w.]+\.)?(?:TestCase|TestCaseSource)'
+    r'(?:Attribute)?\s*(?:\(|\]|,)')
 _CS_TYPE_RE = re.compile(r'\b(?:class|struct|record)\s+([A-Za-z_]\w*)')
 _CS_NAMESPACE_RE = re.compile(r'\bnamespace\s+([\w.]+)\s*([;{])')
 _CS_NAME_RE = re.compile(r'([A-Za-z_]\w*)\s*(?:<[^<>()]*>)?\s*\($')
@@ -713,10 +721,13 @@ def cs_tests(text):
         name_at = None
         index = position
         size = len(mask)
+        rows = False
         while index < size:
             char = mask[index]
             if char == '[':
-                index = _balanced(mask, index, '[', ']')
+                after = _balanced(mask, index, '[', ']')
+                rows = rows or bool(_CS_ROWS_RE.search(mask[index:after]))
+                index = after
                 continue
             if char == '(':
                 named = _CS_NAME_RE.search(mask[:index + 1])
@@ -740,7 +751,7 @@ def cs_tests(text):
         if brace >= 0 and (arrow < 0 or brace < arrow):
             end = _balanced(mask, brace, '{', '}')
         tests.append(Test(name, _line_of(text, name_at), scopes, start=position,
-                          end=end, namespace='.'.join(space)))
+                          end=end, namespace='.'.join(space), rows=rows))
     tests.sort(key=lambda test: test.line)
     return tests
 

@@ -168,6 +168,22 @@ class TestTheCommandLine:
                 'to see the specs this project has.'
                 in output.splitlines()), output
 
+    # purlin: run_script PROOF-284
+    def test_an_empty_project_root_is_refused_and_nothing_is_written(
+            self, tmp_path):
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat')
+        before = _purlin_files(root)
+        result = subprocess.run(
+            [sys.executable, RUN_SCRIPT, '--all', '--test',
+             '--project-root', ''],
+            capture_output=True, encoding='utf-8', cwd=str(root))
+        output = result.stdout + result.stderr
+        assert result.returncode == 2, output
+        assert ('purlin: --project-root needs a directory, not an empty '
+                'value.') in output.splitlines(), output
+        assert len(before) == 1 and _purlin_files(root) == before
+
 
 # ---------------------------------------------------------------------------
 # --test, per framework
@@ -592,6 +608,29 @@ class TestTheCiArmWritesItsSection:
         _git_repo(root)
         code = evidence_run(root, '--all', '--ci')
         assert code == 0, capsys.readouterr().out
+
+    # purlin: run_script PROOF-283
+    def test_a_tagged_test_that_fails_exits_1_and_is_written_as_failed(
+            self, tmp_path, evidence_run, capsys):
+        root = _pytest_project(tmp_path, body=(
+            'import pytest\n\n'
+            '# purlin: feat PROOF-1\n'
+            'def test_untagged():\n'
+            '    assert True\n\n'
+            '# purlin: feat PROOF-2\n'
+            'def test_tagged():\n'
+            '    assert 1 == 2\n'))
+        _spec(root, 'feat', proofs=(
+            ('PROOF-1', 'RULE-1', ''),
+            ('PROOF-2', 'RULE-1', ' @env(%s)' % HERE_OS)))
+        _git_repo(root)
+        code = evidence_run(root, '--all', '--ci')
+        output = capsys.readouterr().out
+        assert code == 1, output
+        section = _evidence(root, source='ci')['platforms'][HERE_OS]
+        assert [(entry['id'], entry['result'])
+                for entry in section['proofs']] == [('PROOF-2', 'fail')]
+        assert section['rules'] == {'RULE-1': 'failed'}, section
 
 
 class TestWhereEachArmWrites:
@@ -1595,3 +1634,116 @@ class TestSlowProofs:
         assert _proof(root, 'PROOF-2')[0] == 'not run'
         assert output.rstrip().splitlines()[-1] == (
             '  1 slow proof to run: purlin:test --all'), output
+
+    @staticmethod
+    def _kept_after_another_commit(tmp_path):
+        """A git checkout where `--all --test --commit` passed the slow
+        PROOF-2, `README.md` was then changed and committed, and a plain run
+        of `feat` was committed. `(root, the first run's section)`."""
+        root = _slow_project(tmp_path)
+        (root / 'README.md').write_text('one\n', encoding='utf-8')
+        (root / '.gitignore').write_text(
+            '.purlin/runtime/\n__pycache__/\n.pytest_cache/\nstarted\n',
+            encoding='utf-8')
+        _git_repo(root)
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0 and _proof(root, 'PROOF-2')[0] == 'pass', output
+        taken = _evidence(root)['platforms'][HERE_OS]
+        (root / 'started').unlink()
+        (root / 'README.md').write_text('two\n', encoding='utf-8')
+        _git(root, 'commit', '-q', '-am', 'docs: the readme')
+        code, output = _run(root, '--feature', 'feat', '--test', '--commit')
+        assert code == 0, output
+        assert not (root / 'started').exists()
+        return root, taken
+
+    # purlin: run_script PROOF-281
+    def test_a_kept_slow_result_names_the_run_that_took_it(self, tmp_path):
+        root, taken = self._kept_after_another_commit(tmp_path)
+        later = _git(root, 'rev-parse', 'HEAD~1').strip()
+        assert _git(root, 'log', '-1', '--format=%s', later).strip() == (
+            'docs: the readme')
+        section = _evidence(root)['platforms'][HERE_OS]
+        (slow,) = [entry for entry in section['proofs']
+                   if entry['id'] == 'PROOF-2']
+        assert slow['result'] == 'pass', slow
+        assert later != taken['commit']
+        assert section['commit'] == later, section
+        assert slow.get('kept') == {
+            'commit': taken['commit'], 'at': taken['at'],
+            'machine': taken['machine'], 'email': taken['email']}, slow
+        assert all('kept' not in entry for entry in section['proofs']
+                   if entry['id'] != 'PROOF-2'), section
+
+    def test_a_full_run_takes_a_kept_result_again(self, tmp_path):
+        """No proof names this case yet: a result `--all` takes itself
+        replaces the kept one, on the same code."""
+        root, _taken = self._kept_after_another_commit(tmp_path)
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0, output
+        assert (root / 'started').exists()
+        section = _evidence(root)['platforms'][HERE_OS]
+        assert all('kept' not in entry for entry in section['proofs']), section
+        assert _proof(root, 'PROOF-2')[0] == 'pass'
+
+    # purlin: run_script PROOF-285
+    def test_a_slow_nunit_row_test_is_started_and_the_run_says_so(
+            self, tmp_path):
+        dotnet = dict(frameworks.entry_for('dotnet'),
+                      run='bash ./dotnet test --logger trx '
+                          '--results-directory {report}')
+        root = _project(tmp_path, tests=[dotnet])
+        # A stand-in for the tool, which writes down how it was started.
+        _script(root / 'dotnet', 'printf \'%s\\n\' "$@" > started-with.txt\n')
+        (root / 'Shop.Tests').mkdir()
+        (root / 'Shop.Tests' / 'CartTests.cs').write_text(
+            'using NUnit.Framework;\n\n'
+            'namespace Shop.Tests\n{\n'
+            '    public class CartTests\n    {\n'
+            '        // purlin: feat PROOF-1\n'
+            '        [Test]\n'
+            '        public void Adds() { Assert.Pass(); }\n\n'
+            '        // purlin: feat PROOF-2\n'
+            '        [TestCase(1)]\n'
+            '        public void ChecksOut(int count) { Assert.Pass(); }\n'
+            '    }\n}\n', encoding='utf-8')
+        _spec(root, 'feat', rules=2, proofs=(('PROOF-1', 'RULE-1', ''),
+                                             ('PROOF-2', 'RULE-2', ' @slow')))
+        _code, output = _run(root, '--feature', 'feat', '--test')
+        started = (root / 'started-with.txt').read_text(
+            encoding='utf-8').split()
+        assert started[:3] == ['test', '--logger', 'trx'], output
+        assert '--filter' not in started, started
+        assert not any('FullyQualifiedName' in word for word in started)
+        lines = output.splitlines()
+        assert ('Started 1 slow test in the dotnet suite: its command gives '
+                'Purlin no way to leave one test out.') in lines, output
+        assert not any(line.startswith('Left out') for line in lines), output
+
+
+class TestNothingToRunOverAFailure:
+
+    # purlin: run_script PROOF-282
+    def test_nothing_to_run_exits_1_while_the_evidence_holds_a_failure(
+            self, tmp_path):
+        root = _pytest_project(tmp_path, body=(
+            'import pytest\n\n'
+            '# purlin: feat PROOF-1\n'
+            'def test_bad():\n'
+            '    assert 1 == 2\n'))
+        (root / 'src').mkdir()
+        (root / 'src' / 'feat.py').write_text('VALUE = 1\n', encoding='utf-8')
+        (root / '.gitignore').write_text(
+            '.purlin/runtime/\n__pycache__/\n.pytest_cache/\n',
+            encoding='utf-8')
+        _spec(root, 'feat')
+        _git_repo(root)
+        code, output = _run(root, '--all', '--test')
+        assert code == 1, output
+        assert 'Running the pytest suite.' in output.splitlines(), output
+        code, output = _run(root, '--test')
+        assert any(line.startswith('Nothing to run')
+                   for line in output.splitlines()), output
+        assert not any(line.startswith('Running the ')
+                       for line in output.splitlines()), output
+        assert code == 1, output

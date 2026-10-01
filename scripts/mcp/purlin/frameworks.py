@@ -360,8 +360,8 @@ def leave_out(suite, slow, others=()):
     add to the suite's command, '' where none is needed, `held` the tests it
     leaves out and `started` those the command cannot leave out: the tool is
     not one of `_TOOLS`, the command already carries the option or cannot
-    take one at its end, or the option would leave out a test of `others`
-    as well.
+    take one at its end, the option would leave out a test of `others` as
+    well, or the test is one NUnit names row by row.
     """
     slow = list(slow)
     if not slow:
@@ -399,10 +399,16 @@ def leave_out(suite, slow, others=()):
         return ('--testNamePattern %s' % shlex.quote(
             '^(?!(?:.* )?(?:%s)$)' % '|'.join(titles))), held, started
     if tool == 'dotnet':
+        # NUnit names a `[TestCase]` test once per row, with the row's
+        # arguments after the method's name, so no one name leaves it out.
+        held = [(path, test) for path, test in slow if not test.rows]
+        started = [(path, test) for path, test in slow if test.rows]
+        if not held:
+            return '', [], started
         names = sorted({_dotnet_value(_dotnet_name(test))
-                        for _path, test in slow})
+                        for _path, test in held})
         return ('--filter %s' % shlex.quote('&'.join(
-            'FullyQualifiedName!=%s' % name for name in names))), slow, []
+            'FullyQualifiedName!=%s' % name for name in names))), held, started
     # go: `-skip` matches a test's name in every package.
     taken = {test.name for _path, test in others}
     held = [(path, test) for path, test in slow if test.name not in taken]
