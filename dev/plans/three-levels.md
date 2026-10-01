@@ -1537,6 +1537,28 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **The band's progress bar goes from the dashboard** (decision 109 said a count and no bar);
       `<passing> of <rules> rules pass` stays.
     - The deck gains the slide `Slow tests stay out of your way`, published as version 88.
+119. **Testing on another platform is the project's own setup, and the remote runner goes from
+    Purlin** (added 2026-10-01). In the owner's words: "i would expect AI to write my proofs and
+    tests to enable that remote runner workflow, but it would be for MY PROJECT rather than a core
+    purlin feature", and "add to the change plan a full removal of the remote runner feature in
+    Purlin. Keep the code we can use to enable purlin itself to test windows."
+    - **Purlin itself only works locally.** It drives no remote pipeline and adds none to a
+      repository. `purlin:test --remote`, the runner file Purlin wrote, its templates, the reading
+      of the git host and the waiting on a run all go.
+    - **Purlin keeps** the `@env(<system>)` tag, evidence from more than one machine with the
+      machine and system recorded for every rule, the line naming rules to test on another
+      system, and the sign-off counting a result only when taken on the version being signed.
+    - **A project that needs another platform asks the AI to set it up** for its git host, GitHub
+      or Azure DevOps or another; the files live in the project and are its own to change. How a
+      run starts is the project's choice: from the desk, on a push or on a schedule. The run over
+      there is `purlin:test`, and the results come back through git.
+    - **This repository keeps what it needs to test its own Windows rules**, as its own
+      maintenance scripts and runner file, the way any project would hold them.
+    - **The docs change first**, with one worked example; then the removal.
+    - **A scan of the whole project for stale references is a slow proof of Purlin's own**, and a
+      reading for conflicting instructions is the last step of the round.
+    - The deck's slide reads `What if you have to test other platforms?`; the anchors slide holds
+      two rows, the second with `Kept in step` and `Read-only` under it.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5

@@ -127,7 +127,7 @@ slide('slow', 'Slow tests', 'Slow tests stay out of your way', [
     ('`purlin:test`', 'While you build. It runs what changed and skips every slow test.'),
     ('`purlin:test --all`', 'When you want to check the whole project. It runs everything, slow tests included.'),
     ('Purlin remembers it', 'When a slow test is due, every status says so: %s' % m('1 slow proof to run: purlin:test --all')),
-], '<b>Nothing to remember.</b> The tests read %s only after every slow test has passed.' % m('met'),
+], '<b>Nothing to remember.</b> The tests are fully %s only after every slow test has passed.' % m('met'),
  'A slow proof is a proof like any other: one sentence saying how a rule is shown, and one test '
  'with a comment above it. The tag changes only when its test runs. A plain purlin:test, or one '
  'that names a feature, never starts it. purlin:test --all does, and that is the run a developer '
@@ -163,15 +163,20 @@ slide('signoff', 'The sign-off', 'When everyone is done, a person signs the evid
  'while files are changed and not committed, or while a rule has no test, and names what to run. '
  'One signature covers the whole package, over its fingerprint, in a '
  'signed commit. The tag itself is signed.', pad=16)
-slide('remote', 'Remote runners', 'Purlin can use remote runners if needed', [
-    ('A rule must hold on another operating system', 'You work on a Mac and a rule must hold on Windows. %s runs those tests on a runner and brings the results back.' % m('purlin:test --remote')),
-    ('Set up the first time it is needed', 'The first remote run writes the runner file for your git host, GitHub or Azure DevOps, shows it, and asks before committing it.'),
-    ('What the runner does', 'It runs the tests and saves the results. Its job fails only when a test fails.'),
-], 'In every other case Purlin only works locally and does NOT add a pipeline file to your repository.',
- 'One reason and no other. The runner runs only on the run branch purlin:test --remote creates, waits '
- 'on and deletes. Each result records the machine and the operating system it came from, and the '
- 'sign-off counts it only when it was taken on the version being signed.',
- lead='A remote runner is a machine your git host starts to run a job, as GitHub Actions does.')
+slide('remote', 'Other platforms', 'What if you have to test other platforms?', [
+    ('Say where it must hold', 'Tag the proof %s. Every status then lists it: %s' % (m('@env(windows)'), m('22 rules to test on Windows'))),
+    ('Ask the AI to set it up', 'It writes what your project needs for your git host, GitHub or Azure DevOps. The files live in your project and are yours to change.'),
+    ('Run it your way', 'How a run starts is up to your project: from your desk, on a push or on a schedule. The results come back through git.'),
+    ('Purlin tracks the results', 'Each result records the machine and the system it ran on, for every rule, like a result from your own machine.'),
+], '<b>Purlin itself only works locally.</b> It drives no remote pipeline and adds none to your repository.',
+ 'Running tests on another platform is set up in your project, not built into Purlin. You ask the '
+ 'AI for it once: it writes the pipeline file for the git host you use and whatever starts a run, '
+ 'for example a small script that pushes a branch, waits for the run and pulls the results. How a '
+ 'run starts is each project\'s choice. On another machine with another git host, you ask again '
+ 'and pick. The run on the other platform uses purlin:test, so each rule gets its own result '
+ 'there, with the machine and the operating system recorded, and the sign-off counts it only when '
+ 'it was taken on the version being signed.',
+ lead='Purlin runs your tests where you are. Reaching another platform is your project\'s own setup, and Purlin keeps the evidence.')
 slide('regulated', 'Regulated work', 'Purlin supplies evidence. It does not claim compliance.', [
     ('Purlin produces', 'Evidence for each rule: its tests and their results, what the audit found, who wrote what, who ran the tests and who signed.'),
     ('You hand over', 'The evidence package: one file for the version, made by %s, with its sign-offs.' % m('purlin:sign')),
@@ -183,22 +188,25 @@ slide('regulated', 'Regulated work', 'Purlin supplies evidence. It does not clai
  'which key, what they were shown and every note they typed. A requirement number such as (URS-042) '
  'reaches it as a note in the rule\'s own words.')
 slide('anchors', 'Shared rules', 'Anchors: rules the whole project must follow', [
-    ('Written in this project', 'Write a rule once, such as no secret in the code. Tests across the whole project prove it, and no feature names it.'),
-    ('Owned by another department', 'Security, GRC or GxP keep their rules in their own repository. Each project brings in the ones it must follow.'),
-    ('Kept in step', '%s updates the copy. The status says when the source has moved on.' % m('purlin:anchor sync')),
-    ('Design standards too', 'Design publishes its standards as an anchor, proven by tests across every screen.'),
-], '<b>A rule only some features need</b> goes in those features\' own specs.',
+    ('They can be in this project', 'Write a rule once, such as no secret in the code. Tests across the whole project prove it, and no feature names it.'),
+    ('They can be owned elsewhere', 'Security, GRC / GxP, Design, etc. keep their rules in their own repository. Each project brings in the ones it must follow.', [
+        ('Kept in step', '%s updates your copy. The status says when the source has moved on.' % m('purlin:anchor sync')),
+        ('Read-only', 'Your copy is never edited in your project. A change is made at the source, by the team that owns it.')]),
+], '<b>A rule that only some features need</b> goes in those features\' own specs.',
  'Every anchor covers the whole project, and each of its rules is counted and audited once. An '
  'anchor\'s rule is written as "for every X in the project, Y holds", so a project with no X has '
  'nothing to break it; its test then skips with the reason, and the rule reads as met with that '
- 'reason shown. A pinned copy is never edited in place; a change is made at the source.',
+ 'reason shown. The two rows are the two kinds: an anchor written in this project, and a remote '
+ 'anchor another team owns, such as security, GRC, GxP or design standards. For a remote anchor, '
+ 'purlin:anchor sync brings in the newer version, the status says when the source has moved on, '
+ 'and the copy is never edited in place; a change is made at the source.',
  lead='An anchor is a set of rules for the whole project, proven by tests that run across all of it.', width=560, pad=16)
 deck = {"v": 4, "createdOnFiles": {"v": 1, "at": "2026-09-26T18:00:00Z"},
         "title": "Purlin workflows",
-        "order": ["why", "compare", "touches", "start", "fromcode", "together", "slow", "audit", "signoff", "remote", "regulated", "anchors"],
+        "order": ["why", "compare", "touches", "start", "fromcode", "together", "slow", "anchors", "audit", "signoff", "remote", "regulated"],
         "sections": {"s1": {"description": "What Purlin is for, how little it changes in a project and a workflow, and how to start in under ten minutes or from code you already have", "start": "why"},
-                     "s2": {"description": "Working together while the specs change, the audit that checks the tests are any good, and the sign-off when everyone is done", "start": "together"},
-                     "s3": {"description": "The one case where Purlin uses a remote runner, where Purlin stops in regulated work, and how anchors carry rules for the whole project", "start": "remote"}},
+                     "s2": {"description": "Working together while the specs change, slow tests that stay out of the way, anchors that carry rules for the whole project, the audit that checks the tests are any good, and the sign-off when everyone is done", "start": "together"},
+                     "s3": {"description": "How a project tests on other platforms while Purlin itself only works locally, and where Purlin stops in regulated work", "start": "remote"}},
         "faces": {}, "designSystems": []}
 with open(os.path.join(ROOT, 'deck.json'), 'w', encoding='utf-8') as h:
     json.dump(deck, h, indent=2); h.write('\n')
