@@ -114,9 +114,9 @@ sentences carrying a long quoted line.
 - The pages describe what sibling lanes are building: no `--remote`, `--ci --commit`, the lines
   `Run purlin:test on Windows.` and `run purlin:test on Windows`, a `ci` section with the
   machine's name and the git email. They are true once `run`, `surfaces` and `words` merge.
-- The example workflow clones Purlin with `--branch v0.10.0`, as the plan has it. This
-  repository has no `v0.10.0` tag today; its release tag is `signed/<version>`. Someone has to
-  decide which tag the example names before release.
+- The example workflow clones Purlin with `--branch v0.10.0`, as the plan has it. The
+  repository's tags run to `v0.9.5` today, so the example works once the release pushes
+  `v0.10.0`.
 - `README.md`'s command table still gives `purlin:sign [--version <version>]` and one purpose
   sentence per command, as `references/purlin_commands.md` has them now. If lane `words` rewords
   a purpose sentence, the reading pass brings the README in line.
