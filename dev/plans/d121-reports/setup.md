@@ -134,7 +134,7 @@ specs, runs `purlin_run.py --all --test --commit` on it, makes a throwaway key w
 `sign_project.signing_key`, and runs `sign.py --answers` as a child process. No model and no
 network. The file takes about 2 seconds.
 
-**They pass on `main`'s skills now**: 11 files read for paths and flags, 28 for `dev/`, nothing
+**They pass on `main`'s skills now**: 11 files read for paths and flags, 27 for `dev/`, nothing
 listed. Integration runs `python3 -m pytest dev/test_purlin_agent.py -q` again after lane
 `words` merges.
 
@@ -155,7 +155,7 @@ failure after `words` merges:
   `--test`, `--ci`, `--project-root`; `wording.py` `--project-root`; `markers.py`
   `--near-misses`, `--project-root`; `scaffold.py` `--project-root`, `--update`; `sign.py`
   `--show`, `--answers`, `--check`, `--version`, `--project-root`; `renumber.py` `--dry-run`.
-- The one `dev/` in the 28 files is `< /dev/null` in `skills/init/SKILL.md`, line 27.
+- The one `dev/` in the 27 files is `< /dev/null` in `skills/init/SKILL.md`, line 27.
 
 **Limits, stated.**
 
