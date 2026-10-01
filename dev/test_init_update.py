@@ -751,6 +751,32 @@ def test_every_design_line_of_the_anchor_is_removed(tmp_path, capsys):
             '> Visual-Reference:, > Visual-Hash:' % DESIGN_ANCHOR) in printed
 
 
+# A remote anchor: its source is a git address that only holds the word.
+GIT_ANCHOR = 'specs/_anchors/tokens.md'
+GIT_ANCHOR_TEXT = (
+    b'# Anchor: tokens\n\n'
+    b'> Description: The design tokens every screen uses.\n'
+    b'> Source: https://github.com/acme/figma-tokens.git specs/tokens.md\n'
+    b'> Pinned: 0123456789abcdef0123456789abcdef01234567\n\n'
+    b'## Rules\n\n'
+    b'- RULE-1: Every colour on a screen is one of the tokens\n\n'
+    b'## Proof\n\n'
+    b'- PROOF-1 (RULE-1): Read the checkout screen; every colour is a token '
+    b'@manual\n')
+
+
+# purlin: update PROOF-165
+def test_an_anchor_from_a_git_address_holding_figma_is_left_as_it_was(
+        tmp_path):
+    root = _project(tmp_path, V095)
+    _write_bytes(root, GIT_ANCHOR, GIT_ANCHOR_TEXT)
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'anchor(tokens): add')
+    assert _apply(root) == 0
+    assert _read_bytes(root, GIT_ANCHOR) == GIT_ANCHOR_TEXT
+    assert _walk(root, ('tokens.md*',), skip_backups=False) == [GIT_ANCHOR]
+
+
 # purlin: update PROOF-153
 def test_no_spec_names_an_anchor_after_the_update(tmp_path):
     root = _project(tmp_path, V095)
@@ -791,6 +817,54 @@ def test_no_proof_or_run_file_is_left_on_disk_or_tracked(tmp_path):
 
 SHIPPED_COPIES = ('pytest_purlin.py', 'jest_purlin.js', 'vitest_purlin.ts',
                   'purlin-proof.sh')
+
+
+# The workflow 0.9.5 wrote, and one of the project's own.
+PROOF_WORKFLOW = '.github/workflows/purlin-proofs.yml'
+PROOF_WORKFLOW_TEXT = (
+    b'name: purlin-proofs\n'
+    b'on: push\n'
+    b'jobs:\n'
+    b'  proofs:\n'
+    b'    runs-on: ubuntu-latest\n'
+    b'    steps:\n'
+    b'      - uses: actions/checkout@v4\n'
+    b'      - run: python -m pytest\n'
+    b"      - run: git add '*.proofs-*.json'\n"
+    b'      - run: git commit -m "proofs [skip ci]" && git push\n')
+OWN_WORKFLOW = '.github/workflows/ci.yml'
+OWN_WORKFLOW_TEXT = (
+    b'name: ci\n'
+    b'on: push\n'
+    b'jobs:\n'
+    b'  test:\n'
+    b'    runs-on: ubuntu-latest\n'
+    b'    steps:\n'
+    b'      - uses: actions/checkout@v4\n'
+    b'      - run: pytest\n')
+
+
+# purlin: update PROOF-164
+def test_only_the_workflow_that_committed_proof_files_is_removed(tmp_path,
+                                                                 capsys):
+    root = _project(tmp_path, V095)
+    os.rename(os.path.join(root, '.github/workflows/windows-proofs.yml'),
+              os.path.join(root, PROOF_WORKFLOW))
+    _write_bytes(root, PROOF_WORKFLOW, PROOF_WORKFLOW_TEXT)
+    _write_bytes(root, OWN_WORKFLOW, OWN_WORKFLOW_TEXT)
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'ci: the two workflows')
+    assert _apply(root) == 0
+    printed = capsys.readouterr().out.splitlines()
+    held = _walk(root, ('*',), skip_backups=False)
+    workflows = [rel for rel in held if rel.startswith('.github/workflows/')]
+    backup = '%s.local-%s.bak' % (
+        PROOF_WORKFLOW, hashlib.sha256(PROOF_WORKFLOW_TEXT).hexdigest()[:8])
+    assert workflows == [OWN_WORKFLOW, backup]
+    assert _read_bytes(root, backup) == PROOF_WORKFLOW_TEXT
+    assert _read_bytes(root, OWN_WORKFLOW) == OWN_WORKFLOW_TEXT
+    assert '  removed 1 workflow that committed proof files' in printed
+    assert PROOF_WORKFLOW not in _tracked(root)
 
 
 # purlin: update PROOF-81

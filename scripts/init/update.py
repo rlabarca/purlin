@@ -54,7 +54,9 @@ WORKFLOW_MARKER = '.proofs-'
 PRE_PUSH_HOOK = '.git/hooks/pre-push'
 PRE_PUSH_KEY = 'pre_push'
 DESIGN_FIELD_RE = re.compile(r'^>\s*(Visual-Reference|Visual-Hash):')
-FIGMA_SOURCE_RE = re.compile(r'^>\s*Source:.*figma', re.I)
+# A Figma source is an address at figma.com. A git address that only holds
+# the word, such as acme/figma-tokens.git, is a remote anchor's and stays.
+FIGMA_SOURCE_RE = re.compile(r'^>\s*Source:\s*\S*figma\.com/', re.I)
 PINNED_RE = re.compile(r'^>\s*Pinned:')
 # The lines by which a 0.9.5 spec named an anchor, and an anchor named what
 # it covered, in the order the upgrade names them.

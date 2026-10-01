@@ -9,8 +9,8 @@
 >   tool or person wrote is left alone, and one commit carries the whole run.
 > Scope: scripts/init/update.py
 > Stack: python3 (stdlib only, 3.9 floor)
-> Highest-Rule: 54
-> Highest-Proof: 163
+> Highest-Rule: 56
+> Highest-Proof: 165
 
 ## Rules
 
@@ -29,6 +29,8 @@
 - RULE-52: Each line 0.9.5 wrote into a spec that this release does not read is rewritten or removed, the rest of the spec untouched: the Windows tag becomes `@env(windows)`, the kind-of-test tag goes, the design reference lines go, and `> Requires:` and `> Global:` go from every spec and `> Scope:` from every anchor
 - RULE-53: The files 0.9.5 kept that this release does not use are removed: the proof and run files beside the specs, the `.purlin/cache/` folder, the plugin copies under `.purlin/` and the workflow that committed proof files; the dashboard data is untracked, left on disk and named in `.gitignore`; a file of any other name is left alone
 - RULE-54: A project with no `.purlin/evidence/README.md` gets the one `purlin:init` writes, and a `purlin-report.html` that is a link or not the page the plugin ships is replaced with that page; a README the project wrote itself is kept, and a project with no page at the root is not given one
+- RULE-55: The update removes a workflow under `.github/workflows/` only where it wrote 0.9.5's proof files, backs it up first, and leaves every other workflow as it was
+- RULE-56: An anchor whose `> Source:` is a git address keeps its `> Source:` and `> Pinned:` lines through the update, byte for byte
 
 ## Proof
 
@@ -72,3 +74,5 @@
 - PROOF-28 (RULE-54): On the sample v0.9.5 project, which has no `.purlin/evidence/`, `evidence` is pending; after the update with `--yes`, `.purlin/evidence/README.md` holds exactly the bytes `purlin:init` writes there and is committed, and `evidence` is no longer pending
 - PROOF-106 (RULE-54): The sample v0.9.5 project given a `.purlin/evidence/README.md` of its own does not have `evidence` pending; after the update with `--yes` that README holds exactly its own text, and no proof file or run file is left beside a spec
 - PROOF-31 (RULE-54): In the sample v0.9.5 project `purlin-report.html` at the root is a link to a page that no longer exists, and `dashboard` is pending; after the update with `--yes` the path is a file, not a link, holding exactly the bytes of the page the plugin ships, and `dashboard` is no longer pending @env(macos)
+- PROOF-164 (RULE-55): The sample 0.9.5 project holds `purlin-proofs.yml`, which commits `*.proofs-*.json`, and `ci.yml` running `pytest`; after the update with `--yes` the first is gone with a backup holding its bytes, `ci.yml` is byte for byte as it was, and the output holds `removed 1 workflow that committed proof files`
+- PROOF-165 (RULE-56): An anchor whose `> Source:` is `https://github.com/acme/figma-tokens.git specs/tokens.md` with a `> Pinned:` sha of 40 characters is exactly what it was after the update with `--yes`, and no backup is written beside it
