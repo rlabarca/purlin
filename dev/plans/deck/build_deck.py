@@ -18,16 +18,18 @@ CMD = '<p style="' + MONO + '; font-size:32px; color:#E6BEB0; width:%dpx">%s</p>
 WHAT = '<p style="font-size:32px; color:#E4DDD4; flex:1">%s</p>'
 # A part of a step: no number, set in under the step it belongs to.
 PART = ('<div style="display:flex; align-items:center; gap:32px; padding:0 0 0 80px">'
-        '<p style="' + MONO + '; font-size:28px; color:#BFCED5; width:%dpx">%s</p>'
+        '<p style="' + MONO + '; font-size:32px; color:#BFCED5; width:%dpx">%s</p>'
         '<p style="font-size:28px; color:#BFCED5; flex:1">%s</p></div>')
 # The mark and the name, pinned to the top right of every slide. The mark is
 # design/assets/logo.svg, the one for navy grounds, without its metadata.
 def brand():
     svg = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'design', 'assets', 'logo.svg'), encoding='utf-8').read()
     svg = re.sub(r'<metadata>.*?</metadata>', '', svg, flags=re.S).replace(' xmlns:c2pa="http://c2pa.org/manifest"', '')
-    svg = svg.replace('width="670" height="330"', 'aria-label="Purlin" style="width:440px; height:217px"')
-    # The mark runs off the right edge: a third of it bleeds past the canvas, top aligned with the headline.
-    return ('<div style="position:absolute; right:-130px; top:44px; width:440px; height:217px; opacity:0.9">%s</div>' % svg)
+    svg = svg.replace('width="670" height="330"', 'aria-label="Purlin" style="width:300px; height:148px"')
+    # The mark runs a little off the right edge; the name sits under it, on the right margin.
+    return ('<div style="position:absolute; right:-80px; top:40px; width:300px; height:148px; opacity:0.9">%s</div>'
+            '<p style="position:absolute; right:128px; top:196px; width:200px; text-align:right; font-size:32px; '
+            'font-weight:600; color:#E4DDD4">Purlin</p>' % svg)
 # numbers=False drops the count at the start of each row: a slide with one case has nothing to count.
 def slide(sid, eyebrow, headline, rows, closing, notes, lead='', width=620, gap=20, pad=18, numbers=True):
     # One label width and one card padding on every slide, so every text column starts in the same place.
