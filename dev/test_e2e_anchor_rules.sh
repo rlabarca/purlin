@@ -36,7 +36,7 @@ check() {
 mkdir -p "$TMPDIR_E2E/.purlin" "$TMPDIR_E2E/specs/_anchors" \
          "$TMPDIR_E2E/specs/auth" "$TMPDIR_E2E/src/auth"
 
-echo '{"gate":"passed","project_name":"e2e","tests":[{"name":"shell","run":"bash {files}","report":null,"format":"exit","files":["tests/*.test.sh"]}]}' \
+echo '{"version":"0.10.0","tests":[{"name":"shell","run":"bash {files}","report":null,"format":"exit","files":["tests/*.test.sh"]}]}' \
   > "$TMPDIR_E2E/.purlin/config.json"
 echo '.purlin/runtime/' > "$TMPDIR_E2E/.gitignore"
 
@@ -156,6 +156,9 @@ check "the summary counts three rules, each once" \
 
 # ── phase D: the status table ─────────────────────────────────────────
 echo "  --- phase D: the table ---"
+# The results committed, so the tests are met on the committed evidence.
+python3 "$RUN" --all --test --commit --project-root "$TMPDIR_E2E" \
+  > "$TMPDIR_E2E/.run.log" 2>&1 || true
 STATUS="$(python3 -c "
 import sys
 sys.path.insert(0, '$MCP_DIR')
@@ -170,13 +173,11 @@ ROWS="$(printf '%s\n' "$STATUS" \
 check "the anchors stand above the specs" \
   "Anchors security_no_eval Specs login" "$ROWS"
 
-if [ "$(printf '%s' "$STATUS" | tail -1)" = 'Nothing left to do. To release a version: purlin:test --release' ]; then
-  echo "    ok: the table ends with nothing left to do"
-else
-  echo "    FAIL: the table does not end with nothing left to do"
-  printf '%s\n' "$STATUS" | tail -3
-  FAILED=1
-fi
+check "the status says the tests are met" "Tests: met" \
+  "$(printf '%s\n' "$STATUS" | grep -x 'Tests: met' || true)"
+check "the table ends on the line that names the sign-off" \
+  'Every rule passes its tests on the committed evidence. To sign it: purlin:sign' \
+  "$(printf '%s' "$STATUS" | tail -1)"
 
 echo ""
 if [ "$FAILED" -eq 0 ]; then
