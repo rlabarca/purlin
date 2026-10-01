@@ -1354,6 +1354,19 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       own rule the skip reads as not run, its reason kept (answered on the d105 plan's Q2).
     - **Only the sign-off requires every result to be taken on this exact version of the code**;
       the status keeps counting a result while nothing its feature covers changed (the plan's Q1).
+108. **No gate: two facts, the tests and the sign-off** (added 2026-10-01). Since nothing is
+    signed rule by rule (decisions 103 and 106), `signed` is no bar each rule clears. This reverses
+    the gate of decisions 103 and 106.
+    - **The setting `gate` goes.** Setup asks for none; the upgrade from 0.9.5 and from any earlier
+      0.10 build takes it out.
+    - **Purlin shows two facts.** The tests: `met` when every rule's tests pass on the committed
+      evidence, else `not met`. The sign-off: `signed 0.1.0 at a1b2c3d`, `signed 0.1.0, 4 commits
+      since`, or `not signed`. The dashboard's two header boxes show these, in place of
+      `gate: signed` and `no signed tag`.
+    - **Any project may run `purlin:sign` whenever it chooses.** The walk, the package and the tag
+      `signed/<version>` are as decision 106 has them.
+    - **A hand check reads `checked at sign-off`** until someone signs; the sign-off records it.
+    - **Mutation testing is a setting of its own**, no longer tied to a gate.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
