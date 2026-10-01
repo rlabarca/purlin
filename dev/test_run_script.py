@@ -560,6 +560,9 @@ class TestTheCiArmCommitsItsSection:
     # purlin: run_script PROOF-12
     def test_the_ci_arm_writes_its_section_and_commits(
             self, tmp_path, evidence_run, capsys):
+        """In a git checkout, `--all --ci` over one proof tagged for this
+        machine's system: one section, runner `ci`, machine `remote runner,
+        <system>`, `RULE-1` `passed`, nothing under `local/`, exit 0."""
         root, code, _calls, output = self._ci(tmp_path, evidence_run, capsys)
         here = _load_run_script().host_os()
         data = _evidence(root, source='ci')
@@ -576,6 +579,8 @@ class TestTheCiArmCommitsItsSection:
     # purlin: run_script PROOF-117
     def test_the_merge_keeps_another_systems_section(
             self, tmp_path, evidence_run, capsys):
+        """The branch's copy of `ci/feat.json` holds only another system's
+        section; the merge the run hands the git host keeps both."""
         root, _code, calls, _output = self._ci(tmp_path, evidence_run,
                                                 capsys)
         ((paths, _message, merge),) = calls['commit']
