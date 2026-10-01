@@ -720,6 +720,72 @@ class TestWhenTheModelCannotBeReached:
         monkeypatch.setattr(audit_module, 'MODEL_TIMEOUT', 1)
         assert ask(project) == {'why': 'claude timed out after 1 s'}
 
+    UNREACHED = ('The model could not be reached: claude exited with an '
+                 'error.%s Run purlin:audit again.')
+
+    @staticmethod
+    def _entries(made):
+        """Every audit entry the local evidence of `login` holds."""
+        path = os.path.join(made.root, '.purlin', 'evidence', 'local',
+                            'login.json')
+        with open(path, encoding='utf-8') as handle:
+            return (json.load(handle).get('audit') or {}).get('rules') or {}
+
+    # purlin: ai_audit PROOF-108
+    def test_a_rule_that_passed_the_spot_tests_alone_stays_not_audited(
+            self, claude):
+        install, directory = claude
+        install(exit_code=1, answers=['- The test reads the status.'])
+        with passing_project(source=LOGIN_SOURCE) as made:
+            made.audit('RULE-1')
+            assert to_read(made) == [('login', 'RULE-2')]
+            code, printed = audit(made)
+            entries = self._entries(made)
+            strong = made.rule('RULE-2')['cells']['strong']['word']
+        assert code == 0, printed
+        assert fake_claude.calls(directory), 'the fake claude was not asked'
+        assert sorted(entries) == ['RULE-1'], entries
+        assert strong == 'not audited'
+        lines = printed.splitlines()
+        assert 'login RULE-2   not audited' in lines, printed
+        assert [line for line in lines if 'could not be reached' in line] == [
+            self.UNREACHED % ' 1 rule stays not audited.'], printed
+
+    # purlin: ai_audit PROOF-109
+    def test_a_spot_finding_is_still_written_weak(self, claude):
+        install, _directory = claude
+        install(exit_code=1, answers=['- The test calls login.'])
+        with passing_project(source=LOGIN_SOURCE,
+                             test_file=CHECKS_NOTHING_TEST) as made:
+            made.audit('RULE-1')
+            code, printed = audit(made)
+            entry = entry_of(made)
+        assert code == 0, printed
+        assert entry['verdict'] == 'weak', entry
+        assert entry['findings'] == [CHECKS_NOTHING], entry
+        assert entry['breaks'] == {}, entry
+        assert entry['model'] == 'unknown', entry
+        lines = printed.splitlines()
+        assert 'login RULE-2   weak' in lines, printed
+        assert [line for line in lines if 'could not be reached' in line] == [
+            self.UNREACHED % ''], printed
+
+    # purlin: ai_audit PROOF-110
+    def test_two_rules_stay_not_audited_and_none_is_counted_strong(
+            self, claude):
+        install, _directory = claude
+        install(exit_code=1, answers=['- The test reads the status.'])
+        with passing_project(source=LOGIN_SOURCE) as made:
+            assert to_read(made) == [('login', 'RULE-1'), ('login', 'RULE-2')]
+            code, printed = audit(made)
+            entries = self._entries(made)
+        assert code == 0, printed
+        assert entries == {}, entries
+        lines = printed.splitlines()
+        assert [line for line in lines if 'could not be reached' in line] == [
+            self.UNREACHED % ' 2 rules stay not audited.'], printed
+        assert lines[-1] == 'The audit found 0 of 2 rules strong (0%).', printed
+
 
 # ---------------------------------------------------------------------------
 # Writing
@@ -811,6 +877,24 @@ class TestTheCommandLine:
         assert found[:3] == ['  Weak.', '  %s' % FINDING, READ_BY], printed
         assert not [line for line in lines
                     if line.strip().startswith('Note:')], printed
+
+    # purlin: ai_audit PROOF-111
+    def test_the_printed_rule_holds_the_explanation_under_the_finding(
+            self, project, capsys):
+        explanation = 'The test calls login and reads no status.'
+        rel = project.audit('RULE-2', findings=[FINDING])
+        path = os.path.join(project.root, *rel.split('/'))
+        with open(path, encoding='utf-8') as handle:
+            data = json.load(handle)
+        data['audit']['rules']['RULE-2']['explanation'] = [explanation]
+        write(path, json.dumps(data, indent=2, sort_keys=True))
+        code, printed = command(project, capsys, '--feature', 'login',
+                                '--rule', 'RULE-2')
+        assert code == 0
+        lines = printed.splitlines()
+        found = lines[lines.index('What the audit found') + 1:]
+        assert found[:4] == ['  Weak.', '  %s' % FINDING,
+                             '    %s' % explanation, READ_BY], printed
 
     # purlin: ai_audit PROOF-87
     def test_a_proof_with_no_marked_test_prints_no_test_yet_under_test(

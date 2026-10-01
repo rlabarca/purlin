@@ -182,8 +182,12 @@ Each `audit.rules` entry:
 
 `verdict` is `weak` when a heuristic spot test fired on one of the rule's
 tests or a planted bug survived, each finding one sentence, and `strong`
-otherwise. A rule the model could not be reached for gets no entry at all, so
-the next audit reads it again.
+otherwise. `strong` is written only where the model was reached. A rule the
+model could not be reached for, for a planted bug or for its reading, gets no
+entry at all, so the next audit reads it again, unless a spot test fired on
+one of its tests or a kept planted bug survived: it is then written `weak`,
+with the model `unknown` and no bug recorded for a proof the model was not
+reached for.
 
 `model` and `criteria` name the model that gave the explanation and the
 instructions it was given. The evidence package carries each rule's

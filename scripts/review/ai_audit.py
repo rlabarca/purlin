@@ -22,7 +22,8 @@ rule, `MODEL_TIMEOUT` seconds each, `AUDIT_PARALLEL` calls at once. The JSON's
 under a `notes:` line are the notes. The answer sets no verdict.
 
 **When the model cannot be reached** (no `claude` on PATH, a non-zero exit or
-a timeout) nothing comes back for that rule but the reason.
+a timeout) nothing comes back for that rule but the reason, and the audit's
+run writes the rule no `strong` (ai_audit RULE-43).
 
 The command line prints what the audit reads for a rule and what the last
 audit found, from the payload, with each note after the findings. It calls no

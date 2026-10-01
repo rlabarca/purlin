@@ -21,6 +21,10 @@ A rule reads `weak` when a spot test fires on one of its tests or a planted bug 
 `strong` when no spot test fires and every planted bug was caught or not made. Nothing else sets
 it: the model's reading is asked after the verdict is set and never changes it.
 
+`strong` means the model part of the audit ran. When the model cannot be reached for a rule, for
+a planted bug or for its reading, the spot tests still report what they find as `weak`, and a rule
+that passed them alone gets no audit entry and stays not audited.
+
 ## Heuristic spot tests
 
 The audit's first step reads each marked test as text, without running it, and flags a test that cannot fail. It catches the mistakes model-written tests are known to make. Each check below names what it flags, what it deliberately does not flag, the finding it reports, and the research it rests on.
@@ -183,8 +187,9 @@ and the copy is deleted after.
   rule reads `weak`, with the finding
   `PROOF-1: the test still passes when src/age.py:12 reads "return 0"`.
 - **Not made.** The answer named no change, or a change that does not match its file exactly
-  once, or a file the feature does not cover, or the model could not be reached. The test is not
-  run, the audit prints `PROOF-1: no bug was planted: <why>.`, and it is not a finding.
+  once, or a file the feature does not cover. The test is not run, the audit prints
+  `PROOF-1: no bug was planted: <why>.`, and it is not a finding. Where the model could not be
+  reached, nothing is recorded for the proof and its bug is asked for at the next audit.
 
 A proof keeps its last result while its tests and its feature's code are unchanged, and no bug is
 planted for it again. No bug is planted for an anchor's proof or a `@manual` proof. When a file of
@@ -242,8 +247,10 @@ is allowed, is written under `notes:`, one sentence naming the proof.
 **The call.** `claude -p --output-format json`, the prompt on its standard input, one call per
 rule, four at once, 300 seconds each. Each answer names the model that gave it and the sha256 of
 this file as it was sent. When `claude` is not on the path, exits with an error or runs past its
-300 seconds, no explanation is recorded, and the reason is printed: `claude is not on PATH`,
-`claude exited with an error` or `claude timed out after 300 s`. The verdict stands without it.
+300 seconds, no explanation is recorded and the audit prints one line naming the reason,
+`claude is not on PATH`, `claude exited with an error` or `claude timed out after 300 s`:
+`The model could not be reached: claude is not on PATH. 2 rules stay not audited. Run purlin:audit again.`
+A rule on which a spot test fired is still written `weak`; no rule is written `strong`.
 
 ## Anchors and rules with no proof
 
@@ -268,7 +275,8 @@ The audit reports. It recommends nothing.
   counted over the rules that pass their tests, a rule with a hand check counted where it also has
   a tested proof. A team can set its own target, such as 80 percent, and check it here.
 
-Each rule read gets one entry in its feature's evidence, under `audit.rules`: the hashes of its
+Each rule read with the model reached gets one entry in its feature's evidence, under
+`audit.rules`: the hashes of its
 rule, proofs and tests, the `verdict`, the `findings`, each planted bug under `breaks` with its
 file, line, the lines before and after, and its result, the model's `explanation` and `notes`,
 the `model`, the sha256 of these `criteria`, the time and the commit. A person reads it beside

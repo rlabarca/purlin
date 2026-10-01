@@ -11,8 +11,8 @@
 >   the share of rules it found strong.
 > Scope: scripts/review/audit_run.py, scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
-> Highest-Rule: 42
-> Highest-Proof: 107
+> Highest-Rule: 43
+> Highest-Proof: 111
 
 ## Rules
 
@@ -32,6 +32,7 @@
 - RULE-40: What the audit reads for a rule names each marked test's file, its name and its own source, matched by the name the runner records; a test whose source cannot be found shows none rather than another test's
 - RULE-41: Each refusal of `ai_audit.py` names what is wrong, and the command or file that fixes it where there is one, and writes nothing: an unknown option, a missing `--feature` or a `--project-root` that is not a folder exits 2; an unknown feature or rule, or an unreadable `.purlin/config.json`, exits 1
 - RULE-42: `ai_audit.py --feature <name>` prints, for the rule named with `--rule` or for every rule of the feature, its proofs, each test or `No test yet. Run purlin:build <feature>.`, and what the last audit found with the model and the time that read it, and starts no `claude`
+- RULE-43: `strong` means the model part of the audit ran: when the model cannot be reached for a rule, for a planted bug or for its reading, a rule on which a spot test fired or whose kept planted bug survived is still written `weak`, any other rule is written no audit entry and stays `not audited`, and the audit prints one line, `The model could not be reached: <why>. <n> rules stay not audited. Run purlin:audit again.`, the middle sentence left out where no rule stays not audited
 
 ## Proof
 
@@ -72,3 +73,7 @@
 - PROOF-29 (RULE-42): The audit entry of `RULE-2` finds `PROOF-2 asserts the status but never the body the rule names.`; the command for that rule prints `login RULE-2`, its rule, proof and test line, `  Weak.`, the finding and `  Read by unknown at 2026-09-13T12:05:00Z.`, and no `Note:` line
 - PROOF-87 (RULE-42): The one proof of `RULE-3` has no test marked for it; the command run for that rule prints, under `Test`, `  No test yet. Run purlin:build login.`
 - PROOF-33 (RULE-42): The command run as its own process for `--feature login --rule RULE-1` exits 0 and prints `login RULE-1`, and no `claude` is started
+- PROOF-111 (RULE-42): The audit entry of `RULE-2` reads `weak` with the finding `PROOF-2 asserts the status but never the body the rule names.` and the explanation `The test calls login and reads no status.`; the command for that rule prints `    The test calls login and reads no status.` on the line after the finding and before `  Read by unknown at 2026-09-13T12:05:00Z.`
+- PROOF-108 (RULE-43): `claude` exits with the code 1 at every call and no spot test fires on the test of `RULE-2`, the one rule the audit reads; no audit entry is written for `RULE-2`, and the audit prints `login RULE-2   not audited` and, once, `The model could not be reached: claude exited with an error. 1 rule stays not audited. Run purlin:audit again.`
+- PROOF-109 (RULE-43): `claude` exits with the code 1 at every call and the spot tests find `tests/test_login.py::test_a_bad_password_is_denied: the test checks nothing.` for `RULE-2`; the audit entry of `RULE-2` reads `weak` with that one finding, no planted bug and the model `unknown`, and the audit prints `The model could not be reached: claude exited with an error. Run purlin:audit again.`
+- PROOF-110 (RULE-43): `claude` exits with the code 1 at every call and the audit reads two rules that pass, with no spot test firing on either; no audit entry is written, the audit prints `The model could not be reached: claude exited with an error. 2 rules stay not audited. Run purlin:audit again.` once, and its last line reads `The audit found 0 of 2 rules strong (0%).`

@@ -14,7 +14,13 @@ audit reads (`ai_audit.is_read`, ai_audit RULE-1) it runs, in this order:
 
 A rule reads `weak` when a spot test fires on one of its tests or a planted
 bug survived, else `strong` (ai_audit RULE-33). One `audit.rules` entry per
-rule read is written through `evidence.write_audit`. What the model cost is
+rule read is written through `evidence.write_audit`.
+
+`strong` means the model part ran. Where the model could not be reached for
+a rule, for a planted bug or for its reading, the rule is written `weak` when
+a spot test fired or a kept planted bug survived, and is written no entry
+otherwise, so it stays not audited; one line then says so and names
+`purlin:audit` (ai_audit RULE-43). What the model cost is
 written to `.purlin/runtime/audit_run.json`, which git ignores. The run
 prints the findings, the cost line and, last, the share of rules found
 strong (ai_audit RULE-35).
@@ -59,8 +65,10 @@ COST = 'The model was asked %d %s for %d %s: $%.2f in all, $%.2f a rule.'
 RULE_LINE = '%s %s   %s'
 FINDING_LINE = '  %s'
 NOT_PLANTED = '  %s: no bug was planted: %s.'
-NO_EXPLANATION = ('%d %s read without the model\'s explanation: %s. Run '
-                  'purlin:audit --all once it can be reached.')
+NOT_AUDITED = 'not audited'
+UNREACHED = 'The model could not be reached: %s.%s Run purlin:audit again.'
+STAY_ONE = ' 1 rule stays not audited.'
+STAY_MANY = ' %d rules stay not audited.'
 
 # The language a test file is read in, for a spot test that cannot read it.
 LANGUAGES = (
@@ -232,17 +240,34 @@ def _survived_finding(proof_id, kept, last):
                                       kept.get('line') or 0, changed.strip())
 
 
+def reaching(ask, unreached):
+    """`ask`, with the reason of each call that could not reach the model
+    added to the list `unreached` before it is raised again."""
+    def asked(request):
+        try:
+            return ask(request)
+        except Exception as error:   # noqa: BLE001 -- told apart by its class
+            if type(error).__name__ == 'ModelUnreachable':
+                unreached.append(str(error.args[0] if error.args else error))
+            raise
+    return asked
+
+
 def planted_bugs(project_root, reading, info, last, ask, code_part):
-    """`(breaks, findings, not_planted, asked)` for one rule's proofs.
+    """`(breaks, findings, not_planted, asked, unreached)` for one rule's proofs.
 
     `breaks` is `{proof: entry}` as the evidence holds it; `findings` the
     sentence of each bug that survived; `not_planted` `[(proof, why)]`;
-    `asked` `{proof: result}` for the bugs planted this run. Raises
+    `asked` `{proof: result}` for the bugs planted this run; `unreached` the
+    reason of each bug the model could not be reached for, which `breaks`
+    leaves out so the bug is asked for again. Raises
     `targeted_break.ProjectChanged`.
     """
+    unreached = []
+    ask = reaching(ask, unreached)
     breaks, findings, not_planted, asked = {}, [], [], {}
     if reading.get('anchor'):
-        return breaks, findings, not_planted, asked
+        return breaks, findings, not_planted, asked, unreached
     scope_files = fingerprint_module.expand_scope(
         project_root, info.get('scope') or [])[0]
     kept_breaks = last.get('breaks') if isinstance(last.get('breaks'),
@@ -260,12 +285,16 @@ def planted_bugs(project_root, reading, info, last, ask, code_part):
             if kept.get('result') == 'survived':
                 findings.append(_survived_finding(proof['id'], kept, last))
             continue
+        before = len(unreached)
         result = targeted_break.break_proof(
             project_root, reading['feature'],
             {'id': proof['id'], 'text': proof.get('text'),
              'rule': reading['rule'], 'rule_text': reading.get('rule_text')},
             tests, scope_files, ask)
         result = dict(result or {})
+        if len(unreached) > before:
+            asked[proof['id']] = 'not made'
+            continue
         entry = {'file': result.get('file'), 'line': result.get('line'),
                  'before': result.get('before'), 'after': result.get('after'),
                  'result': result.get('result') or 'not made',
@@ -277,7 +306,7 @@ def planted_bugs(project_root, reading, info, last, ask, code_part):
                 proof['id'], entry, {}))
         elif entry['result'] == 'not made':
             not_planted.append((proof['id'], entry['why']))
-    return breaks, findings, not_planted, asked
+    return breaks, findings, not_planted, asked, unreached
 
 
 # ---------------------------------------------------------------------------
@@ -317,7 +346,7 @@ def run(project_root, features, selected, again=False, out=None):
                 code_parts[feature] = fingerprint_module.code_part(
                     project_root, info)
             spot = spot_tests(project_root, reading, not_read)
-            breaks, survived, not_planted, asked = planted_bugs(
+            breaks, survived, not_planted, asked, unreached = planted_bugs(
                 project_root, reading, info,
                 last_entry(project_root, feature, rule['id']), ask,
                 code_parts[feature])
@@ -326,7 +355,7 @@ def run(project_root, features, selected, again=False, out=None):
             done.append({'feature': feature, 'rule': rule, 'reading': reading,
                          'findings': findings, 'breaks': breaks,
                          'not_planted': not_planted, 'asked': asked,
-                         'spent': spent,
+                         'spent': spent, 'unreached': unreached,
                          'verdict': 'weak' if (spot or survived) else 'strong'})
     except targeted_break.ProjectChanged as stopped:
         say(targeted_break.STOPPED % _changed_path(project_root, stopped))
@@ -337,12 +366,17 @@ def run(project_root, features, selected, again=False, out=None):
     criteria = ai_audit.criteria_hash(ai_audit.criteria_text(project_root))
     commit = head_commit(project_root)
     by_feature = {}
-    unreached = {}
+    reasons, stay = [], 0
     for item, answer in zip(done, answers):
         reached = not answer.get('why')
-        if not reached:
-            unreached[answer['why']] = unreached.get(answer['why'], 0) + 1
         item['answer'] = answer
+        missed = item['unreached'] + ([] if reached else [answer['why']])
+        reasons.extend(why for why in missed if why not in reasons)
+        if missed and item['verdict'] != 'weak':
+            # `strong` means the model part ran: this rule gets no entry.
+            item['verdict'] = None
+            stay += 1
+            continue
         found = {'verdict': item['verdict'], 'findings': item['findings'],
                  'breaks': item['breaks'],
                  'explanation': answer.get('explanation') or [],
@@ -359,14 +393,16 @@ def run(project_root, features, selected, again=False, out=None):
         say(plain_checks.NOT_READ % (check, language))
     for item in done:
         rule_id = item['rule']['id']
-        say(RULE_LINE % (item['feature'], rule_id, item['verdict']))
+        say(RULE_LINE % (item['feature'], rule_id,
+                         item['verdict'] or NOT_AUDITED))
         for line in item['findings']:
             say(FINDING_LINE % line)
         for proof_id, why in item['not_planted']:
             say(NOT_PLANTED % (proof_id, str(why).rstrip('.')))
-    for why, count in sorted(unreached.items()):
-        say(NO_EXPLANATION % (count, _plural(count, 'rule was', 'rules were'),
-                              why))
+    if reasons:
+        say(UNREACHED % ('; '.join(reasons),
+                         '' if not stay else STAY_ONE if stay == 1
+                         else STAY_MANY % stay))
 
     costs = write_costs(project_root, done, commit, time.time() - started)
     if costs['cost_usd'] is not None and done:
@@ -390,7 +426,7 @@ def share_line(payload, selected, done):
     """The last line: the share of the rules that pass their tests the audit
     found strong, over what it read now and the entries still current."""
     now = {(item['feature'], item['rule']['id']): item['verdict']
-           for item in done}
+           for item in done if item['verdict']}
     counted = counted_rules(payload, selected)
     if not counted:
         return NO_RULE_PASSES
