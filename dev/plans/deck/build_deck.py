@@ -106,7 +106,7 @@ slide('fromcode', 'An existing codebase', 'Starting from code you already have',
     ('Reads the code', 'It surveys the project and proposes a list of features. You merge, split and rename until the list is right.'),
     ('Writes the rules', 'One file per feature. Each rule says what the code does today, with a plain sentence saying how that is shown.'),
     ('Uses the tests you have', 'Where a test already shows a rule, it offers to add the comment above that test. It writes no new test.'),
-    ('Reports where you stand', 'How many rules it wrote, how many already pass, and which have no test yet.'),
+    ('Reports where you stand', 'How many rules it wrote, how many a test you have already shows, and which have no test yet.'),
 ], '<b>A person reads every rule.</b> A rule read from code says what the code does, not what it should do.',
  'An optional skill: run purlin:init first, then purlin:spec-from-code once. Twenty to forty features '
  'is normal for a mid-sized service. Each spec is committed on its own, and a session that ends '
@@ -155,7 +155,7 @@ slide('audit', 'Are the tests any good?', 'The audit: would your tests catch a b
 slide('signoff', 'The sign-off', 'When everyone is done, a person signs the evidence once', [
     ('Run and commit', 'A developer runs every test on the version to sign, the run on Windows included, and commits the results.'),
     ('`purlin:sign`', 'Opens with who ran the tests, where and when. Stops at each hand check, shows what the audit found, and asks for one signature.', [
-        ('The package', 'One file: every rule, its proofs, its tests, the results, the audit, who wrote what, who signed.'),
+        ('The package', 'One file: every rule, its proofs, its tests, the results, the audit, who wrote what. Each sign-off is a file beside it.'),
         ('The tag', 'The first sign-off tags the version %s. Later sign-offs are added beside it.' % m('signed/1.4.0'))]),
     ('`git push`', 'You publish the branch and the tag.'),
 ], '<b>Signing is optional.</b> A project that never signs keeps its evidence all the same.',
@@ -187,7 +187,7 @@ slide('regulated', 'Regulated work', 'Purlin supplies evidence. It does not clai
  'where it ran and who ran it, what the audit found and which model was asked, and who wrote each rule '
  'and proof and last changed each test, read from git. Each sign-off records who signed, when, with '
  'which key, what they were shown and every note they typed. A requirement number such as (URS-042) '
- 'reaches it as a note in the rule\'s own words.')
+ 'reaches it in the rule\'s own words.')
 slide('manual', 'Judgment calls', 'Pass or fail. What about judgment calls?', [
     ('A proof is pass or fail', 'A test checks an exact result, like the message %s.' % m('Account locked')),
     ('A judgment call is not', '"It looks good." "It is easy to use." A test cannot decide these, and neither can an AI.', [
@@ -197,9 +197,9 @@ slide('manual', 'Judgment calls', 'Pass or fail. What about judgment calls?', [
  'A proof a test carries out ends in pass or fail, settled by a value the proof names. A claim '
  'that is a judgment, such as it looks good or it is easy to use, is not a test\'s to settle. '
  'For now the way to sign off on one is a hand check: a proof tagged manual, which the status '
- 'shows as checked at sign-off until someone signs. The walk shows the last note with the version '
- 'it was signed at and how many commits have come since, so the signer can judge whether it '
- 'still holds. An AI may help a person look, but a test does not pass or fail on an AI\'s '
+ 'shows as checked at sign-off until someone signs. After a sign-off the status and the dashboard '
+ 'show the last note with the version it was signed at and how many commits have come since, so '
+ 'a reader can judge whether it still holds. An AI may help a person look, but a test does not pass or fail on an AI\'s '
  'opinion; a test may ask a model a question with one right answer.',
  lead='A test can check a result. Only a person can make a judgment call.', width=560, pad=16, numbers=False)
 slide('anchors', 'Shared rules', 'Anchors: rules the whole project must follow', [
