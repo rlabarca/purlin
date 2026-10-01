@@ -103,7 +103,7 @@ slide('together', 'Working together', 'Product, QA and developers improve the sp
  'shows its renumbering plan before changing anything. A test comment whose proof was reworded '
  'since the test last changed is named on every run.', width=560, pad=16)
 slide('audit', 'Are the tests any good?', 'The audit: would your tests catch a bug?', [
-    ('Spot tests that can\'t fail', 'Purlin flags a test that checks nothing, takes its expected answer from the code it tests, or never checks the value its proof promises, such as 90 minutes.'),
+    ('Spot tests that can\'t fail', 'Purlin flags tests that check nothing, check the code against itself, or skip the number the proof states.'),
     ('Plant one bug', 'For each proof, an AI puts one small bug in a throwaway copy of your code, such as a sample age off by one hour.'),
     ('Run that proof\'s test', 'The test fails: the rule is %s. The test still passes: the rule is %s, and you see the bug it missed.' % (m('strong'), m('weak'))),
     ('`purlin:audit`', 'Tell the agent: <i>"Build and audit until 80% of rules are strong."</i>'),
