@@ -196,30 +196,31 @@ class Project(object):
                     'source': source, 'spec': 'specs/auth/%s.md' % feature,
                     'platforms': {}}
 
-    def audit(self, rule, findings=(), settled=True, source='local',
-              feature='login', no_bug=()):
+    def audit(self, rule, findings=(), source='local', feature='login',
+              no_bug=(), word=None, breaks=None):
         """Write the audit entry for a rule's current rule, proof and test
         hashes, and the feature's `code` part taken now.
 
         An entry is current only while the rule, the proof, the test and the
-        code all stand as they were when the audit read them. `settled` with no
-        finding is `strong`, with a finding `weak`, and not settled is
-        `undecided`.
+        code all stand as they were when the audit read them. With a finding
+        the verdict is `weak`, with none `strong`; `word` names
+        `spot-checked` outright. `breaks` is the planted bugs on record, one
+        per proof, and `no_bug` the sentence for each proof no bug was caught
+        for.
         """
         entry = self.rule(rule, feature)
         rel = '.purlin/evidence/%s/%s.json' % (source, feature)
         data = self._read_evidence(rel, source, feature)
         audit = data.setdefault('audit', {'rules': {}})
-        word = ('undecided' if not settled
-                else 'weak' if findings else 'strong')
         audit['rules'][rule] = {
             'rule_hash': entry['rule_hash'],
             'proof_hash': entry['proof_hash'],
             'test_hash': entry['test_hash'],
             'code_hash': purlin_fingerprint.fingerprint(
                 self.root, feature)['code'],
-            'verdict': word,
+            'verdict': word or ('weak' if findings else 'strong'),
             'findings': list(findings), 'no_bug': list(no_bug),
+            'breaks': dict(breaks or {}),
             'at': '2026-09-13T12:05:00Z',
             'commit': self.head()}
         write(os.path.join(self.root, *rel.split('/')),

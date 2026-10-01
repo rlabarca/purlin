@@ -160,14 +160,16 @@ class Project(object):
             _git(self.root, 'commit', '-q', '-m', 'purlin: evidence at abc1234')
         return rel
 
-    def audit(self, rule_id, feature='login', settled=True, observations=(),
-              source='local', word=None, no_bug=(), **extra):
+    def audit(self, rule_id, feature='login', observations=(),
+              source='local', word=None, no_bug=(), breaks=None, **extra):
         """Write the audit entry for a rule's current rule, proof and test
         hashes, and the feature's `code` part taken now.
 
-        `settled` with no observation is `strong`, with one `weak`, and not
-        settled is `undecided`; `word` names another outright. `extra`
-        adds fields the format does not name.
+        With an observation the verdict is `weak`, with none `strong`;
+        `word` names another outright, `spot-checked` among them. `breaks`
+        is the planted bugs on record, one per proof, and `no_bug` the
+        sentence for each proof no bug was caught for. `extra` adds any
+        other field of the entry, such as `model` or `explanation`.
         """
         rule = self.rule(rule_id, feature)
         rel = '.purlin/evidence/%s/%s.json' % (source, feature)
@@ -185,9 +187,9 @@ class Project(object):
                  'test_hash': rule['test_hash'],
                  'code_hash': purlin_fingerprint.fingerprint(
                      self.root, feature)['code'],
-                 'verdict': word or ('undecided' if not settled else
-                                     'weak' if observations else 'strong'),
+                 'verdict': word or ('weak' if observations else 'strong'),
                  'findings': list(observations), 'no_bug': list(no_bug),
+                 'breaks': dict(breaks or {}),
                  'at': '2026-09-13T12:05:00Z', 'commit': self.head()}
         entry.update(extra)
         audit['rules'][rule_id] = entry
