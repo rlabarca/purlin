@@ -51,20 +51,19 @@ def slide(sid, eyebrow, headline, rows, closing, notes, lead='', width=620, gap=
 os.makedirs(os.path.join(ROOT, 'slides'), exist_ok=True)
 slide('why', 'What Purlin is for', 'Why use Purlin?', [
     ('Tests pass. Do they cover what was asked?', 'You write each requirement as a rule. Purlin ties every rule to the tests that show it, and calls out every rule that doesn\'t have a test.'),
-    ('AI writes code &amp; tests fast. Are they any good?', 'An AI audit reads each test against what it claims to show, and names the tests that show too little.'),
+    ('AI writes code &amp; tests fast. Are they any good?', 'The audit breaks the code the way each proof forbids and checks that the test notices.'),
     ('Something changed. Is the result still true?', 'A result stops counting when the rule, the test or the code changes, until the tests are run again.'),
-    ('Someone has to sign it off.', 'A person signs the release once, over one evidence package, and the version gets a signed tag. The package is one file you hand over.'),
+    ('Someone has to sign it off.', 'When everyone is done, a person signs the evidence once and the version gets a signed tag. The evidence package is one file you hand over.'),
 ], '',
- 'Purlin is a Claude Code plugin for spec-driven development. Its intended use is to produce '
- 'evidence, in the repository, for the people who build the software and for whoever must sign it '
- 'off. A team chooses one of two gates: tests that pass, or tests that pass and a signature over '
- 'the release. The audit is a tool at either. Purlin cannot '
- 'prove your code is correct, and it makes no claim of compliance.',
+ 'Purlin is a Claude Code plugin for spec-driven development. Product, QA and developers write the '
+ 'rules together, and Purlin keeps two facts: whether every rule\'s tests pass, and whether the '
+ 'evidence is signed. The audit and the sign-off are optional. Purlin cannot prove your code is '
+ 'correct, and it makes no claim of compliance.',
  lead='Purlin shows, rule by rule, that your software does what you said it must.', width=700)
 slide('touches', 'Your project and your workflow', 'Purlin workflows don\'t change your project much', [
-    ('A settings file', '%s, a folder for evidence, and a few lines in %s.' % (m('.purlin/config.json'), m('.gitignore'))),
+    ('A settings file', '%s holds your test command. Also a folder for evidence and a few lines in %s.' % (m('.purlin/config.json'), m('.gitignore'))),
     ('Your specs', 'Markdown files you write, under %s. Each holds the rules of one feature.' % m('specs/')),
-    ('One comment per test', '%s above the test. The test itself does not change.' % m('# purlin: login RULE-4')),
+    ('One comment per test', '%s above the test. The test itself does not change.' % m('# purlin: login PROOF-4')),
     ('Your test command', 'Purlin runs your tests the way you already do. Nothing is installed in your test suite.'),
     ('Your workflow', 'You commit and push as before. Purlin commits only when you ask, and adds no git hook and no background job.'),
 ], '',
@@ -74,10 +73,10 @@ slide('touches', 'Your project and your workflow', 'Purlin workflows don\'t chan
  'into the project, where git ignores it.', pad=16)
 slide('start', 'Getting started', 'Start in under ten minutes', [
     ('Install the plugin', 'Inside Claude Code: %s.' % m('/plugin install purlin@purlin')),
-    ('`purlin:init`', 'Sets the project up. It asks what a release needs; answer %s.' % m('passed')),
+    ('`purlin:init`', 'Sets the project up. It asks one thing: whether it may commit what it wrote.'),
     ('`purlin:spec`', 'Say in your own words what must be true. It writes the rules for you, one line each.'),
-    ('`purlin:build`', 'Writes the code and its tests, or finds the tests you have. It adds one comment above each: %s.' % m('# purlin: cart RULE-1')),
-    ('`purlin:test`', 'Runs your tests and prints %s' % m('Tests: 3 of 3 rules pass.')),
+    ('`purlin:build`', 'Writes the code and its tests, or finds the tests you have. It adds one comment above each: %s.' % m('# purlin: cart PROOF-1')),
+    ('`purlin:test`', 'Runs your tests and prints %s' % m('Tests: met. 3 of 3 rules pass.')),
 ], '',
  'You need git, Python 3.9 or later and Claude Code. The marketplace is added once per project with '
  'claude plugin marketplace add. Setup reads the test framework from the project; where it finds '
@@ -88,77 +87,85 @@ slide('fromcode', 'An existing codebase', 'Starting from code you already have',
     ('Uses the tests you have', 'Where a test already shows a rule, it offers to add the comment above that test. It writes no new test.'),
     ('Reports where you stand', 'How many rules it wrote, how many already pass, and which have no test yet.'),
 ], '<b>A person reads every rule.</b> A rule read from code says what the code does, not what it should do.',
- 'Run purlin:init first, then purlin:spec-from-code once. Twenty to forty features is normal for a '
- 'mid-sized service. Each spec is committed on its own, and a session that ends halfway resumes at '
- 'the next feature. Every rule is asked what the gate asks. Rules with no test go to purlin:build.',
+ 'An optional skill: run purlin:init first, then purlin:spec-from-code once. Twenty to forty features '
+ 'is normal for a mid-sized service. Each spec is committed on its own, and a session that ends '
+ 'halfway resumes at the next feature. Rules with no test go to purlin:build.',
  lead='%s is run once. It turns a codebase with no rules into one whose rules can be proven.' % m('purlin:spec-from-code'), width=560, pad=16)
-slide('passed', 'The first gate', 'Gate %s: only check that rules pass their tests' % mt('passed'), [
-    ('`purlin:spec`', 'You say what must be true. It is written down as rules.'),
-    ('`purlin:build`', 'The code and its tests are written. One comment above each test names the rule it shows.'),
-    ('`purlin:test`', 'Runs the tests and reports each rule: passed, failed, no test, or out of date, which means something changed since its test ran.'),
-    ('`purlin:test --release`', 'On a release branch: runs every test, commits the evidence and the package, and tags the release %s.' % m('passed/1.4.0')),
-], '<b>A version is released</b> when every rule has a test that passed at the release commit.',
- 'At passed a project needs a rule and a test that names it. Out of date means the code, the rule or '
- 'the test changed after the last run. purlin:test runs only what your change touched, writes the '
- 'evidence, and commits it only when you pass --commit. The release run uses only the evidence at '
- 'the release commit, and the tag is not signed.',
- lead='A gate is what a release needs. You choose one of two.')
-slide('audit', 'A tool at either gate', 'The audit: check that the tests are good', [
-    ('`purlin:spec`', 'Every rule can carry a proof: one plain sentence saying how the rule is shown to hold.'),
-    ('`purlin:audit`', 'An AI model reads each test against its proof and reports any test that shows less than its proof says.', [
-        ('Mutation testing', 'Optional. The code is broken on purpose to see whether the tests notice.'),
-        ('The evidence', 'What ran and what the audit found, one file per feature. Committed when you ask.')]),
-], '<b>Nothing waits on the audit.</b> A weak rule is listed to strengthen, and it never stops a release.',
- 'A proof says in plain language how a rule is shown; QA writes and reviews them, and AI may draft '
- 'them. The audit reads one rule per call, several at once, says how many it will read before it '
- 'starts, and names the model on every finding. A rule whose text, proof and test have not changed '
- 'is not read again.')
-slide('signed', 'The second gate', 'Gate %s: a person signs the release, once' % mt('signed'), [
-    ('`purlin:test --release`', 'As at passed: every test runs, and the evidence and the package are committed. No tag yet.'),
-    ('`purlin:sign`', 'Walks the package with you: each hand check, each weak rule and each rule never audited. You look, add a note, and sign.', [
-        ('The sign-off', 'One file beside the package, in a signed commit. It records who signed, what they were shown and every note.'),
-        ('The tag', 'The first sign-off tags the version %s. Later sign-offs are added; the tag does not move.' % m('signed/1.4.0'))]),
-    ('`git push origin signed/1.4.0`', 'You publish the tag.'),
-], '<b>A version is released</b> when every rule passes at the release commit and a person has signed its evidence package.',
- 'Nothing is signed while the specs change: product, QA and the developers improve rules, proofs '
- 'and tests together, and the sign-off is the final check once everybody is done. One signature '
- 'covers the whole package, over its fingerprint. Any role may sign and several people may; Purlin '
- 'creates evidence and enforces no policy about who. The tag itself is signed.', pad=16)
+slide('together', 'Working together', 'Product, QA and developers improve the specs together', [
+    ('`purlin:spec`', 'Anyone writes or sharpens rules and proofs, in plain words with the AI or by hand.'),
+    ('`purlin:build`', 'Writes the code and the tests, with one comment above each test naming its proof.'),
+    ('`purlin:test`', 'Runs what changed and states the first fact, %s, or what fails.' % m('Tests: met')),
+    ('`purlin:drift`', 'After a pull: which rules and proofs changed, and any number two branches both took, with a fix you accept by answering %s.' % m('y')),
+], '<b>Nothing is signed while the work goes on.</b> Purlin has no roles: whoever knows the answer edits the spec.',
+ 'Purlin keeps two facts: whether every rule\'s tests pass on the committed evidence, and whether that '
+ 'evidence is signed. Nothing waits on a person while the specs change. When two branches take the '
+ 'same rule or proof number, the number already on the default branch keeps it, and the helper '
+ 'shows its renumbering plan before changing anything. A test comment whose proof was reworded '
+ 'since the test last changed is named on every run.', width=560, pad=16)
+slide('audit', 'Are the tests any good?', 'The audit breaks the code the way each proof forbids', [
+    ('Plain checks', 'Code reads every test: no assertion, a check that cannot fail, an expected value from the code itself, the proof\'s value missing.'),
+    ('One targeted break', 'For each changed proof an AI makes the smallest change that breaks it, in a throwaway copy, and runs its test. Still passing means weak.'),
+    ('An explanation', 'One sentence on what the weak test misses, so the fix is plain.'),
+    ('`purlin:audit`', 'Run it when you choose. It ends on %s; ask the agent to iterate until 80%% are strong.' % m('42 of 50 rules strong (84%)')),
+], '<b>Safe where it matters, fast enough to run often:</b> one break per changed proof, nothing to install.',
+ 'Why this design. Coverage says little about whether tests catch bugs (Inozemtseva and Holmes, '
+ 'ICSE 2014). Deliberately broken code is the best objective guide (Just et al., FSE 2014), but '
+ 'breaking everything is slow, so Google breaks only changed lines (Petrovic et al.) and Meta has a '
+ 'model write a few targeted breaks (ACH, FSE 2025). A model judging a test on its own is the weakest '
+ 'evidence, and AI-written tests are often tautological. Purlin aims one break at each proof, the '
+ 'claim a person wrote down: objective where the requirement is, cheap because only changed proofs '
+ 'are broken. It does not show the tests catch every bug. The full reasoning and sources are on the '
+ 'audit page of the docs, with Siddiq et al. (EASE 2024) on the smells of model-written tests and '
+ 'Alshahwan et al. (FSE 2024) on why Meta lets no generated test through without a measured check.',
+ lead='AI-written tests tend to check what the code does, not what was asked (Konstantinou et al., 2024). '
+      'Breaking the code on purpose is the strongest test of a test (Just et al., FSE 2014).', width=420, pad=16)
+slide('signoff', 'The sign-off', 'When everyone is done, a person signs the evidence once', [
+    ('Run and commit', 'A developer runs every test on the version to sign, the remote run for Windows included, and commits the results.'),
+    ('`purlin:sign`', 'Opens with who ran the tests, where and when. Stops at each hand check, shows what the audit found, and asks for one signature.', [
+        ('The package', 'One file: every rule, its proofs, its tests, the results, the audit, who wrote what, who signed.'),
+        ('The tag', 'The first sign-off tags the version %s. Later sign-offs are added beside it.' % m('signed/1.4.0'))]),
+    ('`git push`', 'You publish the branch and the tag.'),
+], '<b>Signing is optional.</b> A project that never signs keeps its evidence all the same.',
+ 'Any role may sign, and several people may; Purlin creates evidence and enforces no policy about '
+ 'who. The sign-off refuses when a result was taken on other code than the version being signed, '
+ 'and names what to run again. One signature covers the whole package, over its fingerprint, in a '
+ 'signed commit. The tag itself is signed.', pad=16)
 slide('remote', 'Remote runners', 'When does Purlin use a remote runner in your repository?', [
     ('A rule must hold on another operating system', 'You work on a Mac and a rule must hold on Windows. %s runs those tests on a runner and brings the results back.' % m('purlin:test --remote')),
+    ('Set up the first time it is needed', 'The first remote run writes the runner file for your git host, GitHub or Azure DevOps, shows it, and asks before committing it.'),
     ('What the runner does', 'It runs the tests and saves the results. Its job fails only when a test fails.'),
 ], 'In every other case Purlin only works locally and does NOT add a pipeline file to your repository.',
- 'One reason and no other. Where a runner exists it runs on a pushed signed/* tag and on the run '
- 'branch purlin:test --remote creates, waits on and deletes. A result counts wherever it ran, and '
- 'each records the machine and the operating system it came from.',
+ 'One reason and no other. The runner runs only on the run branch purlin:test --remote creates, waits '
+ 'on and deletes. Each result records the machine and the operating system it came from, and the '
+ 'sign-off counts it only when it was taken on the version being signed.',
  lead='A remote runner is a machine your git host starts to run a job, as GitHub Actions does.', numbers=False)
 slide('regulated', 'Regulated work', 'Purlin supplies evidence. It does not claim compliance.', [
-    ('Purlin produces', 'Evidence for each rule: its tests and their results and what the audit found, and who signed the release.'),
-    ('You hand over', 'The evidence package: one file for the version, made by %s, with its sign-offs.' % m('purlin:test --release')),
+    ('Purlin produces', 'Evidence for each rule: its tests and their results, what the audit found, who wrote what, who ran the tests and who signed.'),
+    ('You hand over', 'The evidence package: one file for the version, made by %s, with its sign-offs.' % m('purlin:sign')),
     ('Your system of record', 'The validated system your company uses for approval. It holds the document, decides who approves, and carries the approval that counts.'),
 ], '',
  'The package holds, for each rule: its words, its proofs, its tests, each result with when and '
- 'where it ran, and what the audit found and which model judged. Each sign-off beside it records who '
- 'signed, when, with which key, what they were shown and every note they typed. A requirement number such as (URS-042) reaches it as a note in the rule\'s own words. '
- 'The same tag always gives the same package, byte for byte.')
-slide('anchors', 'Shared rules', 'Anchors: rules that every project must follow', [
-    ('Shared inside one project', 'Write a rule once, such as an API contract. Every feature that names the anchor takes on its rules. A global anchor applies to every feature.'),
+ 'where it ran and who ran it, what the audit found and which model judged, and who wrote each rule '
+ 'and proof and last changed each test, read from git. Each sign-off records who signed, when, with '
+ 'which key, what they were shown and every note they typed. A requirement number such as (URS-042) '
+ 'reaches it as a note in the rule\'s own words.')
+slide('anchors', 'Shared rules', 'Anchors: rules the whole project must follow', [
+    ('Written in this project', 'Write a rule once, such as no secret in the code. Tests across the whole project prove it, and no feature names it.'),
     ('Owned by another department', 'Security, GRC or GxP keep their rules in their own repository. Each project brings in the ones it must follow.'),
-    ('Kept in step', '%s shows what changed at the source and updates the project.' % m('purlin:anchor sync')),
-    ('Design standards too', 'Design publishes its standards as an anchor. Every feature that produces a screen follows them, and proves it.'),
-], '<b>An anchor\'s rules count like any other:</b> tested and audited in every project, and signed with the release.',
- 'An anchor is a spec for something shared. A feature names it with Requires, and an anchor marked '
- 'Global applies to every feature without being named. Most projects keep their anchors in their own '
- 'repository and sync nothing. A second repository is for rules two or more projects must share: '
- 'each project keeps a copy pinned to one commit, and purlin:anchor sync moves the pin. A pinned rule '
- 'is never edited in place; a change is made at the source.',
- lead='An anchor is a set of rules written once and applied to many features, or to many projects.', width=560, pad=16)
+    ('Kept in step', '%s updates the copy. The status says when the source has moved on.' % m('purlin:anchor sync')),
+    ('Design standards too', 'Design publishes its standards as an anchor. Tests across every screen prove them; a project with no screens has nothing to check.'),
+], '<b>A rule only some features need</b> goes in those features\' own specs.',
+ 'Every anchor covers the whole project, and each of its rules is counted and audited once. An '
+ 'anchor\'s rule is written as "for every X in the project, Y holds", so a project with no X has '
+ 'nothing to break it; its test then skips with the reason, and the rule reads as met with that '
+ 'reason shown. A pinned copy is never edited in place; a change is made at the source.',
+ lead='An anchor is a set of rules for the whole project, proven by tests that run across all of it.', width=560, pad=16)
 deck = {"v": 4, "createdOnFiles": {"v": 1, "at": "2026-09-26T18:00:00Z"},
         "title": "Purlin gate workflows",
-        "order": ["why", "touches", "start", "fromcode", "passed", "audit", "signed", "remote", "regulated", "anchors"],
+        "order": ["why", "touches", "start", "fromcode", "together", "audit", "signoff", "remote", "regulated", "anchors"],
         "sections": {"s1": {"description": "What Purlin is for, how little it changes in a project and a workflow, and how to start in under ten minutes or from code you already have", "start": "why"},
-                     "s2": {"description": "The two gates and the audit as a tool: what each checks, what you run, and when a version is released", "start": "passed"},
-                     "s3": {"description": "The one case where Purlin uses a remote runner, where Purlin stops in regulated work, and how anchors carry shared rules across projects", "start": "remote"}},
+                     "s2": {"description": "Working together while the specs change, the audit that checks the tests are any good, and the sign-off when everyone is done", "start": "together"},
+                     "s3": {"description": "The one case where Purlin uses a remote runner, where Purlin stops in regulated work, and how anchors carry rules for the whole project", "start": "remote"}},
         "faces": {}, "designSystems": []}
 with open(os.path.join(ROOT, 'deck.json'), 'w', encoding='utf-8') as h:
     json.dump(deck, h, indent=2); h.write('\n')
