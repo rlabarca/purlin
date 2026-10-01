@@ -170,7 +170,7 @@ ROWS="$(printf '%s\n' "$STATUS" \
 check "the anchors stand above the specs" \
   "Anchors security_no_eval Specs login" "$ROWS"
 
-if [ "$(printf '%s' "$STATUS" | tail -1)" = 'Nothing left to do.' ]; then
+if [ "$(printf '%s' "$STATUS" | tail -1)" = 'Nothing left to do. To release a version: purlin:test --release' ]; then
   echo "    ok: the table ends with nothing left to do"
 else
   echo "    FAIL: the table does not end with nothing left to do"
