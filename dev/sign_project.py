@@ -33,12 +33,6 @@ from purlin import fingerprint as purlin_fingerprint  # noqa: E402
 SIGN_PY = os.path.join(ROOT, 'scripts', 'review', 'sign.py')
 
 
-# Two names four test files still import by name, so those files collect.
-# Nothing here reads them; they go once no test file imports them.
-FIRST_GATE = 'passed'
-SIGNING_GATE = 'signed'
-
-
 SPEC = (
     '# Feature: login\n\n'
     '> Description: Signing in with an email and a password.\n'
