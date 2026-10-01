@@ -201,7 +201,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     could_not_run = evidence_module.could_not_run(project_root)
     head = head_sha(project_root)
     here_os = evidence_module.host_os()
-    hand_notes = _hand_notes(project_root)
+    notes = hand_notes(project_root)
 
     # Which proofs have a test is read from the markers in the test files,
     # not from the evidence: a marked test that has not run yet is a test.
@@ -222,7 +222,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     for name in sorted(features):
         entry, _rollup = _feature_entry(
             project_root, name, features[name], evidence, sources,
-            own_results, could_not_run, incomplete, tied, here_os, hand_notes)
+            own_results, could_not_run, incomplete, tied, here_os, notes)
         feature_entries.append(entry)
 
     summary = states.project_rollup({'': states.feature_rollup(own_results)})
@@ -766,7 +766,7 @@ def branch_name(project_root):
     return name if name and name != 'HEAD' else None
 
 
-def _hand_notes(project_root):
+def hand_notes(project_root):
     """`{(feature, rule): [reason]}` from the newest sign-off holding a note on each rule.
 
     Every sign-off file of every version is read, whatever code it was taken
