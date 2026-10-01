@@ -24,10 +24,10 @@ write the files and do not commit them. `--commit` makes two commits under
 the person's own identity, and nothing here pushes: first the specs, the
 marked tests and the settings the results describe, as
 `purlin: specs, tests and settings for <feature>, ...`, then the `local/`
-files as `purlin: evidence at <sha7>`, naming the first. A
-remote runner is the one writer that always commits, through the git host's
-API, because its evidence exists nowhere else; `host.py` makes that commit
-and hands each file back here to be merged into what its parent holds.
+files as `purlin: evidence at <sha7>`, naming the first. A project's own run
+on another system, `--ci`, writes that system's section of the `ci/` files
+the same way and, with `--commit`, makes one commit of those files alone,
+under the git identity set in that checkout.
 """
 
 import json
@@ -68,19 +68,19 @@ def now_iso():
 
 
 def runner_slug(email):
-    """The `runner` a person's section carries: the email's local part, `-` safe."""
+    """The `runner` a section carries: the email's local part, `-` safe."""
     local = str(email or '').split('@')[0].lower()
     slug = re.sub(r'[^a-z0-9]+', '-', local).strip('-')
     return slug or 'unknown'
 
 
 def local_machine():
-    """The `machine` a person's section carries: the host's name, or `unknown`."""
+    """The `machine` a section carries: the host's name, or `unknown`."""
     return platform.node() or 'unknown'
 
 
 def git_email(project_root):
-    """The `email` a `local` section carries: `git config user.email`, or `unknown`."""
+    """The `email` a section carries: `git config user.email`, or `unknown`."""
     return (_git(project_root, ['config', 'user.email']) or '').strip() or 'unknown'
 
 
@@ -160,8 +160,7 @@ def _nothing_to_check(seen):
 
 
 def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
-                  fingerprint, at=None, machine=None, hostname=None,
-                  only=None):
+                  fingerprint, at=None, machine=None, only=None):
     """One platform section for one feature this run covered.
 
     `entries_by_proof` is `{id: [entry, ...]}`, what the run tied to each
@@ -180,15 +179,12 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
     those words; its rule reads it as passed in an anchor's section and as
     not run in any other.
 
-    `only`, on a remote runner, is the proofs tagged for its system: the
-    section then lists those proofs alone and the rules they prove, and
+    `only`, under `--ci`, is the proofs tagged for this machine's system:
+    the section then lists those proofs alone and the rules they prove, and
     each rule is read from those proofs alone.
 
-    `machine` is where the tests ran: the host's name on a person's machine,
-    `remote runner, <system>` on a remote runner, and defaults to this host.
-    `hostname`, given on a remote runner alone, is the name the host lent
-    it, kept and never compared; a section given none carries no such key.
-    A `local` section's `email` is added where it is written, by
+    `machine` is where the tests ran, the host's name, and defaults to this
+    host's. The section's `email` is added where it is written, by
     `write_section`.
     """
     proofs = info.get('proofs') or {}
@@ -244,7 +240,7 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
                     test=test))
             if not seen:
                 listed.append(dict(base, result=unseen, test=''))
-    section = {
+    return {
         'commit': commit or '',
         'dirty': bool(dirty),
         'at': at or now_iso(),
@@ -254,9 +250,6 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
         'rules': rules,
         'proofs': listed,
     }
-    if hostname is not None:
-        section['hostname'] = hostname
-    return section
 
 
 def _rule_marked_word(status, seen):
@@ -275,12 +268,12 @@ def _same_observation(one, other):
     """True when two sections saw the same thing over the same fingerprint.
 
     `commit`, `dirty` and `at` say when a run happened, not what it saw, and
-    `email` and `hostname` are kept and never compared. A run on another
-    `machine` replaces the section.
+    `email` is kept and never compared. A run on another `machine` replaces
+    the section.
     """
     def seen(section):
         return {key: value for key, value in (section or {}).items()
-                if key not in ('commit', 'dirty', 'at', 'email', 'hostname')}
+                if key not in ('commit', 'dirty', 'at', 'email')}
     return json.loads(json.dumps(seen(one))) == json.loads(json.dumps(
         seen(other)))
 
@@ -566,9 +559,10 @@ def write_file(project_root, source, feature, data):
 def write_section(project_root, source, feature, info, os_name, section):
     """Merge one section into the feature's file on disk. The path.
 
-    A `local` section given no `email` is written with `git_email`'s.
+    A section given no `email` is written with `git_email`'s, whatever
+    the source.
     """
-    if source == 'local' and 'email' not in section:
+    if 'email' not in section:
         section = dict(section, email=git_email(project_root))
     merged = merge_section(read_file(project_root, source, feature), source,
                            feature, info.get('spec_path', ''), os_name,
@@ -583,37 +577,6 @@ def write_audit(project_root, source, feature, info, entries):
                          feature, info.get('spec_path', ''), entries,
                          info.get('rule_order') or ())
     return write_file(project_root, source, feature, merged)
-
-
-def merge_for_host(os_name, rule_ids_by_feature):
-    """The merge a remote runner's commit applies to each file at its parent.
-
-    The API commit is retried when the branch moved, and on each attempt the
-    file the parent holds is read again. This returns the function that puts
-    this runner's own section into it, so two runners on two operating
-    systems do not overwrite each other. `rule_ids_by_feature` is the spec's
-    rules per feature, read on the runner.
-    """
-    def merge(rel, local_text, parent_text):
-        try:
-            mine = json.loads(local_text)
-        except ValueError:
-            return local_text
-        feature = mine.get('feature') or os.path.basename(rel)[:-len('.json')]
-        section = (mine.get('platforms') or {}).get(os_name)
-        if not isinstance(section, dict):
-            return local_text
-        parent = None
-        if parent_text:
-            try:
-                parent = parse(json.loads(parent_text), mine.get('source'))
-            except ValueError:
-                parent = None
-        merged = merge_section(parent, mine.get('source'), feature,
-                               mine.get('spec'), os_name, section,
-                               rule_ids_by_feature.get(feature) or ())
-        return dump(merged)
-    return merge
 
 
 # ---------------------------------------------------------------------------
@@ -652,7 +615,7 @@ def written_line(paths, source='local'):
 
 
 # ---------------------------------------------------------------------------
-# The person's own two commits
+# The commits
 # ---------------------------------------------------------------------------
 
 def commit_work(project_root, paths):
@@ -717,7 +680,7 @@ def commit_local(project_root, work_sha, removed=()):
     person's own, under their own identity, and nothing here pushes. A file
     a run removed from `ci/` because its feature has no spec is committed as
     that removal; nothing else under `ci/` is staged, because that folder is
-    the runner's. Prints `Evidence committed.`, `Evidence unchanged.`, or
+    a `--ci` run's. Prints `Evidence committed.`, `Evidence unchanged.`, or
     that there is no git repository to commit to.
     """
     print(commit_paths(
@@ -726,8 +689,23 @@ def commit_local(project_root, work_sha, removed=()):
         COMMIT_SUBJECT % (str(work_sha or '')[:7] or 'an unknown commit')))
 
 
+def commit_ci(project_root, head_sha, removed=()):
+    """Commit the `ci/` files and what the run removed, as
+    `purlin: evidence at <sha7 of head_sha>`. Prints COMMITTED or UNCHANGED.
+
+    The one commit of a `--ci --commit` run, under the git identity set in
+    that checkout. `head_sha` is HEAD when the run started. Nothing else is
+    staged, and nothing here pushes. Outside a git repository it prints that
+    there is none to commit to.
+    """
+    print(commit_paths(
+        project_root,
+        ['%s/ci' % EVIDENCE_DIR] + list(removed or ()),
+        COMMIT_SUBJECT % (str(head_sha or '')[:7] or 'an unknown commit')))
+
+
 def commit_paths(project_root, paths, message):
-    """Commit `paths` under the person's identity. The line to print."""
+    """Commit `paths` under the checkout's git identity. The line to print."""
     paths = [path for path in paths if _known(project_root, path)]
     if not paths:
         return UNCHANGED

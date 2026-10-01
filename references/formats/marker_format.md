@@ -89,7 +89,7 @@ list with one entry per suite:
 
 - `{report}` becomes the `report` path.
 - `{files}` becomes the test files, each quoted, that carry the markers of
-  the proofs the run selected; a remote runner selects the proofs tagged
+  the proofs the run selected; a `--ci` run selects the proofs tagged
   `@env` for its own system. On a run over some
   features these are their test files; on a run over every feature on your
   own machine it becomes nothing, and the suite runs whole. A suite with no

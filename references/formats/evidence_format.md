@@ -1,4 +1,4 @@
-> Format-Version: 8
+> Format-Version: 9
 
 # Evidence format
 
@@ -11,7 +11,7 @@ decide every rule's cells.
 
 ```
 .purlin/evidence/local/<feature>.json   a person's own run
-.purlin/evidence/ci/<feature>.json      a remote runner's run
+.purlin/evidence/ci/<feature>.json      a project's own run on another system
 ```
 
 All of them are tracked. Nothing under `.purlin/evidence/` is gitignored,
@@ -22,9 +22,10 @@ read them.
 
 **The folder is the source.** A file under `local/` is written by
 `purlin:test` and `purlin:audit` on a person's machine and committed under
-that person's own git identity. A file under `ci/` is written only by the
-`--ci` arm on a run branch, through the git host's API; `purlin:test
---remote` pulls that commit home.
+that person's own git identity. A file under `ci/` is written only by
+`scripts/run/purlin_run.py --ci`, which a project's own run on another
+system runs. With `--commit` that run commits the file under the git
+identity its checkout sets, and the results come back with `git pull`.
 
 The file's `source` field repeats the folder. A file whose `source` disagrees
 with its folder is ignored, and the reader prints one warning naming it.
@@ -101,17 +102,17 @@ present only once an audit has run.
 | `commit` | string | the full sha of the code the section describes: `HEAD` after the run's own commit of the specs, tests and settings where `--commit` made one, else `HEAD` when the run started |
 | `dirty` | bool | whether the working tree had changes that were not committed. It is shown and not compared: the fingerprint is what decides |
 | `at` | string | ISO 8601 UTC with `Z`, when the run finished |
-| `runner` | string | the slug of the runner's email, or `ci` |
-| `email` | string | a `local` section alone: `git config user.email`, or `unknown` where git has none. A `ci` section carries none. Kept and never compared |
-| `machine` | string | where the tests ran: the host's name, or `unknown` where it reports none, for a `local` section; `remote runner, <Windows\|macOS\|Linux/Unix>` for a `ci` section. Compared: a run on another machine replaces the section |
-| `hostname` | string | a `ci` section alone: the name the host lent the runner, beside `machine` `remote runner, <System>`. A `local` section carries none. Kept and never compared |
+| `runner` | string | the slug of `email`, made from its part before the `@`; `unknown` where there is none |
+| `email` | string | the `git config user.email` of the checkout the run was made in, or `unknown` where git has none. Kept and never compared |
+| `machine` | string | where the tests ran: the host's name, or `unknown` where it reports none. Compared: a run on another machine replaces the section |
 | `fingerprint` | object | `spec`, `code` and `tests`, three sha256 hex strings. See "The fingerprint" |
 | `rules` | object | `RULE-N` to one word for what this run saw |
 | `proofs` | array | one entry per (proof, test) pair |
 
-A `ci` section answers only for the proofs tagged `@env` for the runner's
-own system: its `proofs` list those proofs alone, and its `rules` the rules
-they prove. A feature with no such proof gets no `ci` file from that runner.
+A section carries the same fields under either source. A `ci` section
+answers only for the proofs tagged `@env` for the system it was taken on:
+its `proofs` list those proofs alone, and its `rules` the rules they prove.
+A feature with no such proof gets no `ci` file from that run.
 
 Each `rules` value:
 
@@ -254,10 +255,10 @@ each part that differs: `code changed since 4f1c2ab`, `spec changed since
   where both hold one.
 - Every run deletes the files under `local/` and `ci/` whose feature has no
   spec.
-- A `ci/` write carries only the runner's own section. In the API commit's
-  retry loop the runner reads the file again at the new parent, merges its
-  section into it and sends the result, so two runners on two operating
-  systems do not overwrite each other.
+- A `--ci` run merges the same way: it replaces its own system's section
+  of the `ci/` file on disk and leaves every other section as it was. Two
+  systems in one pipeline run one after the other, each on the branch as
+  the one before left it.
 
 ## Retention
 
@@ -266,7 +267,7 @@ entry per rule. The history is the file's `git log`. Nothing is pruned.
 
 A run that sees the same results over the same fingerprint on the same
 `machine` as the section already there leaves the file byte for byte as it
-was, `at`, `commit`, `dirty`, `email` and `hostname` included, where every
+was, `at`, `commit`, `dirty` and `email` included, where every
 commit from the one the section names to the run's own changes only paths
 under `.purlin/`, so a second run finds nothing new to commit. Any other
 section replaces it, with its own `at`, `commit`, `dirty` and `email`.
@@ -306,6 +307,9 @@ where `<sha7>` is the first seven characters of the first commit, or of
 committed.`, or `Evidence unchanged.` when no file changed and there was
 nothing to commit. Neither command ever pushes.
 
-A remote runner always commits, with the same subject, through the git
-host's API, because its evidence exists nowhere else. It commits its `ci/`
-files alone.
+A `--ci` run writes its `ci/` files and does not commit them. With
+`--commit` it makes one commit, of the files under `ci/` and any evidence
+file the run removed and nothing else, under the git identity set in that
+checkout, with the same subject, where `<sha7>` names `HEAD` when the run
+started. It prints `Evidence committed.` or `Evidence unchanged.` the same
+way, and it never pushes.

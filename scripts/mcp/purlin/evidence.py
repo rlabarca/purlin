@@ -1,7 +1,8 @@
 """Read a feature's evidence files.
 
     .purlin/evidence/local/<feature>.json   written on a person's machine
-    .purlin/evidence/ci/<feature>.json      written by a remote runner
+    .purlin/evidence/ci/<feature>.json      written by a project's own run
+                                            on another system
 
 The folder is the source. Each file holds one section per operating system
 that ran the feature's tests, and, once an audit has read the feature, one
@@ -118,7 +119,7 @@ def feature_names(project_root):
 
 # The step that writes an ignored file again, by the folder it sits in.
 REWRITE_LOCAL = 'Run purlin:test %s to write it again.'
-REWRITE_CI = 'Run purlin:test --remote to write it again.'
+REWRITE_CI = 'Start the run that wrote it again.'
 
 
 def rewrite_fix(source, feature):

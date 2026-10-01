@@ -121,7 +121,7 @@ def test_a_source_that_disagrees_with_its_folder_is_ignored(root):
     assert loaded['files']['ci'] is None
     assert loaded['warnings'] == [
         '.purlin/evidence/ci/login.json names the source "local" but sits '
-        'in ci/; it is ignored. Run purlin:test --remote to write it again.']
+        'in ci/; it is ignored. Start the run that wrote it again.']
 
 
 # purlin: evidence PROOF-20

@@ -1,7 +1,6 @@
 """Run a project's marked tests, write the evidence, and audit it on request.
 
-    purlin_run.py [--feature NAME ... | --all]
-                  (--test [--remote [--commit-runner]] [--commit] | --ci)
+    purlin_run.py [--feature NAME ... | --all] (--test | --ci) [--commit]
                   [--arm-timeout SECONDS] [--project-root DIR]
     purlin_run.py [--feature NAME ... | --all] --audit [--commit]
                   [--arm-timeout SECONDS] [--project-root DIR]
@@ -26,7 +25,7 @@ its tests, and one whose spec names no files. Before anything runs the run
 prints what it selected and why, what it skipped, and each untracked file
 that selected a feature; with nothing selected it says so and runs no test.
 `--ci` with no feature named runs every feature that has a proof tagged
-`@env` for the runner's system.
+`@env` for this machine's system.
 
 **Slow proofs.** `--test` and `--audit` without `--all` never start a test
 whose every marker names a proof tagged `@slow` (`slow_plan`): the test is
@@ -58,9 +57,6 @@ identity: the specs of the features run, the test files carrying their
 markers and the settings file, then the evidence, which names the first;
 nothing here ever pushes. A section's `commit` is the first of those
 commits where `--commit` made one, else `HEAD` when the run started.
-`--remote` hands the run to the git host's runner instead
-(`remote.run_remote`), which writes the runner file on first need and,
-with `--commit-runner`, commits it.
 
 `--audit` is what `purlin:audit` runs: the tests, as `--test` runs them, then
 the audit (`scripts/review/audit_run.py`): the spot tests, the planted bugs
@@ -68,23 +64,24 @@ and the model's reading, written into the same evidence file under `audit`,
 which `--commit` commits the same way. With features named it reads their
 rules; otherwise every feature's, and `--all` reads every passing rule again.
 
-`--ci` is the arm a remote runner runs. It answers only for the proofs
-tagged `@env` for the runner's own system: a feature with none is not run,
-`{files}` is the test files carrying those proofs' markers, a suite with no
-such file is not started, and only those markers count for missing evidence
-and for the exit code. A file holding other tests beside them is started
-whole, and the results of the others are neither written nor counted. On a
-run branch it writes this runner's section of
+`--ci` is what a project's own run on another system runs. It answers only
+for the proofs tagged `@env` for this machine's own system: a feature with
+none is not run, `{files}` is the test files carrying those proofs' markers,
+a suite with no such file is not started, and only those markers count for
+missing evidence and for the exit code. A file holding other tests beside
+them is started whole, and the results of the others are neither written nor
+counted. It writes this system's section of
 `.purlin/evidence/ci/<feature>.json`, listing those proofs and the rules they
-prove, and always commits it, through the git host's API, because the
-evidence exists nowhere else. The audit is not called there.
+prove, on whatever branch it runs. `--commit` makes one commit of the files
+under `.purlin/evidence/ci/`, under the git identity set in that checkout;
+nothing here pushes. The audit is not called there.
 
-On a person's machine a proof the spec tags `@env` for another operating
-system reads `not run`, whatever its test did there. The run counts those
-proofs in one line per system and names `purlin:test --remote`.
+Under `--test` and `--audit` a proof the spec tags `@env` for another
+operating system reads `not run`, whatever its test did here. The run counts
+those proofs in one line per system and names `purlin:test` on that system.
 
 No suite ever reads this process's stdin, and none may ask git for a
-password: a runner is nobody's terminal, and a command that stops for an
+password: a pipeline is nobody's terminal, and a command that stops for an
 answer holds the whole run until the job limit cancels it. Every suite also
 gets `--arm-timeout` seconds, 3600 by default; past it the suite is killed,
 what it printed is kept, the run reports the timeout as missing evidence and
@@ -149,38 +146,19 @@ import reports as reports_module                               # noqa: E402
 LOG_PATH = os.path.join('.purlin', 'runtime', 'run.log')
 
 USAGE = (
-    'Usage: purlin_run.py [--feature NAME ... | --all] '
-    '(--test [--remote [--commit-runner]] [--commit] | --ci) '
-    '[--arm-timeout SECONDS] [--project-root DIR]\n'
+    'Usage: purlin_run.py [--feature NAME ... | --all] (--test | --ci) '
+    '[--commit] [--arm-timeout SECONDS] [--project-root DIR]\n'
     '       purlin_run.py [--feature NAME ... | --all] --audit [--commit] '
     '[--arm-timeout SECONDS] [--project-root DIR]')
-
-# The one line `purlin:test --remote` gets. A remote runner runs the tests,
-# so the flag belongs to the test and nowhere else.
-REMOTE_IS_A_TEST = ('a remote runner runs the tests, so --remote belongs to '
-                    '--test. Run purlin:test --remote')
 
 # What the run says about the proofs tagged for an operating system it is
 # not on, one line per system, each in the words a person reads. A proof
 # with no test tied to it is not counted: it has its rule's no-test line.
-NEEDS_ONE = '1 proof needs %s; this machine is %s. Run purlin:test --remote.'
-NEEDS_MANY = ('%d proofs need %s; this machine is %s. Run purlin:test '
-              '--remote.')
-
-# The one line `--commit` gets anywhere but `--test` and `--audit`. A runner
-# always commits, and a remote run commits nothing here.
-COMMIT_IS_A_PERSONS = ('--commit belongs to --test and --audit; a remote run '
-                       'commits on the runner. Run purlin:test --remote without '
-                       '--commit')
-
-# The one line `--commit-runner` gets without `--remote`: committing the
-# runner file is the first step of a remote run. It ends on the command
-# itself, with no full stop after it.
-COMMIT_RUNNER_IS_REMOTE = ('purlin: --commit-runner belongs to --test '
-                           '--remote. Run purlin:test --remote --commit-runner')
+NEEDS_ONE = '1 proof needs %s; this machine is %s. Run purlin:test on %s.'
+NEEDS_MANY = '%d proofs need %s; this machine is %s. Run purlin:test on %s.'
 
 # How long one arm may take before it is killed. An hour is longer than any
-# shipped suite and far shorter than a hosted runner's six-hour job limit, so
+# shipped suite and far shorter than a hosted pipeline's six-hour job limit, so
 # a stuck arm ends as a named piece of missing evidence rather than as a
 # cancelled job with an empty log.
 ARM_TIMEOUT_DEFAULT = 3600
@@ -268,8 +246,6 @@ class Args(object):
         self.features = []
         self.all = False
         self.action = None          # 'test', 'audit' or 'ci'
-        self.remote = False
-        self.commit_runner = False
         self.commit = False
         self.arm_timeout = ARM_TIMEOUT_DEFAULT
         self.project_root = '.'
@@ -296,10 +272,6 @@ def parse_args(argv):
             args.all = True
         elif token in ('--test', '--audit', '--ci'):
             actions.append(token[2:])
-        elif token == '--remote':
-            args.remote = True
-        elif token == '--commit-runner':
-            args.commit_runner = True
         elif token == '--commit':
             args.commit = True
         elif token == '--arm-timeout':
@@ -334,15 +306,6 @@ def parse_args(argv):
     args.action = actions[0]
     if args.all and args.features:
         args.error = 'name features or --all, not both'
-        return args
-    if args.remote and args.action != 'test':
-        args.error = REMOTE_IS_A_TEST
-        return args
-    if args.commit and (args.action == 'ci' or args.remote):
-        args.error = COMMIT_IS_A_PERSONS
-        return args
-    if args.commit_runner and not args.remote:
-        args.error = COMMIT_RUNNER_IS_REMOTE
         return args
     return args
 
@@ -386,19 +349,19 @@ def needs_lines(foreign, index, os_name):
     lines = []
     for env in evidence_reader.PLATFORMS:
         count = counts.get(env)
+        there = evidence_reader.os_word(env)
         if count == 1:
-            lines.append(NEEDS_ONE % (evidence_reader.os_word(env), here))
+            lines.append(NEEDS_ONE % (there, here, there))
         elif count:
-            lines.append(NEEDS_MANY % (count, evidence_reader.os_word(env),
-                                       here))
+            lines.append(NEEDS_MANY % (count, there, here, there))
     return lines
 
 
 def tagged_here(features, selected, os_name):
     """`{(feature, proof_id)}` for the proofs tagged `@env` for `os_name`.
 
-    What a remote runner answers for: it runs only the tests tied to these
-    proofs, and a feature with none of them is not run there.
+    What a `--ci` run answers for: it runs only the tests tied to these
+    proofs, and a feature with none of them is not run.
     """
     return {(name, proof_id) for name in selected
             for proof_id, proof in ((features.get(name) or {})
@@ -414,7 +377,7 @@ def arm_environment(extra=None):
     """The environment every suite and every engine is given.
 
     `GIT_TERMINAL_PROMPT=0` makes git fail instead of asking for a password.
-    A hosted runner is nobody's terminal, so the question would never be
+    A hosted pipeline is nobody's terminal, so the question would never be
     answered and the run would sit there until the job limit cancelled it.
     """
     environment = dict(os.environ)
@@ -431,7 +394,7 @@ def bash_command():
     shell at all: it is the launcher for the Windows Subsystem for Linux,
     which on a machine with no distribution installed prints "Windows
     Subsystem for Linux has no installed distributions" and exits 1 before it
-    has read the command. Every hosted Windows runner is such a machine.
+    has read the command. Every hosted Windows machine is such a machine.
 
     Git for Windows ships a real bash beside its own git, so the answer there
     is found from git: `<install>/bin/bash.exe`, next to `<install>/cmd/git.exe`
@@ -467,7 +430,7 @@ def _run(command, project_root, log, timeout, environment=None,
          keep_stdout=False):
     """Run one command in the project root, echoing it and its output.
 
-    The command gets no stdin: a runner is nobody's terminal, and a prompt
+    The command gets no stdin: a pipeline is nobody's terminal, and a prompt
     nobody answers is a run that never ends. It gets `timeout` seconds; past
     them it is killed, whatever it printed is kept, and `TIMED_OUT` comes
     back so the caller names the timeout as missing evidence. With
@@ -504,7 +467,7 @@ def _run(command, project_root, log, timeout, environment=None,
 def print_arm_output(name, text):
     """Print the tail of one suite's captured output, as soon as it failed.
 
-    The suites write into the run log, which is a file on the runner and
+    The suites write into the run log, which is a file on the machine and
     never reaches a job log, so a suite that exits non-zero or is killed
     reads there as a bare exit code. This puts the last `ARM_TAIL_LINES`
     lines of that suite's own output on stdout, flushed, before the
@@ -837,7 +800,7 @@ def marked_files(scan, suite, selected, proofs=None):
     """The `/` relative paths, sorted, of one suite's files a run gives `{files}`.
 
     A file is given when it carries a marker of a feature in `selected`, or,
-    where `proofs` names the `(feature, proof_id)` pairs a remote runner
+    where `proofs` names the `(feature, proof_id)` pairs a `--ci` run
     answers for, a marker of one of them. The files are read from the disk,
     tracked or not, so a new test is run before anyone has added it.
     """
@@ -856,10 +819,8 @@ def marked_files(scan, suite, selected, proofs=None):
 # Who ran, and on what
 # ---------------------------------------------------------------------------
 
-def runner_name(project_root, args):
-    """`ci` on a runner, else the slug of the person's git email."""
-    if args.action == 'ci':
-        return 'ci'
+def runner_name(project_root):
+    """The slug of the git email set in this checkout, under every action."""
     return evidence_writer.runner_slug(_git_email(project_root))
 
 
@@ -900,15 +861,9 @@ def working_tree_dirty(project_root):
 # The evidence
 # ---------------------------------------------------------------------------
 
-def machine_name(args, os_name):
-    """What a section names the machine it ran on.
-
-    A person's own run names the host, `unknown` where it has no name; a
-    remote runner names its kind and system, `remote runner, Windows`.
-    """
-    if args.action == 'ci':
-        from host import runner_machine
-        return runner_machine(os_name)
+def machine_name():
+    """What a section names the machine it ran on, under every action: the
+    host's name, `unknown` where it has none."""
     return platform.node() or 'unknown'
 
 
@@ -918,14 +873,14 @@ def build_sections(project_root, args, features, selected, index, os_name,
 
     `commit` is the code the sections describe: the run's own commit of the
     specs, tests and settings where `--commit` made one, else `HEAD` when
-    the run started. `proofs`, on a remote runner, is the `(feature,
-    proof_id)` pairs tagged for its system: each section lists those proofs
+    the run started. `proofs`, under `--ci`, is the `(feature, proof_id)`
+    pairs tagged for this machine's system: each section lists those proofs
     alone.
     """
     dirty = working_tree_dirty(project_root)
-    runner = runner_name(project_root, args)
+    runner = runner_name(project_root)
     markers = fingerprint_module.marker_index(project_root)
-    machine = machine_name(args, os_name)
+    machine = machine_name()
     sections = {}
     for name in selected:
         info = features.get(name) or {}
@@ -948,7 +903,6 @@ def build_sections(project_root, args, features, selected, index, os_name,
             info, entries, os_name, commit, dirty, runner,
             fingerprint,
             machine=machine,
-            hostname=platform.node() if args.action == 'ci' else None,
             only=(None if proofs is None else
                   {pid for feature, pid in proofs if feature == name}))
     return sections
@@ -1158,7 +1112,7 @@ def broken_specs(features):
 
 def main(argv=None):
     # UTF-8 so the table's glyphs survive a cp1252 console, line buffering
-    # so a hosted runner's log shows where a long run got to.
+    # so a pipeline's log shows where a long run got to.
     console_module.force_utf8_stdio(line_buffering=True)
     args = parse_args(list(sys.argv[1:] if argv is None else argv))
     if args.help:
@@ -1184,9 +1138,6 @@ def main(argv=None):
         return 1
 
     config = resolve_config(project_root)
-
-    if args.remote:
-        return _remote(project_root, args)
 
     features = specs_module.scan_specs(project_root)
     if not features:
@@ -1218,8 +1169,8 @@ def main(argv=None):
         if not selected:
             return _nothing_to_run(project_root, args, features, suites)
 
-    # A remote runner answers only for the proofs tagged for its own system:
-    # a feature with none of them is not run there, and only their markers
+    # A `--ci` run answers only for the proofs tagged for this machine's
+    # system: a feature with none of them is not run, and only their markers
     # count for missing evidence and for the exit code.
     remote_proofs = None
     if args.action == 'ci':
@@ -1230,11 +1181,11 @@ def main(argv=None):
     foreign_ids = {(feature, proof_id) for feature, proof_id, _env in foreign}
     # A run over every feature runs every suite whole. A narrower run gives
     # each suite the files that carry a marker of a feature it runs, and a
-    # suite with none of those is not started. A remote runner gives each
+    # suite with none of those is not started. A `--ci` run gives each
     # suite the files that carry a marker of a proof it answers for.
     narrow = remote_proofs is not None or len(selected) < len(features)
     scan = markers_module.scan(project_root, suites)
-    # `--all` and a remote runner start every test; any other run leaves
+    # `--all` and `--ci` start every test; any other run leaves
     # out the tests of the proofs tagged `@slow`.
     plan = (SlowPlan() if args.all or args.action == 'ci'
             else slow_plan(features, scan, suites))
@@ -1351,7 +1302,7 @@ def main(argv=None):
 
     # A failing test is a result the evidence records, so it fails the run
     # without being called missing; only a suite that left nothing to read,
-    # or a marker with no result, is missing evidence. A remote runner
+    # or a marker with no result, is missing evidence. A `--ci` run
     # starts a file of mixed tests whole, and only the tests tied to the
     # proofs it answers for can fail it.
     if remote_proofs is None:
@@ -1369,8 +1320,10 @@ def main(argv=None):
         for failure in failures:
             print('Evidence is missing: %s' % failure)
 
+    # A `--ci` run commits its `ci/` files alone: the specs, tests and
+    # settings it ran are the commit it was started on.
     work = None
-    if args.commit:
+    if args.commit and args.action != 'ci':
         print('')
         work = commit_the_work(project_root,
                                work_paths(scan, features, selected))
@@ -1383,10 +1336,10 @@ def main(argv=None):
             print(line)
 
     if args.action == 'ci':
-        # Called whatever the arms found: a run that reports missing evidence
-        # still commits what it saw, which is where a reader finds out what
-        # went missing. Only the tests decide the job's exit code.
-        _ci(project_root, features, sections, log, os_name)
+        # Called whatever the suites found: a run that reports missing
+        # evidence still writes what it saw, which is where a reader finds
+        # out what went missing. Only the tests decide the exit code.
+        _ci(project_root, args, features, sections, log, os_name, started)
         print('')
         print(status_module.sync_status(project_root))
         return 1 if tests_failed else 0
@@ -1613,53 +1566,24 @@ def _audit(project_root, args, features, selected, exit_code):
 # CI
 # ---------------------------------------------------------------------------
 
-def _ci(project_root, features, sections, log, os_name):
-    """The `--ci` arm: on a run branch, this runner's sections, committed.
+def _ci(project_root, args, features, sections, log, os_name, started):
+    """The `--ci` arm: this system's sections, written and, when asked,
+    committed.
 
-    A runner writes only its own operating system's section of
-    `.purlin/evidence/ci/<feature>.json` and commits it through the git
-    host's API, merged on every attempt into what the branch's head holds,
-    because its evidence exists nowhere else. The audit is not called here:
-    `purlin:audit` runs on a person's machine. A run on any other branch
-    runs the tests and writes nothing.
+    The run writes only its own operating system's section of
+    `.purlin/evidence/ci/<feature>.json`, on whatever branch it is on. With
+    `--commit` it makes one commit of the files under `ci/` and of any
+    evidence file it removed, naming `started`, HEAD when the run began; it
+    commits no spec, test or settings file, and nothing here pushes. The
+    audit is not called here: `purlin:audit` runs on a person's machine.
     """
-    from host import commit_files, commits_here, no_commit_line
-
-    if not commits_here(project_root):
-        print('')
-        print(no_commit_line(project_root))
-        return
-
     _write_log(project_root, log)
     print('')
     paths = write_sections(project_root, features, sections, os_name, 'ci')
-    _prune(project_root, features)
+    removed = _prune(project_root, features)
     print(evidence_writer.written_line(paths, 'ci'))
-    commit = head_commit(project_root)
-    # The merge drops, in every section of a file, the rules its spec no
-    # longer carries, so it is handed each feature's whole list of rules:
-    # another system's section keeps the rules this runner does not list.
-    merge = evidence_writer.merge_for_host(
-        os_name, {name: list((features.get(name) or {}).get('rule_order')
-                             or ())
-                  for name in sections})
-    commit_files(project_root, paths, evidence_writer.COMMIT_SUBJECT
-                 % (commit[:7] or 'an unknown commit'), merge)
-    print(evidence_writer.COMMITTED)
-
-
-def _remote(project_root, args):
-    """`--test --remote`: let the git host's runner do the run.
-
-    `remote.run_remote` writes the runner file for the git host of `origin`
-    where there is none and, with `--commit-runner`, commits it; then the
-    runner runs the tests tied to the proofs tagged for its own operating
-    system, writes its section of each such feature's `ci/` evidence, and
-    commits it on the run branch, and the run pulls that commit back.
-    Everything it says it prints itself.
-    """
-    from remote import run_remote
-    return run_remote(project_root, args)
+    if args.commit:
+        evidence_writer.commit_ci(project_root, started, removed)
 
 
 if __name__ == '__main__':

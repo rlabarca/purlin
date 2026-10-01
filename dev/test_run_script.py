@@ -5,15 +5,12 @@ script against it: the suites it runs, the two loud failures it raises, the
 proofs another operating system owns, the exit codes, the evidence each run
 writes and where it is committed. `scripts/run/evidence.py` has tests of its
 own for the file's shape and the merge.
-
-The module only a runner's run needs, `host`, is imported lazily, so those
-tests inject a fake through `sys.modules` and read back what the script
-called it with.
 """
 
-import importlib.util
+import importlib
 import json
 import os
+import platform
 import re
 import shutil
 import subprocess
@@ -36,7 +33,7 @@ from run_project import (RUN_SCRIPT, _project,  # noqa: E402,F401
                          _pytest_project, _run, _spec, claude)
 
 # The system this machine is, and a feature's one proof tagged for it: a
-# remote runner runs only the tests tied to proofs tagged for its system, so
+# `--ci` run starts only the tests tied to proofs tagged for its system, so
 # every `--ci` fixture tags its proof this way.
 HERE_OS = purlin_evidence.host_os()
 TAGGED_HERE = (('PROOF-1', 'RULE-1', ' @env(%s)' % HERE_OS),)
@@ -407,9 +404,10 @@ class TestEnvScopedProofs:
         purlin_run = _load_run_script()
         here = purlin_run.host_os()
         code, output = _run(root, '--all', '--test')
-        assert ('1 proof needs %s; this machine is %s. Run purlin:test '
-                '--remote.' % (purlin_evidence.os_word(other),
-                               purlin_evidence.os_word(here))
+        assert ('1 proof needs %s; this machine is %s. Run purlin:test on '
+                '%s.' % (purlin_evidence.os_word(other),
+                         purlin_evidence.os_word(here),
+                         purlin_evidence.os_word(other))
                 in output.splitlines()), output
         assert 'Evidence is missing' not in output, output
         assert [(entry['id'], entry['result'])
@@ -490,7 +488,7 @@ class TestEveryRunEndsOnTheSummary:
 
 
 # ---------------------------------------------------------------------------
-# The evidence, the audit and the CI run
+# The evidence, the audit and the `--ci` run
 # ---------------------------------------------------------------------------
 
 def _load_run_script():
@@ -504,137 +502,108 @@ def _load_run_script():
     return purlin_run
 
 
-class _FakeModule(object):
-    """A stand-in for a module the run imports only when it needs it."""
-
-    def __init__(self, **attributes):
-        self.__dict__.update(attributes)
-
-
 def _evidence(root, feature='feat', source='local'):
     path = root / '.purlin' / 'evidence' / source / ('%s.json' % feature)
     return json.loads(path.read_text(encoding='utf-8'))
 
 
 @pytest.fixture
-def evidence_run(monkeypatch, tmp_path):
-    """Run the script in-process with the git host's API faked."""
-    calls = {'commit': []}
-
-    def commit_files(project_root, paths, message, merge=None):
-        calls['commit'].append((list(paths), message, merge))
-        return 'c' * 40
-
-    # The run is on a run branch, so it commits. The machine a runner's
-    # section names is the real module's answer.
-    _load_run_script()
-    loaded = importlib.util.spec_from_file_location(
-        'real_host', os.path.join(REPO, 'scripts', 'run', 'host.py'))
-    real_host = importlib.util.module_from_spec(loaded)
-    loaded.loader.exec_module(real_host)
-    monkeypatch.setitem(sys.modules, 'host', _FakeModule(
-        commit_files=commit_files,
-        commits_here=lambda project_root: True,
-        runner_machine=real_host.runner_machine,
-        no_commit_line=real_host.no_commit_line))
+def evidence_run():
+    """Run the script in this process, so a test reads what it printed
+    through `capsys`. The exit code."""
 
     def go(root, *args):
         purlin_run = _load_run_script()
-        code = purlin_run.main(['--project-root', str(root)] + list(args))
-        return code, calls
+        return purlin_run.main(['--project-root', str(root)] + list(args))
 
     return go
 
 
-class TestTheCiArmCommitsItsSection:
-    """A runner writes its own operating system's section and commits it."""
+class TestTheCiArmWritesItsSection:
+    """A `--ci` run writes its own operating system's section under `ci/`."""
 
     @staticmethod
-    def _ci(tmp_path, evidence_run, capsys):
+    def _ci(tmp_path):
+        """A git checkout of `feat`, its one proof tagged for this
+        machine's system and its test passing."""
         root = _pytest_project(tmp_path)
         _spec(root, 'feat', proofs=TAGGED_HERE)
         _git_repo(root)
-        code, calls = evidence_run(root, '--all', '--ci')
-        return root, code, calls, capsys.readouterr().out
+        return root
 
     # purlin: run_script PROOF-12
-    def test_the_ci_arm_writes_its_section_and_commits(
+    def test_the_ci_arm_writes_its_section_and_commits_nothing(
             self, tmp_path, evidence_run, capsys):
-        """In a git checkout, `--all --ci` over one proof tagged for this
-        machine's system: one section, runner `ci`, machine `remote runner,
-        <system>`, `RULE-1` `passed`, nothing under `local/`, exit 0."""
-        root, code, _calls, output = self._ci(tmp_path, evidence_run, capsys)
-        here = _load_run_script().host_os()
+        root = self._ci(tmp_path)
+        head = _head(root)
+        code = evidence_run(root, '--all', '--ci')
+        output = capsys.readouterr().out
         data = _evidence(root, source='ci')
-        assert list(data['platforms']) == [here]
-        section = data['platforms'][here]
-        assert section['runner'] == 'ci'
-        assert section['machine'] == 'remote runner, %s' % (
-            purlin_evidence.os_word(here)), section
+        assert list(data['platforms']) == [HERE_OS]
+        section = data['platforms'][HERE_OS]
+        assert platform.node()
+        assert section['machine'] == platform.node(), section
         assert section['rules'] == {'RULE-1': 'passed'}
-        assert 'Evidence committed.' in output.splitlines(), output
+        assert ('Evidence written to .purlin/evidence/ci/feat.json.'
+                in output.splitlines()), output
         assert not (root / '.purlin' / 'evidence' / 'local').exists()
+        assert _head(root) == head, 'the run made a commit'
         assert code == 0, output
 
     # purlin: run_script PROOF-117
-    def test_the_merge_keeps_another_systems_section(
+    def test_another_systems_section_is_left_as_it_was(
             self, tmp_path, evidence_run, capsys):
-        """The branch's copy of `ci/feat.json` holds only another system's
-        section; the merge the run hands the git host keeps both."""
-        root, _code, calls, _output = self._ci(tmp_path, evidence_run,
-                                                capsys)
-        ((paths, _message, merge),) = calls['commit']
-        assert callable(merge), 'the commit was handed no merge'
-        assert [path.replace(os.sep, '/') for path in paths] == [
-            '.purlin/evidence/ci/feat.json'], paths
-        data = _evidence(root, source='ci')
-        here = _load_run_script().host_os()
-        other = 'windows' if here != 'windows' else 'linux'
-        branch = dict(data, platforms={other: data['platforms'][here]})
-        merged = json.loads(merge(paths[0], json.dumps(data),
-                                  json.dumps(branch)))
-        assert sorted(merged['platforms']) == sorted([here, other]), merged
-
-    @staticmethod
-    def _mixed(tmp_path, evidence_run, capsys, untagged='True'):
-        """`feat`'s PROOF-1 (RULE-1) carries no tag and PROOF-2 (RULE-2) is
-        tagged for this machine's system; one test file holds both tests,
-        the untagged one asserting `untagged`. `(root, code, calls, output)`."""
-        root = _pytest_project(tmp_path, body=(
-            'import pytest\n\n'
-            '# purlin: feat PROOF-1\n'
-            'def test_untagged():\n'
-            '    assert %s\n\n'
-            '# purlin: feat PROOF-2\n'
-            'def test_tagged():\n'
-            '    assert True\n' % untagged))
-        _spec(root, 'feat', rules=2, proofs=(
-            ('PROOF-1', 'RULE-1', ''),
-            ('PROOF-2', 'RULE-2', ' @env(%s)' % HERE_OS)))
-        _git_repo(root)
-        code, calls = evidence_run(root, '--all', '--ci')
-        return root, code, calls, capsys.readouterr().out
+        root = self._ci(tmp_path)
+        other = 'windows' if HERE_OS != 'windows' else 'linux'
+        theirs = {'commit': 'b' * 40, 'dirty': False,
+                  'at': '2026-09-01T00:00:00Z', 'runner': 'runner',
+                  'email': 'runner@example.com', 'machine': 'build-7',
+                  'fingerprint': {'spec': 's', 'code': 'c', 'tests': 't'},
+                  'rules': {'RULE-1': 'passed'}, 'proofs': []}
+        path = root / '.purlin' / 'evidence' / 'ci' / 'feat.json'
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps({
+            'schema': purlin_evidence.SCHEMA, 'feature': 'feat',
+            'source': 'ci', 'spec': 'specs/feat.md',
+            'platforms': {other: theirs}}), encoding='utf-8')
+        evidence_run(root, '--all', '--ci')
+        output = capsys.readouterr().out
+        platforms = _evidence(root, source='ci')['platforms']
+        assert sorted(platforms) == sorted([HERE_OS, other]), output
+        assert platforms[other] == theirs, platforms[other]
 
     # purlin: run_script PROOF-209
     def test_an_untagged_test_that_fails_beside_a_tagged_one_does_not_fail_it(
             self, tmp_path, evidence_run, capsys):
-        _root, code, _calls, output = self._mixed(
-            tmp_path, evidence_run, capsys, untagged='1 == 2')
-        assert code == 0, output
+        """`feat`'s PROOF-1 (RULE-1) carries no tag and its test fails;
+        PROOF-2 (RULE-2) is tagged for this machine's system and its test,
+        in the same file, passes."""
+        root = _pytest_project(tmp_path, body=(
+            'import pytest\n\n'
+            '# purlin: feat PROOF-1\n'
+            'def test_untagged():\n'
+            '    assert 1 == 2\n\n'
+            '# purlin: feat PROOF-2\n'
+            'def test_tagged():\n'
+            '    assert True\n'))
+        _spec(root, 'feat', rules=2, proofs=(
+            ('PROOF-1', 'RULE-1', ''),
+            ('PROOF-2', 'RULE-2', ' @env(%s)' % HERE_OS)))
+        _git_repo(root)
+        code = evidence_run(root, '--all', '--ci')
+        assert code == 0, capsys.readouterr().out
 
 
-class TestWhereEachArmCommits:
+class TestWhereEachArmWrites:
 
     # purlin: run_script PROOF-17
-    def test_a_test_run_never_uses_the_git_hosts_api(
+    def test_a_test_run_writes_nothing_under_ci(
             self, tmp_path, evidence_run, capsys):
         root = _pytest_project(tmp_path)
         _spec(root, 'feat')
         _git_repo(root)
-        _code, calls = evidence_run(root, '--all', '--test', '--commit')
+        evidence_run(root, '--all', '--test', '--commit')
         output = capsys.readouterr().out
-        assert calls['commit'] == [], (
-            "a person's run commits through git, not the git host's API")
         assert 'Evidence committed.' in output.splitlines(), output
         assert not (root / '.purlin' / 'evidence' / 'ci').exists()
 
@@ -644,7 +613,7 @@ class TestWhereEachArmCommits:
         _install, directory = claude
         root = _pytest_project(tmp_path)
         _spec(root, 'feat', proofs=TAGGED_HERE)
-        code, _calls = evidence_run(root, '--all', '--ci')
+        code = evidence_run(root, '--all', '--ci')
         output = capsys.readouterr().out
         assert code == 0, output
         assert fake_claude.calls(directory) == []
@@ -667,7 +636,7 @@ class TestTheAuditExitCode:
             'def test_bad():\n'
             '    assert 1 == 2\n'))
         _spec(root, 'feat')
-        code, _calls = evidence_run(root, '--all', '--audit')
+        code = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
         assert output.strip().splitlines()[-1] == (
             '  1 rule to fix: purlin:build'), output
@@ -682,7 +651,7 @@ class TestTheAuditExitCode:
             'def test_ok():\n'
             '    total = 1 + 1\n'))
         _spec(root, 'feat')
-        code, _calls = evidence_run(root, '--all', '--audit')
+        code = evidence_run(root, '--all', '--audit')
         output = capsys.readouterr().out
         assert output.strip().splitlines()[-1] == (
             '  1 rule to strengthen: purlin:build'), output
@@ -759,10 +728,9 @@ class TestTheEvidenceMeetsThePassedCell:
 class TestTheConsoleCodecNeverEndsTheRun:
     """A Windows console hands Python cp1252, which encodes none of the glyphs.
 
-    The first status table then ends the run with `UnicodeEncodeError: 'charmap'
-    codec can't encode characters`, which is how the first CI run of this
-    workflow lost its Windows job. The run script reconfigures both streams to
-    UTF-8 before it prints anything.
+    The first status table would then end the run with `UnicodeEncodeError:
+    'charmap' codec can't encode characters`. The run script reconfigures both
+    streams to UTF-8 before it prints anything.
     """
 
     # purlin: run_script PROOF-57
@@ -813,10 +781,10 @@ def _hundred_lines(tmp_path):
 class TestAFailingSuiteStatesItsReason:
     """Everything a suite prints is captured, and a job log never shows it.
 
-    The Linux job of the first CI runs reported a suite that exited 1 and one
-    that was killed at the cap, and said nothing about either: the output had
-    gone to `.purlin/runtime/run.log` on a runner that is thrown away. The tail
-    goes to stdout as soon as the suite fails.
+    A suite that exits 1, or is killed at the cap, would otherwise say nothing
+    in a pipeline's job log: its output goes to `.purlin/runtime/run.log`, on a
+    machine that is thrown away. The tail goes to stdout as soon as the suite
+    fails.
     """
 
     # purlin: run_script PROOF-58
@@ -1472,63 +1440,6 @@ class TestABrokenSpec:
             ('PROOF-1', 'pass'), ('PROOF-2', 'pass')}, output
         assert code == 1, output
 
-
-
-# ---------------------------------------------------------------------------
-# The runner, written on first need
-# ---------------------------------------------------------------------------
-
-@pytest.fixture
-def on_github(tmp_path, monkeypatch):
-    """A git checkout whose `origin` is on GitHub, with one proof tagged
-    `@env(windows)` and no runner file. A push lands in a bare repository on
-    disk, and no `gh` is on the path, so nothing reaches the network."""
-    root = _pytest_project(tmp_path)
-    _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ' @env(windows)'),))
-    (root / '.gitignore').write_text('.purlin/runtime/\n__pycache__/\n'
-                                     '.pytest_cache/\n', encoding='utf-8')
-    _git_repo(root)
-    bare = tmp_path / 'host.git'
-    _git(tmp_path, 'init', '-q', '--bare', str(bare))
-    _git(root, 'remote', 'add', 'origin', 'https://github.com/acme/shop.git')
-    _git(root, 'config', 'url.%s.pushInsteadOf' % bare.as_uri(),
-         'https://github.com/acme/shop.git')
-    monkeypatch.setenv('PATH', os.pathsep.join(
-        folder for folder in os.environ.get('PATH', '').split(os.pathsep)
-        if not os.path.exists(os.path.join(folder, 'gh'))))
-    return root
-
-
-class TestTheRunnerOnFirstNeed:
-
-    # purlin: run_script PROOF-272
-    def test_remote_with_no_runner_file_writes_it_and_runs_nothing(
-            self, on_github):
-        code, output = _run(on_github, '--all', '--test', '--remote')
-        lines = output.splitlines()
-        assert (on_github / '.github' / 'workflows' / 'purlin.yml').is_file()
-        assert ('Purlin wrote .github/workflows/purlin.yml, the runner for '
-                'GitHub, to run the proofs tagged for Windows:') in lines, \
-            output
-        assert ('Commit it and run: purlin:test --remote --commit-runner'
-                in lines), output
-        assert not [line for line in lines
-                    if line.startswith(('Running the', 'Pushing '))], output
-        assert code == 0, output
-
-    # purlin: run_script PROOF-273
-    def test_commit_runner_commits_the_runner_file_alone(self, on_github):
-        _code, output = _run(on_github, '--all', '--test', '--remote',
-                             '--commit-runner')
-        commits = [line.split(' ', 1)[0] for line in _git(
-            on_github, 'log', '--format=%H %s').splitlines()
-            if line.endswith(' ci: the Purlin runner for GitHub')]
-        assert len(commits) == 1, output
-        assert _git(on_github, 'show', '--format=', '--name-only',
-                    commits[0]).split() == ['.github/workflows/purlin.yml'], \
-            output
-        assert ('Committed .github/workflows/purlin.yml, the runner for '
-                'GitHub.' in output.splitlines()), output
 
 
 # ---------------------------------------------------------------------------

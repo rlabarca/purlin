@@ -122,21 +122,16 @@ def _evidence(root, feature='feat', source='local'):
 
 
 def _section(result='pass', at='2026-09-01T00:00:00Z', commit='a' * 40,
-             rules=None, machine='build-1', hostname=None):
-    """A section as a run writes it: `hostname` and no `email` for a `ci`
-    section, `email` for a `local` one."""
-    section = {'commit': commit, 'dirty': False, 'at': at, 'runner': 'dev',
-               'machine': machine, 'fingerprint': dict(PRINT),
-               'rules': rules or {'RULE-1': 'passed' if result == 'pass'
-                                  else 'failed'},
-               'proofs': [{'id': 'PROOF-1', 'rule': 'RULE-1',
-                           'result': result, 'env': None, 'manual': False,
-                           'test': 'tests/test_feat.py::test_ok'}]}
-    if hostname is not None:
-        section['hostname'] = hostname
-    else:
-        section['email'] = 'dev@example.com'
-    return section
+             rules=None, machine='build-1'):
+    """A section as a run writes it, under either source."""
+    return {'commit': commit, 'dirty': False, 'at': at, 'runner': 'dev',
+            'email': 'dev@example.com',
+            'machine': machine, 'fingerprint': dict(PRINT),
+            'rules': rules or {'RULE-1': 'passed' if result == 'pass'
+                               else 'failed'},
+            'proofs': [{'id': 'PROOF-1', 'rule': 'RULE-1',
+                        'result': result, 'env': None, 'manual': False,
+                        'test': 'tests/test_feat.py::test_ok'}]}
 
 
 def _file(source='local', platforms=None, audit=None, feature='feat'):
@@ -278,24 +273,37 @@ def test_a_run_names_the_machine_its_tests_ran_on(tmp_path):
     assert section['machine'] == platform.node()
 
 
-class _Args(object):
-    """The one part of a parsed command line the section reads."""
+TAGGED_HERE = (('PROOF-1', 'RULE-1', ' @env(%s)' % HERE),)
 
-    def __init__(self, action):
-        self.action = action
+
+def _runner_checkout(tmp_path):
+    """A git checkout whose git name is `Runner` and email
+    `runner@example.com`, holding `feat`, its one proof tagged for this
+    machine's system, its passing marked test and a `README.md`."""
+    root = _project(tmp_path)
+    _spec(root, proofs=TAGGED_HERE)
+    _test_file(root)
+    (root / 'README.md').write_text('A project.\n', encoding='utf-8')
+    _repo(root)
+    _git(root, 'config', 'user.email', 'runner@example.com')
+    _git(root, 'config', 'user.name', 'Runner')
+    return root
 
 
 # purlin: evidence_writer PROOF-78
-def test_a_ci_section_names_the_host_the_runner_was_lent(tmp_path):
-    import purlin_run
-    root = _project(tmp_path)
-    _spec(root)
-    from purlin import specs as specs_module
-    features = specs_module.scan_specs(str(root))
-    section = purlin_run.build_sections(str(root), _Args('ci'), features,
-                                        ['feat'], {}, HERE, None)['feat']
+def test_a_ci_section_holds_the_fields_a_local_one_does(tmp_path):
+    root = _runner_checkout(tmp_path)
+
+    code, out = _run(root, '--all', '--ci')
+
+    assert code == 0, out
+    section = _evidence(root, source='ci')['platforms'][HERE]
+    assert sorted(section) == [
+        'at', 'commit', 'dirty', 'email', 'fingerprint', 'machine', 'proofs',
+        'rules', 'runner']
     assert platform.node()
-    assert section['hostname'] == platform.node()
+    assert section['machine'] == platform.node()
+    assert section['email'] == 'runner@example.com'
 
 
 # ---------------------------------------------------------------------------
@@ -568,19 +576,6 @@ def test_a_section_from_another_machine_replaces_the_one_on_disk(tmp_path):
     assert _evidence(root)['platforms']['linux']['machine'] == 'build-2'
 
 
-# purlin: evidence_writer PROOF-44
-def test_a_section_that_differs_only_in_its_hostname_is_not_written(tmp_path):
-    root = tmp_path
-    path = _put(root, _file(source='ci', platforms={
-        'linux': _section(hostname='fv-az123')}), source='ci')
-    before = path.read_bytes()
-
-    writer.write_section(str(root), 'ci', 'feat', _info(), 'linux',
-                         _section(hostname='fv-az456'))
-
-    assert path.read_bytes() == before
-
-
 # ---------------------------------------------------------------------------
 # Written, and committed when asked
 # ---------------------------------------------------------------------------
@@ -713,6 +708,43 @@ def test_commit_carries_the_removal_and_pushes_nothing(tmp_path):
     assert 'D\t.purlin/evidence/local/gone.json' in changed, changed
     assert 'D\t.purlin/evidence/ci/gone.json' in changed, changed
     assert _head(root) != pushed
+    assert _git(remote, 'rev-parse', 'main').strip() == pushed
+
+
+# purlin: evidence_writer PROOF-95
+def test_a_ci_commit_run_commits_exactly_its_ci_file(tmp_path):
+    root = _runner_checkout(tmp_path)
+    (root / 'README.md').write_text('A project, edited.\n', encoding='utf-8')
+    head = _head(root)
+
+    code, out = _run(root, '--all', '--ci', '--commit')
+
+    assert code == 0, out
+    assert 'Evidence committed.' in out.splitlines(), out
+    assert _subjects(root)[0] == 'purlin: evidence at %s' % head[:7]
+    assert _git(root, 'log', '-1', '--format=%an').strip() == 'Runner'
+    assert _git(root, 'rev-parse', 'HEAD^').strip() == head
+    touched = _git(root, 'show', '--name-only', '--format=', 'HEAD').split()
+    assert touched == ['.purlin/evidence/ci/feat.json']
+
+
+# purlin: evidence_writer PROOF-96
+def test_a_second_ci_commit_run_commits_nothing_and_pushes_nothing(tmp_path):
+    root = _runner_checkout(tmp_path)
+    remote = tmp_path / 'remote.git'
+    _git(tmp_path, 'init', '--bare', '-q', str(remote))
+    _git(root, 'remote', 'add', 'origin', str(remote))
+    _git(root, 'push', '-q', 'origin', 'main')
+    pushed = _git(remote, 'rev-parse', 'main').strip()
+    code, out = _run(root, '--all', '--ci', '--commit')
+    assert code == 0, out
+    commits = len(_subjects(root))
+
+    code, out = _run(root, '--all', '--ci', '--commit')
+
+    assert code == 0, out
+    assert 'Evidence unchanged.' in out.splitlines(), out
+    assert len(_subjects(root)) == commits
     assert _git(remote, 'rev-parse', 'main').strip() == pushed
 
 
