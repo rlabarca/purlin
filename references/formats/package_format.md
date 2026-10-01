@@ -51,7 +51,9 @@ write it to a VERSION file.`, writes nothing and exits 1.
 ## What it reads
 
 The package is built from a checkout of one commit, so it describes only what
-git holds. `purlin:sign` refuses while evidence is written and not committed.
+git holds. `purlin:sign` refuses while tracked files are changed and not
+committed, while evidence is written and not committed, and over a result
+whose section reads `dirty`, taken while files were changed and not committed.
 
 That commit is the one the evidence was taken at: `HEAD`, stepping back over
 any commit that changed nothing but files under `.purlin/evidence/package/`,
@@ -219,7 +221,8 @@ Every time is ISO 8601 UTC with `Z`.
 | `false` | `left` holds a line of `to_repair`, `to_correct`, `to_fix`, `no_test`, `to_test` or `to_test_remote` |
 
 A weak rule (`to_strengthen`) and a rule with no proof (`no_proof`) are listed
-in `left` and leave `met` true. `purlin:sign` refuses while `met` is false.
+in `left` and leave `met` true. `purlin:sign` refuses while `met` is false,
+and names `purlin:build` where a rule has no test (`no_test`).
 
 ## What is left
 

@@ -23,12 +23,13 @@ and the tag does not move. `references/formats/signature_format.md` holds the
 sign-off field by field, and `package_format.md` the package.
 
 **Refusals**, in this order, each one line with nothing written and exit 1:
-the working tree holds changes that are not committed; the evidence is
-written and not committed; no version is stated or named;
-`signed/<version>` is on a commit this checkout does not hold, or the code
-changed since it; a result was not taken on this version of the code; a rule
-does not pass; the branch's copy on the host, as this checkout last fetched
-it, holds commits HEAD lacks; the signer already signed this package. Then,
+tracked files are changed and not committed; the evidence is written and not
+committed; no version is stated or named; `signed/<version>` is on a commit
+this checkout does not hold, or the code changed since it; a result was not
+taken on this version of the code; a result was taken while files were
+changed and not committed; a rule has no test; a rule does not pass; the
+branch's copy on the host, as this checkout last fetched it, holds commits
+HEAD lacks; the signer already signed this package. Then,
 for the walk and `--answers`, no key to sign with. Nothing is fetched and
 nothing is pushed.
 
@@ -70,8 +71,10 @@ USAGE = ('Usage: sign.py [--version <version>] [--show | --answers FILE | '
          '--check FILE] [--project-root DIR]')
 
 # The refusals, in the order they are read.
-NO_SIGNOFF_WORK = ('No sign-off: the working tree holds changes that are not committed. '
-                   'Commit them, run purlin:test --all --commit, then purlin:sign.')
+NO_SIGNOFF_WORK_ONE = ('No sign-off: 1 file is changed and not committed. Commit it or '
+                       'set it aside, then run purlin:sign again.')
+NO_SIGNOFF_WORK_MANY = ('No sign-off: %d files are changed and not committed. Commit them '
+                        'or set them aside, then run purlin:sign again.')
 NO_SIGNOFF_EVIDENCE = ('No sign-off: the evidence is written and not committed. Run '
                        'purlin:test --commit, then purlin:sign.')
 NO_VERSION = ('No version: nothing in this project states one. Run purlin:sign --version '
@@ -82,6 +85,9 @@ NO_SIGNOFF_MOVED = ('No sign-off: %s is at %s, and the code has changed since. T
                     'code, name a new version: purlin:sign --version <version>.')
 NO_SIGNOFF_NOT_THIS_CODE = ('No sign-off: these results were not taken on this version of '
                             'the code, %s: %s. Run %s, then purlin:sign.')
+NO_SIGNOFF_DIRTY = ('No sign-off: these results were taken while files were changed and '
+                    'not committed: %s. Run %s, then purlin:sign.')
+NO_SIGNOFF_NO_TEST = 'No sign-off: %s at %s: %s. Run purlin:build %s, then purlin:sign.'
 NO_SIGNOFF_FAILING = ('No sign-off: %s at %s: %s. Run purlin:status to see what is left, '
                       'then purlin:sign.')
 NO_SIGNOFF_BEHIND = ('No sign-off: %s holds %s that %s does not, as this checkout last '
@@ -193,10 +199,16 @@ def _first_line(result):
 
 
 def uncommitted_work(project_root):
-    """True when `git status` lists a path outside `.purlin/`."""
-    result = _git(project_root, 'status', '--porcelain', '-z')
+    """How many tracked files outside `.purlin/` are changed and not committed.
+
+    A file git does not track is not counted: it is in no commit, so it is
+    in nothing the sign-off signs.
+    """
+    result = _git(project_root, 'status', '--porcelain', '-z',
+                  '--untracked-files=no')
     if result.returncode != 0:
-        return False
+        return 0
+    count = 0
     fields = result.stdout.split('\0')
     while fields:
         field = fields.pop(0)
@@ -205,8 +217,8 @@ def uncommitted_work(project_root):
         if field[0] in 'RC' and fields:
             fields.pop(0)
         if not field[3:].startswith('.purlin/'):
-            return True
-    return False
+            count += 1
+    return count
 
 
 def behind_host(project_root):
@@ -325,9 +337,40 @@ def failing_fill(package):
             '; '.join(parts))
 
 
+def no_test_fill(package):
+    """`(count words, rules, feature)` for the rules with no test, or None.
+
+    The rules whose work left is `no_test`, a rule with no proof and no test
+    among them, named as `failing_fill` names rules; `feature` is the first
+    of them, which `purlin:build` is run for.
+    """
+    named = {}
+    for feature in package.get('features') or ():
+        for rule in feature.get('rules') or ():
+            if rule.get('left') == 'no_test':
+                named.setdefault(feature.get('name'), []).append(rule.get('id'))
+    if not named:
+        return None
+    count = sum(len(rules) for rules in named.values())
+    parts = ['%s %s' % (name, ', '.join(sorted(rules, key=_rule_number)))
+             for name, rules in sorted(named.items())]
+    return (_count('1 rule has no test', '%d rules have no test', count),
+            '; '.join(parts), sorted(named)[0])
+
+
 def off_code_fill(package, project_root):
     """`(what, commands)` for the results not taken on this code, or None."""
-    found = package_module.off_code(package, project_root)
+    return _results_fill(package_module.off_code(package, project_root))
+
+
+def dirty_fill(package, project_root):
+    """`(what, commands)` for the results taken while files were changed and
+    not committed, or None."""
+    return _results_fill(package_module.taken_dirty(package, project_root))
+
+
+def _results_fill(found):
+    """`(what, commands)` for `[(system words, source, [features])]`, or None."""
     if not found:
         return None
     by_system, sources = [], set()
@@ -368,8 +411,10 @@ def refusal(project_root, name=None):
     `written` (the package is to be written with the sign-off), `head` and
     `email`.
     """
-    if uncommitted_work(project_root):
-        return [NO_SIGNOFF_WORK], EXIT_NOTHING, None
+    changed = uncommitted_work(project_root)
+    if changed:
+        return ([_count(NO_SIGNOFF_WORK_ONE, NO_SIGNOFF_WORK_MANY, changed)],
+                EXIT_NOTHING, None)
     if package_module.uncommitted_evidence(project_root):
         return [NO_SIGNOFF_EVIDENCE], EXIT_NOTHING, None
     version = (str(name or '').strip()
@@ -397,6 +442,13 @@ def refusal(project_root, name=None):
     if off:
         return ([NO_SIGNOFF_NOT_THIS_CODE % (head[:7], off[0], off[1])],
                 EXIT_NOTHING, None)
+    dirty = dirty_fill(package, project_root)
+    if dirty:
+        return [NO_SIGNOFF_DIRTY % dirty], EXIT_NOTHING, None
+    no_test = no_test_fill(package)
+    if no_test:
+        return ([NO_SIGNOFF_NO_TEST % (no_test[0], head[:7], no_test[1],
+                                       no_test[2])], EXIT_NOTHING, None)
     failing = failing_fill(package)
     if failing:
         return ([NO_SIGNOFF_FAILING % (failing[0], head[:7], failing[1])],

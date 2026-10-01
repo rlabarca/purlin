@@ -9,8 +9,8 @@
 >   package with it and writes the tag `signed/<version>`; later ones are added beside it.
 > Scope: scripts/mcp/purlin/signatures.py, scripts/review/sign.py
 > Stack: python/stdlib (json, subprocess), git signed commits, SSH keys
-> Highest-Rule: 127
-> Highest-Proof: 243
+> Highest-Rule: 128
+> Highest-Proof: 248
 
 ## Rules
 
@@ -20,7 +20,7 @@
 - RULE-60: The key fingerprint is read from `user.signingkey`, a public key path or a private key path with its `.pub` beside it, and reads as `ssh-keygen -l` prints it; a key that is not an SSH key is no key
 - RULE-89: `signed/<version>` carries an SSH signature made with the key `user.signingkey` names
 - RULE-97: A sign-off's commit counts only when the signature on it verifies over that commit; otherwise it does not count, with the reason `the signature on the commit that added it does not verify`
-- RULE-102: The command refuses, with one line naming the cause and the command to run, nothing written and exit 1, when the working tree holds uncommitted work, evidence is written and not committed, a result was not taken on this version of the code, or a rule does not pass
+- RULE-102: The command refuses, with one line naming the cause and the command to run, nothing written and exit 1, when tracked files are changed and not committed, evidence is written and not committed, a result was not taken on this version of the code, a result was taken while files were changed and not committed, or a rule does not pass
 - RULE-106: The sign-off file records the package's fingerprint as `package_hash`, and under `shown` the overview, the runs, each hand check walked and whether the audit's list was opened, with every note typed, an empty answer recorded as `no note`, and no answer word
 - RULE-108: A sign-off counts only while its `package_hash` equals the fingerprint of the package `HEAD` holds for its version
 - RULE-109: `stop` at any stop, and any answer but yes to the last question, write nothing and exit 0
@@ -36,6 +36,7 @@
 - RULE-125: Every other refusal of the command prints one line naming what is wrong and what to do, writes nothing and exits 1: no version stated or named, the signer already signed this package, or git not making the sign-off commit
 - RULE-126: A hand check's stop shows the rule, each proof with its tag and the tests tied to it, the results on each system with any proof that found nothing to check and its reason, the audit's findings where it found the rule weak, and asks what the person saw
 - RULE-127: The walk opens with one line per run of the counted results, naming who ran it, on which machine, when, on which commit and how many rules, then `Signing <version> at <sha7>.`, then an overview counting per system the rules that pass and the hand checks, and the audit's strong, weak and not audited
+- RULE-128: A rule with no test stops the sign-off, a rule with no proof and no test among them: the command prints one line naming each such rule and `purlin:build`, writes nothing and exits 1
 
 ## Proof
 
@@ -53,6 +54,10 @@
 - PROOF-206 (RULE-102): With results committed at `HEAD` in which `login RULE-2` fails, the walk prints only `No sign-off: 1 rule does not pass at <sha7>: login RULE-2. Run purlin:status to see what is left, then purlin:sign.` and exits 1
 - PROOF-223 (RULE-102): The tests are run and their results written and not committed; the walk prints only `No sign-off: the evidence is written and not committed. Run purlin:test --commit, then purlin:sign.` and exits 1
 - PROOF-226 (RULE-102): `audit`'s Windows results were pulled home before a commit that changed `src/audit.py`, and every other result was taken at `HEAD`; the walk prints only `No sign-off: these results were not taken on this version of the code, <sha7>: audit on Windows. Run purlin:test --remote, then purlin:sign.` and exits 1
+- PROOF-244 (RULE-102): With committed evidence that passes, `src/login.py`, a tracked file, is changed and not committed; the walk prints only `No sign-off: 1 file is changed and not committed. Commit it or set it aside, then run purlin:sign again.` and exits 1
+- PROOF-245 (RULE-102): With committed evidence that passes, `src/login.py` and `tests/test_login.py`, both tracked, are changed and not committed; the walk prints only `No sign-off: 2 files are changed and not committed. Commit them or set them aside, then run purlin:sign again.` and exits 1
+- PROOF-246 (RULE-102): The committed results of `login` on Linux/Unix were taken on `HEAD`'s code while files were changed and not committed, so their section reads `dirty` `true`; the walk prints only `No sign-off: these results were taken while files were changed and not committed: login on Linux/Unix. Run purlin:test --all --commit, then purlin:sign.` and exits 1
+- PROOF-248 (RULE-102): With committed evidence that passes, the project holds `notes.txt`, a file git does not track, and no tracked file is changed; `--show` exits 0 and prints no line beginning `No sign-off`
 - PROOF-214 (RULE-106): With `login RULE-2` a hand check answered `the lockout page read 401` and the audit's list not opened, the sign-off records `package_hash` the package's fingerprint, `login RULE-2` among the hand checks shown, `audit_list_opened` false, that note, and no answer word
 - PROOF-235 (RULE-106): At the hand check `login RULE-2` the walk is given an empty line, then yes; the sign-off records the note `no note` for `login RULE-2`
 - PROOF-217 (RULE-108): The walk signs `2.1.0`, then the committed package's fingerprint is changed and committed; before the change the sign-off counts, and after it the sign-off does not count, with the reason `it signs another evidence package than the one committed`
@@ -83,3 +88,4 @@
 - PROOF-209 (RULE-127): Over evidence committed at `1cf829e`, the walk for `0.1.0` prints `Signing 0.1.0 at 1cf829e.` on the line after the last line naming a run
 - PROOF-227 (RULE-127): `dana.dev@labconnect.example` ran 19 rules' tests on `dana-laptop`, a Linux machine, at 12:17 UTC on 2026-10-01 at `1cf829e`; the walk's first line reads `Tests run by dana.dev@labconnect.example on dana-laptop at 2026-10-01 12:17 UTC on 1cf829e: 19 rules on Linux/Unix.`
 - PROOF-232 (RULE-127): Over 19 rules on Linux/Unix that pass, one a hand check, with 17 audited strong, 1 weak and 1 not audited, the overview prints `  19 rules on Linux/Unix: 19 pass their tests, 1 has a hand check.` and `  The audit: 17 strong, 1 weak, 1 not audited.`
+- PROOF-247 (RULE-128): `login` has a third rule, `RULE-3`, with no proof and no test, beside two rules whose tests pass on committed evidence; the walk prints only `No sign-off: 1 rule has no test at <sha7>: login RULE-3. Run purlin:build login, then purlin:sign.` and exits 1

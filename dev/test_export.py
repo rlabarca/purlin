@@ -318,12 +318,15 @@ class TestTheFile:
 
     # purlin: package PROOF-3
     def test_the_sixteen_top_level_keys_come_in_order(self, project):
-        tests_ran_at = project.head()
+        holds_the_evidence = project.head()
         package = signed_package(project)
         assert list(package) == TOP_LEVEL
         assert package['schema'] == 'purlin-package/4'
         assert package['purlin_version'] == PURLIN_VERSION
-        assert package['commit'] == tests_ran_at
+        # HEAD before the sign-off's own commit, which is HEAD~1 after it.
+        assert package['commit'] == holds_the_evidence
+        assert package['commit'] == git(
+            project.root, 'rev-parse', 'HEAD~1').stdout.strip()
 
     # purlin: package PROOF-30
     def test_a_later_version_names_the_code_not_the_sign_off(self, project):
@@ -413,20 +416,24 @@ class TestMet:
 
     # purlin: package PROOF-5
     def test_a_rule_with_no_proof_is_left_to_write_one_for(self):
-        made = made_project(spec=SPEC_WITH_A_THIRD_RULE, strong=())
+        made = Project(spec=SPEC_WITH_A_THIRD_RULE)
         try:
-            # The run writes the third rule's word beside the two that pass.
-            section(made, [(proof_id, 'RULE-%s' % proof_id[-1], 'pass',
-                            TEST_NAMES[proof_id], None)
-                           for proof_id in ('PROOF-1', 'PROOF-2')],
-                    {'RULE-1': 'passed', 'RULE-2': 'passed',
-                     'RULE-3': 'no test'})
+            # No proof, and one passing test marked with the rule's own id.
+            made.edit_test(TEST_FILE + (
+                '\n\n# purlin: login RULE-3\n'
+                'def test_a_locked_account_returns_423():\n'
+                '    assert True\n'))
+            write(os.path.join(made.root, 'VERSION'), '2.1.0\n')
+            commit_all(made, 'chore: version')
+            passing(made, extra=[('RULE-3', 'RULE-3',
+                                  'test_a_locked_account_returns_423')])
             commit_all(made)
+            key(made.root)
             package = signed_package(made)
             third = rule_of(package, 'RULE-3')
             assert third['text'] == 'A locked account returns 423 (URS-042)'
-            assert (third['proofs'], third['tests']) == ([], [])
-            assert [r['result'] for r in third['results']] == ['no test']
+            assert third['proofs'] == []
+            assert [r['result'] for r in third['results']] == ['passed']
             assert third['left'] == 'no_proof'
             assert package['left'][0] == line(
                 'no_proof', 1, '1 rule to write a proof for', 'purlin:spec')

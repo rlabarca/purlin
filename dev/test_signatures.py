@@ -465,6 +465,69 @@ class TestTheRefusals:
             'No sign-off: the evidence is written and not committed. Run '
             'purlin:test --commit, then purlin:sign.'])
 
+    # purlin: signatures PROOF-244
+    def test_one_tracked_file_changed_and_not_committed_is_refused(
+            self, signed, capsys):
+        write(os.path.join(signed.root, 'src', 'login.py'),
+              'def login(user, password):\n    return 401\n')
+        assert run_main(signed, capsys) == (1, [
+            'No sign-off: 1 file is changed and not committed. Commit it or '
+            'set it aside, then run purlin:sign again.'])
+
+    # purlin: signatures PROOF-245
+    def test_two_tracked_files_changed_and_not_committed_are_counted(
+            self, signed, capsys):
+        write(os.path.join(signed.root, 'src', 'login.py'),
+              'def login(user, password):\n    return 401\n')
+        write(os.path.join(signed.root, 'tests', 'test_login.py'),
+              TEST_FILE + '\n# a line not committed\n')
+        assert run_main(signed, capsys) == (1, [
+            'No sign-off: 2 files are changed and not committed. Commit them '
+            'or set them aside, then run purlin:sign again.'])
+
+    # purlin: signatures PROOF-246
+    def test_results_taken_over_files_not_committed_are_refused(self, capsys):
+        made = ready()
+        try:
+            rel = '.purlin/evidence/local/login.json'
+            data = read_json(made.root, rel)
+            assert data['platforms']['linux']['commit'] == git(
+                made.root, 'rev-parse', 'HEAD~1').stdout.strip()
+            data['platforms']['linux']['dirty'] = True
+            write(os.path.join(made.root, *rel.split('/')),
+                  json.dumps(data, indent=2, sort_keys=True))
+            commit_all(made)
+            assert run_main(made, capsys) == (1, [
+                'No sign-off: these results were taken while files were '
+                'changed and not committed: login on Linux/Unix. Run '
+                'purlin:test --all --commit, then purlin:sign.'])
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-248
+    def test_a_file_git_does_not_track_stops_nothing(self, signed, capsys):
+        write(os.path.join(signed.root, 'notes.txt'), 'not tracked\n')
+        assert status(signed.root) == '?? notes.txt\n'
+        code, lines = run_main(signed, capsys, ['--show'])
+        assert code == 0, lines
+        assert not [line for line in lines
+                    if line.startswith('No sign-off')], lines
+
+    # purlin: signatures PROOF-247
+    def test_a_rule_with_no_proof_and_no_test_is_named_with_purlin_build(
+            self, capsys):
+        made = ready(spec=SPEC.replace(
+            '\n\n## Proof',
+            '\n- RULE-3: A locked account returns 423\n\n## Proof'))
+        try:
+            third = made.rule('RULE-3')
+            assert (third['proofs'], third['tests']) == ([], [])
+            assert run_main(made, capsys) == (1, [
+                'No sign-off: 1 rule has no test at %s: login RULE-3. Run '
+                'purlin:build login, then purlin:sign.' % made.head()[:7]])
+        finally:
+            made.close()
+
     # purlin: signatures PROOF-226
     def test_results_taken_before_a_code_change_are_named(self, capsys):
         made = ready()

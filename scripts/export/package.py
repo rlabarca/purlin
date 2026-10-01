@@ -656,6 +656,12 @@ def off_code(package, project_root):
                 names = found.setdefault(key, [])
                 if feature['name'] not in names:
                     names.append(feature['name'])
+    return _by_system(found)
+
+
+def _by_system(found):
+    """`{(os, source): [features]}` as `[(system words, source, [features])]`,
+    by system in the order a person reads them, a person's run first."""
     order = {name: index for index, name in
              enumerate(states_module.SYSTEM_ORDER)}
     return [(evidence_module.os_word(os_name), source, sorted(names))
@@ -664,6 +670,29 @@ def off_code(package, project_root):
                     order.get(item[0][0], 9), item[0][0],
                     evidence_module.SOURCES.index(item[0][1])
                     if item[0][1] in evidence_module.SOURCES else 9))]
+
+
+def taken_dirty(package, project_root):
+    """[(system words, source, [features])]: the committed results taken while
+    the working tree held changes that were not committed, in `off_code`'s
+    shape and order. A section says so itself, under `dirty`."""
+    found = {}
+    for feature in package.get('features') or ():
+        name = feature['name']
+        loaded = evidence_module.load(project_root, name)
+        for entry in evidence_module.sections(loaded):
+            if entry['section'].get('dirty') is not True:
+                continue
+            if not any(_speaks(entry['section'], rule.get('id'),
+                               {proof.get('id') for proof
+                                in rule.get('proofs') or ()}
+                               or {rule.get('id')})
+                       for rule in feature.get('rules') or ()):
+                continue
+            names = found.setdefault((entry['os'], entry['source']), [])
+            if name not in names:
+                names.append(name)
+    return _by_system(found)
 
 
 # ---------------------------------------------------------------------------
