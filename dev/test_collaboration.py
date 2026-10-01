@@ -619,15 +619,6 @@ def test_three_people_reach_a_signed_version(tmp_path):
     pat.git('push', 'origin', 'main')
 
     # 10. The end, read in a fresh clone.
-    #     No command failed but the ones planned, each named here.
-    unexpected = [entry for entry in team.codes if entry[2] != entry[3]]
-    assert unexpected == []
-    assert [entry[:2] for entry in team.codes if entry[2] != 0] == [
-        ('dana', 'purlin:test '),
-        ('quinn', 'purlin:sign --answers ' + answers),
-        ('pat', 'purlin:sign --answers ' + answers),
-        ('pat', 'purlin:sign --answers ' + answers)]
-
     check = team.person('reader')
     fresh = check.root
 
@@ -713,3 +704,13 @@ def test_three_people_reach_a_signed_version(tmp_path):
                           'sample_age RULE-3', 'stability RULE-1',
                           'stability RULE-2', 'stability RULE-3',
                           'stability RULE-4']
+
+    #     No command failed but the ones planned, each named here: the first
+    #     test run with no test command set, the two sign-offs asked for with
+    #     no key, and Pat's before the pull.
+    assert [entry for entry in team.codes if entry[2] != entry[3]] == []
+    assert [entry[:2] for entry in team.codes if entry[2] != 0] == [
+        ('dana', 'purlin:test '),
+        ('quinn', 'purlin:sign --answers ' + answers),
+        ('pat', 'purlin:sign --answers ' + answers),
+        ('pat', 'purlin:sign --answers ' + answers)]
