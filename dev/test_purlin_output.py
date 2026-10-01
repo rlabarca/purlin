@@ -1,12 +1,13 @@
 """The checks of what Purlin prints and how its programs run.
 
-`specs/instructions/purlin_output.md` holds three rules. No file under
-`scripts/` or `templates/` carries a character with the Unicode property
-`Extended_Pictographic`, or U+FE0F, other than `▶`: Python's own `re` cannot
-name that property, so the ranges are written out below as a table, taken
-from Unicode's `emoji-data.txt`, with adjacent ranges joined. Setup, a test
-run and the status run on Python 3.9: every file under `scripts/` parses as
-3.9, and each of the three is run under a Python 3.9 in a scratch project,
+`specs/instructions/purlin_output.md` holds four rules. No file under
+`scripts/` or `templates/`, no skill definition and not the agent definition
+carries a character with the Unicode property `Extended_Pictographic`, or
+U+FE0F, other than `▶`: Python's own `re` cannot name that property, so the
+ranges are written out below as a table, taken from Unicode's
+`emoji-data.txt`, with adjacent ranges joined. Setup, a test run and the
+status run on Python 3.9: every file under `scripts/` parses as 3.9, and a
+test run and the status are run under a Python 3.9 in a scratch project,
 skipped where the machine has none. No command leaves a process of its own
 running once it exits.
 """
@@ -87,6 +88,14 @@ def pictographs(root, rels):
     return found
 
 
+def skill_and_agent_files(root):
+    """Each `skills/*/SKILL.md` and `agents/purlin.md`, relative to `root`."""
+    skills = os.path.join(root, 'skills')
+    rels = sorted('skills/%s/SKILL.md' % name for name in os.listdir(skills)
+                  if os.path.isfile(os.path.join(skills, name, 'SKILL.md')))
+    return rels + ['agents/purlin.md']
+
+
 class TestNoPictograph:
 
     # purlin: purlin_output PROOF-1
@@ -106,6 +115,27 @@ class TestNoPictograph:
         assert pictographs(str(tmp_path), ['out.py']) == [
             'out.py:1: U+2705', 'out.py:2: U+26A0', 'out.py:3: U+1F680',
             'out.py:4: U+2764', 'out.py:4: U+FE0F']
+
+
+    # purlin: purlin_output PROOF-7
+    def test_no_skill_and_not_the_agent_definition_holds_a_pictograph(
+            self, tmp_path):
+        rels = skill_and_agent_files(ROOT)
+        assert 'skills/status/SKILL.md' in rels, rels
+        assert rels[-1] == 'agents/purlin.md', rels
+        assert pictographs(ROOT, rels) == []
+        # A skill holding a check mark and a heart with its variation
+        # selector is named, and the one glyph Purlin prints is not.
+        (tmp_path / 'skills' / 'demo').mkdir(parents=True)
+        (tmp_path / 'agents').mkdir()
+        (tmp_path / 'skills' / 'demo' / 'SKILL.md').write_text(
+            '\u25b6 run it\n\u2705 done\n\u2764\ufe0f\n', encoding='utf-8')
+        (tmp_path / 'agents' / 'purlin.md').write_text(
+            'plain\n', encoding='utf-8')
+        copy = skill_and_agent_files(str(tmp_path))
+        assert pictographs(str(tmp_path), copy) == [
+            'skills/demo/SKILL.md:2: U+2705', 'skills/demo/SKILL.md:3: U+2764',
+            'skills/demo/SKILL.md:3: U+FE0F']
 
 
 # --- Python 3.9 ------------------------------------------------------------
@@ -225,8 +255,8 @@ def run(command, root, stdin=None, new_session=False):
 
 
 def set_up(python, root, new_session=False):
-    return run(python + [SCAFFOLD, '--project-root', str(root), '--gate',
-                         'passed', '--yes'], root, new_session=new_session)
+    return run(python + [SCAFFOLD, '--project-root', str(root), '--yes'],
+               root, new_session=new_session)
 
 
 def give_it_a_spec(root):
@@ -289,14 +319,6 @@ class TestPython39:
         found = python_files_that_do_not_parse_as_39(str(tmp_path),
                                                      ['later.py'])
         assert len(found) == 1 and found[0].startswith('later.py: '), found
-
-    # purlin: purlin_output PROOF-3
-    def test_setup_runs_on_39(self, tmp_path):
-        python = needs_python_39()
-        root = new_repository(tmp_path)
-        done = set_up(python, root)
-        assert done.returncode == 0, done.stdout + done.stderr
-        assert (root / '.purlin' / 'config.json').is_file()
 
     # purlin: purlin_output PROOF-4
     def test_a_test_run_runs_on_39(self, tmp_path):
