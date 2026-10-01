@@ -1059,6 +1059,8 @@ code is covered, though not by this proof's test.
 
 The plan is written to (a): C17's "the proof's own test runs".
 
+**Answered by the owner, 2026-10-01: Q2 (a), only the proof's own test counts when a break is caught; the call on authorship is reversed: the package names the first person to write a rule's or proof's wording, followed through renumbers.**
+
 ## 8. Calls this plan makes
 
 - `references/hard_gates.md` is renamed `references/evidence_and_signoff.md`: its name carried
