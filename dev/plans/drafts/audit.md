@@ -22,9 +22,9 @@ For each rule, the audit takes three steps, cheapest first.
    - mocks the very thing the rule is about;
    - does not hold the concrete value its proof names. A proof that reads "a sample collected at
      08:00 and received at 09:30 has an age of `90` minutes" expects a test that holds `90`.
-2. **One targeted break per proof.** For each proof whose test or covered code changed since the
-   audit last read it, a model makes the smallest change to the code that would make the proof
-   untrue, for example an age off by one hour. The proof's own test runs against that change, in a
+2. **One planted bug per proof.** For each proof whose test or covered code changed since the
+   audit last read it, a model plants one small bug in the code that makes the proof's claim
+   false, for example an age off by one hour. The proof's own test runs against that change, in a
    temporary copy of the project, and the copy is thrown away. If the test still passes, the rule
    is weak, and the change is the evidence: `with the age off by an hour, the test still passed`.
 3. **An explanation.** The model says in one sentence why a weak test is weak, so the person fixing
@@ -56,16 +56,16 @@ signer can read it at sign-off.
 
 - **Coverage is a poor guide.** Whether a test runs a line says little about whether it would catch
   a bug in it ([Inozemtseva and Holmes, ICSE 2014](https://cs.ubc.ca/~rtholmes/papers/icse_2014_inozemtseva.pdf)).
-- **Breaking the code on purpose is the best objective guide.** Whether tests catch small, deliberate
+- **Planting bugs on purpose is the best objective guide.** Whether tests catch small, deliberate
   faults correlates with whether they catch real ones, independently of coverage ([Just et al.,
   FSE 2014](https://homes.cs.washington.edu/~mernst/pubs/mutation-effectiveness-fse2014.pdf)).
-- **At scale, breaking everything is too slow, so the practice is targeted.** Google breaks only the
-  lines a change touches, filters out uninteresting ones, and shows a few surviving breaks in code
+- **At scale, planting bugs everywhere is too slow, so the practice is targeted.** Google plants them only
+  in the lines a change touches, filters out uninteresting ones, and shows the few the tests missed in code
   review, where developers act on them ([Petrović et al., TSE 2021](https://arxiv.org/pdf/2102.11378)).
-- **A model can write the break.** Meta's ACH has a model write a few faults aimed at one concern,
+- **A model can write the bug.** Meta's ACH has a model write a few faults aimed at one concern,
   then tests that catch them; engineers accepted 73% of those tests ([Foster et al., FSE 2025](https://arxiv.org/pdf/2501.12862)). Model-written
   faults also resemble real bugs more than tool-made ones ([Tip et al., LLMorpheus](https://arxiv.org/pdf/2404.09952)).
-- **The crudest break finds a lot.** Tests that still pass when a method's body is removed are common
+- **The crudest bug finds a lot.** Tests that still pass when a method's body is removed are common
   even in well-tested projects ([Vera-Pérez et al.](https://arxiv.org/pdf/1807.05030)).
 - **Tests written by an AI check what the code does, not what was asked.** Their expected values
   tend to capture the program's actual behaviour rather than its intended behaviour, so a bug is
@@ -78,7 +78,7 @@ signer can read it at sign-off.
 - **AI-written tests need an executed check, not trust.** At Meta, only 25% of model-generated tests
   improved coverage; the tool works because every test must clear filters that measure an
   improvement before anyone sees it ([Alshahwan et al., FSE 2024](https://arxiv.org/pdf/2402.09171)). Measured, not judged, is the
-  principle the targeted break follows.
+  principle the planted bug follows.
 - **A model's opinion alone is the weakest evidence.** Models are better at writing a test's check
   than at judging someone else's ([Konstantinou et al., 2024](https://arxiv.org/pdf/2410.21136)), and model judges show bias and
   inconsistency ([a large-scale evaluation of model judges, 2026](https://arxiv.org/pdf/2606.19544)).
@@ -91,22 +91,22 @@ There are three common ways to judge tests, and each sits at a different point:
 |---|---|---|
 | A model reads the test | Fast, one call per rule | An opinion; misses what it does not notice |
 | Classic mutation testing | Slow, minutes to hours; a tool per language | Objective, across all the code |
-| Plain checks and one targeted break per proof | One call and one test run per changed proof | Objective where it matters: the proof the requirement states |
+| Plain checks and one planted bug per proof | One call and one test run per changed proof | Objective where it matters: the proof the requirement states |
 
 Purlin takes the third.
 
-- **It is safe where the requirement is.** The break is aimed at the proof: the one claim a person
-  wrote down. A caught break shows the test guards that claim.
-- **It is fast enough to run often.** Only proofs whose test or code changed are broken, one break
+- **It is safe where the requirement is.** The bug is aimed at the proof: the one claim a person
+  wrote down. A caught bug shows the test guards that claim.
+- **It is fast enough to run often.** Only proofs whose test or code changed get a bug, one
   each, and the plain checks cost nothing.
 - **It needs nothing installed.** No mutation tool per language. Any language Purlin's runner can run
   works.
-- **It never changes your code.** Every break runs in a temporary copy that is thrown away, and the
+- **It never changes your code.** Every planted bug runs in a temporary copy that is thrown away, and the
   audit checks the project is unchanged afterwards.
 - **It catches the AI's typical mistakes.** The plain checks and the proof's value catch tautological
-  tests, and the break catches the test that asserts something but not the thing that matters.
+  tests, and the planted bug catches the test that asserts something but not the thing that matters.
 
-What it does not do: prove your tests catch every bug. One break per proof tests the claim the proof
+What it does not do: prove your tests catch every bug. One planted bug per proof tests the claim the proof
 makes, not every way the code could be wrong. A rule with no proof is not broken at all. The audit
 is evidence that tests guard what was asked, not proof that the code is correct.
 

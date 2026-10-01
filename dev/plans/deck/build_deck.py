@@ -51,7 +51,7 @@ def slide(sid, eyebrow, headline, rows, closing, notes, lead='', width=620, gap=
 os.makedirs(os.path.join(ROOT, 'slides'), exist_ok=True)
 slide('why', 'What Purlin is for', 'Why use Purlin?', [
     ('Tests pass. Do they cover what was asked?', 'You write each requirement as a rule. Purlin ties every rule to the tests that show it, and calls out every rule that doesn\'t have a test.'),
-    ('AI writes code &amp; tests fast. Are they any good?', 'The audit breaks the code the way each proof forbids and checks that the test notices.'),
+    ('AI writes code &amp; tests fast. Are they any good?', 'The audit plants a small bug for each proof and checks that the test catches it.'),
     ('Something changed. Is the result still true?', 'A result stops counting when the rule, the test or the code changes, until the tests are run again.'),
     ('Someone has to sign it off.', 'When everyone is done, a person signs the evidence once and the version gets a signed tag. The evidence package is one file you hand over.'),
 ], '',
@@ -102,23 +102,21 @@ slide('together', 'Working together', 'Product, QA and developers improve the sp
  'same rule or proof number, the number already on the default branch keeps it, and the helper '
  'shows its renumbering plan before changing anything. A test comment whose proof was reworded '
  'since the test last changed is named on every run.', width=560, pad=16)
-slide('audit', 'Are the tests any good?', 'The audit breaks the code the way each proof forbids', [
-    ('Plain checks', 'Code reads every test: no assertion, a check that cannot fail, an expected value from the code itself, the proof\'s value missing.'),
-    ('One targeted break', 'For each changed proof an AI makes the smallest change that breaks it, in a throwaway copy, and runs its test. Still passing means weak.'),
-    ('An explanation', 'One sentence on what the weak test misses, so the fix is plain.'),
-    ('`purlin:audit`', 'Run it when you choose. It ends on %s; ask the agent to iterate until 80%% are strong.' % m('42 of 50 rules strong (84%)')),
-], '<b>Safe where it matters, fast enough to run often:</b> one break per changed proof, nothing to install.',
- 'Why this design. Coverage says little about whether tests catch bugs (Inozemtseva and Holmes, '
- 'ICSE 2014). Deliberately broken code is the best objective guide (Just et al., FSE 2014), but '
- 'breaking everything is slow, so Google breaks only changed lines (Petrovic et al.) and Meta has a '
- 'model write a few targeted breaks (ACH, FSE 2025). A model judging a test on its own is the weakest '
- 'evidence, and AI-written tests are often tautological. Purlin aims one break at each proof, the '
- 'claim a person wrote down: objective where the requirement is, cheap because only changed proofs '
- 'are broken. It does not show the tests catch every bug. The full reasoning and sources are on the '
- 'audit page of the docs, with Siddiq et al. (EASE 2024) on the smells of model-written tests and '
- 'Alshahwan et al. (FSE 2024) on why Meta lets no generated test through without a measured check.',
- lead='AI-written tests tend to check what the code does, not what was asked (<a href="https://arxiv.org/pdf/2410.21136" style="color:#E6BEB0">Konstantinou et al., 2024</a>). '
-      'Breaking the code on purpose is the strongest test of a test (<a href="https://homes.cs.washington.edu/~mernst/pubs/mutation-effectiveness-fse2014.pdf" style="color:#E6BEB0">Just et al., FSE 2014</a>).', width=420, pad=16)
+slide('audit', 'Are the tests any good?', 'The audit: would your tests catch a bug?', [
+    ('Spot tests that can\'t fail', 'Code reads each test: no check at all, an expected value copied from the code, or the number the proof names missing.'),
+    ('Plant one bug', 'For each proof, an AI puts one small bug in a throwaway copy of your code, such as a sample age off by one hour.'),
+    ('Run that proof\'s test', 'The test fails: the rule is %s. The test still passes: the rule is %s, and you see the bug it missed.' % (m('strong'), m('weak'))),
+    ('`purlin:audit`', 'Run it whenever you like. It ends on the share of rules found strong, such as %s.' % m('84%')),
+], 'Why: AI-written tests often check what the code does, not what was asked (<a href="https://arxiv.org/pdf/2410.21136" style="color:#E6BEB0">Konstantinou et al., 2024</a>), and planting bugs is the most reliable test of a test (<a href="https://homes.cs.washington.edu/~mernst/pubs/mutation-effectiveness-fse2014.pdf" style="color:#E6BEB0">Just et al., FSE 2014</a>).',
+ 'A passing test only shows the code did what the test checked. The audit asks the harder '
+ 'question: if the code were wrong, would the test notice? It plants one small bug per proof, aimed '
+ 'at the exact claim the proof makes, in a copy of the project that is thrown away, and runs only '
+ 'that proof\'s test. Your code is never changed. Only proofs whose test or code changed since the '
+ 'last audit are tried again, so it stays fast, and nothing waits on it. Google plants bugs only in '
+ 'changed code (Petrovic et al., TSE 2021) and Meta has a model write a few targeted ones (Foster '
+ 'et al., FSE 2025); Purlin follows both. The full reasoning and sources are on the audit page of '
+ 'the docs.',
+ lead='A passing test is not proof that it checks anything. The audit tries to make each test fail.', width=560, pad=16)
 slide('signoff', 'The sign-off', 'When everyone is done, a person signs the evidence once', [
     ('Run and commit', 'A developer runs every test on the version to sign, the remote run for Windows included, and commits the results.'),
     ('`purlin:sign`', 'Opens with who ran the tests, where and when. Stops at each hand check, shows what the audit found, and asks for one signature.', [
