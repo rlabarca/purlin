@@ -2,14 +2,14 @@
   "feature": "planted_bug",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T20:58:49Z",
-      "commit": "006b64b5152305328a4faddc904b61418162d6b4",
+      "at": "2026-10-01T22:23:55Z",
+      "commit": "e79e00d5cc5cfb37c5bb91842c42c7107c11e07c",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "03d290102abe62466c86e2d22f69b48ad79c4b24fba5c836a76e4ff80cc15dcf",
-        "spec": "2e641429a14008ac88a2e907ecbd6c91c8d9ff9a9dabd908a5a9a52b74fc6b4c",
-        "tests": "cee064358dac1243e95c797d246799678e7642f9081e6a9f1216ea619f369c43"
+        "code": "4777a8870ab774dbdc1f8cce113e64b0762a58ce8013da4cff38e37e381c0c1c",
+        "spec": "66e69cd34220ab6cf4a1089fd4ca76d08d1f14d4902be789314edfb6fb63c6e3",
+        "tests": "65c77dc4a35895513a62e317f579e103976f5b9f5c99a9ffc4a6e397e0fde255"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [

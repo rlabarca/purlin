@@ -2,14 +2,14 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T20:58:49Z",
-      "commit": "006b64b5152305328a4faddc904b61418162d6b4",
+      "at": "2026-10-01T22:23:56Z",
+      "commit": "e79e00d5cc5cfb37c5bb91842c42c7107c11e07c",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "5f884a976d0dedda3ea3cdf31179abf03e9fb178c92743772cae51d14a8cc3ee",
-        "spec": "e7f6c69f77b55de3b250c511b9abcf133d15e8557e32396b23d0563ce8a69e19",
-        "tests": "9ad31fbc003fde8184268864674d16e1dd9bece194cee8ad865dad3887b9e2ba"
+        "code": "6923bd1dce7f17a88318d307c008afe608b9df59f0bcf16cbb31e10dedd22251",
+        "spec": "a205fc7f7231022ccd0ae2b67610e80bd865b9db005959243659e05b33437168",
+        "tests": "25e71457a3278a2d9806b3f9eb40c4eb0467dedb72c20a92e8fae779f506fe62"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -499,7 +499,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-75",
-          "test": "dev/test_purlin_report.py::test_neutral_text_measures_7_to_1_in_the_dark_theme"
+          "test": "dev/test_purlin_report.py::test_every_text_measures_7_to_1_in_the_dark_theme"
         },
         {
           "env": null,

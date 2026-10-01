@@ -2,14 +2,14 @@
   "feature": "signatures",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T20:58:49Z",
-      "commit": "006b64b5152305328a4faddc904b61418162d6b4",
+      "at": "2026-10-01T22:23:56Z",
+      "commit": "e79e00d5cc5cfb37c5bb91842c42c7107c11e07c",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "5209cd577abe80a9c6bf6a55b767285da31355fe1e10395364b9519501955773",
-        "spec": "13512c16045bd2895c25faf8f625259e7863097f7adc469b8465ae7f3d21146f",
-        "tests": "c6029f9902f932d423f926588e85867ebd4e2cc7c79b2e42b1f8694741f944a3"
+        "code": "5761ce0c374962a2596ccc0ddfd73ab4696c9e3b6d6847ae6b18317c3832fb22",
+        "spec": "b1a77ef5699a15ad0fc7a915cb3ce0000a3a2dd50e6885d6a247e7180a1ae55f",
+        "tests": "9093de32e548c8f08052a4045689480a3e71afea80ccc17c46b779820caf1568"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -404,6 +404,30 @@
           "result": "pass",
           "rule": "RULE-128",
           "test": "dev/test_signatures.py::TestTheRefusals::test_a_rule_with_no_proof_and_no_test_is_named_with_purlin_build"
+        },
+        {
+          "env": null,
+          "id": "PROOF-249",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-129",
+          "test": "dev/test_signatures.py::TestTheLastNote::test_a_second_signer_sees_the_note_at_this_commit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-250",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-129",
+          "test": "dev/test_signatures.py::TestTheLastNote::test_four_commits_later_the_note_says_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-251",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-129",
+          "test": "dev/test_signatures.py::TestTheLastNote::test_before_any_sign_off_the_stop_ends_on_its_results"
         }
       ],
       "rules": {
@@ -424,6 +448,7 @@
         "RULE-126": "passed",
         "RULE-127": "passed",
         "RULE-128": "passed",
+        "RULE-129": "passed",
         "RULE-17": "passed",
         "RULE-20": "passed",
         "RULE-50": "passed",

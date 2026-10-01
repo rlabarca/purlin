@@ -2,14 +2,14 @@
   "feature": "states",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T20:58:50Z",
-      "commit": "006b64b5152305328a4faddc904b61418162d6b4",
+      "at": "2026-10-01T22:23:56Z",
+      "commit": "e79e00d5cc5cfb37c5bb91842c42c7107c11e07c",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "01f7960ebf2367da1e3c9d6025206ef2f05ab91357ec07ca9720e735682c2b63",
-        "spec": "1aee035ab311f5a99fbbe6dfce74291eb9337b20dab7ba5d1761aa7aa0fc90b0",
-        "tests": "c1ee0cf9d52b7ef5c9a684d770b8140e82954625471883c8555f4d6b29af04db"
+        "code": "7980001d0267b657d022944ea1c41e3b556924fb268e16b40715c247b1a00bba",
+        "spec": "bffe4f91e6619bfd79272fcc6870fa95c9f097f492f5be4066edf48ccead772b",
+        "tests": "4be089c39c011b03dfbae979eb16ca515aef68f163dff8a610a9a458dfaa5f23"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -291,7 +291,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-27",
-          "test": "dev/test_states.py::TestPayload::test_schema_fourteen_carries_exactly_the_eighteen_keys"
+          "test": "dev/test_states.py::TestPayload::test_schema_fourteen_carries_exactly_the_seventeen_keys"
         },
         {
           "env": null,
