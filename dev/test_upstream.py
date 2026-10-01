@@ -699,3 +699,41 @@ def test_the_status_names_a_pin_behind_its_source_and_leaves_the_copy_as_it_was(
     assert line in lines, '\n'.join(lines)
     with open(path, 'rb') as handle:
         assert handle.read() == before
+
+
+def _private_notes(workspace):
+    """A spec in Purlin's format in the folder around the project: no file of
+    the source. Its path."""
+    path = os.path.join(os.path.dirname(workspace.root), 'private_notes.md')
+    _write(path, ANCHOR_V1.replace('No eval() in source files',
+                                   'Kept outside the source'))
+    return path
+
+
+# purlin: upstream PROOF-63
+def test_a_path_that_leads_out_of_the_source_is_refused(workspace):
+    _private_notes(workspace)
+    path = '../../../../../private_notes.md'
+    fetched = os.path.join(workspace.root, '.purlin', 'runtime', 'anchors',
+                           'x.src')
+    assert os.path.normpath(os.path.join(fetched, path)) == os.path.join(
+        os.path.dirname(workspace.root), 'private_notes.md')
+    code, out = _cli(workspace, ['add', workspace.anchor_repo, '--path', path,
+                                 '--json'])
+    answer = json.loads(out)
+    assert (code, answer['status']) == (2, 'error'), answer
+    assert _anchors_held(workspace) == []
+
+
+# purlin: upstream PROOF-64
+def test_an_absolute_path_is_refused(workspace):
+    path = _private_notes(workspace)
+    code, out = _cli(workspace, ['add', workspace.anchor_repo, '--path', path,
+                                 '--json'])
+    answer = json.loads(out)
+    assert (code, answer['status']) == (2, 'error'), answer
+    assert answer['error'] == (
+        'not added. --path takes a path inside the source, with no .. and no '
+        'leading /. Run purlin:anchor add <source> --path <path> --name '
+        'private_notes.')
+    assert _anchors_held(workspace) == []

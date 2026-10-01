@@ -23,7 +23,8 @@ Every command takes `--project-root DIR`; without it the root is the one
 copy. The file is a spec in Purlin's format kept in a git repository: `add`
 refuses a file on disk, a description in words or a file that holds no rule,
 and writes nothing. It also refuses a `--name` that is not letters, digits and
-`_`, and a name an anchor in the project already holds.
+`_`, a name an anchor in the project already holds, and a `--path` that is
+absolute or holds `..`: only a file of the source is read.
 
 `sync` names the rules that changed and advances the pin, fetching each distinct
 source once per run. `--check` changes nothing and exits 1 when a pin is behind,
@@ -144,12 +145,23 @@ def fetch_source(project_root, url, cache=None):
     return target, head, ''
 
 
+def leads_out(path):
+    """True for a path into a source that is absolute or holds `..`."""
+    path = (path or '').replace('\\', '/')
+    return (path.startswith('/') or bool(re.match(r'[A-Za-z]:', path))
+            or '..' in path.split('/'))
+
+
 def read_source_file(checkout_dir, path):
     """`(text, error)` for one file in a fetched checkout, at its head."""
     if not path:
         return None, 'no path into the source; pass --path'
-    full = os.path.join(checkout_dir, path)
-    if not os.path.isfile(full):
+    # Only a file of the source is read: a path that leaves the checkout, by
+    # `..`, by a leading `/` or by a link, names none.
+    root = os.path.realpath(checkout_dir)
+    full = os.path.realpath(os.path.join(root, path))
+    if (leads_out(path) or not full.startswith(root + os.sep)
+            or not os.path.isfile(full)):
         return None, '%s is not in the source' % path
     with open(full, 'r', encoding='utf-8') as handle:
         return handle.read(), ''
@@ -271,6 +283,11 @@ NAME_REFUSED = ('not added. --name takes letters, digits and _ alone. Run '
 NAME_TAKEN = ('not added. %s already holds an anchor of that name. Run '
               'purlin:anchor sync %s to update it, or add it under another '
               '--name.')
+# The refusal of a path that is absolute or holds `..`: it would be read from
+# outside the fetched source. The anchor's name.
+PATH_REFUSED = ('not added. --path takes a path inside the source, with no .. '
+                'and no leading /. Run purlin:anchor add <source> --path '
+                '<path> --name %s.')
 _NAME_RE = re.compile(r'[A-Za-z0-9_]+')
 
 
@@ -298,6 +315,9 @@ def add(project_root, source, path=None, name=None):
         result.update({'status': 'error',
                        'error': NAME_TAKEN % ('specs/_anchors/%s.md' % name,
                                               name)})
+        return result
+    if leads_out(path):
+        result.update({'status': 'error', 'error': PATH_REFUSED % name})
         return result
     safe, reason = drift_module.source_url_is_safe(source)
     if not safe:

@@ -56,7 +56,8 @@ brought in this way is a remote anchor: its copy is pinned to one version of its
 
 The copy takes its name from the file. `--name <name>` gives it another, in letters, digits and
 `_`. A name an anchor in the project already holds is refused, with nothing written, and the
-refusal names `purlin:anchor sync <name>`.
+refusal names `purlin:anchor sync <name>`. `--path` names a file inside the source: a path that
+is absolute or holds `..` is refused.
 
 ```markdown
 > Source: https://github.com/acme/policies.git specs/no_eval.md

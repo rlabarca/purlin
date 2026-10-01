@@ -10,8 +10,8 @@
 >   Purlin's format kept in a git repository.
 > Scope: scripts/anchor/upstream.py
 > Stack: python/stdlib, git plumbing over subprocess, no third-party package
-> Highest-Rule: 40
-> Highest-Proof: 62
+> Highest-Rule: 41
+> Highest-Proof: 64
 
 ## Rules
 
@@ -32,6 +32,7 @@
 - RULE-25: `sync --check`, `sync <name>` and `sync` with no name report an anchor whose `> Source:` names no repository as `error` with the line `<name>: its source, <source>, is not a spec in Purlin's format kept in a git repository, so it cannot be checked. Run purlin:spec <name> to take out its > Source: and > Pinned: lines and keep it as this project's own anchor.`, start no process for it, write nothing and exit 2
 - RULE-36: The check the status and drift make of a remote anchor reads its source's head and pulls nothing: the anchor copy is left byte for byte as it was, whether its pin is current or behind
 - RULE-40: `add` refuses a name an anchor in the project already holds, writes nothing and names `purlin:anchor sync <name>`
+- RULE-41: `add` and `sync` read no file outside the fetched source: `add` refuses a `--path` that is absolute or holds `..` before anything is fetched, and a path that leads out of the source by a link reads as not in the source
 
 ## Proof
 
@@ -66,3 +67,5 @@
 - PROOF-60 (RULE-36): The anchor `no_eval` is pinned, a new version of it is published, and the status is read; it prints `no_eval: the pin <first sha7> is behind its source, now <new sha7>. Run purlin:anchor sync no_eval.`, and `specs/_anchors/no_eval.md` is byte for byte as it was
 - PROOF-61 (RULE-22): The published anchor is added with `--name ../../outside`; it exits 2, the answer reads `error`, `specs/_anchors/` stays empty and no `outside.md` exists under the folder around the project
 - PROOF-62 (RULE-40): With `specs/_anchors/no_eval.md` holding the project's own rule `No eval in scripts`, the published anchor is added as `no_eval`; it exits 2, the answer reads `error`, and the file holds exactly its text from before
+- PROOF-63 (RULE-41): The folder around the project holds `private_notes.md`, a spec in Purlin's format, and the published anchor is added with `--path ../../../../../private_notes.md`, which names that file from the fetched source; it exits 2, the answer reads `error`, and `specs/_anchors/` stays empty
+- PROOF-64 (RULE-41): The published anchor is added with `--path` naming `private_notes.md` by its absolute path; it exits 2, the answer's error reads `not added. --path takes a path inside the source, with no .. and no leading /. Run purlin:anchor add <source> --path <path> --name private_notes.`, and `specs/_anchors/` stays empty
