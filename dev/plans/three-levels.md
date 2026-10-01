@@ -1213,6 +1213,33 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **The run with real AI sessions stays a sanity check the owner runs on demand**, as decision
       94 placed it; it is not a proof.
     - Planned after the second QA and product check reports, so its findings shape the scenario.
+105. **The answers to the second QA and product check** (added 2026-10-01), to
+    `sanity-qa-product-2.md`, a cloud run in which product, QA and dev reached a signed release.
+    - **The signer signs the run they are shown.** The developer runs `purlin:test --release` on
+      the release branch. That run writes fresh results for every rule at the release commit and
+      keeps nothing from earlier runs; the package records the run: who ran it (their git
+      identity), on which machine, when, on which commit, and every result. The sign-off walk opens
+      by naming it, as in `Tests run by dana.dev@labconnect.example on dana-laptop at 12:17 on
+      1cf829e: 19 rules, all passed.`, and refuses when the branch has moved past that run or a
+      result is not the release run's, asking for the release run again. The one signature covers
+      the package and so that run.
+    - **A test comment whose proof's wording changed since the test was last changed is caught by
+      the status and every test run**, under `Left to do` as test comments to correct with
+      `purlin:build`, and clears once the test itself changes; `purlin:build` checks that each
+      marked test still shows its proof before it adds a comment.
+    - **The audit keeps a rule's result until that rule's own test changes**, not the whole file.
+    - **`.purlin/tests.md` is rendered on every run and never conflicts:** setup writes a git
+      attribute that keeps one side on a merge.
+    - **Fixed without a question:** a weak test under a rule with a hand check is shown and counted
+      as weak, and its finding appears at the hand-check stop (N1); the first sign-off tells the
+      signer to push the branch and the tag, and a later sign-off is refused until it holds the
+      tagged commit (N2); the package's project name comes from the project's own files, and
+      setup writes it (N5); the release run tells the developer to push the branch for the signer
+      (N6); drift's wording line clears once the test changed (N9) and calls a number written twice
+      a collision, not a change (N10); `purlin:sign --show` needs no key (N11); and N12's smaller
+      items.
+    - **Decision 104's scripted three-person test is built in the same round**, with these two
+      cases in it: a test left on a moved proof, and a second signer. This round runs locally.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
