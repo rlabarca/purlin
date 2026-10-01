@@ -20,7 +20,8 @@ NOTES = ('run the setup script first', 'the pin moves on each release')
 
 
 # purlin: upstream PROOF-23
-def test_a_sync_keeps_the_notes(workspace):  # noqa: F811
+def test_a_sync_after_a_new_version_keeps_both_notes_once_and_in_order(  # noqa: F811
+        workspace):
     _add(workspace)
     path = upstream.anchor_path(workspace.root, 'no_eval')
     text = _copy_text(workspace)
@@ -34,4 +35,6 @@ def test_a_sync_keeps_the_notes(workspace):  # noqa: F811
     lines = _copy_text(workspace).splitlines()
     assert '> Pinned: %s' % new_sha in lines
     notes = [line for line in lines if line.startswith('> Note:')]
-    assert notes == ['> Note: %s' % note for note in NOTES], lines
+    # Each note once, in the order the copy carried them.
+    assert notes == ['> Note: run the setup script first',
+                     '> Note: the pin moves on each release'], lines
