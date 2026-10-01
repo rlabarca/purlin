@@ -1481,6 +1481,23 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       refused with a one-line fix, rather than reading the folder the session started in.
     - **The docs say so**, in one paragraph of the page on working together: each checkout has its
       own results and dashboard; merging and `purlin:status` bring the main one up to date.
+116. **The answers on the six open concerns** (added 2026-10-01), asked before the build of
+    decisions 100 to 115.
+    - **The build runs in two rounds.** Round 1 is the core: evidence, running tests, the states,
+      the sign-off, the audit. A full sweep follows. Round 2 is what sits on the core: the
+      dashboard, setup, the upgrade, the remote runner, anchors.
+    - **The real-skills QA check runs right after the build**, on a fresh LabConnect-style project
+      set up with Purlin from nothing.
+    - **A red sweep on `main` is acceptable until the build lands.** No test is skipped for a spec
+      not yet built.
+    - **Evidence conflicts keep the current answer:** a re-run after the conflict, which keeps
+      audit results that still match. The evidence format does not change for this.
+    - **The planted-bug audit is measured before release**, on Purlin's own tests and one sample
+      project: the cost per rule and the share of planted bugs that were irrelevant. The limit
+      proposed with the question: at most $0.10 per rule and at most 1 in 5 irrelevant; over it,
+      the check is fixed or marked experimental before release.
+    - **The build may spend up to $80 of cloud credits**, of the $121 of $250 left on 2026-10-01;
+      $41 is kept for the real-skills check. Lanes past the budget run locally.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5

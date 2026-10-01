@@ -10,15 +10,15 @@
 >   the page resolves to one block and both themes ship in the same file.
 > Scope: scripts/report/src/page.html, scripts/report/src/styles.css, scripts/report/src/theme.js, scripts/report/src/board.js, scripts/report/src/rule.js, scripts/report/src/app.js, scripts/report/purlin-report.html, scripts/mcp/purlin/report_data.py, dev/build_report.py
 > Stack: html/css/javascript, no framework and no build-time dependency, design tokens inlined by a python assembler
-> Highest-Rule: 76
-> Highest-Proof: 231
+> Highest-Rule: 77
+> Highest-Proof: 233
 
 ## Rules
 
 - RULE-2: The build writes one page and copies it to the project root, where the data file resolves beside it
 - RULE-3: The page keeps to the design system on its own: every colour it uses is written inside the one inlined token block, it carries no shadow and no gradient, and its only affordances are the glyphs `▶`, `▼`, `▲`, `→`, `◐` and `◑`, with no icon set and no emoji
 - RULE-5: The page asks nothing of anything outside itself: no stylesheet link, no style import, no fetch, and no source or link address on another host
-- RULE-7: The top bar states when the data was written, `Data from <date> <hh:mm> UTC`, unchanged while the page is open, and the two facts as two boxes, as the payload gives them: `Tests` reading `met` where every rule's tests pass on the committed evidence and `not met` otherwise, and `Sign-off` reading `signed <version> at <commit>`, `signed <version>, <n> commits since` or `not signed`
+- RULE-7: The top bar states the two facts as two boxes, as the payload gives them: `Tests` reading `met` where every rule's tests pass on the committed evidence and `not met` otherwise, and `Sign-off` reading `signed <version> at <commit>`, `signed <version>, <n> commits since` or `not signed`
 - RULE-8: The boxes count the project's rules from the payload: `No proof`, wherever the project writes at least one proof line, counting the rules of the kind `no_proof`; `Passing`, counting the rules whose tests pass, with the project's rule count beneath it as `<n> RULES TOTAL`; and `Strong`, wherever the audit found a rule strong or weak, counting the rules it found strong. A count is in the pass tone once it is complete, `No proof` at zero, and the warn tone until then
 - RULE-9: A column exists only where the project reaches it: `Spec`, `Rules` and `Tests` always, `Proofs` wherever the project writes at least one proof line, and `Strong` last wherever the audit found a rule strong or weak. Each count cell names what it counts beside the number: `Proofs` the proof total, then `<k> no test`, a `@manual` proof counting as no gap; `Tests` `<passed> of <rules>`, then `<k> partial` and `<k> failing`; `Strong` `<n> of <rules>`
 - RULE-10: A spec row opens to its `> Description:` and the rules it owns and closes again on the next click, and a rule's screen carries one link, `Back to the board`, which returns to the board
@@ -42,6 +42,7 @@
 - RULE-75: The page reads on every screen from 390 to 1500 pixels wide, in both themes, on the board and a rule's screen: the page never scrolls sideways, no count, label, box or rule id breaks onto two lines, and every text drawn in a neutral colour, any but the four state colours and the accent, measures at least 7:1 by the WCAG contrast formula against the ground beneath it, read through every translucent layer
 
 - RULE-76: Whenever a Purlin command writes the page's data file, it also writes the page itself where the project's copy differs from the plugin's, so the page and its data always come from the same version of Purlin
+- RULE-77: The top bar names the checkout state its data describes and when it was written, as `<branch> at <commit>, written <hh:mm>`, as in `main at a1b2c3d, written 10:42`: the branch and the first 7 characters of the commit the writing command ran on, and the time in UTC, its hover giving the date and time in full; the line is unchanged while the page is open
 ## Proof
 
 - PROOF-122 (RULE-2): After a build, the page at the project root reads the same text, character for character, as the page written under `scripts/report/`
@@ -51,7 +52,6 @@
 - PROOF-5 (RULE-5): After a build, the page holds no `<link` element, no `@import`, no `fetch(`, and no `src` or `href` address beginning `http:` or `https:`
 - PROOF-223 (RULE-7): Open the board with the regulated sample after its data reads every rule passing on the committed evidence and the sign-off `signed 0.1.0 at a1b2c3d`; the top bar holds exactly two boxes, `Tests` reading `met` and `Sign-off` reading `signed 0.1.0 at a1b2c3d`
 - PROOF-225 (RULE-7): Open the board with the solo sample, one of whose rules fails its tests and which no one has signed; the `Tests` box reads `not met` and the `Sign-off` box reads `not signed`
-- PROOF-226 (RULE-7): Open the board with the regulated sample, its data stamped `2026-10-01T12:17:13Z`; the top bar reads `Data from 2026-10-01 12:17 UTC`, and after the page's clock runs on 2 hours it reads the same
 - PROOF-8 (RULE-8): Open the board with the regulated sample, whose 11 rules pass their tests 8 times and read strong 3 times; the boxes read, left to right, `No proof` 0, `Passing` 8 and `Strong` 3, each label set in capitals and `Passing` and `Strong` in the warn tone
 - PROOF-114 (RULE-8): Open the board with the regulated sample after export `RULE-2`'s proof is taken out, which gives it the kind `no_proof`; the boxes read, left to right, `No proof`, `Passing` and `Strong`, and `No proof` reads 1 in the warn tone
 - PROOF-170 (RULE-8): Open the board with the regulated sample, 11 rules; under the `Passing` label a second line reads `11 RULES TOTAL` in the label's face, size and colour, and no other box has a second line
@@ -108,3 +108,5 @@
 - PROOF-104 (RULE-75): In the light theme, open the solo, team and regulated samples in turn, each on the board with its first spec open and then on its first rule's screen; every text drawn in a neutral colour measures at least 7:1 against the ground under it
 - PROOF-230 (RULE-76): A project whose `purlin-report.html` is an older page that reads schema `11` gets, from one `purlin:status`, a page that is byte for byte the plugin's own, and opening it draws the board, not the notice naming a schema
 - PROOF-231 (RULE-76): A project whose page is already the plugin's own keeps its page's modification time after `purlin:status`
+- PROOF-232 (RULE-77): Open the board with the regulated sample, its data written on the branch `main` at the commit `a1b2c3d` and stamped `2026-10-01T10:42:13Z`; the top bar reads `main at a1b2c3d, written 10:42`, its hover reads `2026-10-01 10:42 UTC`, and after the page's clock runs on 2 hours the line reads the same
+- PROOF-233 (RULE-77): In a project on the branch `feature/login`, run `purlin:status`; the data file names the branch `feature/login` and, as its commit, the first 7 characters of the commit git gives for `HEAD`
