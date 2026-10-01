@@ -37,7 +37,7 @@ def _project(tmp_path, tests=None):
     (root / '.purlin').mkdir(parents=True)
     (root / '.purlin' / 'config.json').write_text(
         json.dumps({'version': VERSION, 'tests': (
-            [suites.pytest_suite(extra='--ignore=mutants')] if tests is None
+            [suites.pytest_suite()] if tests is None
             else tests)}), encoding='utf-8')
     return root
 
