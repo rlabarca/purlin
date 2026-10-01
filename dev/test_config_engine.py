@@ -247,6 +247,7 @@ class TestASettingsFileThatCannotBeRead:
     # purlin: config_engine PROOF-32
     def test_a_trailing_comma_is_named_with_the_readers_message_and_line(
             self, project):
+        assert TRAILING_COMMA.splitlines() == ['{', '  "tests": [],}']
         _write_bytes(project, TRAILING_COMMA.encode('utf-8'))
         message, line = _readers_message(TRAILING_COMMA)
         assert line == 2
