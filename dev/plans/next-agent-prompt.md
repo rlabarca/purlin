@@ -19,6 +19,33 @@ the cloud and integration on this Mac, then stop and report.
 4. `dev/plans/d105-plan.md` for its contracts and lines a person reads; it predates decisions
    111 to 115 and was written when specs were still to change, so re-cut it (below).
 
+## Step 0: ask the owner about the open concerns (before any work)
+
+The last session ended with six concerns. Ask the owner about each, with the question UI, in
+plain words from the root (what it is for, no function or file names), the recommended option
+first, and what the owner needs to answer inside the question. Record the answers as decision 116
+in `three-levels.md` and carry them into the plan. The concerns and a starting question for each:
+
+1. **The build is the largest yet** (408 rules; about 700 rules' worth of code and tests deleted
+   or rewritten; about 1,600 test comments to correct). Ask: build it all in one round, or in two
+   rounds (first the core: evidence, run, states, sign-off, audit; then the dashboard, setup,
+   upgrade, remote runner, anchors), with a full sweep between?
+2. **Nobody has used Purlin for real.** Ask: run the real-skills QA check (three real Claude
+   sessions with the plugin, one feature, one collision) right after the build, or before
+   releasing only, and on what kind of project (a fresh LabConnect-style one, or a copy of a real
+   0.9.5 project)?
+3. **`main`'s specs run ahead of its code until the build lands.** Ask: is a red sweep on `main`
+   acceptable meanwhile, or should the full sweep skip the tests of specs not yet built?
+4. **Parallel agents committing evidence for the same feature still conflict on merge.** Ask:
+   keep the current answer (a re-run after the conflict keeps matching audits), or make evidence
+   files merge cleanly by design (for example one file per feature per run), or commit evidence
+   only from the main checkout?
+5. **The planted-bug audit is new and its cost and noise are unknown.** Ask: before release,
+   measure it on Purlin's own tests and one sample project (cost per rule, share of planted bugs
+   that were irrelevant), with a limit agreed in advance; or ship it and learn from use?
+6. **Cloud credits expire 2026-11-05 and the balance is unknown.** Read the balance first, then
+   ask how much of it the build may spend, and what to keep for the real-skills check.
+
 ## Step 1: decision 115's specs (alone, local, small)
 
 Add, in the shape of the existing specs, with new numbers and raised `> Highest-*` lines:
