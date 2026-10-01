@@ -63,7 +63,15 @@ import config_engine                                          # noqa: E402
 import marked_tests                                           # noqa: E402
 from purlin import (console as console_module,                 # noqa: E402
                     payload as payload_module)
-from sign import not_a_rule                                   # noqa: E402
+
+NOT_A_RULE = ('%s %s is not a rule any spec has. Run purlin:status %s to see '
+              'its rules.')
+
+
+def not_a_rule(feature, rule):
+    """The line naming a rule no spec has, filled in for `feature` and `rule`."""
+    return NOT_A_RULE % (feature, rule, feature)
+
 
 USAGE = ('Usage: ai_audit.py --feature <f> [--rule RULE-N] '
          '[--project-root DIR]')
