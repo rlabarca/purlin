@@ -7,15 +7,23 @@
 #
 # `--fast` holds out the shell suites and the browser suites
 # (dev/test_purlin_report*.py), nearly all of the wall clock.
+#
+# dev/test_install.py is held out of both: it installs the plugin with the real
+# `claude` program and sends one prompt to a model. `--install` runs it, alone.
 set -euo pipefail
 
 FAST=0
+INSTALL=0
 for arg in "$@"; do
   case "$arg" in
     --fast) FAST=1 ;;
-    *) echo "usage: $0 [--fast]" >&2; exit 2 ;;
+    --install) INSTALL=1 ;;
+    *) echo "usage: $0 [--fast | --install]" >&2; exit 2 ;;
   esac
 done
+if [[ $FAST -eq 1 && $INSTALL -eq 1 ]]; then
+  echo "usage: $0 [--fast | --install]" >&2; exit 2
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -41,8 +49,13 @@ run_suite() {
 
 # ── Shell suites first ───────────────────────────────────────────────
 # Held out by `--fast`: these invocations are most of the sweep's wall clock.
+if [[ $INSTALL -eq 1 ]]; then
+  run_suite "The install the docs give" pytest "$SCRIPT_DIR/test_install.py" -v -rs
+  printf '\n━━━━━━━━━━━━━━━━━━━━━━━━━\nSuites: %d passed, %d failed\n━━━━━━━━━━━━━━━━━━━━━━━━━\n' "$PASS" "$FAIL"
+  if [[ $FAIL -eq 0 ]]; then exit 0; else exit 1; fi
+fi
+
 if [[ $FAST -eq 0 ]]; then
-run_suite "E2E Init (wiring)" bash "$SCRIPT_DIR/test_init_e2e_wiring.sh"
 # The dog-food external reference repo; idempotent, creates it once.
 bash "$SCRIPT_DIR/setup-external-refs.sh"
 run_suite "E2E External Refs" bash "$SCRIPT_DIR/test_e2e_external_refs.sh"
@@ -55,11 +68,13 @@ fi
 # ── All pytest tests in a single session ─────────────────────────────
 # One session for speed. Correctness does not depend on it.
 # Every dev/test_*.py, found rather than listed: a hand-kept list left new test
-# files out of the sweep. The browser suites (test_purlin_report*.py) join below.
+# files out of the sweep. The browser suites (test_purlin_report*.py) join below;
+# test_install.py runs under `--install` alone.
 PYTEST_FILES=()
 for test_file in "$SCRIPT_DIR"/test_*.py; do
   case "$(basename "$test_file")" in
     test_purlin_report*.py) ;;
+    test_install.py) ;;
     *) PYTEST_FILES+=("$test_file") ;;
   esac
 done
@@ -72,7 +87,7 @@ if [[ $FAST -eq 0 ]]; then
 else
   echo "--fast: skipping the browser suites (dev/test_purlin_report*.py)"
 fi
-run_suite "All Pytest Tests" pytest "${PYTEST_FILES[@]}" -v
+run_suite "All Pytest Tests" pytest "${PYTEST_FILES[@]}" -v -rs
 
 printf '\n━━━━━━━━━━━━━━━━━━━━━━━━━\nSuites: %d passed, %d failed\n━━━━━━━━━━━━━━━━━━━━━━━━━\n' "$PASS" "$FAIL"
 [[ $FAIL -eq 0 ]]
