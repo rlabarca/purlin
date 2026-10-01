@@ -1337,6 +1337,19 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **The check for a test whose proof was reworded applies to every test now**: the build reads
       and fixes the roughly 198 tests in this repository whose proof was reworded after the test
       last changed, so the check starts clean.
+107. **An anchor rule with nothing to check passes, and says so** (added 2026-10-01). It
+    answers what decision 101's signature as not applying did before decision 103 removed it.
+    - **An anchor's rule is written to hold across the whole project, as "for every X in the
+      project, Y holds", so a project with no X has nothing to break it.** In the owner's words:
+      "remote anchors have to be written such that the proofs pass when the project does not have
+      functions that match the test." It is the anchor author's job, and the quality guide
+      teaches it.
+    - **When its test finds nothing to check, it skips with a reason**, through the test tool's
+      own skip, as in `nothing to check: this project has no screens`. Purlin counts the rule as
+      met and shows the reason on the status, the dashboard and in the evidence package, so the
+      signer sees the rule was not exercised.
+    - **No project-side way to say a pulled rule does not apply.** A pulled rule that fails here is
+      a problem to raise with its authors.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
