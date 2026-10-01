@@ -1,21 +1,19 @@
-#!/usr/bin/env python3
-"""Write the evidence package: one data file describing one version.
+"""The evidence package: one data file describing one version.
 
-    package.py [--release NAME] [--commit] [--project-root DIR]
-    package.py --check FILE
+`purlin:sign` builds it, and nothing else does: `sign.py` calls `build`,
+writes the file with `write` and commits it with the first sign-off of the
+version. `sign.py --check FILE` calls `check_file`. This module has no
+command line of its own.
 
 The package holds, for every rule, its words, its proofs, its tests, each
-result on each operating system and the machine it ran on, what the audit
-found, its two statuses and the one kind of work it waits for. Above them it
-carries the total, the count that pass, what the audit found, what is left to
-do, the state and every hand check. It is written to
+result on each operating system with who ran it and on which machine, what
+the audit found, its two statuses, the one kind of work it waits for and
+who wrote and last changed its words, its proofs and its tests. Above them
+it carries whether the tests are met, the total, the count that pass, what
+the audit found, what is left to do, the runs the results came from and
+every hand check. It is written to
 
     .purlin/evidence/package/<version>.json
-
-where `<version>` is the version the project states, read as
-`purlin:test --release` reads it for its tag, or what `--release <name>`
-names.
-With neither, the command prints `No version: ...`, writes nothing and exits 1.
 
 **It is evidence for review.** Purlin hands the package to a regulated
 document and sign-off system, which holds the controlled document, the
@@ -24,29 +22,24 @@ Purlin makes no claim that the software is compliant.
 
 **It reads what git holds.** The package is built from a checkout of the
 commit the evidence was taken at, so evidence that is written and not
-committed is left out, named in the package's `warnings` and on the
-terminal. That commit is `HEAD`, stepping back over any commit that changed
-nothing but a file under the package folder, a sign-off included, so the
-package a tag carries names the commit below it.
+committed is left out and named in the package's `warnings`. That commit is
+`HEAD`, stepping back over any commit that changed nothing but a file under
+the package folder, a sign-off included, so the package a tag carries names
+the commit below it.
 
-**The same tag always gives the same bytes.** Keys are sorted within every
-object except the top level, which keeps the order the format names; lists
-keep a fixed order; nothing records when the export ran; the file is UTF-8
-with `\\n` line ends and a trailing newline on every operating system. The
-`fingerprint` field is the sha256 of the file's own bytes with that field set
-to the empty string. `--check FILE` recomputes it.
+**The same commit always gives the same bytes.** Keys are sorted within
+every object except the top level, which keeps the order the format names;
+lists keep a fixed order; nothing records when the package was built; the
+file is UTF-8 with `\\n` line ends and a trailing newline on every operating
+system. The `fingerprint` field is the sha256 of the file's own bytes with
+that field set to the empty string.
 
-**State.** `finished` when no line left stops a release, `not finished`
-otherwise: a weak rule or a rule with no proof leaves it `finished`. `steps`,
-`audit` and `left` are the payload's own, the words of `purlin:status`.
+**The same version of the code.** A result counts for a sign-off only where
+every commit from the one its tests ran at to the package's `commit` changes
+nothing but files under `.purlin/`: `same_code`, read by
+`only_records_between`.
 
-Run by itself it writes the file and commits nothing; `--commit` commits it
-as `purlin: evidence at <sha7>`. `purlin:test --release` writes and commits
-it before the tag. `references/formats/package_format.md` holds every field.
-
-Exit codes: 0 written, or the check matched; 1 the check did not match, the
-project states no version, the package could not be written, or the settings
-file cannot be read; 2 the command line was wrong.
+`references/formats/package_format.md` holds every field.
 """
 
 import hashlib
@@ -60,61 +53,49 @@ import tempfile
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _SCRIPTS = os.path.dirname(_HERE)
-for _path in (os.path.join(_SCRIPTS, 'mcp'), os.path.join(_SCRIPTS, 'review')):
+for _path in (os.path.join(_SCRIPTS, 'mcp'),):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
-import config_engine                                          # noqa: E402
 from purlin import (PURLIN_VERSION,                            # noqa: E402
-                    console as console_module,
                     evidence as evidence_module,
                     fingerprint as fingerprint_module,
-                    gate as gate_module,
+                    markers as markers_module,
                     payload as payload_module,
+                    project as project_module,
+                    signatures as signatures_module,
                     specs as specs_module,
-                    summary as summary_module)
+                    states as states_module,
+                    summary as summary_module,
+                    wording as wording_module)
 
-import release as release_module                              # noqa: E402
+SCHEMA = 'purlin-package/4'
+PACKAGE_DIR = signatures_module.PACKAGE_DIR
+RECORDS_DIR = '.purlin/'
 
-SCHEMA = 'purlin-package/3'
-PACKAGE_DIR = release_module.PACKAGE_DIR
+# The top-level keys in the order the file carries them. Whether the tests
+# are met is what a reader sees first after the schema.
+TOP_LEVEL = ('schema', 'met', 'rules', 'steps', 'audit', 'left',
+             'purlin_version', 'project', 'version', 'tag', 'commit', 'runs',
+             'features', 'hand_checks', 'warnings', 'fingerprint')
 
-# The top-level keys in the order the file carries them. The state is what a
-# reader sees first after the schema.
-TOP_LEVEL = ('schema', 'state', 'rules', 'steps', 'audit', 'left',
-             'purlin_version', 'project', 'version', 'tag', 'commit', 'gate',
-             'mutation_engine', 'features', 'hand_checks', 'warnings',
-             'fingerprint')
-
-FINISHED = 'finished'
-NOT_FINISHED = 'not finished'
 CELLS = ('passed', 'strong')
 
-# What a hand check's entry says of it: at `passed` nobody checks it; at
-# `signed` what each signer saw is in the sign-offs beside the package.
-CHECKED = {'passed': False, 'signed': 'in the sign-offs'}
+# What a hand check's entry says of it: what each signer saw is in the
+# sign-offs beside the package.
+CHECKED = 'in the sign-offs'
 
-WRITTEN = 'Evidence package written to %s. State: %s.'
-NO_VERSION = ('No version: nothing in this project states one. '
-              'Run purlin:export --release <version>, or write it to a '
-              'VERSION file.')
+# Who ran a remote runner's results.
+REMOTE_RUNNER = 'a remote runner'
+
+# The prefix a test's skip reason carries when it found nothing to check.
+NOTHING_TO_CHECK = 'nothing to check'
+
 NOT_COMMITTED = '%s is written and not committed; the package leaves it out.'
-MATCHES = 'The package matches its fingerprint.'
-COMMITTED = 'Package committed.'
-UNCHANGED = 'Package unchanged.'
-EVIDENCE_SUBJECT = 'purlin: evidence at %s'
-
-EXIT_OK = 0
-EXIT_FAILED = 1
-EXIT_BAD_INVOCATION = 2
 
 
 class PackageError(Exception):
     """The package could not be built or written; the message says why."""
-
-
-class NoVersion(PackageError):
-    """The project states no version and `--release` named none."""
 
 
 # ---------------------------------------------------------------------------
@@ -122,8 +103,25 @@ class NoVersion(PackageError):
 # ---------------------------------------------------------------------------
 
 def _git(project_root, *args):
-    return subprocess.run(['git'] + list(args), capture_output=True,
-                          text=True, cwd=project_root, timeout=120)
+    try:
+        return subprocess.run(['git'] + list(args), capture_output=True,
+                              text=True, cwd=project_root, timeout=120)
+    except (subprocess.SubprocessError, OSError) as error:
+        return subprocess.CompletedProcess(args, 1, '', str(error))
+
+
+def _git_out(project_root, *args):
+    """What a git command prints, stripped, or '' when it fails."""
+    done = _git(project_root, *args)
+    return done.stdout.strip() if done.returncode == 0 else ''
+
+
+def _commit_of(project_root, ref):
+    """The full sha `ref` names, or None."""
+    if not ref:
+        return None
+    return _git_out(project_root, 'rev-parse', '--verify', '--quiet',
+                    '%s^{commit}' % ref) or None
 
 
 def _changed_paths(project_root, sha):
@@ -139,24 +137,49 @@ def evidence_commit(project_root, start='HEAD'):
 
     A commit that changed nothing but files under the package folder adds no
     evidence, so the walk steps to its parent. The package a tag carries
-    therefore names the commit beneath it, and exporting at the tag again
-    reads the same commit. None where there is no commit.
+    therefore names the commit beneath it, and building the package at the
+    tag again reads the same commit. None where there is no commit.
     """
-    found = _git(project_root, 'rev-parse', '--verify', '--quiet',
-                 '%s^{commit}' % start)
-    if found.returncode != 0 or not found.stdout.strip():
+    sha = _commit_of(project_root, start)
+    if sha is None:
         return None
-    sha = found.stdout.strip()
     while True:
         paths = _changed_paths(project_root, sha)
         if not paths or not all(path.startswith(PACKAGE_DIR + '/')
                                 for path in paths):
             return sha
-        parent = _git(project_root, 'rev-parse', '--verify', '--quiet',
-                      '%s^' % sha)
-        if parent.returncode != 0 or not parent.stdout.strip():
+        parent = _commit_of(project_root, '%s^' % sha)
+        if parent is None:
             return sha
-        sha = parent.stdout.strip()
+        sha = parent
+
+
+def only_records_between(project_root, older, newer):
+    """True when `older` is `newer`, or an ancestor of it from which every commit up
+    to `newer` changes only paths under `.purlin/`."""
+    older = _commit_of(project_root, older)
+    newer = _commit_of(project_root, newer)
+    if older is None or newer is None:
+        return False
+    if older == newer:
+        return True
+    if _git(project_root, 'merge-base', '--is-ancestor', older,
+            newer).returncode != 0:
+        return False
+    listed = _git(project_root, 'log', '-m', '--format=', '--name-only',
+                  '%s..%s' % (older, newer))
+    if listed.returncode != 0:
+        return False
+    return all(path.startswith(RECORDS_DIR)
+               for path in (line.strip() for line in listed.stdout.splitlines())
+               if path)
+
+
+def same_code(project_root, section_commit, head=None):
+    """only_records_between(section_commit, head or HEAD); False for an empty commit."""
+    if not section_commit:
+        return False
+    return only_records_between(project_root, section_commit, head or 'HEAD')
 
 
 def uncommitted_evidence(project_root):
@@ -204,40 +227,8 @@ class _Checkout(object):
 
 
 # ---------------------------------------------------------------------------
-# The same version of the code, the time and the run lines. Stubs from the base
-# commit of dev/plans/d115-plan.md, until the lane `signoff` fills them.
+# The version
 # ---------------------------------------------------------------------------
-
-def only_records_between(project_root, older, newer):
-    """True when `older` is `newer`, or an ancestor of it from which every commit up
-    to `newer` changes only paths under `.purlin/`."""
-    return False
-
-
-def same_code(project_root, section_commit, head=None):
-    """only_records_between(section_commit, head or HEAD); False for an empty commit."""
-    return False
-
-
-def time_words(at):
-    """`2026-10-01 12:17 UTC` for `2026-10-01T12:17:13Z`."""
-    return '%s %s UTC' % (at[:10], at[11:16])
-
-
-def run_lines(package):
-    """K8's run lines, local first."""
-    return []
-
-
-# ---------------------------------------------------------------------------
-# The version and the tag
-# ---------------------------------------------------------------------------
-
-def version_name(project_root, release=None):
-    """The version the package and the tag are named for, or None where there is none."""
-    return (str(release or '').strip()
-            or release_module.project_version(project_root) or None)
-
 
 def project_version(project_root):
     """The VERSION file, package.json, pyproject.toml or the first root *.csproj, in
@@ -308,22 +299,20 @@ def _csproj(project_root):
 
 def package_path(version):
     """`.purlin/evidence/package/<version>.json`, `/` separated."""
-    return release_module.package_rel(version)
+    return signatures_module.package_rel(version)
+
+
+def tag_name(version):
+    """`signed/<version>`."""
+    return 'signed/%s' % version
 
 
 # ---------------------------------------------------------------------------
 # Building the package
 # ---------------------------------------------------------------------------
 
-def build(project_root, release=None):
-    """The package as a dict, its top-level keys in the format's order.
-
-    Raises `NoVersion` where the project states no version and `release` is
-    None.
-    """
-    version = version_name(project_root, release)
-    if not version:
-        raise NoVersion(NO_VERSION)
+def build(project_root, version):
+    """The package for `version` as a dict, its top-level keys in the format's order."""
     commit = evidence_commit(project_root)
     if commit is None:
         raise PackageError('the project has no commit yet')
@@ -333,9 +322,11 @@ def build(project_root, release=None):
     checkout = _Checkout(project_root, commit)
     try:
         tree = checkout.root
-        payload = payload_module.build_payload(tree, generated_by='export')
+        payload = payload_module.build_payload(tree, generated_by='sign')
         features = specs_module.scan_specs(tree)
-        entries = _features(tree, payload, features)
+        seen = []
+        entries = _features(tree, payload, features, commit, seen)
+        project = project_module.project_name(tree)
     finally:
         checkout.close()
 
@@ -345,28 +336,23 @@ def build(project_root, release=None):
 
     left = [dict(item) for item in payload.get('left') or ()]
     summary = payload.get('summary') or {}
-    settings = payload.get('gate') or {}
-    gate = 'signed' if settings.get('gate') == 'signed' else gate_module.DEFAULT_GATE
-    blocking = summary_module.BLOCKING
     steps = summary.get('steps') or {}
-
     values = {
         'schema': SCHEMA,
-        'state': (NOT_FINISHED if any(item.get('kind') in blocking
-                                      for item in left) else FINISHED),
-        'rules': summary.get('rules') or 0,
+        'met': not any(item.get('kind') in summary_module.BLOCKING
+                       for item in left),
+        'rules': sum(len(feature['rules']) for feature in entries),
         'steps': {'passed': steps.get('passed') or 0},
-        'audit': dict(summary.get('audit') or {}),
+        'audit': audit_counts(entries),
         'left': left,
         'purlin_version': PURLIN_VERSION,
-        'project': payload.get('project'),
+        'project': project,
         'version': version,
-        'tag': release_module.tag_name(gate, version),
+        'tag': tag_name(version),
         'commit': commit,
-        'gate': gate,
-        'mutation_engine': settings.get('mutation_engine'),
+        'runs': runs_of(seen),
         'features': entries,
-        'hand_checks': _hand_checks(entries, gate),
+        'hand_checks': _hand_checks(entries),
         'warnings': warnings,
         'fingerprint': '',
     }
@@ -380,14 +366,17 @@ def _rule_number(rule_id):
     return int(digits) if digits.isdigit() else 0
 
 
-def _features(tree, payload, features):
+def _features(tree, payload, features, commit, seen):
     """`features[]`, by name, each carrying its own rules by number.
 
     A feature entry holds `name`, `spec`, `scope`, `anchor` and `rules`, and
     nothing else; an anchor's `scope` is `[]`, since its rules cover the
-    whole project.
+    whole project. `seen` gains `(section entry, feature, rule id)` for each
+    result, which `runs_of` groups.
     """
-    markers = fingerprint_module.marker_index(tree)
+    index = fingerprint_module.marker_index(tree)
+    authors = _Authors(tree)
+    same = {}
     out = []
     for feature in sorted(payload.get('features') or (),
                           key=lambda entry: entry.get('name') or ''):
@@ -395,23 +384,34 @@ def _features(tree, payload, features):
         loaded = evidence_module.load(tree, name)
         sections = []
         if any(loaded['files'].values()):
-            now = fingerprint_module.fingerprint(tree, name, features, markers)
+            now = fingerprint_module.fingerprint(tree, name, features, index)
             sections = evidence_module.checked_sections(loaded, now)
+        for entry in sections:
+            sha = entry['section'].get('commit') or ''
+            if sha not in same:
+                same[sha] = same_code(tree, sha, commit)
         own = [rule for rule in feature.get('rules') or ()
                if rule.get('feature') == name]
         own.sort(key=lambda rule: _rule_number(rule.get('id')))
+        seen.extend((entry, name, rule.get('id'))
+                    for rule in own for entry in sections
+                    if _speaks(entry['section'], rule.get('id'),
+                               _ids(rule)))
         anchor = bool(feature.get('is_anchor'))
+        spec = feature.get('spec_path')
         out.append({
             'name': name,
-            'spec': feature.get('spec_path'),
+            'spec': spec,
             'scope': [] if anchor else list(feature.get('scope') or ()),
             'anchor': anchor,
-            'rules': [_rule(rule, loaded, sections) for rule in own],
+            'rules': [_rule(rule, loaded, sections, same,
+                            authors.of(name, spec, rule))
+                      for rule in own],
         })
     return out
 
 
-def _rule(rule, loaded, sections):
+def _rule(rule, loaded, sections, same, authors):
     rule_id = rule.get('id')
     proofs = rule.get('proofs') or ()
     return {
@@ -421,43 +421,105 @@ def _rule(rule, loaded, sections):
         'proofs': [{'id': proof.get('id'), 'text': proof.get('text') or '',
                     'manual': bool(proof.get('manual')),
                     'env': proof.get('env')} for proof in proofs],
-        'tests': [{'proof': proof.get('id'), 'file': test.get('file'),
-                   'name': test.get('name')}
-                  for proof in proofs for test in proof.get('tests') or ()]
-                 + [{'proof': rule_id, 'file': test.get('file'),
-                     'name': test.get('name')}
-                    for test in rule.get('tests') or ()],
-        'results': _results(rule_id, proofs, sections),
+        'tests': _tests(rule),
+        'results': _results(rule_id, proofs, sections, same),
         'audit': _audit(rule, loaded),
         'statuses': {name: _status(rule, name) for name in CELLS
                      if name in (rule.get('cells') or {})},
+        'authors': authors,
     }
 
 
-def _results(rule_id, proofs, sections):
+def _tests(rule):
+    """`{proof, file, name}` per test backing a proof, then per test marked
+    with the rule's own id, whose `proof` is then the `RULE-N`."""
+    rule_id = rule.get('id')
+    return ([{'proof': proof.get('id'), 'file': test.get('file'),
+              'name': test.get('name')}
+             for proof in rule.get('proofs') or ()
+             for test in proof.get('tests') or ()]
+            + [{'proof': rule_id, 'file': test.get('file'),
+                'name': test.get('name')}
+               for test in rule.get('tests') or ()])
+
+
+def _entries(section, ids):
+    """The section's proof entries for the ids given, by id."""
+    found = {}
+    for entry in (section or {}).get('proofs') or ():
+        if isinstance(entry, dict) and entry.get('id') in ids:
+            found.setdefault(entry['id'], []).append(entry)
+    return found
+
+
+def _ids(rule):
+    """The ids a section lists a rule's results under: its proofs', else its own."""
+    return {proof.get('id') for proof in rule.get('proofs') or ()} \
+        or {rule.get('id')}
+
+
+def _speaks(section, rule_id, ids):
+    """True when a section holds a result for the rule."""
+    return (rule_id in ((section or {}).get('rules') or {})
+            or bool(_entries(section, ids)))
+
+
+def _word(section, rule_id, ids):
+    """What one section saw for a rule: its own word, else read from its proofs."""
+    word = ((section or {}).get('rules') or {}).get(rule_id)
+    if word:
+        return word
+    seen = [entry.get('result')
+            for entries in _entries(section, ids).values()
+            for entry in entries]
+    if not seen:
+        return 'no test'
+    if 'fail' in seen:
+        return 'failed'
+    if all(result == 'pass' for result in seen):
+        return 'passed'
+    return 'not run'
+
+
+def _nothing_to_check(section, ids):
+    """`[{proof, reason}]` for each proof whose every entry found nothing to check."""
+    out = []
+    for proof_id, entries in sorted(_entries(section, ids).items(),
+                                    key=lambda item: _rule_number(item[0])):
+        if entries and all(entry.get('result') == NOTHING_TO_CHECK
+                           for entry in entries):
+            out.append({'proof': proof_id,
+                        'reason': str(entries[0].get('reason') or '')})
+    return out
+
+
+def _results(rule_id, proofs, sections, same):
     """One entry per section: what that run saw for this rule, by operating system."""
-    proof_ids = {proof.get('id') for proof in proofs}
+    ids = {proof.get('id') for proof in proofs} or {rule_id}
     out = []
     for entry in sections:
         section = entry['section']
-        word = (section.get('rules') or {}).get(rule_id)
-        if not word:
-            seen = [result for proof_id, result in
-                    evidence_module.proof_results(section).items()
-                    if proof_id in proof_ids]
-            word = ('failed' if 'fail' in seen
-                    else 'no test' if not seen
-                    else 'passed' if all(r == 'pass' for r in seen)
-                    else 'not run')
+        if not _speaks(section, rule_id, ids):
+            continue
         out.append({'os': entry['os'], 'source': entry['source'],
-                    'result': word, 'at': section.get('at'),
+                    'result': _word(section, rule_id, ids),
+                    'at': section.get('at'),
                     'commit': section.get('commit'),
                     'runner': section.get('runner'),
                     'machine': section.get('machine'),
                     'current': bool(entry['current']),
-                    'out_of_date': sorted(entry['out_of_date'])})
+                    'out_of_date': sorted(entry['out_of_date']),
+                    'same_code': bool(same.get(section.get('commit') or '')),
+                    'nothing_to_check': _nothing_to_check(section, ids)})
     out.sort(key=lambda item: (item['os'], item['source']))
     return out
+
+
+def _by(entry):
+    """Who ran a section: `a remote runner`, else the email it records."""
+    if entry['source'] == 'ci':
+        return REMOTE_RUNNER
+    return str(entry['section'].get('email') or 'unknown')
 
 
 def _audit(rule, loaded):
@@ -469,8 +531,10 @@ def _audit(rule, loaded):
         loaded, rule.get('id'), rule.get('rule_hash'), rule.get('proof_hash'),
         rule.get('test_hash')) or {}
     return {'verdict': summary.get('verdict'),
-            'findings': list(summary.get('findings') or ()),
-            'strength': summary.get('strength'),
+            'findings': [str(line) for line in summary.get('findings') or ()],
+            'notes': [str(line) for line in summary.get('notes') or ()],
+            'explanation': [str(line) for line in entry.get('explanation') or ()],
+            'breaks': dict(entry.get('breaks') or {}),
             'model': summary.get('model'),
             'criteria': entry.get('criteria'),
             'at': summary.get('at'),
@@ -478,19 +542,27 @@ def _audit(rule, loaded):
             'source': entry.get('source')}
 
 
-def _hand_checks(entries, gate):
-    """Every rule with a `@manual` proof, by feature then number, with its proofs.
+def audit_counts(entries):
+    """`{strong, weak, not_audited}` over every rule: the verdict its audit
+    gives, and `not_audited` where no audit answers for it."""
+    counts = {'strong': 0, 'weak': 0, 'not_audited': 0}
+    for feature in entries:
+        for rule in feature['rules']:
+            verdict = (rule['audit'] or {}).get('verdict')
+            counts[verdict if verdict in ('strong', 'weak')
+                   else 'not_audited'] += 1
+    return counts
 
-    `checked` is false at the gate `passed`, where nobody signs, and
-    `in the sign-offs` at `signed`, where each signer types what they saw.
-    """
+
+def _hand_checks(entries):
+    """Every rule with a `@manual` proof, by feature then number, with its proofs."""
     out = []
     for feature in entries:
         for rule in feature['rules']:
             manual = [proof['id'] for proof in rule['proofs'] if proof['manual']]
             if manual:
                 out.append({'feature': feature['name'], 'rule': rule['id'],
-                            'proofs': manual, 'checked': CHECKED[gate]})
+                            'proofs': manual, 'checked': CHECKED})
     return out
 
 
@@ -499,6 +571,198 @@ def _status(rule, name):
     cell = (rule.get('cells') or {}).get(name) or {}
     return {'word': cell.get('word'),
             'reasons': [str(reason) for reason in cell.get('reasons') or ()]}
+
+
+# ---------------------------------------------------------------------------
+# The runs
+# ---------------------------------------------------------------------------
+
+def runs_of(seen):
+    """`runs[]`: one per group of results sharing a source, a system, who ran
+    them and a machine, local first, then by system.
+
+    `seen` is `(section entry, feature, rule id)` per result. Each run names
+    `by`, `machine`, `os`, `source`, `at` and `commit`, the newest of its
+    sections, and `rules`, how many rules it holds a result for.
+    """
+    groups = {}
+    for entry, feature, rule_id in seen:
+        section = entry['section']
+        machine = section.get('machine') or None
+        key = (entry['source'], entry['os'], _by(entry), machine or '')
+        group = groups.setdefault(key, {'rules': set(), 'at': '',
+                                        'commit': None, 'machine': machine})
+        group['rules'].add((feature, rule_id))
+        at = str(section.get('at') or '')
+        if group['commit'] is None or at > group['at']:
+            group['at'], group['commit'] = at, section.get('commit')
+    order = {name: index for index, name in
+             enumerate(states_module.SYSTEM_ORDER)}
+    out = []
+    for key in sorted(groups, key=lambda key: (
+            evidence_module.SOURCES.index(key[0])
+            if key[0] in evidence_module.SOURCES else 9,
+            order.get(key[1], 9), key[1], key[2], key[3])):
+        source, os_name, by, _machine = key
+        group = groups[key]
+        out.append({'by': by, 'machine': group['machine'], 'os': os_name,
+                    'source': source, 'at': group['at'] or None,
+                    'commit': group['commit'], 'rules': len(group['rules'])})
+    return out
+
+
+def time_words(at):
+    """`2026-10-01 12:17 UTC` for `2026-10-01T12:17:13Z`."""
+    return '%s %s UTC' % (at[:10], at[11:16])
+
+
+RUN_LINE = 'Tests run by %s on %s at %s on %s: %s on %s.'
+RUN_REMOTE_LINE = 'Tests run by a remote runner at %s on %s: %s on %s.'
+
+
+def _rules_words(count):
+    return '1 rule' if count == 1 else '%d rules' % count
+
+
+def run_lines(package):
+    """K8's run lines, local first."""
+    lines = []
+    for run in package.get('runs') or ():
+        at = time_words(str(run.get('at') or ''))
+        commit = str(run.get('commit') or '')[:7]
+        system = evidence_module.os_word(run.get('os'))
+        if run.get('source') == 'ci':
+            lines.append(RUN_REMOTE_LINE % (at, commit,
+                                            _rules_words(run.get('rules') or 0),
+                                            system))
+        else:
+            lines.append(RUN_LINE % (run.get('by'), run.get('machine'), at,
+                                     commit,
+                                     _rules_words(run.get('rules') or 0),
+                                     system))
+    return lines
+
+
+def off_code(package, project_root):
+    """[(system words, source, [features])]: the results not taken on the
+    package's commit, by system in the order a person reads them."""
+    found = {}
+    for feature in package.get('features') or ():
+        for rule in feature.get('rules') or ():
+            for result in rule.get('results') or ():
+                if result.get('same_code'):
+                    continue
+                key = (result.get('os'), result.get('source'))
+                names = found.setdefault(key, [])
+                if feature['name'] not in names:
+                    names.append(feature['name'])
+    order = {name: index for index, name in
+             enumerate(states_module.SYSTEM_ORDER)}
+    return [(evidence_module.os_word(os_name), source, sorted(names))
+            for (os_name, source), names in sorted(
+                found.items(), key=lambda item: (
+                    order.get(item[0][0], 9), item[0][0],
+                    evidence_module.SOURCES.index(item[0][1])
+                    if item[0][1] in evidence_module.SOURCES else 9))]
+
+
+# ---------------------------------------------------------------------------
+# Who wrote and last changed each rule, proof and test
+# ---------------------------------------------------------------------------
+
+_PROOF_LINE = r'^\s*-\s+%s\s*\('
+
+
+class _Authors(object):
+    """`authors` for each rule, read from git in the checkout."""
+
+    def __init__(self, tree):
+        self.tree = tree
+        self._text = {}
+        self._tests = None
+
+    def of(self, feature, spec, rule):
+        """`{rule, proofs, tests}` for one payload rule entry."""
+        return {'rule': self._rule(spec, rule.get('text') or ''),
+                'proofs': [self._proof(spec, proof.get('id'))
+                           for proof in rule.get('proofs') or ()],
+                'tests': [self._test(feature, test)
+                          for test in _tests(rule)]}
+
+    def _lines(self, spec):
+        if spec not in self._text:
+            self._text[spec] = _read(self.tree, spec).splitlines()
+        return self._text[spec]
+
+    def _rule(self, spec, text):
+        """Who first wrote the rule's words, whatever id they stood under."""
+        found = None
+        if text and spec:
+            listed = _git_out(self.tree, 'log', '--reverse',
+                              '--format=%H %ae', '-S', text, '--', spec)
+            found = _pair(listed.splitlines()[0]) if listed else None
+        return {'written_by': found[1] if found else None,
+                'commit': found[0] if found else None}
+
+    def _proof(self, spec, proof_id):
+        """Who first wrote the proof's line and who last changed it."""
+        number = None
+        pattern = re.compile(_PROOF_LINE % re.escape(str(proof_id)))
+        for index, line in enumerate(self._lines(spec), 1):
+            if pattern.match(line):
+                number = index
+                break
+        history = []
+        if number is not None:
+            listed = _git_out(self.tree, 'log', '-s', '--format=%H %ae',
+                              '-L%d,%d:%s' % (number, number, spec))
+            history = [_pair(line) for line in listed.splitlines()
+                       if re.match(r'^[0-9a-f]{40,64} ', line)]
+        written = history[-1] if history else None
+        changed = history[0] if history else None
+        return {'id': proof_id,
+                'written_by': written[1] if written else None,
+                'written_commit': written[0] if written else None,
+                'changed_by': changed[1] if changed else None,
+                'changed_commit': changed[0] if changed else None}
+
+    def _test(self, feature, test):
+        """Who last changed one tied test, as `wording.test_last_change` reads it."""
+        span = self._span(feature, test)
+        found = (wording_module.test_last_change(self.tree, test['file'],
+                                                 span[0], span[1])
+                 if span else None)
+        return {'file': test['file'], 'name': test['name'],
+                'changed_by': found[1] if found else None,
+                'changed_commit': found[0] if found else None}
+
+    def _span(self, feature, test):
+        """`(marker line, last line)` of a tied test, or None where it is not found."""
+        if self._tests is None:
+            self._tests = {}
+            suites = markers_module.read_suites(self.tree)[0]
+            for path, found in markers_module.scan(self.tree, suites).items():
+                text = _read(self.tree, path)
+                for declared in found.tests:
+                    for marker in declared.markers:
+                        end = declared.end
+                        if end is not None and not path.endswith('.py'):
+                            end = text.count('\n', 0, end) + 1
+                        self._tests[(path, markers_module.test_name(
+                            path, declared), marker.feature, marker.id)] = (
+                                marker.line, end)
+                if found.whole:
+                    for marker in found.markers:
+                        self._tests[(path, markers_module.test_name(
+                            path, None), marker.feature, marker.id)] = (
+                                marker.line, len(text.splitlines()))
+        return self._tests.get((test['file'], test['name'], feature,
+                                test['proof']))
+
+
+def _pair(line):
+    sha, _, email = line.partition(' ')
+    return sha, email.strip() or None
 
 
 # ---------------------------------------------------------------------------
@@ -574,7 +838,7 @@ def check_file(path):
 
 
 # ---------------------------------------------------------------------------
-# Writing and committing
+# Writing
 # ---------------------------------------------------------------------------
 
 def write(project_root, package):
@@ -585,117 +849,3 @@ def write(project_root, package):
     with open(full, 'wb') as handle:
         handle.write(canonical_bytes(package))
     return rel
-
-
-def commit(project_root, rel, package):
-    """Commit the one package file. True when a commit was made.
-
-    The commit is signed where `commit.gpgsign` is on and plain otherwise.
-    False when the file was already committed as it stands. Raises
-    `PackageError` when git refused.
-    """
-    added = _git(project_root, 'add', '--', rel)
-    if added.returncode != 0:
-        raise PackageError('git add failed: %s' % added.stderr.strip())
-    staged = _git(project_root, 'diff', '--cached', '--quiet', '--', rel)
-    if staged.returncode == 0:
-        return False
-    command = ['commit', '-q', '-m', EVIDENCE_SUBJECT % package['commit'][:7]]
-    made = _git(project_root, *(command + ['--', rel]))
-    if made.returncode != 0:
-        raise PackageError('git commit failed: %s'
-                           % (made.stderr.strip() or made.stdout.strip()))
-    return True
-
-
-def summary_lines(rel, package):
-    """What the command prints: the path and the state, then the warnings."""
-    return [WRITTEN % (rel, package['state'])] + list(package['warnings'])
-
-
-# ---------------------------------------------------------------------------
-# The command line
-# ---------------------------------------------------------------------------
-
-USAGE = ('Usage: package.py [--release NAME] [--commit] [--project-root DIR]\n'
-         '       package.py --check FILE')
-
-
-def _parse(argv):
-    args = {'release': None, 'commit': False, 'root': '.', 'check': None,
-            'error': None, 'help': False}
-    rest = list(argv)
-    while rest:
-        item = rest.pop(0)
-        if item in ('-h', '--help'):
-            args['help'] = True
-        elif item == '--commit':
-            args['commit'] = True
-        elif item in ('--release', '--project-root', '--check'):
-            if not rest or not rest[0].strip() or rest[0].startswith('--'):
-                args['error'] = '%s needs a value.' % item
-                return args
-            key = {'--release': 'release', '--project-root': 'root',
-                   '--check': 'check'}[item]
-            args[key] = rest.pop(0)
-        else:
-            args['error'] = 'unexpected argument %s' % item
-            return args
-    if args['check'] and (args['commit'] or args['release']):
-        args['error'] = '--check reads a file and takes nothing else.'
-    return args
-
-
-def main(argv=None):
-    console_module.force_utf8_stdio()
-    args = _parse(sys.argv[1:] if argv is None else argv)
-    if args['help']:
-        print(__doc__.strip())
-        return EXIT_OK
-    if args['error']:
-        print(USAGE, file=sys.stderr)
-        print('package.py: %s' % args['error'], file=sys.stderr)
-        return EXIT_BAD_INVOCATION
-
-    # A settings file that cannot be read stops the command before anything
-    # else is read or written, the check of a package file included.
-    problem = config_engine.config_problem(args['root'])
-    if problem:
-        print(problem)
-        return EXIT_FAILED
-
-    if args['check']:
-        why = check_file(args['check'])
-        if why:
-            print('The package does not match its fingerprint: %s.' % why)
-            return EXIT_FAILED
-        print(MATCHES)
-        return EXIT_OK
-
-    root = args['root']
-    if not os.path.isdir(root):
-        print('package.py: %s is not a directory.' % root, file=sys.stderr)
-        return EXIT_BAD_INVOCATION
-    try:
-        package = build(root, args['release'])
-        rel = write(root, package)
-    except NoVersion:
-        print(NO_VERSION)
-        return EXIT_FAILED
-    except (PackageError, IOError, OSError) as error:
-        print('export: the package was not written: %s.' % error)
-        return EXIT_FAILED
-    for line in summary_lines(rel, package):
-        print(line)
-    if args['commit']:
-        try:
-            made = commit(root, rel, package)
-        except PackageError as error:
-            print('export: the package was not committed: %s.' % error)
-            return EXIT_FAILED
-        print(COMMITTED if made else UNCHANGED)
-    return EXIT_OK
-
-
-if __name__ == '__main__':
-    sys.exit(main())

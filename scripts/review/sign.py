@@ -1,51 +1,46 @@
 #!/usr/bin/env python3
-"""Sign a release's evidence package, as a signed commit.
+"""Sign the evidence package for a version, as a signed commit.
 
-    sign.py [--release NAME] [--project-root DIR]
-    sign.py --show [--release NAME] [--project-root DIR]
-    sign.py --answers FILE [--release NAME] [--project-root DIR]
+    sign.py [--version <version>] [--project-root DIR]
+    sign.py --show [--version <version>] [--project-root DIR]
+    sign.py --answers FILE [--version <version>] [--project-root DIR]
+    sign.py --check FILE
 
-At the gate `signed`, `purlin:test --release` commits the evidence package
-`.purlin/evidence/package/<version>.json` and writes no tag. This command is
-the sign-off walk over that package: an overview of the rules, the systems
-and what the audit found, then one stop per rule a person has something to
-look at, then one question, and on yes one file in one signed commit:
+Any project may run it whenever it chooses. It reads the evidence committed
+at HEAD, builds the evidence package for the version and walks it with a
+person: who ran the tests, where and when; an overview counting per system
+the rules that pass and the hand checks, and what the audit found; the
+audit's findings as a list the signer may open; then one stop per hand check,
+where the person types what they saw or presses Enter for no note. On yes to
+the last question it writes one file in one signed commit:
 
     .purlin/evidence/package/<version>.signoffs/<signer-slug>.json
 
-The file carries the package's `fingerprint`, what the signer was shown and
-every note typed; `references/formats/signature_format.md` holds it field by
-field. Several people may sign, one file each. The first sign-off of a
-version writes the tag `signed/<version>` on its commit, signed; the tag
-never moves after it.
+The first sign-off of a version commits the package with it,
+`.purlin/evidence/package/<version>.json`, and writes the signed tag
+`signed/<version>` on that commit; a later sign-off adds its own file alone
+and the tag does not move. `references/formats/signature_format.md` holds the
+sign-off field by field, and `package_format.md` the package.
 
-**The stops**, in this order, each by feature name then rule number: every
-hand check (a rule with a `@manual` proof), where the person types what they
-saw; every rule the audit found weak; every rule no audit has read; then the
-rules the audit found strong, where the person asked to walk them. At a hand
-check the answer is the line seen, or `stop`; at any other stop `continue`,
-`note` or `stop`. `stop` writes nothing.
+**Refusals**, in this order, each one line with nothing written and exit 1:
+the working tree holds changes that are not committed; the evidence is
+written and not committed; no version is stated or named;
+`signed/<version>` is on a commit this checkout does not hold, or the code
+changed since it; a result was not taken on this version of the code; a rule
+does not pass; the branch's copy on the host, as this checkout last fetched
+it, holds commits HEAD lacks; the signer already signed this package. Then,
+for the walk and `--answers`, no key to sign with. Nothing is fetched and
+nothing is pushed.
 
-`--show` prints the overview, every stop and the strong list, asks nothing
-and writes nothing. `--answers FILE` walks with the answers a JSON file gives,
-for an agent whose shell has no terminal to ask in.
+`--show` prints what the walk shows, asks nothing, writes nothing and needs
+no key. `--answers FILE` walks with the answers a JSON file gives, for an
+agent whose shell has no terminal to ask in. `--check FILE` checks a package
+against its fingerprint. `--version <version>` names the version in place of
+the one the project states.
 
-**Refusals**, in this order, each one line with nothing written: the gate is
-not `signed` (exit 0); the working tree holds changes that are not
-committed; no version is stated; no package for the version is committed at
-HEAD; a commit after the package's touches anything but that version's
-sign-offs; a rule does not pass at HEAD; the branch's copy on the host, as
-this checkout last fetched it, holds commits this checkout lacks; the signer
-already signed this package; there is no key to sign with. The version is
-read as `purlin:test --release` reads it; `--release <name>` names another.
-Nothing is fetched and nothing is pushed.
-
-A settings file that cannot be read stops the command before anything
-else is read or written: it prints the sentence saying so and writes nothing.
-
-Exit codes: 0 signed, stopped, answered no, or the gate is `passed`; 1 a
-refusal, no key, the commit not made, git could not write the tag, or the
-settings file cannot be read; 2 the command line was wrong.
+Exit codes: 0 signed, shown, checked and matching, stopped, or declined; 1
+refused, no key, the package or the commit not written, the tag not written,
+or not matching; 2 the command line was wrong.
 """
 
 import json
@@ -62,38 +57,43 @@ for _path in (os.path.join(_SCRIPTS, 'mcp'), os.path.join(_SCRIPTS, 'export'),
         sys.path.insert(0, _path)
 
 import config_engine                                           # noqa: E402
-import marked_tests                                            # noqa: E402
-import release                                                 # noqa: E402
+import package as package_module                               # noqa: E402
 from purlin import report_data                                 # noqa: E402
 from purlin import (console as console_module,                 # noqa: E402
                     evidence as evidence_module,
-                    gate as gate_module,
-                    payload as payload_module,
                     signatures as signatures_module,
                     states as states_module,
                     summary as summary_module)
 
 SCHEMA = 'purlin-signoff/1'
-USAGE = ('Usage: sign.py [--show | --answers FILE] [--release NAME] '
-         '[--project-root DIR]')
+USAGE = ('Usage: sign.py [--version <version>] [--show | --answers FILE | '
+         '--check FILE] [--project-root DIR]')
 
 # The refusals, in the order they are read.
-AT_PASSED = ('Nothing is signed at the gate passed: purlin:test --release tags '
-             'the release unsigned. To sign releases, run purlin:init --gate '
-             'signed.')
-NO_SIGNOFF_WORK = ('No sign-off: the working tree holds changes that are not '
-                   'committed. Commit them, then run purlin:test --release.')
-NO_VERSION = ('No version: nothing in this project states one. Run purlin:sign '
-              '--release <version>, or write it to a VERSION file.')
-NO_SIGNOFF_PACKAGE = ('No sign-off: no evidence package for %s is committed at '
-                      '%s. Run purlin:test --release.')
-NO_SIGNOFF_MOVED = ('No sign-off: the evidence package for %s describes %s, and '
-                    '%s has changed since. Run purlin:test --release.')
-NO_SIGNOFF_FAILING = ('No sign-off: %s at %s: %s. Run purlin:status to see what '
-                      'is left, then purlin:test --release.')
-NO_SIGNOFF_BEHIND = ('No sign-off: %s holds %s that %s does not, as this '
-                     'checkout last fetched it. Pull, then run purlin:sign.')
+NO_SIGNOFF_WORK = ('No sign-off: the working tree holds changes that are not committed. '
+                   'Commit them, run purlin:test --all --commit, then purlin:sign.')
+NO_SIGNOFF_EVIDENCE = ('No sign-off: the evidence is written and not committed. Run '
+                       'purlin:test --commit, then purlin:sign.')
+NO_VERSION = ('No version: nothing in this project states one. Run purlin:sign --version '
+              '<version>, or write it to a VERSION file.')
+NO_SIGNOFF_ELSEWHERE = ('No sign-off: %s is at %s, which this checkout does not hold. '
+                        'Pull, then run purlin:sign.')
+NO_SIGNOFF_MOVED = ('No sign-off: %s is at %s, and the code has changed since. To sign this '
+                    'code, name a new version: purlin:sign --version <version>.')
+NO_SIGNOFF_NOT_THIS_CODE = ('No sign-off: these results were not taken on this version of '
+                            'the code, %s: %s. Run %s, then purlin:sign.')
+NO_SIGNOFF_FAILING = ('No sign-off: %s at %s: %s. Run purlin:status to see what is left, '
+                      'then purlin:sign.')
+NO_SIGNOFF_BEHIND = ('No sign-off: %s holds %s that %s does not, as this checkout last '
+                     'fetched it. Pull, then run purlin:sign.')
 ALREADY_SIGNED = '%s has already signed %s over this package; nothing was written.'
+NOT_MADE = 'The sign-off commit was not made: %s. Nothing was signed; run purlin:sign again.'
+NOT_WRITTEN = ('The evidence package was not written: %s. Nothing was signed; run '
+               'purlin:sign again.')
+NO_TAG_GIT = 'No tag: git could not write %s: %s.'
+
+# What runs a result again, by the source it came from.
+RUN_AGAIN = {'local': 'purlin:test --all --commit', 'ci': 'purlin:test --remote'}
 
 # The key a signer signs with, and the commands that set one up.
 NO_KEY = 'No key to sign with. These commands set one up:'
@@ -104,70 +104,50 @@ SIGNING_SETUP = (
     'git config user.signingkey ~/.ssh/id_ed25519.pub',
 )
 
-# The overview.
-OVERVIEW = 'Signing %s: %s, at %s.'
+# The walk.
+OVERVIEW = 'Signing %s at %s.'
 OVERVIEW_RULES = '  %s on %s: %s, %s.'
 OVERVIEW_AUDIT = '  The audit: %d strong, %d weak, %d not audited.'
-OVERVIEW_STOPS = '  %s: %d hand checks, %d weak, %d not audited.'
-NO_STOPS = '  No stops: nothing is checked by hand, weak or not audited.'
-
-# The strong list.
-STRONG_ASK = '%s the audit found strong. list / walk / go on: '
-STRONG_AGAIN = 'walk / go on: '
-STRONG_LIST = '  %s %s'
-
-# A stop.
-HAND_CHECK = 'hand check'
-WEAK_STOP = 'weak'
-NOT_AUDITED = 'not audited'
-STRONG_STOP = 'strong'
-RESULT = '  %s: %s on %s'
-NO_SOURCE = "      the test's source was not found"
-HAND_ASK = '%s %s   what did you see, in one line, or stop: '
-STOP_ASK = '%s %s   continue / note / stop: '
-NOTE_ASK = 'Your note, in one line: '
-STOPPED = ('Stopped at %s %s: nothing was signed. After the fix, run '
-           'purlin:test --release, then purlin:sign.')
-
-# The signature.
+AUDIT_ASK = "The audit's findings: %s. list / go on: "
+AUDIT_SHOWN = "The audit's findings: %s."
+AUDIT_LIST = '  %s %s   %s'
+AUDIT_AGAIN = 'go on: '
+STOP_HEAD = '%s %s   hand check'
+HAND_ASK = '%s %s   what did you see, in one line, or Enter for no note, or stop: '
+NO_NOTE = 'no note'
+STOPPED = ('Stopped at %s %s: nothing was signed. After the fix, run purlin:test --all '
+           '--commit, then purlin:sign.')
 SIGN_ASK = 'Sign the evidence package for %s as %s? [y/N] '
 NOT_SIGNED = 'Nothing was signed.'
 SIGNED_AS = 'Signed %s as %s with the key ending ...%s.'
-TAG_STAYS = '%s stays at %s; this sign-off is added after it. Push it: git push'
-SIGNOFFS = 'Sign-offs of %s: %s.'
-NOT_MADE = ('The sign-off commit was not made: %s. Nothing was signed; run '
-            'purlin:sign again.')
+TAGGED = 'Tagged %s at %s.'
+SIGNED_PUSH = 'Push the branch and the tag: git push origin %s'
+TAG_STAYS = '%s stays at %s; this sign-off is added after it. Push it: git push origin%s'
+SHOW_NEXT = 'Answer each stop, then run purlin:sign --answers <file>.'
+MATCHES = 'The package matches its fingerprint.'
+NO_MATCH = 'The package does not match its fingerprint: %s.'
+
+# A stop.
+RESULT = '  %s: %s on %s'
+NOTHING = '; nothing to check for %s: %s'
+TIED_TO = '    tied to %s'
+TIED_TO_NONE = '    tied to no test'
+AUDIT_WEAK = 'What the audit found'
 
 # The agent's walk.
-SHOW_NEXT = 'Answer each stop, then run purlin:sign --answers <file>.'
 ANSWERS_MISSING = ('No sign-off: %s has no answer in %s. Answer every stop, '
                    'then run purlin:sign --answers %s again.')
 ANSWERS_UNREAD = 'No sign-off: %s cannot be read: %s.'
 
 NOT_A_DIRECTORY = 'sign.py: %s is not a directory.'
 
-# What the audit found, as a stop shows it under `What the audit found`: the
-# same words the audit printout and the dashboard give.
-NO_AUDIT = "No audit has read this rule's text, proof and test yet."
-STRONG_NOTHING = 'Strong. It found nothing.'
-STRONG = 'Strong.'
-WEAK = 'Weak.'
-UNDECIDED = ('Undecided. The AI audit could not decide, so the rule reads '
-             'weak until its proof or test changes.')
-
-TIED_TO = '    tied to %s'
-TIED_TO_NONE = '    tied to no test'
-
 EXIT_OK = 0
 EXIT_NOTHING = 1
 EXIT_BAD_INVOCATION = 2
 
-STRONG_ANSWERS = ('list', 'walk', 'go on')
-STOP_ANSWERS = ('continue', 'note', 'stop')
-
 
 class Stopped(Exception):
-    """The person stopped the walk at a rule; nothing is written."""
+    """The person stopped the walk at a hand check; nothing is written."""
 
     def __init__(self, stop):
         Exception.__init__(self, '%s %s' % (stop['feature'], stop['rule']))
@@ -178,13 +158,17 @@ class Stopped(Exception):
 # git
 # ---------------------------------------------------------------------------
 
+def _git(project_root, *args):
+    try:
+        return subprocess.run(['git'] + list(args), capture_output=True,
+                              text=True, cwd=project_root, timeout=60)
+    except (subprocess.SubprocessError, OSError) as error:
+        return subprocess.CompletedProcess(args, 1, '', str(error))
+
+
 def _git_out(project_root, *args):
     """What a git command prints, stripped, or '' when it fails."""
-    try:
-        result = subprocess.run(['git'] + list(args), capture_output=True,
-                                text=True, cwd=project_root, timeout=30)
-    except (subprocess.SubprocessError, OSError):
-        return ''
+    result = _git(project_root, *args)
     return result.stdout.strip() if result.returncode == 0 else ''
 
 
@@ -206,6 +190,77 @@ def _first_line(result):
     if lines:
         return lines[0].rstrip('.')
     return 'git exited with %d' % result.returncode
+
+
+def uncommitted_work(project_root):
+    """True when `git status` lists a path outside `.purlin/`."""
+    result = _git(project_root, 'status', '--porcelain', '-z')
+    if result.returncode != 0:
+        return False
+    fields = result.stdout.split('\0')
+    while fields:
+        field = fields.pop(0)
+        if len(field) < 4:
+            continue
+        if field[0] in 'RC' and fields:
+            fields.pop(0)
+        if not field[3:].startswith('.purlin/'):
+            return True
+    return False
+
+
+def behind_host(project_root):
+    """`(ref, count)` when the branch's copy on the host holds commits HEAD lacks.
+
+    The ref is the checked-out branch's upstream, else `origin/<branch>`
+    where that exists; the count is `git rev-list --count HEAD..<ref>`, as
+    this checkout last fetched it. None when there is no such ref, when HEAD
+    names no branch, or when the copy holds nothing HEAD lacks. Nothing is
+    fetched.
+    """
+    ref = _git_out(project_root, 'rev-parse', '--abbrev-ref', '@{upstream}')
+    if not ref:
+        branch = _branch(project_root)
+        if not branch:
+            return None
+        ref = 'origin/%s' % branch
+        if not _git_out(project_root, 'rev-parse', '--verify', '--quiet',
+                        'refs/remotes/%s' % ref):
+            return None
+    count = _git_out(project_root, 'rev-list', '--count', 'HEAD..%s' % ref)
+    if not count.isdigit() or int(count) == 0:
+        return None
+    return ref, int(count)
+
+
+def behind_words(count):
+    """`1 commit` or `<n> commits`."""
+    return '%d commit%s' % (count, '' if count == 1 else 's')
+
+
+def _branch(project_root):
+    """The checked-out branch's short name, or '' on a detached HEAD."""
+    return _git_out(project_root, 'symbolic-ref', '--quiet', '--short', 'HEAD')
+
+
+def tag_exists(project_root, name):
+    """True when the repository already carries this tag."""
+    return _git(project_root, 'rev-parse', '--verify', '--quiet',
+                'refs/tags/%s' % name).returncode == 0
+
+
+def write_tag(project_root, name, message):
+    """Write a signed annotated tag on HEAD. `(ok, git's first line)`."""
+    made = _git(project_root, 'tag', '-s', name, '-m', message)
+    if made.returncode != 0:
+        return False, _first_line(made)
+    return True, ''
+
+
+def tag_message(version, package):
+    """What the tag says: the version, and the commit the package describes."""
+    return 'Signed %s.\n\nCommit: %s\n' % (version, package.get('commit')
+                                         or 'unknown')
 
 
 def signing_configured(project_root):
@@ -230,42 +285,8 @@ def no_key_lines():
 # The refusals
 # ---------------------------------------------------------------------------
 
-def _gate(project_root):
-    config = config_engine.resolve_config(project_root)
-    return gate_module.resolve_gate(config).gate
-
-
 def _count(one, many, count):
     return one if count == 1 else many % count
-
-
-def failing_fill(payload):
-    """`(count words, rules)` for what stops a release at HEAD, or None.
-
-    The rules whose work left is in `summary.BLOCKING`, by feature then
-    number, as `sample_age RULE-2, RULE-3; stability RULE-1`, then a test
-    comment that names nothing, as `1 test comment to correct`.
-    """
-    named = {}
-    for entry in payload.get('features') or ():
-        for rule in entry.get('rules') or ():
-            if rule.get('feature') != entry.get('name'):
-                continue
-            if rule.get('left') in summary_module.BLOCKING:
-                named.setdefault(entry.get('name'), []).append(rule.get('id'))
-    corrections = sum(int(item.get('count') or 0)
-                      for item in payload.get('left') or ()
-                      if item.get('kind') == 'to_correct')
-    if not named and not corrections:
-        return None
-    count = sum(len(rules) for rules in named.values())
-    parts = ['%s %s' % (name, ', '.join(sorted(rules, key=_rule_number)))
-             for name, rules in sorted(named.items())]
-    if corrections:
-        parts.append(_count('1 test comment to correct',
-                            '%d test comments to correct', corrections))
-    return (_count('1 rule does not pass', '%d rules do not pass', count),
-            '; '.join(parts))
 
 
 def _rule_number(rule_id):
@@ -273,51 +294,124 @@ def _rule_number(rule_id):
     return int(digits) if digits.isdigit() else 0
 
 
+def failing_fill(package):
+    """`(count words, rules)` for what stops a sign-off, or None.
+
+    The rules whose work left is in `summary.BLOCKING`, by feature then
+    number, as `sample_age RULE-2, RULE-3; stability RULE-1`, then the test
+    comments to correct, as `1 test comment to correct`.
+    """
+    named = {}
+    for feature in package.get('features') or ():
+        for rule in feature.get('rules') or ():
+            if rule.get('left') in summary_module.BLOCKING:
+                named.setdefault(feature.get('name'), []).append(rule.get('id'))
+    corrections = sum(int(item.get('count') or 0)
+                      for item in package.get('left') or ()
+                      if item.get('kind') == 'to_correct')
+    if not named and not corrections and package.get('met'):
+        return None
+    count = sum(len(rules) for rules in named.values())
+    parts = ['%s %s' % (name, ', '.join(sorted(rules, key=_rule_number)))
+             for name, rules in sorted(named.items())]
+    if corrections:
+        parts.append(_count('1 test comment to correct',
+                            '%d test comments to correct', corrections))
+    if not parts:
+        parts = ['%s: %s' % (item.get('text'), item.get('command'))
+                 for item in package.get('left') or ()
+                 if item.get('kind') in summary_module.BLOCKING]
+    return (_count('1 rule does not pass', '%d rules do not pass', count),
+            '; '.join(parts))
+
+
+def off_code_fill(package, project_root):
+    """`(what, commands)` for the results not taken on this code, or None."""
+    found = package_module.off_code(package, project_root)
+    if not found:
+        return None
+    by_system, sources = [], set()
+    for words, source, names in found:
+        sources.add(source)
+        known = next((item for item in by_system if item[0] == words), None)
+        if known is None:
+            by_system.append((words, list(names)))
+        else:
+            known[1].extend(name for name in names if name not in known[1])
+    what = '; '.join('%s on %s' % (', '.join(sorted(names)), words)
+                     for words, names in by_system)
+    commands = ' and '.join(RUN_AGAIN[source] for source in ('local', 'ci')
+                            if source in sources)
+    return what, commands
+
+
 def _signer(project_root):
     return _git_out(project_root, 'config', '--get', 'user.email')
 
 
-def refusal(project_root, name=None):
-    """What stands in the way of a sign-off: `(lines, exit, release)`.
+def committed_package(project_root, version):
+    """The package HEAD's tree holds for `version`, or None."""
+    text = _git_out(project_root, 'show',
+                    'HEAD:%s' % signatures_module.package_rel(version))
+    try:
+        package = json.loads(text) if text else None
+    except ValueError:
+        return None
+    return package if isinstance(package, dict) else None
 
-    `lines` is empty when nothing does, and `release` then holds what the
-    walk reads: `version`, `rel`, `package`, `commit` (the commit that added
-    the package) and `email`.
+
+def refusal(project_root, name=None):
+    """What stands in the way of a sign-off: `(lines, exit, info)`.
+
+    `lines` is empty when nothing does, and `info` then holds what the walk
+    reads: `version`, `tag`, `first` (no tag is written yet), `package`,
+    `written` (the package is to be written with the sign-off), `head` and
+    `email`.
     """
-    if _gate(project_root) != gate_module.GATES[-1]:
-        return [AT_PASSED], EXIT_OK, None
-    if release.uncommitted_work(project_root):
+    if uncommitted_work(project_root):
         return [NO_SIGNOFF_WORK], EXIT_NOTHING, None
-    version = str(name or '').strip() or release.project_version(project_root)
+    if package_module.uncommitted_evidence(project_root):
+        return [NO_SIGNOFF_EVIDENCE], EXIT_NOTHING, None
+    version = (str(name or '').strip()
+               or package_module.project_version(project_root))
     if not version:
         return [NO_VERSION], EXIT_NOTHING, None
     head = _git_out(project_root, 'rev-parse', 'HEAD')
-    found = release.package_at_head(project_root, version)
-    if not found:
-        return ([NO_SIGNOFF_PACKAGE % (version, head[:7] or 'HEAD')],
+    tag = package_module.tag_name(version)
+    first = not tag_exists(project_root, tag)
+    if not first:
+        at = _git_out(project_root, 'rev-parse', '%s^{commit}' % tag)
+        if _git(project_root, 'merge-base', '--is-ancestor', at,
+                'HEAD').returncode != 0:
+            return [NO_SIGNOFF_ELSEWHERE % (tag, at[:7])], EXIT_NOTHING, None
+        if not package_module.only_records_between(project_root, at, 'HEAD'):
+            return [NO_SIGNOFF_MOVED % (tag, at[:7])], EXIT_NOTHING, None
+    package = None if first else committed_package(project_root, version)
+    written = package is None
+    if written:
+        try:
+            package = package_module.build(project_root, version)
+        except (package_module.PackageError, IOError, OSError) as error:
+            return [NOT_WRITTEN % str(error).rstrip('.')], EXIT_NOTHING, None
+    off = off_code_fill(package, project_root)
+    if off:
+        return ([NO_SIGNOFF_NOT_THIS_CODE % (head[:7], off[0], off[1])],
                 EXIT_NOTHING, None)
-    rel, package = found
-    commit = _git_out(project_root, 'log', '-1', '--format=%H', '--', rel)
-    if not release.only_signoffs_since(project_root, commit):
-        return ([NO_SIGNOFF_MOVED % (version, commit[:7], head[:7])],
-                EXIT_NOTHING, None)
-    failing = failing_fill(payload_module.build_payload(
-        project_root, generated_by='sign'))
+    failing = failing_fill(package)
     if failing:
         return ([NO_SIGNOFF_FAILING % (failing[0], head[:7], failing[1])],
                 EXIT_NOTHING, None)
-    behind = release.behind_host(project_root)
+    behind = behind_host(project_root)
     if behind:
         ref, count = behind
-        return ([NO_SIGNOFF_BEHIND % (ref, release.behind_words(count),
-                                      head[:7])], EXIT_NOTHING, None)
+        return ([NO_SIGNOFF_BEHIND % (ref, behind_words(count), head[:7])],
+                EXIT_NOTHING, None)
     email = _signer(project_root)
     if already_signed(project_root, version, email, package):
         return [ALREADY_SIGNED % (email, version)], EXIT_NOTHING, None
-    if not signing_configured(project_root):
-        return no_key_lines(), EXIT_NOTHING, None
-    return [], EXIT_OK, {'version': version, 'rel': rel, 'package': package,
-                         'commit': commit, 'email': email}
+    return [], EXIT_OK, {'version': version, 'tag': tag, 'first': first,
+                         'package': package, 'written': written,
+                         'head': head, 'email': email}
 
 
 def signoff_rel(version, email):
@@ -353,95 +447,97 @@ def package_rules(package):
     return found
 
 
-def why_of(rule):
-    """`hand check`, `weak`, `not audited` or `strong`: why a rule stops.
-
-    A rule with a `@manual` proof is a hand check whatever the audit found.
-    Otherwise the word comes from the audit's `verdict` alone, an undecided
-    one reading weak as the strong cell reads it.
-    """
-    if any(proof.get('manual') for proof in rule.get('proofs') or ()):
-        return HAND_CHECK
-    verdict = (rule.get('audit') or {}).get('verdict')
-    if verdict == 'strong':
-        return STRONG_STOP
-    if verdict:
-        return WEAK_STOP
-    return NOT_AUDITED
+def _hand_check(rule):
+    return any(proof.get('manual') for proof in rule.get('proofs') or ())
 
 
-def _passes(rule):
-    return ((rule.get('statuses') or {}).get('passed') or {}).get('word') \
-        == 'passed'
+def _weak(rule):
+    return (rule.get('audit') or {}).get('verdict') == 'weak'
+
+
+def _chosen_results(rule):
+    """`{os: result}`: per system, a current result before one that is not,
+    then a remote runner's before a person's."""
+    chosen = {}
+    for result in rule.get('results') or ():
+        system = result.get('os')
+        if not system:
+            continue
+        rank = (not result.get('current'), result.get('source') != 'ci')
+        if system not in chosen or rank < chosen[system][0]:
+            chosen[system] = (rank, result)
+    return {system: pair[1] for system, pair in chosen.items()}
+
+
+def _systems(names):
+    return ([name for name in states_module.SYSTEM_ORDER if name in names]
+            + sorted(name for name in names
+                     if name not in states_module.SYSTEM_ORDER))
 
 
 def plan(package):
-    """What the walk shows: the overview's numbers, the stops and the strong list.
-
-    Stops are `{feature, rule, why, entry}`: every hand check, then every
-    weak rule, then every rule not audited. `strong` lists the strong rules.
-    """
+    """What the walk shows: the overview's numbers, the weak rules and the stops."""
     rules = package_rules(package)
-    by_why = {HAND_CHECK: [], WEAK_STOP: [], NOT_AUDITED: [], STRONG_STOP: []}
-    systems = set()
-    passing = 0
+    per_system = {}
+    weak, stops = [], []
     for feature, rule in rules:
-        why = why_of(rule)
-        by_why[why].append({'feature': feature, 'rule': rule.get('id'),
-                            'why': why, 'entry': rule})
-        if why != HAND_CHECK and _passes(rule):
-            passing += 1
-        for result in rule.get('results') or ():
-            if result.get('os'):
-                systems.add(result['os'])
+        for system, result in _chosen_results(rule).items():
+            counts = per_system.setdefault(system, {'rules': 0, 'passing': 0,
+                                                    'hand_checks': 0})
+            counts['rules'] += 1
+            if result.get('result') == 'passed':
+                counts['passing'] += 1
+            if _hand_check(rule):
+                counts['hand_checks'] += 1
+        if _weak(rule):
+            weak.append({'feature': feature, 'rule': rule.get('id'),
+                         'entry': rule})
+        if _hand_check(rule):
+            stops.append({'feature': feature, 'rule': rule.get('id'),
+                          'entry': rule})
+    audit = package.get('audit') or {}
+    audited = any(audit.get(key) for key in ('strong', 'weak'))
     overview = {
-        'rules': len(rules), 'passing': passing,
-        'hand_checks': len(by_why[HAND_CHECK]),
-        'strong': len(by_why[STRONG_STOP]), 'weak': len(by_why[WEAK_STOP]),
-        'not_audited': len(by_why[NOT_AUDITED]),
-        'systems': [name for name in states_module.SYSTEM_ORDER
-                    if name in systems]
-        + sorted(name for name in systems
-                 if name not in states_module.SYSTEM_ORDER)}
-    return {'overview': overview,
-            'stops': by_why[HAND_CHECK] + by_why[WEAK_STOP]
-            + by_why[NOT_AUDITED],
-            'strong': by_why[STRONG_STOP]}
+        'systems': [dict(per_system[name], os=name)
+                    for name in _systems(per_system)],
+        'audit': ({'strong': audit.get('strong') or 0,
+                   'weak': audit.get('weak') or 0,
+                   'not_audited': audit.get('not_audited') or 0}
+                  if audited else None)}
+    return {'overview': overview, 'weak': weak, 'stops': stops}
 
 
-def overview_lines(release_info, shown):
-    """The overview: what is signed, the rules and systems, the audit, the stops."""
-    overview = shown['overview']
-    lines = [OVERVIEW % (release_info['version'], release_info['rel'],
-                         release_info['commit'][:7])]
-    lines.append(OVERVIEW_RULES % (
-        _count('1 rule', '%d rules', overview['rules']),
-        states_module.systems_text(overview['systems']) or 'no system',
-        _count('1 passes its tests', '%d pass their tests',
-               overview['passing']),
-        _count('1 is checked by hand', '%d are checked by hand',
-               overview['hand_checks'])))
-    lines.append(OVERVIEW_AUDIT % (overview['strong'], overview['weak'],
-                                   overview['not_audited']))
-    stops = (overview['hand_checks'] + overview['weak']
-             + overview['not_audited'])
-    if stops:
-        lines.append(OVERVIEW_STOPS % (_count('1 stop', '%d stops', stops),
-                                       overview['hand_checks'],
-                                       overview['weak'],
-                                       overview['not_audited']))
-    else:
-        lines.append(NO_STOPS)
+def overview_lines(info, shown):
+    """The run lines, then what is signed, the rules per system and the audit."""
+    package = info['package']
+    lines = package_module.run_lines(package)
+    lines.append(OVERVIEW % (info['version'],
+                             str(package.get('commit') or '')[:7]))
+    for system in shown['overview']['systems']:
+        lines.append(OVERVIEW_RULES % (
+            _count('1 rule', '%d rules', system['rules']),
+            evidence_module.os_word(system['os']),
+            _count('1 passes its tests', '%d pass their tests',
+                   system['passing']),
+            'no hand check' if not system['hand_checks']
+            else _count('1 has a hand check', '%d have a hand check',
+                        system['hand_checks'])))
+    audit = shown['overview']['audit']
+    if audit:
+        lines.append(OVERVIEW_AUDIT % (audit['strong'], audit['weak'],
+                                       audit['not_audited']))
     return lines
 
 
-def strong_list_lines(strong):
-    """One line per feature: the feature, then its strong rules joined ', '."""
-    features = {}
-    for stop in strong:
-        features.setdefault(stop['feature'], []).append(stop['rule'])
-    return [STRONG_LIST % (name, ', '.join(rules))
-            for name, rules in sorted(features.items())]
+def audit_list_lines(weak):
+    """One line per finding of each weak rule, the rule named on each."""
+    lines = []
+    for item in weak:
+        findings = (item['entry'].get('audit') or {}).get('findings') or ()
+        for finding in findings or ('',):
+            lines.append((AUDIT_LIST % (item['feature'], item['rule'],
+                                        finding)).rstrip())
+    return lines
 
 
 def _proof_tags(proof):
@@ -454,101 +550,52 @@ def _proof_tags(proof):
     return ' (%s)' % ' '.join(tags) if tags else ''
 
 
-def audit_lines(entry):
-    """What the audit found for one rule, one line each, indented two spaces.
-
-    `Strong. It found nothing.`, or `Strong.`, `Weak.` or the undecided
-    sentence followed by each finding on a line of its own, or that no audit
-    has read the rule yet. It names no reader.
-    """
-    audit = entry.get('audit') or {}
-    findings = [str(line) for line in audit.get('findings') or ()]
-    answered = audit.get('verdict')
-    if not answered:
-        heads = [NO_AUDIT]
-    elif answered == 'strong':
-        heads = [STRONG if findings else STRONG_NOTHING]
-    elif answered == 'weak':
-        heads = [WEAK]
-    else:
-        heads = [UNDECIDED]
-    if answered:
-        heads.extend(findings)
-    return ['  %s' % line for line in heads]
-
-
-def tied_lines(project_root, feature, entry, proof_id, manual=False):
-    """Each test tied to a proof, as `file::name`, with its body six spaces in.
-
-    One line saying there is none where no test is tied. A `@manual` proof
-    has no test to name, so it has none.
-    """
+def tied_lines(entry, proof_id, manual=False):
+    """Each test tied to a proof, as `file::name`; one line saying there is
+    none where no test is tied. A `@manual` proof has no test to name."""
     if manual:
         return []
-    lines = []
-    for test in entry.get('tests') or ():
-        if test.get('proof') != proof_id:
-            continue
-        lines.append(TIED_TO % ('%s::%s' % (test.get('file'), test.get('name'))))
-        body = marked_tests.source(project_root, feature, proof_id,
-                                   test.get('file'), test.get('name'))
-        if body:
-            lines.extend('      %s' % line if line.strip() else ''
-                         for line in body.rstrip('\n').splitlines())
-        else:
-            lines.append(NO_SOURCE)
+    lines = [TIED_TO % ('%s::%s' % (test.get('file'), test.get('name')))
+             for test in entry.get('tests') or ()
+             if test.get('proof') == proof_id]
     return lines or [TIED_TO_NONE]
 
 
 def result_lines(entry):
-    """One line per system: its words, the word its results read, the machine.
-
-    Where a system has results from both sources, a current one is read
-    before one that is not, and the source's own order breaks a tie.
-    """
-    chosen = {}
-    for result in entry.get('results') or ():
-        system = result.get('os')
-        if not system:
-            continue
-        rank = (not result.get('current'), result.get('source') != 'ci')
-        if system not in chosen or rank < chosen[system][0]:
-            chosen[system] = (rank, result)
+    """One line per system: its words, the word its results read, the machine,
+    and each proof that found nothing to check, with its reason."""
+    chosen = _chosen_results(entry)
     lines = []
-    for system in states_module.SYSTEM_ORDER + tuple(
-            sorted(name for name in chosen
-                   if name not in states_module.SYSTEM_ORDER)):
-        if system not in chosen:
-            continue
-        result = chosen[system][1]
-        lines.append(RESULT % (evidence_module.os_word(system),
-                               result.get('result') or 'not run',
-                               result.get('machine') or result.get('runner')
-                               or 'an unnamed machine'))
+    for system in _systems(chosen):
+        result = chosen[system]
+        line = RESULT % (evidence_module.os_word(system),
+                         result.get('result') or 'not run',
+                         result.get('machine') or result.get('runner')
+                         or 'an unnamed machine')
+        for item in result.get('nothing_to_check') or ():
+            line += NOTHING % (item.get('proof'), item.get('reason'))
+        lines.append(line)
     return lines
 
 
-def render_stop(project_root, stop):
-    """One stop: its head, the rule, each proof with its tests, the results
-    and what the audit found. A hand check shows the rule and its proofs."""
+def render_stop(stop):
+    """One hand check's stop: its head, the rule, each proof with its tests,
+    the results on each system and the audit's findings where it found the
+    rule weak."""
     entry = stop['entry']
-    feature = stop['feature']
-    lines = ['%s %s   %s' % (feature, stop['rule'], stop['why']),
+    lines = [STOP_HEAD % (stop['feature'], stop['rule']),
              'Rule', '  %s' % (entry.get('text') or ''), 'Proof']
     for proof in entry.get('proofs') or ():
         lines.append('  %s%s: %s' % (proof.get('id'), _proof_tags(proof),
                                      proof.get('text')))
-        lines.extend(tied_lines(project_root, feature, entry, proof.get('id'),
+        lines.extend(tied_lines(entry, proof.get('id'),
                                 bool(proof.get('manual'))))
-    if any(test.get('proof') == stop['rule']
-           for test in entry.get('tests') or ()):
-        lines.extend(tied_lines(project_root, feature, entry, stop['rule']))
-    if stop['why'] == HAND_CHECK:
-        return lines
     lines.append('Results')
     lines.extend(result_lines(entry))
-    lines.append('What the audit found')
-    lines.extend(audit_lines(entry))
+    if _weak(entry):
+        lines.append(AUDIT_WEAK)
+        lines.extend('  %s' % finding for finding in
+                     (entry.get('audit') or {}).get('findings') or ())
     return lines
 
 
@@ -564,81 +611,74 @@ def terminal_ask(_kind, _key, prompt):
         return None
 
 
+def _say(lines, out):
+    for line in lines:
+        print(line, file=out)
+
+
 def show(project_root, name=None, out=None):
-    """`sign.py --show`: the refusal, or the overview, every stop and the
-    strong list, then the next step. Asks nothing and writes nothing."""
+    """`sign.py --show`: the refusal, or what the walk shows, then the next step.
+    Asks nothing, writes nothing and needs no key."""
     out = sys.stdout if out is None else out
     lines, code, info = refusal(project_root, name)
     if lines:
-        for line in lines:
-            print(line, file=out)
+        _say(lines, out)
         return code
     shown = plan(info['package'])
-    for line in overview_lines(info, shown):
-        print(line, file=out)
+    _say(overview_lines(info, shown), out)
+    if shown['weak']:
+        print(AUDIT_SHOWN % _weak_words(shown['weak']), file=out)
+        _say(audit_list_lines(shown['weak']), out)
     for stop in shown['stops']:
         print('', file=out)
-        for line in render_stop(project_root, stop):
-            print(line, file=out)
-    if shown['strong']:
-        print('', file=out)
-        print((STRONG_ASK % _count('1 rule', '%d rules',
-                                   len(shown['strong']))).rstrip(), file=out)
-        for line in strong_list_lines(shown['strong']):
-            print(line, file=out)
+        _say(render_stop(stop), out)
     print('', file=out)
     print(SHOW_NEXT, file=out)
     return EXIT_OK
+
+
+def _weak_words(weak):
+    return '%d weak' % len(weak)
 
 
 def walk(project_root, name=None, ask=None, out=None):
     """The sign-off walk. Returns the exit code.
 
     `ask(kind, key, prompt)` returns the line given, or None where input
-    ended: `kind` is `strong`, `strong_again`, `hand`, `stop`, `note` or
-    `sign`, and `key` is `<feature> <RULE-N>` at a stop. The default reads
-    the terminal. Nothing is written until the person says yes to the last
-    question; then one file goes in one signed commit.
+    ended: `kind` is `audit`, `audit_again`, `hand` or `sign`, and `key` is
+    `<feature> <RULE-N>` at a hand check. The default reads the terminal.
+    Nothing is written until the person says yes to the last question.
     """
     out = sys.stdout if out is None else out
     ask = terminal_ask if ask is None else ask
     lines, code, info = refusal(project_root, name)
     if lines:
-        for line in lines:
-            print(line, file=out)
+        _say(lines, out)
         return code
+    if not signing_configured(project_root):
+        _say(no_key_lines(), out)
+        return EXIT_NOTHING
     return _walk(project_root, info, ask, out)
 
 
 def _walk(project_root, info, ask, out):
     shown = plan(info['package'])
-    for line in overview_lines(info, shown):
-        print(line, file=out)
-    stops = list(shown['stops'])
-    in_list = list(shown['strong'])
+    _say(overview_lines(info, shown), out)
     list_opened = False
-    if in_list:
-        print('', file=out)
-        given = _choose(ask, 'strong', STRONG_ASK % _count(
-            '1 rule', '%d rules', len(in_list)), STRONG_ANSWERS)
+    if shown['weak']:
+        given = _choose(ask, 'audit', AUDIT_ASK % _weak_words(shown['weak']),
+                        ('list', 'go on'))
         if given == 'list':
             list_opened = True
-            for line in strong_list_lines(in_list):
-                print(line, file=out)
-            given = _choose(ask, 'strong_again', STRONG_AGAIN,
-                            STRONG_ANSWERS[1:])
-        if given == 'walk':
-            stops.extend(in_list)
-            in_list = []
-    notes = []
+            _say(audit_list_lines(shown['weak']), out)
+            _choose(ask, 'audit_again', AUDIT_AGAIN, ('go on',))
+    notes, walked = [], []
     try:
-        for stop in stops:
+        for stop in shown['stops']:
             print('', file=out)
-            for line in render_stop(project_root, stop):
-                print(line, file=out)
-            note = _at_stop(ask, stop)
-            if note:
-                notes.append(note)
+            _say(render_stop(stop), out)
+            notes.append(_at_stop(ask, stop))
+            walked.append({'feature': stop['feature'], 'rule': stop['rule']})
     except Stopped as stopped:
         print(STOPPED % (stopped.stop['feature'], stopped.stop['rule']),
               file=out)
@@ -648,18 +688,15 @@ def _walk(project_root, info, ask, out):
     if str(given or '').strip().lower() not in ('y', 'yes'):
         print(NOT_SIGNED, file=out)
         return EXIT_OK
-    record = {
-        'overview': shown['overview'],
-        'one_by_one': [{'feature': stop['feature'], 'rule': stop['rule'],
-                        'why': stop['why']} for stop in stops],
-        'in_list': [{'feature': stop['feature'], 'rule': stop['rule']}
-                    for stop in in_list],
-        'list_opened': list_opened}
+    record = {'overview': shown['overview'],
+              'runs': list(info['package'].get('runs') or ()),
+              'hand_checks': walked,
+              'audit_list_opened': list_opened}
     return _sign(project_root, info, record, notes, out)
 
 
 def _choose(ask, kind, prompt, answers):
-    """One of `answers`, an empty line reading as the last; asked again otherwise."""
+    """One of `answers`, an empty line or the end of input reading as the last."""
     while True:
         given = ask(kind, None, prompt)
         if given is None:
@@ -672,33 +709,13 @@ def _choose(ask, kind, prompt, answers):
 
 
 def _at_stop(ask, stop):
-    """Ask at one stop. The note it takes, or None; raises `Stopped` on stop."""
+    """Ask at one hand check. The note it takes; raises `Stopped` on stop."""
     key = '%s %s' % (stop['feature'], stop['rule'])
-    if stop['why'] == HAND_CHECK:
-        while True:
-            given = ask('hand', key, HAND_ASK % (stop['feature'], stop['rule']))
-            if given is None or given.strip().lower() == 'stop':
-                raise Stopped(stop)
-            if given.strip():
-                return {'feature': stop['feature'], 'rule': stop['rule'],
-                        'kind': HAND_CHECK, 'note': given.strip()}
-    while True:
-        given = ask('stop', key, STOP_ASK % (stop['feature'], stop['rule']))
-        if given is None:
-            raise Stopped(stop)
-        given = given.strip().lower()
-        if given == 'stop':
-            raise Stopped(stop)
-        if given == 'continue':
-            return None
-        if given == 'note':
-            line = ask('note', key, NOTE_ASK)
-            if line is None:
-                raise Stopped(stop)
-            if not line.strip():
-                return None
-            return {'feature': stop['feature'], 'rule': stop['rule'],
-                    'kind': 'note', 'note': line.strip()}
+    given = ask('hand', key, HAND_ASK % (stop['feature'], stop['rule']))
+    if given is None or given.strip().lower() == 'stop':
+        raise Stopped(stop)
+    return {'feature': stop['feature'], 'rule': stop['rule'],
+            'note': given.strip() or NO_NOTE}
 
 
 # ---------------------------------------------------------------------------
@@ -710,7 +727,7 @@ def signoff_body(project_root, info, record, notes):
     return {
         'schema': SCHEMA,
         'version': info['version'],
-        'package': info['rel'],
+        'package': signatures_module.package_rel(info['version']),
         'package_hash': info['package'].get('fingerprint'),
         'commit': info['package'].get('commit'),
         'signer': info['email'],
@@ -723,80 +740,93 @@ def signoff_body(project_root, info, record, notes):
     }
 
 
-def _commit(project_root, rel, message):
-    """Stage `rel` and commit it alone, signed. `(sha, None)` or `(None, why)`."""
-    add = subprocess.run(['git', 'add', '--', rel], capture_output=True,
-                         text=True, cwd=project_root, timeout=30)
+def _read_bytes(path):
+    try:
+        with open(path, 'rb') as handle:
+            return handle.read()
+    except (IOError, OSError):
+        return None
+
+
+def _take_back(project_root, kept):
+    """Leave each file as it was before a commit not made."""
+    rels = list(kept)
+    subprocess.run(['git', 'reset', '-q', '--'] + rels, capture_output=True,
+                   cwd=project_root, timeout=30)
+    for rel, earlier in kept.items():
+        path = os.path.join(project_root, *rel.split('/'))
+        if earlier is None:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+        else:
+            with open(path, 'wb') as handle:
+                handle.write(earlier)
+
+
+def _commit(project_root, rels, message):
+    """Stage `rels` and commit them alone, signed. `(sha, None)` or `(None, why)`."""
+    add = _git(project_root, 'add', '--', *rels)
     if add.returncode != 0:
         return None, _first_line(add)
-    made = subprocess.run(['git', 'commit', '-q', '-S', '-m', message, '--',
-                           rel], capture_output=True, text=True,
-                          cwd=project_root, timeout=60)
+    made = _git(project_root, 'commit', '-q', '-S', '-m', message, '--', *rels)
     if made.returncode != 0:
         return None, _first_line(made)
     return _git_out(project_root, 'rev-parse', 'HEAD') or None, None
 
 
-def _take_back(project_root, rel, earlier):
-    """Leave the sign-off file as HEAD holds it after a commit not made."""
-    subprocess.run(['git', 'reset', '-q', '--', rel], capture_output=True,
-                   cwd=project_root, timeout=30)
-    path = os.path.join(project_root, *rel.split('/'))
-    if earlier is None:
-        try:
-            os.remove(path)
-        except OSError:
-            pass
-    else:
-        with open(path, 'wb') as handle:
-            handle.write(earlier)
-
-
-def tag_message(package):
-    """What the tag says: the gate, and the commit the package describes."""
-    gate = gate_module.GATES[-1]
-    return ('Released at the gate %s.\n\nCommit: %s\nGate: %s\n'
-            % (gate, package.get('commit') or 'unknown', gate))
-
-
 def _sign(project_root, info, record, notes, out):
     version, email = info['version'], info['email']
+    package = info['package']
+    rels = []
+    kept = {}
+    try:
+        if info['written']:
+            rel = signatures_module.package_rel(version)
+            kept[rel] = _read_bytes(os.path.join(project_root, *rel.split('/')))
+            package_module.write(project_root, package)
+            rels.append(rel)
+    except (package_module.PackageError, IOError, OSError) as error:
+        print(NOT_WRITTEN % str(error).rstrip('.'), file=out)
+        return EXIT_NOTHING
     rel = signoff_rel(version, email)
     path = os.path.join(project_root, *rel.split('/'))
-    earlier = None
-    if os.path.exists(path):
-        with open(path, 'rb') as handle:
-            earlier = handle.read()
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, 'w', encoding='utf-8') as handle:
-        json.dump(signoff_body(project_root, info, record, notes), handle,
-                  indent=2, ensure_ascii=False)
-        handle.write('\n')
-    sha, why = _commit(project_root, rel, 'sign(%s): %s' % (version, email))
+    try:
+        kept[rel] = _read_bytes(path)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8', newline='\n') as handle:
+            json.dump(signoff_body(project_root, info, record, notes), handle,
+                      indent=2, ensure_ascii=False)
+            handle.write('\n')
+    except (IOError, OSError) as error:
+        _take_back(project_root, kept)
+        print(NOT_WRITTEN % str(error).rstrip('.'), file=out)
+        return EXIT_NOTHING
+    rels.append(rel)
+    sha, why = _commit(project_root, rels, 'sign(%s): %s' % (version, email))
     if not sha:
-        _take_back(project_root, rel, earlier)
+        _take_back(project_root, kept)
         print(NOT_MADE % why, file=out)
         return EXIT_NOTHING
     key = signatures_module.key_fingerprint(project_root) or ''
     print(SIGNED_AS % (version, email, key[-4:]), file=out)
-    tag = release.tag_name(gate_module.GATES[-1], version)
+    tag = info['tag']
+    branch = _branch(project_root)
     code = EXIT_OK
-    if release.tag_exists(project_root, tag):
-        at = _git_out(project_root, 'rev-parse', '%s^{commit}' % tag)
-        print(TAG_STAYS % (tag, at[:7]), file=out)
-    else:
-        ok, said = release.write_tag(project_root, tag,
-                                     tag_message(info['package']), True)
+    if info['first']:
+        ok, said = write_tag(project_root, tag, tag_message(version, package))
         if ok:
-            print(release.TAGGED % (tag, sha[:7]), file=out)
-            print(summary_module.RELEASE % tag, file=out)
+            print(TAGGED % (tag, sha[:7]), file=out)
+            print(SIGNED_PUSH % ' '.join(part for part in (branch, tag) if part),
+                  file=out)
         else:
-            print(release.NO_TAG_GIT % (tag, said), file=out)
+            print(NO_TAG_GIT % (tag, said), file=out)
             code = EXIT_NOTHING
-    signers = [item.get('signer') for item in
-               signatures_module.load_signoffs(project_root, version)]
-    print(SIGNOFFS % (version, ', '.join(str(item) for item in signers)),
-          file=out)
+    else:
+        at = _git_out(project_root, 'rev-parse', '%s^{commit}' % tag)
+        print(TAG_STAYS % (tag, at[:7], ' ' + branch if branch else ''),
+              file=out)
     report_data.refresh(project_root)
     return code
 
@@ -819,45 +849,34 @@ def read_answers(path):
     return data, None
 
 
+def _stop_answer(answers, key):
+    given = answers.get('stops')
+    one = given.get(key) if isinstance(given, dict) else None
+    return one if isinstance(one, dict) else {}
+
+
 def missing_answer(answers, stops):
     """The first stop, as `<feature> <RULE-N>`, the answers leave unanswered."""
-    given = answers.get('stops')
-    given = given if isinstance(given, dict) else {}
     for stop in stops:
         key = '%s %s' % (stop['feature'], stop['rule'])
-        one = given.get(key)
-        word = one.get('answer') if isinstance(one, dict) else None
-        note = str((one or {}).get('note') or '').strip() \
-            if isinstance(one, dict) else ''
-        if stop['why'] == HAND_CHECK:
-            if word == 'stop' or (word == 'note' and note):
-                continue
-        elif word in STOP_ANSWERS:
-            continue
-        return key
+        if _stop_answer(answers, key).get('answer') not in ('note', 'stop'):
+            return key
     return None
 
 
 def answers_ask(answers, out):
     """An `ask` that reads the answers file and prints each answer after its question."""
-    stops = answers.get('stops') if isinstance(answers.get('stops'),
-                                               dict) else {}
-    strong = str(answers.get('strong') or 'go on').strip().lower()
+    audit = str(answers.get('audit') or 'go on').strip().lower()
 
     def ask(kind, key, prompt):
-        one = stops.get(key) if key else None
-        one = one if isinstance(one, dict) else {}
-        if kind == 'strong':
-            given = strong
-        elif kind == 'strong_again':
-            given = 'walk' if strong == 'walk' else 'go on'
+        if kind == 'audit':
+            given = 'list' if audit == 'list' else 'go on'
+        elif kind == 'audit_again':
+            given = 'go on'
         elif kind == 'hand':
+            one = _stop_answer(answers, key)
             given = ('stop' if one.get('answer') == 'stop'
                      else str(one.get('note') or ''))
-        elif kind == 'stop':
-            given = str(one.get('answer') or '')
-        elif kind == 'note':
-            given = str(one.get('note') or '')
         else:
             given = 'y' if answers.get('sign') is True else 'n'
         print('%s%s' % (prompt, given), file=out)
@@ -870,22 +889,31 @@ def walk_with_answers(project_root, path, name=None, out=None):
     out = sys.stdout if out is None else out
     lines, code, info = refusal(project_root, name)
     if lines:
-        for line in lines:
-            print(line, file=out)
+        _say(lines, out)
         return code
+    if not signing_configured(project_root):
+        _say(no_key_lines(), out)
+        return EXIT_NOTHING
     answers, why = read_answers(path)
     if answers is None:
         print(ANSWERS_UNREAD % (path, why), file=out)
         return EXIT_NOTHING
-    shown = plan(info['package'])
-    stops = list(shown['stops'])
-    if str(answers.get('strong') or '').strip().lower() == 'walk':
-        stops.extend(shown['strong'])
-    missing = missing_answer(answers, stops)
+    missing = missing_answer(answers, plan(info['package'])['stops'])
     if missing:
         print(ANSWERS_MISSING % (missing, path, path), file=out)
         return EXIT_NOTHING
     return _walk(project_root, info, answers_ask(answers, out), out)
+
+
+def check(path, out=None):
+    """`sign.py --check FILE`: whether the package matches its fingerprint."""
+    out = sys.stdout if out is None else out
+    why = package_module.check_file(path)
+    if why:
+        print(NO_MATCH % why, file=out)
+        return EXIT_NOTHING
+    print(MATCHES, file=out)
+    return EXIT_OK
 
 
 # ---------------------------------------------------------------------------
@@ -895,15 +923,23 @@ def walk_with_answers(project_root, path, name=None, out=None):
 class _Args(object):
     """One parsed invocation, or the reason it could not be parsed."""
 
-    __slots__ = ('show', 'answers', 'release', 'project_root', 'error', 'help')
+    __slots__ = ('show', 'answers', 'check', 'version', 'project_root',
+                 'error', 'help')
 
     def __init__(self):
         self.show = False
         self.answers = None
-        self.release = None
+        self.check = None
+        self.version = None
         self.project_root = '.'
         self.error = None
         self.help = False
+
+
+_NEEDS = {'--answers': ('answers', '--answers needs the file that holds them.'),
+          '--check': ('check', '--check needs the package file to check.'),
+          '--version': ('version', '--version needs the version to sign.'),
+          '--project-root': ('project_root', '--project-root needs a directory.')}
 
 
 def _parse(argv):
@@ -917,29 +953,22 @@ def _parse(argv):
             return args
         if item == '--show':
             args.show = True
-        elif item == '--answers':
+        elif item in _NEEDS:
+            field, why = _NEEDS[item]
             if not rest or not rest[0].strip() or rest[0].startswith('--'):
-                args.error = '--answers needs the file that holds them.'
+                args.error = why
                 return args
-            args.answers = rest.pop(0)
-        elif item == '--release':
-            if not rest or not rest[0].strip() or rest[0].startswith('--'):
-                args.error = '--release needs the version to sign.'
-                return args
-            args.release = rest.pop(0)
-        elif item == '--project-root':
-            if not rest:
-                args.error = '--project-root needs a directory.'
-                return args
-            args.project_root = rest.pop(0)
+            setattr(args, field, rest.pop(0))
         elif item.startswith('-'):
             args.error = 'unknown option %s' % item
             return args
         else:
             args.error = 'unexpected argument %s' % item
             return args
-    if args.show and args.answers is not None:
-        args.error = '--show and --answers are two steps; name one.'
+    if sum([args.show, args.answers is not None, args.check is not None]) > 1:
+        args.error = '--show, --answers and --check are three steps; name one.'
+    elif args.check is not None and args.version is not None:
+        args.error = '--check reads a file and takes no version.'
     return args
 
 
@@ -953,6 +982,8 @@ def main(argv=None):
         print(USAGE, file=sys.stderr)
         print('sign.py: %s' % args.error, file=sys.stderr)
         return EXIT_BAD_INVOCATION
+    if args.check is not None:
+        return check(args.check)
     project_root = args.project_root
     if not os.path.isdir(project_root or '.'):
         print(NOT_A_DIRECTORY % project_root, file=sys.stderr)
@@ -965,10 +996,10 @@ def main(argv=None):
         print(problem)
         return EXIT_NOTHING
     if args.show:
-        return show(project_root, args.release)
+        return show(project_root, args.version)
     if args.answers is not None:
-        return walk_with_answers(project_root, args.answers, args.release)
-    return walk(project_root, args.release)
+        return walk_with_answers(project_root, args.answers, args.version)
+    return walk(project_root, args.version)
 
 
 if __name__ == '__main__':

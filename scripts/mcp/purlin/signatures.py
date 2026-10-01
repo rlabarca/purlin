@@ -1,4 +1,4 @@
-"""Read the sign-offs a person committed over a release's evidence package.
+"""Read the sign-offs a person committed over a version's evidence package.
 
 One sign-off is one file per signer per version, beside the package it signs,
 so two signers never conflict:
@@ -31,7 +31,7 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-# Where a release's evidence package and its sign-offs sit.
+# Where a version's evidence package and its sign-offs sit.
 PACKAGE_DIR = '.purlin/evidence/package'
 
 
@@ -122,8 +122,8 @@ def counts(project_root, signature):
 
     This answers how the file was committed: it is tracked, the last commit
     touching it carries a signature header, and that signature verifies over
-    the commit. Nothing about the key or the author is read, and the answer
-    is the same at every gate. `load_signoffs` adds the package's hash.
+    the commit. Nothing about the key or the author is read.
+    `load_signoffs` adds the package's hash.
     """
     path = (signature or {}).get('path')
     if not path or not _tracked(project_root, path):
