@@ -105,7 +105,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .kv dd{margin:0;color:var(--text-primary);min-width:0;overflow-wrap:anywhere}
 .stack>*+*{margin-top:var(--space-5)}
 .cmd{font-family:var(--font-mono);font-size:var(--ui-base);color:var(--text-secondary);white-space:nowrap}
-.panel p{margin:0 0 var(--space-3)}
+.panel p{margin:0 0 var(--space-3);overflow-wrap:anywhere}
 .panel p:last-child{margin-bottom:0}
 .rule-head{margin-top:var(--space-6)}
 .rule-head hgroup{margin:0}
@@ -144,6 +144,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .bug .kv{grid-template-columns:1fr}
 }
 @media (max-width:599px){
+.panel .nowrap{white-space:normal}
 .facts{display:flex;flex-basis:100%}
 .fact{flex-direction:column;align-items:flex-start;gap:var(--space-1)}
 .fact b{max-width:100%}
