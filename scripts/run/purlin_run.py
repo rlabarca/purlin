@@ -1413,9 +1413,9 @@ def _ci(project_root, features, sections, log, os_name):
     A runner writes only its own operating system's section of
     `.purlin/evidence/ci/<feature>.json` and commits it through the git
     host's API, merged on every attempt into what the branch's head holds,
-    because its evidence exists nowhere else. No breaks run here and the AI
-    audit is not called: `purlin:audit` on a person's machine does both. A
-    tag run runs the tests and writes nothing.
+    because its evidence exists nowhere else. The audit is not called here:
+    `purlin:audit` runs on a person's machine. A run on any other branch
+    runs the tests and writes nothing.
     """
     from host import commit_files, commits_here, no_commit_line
 
