@@ -4,76 +4,35 @@ For the session that continues Purlin 0.10.0. Read this, then `dev/plans/three-l
 decisions 60 to 100 (together with this file they are the product as the owner settled it), then
 `dev/plans/next-agent-prompt.md`, the prompt that session is given.
 
-## Where the tree is
+## Where the tree is (2026-10-01, end of the long session)
 
-- **Decision 103 is built** (evidence is signed once, at the release; two gates, `passed` and
-  `signed`; `purlin:test --release` writes the package and the tag; `purlin:sign` walks and signs
-  the package), by ten lanes merged into `main` by fast-forward and one integration
-  (`d103-interfaces.md`: what differs from the contracts, the ids, every word a lane chose,
-  section 7 under "Words chosen for the owner to read"). Full sweep: 2246 passed, 3 skipped,
-  `Suites: 5 passed, 0 failed`. `purlin_run.py --test --all --commit` (`447578d05 purlin:
-  evidence at 73a3ada`): `Markers: 2287 tied to a test, 0 not tied.`, `921 rules. 837 pass
-  their tests.`, 84 waiting for Windows. **Windows has not been run since decision 100.**
-- **Decision 102 is built** (the answers to the QA and product check), by eight lanes merged into
-  `main` by fast-forward and one integration (`d102-interfaces.md`: what differs from the plan,
-  the ids, the words chosen, the test counts). Full sweep: 2411 passed, 3 skipped,
-  `Suites: 5 passed, 0 failed`. `purlin_run.py --test --all --commit`: `Markers: 2453 tied to a
-  test, 0 not tied.`, `957 rules. 870 pass their tests.`, 87 waiting for Windows. **Windows has
-  not been run since decision 100.**
-- **Decisions 100 and 101 are built** (anchors are global; a pinned anchor's rule signed as not
-  applying), by ten lanes merged into `main` by fast-forward and one integration
-  (`d100-interfaces.md`: what differs from the plan, the ids, the words chosen). Full sweep at
-  `35ddcc29d`: 2345 passed, 3 skipped, `Suites: 5 passed, 0 failed`. `purlin_run.py --test
-  --all --commit`: `Markers: 2387 tied to a test, 0 not tied.`, `918 rules. 831 pass their
-  tests.`, 87 rules waiting for Windows, committed as `35ddcc29d purlin: evidence at 30c97d2`.
-  **Windows has not been run since**: the 87 wait for `purlin:test --remote`.
-- `main` is local only, at the commit of this file, after `35ddcc29d purlin: evidence at
-  30c97d2`. Nothing on it is pushed, nothing is tagged, and no audit or signing has been run
-  against this repository. The only pushes any agent made were the
-  temporary run branches of the remote runs on Windows. The owner pushes `main`; no agent does.
-- Decision 99 is built: the five answers to the open questions, by five lanes merged into
-  `main` and one integration (`phase4-interfaces.md`, "Decision 99": the ids, the words chosen
-  and the calls left).
-- Full sweep on `main` at `094f811d5`, `bash dev/run_tests.sh`: **2291 passed, 3 skipped in
-  729.29s**, `>>> All Pytest Tests: PASSED`, `Suites: 5 passed, 0 failed`; the four shell suites
-  passed. The 3 skips are the Windows-only tests.
-- This repository through its own tool, `python3 scripts/run/purlin_run.py --test --all` at
-  `5f002e00e`, exit 0: `Markers: 2333 tied to a test, 0 not tied.`, `Ran pytest, shell on 36
-  features.`, `86 proofs need Windows; this machine is macOS. Run purlin:test --remote.`, then
-  `891 rules. 891 pass their tests. 0 are strong. 0 are signed.` and `Left to do:` /
-  `  891 rules to audit: purlin:audit` (at `6ea879147 purlin: evidence at e38956f`, after the
-  remote run below).
-  No rule reads `partial`, `failed` or `no test`, and no warning prints. With `--commit` the
-  same lines, `Evidence committed.` after the evidence line, and one commit,
-  `b46c93f01 purlin: evidence at 5f002e0`. 2333 proofs, each one case of at most 60 words with
-  a test of its own. The audit and the signing are the owner's to run.
-- The remote run on Windows after decision 99 came home as `e38956f11 purlin: evidence at
-  c98fe7b`: every rule tagged for Windows passes there. The run before it found a fault in
-  `purlin:test --remote`: it looked up the run to wait on by its branch alone, so when this
-  repository's other workflow, the version check, registered first, it waited on that, pulled
-  nothing and deleted the run branch while the Windows job still ran. The lookup now names the
-  workflow file too (`03005dd8a`; host RULE-12, PROOF-66).
-- The runner file, `.github/workflows/purlin.yml`, was written by setup from the templates of
-  phase 4 and committed by setup (`8008d9de6 chore(init): set up Purlin at the gate signed`).
-  It runs on `windows-latest` alone: 86 proofs are tagged `@env(windows)`, and the 13 tagged
-  `@env(macos)` are proven on this Mac, which wrote the file.
-- The first real remote run on Windows passed 84 of the 86 rules that wait for Windows, and
-  the second passed all 86. A diagnostic run of the whole suite on the same runner showed 78 of
-  1979 tests failing on Windows that no rule is tagged for: `75 failed, 1901 passed, 2 skipped,
-  3 errors`. The runner's log names 16 of them;
-  `dev/plans/windows-untagged-failures.txt` holds them and says how to name the rest. Decision
-  95 runs on Windows only the tests of tagged proofs, so none of the 78 fails a remote run.
-- `.purlin/config.json` here: gate `signed`, mutation testing on.
-- Phase 4 applied sanity check 3 (`sanity-3.md`) and decision 98: `phase4-plan.md` is the plan,
-  `phase4-contracts.md` the contracts, `phase4-interfaces.md` what was built, with "The pages"
-  at its end for the docs. Every page under `docs/` and `README.md` was read again against the
-  code; the two screenshots were retaken from the rebuilt page (`b54a9def4`).
-- The lane branches and worktrees of phases 3 and 4 are still on this machine, 28 worktrees
-  under `/Users/richlabarca/LocalCode/purlin-wt/` with their `lane/*` branches, every one
-  merged into `main`. None was deleted; they can go once the owner says so.
-- The slides: https://claude.ai/artifact/Rifxf2KXfH4CTzfQ9pZ9is, ten of them, built by
-  `dev/plans/deck/build_deck.py`. The owner edits them in place: read each slide from the deck
-  before publishing it, and take the owner's words into the builder.
+- `main` is local only. Decisions 100 to 103 are built in code and tests. Decisions 104 to 115 are
+  decided and their SPECS are on `main` (408 rules, 823 proofs, after a weight pass from about
+  700), but the code and tests are not built: `main`'s specs run ahead of its code, its sweep may
+  fail in places, and the dashboard shows many rules with no test and about 1,600 test comments
+  to correct. That is expected until the build.
+- Decision 115's text is in `three-levels.md`; its four spec rules are Step 1 of
+  `next-agent-prompt.md`.
+- The audit's heuristic spot tests are official in `references/review_criteria.md`, with their
+  research; `docs/audit.md` explains the audit and cites every paper by link.
+- The deck (https://claude.ai/artifact/Rifxf2KXfH4CTzfQ9pZ9is, version 86) has 11 slides for
+  decisions 100 to 115, including the comparison with Spec Kit, Kiro, Ketryx and Cucumber and the
+  audit slide; built by `dev/plans/deck/build_deck.py`.
+- Two QA and product checks ran in the cloud: `sanity-qa-product.md` and `-2.md`. The second
+  reached a signed release; decisions 105 to 107 answer it.
+- Cloud credits: $127 of $250 were left before the second QA check; they expire 2026-11-05.
+- About 50 worktrees under `/Users/richlabarca/LocalCode/purlin-wt/` and many `lane/*` and
+  `specs/d110`, `d102/*`, `d103/*`, `sanity/*` branches (some pushed) can be deleted once the owner
+  says so.
+
+## What is left, in order
+
+1. `next-agent-prompt.md`: decision 115's specs, the build plan, the build (lanes in the cloud,
+   integration local), the cloud sessions archived.
+2. The real-skills QA check: three real Claude sessions with the plugin, one feature, one
+   collision, run on demand.
+3. The remote run on Windows (not run since decision 100), a full reading of the docs pages,
+   the owner's review, and the handover to the work machine.
 
 ## The model in one paragraph
 

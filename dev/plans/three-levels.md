@@ -1469,6 +1469,18 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     whenever a Purlin command writes the page's data, it also writes the page where the project's
     copy differs from the plugin's, so the page and its data always come from one version. The
     data stays a snapshot of the last command, with its time and the uncommitted-changes notice.
+115. **Purlin in worktrees** (added 2026-10-01). Claude Code often works in extra checkouts of
+    the same repository. Each checkout has its own results, status and dashboard; nothing is
+    shared until work is merged. Three changes keep a person from reading one checkout's state as
+    another's:
+    - **The dashboard names the version it describes**: its header shows the branch and commit the
+      data was written for, and the time, as in `main at a1b2c3d, written 10:42`. The agent
+      definition tells Claude to run `purlin:status` in the main checkout after merging work from a
+      worktree, so the main dashboard catches up.
+    - **The tools refuse to guess the folder**: a Purlin tool call that names no checkout is
+      refused with a one-line fix, rather than reading the folder the session started in.
+    - **The docs say so**, in one paragraph of the page on working together: each checkout has its
+      own results and dashboard; merging and `purlin:status` bring the main one up to date.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5

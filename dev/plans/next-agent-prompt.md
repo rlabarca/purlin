@@ -1,110 +1,82 @@
-# Prompt for the next session: build decision 100, prove it on the Mac, then the QA sanity check
+# Prompt for the next session: finish decision 115's specs, then build decisions 100 to 115
 
-Paste everything below the line into a new session opened in
-`/Users/richlabarca/LocalCode/purlin`.
+Paste everything below the line into a new session opened in `/Users/richlabarca/LocalCode/purlin`.
 
 ---
 
 You are continuing Purlin 0.10.0, a Claude Code plugin for spec-driven development that uses
-itself. Decisions 60 to 99 are built and proven on local `main`: 891 rules, all passing on the
-Mac and, where tagged, on Windows. Decision 100 is closed and nothing of it is built. Your job
-is to build decision 100, prove it on this Mac, and then stop and ask me to describe the QA
-sanity check. Tokens are short: spend them on the build, not on ceremony.
+itself. The specs on local `main` describe decisions 100 to 115; the code and tests still describe
+decision 103. Your job: finish decision 115's spec rules, plan the build, run it with the lanes in
+the cloud and integration on this Mac, then stop and report.
 
 ## Read first, in this order
 
-1. `dev/plans/three-levels.md`, decision 100 in full, then decisions 94 to 99 for the words and
-   shapes already settled (search `94. **`). The later decision holds.
-2. `dev/plans/handoff.md`: "Where the tree is", "What is left" item 1, "How to work".
-3. `dev/plans/phase3-plan.md` section 4: which lane owns which file. Reuse that ownership.
-4. `CLAUDE.md`, `references/spec_quality_guide.md`, `references/writing_style.md`.
+1. `dev/plans/three-levels.md`: decisions 100 to 115 (search `100. **`); later wins. Earlier
+   decisions carry "Reversed by" notes.
+2. `dev/plans/handoff.md`: "Where the tree is" and "What is left".
+3. `CLAUDE.md`, `references/spec_quality_guide.md`, `references/writing_style.md`,
+   `references/review_criteria.md` ("Heuristic spot tests" is the owner's official text).
+4. `dev/plans/d105-plan.md` for its contracts and lines a person reads; it predates decisions
+   111 to 115 and was written when specs were still to change, so re-cut it (below).
 
-Read nothing else in `dev/plans/` unless a question sends you there.
+## Step 1: decision 115's specs (alone, local, small)
 
-## What decision 100 is
+Add, in the shape of the existing specs, with new numbers and raised `> Highest-*` lines:
+- `specs/dashboard/purlin_report.md`: the header names the branch and commit the data describes
+  and the time it was written, as in `main at a1b2c3d, written 10:42`.
+- `specs/instructions/purlin_agent.md`: after merging work from a worktree, the agent runs
+  `purlin:status` in the main checkout.
+- `specs/mcp/server.md`: a tool call that names no `project_root` is refused with a one-line fix,
+  not answered from the folder the session started in.
+- `specs/instructions/purlin_docs.md`: the working-together page holds one paragraph saying each
+  checkout has its own results and dashboard, and merging plus `purlin:status` updates the main one.
+Commit them with the uncommitted decision 115 text if it is still uncommitted. Then
+`python3 scripts/run/purlin_run.py --test` (no `--all`) to refresh the dashboard.
 
-An anchor is a set of rules for the whole project.
+## Step 2: the build plan (one planning agent, local)
 
-- Every anchor is global: its rules are proven by tests that run across the whole project, tied
-  to no feature. A rule that cannot be checked that way is not an anchor rule; it is an
-  ordinary rule in each feature's spec that needs it.
-- A spec names no anchor. `> Requires:` and `> Global: true` go. A spec that still carries
-  either is warned of, with its fix, in the shape of decision 97's spec mistakes.
-- Each anchor rule is counted, audited and signed once. A feature's row counts its own rules
-  only: the counts `(+8)` and `(+8 shared)` go, and a feature whose 11 rules pass reads
-  `11 of 11`.
-- On the dashboard, anchors stand in a section of their own above the spec table, headed
-  `Anchors`, same columns, same filters; `(anchor)` after a name goes.
-- Any change to any tracked file ends an anchor's results and its signatures, except the
-  records Purlin itself writes: run results, signatures, the evidence package. An anchor names
-  no covered files.
-- A rule of a pinned anchor that no project-wide test can show is checked by hand and signed.
-- An anchor's tests are judged by the AI audit alone: no code is broken on purpose for an
-  anchor and no test strength is shown for one.
+The specs are written; the build makes code and tests meet them. The planning agent cuts lanes by
+file ownership of CODE and TEST files (each spec's `> Scope:` names its code), fixes every shared
+interface word for word (reuse `d105-plan.md` section 2 where it still holds), and lists:
+- which tests to delete (proofs cut in decisions 100 to 112), which to rewrite, which to add;
+- the roughly 1,600 test comments to correct, each lane fixing those in the files it owns, the
+  test changed and never the proof;
+- the lines a person reads, in the shape of decisions 94 to 115;
+- questions for the owner only where decisions 100 to 115 do not settle something.
+Write `dev/plans/d115-plan.md` and commit it. Ask the owner any questions before Step 3.
 
-## How to work
+## Step 3: the build, lanes in the cloud, integration local
 
-- One planning agent first. It cuts the work into lanes in which every file has one owner,
-  using `phase3-plan.md` section 4, and fixes word for word every line two lanes share. Expect
-  about 8 to 12 lanes: the spec reader and the two formats, the states and the summary, the
-  evidence and its fingerprint, signing, the run, the evidence package, the dashboard, the
-  upgrade from 0.9.5, the skills and the agent definition, the references and the docs. Leave
-  out any lane with no work.
-- Then one workflow: the lanes at once, each in its own worktree under
-  `/Users/richlabarca/LocalCode/purlin-wt/<name>`, then one integration agent alone. Every
-  agent is Opus. **No review agents.** Each lane ends on its own self-check: every proof one
-  case in at most 60 words with a marked test of its own, no rule or proof number reused
-  (`> Highest-Rule:` and `> Highest-Proof:` are raised), no generated file staged, its most
-  important change broken on purpose and seen to fail.
-- The branch `lane/anchors-section` (worktree `purlin-wt/anchors-section`, two commits, not
-  merged) holds a first build of the dashboard's `Anchors` section made before decision 100.
-  It keeps the per-feature counts. The dashboard lane starts from it and brings it to the
-  decision.
-- This repository has two anchors. The security one is already global and stays an anchor. The
-  one about the spec format was required by one feature and its rules are about one piece of
-  code: make it an ordinary spec, unless you find a reason it must stay an anchor, and tell me
-  which you did.
-- Frozen during the fan-out: `dev/skill_checks.py`, `dev/mcp_project.py`,
-  `dev/sign_project.py`, `dev/run_project.py`, `dev/reports_project.py`, `dev/conftest.py`,
-  `dev/fake_claude.py`. If one must change, that lands alone, first.
-- A format that changes follows `CLAUDE.md` "Format reference versioning" in the same commit.
-  Clean release: what is retired is deleted outright, with no test that it is absent; only
-  `RELEASE_NOTES.md` keeps history, and what an upgrade from 0.9.5 needs is the one exception.
-- Put `/opt/homebrew/opt/dotnet@8/bin` and the repository's `.venv/bin` first on PATH for every
-  test run. Before an agent breaks code on purpose, it makes sure the break cannot reach the
-  real `claude` program or any real service.
-- Push nothing, tag nothing, run no `purlin:audit` and no `purlin:sign` against this
-  repository. **No remote run on Windows in this session.**
+- **Check the cloud credits first** (claude.ai settings, usage, "Cloud session credits"; they
+  expire 2026-11-05). Budget about $5 to $8 per lane; tell the owner the planned spend before
+  launching. If credits are short, run the remaining lanes locally.
+- Push `main` as branch `d115/base`; launch each lane as its own cloud session with
+  `claude --cloud "<prompt>" --model claude-opus-5-5`, run from a worktree checked out at
+  `d115/base`. It needs a TTY: `script -q <log> claude --cloud ...`, then read
+  `View: https://claude.ai/code/session_...` from the log. Never a routine, never the Agent tool's
+  `isolation: "remote"` (it ran locally). Each lane pushes `lane/d115-<lane>` only.
+- Watch for the branches with a Monitor on `git ls-remote origin 'refs/heads/lane/d115-*'`.
+- Integration runs locally on this Mac as one agent: fast-forward merges in the plan's order,
+  the full sweep `bash dev/run_tests.sh` to 0 failed, `python3 scripts/run/purlin_run.py --test
+  --all` with every marker tied and nothing failed, then `--commit`, the dashboard looked at with
+  playwright from the `.venv` (dark and light, 1500, 1024, 390), `dev/plans/handoff.md` updated.
+- After integration, archive the cloud sessions in the claude.ai sidebar (the owner asked; use
+  the Chrome extension; leave sessions that are not this work).
 
-## Questions to me
+## Rules that hold throughout
 
-Ask only what changes what the product does and that decision 100 does not settle. Ask with
-the question UI, from the root, in plain words, with the recommended option first and what I
-need to answer inside the question. Do not ask about words: where a line a person reads
-changes, write it in the shape of the lines decisions 94 to 99 already give, build it, and list
-every such line for me at the end. If nothing needs asking, ask nothing and build.
+- Environment: `export PATH=/opt/homebrew/opt/dotnet@8/bin:$PWD/.venv/bin:$PATH`.
+- No push but the build's branches, no tag, no `purlin:audit` or `purlin:sign` against this
+  repository, no real `claude` in tests, no network in tests (the `install` spec's one cheap model
+  call is the exception, run only when its scope changes).
+- Clean release (decision 44): retired things are deleted outright; only `RELEASE_NOTES.md` keeps
+  history; only the 0.9.5 upgrade keeps what it needs.
+- The deck is `dev/plans/deck/build_deck.py`, published to
+  https://claude.ai/artifact/Rifxf2KXfH4CTzfQ9pZ9is; read the live slides before publishing (the
+  owner edits them); `dev/plans/deck/check_deck.py` and `check_overlap.py` check fit and overlap.
 
-## Done means
+## Then stop and report
 
-1. Every lane merged into local `main` by fast-forward.
-2. `bash dev/run_tests.sh` ends with 0 failed.
-3. `python3 scripts/run/purlin_run.py --test --all` ties every marker, and no rule reads
-   `failed`, `partial` or `no test`. Rules that wait for Windows may wait: say how many. Then
-   the same with `--commit`.
-4. The dashboard looked at with playwright from the `.venv`, headless, dark theme, at 1500,
-   1024 and 390 pixels: the `Anchors` section above the spec table, a feature's row counting
-   its own rules only, no sideways scroll.
-5. `dev/plans/handoff.md` brought up to date in a few lines: where the tree is, that decision
-   100 is built, that Windows has not been run since, and what is left.
-
-Leave for later, and say so in the handoff: the remote run on Windows, the two docs
-screenshots, the slide on anchors, and a full reading of the docs pages. A page that states
-something decision 100 makes false is corrected now; nothing else on it is touched.
-
-## Then stop and ask me
-
-Report in a short message: the counts from steps 2 and 3, what became of the spec-format
-anchor, every line a person reads that you chose, and anything you left unbuilt. Then ask me,
-in one plain question, to describe the QA sanity check I want run: who the person is, what
-project they start from, what they try to do, and what I want to learn. Wait for my answer and
-start nothing else.
+Report the sweep's and the run's numbers, what the dashboard look found, the cloud spend, every
+line a person reads that a lane chose, and anything left unbuilt. Then ask the owner whether to run
+the real-skills QA check (three real Claude sessions with the plugin, one feature, one collision).
