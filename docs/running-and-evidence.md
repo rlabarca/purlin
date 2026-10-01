@@ -36,8 +36,8 @@ tools the project uses, runs nothing, and suggests an entry for each:
 
 ```
 No test command is set in .purlin/config.json, so nothing ran.
-Suggested for pytest: python3 -m pytest --ignore=mutants {files} --junitxml={report}
-Suggested tests setting: [{"name": "pytest", "run": "python3 -m pytest --ignore=mutants {files} --junitxml={report}", "report": ".purlin/runtime/reports/pytest.xml", "format": "junit", "files": ["**/test_*.py", "**/*_test.py"]}]
+Suggested for pytest: python3 -m pytest {files} --junitxml={report}
+Suggested tests setting: [{"name": "pytest", "run": "python3 -m pytest {files} --junitxml={report}", "report": ".purlin/runtime/reports/pytest.xml", "format": "junit", "files": ["**/test_*.py", "**/*_test.py"]}]
 ```
 
 `purlin:test` compares each suggested command with how the project runs its tests itself, and
@@ -357,7 +357,7 @@ is a tool, and nothing waits on it.
 
 Your code is never changed by a planted bug. Where a file of the project changes while a bug's
 tests run, the audit stops and says so:
-`The audit stopped: src/age.py changed while a break ran. Nothing in the project was written by the audit.`
+`The audit stopped: src/age.py changed while a bug was planted. Nothing in the project was written by the audit.`
 [audit.md](audit.md) gives the reasoning and the research behind these steps.
 
 ### The flow

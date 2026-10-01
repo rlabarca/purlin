@@ -676,15 +676,15 @@ class TestBuckets:
 class TestPayload:
 
     # purlin: states PROOF-31
-    def test_schema_fourteen_carries_exactly_the_eighteen_keys(self, project):
+    def test_schema_fourteen_carries_exactly_the_seventeen_keys(self, project):
         data = project.payload()
         assert data['schema_version'] == 14
         assert sorted(data) == sorted((
             'schema_version', 'generated_at', 'generated_by', 'project',
             'version', 'branch', 'commit', 'dirty', 'summary', 'features',
             'left', 'met', 'signoff', 'last_line', 'os_words', 'evidence',
-            'remote_url', 'information', 'warnings')), sorted(data)
-        assert len(data) - 1 == 18
+            'information', 'warnings')), sorted(data)
+        assert len(data) - 1 == 17
         assert data['generated_at'].endswith('Z')
 
     @staticmethod

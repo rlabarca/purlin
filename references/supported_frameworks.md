@@ -10,7 +10,7 @@ the flag that writes the report already in each command:
 
 ```
 No test command is set in .purlin/config.json, so nothing ran.
-Suggested for pytest: python3 -m pytest --ignore=mutants {files} --junitxml={report}
+Suggested for pytest: python3 -m pytest {files} --junitxml={report}
 Suggested for vitest: npx vitest run --reporter=default --reporter=junit --outputFile.junit={report} {files}
 Suggested tests setting: [{"name": "pytest", ...}, {"name": "vitest", ...}]
 ```
@@ -58,7 +58,7 @@ jest reads every word after that option as another reporter.
 ```json
 {
   "name": "pytest",
-  "run": "python3 -m pytest --ignore=mutants {files} --junitxml={report}",
+  "run": "python3 -m pytest {files} --junitxml={report}",
   "report": ".purlin/runtime/reports/pytest.xml",
   "format": "junit",
   "files": [

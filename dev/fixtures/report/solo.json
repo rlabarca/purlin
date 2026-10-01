@@ -467,7 +467,6 @@
     }
   },
   "project": "ledger",
-  "remote_url": null,
   "schema_version": 14,
   "signoff": {
     "commit": null,

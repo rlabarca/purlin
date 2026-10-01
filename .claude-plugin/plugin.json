@@ -1,7 +1,7 @@
 {
   "name": "purlin",
   "version": "0.10.0",
-  "description": "Rule-proof spec-driven development: specs define rules, proof descriptions say what would demonstrate them, tests prove it",
+  "description": "Rule-proof spec-driven development: specs define rules, proofs say how each rule is shown, tests prove it",
   "author": {
     "name": "Rich LaBarca",
     "url": "https://github.com/rlabarca"
@@ -24,7 +24,6 @@
     "specs",
     "testing",
     "audit",
-    "sync",
     "rules",
     "proofs"
   ]

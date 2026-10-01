@@ -75,7 +75,6 @@ be coupled to a layout; this is the shape they all read instead.
                                                  "result": "pass",
                                                  "current": true,
                                                  "path": ...}}}},
-      "remote_url": "https://github.com/acme/ledger.git",
       "information": ["..."],
       "warnings": ["..."]
     }
@@ -260,7 +259,6 @@ def build_payload(project_root, generated_by='sync_status', config=None):
                             'short': evidence_module.os_short(name)}
                      for name in evidence_module.PLATFORMS},
         'evidence': _evidence_map(evidence),
-        'remote_url': _remote_url(project_root),
         'information': status_module.not_written_lines(project_root, features),
         'warnings': warnings,
     }
@@ -836,24 +834,6 @@ def head_sha(project_root):
         result = subprocess.run(
             ['git', 'rev-parse', 'HEAD'],
             capture_output=True, text=True, cwd=project_root, timeout=10)
-    except (subprocess.SubprocessError, OSError):
-        return None
-    if result.returncode != 0:
-        return None
-    return result.stdout.strip() or None
-
-
-def _remote_url(project_root):
-    """The `origin` remote, or `None` when the project has no remote.
-
-    The dashboard turns this into a link to each file on the git host. A
-    project with no remote, or a checkout where git cannot answer, gets
-    plain text instead of a broken link.
-    """
-    try:
-        result = subprocess.run(
-            ['git', 'remote', 'get-url', 'origin'],
-            capture_output=True, text=True, cwd=project_root, timeout=15)
     except (subprocess.SubprocessError, OSError):
         return None
     if result.returncode != 0:

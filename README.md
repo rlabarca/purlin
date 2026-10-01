@@ -60,7 +60,7 @@ The `purlin:` commands are there.
 
    ```text
    No test command is set in .purlin/config.json, so nothing ran.
-   Suggested for pytest: python3 -m pytest --ignore=mutants {files} --junitxml={report}
+   Suggested for pytest: python3 -m pytest {files} --junitxml={report}
    ```
 
    Say yes. The command is written into `.purlin/config.json` and the tests run. Then

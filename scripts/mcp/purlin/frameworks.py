@@ -33,7 +33,7 @@ _JS_TEST_GLOBS = ['**/*.%s.%s' % (kind, ext) for kind in ('test', 'spec')
 # that writes the report Purlin reads.
 ENTRIES = {
     'pytest': {
-        'run': 'python3 -m pytest --ignore=mutants {files} --junitxml={report}',
+        'run': 'python3 -m pytest {files} --junitxml={report}',
         'report': REPORTS + '/pytest.xml', 'format': 'junit',
         'files': ['**/test_*.py', '**/*_test.py'],
     },

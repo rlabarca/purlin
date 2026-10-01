@@ -1174,8 +1174,8 @@ class TestNoTestCommand:
         entry = frameworks.entry_for('pytest')
         assert output.strip().splitlines()[-3:] == [
             'No test command is set in .purlin/config.json, so nothing ran.',
-            'Suggested for pytest: python3 -m pytest --ignore=mutants '
-            '{files} --junitxml={report}',
+            'Suggested for pytest: python3 -m pytest {files} '
+            '--junitxml={report}',
             'Suggested tests setting: %s' % json.dumps([entry])], output
         assert _purlin_files(root) == [
             os.path.join('.purlin', 'config.json')], output
@@ -1200,15 +1200,15 @@ class TestNoTestCommand:
         (root / 'tests' / 'test_cart.py').write_text(
             'def test_cart():\n    assert True\n', encoding='utf-8')
         _code, output = _run(root, '--all', '--test')
-        assert ('Suggested for pytest: python3 -m pytest --ignore=mutants '
-                '{files} --junitxml={report}' in output.splitlines()), output
+        assert ('Suggested for pytest: python3 -m pytest {files} '
+                '--junitxml={report}' in output.splitlines()), output
 
     # purlin: run_script PROOF-221
     def test_on_windows_the_pytest_command_starts_with_the_launcher(
             self, tmp_path):
         root = _no_command(tmp_path, 'pytest')
         (entry,) = frameworks.suggest(str(root), os_name='windows')
-        assert entry['run'] == ('py -3 -m pytest --ignore=mutants {files} '
+        assert entry['run'] == ('py -3 -m pytest {files} '
                                 '--junitxml={report}')
 
     # purlin: run_script PROOF-130

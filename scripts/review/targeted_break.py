@@ -42,8 +42,8 @@ for _path in (os.path.join(_SCRIPTS, 'mcp'), os.path.join(_SCRIPTS, 'run')):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
-STOPPED = ('The audit stopped: %s changed while a break ran. Nothing in the project was '
-           'written by the audit.')
+STOPPED = ('The audit stopped: %s changed while a bug was planted. Nothing in the '
+           'project was written by the audit.')
 SURVIVED = '%s: the test still passes when %s:%d reads "%s"'   # PROOF-N, file, line, the changed line
 
 COPY_PREFIX = 'purlin-break-'

@@ -96,7 +96,7 @@ entry for each test tool it recognises. Then it prints the whole setting on one 
 
 ```text
 No test command is set in .purlin/config.json, so nothing ran.
-Suggested for pytest: python3 -m pytest --ignore=mutants {files} --junitxml={report}
+Suggested for pytest: python3 -m pytest {files} --junitxml={report}
 ```
 
 Your project may run its tests another way, with another interpreter or other options. The

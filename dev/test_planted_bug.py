@@ -180,8 +180,8 @@ def test_a_project_that_changes_while_a_bug_is_planted_stops_the_audit(tmp_path)
     jobs = [{'feature': 'age', 'proof': PROOF, 'tests': own_test(), 'scope_files': SCOPE}]
     _results, code = targeted_break.break_proofs(root, jobs, ask, out=out)
     assert out.getvalue().splitlines() == [
-        'The audit stopped: src/age.py changed while a break ran. Nothing in the project was '
-        'written by the audit.']
+        'The audit stopped: src/age.py changed while a bug was planted. Nothing in the '
+        'project was written by the audit.']
     assert code == 1
 
 

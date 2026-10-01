@@ -1093,7 +1093,6 @@
     }
   },
   "project": "ledger",
-  "remote_url": "https://github.com/acme/ledger.git",
   "schema_version": 14,
   "signoff": {
     "commit": null,

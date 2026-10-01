@@ -18,7 +18,7 @@
 - RULE-2: A test that still passes with the bug in place reads `survived`, with the finding `<PROOF-N>: the test still passes when <file>:<line> reads "<the changed line>"`
 - RULE-3: A test that fails with the bug in place reads `caught`
 - RULE-5: A write to a path outside the copy is refused, and the result reads `not made`
-- RULE-6: When a file of the project changes while a bug is planted, the audit stops, prints `The audit stopped: <path> changed while a break ran. Nothing in the project was written by the audit.` and exits 1
+- RULE-6: When a file of the project changes while a bug is planted, the audit stops, prints `The audit stopped: <path> changed while a bug was planted. Nothing in the project was written by the audit.` and exits 1
 - RULE-7: The copy is removed when the test passes, fails or runs past its limit
 - RULE-8: No test of this feature reaches a real model: each runs with a `claude` that resolves under its own temporary folder
 - RULE-10: Only the proof's own test runs against its planted bug, so a bug only another proof's test catches reads `survived`
@@ -30,7 +30,7 @@
 - PROOF-2 (RULE-2): The model answers `file: src/age.py`, `before:` `return days`, `after:` `return 0`, line 12, and the test of `PROOF-1` still passes; the result reads `survived` and the finding `PROOF-1: the test still passes when src/age.py:12 reads "return 0"`
 - PROOF-3 (RULE-3): The model answers `file: src/age.py`, `before:` `return days`, `after:` `return 0`, and the test of `PROOF-1` fails; the result reads `caught`
 - PROOF-6 (RULE-5): The model answers `file: ../outside.py`; the result reads `not made`, and no file outside the copy is written
-- PROOF-7 (RULE-6): The model's answer, as it is given, writes a line to `src/age.py` in the project; the audit prints `The audit stopped: src/age.py changed while a break ran. Nothing in the project was written by the audit.` and exits `1`
+- PROOF-7 (RULE-6): The model's answer, as it is given, writes a line to `src/age.py` in the project; the audit prints `The audit stopped: src/age.py changed while a bug was planted. Nothing in the project was written by the audit.` and exits `1`
 - PROOF-13 (RULE-6): Bugs are planted for three proofs while nothing else touches the project; no line starting `The audit stopped:` is printed, and the audit exits `0`
 - PROOF-8 (RULE-7): The test of `PROOF-1` fails with the bug in place; afterwards the temporary folder holds no folder whose name starts `purlin-break-`
 - PROOF-14 (RULE-7): The test of `PROOF-1` runs past its limit with the bug in place; afterwards the temporary folder holds no folder whose name starts `purlin-break-`

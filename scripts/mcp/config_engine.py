@@ -17,12 +17,10 @@ import os
 # The keys `.purlin/config.json` holds, in the order setup writes them.
 KNOWN_KEYS = ('version', 'tests')
 
-# The keys an earlier Purlin wrote, each of which `purlin:init --update`
-# takes out of the file: the ones 0.9.5 wrote, then the ones a 0.10 build
-# before this one wrote.
+# The keys Purlin 0.9.5 wrote, each of which `purlin:init --update` takes out
+# of the file.
 UPGRADE_KEYS = ('test_framework', 'spec_dir', 'pre_push', 'report', 'digest',
-                'audit_criteria', 'min_strength', 'gate', 'mutation_engine',
-                'audit_parallel', 'ci', 'project_name')
+                'audit_criteria')
 
 SETTINGS_NOT_READ = '.purlin/config.json carries %s, which this version does not read. '
 SETTINGS_RUN_UPDATE = 'Run purlin:init --update.'

@@ -346,9 +346,9 @@ class TestKeysThisVersionDoesNotRead:
     # purlin: config_engine PROOF-50
     def test_keys_the_upgrade_removes_name_the_upgrade(self, project):
         _write_bytes(project, b'{"version": "0.10.0", "tests": [], '
-                              b'"gate": "passed", "mutation_engine": "none"}')
+                              b'"pre_push": "warn", "digest": true}')
         assert settings_warnings(resolve_config(project)) == [
-            '.purlin/config.json carries gate, mutation_engine, which this '
+            '.purlin/config.json carries pre_push, digest, which this '
             'version does not read. Run purlin:init --update.']
 
     # purlin: config_engine PROOF-51

@@ -10,7 +10,7 @@
     {
       "name": "purlin",
       "source": "./",
-      "description": "Rule-proof spec-driven development: specs define rules, proof descriptions say what would demonstrate them, tests prove it."
+      "description": "Rule-proof spec-driven development: specs define rules, proofs say how each rule is shown, tests prove it."
     }
   ]
 }
