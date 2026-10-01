@@ -146,7 +146,7 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from config_engine import resolve_config
+from config_engine import resolve_config, settings_warnings
 from purlin import (PURLIN_VERSION,
                     evidence as evidence_module,
                     facts as facts_module,
@@ -173,7 +173,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     """The whole payload for a project root."""
     from purlin import status as status_module
     config = resolve_config(project_root) if config is None else config
-    warnings = []
+    warnings = list(settings_warnings(config))
 
     features = specs_module.scan_specs(project_root)
     tag_warning = specs_module.unknown_tag_warning(features)
