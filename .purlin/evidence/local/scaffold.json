@@ -2,14 +2,14 @@
   "feature": "scaffold",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T19:27:26Z",
-      "commit": "1b8e8319d6dcd5fb57cc1e9f861a2b150c6b9623",
+      "at": "2026-10-01T20:26:51Z",
+      "commit": "b4aac4921b55618a6f011bf390fd38650d621c44",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "84b98a6d7faa6040d9f4c33e8d4645360563a3310897029c5b6bf4b4d85f0120",
-        "spec": "b35f5f824b993f7dbd3844a585630866f3ea3bbd00a4a51e308a5574bfb91a84",
-        "tests": "05481dde73a3d97b32447fd97aeba0d00671493f6618393196d84dc4076518d1"
+        "code": "fc679d0b35578ce4678b3fe46ac565929e3f739d75c022df1cf320041914b961",
+        "spec": "615ca2dcf59ce9a57bddafbd210e12e99034c1264490d9e5b57cff123521da59",
+        "tests": "c089693bfd4418b5f17c6ea9349055fde0140b8912730bfa2535b190842c5185"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -223,14 +223,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-173",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-81",
-          "test": "dev/test_init_scaffold.py::TestNoRunnerFile::test_a_foreign_proof_on_github_gets_no_runner_file"
-        },
-        {
-          "env": null,
           "id": "PROOF-31",
           "manual": false,
           "result": "pass",
@@ -291,7 +283,6 @@
         "RULE-68": "passed",
         "RULE-70": "passed",
         "RULE-8": "passed",
-        "RULE-81": "passed",
         "RULE-82": "passed",
         "RULE-83": "passed"
       },

@@ -2,14 +2,14 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T19:20:58Z",
-      "commit": "1b8e8319d6dcd5fb57cc1e9f861a2b150c6b9623",
+      "at": "2026-10-01T20:26:51Z",
+      "commit": "b4aac4921b55618a6f011bf390fd38650d621c44",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "44a1fa2e93e22bc9b8e26c3f0e3637fe8d2de19e3b34be4b80a12bdb2af11e2a",
-        "spec": "3dba83965d7dcc7fe45048b5049946dae5a85269fef4b31810239436a0734c9e",
-        "tests": "f22435eb0d2e7b3bfd7d58ad7de1709b6787cbe8333a4cd1804b98c728838d64"
+        "code": "81de25cb0f03356f917a609e7c7b3622f7606e355dd2194a99ca34858bd641ec",
+        "spec": "ace24c4eee23e5e128f30a35b9b5f32b1a678542a9ed41a56e2dcb26f740727c",
+        "tests": "6363c325828c1471efd05340d0c5c79dfd560cb9a0a4a7b6dad133841cabce29"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -499,7 +499,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-17",
-          "test": "dev/test_run_script.py::TestWhereEachArmCommits::test_a_test_run_never_uses_the_git_hosts_api"
+          "test": "dev/test_run_script.py::TestWhereEachArmWrites::test_a_test_run_writes_nothing_under_ci"
         },
         {
           "env": null,
@@ -507,7 +507,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-12",
-          "test": "dev/test_run_script.py::TestTheCiArmCommitsItsSection::test_the_ci_arm_writes_its_section_and_commits"
+          "test": "dev/test_run_script.py::TestTheCiArmWritesItsSection::test_the_ci_arm_writes_its_section_and_commits_nothing"
         },
         {
           "env": null,
@@ -515,7 +515,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-12",
-          "test": "dev/test_run_script.py::TestTheCiArmCommitsItsSection::test_the_merge_keeps_another_systems_section"
+          "test": "dev/test_run_script.py::TestTheCiArmWritesItsSection::test_another_systems_section_is_left_as_it_was"
         },
         {
           "env": null,
@@ -523,7 +523,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-12",
-          "test": "dev/test_run_script.py::TestTheCiArmCommitsItsSection::test_an_untagged_test_that_fails_beside_a_tagged_one_does_not_fail_it"
+          "test": "dev/test_run_script.py::TestTheCiArmWritesItsSection::test_an_untagged_test_that_fails_beside_a_tagged_one_does_not_fail_it"
         },
         {
           "env": null,
@@ -531,23 +531,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-75",
-          "test": "dev/test_run_script.py::TestWhereEachArmCommits::test_a_ci_run_calls_no_model_and_writes_no_audit"
-        },
-        {
-          "env": null,
-          "id": "PROOF-272",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-97",
-          "test": "dev/test_run_script.py::TestTheRunnerOnFirstNeed::test_remote_with_no_runner_file_writes_it_and_runs_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-273",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-97",
-          "test": "dev/test_run_script.py::TestTheRunnerOnFirstNeed::test_commit_runner_commits_the_runner_file_alone"
+          "test": "dev/test_run_script.py::TestWhereEachArmWrites::test_a_ci_run_calls_no_model_and_writes_no_audit"
         }
       ],
       "rules": {
@@ -583,7 +567,6 @@
         "RULE-88": "passed",
         "RULE-95": "passed",
         "RULE-96": "passed",
-        "RULE-97": "passed",
         "RULE-98": "passed",
         "RULE-99": "passed"
       },

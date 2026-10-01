@@ -2,14 +2,14 @@
   "feature": "upstream",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T19:27:27Z",
-      "commit": "1b8e8319d6dcd5fb57cc1e9f861a2b150c6b9623",
+      "at": "2026-10-01T20:26:52Z",
+      "commit": "b4aac4921b55618a6f011bf390fd38650d621c44",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "4e2f27b1d210bd71b21cbefb873b4923d00f33185612cc5ee5906615fd82536e",
-        "spec": "ae9c76fa4f0eef7d7a7f3b052f021ed5447c108d3fa91e1358a804a497e39e1f",
-        "tests": "064c97d0e65f5309db3a8e8a6e5353cfec9134962149f808bf46214358f0eb34"
+        "code": "c4a619054314ae1fa8200385064c513b7ae5015973925843cda097a7fc397480",
+        "spec": "8cb53aeadfd091fd9f8650084640ccd2418ebeebd7728448b94605fbd9465f91",
+        "tests": "29d396655f6ae446c083e36fd9d48b65cd2ad5d7b93dc79ddce6d690b898139d"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [

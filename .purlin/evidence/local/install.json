@@ -2,12 +2,12 @@
   "feature": "install",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T19:27:26Z",
-      "commit": "1b8e8319d6dcd5fb57cc1e9f861a2b150c6b9623",
+      "at": "2026-10-01T20:33:10Z",
+      "commit": "b4aac4921b55618a6f011bf390fd38650d621c44",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "cf5cc8a1b863136dc4694d458bbe628cec1341bd81ebbf78bde9817b017cd8aa",
+        "code": "513dcb3612d5fe2066b893f04237b7cbb6ee12eb2c1d693c96443c08d42be2d8",
         "spec": "57c4530829b6585103130a56f43158a5fd4c8d787262c0f9a1e4f9672ca03a81",
         "tests": "02874c77a1675cbeab768a795151ed96a656a62858885c5730e685b4cd9f0825"
       },

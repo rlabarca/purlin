@@ -2,14 +2,14 @@
   "feature": "summary",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T19:20:58Z",
-      "commit": "1b8e8319d6dcd5fb57cc1e9f861a2b150c6b9623",
+      "at": "2026-10-01T20:26:52Z",
+      "commit": "b4aac4921b55618a6f011bf390fd38650d621c44",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "cbefda0dea108bcc8a6033fbd46e563a9109530f904050c2cb7bbf0d56ed4ab6",
-        "spec": "cd63bcff811cf93e2d95160ad5a46f96fc88a66eadb870804166edb19341aa0d",
-        "tests": "e065ae51bf5faebc61d6d297c55057514b4ca8c83479a9b5004efd84f4f791f6"
+        "code": "52bd2426f3b3880ca264e10d316208838462e2a886bf9b154365013fc1393181",
+        "spec": "284e20a381c8719ff30f0336c54f7364ad1ef9c01edf54cd4dba772817caf99e",
+        "tests": "d27fe79df526064abe3396f55a290897007adb36b04f2616b5aab1d40e9d453d"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -147,7 +147,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-24",
-          "test": "dev/test_summary.py::TestSlowProofsToRun::test_a_slow_proof_tagged_for_windows_is_the_remote_runs"
+          "test": "dev/test_summary.py::TestSlowProofsToRun::test_a_slow_proof_tagged_for_windows_is_to_test_on_windows"
         },
         {
           "env": null,

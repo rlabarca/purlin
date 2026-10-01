@@ -1,0 +1,60 @@
+{
+  "feature": "windows_run",
+  "platforms": {
+    "macos": {
+      "at": "2026-10-01T20:26:52Z",
+      "commit": "b4aac4921b55618a6f011bf390fd38650d621c44",
+      "dirty": false,
+      "email": "rich.labarca@gmail.com",
+      "fingerprint": {
+        "code": "7e050e4961635bc00d7fc3b1568fdbf091a068923a21471e28beab91fddd23fa",
+        "spec": "86773a0ca775404b0236263c93e13badc074f866881e5bd933495eab48847985",
+        "tests": "822f2f7c3e9f581a2e7eaab5ea32286a5d7ce7f570328051f026202d42d32d60"
+      },
+      "machine": "Richs-MacBook-Pro.local",
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_windows_run.py::test_a_green_run_pushes_watches_pulls_and_deletes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_windows_run.py::test_a_red_run_says_so_still_pulls_and_deletes_and_exits_1"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_windows_run.py::test_one_uncommitted_file_exits_1_with_the_one_line_and_no_push"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_windows_run.py::test_the_workflow_starts_on_a_run_branch_runs_on_windows_and_pushes_back"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-2": "passed",
+        "RULE-3": "passed"
+      },
+      "runner": "rich-labarca"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "local",
+  "spec": "specs/instructions/windows_run.md"
+}

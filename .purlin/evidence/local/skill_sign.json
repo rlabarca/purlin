@@ -2,14 +2,14 @@
   "feature": "skill_sign",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T19:27:27Z",
-      "commit": "1b8e8319d6dcd5fb57cc1e9f861a2b150c6b9623",
+      "at": "2026-10-01T20:26:52Z",
+      "commit": "b4aac4921b55618a6f011bf390fd38650d621c44",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "47e248dc9cd4440bdc737e72060998b1ab96a99afc57835469d9265aedab252f",
-        "spec": "cd56a3eece5f25b6534fb6fd5529dc746e1843bf44e587796cc5ebefdfc84017",
-        "tests": "4bf149b85a07998050980edd81cbec6a8f3e5de526b1b047cc584dbdb343f036"
+        "code": "ac71a614bf7e7fa0d63099e7da3a5d5f8f9fa63cec8f72cddbff785677b7136e",
+        "spec": "048da7008597567dacdf30381598a8730e7da3836df6d0ff5b04eb311f911639",
+        "tests": "1a0e2a08f75020a153feb17c57ba5c500cd158de1278ea937bf44ca419c8abd4"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -19,7 +19,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-35",
-          "test": "dev/test_skill_sign.py::test_the_sign_skill_holds_each_command_it_must_name"
+          "test": "dev/test_skill_sign.py::test_the_sign_skill_holds_each_of_its_seven_commands"
         },
         {
           "env": null,

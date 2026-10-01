@@ -2,12 +2,12 @@
   "feature": "purlin_docs",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T19:20:57Z",
-      "commit": "1b8e8319d6dcd5fb57cc1e9f861a2b150c6b9623",
+      "at": "2026-10-01T20:26:51Z",
+      "commit": "b4aac4921b55618a6f011bf390fd38650d621c44",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "bfcfb516626bdf421b136667121bad1b3d03513019996b4c82d1955f84160e5d",
+        "code": "421afb37f9ea6fea781e314bd90478f557032b56f6689f32b237cec6dfa85b7c",
         "spec": "9f6515493cb7e4b5b6c042f77180f7a99864a7737416f2303ba0d22e722b541a",
         "tests": "c44becfc8ac0ddca6eaac2004d699ccccc0c59c6c995f38a576712c9cd610295"
       },

@@ -2,14 +2,14 @@
   "feature": "evidence_writer",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T19:20:57Z",
-      "commit": "1b8e8319d6dcd5fb57cc1e9f861a2b150c6b9623",
+      "at": "2026-10-01T20:26:51Z",
+      "commit": "b4aac4921b55618a6f011bf390fd38650d621c44",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "e85fedf3bce29d5979f20d4c4808016279e85b3e34a526e13328b6c73f79e678",
-        "spec": "7c32e10798ab63dace46869b905bafbf9f1b6bf100ff9c97ca8f8068fe1c6e34",
-        "tests": "7ce43e1378032726955f3c2b4cbde28ef44bf7614e4951c3807c22aee93641b1"
+        "code": "79853899945be290489a7f14ea879af5f9f2866e688f0967d06293cd8da544a9",
+        "spec": "693c1c35c46b59eeb2b956762b2f61b59693cb4556aa25045084688399299c98",
+        "tests": "b5b917c34acdd7e3a9300401bfce6d2ffcabcd2eb3949ddfe1afb5af0cd91cbb"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -59,7 +59,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-16",
-          "test": "dev/test_evidence_writer.py::test_a_ci_section_names_the_host_the_runner_was_lent"
+          "test": "dev/test_evidence_writer.py::test_a_ci_section_holds_the_fields_a_local_one_does"
         },
         {
           "env": null,
@@ -215,14 +215,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-44",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-17",
-          "test": "dev/test_evidence_writer.py::test_a_section_that_differs_only_in_its_hostname_is_not_written"
-        },
-        {
-          "env": null,
           "id": "PROOF-85",
           "manual": false,
           "result": "pass",
@@ -340,6 +332,22 @@
           "result": "pass",
           "rule": "RULE-14",
           "test": "dev/test_evidence_writer.py::test_an_entry_with_another_rule_hash_replaces_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-95",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_evidence_writer.py::test_a_ci_commit_run_commits_exactly_its_ci_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-96",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_evidence_writer.py::test_a_second_ci_commit_run_commits_nothing_and_pushes_nothing"
         }
       ],
       "rules": {
@@ -360,6 +368,7 @@
         "RULE-30": "passed",
         "RULE-31": "passed",
         "RULE-32": "passed",
+        "RULE-33": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",

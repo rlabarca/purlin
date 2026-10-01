@@ -2,13 +2,13 @@
   "feature": "update",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T19:27:27Z",
-      "commit": "1b8e8319d6dcd5fb57cc1e9f861a2b150c6b9623",
+      "at": "2026-10-01T20:26:52Z",
+      "commit": "b4aac4921b55618a6f011bf390fd38650d621c44",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "172ae012013f2d77fdfbdf61251a81b1991db544439d19c8e4ba8bc47929d81b",
-        "spec": "fbe8a2ba4652329ef381205b06c837d3772e3eb1e81451c62bb2d1747669f0a5",
+        "code": "1fbc86515e84910d2aae9a5b2b04d36a96f06f47e3ebd5a31fdf9761ffab7966",
+        "spec": "7714b54cc073a2e13eeae2dc59071a8ace661b2d14eda941a5010404864ccd84",
         "tests": "65bf3af90de60b89a06a0614fc68ff9ac04c8da92ef17afe9a717eecc75a20ea"
       },
       "machine": "Richs-MacBook-Pro.local",

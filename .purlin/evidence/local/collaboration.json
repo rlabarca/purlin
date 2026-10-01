@@ -2,12 +2,12 @@
   "feature": "collaboration",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T19:27:25Z",
-      "commit": "1b8e8319d6dcd5fb57cc1e9f861a2b150c6b9623",
+      "at": "2026-10-01T20:33:10Z",
+      "commit": "b4aac4921b55618a6f011bf390fd38650d621c44",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "9164e4a7594f5a9104b0bf0e6ce671f3868fec7f5eb1191467c509a3ebbffd12",
+        "code": "6b497627f3465c45c8a23349df29adbe0b38f464a344648813775863df7db78c",
         "spec": "288338e527e74393978cafd86960a75157c22cc5cf5d84eb92b504f76083ce74",
         "tests": "902e9ed037c6b6ebe7b860d09dcbdce72b48757a596ebe2b209a23dec95a9060"
       },

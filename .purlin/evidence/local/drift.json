@@ -2,13 +2,13 @@
   "feature": "drift",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T19:20:57Z",
-      "commit": "1b8e8319d6dcd5fb57cc1e9f861a2b150c6b9623",
+      "at": "2026-10-01T20:26:51Z",
+      "commit": "b4aac4921b55618a6f011bf390fd38650d621c44",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "789906b0f65f92c18fa2ad97ebf670327e6121ea8882d8366634c726ec969f5d",
-        "spec": "83d4c35afb871cd4637aa8fe0897a23cb937a7184ad907469ca144b8b4277a70",
+        "code": "199fbdac088c77debd576f1b5120873c2fb94714255a039b004ca301b7e09daf",
+        "spec": "8def3c9b5d0b2615a5ece05f43a827fbb58b6faf6154b1aa5c8366ae5e3c8e7f",
         "tests": "077585d0597eb33d3463cbc413536e6cb6a280de13b24c9fd1b3c75855cfed71"
       },
       "machine": "Richs-MacBook-Pro.local",
