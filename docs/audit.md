@@ -5,27 +5,26 @@ A passing test is not proof that it checks anything. The audit tries to make eac
 ## How it works
 
 **1. Heuristic spot tests.** Purlin flags tests that check nothing, check the code against
-itself, or never check the result the proof expects. It reads the tests as text, with no AI and
-without running them, so this step is free. The six checks, and the research behind each, are in
+itself, or never check the result the proof expects. It reads the tests as text. No AI is asked
+and no test runs, so this step is free. The six checks are in
 [the heuristic spot tests reference](../references/review_criteria.md#heuristic-spot-tests).
 
 **2. Plant one bug.** For each proof, an AI puts one small bug in a throwaway copy of your code,
-aimed at what the proof says. If the proof says a sample collected at 08:00 and received at 09:30
-is `90` minutes old, the bug might make the age come out an hour off.
+such as a sample age off by one hour. The bug is aimed at what the proof says.
 
-**3. Run that proof's test.** The test fails: it caught the bug, and the rule is `strong`. The test
-still passes: the rule is `weak`, and you see the bug it missed:
+**3. Run that proof's test.** The test fails: the rule is `strong`. The test still passes: the
+rule is `weak`, and you see the bug it missed:
 
 ```
 PROOF-1: the test still passes when src/age.py:12 reads "return minutes + 60"
 ```
 
-**4. `purlin:audit`.** Run it whenever you like, or give the agent a target:
+**4. `purlin:audit`.** Run it whenever you like. Or tell the agent:
 
 > Build and audit until 80% of rules are strong.
 
-The agent strengthens the weak tests and audits again until the share reaches 80%. The audit ends
-on that share:
+The agent strengthens the weak tests and audits again until 80% of rules are strong. Every audit
+ends on that share:
 
 ```
 The audit found 42 of 50 rules strong (84%).
@@ -33,66 +32,69 @@ The audit found 42 of 50 rules strong (84%).
 
 ## What you can count on
 
-- **Your code is never changed.** Every planted bug lives in a copy that is thrown away.
-- **Nothing waits on it.** A weak rule is work to do, listed as `to strengthen`. The tests read
-  `met` with it, and a sign-off goes ahead.
-- **`strong` means a bug was planted and caught.** Where the AI cannot be reached, the spot
-  tests still report what they find as `weak`, a rule that passed them alone stays
-  `not audited`, and the audit says to run `purlin:audit` again.
+- **Your code is never changed.** Every bug is planted in a copy, and the copy is thrown away.
+- **Nothing waits on it.** A weak rule is work to do, listed as `to strengthen`. The tests still
+  read `met`, and a sign-off goes ahead.
+- **`strong` means a bug was planted and caught.** If the AI cannot be reached, a rule the spot
+  tests flag is still `weak`. Every other rule stays `not audited`, and the audit tells you to
+  run `purlin:audit` again.
 - **It stays fast.** Only proofs whose test or code changed since the last audit get a new bug.
-- **Nothing to install.** No extra tool for each language; any test Purlin can run, it can audit.
-- **What it found is kept.** Each finding and each planted bug goes into the evidence, and the
+- **Nothing to install.** Any test Purlin can run, it can audit. No extra tool per language.
+- **What it found is kept.** Each finding and each planted bug goes into the evidence. The
   signer can read the findings at sign-off.
 
-What it does not do: prove your tests catch every possible bug. It tests the claim each proof
-makes, one bug at a time. A rule with no proof has nothing to plant a bug against.
+## What it does not do
+
+- It does not prove your tests catch every bug. It tests what each proof says, one bug at a time.
+- It reads only rules whose tests pass. A failing test is fixed first.
+- It plants no bug for an anchor's rule. The spot tests alone decide that rule.
+- A rule with no proof has nothing to plant a bug against.
 
 ## Why this works
 
-**AI-written tests often check what the code does, not what was asked.** When a model writes a
-test, its expected answer tends to come from the code as written, so a bug is copied into the test
+**AI-written tests often check what the code does, not what was asked.** A model tends to take
+a test's expected answer from the code as written. A bug in the code is then copied into the test
 ([Konstantinou, Degiovanni and Papadakis, 2024](https://arxiv.org/pdf/2410.21136)). Model-written
 tests also often check nothing at all
 ([Siddiq et al., EASE 2024](https://arxiv.org/pdf/2305.00418)) and lean on mocks
 ([an empirical study of coding agents, 2026](https://arxiv.org/pdf/2602.00409)). The spot tests
-catch these, and the proof, written by a person, supplies the expected answer.
+catch these. The expected answer comes from the proof, which a person wrote.
 
-**Planting bugs is the most reliable test of a test.** Whether tests catch small deliberate bugs
-tracks whether they catch real ones
+**Planting bugs is the most reliable test of a test.** Tests that catch small planted bugs tend
+to catch real ones
 ([Just et al., FSE 2014](https://homes.cs.washington.edu/~mernst/pubs/mutation-effectiveness-fse2014.pdf)).
-Code coverage, how much code the tests run, does not
+Code coverage, how much code the tests run, does not predict that
 ([Inozemtseva and Holmes, ICSE 2014](https://cs.ubc.ca/~rtholmes/papers/icse_2014_inozemtseva.pdf)).
 
-**Big companies plant few, targeted bugs, not thousands.** Google plants bugs only in the code a
-change touches and shows developers the few their tests missed
-([Petrović et al., TSE 2021](https://arxiv.org/pdf/2102.11378)). Meta has an AI write a few bugs
-aimed at one concern
-([Foster et al., FSE 2025](https://arxiv.org/pdf/2501.12862)), and AI-written bugs look more like
-real ones than tool-made ones ([Tip et al., LLMorpheus](https://arxiv.org/pdf/2404.09952)). Purlin
-does the same, one bug per proof.
+**Big companies plant a few targeted bugs, not thousands.** Google plants bugs only in changed
+code and shows developers the few their tests missed
+([Petrović et al., TSE 2021](https://arxiv.org/pdf/2102.11378)). Meta has a model write a few
+targeted ones ([Foster et al., FSE 2025](https://arxiv.org/pdf/2501.12862)). AI-written bugs look
+more like real ones than tool-made ones
+([Tip et al., LLMorpheus](https://arxiv.org/pdf/2404.09952)). Purlin follows both: one bug per
+proof.
 
 **An AI's opinion alone is not enough.** Asking a model whether a test looks good is the weakest
-check: models judge inconsistently
-([a large-scale evaluation of model judges, 2026](https://arxiv.org/pdf/2606.19544)). At Meta, AI
-tests only ship after a measured check
-([Alshahwan et al., FSE 2024](https://arxiv.org/pdf/2402.09171)). In Purlin the AI plants the bug,
-but the test run decides.
+check, because models judge inconsistently
+([a large-scale evaluation of model judges, 2026](https://arxiv.org/pdf/2606.19544)). At Meta,
+AI-written tests ship only after a measured check
+([Alshahwan et al., FSE 2024](https://arxiv.org/pdf/2402.09171)). In Purlin the AI plants the
+bug. The test run decides.
 
-## Fast enough, safe enough
+## Fast enough to run every day
 
-| How to judge a test | Speed | What it shows |
+| How to judge a test | Cost | What it shows |
 |---|---|---|
 | An AI reads it | Fast | An opinion |
-| Plant bugs everywhere, with a tool per language | Minutes to hours, a tool per language | Objective, across all the code |
-| **Spot tests, then one planted bug per proof** | **Free, then one AI call and one test run per changed proof** | **Objective, aimed at what the requirement says** |
+| Plant bugs everywhere | Minutes to hours, and a tool per language | Objective, across all the code |
+| **Spot tests, then one planted bug per proof** | **Free, then one AI call and one test run per changed proof** | **Objective, aimed at what the proof says** |
 
-Purlin takes the last row: real evidence where the requirement is, cheap enough to run every day.
+Purlin takes the last row.
 
 ## Sources
 
-The research behind Purlin's approach, each linked to the paper itself, and
-[the heuristic spot tests reference](../references/review_criteria.md#heuristic-spot-tests),
-which holds the six checks.
+Each paper is linked. The six checks are in
+[the heuristic spot tests reference](../references/review_criteria.md#heuristic-spot-tests).
 
 **The audit as a whole**
 
