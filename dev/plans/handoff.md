@@ -619,6 +619,18 @@ For the session that continues Purlin 0.10.0. Read this, then `dev/plans/three-l
 decisions 60 to 100 (together with this file they are the product as the owner settled it), then
 `dev/plans/next-agent-prompt.md`, the prompt that session is given.
 
+## The end of the round, 2026-10-01
+
+After the reading pass (77 findings, 54 fixed, 23 left for the owner in
+`dev/plans/d119-reports/reading.md`), `purlin:test --all --commit` cleared the 4 slow proofs, and
+`python3 dev/windows_run.py` made the first run on GitHub under the new setup: the 20 Windows
+rules passed and their evidence came back through git as `purlin: evidence at 9b20304`. The
+status then read `410 rules. 410 pass their tests.` and `Every rule passes its tests on the
+committed evidence. To sign it: purlin:sign`. This commit puts the anchor's 8 rules out of date
+again; a plain `purlin:test --commit` clears them. Nothing is signed or tagged, and `main` is not
+pushed. Left: the owner's calls in `reading.md` and `integration.md`, the deck's unpublished
+changes, the real-skills QA check, measuring the planted-bug audit, the owner's review.
+
 ## Where the tree is (2026-10-01, end of the long session)
 
 - `main` is local only. Decisions 100 to 103 are built in code and tests. Decisions 104 to 115 are
