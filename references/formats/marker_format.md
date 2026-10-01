@@ -1,4 +1,4 @@
-> Format-Version: 3
+> Format-Version: 4
 
 # Marker format
 
@@ -27,8 +27,7 @@ The shape is `purlin: <feature> PROOF-<n>`: the feature is the spec's name,
 and the proof is one of its `## Proof` lines. The marker names the proof only;
 the spec already says which rule a proof serves.
 
-Where a rule has no proof, which is allowed at the gate `passed`, the marker
-names the rule instead: `purlin: <feature> RULE-<n>`. A rule that has proofs is
+Where a rule has no proof, the marker names the rule instead: `purlin: <feature> RULE-<n>`. A rule that has proofs is
 marked by one of them.
 
 `purlin:` is read after any of `#`, `//`, `--`, `;`, `%` and `'`, and inside a
@@ -90,8 +89,8 @@ list with one entry per suite:
 
 - `{report}` becomes the `report` path.
 - `{files}` becomes the test files, each quoted, that carry the markers of
-  the proofs the run selected (which proofs a remote runner selects:
-  `references/hard_gates.md`, "Where a runner runs"). On a run over some
+  the proofs the run selected; a remote runner selects the proofs tagged
+  `@env` for its own system. On a run over some
   features these are their test files; on a run over every feature on your
   own machine it becomes nothing, and the suite runs whole. A suite with no
   `{files}` runs whole every time it runs. A run over some features starts no
@@ -128,6 +127,7 @@ any number of `<testsuite>` elements:
 | the class | `classname`: a path, a dotted Python module and class, or the outer titles joined by ` > ` |
 | the file | `file` on the `<testcase>`, else `file` or `filepath` on its `<testsuite>`, where the writer adds one |
 | the outcome | a `<failure>` or `<error>` child fails it, a `<skipped>` child skips it, and otherwise it passed |
+| a skip's reason | the `<skipped>` child's `message`, else its text |
 
 ### `trx`
 
@@ -137,19 +137,25 @@ What `dotnet test --logger trx` writes. Purlin reads each `UnitTestResult`:
 |------|------|
 | the outcome | `outcome`: `Passed`, `Warning`, `Completed` and `PassedButRunAborted` pass; `Failed`, `Error`, `Timeout` and `Aborted` fail; any other value is skipped |
 | the class and method | the `TestMethod` of the `UnitTest` whose `id` is the result's `testId`: its `className` (a nested class after `+`) and its `name` |
+| a skip's reason | the result's `Output/ErrorInfo/Message`, else the last line of `Output/StdOut` |
 
 ### `gotest`
 
 The JSON stream `go test -json` prints, one event per line, read from the
 command's standard output when `report` is `-`. Purlin reads each event whose
 `Test` is set and whose `Action` is `pass`, `fail` or `skip`, with its
-`Package`. Every other event, and every line that is not JSON, is left alone.
+`Package`. A skipped test's reason is its last `output` event before the
+`skip`, `go test`'s own `=== ` and `--- ` lines aside, with the leading
+`<file>:<line>: ` cut: `t.Skip("nothing to check: no screens")` on line 12 of
+`screens_test.go` gives `nothing to check: no screens`. Every other event, and
+every line that is not JSON, is left alone.
 
 ### `exit`
 
 No report. Each file `files` matches is one test: the command runs once per
 file, with `{files}` that one file, and the file passes when the command exits
-0. This is how shell and SQL scripts are tests.
+0. This is how shell and SQL scripts are tests. A file of an `exit` suite
+gives no skip reason.
 
 ## Tying a result to its marker, by name
 
@@ -187,6 +193,25 @@ written as `not run` whatever its test did. The test is named as `<file>::<name>
 for Python, `outer > inner > title` for JavaScript and TypeScript,
 `Class.Method` for C#, `TestX` for Go, and the file's own name for a file of
 an `exit` suite.
+
+### Nothing to check
+
+A test skipped through its tool's own skip, with a reason starting exactly
+`nothing to check:`, says the project holds nothing for its proof to check:
+
+```python
+# purlin: security_baseline PROOF-3
+def test_every_screen_escapes_its_input():
+    screens = find_screens()
+    if not screens:
+        pytest.skip('nothing to check: this project has no screens')
+```
+
+A proof whose every tied test skipped so reads `nothing to check` in the
+evidence, with the text after `nothing to check: ` as its reason. On an
+anchor's rule it counts as passed and the reason is shown; on any other
+spec's rule it counts as not run, the reason kept. A test skipped for any
+other reason reads `missing`.
 
 ## What is reported
 

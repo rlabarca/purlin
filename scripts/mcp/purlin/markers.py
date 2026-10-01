@@ -67,9 +67,8 @@ REPORTS_DIR = '.purlin/runtime/reports'
 _REPORT_EXTENSIONS = {'junit': '.xml', 'trx': '', 'gotest': '.json'}
 
 # Directories no test file is read from: dot directories are tool state,
-# `node_modules` is other people's code, `bin` and `obj` are build output and
-# `mutants/` is mutmut's copy of the project, tests included.
-SKIP_DIRS = ('node_modules', 'bin', 'obj', 'mutants')
+# `node_modules` is other people's code, and `bin` and `obj` are build output.
+SKIP_DIRS = ('node_modules', 'bin', 'obj')
 
 # One comment line holding `purlin:`, in any of the comment syntaxes.
 _COMMENT_RE = re.compile(

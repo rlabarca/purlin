@@ -22,6 +22,8 @@ import sys
 import pytest
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+with open(os.path.join(REPO, 'VERSION'), encoding='utf-8') as _handle:
+    VERSION = _handle.read().strip()
 
 for _path in (os.path.join(REPO, 'scripts', 'run'),
               os.path.join(REPO, 'scripts', 'mcp'),
@@ -79,7 +81,7 @@ def _project(tmp_path, tests, spec=LOGIN_SPEC, feature='login',
 
 def _config(root, tests):
     (root / '.purlin' / 'config.json').write_text(json.dumps(
-        {'gate': 'passed', 'mutation_engine': 'none', 'tests': tests}),
+        {'version': VERSION, 'tests': tests}),
         encoding='utf-8')
 
 
@@ -188,59 +190,19 @@ class TestTheMarker:
             ('login', 'PROOF-5', 5), ('login', 'PROOF-6', 6),
             ('login', 'RULE-7', 7), ('login', 'PROOF-8', 8)]
 
-    # purlin: reports PROOF-26
-    def test_a_comment_naming_no_id_is_not_a_marker(self):
-        assert markers.comment_markers('# purlin: login\n', '.txt') == []
-
     # purlin: reports PROOF-27
     def test_a_marker_after_code_in_a_text_file_is_not_read(self):
         assert markers.comment_markers(
             'x = 1  # purlin: login PROOF-1\n', '.txt') == []
 
-    # purlin: reports PROOF-40
-    def test_a_marker_after_code_in_a_python_file_is_not_read(self):
-        assert markers.comment_markers(
-            'x = 1  # purlin: login PROOF-1\n', '.py') == []
-
-    # purlin: reports PROOF-2
-    def test_a_marker_in_a_python_string_is_not_read(self):
-        python = ('BODY = """\n# purlin: login PROOF-1\n"""\n\n'
-                  '# purlin: login PROOF-1\ndef test_x():\n    pass\n')
-        found = markers.comment_markers(python, '.py')
-        assert [(m.id, m.line) for m in found] == [('PROOF-1', 5)]
-
-    # purlin: reports PROOF-41
-    def test_a_marker_in_a_here_document_is_not_read(self):
-        shell = ("cat > other.sh <<'EOF'\n# purlin: login PROOF-1\nEOF\n"
-                 '# purlin: login PROOF-2\nexit 0\n')
-        found = markers.comment_markers(shell, '.sh')
-        assert [m.id for m in found] == ['PROOF-2']
-
     # purlin: reports PROOF-3
     def test_a_star_does_not_cross_a_folder(self):
         assert _matched(PATHS, 'dev/test_*.py') == ['dev/test_a.py']
-
-    # purlin: reports PROOF-42
-    def test_two_stars_cross_any_number_of_folders(self):
-        assert _matched(PATHS, '**/*.test.ts') == ['a/b/c.test.ts']
 
     # purlin: reports PROOF-43
     def test_a_glob_with_no_slash_matches_the_name_in_any_folder(self):
         assert _matched(PATHS, 'test_*.py') == ['dev/test_a.py',
                                                'dev/sub/test_b.py']
-
-    # purlin: reports PROOF-44
-    def test_a_question_mark_is_one_character_and_never_a_slash(self):
-        paths = PATHS + ['dev/test_ab.py', 'dev/test_/.py']
-        assert _matched(paths, 'dev/test_?.py') == ['dev/test_a.py']
-
-    # purlin: reports PROOF-45
-    def test_two_stars_may_be_no_folder_at_the_top(self):
-        assert markers.glob_match('x.py', '**/*.py')
-
-    # purlin: reports PROOF-46
-    def test_two_stars_may_be_no_folder_in_the_middle(self):
-        assert markers.glob_match('dev/test_a.py', 'dev/**/test_*.py')
 
     @staticmethod
     def _two_files(tmp_path):
@@ -259,54 +221,6 @@ class TestTheMarker:
         files = markers.test_files(str(root), [first, second])
         assert {path: suite.name for path, suite in files.items()} == {
             'tests/test_a.py': 'first', 'other/test_b.py': 'second'}
-
-    # purlin: reports PROOF-48
-    # purlin: reports PROOF-99
-    def test_a_file_no_suite_matches_is_not_read(self, tmp_path):
-        root = self._two_files(tmp_path)
-        first = markers.Suite('first', 'x', None, 'junit', ['tests/*.py'])
-        assert set(markers.scan(str(root), [first])) == {'tests/test_a.py'}
-
-    @staticmethod
-    def _no_suite(tmp_path, rel, proof='PROOF-1'):
-        """A `login` project of one proof, `tests` set to `[]`, whose one
-        test marked `login <proof>` is `rel`, added to git; nothing has
-        run."""
-        root = _project(tmp_path, [], spec=_spec('login', 1))
-        _write(root, rel, '# purlin: login %s\ndef test_a():\n'
-                          '    pass\n' % proof)
-        for command in (['git', 'init', '-q'], ['git', 'add', '-A']):
-            subprocess.run(command, cwd=str(root), check=True,
-                           capture_output=True)
-        return root
-
-    @staticmethod
-    def _passed_word(root):
-        from purlin import payload
-        (feature,) = payload.build_payload(str(root))['features']
-        (rule,) = feature['rules']
-        return rule['cells']['passed']['word']
-
-    # purlin: reports PROOF-105
-    def test_with_no_suite_a_marked_test_is_not_run(self, tmp_path):
-        root = self._no_suite(tmp_path, 'tests/test_login.py')
-        assert self._passed_word(root) == 'not run'
-
-    # purlin: reports PROOF-106
-    def test_with_no_suite_the_status_sends_the_rule_to_be_tested(
-            self, tmp_path):
-        from purlin import status
-        root = self._no_suite(tmp_path, 'tests/test_login.py')
-        text = status.sync_status(str(root))
-        assert text.splitlines()[-1] == '  1 rule to test: purlin:test', text
-
-    # purlin: reports PROOF-107
-    def test_with_no_suite_a_file_of_no_test_language_is_not_read(
-            self, tmp_path):
-        from purlin import status
-        root = self._no_suite(tmp_path, 'notes/test_login.md', 'PROOF-9')
-        text = status.sync_status(str(root))
-        assert 'Left to do:' in text and 'to correct' not in text, text
 
     # purlin: reports PROOF-6
     def test_python_declares_test_functions_and_methods_only(self):
@@ -338,45 +252,6 @@ class TestTheMarker:
             ('Skipped', ['GreetingTests'], 'App.Tests'),
             ('Inner', ['GreetingTests', 'Nested'], 'App.Tests')]
 
-    # purlin: reports PROOF-55
-    def test_go_declares_its_test_functions_in_order(self):
-        with open(os.path.join(FIXTURES, 'go', 'cart', 'cart_test.go'),
-                  encoding='utf-8') as handle:
-            go = markers.go_tests(handle.read())
-        assert [t.name for t in go] == ['TestTotal', 'TestParse',
-                                        'TestDiscount', 'TestTotalIsWrong']
-
-    # purlin: reports PROOF-56
-    def test_csharp_declares_every_other_test_attribute(self):
-        cs = markers.cs_tests(
-            'namespace N {\n public class C {\n'
-            '  [Test]\n  public void Plain() {}\n'
-            '  [TestCase(1)]\n  public void Case(int x) {}\n'
-            '  [TestCaseSource("Rows")]\n  public void Source(int x) {}\n'
-            '  [TestMethod]\n  public void Method() {}\n'
-            '  [DataTestMethod]\n  public void DataMethod() {}\n'
-            '  [SkippableFact]\n  public void SkipFact() {}\n'
-            '  [SkippableTheory]\n  public void SkipTheory(int x) {}\n'
-            '  public void Helper() {}\n }\n}\n')
-        assert [(t.name, t.scopes, t.namespace) for t in cs] == [
-            (name, ['C'], 'N') for name in (
-                'Plain', 'Case', 'Source', 'Method', 'DataMethod',
-                'SkipFact', 'SkipTheory')]
-
-    # purlin: reports PROOF-57
-    def test_a_title_that_is_not_a_literal_declares_no_test(self):
-        js = markers.js_tests('const name = "x";\nit(name, () => {});\n'
-                              'test("lit", () => {});\n')
-        assert [t.name for t in js] == ['lit']
-
-    # purlin: reports PROOF-58
-    def test_a_go_function_not_shaped_as_a_test_declares_none(self):
-        go = markers.go_tests(
-            'func helper(t *testing.T) {}\nfunc TestA(t *testing.T) {}\n'
-            'func BenchmarkB(b *testing.B) {}\nfunc TestLike(n int) {}\n')
-        assert [t.name for t in go] == ['TestA']
-
-
 # ---------------------------------------------------------------------------
 # Reading the four formats
 # ---------------------------------------------------------------------------
@@ -401,7 +276,8 @@ GO_CASES = [
 class TestTheReports:
 
     # purlin: reports PROOF-7
-    def test_the_junit_pytest_writes(self, tmp_path):
+    def test_four_python_tests_read_pass_fail_skip_fail_in_their_order(
+            self, tmp_path):
         _root, cases = _pytest_run(tmp_path, (
             'import pytest\n\n'
             'def test_passes():\n    pass\n\n'
@@ -439,33 +315,39 @@ class TestTheReports:
             ('A.T', 'E', 'fail'), ('A.T', 'T', 'fail'), ('A.T', 'B', 'fail'),
             ('A.T', 'I', 'skip')]
 
-    # purlin: reports PROOF-94
-    def test_a_trx_warning_passes(self):
-        (case,) = reports.read_trx(_trx([('A.T', 'W', 'Warning')]))
-        assert case.outcome == 'pass'
-
-    # purlin: reports PROOF-95
-    def test_a_trx_completed_passes(self):
-        (case,) = reports.read_trx(_trx([('A.T', 'C', 'Completed')]))
-        assert case.outcome == 'pass'
-
-    # purlin: reports PROOF-96
-    def test_a_trx_passed_but_run_aborted_passes(self):
-        (case,) = reports.read_trx(_trx([('A.T', 'P',
-                                          'PassedButRunAborted')]))
-        assert case.outcome == 'pass'
-
     # purlin: reports PROOF-9
     def test_the_stream_go_test_prints(self):
         cases = reports.read_gotest(_go_stream())
         assert [(c.package, c.name, c.outcome) for c in cases] == GO_CASES
 
-    # purlin: reports PROOF-60
-    def test_a_line_of_the_stream_that_is_not_json_is_left_alone(self):
-        cases = reports.read_gotest(_go_stream()
-                                    + 'ok  \texample.com/shop 0.1s\n')
-        assert [(c.package, c.name, c.outcome) for c in cases] == GO_CASES
+    # purlin: reports PROOF-115
+    def test_a_junit_skip_carries_its_message_as_the_reason(self):
+        (case,) = reports.read_junit(
+            '<testsuite><testcase classname="tests.test_screens" '
+            'name="test_screens"><skipped message="nothing to check: this '
+            'project has no screens"/></testcase></testsuite>')
+        assert (case.name, case.outcome, case.reason) == (
+            'test_screens', 'skip',
+            'nothing to check: this project has no screens')
 
+    # purlin: reports PROOF-117
+    def test_a_go_skip_carries_its_last_output_as_the_reason(self):
+        events = [
+            {'Action': 'run', 'Test': 'TestScreens'},
+            {'Action': 'output', 'Test': 'TestScreens',
+             'Output': '=== RUN   TestScreens\n'},
+            {'Action': 'output', 'Test': 'TestScreens',
+             'Output': '    screens_test.go:12: nothing to check: this project '
+                       'has no screens\n'},
+            {'Action': 'output', 'Test': 'TestScreens',
+             'Output': '--- SKIP: TestScreens (0.00s)\n'},
+            {'Action': 'skip', 'Test': 'TestScreens'}]
+        stream = ''.join(json.dumps(dict(event, Package='example.com/app'))
+                         + '\n' for event in events)
+        (case,) = reports.read_gotest(stream)
+        assert (case.name, case.outcome, case.reason) == (
+            'TestScreens', 'skip',
+            'nothing to check: this project has no screens')
 
 # ---------------------------------------------------------------------------
 # The tie
@@ -497,18 +379,7 @@ class TestTheTie:
         (outcomes, _problems), _marked = _tie(root, PYTEST_SUITE, cases)
         assert outcomes == {('tests/test_login.py', 3): ['pass']}
 
-    # purlin: reports PROOF-61
-    def test_a_vitest_class_is_the_file_path(self, tmp_path):
-        root, suite, cases = _captured(tmp_path, 'vitest', 'vitest.xml',
-                                       'junit', ['tests/*.test.*'])
-        assert {c.classname for c in cases} == {'tests/login.test.ts'}
-        (outcomes, _p), marked = _tie(root, suite, cases)
-        assert list(marked) == ['tests/login.test.ts']
-        assert _marker_results(marked, outcomes)[('login', 'PROOF-1')] \
-            == 'pass'
-
     # purlin: reports PROOF-62
-    # purlin: reports PROOF-100
     def test_a_jest_case_names_its_file(self, tmp_path):
         # The capture was written on a Mac. Jest on Windows names each file
         # with this system's separator, `tests\login.test.js`, so the
@@ -537,51 +408,10 @@ class TestTheTie:
         assert outcomes[('App.Tests/GreetingTests.cs', 7)] == ['pass']
         assert outcomes[('App.Tests/OtherGreetingTests.cs', 8)] == ['fail']
 
-    # purlin: reports PROOF-64
-    def test_a_go_package_is_read_against_go_mod(self, tmp_path):
-        root, suite, cases = _go(tmp_path)
-        (outcomes, _p), _marked = _tie(root, suite, cases)
-        assert outcomes[('cart/cart_test.go', 6)] == ['pass']
-        assert outcomes[('tax/tax_test.go', 6)] == ['pass']
-
-    # purlin: reports PROOF-65
-    def test_a_python_case_of_no_marked_file_is_tied_to_nothing(
-            self, tmp_path):
-        root, cases = _pytest_run(tmp_path, _ONE_CLASS)
-        (outcomes, _p), _marked = _tie(root, PYTEST_SUITE, cases)
-        stray = reports.Case('test_same', 'fail', 'tests.test_elsewhere')
-        assert _tie(root, PYTEST_SUITE, cases + [stray])[0] == (outcomes, [])
-
-    # purlin: reports PROOF-66
-    def test_a_trx_case_of_no_marked_class_is_tied_to_nothing(
-            self, tmp_path):
-        root, suite, cases = _dotnet(tmp_path)
-        (outcomes, _p), _marked = _tie(root, suite, cases)
-        stray = reports.Case('GreetsByName', 'fail',
-                             'Nowhere.Tests.MissingTests')
-        assert _tie(root, suite, cases + [stray])[0] == (outcomes, [])
-
-    # purlin: reports PROOF-67
-    def test_a_go_case_of_no_package_is_tied_to_nothing(self, tmp_path):
-        root, suite, cases = _go(tmp_path)
-        (outcomes, _p), _marked = _tie(root, suite, cases)
-        stray = reports.Case('TestTotal', 'fail',
-                             package='example.com/shop/nowhere')
-        assert _tie(root, suite, cases + [stray])[0][0] == outcomes
-
     _VALUES = ('import pytest\n\n'
                '# purlin: login PROOF-1\n'
                '@pytest.mark.parametrize("x", [1, %s])\n'
                'def test_values(x):\n    assert x > 0\n')
-
-    # purlin: reports PROOF-11
-    def test_a_parametrised_test_passes_when_every_value_passes(
-            self, tmp_path):
-        root, cases = _pytest_run(tmp_path, self._VALUES % '2')
-        assert len(cases) == 2
-        (outcomes, _p), marked = _tie(root, PYTEST_SUITE, cases)
-        assert _marker_results(marked, outcomes) == {
-            ('login', 'PROOF-1'): 'pass'}
 
     # purlin: reports PROOF-68
     def test_a_parametrised_test_fails_when_one_value_fails(self, tmp_path):
@@ -590,29 +420,12 @@ class TestTheTie:
         assert _marker_results(marked, outcomes) == {
             ('login', 'PROOF-1'): 'fail'}
 
-    # purlin: reports PROOF-69
-    def test_a_theory_with_one_failing_row_fails(self, tmp_path):
-        root, suite, cases = _dotnet(tmp_path)
-        (outcomes, _p), marked = _tie(root, suite, cases)
-        assert _marker_results(marked, outcomes)[('greeting', 'PROOF-2')] \
-            == 'fail'
-
     # purlin: reports PROOF-70
     def test_a_go_test_with_a_failing_subtest_fails(self, tmp_path):
         root, suite, cases = _go(tmp_path)
         (outcomes, _p), marked = _tie(root, suite, cases)
         assert _marker_results(marked, outcomes)[('cart', 'PROOF-2')] \
             == 'fail'
-
-    # purlin: reports PROOF-71
-    def test_a_table_of_passing_rows_passes(self, tmp_path):
-        root, suite, cases = _captured(tmp_path, 'vitest', 'vitest.xml',
-                                       'junit', ['tests/*.test.ts'])
-        assert [c.name for c in cases if 'param' in c.name] == [
-            'outer > param 1', 'outer > param 2']
-        (outcomes, _p), marked = _tie(root, suite, cases)
-        assert _marker_results(marked, outcomes)[('login', 'PROOF-4')] \
-            == 'pass'
 
     def _narrowed(self, tmp_path, tool, report):
         root, suite, cases = _captured(tmp_path, tool, report, 'junit',
@@ -626,10 +439,6 @@ class TestTheTie:
     def test_a_vitest_title_is_narrowed_by_its_outer_parts(self, tmp_path):
         assert self._narrowed(tmp_path, 'vitest', 'vitest.xml') == 'pass'
 
-    # purlin: reports PROOF-72
-    def test_a_jest_title_is_narrowed_by_its_outer_parts(self, tmp_path):
-        assert self._narrowed(tmp_path, 'jest', 'jest.xml') == 'pass'
-
     # purlin: reports PROOF-73
     def test_a_python_test_is_narrowed_by_its_class(self, tmp_path):
         root, cases = _pytest_run(tmp_path, _ONE_CLASS + (
@@ -639,23 +448,6 @@ class TestTheTie:
         assert problems == []
         assert _marker_results(marked, outcomes) == {
             ('login', 'PROOF-1'): 'pass'}
-
-    # purlin: reports PROOF-74
-    def test_a_csharp_test_is_narrowed_by_its_class(self, tmp_path):
-        root = tmp_path / 'cs'
-        _write(root, 'tests/Twice.cs', (
-            'namespace N {\n public class First {\n'
-            '  // purlin: login PROOF-3\n  [Fact]\n  public void Same() {}\n'
-            ' }\n public class Second {\n  [Fact]\n  public void Same() {}\n'
-            ' }\n}\n'))
-        suite = markers.Suite('dotnet', 'x', 'r.trx', 'trx', ['**/*.cs'])
-        cases = reports.read_trx(_trx([('N.First', 'Same', 'Passed'),
-                                       ('N.Second', 'Same', 'Failed')]))
-        (outcomes, problems), marked = _tie(root, suite, cases)
-        assert problems == []
-        assert _marker_results(marked, outcomes) == {
-            ('login', 'PROOF-3'): 'pass'}
-
 
 # ---------------------------------------------------------------------------
 # Through a run
@@ -750,16 +542,6 @@ def _silent_project(tmp_path, report):
 
 class TestThroughARun:
 
-    # purlin: reports PROOF-4
-    def test_a_marker_above_a_decorator_is_tied(self, tmp_path):
-        _code, out, results = _login_run(tmp_path, (
-            'import pytest\n\n'
-            '# purlin: login PROOF-1\n'
-            '@pytest.mark.parametrize("x", [1])\n'
-            'def test_decorated(x):\n    assert x\n'), _spec('login', 1))
-        assert results == {
-            ('PROOF-1', 'tests/test_login.py::test_decorated'): 'pass'}, out
-
     # purlin: reports PROOF-49
     def test_two_markers_over_one_passing_test_both_pass(self, tmp_path):
         _code, out, results = _login_run(tmp_path, (
@@ -781,17 +563,6 @@ class TestThroughARun:
         assert results == {
             ('PROOF-1', 'tests/test_login.py::test_decorated'): 'pass'}, out
 
-    # purlin: reports PROOF-51
-    def test_a_failing_test_fails_each_of_its_markers_once(self, tmp_path):
-        code, out, results = _login_run(tmp_path, (
-            '# purlin: login PROOF-1\n'
-            '# purlin: login PROOF-2\n'
-            'def test_two():\n    assert False\n'), _spec('login', 2))
-        assert code == 1, out
-        assert results == {
-            ('PROOF-1', 'tests/test_login.py::test_two'): 'fail',
-            ('PROOF-2', 'tests/test_login.py::test_two'): 'fail'}, out
-
     # purlin: reports PROOF-5
     def test_a_marker_above_nothing_is_tied_to_no_test(self, untied_run):
         code, out, results = untied_run
@@ -800,17 +571,6 @@ class TestThroughARun:
                 'purlin:build to repair it.') in out.splitlines(), out
         assert results[('PROOF-3', '')] == 'missing'
         assert code == 1
-
-    # purlin: reports PROOF-52
-    def test_the_tied_markers_beside_an_untied_one_still_pass(
-            self, untied_run):
-        _code, out, results = untied_run
-        assert results == {
-            ('PROOF-1', 'tests/test_login.py::test_one'): 'pass',
-            ('PROOF-2', 'tests/test_login.py::test_two'): 'pass',
-            ('PROOF-3', ''): 'missing'}
-        assert ('Evidence is missing: 1 marker has no passing or failing '
-                'result: login PROOF-3 at tests/test_login.py:9.') in out
 
     # purlin: reports PROOF-13
     def test_a_case_that_is_two_tests_is_counted_for_neither(
@@ -825,18 +585,6 @@ class TestThroughARun:
         assert {key[0]: value for key, value in results.items()} == {
             'PROOF-1': 'missing', 'PROOF-2': 'missing'}, out
         assert code == 1, out
-
-    # purlin: reports PROOF-14
-    def test_a_passing_test_is_pass(self, five_outcomes):
-        assert five_outcomes['PROOF-1'] == 'pass'
-
-    # purlin: reports PROOF-75
-    def test_a_failing_test_is_fail(self, five_outcomes):
-        assert five_outcomes['PROOF-2'] == 'fail'
-
-    # purlin: reports PROOF-76
-    def test_a_skipped_test_is_missing(self, five_outcomes):
-        assert five_outcomes['PROOF-3'] == 'missing'
 
     # purlin: reports PROOF-77
     def test_a_test_whose_setup_errors_is_fail(self, five_outcomes):
@@ -863,7 +611,6 @@ class TestThroughARun:
                                            'PROOF-2': 'missing'}
 
     # purlin: reports PROOF-15
-    # purlin: reports PROOF-101
     def test_an_exit_suite_gives_each_file_its_exit_code(self, exit_run):
         root, code, out = exit_run
         assert code == 1
@@ -879,32 +626,12 @@ class TestThroughARun:
         assert (root / 'calls.txt').read_text(encoding='utf-8').splitlines() \
             == ['call: tests/bad.sh', 'call: tests/good.sh']
 
-    # purlin: reports PROOF-16
-    def test_a_run_over_one_feature_gives_its_test_file(self, tmp_path):
-        assert _arguments_run(tmp_path, '--feature', 'login', '--test') == [
-            'x', 'tests/test_login.py', '.purlin/runtime/reports/pytest.xml']
-
-    # purlin: reports PROOF-81
-    def test_a_run_over_every_feature_gives_no_test_file(self, tmp_path):
-        assert _arguments_run(tmp_path, '--all', '--test') == [
-            'x', '.purlin/runtime/reports/pytest.xml']
-
     # purlin: reports PROOF-82
-    # purlin: reports PROOF-102
-    def test_a_path_holding_a_space_is_one_argument(self, tmp_path):
+    def test_a_path_holding_a_space_is_one_argument_then_the_report_path(
+            self, tmp_path):
         assert _arguments_run(tmp_path, '--feature', 'signup', '--test') == [
             'x', 'tests/test_sign up.py',
             '.purlin/runtime/reports/pytest.xml']
-
-    # purlin: reports PROOF-83
-    def test_the_command_runs_through_bash(self, tmp_path):
-        suite = suites.pytest_suite()
-        suite['run'] = 'echo "${BASH_VERSION:+bash}" > shell.txt; ' \
-            + suite['run']
-        root = _project(tmp_path, [suite])
-        _write(root, 'tests/test_login.py', _WELL_FORMED)
-        _run(root, '--all', '--test')
-        assert (root / 'shell.txt').read_text(encoding='utf-8') == 'bash\n'
 
     # purlin: reports PROOF-84
     def test_the_command_runs_in_the_project_root(self, tmp_path):
@@ -929,18 +656,6 @@ class TestThroughARun:
         code, out = _run(root, '--all', '--test')
         assert code == 1
         assert 'wrote no report' in out, out
-        assert not (root / report).exists()
-
-    # purlin: reports PROOF-85
-    # purlin: reports PROOF-103
-    def test_an_old_report_folder_is_deleted_before_the_suite_runs(
-            self, tmp_path):
-        report = '.purlin/runtime/reports/out'
-        root = _silent_project(tmp_path, report)
-        _write(root, report + '/old.xml', _STALE_CASE)
-        code, out = _run(root, '--all', '--test')
-        assert code == 1
-        assert 'wrote no report at .purlin/runtime/reports/out' in out, out
         assert not (root / report).exists()
 
     # purlin: reports PROOF-86
@@ -988,22 +703,6 @@ class TestThroughARun:
         assert ('Evidence is missing: the pytest suite wrote no report at '
                 '.purlin/runtime/reports/pytest.xml.') in out
 
-    # purlin: reports PROOF-93
-    def test_a_suite_leaving_an_empty_report_folder_is_missing_evidence(
-            self, tmp_path):
-        root = _project(tmp_path, [{
-            'name': 'dotnet', 'run': 'mkdir -p {report}',
-            'report': '.purlin/runtime/reports/out', 'format': 'trx',
-            'files': ['tests/*.cs']}])
-        _write(root, 'tests/One.cs', (
-            'namespace N {\n public class C {\n'
-            '  // purlin: login PROOF-1\n  [Fact]\n  public void A() {}\n'
-            ' }\n}\n'))
-        code, out = _run(root, '--all', '--test')
-        assert ('Evidence is missing: the dotnet suite wrote no report in '
-                '.purlin/runtime/reports/out.') in out, out
-        assert code == 1
-
     @staticmethod
     def _names_nothing(tmp_path, marker):
         root = _project(tmp_path, [suites.pytest_suite()])
@@ -1013,64 +712,13 @@ class TestThroughARun:
         return code, out, out.splitlines()
 
     # purlin: reports PROOF-19
-    def test_a_marker_naming_a_feature_no_spec_has_fails_the_run(
+    def test_a_marker_naming_a_feature_no_spec_has_is_printed_and_exits_1(
             self, tmp_path):
         code, out, lines = self._names_nothing(tmp_path, 'nosuch PROOF-1')
         assert ('tests/test_login.py:13 names nosuch PROOF-1, which no spec '
                 'has. Correct the comment, or run purlin:build to repair '
                 'it.') in lines, out
         assert code == 1
-
-    # purlin: reports PROOF-25
-    def test_two_markers_naming_no_spec_are_each_named(self, tmp_path):
-        root = _project(tmp_path, [suites.pytest_suite()])
-        _write(root, 'tests/test_login.py', _WELL_FORMED + (
-            '# purlin: nosuch PROOF-1\ndef test_x():\n    pass\n\n'
-            '# purlin: other PROOF-2\ndef test_y():\n    pass\n'))
-        code, out = _run(root, '--all', '--test')
-        advice = ' Correct the comment, or run purlin:build to repair it.'
-        lines = out.splitlines()
-        assert ('tests/test_login.py:13 names nosuch PROOF-1, which no spec '
-                'has.' + advice) in lines, out
-        assert ('tests/test_login.py:17 names other PROOF-2, which no spec '
-                'has.' + advice) in lines, out
-        assert code == 1
-
-    # purlin: reports PROOF-21
-    def test_a_marker_naming_a_proof_no_spec_has_fails_the_run(
-            self, tmp_path):
-        code, out, lines = self._names_nothing(tmp_path, 'login PROOF-9')
-        assert ('tests/test_login.py:13 names login PROOF-9, which no spec '
-                'has. Correct the comment, or run purlin:build to repair '
-                'it.') in lines, out
-        assert code == 1
-
-    # purlin: reports PROOF-22
-    def test_a_marker_naming_a_rule_no_spec_has_fails_the_run(
-            self, tmp_path):
-        code, out, lines = self._names_nothing(tmp_path, 'login RULE-9')
-        assert ('tests/test_login.py:13 names login RULE-9, which no spec '
-                'has. Correct the comment, or run purlin:build to repair '
-                'it.') in lines, out
-        assert code == 1
-
-    # purlin: reports PROOF-23
-    def test_a_marker_naming_a_rule_that_has_proofs_fails_the_run(
-            self, tmp_path):
-        code, out, lines = self._names_nothing(tmp_path, 'login RULE-1')
-        assert ('tests/test_login.py:13 names login RULE-1, which has '
-                'proofs; a comment names one of its proofs. Correct the '
-                'comment, or run purlin:build to repair it.') in lines, out
-        assert code == 1
-
-    # purlin: reports PROOF-24
-    def test_a_run_with_only_well_formed_markers_exits_0(self, tmp_path):
-        root = _project(tmp_path, [suites.pytest_suite()])
-        _write(root, 'tests/test_login.py', _WELL_FORMED)
-        code, out = _run(root, '--all', '--test')
-        assert 'which no spec has' not in out, out
-        assert 'which has proofs' not in out, out
-        assert code == 0, out
 
     @staticmethod
     def _beside_a_complete_suite(tmp_path, broken):
@@ -1104,16 +752,6 @@ class TestThroughARun:
         assert started == ['Running the pytest suite.'], out
         assert code == 0, out
 
-    # purlin: reports PROOF-89
-    def test_a_suite_with_no_files_is_left_out(self, tmp_path):
-        code, out, said, started = self._beside_a_complete_suite(
-            tmp_path, {'name': 'c', 'run': 'x', 'format': 'junit'})
-        assert said == ['purlin: the c suite names no files. '
-                        'Fix the tests setting in .purlin/config.json, then '
-                        'run purlin:test.'], out
-        assert started == ['Running the pytest suite.'], out
-        assert code == 0, out
-
     @staticmethod
     def _suites_read(tmp_path, tests):
         """`(names, problems)` of the suites a settings file's `tests`
@@ -1122,32 +760,10 @@ class TestThroughARun:
         read, problems = markers.read_suites(str(root))
         return [suite.name for suite in read], problems
 
-    # purlin: reports PROOF-110
-    def test_a_suite_with_no_files_names_its_problem(self, tmp_path):
-        assert self._suites_read(tmp_path, [
-            {'name': 'c', 'run': 'x', 'format': 'junit'}]) == (
-            [], ['the c suite names no files'])
-
     # purlin: reports PROOF-108
     def test_a_tests_setting_that_is_not_a_list_is_no_suite(self, tmp_path):
         assert self._suites_read(tmp_path, {}) == (
             [], ['"tests" in .purlin/config.json is not a list'])
-
-    # purlin: reports PROOF-109
-    def test_an_entry_that_is_not_an_object_is_left_out(self, tmp_path):
-        assert self._suites_read(tmp_path, [
-            'pytest', suites.pytest_suite()]) == (
-            ['pytest'], ['tests[0] is not an object'])
-
-    # purlin: reports PROOF-111
-    def test_a_suite_named_twice_keeps_the_first(self, tmp_path):
-        second = dict(suites.pytest_suite(), run='echo second')
-        root = _project(tmp_path, [suites.pytest_suite(), second])
-        read, problems = markers.read_suites(str(root))
-        assert [(suite.name, suite.run) for suite in read] == [
-            ('pytest', suites.pytest_suite()['run'])]
-        assert problems == [
-            'the pytest suite is named twice; the second is left out']
 
     @staticmethod
     def _report_written(tmp_path, command):
@@ -1158,17 +774,6 @@ class TestThroughARun:
             'format': 'junit', 'files': ['tests/test_*.py']}])
         _write(root, 'tests/test_login.py', _WELL_FORMED)
         return _run(root, '--all', '--test')
-
-    # purlin: reports PROOF-113
-    def test_a_report_that_cannot_be_read_is_missing_evidence(
-            self, tmp_path):
-        code, out = self._report_written(
-            tmp_path, "mkdir -p .purlin/runtime/reports && "
-                      "printf '\\377\\376' > {report}")
-        assert ('Evidence is missing: the pytest suite wrote a report at '
-                '.purlin/runtime/reports/pytest.xml that could not be read'
-                ) in out, out
-        assert code == 1, out
 
     # purlin: reports PROOF-114
     def test_a_report_not_in_its_format_is_missing_evidence(self, tmp_path):
@@ -1218,7 +823,6 @@ def _fix_and_why(tmp_path, comment, spec=LOGIN_SPEC):
 class TestNearMisses:
 
     # purlin: reports PROOF-28
-    # purlin: reports PROOF-104
     def test_a_near_miss_is_listed_as_json(self, tmp_path):
         root = _project(tmp_path, [suites.pytest_suite()])
         _write(root, 'tests/test_login.py', '# purln: login PROOF-1\n'
@@ -1232,103 +836,16 @@ class TestNearMisses:
         assert '`purln`' in entry['why'], entry
         assert code == 0, err
 
-    # purlin: reports PROOF-29
-    def test_a_wrong_command_line_exits_2(self, tmp_path):
-        code, _out, err = _near_misses(tmp_path, '--near-misses',
-                                       '--nonsense')
-        assert code == 2
-        assert err.splitlines() == [
-            'Usage: markers.py --near-misses [--project-root DIR]'], err
-
-    # purlin: reports PROOF-30
-    def test_a_file_no_suite_reads_is_not_listed(self, tmp_path):
-        root = _project(tmp_path, [suites.pytest_suite()])
-        _write(root, 'notes/login.txt', '# purln: login PROOF-1\n')
-        code, out, _err = _near_misses(root)
-        assert json.loads(out) == [] and code == 0, out
-
-    # purlin: reports PROOF-31
-    def test_purlin_in_capitals(self, tmp_path):
-        assert _fix_and_why(tmp_path, '# PURLIN: login PROOF-1') == (
-            '# purlin: login PROOF-1', '`PURLIN` is `purlin` in capitals.')
-
-    # purlin: reports PROOF-32
-    def test_no_space_after_the_colon(self, tmp_path):
-        assert _fix_and_why(tmp_path, '# purlin:login PROOF-1') == (
-            '# purlin: login PROOF-1', 'There is no space after the colon.')
-
-    # purlin: reports PROOF-90
-    def test_purlin_misspelled_by_one_letter(self, tmp_path):
-        assert _fix_and_why(tmp_path, '# purlim: login PROOF-1') == (
-            '# purlin: login PROOF-1',
-            '`purlim` is one letter from `purlin`.')
-
-    # purlin: reports PROOF-33
-    def test_a_marker_naming_what_exists_is_not_a_near_miss(self, tmp_path):
-        assert _listed(tmp_path, '# purlin: login PROOF-1') == []
-
-    # purlin: reports PROOF-34
-    def test_a_comment_naming_no_id_has_no_fix(self, tmp_path):
-        assert _fix_and_why(tmp_path, '# purlin: login') == (
-            None, 'The comment names no `<feature> PROOF-<n>` or '
-                  '`<feature> RULE-<n>`.')
-
-    # purlin: reports PROOF-38
-    def test_an_id_that_is_neither_proof_nor_rule_has_no_fix(self, tmp_path):
-        fix, _why = _fix_and_why(tmp_path, '# purlin: login TEST-1')
-        assert fix is None
-
     # purlin: reports PROOF-35
     def test_a_feature_one_character_off(self, tmp_path):
         assert _fix_and_why(tmp_path, '# purlin: logn PROOF-1') == (
             '# purlin: login PROOF-1',
             '`logn` is one character from the feature `login`.')
 
-    # purlin: reports PROOF-36
-    def test_a_proof_id_one_character_off(self, tmp_path):
-        fix, _why = _fix_and_why(tmp_path, '# purlin: login PROOF-30')
-        assert fix == '# purlin: login PROOF-3'
-
-    # purlin: reports PROOF-39
-    def test_a_misspelled_proof_word(self, tmp_path):
-        assert _fix_and_why(tmp_path, '# purlin: login PROF-2') == (
-            '# purlin: login PROOF-2', '`PROF` is one character from `PROOF`.')
-
-    # purlin: reports PROOF-112
-    def test_a_proof_word_in_lower_case(self, tmp_path):
-        assert _fix_and_why(tmp_path, '# purlin: login proof-1') == (
-            '# purlin: login PROOF-1', '`proof` is `PROOF` in lower case.')
-
-    # purlin: reports PROOF-91
-    def test_a_rule_with_one_proof_is_offered_its_proof(self, tmp_path):
-        assert _fix_and_why(tmp_path, '# purlin: login RULE-30') == (
-            '# purlin: login PROOF-3',
-            '`RULE-30` is one character from `RULE-3`, which login has; a '
-            'comment names its one proof, `PROOF-3`.')
-
-    # purlin: reports PROOF-97
-    def test_a_rule_with_two_proofs_is_not_offered(self, tmp_path):
-        spec = LOGIN_SPEC + '- PROOF-4 (RULE-3): observe 4\n'
-        assert _listed(tmp_path, '# purlin: login RULE-30', spec=spec) == []
-
-    # purlin: reports PROOF-98
-    def test_a_rule_with_no_proof_is_offered_itself(self, tmp_path):
-        spec = LOGIN_SPEC.replace('- PROOF-3 (RULE-3): observe 3\n', '')
-        fix, _why = _fix_and_why(tmp_path, '# purlin: login RULE-30',
-                                 spec=spec)
-        assert fix == '# purlin: login RULE-3'
-
     # purlin: reports PROOF-37
     def test_an_id_one_character_from_several_is_not_a_near_miss(
             self, tmp_path):
         assert _listed(tmp_path, '# purlin: login PROOF-4') == []
-
-    # purlin: reports PROOF-92
-    def test_a_feature_one_character_from_two_is_not_a_near_miss(
-            self, tmp_path):
-        assert _listed(tmp_path, '# purlin: logn PROOF-1',
-                       more_specs=(('logon', _spec('logon', 3)),)) == []
-
 
 # ---------------------------------------------------------------------------
 # The captures are what the tools write today

@@ -5,14 +5,18 @@ and reads the report that command writes. Four formats are read:
 
     junit    JUnit XML: every `<testcase>`, with its `classname`, `name` and,
              where the writer adds one, `file`; a `<failure>` or `<error>`
-             child fails it and a `<skipped>` child skips it
+             child fails it and a `<skipped>` child skips it, its reason the
+             child's `message`, else its text
     trx      what `dotnet test --logger trx` writes: each `UnitTestResult`'s
              `outcome`, joined through its `testId` to the `TestMethod` whose
-             `className` and `name` it ran
+             `className` and `name` it ran; a skip's reason is the result's
+             `Output/ErrorInfo/Message`, else the last line of `Output/StdOut`
     gotest   the JSON stream `go test -json` writes: each event whose
-             `Action` is `pass`, `fail` or `skip` and that names a `Test`
+             `Action` is `pass`, `fail` or `skip` and that names a `Test`; a
+             skip's reason is the test's last `output` event before it, its
+             leading `<file>:<line>: ` cut
     exit     no report: each test file is run on its own and passes when the
-             command exits 0
+             command exits 0; a skip gives no reason
 
 For each case in a report the file it belongs to is found (from the case's
 file attribute where there is one, otherwise by resolving its class or package
@@ -63,21 +67,42 @@ _TRX_PASS = ('passed', 'passedbutrunaborted', 'warning', 'completed')
 
 
 class Case(object):
-    """One test result from a report."""
+    """One test result from a report.
 
-    __slots__ = ('file', 'classname', 'name', 'outcome', 'package')
+    `reason` is the text the test tool gave for a skipped case, or None.
+    """
 
-    def __init__(self, name, outcome, classname='', file=None, package=None):
+    __slots__ = ('file', 'classname', 'name', 'outcome', 'package', 'reason')
+
+    def __init__(self, name, outcome, classname='', file=None, package=None,
+                 reason=None):
         self.name = name
         self.outcome = outcome
         self.classname = classname or ''
         self.file = file
         self.package = package
+        self.reason = reason
 
     def __repr__(self):
         return 'Case(%s %s %s %s)' % (self.file or self.classname,
                                       self.name, self.outcome,
                                       self.package or '')
+
+
+class Outcome(str):
+    """One case's outcome as `tie` gives it: `pass`, `fail` or `skip`,
+    carrying the case's `reason`."""
+
+    def __new__(cls, outcome, reason=None):
+        made = str.__new__(cls, outcome)
+        made.reason = reason
+        return made
+
+
+def _text_of(text):
+    """`text` stripped, or None where nothing is left."""
+    text = (text or '').strip()
+    return text or None
 
 
 # ---------------------------------------------------------------------------
@@ -100,16 +125,21 @@ def read_junit(text):
                 walk(child, child.get('file') or child.get('filepath')
                      or suite_file)
             elif tag == 'testcase':
-                kinds = {_local(grand.tag) for grand in list(child)}
-                if kinds & {'failure', 'error'}:
+                kinds = {_local(grand.tag): grand for grand in list(child)}
+                reason = None
+                if set(kinds) & {'failure', 'error'}:
                     outcome = FAIL
                 elif 'skipped' in kinds:
                     outcome = SKIP
+                    skipped = kinds['skipped']
+                    reason = (_text_of(skipped.get('message'))
+                              or _text_of(skipped.text))
                 else:
                     outcome = PASS
                 cases.append(Case(child.get('name') or '', outcome,
                                   child.get('classname') or '',
-                                  child.get('file') or suite_file))
+                                  child.get('file') or suite_file,
+                                  reason=reason))
     if _local(root.tag) == 'testcase':
         wrapper = ElementTree.Element('testsuite')
         wrapper.append(root)
@@ -134,24 +164,55 @@ def read_trx(text):
         if _local(node.tag) != 'UnitTestResult':
             continue
         outcome = str(node.get('outcome') or '').lower()
+        reason = None
         if outcome in _TRX_FAIL:
             result = FAIL
         elif outcome in _TRX_PASS:
             result = PASS
         else:
             result = SKIP
+            reason = _trx_reason(node)
         classname, name = methods.get(node.get('testId'), ('', ''))
         if not name:
             # A result with no definition names its test in full.
             full = re.sub(r'\(.*\)$', '', node.get('testName') or '')
             classname, _, name = full.rpartition('.')
-        cases.append(Case(name, result, classname))
+        cases.append(Case(name, result, classname, reason=reason))
     return cases
+
+
+def _trx_reason(result):
+    """A skipped TRX result's reason: `Output/ErrorInfo/Message`, else the
+    last line of `Output/StdOut`; None where it holds neither."""
+    found = {}
+    for output in list(result):
+        if _local(output.tag) != 'Output':
+            continue
+        for child in list(output):
+            if _local(child.tag) == 'StdOut':
+                found.setdefault('stdout', child.text)
+            elif _local(child.tag) == 'ErrorInfo':
+                for grand in list(child):
+                    if _local(grand.tag) == 'Message':
+                        found.setdefault('message', grand.text)
+    message = _text_of(found.get('message'))
+    if message:
+        return message
+    lines = [line.strip() for line in (found.get('stdout') or '').splitlines()
+             if line.strip()]
+    return lines[-1] if lines else None
+
+
+# The lines `go test` writes about a test itself, which are not its output.
+_GO_OWN_LINE = re.compile(r'^\s*(?:---|===) ')
+# The `<file>:<line>: ` a `t.Skip` or `t.Log` line opens on.
+_GO_WHERE = re.compile(r'^\s*\S+?\.go:\d+: ')
 
 
 def read_gotest(text):
     """Every test `go test -json` reported passing, failing or skipping."""
     cases = []
+    said = {}
     for line in text.splitlines():
         line = line.strip()
         if not line.startswith('{'):
@@ -163,10 +224,20 @@ def read_gotest(text):
         if not isinstance(event, dict) or not event.get('Test'):
             continue
         action = event.get('Action')
+        key = (str(event.get('Package') or ''), str(event['Test']))
+        if action == 'output':
+            output = str(event.get('Output') or '')
+            if output.strip() and not _GO_OWN_LINE.match(output):
+                said[key] = output
+            continue
         if action not in (PASS, FAIL, SKIP):
             continue
+        reason = None
+        if action == SKIP and key in said:
+            reason = _text_of(_GO_WHERE.sub('', said[key], count=1))
         cases.append(Case(str(event['Test']), action,
-                          package=str(event.get('Package') or '')))
+                          package=str(event.get('Package') or ''),
+                          reason=reason))
     return cases
 
 
@@ -417,8 +488,8 @@ def tie(project_root, suite, cases, marked):
     """`(outcomes, problems)` for one suite's cases.
 
     `outcomes` is `{(path, test line): [outcome, ...]}` for every marked test
-    a case was tied to, and `problems` one line for each case that matched
-    more than one test.
+    a case was tied to, each an `Outcome` carrying its case's reason, and
+    `problems` one line for each case that matched more than one test.
     """
     outcomes = {}
     problems = []
@@ -427,7 +498,8 @@ def tie(project_root, suite, cases, marked):
         found = locate(project_root, suite, case, marked, cache)
         if len(found) == 1:
             path, test = found[0]
-            outcomes.setdefault((path, test.line), []).append(case.outcome)
+            outcomes.setdefault((path, test.line), []).append(
+                Outcome(case.outcome, case.reason))
         elif len(found) > 1:
             line = AMBIGUOUS % (case.name, len(found),
                                 ', '.join(sorted({path for path, _t in found})))
@@ -449,6 +521,18 @@ def result_of(outcomes):
     if all(outcome == PASS for outcome in outcomes):
         return PASS
     return NOT_RUN
+
+
+def reason_of(outcomes):
+    """The reason the tool gave where every case one test had was skipped:
+    the first skipped case's that gave one; None otherwise."""
+    if not outcomes or any(outcome != SKIP for outcome in outcomes):
+        return None
+    for outcome in outcomes:
+        reason = getattr(outcome, 'reason', None)
+        if reason:
+            return reason
+    return None
 
 
 def test_name(path, test, fmt):
