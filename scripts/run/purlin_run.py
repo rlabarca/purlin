@@ -96,7 +96,7 @@ settings file or it cannot be read, an older Purlin set the project up and
 it was not upgraded, or no test command is set; 2 the command line was
 wrong. A test comment to correct sets no code. `--audit` exits as its tests
 do, whatever the audit found, or 1 where the audit stopped because the
-project changed while a planted bug ran. `--help` and `-h` print the usage
+project changed while the audit ran. `--help` and `-h` print the usage
 to stdout and exit 0. `--ci` exits 1 only when a test tied to a proof
 tagged for its system failed or could not run.
 
@@ -1562,7 +1562,7 @@ def _audit(project_root, args, features, selected, exit_code):
     passing one again under `--all`, writes what it found under `audit` in
     each feature's local evidence and prints it. The exit code is the tests'
     (`run_script RULE-48`), or 1 where the audit stopped because the project
-    changed while a planted bug ran.
+    changed while the audit ran.
     """
     import audit_run
     print('')
