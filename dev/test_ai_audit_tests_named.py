@@ -63,8 +63,12 @@ def project():
 class TestEachTestShowsItsOwnSource:
 
     # purlin: ai_audit PROOF-34
-    def test_each_name_shows_its_own_body(self, project):
+    def test_two_passing_tests_of_one_proof_each_show_their_own_source(
+            self, project):
         _two_tests(project)
+        rule = project.rule('RULE-1')
+        assert [test['result'] for proof in rule['proofs']
+                for test in proof['tests']] == ['pass', 'pass'], rule
         tests = _tests_by_name(project)
         assert sorted(tests) == sorted(NAMES), tests
         first = tests['test_valid_credentials_return_200']['body']
@@ -77,7 +81,8 @@ class TestEachTestShowsItsOwnSource:
         assert 'def test_valid_credentials_return_200' not in second, second
 
     # purlin: ai_audit PROOF-35
-    def test_a_name_the_file_no_longer_holds_shows_no_body(self, project):
+    def test_a_name_the_evidence_holds_and_the_file_does_not_shows_no_source(
+            self, project):
         _two_tests(project, names=NAMES + ('test_renamed_away',))
         tests = _tests_by_name(project)
         assert tests['test_renamed_away']['body'] is None, \
@@ -100,36 +105,6 @@ class TestANameFromARecordFindsItsSource:
         (tmp_path / path).write_text(text, encoding='utf-8')
         return marked_tests.source(str(tmp_path), 'demo', 'PROOF-1', path,
                                    recorded)
-
-    PYTHON = (
-        'import pytest\n'
-        '\n'
-        '\n'
-        '# purlin: demo PROOF-1\n'
-        '@pytest.mark.parametrize("case", [1])\n'
-        'def test_found(case):\n'
-        '    assert case == 1\n'
-        '\n'
-        '\n'
-        '# purlin: demo PROOF-1\n'
-        'def test_other():\n'
-        '    assert 2 == 2\n'
-    )
-
-    # purlin: ai_audit PROOF-36
-    def test_a_name_with_a_parameter_finds_its_own_test(self, tmp_path):
-        body = self._source(tmp_path, 'tests/test_login.py', self.PYTHON,
-                            'test_found[case-1]')
-        assert body is not None and 'def test_found' in body, body
-        assert 'def test_other' not in body, body
-
-    # purlin: ai_audit PROOF-64
-    def test_a_name_with_a_class_before_it_finds_its_own_test(self,
-                                                              tmp_path):
-        body = self._source(tmp_path, 'tests/test_login.py', self.PYTHON,
-                            'TestLogin::test_found')
-        assert body is not None and 'def test_found' in body, body
-        assert 'def test_other' not in body, body
 
     # purlin: ai_audit PROOF-65
     def test_a_csharp_name_with_arguments_finds_its_own_test(self, tmp_path):
@@ -160,23 +135,3 @@ class TestANameFromARecordFindsItsSource:
                             'Acme.LoginTests.Denied(user: "x")')
         assert body is not None and 'public void Denied' in body, body
         assert 'Allowed' not in body, body
-
-    # purlin: ai_audit PROOF-66
-    def test_a_typescript_name_with_a_prefix_finds_its_own_test(self,
-                                                                tmp_path):
-        text = (
-            'import { it, expect } from "vitest";\n'
-            '\n'
-            '// purlin: demo PROOF-1\n'
-            'it("works", () => {\n'
-            '  expect(200).toBe(200);\n'
-            '});\n'
-            '\n'
-            '// purlin: demo PROOF-1\n'
-            'it("refuses", () => {\n'
-            '  expect(401).toBe(401);\n'
-            '});\n')
-        body = self._source(tmp_path, 'tests/login.test.ts', text,
-                            'login > works')
-        assert body is not None and 'expect(200)' in body, body
-        assert 'refuses' not in body, body

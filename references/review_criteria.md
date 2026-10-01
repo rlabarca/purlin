@@ -1,49 +1,25 @@
 # Review criteria
 
-What the AI audit reads on one rule, and what a person reads after. `purlin:audit` sets the
-rule, its proofs and the source of each test that backs them beside the test strength from the
-evidence, and sends that to a model, one call per rule. The prompt opens with this file
-verbatim, so every sentence here is written to be read by a person and by a model.
+What the audit reads on one rule, and what a person reads after. `purlin:audit` runs when a
+person asks, and nothing waits on it. For each rule it reads it takes three steps: the heuristic
+spot tests, then one planted bug per proof, then the model's reading. The spot tests and the
+planted bugs set the rule's verdict; the model explains what they found and decides nothing. The
+model's prompt opens with this file verbatim, so every sentence here is written to be read by a
+person and by a model.
 
-## What the audit looks for
+## Which rules the audit reads
 
-The AI audit reads each proof beside the source of the test that backs it and says what it
-observed, one sentence at a time. A settled audit that observed a gap leaves the strong cell
-reading `weak` with its own sentence as the reason. The checks below are what it looks for;
-a rule that trips one may still be proved, so each is read against the test, never on the
-proof text alone.
+A rule is read when it is its feature's own, at least one of its proofs has a test, its tests
+pass, and it has no audit entry for its current rule, proofs and tests, or its feature's code
+changed since that entry. An anchor's rules are read once, as the anchor's. `purlin:audit --all`
+reads every rule that passes its tests again. A rule whose every proof is `@manual` has no test
+to read and is not read.
 
-**In the proof description.** A good proof is defined in
-`references/spec_quality_guide.md`, "Writing proofs", and the reasoning lives there. The audit
-checks each of these against the test the proof names:
+## The verdict
 
-- The proof does not say what is done, what is observed and the expected value. It names no
-  literal, number, quoted string, status or exact message, so almost any result would
-  satisfy it. "Verify the parser handles the id" holds against a test that asserts nothing
-  in particular.
-- The expected value is not a real value: the proof says "works", "correctly", "properly",
-  "as expected" or "successfully" with nothing beside it.
-- Nothing is done before the observation, so the proof reads something that exists whether
-  or not the software is right.
-- No proof of the rule names a failure case or a boundary. A rule that refuses, limits,
-  blocks or expires anything has been proved in one direction only.
-- A person who cannot read code could not judge the proof: it names a source or test file
-  path, a function, a class, a selector or a test framework, where it should name what a
-  user or a caller of the system would see, as `references/spec_quality_guide.md`, "Written
-  for a person who cannot read code", says. A path the software itself writes, reads or
-  prints is output a caller sees, and naming it is not a finding.
-- The proof describes the test's mechanics, a call, an assertion, a mock, a fixture or a spy,
-  instead of what is shown.
-- The proof would read the same if the rule were broken, or it restates the rule and adds no
-  input, action or value.
-- A proof about a flow through the running app is described as a function call. Such a
-  proof must read as arrange, act, observe, through the running app.
-
-**Notes, not findings.** A proof holds one case: one starting situation, one action and the
-results seen from it, in at most 60 words, as `references/spec_quality_guide.md`, "One proof,
-one case", says. A proof longer than 60 words, or one holding a second case, such as a refusal
-beside the case that is allowed, is written under `notes:`, one sentence naming the proof. A
-note never makes the rule `weak`: the rule is read against its test as it stands.
+A rule reads `weak` when a spot test fires on one of its tests or a planted bug survived, and
+`strong` when no spot test fires and every planted bug was caught or not made. Nothing else sets
+it: the model's reading is asked after the verdict is set and never changes it.
 
 ## Heuristic spot tests
 
@@ -182,73 +158,129 @@ expected value, written by a person; a test that never mentions it is checking s
   person and either fixed in the test or, if the check was wrong, the check is narrowed. The count
   of findings and of false alarms is reported in the release notes.
 
+## The planted bug
+
+The audit's second step runs each proof's own test against a small change to the code. For a
+proof whose test or whose feature's code changed since its last planted bug, the model is asked
+for the smallest change to one file the feature covers that would break what the proof says. It
+answers with the file, the exact lines to change and what they become:
+
+```
+file: src/age.py
+before:
+<the exact lines>
+after:
+<the lines>
+```
+
+or `no break: <why>` when no change to those files can break what the proof says. The change is
+made in a copy of the project, never in the project itself; only the proof's own tests run there,
+and the copy is deleted after.
+
+- **Caught.** A test fails, errors, cannot be collected or runs past its limit with the change in
+  place. The test noticed.
+- **Survived.** Every one of the proof's own tests still passes with the change in place. The
+  rule reads `weak`, with the finding
+  `PROOF-1: the test still passes when src/age.py:12 reads "return 0"`.
+- **Not made.** The answer named no change, or a change that does not match its file exactly
+  once, or a file the feature does not cover, or the model could not be reached. The test is not
+  run, the audit prints `PROOF-1: no bug was planted: <why>.`, and it is not a finding.
+
+A proof keeps its last result while its tests and its feature's code are unchanged, and no bug is
+planted for it again. No bug is planted for an anchor's proof or a `@manual` proof. When a file of
+the project changes while a bug is planted, the audit stops and writes nothing.
+
+## What the model is sent, and what it decides
+
+After the spot tests and the planted bugs, the model reads each rule once: this file, then the
+rule's text, its proofs, the source of each test that backs them, and under `Findings:` each
+finding of the spot tests and the planted bugs, or `none`. The verdict is already set. The model
+decides nothing; it explains.
+
+**The answer.** One sentence per line, each opening `- `: what each test observes against what
+its proof names, and why each finding holds or what it misses. Then, where there is one, a line
+`notes:` and one sentence per note, each opening `- ` and naming the proof. Nothing else: no
+recommendation, no grade, no score, no verdict. A person reads what the model wrote beside the
+findings and decides.
+
+```
+- PROOF-2: the test calls login and reads no status, so a wrong status still passes.
+notes:
+- PROOF-2 holds two cases.
+```
+
+**What the explanation may point at in a proof.** A good proof is defined in
+`references/spec_quality_guide.md`, "Writing proofs", and the reasoning lives there. Each of these
+is read against the test the proof names, never on the proof text alone:
+
+- The proof does not say what is done, what is observed and the expected value. It names no
+  literal, number, quoted string, status or exact message, so almost any result would
+  satisfy it.
+- The expected value is not a real value: the proof says "works", "correctly", "properly",
+  "as expected" or "successfully" with nothing beside it.
+- Nothing is done before the observation, so the proof reads something that exists whether
+  or not the software is right.
+- No proof of the rule names a failure case or a boundary. A rule that refuses, limits,
+  blocks or expires anything has been proved in one direction only.
+- A person who cannot read code could not judge the proof: it names a source or test file
+  path, a function, a class, a selector or a test framework, where it should name what a
+  user or a caller of the system would see, as `references/spec_quality_guide.md`, "Written
+  for a person who cannot read code", says. A path the software itself writes, reads or
+  prints is output a caller sees, and naming it is not a problem.
+- The proof describes the test's mechanics, a call, an assertion, a mock, a fixture or a spy,
+  instead of what is shown.
+- The proof would read the same if the rule were broken, or it restates the rule and adds no
+  input, action or value.
+- A proof about a flow through the running app is described as a function call. Such a
+  proof must read as arrange, act, observe, through the running app.
+
+**Notes.** A proof holds one case: one starting situation, one action and the results seen from
+it, in at most 60 words, as `references/spec_quality_guide.md`, "One proof, one case", says. A
+proof longer than 60 words, or one holding a second case, such as a refusal beside the case that
+is allowed, is written under `notes:`, one sentence naming the proof.
+
+**The call.** `claude -p --output-format json`, the prompt on its standard input, one call per
+rule, four at once, 300 seconds each. Each answer names the model that gave it and the sha256 of
+this file as it was sent. When `claude` is not on the path, exits with an error or runs past its
+300 seconds, no explanation is recorded, and the reason is printed: `claude is not on PATH`,
+`claude exited with an error` or `claude timed out after 300 s`. The verdict stands without it.
+
 ## Anchors and rules with no proof
 
 An anchor's rule covers the whole project. Its test is strong only when it checks every file of
-the project the rule speaks of, not a sample of them and not one feature's files. No code is
-broken on purpose for an anchor, so the audit alone judges its tests.
+the project the rule speaks of, not a sample of them and not one feature's files. No bug is
+planted for an anchor, so its verdict comes from the spot tests alone.
 
-A rule no proof line names, and no test marked with the rule's own id answers, reads
-`no test` with the reason `no proof written`. A rule whose test passes and that has no proof
-reads `no proof` in its strong cell, because there is no proof to read the test against.
-Whether a proof line is there is all that is read there: what a proof is worth is the audit's
-question, answered by a model that read the test beside it.
-
-## What test strength says
-
-The model is shown the test strength of the feature the rule belongs to: of the deliberate
-breaks made to that feature's code, the share its tests caught, as an integer percent, as
-`Test strength 71%.` Where nothing was measured, or the engine cannot run on this system, the
-model is shown `Test strength: not measured`. No strength is measured for an anchor. The
-breaks run wherever `mutation_engine` in `.purlin/config.json` is not `none`, at either gate,
-and the strength is a reason beside the strong cell's word, never the word itself.
-
-It says one thing: the feature's tests noticed when its behaviour changed. It does not say
-the tests prove the right rule, that the proof text matches the test, or that the rule is
-worth having. A feature can reach 90 percent while one of its proofs observes the wrong thing,
-and a rule proved correctly can belong to a feature at 0 percent because nothing broke. Read
-it beside what the audit observed, never instead of it.
-
-## What the audit holds back
-
-Nothing. The AI audit and the breaks are tools at either gate: `purlin:audit` runs them when a
-person asks, and neither a gate nor a release waits on them. Where the audit ran, what it found
-is written into the evidence and the evidence package. Until it has run the strong cell reads
-`not audited`; where it ran and could not tell it reads `weak` with the reason
-`the AI audit could not decide: <its sentence>`; where it settled and still observed something
-the cell reads `weak` with that sentence as the reason. Where no model could be reached nothing
-is written, and the cell reads `not audited` until an audit reaches the rule.
+A rule no proof line names has no proof to read its test against, and the audit does not read
+it. Whether a proof line is there is all the status reads; what a proof is worth is the audit's
+question.
 
 ## What the audit reports
 
-The audit reports. It recommends nothing, and it never names a next action. Four things:
+The audit reports. It recommends nothing.
 
-- **The feature's test strength, where it was measured.** `Test strength 71%.` Where
-  nothing was measured the report says nothing of strength, and the model reading the rule is
-  shown `Test strength: not measured`.
-- **The observations.** What the AI audit saw the test observe, against what the proof
-  names, one sentence each. The audit is asked to state what it saw and to say when it
-  cannot tell. It is never asked what to do.
-- **Whether it settled.** `settled: yes` when the audit could tell and `settled: no` when it
-  could not. `no` makes the strong cell read `weak`, with the audit's own sentence as the
-  reason: an audit that cannot decide is build work. Where no model could be reached nothing
-  is written, and the rule reads `not audited`. An audit that settled and still observed
-  something is a different answer: it could tell, and what it saw is build work, so the cell
-  reads `weak` with each observation sentence among its reasons.
-- **The notes.** A proof longer than the standard, or holding two cases, one sentence each
-  under `notes:`. They are written beside what the audit found, printed after the findings,
-  each on a line of its own starting `Note:`, and change no cell.
+- **Each rule it read**, its verdict, then each finding: the spot tests' sentences and each
+  planted bug that survived. A planted bug that was not made is printed with its reason and is
+  not a finding.
+- **What the model was asked and what it cost**, the line before the last, where an answer
+  carried a cost: `The model was asked 31 times for 12 rules: $1.87 in all, $0.16 a rule.`
+- **The share of rules found strong**, the last line: `The audit found 4 of 5 rules strong (80%).`,
+  counted over the rules that pass their tests, a rule with a hand check counted where it also has
+  a tested proof. A team can set its own target, such as 80 percent, and check it here.
 
-What the audit found is written into the evidence with the name of the model that found it,
-and a person reads it beside the rule, each proof and the source of each test, which is what
-the audit read.
+Each rule read gets one entry in its feature's evidence, under `audit.rules`: the hashes of its
+rule, proofs and tests, the `verdict`, the `findings`, each planted bug under `breaks` with its
+file, line, the lines before and after, and its result, the model's `explanation` and `notes`,
+the `model`, the sha256 of these `criteria`, the time and the commit. A person reads it beside
+the rule, each proof and the source of each test, which is what the audit read. What the model
+cost is written to `.purlin/runtime/audit_run.json`, which git ignores.
 
-A `@manual` proof has no test, so there is no test body to read and no AI audit is asked
-for. Its strong cell reads `manual test`.
-
-A rule the audit found weak is build work: it shows under `Left to do` as a rule to strengthen,
-and `purlin:build` works on it. A weak finding does not stop a release. At the gate `signed`
-the sign-off walk of `purlin:sign` stops at each weak rule and each rule no audit has read,
-shows its proofs, its tests and what the audit found, and the signer continues, adds a note,
-or stops to fix it. A case the test is missing is fixed by writing its proof line; the next
+A rule the audit found weak shows under `Left to do` as a rule to strengthen, and `purlin:build`
+works on it. A case the test is missing is fixed by writing its proof line; the next
 `purlin:build` writes the test for it.
+
+## What the audit holds back
+
+Nothing. The audit is a tool a person runs by hand. Neither the tests being met nor a sign-off
+waits on it. Where it ran, what it found is written into the evidence and the evidence package,
+and the signer of `purlin:sign` can read its findings as a list.

@@ -1,37 +1,28 @@
 #!/usr/bin/env python3
-"""The AI audit: what one rule is read with, the model call, and its answer.
+"""The AI audit's model: what one rule is read with, the call, and its answer.
 
     ai_audit.py --feature <f> [--rule RULE-N] [--project-root DIR]
 
-`purlin:audit` reads each rule that needs reading through this module: it
-sets the rule, its proofs and the source of each test that backs them beside
-`references/review_criteria.md`, sends that prompt to the model, and reads
-the answer back into a `verdict` and findings. The run script writes what comes
-back into the feature's evidence; this module writes no file.
+`purlin:audit` runs through `scripts/review/audit_run.py`, which runs the
+heuristic spot tests, then one planted bug per proof, then the model's reading
+of each rule. This module holds the model's two parts. It sets a rule, its
+proofs, the source of each test that backs them and the findings of the spot
+tests and the planted bugs beside `references/review_criteria.md`, sends that
+prompt to the model, and reads the answer back as the explanation under the
+findings. It also asks the model for a planted bug (`ask_for_bug`). It
+decides no verdict and writes no file.
 
 **The call.** `claude -p --output-format json`, with the prompt on stdin, so
 no command line carries it, and stdin closed after the prompt. One call per
-rule, `MODEL_TIMEOUT` seconds each, and `audit_parallel` calls at once. The
-JSON's `result` is the answer; the model is the one its `modelUsage` names,
-or `unknown` where it names none.
+rule, `MODEL_TIMEOUT` seconds each, `AUDIT_PARALLEL` calls at once. The JSON's
+`result` is the answer; the model is the one its `modelUsage` names, or
+`unknown` where it names none; `total_cost_usd` is what the call cost.
 
-**The answer.** The model is asked for what it observed, never for a grade:
+**The answer.** One sentence per line opening `- `, the explanation; the lines
+under a `notes:` line are the notes. The answer sets no verdict.
 
-    settled: yes
-    - <one sentence per finding, naming the proof>
-    notes:
-    - <one sentence per note, naming the proof>
-
-Settled with no line is the `verdict` `strong`. Settled with lines is `weak`,
-and the lines are the findings. Not settled is `undecided`, and its lines are
-the reason it gives. The lines under `notes:` are the notes: a proof longer
-than the standard, or holding two cases, is noted there and never makes the
-rule `weak`.
-
-**When the model cannot be reached** (no `claude` on PATH, a non-zero exit, a
-timeout, or an answer with no settled line after one retry) nothing comes
-back for that rule but the reason, so nothing is written and the next audit
-tries again.
+**When the model cannot be reached** (no `claude` on PATH, a non-zero exit or
+a timeout) nothing comes back for that rule but the reason.
 
 The command line prints what the audit reads for a rule and what the last
 audit found, from the payload, with each note after the findings. It calls no
@@ -45,12 +36,12 @@ settings file cannot be read, 2 the command line was wrong.
 import concurrent.futures
 import hashlib
 import json
-import math
 import os
 import re
 import shutil
 import subprocess
 import sys
+import time
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _MCP_DIR = os.path.join(os.path.dirname(_HERE), 'mcp')
@@ -82,32 +73,25 @@ EXIT_BAD_INVOCATION = 2
 
 CRITERIA = os.path.join('references', 'review_criteria.md')
 
-# The command, and how long one call may take.
+# The command, how long one call may take, and how many run at once.
 COMMAND = ('claude', '-p', '--output-format', 'json')
 MODEL_TIMEOUT = 300
+AUDIT_PARALLEL = 4
 
-# Why a call could not be made, one sentence per cause. The run prints one
-# line per cause with a count, and the strong cell names the cause.
+# Why a call could not be made, one sentence per cause.
 NOT_ON_PATH = 'claude is not on PATH'
 EXITED = 'claude exited with an error'
 TIMED_OUT = 'claude timed out after %d s'
-NO_ANSWER = 'claude answered without a settled line'
 
 # What a person reads of the last audit, the same on every surface.
 NO_AUDIT = "No audit has read this rule's text, proof and test yet."
 STRONG_NOTHING = 'Strong. It found nothing.'
-VERDICT_WORDS = {
-    'strong': 'Strong.',
-    'weak': 'Weak.',
-    'undecided': ('Undecided. The AI audit could not decide, so the rule '
-                  'reads weak until its proof or test changes.'),
-}
+VERDICT_WORDS = {'strong': 'Strong.', 'weak': 'Weak.'}
 NO_TEST_YET = '  No test yet. Run purlin:build %s.'
-STRENGTH_LINE = 'Test strength %d%%.'
-# What the prompt of an anchor's rule ends on, in place of its strength.
-ANCHOR_LINE = ('Anchor: its rules cover the whole project, so its tests must '
-               'check the whole project. No test strength is measured for an '
-               'anchor.')
+
+
+class ModelUnreachable(Exception):
+    """The model could not be reached; `str(error)` is the reason."""
 
 
 # ---------------------------------------------------------------------------
@@ -130,34 +114,42 @@ def rule_entry(payload, feature, rule):
     return None
 
 
-def is_read(entry, again=False):
-    """True when the audit reads this rule.
+def passes(entry):
+    """True when the rule passes its tests: its passed cell reads `passed`."""
+    cells = (entry or {}).get('cells') or {}
+    return ((cells.get('passed') or {}).get('word')) == 'passed'
+
+
+def tested(entry):
+    """True when at least one proof of the rule has a test, not by hand."""
+    return any(proof.get('tests') and not proof.get('manual')
+               for proof in (entry or {}).get('proofs') or ())
+
+
+def is_read(entry, again=False, code_changed=False):
+    """True when the audit reads this rule (ai_audit RULE-1).
 
     A rule is read when at least one of its proofs has a test, its passed
     cell reads `passed`, and it has no audit entry for its current rule,
-    proof and test hashes. The same rules are read at every gate. `again`
-    drops the condition about an existing entry, which is what `--all` asks
-    for.
+    proof and test, or its feature's code changed since that entry
+    (`code_changed`, which the caller works out). `again` drops the
+    condition about an existing entry, which is what `--all` asks for.
     """
-    entry = entry or {}
-    passed = ((entry.get('cells') or {}).get('passed') or {}).get('word')
-    if passed != 'passed':
+    if not passes(entry) or not tested(entry):
         return False
-    if not any(proof.get('tests') and not proof.get('manual')
-               for proof in entry.get('proofs') or ()):
-        return False
-    return again or not entry.get('audit')
+    return again or not (entry or {}).get('audit') or bool(code_changed)
 
 
-def reading_for(project_root, payload, feature, rule):
-    """What the audit reads for one rule, as a dict. None when it is not there."""
+def reading_for(project_root, payload, feature, rule, findings=()):
+    """What the audit reads for one rule, as a dict. None when it is not there.
+
+    `findings` are the spot tests' and the planted bugs' sentences for the
+    rule, which the prompt sets after the tests.
+    """
     payload = load_payload(project_root, payload)
     entry = rule_entry(payload, feature, rule)
     if entry is None:
         return None
-    # An anchor's rules cover the whole project, and no strength is measured
-    # for one: the audit reads its tests alone.
-    anchor = bool(_feature_entry(payload, feature).get('is_anchor'))
     proofs = [{'id': proof.get('id'), 'manual': bool(proof.get('manual')),
                'env': proof.get('env'), 'text': proof.get('text')}
               for proof in entry.get('proofs') or ()]
@@ -170,9 +162,8 @@ def reading_for(project_root, payload, feature, rule):
         'proof_hash': entry.get('proof_hash'),
         'test_hash': entry.get('test_hash'),
         'tests': _test_layer(project_root, feature, entry),
-        'anchor': anchor,
-        'test_strength': (None if anchor else _feature_entry(
-            payload, feature).get('test_strength')),
+        'anchor': bool(_feature_entry(payload, feature).get('is_anchor')),
+        'findings': [str(line) for line in findings or ()],
         'audit': entry.get('audit'),
     }
 
@@ -228,7 +219,7 @@ def _one_test(project_root, feature, proof_id, test):
 # The prompt
 # ---------------------------------------------------------------------------
 
-def criteria_text(project_root):
+def criteria_text(project_root=None):
     """The plugin's `references/review_criteria.md`, verbatim."""
     path = os.path.join(_ROOT, CRITERIA)
     if os.path.isfile(path):
@@ -242,117 +233,54 @@ def criteria_hash(text):
     return hashlib.sha256((text or '').encode('utf-8')).hexdigest()
 
 
-# What the model is asked for: what the test observes set against what the
-# proof names, one sentence at a time, and a plain statement when it cannot
-# tell. Never a recommendation and never a grade.
-INSTRUCTION = (
-    'Read one rule against the criteria above and report what you see: '
-    'set each proof against the test body below it and say what you '
-    'observed. Answer in this shape and nothing else:',
-    '',
-    '    settled: yes',
-    '    - <one sentence, naming the proof it concerns>',
-    '    notes:',
-    '    - <one sentence, naming the proof it concerns>',
-    '',
-    'Write `settled: yes` when you could tell what each test observes against '
-    'what its proof names, and `settled: no` when you could not.',
-    'Write one line per observation, each opening with `- `, each one sentence '
-    'long, and each naming the proof it concerns. Write no line at all when '
-    'you observed nothing.',
-    'Write a note, under notes:, for a proof longer than 60 words or one '
-    'holding more than one case, one sentence naming the proof, and never an '
-    'observation for it: a note does not make the rule weak. Leave out '
-    '`notes:` when you have no note.',
-    'Do not recommend a change, do not grade the rule and do not score it. A '
-    'person reads what you write and decides.',
-)
-
-
 def model_prompt(project_root, reading, criteria=None):
-    """The criteria verbatim, then this rule's rule, proof, test and numbers.
-
-    An anchor's rule ends on `ANCHOR_LINE` where any other ends on its
-    strength.
-    """
+    """The criteria verbatim, then the rule, its proofs, each test's source,
+    and the findings of the spot tests and the planted bugs."""
     text = criteria_text(project_root) if criteria is None else criteria
-    parts = [text, '', '---', '']
-    parts.extend(INSTRUCTION)
-    parts.extend([
-        '',
-        '%s %s' % (reading.get('feature'), reading.get('rule')),
-        'Rule: %s' % (reading.get('rule_text') or '')])
+    parts = [text, '', '---', '',
+             '%s %s' % (reading.get('feature'), reading.get('rule')),
+             'Rule: %s' % (reading.get('rule_text') or '')]
     for proof in reading.get('proofs') or ():
         parts.append('%s%s: %s' % (proof.get('id'), _proof_tags(proof),
                                    proof.get('text')))
     for test in reading.get('tests') or ():
         parts.append('')
+        if test.get('manual'):
+            parts.append('Test for %s: checked by hand' % test.get('proof'))
+            continue
         parts.append('Test for %s: %s::%s'
                      % (test.get('proof'), test.get('file'), test.get('name')))
         if test.get('body'):
-            parts.append(test['body'])
-    parts.append('')
-    if reading.get('anchor'):
-        parts.append(ANCHOR_LINE)
-    else:
-        parts.append('Test strength: not measured'
-                     if reading.get('test_strength') is None
-                     else _strength_line(reading))
-    return '\n'.join(parts)
+            parts.append(test['body'].rstrip('\n'))
+    parts.extend(['', 'Findings:'])
+    findings = reading.get('findings') or ()
+    parts.extend('- %s' % line for line in findings)
+    if not findings:
+        parts.append('none')
+    return '\n'.join(parts) + '\n'
 
 
 # ---------------------------------------------------------------------------
 # The answer
 # ---------------------------------------------------------------------------
 
-_SETTLED_RE = re.compile(r'^\s*settled\s*:\s*(yes|no|true|false)\s*$', re.I)
 _NOTES_RE = re.compile(r'^\s*notes\s*:\s*$', re.I)
-_FINDING_RE = re.compile(r'^\s*[-*]\s+(.*\S)\s*$')
+_LINE_RE = re.compile(r'^\s*[-*]\s+(.*\S)\s*$')
 
 
-def _read_answer(answer):
-    """`(findings, settled, notes)`: each `- ` line is a finding until a
-    `notes:` line, and a note after it."""
-    settled = None
-    findings, notes = [], []
-    lines = findings
+def read_answer(answer):
+    """`(explanation, notes)`: each `- ` line is a sentence of the
+    explanation until a `notes:` line, and a note after it."""
+    explanation, notes = [], []
+    lines = explanation
     for line in str(answer or '').splitlines():
-        found = _SETTLED_RE.match(line)
-        if found:
-            settled = found.group(1).lower() in ('yes', 'true')
-            continue
         if _NOTES_RE.match(line):
             lines = notes
             continue
-        found = _FINDING_RE.match(line)
+        found = _LINE_RE.match(line)
         if found:
             lines.append(found.group(1))
-    return findings, settled, notes
-
-
-def parse_answer(answer):
-    """`(findings, settled)` read out of one model answer.
-
-    `settled` is True, False, or None for an answer that never says whether
-    it settled, which is not an answer the audit can record. A line under
-    `notes:` is not a finding.
-    """
-    findings, settled, _notes = _read_answer(answer)
-    return findings, settled
-
-
-def answer_notes(answer):
-    """The lines under `notes:` in one model answer, `[]` when there are none."""
-    return _read_answer(answer)[2]
-
-
-def verdict_of(findings, settled):
-    """`strong`, `weak` or `undecided`, or None when the answer did not say."""
-    if settled is None:
-        return None
-    if not settled:
-        return 'undecided'
-    return 'weak' if findings else 'strong'
+    return explanation, notes
 
 
 def model_name(body):
@@ -375,6 +303,13 @@ def model_name(body):
     return 'unknown'
 
 
+def _cost(body):
+    cost = body.get('total_cost_usd') if isinstance(body, dict) else None
+    if isinstance(cost, bool) or not isinstance(cost, (int, float)):
+        return None
+    return float(cost)
+
+
 # ---------------------------------------------------------------------------
 # The call
 # ---------------------------------------------------------------------------
@@ -385,62 +320,71 @@ def claude_path():
 
 
 def ask_model(project_root, prompt, command=None, runner=None):
-    """`(answer, model, why)` for one call.
+    """One call: `{'answer', 'model', 'why', 'cost_usd', 'seconds'}`.
 
     The prompt goes on stdin and stdin is closed after it, so the command
     line never carries it. `why` is None when the model answered, and names
-    the cause otherwise. `runner` stands in for `subprocess.run` in a test.
+    the cause otherwise. `cost_usd` is the answer's `total_cost_usd`, or None.
+    `runner` stands in for `subprocess.run` in a test.
     """
+    found = {'answer': None, 'model': None, 'why': None, 'cost_usd': None,
+             'seconds': 0.0}
     command = command or claude_path()
     if not command:
-        return None, None, NOT_ON_PATH
+        found['why'] = NOT_ON_PATH
+        return found
     runner = runner or subprocess.run
+    started = time.time()
     try:
         result = runner([command] + list(COMMAND[1:]), input=prompt,
                         capture_output=True, text=True, encoding='utf-8',
                         errors='replace', cwd=project_root,
                         timeout=MODEL_TIMEOUT)
     except subprocess.TimeoutExpired:
-        return None, None, TIMED_OUT % MODEL_TIMEOUT
+        result = None
+        found['why'] = TIMED_OUT % MODEL_TIMEOUT
     except (OSError, subprocess.SubprocessError):
-        return None, None, EXITED
+        result = None
+        found['why'] = EXITED
+    found['seconds'] = time.time() - started
+    if result is None:
+        return found
     if result.returncode != 0:
-        return None, None, EXITED
+        found['why'] = EXITED
+        return found
     stdout = result.stdout or ''
     try:
         body = json.loads(stdout)
     except ValueError:
-        return stdout, 'unknown', None
+        body = None
     if not isinstance(body, dict):
-        return stdout, 'unknown', None
+        found.update(answer=stdout, model='unknown')
+        return found
     answer = body.get('result')
-    return (answer if isinstance(answer, str) else ''), model_name(body), None
+    found.update(answer=answer if isinstance(answer, str) else '',
+                 model=model_name(body), cost_usd=_cost(body))
+    return found
 
 
 def audit_one(project_root, reading, criteria, command=None, runner=None):
-    """What the audit found for one rule, or why it could not ask.
+    """The model's reading of one rule, or why it could not be asked.
 
-    `{'verdict', 'findings', 'notes', 'model', 'criteria'}` when the model
-    answered, where `criteria` is the sha256 of the criteria it was sent and
-    `notes` never changes the verdict; `{why}` when it could not be reached.
-    An answer with no settled line is asked once more before it counts as no
-    answer.
+    `{'explanation', 'notes', 'model', 'criteria', 'cost_usd', 'seconds'}`
+    when the model answered, where `criteria` is the sha256 of the criteria it
+    was sent; only `{'why'}` when it could not be reached. The answer sets no
+    verdict.
     """
     prompt = model_prompt(project_root, reading, criteria)
-    for _attempt in range(2):
-        answer, model, why = ask_model(project_root, prompt, command, runner)
-        if why:
-            return {'why': why}
-        findings, settled = parse_answer(answer)
-        answered = verdict_of(findings, settled)
-        if answered:
-            return {'verdict': answered, 'findings': findings,
-                    'notes': answer_notes(answer), 'model': model,
-                    'criteria': criteria_hash(criteria)}
-    return {'why': NO_ANSWER}
+    called = ask_model(project_root, prompt, command, runner)
+    if called['why']:
+        return {'why': called['why']}
+    explanation, notes = read_answer(called['answer'])
+    return {'explanation': explanation, 'notes': notes,
+            'model': called['model'], 'criteria': criteria_hash(criteria),
+            'cost_usd': called['cost_usd'], 'seconds': called['seconds']}
 
 
-def audit_all(project_root, readings, parallel, runner=None):
+def audit_all(project_root, readings, parallel=AUDIT_PARALLEL, runner=None):
     """One result per reading, in order, `parallel` calls at once.
 
     With no `claude` on PATH nothing is called and every reading carries
@@ -456,6 +400,92 @@ def audit_all(project_root, readings, parallel, runner=None):
         futures = [pool.submit(audit_one, project_root, reading, criteria,
                                command, runner) for reading in readings]
         return [future.result() for future in futures]
+
+
+# ---------------------------------------------------------------------------
+# The planted bug's request
+# ---------------------------------------------------------------------------
+
+BUG_INSTRUCTION = (
+    'Make the smallest change to one of the files below that would break '
+    'what the proof says, so that a test checking the proof fails. Answer in '
+    'this shape and nothing else, the lines under before: copied exactly '
+    'from the file:',
+    '',
+    'file: <the path, as given below>',
+    'before:',
+    '<the exact lines>',
+    'after:',
+    '<the lines>',
+    '',
+    'or, when no change to these files can break what the proof says:',
+    '',
+    'no break: <why, in one sentence>',
+)
+
+
+def bug_prompt(project_root, request):
+    """The request for one planted bug: the instruction, the rule, the proof,
+    its tests' source and the text of each file the feature covers."""
+    parts = list(BUG_INSTRUCTION)
+    parts.extend(['', '---', '',
+                  '%s %s' % (request.get('feature'), request.get('rule')),
+                  'Rule: %s' % (request.get('rule_text') or ''),
+                  '%s: %s' % (request.get('proof'),
+                              request.get('proof_text') or '')])
+    for test in request.get('tests') or ():
+        parts.append('')
+        parts.append('Test: %s::%s' % (test.get('file'), test.get('name')))
+        if test.get('source'):
+            parts.append(str(test['source']).rstrip('\n'))
+    for item in request.get('files') or ():
+        path, text = _file_of(project_root, item)
+        parts.extend(['', 'File: %s' % path, text.rstrip('\n')])
+    return '\n'.join(parts) + '\n'
+
+
+def _file_of(project_root, item):
+    """`(path, text)` for one file of the request, a path or a dict."""
+    if isinstance(item, dict):
+        path = item.get('path') or item.get('file') or ''
+        text = item.get('text')
+        if text is None:
+            text = item.get('source')
+    else:
+        path, text = str(item), None
+    if text is None:
+        try:
+            with open(os.path.join(project_root, *path.split('/')),
+                      encoding='utf-8') as handle:
+                text = handle.read()
+        except (OSError, UnicodeDecodeError):
+            text = ''
+    return path, text
+
+
+def ask_for_bug(project_root, request, spent=None, runner=None):
+    """The model's text for one planted bug's request (the `ask` audit_run
+    hands `targeted_break.break_proof`).
+
+    Raises `ModelUnreachable(reason)` when the model cannot be reached.
+    `spent`, a list, gains one `{'cost_usd', 'seconds'}` per call made.
+    """
+    called = ask_model(project_root, bug_prompt(project_root, request),
+                       runner=runner)
+    if spent is not None and called['why'] != NOT_ON_PATH:
+        spent.append({'cost_usd': called['cost_usd'],
+                      'seconds': called['seconds']})
+    if called['why']:
+        raise ModelUnreachable(called['why'])
+    return called['answer'] or ''
+
+
+def break_key(test_source_hash, code_part):
+    """The sha256 of a proof's tests' source hash and its code part, joined
+    by a line feed: a planted bug's result holds while this is unchanged."""
+    return hashlib.sha256(('%s\n%s' % (test_source_hash or '',
+                                       code_part or '')).encode('utf-8')
+                          ).hexdigest()
 
 
 # ---------------------------------------------------------------------------
@@ -481,16 +511,14 @@ def render(reading):
             lines.append('  %s  manual' % test.get('proof'))
         for line in (test.get('body') or '').splitlines():
             lines.append('    %s' % line)
-    # A person is told nothing of strength where none was measured, which
-    # is always so for an anchor.
-    if reading.get('test_strength') is not None:
-        lines.extend(['', _strength_line(reading)])
     lines.extend(['', 'What the audit found'])
     audit = reading.get('audit') or {}
     if not audit:
         lines.append('  ' + NO_AUDIT)
     else:
         lines.extend('  %s' % line for line in verdict_lines(audit))
+        lines.extend('    %s' % line
+                     for line in audit.get('explanation') or ())
         lines.append('  Read by %s at %s.'
                      % (audit.get('model') or 'unknown',
                         audit.get('at') or 'an unknown time'))
@@ -498,11 +526,6 @@ def render(reading):
             lines.append('  Note: %s' % note)
     lines.append('')
     return '\n'.join(lines)
-
-
-def _strength_line(reading):
-    """The test strength a person and the model read, its whole-number part."""
-    return STRENGTH_LINE % int(math.floor(reading['test_strength']))
 
 
 def verdict_lines(audit):
