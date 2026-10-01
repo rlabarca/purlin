@@ -293,7 +293,7 @@ def test_a_ci_section_names_the_host_the_runner_was_lent(tmp_path):
     from purlin import specs as specs_module
     features = specs_module.scan_specs(str(root))
     section = purlin_run.build_sections(str(root), _Args('ci'), features,
-                                        ['feat'], {}, HERE)['feat']
+                                        ['feat'], {}, HERE, None)['feat']
     assert platform.node()
     assert section['hostname'] == platform.node()
 
