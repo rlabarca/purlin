@@ -1367,6 +1367,43 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       `signed/<version>` are as decision 106 has them.
     - **A hand check reads `checked at sign-off`** until someone signs; the sign-off records it.
     - **Mutation testing is a setting of its own**, no longer tied to a gate.
+109. **The scope review's answers** (added 2026-10-01), to `scope-review.md`, judged against
+    decision 106: Purlin keeps the evidence and the sign-off; the rest is informative.
+    - **Cut with no question:** the gate (108), the release step (106), `.purlin/tests.md`, the
+      runner's run on a pushed `signed/*` tag, the release wording left in drift, the release
+      notes and the docs, and the empty folders `scripts/ci`, `scripts/hooks`, `scripts/proof`.
+    - **Mutation testing is cut**, all three engines, its setting and its question. In the owner's
+      words: "people can use mutation testing in the proof definition manually if they elect to".
+    - **The AI audit stays an optional tool, and the sign-off walk stops only at hand checks**; the
+      audit's findings, where it ran, are a list the signer can read. Skipping the audit no longer
+      adds a stop per rule.
+    - **Pulled anchors: drift and the status check the source and do not pull.** They say an anchor
+      is behind its source (stale); only `purlin:anchor sync` pulls.
+    - **Drift has one view, no roles**: rules and proofs changed, collisions and the renumbering
+      offer, stale test comments, stale anchors; lines the status already prints are dropped.
+    - **The dashboard keeps:** the board and a rule's own page; the two facts and the count boxes;
+      the theme button; the per-system boxes; specs grouped by folder with a count and no progress
+      bar; the badges on a rule's row; the hovers. **It cuts:** the filter buttons, the live age
+      and the reload (a static `Data from <time>` stays), the links to the git host, unfolding a
+      rule under its row, and the tabs (a rule's page has `Back to the board`).
+    - **`purlin:export` folds into the sign-off**; checking a package against its fingerprint stays
+      as an option of `purlin:sign`.
+    - **`purlin:spec-from-code` stays a separate, optional skill**, out of the core docs, so its
+      instructions load only when it is used.
+    - **The upgrade is from 0.9.5 only**; this repository's own settings are fixed by hand once.
+    - **The remote runner is set up when a proof first needs it.** Setup never asks; the status
+      names proofs tagged for a system this machine is not; the first `purlin:test --remote`
+      writes the runner file for the project's git host, shows it, asks to commit it, then runs.
+      GitHub and Azure DevOps both stay.
+    - **The settings file holds Purlin's version and the test commands only.** The git host is read
+      from the remote and the project's name from its own files each time; setup asks only whether
+      it may commit what it wrote.
+    - **Purlin's checks on itself are trimmed** to what protects what a user runs: no emoji in
+      output, the security rules for the languages Purlin's scripts use, the version check; each
+      skill's wording rules become one short list of the commands and files it must name.
+    - **The docs become about eight pages** (how it works, getting started, specs and anchors,
+      running and evidence, working together, the sign-off with QA and regulated use, upgrading,
+      the dashboard) **and the deck is rebuilt** for the two facts.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
