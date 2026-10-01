@@ -546,8 +546,7 @@ class TestAnchorsBehind:
         assert rows[0]['anchor'] == 'policy', rows
         assert rows[0]['status'] == 'error', rows
         assert 'remote_sha' not in rows[0], rows
-        assert missing in rows[0]['error'] or 'nope.git' in rows[0]['error'], \
-            rows
+        assert missing in rows[0]['error'], rows
         assert ('anchor policy: the source could not be read (%s). Check its '
                 '> Source: line, then run purlin:anchor sync policy.'
                 % rows[0]['error']) in _lines(report), _lines(report)
@@ -806,9 +805,10 @@ class TestCannotRead:
 
         # The JSON reader's own message and line differ between versions of
         # Python, so they are read as any message and any line.
-        assert re.match(r'^\.purlin/config\.json cannot be read: \S.* at line '
-                        r'\d+\. Fix the file by hand; nothing ran and nothing '
-                        r'was saved\.$', answer), answer
+        assert re.match(re.escape('.purlin/config.json cannot be read: ')
+                        + r'\S.* at line \d+'
+                        + re.escape('. Fix the file by hand; nothing ran and '
+                                    'nothing was saved.') + '$', answer), answer
         assert 'comma' in answer.lower() or 'property name' in answer, answer
         assert calls == [], calls
 

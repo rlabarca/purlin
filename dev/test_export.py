@@ -831,7 +831,8 @@ class TestTheFingerprint:
             with open(path, 'wb') as handle:
                 handle.write(data)
             assert check(path, capsys) == (
-                1, [CHECK_FAILED % 'the file is not UTF-8 JSON']), name
+                1, ['The package does not match its fingerprint: the file is '
+                    'not UTF-8 JSON.']), name
 
     # purlin: package PROOF-46
     def test_check_names_another_schema(self, signed, capsys):

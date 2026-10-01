@@ -585,6 +585,8 @@ class TestTheCiArmCommitsItsSection:
                                                 capsys)
         ((paths, _message, merge),) = calls['commit']
         assert callable(merge), 'the commit was handed no merge'
+        assert [path.replace(os.sep, '/') for path in paths] == [
+            '.purlin/evidence/ci/feat.json'], paths
         data = _evidence(root, source='ci')
         here = _load_run_script().host_os()
         other = 'windows' if here != 'windows' else 'linux'
