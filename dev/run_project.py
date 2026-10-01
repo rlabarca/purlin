@@ -28,8 +28,8 @@ def _project(tmp_path, tests=None, gate='passed'):
 
     `tests` is the `tests` setting, one pytest suite by default. `passed` is
     the default gate because it is the gate a new project is set up at. A
-    test that needs the breaks to run asks for `strong`, the lowest gate
-    that runs them, and sets `mutation_engine`, which is off until named.
+    test that needs the breaks to run sets mutation_engine, which is off
+    until named, at either gate.
     """
     root = tmp_path / 'project'
     (root / 'specs' / 'a').mkdir(parents=True)

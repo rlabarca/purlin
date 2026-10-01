@@ -203,8 +203,8 @@ def undirected_outcome_problems(name):
     """Every outcome of the closing section that gives no `\u2192` directive.
 
     One outcome is let through with none, the one that reads `Nothing left
-    to do.`: at the gates `passed` and `strong` a finished project names no
-    command. A second such outcome is reported like any other."""
+    to do.`: at the gate passed a finished project may name no command. A
+    second such outcome is reported like any other."""
     rel = skill_path(name)
     body = sections(read(rel))[-1][1]
     undirected = [outcome for outcome in closing_outcomes(body)

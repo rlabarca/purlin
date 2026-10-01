@@ -27,18 +27,15 @@ for _path in (os.path.join(ROOT, 'scripts', 'mcp'),
 from purlin import evidence as purlin_evidence  # noqa: E402
 from purlin import gate as purlin_gate  # noqa: E402
 from purlin import payload as purlin_payload  # noqa: E402
-from purlin import signatures as purlin_signatures  # noqa: E402
 from purlin import fingerprint as purlin_fingerprint  # noqa: E402
-from purlin import specs as purlin_specs  # noqa: E402
 
 
 SIGN_PY = os.path.join(ROOT, 'scripts', 'review', 'sign.py')
 
 
-# The three gates by position: the one a project sits at by default, the one
-# that asks for an audit, and the one that asks for a signature.
+# The two gates by position: the one a project sits at by default, and the one
+# that asks for a sign-off.
 FIRST_GATE = purlin_gate.GATES[0]
-REVIEW_GATE = purlin_gate.GATES[1]
 SIGNING_GATE = purlin_gate.GATES[-1]
 
 
@@ -237,17 +234,6 @@ class Project(object):
         return next(r for r in entry['rules'] if r['id'] == rule_id
                     and r['feature'] == feature)
 
-    def signatures(self):
-        directory = os.path.join(self.root, 'specs', 'auth',
-                                 'login.signatures')
-        if not os.path.isdir(directory):
-            return []
-        return sorted(os.listdir(directory))
-
-    def load(self, kind='signatures'):
-        reader = getattr(purlin_signatures, 'load_' + kind)
-        return reader(self.root, purlin_specs.scan_specs(self.root))
-
 
 def signing_key(root, email='jane@acme.com'):
     """A throwaway ssh signing key, configured in this checkout alone."""
@@ -268,10 +254,10 @@ def commit_all(root, message='purlin: evidence at abc1234'):
 
 
 def signing_project(signer='jane@acme.com'):
-    """A project at the signing gate whose two rules wait to be signed.
+    """A project at the gate signed whose two rules pass on a runner and
+    carry an audit reading strong, ready for a release.
 
-    Both rules pass on a runner and carry an audit reading `strong`, so the
-    only thing left is a person. The signer's key is set up last.
+    The signer's key is set up last.
     """
     made = Project(gate=SIGNING_GATE)
     made.evidence(runner='ci', commit_it=False, source='ci')

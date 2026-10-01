@@ -21,7 +21,6 @@ import pytest
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
 
-from purlin import signatures as purlin_signatures
 from purlin import evidence as purlin_evidence
 from purlin import fingerprint as purlin_fingerprint
 from purlin import payload as purlin_payload
@@ -159,39 +158,6 @@ class Project(object):
             _git(self.root, 'add', '-A')
             _git(self.root, 'commit', '-q', '-m', 'purlin: evidence at abc1234')
         return rel
-
-    def signature(self, rule_id, feature='login', category='auth',
-                  listed_under=None, signer='jane@acme.com', commit_it=True,
-                  **fields):
-        """Write one signature file over what the rule is now, as `purlin:sign` does.
-
-        It is made for the feature the rule is listed under, over that
-        feature's code and the machines its results came from, and names the
-        hash of all of them, so it binds the rule until any of them moves.
-        `fields` adds or overrides what the file records.
-        """
-        rule = _listed(self.payload(), rule_id, feature, listed_under)
-        data = {
-            'schema': 'purlin-signature/2', 'feature': feature,
-            'rule': rule_id, 'applies_to': rule['applies_to'],
-            'signed_hash': purlin_signatures.signed_hash(rule),
-            'rule_hash': rule['rule_hash'], 'proof_hash': rule['proof_hash'],
-            'test_hash': rule['test_hash'], 'code_hash': rule['code_hash'],
-            'audit_hash': rule['audit_hash'], 'machines': rule['machines'],
-            'test_hash_kind': rule['test_hash_kind'], 'signer': signer,
-            'key_fingerprint': None, 'timestamp': '2026-09-13T12:00:00Z',
-        }
-        data.update(fields)
-        name = '%s.%s.%s.json' % (rule_id, data['signed_hash'][:8],
-                                  purlin_signatures.signer_slug(signer))
-        path = os.path.join(self.root, 'specs', category,
-                            feature + '.signatures', name)
-        _write(path, json.dumps(data))
-        if commit_it:
-            _git(self.root, 'add', '-A')
-            _git(self.root, 'commit', '-q', '-m', 'sign(%s): %s'
-                 % (feature, rule_id))
-        return path
 
     def audit(self, rule_id, feature='login', settled=True, observations=(),
               source='local', word=None, **extra):
