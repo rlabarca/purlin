@@ -35,6 +35,7 @@ The gate says what a release asks. The whole loop runs on one machine at either 
 
 | Guide | What it covers |
 |-------|----------------|
+| [The audit](audit.md) | Would your tests catch a bug: the heuristic spot tests, one planted bug per proof, a target such as 80% strong, and the research behind the approach |
 | [From criteria to a sign-off](qa-guide.md) | Acceptance criteria to proofs, what the developer adds, drift after a pull, the release, the sign-off and what the package records, where the risk is |
 | [The release and the sign-off](review-and-signing.md) | `purlin:test --release` and what it checks, the sign-off walk and its stops, several signers, when a sign-off counts, the tags |
 | [Dashboard](dashboard.md) | The page that opens from disk, its screens, filters, both themes |

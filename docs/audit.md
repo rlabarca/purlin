@@ -1,8 +1,5 @@
 # The audit: would your tests catch a bug?
 
-> Draft for `docs/audit.md`, written to decision 110 before it is built. The docs lane takes it over
-> and changes any line the build makes untrue.
-
 A passing test is not proof that it checks anything. The audit tries to make each test fail.
 
 ## How it works
@@ -10,7 +7,7 @@ A passing test is not proof that it checks anything. The audit tries to make eac
 **1. Heuristic spot tests.** Purlin flags tests that check nothing, check the code against
 itself, or never check the result the proof expects. It reads the tests as text, with no AI and
 without running them, so this step is free. The six checks, and the research behind each, are in
-[the spot tests reference](../references/review_criteria.md).
+[the heuristic spot tests reference](../references/review_criteria.md#heuristic-spot-tests).
 
 **2. Plant one bug.** For each proof, an AI puts one small bug in a throwaway copy of your code,
 aimed at what the proof says. If the proof says a sample collected at 08:00 and received at 09:30
@@ -89,6 +86,10 @@ Purlin takes the last row: real evidence where the requirement is, cheap enough 
 
 ## Sources
 
+The research behind Purlin's approach, each linked to the paper itself.
+
+**The audit as a whole**
+
 - Konstantinou, Degiovanni and Papadakis, [Do LLMs generate test oracles that capture the actual or the expected program behaviour?](https://arxiv.org/pdf/2410.21136), 2024
 - Siddiq et al., [Using Large Language Models to Generate JUnit Tests: An Empirical Study](https://arxiv.org/pdf/2305.00418), EASE 2024
 - [Are Coding Agents Generating Over-Mocked Tests? An Empirical Study](https://arxiv.org/pdf/2602.00409), 2026
@@ -100,3 +101,11 @@ Purlin takes the last row: real evidence where the requirement is, cheap enough 
 - [Reliability without Validity: A Systematic, Large-Scale Evaluation of LLM-as-a-Judge Models](https://arxiv.org/pdf/2606.19544), 2026
 - Alshahwan et al., [Automated Unit Test Improvement using Large Language Models at Meta](https://arxiv.org/pdf/2402.09171), FSE 2024
 - Schäfer, Nadi, Eghbali and Tip, [An Empirical Evaluation of Using Large Language Models for Automated Unit Test Generation](https://arxiv.org/pdf/2302.06527), IEEE TSE 2024
+
+**The heuristic spot tests**
+
+- Peruma et al., [tsDetect: An Open Source Test Smells Detection Tool](https://2020.esec-fse.org/details/esecfse-2020-tool-demos/4/tsDetect-An-Open-Source-Test-Smells-Detection-Tool), ESEC/FSE 2020
+- Schuler and Zeller, [Assessing Oracle Quality with Checked Coverage](https://www.st.cs.uni-saarland.de/publications/files/schuler-icst-2011.pdf), ICST 2011
+- Barr, Harman, McMinn, Shahbaz and Yoo, [The Oracle Problem in Software Testing: A Survey](https://discovery-pp.ucl.ac.uk/id/eprint/1471263/1/06963470.pdf), IEEE TSE 2015
+- Spadini, Aniche, Bruntink and Bacchelli, [To Mock or Not To Mock? An Empirical Study on Mocking Practices](https://repository.tudelft.nl/file/File_dcb7ec41-615b-457c-9b5f-e6c6de2dea7e?preview=1), MSR 2017
+- Panichella, Panichella, Fraser, Sawant and Hellendoorn, [Test Smells 20 Years Later: Detectability, Validity, and Reliability](https://pure.tudelft.nl/ws/portalfiles/portal/137994226/s10664_022_10207_5.pdf), EMSE 2022

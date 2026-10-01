@@ -1065,9 +1065,9 @@ The plan is written to (a): C17's "the proof's own test runs".
 - The audit's first step is named **Heuristic spot tests** and its second **one planted bug per
   proof**; "targeted break" and "plain checks" appear in nothing a person reads.
 - The six spot tests, their exact scope, what each does not flag, and their finding lines are as
-  `dev/plans/drafts/spot_tests.md` gives them, word for word. Lane `plain` implements them to it,
-  one rule each; lane `words` places its text in `references/review_criteria.md` in place of "In
-  the marked test body", with its research links, and removes what the code now does.
+  `references/review_criteria.md`, "Heuristic spot tests", gives them, word for word (the owner's
+  official text, committed before the build). Lane `plain` implements them to it, one rule each;
+  no lane changes that section's checks, scope or findings.
 - `docs/audit.md` is `dev/plans/drafts/audit.md`, taken over by lane `docs`, which changes only
   what the build makes untrue and keeps every link to a paper.
 - Integration runs the spot tests over this repository's own tests, reads every finding, fixes

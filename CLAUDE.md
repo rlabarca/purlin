@@ -69,7 +69,7 @@ concept and consolidate any duplicate in the same commit.
 | `references/glossary.md` | The word this project uses for each concept, its one definition, and the chain |
 | `references/purlin_commands.md` | Every command's syntax, its one purpose sentence, and what it writes |
 | `references/hard_gates.md` | The two gates, the release, which evidence counts, when a sign-off counts, what the tags mean |
-| `references/review_criteria.md` | What the AI audit looks for in a rule, its proof and its test; the instructions the model is sent |
+| `references/review_criteria.md` | What the AI audit looks for in a rule, its proof and its test; the heuristic spot tests and the research behind them; the instructions the model is sent |
 | `references/spec_quality_guide.md` | Writing a rule, the guideline for a good proof, reading the cell that blocks it |
 | `references/drift_criteria.md` | Drift's range and its three views, config field ownership, project root ownership |
 | `references/commit_conventions.md` | Every commit message prefix and shape |
