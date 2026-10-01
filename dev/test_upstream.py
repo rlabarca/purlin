@@ -598,6 +598,7 @@ def test_sync_all_reports_the_text_file_anchor_and_syncs_the_others(
     assert code == 2
     rows = {row['anchor']: row['status']
             for row in json.loads(out)['anchors']}
+    # The two remote anchors sync; the anchor of a file on disk does not.
     assert rows == {'no_eval': 'synced', 'no_secrets': 'synced',
                     'refunds': 'error'}
     assert not any('policy.txt' in ' '.join(args) for args in started), started

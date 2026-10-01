@@ -2,12 +2,12 @@
 # End-to-end checks for who owns which rule when an anchor comes from an
 # anchor repo.
 #
-# The anchor repo owns the rules in the pinned copy: a sync overwrites them.
-# The project owns the rules in a local anchor of its own beside it, and a sync
-# never touches those. A rule a consumer does add to the pinned copy does not
-# survive the next sync. A pinned copy is written as its source holds it, and a
-# field in it Purlin does not read on an anchor is warned of in the status,
-# naming the source's owners as the ones to take it out.
+# The anchor repo owns the rules in a remote anchor's copy: a sync overwrites
+# them. The project owns the rules in a local anchor of its own beside it, and
+# a sync never touches those. A rule a consumer does add to the remote anchor's
+# copy does not survive the next sync. That copy is written as its source holds
+# it, and a field in it Purlin does not read on an anchor is warned of in the
+# status, naming the source's owners as the ones to take it out.
 #
 # Every source is a local bare repository on disk, so nothing reaches a
 # network, and every command runs against a temporary project with
@@ -233,7 +233,7 @@ else:
 ')
 ok=true
 [[ "$result" == "ok" ]] || ok=false
-record "drift names the pinned anchor behind and leaves the local one out" "$ok" "$result"
+record "drift names the remote anchor behind and leaves the local one out" "$ok" "$result"
 
 # ==========================================================================
 # 2. Editing a spec in the project is a spec change, not a pin change
@@ -305,7 +305,7 @@ ok=true
 record "one drift run carries the pin behind and the local rule" "$ok" "$result"
 
 # ==========================================================================
-# 4. A sync overwrites the pinned copy and leaves the local anchor alone
+# 4. A sync overwrites the remote anchor's copy and leaves the local anchor alone
 # ==========================================================================
 echo "--- 4: what a sync owns ---"
 build_workspace
@@ -320,7 +320,7 @@ text = text.replace(
 with open(path, 'w', encoding='utf-8') as handle:
     handle.write(text)
 PY
-commit_project "$PROJECT" "edit the pinned copy, which a sync will undo"
+commit_project "$PROJECT" "edit the remote anchor's copy, which a sync will undo"
 BEFORE_LOCAL=$(cat "$PROJECT/specs/_anchors/local_security.md")
 advance_anchor_repo "$BARE" "$SOURCE_PATH" "$PUBLISHED_V2" >/dev/null
 sync_out=$(run_upstream "$PROJECT" sync ext_security)
@@ -334,7 +334,7 @@ grep -q '^- RULE-3: Every failed sign-in is written to the log' \
   ok=false; detail="the published RULE-3 did not arrive"; }
 [[ "$BEFORE_LOCAL" == "$(cat "$PROJECT/specs/_anchors/local_security.md")" ]] || {
   ok=false; detail="the local anchor was rewritten"; }
-record "a sync replaces the pinned copy and never the local anchor" "$ok" "$detail"
+record "a sync replaces the remote anchor's copy and never the local anchor" "$ok" "$detail"
 
 # ==========================================================================
 # 5. The anchor name is the spec name, whatever the source path is
@@ -372,12 +372,12 @@ print("ok" if published == 2 and local == 1
 ')
 ok=true
 [[ "$result" == "ok" ]] || ok=false
-record "the pinned anchor still counts the rules its copy holds" "$ok" "$result"
+record "the remote anchor still counts the rules its copy holds" "$ok" "$result"
 
 # ==========================================================================
-# 7. A pinned source carrying > Scope: is copied as it is, and warned of
+# 7. A remote anchor's source carrying > Scope: is copied as it is, and warned of
 # ==========================================================================
-echo "--- 7: a pinned source that carries > Scope: ---"
+echo "--- 7: a remote anchor's source that carries > Scope: ---"
 TMP7=$(new_tmpdir)
 BARE7="$TMP7/published.git"
 create_anchor_repo "$BARE7" "specs/security.md" "$PUBLISHED_SCOPED" >/dev/null

@@ -12,7 +12,7 @@ changed and removed; the proofs added, changed and moved; each number a spec
 of this checkout writes twice, with the line that keeps it and how old this
 checkout's copy of the default branch is; each test comment whose proof's
 wording changed after its test was last changed, as `wording.py` finds it;
-and each pinned anchor that is not current, checked against its source
+and each remote anchor that is not current, checked against its source
 without pulling it. Lines the status already prints are not repeated here.
 
 Drift reads only this checkout: it writes no file, fetches nothing and
@@ -141,7 +141,7 @@ def source_is_repository(project_root, source):
 
 
 def check_pin(project_root, source_url, pinned, cache=None):
-    """`{'status', 'remote_sha', ...}` for one pinned anchor, or None.
+    """`{'status', 'remote_sha', ...}` for one remote anchor, or None.
 
     `status` is `current`, `behind`, `unpinned` or `error`. One
     `git ls-remote` per source per run: the cache is keyed on the url, so an
@@ -208,7 +208,7 @@ def _ls_remote(project_root, url):
 
 
 def pin_report(project_root, features, network=True, cache=None):
-    """One row per pinned anchor that is not current."""
+    """One row per remote anchor that is not current."""
     rows = []
     if not network:
         return rows

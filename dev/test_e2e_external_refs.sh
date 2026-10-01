@@ -318,7 +318,7 @@ record "drift names the anchor, the status behind and the remote sha" "$ok" "$re
 # ==========================================================================
 # 8. an anchor with a source and no pin is reported as unpinned
 # ==========================================================================
-echo "--- 8: an unpinned source ---"
+echo "--- 8: a source with no pin ---"
 TMP8=$(new_tmpdir)
 BARE8="$TMP8/policies.git"
 create_anchor_repo "$BARE8" "specs/no_eval.md" "$ANCHOR_V1" >/dev/null
@@ -338,7 +338,7 @@ init_project "$PROJECT8"
   echo ""
   echo "- PROOF-1 (RULE-1): Check it"
 } > "$PROJECT8/specs/_anchors/loose.md"
-(cd "$PROJECT8" && git add -A && git commit -q -m "add an unpinned anchor")
+(cd "$PROJECT8" && git add -A && git commit -q -m "add an anchor with no pin")
 
 status_out=$(run_status "$PROJECT8")
 ok=true

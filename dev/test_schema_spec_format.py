@@ -432,7 +432,7 @@ def test_a_new_proof_after_the_highest_is_deleted_takes_the_next_number():
 
 def _anchor_spec(root, name, meta, source=None):
     """The anchor `name` under `specs/_anchors/`, carrying `meta` and, for a
-    pinned copy, its `> Source:`."""
+    remote anchor's copy, its `> Source:`."""
     lines = '# Anchor: %s\n\n' % name
     if source:
         lines += '> Source: %s\n> Pinned: abc1234def\n' % source
@@ -492,7 +492,7 @@ BASELINE_SOURCE = 'https://github.com/acme/policies.git'
 
 
 # purlin: schema_spec_format PROOF-78
-def test_a_pinned_anchor_carrying_a_scope_line_names_its_source(tmp_path):
+def test_a_remote_anchor_carrying_a_scope_line_names_its_source(tmp_path):
     root = _project(tmp_path)
     _anchor_spec(root, 'security_baseline', '> Scope: src/',
                  source=BASELINE_SOURCE + ' specs/baseline.md')

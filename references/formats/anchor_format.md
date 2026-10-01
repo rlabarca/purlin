@@ -110,7 +110,8 @@ checklist for writing one, with a worked anchor showing all three forms.
 
 When a project pulls an anchor from somewhere else, `purlin:anchor` writes
 tracking metadata into the local copy under `specs/_anchors/`. The author's
-file in the source repo does not carry these.
+file in the source repo does not carry these. Such an anchor is a remote
+anchor: its copy is pinned to one version of its source.
 
 | Field | Description |
 |-------|-------------|
@@ -171,15 +172,15 @@ transport is refused before any process starts, and the status line says
 The `> Source:` and `> Pinned:` lines were added by Purlin; the author's file
 in `acme/security-policies` does not carry them.
 
-## Editing a pinned anchor
+## Editing a remote anchor
 
-A consumer never edits a pinned rule in place: the next sync would overwrite
-it. A change to the rule is a pull request against the anchor repo, which the
+A consumer never edits a remote anchor's rule in place: the next sync would
+overwrite it. A change to the rule is a pull request against the anchor repo, which the
 next sync brings back. A rule that belongs only to this project goes in a local
 anchor of its own when it holds across the whole project, and in the spec of
 each feature it holds for when it does not.
 
-A pinned copy is written as its source holds it; a `> Requires:`, `> Global:` or `> Scope:` line in it is warned of, naming the source's owners as the ones to take it out.
+A remote anchor's copy is written as its source holds it; a `> Requires:`, `> Global:` or `> Scope:` line in it is warned of, naming the source's owners as the ones to take it out.
 
 ## Fields 0.9.5 wrote
 

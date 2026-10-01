@@ -481,7 +481,7 @@ UNREAD_GLOBAL = ('%s: > Global: is not read, because every anchor covers the '
                  'whole project. Run purlin:spec %s.')
 UNREAD_SCOPE = ('%s: > Scope: is not read on an anchor, because an anchor '
                 'covers the whole project. Run purlin:spec %s.')
-PINNED_UNREAD = ('%s: its source, %s, carries %s, which Purlin does not read '
+REMOTE_UNREAD = ('%s: its source, %s, carries %s, which Purlin does not read '
                  'on an anchor, so %s read as nothing. Ask the owners of %s to '
                  'take %s out, then run purlin:anchor sync %s.')
 
@@ -501,7 +501,7 @@ def spec_mistakes(project_root, features):
     proof line, a first line naming another feature, a proof tagged both
     `@slow` and `@manual`, then the fields Purlin
     does not read: every `> Requires:`, then every `> Global:`, then every
-    anchor's `> Scope:`. A pinned anchor carrying any of the three has one
+    anchor's `> Scope:`. A remote anchor carrying any of the three has one
     line naming them all and its source, sorted with the `> Scope:` lines.
     A `> Scope:` entry naming a file git does not have is no mistake: the
     status names it as information (`status.not_written_lines`).
@@ -552,15 +552,15 @@ def spec_mistakes(project_root, features):
     for field, line in (('Requires', UNREAD_REQUIRES), ('Global', UNREAD_GLOBAL)):
         for name in sorted(features):
             info = features[name]
-            if field in (info.get('unread_fields') or ()) and not _pinned(info):
+            if field in (info.get('unread_fields') or ()) and not _remote(info):
                 lines.append(line % (name, name))
     for name in sorted(features):
         info = features[name]
         fields = info.get('unread_fields') or ()
         if not fields:
             continue
-        if _pinned(info):
-            lines.append(PINNED_UNREAD % (
+        if _remote(info):
+            lines.append(REMOTE_UNREAD % (
                 name, info['source'], _join_fields(fields),
                 'the line is' if len(fields) == 1 else 'the lines are',
                 info['source'], 'it' if len(fields) == 1 else 'them', name))
@@ -584,8 +584,8 @@ def broken_reasons(info):
     return reasons
 
 
-def _pinned(info):
-    """True for an anchor pulled from another repository: one carrying
+def _remote(info):
+    """True for a remote anchor, one pulled from another repository: it carries
     `> Source:`."""
     return bool(info.get('is_anchor') and info.get('source'))
 

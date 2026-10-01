@@ -14,7 +14,7 @@ number twice, and one spec whose scope names a file not written yet;
 regulated, signed as `0.1.0` four commits ago, with a rule whose audit found
 a gap and a planted bug its test missed, a rule no audit has run on, a hand
 check, a rule that passed on one system and failed on another, and a rule of
-a pinned anchor with no test.
+a remote anchor with no test.
 
     python3 -m pytest dev/test_purlin_report.py -q
 """

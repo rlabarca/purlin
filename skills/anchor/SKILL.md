@@ -52,7 +52,8 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scrip
 ```
 
 Fetches the anchor from another repository and writes the local copy under
-`specs/_anchors/`, with two tracking lines the author's own file does not carry:
+`specs/_anchors/`, with two tracking lines the author's own file does not carry. An anchor
+brought in this way is a remote anchor: its copy is pinned to one version of its source.
 
 ```markdown
 > Source: https://github.com/acme/policies.git specs/no_eval.md
@@ -85,15 +86,15 @@ it as anchor(security_baseline): sync (9f8e7d6), then run purlin:test.` It commi
 commit the copy in one commit with the `anchor(<name>):` prefix, so the diff shows exactly
 which rules moved.
 
-## Changing a pinned rule
+## Changing a remote anchor's rule
 
-**Never edit a pinned rule in place.** The next sync overwrites it and the change is lost with
+**Never edit a remote anchor's rule in place.** The next sync overwrites it and the change is lost with
 no trace. A change to the rule is a pull request against the source repository, made in a
 checkout of it; once it merges, `sync` brings it here.
 
 A rule that belongs only to this project goes in a local anchor of its own when it holds across
-the whole project, and in the spec of each feature it holds for when it does not. The pinned
-copy stays untouched. A pulled rule that fails here is a problem to raise with its authors: the
+the whole project, and in the spec of each feature it holds for when it does not. The remote
+anchor's copy stays untouched. A pulled rule that fails here is a problem to raise with its authors: the
 project has no way to set a pulled rule aside.
 
 ## When you are done

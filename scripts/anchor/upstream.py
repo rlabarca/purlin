@@ -27,7 +27,8 @@ and writes nothing.
 `sync` names the rules that changed and advances the pin, fetching each distinct
 source once per run. `--check` changes nothing and exits 1 when a pin is behind,
 2 when a source could not be read or names no repository. `--json` prints the
-same answer for the skill. A consumer never edits a pinned rule in place.
+same answer for the skill. A consumer never edits a remote anchor's rule in
+place.
 """
 
 import argparse
@@ -334,7 +335,7 @@ def _write(path, text):
 # sync
 # ---------------------------------------------------------------------------
 
-def pinned_anchors(project_root):
+def remote_anchors(project_root):
     """`{name: info}` for every anchor carrying a `> Source:`."""
     features = specs_module.scan_specs(project_root)
     return {name: info for name, info in sorted(features.items())
@@ -343,7 +344,7 @@ def pinned_anchors(project_root):
 
 def sync(project_root, names=None, check=False):
     """Check, and unless `check`, advance every named pin. Returns a dict."""
-    anchors = pinned_anchors(project_root)
+    anchors = remote_anchors(project_root)
     wanted = list(names) if names else sorted(anchors)
     cache = {}
     fetched = {}

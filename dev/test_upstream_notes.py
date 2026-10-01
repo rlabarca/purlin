@@ -1,4 +1,4 @@
-"""Tests for the `> Note:` lines a pinned anchor's local copy carries.
+"""Tests for the `> Note:` lines a remote anchor's local copy carries.
 
 A note is the consumer's own free text beside the tracking fields, so a sync
 that rewrites those fields keeps it. The anchor repo and project fixtures are
