@@ -1457,6 +1457,13 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       Windows differs; the guard that never overwrites a person's signing key, a sign-off counting
       after its key is deleted, and the status working in a project never set up all stay. The
       drift skill's instructions lose the role views decision 109 removed.
+113. **A spec ahead of its code is reported, not warned of** (added 2026-10-01). Writing a spec
+    before its code is the normal order, so a `> Scope:` naming files git does not have yet is one
+    line per spec, as information: `states: 3 files its scope names are not written yet: facts.py,
+    project.py, wording.py. Run purlin:build states, or correct the path with purlin:spec states.`
+    It names the build first and the spec second, since Purlin cannot tell a file not yet written
+    from a typo. This replaces the per-file warning of decision 97 that sent the person to
+    `purlin:spec`.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5

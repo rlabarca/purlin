@@ -8,8 +8,8 @@
 >   output.
 > Scope: scripts/mcp/purlin/states.py, scripts/mcp/purlin/payload.py, scripts/mcp/purlin/status.py, scripts/mcp/purlin/facts.py, scripts/mcp/purlin/project.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib, json, hashlib, subprocess (list-only)
-> Highest-Rule: 122
-> Highest-Proof: 278
+> Highest-Rule: 123
+> Highest-Proof: 280
 
 ## Rules
 
@@ -55,6 +55,7 @@
 - RULE-113: The payload's `project` is the project's name read from its own files each time: `pyproject.toml`, `package.json`, a root `.csproj` file, the `origin` remote, then the folder's name
 - RULE-115: An anchor's proof whose every tied test skipped with a reason opening `nothing to check:` counts as passed: the rule reads `passed` with one reason `<PROOF-N>: <reason>` per such proof, and the status prints after the table `<anchor> <RULE-N> passes with nothing to check here: <reason>.`; on a project's own spec such a proof reads `not run`, its reason kept
 
+- RULE-123: A spec whose `> Scope:` names files git does not have is reported in one line for the spec, as information and not as a warning: the files are named as not written yet, with `purlin:build` to write them first and `purlin:spec` to correct a path second, because writing a spec before its code is the normal order
 ## Proof
 
 - PROOF-1 (RULE-1): A spec has two rules and one proof line, which names `RULE-2`, and no test is marked for either rule; `RULE-1`'s passed cell reads `no test` with exactly the one reason `no proof written`, its proof list is empty and its `no_proof` flag is raised, while `RULE-2`'s `no_proof` flag is not raised
@@ -127,3 +128,5 @@
 - PROOF-271 (RULE-113): A project in the folder `work` whose `pyproject.toml` names `labconnect` under `[project]` reads `project` `labconnect`
 - PROOF-274 (RULE-115): The anchor `security_no_dangerous_patterns`, whose `PROOF-3` test skipped with `nothing to check: this project has no screens`, reads `passed` in `RULE-3`'s passed cell with the one reason `PROOF-3: this project has no screens`
 - PROOF-278 (RULE-115): A feature `login`, not an anchor, whose `PROOF-1` test skipped with `nothing to check: no screens here` reads `not run` in `RULE-1`'s passed cell, the reason `no screens here` kept
+- PROOF-279 (RULE-123): A spec `states` whose scope names `facts.py`, `project.py` and `wording.py`, none in git, makes the status print the one line `states: 3 files its scope names are not written yet: facts.py, project.py, wording.py. Run purlin:build states, or correct the path with purlin:spec states.`
+- PROOF-280 (RULE-123): A spec `login` whose scope names `src/login.py`, in git, and `src/gone.py`, not in git, makes the status print `login: 1 file its scope names is not written yet: src/gone.py. Run purlin:build login, or correct the path with purlin:spec login.`, and the dashboard shows that line among the information, not among the warnings
