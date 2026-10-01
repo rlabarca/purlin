@@ -150,8 +150,8 @@ def _read_file(project_root, rel_path):
     if not rel_path:
         return None
     try:
-        with open(os.path.join(project_root, *rel_path.split('/')), 'r',
-                  encoding='utf-8') as handle:
+        full = os.path.join(project_root, *rel_path.split('/'))
+        with open(full, 'r', encoding='utf-8') as handle:
             return handle.read()
     except (IOError, OSError, UnicodeDecodeError):
         return None
@@ -167,7 +167,7 @@ class _Reader(object):
 
     def _git(self, *args):
         try:
-            result = subprocess.run(('git',) + args, capture_output=True,
+            result = subprocess.run(['git'] + list(args), capture_output=True,
                                     cwd=self.root, timeout=60)
         except (subprocess.SubprocessError, OSError):
             return None

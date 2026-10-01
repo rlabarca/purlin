@@ -76,7 +76,7 @@ def _plural(count, one, many):
 
 
 def _git(project_root, *args):
-    return subprocess.run(('git',) + args, cwd=project_root,
+    return subprocess.run(['git'] + list(args), cwd=project_root,
                           capture_output=True, text=True)
 
 

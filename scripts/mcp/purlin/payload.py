@@ -59,7 +59,7 @@ be coupled to a layout; this is the shape they all read instead.
       "left": [{"kind": "to_strengthen", "count": 1,
                 "text": "1 rule to strengthen", "command": "purlin:build"}],
       "met": true,
-      "signoff": {"word": "signed 0.1.0, 4 commits since", "version": "0.1.0",
+      "signoff": {"word": "signed <version>, 4 commits since", "version": "<version>",
                   "commit": "<40 hex>", "since": 4},
       "last_line": "Every rule passes its tests on the committed evidence. To sign it: purlin:sign",
       "os_words": {"windows": {"word": "Windows", "short": "Win"},
@@ -724,8 +724,8 @@ def _test_sources(project_root, path, sources):
     if suite is not None and suite.format == 'exit':
         return cache[path]
     try:
-        with open(os.path.join(project_root, *path.split('/')), 'r',
-                  encoding='utf-8', newline='') as handle:
+        full = os.path.join(project_root, *path.split('/'))
+        with open(full, 'r', encoding='utf-8', newline='') as handle:
             text = handle.read()
     except (IOError, OSError, UnicodeDecodeError):
         return cache[path]
@@ -774,8 +774,8 @@ def _hand_notes(project_root):
             if not basename.endswith('.json'):
                 continue
             try:
-                with open(os.path.join(directory, basename), 'r',
-                          encoding='utf-8') as handle:
+                full = os.path.join(directory, basename)
+                with open(full, 'r', encoding='utf-8') as handle:
                     data = json.load(handle)
             except (IOError, OSError, UnicodeDecodeError, ValueError):
                 continue
