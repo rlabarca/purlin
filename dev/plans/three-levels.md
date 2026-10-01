@@ -1,5 +1,7 @@
 # Purlin 0.10.0: three levels
 
+*The decisions are listed in the order they were added; a later decision wins, and each reversed decision carries a note naming what reversed it.*
+
 One ladder of seven states becomes a spec status plus three evidence levels, three commands
 carry the three levels, and the gate level is the only thing that decides how much of the chain
 anyone sees. Written 2026-09-16 from a full scan of the code, the dashboard, the skills, the
@@ -18,22 +20,30 @@ left to a lane's judgment except wording.
    `purlin:audit` runs level 2 and writes the record, `purlin:sign` is level 3 and walks the
    review list when given no rule. `purlin:verify`, `purlin:review` and `purlin:approve` are
    gone, not aliased. Twelve skills.
+   - *Reversed by 103:* two gates, `passed` and `signed`; `purlin:audit` is an optional tool, and `purlin:sign` takes one signature over the evidence package.
 2. **Level 2 is fully automatic.** A person first appears at level 3.
+   - *Reversed by 103:* the audit is optional and informative at either gate, and a person first appears at the sign-off.
 3. **Spec status is Drafted or Ready.** Ready means the proof text clears the blocking free
    checks.
+   - *Reversed by 36:* there is no spec status; at `signed` a rule with no proof is listed as `to write a proof for`.
 4. **The brief reports, it recommends nothing.** Strength beside the minimum, the free-check
    findings, what the model review observed, and whether it could settle the question. The four
    verdict words are retired.
+   - *Superseded by 33 and 40:* there are no briefs; the audit's findings go into the evidence file.
 5. **A local pass meets level 1.** Under `strong` and `signed` only a CI record counts; a local
    `purlin:audit` there is a preview that says it does not count.
+   - *Reversed by 31 and 103:* a local run counts at either gate.
 6. **Under `passed`, `purlin:audit` runs the tests only** and the record carries strength
    `n/a`. Raising the gate to `strong` turns the breaks on, locally and in CI.
+   - *Reversed by 103:* the breaks run wherever `mutation_engine` is set, at either gate, and block nothing.
 7. **Under `signed`, a signature is required at or above `sign_at`, default `medium`.** Low risk
    meets the `signed` gate at strong. `sign_at: low` signs everything.
+   - *Reversed by 103:* no rule is signed one by one; at `signed` one signature covers the evidence package.
 8. **CI writes no signature file, ever.** The `.ci.json` auto-approval is gone. Signature
    directories hold only files a person wrote.
 9. **Briefs live in `.purlin/briefs/<feature>/`** beside the records, committed by CI. The CI-only
    branch ruleset covers `.purlin/records/**` and `.purlin/briefs/**`.
+   - *Superseded by 40:* there are no briefs; each feature has one evidence file per source.
 10. **The old approval files, CI files and briefs are dropped, not migrated.** This checkout's 37
     `.approvals/` directories and its `.purlin/records/` are deleted by hand in Phase 7. The
     0.9.5 → 0.10.0 migration in `update.py` lands a project straight on the new layout; there is
@@ -41,11 +51,14 @@ left to a lane's judgment except wording.
 11. **Rule text is rewritten freely** wherever the model changes what a rule claims.
 12. **A `@manual` proof, or a model review that could not settle, reads `needs a person`**, and a
     signature file from anyone clears it under `strong`; under `signed` the signer rules apply.
+    - *Superseded by 23, 78 and 103:* a `@manual` proof is checked by a person in the sign-off walk at `signed`.
 13. **The review list carries only what needs a person**: unsigned, stale, held, needs a person.
     A weak rule is build work and stays on the board.
+    - *Superseded by 74 and 103:* `Left to do` lists only work, and hand checks and the signature happen in the sign-off walk.
 14. **Tiles**: `Untested`, `Failing`, `Passed`; `Strong` at `strong`; `Signed` and a `Stale` flag
     card at `signed`. **Columns**: `Spec`, `Rules`, `Spec status`, `Tests`, `Last run`; `Strength`
     and `Strong` at `strong`; `Signed` at `signed`.
+    - *Superseded by 87 and 103:* the boxes are `No proof` at `signed`, `Passing`, and `Strong` where the audit ran.
 15. **Retired outright, any casing, whole word**: `tested`, `recorded`, `approved`, `approve`,
     `approval`, `approver`, `approvers`, `verified`, `verdict`, `Reviewed`, `re-verify`, plus the
     phrases `Proof ready`, `lowest state`, `seven states`, `auto-approval`, `review queue`. Plain
@@ -58,6 +71,7 @@ left to a lane's judgment except wording.
 16. **`scripts/ci/verify_gate.py` becomes `scripts/ci/gate_check.py`**, log prefix `gate:`, spec
     `specs/ci/gate_check.md`, JSON key `result` instead of `verdict`. `purlin:audit --tag`
     writes `record/<name>` tags.
+    - *Superseded by 31 and 83:* `record/<name>` tags and the separate gate check at the end of a runner's job are gone.
 17. **The docs page `review-and-approval.md` becomes `review-and-signing.md`.**
 18. **In scope as extras**: delete `dev/screenshots/`; update `design/components` StatusPill and
     cards to the cell words; restate `dev/plans/TODO-0.10.0.md` and `held-rules-0.10.0.md` in the
@@ -69,8 +83,10 @@ left to a lane's judgment except wording.
     and the three evidence levels of a rule". `approvals.py` → `signatures.py`, `approve.py` →
     `sign.py`.
 21. **Risk stays inside the signature's hash set.** A risk re-tag stales a signature.
+    - *Reversed by 30 and 103:* risk is retired, and no rule carries a signature of its own.
 22. **Format versions bump as `CLAUDE.md` says**: record 1 → 2, approval 2 → signature 3, payload
     schema 4 → 5, drift criteria 3 → 4. Spec, proofs and anchor formats change wording only.
+    - *Superseded by later decisions:* records, briefs and per-rule signatures are gone; each file in `references/formats/` carries its current number.
 
 23. **`needs a person` is retired** (added 2026-09-17). It stood for two things, and each
     now names the work a person has to do. A rule whose proofs are `@manual` reads
@@ -80,6 +96,7 @@ left to a lane's judgment except wording.
     list is the one place a person is needed, and its header keeps the sentence `<n> rules
     need a person`. The `why` tokens are `unsigned`, `stale`, `held`, `manual test`,
     `manual audit`. Lane 7B.
+    - *Superseded by 35, 37, 74 and 103:* `manual test`, `manual audit`, `held` and the review list are retired; a hand check happens in the sign-off walk.
 24. **The Board tab leads with tests passing** (added 2026-09-17). Its headline is
     `<passing> of <rules> rules pass their tests · <failing> failing · <untested> untested`,
     where passing means the passed cell is met, with `<met> of <rules> meet the gate <gate>` as
@@ -87,11 +104,13 @@ left to a lane's judgment except wording.
     `Passing`, then `Strong` (strong cell met, signed rules included), then `Signed` and the
     `Stale` flag card. The group band reads `<name> · <n> specs · <passing> of <rules> pass`.
     The gate and the signed layer stay in their own columns. Lane 7A.
+    - *Superseded by 60, 92 and 103:* there is no headline line; the boxes carry the counts.
 25. **Nothing pushes on its own except `purlin:audit --remote`** (added 2026-09-17). A local
     `purlin:audit --commit` commits the record and prints `Run: git push`; it never pushes.
     `--remote` keeps its push, because the remote runner is the point of it. CI's record commit
     through the git host's API stays: it is the remote runner writing its own evidence, not a
     push from a person's machine. `purlin:sign` and `--tag` already push nothing. Lane 7B.
+    - *Superseded by 50 and 75:* nothing commits on its own, and `purlin:test --remote` is the one push Purlin makes.
 26. **CI runs where evidence is decided, and enforces the gate** (added 2026-09-26). The
     workflow triggers on pull requests, on pushes to the protected branch, and on pushes to
     `run/*` branches; a push to any other branch starts nothing. A pull request run tests,
@@ -100,6 +119,7 @@ left to a lane's judgment except wording.
     run ends with `scripts/ci/gate_check.py --check`, and the job fails when the gate is not
     met, so the required check means the gate held. At `passed` init writes no workflow unless
     `--ci` asks for one (scaffold RULE-13 stands); at `strong` and above it always does.
+    - *Reversed by 31 and 75:* a remote runner exists only for a rule that must hold on another system; there are no pull-request or protected-branch runs and no gate check step.
 27. **A push is a person's act, and git enforces it** (added 2026-09-26). Vocabulary: a
     **push** is `git push` typed by a person; a **remote run** is `purlin:audit --remote`,
     the one case in which Purlin pushes, to a **run branch** `run/<branch>-<sha7>` it creates,
@@ -108,6 +128,7 @@ left to a lane's judgment except wording.
     pull request changed against the local tree. The pre-push hook refuses a push from an
     agent session (`CLAUDE_CODE_SESSION_ID` set) unless `PURLIN_REMOTE_RUN=1` marks a remote
     run, and prints that a person runs `git push`. Lanes 8A (code) and 8B (docs).
+    - *Reversed by 31:* the pre-push hook is removed, and a push is free.
 28. **The `passed` workflow is spec, build, test** (added 2026-09-26). Settled with the user
     question by question:
     - `purlin:test` runs the tagged tests and writes the **test results**: one
@@ -139,6 +160,7 @@ left to a lane's judgment except wording.
     - At `passed` a person runs no script: `purlin:test` prints the table and the line
       `gate passed: <n> of <rules>` or `gate not met: <n> of <rules>`, and exits 1 when not
       met. `gate_check.py` stays the CI step. Lanes 10A (code) and 10B (docs, skills, deck).
+    - *Superseded by 40, 50 and 106:* one evidence file per feature, committed with `--commit`; `.purlin/tests.md` goes.
 29. **`strong` counts any audit; only `signed` requires CI; platforms roll up** (added
     2026-09-26, settled question by question; it replaces decision 5's second sentence and
     the parts of 28 that made the record CI's alone):
@@ -174,6 +196,7 @@ left to a lane's judgment except wording.
     - `purlin:audit` ends with `gate strong: <n> of <rules>` or `gate not met: ...` and exits
       1 when not met, the same shape as `purlin:test`'s line. Lanes 11A (code) and 11B (board,
       docs, slides).
+    - *Superseded by 31, 40 and 103:* a local run counts at both gates, evidence lives at `.purlin/evidence/<source>/<feature>.json`, and there is no gate `strong`.
 30. **The bar replaces risk; Review and Sign; Signable** (added 2026-09-26, settled question
     by question):
     - **Bar.** Every rule has a bar, `passed` or `strong`: the evidence it must have before it
@@ -201,6 +224,7 @@ left to a lane's judgment except wording.
     - **Two tabs.** `Review` at `strong` and above: `manual test`, `unsettled`, `held`. `Sign`
       at `signed`. `purlin:sign` walks Review, then Sign. Lanes 12A (code) and 12B (board,
       docs, slides).
+    - *Reversed by 36, 37, 73 and 103:* no bar, no `sign_at`, no Signable and no Review or Sign tab; one signature covers the evidence package.
 
 
 
@@ -260,6 +284,7 @@ left to a lane's judgment except wording.
       short section per page at most and on one page of their own.
     - **The counts line in `RELEASE_NOTES.md` and `purlin_version` RULE-9 are dropped** (added
       the same day): the sweep writes its record and nothing compares the notes against it.
+    - *Amended by 37, 73, 75 and 103:* no trust setting, no holds and no bar; the signature covers the evidence package, not one rule's hashes.
 32. **Signing is recorded, not policed** (added 2026-09-27, settled question by question from
     lane 15's Q1, Q2, Q3 and Q5). Purlin's job is a provable, traceable log of where the tests
     ran and who signed that rule, proof, test, bar and audit match. It does not decide who may.
@@ -288,6 +313,7 @@ left to a lane's judgment except wording.
       tag. The definition lives in `references/glossary.md` and `references/hard_gates.md`;
       every other page points there.
     - `signature_format.md` bumps.
+    - *Amended by 67, 102 and 103:* no bar and no `sign_at`; one signature covers the package, made in a commit signed with any key and verified.
 33. **The free scans are removed; drift reports facts** (added 2026-09-27, from lane 15's Q4
     and Q8). A project at `passed` has said it wants no reading of test quality; at `strong`
     and above `purlin:audit` is the one place strength is judged, by the breaks and the AI
@@ -329,6 +355,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - The signature locks every sentence of the audit, as decision 31 wrote it.
     - At the gate `passed`, `purlin:audit` runs, prints and commits what it found, and
       nothing blocks on it.
+    - *Reversed by 103:* the audit and mutation testing are informative only; a weak or unaudited rule blocks nothing, and `min_strength` is retired.
 36. **A rule's level uses the gate's three words.** A rule may be marked `[level: passed]`,
     `[level: strong]` or `[level: signed]`, meaning what the gate means: tests; tests and
     audit; tests, audit and signature. An unmarked rule takes the gate. The gate is the
@@ -337,11 +364,13 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     proof reads `no test` with the reason `no proof written`; `drafted`, `ready` and
     `spec status` are retired. In this repository, the rules of
     `specs/dashboard/purlin_report.md` are marked `[level: passed]`.
+    - *Reversed by 73:* no rule carries a level; every rule is asked what the gate asks.
 37. **One queue, and no holds.** `purlin:sign` walks one list of the rules that wait on a
     person, each row saying what is needed: a hand check (`@manual`) or a signature. The
     dashboard has one tab for it. `Review`, `Sign` as list names, and `signable` are retired.
     Holds are removed: a reviewer who disagrees adds the missing proof or changes the proof,
     alone or with AI help. `hold`, `held` and `--hold` are retired.
+    - *Amended by 74 and 103:* there is no queue; the sign-off walk at `signed` stops at each hand check and each weak or unaudited rule before the one signature.
 38. **A proof says less.** `@integration` and `@e2e` are removed, with the filter by kind and
     its flag; `purlin:test` runs every tagged test of the features it runs. `@manual` and
     `@env` stay as they are. `[origin: ...]` and `[criterion: ...]` are removed. The design
@@ -354,11 +383,13 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     reported as incomplete. Evidence from a person's own run is checked against the
     fingerprint like any other. The tag is written only when every feature's evidence is
     current for the code it covers, and a feature that is not is named.
+    - *Amended by 46, 98 and 103:* `> Scope:` is optional, and a spec that names no files is warned of, never refused.
 40. **One evidence file per feature.** Every run, test or audit, writes
     `.purlin/evidence/<source>/<feature>.json`: each proof's result, the commit, the
     operating system, the time, and once audited the strength and the AI audit's findings
     per rule. One format file, one commit subject. `test results`, `record` and `brief` are
     retired as names of files. `.purlin/tests.md`, the summary table, stays.
+    - *Amended by 106:* `.purlin/tests.md` goes too.
 41. **The periphery is removed.** The per-person settings file; `purlin:anchor propose` and
     the weekly upstream check with `--upstream-check`; everything under `tools/`; the
     repository reader script; `purlin:find`, folded into `purlin:status <name>`;
@@ -369,6 +400,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     from the log and the diff: rules added, changed and removed; code changed and the rules
     behind it, rules with no test, anchors behind; tests changed, signatures stale, the
     size of the queue. The `design` view goes.
+    - *Amended by 83 and 103:* there are no stale signatures and no queue for drift to report.
 43. **Both git hosts, and Azure DevOps is fixed**: a remote run that waits for its result,
     and a check of who committed a file that does not rest on a name.
 45. **Three roles, and a brand kit cut to what is used** (added 2026-09-27). The roles are
@@ -383,6 +415,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     page keeps the look. Both colour themes stay. Diagrams are plain mermaid: the init block
     and `docs/_mermaid.md` go. The docs carry three screenshots taken from the rebuilt
     dashboard: the board, the queue, one rule.
+    - *Superseded by 89:* the docs carry two screenshots, the board and one rule.
 46. **What the design round settled** (added 2026-09-27). `dev/plans/design-35-43.md` is the
     technical design for decisions 35 to 43, and its section 10 holds the owner's answers,
     which win over its text. The ones that amend a decision: `> Scope:` is optional below
@@ -392,6 +425,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     `audit_parallel` calls at once, default four (35); drift measures from the last git
     action that brought changes in (42). `dev/plans/stale-inventory.md` is the list the
     final sweep works from.
+    - *Amended by 73, 98 and 103:* rules carry no level, no signature is made over one rule, and a spec without files is warned of, not refused.
 47. **Two machines** (added 2026-09-27). This machine takes 0.10.0 as far as it can: every
     piece of decisions 35 to 46, the Azure DevOps work up to what can be tested without an
     Azure project, the docs, the diagrams, the slides and the statement of what differs from
@@ -409,6 +443,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     is what makes the signer provable; and `trust: remote` stays as a project's own setting.
     New: every signature records the machine's name and its operating system beside the
     signer and the time. `signature_format.md` bumps. Piece P4 of the design owns it.
+    - *Amended by 67, 75, 102, 103 and 106:* no trust setting; one signature covers the package in a verified commit, and the package names who ran the tests, where and when.
 49. **This repository is brought up to its own spec** (added 2026-09-27). After the last
     piece lands, `purlin:init --update` runs here, so this project carries what a project
     set up by 0.10.0 carries: the settings file, the plugin copies, the ignore entries, the
@@ -435,6 +470,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **Five words at `passed`.** At the gate `passed` every surface and every page a
       person meets first uses rule, test, passed, out of date and gate, and no word of a
       higher level. The rest appears when the gate is raised.
+    - *Amended by 103 and 106:* a finding blocks nothing; `purlin:sign` refuses results not taken on this exact version of the code, and builds the package.
 51. **A proof is QA's plan, a test is any test with one comment, and there are no plugins**
     (added 2026-09-27, from the first sanity check). Product, QA and developers all work in
     Claude Code on a checkout; `purlin:drift` is how each catches up after pulling.
@@ -466,6 +502,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       proofs rewritten to the guideline as the examples the docs show.
     - **Order**: after the scheduled pieces, and not before the owner has talked through the
       GxP complaints of the same sanity check.
+    - *Amended by 73 and 103:* no rule carries a level; at `signed` a rule with no proof is listed as `to write a proof for` and blocks nothing.
 52. **Purlin produces evidence for a regulated system; it does not make software
     compliant** (added 2026-09-27, from the first sanity check, the GxP half). A regulated
     document and sign-off system such as Veeva holds the controlled document, the authority
@@ -493,6 +530,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       and drops "the same team under GxP". `docs/regulated-workflow.md` spells out Purlin's
       role: what it produces, what it hands over, what the regulated system does, and that
       Purlin makes no claim of compliance.
+    - *Amended by 103 and 106:* the package carries one signature over the whole package, built by `purlin:sign` at `signed`.
 53. **The docs speak to a developer who wants to be left alone** (added 2026-09-27). The
     README and the first pages a developer meets lead with how little Purlin touches: a
     settings file and the specs you write, one comment above a test, your own test command,
@@ -510,6 +548,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     listed instead; the slides are published to the same private link, six of them: the
     three levels, the remote runner, how little Purlin touches, Purlin and the regulated
     system. No audit, no signing, no tag and no push.
+    - *Amended by 103:* the slides show two gates, `passed` and `signed`.
 55. **The evidence package is part of the workflow and is committed with the tag** (added
     2026-09-27; amends decision 52). `purlin:export` writes the package into the project,
     at `.purlin/evidence/package/<version>.json`. When `purlin:sign` is about to write
@@ -518,6 +557,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     commit its evidence was taken at, which is the parent of the commit that carries it.
     Run at any other time, `purlin:export` writes the file, says the version is work in
     progress, and commits it only with `--commit`.
+    - *Reversed by 106:* `purlin:sign` builds the package from the committed evidence at the gate `signed`, and its first signature writes `signed/<version>`.
 56. **Six choices from the overnight run, settled** (added 2026-09-28).
     - A hand check signed without a note is accepted, as it is.
     - At the gate `signed`, a spec that names no files fails the gate check whatever its
@@ -532,6 +572,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       tag below `signed`.
     - **The remote runner gets a diagram**, in the section of `docs/running-and-evidence.md`
       that describes the two cases. That page then holds two diagrams, one per section.
+    - *Amended by 98, 103 and 106:* a spec that names no files is warned of, never refused; hand checks happen in the sign-off walk at `signed`.
 57. **The dashboard, from the owner's first look** (added 2026-09-28).
     - The two headline lines above the tiles go.
     - `without a test` reads `no test`.
@@ -548,6 +589,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       lists them once, under the anchor that owns them, and a feature's row reads
       `<n> rules, plus <k> shared`, with the hover naming the anchors. A rule is always
       addressed by its owner and its id, so opening a rule opens that rule.
+    - *Amended by 100:* a feature counts its own rules only, and anchors stand in a section of their own.
 58. **A cell above a rule's level shows nothing** (added 2026-09-28). A rule is asked only
     what its level asks. For a rule whose level is `passed`, the strong cell and the signed
     cell are absent: no word, no badge, no reason, on the board, the rule's screen, the
@@ -557,6 +599,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     which showed such cells and let them block nothing. A rule whose tests do not pass reads
     what its passed cell says, and its strong cell says `not passed` only where its level
     asks for the audit.
+    - *Reversed by 73:* no rule carries a level, so every cell the gate asks for is shown.
 59. **The close of the first session** (added 2026-09-28). A rule whose tests have not
     passed reads `waiting` in the columns above, and `weak` means only that the audit found
     fault. The two gaps in the tests of `upstream` are closed. Go is proven against the real
@@ -579,6 +622,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     used in hovers and empty states; the card stays `Queue`, and beneath it and in the queue
     tab the short labels are `To test by hand <h> · To sign <s>`. The terminal and the docs
     use the same words. This replaces the sentence decision 23 kept.
+    - *Superseded by 74 and 103:* there is no queue, and outside the sign-off nothing reads `to sign` or `to test by hand`.
 62. **A signature is locked to the code and to where the tests ran** (added 2026-09-28).
     A signature says a person signed one exact set: the rule, its proof, its test, what the
     audit found, the code the rule covers, and the operating systems its test results came
@@ -587,6 +631,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     machine and operating system were recorded and bound nothing. A signature still belongs
     to no machine: it is bound to where the tests ran, not to where it was signed. The
     signature format changes, so its `Format-Version` is raised.
+    - *Reversed by 103:* one signature covers the evidence package; nothing is signed per rule.
 63. **Every page is read again against the code, last** (added 2026-09-28). After every
     decision above and every answer to the sanity checks is applied. The ten-minute path
     writes its first rules with `purlin:spec` and marks its tests with `purlin:build`. The
@@ -634,6 +679,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     record decides who was entitled. Before signing starts Purlin confirms only that there
     is a key to sign with. This amends decisions 32 and 48, which asked that the signature
     verify.
+    - *Amended by 102 and 103:* the signing commit must verify, with any key, and the signature covers the package.
 68. **One summary, steps reached, and what is left to do** (added 2026-09-28). The terminal,
     the dashboard and the check on a remote runner show the same thing. Each step contains
     the next: `35 pass their tests. 30 are strong. 20 are signed.` Whether a version is
@@ -643,6 +689,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     audited or signed never fail it, and no `PASS` or `FAIL` word is printed. A rule with
     no proof, at the gates that ask for one, has its own box and filter on the dashboard.
     A spec's `> Description:` is shown under the feature's name on the dashboard.
+    - *Amended by 103 and 106:* the summary says what passes and what the audit found; a weak or unproven rule blocks nothing, and nothing is called finished.
 69. **Every command says exactly what to do next** (added 2026-09-28). The test of any
     output is that an agent seeking a goal can read it, know which rule is affected and
     what to do, and improve the project by doing it. A run names each rule that fails or has
@@ -663,6 +710,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     one and offers to write it to a version file. A signed tag is written only when every
     result came from committed work. The docs say commands are run inside Claude Code, and
     carry no section on removing Purlin.
+    - *Amended by 80, 98, 103 and 106:* setup asks the gate, the mutation question at `signed` alone, and whether it may commit.
 71. **One proof, one case** (added 2026-09-28). A proof holds one starting situation, one
     action and the results seen from it, in at most 60 words. A refusal or a boundary is a
     case of its own. This is written into `references/spec_quality_guide.md`, `purlin:spec`
@@ -686,6 +734,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     its tab, its box and its line. `Left to do` holds every kind of remaining work, each
     with who or what does it; `to test by hand` and `to sign` are two of its lines.
     `purlin:sign` still walks the rules that wait for a person. This amends decision 61.
+    - *Amended by 103:* `to sign` and `to test by hand` leave `Left to do`; the sign-off walk covers both.
 75. **Where Purlin refuses, and where it does not** (added 2026-09-28). Purlin refuses
     nothing a person does. It will not itself state that a version is finished unless that
     is so: the signed tag is written only when nothing is left to do and every result came
@@ -695,6 +744,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     that must hold on another operating system. On a pushed signed tag the runner runs the
     tests and nothing else. An audit that finds a proof longer than the standard, or holding
     two cases, notes it and does not find the rule weak for it.
+    - *Amended by 103 and 106:* the first signature over the package at `signed` writes the tag, and nothing is called finished.
 76. **Small things that follow** (added 2026-09-28). The word `gate` stays. A finished
     project's last line names the release step at the gate `signed`, `git push origin
     signed/<version>`, and at the other two gates says `Nothing left to do.` and names no
@@ -702,6 +752,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     feature it applies to, a change to that feature's files ends that one signature, and the
     rule counts as signed when it is signed in every one of them. The slides end each gate
     with `A version is finished when`.
+    - *Reversed by 100, 103 and 106:* an anchor's rule is counted once, nothing is signed per rule, and no ending says a version is finished.
 77. **What a signature is made over** (added 2026-09-28). The rule, its proof, its test, the
     code its feature lists, what the audit found, and the machine the tests ran on. The
     machine it was signed on is not recorded. Run again on the same machine with nothing
@@ -714,12 +765,14 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     shows the commands, offers to run them, and carries on. When it finishes it prints
     `Signed 3 rules as jane@acme.com with the key ending ...Xy4Q.` No message is printed
     when a change ends signatures; the rules return to `to sign`. This amends decision 62.
+    - *Reversed by 103 and 106:* one signature covers the package in a verified commit (102), and the package names who ran the tests, where and when.
 78. **A check done by hand** (added 2026-09-28). A proof marked `@manual` is checked by a
     person, who writes what they saw and signs, in one act, at any gate. That act stands for
     the test, the audit and the signature of the rule. Only `purlin:sign` records it. It
     shows under `Left to do` as `to test by hand`, and in drift for QA. The dashboard is
     for reading: each line of `Left to do` shows what to type in Claude Code to clear it,
     and nothing is ticked on the page. `purlin:sign` takes one rule, a feature or all.
+    - *Amended by 103 and 106:* a hand check is done in the sign-off walk at `signed`, and its note is asked for, not required.
 79. **The summary and `Left to do`, in full** (added 2026-09-28). `40 rules. 35 pass their
     tests. 30 are strong. 20 are signed.` Then `Left to do`, one line per kind of work in
     the order it is done, each with its count and its command, kinds at zero left out. The
@@ -733,6 +786,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     count at each step, what is left, and the state `finished` or `not finished`; its
     format version is raised. The systems are shown as `Windows`, `macOS` and
     `Linux/Unix`, and in the dashboard's small boxes as `Win`, `Mac`, `Lin`.
+    - *Amended by 92, 103 and 106:* the summary says what passes and what the audit found, with no signed count, and nothing is called finished.
 80. **Setup, the first run and the upgrade, in full** (added 2026-09-28). `purlin:init` asks
     the gate, and at `strong` and `signed` also whether to break the code on purpose. The
     first test run in a project with tests and no command suggests one from a fixed list of
@@ -746,6 +800,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     rehearsal. `purlin:build` repairs a comment whose form is wrong or whose feature or rule
     name is one letter from a real one. Each command's instructions keep their maximum
     length: a change cuts as many lines as it adds.
+    - *Amended by 103:* the mutation question is asked at `signed` alone.
 81. **Starting from existing code, in full** (added 2026-09-28). Every rule is written from
     what its test expects, passing or not, and no test is run first. `purlin:spec-from-code`
     does its best to give every source file a rule and ends by listing the files that got
@@ -767,10 +822,12 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     failing and failing on one system go: the step boxes, `No proof` and `Left to do`
     remain. The evidence package's `not for approval` goes: it carries the state and the
     gate.
+    - *Superseded by 103 and 106:* no per-rule signature ends; a result counts only when it was taken on the version of the code being signed.
 84. **A hand check needs no note** (added 2026-09-28). Signing a rule that is checked by
     hand counts as the check, with or without a note. `purlin:sign` asks for the note and
     records it when given. This keeps the owner's earlier choice and reads decision 78's
     "writes what they saw" as what is asked, not what is required.
+    - *Amended by 103 and 106:* the note is asked in the sign-off walk, and an empty answer is recorded as `no note`.
 85. **The dashboard's badges, filters and reasons** (added 2026-09-29). A rule's row shows a
     badge only for a step it has reached, `PASSED`, `STRONG`, `SIGNED`, and `FAILED` where a
     test fails; a step not reached shows nothing. The `Left to do` list leaves the dashboard.
@@ -782,6 +839,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     each command's instructions. `purlin:sign` given several rules of which one does not
     exist signs the rest and names the one. `CLAUDE.md` is read whole against the product
     and corrected; what is not obvious is asked.
+    - *Amended by 89 and 103:* there is no `SIGNED` badge, and `purlin:sign` signs the package, not a list of rules.
 86. **One way to look closer at a rule** (added 2026-09-29). The full page for one rule
     goes. Unfolding a rule's row on the board shows everything about it in place: why it has
     not reached a step, what the audit found, who signed it and with which key, the machine
@@ -791,22 +849,26 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     left to right, `No proof`, `Passing`, `Strong`, `Signed`, in the order the work is done.
     The filter buttons follow the same order as the terminal's `Left to do`, in which writing
     a proof is already first.
+    - *Amended by 103:* the boxes are `No proof` at `signed`, `Passing`, and `Strong` where the audit ran; there is no `Signed` box.
 88. **The dashboard's top corner** (added 2026-09-29). The box `at <sha>` goes: `Data: <age>
     old` says whether the page is current, and the evidence package carries the commit. The
     box for the last signed version shows at the gate `signed` only, as `signed/<version>`
     with no sha, or `no signed tag`; at the first two gates there is no such box. The box
     `gate: <gate>` stays.
+    - *Amended by 106:* no release is tracked, so at `passed` there is no tag box.
 89. **The rule's page stays, and holds the detail** (added 2026-09-29). This withdraws
     decision 86 and the last part of decision 85. Clicking a rule opens its own page, which
     shows why the rule has not reached a step, what the audit found, who signed it and with
     which key, and the machine its tests ran on for each system. An unfolded row on the
     board shows what it showed before: the rule's proofs, each with its result, its tags and
     its tests, and nothing more. The docs carry two screenshots, the board and one rule.
+    - *Amended by 103:* the rule page names no per-rule signer; the signature covers the package.
 90. **A spec's shared rules on the dashboard** (added 2026-09-29). The `Rules` cell reads
     `16 (+6)`, and its hover says what the second number is, `16 rules of its own, and 6 more
     it must also meet, from shared rules:`, then each anchor with its count. The terminal
     keeps `16 (+6 shared)`, since it has no hover. The two differ by that one word, which the
     rule that the terminal and the dashboard mirror each other's words now allows.
+    - *Reversed by 100:* a feature counts its own rules only.
 91. **Small changes to the dashboard, made at once** (added 2026-09-29). The line saying how
     old the data is reads the age alone, `Data: 7 hours old`; its hover says how to refresh
     it, and pressing it reloads the page. In the light theme each tan ground but the
@@ -828,6 +890,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     measured. The model is told `test strength: not measured`, in words. Setup's line about
     a missing tool is reworded, since the cell no longer reads `n/a`. The stand-in inside a
     signature stays as it is: no person reads it, and changing it would end every signature.
+    - *Amended by 103:* no signature is made over one rule, so there is no stand-in inside one.
 94. **The answers to the second fan-out's questions** (added 2026-09-29), which are grouped in
     `phase2-questions.md`.
     - **A rule about a command's instructions says what the instructions tell the agent**, and
@@ -850,6 +913,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       the audit alone decides.
     - **The 55 readings** of `phase2-questions.md`, "One sensible reading", are applied. The
       owner reads the list afterwards and says which to reverse.
+    - *Amended by 103:* a rule found weak, measured or not, blocks nothing.
 95. **Windows, settled** (added 2026-09-29). Tests run on Windows only where what they check
     could differ because of files or the operating system.
     - **A remote run on a system runs only the tests tied to proofs tagged for that system.**
@@ -986,6 +1050,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **The first remote run on Windows goes ahead without asking again.** After wave W, setup
       writes this repository's runner file and `purlin:test --remote` runs once. It pushes one
       temporary run branch and nothing else: no tag is pushed, and `main` stays on this machine.
+    - *Amended by 103:* `min_strength` and the gate `strong` are retired, so the settings list and the setup example lose them.
 98. **The answers to sanity check 3** (added 2026-09-30), to the 15 questions of
     `sanity-3.md` section 11, given on 2026-09-29 and 2026-09-30.
     - **The README says nothing about leaving.** The line `If you leave, the markers are
@@ -1038,6 +1103,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       This amends decision 97.
     - **When the first test run finds no test tool it knows**, it prints
       `No test command is set and no test tool Purlin knows was found, so nothing ran. The agent reads the project and proposes a command for you to confirm.`
+    - *Amended by 100 and 103:* `> Requires:` goes, and no rule is signed one by one.
 99. **The answers after phase 4** (added 2026-09-30), to the questions the fourth phase left
     open.
     - **A proof number is never reused.** The spec records the highest proof number it has
@@ -1058,6 +1124,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **Setup leaves test fixtures out** when it decides which test tools a project uses:
       files under a folder named for fixtures, samples or test data do not count, so setup
       names only the tools the project itself uses.
+    - *Amended by 103:* a hand check is cleared in the sign-off walk, and `min_strength` is retired.
 100. **An anchor is a set of rules for the whole project** (added 2026-09-30). Closed, and not
     yet built. This reverses decision 76's signing of an anchor's rule in each feature, and the
     part of decision 98 that kept a line in a spec naming the anchors it requires.
@@ -1088,6 +1155,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **Still to be asked when it is planned:** the words of every line a person reads that this
       changes, and what becomes of this repository's anchor about the spec format, which one
       feature required and whose rules are about one piece of code.
+    - *Amended by 103:* no anchor rule is signed one by one; a pinned anchor's rule that no test can show is checked by hand in the sign-off walk.
 101. **The answers to the plan for decision 100** (added 2026-09-30), to the three questions of
     `d100-plan.md`, with one further request. The plan carries them in its contracts C12 to C15.
     - **A pulled anchor whose source carries `> Requires:`, `> Global:` or `> Scope:` is copied as
@@ -1109,6 +1177,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       the words `Light theme` and `Dark theme` staying as its hover and accessible name. The two
       glyphs join `▶ ▼ ▲ →` as the ones Purlin uses.
     - The six calls the plan made stand.
+    - *Reversed by 103:* with no per-rule signature, `--does-not-apply` goes; how a pinned anchor's rule that does not apply is handled is still to be asked.
 102. **The answers to the QA and product check** (added 2026-09-30), to the findings of
     `sanity-qa-product.md`, a cloud run in which one agent played product, QA and dev in three
     clones of one repository on a sample-intake project at the gate `signed`.
@@ -1151,6 +1220,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       the default branch that is the default branch; on a release branch, the release branch.
     - **Not changed, as settled before:** who may sign (logged, not policed, decisions 48 and
       52) and the walk writing the tag when nothing is left.
+    - *Amended by 103:* signatures no longer end one by one; the one signature covers the package.
 103. **Evidence is signed once, at the release** (added 2026-09-30). In the owner's words:
     "we don't need to actually log the QA evaluation of the test. It's just a concurrent workflow
     where they continually improve the specs together. Signing off is a final check when
@@ -1195,6 +1265,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **A hand check at the gate `passed` is listed as not checked** (answered on the plan's Q1):
       the release goes ahead, prints one line naming those rules, and the package lists them as
       not checked.
+    - *Amended by 106:* there is no release step and no `passed/<version>` tag; `purlin:sign` builds the package from the committed evidence.
 104. **A team's collaboration is a rule** (added 2026-10-01). Purlin's success needs three
     people working concurrently through git to reach a signed release. In the owner's words:
     "we can just test if we successfuly complete the collaboration without getting stuck or have
@@ -1240,6 +1311,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       items.
     - **Decision 104's scripted three-person test is built in the same round**, with these two
       cases in it: a test left on a moved proof, and a second signer. This round runs locally.
+    - *Amended by 106:* `purlin:test --release` goes; the signer signs the committed evidence, and `.purlin/tests.md` goes.
 106. **Purlin keeps the evidence and the sign-off, and tracks no release** (added 2026-10-01).
     In the owner's words: "the only thing purlin cares about is creating the curent state of the
     evidence, and the signing stage. everything else is just informative". This reverses the
@@ -1274,6 +1346,8 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
 ---
 
 # Part A: the design
+
+*Superseded in full by decisions 23 to 106; read references/glossary.md and references/hard_gates.md for what holds.*
 
 Every doc, skill, reference, message and test uses these words and no others.
 
@@ -1419,6 +1493,8 @@ min_strength, commit, rules, met, not_passed, weak, not_signed, result, exit, si
 ---
 
 # Part B: technical design
+
+*Superseded in full by decisions 23 to 106; read references/glossary.md and references/hard_gates.md for what holds.*
 
 ## B1. Payload, schema 5
 
@@ -1574,6 +1650,8 @@ and `.purlin/`; `design/components/` and `design/readme.md` join the checked set
 ---
 
 # Part C: execution
+
+*Superseded in full by decisions 23 to 106; read references/glossary.md and references/hard_gates.md for what holds.*
 
 ## C1. Rules for every lane
 
