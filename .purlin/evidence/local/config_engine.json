@@ -2,13 +2,13 @@
   "feature": "config_engine",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:52Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-10-01T01:14:48Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "3551ef9c3886ccd9c4fa053da404f80c3e29d09d79281cfd467489f59990c835",
-        "spec": "dcb39d5366a5765c3afbb474a7aa50d5e3e9531d9801de778a53519c0e232b45",
-        "tests": "7302a354c7466f75dc8dfddad14caf54e24008d7938bb4fe4154c869aa7d2d1d"
+        "code": "d2f1031a92fd29cd0d103658c31c9025cc6beab44b965b6d5cbd751488aeea45",
+        "spec": "748d346381010b1bf6c98805a23a242c7611c57c2fc7b5b2cc7288ff4339db2e",
+        "tests": "554b482571a46f58a3e68f49da5440dd2406801a443943c37c3db9328632f6f8"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -251,6 +251,38 @@
           "result": "pass",
           "rule": "RULE-15",
           "test": "dev/test_config_engine.py::TestASettingsFileThatCannotBeRead::test_a_write_is_refused_and_the_file_left_as_it_was"
+        },
+        {
+          "env": null,
+          "id": "PROOF-41",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_config_engine.py::TestTheGate::test_a_gate_of_strong_reads_as_passed_with_one_warning"
+        },
+        {
+          "env": null,
+          "id": "PROOF-42",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_config_engine.py::TestTheGate::test_the_breaks_are_on_at_the_gate_passed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_config_engine.py::TestTheGate::test_the_breaks_are_on_at_the_gate_signed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-44",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_config_engine.py::TestTheGate::test_min_strength_is_named_as_a_key_not_read"
         }
       ],
       "rules": {
@@ -259,6 +291,9 @@
         "RULE-13": "not run",
         "RULE-14": "passed",
         "RULE-15": "passed",
+        "RULE-16": "passed",
+        "RULE-17": "passed",
+        "RULE-18": "passed",
         "RULE-2": "not run",
         "RULE-3": "passed",
         "RULE-4": "passed",

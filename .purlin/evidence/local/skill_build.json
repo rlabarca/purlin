@@ -2,13 +2,13 @@
   "feature": "skill_build",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:53Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-10-01T01:14:50Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "8f73edb4947cf330ae73d63100bd7885a41dbd62afee8947bb05e35197c40b79",
-        "spec": "dca25d4f69d64ef6bb3360f982dfeb6b65511687f6f82a1ec7615eb971c1e4e1",
-        "tests": "d928c44f310171d4b6ab13ca6a415dc11d05997f01b9b9fa6d5adbf969b9de12"
+        "code": "bcf123914e84d61f61d82fa237314c48bb6e375ec302d1fa1b007a30f2e36a1c",
+        "spec": "c54bcc8a809cac2db8278336906834a58c0f950db08530302a0f81897c14bdf8",
+        "tests": "112ea801f08941831e89789eb27d828b9308f8866a9d859eafbb572d21c259a4"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -139,6 +139,14 @@
           "result": "pass",
           "rule": "RULE-18",
           "test": "dev/test_skill_build.py::TestSkillBuild::test_every_anchor_holds_across_the_project"
+        },
+        {
+          "env": null,
+          "id": "PROOF-48",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_skill_build.py::test_a_number_written_twice_goes_to_renumbering"
         }
       ],
       "rules": {
@@ -149,6 +157,7 @@
         "RULE-13": "passed",
         "RULE-17": "passed",
         "RULE-18": "passed",
+        "RULE-19": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

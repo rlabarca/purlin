@@ -2,13 +2,13 @@
   "feature": "update",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:54Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-10-01T01:14:50Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "f18efe1eed28cc6290199d31e0eb3d3cb289e5e450b16553188ed4a82112f8c0",
-        "spec": "bdac26c166d418be313b1838af6c005bacf08d82d86f53364276d967e6c372fd",
-        "tests": "73d0912aabdbed60e0794b5f5fee05829fab55e56435f1349c1beb3f97fda4fd"
+        "code": "f6167ad30a387fef40ad77ec335ef309f8415f2ff3f86639b0b47aea48dd9a1d",
+        "spec": "0d2ecbe6e7a5f6a8bae04b6dfed3dde052a8205344e40ea901ef86e38e43be9d",
+        "tests": "e9bfc02a22bff72fa5ff90a5f2d45aad49ac25705f541c718d1840b8b94020cc"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -206,14 +206,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-37",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_init_update.py::test_the_config_is_the_gate_shape_at_strong"
-        },
-        {
-          "env": null,
           "id": "PROOF-38",
           "manual": false,
           "result": "pass",
@@ -294,14 +286,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-45",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_init_update.py::test_the_gate_defaults_to_strong_when_the_hook_was_strict"
-        },
-        {
-          "env": null,
           "id": "PROOF-46",
           "manual": false,
           "result": "pass",
@@ -330,7 +314,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-12",
-          "test": "dev/test_init_update.py::test_the_gate_question_prints_its_three_choices"
+          "test": "dev/test_init_update.py::test_the_gate_question_prints_its_two_choices"
         },
         {
           "env": null,
@@ -666,7 +650,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-26",
-          "test": "dev/test_init_update.py::test_yes_turns_it_on_at_the_gate_s_minimum"
+          "test": "dev/test_init_update.py::test_yes_turns_it_on"
         },
         {
           "env": null,
@@ -1042,7 +1026,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-42",
-          "test": "dev/test_init_update.py::test_the_runner_reason_at_strong"
+          "test": "dev/test_init_update.py::test_the_runner_reason_at_signed"
         },
         {
           "env": null,
@@ -1171,6 +1155,30 @@
           "result": "pass",
           "rule": "RULE-46",
           "test": "dev/test_init_update.py::test_a_global_anchor_named_by_a_spec_gets_no_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-159",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-47",
+          "test": "dev/test_init_update.py::test_the_gate_strong_is_now_passed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-160",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-48",
+          "test": "dev/test_init_update.py::test_min_strength_is_taken_out"
+        },
+        {
+          "env": null,
+          "id": "PROOF-161",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-49",
+          "test": "dev/test_init_update.py::test_the_gate_offered_where_the_hook_was_strict_is_passed"
         }
       ],
       "rules": {
@@ -1209,6 +1217,9 @@
         "RULE-44": "passed",
         "RULE-45": "passed",
         "RULE-46": "passed",
+        "RULE-47": "passed",
+        "RULE-48": "passed",
+        "RULE-49": "passed",
         "RULE-5": "not run",
         "RULE-6": "passed",
         "RULE-7": "not run",

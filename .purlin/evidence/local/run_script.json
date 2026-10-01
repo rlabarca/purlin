@@ -2,13 +2,13 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T20:57:51Z",
-      "commit": "0bcb74f690d73a89c70961c9806e7c83b4203455",
+      "at": "2026-10-01T01:14:49Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "cf5ec49cc253c16f7c543c2dd74b980da7468d7df3dacf856770521158fe4ac2",
-        "spec": "c2970b223f1a62a35d38a1f739bdf51c43bf0822a2e110c4e5a59265410f7225",
-        "tests": "a74933b4893f66f1981aa81d8976eeb13d143aa6b9d5e997df53fdf30ee75715"
+        "code": "d6f75a21e558bfcdc0a55587481c4398bd42c5df719adb18c5f7ab386d98ee3c",
+        "spec": "085aa34f31a136cbc57c4179c7acd47d939ec0f033137fa958f12685d3c1b2a9",
+        "tests": "600f29cf1ee25043fd876f2835f40c13ab15ea4de3529b99852f449d7b25acc0"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -314,7 +314,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-11",
-          "test": "dev/test_run_script.py::TestEveryRunEndsOnTheSummary::test_at_strong_a_passing_rule_is_left_to_audit"
+          "test": "dev/test_run_script.py::TestEveryRunEndsOnTheSummary::test_a_passing_rule_no_audit_read_leaves_nothing_to_do"
         },
         {
           "env": null,
@@ -330,7 +330,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-11",
-          "test": "dev/test_run_script.py::TestEveryRunEndsOnTheSummary::test_at_strong_a_failing_rule_is_left_to_fix"
+          "test": "dev/test_run_script.py::TestEveryRunEndsOnTheSummary::test_at_signed_a_failing_rule_is_left_to_fix"
         },
         {
           "env": null,
@@ -710,14 +710,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-65",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-45",
-          "test": "dev/test_run_script.py::TestTheGateDecidesTheBreaks::test_under_passed_no_break_runs_and_the_strength_is_not_measured"
-        },
-        {
-          "env": null,
           "id": "PROOF-79",
           "manual": false,
           "result": "pass",
@@ -730,15 +722,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-73",
-          "test": "dev/test_run_script.py::TestTheGateDecidesTheBreaks::test_under_strong_the_audit_measures_and_writes_the_score"
-        },
-        {
-          "env": null,
-          "id": "PROOF-80",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-73",
-          "test": "dev/test_run_script.py::TestTheGateDecidesTheBreaks::test_with_mutation_on_a_score_under_the_minimum_is_weak"
+          "test": "dev/test_run_script.py::TestTheGateDecidesTheBreaks::test_with_mutation_on_the_audit_measures_and_writes_the_score"
         },
         {
           "env": null,
@@ -774,27 +758,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-174",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-75",
-          "test": "dev/test_run_script.py::TestTheGateDecidesTheBreaks::test_a_ci_run_at_strong_measures_nothing_and_audits_nothing"
-        },
-        {
-          "env": null,
           "id": "PROOF-175",
           "manual": false,
           "result": "pass",
           "rule": "RULE-75",
           "test": "dev/test_run_script.py::TestTheGateDecidesTheBreaks::test_a_ci_run_at_signed_measures_nothing_and_audits_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-69",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-48",
-          "test": "dev/test_run_script.py::TestTheAuditExitCode::test_a_finding_blocks_at_strong"
         },
         {
           "env": null,
@@ -818,7 +786,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-48",
-          "test": "dev/test_run_script.py::TestTheAuditExitCode::test_a_rule_found_weak_then_found_strong_meets_strong"
+          "test": "dev/test_run_script.py::TestTheAuditExitCode::test_a_rule_found_weak_then_found_strong_is_left_to_release"
         },
         {
           "env": null,
@@ -826,7 +794,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-48",
-          "test": "dev/test_run_script.py::TestTheAuditExitCode::test_a_failing_test_blocks_at_strong"
+          "test": "dev/test_run_script.py::TestTheAuditExitCode::test_a_failing_test_is_left_to_fix"
         },
         {
           "env": null,
@@ -891,6 +859,46 @@
           "result": "pass",
           "rule": "RULE-89",
           "test": "dev/test_run_script.py::TestABrokenSpec::test_the_audit_reads_no_rule_of_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-265",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-90",
+          "test": "dev/test_run_script.py::TestTheReleaseRun::test_a_passing_release_is_tagged_at_passed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-266",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-91",
+          "test": "dev/test_run_script.py::TestTheReleaseRun::test_a_refused_release_exits_1"
+        },
+        {
+          "env": null,
+          "id": "PROOF-267",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-92",
+          "test": "dev/test_run_script.py::TestTheAuditExitCode::test_a_finding_blocks_nothing_at_signed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-268",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-93",
+          "test": "dev/test_run_script.py::TestTheGateDecidesTheBreaks::test_at_passed_the_breaks_run_where_mutation_is_on"
+        },
+        {
+          "env": null,
+          "id": "PROOF-269",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-94",
+          "test": "dev/test_run_script.py::TestTheReleaseRun::test_release_beside_a_feature_is_refused"
         },
         {
           "env": null,
@@ -1758,7 +1766,6 @@
         "RULE-40": "not run",
         "RULE-41": "passed",
         "RULE-43": "not run",
-        "RULE-45": "passed",
         "RULE-47": "passed",
         "RULE-48": "passed",
         "RULE-49": "passed",
@@ -1804,7 +1811,12 @@
         "RULE-87": "passed",
         "RULE-88": "passed",
         "RULE-89": "passed",
-        "RULE-9": "passed"
+        "RULE-9": "passed",
+        "RULE-90": "passed",
+        "RULE-91": "passed",
+        "RULE-92": "passed",
+        "RULE-93": "passed",
+        "RULE-94": "passed"
       },
       "runner": "rich-labarca"
     }

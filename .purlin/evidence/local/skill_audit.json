@@ -2,13 +2,13 @@
   "feature": "skill_audit",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:53Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-10-01T01:14:50Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "b9c291312fee294a33736e8813a72e4173bb209a502ea4967080def783e74340",
-        "spec": "b625f12e228beb9c59999966b65fd6f212e9ddc3ad1e130ae1150114b27f91e8",
-        "tests": "b3debcf9d626aa2dbe0427275449aa0a2dbdf23c3d79b4d0e5b2c8e8dfeaac20"
+        "code": "fb3c969f1acb2f639bf3e3c2b3668714ac23e1c7a368c193cb46546669ee7861",
+        "spec": "c5c267108accedfe3ad0019e5f42fa8b91e76f0ccf9e422f045b5d81b947403b",
+        "tests": "87581c45d603763ab7d8c29773295fec5bb34d7a9edf2badcbc4d83fabfce664"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -78,19 +78,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-37",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_the_strong_row_runs_the_breaks_against_the_minimum"
-        },
-        {
-          "env": null,
           "id": "PROOF-38",
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_the_signed_row_runs_what_strong_runs_and_counts_both"
+          "test": "dev/test_skill_audit.py::TestSkillAudit::test_the_signed_row_runs_what_passed_runs_and_counts_both"
         },
         {
           "env": null,
@@ -122,7 +114,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_a_signature_does_not_set_the_exit_code"
+          "test": "dev/test_skill_audit.py::TestSkillAudit::test_nothing_the_audit_found_sets_the_exit_code"
         },
         {
           "env": null,
@@ -179,6 +171,14 @@
           "result": "pass",
           "rule": "RULE-24",
           "test": "dev/test_skill_audit.py::TestSkillAudit::test_the_first_sync_status_names_the_project_root"
+        },
+        {
+          "env": null,
+          "id": "PROOF-52",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-25",
+          "test": "dev/test_skill_audit.py::TestSkillAudit::test_the_audit_is_a_tool_nothing_waits_on"
         }
       ],
       "rules": {
@@ -191,6 +191,7 @@
         "RULE-15": "passed",
         "RULE-2": "passed",
         "RULE-24": "passed",
+        "RULE-25": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",

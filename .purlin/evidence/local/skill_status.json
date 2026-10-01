@@ -2,13 +2,13 @@
   "feature": "skill_status",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T20:57:52Z",
-      "commit": "0bcb74f690d73a89c70961c9806e7c83b4203455",
+      "at": "2026-10-01T01:14:50Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "6bdd2634ac7e798297849472accc15e184e9f19dd6a74e81c3ab60fa58c5c11c",
-        "spec": "7115c3282d502d051c74751b51b0a64f8abdeb8fcfa9bf33a786ee24538aea7d",
-        "tests": "817c7b2b0d8835d2a1bb35256da8536905ee165074852d72fce2fa4b7ba275d6"
+        "code": "556c5b6b8a3c6905f17c7d6bc9311a25c362d8f33b67031b7b0281e6056be5df",
+        "spec": "0cbca53615f2a8a913bf7a985ebc09d1363fa2d3ec6fb5d29317057fa57549fd",
+        "tests": "05c0a11304a3d5b79fa58c68ac75cd15503332c4196ec8fb033b88587623aee5"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -123,11 +123,20 @@
           "result": "pass",
           "rule": "RULE-11",
           "test": "dev/test_skill_status.py::TestTheFirstCall::test_the_first_call_names_the_project_root"
+        },
+        {
+          "env": null,
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_skill_status.py::TestRenumbering::test_a_number_written_twice_is_sent_to_the_renumbering"
         }
       ],
       "rules": {
         "RULE-1": "passed",
         "RULE-11": "passed",
+        "RULE-12": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

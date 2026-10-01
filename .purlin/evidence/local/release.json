@@ -1,0 +1,164 @@
+{
+  "feature": "release",
+  "platforms": {
+    "macos": {
+      "at": "2026-10-01T00:50:27Z",
+      "commit": "39171b09615ba6e5ba7c10524ae3dbd2dcab782d",
+      "dirty": false,
+      "fingerprint": {
+        "code": "2d191ceb21719eb9c808e3debf1a0b14b78c3d5c515c9da584f2316235dbf194",
+        "spec": "4bbb292ba81b0fd2c221e189a2c54d1c4184dd4bd259c068b03fefd4d6a9d973",
+        "tests": "6cd42b56bef919a27b44bc0ae13f5a57eb93b167c380ff8194f04f2a7277d669"
+      },
+      "machine": "Richs-MacBook-Pro.local",
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_tag.py::TestTheRefusals::test_a_rule_whose_test_fails_refuses_the_release"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_tag.py::TestTheRefusals::test_a_spec_that_cannot_be_counted_refuses_the_release"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_tag.py::TestTheRefusals::test_work_not_committed_refuses_the_release"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_tag.py::TestTheHost::test_a_host_copy_ahead_refuses_the_release"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_tag.py::TestTheHost::test_a_commit_of_its_own_the_host_lacks_is_released"
+        },
+        {
+          "env": null,
+          "id": "PROOF-6",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_tag.py::TestTheVersion::test_the_version_file_names_the_release"
+        },
+        {
+          "env": null,
+          "id": "PROOF-7",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_tag.py::TestTheVersion::test_a_named_version_names_the_release"
+        },
+        {
+          "env": null,
+          "id": "PROOF-8",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_tag.py::TestTheVersion::test_no_version_refuses_the_release"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_tag.py::TestTheRelease::test_at_passed_the_package_is_committed_and_tagged"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_tag.py::TestTheRelease::test_at_signed_the_package_is_committed_and_no_tag_written"
+        },
+        {
+          "env": null,
+          "id": "PROOF-11",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_tag.py::TestTheRefusals::test_a_tag_already_written_refuses_the_release"
+        },
+        {
+          "env": null,
+          "id": "PROOF-12",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_tag.py::TestWhatWaits::test_a_weak_or_unaudited_rule_does_not_refuse"
+        },
+        {
+          "env": null,
+          "id": "PROOF-13",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_tag.py::TestWhatWaits::test_a_package_with_no_tag_yet_is_written_again"
+        },
+        {
+          "env": null,
+          "id": "PROOF-14",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_tag.py::TestWhatWaits::test_a_hand_check_at_passed_is_named_and_listed_not_checked"
+        },
+        {
+          "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_tag.py::TestTheRelease::test_git_refusing_the_tag_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-16",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_tag.py::TestTheHost::test_nothing_is_fetched_or_pushed"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-10": "passed",
+        "RULE-11": "passed",
+        "RULE-12": "passed",
+        "RULE-2": "passed",
+        "RULE-3": "passed",
+        "RULE-4": "passed",
+        "RULE-5": "passed",
+        "RULE-6": "passed",
+        "RULE-7": "passed",
+        "RULE-8": "passed",
+        "RULE-9": "passed"
+      },
+      "runner": "rich-labarca"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "local",
+  "spec": "specs/export/release.md"
+}

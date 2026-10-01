@@ -2,13 +2,13 @@
   "feature": "host",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:52Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-10-01T01:14:49Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "b750a0879fdfb093aba9a577a13f2cb6df98beebabc2fce33d2a104ae0ca100f",
-        "spec": "111921c214cfc6231fb4d8f9a7b733b0ec95ca3a6562a397aaa9575c3b757c17",
-        "tests": "0ce8393acfbf6b5fd0875edceef0d0baef820c208c66bf5f6b5d6ea039af360f"
+        "code": "83aa90ce5c99d532dd5858e0502d34b29d9c90cec6331159e01602467d452d84",
+        "spec": "bde82c5b283866deab79d53347a9e0d5372eca440b0decc013b766341133b23b",
+        "tests": "5a896d71e396d0911365645572e5b755d9780613654def5e5048102daeed464d"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -179,14 +179,6 @@
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_host.py::test_the_evidence_comes_home_at_the_gate_passed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-109",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_host.py::test_the_evidence_comes_home_at_the_gate_strong"
         },
         {
           "env": null,

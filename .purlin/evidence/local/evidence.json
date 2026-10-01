@@ -2,13 +2,13 @@
   "feature": "evidence",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:52Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-10-01T01:14:49Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "a24f888e4eb20162b3ac096aa5b03d4ee0e075fef018a866c703640592bafd97",
-        "spec": "c6d8f267115a27863bdbdd3da8de9937295355ef9a2daf763e6048593575ebb5",
-        "tests": "c6394a6445b860da16e1afdbac0ada585badc34e3e572057fa3c8a8ef23da875"
+        "code": "fb4c23130f573bde7424a9f490aae6f59da7147fc9bed1b8f91b7a3d8471a792",
+        "spec": "48d98750d3d914bb817b8a119ca1196c1f845f3057c67cd29eba36c99ce8ef28",
+        "tests": "b13f17d500d994c5a2cc560e63d764056fcb4f2a0917d3d450fdcd87fef26d36"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -642,7 +642,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-31",
-          "test": "dev/test_fingerprint.py::test_a_signature_file_leaves_an_anchor_as_it_was"
+          "test": "dev/test_fingerprint.py::test_a_signoff_file_leaves_an_anchor_as_it_was"
         },
         {
           "env": null,

@@ -2,13 +2,13 @@
   "feature": "evidence_writer",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T20:57:51Z",
-      "commit": "0bcb74f690d73a89c70961c9806e7c83b4203455",
+      "at": "2026-10-01T01:14:49Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "e313545e9b44345f175aab64deba4ffe68ee4110ed8360998a445c057a67001c",
-        "spec": "4148b1b28528bf049bfa42103bd6e5777918faa079afd834333ce632a830655e",
-        "tests": "7eb28ae77bb14f33aa6dada400603c9f007b4cbd98694071527d6555542acd71"
+        "code": "7d5090fe38dbd497f51867995e893b7a63600bfb95d94c05e8b386102e9e8627",
+        "spec": "f7066440daf4360f1cbb01e31fa1cc18f8926764ff35990261ebde67f59fa2a3",
+        "tests": "fa359f64b9b57c4f1cabef18b4e78368829843a983e51f057b9180193174a8bc"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [

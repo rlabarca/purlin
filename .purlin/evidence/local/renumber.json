@@ -1,0 +1,129 @@
+{
+  "feature": "renumber",
+  "platforms": {
+    "macos": {
+      "at": "2026-10-01T00:50:27Z",
+      "commit": "39171b09615ba6e5ba7c10524ae3dbd2dcab782d",
+      "dirty": false,
+      "fingerprint": {
+        "code": "7767789dba5fd3189e1cc1a751a63701ac380631cb5433d96236391d82c50ae4",
+        "spec": "88d00c001738c1f12b45df49376eb1ee78d86d4785248104d38877c081649db8",
+        "tests": "1bc1ec5c2da6ce7fa8258cd7b8ec9c32525344466070e6e84e1d74be38b2bc6d"
+      },
+      "machine": "Richs-MacBook-Pro.local",
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_renumber.py::TestPlan::test_a_dry_run_changes_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_renumber.py::TestPlan::test_the_line_not_on_the_default_branch_moves"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_renumber.py::TestPlan::test_neither_line_on_the_default_branch"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_renumber.py::TestPlan::test_no_default_branch"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_renumber.py::TestComments::test_a_comment_written_for_the_moving_line_moves"
+        },
+        {
+          "env": null,
+          "id": "PROOF-6",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_renumber.py::TestComments::test_a_comment_written_for_the_kept_line_stays"
+        },
+        {
+          "env": null,
+          "id": "PROOF-7",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_renumber.py::TestComments::test_an_uncommitted_comment_is_named_not_changed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-8",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_renumber.py::TestComments::test_a_comment_follows_its_old_wording"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_renumber.py::TestTheRest::test_the_highest_line_is_raised"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_renumber.py::TestTheRest::test_a_comment_on_another_branch_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-11",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_renumber.py::TestTheRest::test_a_moved_rule_takes_its_new_proofs"
+        },
+        {
+          "env": null,
+          "id": "PROOF-12",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_renumber.py::TestTheRest::test_a_run_makes_the_edits_and_commits_nothing"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-2": "passed",
+        "RULE-3": "passed",
+        "RULE-4": "passed",
+        "RULE-5": "passed",
+        "RULE-6": "passed",
+        "RULE-7": "passed",
+        "RULE-8": "passed",
+        "RULE-9": "passed"
+      },
+      "runner": "rich-labarca"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "local",
+  "spec": "specs/spec/renumber.md"
+}

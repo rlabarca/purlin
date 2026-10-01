@@ -2,13 +2,13 @@
   "feature": "purlin_docs",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T20:57:51Z",
-      "commit": "0bcb74f690d73a89c70961c9806e7c83b4203455",
+      "at": "2026-10-01T01:14:49Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "c40a8d28271fcedb7218b549de44d80cc7d8d0ff11f45f4f4a42c9e9106d6d03",
-        "spec": "a47b7641eb6fb9a00141317d94d7e86d6e83a9d40f4bc4c55f178dba6f9701c5",
-        "tests": "44910103610c1ad99306046a8c7290610e7462deb433dfc318b97653be3ea635"
+        "code": "9cc1852266ed361addfb817426ce49fae4d2576fc30a702f3f5fad94b2f2a284",
+        "spec": "36f26333eef110c94ab8d4f52331d3d065a1132d6ac7725d86b5d301a5cd28b0",
+        "tests": "cc7e42f3e78b8c32d50b63c3f2346e0797fb483f9687f8bc73c780aa1c40a907"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -91,11 +91,20 @@
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_purlin_docs.py::TestLinks::test_every_relative_link_names_a_file_and_a_heading"
+        },
+        {
+          "env": null,
+          "id": "PROOF-18",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_purlin_docs.py::TestReleasePage::test_the_table_of_tags_names_both_tags_and_their_commands"
         }
       ],
       "rules": {
         "RULE-1": "passed",
         "RULE-12": "passed",
+        "RULE-13": "passed",
         "RULE-2": "passed"
       },
       "runner": "rich-labarca"

@@ -2,13 +2,13 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T20:57:51Z",
-      "commit": "0bcb74f690d73a89c70961c9806e7c83b4203455",
+      "at": "2026-10-01T01:14:49Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "f47eefedfa63edac9943a89873d669d486c4f667f8196967885c5378ef05987e",
-        "spec": "e1a6c6f50f90ff463cce4c68ce90d89cc333fb37c33a759546742974cdd05d39",
-        "tests": "1380645e673f1e4263dcbab6d8de9cd7ba977cb05662139c89658fad045ab498"
+        "code": "968cb087b548db65a47795500d42ee36dbeb3125df477d214704ce3a3a0a6adb",
+        "spec": "0487ffdee24b6d1df4556a097f866be88d23ace5287b27331900c70b4311021c",
+        "tests": "36d6da6c49f88191c93d36073b4f07eaa8c74ba6525c4819e7fdc9d6116b227d"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -106,7 +106,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
-          "test": "dev/test_purlin_report.py::test_a_strong_project_has_no_proof_passing_and_strong"
+          "test": "dev/test_purlin_report.py::test_an_audited_passed_project_has_passing_and_strong"
         },
         {
           "env": null,
@@ -138,7 +138,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
-          "test": "dev/test_purlin_report.py::test_a_strong_project_adds_the_strong_column"
+          "test": "dev/test_purlin_report.py::test_an_audited_project_adds_the_strong_column"
         },
         {
           "env": null,
@@ -146,7 +146,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
-          "test": "dev/test_purlin_report.py::test_a_strong_project_keeps_proofs_with_no_proof_line"
+          "test": "dev/test_purlin_report.py::test_an_audited_passed_project_with_no_proof_line_drops_proofs"
         },
         {
           "env": null,
@@ -154,7 +154,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
-          "test": "dev/test_purlin_report.py::test_a_signed_project_shows_six_columns"
+          "test": "dev/test_purlin_report.py::test_a_signed_project_keeps_proofs_with_no_proof_line"
         },
         {
           "env": null,
@@ -278,14 +278,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-131",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_purlin_report.py::test_the_version_to_tag_reads_to_tag"
-        },
-        {
-          "env": null,
           "id": "PROOF-83",
           "manual": false,
           "result": "pass",
@@ -314,7 +306,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-14",
-          "test": "dev/test_purlin_report.py::test_to_audit_leaves_the_rules_to_audit"
+          "test": "dev/test_purlin_report.py::test_to_test_leaves_the_rules_to_test"
         },
         {
           "env": null,
@@ -339,14 +331,6 @@
           "result": "pass",
           "rule": "RULE-14",
           "test": "dev/test_purlin_report.py::test_the_write_a_proof_filter_leaves_the_rules_with_no_proof"
-        },
-        {
-          "env": null,
-          "id": "PROOF-133",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-14",
-          "test": "dev/test_purlin_report.py::test_choosing_to_tag_leaves_every_rule_showing"
         },
         {
           "env": null,
@@ -483,46 +467,6 @@
           "result": "pass",
           "rule": "RULE-25",
           "test": "dev/test_purlin_report.py::test_the_link_back_closes_the_rule"
-        },
-        {
-          "env": null,
-          "id": "PROOF-26",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-26",
-          "test": "dev/test_purlin_report.py::test_the_rule_screen_names_the_sign_command"
-        },
-        {
-          "env": null,
-          "id": "PROOF-89",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-26",
-          "test": "dev/test_purlin_report.py::test_a_rule_to_test_by_hand_names_the_hand_check"
-        },
-        {
-          "env": null,
-          "id": "PROOF-90",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-26",
-          "test": "dev/test_purlin_report.py::test_a_signed_rule_names_its_signer_key_and_machines"
-        },
-        {
-          "env": null,
-          "id": "PROOF-186",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-26",
-          "test": "dev/test_purlin_report.py::test_a_signed_rule_says_what_the_signature_covers"
-        },
-        {
-          "env": null,
-          "id": "PROOF-39",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-26",
-          "test": "dev/test_purlin_report.py::test_the_sign_panel_is_absent_below_the_signed_gate"
         },
         {
           "env": null,
@@ -806,14 +750,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-149",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-40",
-          "test": "dev/test_purlin_report.py::test_the_top_bar_at_strong_shows_no_tag"
-        },
-        {
-          "env": null,
           "id": "PROOF-150",
           "manual": false,
           "result": "pass",
@@ -858,7 +794,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-41",
-          "test": "dev/test_report_refresh.py::test_a_signature_writes_the_data_file"
+          "test": "dev/test_report_refresh.py::test_a_sign_off_writes_the_data_file"
         },
         {
           "env": null,
@@ -1162,7 +1098,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-49",
-          "test": "dev/test_purlin_report_board_layout.py::test_four_boxes_to_a_row_at_768"
+          "test": "dev/test_purlin_report_board_layout.py::test_three_boxes_to_a_row_at_768"
         },
         {
           "env": null,
@@ -1374,14 +1310,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-191",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-59",
-          "test": "dev/test_purlin_report.py::test_a_spec_nobody_signed_says_so_in_its_hover"
-        },
-        {
-          "env": null,
           "id": "PROOF-192",
           "manual": false,
           "result": "pass",
@@ -1427,38 +1355,6 @@
           "result": "pass",
           "rule": "RULE-60",
           "test": "dev/test_purlin_report.py::test_each_warning_is_a_notice_after_the_working_tree_one"
-        },
-        {
-          "env": null,
-          "id": "PROOF-199",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-61",
-          "test": "dev/test_purlin_report.py::test_with_mutation_testing_off_no_minimum_strength_applies"
-        },
-        {
-          "env": null,
-          "id": "PROOF-200",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-62",
-          "test": "dev/test_purlin_report.py::test_a_manual_proof_under_its_row_names_the_sign"
-        },
-        {
-          "env": null,
-          "id": "PROOF-201",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-62",
-          "test": "dev/test_purlin_report.py::test_a_manual_proof_on_the_rule_screen_names_the_sign"
-        },
-        {
-          "env": null,
-          "id": "PROOF-202",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-62",
-          "test": "dev/test_purlin_report.py::test_a_signed_manual_proof_reads_checked_by_hand"
         },
         {
           "env": null,
@@ -1510,46 +1406,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-210",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-65",
-          "test": "dev/test_purlin_report.py::test_every_cell_of_a_rule_that_does_not_apply_says_so"
-        },
-        {
-          "env": null,
-          "id": "PROOF-214",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-65",
-          "test": "dev/test_purlin_report.py::test_a_rule_that_does_not_apply_carries_one_badge"
-        },
-        {
-          "env": null,
-          "id": "PROOF-211",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-65",
-          "test": "dev/test_purlin_report.py::test_the_signed_panel_says_the_rule_does_not_apply"
-        },
-        {
-          "env": null,
-          "id": "PROOF-212",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-65",
-          "test": "dev/test_purlin_report.py::test_the_tests_cell_counts_the_rules_that_do_not_apply"
-        },
-        {
-          "env": null,
-          "id": "PROOF-213",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-65",
-          "test": "dev/test_purlin_report.py::test_a_rule_to_confirm_has_its_filter_button"
-        },
-        {
-          "env": null,
           "id": "PROOF-215",
           "manual": false,
           "result": "pass",
@@ -1558,19 +1414,51 @@
         },
         {
           "env": null,
-          "id": "PROOF-216",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-67",
-          "test": "dev/test_purlin_report.py::test_a_rule_whose_signature_ended_says_why"
-        },
-        {
-          "env": null,
           "id": "PROOF-217",
           "manual": false,
           "result": "pass",
           "rule": "RULE-68",
           "test": "dev/test_purlin_report.py::test_a_rule_of_a_spec_to_repair_says_why"
+        },
+        {
+          "env": null,
+          "id": "PROOF-218",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-69",
+          "test": "dev/test_purlin_report.py::test_no_signed_column_at_the_gate_signed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-219",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-70",
+          "test": "dev/test_purlin_report.py::test_an_audited_project_shows_the_strong_column"
+        },
+        {
+          "env": null,
+          "id": "PROOF-220",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-70",
+          "test": "dev/test_purlin_report.py::test_a_project_no_audit_read_shows_no_strong_column"
+        },
+        {
+          "env": null,
+          "id": "PROOF-221",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-71",
+          "test": "dev/test_purlin_report.py::test_a_hand_check_at_signed_is_checked_in_the_walk"
+        },
+        {
+          "env": null,
+          "id": "PROOF-222",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-71",
+          "test": "dev/test_purlin_report.py::test_a_hand_check_at_passed_is_listed_as_not_checked"
         }
       ],
       "rules": {
@@ -1589,7 +1477,6 @@
         "RULE-23": "passed",
         "RULE-24": "passed",
         "RULE-25": "passed",
-        "RULE-26": "passed",
         "RULE-27": "passed",
         "RULE-28": "passed",
         "RULE-29": "passed",
@@ -1623,15 +1510,14 @@
         "RULE-59": "passed",
         "RULE-6": "passed",
         "RULE-60": "passed",
-        "RULE-61": "passed",
-        "RULE-62": "passed",
         "RULE-63": "passed",
         "RULE-64": "passed",
-        "RULE-65": "passed",
         "RULE-66": "passed",
-        "RULE-67": "passed",
         "RULE-68": "passed",
+        "RULE-69": "passed",
         "RULE-7": "passed",
+        "RULE-70": "passed",
+        "RULE-71": "passed",
         "RULE-8": "passed",
         "RULE-9": "passed"
       },

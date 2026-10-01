@@ -2,13 +2,13 @@
   "feature": "drift",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T20:57:50Z",
-      "commit": "0bcb74f690d73a89c70961c9806e7c83b4203455",
+      "at": "2026-10-01T01:14:49Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "bf91f848af1ac33600da5c5f62b27090e62c51bce59d5a12df0a1fa0f827a197",
-        "spec": "6ba0ff69d5c15b0ff1920aafbcbe294e064265a74c32b585395f188f8694efbd",
-        "tests": "e8465e7d76286a0fcb8b582c961dbdcb9e33b87a71679a8d43c64e8cc99c657e"
+        "code": "0034176560e359b7e3a19bf55d00861375e39fedc06412f64473e6328ff5219b",
+        "spec": "7dc441cc39264bf3998be0d7aaf0dd053a589526ea2e14a9da825efda759db31",
+        "tests": "c71d510e0ffe07abec050335a0f47b332da5cb73df30a554923abd3178952d8c"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -474,7 +474,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-22",
-          "test": "dev/test_drift.py::TestQaView::test_a_rule_to_test_by_hand"
+          "test": "dev/test_drift.py::TestQaView::test_a_rule_to_write_a_test_for"
         },
         {
           "env": null,
@@ -482,7 +482,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-22",
-          "test": "dev/test_drift.py::TestQaView::test_the_rules_to_sign_and_not_the_rest"
+          "test": "dev/test_drift.py::TestQaView::test_the_rules_to_fix_and_not_the_rest"
         },
         {
           "env": null,
@@ -490,7 +490,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-22",
-          "test": "dev/test_drift.py::TestQaView::test_nothing_waiting_for_a_person_prints_nothing"
+          "test": "dev/test_drift.py::TestQaView::test_nothing_that_stops_a_release_prints_nothing"
         },
         {
           "env": null,
@@ -635,14 +635,6 @@
           "result": "pass",
           "rule": "RULE-33",
           "test": "dev/test_drift.py::TestCommentsChanged::test_a_comment_whose_proof_is_unchanged"
-        },
-        {
-          "env": null,
-          "id": "PROOF-78",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-34",
-          "test": "dev/test_drift.py::TestSignaturesEnded::test_the_qa_view_prints_an_ended_signature"
         }
       ],
       "rules": {
@@ -672,7 +664,6 @@
         "RULE-31": "passed",
         "RULE-32": "passed",
         "RULE-33": "passed",
-        "RULE-34": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",

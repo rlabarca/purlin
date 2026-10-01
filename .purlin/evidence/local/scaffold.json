@@ -2,13 +2,13 @@
   "feature": "scaffold",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:53Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-10-01T01:14:49Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "a268af0b63bec7492f208834a619f0c1a8e1b61e6943c3b0b2ec9e9ea807cdde",
-        "spec": "1757386a7b41b0c33a24fd876cdc24d300d65ffe837719e63048afbb048081b6",
-        "tests": "9026679fb860dd31f15f69c1de336d07f997e90e64200ca11c3b23b253e2ad9d"
+        "code": "c0ba3d057701b40b51e342761fd1b9170388470a84239ff5f3b3516352768d1b",
+        "spec": "9a7ef1a1b5ecffff51146264bf5c161d976cd8ecffc7e32d1be30083b82c4470",
+        "tests": "203d6159fc4d85d8d6e3d6a8e19e462e31c8f7b321312dd9cee1b832f1168b0c"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -18,7 +18,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_at_strong_a_project_with_code_is_asked_two_questions"
+          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_at_signed_a_project_with_code_is_asked_three_questions"
         },
         {
           "env": null,
@@ -35,54 +35,6 @@
           "result": "pass",
           "rule": "RULE-1",
           "test": "dev/test_init_scaffold.py::TestTheQuestions::test_a_later_run_asks_nothing_before_it_writes"
-        },
-        {
-          "env": null,
-          "id": "PROOF-2",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_with_mutation_on_passed_has_no_minimum"
-        },
-        {
-          "env": null,
-          "id": "PROOF-99",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_with_mutation_on_strong_asks_70"
-        },
-        {
-          "env": null,
-          "id": "PROOF-100",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_with_mutation_on_signed_asks_80"
-        },
-        {
-          "env": null,
-          "id": "PROOF-103",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_with_mutation_off_passed_has_no_minimum"
-        },
-        {
-          "env": null,
-          "id": "PROOF-101",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_with_mutation_off_strong_has_no_minimum"
-        },
-        {
-          "env": null,
-          "id": "PROOF-102",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_with_mutation_off_signed_has_no_minimum"
         },
         {
           "env": null,
@@ -122,7 +74,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_init_scaffold.py::TestTheSettings::test_the_config_holds_the_seven_keys"
+          "test": "dev/test_init_scaffold.py::TestTheSettings::test_the_config_holds_the_six_keys"
         },
         {
           "env": null,
@@ -154,7 +106,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-52",
-          "test": "dev/test_init_scaffold.py::TestTheSettings::test_the_template_carries_six_keys_in_order"
+          "test": "dev/test_init_scaffold.py::TestTheSettings::test_the_template_carries_five_keys_in_order"
         },
         {
           "env": null,
@@ -274,7 +226,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-13",
-          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_at_strong_the_reason_names_the_proof"
+          "test": "dev/test_init_scaffold.py::TestTheWorkflow::test_at_signed_the_reason_names_the_proof"
         },
         {
           "env": null,
@@ -730,7 +682,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-36",
-          "test": "dev/test_init_scaffold.py::TestTheThreeGates::test_at_passed_the_test_run_commits_the_work_then_its_evidence"
+          "test": "dev/test_init_scaffold.py::TestTheTwoGates::test_at_passed_the_test_run_commits_the_work_then_its_evidence"
         },
         {
           "env": "macos",
@@ -738,7 +690,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-36",
-          "test": "dev/test_init_scaffold.py::TestTheThreeGates::test_raised_to_strong_one_rule_is_left_to_audit"
+          "test": "dev/test_init_scaffold.py::TestTheTwoGates::test_the_release_at_passed_writes_the_passed_tag"
         },
         {
           "env": "macos",
@@ -746,7 +698,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-36",
-          "test": "dev/test_init_scaffold.py::TestTheThreeGates::test_the_audit_writes_into_the_evidence_and_commits_it"
+          "test": "dev/test_init_scaffold.py::TestTheTwoGates::test_the_audit_writes_into_the_evidence_and_commits_it"
         },
         {
           "env": "macos",
@@ -754,7 +706,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-36",
-          "test": "dev/test_init_scaffold.py::TestTheThreeGates::test_a_runner_s_run_on_the_signed_tag_writes_nothing"
+          "test": "dev/test_init_scaffold.py::TestTheTwoGates::test_a_runner_s_run_on_the_signed_tag_writes_nothing"
         },
         {
           "env": "macos",
@@ -762,7 +714,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-36",
-          "test": "dev/test_init_scaffold.py::TestTheThreeGates::test_a_runner_s_run_on_a_run_branch_writes_its_evidence"
+          "test": "dev/test_init_scaffold.py::TestTheTwoGates::test_a_runner_s_run_on_a_run_branch_writes_its_evidence"
         },
         {
           "env": "macos",
@@ -770,7 +722,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-36",
-          "test": "dev/test_init_scaffold.py::TestTheThreeGates::test_raised_to_signed_one_rule_is_left_to_sign"
+          "test": "dev/test_init_scaffold.py::TestTheTwoGates::test_the_release_at_signed_writes_no_tag"
         },
         {
           "env": "macos",
@@ -778,7 +730,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-36",
-          "test": "dev/test_init_scaffold.py::TestTheThreeGates::test_signing_the_rule_makes_a_signed_commit_naming_the_signer"
+          "test": "dev/test_init_scaffold.py::TestTheTwoGates::test_the_sign_off_makes_a_signed_commit_naming_the_signer"
         },
         {
           "env": "macos",
@@ -786,7 +738,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-36",
-          "test": "dev/test_init_scaffold.py::TestTheThreeGates::test_with_the_rule_signed_the_signed_tag_is_written"
+          "test": "dev/test_init_scaffold.py::TestTheTwoGates::test_the_first_sign_off_writes_the_signed_tag"
         },
         {
           "env": "macos",
@@ -914,7 +866,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-61",
-          "test": "dev/test_init_scaffold.py::TestMutationTesting::test_at_strong_a_framework_with_no_engine_is_told_why"
+          "test": "dev/test_init_scaffold.py::TestMutationTesting::test_at_signed_a_framework_with_no_engine_is_told_why"
         },
         {
           "env": null,
@@ -1054,14 +1006,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-152",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-66",
-          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_the_gate_question_offers_three_choices"
-        },
-        {
-          "env": null,
           "id": "PROOF-153",
           "manual": false,
           "result": "pass",
@@ -1171,6 +1115,38 @@
           "result": "pass",
           "rule": "RULE-75",
           "test": "dev/test_init_scaffold.py::TestFixturesAreNotTheProjectsTools::test_each_fixture_folder_name_is_left_out_at_any_depth"
+        },
+        {
+          "env": null,
+          "id": "PROOF-167",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-76",
+          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_the_gate_question_offers_two_choices"
+        },
+        {
+          "env": null,
+          "id": "PROOF-168",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-77",
+          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_at_passed_the_mutation_question_is_not_asked"
+        },
+        {
+          "env": null,
+          "id": "PROOF-169",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-77",
+          "test": "dev/test_init_scaffold.py::TestTheQuestions::test_at_signed_the_mutation_question_is_asked"
+        },
+        {
+          "env": null,
+          "id": "PROOF-170",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-78",
+          "test": "dev/test_init_scaffold.py::TestMutationTesting::test_no_minimum_is_written_with_mutation_on"
         }
       ],
       "rules": {
@@ -1181,7 +1157,6 @@
         "RULE-15": "passed",
         "RULE-18": "passed",
         "RULE-19": "not run",
-        "RULE-2": "passed",
         "RULE-20": "not run",
         "RULE-21": "not run",
         "RULE-22": "not run",
@@ -1219,7 +1194,6 @@
         "RULE-63": "passed",
         "RULE-64": "passed",
         "RULE-65": "passed",
-        "RULE-66": "passed",
         "RULE-67": "passed",
         "RULE-68": "passed",
         "RULE-69": "passed",
@@ -1229,6 +1203,9 @@
         "RULE-73": "passed",
         "RULE-74": "passed",
         "RULE-75": "passed",
+        "RULE-76": "passed",
+        "RULE-77": "passed",
+        "RULE-78": "passed",
         "RULE-8": "passed",
         "RULE-9": "passed"
       },

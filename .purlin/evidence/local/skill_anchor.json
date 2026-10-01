@@ -2,13 +2,13 @@
   "feature": "skill_anchor",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:53Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-10-01T01:14:50Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "f41e7a1def27934d1cdea39c6ecf5f665ce01155e9e0716c1c2945d0473c06c3",
-        "spec": "4a92bbf127f3d98fec741589b24c87b9e05cf375c220b948aed5b7d8c33d7be1",
-        "tests": "e6b96acb107bf5aaef029792c199146aca405a138259f3327fb599f76ebbc2e9"
+        "code": "f9013711863449e330375557f699ee1e79570ea3895b41e87c4411bcdcea8988",
+        "spec": "33dd9289f17670895509443e59244ca1b47674f9f4172a03c655a56b251feb4a",
+        "tests": "aed22d99d09838181923c66703c1910c1ada9149b89c9a72b03ece76f8797477"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -147,14 +147,6 @@
           "result": "pass",
           "rule": "RULE-15",
           "test": "dev/test_skill_anchor.py::TestTheWholeProject::test_a_rule_not_checkable_everywhere_goes_in_each_feature"
-        },
-        {
-          "env": null,
-          "id": "PROOF-38",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-16",
-          "test": "dev/test_skill_anchor.py::TestThePin::test_a_pinned_rule_that_does_not_apply_is_signed_so"
         }
       ],
       "rules": {
@@ -165,7 +157,6 @@
         "RULE-13": "passed",
         "RULE-14": "passed",
         "RULE-15": "passed",
-        "RULE-16": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

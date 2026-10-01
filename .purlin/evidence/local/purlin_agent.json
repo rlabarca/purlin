@@ -2,13 +2,13 @@
   "feature": "purlin_agent",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:52Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-10-01T01:14:49Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "3f919262c65dd0dd84bdc6ec731bdbcd54317802861c61e1601f590ca7861f74",
-        "spec": "3e70eb69c2217f2ae85ba4a01ca1381b200454f2785b5a4cbf7fd961558e812e",
-        "tests": "be73b2b64d272d64c5f9db61528614b6569fc46c45b8424e8ea260af00b05b90"
+        "code": "85fcab4fe87afe36d86bb93098157db65103f509c18402a94ca584aff802c98e",
+        "spec": "aadc164710a77d54b5985d68c6c84698cc58f6c6add16e31ca27e00339f28d02",
+        "tests": "367b93186ec6f0f390f2cbe1a65d35f839a935ad23f288497393de844460fcfd"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -91,11 +91,20 @@
           "result": "pass",
           "rule": "RULE-16",
           "test": "dev/test_purlin_agent.py::TestProjectRoot::test_the_first_call_names_the_project_root"
+        },
+        {
+          "env": null,
+          "id": "PROOF-48",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_purlin_agent.py::TestRelease::test_it_says_how_a_release_is_made"
         }
       ],
       "rules": {
         "RULE-1": "passed",
         "RULE-16": "passed",
+        "RULE-17": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

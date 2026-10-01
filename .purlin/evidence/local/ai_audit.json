@@ -2,13 +2,13 @@
   "feature": "ai_audit",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:52Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-10-01T01:14:48Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "f1785852105bc39dbfad2c8e1efe007c2b8ce82150fe23d020a6dcd5f056a8a6",
-        "spec": "5ba19fedcd79d0db3974a3224c6f8544bbb03fff3519777b5a181270158365e0",
-        "tests": "4c1d32b9c10c3fcb78ff362dcb29925bb6001729cc179f8312694b64064f9ea8"
+        "code": "88eb6ae79db4d46708e39e7a8eab7973995154c9d4053a0ef6d766485f2b716f",
+        "spec": "d0d56a9da3ddc19832710f985f8f81ae6cdfe7df3000b4ff2c4f2c701e2bfcab",
+        "tests": "f217279bc2662a100305da3cd6ba6faf3430963636013d0218f8736dff29adb0"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -18,7 +18,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_ai_audit.py::TestWhichRulesAreRead::test_a_passing_rule_with_no_entry_is_read_at_strong"
+          "test": "dev/test_ai_audit.py::TestWhichRulesAreRead::test_a_passing_rule_with_no_entry_is_read"
         },
         {
           "env": null,
@@ -290,7 +290,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
-          "test": "dev/test_ai_audit.py::TestWhatOneRuleIsReadWith::test_the_strength_is_read_beside_the_minimum"
+          "test": "dev/test_ai_audit.py::TestWhatOneRuleIsReadWith::test_the_strength_is_read"
         },
         {
           "env": null,
@@ -675,6 +675,14 @@
           "result": "pass",
           "rule": "RULE-30",
           "test": "dev/test_ai_audit.py::TestThePrompt::test_an_anchors_prompt_names_no_strength"
+        },
+        {
+          "env": null,
+          "id": "PROOF-93",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_ai_audit.py::TestThePrompt::test_the_prompt_names_the_strength_and_no_minimum"
         }
       ],
       "rules": {
@@ -694,6 +702,7 @@
         "RULE-29": "passed",
         "RULE-3": "not run",
         "RULE-30": "passed",
+        "RULE-31": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",

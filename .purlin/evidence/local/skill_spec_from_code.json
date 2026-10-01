@@ -2,13 +2,13 @@
   "feature": "skill_spec_from_code",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:53Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-10-01T01:14:50Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "a8e879e010b5659bd197b9fd56f998a04c2c601081ca8afab98122a02039bb49",
-        "spec": "68c9175683f24733517bd27b06847e064286a8ac95b0f56e54092419cecda2c0",
-        "tests": "2d4a289448ccdbca8b91aa8f96ce4fd3990ffeeabdab86b39ce34297f9284c92"
+        "code": "cd8bf25413e2413861339d26694a9b1cc88b5ec3649263b2e95e5aa09a2fe9d2",
+        "spec": "28c08231364572aed17e0152a01ee81aa96080958cfac3ab8da623f010c4ac71",
+        "tests": "aebeb878fdcccbdf487d61dc660a89700fcc941e030d309466287ea8453a2cc7"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [

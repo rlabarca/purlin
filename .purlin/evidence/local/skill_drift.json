@@ -2,13 +2,13 @@
   "feature": "skill_drift",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T20:57:52Z",
-      "commit": "0bcb74f690d73a89c70961c9806e7c83b4203455",
+      "at": "2026-10-01T01:14:50Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "388ba347371599950a7e964491316bc1ccd96defa2c972dac7fc9c87931a082b",
-        "spec": "88bd51a84bbbfb783b2ae99a53dcf25236e4f1f5287ce44c24c7f6f248638d16",
-        "tests": "1c7359cb9bedaf14ec7b8213596c2b3cb5b91079af7de0e7f5e7355c2d035352"
+        "code": "22cfe92880176c83d097963b0b12d8e404a58def87fc4ba6b82ebe60d5a3cb5a",
+        "spec": "1b8127c25eb603a7ea50a6fe9c5a94081a83287699eb83c204a3bcc0a50417fc",
+        "tests": "dda343e0f5594404442603532bb8901651ff906c7ee535baabf16d8bdd1105e2"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -131,6 +131,14 @@
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_skill_drift.py::TestSkillDrift::test_it_says_which_line_keeps_a_number_written_twice"
+        },
+        {
+          "env": null,
+          "id": "PROOF-39",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_skill_drift.py::TestSkillDrift::test_it_sends_a_number_written_twice_to_the_renumbering"
         }
       ],
       "rules": {
@@ -138,6 +146,7 @@
         "RULE-10": "passed",
         "RULE-11": "passed",
         "RULE-12": "passed",
+        "RULE-13": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

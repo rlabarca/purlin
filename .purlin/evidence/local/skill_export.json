@@ -2,13 +2,13 @@
   "feature": "skill_export",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:53Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-10-01T01:14:50Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "cf73f6b72d3c33cb382ad657873fef7fceec1846089922c61b35b4ad2ef4da80",
-        "spec": "34dda53286b668196f127feb8e32d21ede98f1642d2bf6faafba09098a2fd6b2",
-        "tests": "c5b38fe3928087bf0dc0faf81f68d8980d71ec43ae11e6ef53ccefca9823d209"
+        "code": "a64bcd8032dcf0ea7ff5a560e92993f295972cc086d169cd17a62914daf00a92",
+        "spec": "e328bc229dd8a8f8c33c7ec0cc4c94bbe48f6c811e9908300da32f4d98baceb2",
+        "tests": "4c553b21a37c54d9f80a8ffbd266e71e8181d4d3f70842b3cd91ada630c6c2ed"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -131,6 +131,14 @@
           "result": "pass",
           "rule": "RULE-13",
           "test": "dev/test_skill_export.py::test_the_system_of_record_holds_the_document_authority_and_signature"
+        },
+        {
+          "env": null,
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_skill_export.py::TestSkillExport::test_it_names_the_release_run"
         }
       ],
       "rules": {
@@ -139,6 +147,7 @@
         "RULE-11": "passed",
         "RULE-12": "passed",
         "RULE-13": "passed",
+        "RULE-14": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

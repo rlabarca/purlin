@@ -2,11 +2,11 @@
   "feature": "purlin_version",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T20:57:51Z",
-      "commit": "0bcb74f690d73a89c70961c9806e7c83b4203455",
+      "at": "2026-10-01T01:14:49Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "f14808b5dc4ed3a8ae2e8abc1d3bd347459f013a9fd34a7ca56f4a99e20596a5",
+        "code": "452e53e25a393defa8ba4e0b2257ffdd3478cfe662644e5ffddd68459c630629",
         "spec": "06100a4166b9c671377d764824968dbb957454c4a8370036ad58b13349fdacb5",
         "tests": "08e630149189e42d3dcfbe1e293a981fe9e6a2ecb5473e4a043443dd076be007"
       },

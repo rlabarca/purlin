@@ -2,13 +2,13 @@
   "feature": "skill_init",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:53Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-10-01T01:14:50Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "b25d9ac8d1e12baed149cdae72fcf441eab7032656e9b768a723f683d7274b28",
-        "spec": "20cbaf7244a47c6ef2ead2303d493cf35ba1f4eae7eb287b384df73648642529",
-        "tests": "cc5601e81f673af3f6530bf1b39b385616abb4f2e0057d3a6b887729142674d2"
+        "code": "830a44a192e31f597e7c8419c1e3650673a14ab1cc34bd7bd954e2af9546b289",
+        "spec": "53f5a8ac1b6a4e00be81e84032646edff53f5a4c8139d0b7e7fc1cdc83f08448",
+        "tests": "58e606be64a7046bb4eb2dffde4902312dd73fa1e4a4c7789c1c66edfbff1ebb"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -98,7 +98,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skill_init.py::TestQuestions::test_the_gate_table_lists_the_three_answers_in_order"
+          "test": "dev/test_skill_init.py::TestQuestions::test_the_gate_table_lists_the_two_answers_in_order"
         },
         {
           "env": null,
@@ -106,7 +106,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skill_init.py::TestQuestions::test_setup_at_strong_asks_the_three_questions_the_skill_quotes"
+          "test": "dev/test_skill_init.py::TestQuestions::test_setup_at_signed_asks_the_three_questions_the_skill_quotes"
         },
         {
           "env": null,
@@ -130,7 +130,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_skill_init.py::TestQuestions::test_the_gate_question_offers_the_three_gates_in_order"
+          "test": "dev/test_skill_init.py::TestQuestions::test_the_gate_question_offers_the_two_gates_in_order"
         },
         {
           "env": null,
@@ -146,7 +146,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_skill_init.py::TestSettings::test_it_shows_the_seven_settings"
+          "test": "dev/test_skill_init.py::TestSettings::test_it_shows_the_six_settings"
         },
         {
           "env": null,

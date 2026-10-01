@@ -2,13 +2,13 @@
   "feature": "server",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T15:50:53Z",
-      "commit": "30c97d29b6a4688d1001749246a8f66906123965",
+      "at": "2026-10-01T01:14:49Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "20491ffe9297600ba5c17558531e0cacd5ed7f6f77104b7d8598aa9f7490a754",
-        "spec": "9bd46c0ec2b4a4332aa63f23717d3b34eb5e7dd232fad135fdcfd6cfc787b0d5",
-        "tests": "38e446c2855ad4fd9170e3f5d3d2fd22c43404a48590583ec8fec4a48cf357ac"
+        "code": "5c1eee6e294f1437ea1fb57bd5372d639cfec4c7aa44c3baffbdbb9d70524619",
+        "spec": "e4d33bdf7eee03d3b389275e3f12e357c7b6bc3a31093993ec52511a078d5388",
+        "tests": "d466f80d7f1fe6408bfc6bea1c9cfb4da9d0206de53be199464bc9f77f6e49bb"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -334,14 +334,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-149",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-29",
-          "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_a_minimum_strength_above_100_is_refused"
-        },
-        {
-          "env": null,
           "id": "PROOF-150",
           "manual": false,
           "result": "pass",
@@ -363,14 +355,6 @@
           "result": "pass",
           "rule": "RULE-29",
           "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_a_ci_of_gitlab_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-153",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-29",
-          "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_a_minimum_strength_of_null_is_written"
         },
         {
           "env": null,
@@ -403,6 +387,14 @@
           "result": "pass",
           "rule": "RULE-31",
           "test": "dev/test_mcp_server.py::TestTheInterpreterResolver::test_no_python_with_the_soft_variable_exits_0"
+        },
+        {
+          "env": null,
+          "id": "PROOF-163",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-32",
+          "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_a_key_this_release_does_not_read_is_refused"
         }
       ],
       "rules": {
@@ -420,6 +412,7 @@
         "RULE-3": "passed",
         "RULE-30": "passed",
         "RULE-31": "passed",
+        "RULE-32": "passed",
         "RULE-4": "passed",
         "RULE-5": "not run",
         "RULE-6": "not run",

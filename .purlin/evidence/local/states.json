@@ -2,13 +2,13 @@
   "feature": "states",
   "platforms": {
     "macos": {
-      "at": "2026-09-30T20:57:52Z",
-      "commit": "0bcb74f690d73a89c70961c9806e7c83b4203455",
+      "at": "2026-10-01T01:14:50Z",
+      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
       "dirty": false,
       "fingerprint": {
-        "code": "b37302b194e3c949861706a35e26abcb866f0f9a7490f421e00ffba973c34da7",
-        "spec": "db3d59d562c5bd52cef835c5e1a4445853aaecbfc381c4f2357614128c76ebe3",
-        "tests": "83341003acb381c380b89bf8118c01b184525c8844bbd306b96c731675b432c9"
+        "code": "da6b8c19d6daab5bbd9ece4657c8627ee0f510816ac80997e1ee29f3eb512ae7",
+        "spec": "80b074ec5892bfaf002bb027a2700a0c877aed75abc02d82b6e4f359fd75491f",
+        "tests": "ae8b97a945889d7fb57d2c03012c673231ad58bcc80b2945032d0a3a8ccd54e0"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -78,22 +78,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-183",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_states.py::TestTheSources::test_a_ci_section_counts_at_strong"
-        },
-        {
-          "env": null,
-          "id": "PROOF-184",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_states.py::TestTheSources::test_a_local_section_counts_at_strong"
-        },
-        {
-          "env": null,
           "id": "PROOF-185",
           "manual": false,
           "result": "pass",
@@ -107,14 +91,6 @@
           "result": "pass",
           "rule": "RULE-4",
           "test": "dev/test_states.py::TestTheSources::test_a_local_section_counts_at_signed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-6",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_states.py::TestThePassedCell::test_a_committed_local_section_counts_at_strong"
         },
         {
           "env": null,
@@ -182,14 +158,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-194",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-57",
-          "test": "dev/test_states.py::TestThePlatformsInThePassedCell::test_a_persons_own_section_answers_for_its_platform_at_strong"
-        },
-        {
-          "env": null,
           "id": "PROOF-195",
           "manual": false,
           "result": "pass",
@@ -227,46 +195,6 @@
           "result": "pass",
           "rule": "RULE-45",
           "test": "dev/test_states.py::TestThePlatformsInThePassedCell::test_an_older_section_that_is_out_of_date_is_not_read"
-        },
-        {
-          "env": null,
-          "id": "PROOF-56",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-47",
-          "test": "dev/test_states.py::TestPayload::test_the_signed_cell_carries_when_it_was_signed"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-217",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-47",
-          "test": "dev/test_states.py::TestPayload::test_the_signed_cell_carries_when_it_was_signed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-133",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-47",
-          "test": "dev/test_states.py::TestPayload::test_a_signature_no_commit_carries_reads_the_files_own_time"
-        },
-        {
-          "env": null,
-          "id": "PROOF-131",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-88",
-          "test": "dev/test_states.py::TestPayload::test_the_signed_cell_carries_the_name_and_the_key"
-        },
-        {
-          "env": null,
-          "id": "PROOF-132",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-88",
-          "test": "dev/test_states.py::TestPayload::test_a_signature_recording_no_name_or_key_gives_none"
         },
         {
           "env": null,
@@ -406,30 +334,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-14",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_states.py::TestTheStrongCell::test_a_strength_under_the_minimum_is_weak_and_says_so"
-        },
-        {
-          "env": null,
-          "id": "PROOF-157",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_states.py::TestTheStrongCell::test_a_strength_of_exactly_the_minimum_is_not_under_it"
-        },
-        {
-          "env": null,
-          "id": "PROOF-237",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_states.py::TestTheStrongCell::test_a_strength_just_under_the_minimum_shows_its_whole_part"
-        },
-        {
-          "env": null,
           "id": "PROOF-15",
           "manual": false,
           "result": "pass",
@@ -450,7 +354,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-77",
-          "test": "dev/test_states.py::TestTheAuditOnTheRule::test_a_strength_not_measured_for_a_reason_is_weak"
+          "test": "dev/test_states.py::TestTheAuditOnTheRule::test_a_strength_not_measured_for_a_reason_keeps_the_audits_word"
         },
         {
           "env": null,
@@ -466,7 +370,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-78",
-          "test": "dev/test_states.py::TestASpecThatNamesNoFiles::test_at_strong_with_breaking_on_it_is_weak_and_says_why"
+          "test": "dev/test_states.py::TestASpecThatNamesNoFiles::test_at_passed_with_breaking_on_it_says_why_nothing_was_measured"
         },
         {
           "env": null,
@@ -474,7 +378,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-78",
-          "test": "dev/test_states.py::TestASpecThatNamesNoFiles::test_at_signed_with_breaking_on_it_is_weak_and_says_why"
+          "test": "dev/test_states.py::TestASpecThatNamesNoFiles::test_at_signed_with_breaking_on_it_says_why_nothing_was_measured"
         },
         {
           "env": null,
@@ -582,107 +486,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-22",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_states.py::TestHoldsAndSignatures::test_a_signature_for_the_current_hashes_is_the_hand_check"
-        },
-        {
-          "env": null,
-          "id": "PROOF-124",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_states.py::TestHoldsAndSignatures::test_a_hand_check_over_another_rule_text_does_not_hold"
-        },
-        {
-          "env": null,
-          "id": "PROOF-125",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_states.py::TestHoldsAndSignatures::test_a_hand_check_the_check_does_not_count_does_not_hold"
-        },
-        {
-          "env": null,
-          "id": "PROOF-23",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-19",
-          "test": "dev/test_states.py::TestTheStrongCell::test_a_strong_cell_with_an_engine_carries_no_reasons"
-        },
-        {
-          "env": null,
-          "id": "PROOF-24",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-20",
-          "test": "dev/test_states.py::TestHoldsAndSignatures::test_a_signature_over_the_current_hashes_signs_the_rule"
-        },
-        {
-          "env": null,
-          "id": "PROOF-72",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-20",
-          "test": "dev/test_states.py::TestTheAuditOnTheRule::test_a_new_strength_ends_the_signature_and_says_why"
-        },
-        {
-          "env": null,
-          "id": "PROOF-93",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-73",
-          "test": "dev/test_states.py::TestEveryRuleIsAskedWhatTheGateAsks::test_a_signature_waits_for_the_tests"
-        },
-        {
-          "env": null,
-          "id": "PROOF-143",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-73",
-          "test": "dev/test_states.py::TestEveryRuleIsAskedWhatTheGateAsks::test_a_signature_waits_for_the_audit"
-        },
-        {
-          "env": null,
-          "id": "PROOF-144",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-73",
-          "test": "dev/test_states.py::TestEveryRuleIsAskedWhatTheGateAsks::test_a_hand_check_waits_on_a_person_and_not_on_the_audit"
-        },
-        {
-          "env": null,
-          "id": "PROOF-94",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-73",
-          "test": "dev/test_states.py::TestEveryRuleIsAskedWhatTheGateAsks::test_a_signature_over_old_text_waits_while_the_tests_do"
-        },
-        {
-          "env": null,
-          "id": "PROOF-25",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-21",
-          "test": "dev/test_states.py::TestHoldsAndSignatures::test_at_signed_every_rule_needs_a_signature"
-        },
-        {
-          "env": null,
-          "id": "PROOF-26",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_states.py::TestHoldsAndSignatures::test_a_signature_the_check_does_not_count_leaves_it_unsigned"
-        },
-        {
-          "env": null,
           "id": "PROOF-27",
           "manual": false,
           "result": "pass",
           "rule": "RULE-23",
-          "test": "dev/test_states.py::TestBucketsAndTheGate::test_one_rule_in_each_of_the_five_buckets"
+          "test": "dev/test_states.py::TestBucketsAndTheGate::test_each_rule_is_counted_in_one_of_the_four_buckets"
         },
         {
           "env": null,
@@ -698,7 +506,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-25",
-          "test": "dev/test_states.py::TestBucketsAndTheGate::test_at_signed_the_rollup_counts_the_six_buckets_in_order"
+          "test": "dev/test_states.py::TestBucketsAndTheGate::test_at_signed_the_rollup_counts_the_four_buckets_then_the_flags"
         },
         {
           "env": null,
@@ -738,7 +546,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-27",
-          "test": "dev/test_states.py::TestPayload::test_schema_twelve_carries_the_documented_top_level"
+          "test": "dev/test_states.py::TestPayload::test_schema_thirteen_carries_the_documented_top_level"
         },
         {
           "env": null,
@@ -843,14 +651,6 @@
           "result": "pass",
           "rule": "RULE-28",
           "test": "dev/test_states.py::TestPayload::test_a_feature_says_its_evidence_is_no_longer_current"
-        },
-        {
-          "env": null,
-          "id": "PROOF-127",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-83",
-          "test": "dev/test_states.py::TestPayload::test_a_rule_carries_the_hash_of_what_the_audit_found"
         },
         {
           "env": null,
@@ -962,7 +762,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-36",
-          "test": "dev/test_states.py::TestStatusTable::test_at_strong_the_table_adds_the_strong_column"
+          "test": "dev/test_states.py::TestStatusTable::test_with_no_rule_audited_the_table_shows_no_strong_column"
         },
         {
           "env": null,
@@ -970,7 +770,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-36",
-          "test": "dev/test_states.py::TestStatusTable::test_at_signed_the_table_adds_the_signed_column"
+          "test": "dev/test_states.py::TestStatusTable::test_once_the_audit_found_a_rule_strong_the_table_adds_the_column"
         },
         {
           "env": null,
@@ -986,7 +786,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-36",
-          "test": "dev/test_states.py::TestEveryRuleIsAskedWhatTheGateAsks::test_the_table_counts_strong_and_signed_over_every_rule"
+          "test": "dev/test_states.py::TestEveryRuleIsAskedWhatTheGateAsks::test_the_table_counts_strong_over_every_rule"
         },
         {
           "env": null,
@@ -994,7 +794,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-36",
-          "test": "dev/test_states.py::TestEveryRuleIsAskedWhatTheGateAsks::test_a_row_counts_strong_and_signed_over_its_rules"
+          "test": "dev/test_states.py::TestEveryRuleIsAskedWhatTheGateAsks::test_a_row_counts_strong_over_its_rules"
         },
         {
           "env": null,
@@ -1066,7 +866,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-59",
-          "test": "dev/test_states.py::TestTheSignedTag::test_no_tag_reads_none"
+          "test": "dev/test_states.py::TestTheReleaseTag::test_no_tag_reads_none"
         },
         {
           "env": null,
@@ -1074,7 +874,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-59",
-          "test": "dev/test_states.py::TestTheSignedTag::test_a_tag_on_head_reads_its_name_and_head"
+          "test": "dev/test_states.py::TestTheReleaseTag::test_a_tag_on_head_reads_its_name_and_head"
         },
         {
           "env": null,
@@ -1082,7 +882,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-59",
-          "test": "dev/test_states.py::TestTheSignedTag::test_a_tag_that_is_not_on_head_says_nothing_about_this_code"
+          "test": "dev/test_states.py::TestTheReleaseTag::test_a_tag_that_is_not_on_head_says_nothing_about_this_code"
         },
         {
           "env": null,
@@ -1094,35 +894,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-83",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-59",
-          "test": "dev/test_states.py::TestTheSignedTag::test_at_strong_the_payload_names_no_tag"
-        },
-        {
-          "env": null,
           "id": "PROOF-196",
           "manual": false,
           "result": "pass",
           "rule": "RULE-59",
-          "test": "dev/test_states.py::TestTheSignedTag::test_at_passed_the_payload_names_no_tag"
-        },
-        {
-          "env": null,
-          "id": "PROOF-174",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-59",
-          "test": "dev/test_states.py::TestTheSignedTag::test_raising_the_gate_from_strong_to_signed_names_the_tag"
-        },
-        {
-          "env": null,
-          "id": "PROOF-197",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-59",
-          "test": "dev/test_states.py::TestTheSignedTag::test_raising_the_gate_from_passed_to_signed_names_the_tag"
+          "test": "dev/test_states.py::TestTheReleaseTag::test_at_passed_the_payload_names_a_passed_tag"
         },
         {
           "env": null,
@@ -1130,7 +906,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-91",
-          "test": "dev/test_states.py::TestTheSignedTag::test_the_newest_version_wins_where_several_point_at_head"
+          "test": "dev/test_states.py::TestTheReleaseTag::test_the_newest_version_wins_where_several_point_at_head"
         },
         {
           "env": null,
@@ -1139,14 +915,6 @@
           "result": "pass",
           "rule": "RULE-61",
           "test": "dev/test_states.py::TestTheAuditOnTheRule::test_a_rule_carries_its_audit_at_passed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-188",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-61",
-          "test": "dev/test_states.py::TestTheAuditOnTheRule::test_a_rule_carries_its_audit_at_strong"
         },
         {
           "env": null,
@@ -1166,14 +934,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-190",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-61",
-          "test": "dev/test_states.py::TestTheAuditOnTheRule::test_a_rule_no_audit_entry_answers_carries_none_at_strong"
-        },
-        {
-          "env": null,
           "id": "PROOF-191",
           "manual": false,
           "result": "pass",
@@ -1187,14 +947,6 @@
           "result": "pass",
           "rule": "RULE-61",
           "test": "dev/test_states.py::TestTheAuditOnTheRule::test_an_entry_naming_its_model_is_carried_at_passed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-192",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-61",
-          "test": "dev/test_states.py::TestTheAuditOnTheRule::test_an_entry_naming_its_model_is_carried_at_strong"
         },
         {
           "env": null,
@@ -1246,51 +998,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-75",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-63",
-          "test": "dev/test_states.py::TestASpecThatNamesNoFiles::test_at_signed_its_rules_read_unsigned_and_say_why"
-        },
-        {
-          "env": null,
-          "id": "PROOF-137",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-63",
-          "test": "dev/test_states.py::TestASpecThatNamesNoFiles::test_at_signed_a_signature_on_it_does_not_count"
-        },
-        {
-          "env": null,
-          "id": "PROOF-222",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-63",
-          "test": "dev/test_states.py::TestASpecThatNamesNoFiles::test_at_signed_it_waits_for_the_audit_until_the_audit_clears_it"
-        },
-        {
-          "env": null,
-          "id": "PROOF-138",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-63",
-          "test": "dev/test_states.py::TestASpecThatNamesNoFiles::test_below_signed_it_waits_for_nothing"
-        },
-        {
-          "env": null,
           "id": "PROOF-76",
           "manual": false,
           "result": "pass",
           "rule": "RULE-64",
           "test": "dev/test_states.py::TestASpecThatNamesNoFiles::test_status_names_one_spec_at_passed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-198",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-64",
-          "test": "dev/test_states.py::TestASpecThatNamesNoFiles::test_status_names_one_spec_at_strong"
         },
         {
           "env": null,
@@ -1310,14 +1022,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-200",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-64",
-          "test": "dev/test_states.py::TestASpecThatNamesNoFiles::test_status_names_two_specs_at_strong"
-        },
-        {
-          "env": null,
           "id": "PROOF-201",
           "manual": false,
           "result": "pass",
@@ -1331,14 +1035,6 @@
           "result": "pass",
           "rule": "RULE-64",
           "test": "dev/test_states.py::TestASpecThatNamesNoFiles::test_status_says_nothing_when_every_spec_names_its_files_at_passed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-202",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-64",
-          "test": "dev/test_states.py::TestASpecThatNamesNoFiles::test_status_says_nothing_when_every_spec_names_its_files_at_strong"
         },
         {
           "env": null,
@@ -1363,14 +1059,6 @@
           "result": "pass",
           "rule": "RULE-65",
           "test": "dev/test_states.py::TestARuleWithNoProof::test_a_section_listing_no_marked_test_leaves_no_proof_written"
-        },
-        {
-          "env": null,
-          "id": "PROOF-78",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-66",
-          "test": "dev/test_states.py::TestARuleWithNoProof::test_at_strong_a_rule_with_a_test_and_no_proof_reads_no_proof"
         },
         {
           "env": null,
@@ -1438,14 +1126,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-111",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-74",
-          "test": "dev/test_states.py::TestPayload::test_an_anchors_rule_is_signed_over_the_project"
-        },
-        {
-          "env": null,
           "id": "PROOF-112",
           "manual": false,
           "result": "pass",
@@ -1462,51 +1142,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-114",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-86",
-          "test": "dev/test_states.py::TestPayload::test_a_hand_check_signed_with_a_note_is_checked"
-        },
-        {
-          "env": null,
-          "id": "PROOF-115",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-86",
-          "test": "dev/test_states.py::TestPayload::test_a_hand_check_signed_without_a_note_is_checked"
-        },
-        {
-          "env": null,
-          "id": "PROOF-145",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-86",
-          "test": "dev/test_states.py::TestPayload::test_a_signed_rule_with_no_manual_proof_is_not_hand_checked"
-        },
-        {
-          "env": null,
           "id": "PROOF-116",
           "manual": false,
           "result": "pass",
           "rule": "RULE-87",
           "test": "dev/test_states.py::TestPayload::test_each_rule_names_the_one_kind_it_waits_for"
-        },
-        {
-          "env": null,
-          "id": "PROOF-146",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-75",
-          "test": "dev/test_states.py::TestPayload::test_at_passed_a_hand_check_not_made_is_not_passing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-147",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-75",
-          "test": "dev/test_states.py::TestPayload::test_at_passed_a_hand_check_is_the_rules_passing"
         },
         {
           "env": null,
@@ -1531,22 +1171,6 @@
           "result": "pass",
           "rule": "RULE-93",
           "test": "dev/test_states.py::TestTheSettingsLines::test_an_audit_parallel_not_accepted_is_read_as_4_with_its_fix"
-        },
-        {
-          "env": null,
-          "id": "PROOF-226",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-93",
-          "test": "dev/test_states.py::TestTheSettingsLines::test_a_min_strength_that_is_no_number_at_passed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-227",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-93",
-          "test": "dev/test_states.py::TestTheSettingsLines::test_a_min_strength_that_is_no_number_at_strong"
         },
         {
           "env": null,
@@ -1662,30 +1286,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-244",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-100",
-          "test": "dev/test_states.py::TestAnchors::test_a_rule_signed_as_not_applying_reads_so_in_every_cell"
-        },
-        {
-          "env": null,
-          "id": "PROOF-245",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-100",
-          "test": "dev/test_states.py::TestAnchors::test_the_row_counts_the_rule_that_does_not_apply"
-        },
-        {
-          "env": null,
-          "id": "PROOF-246",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-100",
-          "test": "dev/test_states.py::TestAnchors::test_nothing_is_left_for_a_rule_that_does_not_apply"
-        },
-        {
-          "env": null,
           "id": "PROOF-248",
           "manual": false,
           "result": "pass",
@@ -1707,54 +1307,6 @@
           "result": "pass",
           "rule": "RULE-102",
           "test": "dev/test_states.py::TestABrokenSpecFails::test_a_sound_spec_beside_a_broken_one_passes"
-        },
-        {
-          "env": null,
-          "id": "PROOF-251",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-102",
-          "test": "dev/test_states.py::TestABrokenSpecFails::test_a_signed_rule_of_a_broken_spec_fails_and_is_not_signed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-252",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-103",
-          "test": "dev/test_states.py::TestAnEndedSignatureSaysWhy::test_a_test_file_edit_names_the_file"
-        },
-        {
-          "env": null,
-          "id": "PROOF-253",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-103",
-          "test": "dev/test_states.py::TestAnEndedSignatureSaysWhy::test_a_rule_edit_names_the_wording"
-        },
-        {
-          "env": null,
-          "id": "PROOF-254",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-103",
-          "test": "dev/test_states.py::TestAnEndedSignatureSaysWhy::test_results_from_another_machine_name_both"
-        },
-        {
-          "env": null,
-          "id": "PROOF-255",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-104",
-          "test": "dev/test_states.py::TestAnEndedSignatureSaysWhy::test_the_status_prints_one_line_for_it"
-        },
-        {
-          "env": null,
-          "id": "PROOF-256",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-104",
-          "test": "dev/test_states.py::TestAnEndedSignatureSaysWhy::test_a_newer_signature_that_binds_prints_no_line"
         },
         {
           "env": null,
@@ -1782,32 +1334,58 @@
         },
         {
           "env": null,
-          "id": "PROOF-247",
+          "id": "PROOF-260",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-101",
-          "test": "dev/test_states.py::TestAnchors::test_a_change_to_the_project_leaves_it_to_confirm"
+          "rule": "RULE-106",
+          "test": "dev/test_states.py::TestBucketsAndTheGate::test_at_passed_a_rule_carries_both_cells"
+        },
+        {
+          "env": null,
+          "id": "PROOF-261",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-106",
+          "test": "dev/test_states.py::TestBucketsAndTheGate::test_at_signed_a_rule_carries_both_cells"
+        },
+        {
+          "env": null,
+          "id": "PROOF-262",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-107",
+          "test": "dev/test_states.py::TestBucketsAndTheGate::test_a_weak_audit_stops_neither_the_passed_cell_nor_a_release"
+        },
+        {
+          "env": null,
+          "id": "PROOF-263",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-108",
+          "test": "dev/test_states.py::TestTheStrongCell::test_a_measured_strength_is_a_reason_and_no_minimum_is_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-264",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-109",
+          "test": "dev/test_states.py::TestBucketsAndTheGate::test_a_rule_whose_every_proof_is_manual_passes_with_no_test"
         }
       ],
       "rules": {
         "RULE-1": "passed",
-        "RULE-100": "passed",
-        "RULE-101": "passed",
         "RULE-102": "passed",
-        "RULE-103": "passed",
-        "RULE-104": "passed",
         "RULE-105": "passed",
+        "RULE-106": "passed",
+        "RULE-107": "passed",
+        "RULE-108": "passed",
+        "RULE-109": "passed",
         "RULE-11": "passed",
-        "RULE-12": "passed",
         "RULE-13": "passed",
         "RULE-14": "passed",
         "RULE-15": "passed",
         "RULE-16": "passed",
-        "RULE-18": "passed",
-        "RULE-19": "passed",
-        "RULE-20": "passed",
-        "RULE-21": "passed",
-        "RULE-22": "passed",
         "RULE-23": "passed",
         "RULE-25": "passed",
         "RULE-26": "passed",
@@ -1825,7 +1403,6 @@
         "RULE-43": "passed",
         "RULE-44": "passed",
         "RULE-45": "passed",
-        "RULE-47": "not run",
         "RULE-48": "passed",
         "RULE-49": "passed",
         "RULE-57": "passed",
@@ -1833,7 +1410,6 @@
         "RULE-6": "passed",
         "RULE-61": "passed",
         "RULE-62": "passed",
-        "RULE-63": "passed",
         "RULE-64": "passed",
         "RULE-65": "passed",
         "RULE-66": "passed",
@@ -1841,9 +1417,6 @@
         "RULE-70": "passed",
         "RULE-71": "passed",
         "RULE-72": "passed",
-        "RULE-73": "passed",
-        "RULE-74": "passed",
-        "RULE-75": "passed",
         "RULE-77": "passed",
         "RULE-78": "passed",
         "RULE-79": "passed",
@@ -1851,12 +1424,9 @@
         "RULE-80": "passed",
         "RULE-81": "passed",
         "RULE-82": "passed",
-        "RULE-83": "passed",
         "RULE-84": "passed",
         "RULE-85": "passed",
-        "RULE-86": "passed",
         "RULE-87": "passed",
-        "RULE-88": "passed",
         "RULE-89": "passed",
         "RULE-9": "passed",
         "RULE-90": "not run",
