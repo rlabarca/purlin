@@ -5,8 +5,8 @@ description: Read an existing codebase and write the specs it already implies
 
 # purlin:spec-from-code
 
-Read a codebase that has no specs and write the rules it already implies. Run this once, on
-the way in. Afterwards every new rule comes from `purlin:spec`.
+Read a codebase that has no specs and write the rules it already implies. This skill is
+optional: run it once, on the way in. Afterwards every new rule comes from `purlin:spec`.
 
 **Paths.** Every `references/` and `scripts/` path below is inside the plugin and is reached
 through `${CLAUDE_PLUGIN_ROOT}`. A project carries none of them.
@@ -18,8 +18,8 @@ this skill writes is a draft until a person reads it. Say so when you hand the r
 
 ## Before you start
 
-Call `sync_status` with `project_root` set to the project root, the top folder of the git
-checkout. When the project has no `.purlin/config.json`, run `purlin:init` first. Run
+Call `sync_status`. Pass `project_root` on every Purlin tool call: the top folder of the git
+checkout you are working in. When the project has no `.purlin/config.json`, run `purlin:init` first. Run
 `git branch --show-current`; when it prints nothing the checkout is on no branch, so make one
 with `git switch -c <name>` before the first commit.
 
@@ -104,8 +104,8 @@ and note the behaviour in `> Description:`.
   reaches; in C#, the `public` types of a project that is not a test project.
 - Do not copy an implementation into a rule. "Uses a Redis sorted set" is not a claim about
   the software's behaviour; "rejects the 61st request in a minute" is.
-- Do not write evidence or signatures. `purlin:test` and `purlin:audit` write the evidence,
-  and `purlin:sign` signs a release.
+- Do not write evidence or a sign-off. `purlin:test` and `purlin:audit` write the evidence,
+  and `purlin:sign` builds the evidence package and signs it.
 
 ## When you are done
 

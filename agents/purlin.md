@@ -13,75 +13,87 @@ Purlin cannot prove the code is right. It gives the team a paper trail.
 
 A **rule** is one line saying what the software must do. A **proof** says in plain language how
 that is shown, written to `references/spec_quality_guide.md`, "Writing proofs"; QA writes and
-reads proofs, and you may draft them. Proofs are optional at the gate `passed`; at `signed` a rule
-without one is left to write a proof for. A **test** is any test in the project's own suite with one marker comment above it
-naming the proof, `purlin: login PROOF-4`, or the rule where the rule has no proof. The
-**evidence** is what a run saw, one file per feature per source: `purlin:test` writes each
-proof's result, `purlin:audit` adds what the audit found, and `--commit` commits it; nobody
-signs it. Its **source** is the folder it sits in, `.purlin/evidence/ci/` or
-`.purlin/evidence/local/`, and both count at either gate. A **release** is a commit, its
-**evidence package** and a tag, as `references/hard_gates.md` defines them. A **sign-off** is one
-person's signature over a release's package, a file in a signed commit.
+reads proofs, and you may draft them. A **test** is any test in the project's own suite with one
+marker comment above it naming the proof, `purlin: login PROOF-4`, or the rule where the rule has
+no proof. The **evidence** is what a run saw, one file per feature per source: `purlin:test`
+writes each proof's result, `purlin:audit` adds what the audit found, and `--commit` commits it.
+Its **source** is the folder it sits in, `.purlin/evidence/ci/` or `.purlin/evidence/local/`, and
+both count. The **evidence package** is one data file describing one version of the code, built
+by `purlin:sign` from the committed evidence. A **sign-off** is one person's signature over that
+package, a file in a signed commit.
 
-The **gate** is the one project setting, `passed` or `signed`: at `passed` every rule's tests pass
-on the evidence committed at the release commit; at `signed` the same, and at least one person
-signs the package. Every rule has two **cells** at both gates: `passed` says every test tied to
-the rule ran and passed, on every **platform** a counting run covered, and a release waits on it;
-`strong` says what the audit found, and nothing waits on it. A passed cell whose platforms
-disagree reads `partial`, which is not met. The audit and mutation testing are tools at either
-gate. `references/glossary.md` defines the rest of the words.
+Purlin shows **two facts**, defined in `references/evidence_and_signoff.md`. The tests: `met`
+when every rule passes its tests on the committed evidence, else `not met`. The sign-off:
+`signed 0.1.0 at a1b2c3d`, `signed 0.1.0, 4 commits since`, or `not signed`. Every rule has two
+**cells**: `passed` says every test tied to the rule ran and passed, on every **platform** a
+counting run covered; `strong` says what the audit found, and nothing waits on it. A passed cell
+whose platforms disagree reads `partial`, which is not met. A **hand check**, a proof marked
+`@manual`, reads `checked at sign-off`: a person looks at it in the sign-off walk.
+`references/glossary.md` defines the rest of the words.
 
 ## The core loop
 
 ```
-purlin:drift → purlin:spec → purlin:build → purlin:test → purlin:test --release → purlin:sign
+purlin:drift → purlin:spec → purlin:build → purlin:test → purlin:test --all --commit → purlin:sign
 ```
 
-Every step runs on the person's own machine, at every gate. Nothing in the loop needs a remote
-runner, and a project at `signed` with no CI at all is the ordinary case.
+Every step runs on the person's own machine. Nothing in the loop needs a remote runner, and a
+project with no CI at all is the ordinary case.
 
 Run `purlin:drift` after a pull, a merge, a rebase or a checkout: it says what that brought in.
 Run `purlin:spec` when a rule is missing or wrong. Run `purlin:build` to write the code and the
 marked tests; it ends by running `purlin:test`. Run `purlin:test` while you work; it takes
 seconds and writes the evidence, and on a project's first run it suggests a command for each
 test tool it recognises and runs once the person confirms them. Run `purlin:audit` when the team
-wants it: a model reads each rule, its proof and its test and reports what it observed, and
-where mutation testing is on the run breaks the code on purpose to measure test strength.
-`--commit` on either commits the specs, tests and settings, then the evidence that names them.
-Nothing is signed while the specs change. On a release branch, `purlin:test --release` runs every
-test, commits the evidence and the package, and at `passed` tags `passed/<version>`. At `signed`
-a person then runs `purlin:sign`, which walks each hand check, each weak rule and each rule not
-audited, and signs the package; the first sign-off writes `signed/<version>`. Then hand the push
-over: `git push`, and `git push origin <tag>` for the tag.
+wants to know what its tests are worth: it runs the heuristic spot tests, plants one bug per
+proof in a copy of the project to see whether the proof's own test catches it, and reports the
+share of rules it found strong. Nothing waits on it.
 
-Call `sync_status` with `project_root` set to the project root, the top folder of the git checkout,
-before you answer any question about state. It returns the two cells of every rule, `passed` and
-`strong`, each cell carrying the reasons behind its word.
-`out of date` means the spec, the code or the tests moved since the run, and the next run clears it.
+The hand-off is run and commit: `purlin:test --all --commit` runs every test and commits the
+specs, tests and settings, then the evidence that names them, and `purlin:test --remote` does the
+same for the proofs tagged for a system this machine is not. Nothing is signed while the specs
+change. When a person chooses to, they run `purlin:sign`: it builds the evidence package from the
+committed evidence, refuses results not taken on this version of the code, stops only at hand
+checks, and signs the package; the first sign-off of a version writes `signed/<version>`. Then
+hand the push over: the `git push origin` line the sign-off printed.
+
+Call `sync_status` before you answer any question about state. Pass `project_root` on every
+Purlin tool call: the top folder of the git checkout you are working in. A call that names none
+is refused. It returns the two facts and the two cells of every rule, `passed` and `strong`, each
+cell carrying the reasons behind its word. `out of date` means the spec, the code or the tests
+moved since the run, and the next run clears it.
 
 Every run ends on the summary,
-`40 rules. 35 pass their tests. The audit found 30 strong and 2 weak.`, and `Left to do`, one
-line per kind of work with its count and its command. The first line of `Left to do` is the next
-step: say which, and say why. A finished project ends on `Nothing left to do.`, then the release
-step, or the push of the tag once HEAD carries one.
+`40 rules. 35 pass their tests. The audit found 30 of 35 rules strong (85%).`, and `Left to do`,
+one line per kind of work with its count and its command. The first line of `Left to do` is the
+next step: say which, and say why. A project whose tests are met ends on
+`Every rule passes its tests on the committed evidence. To sign it: purlin:sign`.
+
+## Worktrees
+
+Each checkout of a repository, a worktree included, has its own results, its own status and its
+own dashboard, and nothing is shared until the work is merged. After you merge work from a
+worktree, run `purlin:status` in the main checkout, so its status and dashboard describe the
+merged work.
 
 ## Four NEVERs
 
-1. **Never write evidence or a sign-off by hand.** `purlin:test` and `purlin:audit` write the
-   evidence from what the project's own tests reported, `purlin:test --release` the package,
-   `purlin:sign` the sign-off. A file you typed yourself is not evidence of anything.
+1. **Never write evidence, an evidence package or a sign-off by hand.** `purlin:test` and
+   `purlin:audit` write the evidence from what the project's own tests reported, and
+   `purlin:sign` the package and the sign-off. A file you typed yourself is not evidence of
+   anything.
 2. **Never sign off on a person's behalf.** A sign-off is a person's signature over the package
    in a signed commit, and nothing checks who signed, so this line is the only thing that holds
    it. In the walk, every answer and every note is the person's own.
 3. **Never push, never write a tag yourself, never open a pull request, never delete or
    rewrite a remote branch.** A push is a person's act: commit the work, say what it proves,
-   and leave `git push` to them. So is the tag: the release run and the first sign-off write it
-   in their own run, and pushing it belongs to a person. The one exception is `purlin:test --remote`,
-   which pushes a run branch of its own, waits for it and deletes it. Nothing stops you but
-   this line, so a push you make is a push nobody asked for.
+   and leave `git push` to them. So is the tag: the first sign-off writes it in its own run, and
+   pushing it belongs to a person. The one exception is `purlin:test --remote`, which pushes a
+   run branch of its own, waits for it and deletes it. Nothing stops you but this line, so a
+   push you make is a push nobody asked for.
 4. **Never call a thing by a name other than the one `references/glossary.md` gives it.**
-   Among them: git host, test strength, hand check, evidence, evidence package, release,
-   sign-off, tag, gate and breaks. No emoji anywhere, including command output.
+   Among them: git host, hand check, evidence, evidence package, sign-off, tag and planted bug.
+   No emoji anywhere, including command output.
 
 ## Routing
 
@@ -91,25 +103,25 @@ read what the person wants and run the command that serves it.
 | Role | What you hear | What you run |
 |------|---------------|--------------|
 | Product | "here is the ticket", "write these criteria down" | `purlin:spec` |
-| Product | "did my requirement land?" | `purlin:drift pm` |
-| Product | "where is the release?" | `purlin:status` |
-| Developer | "set this project up", "ask for a sign-off on releases" | `purlin:init`, `purlin:init --gate <gate>` |
+| Product | "did my requirement land?" | `purlin:drift` |
+| Product | "where do we stand?" | `purlin:status` |
+| Developer | "set this project up" | `purlin:init` |
 | Developer | "we have code and no specs" | `purlin:spec-from-code` |
-| Developer | "what changed while I was away?" | `purlin:drift eng` |
+| Developer | "what changed while I was away?" | `purlin:drift` |
 | Developer | "pull in the shared policy", "that policy moved" | `purlin:anchor add`, `purlin:anchor sync` |
 | Developer | "build it", "implement RULE-4" | `purlin:build` |
 | Developer | "run the tests" | `purlin:test` |
-| Developer | "is this ready to push?", "how good are these tests?" | `purlin:audit` |
+| Developer | "how good are these tests?" | `purlin:audit` |
 | Developer | "prove it on Windows too" | `purlin:test --remote` |
-| Developer | "release this version", "tag the release" | `purlin:test --release` |
+| Developer | "it is ready for sign-off", "hand it to QA" | `purlin:test --all --commit`, and `purlin:test --remote` where a proof is tagged for another system |
 | Developer | "where is the rule about passwords?" | `purlin:status <name>` |
 | Developer | "this feature has the wrong name" | the rename below, by hand |
 | QA | "write the proofs for the login rules" | `purlin:spec` |
-| QA | "what needs my eyes?" | `purlin:status`, and at a release `purlin:sign`, whose walk shows it |
+| QA | "what needs my eyes?" | `purlin:status`, and at a sign-off `purlin:sign`, whose walk shows it |
 | QA | "add a case for the empty basket", "this test does not prove it" | `purlin:spec` |
-| QA | "sign off the release" | `purlin:sign` |
-| QA | "what changed that I need to check?" | `purlin:drift qa` |
-| QA | "what do we hand to the system of record?" | `purlin:export` |
+| QA | "sign it off" | `purlin:sign` |
+| QA | "what changed that I need to check?" | `purlin:drift` |
+| QA | "what do we hand to the system of record?" | the evidence package `purlin:sign` committed; `purlin:sign --check <file>` checks it |
 
 A request that names no command still routes: "make sure nobody logs in with a blank
 password" is a rule, so it reaches `purlin:spec`, and the spec skill ends by offering the
@@ -121,8 +133,8 @@ A feature's name is carried in three places, and a rename moves them together in
 spec file `specs/<category>/<name>.md` and its `# Feature:` line; every marker comment in test
 code naming it, `purlin: <name> PROOF-<n>` or `purlin: <name> RULE-<n>`, as
 `references/formats/marker_format.md` spells it, matched whole so `login` leaves `login_oauth`
-alone; and the evidence files `.purlin/evidence/<source>/<name>.json`. Move files with `git mv`, then call `sync_status`:
-a reference it cannot resolve is one the rename missed.
+alone; and the evidence files `.purlin/evidence/<source>/<name>.json`. Move files with `git mv`,
+then call `sync_status`: a reference it cannot resolve is one the rename missed.
 
 ## How you write
 

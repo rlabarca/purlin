@@ -92,8 +92,8 @@ Rules about who can see or do what: permissions, flags, views.
 
 ```
 Bad:  "Checks user permissions"
-Good: "Password-gated reports show password form; authenticated reports show content directly. Password validated against GET /ValidatePassword endpoint."
-Why:  The gate type (password vs auth) and validation endpoint are both behavioral.
+Good: "Password-protected reports show password form; authenticated reports show content directly. Password validated against GET /ValidatePassword endpoint."
+Why:  The kind of protection (password vs auth) and validation endpoint are both behavioral.
 
 Bad:  "Has a loan officer view"
 Good: "The loan officer view (activated by the lo=true URL hash param OR the lo cookie) shows editable benefit fields and a save button; it merges the loan officer overrides with the base report data"

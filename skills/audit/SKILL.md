@@ -1,104 +1,104 @@
 ---
 name: audit
-description: Run the tests, the breaks where mutation testing is on, and the AI audit, then write what it found into the evidence
+description: Run the tests, the heuristic spot tests, one planted bug per proof and the model's reading, then write what it found into the evidence
 ---
 
-Run the marked tests, break the code on purpose where mutation testing is on to measure how much the
-tests catch, have a model read each rule's proof beside its test, and write what it found into the
-evidence. An audit reports how good the tests are, whoever ran it: the strong cell reads the audit
-entry for each rule's current text, proof and test. The audit and the breaks are tools at either
-gate: nothing waits on them, and a weak rule never stops a release.
+Show how much the tests are worth. The audit runs the marked tests, then for each rule that
+passes: the heuristic spot tests, which read each test as text; one planted bug per proof, to see
+whether the proof's own test catches it; and the model's reading, which explains what was found.
+It writes what it found into the evidence and reports the share of rules it found strong. A person
+runs it by hand, when they choose; nothing waits on it, and a weak rule stops no sign-off.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below is
-relative to the plugin root; see `references/purlin_commands.md#path-resolution`. **Pending
-migrations:** when `sync_status` with `project_root` set to the project root, the top folder of the
-git checkout, opens with a pending-migrations advisory, stop and follow
-`references/purlin_commands.md#pending-migrations` before doing this skill's work.
+relative to the plugin root; see `references/purlin_commands.md#path-resolution`. Pass
+`project_root` on every Purlin tool call: the top folder of the git checkout you are working in.
+**Pending migrations:** when `sync_status` opens with a pending-migrations advisory, stop and
+follow `references/purlin_commands.md#pending-migrations` before doing this skill's work.
 
 ## Usage
 
 ```
 purlin:audit                    Run what the change touched, audit, write the evidence
 purlin:audit <feature> [...]    One feature, or several
-purlin:audit --all              Run every feature, and read every rule again
+purlin:audit --all              Run every feature, and read every passing rule again
 purlin:audit --commit           Commit the evidence the run wrote
-purlin:audit --arm-timeout <seconds>  Give the breaking tool longer per feature
+purlin:audit --arm-timeout <seconds>  Give each suite, and each planted bug's test run, longer
 ```
 
-Plain language reaches the same place: "audit this", "how strong are the tests". `--remote` belongs
-to `purlin:test --remote`.
+Plain language reaches the same place: "audit this", "how strong are the tests". A team may set
+itself a target, such as building and auditing until 80% of rules read strong; the audit's last
+line is the number to hold against it.
 
 ## Step 1: run
 
 ```bash
-sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --audit
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --audit --project-root .
 ```
 
 Add `--arm-timeout <seconds>` when the person gave it. Add `--all` for `purlin:audit --all` and
-`--feature <name>` for each feature named; with neither, `--audit` runs the tests `purlin:test`
-would select, then the breaks where mutation testing is on, then the AI audit: one `claude -p` call
-per rule whose tests pass, that has a proof with a test, and whose text, proof or test changed since
-its last audit, `audit_parallel` at once, announced by `AI audit: <n> rules to read, <k> at a time.`
+`--feature <name>` for each feature named; with neither, the run covers the features `purlin:test`
+would select. It runs the tests, then reads each rule whose tests pass, that has a proof with a
+test, and whose text, proofs, tests or covered code changed since its last audit:
+
+1. **The heuristic spot tests**, with no model: a test that checks nothing, a check that cannot
+   fail, a swallowed error, a test that checks the code against itself, a test that replaces what
+   it is testing, and a test that never checks the result the proof expects.
+2. **One planted bug per proof** whose test or covered code changed since its last one. The model
+   names the smallest change to the code that would break the proof; the change is made in a copy
+   of the project, never in the project itself; the proof's own tests run there; the copy is
+   removed. A test that still passes is weak, with the change as the evidence. No bug is planted
+   for an anchor's proof or a `@manual` proof.
+3. **The model's reading**, one `claude -p` call per rule, which explains what the first two found
+   and decides nothing.
+
+A rule reads `weak` when a spot test fires on one of its tests or a planted bug survived, else
+`strong`. `references/review_criteria.md` is the one home of each check, the research behind it
+and what the model is sent.
+
 The run writes each feature's section and its `audit` into `.purlin/evidence/local/<feature>.json`
-and prints `Evidence written to .purlin/evidence/local/<feature>.json.`. It commits nothing unless
-you add `--commit`, which commits under your own identity and ends on the evidence, with the subject
-`purlin: evidence at <sha7>`, and it never pushes. It then prints one line of its own, `AI audit:
-<n> rules read, <s> strong, <w> weak.`, and one line per cause for any rule the model could not be
-reached for, and ends on the status table, the summary and `Left to do`, as every run does.
+and prints `Evidence written to .purlin/evidence/local/<feature>.json.` It commits nothing unless
+you add `--commit`, which commits under your own identity, and it never pushes.
 
 Exit codes: `0` everything asked happened; `1` a tied test failed or did not run, evidence is
-missing, a marker names nothing a spec has, `.purlin/config.json` is missing, the settings file
-cannot be read, the project was set up by 0.9.5 and not upgraded, or no test command is set; `2`
-the command line was wrong. What the audit found never sets the code: a weak rule, or one the model
-could not be reached for, is listed, not failed.
-
-The run script owns test execution for the whole plugin: `purlin:test` and `purlin:build` call it
-too. A remote runner runs the same script in an arm of its own (`references/hard_gates.md`, "Where a
-runner runs"), which writes its section under `.purlin/evidence/ci/` and runs no audit; you never
-run it by hand.
+missing, a marker names nothing a spec has, `.purlin/config.json` is missing or cannot be read,
+the project was set up by 0.9.5 and not upgraded, no test command is set, or a file of the project
+changed while a bug was planted; `2` the command line was wrong. What the audit found never sets
+the code: a weak rule is listed, not failed.
 
 ## Step 2: read what came back
 
-Test strength is the share of the deliberate breaks the tests caught, measured wherever
-`mutation_engine` in `.purlin/config.json` is not `none`. It is a reason beside the strong cell's
-word, `strength 84%`, or `strength not measured: <why>` where the engine measured nothing; the word
-itself is the AI audit's.
+The audit prints one block per rule it read, then its cost, then the share, and the run ends on
+the status, as every run does:
 
-The AI audit reads each proof beside the source of its test, against
-`references/review_criteria.md`, and what comes back is what it observed, in its own words. A
-finding is build work: it names what the test does not yet observe, and the rule reads `weak` with
-that sentence as the reason. A proof longer than 60 words, or holding two cases, is noted: the audit
-reader prints each note after the findings, starting `Note:`, with no heading, and a note does not
-make the rule weak.
+```
+login RULE-2   weak
+  tests/test_login.py::test_wrong_password: the test checks nothing.
+  PROOF-2: the test still passes when src/auth.py:12 reads "return 200"
+  PROOF-3: no bug was planted: the answer named no change.
+The model was asked 31 times for 12 rules: $1.87 in all, $0.16 a rule.
+The audit found 4 of 5 rules strong (80%).
+```
 
-## Step 3: what the gate changes
+- A line `<file>::<test>: ...` is a spot test's finding: fix the test.
+- A line `PROOF-N: the test still passes when <file>:<line> reads "<line>"` is a planted bug the
+  test did not catch: add the case that tells the right behaviour from that change.
+- A line `PROOF-N: no bug was planted: <why>.` is not a finding and does not make the rule weak.
+- `<check> is not read in <language> tests.` says a spot test does not read that language.
+- `<n> rules were read without the model's explanation: <why>. Run purlin:audit --all once it can
+  be reached.` means `claude` could not be reached; the verdicts stand on the spot tests alone.
+- `The audit stopped: <file> changed while a break ran. Nothing in the project was written by the
+  audit.` means a file changed under the run: leave the project alone while the audit runs, then
+  run it again.
 
-| Gate | What this run does |
-|------|--------------------|
-| `passed` | Runs the tests, the breaks where `mutation_engine` is not `none`, and the AI audit; what they find holds nothing back |
-| `signed` | The same as `passed`. Evidence either source wrote counts here too; the sign-off walk shows what the audit found |
+A finding is build work. `purlin:build <feature>` fixes the test, and the rule is read again by
+the next `purlin:audit`. Never narrow a rule or a proof to make a finding disappear. What the
+model cost is also written to `.purlin/runtime/audit_run.json`, which git ignores.
 
-## Step 4: the folder is the source
+## Step 3: name the next step
 
-An evidence file's source is the folder it sits in, and the file's own `source` field says the same
-word. A file where the two disagree is ignored, with one warning naming it.
+Show the ending as the run printed it, then name the next step:
 
-| Source | The folder | Counts under |
-|--------|------------|--------------|
-| ci | `.purlin/evidence/ci/<feature>.json`, written by a remote runner | `passed`, `signed` |
-| local | `.purlin/evidence/local/<feature>.json`, written by this command and `purlin:test` on anyone's machine | `passed`, `signed` |
-
-## Step 5: retention
-
-A file keeps the newest section per operating system and the newest audit entry per rule; the
-history is the file's `git log`. Nothing pins the evidence: the release's tag, `passed/<version>` or
-`signed/<version>`, holds the whole tree, every evidence file in it included.
-
-## Step 6: name the next step
-
-Show the ending as the run printed it; the first line of `Left to do` is the next step:
-
-- `Left to do:` lists work: `→ Run:` the command its first line names, such as `purlin:build` after
-  `2 rules to strengthen: purlin:build`.
-- `Nothing left to do.`: say so and name no other command than the release step the line goes on
-  to name, `purlin:test --release` (at `signed`, then `purlin:sign`), or `git push origin <tag>`.
+- A rule reads `weak`: `→ Run: purlin:build <feature>`, then `purlin:audit` again.
+- `Left to do:` lists other work: `→ Run:` the command its first line names.
+- Every rule read is strong and nothing else is left: say so, and name `purlin:audit --commit` to
+  commit what the audit found where the person wants it kept.

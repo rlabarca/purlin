@@ -11,12 +11,13 @@ Every commit Purlin makes, or asks you to make, uses one of these. There is no o
 | `fix(<name>):` | Fixing a bug | `purlin:build` |
 | `test(<name>):` | Writing or changing tests without changing behaviour | `purlin:build` |
 | `purlin: specs, tests and settings for <feature>[, <feature>...]` | The specs of the features a run covered, the test files carrying their markers, and `.purlin/config.json`: the work the run's results describe | `purlin:test --commit`, `purlin:audit --commit` |
-| `purlin: evidence at <commit7>` | The evidence a run wrote, under `.purlin/evidence/` with `.purlin/tests.md`, or the evidence package | `purlin:test --commit`, `purlin:audit --commit`, `purlin:export --commit`, `purlin:test --release` for the package of the release, and a remote runner |
-| `sign(<version>): <signer email>` | One sign-off over a release's evidence package, signed | `purlin:sign` |
+| `purlin: evidence at <commit7>` | The evidence a run wrote, under `.purlin/evidence/` | `purlin:test --commit`, `purlin:audit --commit`, and a remote runner |
+| `sign(<version>): <signer email>` | One sign-off over a version's evidence package, signed; the first of a version carries the package too | `purlin:sign` |
 | `anchor(<name>): create` | A new local anchor | `purlin:anchor create` |
 | `anchor(<name>): sync (<sha>)` | Advancing a pin to that commit | `purlin:anchor sync` |
 | `chore(update): migrate to <VERSION> (<ids>)` | Migrating a project to the installed plugin | `purlin:init --update` |
-| `chore(init): set up Purlin at the gate <gate>` | The files setup wrote, once a person agrees or `--yes` is passed | `purlin:init` |
+| `chore(init): set up Purlin` | The files setup wrote, once a person agrees or `--yes` is passed | `purlin:init` |
+| `ci: the Purlin runner for <GitHub or Azure DevOps>` | The runner file the first remote run wrote, alone | `purlin:test --remote --commit-runner` |
 | `chore:` | Project setup, config changes, renames, cleanup | Anyone |
 | `docs:` | Documentation | Anyone |
 
@@ -30,6 +31,7 @@ fix(auth_login): reject a token whose issuer moved
 purlin: specs, tests and settings for auth_login, checkout
 purlin: evidence at a1b2c3d
 sign(1.2.0): quinn.qa@labconnect.example
+ci: the Purlin runner for GitHub
 anchor(security_baseline): sync (abc1234)
 chore(update): migrate to 0.10.0 (markers, plugins)
 chore: rename login to authentication
@@ -55,30 +57,19 @@ file carrying a marker and `.purlin/config.json` that changed. Its subject names
 whose spec or marked tests it holds, and reads `purlin: specs, tests and settings` where it
 holds only the settings.
 
-The second carries the files under `.purlin/evidence/local/`, `.purlin/tests.md` and any
+The second carries the files under `.purlin/evidence/local/` and any
 evidence file the run removed because its feature has no spec, and nothing else. `<commit7>`
 is the first seven characters of the first commit, or of HEAD when there was nothing to commit:
-the commit the results describe, not the evidence commit itself. Never fold it into a
+the commit of the code the results describe, not the evidence commit itself. Each section records
+that same commit, and a sign-off counts a result only when nothing but Purlin's own records under
+`.purlin/` changed after it. Never fold it into a
 `feat(...)` commit, because the evidence must be able to say which commit the tests ran
 against. The run prints `Evidence committed.`, or `Evidence unchanged.` when nothing new was
 seen. Both commits are yours, made under your own git identity, and neither is pushed for you.
 
 A remote runner on a run branch commits its own section of `.purlin/evidence/ci/` with the same
 subject, through the git host's API under the build identity, and always does, because its
-evidence exists nowhere else. A tag run writes nothing at all: it runs the tests and nothing
-else. No run writes a sign-off, so an evidence commit never carries one.
-
-## The release commit
-
-`purlin:test --release` makes the two commits of a run, then one more carrying the evidence
-package alone, `.purlin/evidence/package/<version>.json`:
-
-```
-purlin: evidence at <commit7>
-```
-
-`<commit7>` is the commit the package describes. The commit is signed where `commit.gpgsign` is
-on, and plain otherwise.
+evidence exists nowhere else. No run writes a sign-off, so an evidence commit never carries one.
 
 ## The sign-off commit
 
@@ -86,36 +77,33 @@ on, and plain otherwise.
 sign(<version>): <signer email>
 ```
 
-Signed, always: one commit per sign-off, adding
-`.purlin/evidence/package/<version>.signoffs/<signer-slug>.json` and nothing else. `purlin:sign`
-makes it with your git identity, and the sign-off counts when the commit's signature verifies and
-the file carries the committed package's fingerprint (`references/hard_gates.md`, "When a
-sign-off counts").
+Signed, always: one commit per sign-off. The first sign-off of a version carries the evidence
+package, `.purlin/evidence/package/<version>.json`, and the sign-off,
+`.purlin/evidence/package/<version>.signoffs/<signer-slug>.json`; a later one adds its own file
+and nothing else. `purlin:sign` makes it with your git identity, and the sign-off counts when the
+commit's signature verifies and the file carries the committed package's fingerprint
+(`references/evidence_and_signoff.md`, "When a sign-off counts").
 
-## The tags
+## The tag
 
 ```
-passed/<version>         at the gate passed, by purlin:test --release
-signed/<version>         at the gate signed, by the first sign-off
+signed/<version>         by the first sign-off of a version
 ```
 
-`passed/<version>` is annotated and unsigned (`git tag -a`), on the release commit.
 `signed/<version>` is signed (`git tag -s`, with the key you sign commits with), on the first
-sign-off's commit; a later sign-off adds its file after it, and the tag does not move. What each
-means is defined once, in `references/hard_gates.md`, which also says where the version is read
-from. The message names the commit the package describes and the gate:
+sign-off's commit; a later sign-off adds its file after it, and the tag does not move. What it
+means is defined once, in `references/evidence_and_signoff.md`, which also says where the version
+is read from. The message names the version and the commit the package describes:
 
 ```
-Released at the gate <gate>.
+Signed <version>.
 
 Commit: <full sha>
-Gate: <gate>
 ```
 
-No tag is written over one that is already there. Nothing is pushed: the run prints
-`Tagged <tag> at <sha7>.`, then `Nothing left to do. Push the tag to release it: git push origin <tag>`.
-Where the project has a remote runner, pushing `signed/<version>` starts the run that reruns the
-tests on a clean machine; `passed/<version>` starts none.
+No tag is written over one that is already there. Nothing is pushed: the sign-off prints
+`Tagged signed/<version> at <sha7>.`, then
+`Push the branch and the tag: git push origin <branch> signed/<version>`.
 
 ## The build commit body
 
@@ -151,9 +139,9 @@ Review:
 |----------|--------------|-----|
 | The spec is agreed | The spec file | It is the contract the build reads |
 | The build is stable | Code, tests, and the changeset in the body | Half a feature is not a milestone |
-| A run you want to keep, with `--commit` | The work the results describe, then the evidence and the table, alone | The evidence names the commit the tests ran against |
-| A release is made | The evidence package, alone, by `purlin:test --release` | The package describes one commit |
-| A sign-off walk ended with yes | The sign-off, signed, in one commit | One person's signature over one package |
+| A run you want to keep, with `--commit` | The work the results describe, then the evidence, alone | The evidence names the commit the tests ran against |
+| The work is ready for a sign-off | The same two commits, by `purlin:test --all --commit` | A sign-off counts only results taken on this version of the code |
+| A sign-off walk ended with yes | The sign-off, signed, in one commit, with the package where it is the version's first | One person's signature over one package |
 | A pin advanced | The anchor spec | Staleness is read from the committed pin |
 
 Do not commit after each failed test iteration, do not batch two skills' output into one commit,

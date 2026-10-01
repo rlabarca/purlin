@@ -17,8 +17,8 @@ through `${CLAUDE_PLUGIN_ROOT}`. A project carries none of them.
 purlin:build [<name>]
 ```
 
-With no name, call `sync_status` with `project_root` set to the project root, the top folder of
-the git checkout, and read the state:
+With no name, call `sync_status` and read the state. Pass `project_root` on every Purlin tool
+call: the top folder of the git checkout you are working in.
 
 | What the state says | What you do |
 |---------------------|-------------|
@@ -44,7 +44,8 @@ each proof with no test marked for it:
 1. **Look first for a test that already shows it.** Search the project's existing tests for one
    that does what the proof says: the same input, the same observable, the same expected
    value. Where one does, offer to add the marker above it and write nothing new. A test that
-   shows part of it is not that test.
+   shows part of it is not that test. Before you add a marker above any test, read the test
+   against the proof as it is worded now and check it still shows it.
 2. **Otherwise write an ordinary test** in the project's own framework, in the folder and the
    style its other tests use, with the marker above it.
 
@@ -57,7 +58,7 @@ def test_valid_credentials_return_200():
 ```
 
 It names the feature and the proof; the spec already says which rule the proof serves. Where a
-rule has no proof, which the gate `passed` allows, it names the rule: `purlin: login RULE-2`. A
+rule has no proof, it names the rule: `purlin: login RULE-2`. A
 test may carry several markers, one line each, and decorators may sit between marker and test.
 `references/formats/marker_format.md` is the contract. A test Purlin wrote and a test a
 developer wrote differ in nothing but who typed them; a test with no marker is not evidence.
@@ -77,6 +78,30 @@ A rule that contradicts another, or that no test could settle as written, is a s
 and not a build problem. Call `purlin:spec <name>`, fix the rule text in place, keep the id,
 and come back. A number written twice in a spec, or a test comment whose proof's wording
 changed, moves as `purlin:spec`'s "Renumbering" says, after the person answers `Do it? [y/N]`.
+
+## A test comment to correct
+
+A test comment names a proof. When the proof's wording changed after the test was last changed,
+the status and every run name the comment under `Left to do` as a test comment to correct, and
+the tests read `not met` until the test changes. List them:
+
+```bash
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin/wording.py" --project-root .
+```
+
+Add `--file <path>` for each test file to narrow it. It prints one line per comment, then the
+count, `<n> test comments to correct.` or `No test comment to correct.`:
+
+```
+tests/test_login.py:1 names login PROOF-4, whose wording changed after the test was last changed in 3c9d2e1: it read "A" and now reads "B". Run purlin:build login to make the test show it; the line clears once the test changes.
+```
+
+For each, read the test against the proof as it reads now. Where the test does not show it, fix
+the test: the starting situation, the action and each value the proof names are what the test
+sets up, does and asserts. Where it already does, change the test so it states it, in its name
+or an assertion. The line clears once the test's own lines change; never reword the proof to
+fit the test. A line ending `Its old wording is now PROOF-6: move the comment there.` is a
+comment to move, as `purlin:spec`'s "Renumbering" says.
 
 ## Repairing a comment that is nearly a marker
 
@@ -101,7 +126,7 @@ exactly one test, by file and line; fix each before going on. Iterate until ever
 feature owns has a passing test. A proof tagged `@env` for another operating system is not run
 here: the run counts such proofs in one line per system that names `purlin:test --remote`. Never
 write evidence or a sign-off by hand. `purlin:test` and `purlin:audit` write the evidence,
-`purlin:test --release` the evidence package, and `purlin:sign` a sign-off.
+and `purlin:sign` the evidence package and a sign-off.
 
 ## Committing
 
@@ -121,8 +146,9 @@ rewrite the line in the same commit as the code. Commit the code and the tests t
 
 `purlin:test` ended on the summary and `Left to do`. Name the next step from them:
 
-- `Left to do` is empty: `Nothing left to do.`, and to release a version
-  `→ Run: purlin:test --release`, then at the gate `signed` `purlin:sign`
+- Every rule passes and the work is committed: the hand-off is
+  `→ Run: purlin:test --all --commit`, after which a person may sign with `purlin:sign`
+- A test comment to correct: fix the test as above, `→ Run: purlin:build <feature>`
 - Some rules still have no test: name them and what is missing, `→ Run: purlin:build <feature>`
 - A rule to strengthen: add the case the audit's finding names, `→ Run: purlin:build <feature>`
 - A proof needs another operating system: name it, `→ Run: purlin:test --remote`

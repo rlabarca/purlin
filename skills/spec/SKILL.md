@@ -18,8 +18,9 @@ read `references/spec_quality_guide.md`. Neither is restated here.
 
 ## Procedure
 
-1. Call `sync_status` with `project_root` set to the project root, the top folder of the git
-   checkout, and read the state of the feature, if it already has one.
+1. Call `sync_status` and read the state of the feature, if it already has one. Pass
+   `project_root` on every Purlin tool call: the top folder of the git checkout you are working
+   in.
 2. Read the input whole before writing anything.
 3. Decide the feature name and the category folder: `specs/<category>/<name>.md`.
 4. Write the metadata, `> Scope:` included, then the rules, then one proof for every rule.
@@ -57,7 +58,8 @@ When rules arrive from more than one direction, run this skill on the feature wi
 input. It reads the spec as it now stands, lists what changed since the last time it was
 written, and reports three things: rules that lost their proof, proofs that name a rule id
 that does not exist, and numbers written twice or test comments whose proof's wording changed
-since they were marked. Fix the first two here, and the third as "Renumbering" below says.
+after the test last changed. Fix the first two here, a number written twice as "Renumbering"
+below says, and a reworded proof's test with `purlin:build`.
 
 ## The shape
 
@@ -84,6 +86,8 @@ since they were marked. Fix the first two here, and the third as "Renumbering" b
 Write `> Scope:` on every spec you create: the files the requirement touches, or the paths
 `purlin:build` will create for it. The evidence carries a fingerprint of those files, so a
 change to one of them reads `out of date` and selects the feature for the next `purlin:test`.
+A spec written before its code is the normal order: until the files exist the status prints one
+line of information naming them, with `purlin:build <name>` first.
 
 A spec that carries `> Requires:` or `> Global:`, or an anchor that carries `> Scope:`, is warned
 of: take the line out. Where a rule of an anchor holds only for some features, write it in each
@@ -91,9 +95,8 @@ of their specs instead.
 
 ## Rules
 
-One claim per line, in the present tense, saying what the software does rather than how.
-Every rule is asked for what the project's gate asks, so a rule line carries the claim and
-nothing else.
+One claim per line, in the present tense, saying what the software does rather than how. A
+rule line carries the claim and nothing else.
 
 A rule about what the software must never do is an ordinary rule with a proof that asserts
 absence. There is no separate syntax for it.
@@ -105,14 +108,14 @@ of what a good proof is: what is done, what is observed, the expected value, at 
 failure case, and no file path or function name, so a person who cannot read code can judge
 it. QA reads every proof you draft. Write each proof as one case, one starting situation and
 one action in at most 60 words, and a refusal or a boundary as a proof of its own, as the
-guide's "One proof, one case" says. Write at least one proof for every rule: the gate `passed`
-lets a rule go without one, and at the gate `signed` a rule without one is left to write a
-proof for. Several
+guide's "One proof, one case" says. Write at least one proof for every rule: a rule without
+one is left to write a proof for. Several
 proofs may name one rule, and one proof may name several rules when it drives a flow through
 all of them: `- PROOF-7 (RULE-2, RULE-3, RULE-4): ...`.
 
 Tag a proof `@manual` when only human judgment settles it. A `@manual` proof has no test: a
-person checks it in the sign-off walk of `purlin:sign` and types what they saw.
+person checks it in the sign-off walk of `purlin:sign` and may type what they saw. Until then
+it reads `checked at sign-off`.
 
 Add `@env(windows)`, `@env(macos)` or `@env(linux)` when the claim can only be proved on one
 operating system. Those three are the whole vocabulary. A proof with no `@env` is satisfied by
@@ -155,7 +158,7 @@ Two branches that advanced the same anchor pin resolve to the newer sha.
 ## Renumbering
 
 Where drift, the status, `purlin:build` or this skill finds a number written twice, or a test
-comment whose proof's wording changed since it was marked, run the dry run first:
+comment whose proof's old wording now stands under another id, run the dry run first:
 
 ```bash
 sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/spec/renumber.py" <name> --dry-run

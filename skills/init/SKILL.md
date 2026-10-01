@@ -1,149 +1,79 @@
 ---
 name: init
-description: Set a project up for Purlin, and change the gate later
+description: Set a project up for Purlin
 ---
 
 # purlin:init
 
-Set a project up for spec-driven development, and change the one setting later when the team or
-the obligations change. **Paths.** Every `references/`, `templates/` and `scripts/` path below
-is inside the plugin and is reached through `${CLAUDE_PLUGIN_ROOT}`; a project carries none of
-them.
+Set a project up for spec-driven development. **Paths.** Every `references/`, `templates/` and
+`scripts/` path below is inside the plugin and is reached through `${CLAUDE_PLUGIN_ROOT}`; a
+project carries none of them. Pass `project_root` on every Purlin tool call: the top folder of
+the git checkout you are working in.
 
-## The questions
+## The one question
 
-Init asks these, in this order, and nothing else. Everything else it reads from the tree: the
-test frameworks from detection, the git host from the remote URL. A question the project's
-`.purlin/config.json` or a flag already answers is not asked.
-
-1. **The gate**, on every first run: `What must be true of every rule before a version is
-   finished?`, with the two answers below. The default is `passed`.
-2. **Mutation testing**, only at `signed`, and only where an engine exists for a framework the
-   tree carries: `Measure test strength by breaking the code on purpose? It needs
-   <engine> and takes minutes to hours per run. [y/N]`. The default is no.
-3. **Committing**, whenever setup writes a file: `Commit the files setup wrote? [y/N]`. The default is no; a yes commits them in one commit, `chore(init): set up Purlin at the gate <gate>`.
-
-The first answer is the **gate**, one of two:
-
-| Gate | What a release asks | The tag |
-|------|---------------------|---------|
-| `passed` | every rule's tests pass | `purlin:test --release` writes `passed/<version>`, unsigned |
-| `signed` | every rule's tests pass, and a person signs each release | the first `purlin:sign` over the evidence package writes `signed/<version>` |
-
-A person pushes the tag. `references/hard_gates.md` defines what it means. At either gate the AI
-audit and mutation testing are tools a person runs with `purlin:audit`; nothing waits on them.
-
-A yes to the mutation question writes `mutation_engine: auto` and wires the engine: `[tool.mutmut]` into `pyproject.toml` when that
-file exists and `[mutmut]` into `setup.cfg` otherwise, plus a `mutants/` line in `.gitignore`; a
-jest, vitest or .NET project whose Stryker is not installed gets a line naming the command that
-installs it. A no writes `mutation_engine: none` and wires nothing; the AI audit alone judges
-test strength. A config with no `mutation_engine` is read as `none`, which
-is off. Where no engine exists, or it cannot run on this operating system (mutmut on Windows),
-init asks nothing, writes `none` and, at `signed`, prints one line saying so. `--mutation` turns
-it on without the question, at either gate.
+Setup asks one question and nothing else: `Commit the files setup wrote? [y/N]`. The default is
+no; a yes commits them in one commit, `chore(init): set up Purlin`. It asks nothing about how the
+tests run, which git host the project is on or what the project is called: the first `purlin:test`
+suggests the test commands, and the git host and the project's name are read from the project
+each time they are needed.
 
 ## Run it
 
 ```bash
-sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" --project-root . --gate <gate>
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" --project-root .
 ```
 
-Ask the person each question yourself. Pass `--mutation` when they say yes to breaking the code on purpose. Pass `--yes` when they say yes to the commit; otherwise run the script with its input empty, `< /dev/null`, so every question it would ask takes its default.
+Ask the person the question yourself. Pass `--yes` when they say yes to the commit; otherwise run
+the script with its input empty, `< /dev/null`, so the question takes its default.
 
 | Flag | What it does |
 |------|--------------|
-| `--gate <gate>` | Sets the gate, at setup or later. Lowering changes the setting and deletes nothing |
-| `--mutation` | Turns mutation testing on without asking |
-| `--yes` | Takes the default answer to every question and commits the files setup wrote |
-| `--update` | Brings a project Purlin 0.9.5 set up to the installed release. See below |
+| `--project-root <dir>` | The top folder of the git checkout to set up |
+| `--yes` | Commits the files setup wrote without asking |
+| `--update` | Brings a project Purlin 0.9.5 set up to the installed version. See below |
 
-A later run asks nothing before it writes. Raising or lowering the gate rewrites the setting and
-deletes nothing: the runner file and the evidence stay where they are.
+A second run writes no file: what is there is kept.
 
-## What init writes
+## What setup writes
 
-It writes `.purlin/` and `specs/`; `.purlin/config.json` with the answers and what they derive;
-a block in `.gitignore`; and `.purlin/evidence/` with one README saying what the folder holds.
-The folder for anchors, `specs/_anchors/`, is made when the first anchor is written. It installs
-nothing in the project's tests and asks nothing about them: it writes the `tests` setting as an
-empty list, and the first `purlin:test` suggests a command for each test tool it recognises,
-each with the flag that writes the report Purlin reads, and writes them together once the person
-agrees. `references/supported_frameworks.md` shows every entry, and
-`references/formats/marker_format.md` is the contract. The `.gitignore` block covers
-`.purlin/runtime/`, where a run's reports and log land, `.purlin/report-data.js`, and
-`purlin-report.html`, the dashboard page init copies to the project root so it opens from disk.
-`.purlin/evidence/` and `.purlin/tests.md` stay tracked. It wires the engine only when mutation
-testing is on, and writes a runner file only for the one reason below. It prints every file it
-wrote, kept or skipped, one per line, then asks the third question.
+It writes `.purlin/` and `specs/`; `.purlin/config.json`; a block in `.gitignore`; and
+`.purlin/evidence/` with one README saying what the folder holds. The folder for anchors,
+`specs/_anchors/`, is made when the first anchor is written. It installs nothing in the project's
+tests and no git hook. The `.gitignore` block covers `.purlin/runtime/`, where a run's reports
+land, `.purlin/report-data.js`, and `purlin-report.html`, the dashboard page, which opens from
+disk. `.purlin/evidence/` stays tracked. It prints every file it wrote, kept or copied, one per
+line, then asks its question.
 
-Where a runner is called for, the runner file triggers on two things: a push of a `signed/**`
-tag, and a push to a `run/*` branch, the branch `purlin:test --remote` creates and deletes
-around one run. The job is named `purlin`, and its last step is the test run: the job fails only
-when a test fails or could not run. No breaks and no AI audit run on the runner.
-
-The config it writes carries these six keys and no other; `version` is the plugin's `VERSION`
-file. `audit_parallel`, how many AI audit calls run at once, is 4 and is not asked; change it in
-the file, from 1 to 16.
+The settings file holds two keys and no other; `version` is the plugin's `VERSION` file:
 
 ```json
 {
   "version": "<the plugin's VERSION file>",
-  "gate": "signed",
-  "mutation_engine": "none",
-  "audit_parallel": 4,
-  "tests": [],
-  "ci": "github"
+  "tests": []
 }
 ```
 
-`ci` is the git host read from the remote URL, `github` or `azure`, and `none` where there is no
-remote or it names neither. Under its first summary line init prints `No git host found.` where
-there is no remote, and `This git host cannot run tests remotely. Everything on this machine
-works.` where the remote names neither. Read and change the file with the `purlin_config` tool
-rather than by hand, so a key the installed Purlin does not read is reported instead of kept.
+`tests` starts empty. The first `purlin:test` suggests a command for each test tool it recognises,
+each with the flag that writes the report Purlin reads, and writes them together once the person
+agrees. `references/supported_frameworks.md` shows every entry, and
+`references/formats/marker_format.md` is the contract. Read and change the file with the
+`purlin_config` tool rather than by hand, so a key the installed Purlin does not read is reported
+instead of kept.
 
-## The remote runner
+Setup writes no runner file. Where a proof is tagged `@env` for an operating system this machine
+is not, the first `purlin:test --remote` writes the runner file for the project's git host, shows
+it and asks before committing it. Setup sets up no signing either: `purlin:sign` checks for a key
+to sign with and, when there is none, shows the commands that set one up.
 
-A remote runner is written for one reason and no other: a proof in `specs/` is tagged `@env`
-for an operating system this machine is not. Init prints it:
+## The refusals
 
-```
-A remote runner is written because:
-  A proof in specs/ is tagged @env for Windows, which this machine is not, so only a runner can prove it.
-```
+Each names what is wrong and what fixes it, and writes nothing more:
 
-At `passed` the reason reads `A test is tagged @env for Windows, which this machine is not, so
-only a runner can run it.` With no such proof, init writes no runner file and prints one line,
-`skipped the runner file (<reason>)`. Teammates read the evidence `purlin:test --commit` commits.
-
-Before a runner file is written init checks two prerequisites: a remote exists, and its URL
-names GitHub or Azure DevOps. The first that fails is printed in one line naming what to do, and
-no runner file is written. The host CLI, `gh` or `az`, is reported installed or not either way.
-The same checks run under `--update`.
-
-## What each gate brings
-
-Mutation testing is the answer to its own question, not the gate's. Where a runner file is
-called for, it gets one job per operating system a proof is tagged `@env` for that this machine
-is not, each writing its own section (`references/hard_gates.md`, "Where a runner runs").
-
-Under `signed`, a release needs a sign-off over its evidence package, and init asks nothing
-about it and names nobody: anyone can sign, and a sign-off names its signer. Init prints no signing setup. `purlin:sign`
-checks for a key to sign with and, when there is none, shows the commands that set one up.
-
-## What the runner runs
-
-The runner file init writes clones Purlin at the release the project pins and runs the run
-script's own CI arm from that checkout: the same script a person runs, at a version that changes
-only when someone edits the runner file or, on GitHub, sets the `PURLIN_REF` repository
-variable. Nobody types that arm; the runner file carries it.
-
-| The run | What it does |
-|---------|--------------|
-| a `signed/**` tag | Reruns the tests it selects (`references/hard_gates.md`, "Where a runner runs") on a clean machine, and commits nothing |
-| a `run/*` branch | Runs the tests it selects (`references/hard_gates.md`, "Where a runner runs"), then commits its own section of each feature's `.purlin/evidence/ci/` file onto that branch through the git host's API, at every gate |
-
-The runner writes no signature.
+- `This is not a git repository. Run git init, then purlin:init.`, exit 2.
+- `.purlin/config.json cannot be read: <cause>. Fix the file by hand; nothing ran and nothing was saved.`, exit 1.
+- `The files setup wrote are staged and not committed: <git's own message>`, where git refused
+  the commit: fix what git named and commit them.
 
 ## Bringing a 0.9.5 project forward
 
@@ -152,36 +82,27 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scrip
 ```
 
 `--update` reads the layout Purlin 0.9.5 leaves in a project and lists each pending migration
-with the files it touches. It asks `Apply <migration>, which will <what it does>?` for each,
-and in this order it: removes a spec's Figma `> Source:`, its `> Pinned:`, its
-`> Visual-Reference:` and its `> Visual-Hash:` lines; rewrites the Windows tag to
-`@env(windows)`; drops the kind of test from every proof line; deletes the per-run files 0.9.5
-committed beside the specs and `.purlin/cache/`, and untracks `.purlin/report-data.js`; removes
-the `pre-commit` and `pre-push` scripts 0.9.5 put in `.git/hooks/`; rewrites
-`.purlin/config.json` to the six keys, asking the gate question, reading a gate of `strong` as
-`passed` and taking out `min_strength`, and the mutation question at `signed` where the old
-config names no engine, writing the `tests` setting from the
-frameworks the old config named and the tree carries, and naming every key it drops; creates
-`.purlin/evidence/` with its README; replaces `purlin-report.html` at the project root, the link
-0.9.5 left or a copy that differs, with the page init copies; replaces a workflow that committed
-per-run files with the runner file init writes for the git host, `.github/workflows/purlin.yml`
-or `purlin.azure-pipelines.yml`, where a proof names another operating system; rewrites each
-0.9.5 marker in the project's tests as one comment above the same test; and removes the files
-0.9.5 copied into the project for its test frameworks, with the lines that loaded them.
+with the files it touches. It asks before each one, with a question ending `[y/N]`, and a
+declined one is left pending. Between them the migrations: rewrite or remove each line 0.9.5
+wrote into a spec that this version does not read; remove the files 0.9.5 kept that this version
+does not use, and its two git hooks; rewrite `.purlin/config.json` to `version` and `tests`,
+writing `tests` from the frameworks the old settings named and naming every key they drop; write
+`.purlin/evidence/` with its README; replace the dashboard page at the project root; rewrite each
+0.9.5 marker as one comment above the same test; and remove the wiring 0.9.5 put in the project's
+test configuration.
 
 Every file it rewrites is backed up beside the original as `<name>.local-<sha8>.bak`. It
 commits what it applied in one commit, `chore(update): migrate to <version> (<migrations>)`.
-It changes no spec that has no `> Scope:` line and names each one instead: the line is
-optional below `signed` and required at `signed`. While a migration is pending `sync_status`
-prints `→ Run: purlin:init --update` above its summary, and a test run stops and names it.
+While a migration is pending `sync_status` prints `→ Run: purlin:init --update` above its
+summary, and a test run stops and names it.
 
 ## When you are done
 
-Say what was written. The script ends on the lines `purlin:status` ends on, the summary and
-`Left to do`, whose first line is the next step, or, with no spec yet, on
-`No specs found under specs/.` and `→ Run: purlin:spec-from-code to write the specs this code already implies.` or `→ Run: purlin:spec <name> to write the first spec.` Name the next step from what the tree shows:
+Say what was written. The script ends on the lines `purlin:status` ends on, or, with no spec yet,
+on `No specs found under specs/.` and the command that writes the first one. Name the next step
+from what the tree shows:
 
 - No specs and no code: `→ Run: purlin:spec "<one sentence about what the software must do>"`.
 - Code but no specs: `→ Run: purlin:spec-from-code`.
 - Specs but no tests: `→ Run: purlin:build <name>`.
-- Gate raised to `signed` and a spec names no files in `> Scope:`: `→ Run: purlin:spec <name>`.
+- Specs and marked tests: `→ Run: purlin:test`, which suggests the test commands on its first run.

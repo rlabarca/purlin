@@ -10,7 +10,7 @@ and commit message. This page is the one home of the wording rules.
 level."
 
 **Person.** Second person for the reader's actions ("you commit it yourself", "before you
-push"), third person for the system's ("Purlin breaks your code on purpose", "the audit writes
+push"), third person for the system's ("Purlin plants one bug per proof", "the audit writes
 its findings for each rule it reached"). First person never appears. The product does not say
 "we".
 
@@ -30,18 +30,17 @@ and the three roles are product, developer and QA.
 **Limits stated.** Say what Purlin cannot do as plainly as what it can: "Purlin can't prove code
 is right. It gives you a paper trail." State the gap rather than skip it.
 
-**Exact numbers.** "42 specs", "71% test strength", "40 rules. 35 pass their tests." Figures
+**Exact numbers.** "42 specs", "4 of 5 rules strong (80%)", "40 rules. 35 pass their tests." Figures
 are exact and unrounded, and they usually close a section rather than open it.
 
 **Machine text in monospace.** Anything the machine produced, commands, rule ids, file paths,
-shas, gates, cell words and transcripts, is set in monospace: backticks in Markdown, Courier New
+shas, cell words and transcripts, is set in monospace: backticks in Markdown, Courier New
 on a page. Anything a person wrote is in the running typeface. Readers use the typeface to tell
 whose claim they are reading.
 
 **Every output says what to do next.** An agent seeking a goal can read any output, know which
 rule is affected and what to do, and improve the project by doing it. A command's ending names
-the command to run next; a finished project's `Nothing left to do.` names the release step
-after it.
+the command to run next; a project whose tests are met ends on `purlin:sign`.
 
 **Systems by their names.** Wherever a person reads an operating system it is `Windows`,
 `macOS` or `Linux/Unix`, and in the dashboard's small boxes `Win`, `Mac` or `Lin`. The stored
@@ -56,6 +55,6 @@ rhetorical questions, and no sentence that describes a benefit without naming th
 
 ## Sentence shapes
 
-- Definitions: "*Gate*: the one project setting, `passed` or `signed`."
+- Definitions: "*Evidence*: what a run leaves behind for each feature, one file per source."
 - Consequences: "If the test fails, the rule is left to do as `to fix`."
-- Instructions: "Run it at the start of a session and before a release."
+- Instructions: "Run it at the start of a session and before a sign-off."
