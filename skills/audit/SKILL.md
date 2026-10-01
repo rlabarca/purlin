@@ -80,9 +80,9 @@ The audit found 4 of 5 rules strong (80%).
   means `claude` could not be reached. A rule a spot test fired on is still written `weak`; any
   other rule prints `<feature> RULE-N   not audited` and gets no audit entry, since `strong`
   means the model's part of the audit ran.
-- `The audit stopped: <file> changed while a break ran. Nothing in the project was written by the
-  audit.` means a file changed under the run: leave the project alone while the audit runs, then
-  run it again.
+- `The audit stopped: <file> changed while a bug was planted. Nothing in the project was written
+  by the audit.` means a file changed under the run: leave the project alone while the audit
+  runs, then run it again.
 
 A finding is build work. `purlin:build <feature>` fixes the test, and the rule is read again by
 the next `purlin:audit`. Never narrow a rule or a proof to make a finding disappear. What the
