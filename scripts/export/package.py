@@ -52,6 +52,7 @@ file cannot be read; 2 the command line was wrong.
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -203,6 +204,32 @@ class _Checkout(object):
 
 
 # ---------------------------------------------------------------------------
+# The same version of the code, the time and the run lines. Stubs from the base
+# commit of dev/plans/d115-plan.md, until the lane `signoff` fills them.
+# ---------------------------------------------------------------------------
+
+def only_records_between(project_root, older, newer):
+    """True when `older` is `newer`, or an ancestor of it from which every commit up
+    to `newer` changes only paths under `.purlin/`."""
+    return False
+
+
+def same_code(project_root, section_commit, head=None):
+    """only_records_between(section_commit, head or HEAD); False for an empty commit."""
+    return False
+
+
+def time_words(at):
+    """`2026-10-01 12:17 UTC` for `2026-10-01T12:17:13Z`."""
+    return '%s %s UTC' % (at[:10], at[11:16])
+
+
+def run_lines(package):
+    """K8's run lines, local first."""
+    return []
+
+
+# ---------------------------------------------------------------------------
 # The version and the tag
 # ---------------------------------------------------------------------------
 
@@ -210,6 +237,73 @@ def version_name(project_root, release=None):
     """The version the package and the tag are named for, or None where there is none."""
     return (str(release or '').strip()
             or release_module.project_version(project_root) or None)
+
+
+def project_version(project_root):
+    """The VERSION file, package.json, pyproject.toml or the first root *.csproj, in
+    that order; None where none states a version."""
+    for reader in (_version_file, _package_json, _pyproject, _csproj):
+        named = reader(project_root)
+        if named:
+            return named
+    return None
+
+
+_PACKAGE_JSON = 'package.json'
+_PYPROJECT = 'pyproject.toml'
+_PYPROJECT_TABLES = ('project', 'tool.poetry')
+_TOML_VERSION = re.compile(r'''^version\s*=\s*(["'])(.*?)\1\s*(#.*)?$''')
+_CSPROJ_VERSION = re.compile(r'<Version>\s*([^<]*?)\s*</Version>')
+
+
+def _read(project_root, name):
+    try:
+        with open(os.path.join(project_root, name), 'r',
+                  encoding='utf-8') as handle:
+            return handle.read()
+    except (IOError, OSError, UnicodeDecodeError):
+        return ''
+
+
+def _version_file(project_root):
+    return _read(project_root, 'VERSION').strip()
+
+
+def _package_json(project_root):
+    try:
+        data = json.loads(_read(project_root, _PACKAGE_JSON) or '{}')
+    except ValueError:
+        return ''
+    version = data.get('version') if isinstance(data, dict) else None
+    return version.strip() if isinstance(version, str) else ''
+
+
+def _pyproject(project_root):
+    text = _read(project_root, _PYPROJECT)
+    for table in _PYPROJECT_TABLES:
+        inside = False
+        for raw in text.splitlines():
+            line = raw.strip()
+            if line.startswith('['):
+                inside = line.split('#', 1)[0].strip() == '[%s]' % table
+                continue
+            found = _TOML_VERSION.match(line) if inside else None
+            if found and found.group(2).strip():
+                return found.group(2).strip()
+    return ''
+
+
+def _csproj(project_root):
+    try:
+        names = sorted(name for name in os.listdir(project_root)
+                       if name.endswith('.csproj'))
+    except OSError:
+        return ''
+    for name in names:
+        found = _CSPROJ_VERSION.search(_read(project_root, name))
+        if found and found.group(1):
+            return found.group(1)
+    return ''
 
 
 def package_path(version):

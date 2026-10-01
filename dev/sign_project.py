@@ -1,4 +1,4 @@
-"""The throwaway signing project the signature, tag, export and audit tests share.
+"""The throwaway signing project the signature, export and audit tests share.
 
 A helper module, not a test file: it carries no marker and pytest collects
 nothing from it. Each test file imports the names it uses from here, so no
@@ -24,8 +24,8 @@ for _path in (os.path.join(ROOT, 'scripts', 'mcp'),
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
+from purlin import PURLIN_VERSION  # noqa: E402
 from purlin import evidence as purlin_evidence  # noqa: E402
-from purlin import gate as purlin_gate  # noqa: E402
 from purlin import payload as purlin_payload  # noqa: E402
 from purlin import fingerprint as purlin_fingerprint  # noqa: E402
 
@@ -33,10 +33,10 @@ from purlin import fingerprint as purlin_fingerprint  # noqa: E402
 SIGN_PY = os.path.join(ROOT, 'scripts', 'review', 'sign.py')
 
 
-# The two gates by position: the one a project sits at by default, and the one
-# that asks for a sign-off.
-FIRST_GATE = purlin_gate.GATES[0]
-SIGNING_GATE = purlin_gate.GATES[-1]
+# Two names four test files still import by name, so those files collect.
+# Nothing here reads them; they go once no test file imports them.
+FIRST_GATE = 'passed'
+SIGNING_GATE = 'signed'
 
 
 SPEC = (
@@ -106,10 +106,12 @@ def write(path, text):
 class Project(object):
     """A throwaway project: git, a config, one spec, one test file."""
 
-    def __init__(self, spec=SPEC, gate=None, config=None):
+    def __init__(self, spec=SPEC, config=None):
         self.root = tempfile.mkdtemp()
-        settings = {'gate': gate or FIRST_GATE,
-                    'project_name': 'proj'}
+        settings = {'version': PURLIN_VERSION,
+                    'tests': [{'name': 'pytest', 'run': 'pytest {files}',
+                               'report': None, 'format': 'junit',
+                               'files': ['tests/test_*.py']}]}
         settings.update(config or {})
         write(os.path.join(self.root, '.purlin', 'config.json'),
               json.dumps(settings))
@@ -147,7 +149,7 @@ class Project(object):
         settings.update(fields)
         write(path, json.dumps(settings))
 
-    def evidence(self, statuses=None, runner='ada', strength=90,
+    def evidence(self, statuses=None, runner='ada',
                  commit_it=True, at='2026-09-13T12:00:00Z', tests=None,
                  source='local', os_name=None, audited=True):
         """Write a section naming the tests `statuses` names. Its path.
@@ -157,7 +159,7 @@ class Project(object):
         the test names the section observed for it, for a proof backed by
         more than one test. `source` is the folder it goes in, which is what
         a reader reads the source off. With `audited` the file carries an
-        `audit` too, whose `mutation` holds `strength`.
+        `audit` too.
         """
         statuses = statuses or {'PROOF-1': 'pass', 'PROOF-2': 'pass'}
         os_name = os_name or purlin_evidence.host_os()
@@ -179,10 +181,7 @@ class Project(object):
             'fingerprint': purlin_fingerprint.fingerprint(self.root, 'login'),
             'rules': {}, 'proofs': proofs}
         if audited:
-            audit = data.setdefault('audit', {'mutation': None, 'rules': {}})
-            audit['mutation'] = {'engine': 'mutmut' if strength is not None
-                                 else 'none', 'score': strength, 'at': at,
-                                 'commit': self.head()}
+            data.setdefault('audit', {'rules': {}})
         write(os.path.join(self.root, *rel.split('/')),
               json.dumps(data, indent=2, sort_keys=True))
         if commit_it:
@@ -212,7 +211,7 @@ class Project(object):
         entry = self.rule(rule, feature)
         rel = '.purlin/evidence/%s/%s.json' % (source, feature)
         data = self._read_evidence(rel, source, feature)
-        audit = data.setdefault('audit', {'mutation': None, 'rules': {}})
+        audit = data.setdefault('audit', {'rules': {}})
         word = ('undecided' if not settled
                 else 'weak' if findings else 'strong')
         audit['rules'][rule] = {
@@ -254,12 +253,12 @@ def commit_all(root, message='purlin: evidence at abc1234'):
 
 
 def signing_project(signer='jane@acme.com'):
-    """A project at the gate signed whose two rules pass on a runner and
-    carry an audit reading strong, ready for a release.
+    """A project whose two rules pass on a runner and carry an audit reading
+    strong, ready for a sign-off.
 
     The signer's key is set up last.
     """
-    made = Project(gate=SIGNING_GATE)
+    made = Project()
     made.evidence(runner='ci', commit_it=False, source='ci')
     made.audit('RULE-1')
     made.audit('RULE-2')

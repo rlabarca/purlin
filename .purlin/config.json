@@ -1,8 +1,5 @@
 {
   "version": "0.10.0",
-  "gate": "signed",
-  "mutation_engine": "auto",
-  "audit_parallel": 4,
   "tests": [
     {
       "name": "pytest",
@@ -22,6 +19,5 @@
         "dev/test_*.sh"
       ]
     }
-  ],
-  "ci": "github"
+  ]
 }

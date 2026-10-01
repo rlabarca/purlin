@@ -19,7 +19,7 @@ What the fake answers is set in `fake_claude.json` beside it:
     raw       printed as-is instead of the JSON, when set
 
 `dev/conftest.py` puts one fake first on PATH for every test in the session,
-answering `settled: yes`. A test that wants another answer installs its own
+answering `no break: the fake model plants no bug`. A test that wants another answer installs its own
 into its own directory and puts that first.
 """
 
@@ -28,7 +28,7 @@ import os
 import stat
 import sys
 
-DEFAULT_ANSWER = 'settled: yes'
+DEFAULT_ANSWER = 'no break: the fake model plants no bug'
 DEFAULT_MODEL = 'claude-fake-1'
 
 _SCRIPT = r'''#!%(python)s

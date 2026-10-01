@@ -22,20 +22,21 @@ import suites  # noqa: E402
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RUN_SCRIPT = os.path.join(REPO, 'scripts', 'run', 'purlin_run.py')
 
+with open(os.path.join(REPO, 'VERSION'), encoding='utf-8') as _handle:
+    VERSION = _handle.read().strip()
 
-def _project(tmp_path, tests=None, gate='passed'):
+
+def _project(tmp_path, tests=None):
     """A project root with `.purlin/config.json` and an empty `specs/`.
 
-    `tests` is the `tests` setting, one pytest suite by default. `passed` is
-    the default gate because it is the gate a new project is set up at. A
-    test that needs the breaks to run sets mutation_engine, which is off
-    until named, at either gate.
+    The settings hold `version` and `tests`. `tests` is the `tests` setting,
+    one pytest suite by default.
     """
     root = tmp_path / 'project'
     (root / 'specs' / 'a').mkdir(parents=True)
     (root / '.purlin').mkdir(parents=True)
     (root / '.purlin' / 'config.json').write_text(
-        json.dumps({'gate': gate, 'tests': (
+        json.dumps({'version': VERSION, 'tests': (
             [suites.pytest_suite(extra='--ignore=mutants')] if tests is None
             else tests)}), encoding='utf-8')
     return root
@@ -61,8 +62,8 @@ def _spec(root, feature, proofs=(('PROOF-1', 'RULE-1', ''),), rules=1,
         '\n'.join(lines) + '\n', encoding='utf-8')
 
 
-def _pytest_project(tmp_path, body=None, gate='passed'):
-    root = _project(tmp_path, gate=gate)
+def _pytest_project(tmp_path, body=None):
+    root = _project(tmp_path)
     (root / 'tests').mkdir()
     (root / 'tests' / 'test_feat.py').write_text(
         body if body is not None else

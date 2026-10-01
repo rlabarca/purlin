@@ -21,6 +21,7 @@ import pytest
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
 
+from purlin import PURLIN_VERSION
 from purlin import evidence as purlin_evidence
 from purlin import fingerprint as purlin_fingerprint
 from purlin import payload as purlin_payload
@@ -82,9 +83,9 @@ ONE_RULE_SPEC = (
 class Project(object):
     """A throwaway project root with git, a config and one spec."""
 
-    def __init__(self, spec=SPEC, gate='passed', extra_config=None):
+    def __init__(self, spec=SPEC, extra_config=None):
         self.root = tempfile.mkdtemp()
-        config = {'gate': gate, 'project_name': 'proj',
+        config = {'version': PURLIN_VERSION,
                   'tests': [{'name': 'pytest', 'run': 'pytest {files}',
                              'report': None, 'format': 'junit',
                              'files': ['tests/test_*.py']}]}
@@ -111,7 +112,7 @@ class Project(object):
         _write(os.path.join(self.root, 'specs', category, name + '.md'), text)
 
     def evidence(self, proofs, feature='login', runner='ci', os_name=None,
-                 strength=90, commit_it=True, ci=False, source=None,
+                 commit_it=True, ci=False, source=None,
                  at='2026-09-13T12:00:00Z', claimed_source=None,
                  audited=True, fingerprint=None):
         """One section of a feature's evidence file, in its source folder.
@@ -123,7 +124,7 @@ class Project(object):
         a runner's evidence gets the runner's own folder and machine.
         `claimed_source` writes a different word into the file,
         which is how a test makes the two disagree. With `audited` the file
-        carries an `audit` whose `mutation` holds `strength`.
+        carries an `audit`.
         """
         source = source or ('ci' if ci else 'local')
         os_name = os_name or purlin_evidence.host_os()
@@ -149,10 +150,7 @@ class Project(object):
                         'test': _test_of(entry, feature)}
                        for entry in proofs]}
         if audited:
-            audit = data.setdefault('audit', {'mutation': None, 'rules': {}})
-            audit['mutation'] = {'engine': 'mutmut' if strength is not None
-                                 else 'none', 'score': strength, 'at': at,
-                                 'commit': self.head()}
+            data.setdefault('audit', {'rules': {}})
         _write(path, json.dumps(data, indent=2, sort_keys=True))
         if commit_it:
             _git(self.root, 'add', '-A')
@@ -177,7 +175,7 @@ class Project(object):
             data = {'schema': purlin_evidence.SCHEMA, 'feature': feature,
                     'source': source, 'spec': 'specs/auth/%s.md' % feature,
                     'platforms': {}}
-        audit = data.setdefault('audit', {'mutation': None, 'rules': {}})
+        audit = data.setdefault('audit', {'rules': {}})
         entry = {'rule_hash': rule['rule_hash'],
                  'proof_hash': rule['proof_hash'],
                  'test_hash': rule['test_hash'],
@@ -281,7 +279,7 @@ def _rpc(root, *requests, **kwargs):
     """The server's answers to `requests` on stdin, and what it wrote to stderr.
 
     The server's `main()` runs in this process with `root` as the working
-    directory, so a mutation run can see which case caught a break.
+    directory.
     `child=True` starts `server.py` as the client does instead.
     """
     lines = '\n'.join(json.dumps(request) for request in requests) + '\n'
