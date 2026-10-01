@@ -1,7 +1,3 @@
 {
-  "gate": "passed",
-  "mutation_engine": "none",
-  "audit_parallel": 4,
-  "tests": [],
-  "ci": "none"
+  "tests": []
 }

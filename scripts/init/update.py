@@ -42,9 +42,6 @@ if _MCP_DIR not in sys.path:
 from purlin import console as console_module                  # noqa: E402
 import config_engine                                          # noqa: E402
 # --- what 0.9.5 wrote, which the upgrade finds and rewrites --------------
-# A line naming a spelling this release removed ends with a `# retired`
-# comment, so the check that keeps removed spellings out of the tree steps
-# over exactly those lines and no others.
 
 PROOF_FILE_GLOB = '*.proofs-*.json'
 RUN_FILE_GLOB = '*.receipt.json'
@@ -77,17 +74,17 @@ NAMED_MANY = ('%s: its rules now cover the whole project, where %d specs '
 PYTEST_MARK_RE = re.compile(r'^([ \t]*)@pytest\.mark\.proof\(')
 PYTEST_ARGS_RE = re.compile(r"""\(\s*["'](\w+)["']\s*,\s*["'](PROOF-\d+)["']""")
 PYTESTMARK_RE = re.compile(r'pytest\.mark\.proof\(')
-TITLE_TAG_RE = re.compile(r' ?\[proof:(\w+):(PROOF-\d+):RULE-\d+(?::\w+)?\]')  # retired
-TRAIT_RE = re.compile(r'(\[\s*)?,?\s*Trait\s*\(\s*"PurlinProof"\s*,\s*'  # retired
+TITLE_TAG_RE = re.compile(r' ?\[proof:(\w+):(PROOF-\d+):RULE-\d+(?::\w+)?\]')
+TRAIT_RE = re.compile(r'(\[\s*)?,?\s*Trait\s*\(\s*"PurlinProof"\s*,\s*'
                       r'"(\w+):(PROOF-\d+):RULE-\d+(?::\w+)?"\s*\)(\s*\])?')
-SHELL_CALL_RE = re.compile(r'^([ \t]*)purlin_proof\s+["\']?(\w+)["\']?\s+'  # retired
+SHELL_CALL_RE = re.compile(r'^([ \t]*)purlin_proof\s+["\']?(\w+)["\']?\s+'
                            r'["\']?(PROOF-\d+)["\']?.*$')
 SHELL_HARNESS_RE = re.compile(r'^([ \t]*)(?:source|\.)\s+\S*(?:purlin-proof|'
                               r'shell_purlin)\.sh\S*\s*$')
-SHELL_FINISH_RE = re.compile(r'^([ \t]*)purlin_proof_finish\b.*$')  # retired
+SHELL_FINISH_RE = re.compile(r'^([ \t]*)purlin_proof_finish\b.*$')
 SQL_MARK_RE = re.compile(r'^--[ \t]*@purlin[ \t]+(\w+)[ \t]+(PROOF-\d+)'
                          r'[ \t]+RULE-\d+(?:[ \t]+\w+)?[ \t]*$')
-PLUGIN_DIR = '.purlin/plugins'                             # retired
+PLUGIN_DIR = '.purlin/plugins'
 CONFTEST_PLUGIN_RE = re.compile(
     r"""["']\.purlin\.plugins\.pytest_purlin["']\s*,?\s*""")
 REPORTER_RE = re.compile(
@@ -117,16 +114,12 @@ WORKFLOW_DIR = '.github/workflows'
 DROPPED_FRAMEWORK = 'dropped %s from the tests: nothing in the tree runs it'
 TEST_EXTENSIONS = ('.py', '.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx', '.cs',
                    '.sh', '.bash', '.sql')
-SKIP_DIRS = ('node_modules', 'bin', 'obj', 'mutants')
+SKIP_DIRS = ('node_modules', 'bin', 'obj')
 _COMMIT = 'chore(update): migrate to %s (%s)'
-# What `ci` may say: the git host a remote runner reads, or `none`.
-CI_VALUES = ('github', 'azure', 'none')
-# The gates at which the mutation question is asked, as init asks it.
-MUTATION_GATES = ('signed',)
-# The lines the config migration prints for what this release retired.
-STRONG_NOW_PASSED = ('The gate strong is now passed; the audit stays a tool '
-                     'you run with purlin:audit.')
-REMOVED_KEY = 'removed from .purlin/config.json: %s'
+# The two settings this release reads; the config step removes every other.
+SETTINGS = ('version', 'tests')
+REMOVED_KEYS = 'removed from .purlin/config.json: %s'
+EVIDENCE_TEMPLATE = 'templates/evidence-readme.md'
 
 # --- helpers ---------------------------------------------------------------
 # Both open with `newline=''`: a file the project owns keeps each line's own
@@ -204,18 +197,8 @@ def _plugin_module(subdir, name):
         sys.path.insert(0, folder)
     return __import__(name)
 
-def _gate():
-    return _plugin_module('mcp', 'purlin.gate').gate
-
 def _frameworks():
     return _plugin_module('mcp', 'purlin.frameworks').frameworks
-
-def _flow():
-    return _plugin_module('run', 'workflow')
-
-def _init():
-    """scaffold.py, the one home of the questions init asks and what they write."""
-    return _plugin_module('init', 'scaffold')
 
 def _confirm(question, assume_yes):
     if assume_yes:
@@ -225,18 +208,6 @@ def _confirm(question, assume_yes):
     except (EOFError, KeyboardInterrupt):
         return False
     return answer.strip().lower() in ('y', 'yes')
-
-def _ci(root, old):
-    """`github`, `azure` or `none`: the value the project named, else its host.
-
-    `none` is a project with no remote, or with a host neither GitHub nor
-    Azure DevOps: everything on its own machine works, and only a remote run
-    needs one of the two.
-    """
-    named = str(old.get('ci') or '').strip().lower()
-    if named in CI_VALUES:
-        return named
-    return _init().git_host(root) or 'none'
 
 def _s(items):
     return '' if len(items) == 1 else 's'
@@ -422,10 +393,8 @@ def _detect_hooks(root):
 def _apply_hooks(root, files, args, out):
     """Remove them. Nothing runs at commit time and nothing runs at push time.
 
-    A push is a person's act and a gate is the git host's, so a hook in front
-    of either was a convenience that had to be explained and could be
-    skipped. What is left is the tag: `purlin:sign` writes `signed/<version>`
-    at the gate `signed` when nothing is left to do, and a person pushes it.
+    A push is a person's act, so a hook in front of it was a convenience that
+    had to be explained and could be skipped.
     """
     for rel in files:
         path = os.path.join(root, rel)
@@ -440,84 +409,14 @@ def _apply_hooks(root, files, args, out):
             'push time' % (len(files), _s(files)))
 
 def _detect_config(root):
+    """The settings file, while it holds anything but this release's two."""
     config = _config(root)
     if not config:
         return []
-    gate = _gate()
-    stale = ('gate' not in config
-             or config.get('gate') not in gate.GATES
-             or 'tests' not in config
-             or 'mutation_engine' not in config
-             or 'audit_parallel' not in config
-             or config.get('version') != _version()
-             or any(key in config for key in gate.RETIRED_KEYS))
+    stale = (sorted(config) != sorted(SETTINGS)
+             or not isinstance(config.get('tests'), list)
+             or config.get('version') != _version())
     return ['.purlin/config.json'] if stale else []
-
-def _gate_default(old):
-    """The gate to offer: the one the project named, when it named one.
-
-    A project that named none is offered `passed`, the hook setting v0.9.5
-    wrote included, whether or not it was the blocking one: a release is
-    refused while a rule's tests do not pass, at either gate. A gate of
-    `strong` is offered as `passed`.
-    """
-    gate = _gate()
-    named = str(old.get('gate') or '').strip().lower()
-    if named in gate.GATES:
-        return named
-    return gate.DEFAULT_GATE
-
-
-def _ask_mutation(root, framework, assume_yes, out):
-    # `framework` is the list of suite names the update writes.
-    """`none` or `auto`: the mutation question init asks, asked on an update.
-
-    Released 0.9.5 had no such setting, so the question is new to a project
-    it set up. It is asked only at the gate `signed`, where a person reads the
-    audit at the sign-off, and only where an engine that runs on this operating system
-    exists for a framework the project carries, and the default is no.
-    """
-    init = _init()
-    named = list(framework)
-    engine = init.engine_for(named)
-    if engine is None:
-        # No engine, or only one that cannot run on this operating system:
-        # setup's own line names which.
-        out.say(init._no_engine_line(named))
-        return 'none'
-    if assume_yes:
-        return 'none'
-    question = init.MUTATION_QUESTION % init.ENGINE_NAMES.get(engine, engine)
-    try:
-        answer = input('%s [y/N] ' % question)
-    except (EOFError, KeyboardInterrupt):
-        return 'none'
-    if not answer.strip().lower().startswith('y'):
-        return 'none'
-    out.say('turned mutation testing on; run purlin:init to wire %s into '
-            'the project' % init.ENGINE_NAMES.get(engine, engine))
-    return 'auto'
-
-def _ask_gate(default, assume_yes):
-    """The gate question init asks, asked once more on an update."""
-    if assume_yes:
-        return default
-    init = _init()
-    print('')
-    print(init.GATE_QUESTION)
-    for line in init.GATE_CHOICES:
-        print('  ' + line)
-    try:
-        typed = input('Gate [%s]: ' % default).strip()
-    except (EOFError, KeyboardInterrupt):
-        return default
-    if not typed:
-        return default
-    if typed.lower() in _gate().GATES:
-        return typed.lower()
-    # The answer as JSON writes it, `"whenever"`, as setup quotes it.
-    print(init.NOT_A_GATE % (init.as_json(typed), default))
-    return default
 
 def _tests_setting(root, old):
     """`(the tests setting, the names dropped)` from the config v0.9.5 wrote.
@@ -548,42 +447,20 @@ def _tests_setting(root, old):
 
 
 def _apply_config(root, files, args, out):
+    """`version` and `tests`, and every other key removed and named."""
     old = _config(root)
     path = os.path.join(root, '.purlin', 'config.json')
     out.kept(_back_up_copy(path, '.purlin/config.json'))
-    chosen = _ask_gate(_gate_default(old), args.yes)
     tests, unwired = _tests_setting(root, old)
     for name in unwired:
         out.say(DROPPED_FRAMEWORK % name)
-    init = _init()
-    names = [entry.get('name') for entry in tests if isinstance(entry, dict)]
-    if 'mutation_engine' in old:
-        mutation = old['mutation_engine']
-    elif chosen in MUTATION_GATES:
-        mutation = _ask_mutation(root, names, args.yes, out)
-    else:
-        mutation = 'none'
-    config = {
-        'version': _version(), 'gate': chosen, 'mutation_engine': mutation,
-        'audit_parallel': init.audit_parallel(old),
-        'tests': tests,
-        'ci': _ci(root, old),
-    }
-    # Every key the old file carried that this one does not: the retired
-    # ones, and the ones 0.9.5 wrote that nothing here reads. The framework
-    # list is not dropped: it became the tests setting, which says so.
-    dropped = sorted(key for key in old if key not in config
-                     and key not in ('test_framework', 'min_strength'))
+    config = {'version': _version(), 'tests': tests}
     _write(path, json.dumps(config, indent=2) + '\n')
     out.done('.purlin/config.json')
-    if str(old.get('gate') or '').strip().lower() == 'strong' \
-            and chosen == 'passed':
-        out.say(STRONG_NOW_PASSED)
-    if 'min_strength' in old:
-        out.say(REMOVED_KEY % 'min_strength')
-    out.say('set the gate to %s%s' % (chosen, '' if not dropped else
-            ' and dropped %d key%s this release does not read: %s'
-            % (len(dropped), _s(dropped), ', '.join(dropped))))
+    removed = [key for key in old if key not in SETTINGS]
+    if removed:
+        out.say(REMOVED_KEYS % ', '.join(removed))
+    names = [entry.get('name') for entry in tests if isinstance(entry, dict)]
     out.say('wrote the tests setting: %s' % (', '.join(names) or 'no suite; '
             'add one under "tests" in .purlin/config.json'))
 
@@ -617,12 +494,12 @@ def _apply_kind_tags(root, files, args, out):
             'purlin:test runs every marked test' % (len(files), _s(files)))
 
 def _detect_workflows(root):
-    """The workflow files this release replaces: any that commit proof files.
+    """The workflow files that committed proof files beside the specs.
 
     A v0.9.5 project ran its Windows proofs in a workflow that committed the
     proof file back beside the spec. This release writes no proof file, so
-    that workflow is removed and the runner file init writes is offered in
-    its place.
+    that workflow is removed; the first `purlin:test --remote` writes the
+    runner file a project needs.
     """
     hits = []
     for rel in _files_under(root, WORKFLOW_DIR, ('*.yml', '*.yaml')):
@@ -635,50 +512,15 @@ def _detect_workflows(root):
     return hits
 
 def _apply_workflows(root, files, args, out):
-    """The runner file init writes for this host, one job per OS."""
+    """The workflows go, and no runner file is written in their place."""
     for rel in files:
         out.kept(_back_up_copy(os.path.join(root, rel), rel))
         _untrack(root, rel)
         os.remove(os.path.join(root, rel))
         out.done(rel)
-    out.say('removed %d workflow%s this release replaced'
-            % (len(files), _s(files)))
-    flow = _flow()
-    from purlin import evidence as evidence_module
-    tags = flow.env_tags_in_specs(root)
-    here = evidence_module.host_os()
-    write_one, reasons = flow.wanted(tags, here, _config(root).get('gate'))
-    # One job per system some proof is tagged for that this machine is not.
-    foreign = flow.foreign_tags(tags, here)
-    if not write_one:
-        out.say('wrote no workflow: %s'
-                % flow.no_reason(_config(root).get('gate')))
-        return
-    for reason in reasons:
-        out.say(reason)
-    # The same prerequisites init checks. A workflow file is no use without
-    # the remote that holds it and a host that runs it, so a missing one is
-    # named and nothing is written.
-    ok, host, lines = flow.prerequisites(root)
-    for line in lines:
-        out.say(line)
-    if not ok:
-        out.say('left the workflow unwritten; a prerequisite is missing')
-        return
-    rel = flow.workflow_path(host)
-    if not _confirm('Write %s, one job per operating system your specs name '
-                    'that this machine is not?' % rel, args.yes):
-        out.say('left %s unwritten; run purlin:init again to add it later'
-                % rel)
-        return
-    _write(os.path.join(root, rel),
-           flow.render_workflow(host, foreign, 'v' + _version()))
-    out.done(rel)
-    out.say('wrote %s for %s, covering %s'
-            % (rel, host, ', '.join(evidence_module.os_word(tag)
-                                    for tag in foreign)))
-    out.say('it runs on a push to a run/* branch and on a push of a signed/* '
-            'tag')
+    out.say('removed %d workflow%s that committed proof files; the first '
+            'purlin:test --remote writes the runner file' % (len(files),
+                                                            _s(files)))
 
 
 def _detect_evidence(root):
@@ -689,7 +531,7 @@ def _detect_evidence(root):
 def _apply_evidence(root, files, args, out):
     """The folder every run writes into, and one README saying what it holds."""
     _write(os.path.join(root, EVIDENCE_README),
-           _read(os.path.join(PLUGIN_ROOT, _init().EVIDENCE_README)))
+           _read(os.path.join(PLUGIN_ROOT, *EVIDENCE_TEMPLATE.split('/'))))
     out.done(EVIDENCE_README)
     out.say('wrote %s: each feature\'s evidence lands beside it, under '
             'local/ and ci/' % EVIDENCE_README)
@@ -919,10 +761,10 @@ def _marked_old(root):
             text = _read(os.path.join(root, rel))
         except (IOError, OSError, UnicodeDecodeError):
             continue
-        if not any(token in text for token in ('pytest.mark.proof',  # retired
-                                               '[proof:',            # retired
-                                               'PurlinProof',        # retired
-                                               'purlin_proof',       # retired
+        if not any(token in text for token in ('pytest.mark.proof',
+                                               '[proof:',
+                                               'PurlinProof',
+                                               'purlin_proof',
                                                '@purlin')):
             continue
         ext = os.path.splitext(rel)[1].lower()
@@ -1052,8 +894,8 @@ def _apply_plugins(root, files, args, out):
                 'added' % rel)
 
 
-# Order matters: the tags are rewritten before the workflow matrix is rendered
-# from them.
+# Order matters: a migration can leave work for a later one, as the Windows
+# tag rewritten to `@env(windows)` leaves a kind-of-test tag before it.
 MIGRATIONS = (
     ('design-refs', 'remove the Figma source and the picture fingerprint '
      'from each spec that carries them',
@@ -1069,14 +911,13 @@ MIGRATIONS = (
      _detect_untracked, _apply_untracked),
     ('hooks', 'remove the git hooks an older release installed',
      _detect_hooks, _apply_hooks),
-    ('config', 'write .purlin/config.json at this shape and set the gate',
+    ('config', 'write .purlin/config.json with version and tests alone',
      _detect_config, _apply_config),
     ('evidence', 'create .purlin/evidence/ with the README that says what '
      'it holds', _detect_evidence, _apply_evidence),
     ('dashboard', 'replace purlin-report.html with the page this release '
      'ships', _detect_dashboard, _apply_dashboard),
-    ('workflows', 'remove the retired workflows and write purlin.yml only '
-     'where this project has a reason for a runner',
+    ('workflows', 'remove the workflows that committed proof files',
      _detect_workflows, _apply_workflows),
     ('markers', 'rewrite each 0.9.5 marker as a comment above its test',
      _detect_markers, _apply_markers),
