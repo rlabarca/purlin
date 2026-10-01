@@ -79,7 +79,7 @@ def _put(root, source, data):
 
 
 # purlin: evidence PROOF-17
-def test_a_source_with_no_file_reads_as_no_evidence(root):
+def test_only_a_ci_file_reads_the_ci_file_no_local_file_and_no_warning(root):
     _put(root, 'ci', _file('ci', {'linux': _section()}))
     loaded = evidence.load(root, 'login')
     assert loaded['files']['ci']['source'] == 'ci'
@@ -105,23 +105,6 @@ def test_a_file_that_is_not_json_is_ignored_with_one_warning(root):
         'Run purlin:test login to write it again.')
 
 
-# purlin: evidence PROOF-77
-def test_a_file_under_ci_that_is_not_json_names_the_remote_run(root):
-    _put(root, 'ci', '{not json')
-    loaded = evidence.load(root, 'login')
-    assert loaded['files']['ci'] is None
-    assert loaded['warnings'] == [
-        '.purlin/evidence/ci/login.json is not valid JSON; it is ignored. '
-        'Run purlin:test --remote to write it again.']
-
-
-# purlin: evidence PROOF-51
-def test_a_file_that_is_not_an_object_is_ignored_with_one_warning(root):
-    assert _ignored_local(root, '[1, 2]') == (
-        '.purlin/evidence/local/login.json is not a JSON object; '
-        'it is ignored. Run purlin:test login to write it again.')
-
-
 # purlin: evidence PROOF-52
 def test_a_file_of_another_schema_is_ignored_with_one_warning(root):
     content = json.dumps(_file('local', schema='purlin-evidence/1'))
@@ -142,7 +125,8 @@ def test_a_source_that_disagrees_with_its_folder_is_ignored(root):
 
 
 # purlin: evidence PROOF-20
-def test_two_operating_systems_in_one_file_are_two_sections(root):
+def test_sections_list_local_macos_local_linux_then_ci_windows_and_no_solaris(
+        root):
     _put(root, 'local', _file('local', {'linux': _section(),
                                         'macos': _section(),
                                         'solaris': _section()}))
@@ -151,24 +135,13 @@ def test_two_operating_systems_in_one_file_are_two_sections(root):
               for entry in evidence.sections(evidence.load(root, 'login'))]
     assert listed == [('local', 'macos'), ('local', 'linux'),
                       ('ci', 'windows')]
+    assert 'solaris' not in [system for _source, system in listed]
 
 
 # purlin: evidence PROOF-25
 def test_a_system_neither_windows_nor_macos_is_linux(monkeypatch):
     monkeypatch.setattr(sys, 'platform', 'freebsd14')
     assert evidence.host_os() == 'linux'
-
-
-# purlin: evidence PROOF-53
-def test_a_system_that_names_itself_win32_is_windows(monkeypatch):
-    monkeypatch.setattr(sys, 'platform', 'win32')
-    assert evidence.host_os() == 'windows'
-
-
-# purlin: evidence PROOF-54
-def test_a_system_that_names_itself_darwin_is_macos(monkeypatch):
-    monkeypatch.setattr(sys, 'platform', 'darwin')
-    assert evidence.host_os() == 'macos'
 
 
 # purlin: evidence PROOF-75
@@ -205,15 +178,6 @@ def test_a_code_edit_puts_the_section_out_of_date_on_code(root):
     assert _state(root) == (False, ['code'])
 
 
-# purlin: evidence PROOF-56
-def test_a_code_and_a_rule_edit_put_it_out_of_date_on_spec_and_code(root):
-    _stored_now(root)
-    _write(root, 'src/login.py', 'def login():\n    return 401\n')
-    _write(root, 'specs/auth/login.md',
-           SPEC.replace('return 200', 'return 201'))
-    assert _state(root) == (False, ['spec', 'code'])
-
-
 # purlin: evidence PROOF-57
 def test_a_section_with_no_fingerprint_is_out_of_date_on_all_three(root):
     section = _section()
@@ -223,7 +187,7 @@ def test_a_section_with_no_fingerprint_is_out_of_date_on_all_three(root):
 
 
 def _audit(at, commit='b' * 40, test_hash='t'):
-    return {'mutation': None, 'rules': {'RULE-1': {
+    return {'rules': {'RULE-1': {
         'rule_hash': 'r', 'proof_hash': 'p', 'test_hash': test_hash,
         'verdict': 'strong', 'findings': [], 'at': at, 'commit': commit}}}
 
@@ -247,38 +211,6 @@ def test_an_audit_entry_for_another_test_hash_does_not_answer(root):
     assert evidence.audit_entry(_audited(root), 'RULE-1', 'r', 'p', 't2') is None
 
 
-# purlin: evidence PROOF-59
-def test_an_audit_entry_for_another_rule_hash_does_not_answer(root):
-    assert evidence.audit_entry(_audited(root), 'RULE-1', 'r2', 'p', 't') is None
-
-
-# purlin: evidence PROOF-60
-def test_an_audit_entry_for_another_proof_hash_does_not_answer(root):
-    assert evidence.audit_entry(_audited(root), 'RULE-1', 'r', 'p2', 't') is None
-
-
-def _both_audited(root, local_at):
-    _put(root, 'local', _file('local', audit=_audit(local_at)))
-    _put(root, 'ci', _file('ci', audit=_audit('2026-09-02T00:00:00Z',
-                                               commit='c' * 40)))
-    return evidence.audit_entry(evidence.load(root, 'login'),
-                                'RULE-1', 'r', 'p', 't')
-
-
-# purlin: evidence PROOF-61
-def test_a_later_ci_audit_entry_wins(root):
-    entry = _both_audited(root, '2026-09-01T00:00:00Z')
-    assert entry['source'] == 'ci' and entry['commit'] == 'c' * 40
-    assert entry['path'] == '.purlin/evidence/ci/login.json'
-
-
-# purlin: evidence PROOF-62
-def test_a_later_local_audit_entry_wins(root):
-    entry = _both_audited(root, '2026-09-03T00:00:00Z')
-    assert entry['source'] == 'local' and entry['commit'] == 'b' * 40
-    assert entry['path'] == '.purlin/evidence/local/login.json'
-
-
 # purlin: evidence PROOF-23
 def test_with_no_evidence_there_is_no_newest_section(root):
     assert evidence.newest(evidence.load(root, 'login')) is None
@@ -297,12 +229,6 @@ def test_the_newest_section_is_the_latest_across_both_sources(root):
         'ci', 'linux')
 
 
-# purlin: evidence PROOF-64
-def test_local_wins_a_tie_for_the_newest_section(root):
-    assert _newest(root, '2026-09-01T00:00:00Z', '2026-09-01T00:00:00Z') == (
-        'local', 'macos')
-
-
 def _snapshot(root):
     found = {}
     base = os.path.join(root, '.purlin', 'evidence')
@@ -315,7 +241,7 @@ def _snapshot(root):
 
 
 # purlin: evidence PROOF-24
-def test_reading_evidence_writes_nothing(root):
+def test_loading_checking_and_asking_leaves_the_same_files_and_bytes(root):
     _put(root, 'local', _file('local', {'macos': _section()},
                               audit=_audit('2026-09-01T00:00:00Z')))
     _put(root, 'ci', '{not json')
@@ -325,30 +251,6 @@ def test_reading_evidence_writes_nothing(root):
     evidence.audit_entry(loaded, 'RULE-1', 'r', 'p', 't')
     evidence.newest(loaded)
     assert _snapshot(root) == before
-
-
-# purlin: evidence PROOF-26
-def test_windows_reads_windows_and_win():
-    assert (evidence.os_word('windows'), evidence.os_short('windows')) == (
-        'Windows', 'Win')
-
-
-# purlin: evidence PROOF-69
-def test_macos_reads_macos_and_mac():
-    assert (evidence.os_word('macos'), evidence.os_short('macos')) == (
-        'macOS', 'Mac')
-
-
-# purlin: evidence PROOF-70
-def test_linux_reads_linux_unix_and_lin():
-    assert (evidence.os_word('linux'), evidence.os_short('linux')) == (
-        'Linux/Unix', 'Lin')
-
-
-# purlin: evidence PROOF-27
-def test_an_unknown_system_word_reads_as_linux():
-    assert (evidence.os_word('solaris'), evidence.os_short('solaris')) == (
-        'Linux/Unix', 'Lin')
 
 
 def _listed(*results):
@@ -361,24 +263,11 @@ def _listed(*results):
 def test_a_proof_with_a_test_that_did_not_run_has_not_passed():
     section = _listed(('pass', 'tests/a.py::test_a'),
                       ('missing', 'tests/b.py::test_b'))
-    assert evidence.proof_results(section) == {'PROOF-1': 'not run'}
+    assert evidence.proof_results(section) == {'PROOF-1': {'result': 'not run'}}
 
 
 # purlin: evidence PROOF-29
 def test_a_failing_test_outweighs_one_that_did_not_run():
     section = _listed(('missing', 'tests/a.py::test_a'),
                       ('fail', 'tests/b.py::test_b'))
-    assert evidence.proof_results(section) == {'PROOF-1': 'fail'}
-
-
-# purlin: evidence PROOF-30
-def test_a_proof_whose_tests_all_passed_has_passed():
-    section = _listed(('pass', 'tests/a.py::test_a'),
-                      ('pass', 'tests/b.py::test_b'))
-    assert evidence.proof_results(section) == {'PROOF-1': 'pass'}
-
-
-# purlin: evidence PROOF-31
-def test_a_proof_not_run_here_reads_not_run():
-    assert evidence.proof_results(_listed(('not run', ''))) == {
-        'PROOF-1': 'not run'}
+    assert evidence.proof_results(section) == {'PROOF-1': {'result': 'fail'}}

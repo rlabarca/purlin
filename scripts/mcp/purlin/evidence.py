@@ -12,9 +12,9 @@ exist, whether each is current against a fingerprint taken now and which
 parts are out of date, which audit entry answers a rule whose rule, proof and
 test hashes are known, and which section is the newest across both sources.
 It also reads what a section says about each proof and which tests it
-lists, the newest `audit.mutation`, and which operating system this machine
-is, so a writer and a reader spell it the same way, and the words a person
-reads for each operating system.
+lists, and which operating system this machine is, so a writer and a reader
+spell it the same way, and the words a person reads for each operating
+system.
 
 A file that cannot be read, is not JSON, carries another schema, or names a
 source other than its folder is ignored, and the reader says so once per file
@@ -43,6 +43,20 @@ SOURCES = ('local', 'ci')
 PLATFORMS = ('windows', 'macos', 'linux')
 EVIDENCE_DIR = '.purlin/evidence'
 COULD_NOT_RUN_PATH = '.purlin/runtime/audit_could_not_run.json'
+
+# A proof whose every tied test skipped with a reason starting with these
+# words reads this result, its reason the text after them.
+NOTHING_TO_CHECK = 'nothing to check'
+NOTHING_TO_CHECK_PREFIX = 'nothing to check:'
+
+
+def nothing_reason(reason):
+    """The text after `nothing to check: ` where a skip's reason starts
+    exactly `nothing to check:`, else None."""
+    if not isinstance(reason, str) or not reason.startswith(
+            NOTHING_TO_CHECK_PREFIX):
+        return None
+    return reason[len(NOTHING_TO_CHECK_PREFIX):].strip()
 
 
 # How `sys.platform` spells each operating system a section is keyed by.
@@ -267,18 +281,19 @@ def why_not_audited(table, feature, rule_id, rule_hash, proof_hash,
 
 
 # A proof's result in one section is the worst of its tests', in this order.
-_WORST = {'fail': 2, 'not run': 1, 'pass': 0}
+_WORST = {'fail': 3, 'not run': 2, NOTHING_TO_CHECK: 1, 'pass': 0}
 _READ_AS = {'pass': 'pass', 'fail': 'fail', 'missing': 'not run',
-            'not run': 'not run'}
+            'not run': 'not run', NOTHING_TO_CHECK: NOTHING_TO_CHECK}
 
 
 def proof_results(section):
-    """`{proof_id: 'fail' | 'not run' | 'pass'}` for one section.
+    """`{proof_id: {'result': ..., 'reason': ...}}` for one section.
 
     Each proof reads the worst of the entries the section lists against it:
     `fail` where one failed, else `not run` where one is `missing` or `not
-    run`, else `pass`. A proof has passed only when every test tied to it
-    ran and passed.
+    run`, else `nothing to check` where one reads so, else `pass`. A proof
+    has passed only when every test tied to it ran and passed. `reason` is
+    there only where an entry gave one.
     """
     results = {}
     for entry in (section or {}).get('proofs') or ():
@@ -289,8 +304,11 @@ def proof_results(section):
         if not proof_id or result is None:
             continue
         known = results.get(proof_id)
-        if known is None or _WORST[result] > _WORST[known]:
-            results[proof_id] = result
+        if known is None or _WORST[result] > _WORST[known['result']]:
+            known = results[proof_id] = {'result': result}
+        if (known['result'] == result and 'reason' not in known
+                and isinstance(entry.get('reason'), str)):
+            known['reason'] = entry['reason']
     return results
 
 
@@ -307,20 +325,6 @@ def proof_tests(section, proof_id):
         if (path, name) not in out:
             out.append((path, name))
     return out
-
-
-def mutation(loaded):
-    """The newest `audit.mutation` across both sources, or `None`."""
-    best = None
-    for source in SOURCES:
-        data = loaded['files'].get(source)
-        audit = data.get('audit') if data else None
-        found = audit.get('mutation') if isinstance(audit, dict) else None
-        if not isinstance(found, dict):
-            continue
-        if best is None or _text(found.get('at')) > _text(best.get('at')):
-            best = found
-    return best
 
 
 def _text(value):

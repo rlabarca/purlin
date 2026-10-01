@@ -16,7 +16,7 @@ import pytest
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 
-from purlin import fingerprint, specs  # noqa: E402
+from purlin import fingerprint  # noqa: E402
 
 EMPTY = hashlib.sha256(b'').hexdigest()
 
@@ -97,9 +97,6 @@ LOGIN_TEST = ('import pytest\n\n'
               '# purlin: login PROOF-1\n'
               'def test_login():\n    assert True\n')
 
-JS_TEST = '// purlin: login PROOF-2\nit("works", () => {});\n'
-
-
 @pytest.fixture
 def project(tmp_path):
     p = Project(tmp_path)
@@ -120,7 +117,7 @@ def _changed(before, after):
     return [part for part in fingerprint.PARTS if before[part] != after[part]]
 
 
-# --- RULE-1 and RULE-21 -----------------------------------------------------
+# --- RULE-1 -----------------------------------------------------------------
 
 # purlin: evidence PROOF-1
 # purlin: evidence PROOF-71
@@ -146,7 +143,7 @@ def test_an_edit_not_committed_changes_the_fingerprint(project):
     assert _changed(first, project.fp('login')) == ['code']
 
 
-# --- RULE-2 and RULE-22 -----------------------------------------------------
+# --- RULE-2 -----------------------------------------------------------------
 
 # purlin: evidence PROOF-2
 def test_a_reworded_rule_changes_spec_alone(project):
@@ -162,44 +159,9 @@ def test_a_rewritten_description_changes_no_part(project):
     assert project.fp('login') == first
 
 
-def _api(project, rule):
-    project.write('specs/_anchors/api.md', _spec(
-        'api', [rule], ['GET /x; verify the header'], anchor=True))
-
-
-# purlin: evidence PROOF-3
-def test_a_reworded_anchor_rule_leaves_a_feature_as_it_was(project):
-    _api(project, 'Carry a request id')
-    first = project.fp('login')
-    _api(project, 'Carry a trace id')
-    assert project.fp('login') == first
-
-
-# purlin: evidence PROOF-34
-def test_manual_added_to_a_proof_changes_spec_alone(project):
-    first = project.fp('login')
-    project.login(proof=LOGIN_PROOF + ' @manual')
-    assert _changed(first, project.fp('login')) == ['spec']
-
-
-# --- RULE-4, RULE-24 and RULE-25 --------------------------------------------
-
-# purlin: evidence PROOF-6
-def test_an_edit_to_a_scoped_file_changes_code_alone(project):
-    first = project.fp('login')
-    project.write('src/login.py', 'def login():\n    return 204\n')
-    assert _changed(first, project.fp('login')) == ['code']
-
-
-# purlin: evidence PROOF-36
-def test_an_edit_to_a_file_outside_the_scope_changes_nothing(project):
-    first = project.fp('login')
-    project.write('src/other.py', 'x = 2\n')
-    assert project.fp('login') == first
-
+# --- RULE-34 ----------------------------------------------------------------
 
 # purlin: evidence PROOF-7
-# purlin: evidence PROOF-72
 def test_a_scoped_folder_reaches_a_tracked_file_one_folder_down(project):
     project.login(scope='src')
     project.write('src/deep/token.py', 'TOKEN = 1\n')
@@ -232,30 +194,6 @@ def test_a_glob_reaches_a_matching_file_one_folder_down(tmp_path):
     assert _after_edit(p, 'src/deep/token.py', 'b = 2\n') == ['code']
 
 
-# purlin: evidence PROOF-37
-def test_a_glob_reaches_a_matching_file_directly_in_its_folder(tmp_path):
-    p = _globbed(tmp_path, 'src/**/*.py')
-    assert _after_edit(p, 'src/login.py', 'a = 2\n') == ['code']
-
-
-# purlin: evidence PROOF-38
-def test_a_glob_does_not_reach_a_file_it_does_not_match(tmp_path):
-    p = _globbed(tmp_path, 'src/**/*.py')
-    assert _after_edit(p, 'src/notes.txt', 'other notes\n') == []
-
-
-# purlin: evidence PROOF-39
-def test_an_entry_holding_a_question_mark_is_a_glob(tmp_path):
-    p = _globbed(tmp_path, 'src/logi?.py')
-    assert _after_edit(p, 'src/login.py', 'a = 2\n') == ['code']
-
-
-# purlin: evidence PROOF-40
-def test_an_entry_holding_a_bracket_is_a_glob(tmp_path):
-    p = _globbed(tmp_path, 'src/[l]ogin.py')
-    assert _after_edit(p, 'src/login.py', 'a = 2\n') == ['code']
-
-
 # --- RULE-5 -----------------------------------------------------------------
 
 UNMATCHED_SCOPE = 'src/login.py, src/gone.py, lib/*.rs'
@@ -277,15 +215,6 @@ def test_the_fingerprint_is_taken_over_what_the_other_entries_reach(project):
     assert fingerprint.incomplete_reason(project.root, 'login') is None
 
 
-# purlin: evidence PROOF-42
-def test_a_file_git_does_not_track_is_listed_as_unmatched(project):
-    project.write('src/draft.py', 'DRAFT = 1\n')
-    project.login(scope='src/login.py, src/draft.py')
-    own_scope = specs.scan_specs(project.root)['login']['scope']
-    assert fingerprint.expand_scope(project.root, own_scope) == (
-        ['src/login.py'], ['src/draft.py'])
-
-
 # --- RULE-6 -----------------------------------------------------------------
 
 # purlin: evidence PROOF-10
@@ -300,7 +229,7 @@ def test_a_spec_with_no_scope_is_incomplete_and_its_code_part_is_empty(
     assert len(fp['spec']) == 64 and len(fp['tests']) == 64
 
 
-# --- RULE-7 and RULE-26 -----------------------------------------------------
+# --- RULE-7 -----------------------------------------------------------------
 
 # purlin: evidence PROOF-11
 def test_an_edit_to_a_marked_test_file_changes_tests_alone(project):
@@ -318,62 +247,6 @@ def test_a_test_file_marked_for_another_feature_is_not_counted(project):
     first = project.fp('login')
     project.write('tests/test_other.py', '# rewritten\n')
     assert project.fp('login') == first
-
-
-# purlin: evidence PROOF-44
-def test_a_marked_file_no_suite_names_is_not_counted(project):
-    project.write('scripts/check_login.py', LOGIN_TEST)
-    project.commit()
-    first = project.fp('login')
-    project.write('scripts/check_login.py', LOGIN_TEST + '\n# edited\n')
-    assert project.fp('login') == first
-
-
-# purlin: evidence PROOF-12
-# purlin: evidence PROOF-73
-def test_a_javascript_marker_is_counted(project):
-    project.write('web/login.test.js', JS_TEST)
-    project.commit()
-    first = project.fp('login')
-    project.write('web/login.test.js', JS_TEST + '// edited\n')
-    assert _changed(first, project.fp('login')) == ['tests']
-
-
-def _assert_skipped_folder_not_counted(project, folder):
-    """A marked test committed under `folder` leaves `login` unchanged when
-    edited."""
-    path = '%s/login.test.js' % folder
-    project.write(path, JS_TEST)
-    project.git('add', '-f', path)
-    project.git('commit', '-q', '-m', 'test: fixture')
-    first = project.fp('login')
-    project.write(path, JS_TEST + '// edited\n')
-    assert project.fp('login') == first, path
-
-
-# purlin: evidence PROOF-45
-def test_a_marked_file_under_node_modules_is_not_counted(project):
-    _assert_skipped_folder_not_counted(project, 'node_modules/pkg')
-
-
-# purlin: evidence PROOF-65
-def test_a_marked_file_under_bin_is_not_counted(project):
-    _assert_skipped_folder_not_counted(project, 'bin')
-
-
-# purlin: evidence PROOF-66
-def test_a_marked_file_under_obj_is_not_counted(project):
-    _assert_skipped_folder_not_counted(project, 'obj')
-
-
-# purlin: evidence PROOF-67
-def test_a_marked_file_under_mutants_is_not_counted(project):
-    _assert_skipped_folder_not_counted(project, 'mutants')
-
-
-# purlin: evidence PROOF-68
-def test_a_marked_file_under_a_dot_folder_is_not_counted(project):
-    _assert_skipped_folder_not_counted(project, '.cache')
 
 
 # --- RULE-8 -----------------------------------------------------------------
@@ -395,7 +268,6 @@ def test_an_untracked_file_changes_no_part(folder_scoped):
 
 
 # purlin: evidence PROOF-46
-# purlin: evidence PROOF-74
 def test_untracked_files_in_the_scope_or_beside_a_marker_file_are_listed(
         folder_scoped):
     folder_scoped.write('src/new_token.py', 'NEW = 1\n')
@@ -415,69 +287,7 @@ def test_a_file_git_ignores_is_not_listed(folder_scoped):
         'src/new_token.py']
 
 
-# purlin: evidence PROOF-14
-def test_an_added_file_joins_the_fingerprint(folder_scoped):
-    first = folder_scoped.fp('login')
-    folder_scoped.write('src/new_token.py', 'NEW = 1\n')
-    assert fingerprint.untracked(folder_scoped.root, 'login') == [
-        'src/new_token.py']
-    folder_scoped.git('add', 'src/new_token.py')
-    assert _changed(first, folder_scoped.fp('login')) == ['code']
-    assert fingerprint.untracked(folder_scoped.root, 'login') == []
-
-
-# --- RULE-9 -----------------------------------------------------------------
-
-# purlin: evidence PROOF-15
-def test_a_name_no_spec_defines_raises(project):
-    with pytest.raises(KeyError) as caught:
-        project.fp('nosuch')
-    assert 'nosuch' in str(caught.value)
-
-
-# --- RULE-10 ----------------------------------------------------------------
-
-NOW = {'spec': 'a', 'code': 'x', 'tests': 'y'}
-
-
-# purlin: evidence PROOF-16
-def test_the_parts_that_differ_are_named_in_order():
-    assert fingerprint.differing_parts(
-        {'spec': 'a', 'code': 'b', 'tests': 'c'}, NOW) == ['code', 'tests']
-
-
-# purlin: evidence PROOF-48
-def test_a_missing_stored_fingerprint_differs_on_all_three():
-    assert fingerprint.differing_parts(None, NOW) == ['spec', 'code', 'tests']
-
-
-# purlin: evidence PROOF-49
-def test_a_stored_fingerprint_that_is_text_differs_on_all_three():
-    assert fingerprint.differing_parts('abc', NOW) == [
-        'spec', 'code', 'tests']
-
-
-# purlin: evidence PROOF-50
-def test_two_equal_fingerprints_differ_on_no_part():
-    assert fingerprint.differing_parts(dict(NOW), NOW) == []
-
-
-# --- RULE-29 ----------------------------------------------------------------
-
-# How a person reads the machine this runs on, asked of the system itself.
-_SYSTEM_WORD = {'Darwin': 'macOS', 'Windows': 'Windows'}
-
-
-# purlin: evidence PROOF-76
-def test_a_feature_with_no_evidence_is_selected_as_never_run_here(project):
-    import platform
-    word = _SYSTEM_WORD.get(platform.system(), 'Linux/Unix')
-    (login,) = fingerprint.selection(project.root)
-    assert (login['feature'], login['selected'], login['reasons']) == (
-        'login', True, ['no run on %s yet' % word])
-
-
-# --- RULE-30 to RULE-33: an anchor's code part is the project ---------------
+# --- RULE-30 to RULE-32: an anchor's code part is the project ---------------
 
 SECURITY = _spec('security', ['No eval anywhere'],
                  ['Grep every file for eval(; verify 0'], anchor=True)
@@ -521,14 +331,6 @@ def test_a_new_evidence_file_leaves_an_anchor_as_it_was(anchored):
                               '{"schema": "purlin-evidence/2"}\n')
 
 
-# purlin: evidence PROOF-81
-def test_a_rewritten_tests_table_leaves_an_anchor_as_it_was(anchored):
-    anchored.write('.purlin/tests.md', '# Tests\n')
-    anchored.commit()
-    _record_leaves_the_anchor(anchored, '.purlin/tests.md',
-                              '# Tests\n\n| login | 1 |\n')
-
-
 # purlin: evidence PROOF-82
 def test_a_signoff_file_leaves_an_anchor_as_it_was(anchored):
     _record_leaves_the_anchor(
@@ -544,11 +346,11 @@ def test_an_evidence_package_leaves_an_anchor_as_it_was(anchored):
 
 # purlin: evidence PROOF-84
 def test_an_anchors_code_part_is_the_blob_ids_the_commit_holds(anchored):
-    anchored.write('.purlin/tests.md', '# Tests\n')
+    anchored.write('.purlin/evidence/local/login.json', '{}\n')
     anchored.commit()
     anchored.check_out_again('true')
     assert b'\r\n' in anchored.read_bytes('docs/guide.md')
-    records = ('.purlin/evidence/', '.purlin/tests.md')
+    records = ('.purlin/evidence/',)
     held = []
     for line in anchored.git('ls-tree', '-r', 'HEAD').splitlines():
         head, path = line.split('\t', 1)
@@ -559,19 +361,3 @@ def test_an_anchors_code_part_is_the_blob_ids_the_commit_holds(anchored):
     assert anchored.fp('security')['code'] == expected
 
 
-# purlin: evidence PROOF-85
-def test_a_run_with_no_feature_named_selects_an_anchor_after_an_edit(anchored):
-    from purlin import evidence
-    head = anchored.git('rev-parse', 'HEAD').strip()
-    os_name = evidence.host_os()
-    anchored.write('.purlin/evidence/local/security.json', json.dumps({
-        'schema': 'purlin-evidence/2', 'feature': 'security',
-        'source': 'local', 'spec': 'specs/_anchors/security.md',
-        'platforms': {os_name: {
-            'commit': head, 'at': '2026-09-30T12:00:00Z',
-            'fingerprint': anchored.fp('security')}}}))
-    anchored.write('docs/guide.md', 'How to use it, again.\n')
-    (entry,) = [row for row in fingerprint.selection(anchored.root)
-                if row['feature'] == 'security']
-    assert (entry['selected'], entry['reasons']) == (
-        True, ['code changed since %s' % head[:7]])

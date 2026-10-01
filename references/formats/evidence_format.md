@@ -1,4 +1,4 @@
-> Format-Version: 7
+> Format-Version: 8
 
 # Evidence format
 
@@ -49,21 +49,29 @@ operating system that ran the feature, one section each.
       "dirty": false,
       "at": "2026-09-27T12:00:00Z",
       "runner": "jane",
+      "email": "jane@example.com",
       "machine": "jane-mbp",
       "fingerprint": {"spec": "<sha256>", "code": "<sha256>", "tests": "<sha256>"},
       "rules": {"RULE-1": "passed", "RULE-2": "no test"},
       "proofs": [
         {"id": "PROOF-1", "rule": "RULE-1", "result": "pass", "env": null,
-         "manual": false, "test": "tests/test_login.py::test_rejects_a_wrong_password"}
+         "manual": false, "test": "tests/test_login.py::test_rejects_a_wrong_password"},
+        {"id": "PROOF-2", "rule": "RULE-2", "result": "nothing to check",
+         "reason": "this project has no screens", "env": null, "manual": false,
+         "test": "tests/test_login.py::test_every_screen_has_a_title"}
       ]
     }
   },
   "audit": {
-    "mutation": {"engine": "mutmut", "score": 71, "at": "2026-09-27T12:05:00Z",
-                 "commit": "4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1d9f4c2e7"},
     "rules": {
       "RULE-1": {"rule_hash": "<sha256>", "proof_hash": "<sha256>",
                  "test_hash": "<sha256>", "verdict": "strong", "findings": [],
+                 "breaks": {"PROOF-1": {"file": "src/login.py", "line": 12,
+                                        "before": "return check(password)",
+                                        "after": "return True",
+                                        "result": "caught", "why": "",
+                                        "break_key": "<sha256>"}},
+                 "explanation": ["The test types a wrong password and reads the refusal."],
                  "model": "example-model-1",
                  "criteria": "<sha256>",
                  "notes": ["PROOF-1 holds two cases."],
@@ -90,10 +98,11 @@ present only once an audit has run.
 
 | Field | Type | What it holds |
 |---|---|---|
-| `commit` | string | the full sha of `HEAD` when the run started |
+| `commit` | string | the full sha of the code the section describes: `HEAD` after the run's own commit of the specs, tests and settings where `--commit` made one, else `HEAD` when the run started |
 | `dirty` | bool | whether the working tree had changes that were not committed. It is shown and not compared: the fingerprint is what decides |
 | `at` | string | ISO 8601 UTC with `Z`, when the run finished |
 | `runner` | string | the slug of the runner's email, or `ci` |
+| `email` | string | a `local` section alone: `git config user.email`, or `unknown` where git has none. A `ci` section carries none. Kept and never compared |
 | `machine` | string | where the tests ran: the host's name, or `unknown` where it reports none, for a `local` section; `remote runner, <Windows\|macOS\|Linux/Unix>` for a `ci` section. Compared: a run on another machine replaces the section |
 | `hostname` | string | a `ci` section alone: the name the host lent the runner, beside `machine` `remote runner, <System>`. A `local` section carries none. Kept and never compared |
 | `fingerprint` | object | `spec`, `code` and `tests`, three sha256 hex strings. See "The fingerprint" |
@@ -114,7 +123,9 @@ Each `rules` value:
 | `passed` | else: every test tied to every proof of the rule that could run here ran and passed; for a rule with no proof, every test marked with the rule's own id passed |
 
 The words are read in that order. A rule whose proofs are all `@manual`
-reads `passed`, since no run was ever going to observe one.
+reads `passed`, since no run was ever going to observe one. A proof that
+reads `nothing to check` counts as passed in an anchor's section and as not
+run in any other.
 
 Each `proofs` entry:
 
@@ -122,14 +133,19 @@ Each `proofs` entry:
 |---|---|---|
 | `id` | string | `PROOF-N`, or `RULE-N` for a test marked with the id of a rule that has no proof |
 | `rule` | string | the `RULE-N` the proof covers, the same as `id` for a rule-marked test |
-| `result` | string | `pass`, `fail`, `missing` or `not run` |
+| `result` | string | `pass`, `fail`, `missing`, `not run` or `nothing to check` |
 | `env` | string or null | the operating system the proof's `@env` tag names, or null |
 | `manual` | bool | whether the proof is tagged `@manual` |
 | `test` | string | `<file>::<name>` for the test that observed the proof, `""` when nothing did. The name is the test's own, as the marker format spells it |
+| `reason` | string | present only where `result` is `nothing to check`: the text after `nothing to check: ` in the reason the test's tool gave for its skip |
 
 A test is tied to its proof by the marker comment above it, as
 `references/formats/marker_format.md` says. A proof whose test was skipped, or
 that no case in the report is, reads `missing` with the test named. A proof
+whose every tied test skipped with a reason starting exactly `nothing to
+check:` reads `nothing to check` instead, each entry carrying its `reason`;
+in an anchor's section its rule reads `passed`, and in any other spec's
+section `not run`. A proof
 tagged `@env` for another operating system than the section's reads `not run`
 whatever its tied test did there: a test carrying a Mac proof's marker and a
 Windows proof's marker runs on the Mac and proves only the Mac proof. A proof
@@ -137,15 +153,15 @@ no test is tied to has one entry with an empty `test`, reading the same way.
 
 A reader takes a proof's result in a section as the worst of its entries:
 `fail` where one failed, else `not run` where one reads `missing` or `not
-run`, else `pass`. A proof has passed only when every test tied to it ran and
+run`, else `nothing to check` where one reads so, with its `reason`, else
+`pass`. A proof has passed only when every test tied to it ran and
 passed.
 
 ### The audit
 
 | Field | Type | What it holds |
 |---|---|---|
-| `audit.mutation` | object or null | `engine` (string), `score` (int or null), `at` and `commit`, and `missing` (string), present only when the engine the settings selected measured nothing for the feature and `score` is null: the sentence saying why, such as `mutmut is not installed: run "pip install mutmut"`. Null when mutation testing is off |
-| `audit.rules` | object | `RULE-N` to the audit of that rule |
+| `audit.rules` | object | `RULE-N` to the audit of that rule. `audit` holds `rules` alone |
 
 Each `audit.rules` entry:
 
@@ -153,24 +169,31 @@ Each `audit.rules` entry:
 |---|---|---|
 | `rule_hash` | string | sha256 of the rule text the audit read |
 | `proof_hash` | string | sha256 of the proof texts the audit read |
-| `test_hash` | string | sha256 of the tests the audit read |
-| `verdict` | string | `strong`, `weak` or `undecided` |
+| `test_hash` | string | sha256 of the sorted lines `<file> <test name> <sha256 of the test's source>`, one per test tied to the rule's proofs, the source as the marker format bounds it with line ends read as `\n`; a test of an `exit` suite, or one not found by its name, gives `<file> <test name> <blob id>` |
+| `verdict` | string | `strong` or `weak` |
 | `findings` | array of strings | one sentence per finding; empty when the audit found nothing |
+| `breaks` | object | `PROOF-N` to the bug the audit planted for that proof: `file`, `line`, `before`, `after`, `result` (`caught`, `survived` or `not made`), `why` (empty where there is no reason) and `break_key`, the sha256 that says whether the proof needs a new bug. `{}` for an anchor's rule |
+| `explanation` | array of strings | the model's reading of the rule's tests, one sentence per line. It sets no verdict |
 | `model` | string | the model that answered, its name and version as the `claude` command's JSON reports them, or `unknown` where it reports none |
 | `criteria` | string | sha256 of `references/review_criteria.md` as it was sent to the model |
 | `at` | string | ISO 8601 UTC with `Z` |
 | `commit` | string | the full sha of `HEAD` when the audit ran |
 | `notes` | array of strings | optional: one sentence per proof the audit found longer than the standard or holding two cases. Present only when there are some. A note does not make the rule weak |
 
-`verdict` is what the AI audit answered. It is `strong` with no findings when
-the model settled and found nothing, `weak` when it settled and found
-something, each finding one sentence, and `undecided` when it could not
-settle, its findings being the reason it gave. A rule the model could not be
-reached for gets no entry at all, so the next audit reads it again.
+`verdict` is `weak` when a heuristic spot test fired on one of the rule's
+tests or a planted bug survived, each finding one sentence, and `strong`
+otherwise. A rule the model could not be reached for gets no entry at all, so
+the next audit reads it again.
 
-`model` and `criteria` name the judge and the instructions it was given. The
-evidence package carries each rule's `verdict`, `findings` and test strength
-as they stand at the release commit.
+`model` and `criteria` name the model that gave the explanation and the
+instructions it was given. The evidence package carries each rule's
+`verdict`, `findings`, `breaks` and `explanation` as they stand at the commit
+it describes.
+
+Two entries are the same when their three hashes, `verdict`, `findings`,
+`model` and `criteria` are: an audit that repeats the entry on file leaves it
+as it was, `at` and `commit` included, and one that differs in any of them
+replaces it.
 
 An audit entry answers a rule while its `rule_hash`, `proof_hash` and
 `test_hash` all equal the rule's current ones. `commit` and `at` are shown and
@@ -186,7 +209,7 @@ so an edit counts before it is committed.
 | Part | What it covers |
 |---|---|
 | `spec` | the spec's own rule and proof lines. A rule line is `<spec> <RULE-N> <text> <tag>`; a proof line is `<spec> <PROOF-N> <rules> <text>`, then `@manual` and `@env(<os>)` where the proof carries them. `> Description:` and the other metadata fields are not covered |
-| `code` | for a feature, the tracked files the `> Scope:` entries reach, each as `<path> <blob>`. A file names itself, a directory names every tracked file under it, and an entry holding `*`, `?` or `[` is a git glob, so `scripts/**/*.py` reaches every Python file under `scripts/`. For an anchor, every tracked file but the records Purlin writes: `.purlin/evidence/` whole, the results, the evidence package and its sign-offs, and `.purlin/tests.md`. Any other change to the project changes it; writing a record does not |
+| `code` | for a feature, the tracked files the `> Scope:` entries reach, each as `<path> <blob>`. A file names itself, a directory names every tracked file under it, and an entry holding `*`, `?` or `[` is a git glob, so `scripts/**/*.py` reaches every Python file under `scripts/`. For an anchor, every tracked file but the records Purlin writes: `.purlin/evidence/` whole, the results, the evidence package and its sign-offs. Any other change to the project changes it; writing a record does not |
 | `tests` | every tracked test file carrying a marker for the feature, each as `<path> <blob>`. A test file is one a suite of the `tests` setting names |
 
 A file git does not track is in no part: it would change the fingerprint on
@@ -211,18 +234,14 @@ each part that differs: `code changed since 4f1c2ab`, `spec changed since
   whole, so a run on another machine replaces the results of the one before.
   Every other section and `audit` stay as they are.
 - An audit run first makes the same test-run write. It then replaces
-  `audit.rules[<rule>]` for each rule the model answered for and leaves every
-  other entry as it is. It replaces `audit.mutation` for each feature it
-  measured, which is a feature with at least one rule being read, when
-  mutation testing is on, and keeps the one there when `engine`, `score` and
-  `missing` are all the same: two entries that differ in `missing` alone are
-  different.
+  `audit.rules[<rule>]` for each rule it read and leaves every other entry as
+  it is.
 - Every write drops the `rules` and `audit.rules` entries of rules the spec no
   longer carries.
 - A test run over a file a merge left conflicted, which is not JSON, writes it
   afresh and keeps from both sides each `audit.rules` entry whose `rule_hash`,
   `proof_hash` and `test_hash` equal the rule's current ones, the newer `at`
-  where both hold one, and the newer `audit.mutation`.
+  where both hold one.
 - Every run deletes the files under `local/` and `ci/` whose feature has no
   spec.
 - A `ci/` write carries only the runner's own section. In the API commit's
@@ -235,33 +254,16 @@ each part that differs: `code changed since 4f1c2ab`, `spec changed since
 A file keeps the newest section per operating system and the newest audit
 entry per rule. The history is the file's `git log`. Nothing is pruned.
 
-A run that sees the same thing over the same fingerprint on the same
-`machine` as the section already there leaves that section as it is, `at`,
-`commit`, `dirty` and `hostname` included, so running the tests twice finds
-nothing new to commit.
-
-## The table
-
-`.purlin/tests.md` is rendered again from every file under
-`.purlin/evidence/` on each run, one row per feature from its newest section
-in either source. It opens `# Tests at <sha7>`, the commit of the newest
-section across every feature, or `# Tests at <sha7>, with changes that are
-not committed` where that section's `dirty` is true, and its columns are:
-
-```
-| Feature | Rules | Passed | Failing | No test | Last run |
-```
-
-`Passed` counts the rules that section reads `passed`, which are those every
-tied test of which ran and passed, `Failing` those it reads `failed`, and `No
-test` every other rule. `Last run` is `<sha7> · <at> · <system> · <source>`,
-the system reading `Windows`, `macOS` or `Linux/Unix`. The table is tracked
-beside the evidence.
+A run that sees the same results over the same fingerprint on the same
+`machine` as the section already there leaves the file byte for byte as it
+was, `at`, `commit`, `dirty`, `email` and `hostname` included, where every
+commit from the one the section names to the run's own changes only paths
+under `.purlin/`, so a second run finds nothing new to commit. Any other
+section replaces it, with its own `at`, `commit`, `dirty` and `email`.
 
 ## The two commits
 
-`purlin:test` and `purlin:audit` write the files and the table and do not
-commit them. With `--commit` they make two commits in one step, under the
+`purlin:test` and `purlin:audit` write the files and do not commit them. With `--commit` they make two commits in one step, under the
 person's own identity. The first carries the work the results describe: the
 spec of each feature run, the test files carrying their markers and
 `.purlin/config.json`, where any of them changed:
@@ -283,8 +285,7 @@ where it holds only the settings, the subject is:
 purlin: specs, tests and settings
 ```
 
-The second carries the files under `local/`, the table and any file the run
-removed:
+The second carries the files under `local/` and any file the run removed:
 
 ```
 purlin: evidence at <sha7>
@@ -297,5 +298,4 @@ nothing to commit. Neither command ever pushes.
 
 A remote runner always commits, with the same subject, through the git
 host's API, because its evidence exists nowhere else. It commits its `ci/`
-files alone; the table is rendered again by the next run on a person's
-machine.
+files alone.
