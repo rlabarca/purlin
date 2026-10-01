@@ -1559,6 +1559,19 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       reading for conflicting instructions is the last step of the round.
     - The deck's slide reads `What if you have to test other platforms?`; the anchors slide holds
       two rows, the second with `Kept in step` and `Read-only` under it.
+    - **The owner's answers before the build** (2026-10-01); the build plan is
+      `dev/plans/d119-plan.md`.
+    - **Purlin's own Windows check is GitHub only.**
+    - **The word is "remote anchor" everywhere.** The docs and the glossary say once that the
+      copy is pinned to one version of its source.
+    - **The status line reads `22 rules to test on Windows: run purlin:test on Windows`**, and no
+      line says "there".
+    - **The scan for stale references and conflicting instructions is an AI reading at the end of
+      the round, and is kept out of proofs.** The owner: "more of a scan and judgement call than a
+      pass/fail".
+    - **A proof a test carries out is pass or fail.** A judgment call is a `@manual` proof or no
+      rule, and neither a test nor an AI decides one.
+    - **The docs use the slides' language, tone and brevity**, with the deck as the model.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
