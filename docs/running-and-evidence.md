@@ -2,11 +2,14 @@
 
 For the developer who runs Purlin, and for anyone who reads the evidence afterwards.
 
-Two commands run your tests. `purlin:test` runs the marked tests and writes the evidence.
-`purlin:audit` runs the same tests, then asks whether they would catch a bug, and writes what
-it found into the same evidence. Both call one run script, `scripts/run/purlin_run.py`, so
-there is one answer to how a test is run. Both run on your machine. `purlin:test --remote` is
-the one command that pushes, and it pushes a run branch of its own ([Who pushes](#who-pushes)).
+Two commands run your tests.
+
+- `purlin:test` runs the marked tests and writes the evidence.
+- `purlin:audit` runs the same tests, then asks whether they would catch a bug. It writes what
+  it found into the same evidence.
+
+Both call one run script, `scripts/run/purlin_run.py`, so a test is run one way. Both run on
+your machine.
 
 | | `purlin:test` | `purlin:audit` |
 |---|---|---|
@@ -23,7 +26,6 @@ purlin:test                     Run the features your change touched
 purlin:test --all               Run every feature, slow tests included
 purlin:test <feature> [...]     Run one feature, or several
 purlin:test --commit            Commit the work and the evidence the run wrote
-purlin:test --remote            Let the git host's runner do the run
 purlin:test --arm-timeout <seconds>  Give each suite longer than an hour
 ```
 
@@ -38,8 +40,10 @@ Suggested for pytest: python3 -m pytest --ignore=mutants {files} --junitxml={rep
 Suggested tests setting: [{"name": "pytest", "run": "python3 -m pytest --ignore=mutants {files} --junitxml={report}", "report": ".purlin/runtime/reports/pytest.xml", "format": "junit", "files": ["**/test_*.py", "**/*_test.py"]}]
 ```
 
-`purlin:test` compares each suggested command with how the project runs its tests itself, shows
-you each difference, writes the entry into the `tests` setting once you confirm, and runs.
+`purlin:test` compares each suggested command with how the project runs its tests itself, and
+shows you each difference. Once you confirm, it writes the entry into the `tests` setting and
+runs.
+
 Where the run finds no test tool it knows, it prints `No test command is set and no test tool
 Purlin knows was found, so nothing ran. The agent reads the project and proposes a command for
 you to confirm.` [supported_frameworks.md](../references/supported_frameworks.md) gives the
@@ -47,34 +51,45 @@ entry for each tool and what each needs added.
 
 ### Which features run
 
-With no feature named, the run selects a feature when it has no run on this operating system,
-when its spec, its code or its tests changed since its newest run here, when an untracked file
-sits under its `> Scope:` or beside its tests, or when its spec names no files. It says what it
-selected and why before it runs anything, and names what it skipped:
+With no feature named, the run selects a feature in any of these cases:
+
+- it has no run on this operating system;
+- its spec, its code or its tests changed since its newest run here;
+- an untracked file sits under its `> Scope:` or beside its tests;
+- its spec names no files.
+
+Before it runs anything, it says what it selected and why:
 
 ```
 Selected 1 of 1 feature: cart (no run on macOS yet).
 ```
 
-A skipped feature is named on a line of its own, `Skipped <n> features whose spec, code and
+It names what it skipped on a line of its own, `Skipped <n> features whose spec, code and
 tests match their evidence: <names>. purlin:test --all runs them too.`, with ten names and a
-count of the rest. With nothing selected the run prints `Nothing to run: every feature's spec,
-code and tests match its evidence. purlin:test --all runs them anyway.`, runs no test, and
-exits 1 only where the evidence it stands on holds a failing test.
+count of the rest.
+
+With nothing selected the run prints `Nothing to run: every feature's spec, code and tests
+match its evidence. purlin:test --all runs them anyway.` It runs no test. It exits 1 only where
+the evidence it stands on holds a failing test.
 
 A run over some features hands each suite only the test files that carry their markers. A run
 over every feature runs every suite whole.
 
-Only `--all` starts the test of a proof tagged `@slow`; every other `purlin:test` skips it and
-lists it under `Left to do`, as [Slow proofs](specs-and-anchors.md#slow-proofs) says.
+`purlin:test` skips every slow test. Only `--all` starts the test of a proof tagged `@slow`.
+Every other run lists it under `Left to do`, as
+[Slow proofs](specs-and-anchors.md#slow-proofs) says.
 
 ### What a run prints
 
-The run runs each suite's own command from the `tests` setting, reads the report it writes
-under `.purlin/runtime/reports/`, and ties each result to the marker comment above its test,
-`# purlin: cart PROOF-1` ([marker_format.md](../references/formats/marker_format.md) is the one
-home of the marker). That directory is generated and never committed. A run of a project with
-one feature and three marked tests, with `--all --commit`, reads:
+The run takes three steps:
+
+1. It runs each suite's own command from the `tests` setting.
+2. It reads the report the suite writes under `.purlin/runtime/reports/`. That directory is
+   generated and never committed.
+3. It ties each result to the marker comment above its test, `# purlin: cart PROOF-1`.
+   [marker_format.md](../references/formats/marker_format.md) is the one home of the marker.
+
+A project with one feature and three marked tests, run with `--all --commit`, reads:
 
 ```
 Selected 1 of 1 feature: cart (no run on macOS yet).
@@ -114,17 +129,24 @@ Each rule's passed cell reads one word: `passed`, `failed`, `partial`, `no test`
                                         word, each proof's result and test
 ```
 
-Without `--commit` it commits nothing. `--commit` makes two commits under your own git
-identity: first the specs of the features it ran, the test files carrying their markers and
-`.purlin/config.json`, where any of them changed, as `purlin: specs, tests and settings for
-<feature>`; then the evidence as `purlin: evidence at <sha7>`, naming the first. It prints
-`Evidence committed.`, or `Evidence unchanged.` when the run saw the same thing over the same
-code. A run of one feature replaces that feature's section and leaves the rest as it was.
+A run of one feature replaces that feature's section and leaves the rest as it was.
+
+Without `--commit` the run commits nothing. `--commit` makes two commits under your own git
+identity:
+
+1. The specs of the features it ran, the test files carrying their markers and
+   `.purlin/config.json`, where any of them changed, as
+   `purlin: specs, tests and settings for <feature>`.
+2. The evidence, as `purlin: evidence at <sha7>`, naming the first.
+
+It prints `Evidence committed.` When the run saw the same thing over the same code, it prints
+`Evidence unchanged.`
 
 ### How a run ends
 
-Every run ends on the status, counted over every rule under `specs/` rather than over the
-features this run covered: the three opening lines, the table, the sentence and `Left to do`.
+Every run ends on the status. The status counts every rule under `specs/`, not only the
+features this run covered. It has the three opening lines, the table, the sentence and
+`Left to do`.
 
 ```
 Purlin status: labconnect, plugin 0.10.0
@@ -132,9 +154,11 @@ Tests: not met
 Sign-off: signed 0.1.0, 4 commits since
 ```
 
-`Tests` reads `met` when no line of `Left to do` is of a kind that blocks, and `Sign-off` names
-the newest signed version and whether the code has moved since. `Left to do` names each kind of
-work left with its count and its command, in this order, and its first line is the next step:
+`Tests` reads `met` when no line of `Left to do` is of a kind that blocks. `Sign-off` names the
+newest signed version and whether the code has moved since.
+
+`Left to do` names each kind of work left, with its count and its command, in this order. Its
+first line is the next step.
 
 | Line | Command | Blocks `Tests: met` |
 |---|---|---|
@@ -144,26 +168,33 @@ work left with its count and its command, in this order, and its first line is t
 | `1 rule to fix` | `purlin:build` | yes |
 | `1 rule to write a test for` | `purlin:build` | yes |
 | `1 rule to test` | `purlin:test` | yes |
-| `1 rule to test on Windows` | `purlin:test --remote` | yes |
+| `1 slow proof to run` | `purlin:test --all` | yes |
+| `1 rule to test on Windows` | `run purlin:test on Windows` | yes |
 | `1 feature whose results are not committed` | `purlin:test --commit` | yes |
 | `1 rule to strengthen` | `purlin:build` | no |
 
-The line about results not committed shows once no other work stops the tests being met: while
-a rule fails, has no test or waits for a run, the list names that work alone. Where the tests
-are met and this code is not signed, the run's last line reads
+The line about results not committed shows last: only once no other work stops the tests being
+met. While a rule fails, has no test or waits for a run, the list names that work alone.
+
+Where the tests are met and this code is not signed, the run's last line reads
 `Every rule passes its tests on the committed evidence. To sign it: purlin:sign`.
 
-A test run exits on the tests alone: 1 where a test failed, evidence is missing or a comment
-names nothing a spec has, 0 otherwise. Before anything runs it also exits 1 with no settings
-file, a settings file that cannot be read, a project an older Purlin set up and nobody
-upgraded, or no test command. A command line it cannot read exits 2.
+A test run exits on the tests alone:
+
+| Exit | When |
+|---|---|
+| 1 | a test failed, evidence is missing, or a comment names nothing a spec has |
+| 1, before anything runs | there is no settings file, the settings file cannot be read, an older Purlin set the project up and nobody upgraded it, or no test command is set |
+| 2 | the command line cannot be read |
+| 0 | otherwise |
+
 [purlin_commands.md](../references/purlin_commands.md) lists each command's exit codes.
 
 ### A failing test
 
 A failing test is a result: the evidence records it as `fail`. The run prints the last 60 lines
-of the suite's own output between `--- pytest output (last 60 lines) ---` and
-`--- end of pytest output ---`, names the rule, and exits 1:
+of the suite's own output, between `--- pytest output (last 60 lines) ---` and
+`--- end of pytest output ---`. It names the rule and exits 1:
 
 ```
 cart RULE-2 fails: tests/test_cart.py::test_sum. Run purlin:build cart.
@@ -177,7 +208,7 @@ Left to do:
   1 rule to fix: purlin:build
 ```
 
-A rule some of whose proofs have no test is named the same way:
+A rule with a proof that has no test is named the same way:
 
 ```
 cart RULE-2 has no test for PROOF-5. Run purlin:build cart.
@@ -186,23 +217,29 @@ cart RULE-2 has no test for PROOF-5. Run purlin:build cart.
 ### Proofs for another operating system
 
 A proof tagged `@env(windows)`, `@env(macos)` or `@env(linux)` is proven only by a run on that
-operating system. On your machine the run counts the proofs tagged for another system in one
-line per system, rather than as a pass or a failure:
+operating system. On your machine the run counts the proofs tagged for another system, in one
+line per system. They are neither a pass nor a failure:
 
 ```
-1 proof needs Windows; this machine is macOS. Run purlin:test --remote.
+1 proof needs Windows; this machine is macOS. Run purlin:test on Windows.
 ```
 
-Their rules' passed cells read `not run`, with the reason `Windows: no run yet`, and `Left to
-do` carries `1 rule to test on Windows: purlin:test --remote`. A proof tagged for another system
-with no test tied to it is not counted in that line: its rule reads `no test`. The passed cell
-keeps one entry per operating system a current run covered: the word, the source and when the
-run happened. The cell reads `partial` when two systems that each have a current section
-disagree, and a rule that reads `partial` is left to do as `to fix`.
+Their rules' passed cells read `not run`, with the reason `Windows: no run yet`. `Left to do`
+carries `1 rule to test on Windows: run purlin:test on Windows`.
+[Testing on another system](#testing-on-another-system) says how a project gets that run.
+
+Three details:
+
+- A proof tagged for another system with no test tied to it is not counted in that line. Its
+  rule reads `no test`.
+- The passed cell keeps one entry per operating system a current run covered: the word, the
+  source and when the run happened.
+- The cell reads `partial` when two systems that each have a current section disagree. A rule
+  that reads `partial` is left to do as `to fix`.
 
 ### The two loud failures
 
-A test framework that runs nothing says nothing about it, so the run script checks two things
+A test framework that runs nothing says nothing about it. So the run script checks two things
 the frameworks cannot check themselves. Each prints a line starting `Evidence is missing:` and
 makes the run exit 1.
 
@@ -210,28 +247,28 @@ makes the run exit 1.
   file that cannot be read. Purlin deletes a report before each run, so an old one is never
   read instead. The line names the suite and what was wrong, then `Check its command and
   report in the tests setting of .purlin/config.json, then run purlin:test.` A suite killed at
-  `--arm-timeout`, 3600 seconds by default, is missing evidence the same way, and its line
-  ends `Run purlin:test --arm-timeout <seconds> to give it longer.`
+  `--arm-timeout`, 3600 seconds by default, is missing evidence the same way. Its line ends
+  `Run purlin:test --arm-timeout <seconds> to give it longer.`
 - **B: a marker of a feature the run covers has no passing or failing result.** Its test was
   skipped, the report does not hold it, or no test follows the marker. The line names the
   first five by file and line, counts the rest, and ends `Check that its test ran and was not
-  skipped, then run purlin:test.` The one skip that is a result is an anchor's test that found
-  nothing to check, skipped with a reason starting `nothing to check:`
+  skipped, then run purlin:test.` One skip is a result: an anchor's test that found nothing to
+  check, skipped with a reason starting `nothing to check:`
   ([specs-and-anchors.md](specs-and-anchors.md#a-rule-with-nothing-to-check)).
 
 ### A comment to correct
 
-A comment above a test that names a feature, a proof or a rule no spec has, or names a rule
-that has proofs, ties its test to nothing. The run prints one line for each, by file and line,
+A comment above a test ties its test to nothing when it names a feature, a proof or a rule no
+spec has, or names a rule that has proofs. The run prints one line for each, by file and line,
 and exits 1 whatever the tests did:
 
 ```
 tests/test_cart.py:22 names cart PROOF-9, which no spec has. Correct the comment, or run purlin:build to repair it.
 ```
 
-A comment that names a proof whose wording changed after the test was last changed is printed
-after the `Markers:` line, quoting both wordings. It changes no exit code, and it clears once
-the test itself changes:
+A proof may be reworded after its test was last changed. The run prints that comment after the
+`Markers:` line, quoting both wordings. It changes no exit code, and it clears once the test
+itself changes:
 
 ```
 tests/test_login.py:1 names login PROOF-4, whose wording changed after the test was last changed in 1cf829e: it read "A" and now reads "B". Run purlin:build login to make the test show it; the line clears once the test changes.
@@ -254,27 +291,36 @@ purlin:audit --commit           Commit the evidence the run wrote
 purlin:audit --arm-timeout <seconds>  Give each suite, and each planted bug's run, longer
 ```
 
-An audit runs the tests as `purlin:test` does, then reads each rule that is its feature's own
-or an anchor's, has at least one proof with a test, whose passed cell reads `passed`, and that
-has no audit of its current rule, proof and test in the evidence, or whose code changed since.
-`--all` reads every such rule again. For each rule it takes three steps, in this order:
+A passing test is not proof that it checks anything. The audit tries to make each test fail.
+
+An audit runs the tests as `purlin:test` does. Then it reads a rule when all of these hold:
+
+- the rule is its feature's own or an anchor's;
+- it has at least one proof with a test;
+- its passed cell reads `passed`;
+- the evidence holds no audit of its current rule, proof and test, or its code changed since.
+
+`--all` reads every such rule again. For each rule the audit takes three steps, in this order:
 
 1. **The heuristic spot tests**, in code, with no model: six checks over each test's source
    and its proof's words. [review_criteria.md](../references/review_criteria.md#heuristic-spot-tests)
    is their one home.
 2. **One planted bug per proof** whose test or covered code changed since the audit last read
-   it. The model writes the smallest change to the code that would break what the proof says;
+   it. The model writes the smallest change to the code that would break what the proof says.
    Purlin plants it in a copy of the project, runs the proof's own tests there, and removes the
    copy. A test that still passes did not catch the bug. An anchor's proof and a `@manual`
    proof get no bug.
 3. **The model's reading**, once per rule: an explanation of the findings, stored beside them.
    It sets no verdict.
 
-A rule is `weak` when a spot test fired on one of its tests or a planted bug was not caught,
-and `strong` otherwise. `strong` means the model's part of the audit ran: where the model
-cannot be reached, the spot tests still report what they find as `weak`, a rule that passed
-them alone stays `not audited`, and the audit prints one line, such as
+A rule is `weak` when a spot test fired on one of its tests or a planted bug was not caught.
+Otherwise it is `strong`.
+
+`strong` means the model's part of the audit ran. Where the model cannot be reached, the spot
+tests still report what they find as `weak`. A rule that passed them alone stays
+`not audited`. The audit prints one line, such as
 `The model could not be reached: claude is not on PATH. 2 rules stay not audited. Run purlin:audit again.`
+
 A finding is one line:
 
 ```
@@ -282,10 +328,12 @@ tests/test_age.py::test_age: the test checks nothing.
 PROOF-1: the test still passes when src/age.py:12 reads "return 0"
 ```
 
-The audit writes what it found under `audit` in `.purlin/evidence/local/<feature>.json`, each
-planted bug with its file, its line, the change and whether it was caught, and commits it only
-with `--commit`, in the same two commits as a test run. It prints each rule it found weak with
-its findings, what the model calls cost, and last the share of rules it found strong:
+The audit writes what it found under `audit` in `.purlin/evidence/local/<feature>.json`. Each
+planted bug is there with its file, its line, the change and whether it was caught. The audit
+commits only with `--commit`, in the same two commits as a test run.
+
+It prints each rule it found weak with its findings, then what the model calls cost, and last
+the share of rules it found strong:
 
 ```
 login RULE-2   weak
@@ -294,8 +342,8 @@ The model was asked 31 times for 12 rules: $1.87 in all, $0.16 a rule.
 The audit found 4 of 5 rules strong (80%).
 ```
 
-The run then ends on the status, as every run does, with the audit's share in the sentence
-and each weak rule left to strengthen:
+The run then ends on the status, as every run does. The sentence carries the audit's share, and
+each weak rule is left to strengthen:
 
 ```
 5 rules. 5 pass their tests. The audit found 4 of 5 rules strong (80%).
@@ -303,9 +351,11 @@ Left to do:
   1 rule to strengthen: purlin:build
 ```
 
-An audit exits 1 when a test it ran failed or did not run, and 0 whatever it found: the audit
-is a tool, and nothing waits on it. Your project is never changed by a planted bug. Where a
-file of the project changes while a bug's tests run, the audit stops and says so:
+An audit exits 1 when a test it ran failed or did not run, and 0 whatever it found. The audit
+is a tool, and nothing waits on it.
+
+Your code is never changed by a planted bug. Where a file of the project changes while a bug's
+tests run, the audit stops and says so:
 `The audit stopped: src/age.py changed while a break ran. Nothing in the project was written by the audit.`
 [audit.md](audit.md) gives the reasoning and the research behind these steps.
 
@@ -327,9 +377,10 @@ flowchart TD
 
 ## The evidence
 
-The evidence is what runs saw, one file per feature per source, written into the tree and
-committed when you ask. The git history of `.purlin/evidence/` is the log of what was proven
-and when. [evidence_format.md](../references/formats/evidence_format.md) holds every field.
+The evidence is what runs saw. It is one file per feature per source, written into the tree
+and committed when you ask. The git history of `.purlin/evidence/` is the log of what was
+proven and when. [evidence_format.md](../references/formats/evidence_format.md) holds every
+field.
 
 ```
 .purlin/evidence/<source>/<feature>.json
@@ -337,163 +388,171 @@ and when. [evidence_format.md](../references/formats/evidence_format.md) holds e
 
 | Part | What it is |
 |---|---|
-| `<source>` | `local` for a run on a person's machine, `ci` for a remote runner's |
+| `<source>` | `local` for a run on a person's machine, `ci` for a project's own run on another system |
 | `<feature>` | the spec's name |
 
-One file holds one section per operating system that ran the feature and, once an audit has
-read the feature, one audit entry per rule. A run replaces only its own operating system's
-section, so two machines never overwrite each other.
+One file holds one section per operating system that ran the feature. Once an audit has read
+the feature, it also holds one audit entry per rule. A run replaces only its own operating
+system's section, so two machines never overwrite each other.
 
-Each section carries the commit of the code it describes, whether the tree was dirty, the time,
-the runner, the email git holds for the person who ran it, the machine, a fingerprint over the
-spec, the covered code and the tests, each rule's word and one entry per proof and test. A
-proof's result is `pass`, `fail`, `missing`, `not run` or `nothing to check`, the last with its
-reason. The `audit` object carries, per rule, the hashes the audit read, its `verdict`, its
+Each section carries:
+
+- the commit of the code it describes, and whether files were changed and not committed;
+- the time;
+- who ran it, as the email git holds in that checkout, and the machine's name;
+- a fingerprint over the spec, the covered code and the tests;
+- each rule's word, and one entry per proof and test.
+
+A proof's result is `pass`, `fail`, `missing`, `not run` or `nothing to check`, the last with
+its reason. The `audit` object carries, per rule, the hashes the audit read, its `verdict`, its
 findings, each planted bug, the model's explanation and the model.
 
-A section is current while its fingerprint equals one taken now, committed or not. When the
-spec, the covered code or the tests change, the passed cell reads `out of date`, naming what
-changed, as `code changed since <sha7>`, `spec changed since <sha7>` or `tests changed since
-<sha7>`, and the next run clears it.
+**A result stops counting when the rule, the test or the code changes, until the tests are run
+again.** A section is current while its fingerprint equals one taken now, committed or not.
+When the spec, the covered code or the tests change, the passed cell reads `out of date` and
+names what changed: `code changed since <sha7>`, `spec changed since <sha7>` or
+`tests changed since <sha7>`. The next run clears it.
 
 Outside tools read these files and the evidence package, whose formats are versioned for them.
 People inside the project read the status and the dashboard.
 
 ### The source is the folder
 
-A file under `.purlin/evidence/local/` is written by `purlin:test` or `purlin:audit` on
-somebody's machine. A file under `.purlin/evidence/ci/` is written by a remote runner on a run
-branch. A file whose own `source` field disagrees with its folder is ignored, with one warning
-naming it. Both sources count, as long as the section is current.
+- A file under `.purlin/evidence/local/` is written by `purlin:test` or `purlin:audit` on
+  somebody's machine.
+- A file under `.purlin/evidence/ci/` is written by a project's own run on another system.
+
+Both sources count, as long as the section is current. A file whose own `source` field
+disagrees with its folder is ignored, with one warning naming it.
 
 ### Retention
 
-A file keeps the newest section per operating system and the newest audit entry per rule; the
+A file keeps the newest section per operating system and the newest audit entry per rule. The
 history is the file's `git log`. A run deletes the evidence of a feature no spec defines and
 prints `Removed <path>: no spec defines <feature>.`
 
 ### Which results count for a sign-off
 
-The status counts a result while nothing its feature covers changed. The sign-off asks more: a
-result counts only when its section is current, was taken on a clean tree, and was taken on
-this version of the code, which means every commit from the one its tests ran at to `HEAD`
-changes only files under `.purlin/`. So the developer's hand-off is run and commit:
+The status counts a result while nothing its feature covers changed. The sign-off asks more. A
+result counts only when all three hold:
+
+- its section is current;
+- it was taken with no file changed and not committed;
+- it was taken on this version of the code: every commit from the one its tests ran at to
+  `HEAD` changes only files under `.purlin/`.
+
+So the developer's hand-off is run and commit:
 
 ```
 purlin:test --all --commit
-purlin:test --remote
 ```
 
-the second only where a proof is tagged for another operating system. That commit is ready for
-`purlin:sign`, which reads the committed evidence, builds the evidence package
-`.purlin/evidence/package/<version>.json`, and refuses, naming what to run again, where a
-result was not taken on this code. [sign-off.md](sign-off.md) is the sign-off in full, and
+and your project's run on any other system a proof is tagged for. That commit is ready for
+`purlin:sign`. The sign-off reads the committed evidence and builds the evidence package,
+`.purlin/evidence/package/<version>.json`. Where a result was not taken on this code, it
+refuses and names what to run again.
+
+[sign-off.md](sign-off.md) is the sign-off in full, and
 [evidence_and_signoff.md](../references/evidence_and_signoff.md) the one definition.
 
 ### Who commits the evidence
 
-Whoever runs `purlin:test --commit` or `purlin:audit --commit` commits the evidence, on the branch
-they are on: it describes that branch's code. When a merge conflicts in `.purlin/evidence/`, take
-either side and run `purlin:test --commit`: the file is written again, keeping each audit result
-whose rule, proof and test are unchanged.
+Whoever runs `purlin:test --commit` or `purlin:audit --commit` commits the evidence, on the
+branch they are on. It describes that branch's code.
+
+When a merge conflicts in `.purlin/evidence/`, take either side and run `purlin:test --commit`.
+The file is written again, keeping each audit result whose rule, proof and test are unchanged.
 
 ## Who pushes
 
 A push is `git push`, typed by a person. `purlin:test` and `purlin:audit` write the evidence,
 commit it when you pass `--commit`, and stop. `purlin:sign` makes its signed commit and, for
-the first sign-off of a version, writes the tag, then names the push for you to type. The one
-push Purlin makes is `purlin:test --remote`, to a branch of its own, described below.
+the first sign-off of a version, writes the tag. Then it names the push for you to type. No
+Purlin command pushes.
 
-## When a project has a runner
+## Testing on another system
 
-A project has a remote runner for one reason: a proof in `specs/` is tagged `@env` for an
-operating system this machine is not, so only a runner can prove it. Setup writes no runner
-file and asks nothing about one. The status names the work, as
-`1 rule to test on Windows: purlin:test --remote`, and the first `purlin:test --remote` writes
-the file for the git host of `origin`, `.github/workflows/purlin.yml` on GitHub or
-`purlin.azure-pipelines.yml` at the project root on Azure DevOps, prints it, pushes nothing and
-exits 0:
+Purlin runs your tests where you are. Reaching another platform is your project's own setup,
+and Purlin keeps the evidence. Purlin itself only works locally. It drives no remote pipeline
+and adds none to your repository.
 
-```
-Purlin wrote .github/workflows/purlin.yml, the runner for GitHub, to run the proofs tagged for Windows:
-```
+| | |
+|---|---|
+| Say where it must hold | Tag the proof `@env(windows)`. Every status then lists it: `22 rules to test on Windows` |
+| Ask the AI to set it up | It writes what your project needs for your git host, GitHub or Azure DevOps. The files live in your project and are yours to change. |
+| Run it your way | How a run starts is up to your project: from your desk, on a push or on a schedule. The results come back through git. |
+| Purlin tracks the results | Each result records the machine and the system it ran on, for every rule, like a result from your own machine. |
 
-then the file, then:
+### One example: GitHub, started from your desk
 
-```
-Commit it and run: purlin:test --remote --commit-runner
-```
-
-`purlin:test --remote --commit-runner` commits that file alone, as
-`ci: the Purlin runner for GitHub`, prints
-`Committed .github/workflows/purlin.yml, the runner for GitHub.`, and runs. From then on
-`purlin:test --remote` hands this commit to the runner and brings back what it wrote:
-
-```mermaid
-flowchart TD
-    Y["you run<br>purlin:test --remote"] --> P["Purlin pushes this commit<br>to run/#lt;branch#gt;-#lt;sha7#gt;"]
-    P --> R["each job of the git host's<br>runner runs the tests of the<br>proofs tagged for its system"]
-    R --> C["the runner commits<br>.purlin/evidence/ci/<br>onto the run branch"]
-    C -->|"Purlin waits for<br>the run to finish"| H["Purlin pulls the<br>evidence home with<br>git pull --ff-only"]
-    H --> D["Purlin deletes<br>the run branch"]
-```
-
-### What starts a run
+A workflow a project can copy to `.github/workflows/windows.yml`:
 
 ```yaml
+name: windows
 on:
-  push:
-    branches: ['run/**']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Get Purlin
+        shell: bash
+        run: git clone --depth 1 --branch v0.10.0 https://github.com/rlabarca/purlin "$RUNNER_TEMP/purlin"
+      - name: Install what the tests need
+        shell: bash
+        run: python3 -m pip install pytest
+      - name: Run the tests tagged for Windows
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          python3 "$RUNNER_TEMP/purlin/scripts/run/purlin_run.py" --ci --commit
+      - name: Return the evidence
+        if: always()
+        shell: bash
+        run: git push origin "HEAD:${{ github.ref_name }}"
 ```
 
-One thing starts a run: a push to a `run/*` branch, which `purlin:test --remote` creates and
-deletes around one run. The job runs the tests tied to the proofs tagged for its system and
-commits its own section of each such feature's `.purlin/evidence/ci/<feature>.json` onto that
-branch. A run on any other ref writes nothing and says that the ref is not a run branch.
+Use the tag of the Purlin version in your `.purlin/config.json`, and install what your own test
+command needs. Start it from your desk, on a branch you have pushed:
 
-A `ci` section lists only the proofs tagged for the runner's system and the rules they prove,
-and names its machine `remote runner, <System>`, such as `remote runner, Windows`, with the name
-the host lent the runner kept beside it as `hostname`
-([evidence_format.md](../references/formats/evidence_format.md)).
+```
+gh workflow run windows.yml --ref "$(git branch --show-current)"
+gh run watch
+git pull
+```
 
-No audit runs on the runner. The test step is the last step: it ends on the status, and its
-exit code is the job's. The job fails only when a test tied to a proof tagged for its system
-fails or could not run.
+GitHub starts a workflow by hand only once its file is on the default branch.
 
-The runner file carries one job per operating system a proof in `specs/` is tagged `@env` for
-that the machine writing it is not. Each job writes its own section, merged into the file at
-the branch's head. The git host is read from `origin` each time.
+### What that run does
 
-### purlin:test --remote
+`purlin_run.py --ci` is the run script `purlin:test` runs, in the form a pipeline uses. It
+starts only the tests tied to the proofs tagged for the system it is on, slow ones included,
+and writes that system's section of `.purlin/evidence/ci/<feature>.json` for each feature it
+covered: each rule's word, each proof's result, the commit, the time, the machine's name and
+the git email set there. `--commit` commits those files alone, as `purlin: evidence at <sha7>`.
+It never pushes; the workflow's last step does. It exits 1 only when one of those tests failed
+or could not run, and a failed run's results come back too. No audit runs there.
 
-Use it for the reason above. It pushes a branch of its own, never the branch you are on:
+The commit that comes back changes only files under `.purlin/`, so its results were taken on
+the same version of the code as yours, and both count for a sign-off.
 
-1. It refuses a detached head and an uncommitted change, because the run would prove something
-   other than what is on disk, and an `origin` that is neither GitHub nor Azure DevOps.
-2. It looks for the program it waits on the run with, `gh` on GitHub and `az` on Azure DevOps.
-   Without it, it pushes nothing, names the program to install, and exits 1:
+### Azure DevOps, or any other git host
 
-   ```
-   purlin:test --remote waits for the run with the GitHub CLI, gh, which is not installed, so nothing was pushed. Install gh, then run purlin:test --remote again.
-   ```
-
-3. It pushes this commit to `run/<branch>-<sha7>` on `origin`, creating that branch there and
-   nothing locally, and prints `Pushing <branch> as run/<branch>-<sha7>.`
-4. The runner commits its section of `.purlin/evidence/ci/<feature>.json` onto that branch.
-5. On GitHub it waits on the run of the `purlin.yml` workflow alone, so another workflow the
-   push starts is never the one waited on. On Azure DevOps it finds the run with
-   `az pipelines runs list`, then asks `az pipelines runs show` every 15 seconds for up to 90
-   minutes; only `succeeded` passes. The Azure CLI needs its `azure-devops` extension and
-   `az login`.
-6. It runs `git pull --ff-only origin run/<branch>-<sha7>`, deletes the run branch from
-   `origin` and prints the table. A proof tagged `@env(windows)` then reads `passed` on a Mac.
-   A failed run is pulled home too, and the command exits 1.
-
-The commit the runner made changes only files under `.purlin/`, so the results it brings home
-were taken on the same version of the code as yours, and both count for a sign-off. On Azure
-DevOps a run still going after 90 minutes is left on its branch, and the command prints the
-pull and delete commands to run once it finishes. No process the command starts prompts: a
-push or a pull that needs a credential fails rather than asks.
+Ask: `set up a Windows run for this project on Azure DevOps`. The agent writes the pipeline
+file for that host, which does the same things as the example, and tells you how to start it.
+On another machine with another git host, ask again and pick. The five things every such file
+does are in
+[evidence_and_signoff.md](../references/evidence_and_signoff.md#a-run-on-another-system).
 
 ## Next
 

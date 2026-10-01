@@ -5,31 +5,29 @@ For a developer putting Purlin on a project, who wants it to stay out of the way
 ## What Purlin touches
 
 - **A settings file, the specs and the evidence.** `purlin:init` writes `.purlin/config.json`,
-  `.purlin/evidence/README.md`, an empty `specs/`, a block in `.gitignore`, and a copy of the
-  dashboard, `purlin-report.html`, which that block keeps out of git. It names every file it
-  wrote, then asks whether it may commit them. On a yes it commits them in one commit,
-  `chore(init): set up Purlin`.
+  `.purlin/evidence/README.md`, an empty `specs/` and a few lines in `.gitignore`. It also
+  copies the dashboard page, `purlin-report.html`, into the project, where git ignores it. It
+  names every file it wrote, then asks whether it may commit them. On a yes it makes one
+  commit, `chore(init): set up Purlin`.
 - **One comment above a test.** `# purlin: cart PROOF-1` in Python, `// purlin: cart PROOF-1`
   in JavaScript, TypeScript or C#, `-- purlin: cart PROOF-1` in SQL. The comment ties the test
-  to a proof, and the proof names its rule. Where a rule has no proof, the comment names the
-  rule: `# purlin: cart RULE-1`.
+  to a proof, and the proof names its rule. The test itself does not change. Where a rule has
+  no proof, the comment names the rule: `# purlin: cart RULE-1`.
 - **Your own test command, in your own framework.** Setup leaves the `tests` setting empty. The
   first `purlin:test` suggests an entry for each test tool it recognises, with the flag that
-  makes the tool write a report Purlin reads, and the entries are written once you confirm
-  them.
-- **A commit when you ask for one.** A test run writes its results and commits them only with
-  `--commit`. `purlin:spec` and `purlin:build` commit the spec and the code you asked them for.
+  makes the tool write a report. The entries are written once you confirm them.
+- **A commit when you ask for one.** A test run commits its results only with `--commit`.
+  `purlin:spec` and `purlin:build` commit the spec and the code you asked them for.
 - **Nothing running unless you ran it.** No git hook, and no Purlin process left running after
-  a command ends. A runner file for the git host is written by the first `purlin:test --remote`,
-  for one reason: a proof tagged `@env` for an operating system this machine is not.
+  a command ends.
 - **Nothing added to your test suite.** No plugin, no import, no fixture. The one exception is
-  the test tool's own: jest needs `jest-junit` to write its report, and the first test run
-  prints the command that installs it.
+  the test tool's own: jest needs `jest-junit` to write its report. The first test run prints
+  the command that installs it.
 
 ## Ten minutes
 
-The path below starts in a Python project whose `pyproject.toml` configures pytest and that
-holds no code yet. Each step shows what you type and the lines the step ends on. The rules and
+The path below starts in a Python project that holds no code yet. Its `pyproject.toml`
+configures pytest. Each step shows what you type and the lines the step ends on. The rules and
 tests the model writes are your own and differ from run to run, so this page shows none of
 them.
 
@@ -44,7 +42,7 @@ claude plugin install purlin@purlin --scope project
 
 The two `claude` lines name the marketplace in the project's `.claude/settings.json` and turn
 the plugin on for this project. Start Claude Code in the project, or run `/reload-plugins` in
-a session that is already open, and the `purlin:` commands are there.
+a session that is already open. The `purlin:` commands are there.
 
 **2. Set up.** Type `purlin:init`. It names each file it wrote, kept or copied, one per line,
 then asks one question:
@@ -69,26 +67,31 @@ Committed e1a0b21, the files setup wrote:
   .purlin/evidence/README.md
 ```
 
-The settings file holds two things: `version`, the Purlin that set the project up, and
-`tests`, your test commands, empty until the first test run. In a project that already holds
-code, `purlin:spec-from-code` reads it once and writes the specs that code already implies.
+The settings file holds two things. `version` is the Purlin that set the project up. `tests`
+is your test commands, empty until the first test run.
+
+In a project that already holds code, `purlin:spec-from-code` reads it once and writes the
+specs that code already implies.
 
 **3. Write the rules.** Type `purlin:spec cart` and say what the cart must do: a sentence, a
-ticket or a list of criteria. A **rule** is one line saying what the software must do, and a
-**proof** says how that is shown, in words a person who cannot read code can judge. It prints
-the rules and proofs it drafted for you to read, writes them to `specs/<category>/cart.md` with
-a `> Scope:` line naming the files the code lives in, commits the spec once you agree, and
-ends on:
+ticket or a list of criteria.
+
+A **rule** is one line saying what the software must do. A **proof** says how that is shown, in
+words a person who cannot read code can judge.
+
+`purlin:spec` prints the rules and proofs it drafted for you to read. It writes them to
+`specs/<category>/cart.md`, with a `> Scope:` line naming the files the code lives in. Once you
+agree, it commits the spec and ends on:
 
 `Spec saved: cart. Next: purlin:build cart`
 
-**4. Build.** Type `purlin:build cart`. It writes the code into the files `> Scope:` names and a
-test for each proof, with one comment above each test naming the proof, where no existing test
-already shows it. It commits them, with a body saying which rule each change serves, and runs
-`purlin:test cart`.
+**4. Build.** Type `purlin:build cart`. It writes the code into the files `> Scope:` names. It
+writes a test for each proof, with one comment above each test naming the proof. Where a test
+you already have shows the proof, it adds the comment there and writes no new test. It commits
+them, with a body saying which rule each change serves, and runs `purlin:test cart`.
 
-The first test run in a project has no test command to run. It runs nothing, suggests an entry
-for each test tool it recognises, then prints the whole setting on one line,
+The first test run in a project has no test command to run. It runs nothing and suggests an
+entry for each test tool it recognises. Then it prints the whole setting on one line,
 `Suggested tests setting: [...]`:
 
 ```text
@@ -96,8 +99,8 @@ No test command is set in .purlin/config.json, so nothing ran.
 Suggested for pytest: python3 -m pytest --ignore=mutants {files} --junitxml={report}
 ```
 
-Where your project runs its tests in another way, with another interpreter or other options,
-the agent shows you the difference. Say yes to the entry you want: the agent writes it into
+Your project may run its tests another way, with another interpreter or other options. The
+agent shows you the difference. Say yes to the entry you want. The agent writes it into
 `.purlin/config.json` and runs the tests again. The run prints:
 
 ```text
@@ -126,8 +129,8 @@ Left to do:
   1 feature whose results are not committed: purlin:test --commit
 ```
 
-Every rule passes, and the tests read `not met` for one reason: the results are on disk and
-not in git. `purlin:test --commit` commits the work and its evidence:
+Every rule passes. The tests read `not met` for one reason: the results are on disk and not in
+git. `purlin:test --commit` commits the work and its evidence:
 
 ```text
 Evidence committed.
@@ -154,14 +157,18 @@ No test command is set and no test tool Purlin knows was found, so nothing ran. 
 [supported_frameworks.md](../references/supported_frameworks.md) lists the test tools it
 recognises and the entry it suggests for each.
 
-**5. Read it.** The three opening lines name the project and state the two facts. `Tests: met`
-means every rule's tests pass on the committed evidence. `Sign-off: not signed` means nobody
-has signed this code, and the last line names the command that does. `3 rules. 3 pass their
-tests.` is the sentence: how many rules there are and how many passed their tests. Open
-`purlin-report.html` in a browser to see each rule on its own line; it reads the results of the
-last command.
+**5. Read it.** The three opening lines name the project and state the two facts.
 
-Where a test fails, here the test of `RULE-2`, the run names the rule and the test:
+- `Tests: met` means every rule's tests pass on the committed evidence.
+- `Sign-off: not signed` means nobody has signed this code. The last line names the command
+  that does.
+- `3 rules. 3 pass their tests.` says how many rules there are and how many passed their
+  tests.
+
+Open `purlin-report.html` in a browser to see each rule on its own line. It reads the results
+of the last command.
+
+When a test fails, the run names the rule and the test. Here it is the test of `RULE-2`:
 
 ```text
 cart RULE-2 fails: tests/test_cart.py::test_sum. Run purlin:build cart.
@@ -176,16 +183,15 @@ Left to do:
 ```
 
 Change `src/cart.py` and run `purlin:test` again. Every rule of `cart` is out of date until its
-tests run over the new code, and the run's first line says why it picked the feature,
-`Selected 1 of 1 feature: cart (code changed since <sha7>).`, naming the commit the last run
-saw. Run it once more with nothing changed and it runs nothing:
+tests run over the new code. The run's first line says why it picked the feature, and names the
+commit the last run saw: `Selected 1 of 1 feature: cart (code changed since <sha7>).` Run it
+once more with nothing changed and it runs nothing:
 
 ```text
 Nothing to run: every feature's spec, code and tests match its evidence. purlin:test --all runs them anyway.
 ```
 
-That is the whole of the loop: a rule, a test, and whether the test passed over the code as it
-is now.
+That is the whole loop: a rule, a test, and whether the test passed over the code as it is now.
 
 ## The day to day
 
@@ -194,36 +200,38 @@ is now.
   their source.
 - `purlin:spec <name>` turns a requirement into rules and proofs.
 - `purlin:build <name>` writes the code and the tests, or marks a test you already have.
-- `purlin:test` runs the features the change touched: those whose spec, code or tests changed
-  since their last run, and those with no run on this operating system. `purlin:test <feature>`
-  runs one feature and `purlin:test --all` runs every feature.
+- `purlin:test` runs what changed: the features whose spec, code or tests changed since their
+  last run, and those with no run on this operating system. `purlin:test <feature>` runs one
+  feature. `purlin:test --all` runs every feature, slow tests included.
 - `purlin:audit` asks whether the tests would catch a bug, when you want to know.
 
-A run writes `.purlin/evidence/local/<feature>.json`, what the run saw for each rule on this
-operating system. `purlin:test --commit` makes two commits under your own git identity: first
-the specs, the marked tests and the settings the results describe, as
-`purlin: specs, tests and settings for <feature>`, then the evidence, as
-`purlin: evidence at <sha7>`, naming the first. It never pushes; the push is yours.
+A run writes `.purlin/evidence/local/<feature>.json`: what the run saw for each rule on this
+operating system. `purlin:test --commit` makes two commits under your own git identity:
+
+1. The specs, the marked tests and the settings the results describe, as
+   `purlin: specs, tests and settings for <feature>`.
+2. The evidence, as `purlin: evidence at <sha7>`, naming the first.
+
+It never pushes. The push is yours.
 
 Every run ends on the status. The first line of `Left to do` is the next step and names its
 command.
 
-[running-and-evidence.md](running-and-evidence.md) covers a run in full, including the one
-reason a project has a remote runner: a proof tagged for an operating system this machine is
-not.
+[running-and-evidence.md](running-and-evidence.md) covers a run in full, including how a
+project tests on another operating system.
 
 ## When the tests are met
 
-`purlin:sign` is there for any project, whenever it chooses. It reads the committed evidence,
-builds the evidence package for the version, stops at each hand check, and takes one signature
-in a signed commit; the first sign-off writes the signed tag `signed/<version>`. A project
-that never signs loses nothing: `Tests: met` is the fact the loop works toward.
+**Signing is optional.** `purlin:sign` is there for any project, whenever it chooses. It reads
+the committed evidence, builds the evidence package for the version, and stops at each hand
+check. Then it takes one signature in a signed commit. The first sign-off writes the signed tag
+`signed/<version>`. A project that never signs keeps its evidence all the same.
 [sign-off.md](sign-off.md) is the walk in full.
 
-`purlin:audit` is a tool you run when you want it: it runs heuristic spot tests over your
-tests, then plants one bug per proof in a copy of the project and sees whether the proof's own
-test catches it. A finding makes the rule `weak`, left to do as `to strengthen`; nothing waits
-on it. [audit.md](audit.md) says what it checks and why.
+**The audit is a tool you run when you want it.** `purlin:audit` runs heuristic spot tests over
+your tests. Then it plants one bug per proof in a copy of the project and sees whether the
+proof's own test catches it. A finding makes the rule `weak`, left to do as `to strengthen`.
+Nothing waits on it. [audit.md](audit.md) says what it checks and why.
 
 ## Where to go next
 
