@@ -7,40 +7,46 @@ new, what changed and what you do differently, what is gone, and what `purlin:in
 does to your project.
 
 In 0.9.5 a rule was covered when a test carrying a proof marker passed, `purlin:verify` issued a
-receipt, and `purlin:audit` graded each proof `STRONG`, `WEAK` or `HOLLOW`. In 0.10.0 every
-rule carries two cells, `passed` and `strong`; one project setting, the gate, says what a release
-needs; and a release is a commit, its evidence package and a tag. Purlin no longer installs
-anything in your test suite: a test is any test in your own suite with one comment above it.
+receipt, and `purlin:audit` graded each proof `STRONG`, `WEAK` or `HOLLOW`. In 0.10.0 Purlin
+keeps two things, the evidence and the sign-off, and shows two facts about them; every rule
+carries two cells, `passed` and `strong`. Purlin no longer installs anything in your test suite:
+a test is any test in your own suite with one comment above it.
 
 ### What is new
 
-- **Two gates.** passed: every rule's tests pass at the release commit. signed: the same, and a
-  person signs the evidence package. The gate strong is gone; purlin:init --update reads it as
-  passed. `.purlin/config.json` carries `gate`, and `purlin:init --gate <value>` changes it.
-- **A release is a commit, a package and a tag.** purlin:test --release runs every test,
-  commits the evidence and the package, and at passed tags passed/<version>. At signed the first
-  purlin:sign writes signed/<version>; later sign-offs are added and the tag does not move.
-- **Nothing is signed while specs change.** Left to do lists only work: proofs and tests to
-  write, tests to fix, rules to strengthen where the audit ran.
-- **The audit and mutation testing are tools.** Nothing waits on them; min_strength is gone.
-- **The sign-off walk shows what to look at.** Each hand check, each weak rule and each rule
-  never audited, with its proofs, its tests' names and bodies, its results and the audit's
-  finding; the rest in a list. The sign-off records what was shown and every note typed.
-- **purlin:spec renumbers a number written twice when you say yes**, with a dry run first.
+- **Two facts, no gate.** The status and the dashboard say whether the tests are met on the committed evidence, and whether this code is signed.
+- **The hand-off is run and commit**: purlin:test --all --commit, and purlin:test --remote for other systems.
+- **purlin:sign builds the evidence package and signs it**, at any time, in any project; it stops only at hand checks, whose note is optional, and refuses results not taken on this code.
+- **An anchor rule with nothing to check passes, and says so.**
+- **A test comment whose proof was reworded is caught** until the test changes.
+- **The audit runs heuristic spot tests, then plants one bug per changed proof** in a copy of the project and sees whether the proof's own test catches it; it reports the share of rules it found strong. Run it by hand; nothing blocks on it.
+- **The evidence package records who wrote and last changed each rule, proof and test**, from git.
+- **The dashboard names the branch and commit its data describes**, and its page is written with its data.
+- **A Purlin tool call names its folder**; a call that names none is refused with the fix.
+- **Cut:** mutation testing, purlin:export, the gate, the release step, .purlin/tests.md, drift's role views, setup's questions but one, and most settings.
+- **The formats** stand at spec 22, anchor 12, evidence 8, signature 15, package 8 and marker 4,
+  the drift criteria at 13, and the dashboard's data at schema 14.
+
+In more words:
+
+- **The two facts.** Every status opens `Tests: met` or `Tests: not met`, then
+  `Sign-off: signed 0.1.0 at a1b2c3d`, `Sign-off: signed 0.1.0, 4 commits since` or
+  `Sign-off: not signed`. The dashboard shows the same two in its header boxes.
 - **The summary and `Left to do`.** Every run, every audit and `purlin:status` end on one line
   of counts, `40 rules. 35 pass their tests.`, with
-  ` The audit found 30 strong and 2 weak.` added where the audit has read a rule, then
+  ` The audit found 30 of 35 rules strong (85%).` added where the audit has read a rule, then
   `Left to do`, one line per kind of remaining work with its count and the command that does it,
-  such as `3 rules to fix: purlin:build`. The first line is the next step. A finished project
-  reads `Nothing left to do. To release a version: purlin:test --release`, with
-  `, then purlin:sign` at the gate `signed`, and names the push of the tag once HEAD carries one.
+  such as `3 rules to fix: purlin:build`. The first line is the next step. A project whose tests
+  are met and whose code is not signed ends on
+  `Every rule passes its tests on the committed evidence. To sign it: purlin:sign`.
 - **Evidence in the repository.** Every run writes `.purlin/evidence/local/<feature>.json`, one
-  file per feature with one section per operating system, and the table `.purlin/tests.md`.
-  Nothing is committed unless you pass `--commit`, which makes two commits: the specs, the
-  marked tests and the settings the results describe, as
-  `purlin: specs, tests and settings for <feature>, ...`, then the evidence, as
+  file per feature with one section per operating system. Nothing is committed unless you pass
+  `--commit`, which makes two commits: the specs, the marked tests and the settings the results
+  describe, as `purlin: specs, tests and settings for <feature>, ...`, then the evidence, as
   `purlin: evidence at <sha7>`. A remote runner writes `.purlin/evidence/ci/<feature>.json`. A
-  result counts wherever it ran and records the machine it ran on.
+  result counts wherever it ran and records who ran it, on which machine and on which commit.
+  Results written and not committed are left to do, as
+  `1 feature whose results are not committed: purlin:test --commit`.
 - **Out of date.** Each section carries a fingerprint of the spec, the code its `> Scope:`
   names and the tests. When any of them changes, the rule's passed cell reads `out of date`,
   naming what changed, until the next run.
@@ -48,73 +54,61 @@ anything in your test suite: a test is any test in your own suite with one comme
   features that are out of date or have no run on this operating system, and prints what it
   selected and why, `Selected 2 of 34 features: login (code changed since a1b2c3d), invoice (no
   run on macOS yet).` `purlin:test --all` runs everything.
-- **The audit calls a model.** `purlin:audit` runs the tests, then one model call per rule,
-  four at a time by default (`audit_parallel`, 1 to 16), and writes what it found into the
-  evidence with the model's name on every finding. A finding makes the rule `weak`, left to do
-  as `to strengthen`, and stops nothing. A proof longer than 60 words, or holding two cases, is
-  written among the audit's notes and does not make the rule weak.
-- **Test strength, one share per feature.** Mutation testing is optional and off by default at
-  either gate; where it is on, the share of deliberate breaks the tests caught is shown on each
-  rule of the feature as `strength 84%`. The share is measured once per feature, in every
-  language. An engine not installed, one that ran past its time limit, or one that wrote no
-  report gives the reason `strength not measured: <reason>`, naming the command that fixes it,
-  and the rule's word stays the audit's. An engine that cannot run on this system counts as
-  none.
-  `purlin:audit --arm-timeout <seconds>` gives the breaking tool longer per feature, 3600
-  seconds by default. Engines: mutmut for Python, Stryker for JavaScript and TypeScript,
-  Stryker.NET for C#. mutmut does not run on Windows.
-- **The sign-off.** One file per signer per version,
+- **The audit.** `purlin:audit` runs the tests, then for each rule that passes: six heuristic
+  spot tests that read each test as text, with no model; one planted bug per proof whose test or
+  covered code changed, made in a copy of the project and never in the project; and the model's
+  reading, which explains what was found and decides nothing. A spot test that fires, or a
+  planted bug the proof's own test did not catch, makes the rule `weak`, left to do as
+  `to strengthen`, and stops nothing. It ends on what the model cost and on
+  `The audit found 4 of 5 rules strong (80%).`
+- **The sign-off.** `purlin:sign` reads the committed evidence, names who ran the tests, where
+  and when, builds `.purlin/evidence/package/<version>.json`, and walks it: an overview, the
+  audit's findings as a list you may open, and one stop per hand check, where you may type what
+  you saw. One file per signer per version,
   `.purlin/evidence/package/<version>.signoffs/<signer-slug>.json`, in a signed commit
   `sign(<version>): <signer email>`, carrying the package's fingerprint, the signer's name and
   email as git holds them, the time, the key's fingerprint, what the walk showed and every note.
-  It counts when its commit carries a signature, made with any key, that verifies over the
-  commit, and its package hash is the committed package's: Purlin records who signed and does
-  not decide who may. With no key set up, `purlin:sign` shows the commands that set one up,
-  offers to run them and carries on. `purlin:sign --show` and `--answers <file>` let the agent
-  walk it with you.
-- **The release run refuses what stops the tests from passing.** A broken spec, a rule that does
-  not pass, uncommitted work, or the branch's copy on the host holding commits the checkout
-  lacks: each prints one line naming the command, and nothing is written. A weak rule, a rule
-  not audited and, at `signed`, a rule with no proof are listed, not refused. At `passed` a
-  rule with a `@manual` proof is named in one line and listed in the package as not checked.
+  The first sign-off of a version carries the package and writes the signed tag
+  `signed/<version>`; later sign-offs are added and the tag does not move. A sign-off counts when
+  its commit carries a signature, made with any key, that verifies over the commit, and its
+  package hash is the committed package's: Purlin records who signed and does not decide who may.
+  With no key set up, `purlin:sign` shows the commands that set one up, offers to run them and
+  carries on. `purlin:sign --show` and `--answers <file>` let the agent walk it with you,
+  `--version <version>` names the version, and `--check <file>` checks a package against its
+  fingerprint.
+- **The sign-off refuses results not taken on this code.** Uncommitted work, evidence not
+  committed, a result taken before the code last changed, a rule that does not pass, a broken
+  spec, or the branch's copy on the host holding commits the checkout lacks: each prints one line
+  naming the command, and nothing is written. A weak rule, a rule not audited and a rule with no
+  proof are listed, not refused.
+- **A hand check reads `checked at sign-off`**, and after a sign-off shows its last note with the
+  version it was signed at and how many commits have come since.
 - **A number written twice or a line left from a merge conflict fails the spec.** Every rule of
-  that spec reads failed with the reason, the release is refused, and Left to do reads
-  1 spec to repair: purlin:spec.
-- **Drift reads your checkout after a merge.** It names each number written twice and which
-  line moves, each test comment whose proof's wording changed, and the proofs added, changed and
-  moved; it says how old your copy of the default branch is and never fetches.
-- **The walk shows each proof's tied test**, with the test's body.
-- **A plain tests/test_*.py project is suggested pytest.**
-- **A version is released on a release branch**, cut from the default branch once its specs are
-  done; new specs land on the default branch and wait for the next version. Evidence may be
-  committed on any branch; a release uses only the evidence at the release commit.
-- **When two branches take the same number**, the number already on the default branch keeps it,
-  and the rule or proof from the branch not yet merged moves to the next free number, and
-  `purlin:spec` renumbers it and its test comments when you say yes. A re-run
-  after a conflict in `.purlin/evidence/` keeps each audit result whose rule, proof and test are
-  unchanged.
-- **The evidence package.** `.purlin/evidence/package/<version>.json`, one data file describing
-  a release for a regulated document and sign-off system: every rule's words, proofs, tests,
-  results and what the audit found, the hand checks, the counts, what is left, the state
-  `finished` or `not finished`, and a fingerprint of the file. `purlin:test --release` commits it
-  at the release commit and nothing rewrites it; the sign-offs sit beside it.
-  `purlin:export` writes it at any time. Purlin makes no claim of compliance.
+  that spec reads failed with the reason, a sign-off is refused, and Left to do reads
+  1 spec to repair: purlin:spec. `purlin:spec` renumbers a number written twice when you say
+  yes, with a dry run first: the number already on the default branch keeps it, and the rule or
+  proof from the branch not yet merged moves to the next free number, with its test comments.
+- **Drift reads your checkout after a pull or a merge**, in one view: the rules and proofs added,
+  changed and moved, each number written twice and which line moves, each test comment whose
+  proof's wording changed, and each anchor behind its source. It says how old your copy of the
+  default branch is, never fetches and never pulls an anchor.
+- **A spec ahead of its code is information, not a warning**:
+  `login: 1 file its scope names is not written yet: src/gone.py. Run purlin:build login, or correct the path with purlin:spec login.`
 - **A remote runner for one reason**: a proof tagged `@env(<os>)` for an operating system your
-  machine is not. It runs on GitHub or Azure DevOps, on a push to a `run/*` branch and on a push
-  of a `signed/*` tag. A remote run on a system runs only the tests tied to proofs tagged for
-  that system, and a runner file names a remote machine only for a system the machine running
-  setup is not. A project with no such proof gets no workflow.
-- **Drift by role.** `purlin:drift pm`, `eng` or `qa` reports what your last pull, merge,
-  rebase, checkout, clone or reset brought in, read from git's own log of HEAD.
+  machine is not. Setup writes no runner file; the first `purlin:test --remote` writes it for
+  GitHub or Azure DevOps, shows it and asks before committing it. The runner starts on a push to
+  a `run/*` branch and runs only the tests tied to proofs tagged for its system.
+- **Worktrees.** Each checkout has its own results, status and dashboard. After merging work
+  from a worktree, run `purlin:status` in the main checkout.
 - **A mistake in a spec is warned of, with its fix.** The status and every run print one line
-  naming the spec, the mistake and the command that fixes it, and carry on: a `> Scope:` entry
-  that finds no file, two specs with one name, a rule number written twice, a proof line that
-  cannot be read, and a first heading that names another feature.
+  naming the spec, the mistake and the command that fixes it, and carry on: two specs with one
+  name, a rule number written twice, a proof line that cannot be read, and a first heading that
+  names another feature.
 - A spec records the highest rule number it has held in `> Highest-Rule:` and the highest proof number in `> Highest-Proof:`, so a deleted number is never used again.
 - A pinned anchor is copied as its source holds it. A `> Requires:`, `> Global:` or `> Scope:` line in it is warned of on every status and test run, naming the source's owners as the ones to take it out.
-- `purlin:init` asks whether it may commit the files it wrote, and with `--yes` commits them as `chore(init): set up Purlin at the gate <gate>`.
+- `purlin:init` asks whether it may commit the files it wrote, and with `--yes` commits them as `chore(init): set up Purlin`.
 - `purlin:test --remote` with no `gh` on GitHub or no `az` on Azure DevOps pushes nothing and names the program to install.
-- The first test run keeps running examples inside a function's documentation where the project's own test command ran them.
+- A plain `tests/test_*.py` project is suggested pytest.
 - Every system a person reads is written `Windows`, `macOS` or `Linux/Unix`.
 
 ### What changed, and what you do differently
@@ -131,44 +125,43 @@ anything in your test suite: a test is any test in your own suite with one comme
   starts `py -3 -m pytest`. Purlin runs it and reads JUnit XML, the TRX `dotnet test` writes, or
   the JSON `go test -json` writes; a shell or SQL test file passes when it exits 0. Jest needs
   `jest-junit` to write its report: `npm install --save-dev jest-junit`. Go is new.
-- **Proofs are optional at `passed`.** At `signed` a rule without one is left to do as
-  `to write a proof for`, and a rule with a test and no proof reads `no proof` in its strong
-  cell. A proof is QA's plan in plain language;
+- **A rule without a proof is left to do** as `to write a proof for` once its tests pass, and
+  reads `no proof` in its strong cell. A proof is QA's plan in plain language;
   `references/spec_quality_guide.md` is the guideline for a good one.
 - **`purlin:test` replaces `purlin:unit-test` and `purlin:verify`.** It runs every marked test of
   the features it runs; there is no tier. `purlin:test <feature>` runs one.
-- **`purlin:status`** prints one row per spec, `Spec | Rules | Proofs | Tests`, with a `Strong`
-  column where the audit has read a rule, then the summary and `Left to do`.
-  `purlin:status <name>` shows one spec's rules.
-- **A `@manual` proof** is a hand check: at the gate `signed` a person checks it in the
-  sign-off walk and types what they saw, and the note goes into the sign-off. A stamped
+- **`purlin:status`** prints the two facts, then one row per spec,
+  `Spec | Rules | Proofs | Tests`, with a `Strong` column where the audit has read a rule, then
+  the summary and `Left to do`. `purlin:status <name>` shows one spec's rules.
+- **A `@manual` proof** is a hand check: a person looks at it in the sign-off walk and may type
+  what they saw, and the note goes into the sign-off. A stamped
   `@manual(<email>, <date>, <sha>)` is read as a plain `@manual`, and the file that carries one
   is named in the warnings.
 - **Rule tags.** Nothing reads `(deferred)`, `(assumed ...)` or `(confirmed)`; the text stays
   in the rule's words, and a rule that carried `(deferred)` needs a test like any other.
 - **`> Scope:`** is optional; a spec without one runs on every `purlin:test`.
-- **The dashboard** refreshes when `purlin:test`, `purlin:audit`, `purlin:sign` or
-  `purlin:status` finishes, and at no other time. Its data, `.purlin/report-data.js`, is not
-  committed. It opens from disk.
-- **One settings file**, `.purlin/config.json`, committed. `purlin:init` asks the gate, and at
-  `signed` whether to break the code on purpose. A settings file that cannot be
-  read stops every command with
+- **The dashboard** is written when `purlin:test`, `purlin:audit`, `purlin:sign` or
+  `purlin:status` finishes, page and data together, and at no other time. Its header names the
+  branch, the commit and the time its data was written, as `main at a1b2c3d, written 10:42`.
+  Neither file is committed. It opens from disk.
+- **One settings file**, `.purlin/config.json`, committed, holding `version` and `tests`.
+  `purlin:init` asks one question, whether to commit what it wrote. A settings file that cannot
+  be read stops every command with
   `.purlin/config.json cannot be read: <cause>. Fix the file by hand; nothing ran and nothing was saved.`
 - **The skills start Purlin's scripts through the interpreter lookup**,
   `scripts/purlin_python.sh`, which finds Python 3 as the plugin's server does, `py -3` on
   Windows included.
-- **An anchor is a set of rules for the whole project.** Its tests check the whole project, and each of its rules is counted and audited once, and signed as part of the release. A rule that holds only for some features is written in each of their specs.
+- **An anchor is a set of rules for the whole project.** Its tests check the whole project, and each of its rules is counted and audited once. A rule that holds only for some features is written in each of their specs.
 - **A spec names no anchor.** `> Requires:` and `> Global:` are not read, and neither is `> Scope:` on an anchor; each is warned of with its fix, and `purlin:init --update` takes them out.
-- **A feature's row counts its own rules.** The dashboard lists the anchors in a section of their own, `Anchors`, above the spec table; the counts `(+8)` and `(+8 shared)` are gone.
-- **Any change to the project makes an anchor's results out of date**, but for the records Purlin writes: `.purlin/evidence/`, the package and its sign-offs among them, and `.purlin/tests.md`.
-- **No test strength for an anchor.** Its code is not broken on purpose; the AI audit alone judges its tests.
-- **The formats** stand at spec 21, anchor 11, evidence 7, signature 14, package 7 and marker 3, the drift criteria at 12, and the dashboard's data at schema 13.
-- An anchor is copied only from a spec in Purlin's format kept in a git repository. `purlin:anchor add` refuses a text file, a description in words or a file with no rule, and `purlin:drift` and `purlin:anchor sync --check` report an anchor made from plain text as `error`.
+- **A feature's row counts its own rules.** The dashboard lists the anchors in a section of their own, `Anchors`, above the spec table.
+- **Any change to the project makes an anchor's results out of date**, but for the records Purlin writes under `.purlin/evidence/`, the package and its sign-offs among them.
+- **No bug is planted for an anchor.** The spot tests and the model's reading alone judge its tests.
+- An anchor is copied only from a spec in Purlin's format kept in a git repository. `purlin:anchor add` refuses a text file, a description in words or a file with no rule. The status and `purlin:drift` say an anchor is behind its source and pull nothing; only `purlin:anchor sync` pulls.
 
 ### Windows
 
 The parts are proven on Windows and the whole path on the Mac. The whole path on Windows, from
-setup to a release, is not walked for 0.10.0.
+setup to a sign-off, is not walked for 0.10.0.
 
 ### What is gone
 
@@ -184,6 +177,8 @@ setup to a release, is not walked for 0.10.0.
 - The committed project digest and the Claude Code hook that refreshed it.
 - The per-person settings file, `.purlin/config.local.json`. A copy left in a project is not
   read.
+- Every setting but `version` and `tests`: `pre_push`, `test_framework`, `spec_dir`, `report`,
+  `digest` and the rest.
 - The design tie: `> Visual-Reference:`, `> Visual-Hash:` and a Figma `> Source:`.
 - The `tools/` skills for Claude Desktop. Product and QA work in Claude Code on a checkout.
 - C and PHP support.
@@ -193,64 +188,50 @@ setup to a release, is not walked for 0.10.0.
 
 ### What `purlin:init --update` does
 
-It reads what the project contains, not its `version` field. Until the update runs,
-`purlin:status` prints `→ Run: purlin:init --update`, and a test run stops with
+It reads what the project contains, not its `version` field, and it upgrades from 0.9.5 only.
+Until the update runs, `purlin:status` prints `→ Run: purlin:init --update`, and a test run stops
+with
 `This project was set up by an older Purlin and not upgraded, so nothing ran. Run purlin:init --update.`
 The run goes in this order:
 
-1. It prints every pending migration with the files it touches, then asks before each one,
-   `Apply <id>, which will <what it does>?`. `--yes` answers yes to every question and takes
-   every default. Every file it rewrites is copied beside itself first, as
+1. It prints every pending migration with the files it touches, then asks before each one, with
+   a question ending `[y/N]`. `--yes` answers yes to every question. A declined migration is
+   left pending. Every file it rewrites is copied beside itself first, as
    `<name>.local-<sha8>.bak`.
-2. `design-refs`: deletes each spec's `> Visual-Reference:` and `> Visual-Hash:` lines, a
-   `> Source:` that names Figma and the `> Pinned:` that goes with it, one line per spec.
-3. `anchor-lines`: takes out `> Requires:` and `> Global:` from every spec, and `> Scope:` from
-   every anchor, one line per file, `removed from <rel>: <fields>`. It keeps every anchor, and
-   for each anchor that specs named it prints one line naming them and the command that moves a
-   rule into them:
-   `proof_common: its rules now cover the whole project, where 1 spec named it: sync_status. A rule that holds only there belongs in that spec: run purlin:spec proof_common.`
-4. `os-tags`: rewrites a trailing `@windows` on a proof line as `@env(windows)`.
-5. `kind-tags`: drops `@unit`, `@integration` and `@e2e` from proof lines.
-6. `untracked-files`: deletes the proof files and the receipts beside the specs, untracks
-   `.purlin/report-data.js` and `.purlin/cache/`, and adds `.purlin/report-data.js` to
-   `.gitignore`.
-7. `hooks`: removes the `pre-commit` and `pre-push` hooks under `.git/hooks/` that name Purlin.
-8. `config`: rewrites `.purlin/config.json` with `version`, `gate`, `mutation_engine`,
-   `audit_parallel`, `tests` and `ci`, and names every key it drops (`spec_dir`, `pre_push`,
-   `report`, `digest` and whichever others the file carried). It asks the gate question,
-   offering `passed`; turns `test_framework` into `tests`, one entry per framework the tree
-   still runs (`xunit` becomes `dotnet`), naming any it drops; and at `signed` asks the mutation
-   question where an engine exists, defaulting to no.
-9. `evidence`: writes `.purlin/evidence/README.md`.
-10. `dashboard`: replaces `purlin-report.html` at the project root, the link 0.9.5 left into its
-    own plugin folder or a copy that differs, with the 0.10.0 page, the bytes `purlin:init`
-    copies. A project with no page there is left without one.
-11. `workflows`: removes a workflow that committed proof files, and, after asking, writes the
-    runner file where `purlin:init` writes it, `.github/workflows/purlin.yml` on GitHub or
-    `purlin.azure-pipelines.yml` at the root on Azure DevOps, only where a proof is tagged for
-    a system the machine running the update is not.
-12. `markers`: rewrites each 0.9.5 marker as a comment above the same test, one line per file.
-    A shell or SQL test file becomes one test that passes when it exits 0. A marker it cannot
-    place, such as a module-wide `pytestmark`, is named by file and line and left for you.
-13. `plugins`: removes the plugin copies under `.purlin/plugins/`, the `pytest_plugins` entry
-    in `conftest.py` (the file too, when it held nothing else) and the reporter entry in the
-    Jest or Vitest configuration or `package.json`, and names a `.csproj` that compiles the
-    xUnit logger for you to edit by hand.
-14. It commits everything it changed in one commit,
-    `chore(update): migrate to 0.10.0 (<ids>)`.
-15. It names each spec with no `> Scope:` line,
-    `2 specs name no files, so their tests run every time: a, b. Run purlin:spec with each name to add its > Scope: line.`,
-    and changes none.
-16. It ends as `purlin:status` does, on the summary and `Left to do`.
+2. It rewrites or removes each line 0.9.5 wrote into a spec that 0.10.0 does not read: the
+   `> Visual-Reference:` and `> Visual-Hash:` lines, a `> Source:` that names Figma and the
+   `> Pinned:` that goes with it; `> Requires:` and `> Global:` from every spec, and `> Scope:`
+   from every anchor; a trailing `@windows` on a proof line becomes `@env(windows)`; and
+   `@unit`, `@integration` and `@e2e` go from proof lines.
+3. It removes the files 0.9.5 kept that 0.10.0 does not use: the proof files and the receipts
+   beside the specs, `.purlin/cache/`, the plugin copies under `.purlin/plugins/` and a workflow
+   that committed proof files. It untracks `.purlin/report-data.js` and adds it to `.gitignore`.
+   It writes no runner file.
+4. It removes the `pre-commit` and `pre-push` hooks under `.git/hooks/` that 0.9.5 installed,
+   and leaves a hook another tool wrote.
+5. It rewrites `.purlin/config.json` to `version` and `tests`, and names every key it drops. It
+   turns `test_framework` into `tests`, one entry per framework the tree still runs (`xunit`
+   becomes `dotnet`), naming any it drops.
+6. It writes `.purlin/evidence/README.md`, and replaces `purlin-report.html` at the project
+   root, the link 0.9.5 left or a copy that differs, with the 0.10.0 page. A project with no page
+   there is left without one; the first `purlin:status` writes it.
+7. It rewrites each 0.9.5 marker as a comment above the same test, one line per file. A shell or
+   SQL test file becomes one test that passes when it exits 0. A marker it cannot place, such as
+   a module-wide `pytestmark`, is named by file and line and left for you.
+8. It removes the `pytest_plugins` entry in `conftest.py` (the file too, when it held nothing
+   else) and the reporter entry in the Jest or Vitest configuration or `package.json`, and names
+   a `.csproj` that compiles the xUnit logger for you to edit by hand.
+9. It commits everything it changed in one commit,
+   `chore(update): migrate to 0.10.0 (<ids>)`.
 
 After it, run `purlin:test`. The receipts and `@manual` stamps 0.9.5 wrote do not carry
-forward: a release is signed through `purlin:sign`, after `purlin:test --release`.
+forward: a version is signed through `purlin:sign`, after `purlin:test --all --commit`.
 
 ### Words from 0.9.5, and what to say now
 
 | 0.9.5 | 0.10.0 |
 |-------|--------|
-| `purlin:verify`, receipt, `*.receipt.json`, vhash | `purlin:test --commit` for the evidence, `purlin:test --release` for the release, `purlin:sign` for the sign-off |
+| `purlin:verify`, receipt, `*.receipt.json`, vhash | `purlin:test --all --commit` for the evidence, `purlin:sign` for the evidence package and the sign-off |
 | `purlin:unit-test` | `purlin:test` |
 | proof file, `<feature>.proofs-<tier>.json` | the evidence, `.purlin/evidence/<source>/<feature>.json` |
 | proof marker, `@pytest.mark.proof(...)`, `[proof:...]`, `PurlinProof`, `purlin_proof`, `-- @purlin` | the marker comment, `purlin: <feature> PROOF-<n>` |
@@ -260,10 +241,9 @@ forward: a release is signed through `purlin:sign`, after `purlin:test --release
 | `@manual(<email>, <date>, <sha>)`, `purlin:verify --manual` | a hand check, noted in the sign-off walk |
 | `STRONG`, `WEAK`, `HOLLOW` | the strong cell, `strong` or `weak`, with the audit's findings |
 | coverage, `PASSING`, `PARTIAL`, `VERIFIED` | the cells, and the summary, `40 rules. 35 pass their tests.` |
-| `pre_push`, `warn`, `strict` | the gate, `passed` or `signed` |
+| `pre_push`, `warn`, `strict` | none: nothing runs at push time; the status says whether the tests are met |
 | `test_framework` | `tests` |
 | `purlin:find` | `purlin:status <name>` |
-| `dev` as a role | `eng` in `purlin:drift` |
 | `.purlin/config.local.json` | `.purlin/config.json` alone |
 | `> Requires:`, `> Global: true` | none: every anchor covers the whole project |
 
