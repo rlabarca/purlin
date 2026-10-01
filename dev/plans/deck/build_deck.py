@@ -103,10 +103,10 @@ slide('together', 'Working together', 'Product, QA and developers improve the sp
  'shows its renumbering plan before changing anything. A test comment whose proof was reworded '
  'since the test last changed is named on every run.', width=560, pad=16)
 slide('audit', 'Are the tests any good?', 'The audit: would your tests catch a bug?', [
-    ('Spot tests that can\'t fail', 'Code reads each test: no check at all, an expected value copied from the code, or the number the proof names missing.'),
+    ('Spot tests that can\'t fail', 'Purlin flags a test that checks nothing, takes its expected answer from the code it tests, or never checks the value its proof promises, such as 90 minutes.'),
     ('Plant one bug', 'For each proof, an AI puts one small bug in a throwaway copy of your code, such as a sample age off by one hour.'),
     ('Run that proof\'s test', 'The test fails: the rule is %s. The test still passes: the rule is %s, and you see the bug it missed.' % (m('strong'), m('weak'))),
-    ('`purlin:audit`', 'Run it whenever you like. It ends on the share of rules found strong, such as %s.' % m('84%')),
+    ('`purlin:audit`', 'Run it any time. It reports the share of rules found strong.'),
 ], 'Why: AI-written tests often check what the code does, not what was asked (<a href="https://arxiv.org/pdf/2410.21136" style="color:#E6BEB0">Konstantinou et al., 2024</a>), and planting bugs is the most reliable test of a test (<a href="https://homes.cs.washington.edu/~mernst/pubs/mutation-effectiveness-fse2014.pdf" style="color:#E6BEB0">Just et al., FSE 2014</a>).',
  'A passing test only shows the code did what the test checked. The audit asks the harder '
  'question: if the code were wrong, would the test notice? It plants one small bug per proof, aimed '
