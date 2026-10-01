@@ -239,7 +239,7 @@ def _other_branches(project_root, info, moved, ref):
         for item in sorted(moved, key=drift_module._rule_number):
             out = drift_module._git(project_root, [
                 'grep', '-n', '-I', '-z', '-E',
-                r'purlin:[[:space:]]+%s[[:space:]]+%s\b' % (name, item),
+                r'purlin:[[:space:]]+%s[[:space:]]+%s([^0-9]|$)' % (name, item),
                 full, '--'])
             for hit in out.split('\n'):
                 parts = hit.split('\0')
