@@ -5,8 +5,8 @@ description: Run the marked tests and print each rule's passed cell
 
 Run the project's own test suites, tie each result to the marker comment above its test, write
 what they saw into `.purlin/evidence/local/`, and print every rule's passed cell. The hand-off to
-a sign-off is `purlin:test --all --commit`, and `purlin:test --remote` for the proofs tagged for
-another operating system.
+a sign-off is `purlin:test --all --commit`, and the project's own run for the proofs tagged for
+another operating system (Step 5).
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below is
 relative to the plugin root; see `references/purlin_commands.md#path-resolution`. Pass
@@ -22,8 +22,6 @@ purlin:test --all               Run every feature
 purlin:test <feature> [...]     Run one feature, or several
 purlin:test --commit            Commit the work and the evidence the run wrote
 purlin:test --all --commit      The hand-off: run every feature and commit the results
-purlin:test --remote            Let the git host's runner run the proofs tagged for another system
-purlin:test --remote --commit-runner  Commit the runner file the first remote run wrote, then run
 purlin:test --arm-timeout <seconds>  Give each suite longer than an hour
 ```
 
@@ -105,32 +103,28 @@ left no readable report, or a marker has no pass or fail: its test was skipped, 
 it, or no test follows it. A marker naming nothing a spec has reads `<file>:<line> names
 <feature> <ID>, which no spec has.`
 
-## Step 5: operating systems, and the remote run
+## Step 5: another operating system
 
 A proof tagged `@env(windows)`, `@env(macos)` or `@env(linux)` runs only on that operating system.
 On a machine that does not match, the run prints one line per system, `<n> proofs need <System>;
-this machine is <System>. Run purlin:test --remote.` An untagged proof runs anywhere. A system
+this machine is <System>. Run purlin:test on <System>.` An untagged proof runs anywhere. A system
 that is neither Windows nor macOS is `linux`, shown as `Linux/Unix`. A rule reads `partial` where
 two systems that each ran disagree.
 
-`purlin:test --remote` adds `--remote` to Step 1's line. It hands the commit to the git host's
-runner on a run branch it creates, waits on and deletes; the runner commits its section under
-`.purlin/evidence/ci/` and the run pulls it back. It refuses a detached head and a tree with
-changes that are not committed, and pushes nothing then. It waits through `gh` on GitHub and `az`
-with `azure-devops` on Azure DevOps, and names the program to install where it is missing.
+Purlin runs the tests where you are and starts no run anywhere else. When the run prints that
+line, look in the project for its own setup for that system: a workflow or pipeline file that
+runs `scripts/run/purlin_run.py --ci`.
 
-The first remote run in a project writes the runner file for the project's git host and runs
-nothing:
-
-```
-Purlin wrote .github/workflows/purlin.yml, the runner for GitHub, to run the proofs tagged for Windows:
-<the file>
-Commit it and run: purlin:test --remote --commit-runner
-```
-
-Show the person the file and ask whether to commit it. On yes, run `purlin:test --remote
---commit-runner`, which adds `--remote --commit-runner` to Step 1's line: it commits the runner
-file alone, prints `Committed .github/workflows/purlin.yml, the runner for GitHub.`, then runs.
+- **There is one.** Say how this project starts it, as its own files say, and ask whether to
+  start it. Start it only on a yes. When it has finished, `git pull` brings the results back and
+  `purlin:status` shows them.
+- **There is none.** Say so and offer to write it: `No setup in this project runs the tests on
+  <System>. I can write one for <git host>: a file that runs the tagged tests there and returns
+  the results through git, and a way to start it. Write it? [y/N]`. Read the git host from
+  `origin`; where it names none, or the person wants another, ask which. On yes, write it as
+  `references/evidence_and_signoff.md`, "A run on another system" says, show the files, and
+  commit them only when the person says so. The files are the project's own: Purlin ships none
+  and changes none later.
 
 ## Step 6: name the next step
 
@@ -143,7 +137,6 @@ step:
 | `Left to do:` and its lines | `→ Run: <the command on its first line>` |
 | A line `<feature> RULE-<n> fails: ...` above the status | `→ Run: purlin:build <feature>` (fix the code or the test) |
 | `<n> features whose results are not committed: purlin:test --commit` | `→ Run: purlin:test --commit` |
-| `Commit it and run: purlin:test --remote --commit-runner` | `→ Ask the person, then run: purlin:test --remote --commit-runner` |
 | `Every rule passes its tests on the committed evidence. To sign it: purlin:sign` | `→ Run: purlin:sign`, when a person chooses to sign |
 
 Diagnose a failure first: `references/spec_quality_guide.md` says which part is at fault.

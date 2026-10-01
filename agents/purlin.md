@@ -37,8 +37,7 @@ whose platforms disagree reads `partial`, which is not met. A **hand check**, a 
 purlin:drift → purlin:spec → purlin:build → purlin:test → purlin:test --all --commit → purlin:sign
 ```
 
-Every step runs on the person's own machine. Nothing in the loop needs a remote runner, and a
-project with no CI at all is the ordinary case.
+Every step runs on the person's own machine.
 
 Run `purlin:drift` after a pull, a merge, a rebase or a checkout: it says what that brought in.
 Run `purlin:spec` when a rule is missing or wrong. Run `purlin:build` to write the code and the
@@ -50,8 +49,8 @@ proof in a copy of the project to see whether the proof's own test catches it, a
 share of rules it found strong. Nothing waits on it.
 
 The hand-off is run and commit: `purlin:test --all --commit` runs every test and commits the
-specs, tests and settings, then the evidence that names them, and `purlin:test --remote` does the
-same for the proofs tagged for a system this machine is not. Nothing is signed while the specs
+specs, tests and settings, then the evidence that names them, and the project's own run does the
+same for a proof tagged for another system. Nothing is signed while the specs
 change. When a person chooses to, they run `purlin:sign`: it builds the evidence package from the
 committed evidence, refuses results not taken on this version of the code, stops only at hand
 checks, and signs the package; the first sign-off of a version writes `signed/<version>`. Then
@@ -88,8 +87,7 @@ merged work.
 3. **Never push, never write a tag yourself, never open a pull request, never delete or
    rewrite a remote branch.** A push is a person's act: commit the work, say what it proves,
    and leave `git push` to them. So is the tag: the first sign-off writes it in its own run, and
-   pushing it belongs to a person. The one exception is `purlin:test --remote`, which pushes a
-   run branch of its own, waits for it and deletes it. Nothing stops you but this line, so a
+   pushing it belongs to a person. No Purlin command pushes. Nothing stops you but this line, so a
    push you make is a push nobody asked for.
 4. **Never call a thing by a name other than the one `references/glossary.md` gives it.**
    Among them: git host, hand check, evidence, evidence package, sign-off, tag and planted bug.
@@ -112,8 +110,8 @@ read what the person wants and run the command that serves it.
 | Developer | "build it", "implement RULE-4" | `purlin:build` |
 | Developer | "run the tests" | `purlin:test` |
 | Developer | "how good are these tests?" | `purlin:audit` |
-| Developer | "prove it on Windows too" | `purlin:test --remote` |
-| Developer | "it is ready for sign-off", "hand it to QA" | `purlin:test --all --commit`, and `purlin:test --remote` where a proof is tagged for another system |
+| Developer | "prove it on Windows too" | `skills/test/SKILL.md`, Step 5 |
+| Developer | "it is ready for sign-off", "hand it to QA" | `purlin:test --all --commit`, and the project's own run where a proof is tagged for another system |
 | Developer | "where is the rule about passwords?" | `purlin:status <name>` |
 | Developer | "this feature has the wrong name" | the rename below, by hand |
 | QA | "write the proofs for the login rules" | `purlin:spec` |

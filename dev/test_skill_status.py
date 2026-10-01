@@ -10,12 +10,12 @@ from skill_checks import copy_without, flat, must_name, read, skill_path
 SKILL = skill_path('status')
 
 COMMANDS = ('purlin:status', 'purlin:spec', 'purlin:build', 'purlin:test',
-            'purlin:test --remote', 'purlin:test --commit', 'purlin:sign')
+            'purlin:test --commit', 'purlin:sign')
 PATHS = ('references/purlin_commands.md', 'skills/spec/SKILL.md')
 
 
 # purlin: skill_status PROOF-37
-def test_the_status_skill_names_each_of_its_seven_commands():
+def test_the_status_skill_names_each_of_its_six_commands():
     text = flat(read(SKILL))
     assert [name for name in COMMANDS if name not in text] == []
     assert must_name('status', commands=COMMANDS) == []

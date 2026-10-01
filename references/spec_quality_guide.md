@@ -106,8 +106,8 @@ Only an anchor's rule passes this way; on a feature's own rule the same skip rea
 - Its test checks every X it finds and, finding none, skips with a reason starting
   `nothing to check:`, so the rule passes and says it was not exercised.
 - A rule no test can show is given a `@manual` proof and is checked by a person in the sign-off
-  walk, never left with a test that cannot fail; in an anchor pulled from another repository the
-  tag is written in its source.
+  walk, never left with a test that cannot fail; in a remote anchor the tag is written in its
+  source.
 - A check across the whole project that takes a long time is tagged `@slow`, so it stays out of
   every build run and runs with `purlin:test --all`.
 - A rule only some features need is not an anchor's and goes in those features' own specs.
@@ -151,6 +151,23 @@ tests are then the whole of its evidence. Such a rule is left to write a proof f
 `no proof` in its strong cell: the audit has nothing to read its test against.
 
 Each point below carries a pair: a poor proof, and the one that replaces it.
+
+### Pass or fail
+
+A proof a test carries out is pass or fail: the test checks an exact result, like the message
+`Account locked`.
+
+A judgment call is not. "It looks good" and "it is easy to use" are for a person to decide; a
+test cannot decide them, and neither can an AI. Tag such a proof `@manual`: no test runs for
+it, `purlin:sign` stops there, and a person checks it and writes what they saw. Or leave it
+out: not everything needs a rule.
+
+A test may ask a model a question with one right answer, such as which commands it offers
+after an install.
+
+- Poor: "A model reads the error messages and finds them friendly."
+- Good: "A wrong password shows the message `Wrong email or password`." and, where the tone
+  matters, "Read the error messages against the brand voice guide @manual".
 
 ### What is done, what is observed, the expected value
 
@@ -298,7 +315,7 @@ lock the system holds, a console's default encoding, a filesystem that ignores c
 are the whole vocabulary. A rule that holds everywhere but could differ on Windows keeps its
 untagged proof and gains a second proof tagged `@env(windows)`, tied to the same test by a
 second marker comment; which run proves each is in
-[references/evidence_and_signoff.md](evidence_and_signoff.md), "Where a runner runs".
+[references/evidence_and_signoff.md](evidence_and_signoff.md), "A run on another system".
 
 ### A test that takes a long time
 
@@ -342,7 +359,7 @@ whose row says what moves both.
 | passed | `failed`, with `<RULE-N or PROOF-N> is written twice in the spec` or `the spec holds a line left from a merge conflict` | The spec writes a number twice or holds a line git left from a merge conflict, so every rule of it reads `failed` whatever its tests show. | `purlin:spec`, whose "Renumbering" moves the line from the branch not yet merged when you say yes, or take out the conflict lines. |
 | passed | `not run` | The rule's tests have no result in a current section. | Run `purlin:test`. |
 | passed | `not run`, with `slow: runs with purlin:test --all` | A proof of the rule is tagged `@slow`, and no run that starts its test has passed it on the spec, code and tests as they stand. `Left to do` counts it under `slow proofs to run`. | Run `purlin:test --all`. |
-| passed | `not run`, with `<System>: no run yet` | A proof carries `@env` for an operating system that has not run the rule's tests: no current section comes from it. | Run `purlin:test --remote`, whose runner file names that system, or drop the `@env` tag if any operating system could show it. |
+| passed | `not run`, with `<System>: no run yet` | A proof carries `@env` for an operating system that has not run the rule's tests: no current section comes from it. | Run `purlin:test` on that system, or start the project's own run there, or drop the `@env` tag if any operating system could show it. |
 | passed | `not run`, with `<PROOF-N>: <reason>` | The proof's every test skipped with `nothing to check: <reason>`, and the rule is a feature's own. Only an anchor's rule passes that way. | Give the test something to check, or move the rule to an anchor if it holds across the whole project. |
 | passed | `partial` | The rule's tests passed on one operating system and failed on another. `partial` is not met. | Fix the code or the test for the system that failed, then run the tests there again. |
 | passed | `out of date` | A pass exists but the spec, the code or the tests moved since; the reason names which. | Run the tests again; the next run clears it. |
@@ -371,6 +388,6 @@ If you change **what** a test asserts rather than how, the proof text may be wro
 Re-read it. The rule, the proof text, the assertion and the code must all agree; when
 one disagrees, find out which before you go on. Narrowing the proof text to match a
 weaker test is not a fix: it lowers the claim instead of strengthening the evidence,
-and on a rule of a pinned anchor it is never allowed, because the anchor is an
+and on a remote anchor's rule it is never allowed, because the anchor is an
 upstream-owned contract. Silently changing an assertion to match actual behaviour is
 the most common way an agent introduces a correctness bug.

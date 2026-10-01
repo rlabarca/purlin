@@ -15,7 +15,7 @@ a test is any test in your own suite with one comment above it.
 ### What is new
 
 - **Two facts, no gate.** The status and the dashboard say whether the tests are met on the committed evidence, and whether this code is signed.
-- **The hand-off is run and commit**: purlin:test --all --commit, and purlin:test --remote for other systems.
+- **The hand-off is run and commit**: purlin:test --all --commit, and your project's own run for any other system.
 - **purlin:sign builds the evidence package and signs it**, at any time, in any project; it stops only at hand checks, whose note is optional, and refuses results not taken on this code.
 - **An anchor rule with nothing to check passes, and says so.**
 - **Slow proofs.** Tag a proof `@slow` and `purlin:test` never starts its test; `purlin:test --all` runs everything. Until it has passed, the status lists it: `1 slow proof to run: purlin:test --all`.
@@ -25,7 +25,7 @@ a test is any test in your own suite with one comment above it.
 - **The dashboard names the branch and commit its data describes**, and its page is written with its data.
 - **A Purlin tool call names its folder**; a call that names none is refused with the fix.
 - **Cut:** mutation testing, purlin:export, the gate, the release step, .purlin/tests.md, drift's role views, setup's questions but one, and most settings.
-- **The formats** stand at spec 23, anchor 12, evidence 8, signature 15, package 9 and marker 4,
+- **The formats** stand at spec 23, anchor 12, evidence 9, signature 15, package 10 and marker 4,
   the drift criteria at 13, and the dashboard's data at schema 14.
 
 In more words:
@@ -44,7 +44,7 @@ In more words:
   file per feature with one section per operating system. Nothing is committed unless you pass
   `--commit`, which makes two commits: the specs, the marked tests and the settings the results
   describe, as `purlin: specs, tests and settings for <feature>, ...`, then the evidence, as
-  `purlin: evidence at <sha7>`. A remote runner writes `.purlin/evidence/ci/<feature>.json`. A
+  `purlin: evidence at <sha7>`. Your project's own run on another system writes `.purlin/evidence/ci/<feature>.json`. A
   result counts wherever it ran and records who ran it, on which machine and on which commit.
   Results written and not committed are left to do, as
   `1 feature whose results are not committed: purlin:test --commit`.
@@ -95,10 +95,12 @@ In more words:
   default branch is, never fetches and never pulls an anchor.
 - **A spec ahead of its code is information, not a warning**:
   `login: 1 file its scope names is not written yet: src/gone.py. Run purlin:build login, or correct the path with purlin:spec login.`
-- **A remote runner for one reason**: a proof tagged `@env(<os>)` for an operating system your
-  machine is not. Setup writes no runner file; the first `purlin:test --remote` writes it for
-  GitHub or Azure DevOps, shows it and asks before committing it. The runner starts on a push to
-  a `run/*` branch and runs only the tests tied to proofs tagged for its system.
+- **Purlin runs the tests where you are.** A proof tagged `@env(<os>)` for a system your machine
+  is not is listed by every status, as `22 rules to test on Windows: run purlin:test on Windows`. Reaching
+  that system is your project's own setup: ask the AI, and it writes a file for your git host,
+  GitHub or Azure DevOps, that runs `scripts/run/purlin_run.py --ci --commit` there and returns
+  the results through git. Purlin ships no such file, starts no run on another machine and
+  pushes nothing.
 - **Worktrees.** Each checkout has its own results, status and dashboard. After merging work
   from a worktree, run `purlin:status` in the main checkout.
 - **A mistake in a spec is warned of, with its fix.** The status and every run print one line
@@ -106,9 +108,8 @@ In more words:
   name, a rule number written twice, a proof line that cannot be read, and a first heading that
   names another feature.
 - A spec records the highest rule number it has held in `> Highest-Rule:` and the highest proof number in `> Highest-Proof:`, so a deleted number is never used again.
-- A pinned anchor is copied as its source holds it. A `> Requires:`, `> Global:` or `> Scope:` line in it is warned of on every status and test run, naming the source's owners as the ones to take it out.
+- A remote anchor is copied as its source holds it. A `> Requires:`, `> Global:` or `> Scope:` line in it is warned of on every status and test run, naming the source's owners as the ones to take it out.
 - `purlin:init` asks whether it may commit the files it wrote, and with `--yes` commits them as `chore(init): set up Purlin`.
-- `purlin:test --remote` with no `gh` on GitHub or no `az` on Azure DevOps pushes nothing and names the program to install.
 - A plain `tests/test_*.py` project is suggested pytest.
 - Every system a person reads is written `Windows`, `macOS` or `Linux/Unix`.
 
@@ -207,7 +208,6 @@ The run goes in this order:
 3. It removes the files 0.9.5 kept that 0.10.0 does not use: the proof files and the receipts
    beside the specs, `.purlin/cache/`, the plugin copies under `.purlin/plugins/` and a workflow
    that committed proof files. It untracks `.purlin/report-data.js` and adds it to `.gitignore`.
-   It writes no runner file.
 4. It removes the `pre-commit` and `pre-push` hooks under `.git/hooks/` that 0.9.5 installed,
    and leaves a hook another tool wrote.
 5. It rewrites `.purlin/config.json` to `version` and `tests`, and names every key it drops. It

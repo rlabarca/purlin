@@ -61,14 +61,13 @@ other page points here rather than defining it again.
   such as a spec whose scope names files not written yet.
 - **run**: one execution of the project's suites by `purlin:test` or `purlin:audit`.
 - **hand-off**: what a developer does before a sign-off: `purlin:test --all --commit`, and
-  `purlin:test --remote` for the proofs tagged for another system.
+  the project's own run for the proofs tagged for another system.
 - **evidence**: what runs saw, one file per feature per source,
   `.purlin/evidence/<source>/<feature>.json`, with one **section** per system and, once the
   audit has read the feature, what the audit found. Each section names the commit of the code it
-  describes, who ran it and the **machine** it ran on: the host's name for a person's run,
-  `remote runner, <system>` for a remote runner's. A run writes it; `--commit` commits it, after
+  describes, who ran it and the **machine** it ran on, the host's name. A run writes it; `--commit` commits it, after
   a commit of the specs, tests and settings it describes. **source**: the folder the file sits
-  in, `local` (a person's own run) or `ci` (a remote runner's). Both count.
+  in, `local` (a person's own run) or `ci` (a project's own run on another system). Both count.
 - **platform**: one system a current section covered. **partial**: the passed cell's word when
   a rule's tests passed on one system and failed on another. It is not met. A system that has
   not run reads `not run`.
@@ -120,15 +119,8 @@ other page points here rather than defining it again.
   what the **sign-off walk** of `purlin:sign` showed, and every note. It records no judgment.
   It counts when its commit's signature verifies, made with any key, and its package hash is
   the committed package's.
-- **git host**: GitHub or Azure DevOps, read from the remote each time. With neither, everything
-  on a person's own machine still works. **remote runner**: the git host's CI running the same
-  run script a person runs. A project has one for one reason: a proof tagged `@env` for a system
-  this machine is not. What it runs is in `references/evidence_and_signoff.md`, "Where a runner
-  runs". **remote run**: `purlin:test --remote`, which pushes a **run branch**,
-  `run/<branch>-<sha7>`, waits for the runner and pulls its evidence back. **runner file**: the
-  file the first remote run writes for the git host, `.github/workflows/purlin.yml` or
-  `purlin.azure-pipelines.yml`, with one job for each system a proof is tagged `@env` for that
-  this machine is not.
+- **git host**: where a project's repository is kept, such as GitHub or Azure DevOps. Purlin
+  calls none; a project's own run on another system is written for the one it uses.
 - **drift**: `purlin:drift`, the facts your last pull, merge, rebase, checkout, clone or reset
   brought in, in one view.
 - **role**: product, developer or QA. There are no others.
@@ -136,8 +128,9 @@ other page points here rather than defining it again.
   results, status and dashboard; nothing is shared until the work is merged.
 - **anchor**: a set of rules for the whole project, kept under `specs/_anchors/` or opening
   `# Anchor:`. Its tests check the whole project, and each of its rules is counted and audited
-  once. No spec names an anchor. **pinned anchor**: a local copy of an anchor from another
-  repository, tied to a commit by `> Pinned:`. **anchor repo**: a repository that holds anchors
+  once. No spec names an anchor. **remote anchor**: a local copy of an anchor another repository
+  owns. The copy is pinned to one version of its source, the commit `> Pinned:` names.
+  **anchor repo**: a repository that holds anchors
   for one or more projects.
 
 ## The chain
@@ -160,7 +153,7 @@ A rule with neither a proof nor a marked test reads `no test` with the reason
 |------|---------------------------|
 | spec, rule, proof, scope | `references/formats/spec_format.md` |
 | marker, suite, report | `references/formats/marker_format.md` |
-| anchor, pinned anchor | `references/formats/anchor_format.md` |
+| anchor, remote anchor | `references/formats/anchor_format.md` |
 | evidence, source, section, machine, fingerprint | `references/formats/evidence_format.md` |
 | sign-off, note | `references/formats/signature_format.md` |
 | evidence package | `references/formats/package_format.md` |

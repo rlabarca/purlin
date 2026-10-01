@@ -9,20 +9,19 @@ from skill_checks import copy_without, must_name, skill_path
 
 SKILL = skill_path('test')
 
-COMMANDS = ('purlin:test --all --commit', 'purlin:test --remote',
-            'purlin:test --remote --commit-runner')
+COMMANDS = ('purlin:test --all --commit',)
 PATHS = ('scripts/run/purlin_run.py', '.purlin/evidence/local/<feature>.json',
-         '.purlin/config.json')
+         '.purlin/config.json', 'references/evidence_and_signoff.md')
 
 
 # purlin: skill_test PROOF-55
-def test_the_shipped_skill_file_is_reported_for_nothing():
+def test_the_shipped_skill_file_names_its_command_and_four_paths():
     assert must_name('test', commands=COMMANDS, paths=PATHS) == []
 
 
 # purlin: skill_test PROOF-52
-def test_a_copy_without_the_commit_runner_command_is_reported():
-    with copy_without(SKILL, 'purlin:test --remote --commit-runner'):
+def test_a_copy_without_the_evidence_and_signoff_reference_is_reported():
+    with copy_without(SKILL, 'references/evidence_and_signoff.md'):
         problems = must_name('test', commands=COMMANDS, paths=PATHS)
     assert problems == [
-        'test does not name purlin:test --remote --commit-runner']
+        'test does not name references/evidence_and_signoff.md']

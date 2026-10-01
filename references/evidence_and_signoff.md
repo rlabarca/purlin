@@ -72,7 +72,7 @@ reports the problem. A kind at zero is left out, and the first line is the next 
 | `no_test` | the passed cell reads `no test` | `<n> rules to write a test for` | `purlin:build` | yes |
 | `to_test` | the passed cell reads `not run` or `out of date`, and this machine can run it | `<n> rules to test` | `purlin:test` | yes |
 | `to_run_slow` | a proof tagged `@slow` reads `not run`: no run that starts its test has answered for the spec, code and tests as they stand; the line counts proofs, and a rule that waits for such proofs alone is counted here and not under `to_test` | `<n> slow proofs to run` | `purlin:test --all` | yes |
-| `to_test_remote` | the passed cell reads `not run` for a system this machine is not | `<n> rules to test on <systems>` | `purlin:test --remote` | yes |
+| `to_test_remote` | the passed cell reads `not run` for a system this machine is not | `<n> rules to test on <systems>` | `purlin:test on <System>` | yes |
 | `to_commit` | a feature's results are written and not committed, once no other work stops the tests being met; the line counts features | `<n> features whose results are not committed` | `purlin:test --commit` | yes |
 | `to_strengthen` | the strong cell reads `weak` | `<n> rules to strengthen` | `purlin:build` | no |
 
@@ -91,18 +91,17 @@ writes this system's section of `.purlin/evidence/local/<feature>.json`. `purlin
 tests and writes the same section plus what the audit found, under `audit`, into the same file.
 Neither commits unless you add `--commit`, which makes two commits under your own identity: first
 the specs, the marked tests and the settings the results describe, then the evidence, naming the
-first (`references/commit_conventions.md`). Neither ever pushes. A remote run writes its own
-section under `.purlin/evidence/ci/` and always commits it. A teammate reads the files on the git
+first (`references/commit_conventions.md`). Neither ever pushes. A run on another system writes
+its own section under `.purlin/evidence/ci/` and commits it with `--commit`. A teammate reads the files on the git
 host without running anything.
 
 **The folder is the source.** A file's own `source` field must say the same word as the folder it
 sits in, and a file where the two disagree is ignored with one warning naming it. Both sources
-count: `ci`, written by a remote runner, and `local`, written by `purlin:test` and `purlin:audit`
+count: `ci`, written by a project's own run on another system, and `local`, written by `purlin:test` and `purlin:audit`
 on anyone's machine.
 
 **A result counts wherever it ran, and records where.** Each section names the commit of the code
-it describes, who ran it, as git's email, and the machine: the host's name for a person's run,
-and `remote runner, <system>` for a remote runner's.
+it describes, who ran it, as git's email, and the machine, which is the host's name under both sources.
 
 **For the status**, a section counts while its fingerprint, over the spec, the code the spec's
 `> Scope:` covers and the tests, is the one taken now. A pass that is not current makes the passed
@@ -112,11 +111,11 @@ to the project makes its results out of date.
 
 **For a sign-off**, a result counts only when it was taken on this exact version of the code: its
 section is current, the run saw no uncommitted change, and every commit from the section's commit
-to `HEAD` changes only paths under `.purlin/`. A result from a remote run counts on the same
-terms. Where one does not, `purlin:sign` refuses and names the run that takes it again:
-`purlin:test --all --commit` for this machine's results, `purlin:test --remote` for another
-system's. The developer's hand-off is therefore run and commit: every test, here and on the
-remote runner for any other system, then the commit of the results that come back.
+to `HEAD` changes only paths under `.purlin/`. A result from a run on another system counts on the
+same terms. Where one does not, `purlin:sign` refuses and names the run that takes it again:
+`purlin:test --all --commit` for this machine's results, `purlin:test on <System>` for another
+system's. The developer's hand-off is therefore run and commit: every test, here and through the
+project's own run for any other system, then the commit of the results that come back.
 
 **An anchor's rule with nothing to check passes, and says so.** Where every test tied to a proof
 of an anchor skipped with a reason starting `nothing to check:`, the rule reads `passed`, and the
@@ -124,22 +123,35 @@ status, the dashboard and the evidence package show the reason, as in
 `security_no_dangerous_patterns RULE-3 passes with nothing to check here: this project has no screens.`
 On a feature's own rule the same skip reads `not run`, its reason kept.
 
-## Where a runner runs
+## A run on another system
 
-**A project has a remote runner for one reason:** a proof in `specs/` is tagged `@env` for a
-system your machine is not, so only a runner can prove it. Setup writes no runner file. The first
-`purlin:test --remote` writes it for the project's git host, GitHub or Azure DevOps, shows it and
-asks before committing it; `purlin:test --remote --commit-runner` commits it and runs.
+**Purlin runs the tests where you are.** It starts no run on another machine, drives no pipeline
+and adds no file for a git host to a project. A project needs a run somewhere else for one
+reason: a proof in `specs/` is tagged `@env` for a system the machines at hand are not.
 
-**Which machine proves which proof.** A remote runner runs only the tests tied to proofs tagged
-`@env` for its own system. A person's own machine proves every proof with no `@env` and every
-proof tagged for its own system, and never one tagged for another.
+**Which machine proves which proof.** An untagged proof is proven by `purlin:test` on any
+machine. A proof tagged `@env(<system>)` is proven only by a run on that system: `purlin:test`
+on a person's machine of that system, or the project's own run there.
 
-The runner starts on one thing: a push to a `run/*` branch, the branch `purlin:test --remote`
-creates and deletes around one run. It writes its own section of each feature's
-`.purlin/evidence/ci/<feature>.json` and commits it on that branch; `purlin:test --remote` pulls
-it home and deletes the branch. That is the one push Purlin makes, and it pushes a run branch
-rather than the branch you are on. Every other push is yours.
+**The project's own run** is a file for its git host, written for that project and kept in it,
+usually by the agent on request. Whatever the git host, it does five things:
+
+1. It runs on the system the proofs are tagged for, on a full checkout of the commit to prove.
+2. It installs what the project's tests need, and fetches Purlin at the version
+   `.purlin/config.json` names.
+3. It sets a git name and email, then runs
+   `python3 <purlin>/scripts/run/purlin_run.py --ci --commit`. That run starts only the tests of
+   the proofs tagged for its system, writes that system's section of
+   `.purlin/evidence/ci/<feature>.json` for each feature it covered, and commits those files
+   alone as `purlin: evidence at <sha7>`. It exits 1 only when one of those tests failed or
+   could not run.
+4. It pushes that commit to the branch it ran on, after a failed run as after a passing one, in
+   a way that starts no further run.
+5. Where it covers two systems, their jobs run one after the other, each on the branch as the
+   one before left it.
+
+How a run starts is the project's choice: by hand from a desk, on a push, on a schedule. The
+results come back with `git pull`, and count on the same terms as any other result (above).
 
 ## When a sign-off counts
 

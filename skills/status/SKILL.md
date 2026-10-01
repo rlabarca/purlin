@@ -103,6 +103,6 @@ The next step is the first line of `Left to do`. Add no line of your own; a
 | `<n> test comments to correct` | `→ Run: purlin:build` |
 | `<n> rules to fix`, `to write a test for` or `to strengthen` | `→ Run: purlin:build` |
 | `<n> rules to test` | `→ Run: purlin:test` |
-| `<n> rules to test on <systems>` | `→ Run: purlin:test --remote` |
+| `<n> rules to test on <systems>` | `→ On <systems>: purlin:test`, then as `skills/test/SKILL.md`, Step 5 says |
 | `<n> features whose results are not committed` | `→ Run: purlin:test --commit` |
 | `Every rule passes its tests on the committed evidence. To sign it: purlin:sign` | `→ Run: purlin:sign`, when a person chooses to sign |

@@ -7,9 +7,8 @@ in `dev/skill_checks.py`.
 from skill_checks import AGENT, not_named, read, sentences_with
 
 COMMANDS = ('sync_status', 'purlin:drift', 'purlin:spec', 'purlin:build',
-            'purlin:test', 'purlin:test --all --commit',
-            'purlin:test --remote', 'purlin:status', 'purlin:audit',
-            'purlin:sign')
+            'purlin:test', 'purlin:test --all --commit', 'purlin:status',
+            'purlin:audit', 'purlin:sign')
 FILES = ('references/glossary.md', 'references/evidence_and_signoff.md',
          'references/spec_quality_guide.md',
          'references/formats/marker_format.md',

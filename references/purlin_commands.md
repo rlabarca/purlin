@@ -10,26 +10,26 @@ tests" reaches `purlin:test` and "sign it off" reaches `purlin:sign`. Every run,
 `purlin:status` end on the summary and `Left to do`, whose first line is the next step and its
 command (`references/evidence_and_signoff.md`, "What is left to do").
 
-`purlin:test --remote` is the one command that pushes, and it pushes a run branch of its own,
-never the branch you are on. Every other push is yours: a sign-off ends on a line starting
-`Push`, with the `git push origin` command, and pushing is your act.
+No Purlin command pushes. Every push is yours: a sign-off ends on a line starting `Push`, with
+the `git push origin` command, and pushing is your act.
 
 `purlin:test` runs the tests and writes what it saw. With or without a feature named it never
 starts the test of a slow proof, one tagged `@slow`: it prints `Left out <n> slow proofs`, naming
 each, and keeps the result a slow proof already has while that result still counts.
-`purlin:test --all` starts every test, slow ones included, and `purlin:test --remote` starts
-every test of the proofs it runs. A test carrying the comment of a proof that is not slow is
+`purlin:test --all` starts every test, slow ones included. A test carrying the comment of a proof that is not slow is
 started all the same, and so is a slow test a suite's command cannot leave out, which the run
 names; `references/supported_frameworks.md` says how each test tool leaves a test out.
 `purlin:audit` runs the tests the same way and adds what the audit found, a
-tool nothing waits on. The hand-off is `purlin:test --all --commit`, and `purlin:test --remote`
-for the proofs tagged for another system. `purlin:sign` builds the evidence package from the
+tool nothing waits on. The hand-off is `purlin:test --all --commit`, and the project's own run
+for the proofs tagged for another system (`references/evidence_and_signoff.md`, "A run on another
+system"); that run is `scripts/run/purlin_run.py --ci --commit`, which a pipeline runs and nobody
+types. `purlin:sign` builds the evidence package from the
 committed evidence, walks its hand checks with a person and signs it; the first sign-off of a
 version writes `signed/<version>`. `references/evidence_and_signoff.md` defines the two facts and
 the sign-off. **The folder an evidence file sits in is its source**: `purlin:test` and
 `purlin:audit` write yours under `.purlin/evidence/local/`, and commit it only with `--commit`;
-the remote runner runs the same run script and writes its section under `.purlin/evidence/ci/`,
-which it always commits. That job is the runner's to run and nobody types it. Both sources count.
+the project's own run on another system writes its section under `.purlin/evidence/ci/`. Both
+sources count.
 
 Every Purlin tool call, `sync_status`, `drift` and `purlin_config`, names `project_root`, the top
 folder of the git checkout you are working in. A call that names none is refused:
@@ -41,7 +41,7 @@ folder of the git checkout you are working in. A call that names none is refused
 |---------|---------|------------------------|
 | `purlin:spec <name>` | Turn a requirement in any form into rules and proofs | A developer's agent, or product or QA in Claude Code, at intake and whenever a rule turns out to be wrong |
 | `purlin:build [name]` | Load a spec's rules, write the code and the marked tests, commit the changeset | A developer, on every change. With no name it reads `sync_status` and names the specs with rules that have no passing test. It repairs a marker comment that is nearly right, corrects a test whose proof was reworded, and ends by running `purlin:test` |
-| `purlin:test [feature ...] [--all] [--commit] [--remote [--commit-runner]] [--arm-timeout <seconds>]` | Run the marked tests and print each rule's passed cell | A developer, constantly. Seconds; tests only, and never a slow proof's without `--all`. The first run in a project with no test command suggests one for each test tool it recognises and runs once you confirm it. It writes the evidence, commits it with `--commit`, and never pushes. `purlin:test --all --commit` is the hand-off to a sign-off |
+| `purlin:test [feature ...] [--all] [--commit] [--arm-timeout <seconds>]` | Run the marked tests and print each rule's passed cell | A developer, constantly. Seconds; tests only, and never a slow proof's without `--all`. The first run in a project with no test command suggests one for each test tool it recognises and runs once you confirm it. It writes the evidence, commits it with `--commit`, and never pushes. `purlin:test --all --commit` is the hand-off to a sign-off |
 | `purlin:audit [feature ...] [--all] [--commit] [--arm-timeout <seconds>]` | Run the tests, the heuristic spot tests, one planted bug per proof and the model's reading, then write what it found into the evidence | A developer, by hand, any time. It writes the evidence, commits it with `--commit`, and never pushes. Nothing waits on it |
 | `purlin:sign [--version <version>]` | Build the evidence package from the committed evidence, walk its hand checks with a person, then sign it in a signed commit | Anyone with a key to sign with, in any project, at any time, after the hand-off; the sign-off names them, and several people may sign. The first sign-off of a version writes `signed/<version>` |
 | `purlin:drift` | Report what changed since your last pull | Everyone, after a pull, a merge, a rebase, a checkout, a clone or a reset |
@@ -74,8 +74,6 @@ Purlin
   purlin:test --all               The same, for every feature, slow proofs included
   purlin:test --commit            The same, then commit the work and the evidence
   purlin:test --all --commit      The hand-off: every feature, and the results committed
-  purlin:test --remote            Let the git host's runner run the proofs tagged for another system
-  purlin:test --remote --commit-runner  Commit the runner file the first remote run wrote, then run
 
   Proving
   ──────
@@ -116,7 +114,7 @@ Purlin
 |---------|--------|
 | `purlin:spec`, `purlin:spec-from-code` | `specs/<category>/<name>.md` |
 | `purlin:build` | Code, test files with a marker comment above each test, the repairs to marker comments it asked about, and the commit carrying the changeset |
-| `purlin:test` | Each suite's report under `.purlin/runtime/reports/`, which is not committed, and this system's section of `.purlin/evidence/local/<feature>.json`. `--commit` makes two commits: the specs of the features run, the test files carrying their markers and `.purlin/config.json` as `purlin: specs, tests and settings for <feature>, ...`, then the evidence as `purlin: evidence at <sha7>`; it never pushes. On the first run it writes the `tests` entry you confirm into `.purlin/config.json`. `--remote` pushes the run branch `run/<branch>-<sha7>`, waits for the git host's run through `gh` on GitHub or `az` on Azure DevOps, pulls the runner's own section home under `.purlin/evidence/ci/<feature>.json`, and deletes the branch; what the runner runs is in `references/evidence_and_signoff.md`, "Where a runner runs". The first `--remote` in a project writes the runner file for the git host and runs nothing; `--remote --commit-runner` commits that file alone as `ci: the Purlin runner for <GitHub or Azure DevOps>`, then runs |
+| `purlin:test` | Each suite's report under `.purlin/runtime/reports/`, which is not committed, and this system's section of `.purlin/evidence/local/<feature>.json`. `--commit` makes two commits: the specs of the features run, the test files carrying their markers and `.purlin/config.json` as `purlin: specs, tests and settings for <feature>, ...`, then the evidence as `purlin: evidence at <sha7>`; it never pushes. On the first run it writes the `tests` entry you confirm into `.purlin/config.json`. |
 | `purlin:audit` | The same section, plus what the audit found under `audit`, in `.purlin/evidence/local/<feature>.json`, which `--commit` commits in the same two commits; it never pushes. What the model cost goes to `.purlin/runtime/audit_run.json`, which is not committed. A planted bug is made in a copy of the project and nowhere else |
 | `purlin:sign` | Once the signer answers yes, one signed commit `sign(<version>): <signer email>`. The first sign-off of a version carries `.purlin/evidence/package/<version>.json` and `.purlin/evidence/package/<version>.signoffs/<signer-slug>.json`, and writes the signed tag `signed/<version>` on that commit, which a person pushes; a later sign-off adds its own file alone. `--show` and `--check` write nothing. The skill writes the answers it collects to `.purlin/runtime/signoff-answers.json`, which is not committed. On any refusal it writes nothing |
 | `purlin:init` | `.purlin/`, `specs/`, `.purlin/config.json` holding `version` and an empty `tests` setting, a block in `.gitignore`, `.purlin/evidence/` with its README, and `purlin-report.html` at the project root. It commits the files it wrote in one commit, `chore(init): set up Purlin`, once you agree or with `--yes`. `--update` commits what it applied as `chore(update): migrate to <VERSION> (<ids>)` |
@@ -128,8 +126,8 @@ Purlin
 
 | Command | 0 | 1 | 2 |
 |---------|---|---|---|
-| `scripts/run/purlin_run.py --test`, `--audit` | everything asked happened | a tied test failed or did not run; evidence is missing; a marker names nothing a spec has; a spec under `specs/` writes a number twice or holds a line left from a merge conflict, after every test ran; no settings file; the settings file cannot be read; a project set up by 0.9.5 and not upgraded; no test command; for `--audit`, a file of the project changed while a bug was planted. A weak or unaudited rule never exits 1, and neither does a test comment to correct | a bad command line, `--commit-runner` without `--remote` among them |
-| `scripts/run/purlin_run.py --ci` | the tests tied to the proofs tagged for this runner's system passed | one of those failed or could not run, and nothing else | a bad command line |
+| `scripts/run/purlin_run.py --test`, `--audit` | everything asked happened | a tied test failed or did not run; evidence is missing; a marker names nothing a spec has; a spec under `specs/` writes a number twice or holds a line left from a merge conflict, after every test ran; no settings file; the settings file cannot be read; a project set up by 0.9.5 and not upgraded; no test command; for `--audit`, a file of the project changed while a bug was planted. A weak or unaudited rule never exits 1, and neither does a test comment to correct | a bad command line |
+| `scripts/run/purlin_run.py --ci` | the tests tied to the proofs tagged for this machine's system passed | one of those failed or could not run, and nothing else | a bad command line |
 | `scripts/review/sign.py` | signed, shown, checked and matching, stopped, or answered no | a refusal: tracked files changed and not committed, evidence not committed, no version, the version's tag on a commit this checkout does not hold or on other code, results not taken on this version of the code, results taken while files were changed and not committed, a rule with no test, a rule that does not pass, the branch's copy on the host holding commits HEAD lacks, the signer has already signed, or a stop with no answer in the answers file; no key; the package was not written; the commit was not made; git could not write the tag; `--check` did not match | a bad command line |
 | `scripts/review/ai_audit.py` | a rule was printed | the rule is not in the project; the settings file cannot be read | a bad command line |
 | `scripts/init/scaffold.py` | set up | the settings file cannot be read | a bad command line, not a git repository, or no such project root |
@@ -146,9 +144,6 @@ A run that stops before running anything writes nothing and names the command th
   tool needs added where it needs something, then
   `Suggested tests setting: <the entries as one JSON array on one line>`.
 - `No test command is set and no test tool Purlin knows was found, so nothing ran. The agent reads the project and proposes a command for you to confirm.`
-- `purlin: --commit-runner belongs to --test --remote. Run purlin:test --remote --commit-runner`, exit 2.
-- `purlin:test --remote waits for the run with the GitHub CLI, gh, which is not installed, so nothing was pushed. Install gh, then run purlin:test --remote again.`
-- `purlin:test --remote waits for the run with the Azure CLI, az, which is not installed, so nothing was pushed. Install az with its azure-devops extension, then run purlin:test --remote again.`
 
 A run names each rule where it reports the problem:
 

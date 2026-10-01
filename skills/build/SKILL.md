@@ -124,7 +124,8 @@ where no test command is set it suggests one for each test tool it recognises an
 once the person confirms, so write no entry yourself. It names every marker it could not tie to
 exactly one test, by file and line; fix each before going on. Iterate until every rule the
 feature owns has a passing test. A proof tagged `@env` for another operating system is not run
-here: the run counts such proofs in one line per system that names `purlin:test --remote`. A
+here: the run counts such proofs in one line per system; `skills/test/SKILL.md`, Step 5 says what
+to do then. A
 proof tagged `@slow` gets its test and its comment like any other, with nothing added to the
 test; `purlin:test` leaves it out and names it, and `purlin:test --all` runs it
 (`references/purlin_commands.md`). Never
@@ -154,4 +155,4 @@ rewrite the line in the same commit as the code. Commit the code and the tests t
 - A test comment to correct: fix the test as above, `→ Run: purlin:build <feature>`
 - Some rules still have no test: name them and what is missing, `→ Run: purlin:build <feature>`
 - A rule to strengthen: add the case the audit's finding names, `→ Run: purlin:build <feature>`
-- A proof needs another operating system: name it, `→ Run: purlin:test --remote`
+- A proof needs another operating system: name it, then do as `skills/test/SKILL.md`, Step 5 says

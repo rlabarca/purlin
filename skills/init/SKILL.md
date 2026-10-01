@@ -61,10 +61,8 @@ agrees. `references/supported_frameworks.md` shows every entry, and
 `purlin_config` tool rather than by hand, so a key the installed Purlin does not read is reported
 instead of kept.
 
-Setup writes no runner file. Where a proof is tagged `@env` for an operating system this machine
-is not, the first `purlin:test --remote` writes the runner file for the project's git host, shows
-it and asks before committing it. Setup sets up no signing either: `purlin:sign` checks for a key
-to sign with and, when there is none, shows the commands that set one up.
+Setup sets up no signing: `purlin:sign` checks for a key to sign with and, when there is none,
+shows the commands that set one up.
 
 ## The refusals
 

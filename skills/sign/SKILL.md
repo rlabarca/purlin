@@ -50,9 +50,8 @@ Signing 0.1.0 at 1cf829e.
 The audit's findings: 1 weak.
 ```
 
-There is one `Tests run by` line per run the results come from, this machine's first; a remote
-runner's reads `Tests run by a remote runner at ...`. The audit's line shows only where the audit
-read a rule.
+There is one `Tests run by` line per run the results come from, this machine's first. The audit's
+line shows only where the audit read a rule.
 
 ## Step 2: the refusals
 
@@ -64,7 +63,7 @@ No sign-off: 2 files are changed and not committed. Commit them or set them asid
 No sign-off: the evidence is written and not committed. Run purlin:test --commit, then purlin:sign.
 No sign-off: signed/2.1.0 is at 3c9d2e1, which this checkout does not hold. Pull, then run purlin:sign.
 No sign-off: signed/2.1.0 is at 3c9d2e1, and the code has changed since. To sign this code, name a new version: purlin:sign --version <version>.
-No sign-off: these results were not taken on this version of the code, 8de0b6e: sample_age, stability on Linux/Unix; visit_window on Windows. Run purlin:test --all --commit and purlin:test --remote, then purlin:sign.
+No sign-off: these results were not taken on this version of the code, 8de0b6e: sample_age, stability on Linux/Unix; visit_window on Windows. Run purlin:test --all --commit and purlin:test on Windows, then purlin:sign.
 No sign-off: these results were taken while files were changed and not committed: sample_age on Linux/Unix. Run purlin:test --all --commit, then purlin:sign.
 No sign-off: 1 rule has no test at 8de0b6e: sample_age RULE-3. Run purlin:build sample_age, then purlin:sign.
 No sign-off: 1 rule does not pass at 8de0b6e: sample_age RULE-2. Run purlin:status to see what is left, then purlin:sign.
@@ -77,7 +76,7 @@ With no version stated it prints
 ask the person for the version, offer to write it to a `VERSION` file, and run the walk again. The
 script never fetches. The first line counts tracked files alone, `1 file is` for one; a file git
 does not track stops nothing. Run what a refusal names only when the person asks: `purlin:test
---all --commit` for this machine's results, `purlin:test --remote` for another system's,
+--all --commit` for this machine's results, `purlin:test on <System>` for another system's,
 `purlin:build <feature>` for a rule with no test.
 
 ## Step 3: a key to sign with
@@ -179,7 +178,7 @@ fingerprint.` and exits 0, or `The package does not match its fingerprint: <why>
 | `signed/<version> stays at <sha>; this sign-off is added after it.` | `→ Run: git push origin <branch>` |
 | `Stopped at <feature> <RULE-N>:` | `→ Run: purlin:build <feature>, then purlin:test --all --commit` |
 | `Nothing was signed.` | `→ Run: purlin:sign` when the person is ready |
-| `No sign-off:` naming `purlin:test --all --commit`, `purlin:test --commit` or `purlin:test --remote` | `→ Run:` the command it names |
+| `No sign-off:` naming `purlin:test --all --commit`, `purlin:test --commit` or `purlin:test on <System>` | `→ Run:` the command it names |
 | `No sign-off:` naming `purlin:status` | `→ Run: purlin:status` |
 | `No sign-off:` ending `Pull, then run purlin:sign.` | `→ Pull, then run: purlin:sign` |
 | `No sign-off:` naming `purlin:sign --version <version>` | `→ Ask the person for the new version, then run: purlin:sign --version <version>` |

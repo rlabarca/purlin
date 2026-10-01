@@ -11,13 +11,12 @@ Every commit Purlin makes, or asks you to make, uses one of these. There is no o
 | `fix(<name>):` | Fixing a bug | `purlin:build` |
 | `test(<name>):` | Writing or changing tests without changing behaviour | `purlin:build` |
 | `purlin: specs, tests and settings for <feature>[, <feature>...]` | The specs of the features a run covered, the test files carrying their markers, and `.purlin/config.json`: the work the run's results describe | `purlin:test --commit`, `purlin:audit --commit` |
-| `purlin: evidence at <commit7>` | The evidence a run wrote, under `.purlin/evidence/` | `purlin:test --commit`, `purlin:audit --commit`, and a remote runner |
+| `purlin: evidence at <commit7>` | The evidence a run wrote, under `.purlin/evidence/` | `purlin:test --commit`, `purlin:audit --commit`, and a project's own run on another system |
 | `sign(<version>): <signer email>` | One sign-off over a version's evidence package, signed; the first of a version carries the package too | `purlin:sign` |
 | `anchor(<name>): create` | A new local anchor | `purlin:anchor create` |
 | `anchor(<name>): sync (<sha>)` | Advancing a pin to that commit | `purlin:anchor sync` |
 | `chore(update): migrate to <VERSION> (<ids>)` | Migrating a project to the installed plugin | `purlin:init --update` |
 | `chore(init): set up Purlin` | The files setup wrote, once a person agrees or `--yes` is passed | `purlin:init` |
-| `ci: the Purlin runner for <GitHub or Azure DevOps>` | The runner file the first remote run wrote, alone | `purlin:test --remote --commit-runner` |
 | `chore:` | Project setup, config changes, renames, cleanup | Anyone |
 | `docs:` | Documentation | Anyone |
 
@@ -31,7 +30,6 @@ fix(auth_login): reject a token whose issuer moved
 purlin: specs, tests and settings for auth_login, checkout
 purlin: evidence at a1b2c3d
 sign(1.2.0): quinn.qa@labconnect.example
-ci: the Purlin runner for GitHub
 anchor(security_baseline): sync (abc1234)
 chore(update): migrate to 0.10.0 (markers, plugins)
 chore: rename login to authentication
@@ -67,9 +65,8 @@ that same commit, and a sign-off counts a result only when nothing but Purlin's 
 against. The run prints `Evidence committed.`, or `Evidence unchanged.` when nothing new was
 seen. Both commits are yours, made under your own git identity, and neither is pushed for you.
 
-A remote runner on a run branch commits its own section of `.purlin/evidence/ci/` with the same
-subject, through the git host's API under the build identity, and always does, because its
-evidence exists nowhere else. No run writes a sign-off, so an evidence commit never carries one.
+A run on another system commits its own files under `.purlin/evidence/ci/` with the same subject,
+under the git identity its checkout sets. No run writes a sign-off, so an evidence commit never carries one.
 
 ## The sign-off commit
 
