@@ -1429,6 +1429,15 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       last changed each proof and each test, with commits. Nobody does anything extra.
     - **A hand check always shows its last note**, with the version it was signed at and how many
       commits have come since; the reader judges whether it still holds.
+111. **The install the docs give is proven** (added 2026-10-01). A spec, `install`, holds that the
+    README's and the getting-started page's install commands work. Its test reads the commands out
+    of both pages and runs them with the real `claude` program in a fresh project, the marketplace
+    address swapped for this checkout (a separate proof holds the pages' address is this
+    repository's). Without a model it checks the plugin is installed and enabled and every skill
+    landed; with one prompt to the smallest model it checks Claude Code offers every Purlin skill.
+    In the owner's words: "make sure the skills are PRESENT in the AI based on the install
+    commands.. make that as cheap as possible". Like any test, it reruns only when what it covers
+    changed. The install leaves the person's own Claude Code settings as they were.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5

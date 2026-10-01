@@ -9,8 +9,8 @@
 >   test is reported by file and line; it never guesses.
 > Scope: scripts/run/reports.py, scripts/mcp/purlin/markers.py, references/formats/marker_format.md
 > Stack: python/stdlib (xml.etree, json, tokenize, ast, re, shlex), pytest, jest, vitest, dotnet, go, bash, sqlite3
-> Highest-Rule: 31
-> Highest-Proof: 114
+> Highest-Rule: 32
+> Highest-Proof: 118
 
 ## Rules
 
@@ -45,6 +45,7 @@
 - RULE-29: A `tests` setting that is not a list, an entry of it that is not an object, and an entry whose name an earlier suite has are each left out with one line saying why
 - RULE-30: A comment whose `PROOF` or `RULE` is written in lower case is a near miss whose fix is the marker it meant
 - RULE-31: A report the run cannot read, or that is not in its suite's format, makes the run say `Evidence is missing`, naming the suite, the report's path and why, and exit 1
+- RULE-32: A skipped case carries the reason its test tool gave: in `junit` the `skipped` child's `message`, else its text; in `trx` the result's `Output/ErrorInfo/Message`, else the last line of `Output/StdOut`; in `gotest` the test's last `output` event before its `skip`, with its leading `<file>:<line>: ` cut; an `exit` suite gives no reason
 
 ## Proof
 
@@ -162,3 +163,7 @@
 - PROOF-112 (RULE-30): A test file carrying `# purlin: login proof-1` is listed with the fix `# purlin: login PROOF-1`, and its why reads `` `proof` is `PROOF` in lower case. ``
 - PROOF-113 (RULE-31): A pytest suite whose command writes bytes that are not UTF-8 as its report ends the run with exit code 1, and the run's `Evidence is missing` line names the reason `wrote a report at .purlin/runtime/reports/pytest.xml that could not be read`
 - PROOF-114 (RULE-31): A pytest suite whose command writes the text `not xml` as its report ends the run with exit code 1, and the run's `Evidence is missing` line names the reason `wrote a report at .purlin/runtime/reports/pytest.xml that is not junit: syntax error: line 1, column 0`
+- PROOF-115 (RULE-32): A JUnit report's case `test_screens` holds `<skipped message="nothing to check: this project has no screens"/>`; it reads `skip` with the reason `nothing to check: this project has no screens`
+- PROOF-116 (RULE-32): A TRX result `Screens` whose outcome is `NotExecuted` and whose `Output/ErrorInfo/Message` reads `nothing to check: this project has no screens` reads `skip` with the reason `nothing to check: this project has no screens`
+- PROOF-117 (RULE-32): In a `go test -json` stream, `TestScreens` prints `screens_test.go:12: nothing to check: this project has no screens` and then skips; it reads `skip` with the reason `nothing to check: this project has no screens`
+- PROOF-118 (RULE-32): An `exit` suite's test file prints `nothing to check: this project has no screens` and exits 0; it reads `pass` with no reason

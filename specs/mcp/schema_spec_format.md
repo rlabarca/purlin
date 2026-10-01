@@ -63,7 +63,7 @@
 - PROOF-48 (RULE-18): A spec at `specs/test/login.md` whose `## Proof` holds an unreadable line of 90 characters is reported with the warning quoting only the line's first 60 characters, `- PROOF-8 shows that a locked account stays locked for fifte`
 - PROOF-4 (RULE-4): A spec holding `RULE-1` and an empty `## Proof` section, with no test, is read: `RULE-1` carries no proof, and its passed cell reads `no test` with the one reason `no proof written`
 - PROOF-18 (RULE-4): A spec holding `RULE-1` and the line `PROOF-1 (RULE-1)`, with no test, is read: `RULE-1` carries the one proof `PROOF-1`, and its passed cell reads `no test` without the reason `no proof written`
-- PROOF-19 (RULE-4): At the gate `passed`, a spec holding `RULE-1` and no proof line, whose one test is marked `purlin: feat RULE-1` and passes in a test run, is read: `RULE-1` carries no proof, and its passed cell reads `passed` with no reason
+- PROOF-19 (RULE-4): A spec holding `RULE-1` and no proof line, whose one test is marked `purlin: feat RULE-1` and passes in a test run, is read: `RULE-1` carries no proof, and its passed cell reads `passed` with no reason
 - PROOF-6 (RULE-6): A spec carrying `> Scope: src/alpha.py, src/zeta.py` is read with a scope of exactly two paths, `src/alpha.py` then `src/zeta.py`
 - PROOF-22 (RULE-6): A spec carrying `> Scope: src/zeta.py, src/alpha.py` is read with a scope of exactly two paths in the order written, `src/zeta.py` then `src/alpha.py`, not sorted
 - PROOF-23 (RULE-19): In a project tracking `src/app.py` and `src/other.py`, a spec scoped `src/app.py` keeps the code part of its fingerprint unchanged when `src/other.py` is edited

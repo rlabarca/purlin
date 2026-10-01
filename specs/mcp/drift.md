@@ -1,18 +1,17 @@
 # Feature: drift
 
-> Description: What changed since your last pull, by role. Drift reads git's
+> Description: What changed since your last pull, in one view. Drift reads git's
 >   own log of HEAD for the last action that brought changes in, and reports
 >   what changed between where HEAD stood before it and HEAD: rules added,
->   changed and removed for the PM; code changed, rules with no test, anchors
->   behind and evidence out of date for the engineer; tests changed, and the
->   lines of `Left to do` that stop a release, for QA; proofs added,
->   changed and moved for the PM and QA. Every view names a number a spec
->   writes twice and a test comment whose proof's wording changed. It reads
->   only this checkout, reports facts and judges nothing.
-> Scope: scripts/mcp/purlin/drift.py
+>   changed and removed; proofs added, changed and moved; each number a spec
+>   writes twice, with the line that moves and how old the copy of the default
+>   branch is; each test comment whose proof's wording changed after its test
+>   was last changed; and each anchor behind its source, checked without
+>   pulling. It reads only this checkout, reports facts and judges nothing.
+> Scope: scripts/mcp/purlin/drift.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib, json, re, subprocess (list-only)
-> Highest-Rule: 34
-> Highest-Proof: 80
+> Highest-Rule: 39
+> Highest-Proof: 88
 
 ## Rules
 
@@ -20,34 +19,30 @@
 - RULE-2: With no `since`, the range runs from where HEAD stood before the newest entry of git's log of HEAD whose action is a pull, a merge, a merge committed after its conflicts were resolved, a finished rebase, a checkout or a reset, to HEAD; a pull or a rebase that git logged as several steps is measured from where HEAD stood before its first step
 - RULE-3: When the newest such entry is the clone, or there is none, the range is the last 20 commits, or every commit when there are fewer
 - RULE-4: `since` overrides the log: a count of N gives the last N commits, and a date gives every commit made on or after it
-- RULE-5: When the range starts where HEAD stood before an action, the first line of every view is the same line, naming the action, how long ago it ran, the range as two 7-character shas and the number of commits, as in `Since your last pull, 14 hours ago (a1b2c3d..4f5e6a7, 9 commits).`
-- RULE-6: The PM view compares, for each spec file the range changed, the spec's rule ids and texts at the start of the range with those at HEAD, matching a spec by its name wherever its file lies, and prints `<n> rules added: `, `<n> rules changed: ` and `<n> rules removed: ` lines naming each feature and its rule ids, or, when there is none, `No rule was added, changed or removed` followed by the range, as in `No rule was added, changed or removed since your last pull.`
-- RULE-7: The engineer view names, per spec whose scope reaches a changed file, how many of its files changed and the spec's own rules behind them, as `2 files changed under login's scope: RULE-1, RULE-2 are behind them. Run purlin:test login.`; a scope entry ending in `/` reaches every file under that directory, and a file deleted in the range counts under every spec whose scope entry names it, holds it in its folder or matches it as a glob
-- RULE-8: The engineer view names every changed file no spec's scope reaches, a file deleted in the range included, leaving out files under `specs/`, files under `.purlin/` and files that carry a proof marker, as `2 changed files are under no spec's scope: src/x.py, src/y.py. Add each to a spec's > Scope: line with purlin:spec.`
-- RULE-9: The engineer view names every rule whose passed cell reads `no test`, as `2 rules have no test: login RULE-1, RULE-2. Run purlin:build.`
-- RULE-10: The engineer view names every pinned anchor that is not current: one whose source has moved past its pin is `behind` with the source's 7-character sha, one naming a source and no pin is `unpinned`, one whose source cannot be read is `error` with the reason, and one still at its pin is not named at all
+- RULE-5: When the range starts where HEAD stood before an action, the view's first line names the action, how long ago it ran, the range as two 7-character shas and the number of commits, as in `Since your last pull, 14 hours ago (a1b2c3d..4f5e6a7, 9 commits).`
+- RULE-6: The view compares, for each spec file the range changed, the spec's rule ids and texts at the start of the range with those at HEAD, matching a spec by its name wherever its file lies, and prints `<n> rules added: `, `<n> rules changed: ` and `<n> rules removed: ` lines naming each feature and its rule ids, or, when there is none, `No rule was added, changed or removed` followed by the range, as in `No rule was added, changed or removed since your last pull.`
+- RULE-10: The view names every pinned anchor that is not current: one whose source has moved past its pin is `behind` with the source's 7-character sha, one naming a source and no pin is `unpinned`, one whose source cannot be read is `error` with the reason, and one still at its pin is not named at all
 - RULE-11: A `> Source:` value is refused before any process starts when it begins with `-`, names an `ext::` or an `fd::` transport, or carries a NUL byte or a newline, and the refusal names which of those it was
 - RULE-12: One remote listing per source per run: an anchor repository serving six anchors is reached once
 - RULE-13: An anchor's row and its line name the anchor by its own spec name, never by the repository path and never by the file inside it
-- RULE-14: The engineer view names every feature that has evidence and whose evidence is out of date, as `1 feature is out of date: login. Run purlin:test.`
-- RULE-15: The QA view counts the changed files that carry a proof marker and names the features those markers name, in alphabetical order, as `2 test files changed, covering export, login.`
-- RULE-17: Every view ends with `<n> spec files have changes that are not committed.` when a spec file under `specs/` differs from HEAD or is not tracked, and prints no such line when none does
-- RULE-18: The report carries exactly `since` and `roles`, and the roles are exactly `pm`, `eng` and `qa`
+- RULE-18: The report carries exactly `since` and `view`
 - RULE-19: The report is serialized with no indentation and no space after a separator, because its only reader is a model paying by the token
-- RULE-20: The engineer view reports an anchor whose `> Source:` names no repository, words or a file on disk, as `error` with the line that names `purlin:spec`, and no process is handed the source
+- RULE-20: The view reports an anchor whose `> Source:` names no repository, words or a file on disk, as `error` with the line that names `purlin:spec`, and no process is handed the source
 - RULE-21: When `.purlin/config.json` exists and cannot be read, drift's answer is the sentence `.purlin/config.json cannot be read: <cause>. Fix the file by hand; nothing ran and nothing was saved.` alone, in place of the report, and it reads nothing else
-- RULE-22: The QA view prints the lines of `Left to do` whose kinds stop a release, in the words the status prints them, as `2 rules to fix: purlin:build`, and no other line of `Left to do`
-- RULE-23: Each view carries its lines and the facts they were built from under fixed keys
-- RULE-24: The QA view's `left` holds the status's own items of `Left to do` whose kinds stop a release, the items its lines of `Left to do` are built from
-- RULE-25: A role argument narrows the answer to exactly `since`, `role` and `view`
+- RULE-23: The view carries its lines and the facts they were built from under fixed keys
 - RULE-26: In a repository whose HEAD names no commit, drift's answer is the error `no commits` with the reason `drift reads git, and HEAD names no commit here`, in place of the report
 - RULE-27: A drift call writes no file and leaves HEAD and the working tree as they were
-- RULE-28: The PM and QA views name the proofs the range added, in one count line by feature
-- RULE-29: The PM and QA views name each proof whose wording the range changed, quoting its text at both ends
-- RULE-30: The PM and QA views name each proof whose text the range moved, unchanged, to another id of the same spec
-- RULE-31: Every view names each number a spec of this checkout writes twice: the line whose text is the one on the default branch keeps it, and the other is renumbered to the next free number
-- RULE-32: Where a view names a number written twice, it says how long ago this checkout last fetched the default branch, and drift itself fetches nothing
-- RULE-33: Every view names each test comment whose proof's wording changed since the commit that last wrote the comment's line, quoting both wordings
+- RULE-28: The view names the proofs the range added, in one count line by feature
+- RULE-29: The view names each proof whose wording the range changed, quoting its text at both ends
+- RULE-30: The view names each proof whose text the range moved, unchanged, to another id of the same spec
+- RULE-31: The view names each number a spec of this checkout writes twice: the line whose text is the one on the default branch keeps it, and the other is renumbered to the next free number
+- RULE-32: Where the view names a number written twice, it says how long ago this checkout last fetched the default branch, and drift itself fetches nothing
+- RULE-33: The view names each test comment whose proof's wording changed after its test was last changed, where the range changed that proof or that test's file, quoting both wordings
+- RULE-35: A test is last changed at the newest commit that changed its lines below its marker comment, or any line of its file when the file is run whole; a test with a line not committed is never named
+- RULE-36: A proof id the spec writes twice is named as written twice and never as a proof changed
+- RULE-37: A checkout that leaves HEAD at the commit it stood at is not an action, and starts no range
+- RULE-38: Drift answers with one view for every person, and its answer names no role
+- RULE-39: Drift checks an anchor's source without pulling it: the anchor's file, its pin and this checkout's git objects stay as they were
 
 ## Proof
 
@@ -66,66 +61,49 @@
 - PROOF-62 (RULE-3): A repository of 1 commit is made in place; the range is that commit, with no commit before it, and the first line reads `The last commit (up to <sha7>, 1 commit). Git's log of HEAD names no pull, merge, rebase, checkout, clone or reset.`
 - PROOF-9 (RULE-4): After a pull that brought in 1 commit, drift is asked for the changes since `3`; the range is the last 3 commits, not the pull's 1, and the first line begins `The last 3 commits (`
 - PROOF-10 (RULE-4): In a project whose three commits are dated 2026-01-01, 2026-03-01 and 2026-04-01, drift is asked for the changes since `2026-02-15`; the range is the last 2 commits, from the first commit to HEAD, and the first line begins `Since 2026-02-15 (`
-- PROOF-11 (RULE-5): After a pull that brought in 2 commits, the first line of each of the three views is the same line, `Since your last pull, <n> <unit> ago (<sha7>..<sha7>, 2 commits).`, the shas being the start of the range and HEAD, and the report's range carries that line too
-- PROOF-30 (RULE-5): After a merge committed by hand once its conflict was resolved, the first line of each of the three views is the same line, `Since your last merge, <n> <unit> ago (<sha7>..<sha7>, 3 commits).`, the shas being the start of the range and HEAD
-- PROOF-12 (RULE-6): One pull brings in spec changes that add `RULE-3` to `login`, reword `RULE-1` of `login` and remove `RULE-2` of `cart`; after its first line the PM view reads exactly `1 rule added: login RULE-3.`, `1 rule changed: login RULE-1.` and `1 rule removed: cart RULE-2.`
-- PROOF-38 (RULE-6): A pull brings in one change, a spec moved to another folder with its rules unchanged; after its first line the PM view reads exactly `No rule was added, changed or removed since your last pull.`
-- PROOF-13 (RULE-6): A pull brings in a change to a source file and to no spec; after its first line the PM view reads exactly `No rule was added, changed or removed since your last pull.`
-- PROOF-14 (RULE-7): The spec `login`, of 2 rules, covers the folder `src/auth/`, and a pull changes `src/auth/login.py` and `src/auth/token.py`; the engineer view reads `2 files changed under login's scope: RULE-1, RULE-2 are behind them. Run purlin:test login.` and its facts name both files under `login`
-- PROOF-51 (RULE-7): The spec `login`, of 2 rules, names the files `src/auth/login.py` and `src/auth/old.py`, and a pull deletes `src/auth/old.py`; the engineer view reads `1 file changed under login's scope: RULE-1, RULE-2 are behind it. Run purlin:test login.` and its facts name `src/auth/old.py` under `login`
-- PROOF-52 (RULE-7): The spec `login`, of 2 rules, covers the folder `src/auth/`, and a pull deletes `src/auth/token.py`; the engineer view reads `1 file changed under login's scope: RULE-1, RULE-2 are behind it. Run purlin:test login.` and its facts name `src/auth/token.py` under `login`
-- PROOF-53 (RULE-7): The spec `login`, of 2 rules, covers the glob `src/**/*.py`, and a pull deletes `src/auth/token.py`; the engineer view reads `1 file changed under login's scope: RULE-1, RULE-2 are behind it. Run purlin:test login.` and its facts name `src/auth/token.py` under `login`
-- PROOF-63 (RULE-7): The spec `notes` holds no rule and covers `src/notes.py`, and a pull changes that file; the engineer view reads `1 file changed under notes's scope: no rule is behind it. Run purlin:test notes.`
-- PROOF-15 (RULE-8): A pull changes `src/x.py` and `src/y.py`, which no spec covers, a spec file, a file under `.purlin/` and a test file carrying a proof marker; the engineer view reads `2 changed files are under no spec's scope: src/x.py, src/y.py. Add each to a spec's > Scope: line with purlin:spec.`, naming none of the other three there
-- PROOF-54 (RULE-8): A pull deletes `src/gone.py` and adds `src/x.py`, which no spec covers; the engineer view reads `2 changed files are under no spec's scope: src/gone.py, src/x.py. Add each to a spec's > Scope: line with purlin:spec.` and names no spec whose scope changed
-- PROOF-59 (RULE-8): A pull changes `src/auth/login.py`, which the spec `login` covers, and the file is then removed with `git rm` and not committed; the engineer view prints no line of changed files under no spec's scope
-- PROOF-16 (RULE-9): The spec `login` has 2 rules and no test has run for either; after a pull, the engineer view reads `2 rules have no test: login RULE-1, RULE-2. Run purlin:build.`
-- PROOF-64 (RULE-9): The spec `login` has 1 rule and no test has run for it; after a pull, the engineer view reads `1 rule has no test: login RULE-1. Run purlin:build.`
-- PROOF-39 (RULE-9): The spec `login` has 2 rules and a passing run is written for both; after a pull, the engineer view prints no line saying a rule has no test
-- PROOF-17 (RULE-10): An anchor is pinned to its source's first commit, and the source gains a second; the engineer view holds one row for it, reading `behind` with the first 7 characters of the new commit's sha, and the line `anchor external_anchor: the pin <first sha7> is behind its source, now <new sha7>. Run purlin:anchor sync external_anchor.`
+- PROOF-11 (RULE-5): After a pull that brought in 2 commits, the view's first line reads `Since your last pull, <n> <unit> ago (<sha7>..<sha7>, 2 commits).`, the shas being the start of the range and HEAD, and the report's range carries that line too
+- PROOF-30 (RULE-5): After a merge committed by hand once its conflict was resolved, the view's first line reads `Since your last merge, <n> <unit> ago (<sha7>..<sha7>, 3 commits).`, the shas being the start of the range and HEAD
+- PROOF-12 (RULE-6): One pull brings in spec changes that add `RULE-3` to `login`, reword `RULE-1` of `login` and remove `RULE-2` of `cart`; after its first line the view reads exactly `1 rule added: login RULE-3.`, `1 rule changed: login RULE-1.` and `1 rule removed: cart RULE-2.`
+- PROOF-38 (RULE-6): A pull brings in one change, a spec moved to another folder with its rules unchanged; after its first line the view reads exactly `No rule was added, changed or removed since your last pull.`
+- PROOF-13 (RULE-6): A pull brings in a change to a source file and to no spec; after its first line the view reads exactly `No rule was added, changed or removed since your last pull.`
+- PROOF-17 (RULE-10): An anchor is pinned to its source's first commit, and the source gains a second; the view holds one row for it, reading `behind` with the first 7 characters of the new commit's sha, and the line `anchor external_anchor: the pin <first sha7> is behind its source, now <new sha7>. Run purlin:anchor sync external_anchor.`
 - PROOF-18 (RULE-10): An anchor that carries 2 rules of its own is pinned to its source's first commit, and the source then gains a second commit; exactly 1 row for that anchor reads `behind`
-- PROOF-19 (RULE-10): The anchor `policy` names the source `https://github.com/acme/p.git` and no pin; its row reads `unpinned` with no sha, the engineer view reads `anchor policy: names a source and no pin. Run purlin:anchor sync policy.`, and no process is handed that source
-- PROOF-40 (RULE-10): The anchor `policy` is pinned to a source path where no repository exists; its row reads `error` with no sha and a reason naming that path, and the engineer view reads `anchor policy: the source could not be read (<the reason>). Check its > Source: line, then run purlin:anchor sync policy.`
-- PROOF-41 (RULE-10): An anchor is pinned to its source's newest commit; the source is read once, and the engineer view holds no row and no line for the anchor
-- PROOF-55 (RULE-10): An anchor is pinned to `https://dev.azure.com/acme/p/_git/policies`, which cannot be reached; the source is asked, its row reads `error` with no sha, and the engineer view reads `anchor policy: the source could not be read (<the reason>). Check its > Source: line, then run purlin:anchor sync policy.`
-- PROOF-20 (RULE-11): The anchor `policy` is pinned to the source `--upload-pack=/bin/echo`; its row reads `error` with the reason `begins with "-"`, the engineer view reads `anchor policy: the source could not be read (begins with "-"). Check its > Source: line, then run purlin:anchor sync policy.`, and no process is handed that source
+- PROOF-19 (RULE-10): The anchor `policy` names the source `https://github.com/acme/p.git` and no pin; its row reads `unpinned` with no sha, the view reads `anchor policy: names a source and no pin. Run purlin:anchor sync policy.`, and no process is handed that source
+- PROOF-40 (RULE-10): The anchor `policy` is pinned to a source path where no repository exists; its row reads `error` with no sha and a reason naming that path, and the view reads `anchor policy: the source could not be read (<the reason>). Check its > Source: line, then run purlin:anchor sync policy.`
+- PROOF-41 (RULE-10): An anchor is pinned to its source's newest commit; the source is read once, and the view holds no row and no line for the anchor
+- PROOF-55 (RULE-10): An anchor is pinned to `https://dev.azure.com/acme/p/_git/policies`, which cannot be reached; the source is asked, its row reads `error` with no sha, and the view reads `anchor policy: the source could not be read (<the reason>). Check its > Source: line, then run purlin:anchor sync policy.`
+- PROOF-20 (RULE-11): The anchor `policy` is pinned to the source `--upload-pack=/bin/echo`; its row reads `error` with the reason `begins with "-"`, the view reads `anchor policy: the source could not be read (begins with "-"). Check its > Source: line, then run purlin:anchor sync policy.`, and no process is handed that source
 - PROOF-42 (RULE-11): An anchor pinned to the source `ext::sh -c id` reads `error` with the reason `names an ext:: transport`, and no process is handed that source
 - PROOF-43 (RULE-11): An anchor pinned to the source `fd::7` reads `error` with the reason `names an fd:: transport`, and no process is handed that source
 - PROOF-44 (RULE-11): An anchor pinned to a source carrying a NUL byte, `/srv/anchors<NUL>.git`, reads `error` with the reason `contains a NUL byte`, and no process is handed that source
 - PROOF-45 (RULE-11): The check of an anchor's source, given `/srv/anchors.git`, a newline and `--upload-pack=x`, refuses it with the reason `contains a newline`, and no process starts; a spec's `> Source:` line cannot hold a newline, so this is the check alone
 - PROOF-46 (RULE-11): An anchor names the source `https://github.com/acme/ext-rules.git`, which holds `ext` and a `-` but neither begins with `-` nor names a transport, and no pin; it is not refused, and its row reads `unpinned` with no reason
-- PROOF-21 (RULE-12): Three anchors are pinned to the first commit of one source repository, which then gains a commit; the engineer view holds 3 rows reading `behind`, and the source is listed once
+- PROOF-21 (RULE-12): Three anchors are pinned to the first commit of one source repository, which then gains a commit; the view holds 3 rows reading `behind`, and the source is listed once
 - PROOF-22 (RULE-13): The anchor `local_security`, copied from the file `constraints.md` in another repository, falls behind its source; its row is named `local_security`, and its one line reads `anchor local_security: the pin <first sha7> is behind its source, now <new sha7>. Run purlin:anchor sync local_security.`
-- PROOF-23 (RULE-14): The spec `login` has a passing run written and `cart` has none, and a pull then changes a file in each one's scope; the engineer view reads `1 feature is out of date: login. Run purlin:test.` and does not name `cart`
-- PROOF-65 (RULE-14): The specs `login` and `cart` each have a passing run written, and a pull then changes a file in each one's scope; the engineer view reads `2 features are out of date: cart, login. Run purlin:test.`
-- PROOF-24 (RULE-15): A pull changes one test file carrying markers for `login` and `export`, one carrying a marker for `login` and one carrying no marker; the QA view's line after its first reads `2 test files changed, covering export, login.`, and no other line names a test file changed
-- PROOF-31 (RULE-22): Under the gate `passed`, the spec `login` has one rule with an ordinary proof and one whose only proof is checked by hand, and no test exists; after its first line the QA view reads exactly `1 rule to write a test for: purlin:build`
-- PROOF-32 (RULE-22): The status leaves `3 rules to strengthen` and `2 rules to fix`; after its first line the QA view reads exactly `2 rules to fix: purlin:build`
-- PROOF-33 (RULE-22): The status leaves only `3 rules to strengthen`; the QA view prints nothing after its first line
-- PROOF-26 (RULE-17): One spec is edited and not committed; every view ends with `1 spec file has changes that are not committed.`
-- PROOF-47 (RULE-17): One spec is edited and a second spec is added and not tracked; every view ends with `2 spec files have changes that are not committed.`
-- PROOF-48 (RULE-17): An edited spec and a new one are both committed; no view prints a line about spec files not committed, and each view's count of them reads 0
-- PROOF-60 (RULE-17): On Windows, with `core.autocrlf` set to `true`, an edited spec and a new one are both committed; no view prints a line about spec files not committed, and each view's count of them reads 0 @env(windows)
-- PROOF-27 (RULE-18): After a pull, the report carries exactly `since` and `roles`; `since` carries exactly `action`, `commits`, `from`, `line`, `to` and `when`, and `roles` exactly `eng`, `pm` and `qa`
-- PROOF-49 (RULE-23): After a pull, the PM view carries exactly `comments_changed`, `default_branch`, `lines`, `numbers_twice`, `proofs_added`, `proofs_changed`, `proofs_moved`, `rules_added`, `rules_changed`, `rules_removed` and `specs_uncommitted`
-- PROOF-79 (RULE-23): After a pull, the engineer view carries exactly `anchors_behind`, `code_changed`, `comments_changed`, `default_branch`, `lines`, `numbers_twice`, `out_of_date`, `rules_without_test`, `specs_uncommitted` and `unscoped`
-- PROOF-80 (RULE-23): After a pull, the QA view carries exactly `comments_changed`, `default_branch`, `left`, `lines`, `numbers_twice`, `proofs_added`, `proofs_changed`, `proofs_moved`, `specs_uncommitted` and `tests_changed`
-- PROOF-50 (RULE-25): After a pull, drift is asked for the `qa` role; the answer carries exactly `since`, `role` and `view`, its role reads `qa`, and its `since` and `view` are those of the whole report
-- PROOF-34 (RULE-24): The status leaves `3 rules to strengthen` and `2 rules to fix`; the QA view's `left` holds exactly the one item `{"kind": "to_fix", "count": 2, "text": "2 rules to fix", "command": "purlin:build"}`
-- PROOF-28 (RULE-19): After one committed change, the report text is indented nowhere, puts no space after the `:` and `,` that separate its keys and values, reads back as a report carrying exactly `since` and `roles`, and is shorter than the same report laid out with an indent of 2
+- PROOF-27 (RULE-18): After a pull, the report carries exactly `since` and `view`, and `since` carries exactly `action`, `commits`, `from`, `line`, `to` and `when`
+- PROOF-49 (RULE-23): After a pull, the view carries exactly `anchors_behind`, `comments_changed`, `default_branch`, `lines`, `numbers_twice`, `proofs_added`, `proofs_changed`, `proofs_moved`, `rules_added`, `rules_changed` and `rules_removed`
+- PROOF-28 (RULE-19): After one committed change, the report text is indented nowhere, puts no space after the `:` and `,` that separate its keys and values, reads back as a report carrying exactly `since` and `view`, and is shorter than the same report laid out with an indent of 2
 - PROOF-56 (RULE-20): The anchor `refunds` is pinned to the source `policy.txt`, a text file in the project; its row reads `error`, its line begins `anchor refunds: its source, policy.txt, is not a spec in Purlin's format kept in a git repository` and names `purlin:spec refunds`, and no process is handed `policy.txt`
 - PROOF-57 (RULE-20): The anchor `refunds` is pinned to the source `the finance team's refund policy`, a description in words; its row reads `error`, its line begins `anchor refunds: its source, the finance team's refund policy, is not a spec in Purlin's format` and names `purlin:spec refunds`, and no process is handed that source
 - PROOF-58 (RULE-21): A project's `.purlin/config.json` holds a comma after its last setting; drift's whole answer is `.purlin/config.json cannot be read: <the JSON reader's message> at line <n>. Fix the file by hand; nothing ran and nothing was saved.`, and no process starts
 - PROOF-61 (RULE-26): In a repository made with `git init` and no commit, drift is asked for its report; the answer is the error `no commits` with the reason `drift reads git, and HEAD names no commit here`
-- PROOF-66 (RULE-27): In a checkout that has just pulled a change to a scoped file, the `pm`, `eng` and `qa` views are asked for in turn; HEAD, `git status --porcelain` and the bytes of every file outside `.git` read the same after as before
-- PROOF-67 (RULE-28): A pull adds `PROOF-5` and `PROOF-6` to `login`; the PM and QA views each hold `2 proofs added: login PROOF-5, PROOF-6.`
-- PROOF-68 (RULE-29): A pull changes `login`'s `PROOF-1` from `An age of 150 minutes` to `An age of 90 minutes`; the PM and QA views each hold `login PROOF-1 changed: it read "An age of 150 minutes" and now reads "An age of 90 minutes".`
-- PROOF-69 (RULE-30): A pull moves the text of `login`'s `PROOF-4` to `PROOF-6` and gives `PROOF-4` a new text; the PM and QA views each hold `login PROOF-4 moved to PROOF-6.`
-- PROOF-70 (RULE-31): After a merge, `login` writes `PROOF-4` twice, its line on `origin/main` reading `A` and the branch's `B`; every view holds `login: PROOF-4 is written twice. The line on origin/main keeps PROOF-4; renumber the other to PROOF-5 and move its test comments with it: "B".`
-- PROOF-71 (RULE-31): `login` writes `PROOF-7` twice and `origin/main` holds neither line; every view holds `login: PROOF-7 is written twice, and neither line is on origin/main. The one that reaches origin/main first keeps PROOF-7; renumber the other to PROOF-8 and move its test comments with it.`
-- PROOF-72 (RULE-31): In a checkout with no remote, `login` writes `PROOF-4` twice; every view holds `login: PROOF-4 is written twice, and this checkout has no copy of a default branch to say which line keeps it. Renumber the one not yet merged to PROOF-5 and move its test comments with it.`
-- PROOF-73 (RULE-32): `login` writes `PROOF-4` twice and `origin/main` was last updated three days ago; every view holds `origin/main was last fetched 3 days ago, and drift does not fetch. Run git fetch, then purlin:drift again.`
+- PROOF-66 (RULE-27): In a checkout that has just pulled a change to a spec and a source file, drift is asked for its report twice; HEAD, `git status --porcelain` and the bytes of every file outside `.git` read the same after as before
+- PROOF-67 (RULE-28): A pull adds `PROOF-5` and `PROOF-6` to `login`; the view holds `2 proofs added: login PROOF-5, PROOF-6.`
+- PROOF-68 (RULE-29): A pull changes `login`'s `PROOF-1` from `An age of 150 minutes` to `An age of 90 minutes`; the view holds `login PROOF-1 changed: it read "An age of 150 minutes" and now reads "An age of 90 minutes".`
+- PROOF-69 (RULE-30): A pull moves the text of `login`'s `PROOF-4` to `PROOF-6` and gives `PROOF-4` a new text; the view holds `login PROOF-4 moved to PROOF-6.`
+- PROOF-70 (RULE-31): After a merge, `login` writes `PROOF-4` twice, its line on `origin/main` reading `A` and the branch's `B`; the view holds `login: PROOF-4 is written twice. The line on origin/main keeps PROOF-4; renumber the other to PROOF-5 and move its test comments with it: "B".`
+- PROOF-71 (RULE-31): `login` writes `PROOF-7` twice and `origin/main` holds neither line; the view holds `login: PROOF-7 is written twice, and neither line is on origin/main. The one that reaches origin/main first keeps PROOF-7; renumber the other to PROOF-8 and move its test comments with it.`
+- PROOF-72 (RULE-31): In a checkout with no remote, `login` writes `PROOF-4` twice; the view holds `login: PROOF-4 is written twice, and this checkout has no copy of a default branch to say which line keeps it. Renumber the one not yet merged to PROOF-5 and move its test comments with it.`
+- PROOF-73 (RULE-32): `login` writes `PROOF-4` twice and `origin/main` was last updated three days ago; the view holds `origin/main was last fetched 3 days ago, and drift does not fetch. Run git fetch, then purlin:drift again.`
 - PROOF-74 (RULE-32): Another clone pushes a commit to the bare repository this checkout was cloned from; after drift runs here, `origin/main` names the commit it named before
-- PROOF-75 (RULE-33): A test comment naming `login PROOF-4` is committed while `PROOF-4` reads `A`, and a pull rewords it `B`; every view holds `tests/test_login.py:1 names login PROOF-4, whose wording changed since the comment was written in <sha7>: it read "A" and now reads "B". Check the test still shows it, or run purlin:build login.`
-- PROOF-76 (RULE-33): A test comment naming `login PROOF-4` is committed while `PROOF-4` reads `A`, and a pull rewords it `B` and puts `A` under `PROOF-6`; the comment's line ends `it read "A" and now reads "B". Its old wording is now PROOF-6: move the comment there.`
-- PROOF-77 (RULE-33): A pull edits a test file whose comment names `login PROOF-1`, whose wording has not changed; no view holds a line naming that comment
+- PROOF-75 (RULE-33): A test marked `login PROOF-4` is committed while `PROOF-4` reads `A`, and a pull rewords it `B`; the view holds `tests/test_login.py:1 names login PROOF-4, whose wording changed after the test was last changed in <sha7>: it read "A" and now reads "B". Run purlin:build login to make the test show it; the line clears once the test changes.`
+- PROOF-76 (RULE-33): A test marked `login PROOF-4` is committed while `PROOF-4` reads `A`, and a pull rewords it `B` and puts `A` under `PROOF-6`; the comment's line ends `it read "A" and now reads "B". Its old wording is now PROOF-6: move the comment there.`
+- PROOF-77 (RULE-33): A pull edits a test file whose comment names `login PROOF-1`, whose wording has not changed; the view holds no line naming that comment
+- PROOF-81 (RULE-35): A test marked `login PROOF-4` while it reads `A` has an assertion changed in a later commit; a pull then rewords `PROOF-4` to `B`; the view's line for `tests/test_login.py:1` names that later commit's 7-character sha, not the one that wrote the comment
+- PROOF-82 (RULE-35): A test marked `login PROOF-4` is committed while it reads `A`; a pull rewords it `B`, and a commit after the pull changes an assertion in the test; the view holds no line naming `tests/test_login.py:1`
+- PROOF-83 (RULE-35): A test marked `login PROOF-4` is committed while it reads `A`; a pull rewords it `B`, and an assertion in the test is then changed and not committed; the view holds no line naming `tests/test_login.py:1`
+- PROOF-84 (RULE-35): A test marked `login PROOF-4` is committed while it reads `A`; a pull rewords it `B`, and a commit then rewrites only the comment line, still naming `login PROOF-4`; the view still holds a line naming `tests/test_login.py:1`
+- PROOF-85 (RULE-36): After a merge, `login` writes `PROOF-4` twice, `A` from `origin/main` and `B` from the branch; the view names `PROOF-4` as written twice and holds no line beginning `login PROOF-4 changed`
+- PROOF-86 (RULE-37): A pull brings in 2 commits, then `git checkout -b topic` makes a branch at HEAD; the range still runs from where HEAD stood before the pull, 2 commits, and names the action `pull`
+- PROOF-87 (RULE-38): A pull adds `RULE-3` and `PROOF-5` to `login`; drift's answer holds no `role` and no `roles`, and its one view's lines read, in order, the range line, `1 rule added: login RULE-3.` and `1 proof added: login PROOF-5.`
+- PROOF-88 (RULE-39): An anchor is pinned to its source's first commit and the source gains a second; after the view names it `behind`, the anchor's file reads byte for byte as before, and this checkout holds no object of the source's second commit

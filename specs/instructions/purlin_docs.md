@@ -1,36 +1,25 @@
 # Feature: purlin_docs
 
-> Description: The four pages a reader meets first, `README.md`, `docs/index.md`,
->   `docs/getting-started.md` and `docs/how-purlin-works.md`, say what the product does now.
->   The README's command table carries the purpose sentences of `references/purlin_commands.md`.
->   Each printed line the four pages quote sits in a fenced block marked `text`, under a
->   comment naming the run of the sample project it was taken from, `<!-- sample: <run> -->`.
->   The sample project is the ten-minute path: a Python project whose `pyproject.toml`
->   configures pytest and that holds no code, set up at the gate `passed` with the commit agreed,
->   then one spec, `cart`, of three rules, with its code and three marked tests. A second project
->   with no test tool Purlin knows gives the line the first run prints for it. The release page,
->   `docs/review-and-signing.md`, names the two tags a release writes.
-> Scope: README.md, docs/index.md, docs/getting-started.md, docs/how-purlin-works.md, docs/review-and-signing.md
-> Highest-Rule: 13
-> Highest-Proof: 18
+> Description: The docs are the pages `docs/index.md` lists: how Purlin works, getting started,
+>   specs and anchors, running and evidence, working together, the sign-off, upgrading, the
+>   audit and the dashboard. Every relative link on them resolves. The audit page says why the
+>   audit works as it does and cites the research behind it, each paper by a link the page
+>   lists again under its sources.
+> Scope: docs/*.md
+> Highest-Rule: 15
+> Highest-Proof: 23
 
 ## Rules
 
-- RULE-1: The README's command table gives every command the purpose sentence `references/purlin_commands.md` gives it, word for word
-- RULE-2: Every printed line quoted on the four pages is printed, word for word, by a run of the sample project the page describes
-- RULE-12: Every relative link on the four pages names a file in the repository, and every `#` part names a heading of that file
-- RULE-13: The release page names both tags a release writes, each with the command that writes it
+- RULE-12: Every relative link on the pages under `docs/` names a file in the repository, and every `#` part names a heading of that file
+- RULE-14: The docs are exactly `docs/index.md` and the nine pages it links to
+- RULE-15: `docs/audit.md` cites the papers behind the audit, each by a link, and lists every source it cites under its heading `Sources`
 
 ## Proof
 
-- PROOF-1 (RULE-1): Each row of the README's command table carries, character for character, the purpose sentence the command reference gives the command in that row
-- PROOF-2 (RULE-1): Each of the 11 commands the command reference lists has a row in the README's command table
-- PROOF-3 (RULE-2): The sample project is set up at the gate `passed` with the commit agreed; each block of lines the pages take from setup is printed by it, one line after another as the page shows them
-- PROOF-4 (RULE-2): In the set-up sample project with the spec, code and tests of `cart` committed, the first test run of `cart` prints each block of lines the pages take from it, one line after another
-- PROOF-5 (RULE-2): Once the entry the first run suggested is written into the `tests` setting, the next test run of `cart` prints each block of lines the pages take from it, one line after another
-- PROOF-6 (RULE-2): After that run, a test run with `--commit` and no feature named prints each block of lines the pages take from it, one line after another
-- PROOF-7 (RULE-2): With the cart's code changed so that the test of `RULE-2` fails, a test run with no feature named prints each block of lines the pages take from it, one line after another
-- PROOF-8 (RULE-2): In a set-up project with the spec and tests of `cart` and no test tool Purlin knows, the first test run of `cart` prints each block of lines the pages take from it
-- PROOF-9 (RULE-2): Every fenced block on the four pages names its language, and every block marked `text` sits under a comment naming one of the six runs of the sample project
-- PROOF-17 (RULE-12): Each relative link on the four pages is followed from the page's own folder; each names a file the repository holds, and each `#` part matches a heading of that file as the git host spells its anchor
-- PROOF-18 (RULE-13): The release page's table of tags has a row for `passed/<version>` naming `purlin:test --release` and a row for `signed/<version>` naming `purlin:sign`
+- PROOF-17 (RULE-12): Each relative link on the Markdown pages under `docs/` is followed from the page's own folder; each names a file the repository holds, and each `#` part matches a heading of that file as the git host spells its anchor
+- PROOF-19 (RULE-14): `docs/index.md` links to each of `how-purlin-works.md`, `getting-started.md`, `specs-and-anchors.md`, `running-and-evidence.md`, `working-together.md`, `sign-off.md`, `upgrading.md`, `audit.md` and `dashboard.md`, and each names a file under `docs/`
+- PROOF-20 (RULE-14): Every Markdown file directly under `docs/` is either `index.md` or one of the nine pages `docs/index.md` links to
+- PROOF-21 (RULE-15): The text of `docs/audit.md` cites Inozemtseva and Holmes, ICSE 2014; Just et al., FSE 2014; Petrović et al., TSE 2021; Foster et al., FSE 2025; and LLMorpheus, each as a link starting `https://`
+- PROOF-22 (RULE-15): Every link the text of `docs/audit.md` gives before its heading `Sources` appears again in the list under `Sources`
+- PROOF-23 (RULE-15): Each entry of the list under `Sources` in `docs/audit.md` carries a title that is a link starting `https://`

@@ -45,7 +45,7 @@
 - RULE-28: Where both sources hold a matching audit entry, the later `at` wins, and the entry names its source
 - RULE-29: A run with no feature named selects a feature that has no section for this machine's operating system in either source, with the reason `no run on <System> yet`, the system written as a person reads it
 - RULE-30: An anchor's `code` part covers every file git tracks but the records Purlin writes, so an edit to any other tracked file changes it and an untracked file does not
-- RULE-31: Writing Purlin's records, the evidence under `.purlin/evidence/`, the evidence package and its sign-offs, and `.purlin/tests.md`, leaves an anchor's `code` part as it was
+- RULE-31: Writing Purlin's records, the evidence under `.purlin/evidence/`, the evidence package and its sign-offs, leaves an anchor's `code` part as it was
 - RULE-32: An anchor's `code` part is taken the same on Windows, where git writes each text file out with CRLF, as the blob ids the commit holds
 - RULE-33: A run with no feature named selects an anchor after an edit to any tracked file outside Purlin's records, with the reason `code changed since <sha7>`
 
@@ -128,7 +128,6 @@
 - PROOF-78 (RULE-30): The anchor `security` stands beside `login`, which covers `src/login.py`; `docs/guide.md`, a tracked file no `> Scope:` names, is edited and not committed; the fingerprint of `security` differs from the one taken before in `code` alone
 - PROOF-79 (RULE-30): Beside the anchor `security`, `docs/draft.md` is written and not added to git; all three parts of the fingerprint of `security` are as they were
 - PROOF-80 (RULE-31): A new evidence file `.purlin/evidence/local/login.json` is written and committed; the fingerprint of the anchor `security` is the same as before
-- PROOF-81 (RULE-31): The tracked table `.purlin/tests.md` is rewritten and committed; the fingerprint of the anchor `security` is the same as before
 - PROOF-82 (RULE-31): A sign-off file `.purlin/evidence/package/1.0.0.signoffs/jane.json` is written and committed; the fingerprint of the anchor `security` is the same as before
 - PROOF-83 (RULE-31): An evidence package `.purlin/evidence/package/1.0.0.json` is written and committed; the fingerprint of the anchor `security` is the same as before
 - PROOF-84 (RULE-32): In a checkout with `core.autocrlf` set to `true`, whose text files git writes out with CRLF, the anchor `security`'s `code` part equals the sha256 over each tracked file's path and the blob id the commit holds for it, the records aside @env(windows)

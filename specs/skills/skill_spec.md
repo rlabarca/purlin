@@ -1,74 +1,24 @@
 # Feature: skill_spec
 
-> Description: What `skills/spec/SKILL.md` must say. The spec skill turns a requirement in any
->   form into rules and proofs, so its text decides how ids are allocated, how each proof is
->   shaped, which the guide `references/spec_quality_guide.md` sets, and how the skill hands
->   over to the build.
-> Scope: skills/spec/SKILL.md, references/spec_quality_guide.md, references/purlin_commands.md
+> Description: What `skills/spec/SKILL.md` must name. The spec skill turns a requirement in any
+>   form into rules and proofs; this spec holds the commands and files it names, its length and
+>   its characters.
+> Scope: skills/spec/SKILL.md
 > Stack: markdown, Claude Code skill definition
-> Highest-Rule: 30
-> Highest-Proof: 60
+> Highest-Rule: 31
+> Highest-Proof: 61
 
 ## Rules
 
-- RULE-1: `skills/spec/SKILL.md` opens with a frontmatter block whose `name` is `spec` and whose `description` is one non-empty line
-- RULE-2: The skill tells the agent that a new rule takes one more than the highest of `> Highest-Rule:` and every rule number in the working copy and in `origin/main`'s copy, read with `git show origin/main:<spec>`
-- RULE-3: The skill tells the agent to close on one fixed line, `Spec saved: <name>. Next: purlin:build <name>`, with nothing printed after it, and never to start building itself
 - RULE-4: The whole of `skills/spec/SKILL.md` is at most 210 lines
-- RULE-5: The skill tells the agent to write `> Scope:` on every spec it creates, naming the files the requirement touches or the paths `purlin:build` will create
-- RULE-6: The skill tells the agent to print each rule with its proofs under it and ask whether to change any before it saves, and to save the spec only once the person is satisfied
-- RULE-7: The skill tells the agent to write each proof as one case, one starting situation and one action in at most 60 words, with a refusal or a boundary as a proof of its own, and points it at the guide's `One proof, one case`
-- RULE-8: `references/purlin_commands.md` carries a row for `purlin:spec`
-- RULE-10: The skill tells the agent to draft every proof against the guideline for a good proof in `references/spec_quality_guide.md`
-- RULE-11: The guide's section `One proof, one case` says a proof holds one starting situation and one action in at most 60 words, and that a refusal or a boundary is a case of its own
-- RULE-13: The skill tells the agent to write the number a new rule takes into `> Highest-Rule:`, adding the line after the spec's other `>` lines where it is missing
-- RULE-14: The skill tells the agent to call `sync_status` with `project_root` set to the project root, the top folder of the git checkout
-- RULE-15: The skill's intake table says what to do with each kind of input: one sentence, a product description or a ticket, pasted acceptance criteria, and a screenshot
-- RULE-16: The skill tells the agent to edit an existing spec in place when given a change, and never to renumber
-- RULE-17: After a merge that leaves one id twice in a spec, the skill tells the agent to run `purlin:drift`, which names every number written twice and which line moves, and to tell the person whose line moved
-- RULE-18: The skill tells the agent that two branches that advanced the same anchor pin resolve to the newer sha
-- RULE-19: The guide's section `Written for a person who cannot read code` says that for a library a proof may name a function or class the library exports and an error type a caller gets back, and that a name from inside the code stays out
-- RULE-20: The guide's section `One proof, one case` says one proof may name a list of like inputs that share one action and one kind of result
-- RULE-21: The guide's table `When a rule is stuck` gives, for a proof tagged for a system that has not run, the word `not run` with `<System>: no run yet`, and names `purlin:test --remote` and the runner file
-- RULE-22: The skill tells the agent to commit the spec it writes, with the `spec(<name>):` prefix, before it ends on its closing line
-- RULE-23: The skill tells the agent that a new proof takes one more than the highest of `> Highest-Proof:` and every proof number in either copy of the spec, and to write that number into `> Highest-Proof:`, adding the line after `> Highest-Rule:` where it is missing
-- RULE-24: The skill tells the agent that a spec carrying `> Requires:` or `> Global:`, or an anchor carrying `> Scope:`, is warned of and to take the line out, and that a rule of an anchor that holds only for some features is written in each of their specs
-- RULE-25: The skill tells the agent that when two branches take the same number, the number already on the default branch keeps it and the rule or proof from the branch not yet merged moves to the next free number
-- RULE-26: The skill tells the agent that a moved rule's audit is read again
-- RULE-27: The skill tells the agent to take out every line git left from a merge conflict, since while one stays every rule of the spec reads `failed`
-- RULE-28: The guide's section `Where the risk is` says a computation or a data flow a mistake would harm gets a proof per boundary, and that look and feel is not a rule
-- RULE-29: The skill's section `Renumbering` tells the agent to run the renumbering helper's dry run, show every line it prints, ask exactly `Do it? [y/N]`, and run the helper without `--dry-run` only on yes
-- RULE-30: The skill's section `Renumbering` tells the agent that a test comment on another branch is named and never touched
+- RULE-14: The spec skill names the commands `sync_status`, `purlin:build` and `purlin:drift`
+- RULE-29: The spec skill names the files `scripts/purlin_python.sh`, `scripts/spec/renumber.py`, `references/spec_quality_guide.md`, `references/formats/spec_format.md` and `references/commit_conventions.md`
+- RULE-31: The spec skill holds no emoji
 
 ## Proof
 
-- PROOF-1 (RULE-1): The spec skill opens with a block between two `---` lines in which `name` reads `spec` and `description` holds its value on its own line: not empty, not a `>` or `|` block, and not continued on the next line
-- PROOF-14 (RULE-8): The command reference has a row, in a table headed `Command` and `Purpose`, whose first cell reads `purlin:spec <name>` and whose second cell is not empty
-- PROOF-2 (RULE-2): The spec skill's section `Ids` says a new rule takes "one more than the highest of `> Highest-Rule:` and every rule number in either copy of the spec" and names `git show origin/main:<spec>`; procedure step 5 points at `Ids`
-- PROOF-3 (RULE-3): The spec skill's last section, headed `When you are done`, sets the line `Spec saved: <name>. Next: purlin:build <name>` alone inside a fenced block, says to "end with exactly this and nothing after it", says "Never start the build yourself", and has an edited spec's changes said "before the offer"
 - PROOF-4 (RULE-4): The spec skill, counted line by line, is at most 210 lines
 - PROOF-28 (RULE-4): A copy of the spec skill lengthened with prose to exactly 210 lines is accepted, with nothing reported
-- PROOF-5 (RULE-5): The spec skill says, in one sentence, "Write `> Scope:` on every spec you create", naming "the files the requirement touches" and "the paths `purlin:build` will create", and its numbered step that writes the metadata names `> Scope:`
-- PROOF-6 (RULE-6): In the spec skill's numbered procedure, the step "Print each rule with its proofs under it and ask whether to change any" comes before the step "Save the spec when the person is satisfied"
-- PROOF-36 (RULE-10): The spec skill says, in one sentence, to draft every proof against `references/spec_quality_guide.md`, "Writing proofs", and that a good proof holds "at least one failure case"
-- PROOF-7 (RULE-7): The spec skill says, in one sentence, "Write each proof as one case", "one starting situation and one action", "in at most 60 words", "a refusal or a boundary as a proof of its own" and the guide's "One proof, one case"
-- PROOF-40 (RULE-11): The quality guide has a section headed `One proof, one case` that says "one starting situation, one action", "at most 60 words" and "A refusal or a boundary is a case of its own"
-- PROOF-42 (RULE-13): The spec skill's section `Ids` says ``Write that number into `> Highest-Rule:`, adding the line after the spec's other `>` lines where it is missing``
-- PROOF-43 (RULE-14): The spec skill's first procedure step says ``Call `sync_status` with `project_root` set to the project root, the top folder of the git checkout``
-- PROOF-44 (RULE-15): The spec skill's intake table has a row, each saying what to do, for each of `One sentence`, `A product description or a ticket`, `Pasted acceptance criteria` and `A screenshot`
-- PROOF-45 (RULE-16): The spec skill's intake table has the row `An existing spec plus a change`, whose second cell reads `Edit in place. Never renumber`
-- PROOF-46 (RULE-17): The spec skill's section `After a merge conflict`, read across its line breaks, says ``Run `purlin:drift` after the merge: it names every number written twice and which line moves.`` and `Tell the person whose line moved`
-- PROOF-47 (RULE-18): The spec skill's section `After a merge conflict` says `Two branches that advanced the same anchor pin resolve to the newer sha.`
-- PROOF-48 (RULE-19): The guide's section `Written for a person who cannot read code` says a proof may name a function or class the library exports and an error type a caller gets back, with the poor example `_split_fields` and the good example `parse_line` raising `LineTooShort`
-- PROOF-49 (RULE-20): The guide's section `One proof, one case` says `One proof may name a list of like inputs that share one action and one kind of result`, with the example of `0`, `-1` and `-0.5` refused with `Amount must be positive`
-- PROOF-50 (RULE-21): The guide's `When a rule is stuck` table has a row whose word cell holds `not run` and `<System>: no run yet`, and whose fix says ``Run `purlin:test --remote`, whose runner file names that system``
-- PROOF-51 (RULE-22): The spec skill's section `When you are done`, read across its line breaks, says to commit the file with the `spec(<name>):` prefix and then to end with the closing line `Spec saved: <name>. Next: purlin:build <name>`
-- PROOF-52 (RULE-23): The spec skill's section `Ids`, read across its line breaks, says a new proof takes "one more than the highest of `> Highest-Proof:` and every proof number in either copy"
-- PROOF-53 (RULE-23): The spec skill's section `Ids`, read across its line breaks, says to write that number into `> Highest-Proof:`, "adding the line after `> Highest-Rule:` where it is missing"
-- PROOF-54 (RULE-24): The spec skill, read across its line breaks, says ``A spec that carries `> Requires:` or `> Global:`, or an anchor that carries `> Scope:`, is warned of: take the line out.``, and that a rule of an anchor holding only for some features is written in each of their specs
-- PROOF-55 (RULE-25): The spec skill's section `After a merge conflict`, read across its line breaks, says `The number already on the default branch keeps it; the rule or proof from the branch not yet merged moves to the next free number.`
-- PROOF-56 (RULE-26): The spec skill's section `After a merge conflict`, read across its line breaks, says `A moved rule's audit is read again.`
-- PROOF-57 (RULE-27): The spec skill's section `After a merge conflict`, read across its line breaks, says `Take out every line git left from the conflict: while one stays, every rule of the spec reads` followed by `failed` in code
-- PROOF-58 (RULE-28): The quality guide has a section headed `Where the risk is` that says `A computation or a data flow a mistake would harm gets a proof per boundary` and `Look and feel is not a rule`
-- PROOF-59 (RULE-29): The spec skill's section `Renumbering` gives the helper's command ending `renumber.py" <name> --dry-run` in a fenced block, then `Do it? [y/N]` alone in a fenced block, then says to run the same command without `--dry-run` on yes and to renumber nothing on anything else
-- PROOF-60 (RULE-30): The spec skill's section `Renumbering`, read across its line breaks, says `A comment on another branch is named, never touched`
+- PROOF-43 (RULE-14): The text of `skills/spec/SKILL.md` holds each of `sync_status`, `purlin:build` and `purlin:drift`; nothing is reported
+- PROOF-59 (RULE-29): The text of `skills/spec/SKILL.md` holds each of `scripts/purlin_python.sh`, `scripts/spec/renumber.py`, `references/spec_quality_guide.md`, `references/formats/spec_format.md` and `references/commit_conventions.md`; nothing is reported
+- PROOF-61 (RULE-31): Every character of `skills/spec/SKILL.md` is read; none has the Unicode property `Extended_Pictographic` or is U+FE0F, other than `▶`

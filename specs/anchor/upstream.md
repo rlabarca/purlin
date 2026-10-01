@@ -2,15 +2,16 @@
 
 > Description: The anchor tool's upstream half. A project pins an anchor that
 >   another repository publishes, sees when that pin falls behind, pulls the new
->   version in one step. A pin is always
+>   version in one step. The status and drift check a pin against its source and
+>   pull nothing; only `purlin:anchor sync` pulls. A pin is always
 >   a commit, never a branch, so what a project is holding is one sha a reader
 >   can check out. Nothing here reaches the network on its own account: every
 >   source is a git url the caller named, and an anchor's source is a spec in
 >   Purlin's format kept in a git repository.
 > Scope: scripts/anchor/upstream.py
 > Stack: python/stdlib, git plumbing over subprocess, no third-party package
-> Highest-Rule: 35
-> Highest-Proof: 59
+> Highest-Rule: 36
+> Highest-Proof: 60
 
 ## Rules
 
@@ -41,6 +42,7 @@
 - RULE-33: `sync` in a project where no anchor names a git source exits 0 and prints `No anchors name a git source.`
 - RULE-34: A `--project-root` that names no folder exits 2 and prints `No Purlin project root found. Pass --project-root <dir>.`
 - RULE-35: `sync <name>` makes no commit: the anchor copy whose pin it advances is left changed and not committed
+- RULE-36: The check the status and drift make of a pinned anchor reads its source's head and pulls nothing: the anchor copy is left byte for byte as it was, whether its pin is current or behind
 
 ## Proof
 
@@ -92,3 +94,4 @@
 - PROOF-56 (RULE-33): `sync` runs in a project with no anchor; it exits 0 and prints the one line `No anchors name a git source.`
 - PROOF-58 (RULE-34): `sync` runs with `--project-root` naming a folder that does not exist; it exits 2 and prints `No Purlin project root found. Pass --project-root <dir>.` on its error output
 - PROOF-59 (RULE-35): An added `no_eval` is committed, a new version is published, and `sync no_eval` advances the pin; HEAD is the commit it was before, and git reads the anchor copy as changed and not committed
+- PROOF-60 (RULE-36): The anchor `no_eval` is pinned, a new version of it is published, and the status is read; it prints `no_eval: the pin <first sha7> is behind its source, now <new sha7>. Run purlin:anchor sync no_eval.`, and `specs/_anchors/no_eval.md` is byte for byte as it was

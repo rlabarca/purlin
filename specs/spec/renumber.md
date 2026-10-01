@@ -1,14 +1,15 @@
 # Feature: renumber
 
 > Description: The renumbering helper `purlin:spec` runs when a spec writes a number twice or a
->   test comment names a proof whose wording moved to another id. It plans the edits to the spec
->   and to the test comments of this checkout, the line not already on the default branch moving,
->   prints the plan, and makes it only when run without `--dry-run`. It reads this checkout
->   alone, names comments on other branches without touching them, and commits nothing.
+>   test comment names a proof whose wording, since its test was last changed, moved to another
+>   id. It plans the edits to the spec and to the test comments of this checkout, the line not
+>   already on the default branch moving, prints the plan, and makes it only when run without
+>   `--dry-run`. It reads this checkout alone, names comments on other branches without touching
+>   them, and commits nothing.
 > Scope: scripts/spec/renumber.py
 > Stack: python/stdlib (argparse, re, subprocess), git
-> Highest-Rule: 9
-> Highest-Proof: 12
+> Highest-Rule: 10
+> Highest-Proof: 14
 
 ## Rules
 
@@ -17,10 +18,11 @@
 - RULE-3: Where neither line is on the default branch's copy, or this checkout has no default branch, the later line in the file moves
 - RULE-4: A committed test comment naming the moved id moves with it when it was written while the id read the moving line's text, and stays when it was written for the other line's text
 - RULE-5: A test comment naming the moved id that is not committed is named in the plan and left as written
-- RULE-6: A committed test comment whose proof's wording changed moves to the id of the same spec that now holds its old wording
+- RULE-6: A test comment whose proof's wording changed after its test was last changed moves to the id of the same spec that now holds the wording the proof had at that change
 - RULE-7: The spec's `> Highest-Rule:` or `> Highest-Proof:` line is raised to the new number
 - RULE-8: A comment on another branch that names the moved id is named with that branch, the file and the line, and that branch is not changed
 - RULE-9: A rule that moves takes with it each proof line naming it that is not on the default branch's copy, and a run without `--dry-run` makes the edits in the working tree and commits nothing
+- RULE-10: A moved rule is written after the spec's last `- RULE-` line, and a moved proof after its last `- PROOF-` line
 
 ## Proof
 
@@ -31,8 +33,10 @@
 - PROOF-5 (RULE-4): After the merge of PROOF-2, a comment naming `login PROOF-4` committed on the branch while `PROOF-4` read `B` is planned as `tests/test_b.py:1 names login PROOF-4 and moves to PROOF-5.`, and after the run names `PROOF-5`
 - PROOF-6 (RULE-4): After the merge of PROOF-2, a comment naming `login PROOF-4` committed on `origin/main` while `PROOF-4` read `A` is named in no line of the plan, and after the run still names `PROOF-4`
 - PROOF-7 (RULE-5): After the merge of PROOF-2, a test file not yet committed names `login PROOF-4`; the plan reads `tests/test_new.py:1 names login PROOF-4 and is not committed, so it is not changed: check which proof it means.`, and after the run the file still names `PROOF-4`
-- PROOF-8 (RULE-6): A comment naming `login PROOF-4` is committed while it reads `A`; the spec then rewords `PROOF-4` to `B` and writes `A` under `PROOF-6`; the plan reads `tests/test_login.py:1 names login PROOF-4 and moves to PROOF-6, where its old wording is now.`, and after the run the comment names `PROOF-6`
+- PROOF-8 (RULE-6): A test marked `login PROOF-4` is committed while it reads `A`; a later commit rewords `PROOF-4` to `B` and writes `A` under `PROOF-6`; the plan reads `tests/test_login.py:1 names login PROOF-4 and moves to PROOF-6, where its old wording is now.`, and after the run the comment names `PROOF-6`
 - PROOF-9 (RULE-7): After the merge of PROOF-2, the plan reads `login: > Highest-Proof: 4 becomes 5.`, and after the run the spec carries `> Highest-Proof: 5`
 - PROOF-10 (RULE-8): After the merge of PROOF-2, `origin/qa/age-proofs` holds a comment naming `login PROOF-4`, not merged here; the plan reads `origin/qa/age-proofs names login PROOF-4 at tests/test_qa.py:1, which this checkout does not change. If it means the line that moves, move it to PROOF-5 on that branch.`, and after the run that branch names the same commit
 - PROOF-11 (RULE-9): After a merge, `login` writes `RULE-2` twice, the branch's with its proof `PROOF-3` and `origin/main`'s with `PROOF-2`; the plan reads `login: PROOF-3 at line 16 now names RULE-3.` and names no line for `PROOF-2`, which after the run still names `RULE-2`
 - PROOF-12 (RULE-9): After the merge of PROOF-2, a run without `--dry-run` ends `Renumbered in login: 1 spec line and 1 test comment. Nothing is committed.`; HEAD names the commit it named before, and git lists the spec and `tests/test_b.py` as changed and not committed
+- PROOF-13 (RULE-10): After a merge, `login` writes `RULE-2` twice, the branch's line first, above `RULE-3` to `RULE-5`, with `> Highest-Rule: 5`; after the run the branch's line reads `- RULE-6:` and sits directly below `RULE-5`'s line, the spec's last rule line
+- PROOF-14 (RULE-10): After a merge, `login` writes `PROOF-2` twice, the branch's `- PROOF-2 (RULE-1): B` first, above `PROOF-3` and `PROOF-4`, with `> Highest-Proof: 4`; after the run the spec's last proof line reads `- PROOF-5 (RULE-1): B`, directly below `PROOF-4`'s line

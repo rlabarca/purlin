@@ -2,8 +2,8 @@
 
 > Description: One walk of `specs/` turns every spec file into a feature
 >   dictionary. This is where the rule text, the `@manual` tag, the `@env`
->   operating system, the anchor source and pin, and the two text hashes a
->   signature binds are all read. Every other surface reads what this module
+>   operating system, the anchor source and pin, and the two text hashes an
+>   audit entry binds are all read. Every other surface reads what this module
 >   returns rather than the markdown.
 > Scope: scripts/mcp/purlin/specs.py
 > Stack: python/stdlib, re, hashlib
