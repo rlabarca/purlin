@@ -2,13 +2,14 @@
   "feature": "signatures",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T01:14:49Z",
-      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
+      "at": "2026-10-01T18:13:44Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
       "dirty": false,
+      "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "7bb247b85e115b26bf9a5d6fbf928f70909e52349aec71ae1eb1736a71517bc6",
-        "spec": "5379743c9b64c99765e04b505eedc4bc83c3098721eff1a3c9bca9eab0a8902e",
-        "tests": "7b96f53d7bc42e9d549dc23495b62594d116523b3651c24abf25a80fed88bed3"
+        "code": "22d67f92f0e84a265474d28f529cbd7b7b8d907c330a7be5bcad8a94d68deef5",
+        "spec": "97b8736b6290c5986b23028f4d3c8482c5e0fd756e9d0acbf66d23fb10f0d840",
+        "tests": "39f44bf799cdd2c4b885e086723049cd91b3bb1fe4bbaeed06295c2d0d7cc7a5"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -18,7 +19,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-17",
-          "test": "dev/test_signatures.py::TestTheKey::test_without_a_key_the_commands_are_printed"
+          "test": "dev/test_signatures.py::TestTheKey::test_with_no_key_the_four_lines_are_printed"
         },
         {
           "env": null,
@@ -26,31 +27,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-17",
-          "test": "dev/test_signatures.py::TestTheKey::test_an_existing_key_file_is_not_made_again"
-        },
-        {
-          "env": null,
-          "id": "PROOF-22",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-17",
-          "test": "dev/test_signatures.py::TestTheKey::test_the_script_runs_as_a_command"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-153",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-17",
-          "test": "dev/test_signatures.py::TestTheKey::test_an_existing_key_file_is_not_made_again"
-        },
-        {
-          "env": null,
-          "id": "PROOF-25",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-20",
-          "test": "dev/test_signatures.py::TestWhatCounts::test_a_commit_signed_with_the_signers_key_counts"
+          "test": "dev/test_signatures.py::TestTheKey::test_an_existing_key_file_leaves_the_ssh_keygen_line_out"
         },
         {
           "env": null,
@@ -58,7 +35,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-20",
-          "test": "dev/test_signatures.py::TestWhatCounts::test_an_unsigned_commit_does_not_count"
+          "test": "dev/test_signatures.py::TestWhatCounts::test_a_file_committed_with_signing_off_does_not_count"
         },
         {
           "env": null,
@@ -66,39 +43,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-20",
-          "test": "dev/test_signatures.py::TestWhatCounts::test_a_key_nobody_registered_counts"
-        },
-        {
-          "env": null,
-          "id": "PROOF-98",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-20",
-          "test": "dev/test_signatures.py::TestWhatCounts::test_a_signed_commit_by_another_author_counts"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-155",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-20",
-          "test": "dev/test_signatures.py::TestWhatCounts::test_a_commit_signed_with_the_signers_key_counts"
-        },
-        {
-          "env": null,
-          "id": "PROOF-27",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-21",
-          "test": "dev/test_signatures.py::TestTheSignOff::test_anyone_with_a_key_signs"
-        },
-        {
-          "env": null,
-          "id": "PROOF-28",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_signatures.py::TestTheCommandLine::test_help_exits_zero"
+          "test": "dev/test_signatures.py::TestWhatCounts::test_a_key_made_on_the_spot_for_mallory_counts"
         },
         {
           "env": null,
@@ -109,20 +54,12 @@
           "test": "dev/test_signatures.py::TestTheSignOff::test_it_records_the_signer_as_git_holds_them_and_the_key"
         },
         {
-          "env": "windows",
-          "id": "PROOF-157",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-50",
-          "test": "dev/test_signatures.py::TestTheSignOff::test_it_records_the_signer_as_git_holds_them_and_the_key"
-        },
-        {
           "env": null,
           "id": "PROOF-115",
           "manual": false,
           "result": "pass",
           "rule": "RULE-60",
-          "test": "dev/test_signatures.py::TestTheKey::test_a_public_key_path_gives_its_fingerprint"
+          "test": "dev/test_signatures.py::TestTheKey::test_a_public_key_path_reads_as_ssh_keygen_prints_it"
         },
         {
           "env": null,
@@ -134,115 +71,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-117",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-60",
-          "test": "dev/test_signatures.py::TestTheKey::test_a_key_literal_gives_its_fingerprint"
-        },
-        {
-          "env": null,
           "id": "PROOF-118",
           "manual": false,
           "result": "pass",
           "rule": "RULE-60",
-          "test": "dev/test_signatures.py::TestTheKey::test_a_key_that_is_not_ssh_is_no_key"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-158",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-60",
-          "test": "dev/test_signatures.py::TestTheKey::test_a_private_key_path_reads_the_public_key_beside_it"
-        },
-        {
-          "env": null,
-          "id": "PROOF-152",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-67",
-          "test": "dev/test_signatures.py::TestTheCommandLine::test_a_settings_file_that_cannot_be_read_stops_it"
-        },
-        {
-          "env": null,
-          "id": "PROOF-132",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-77",
-          "test": "dev/test_signatures.py::TestTheCommandLine::test_an_unknown_option_after_another_exits_two"
-        },
-        {
-          "env": null,
-          "id": "PROOF-133",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-77",
-          "test": "dev/test_signatures.py::TestTheCommandLine::test_an_unknown_option_alone_exits_two"
-        },
-        {
-          "env": null,
-          "id": "PROOF-162",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-79",
-          "test": "dev/test_signatures.py::TestTheSignOff::test_gits_own_message_is_named"
-        },
-        {
-          "env": null,
-          "id": "PROOF-164",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-81",
-          "test": "dev/test_signatures.py::TestTheCommandLine::test_a_root_that_is_not_a_directory_exits_two"
-        },
-        {
-          "env": null,
-          "id": "PROOF-166",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-83",
-          "test": "dev/test_signatures.py::TestTheWalk::test_a_proof_for_one_system_shows_its_tag"
-        },
-        {
-          "env": null,
-          "id": "PROOF-167",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-84",
-          "test": "dev/test_signatures.py::TestWhatTheAuditFound::test_no_audit_yet"
-        },
-        {
-          "env": null,
-          "id": "PROOF-168",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-84",
-          "test": "dev/test_signatures.py::TestWhatTheAuditFound::test_strong_with_no_finding"
-        },
-        {
-          "env": null,
-          "id": "PROOF-169",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-84",
-          "test": "dev/test_signatures.py::TestWhatTheAuditFound::test_strong_with_a_finding"
-        },
-        {
-          "env": null,
-          "id": "PROOF-170",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-84",
-          "test": "dev/test_signatures.py::TestWhatTheAuditFound::test_weak_with_a_finding"
-        },
-        {
-          "env": null,
-          "id": "PROOF-171",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-84",
-          "test": "dev/test_signatures.py::TestWhatTheAuditFound::test_undecided_with_a_finding"
+          "test": "dev/test_signatures.py::TestTheKey::test_a_gpg_key_id_is_no_key"
         },
         {
           "env": null,
@@ -258,7 +91,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-97",
-          "test": "dev/test_signatures.py::TestAVerifiedCommit::test_a_signature_block_changed_does_not_verify"
+          "test": "dev/test_signatures.py::TestWhatCounts::test_a_signature_block_changed_does_not_verify"
         },
         {
           "env": null,
@@ -266,55 +99,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-97",
-          "test": "dev/test_signatures.py::TestAVerifiedCommit::test_a_key_deleted_since_still_counts"
-        },
-        {
-          "env": null,
-          "id": "PROOF-200",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-101",
-          "test": "dev/test_signatures.py::TestTheWalk::test_a_stop_names_the_test_under_its_proof"
-        },
-        {
-          "env": null,
-          "id": "PROOF-201",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-101",
-          "test": "dev/test_signatures.py::TestTheWalk::test_a_proof_no_test_carries_out_says_so"
-        },
-        {
-          "env": null,
-          "id": "PROOF-202",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-102",
-          "test": "dev/test_signatures.py::TestTheRefusals::test_at_passed_nothing_is_signed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-203",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-102",
-          "test": "dev/test_signatures.py::TestTheRefusals::test_uncommitted_work_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-204",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-102",
-          "test": "dev/test_signatures.py::TestTheRefusals::test_no_package_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-205",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-102",
-          "test": "dev/test_signatures.py::TestTheRefusals::test_a_commit_after_the_package_is_refused"
+          "test": "dev/test_signatures.py::TestWhatCounts::test_a_key_deleted_since_still_counts"
         },
         {
           "env": null,
@@ -322,63 +107,55 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-102",
-          "test": "dev/test_signatures.py::TestTheRefusals::test_a_rule_that_does_not_pass_is_refused"
+          "test": "dev/test_signatures.py::TestTheRefusals::test_a_rule_that_fails_is_named"
         },
         {
           "env": null,
-          "id": "PROOF-207",
+          "id": "PROOF-223",
           "manual": false,
           "result": "pass",
           "rule": "RULE-102",
-          "test": "dev/test_signatures.py::TestTheRefusals::test_a_host_copy_ahead_is_refused"
+          "test": "dev/test_signatures.py::TestTheRefusals::test_results_written_and_not_committed_are_refused"
         },
         {
           "env": null,
-          "id": "PROOF-208",
+          "id": "PROOF-226",
           "manual": false,
           "result": "pass",
           "rule": "RULE-102",
-          "test": "dev/test_signatures.py::TestTheRefusals::test_a_second_sign_off_by_the_same_signer_is_refused"
+          "test": "dev/test_signatures.py::TestTheRefusals::test_results_taken_before_a_code_change_are_named"
         },
         {
           "env": null,
-          "id": "PROOF-209",
+          "id": "PROOF-244",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-103",
-          "test": "dev/test_signatures.py::TestTheWalk::test_it_opens_on_the_overview"
+          "rule": "RULE-102",
+          "test": "dev/test_signatures.py::TestTheRefusals::test_one_tracked_file_changed_and_not_committed_is_refused"
         },
         {
           "env": null,
-          "id": "PROOF-210",
+          "id": "PROOF-245",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-104",
-          "test": "dev/test_signatures.py::TestTheWalk::test_a_weak_stop_shows_the_test_and_the_results"
+          "rule": "RULE-102",
+          "test": "dev/test_signatures.py::TestTheRefusals::test_two_tracked_files_changed_and_not_committed_are_counted"
         },
         {
           "env": null,
-          "id": "PROOF-211",
+          "id": "PROOF-246",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-104",
-          "test": "dev/test_signatures.py::TestTheWalk::test_a_hand_check_stops_first_and_asks_what_was_seen"
+          "rule": "RULE-102",
+          "test": "dev/test_signatures.py::TestTheRefusals::test_results_taken_over_files_not_committed_are_refused"
         },
         {
           "env": null,
-          "id": "PROOF-212",
+          "id": "PROOF-248",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-105",
-          "test": "dev/test_signatures.py::TestTheWalk::test_the_strong_list_opens_on_list"
-        },
-        {
-          "env": null,
-          "id": "PROOF-213",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-105",
-          "test": "dev/test_signatures.py::TestTheWalk::test_walk_makes_each_strong_rule_a_stop_after_the_others"
+          "rule": "RULE-102",
+          "test": "dev/test_signatures.py::TestTheRefusals::test_a_file_git_does_not_track_stops_nothing"
         },
         {
           "env": null,
@@ -386,23 +163,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-106",
-          "test": "dev/test_signatures.py::TestTheSignOff::test_it_records_what_was_shown_and_every_note"
+          "test": "dev/test_signatures.py::TestTheSignOff::test_it_records_what_was_shown_and_the_note"
         },
         {
           "env": null,
-          "id": "PROOF-215",
+          "id": "PROOF-235",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-107",
-          "test": "dev/test_signatures.py::TestTheSignOff::test_the_first_sign_off_writes_the_tag_on_its_commit"
-        },
-        {
-          "env": null,
-          "id": "PROOF-216",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-107",
-          "test": "dev/test_signatures.py::TestTheSignOff::test_a_later_sign_off_leaves_the_tag"
+          "rule": "RULE-106",
+          "test": "dev/test_signatures.py::TestTheSignOff::test_an_empty_answer_is_recorded_as_no_note"
         },
         {
           "env": null,
@@ -418,7 +187,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-109",
-          "test": "dev/test_signatures.py::TestStoppingAndNo::test_stop_writes_nothing"
+          "test": "dev/test_signatures.py::TestTheWalk::test_stop_at_a_hand_check_writes_nothing"
         },
         {
           "env": null,
@@ -426,7 +195,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-109",
-          "test": "dev/test_signatures.py::TestStoppingAndNo::test_no_to_the_last_question_writes_nothing"
+          "test": "dev/test_signatures.py::TestTheWalk::test_an_empty_line_at_every_question_signs_nothing"
         },
         {
           "env": null,
@@ -434,7 +203,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-110",
-          "test": "dev/test_signatures.py::TestTheAgent::test_show_asks_nothing_and_writes_nothing"
+          "test": "dev/test_signatures.py::TestTheAgent::test_show_prints_every_stop_and_asks_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-228",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-110",
+          "test": "dev/test_signatures.py::TestTheAgent::test_show_needs_no_key"
         },
         {
           "env": null,
@@ -442,7 +219,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-111",
-          "test": "dev/test_signatures.py::TestTheAgent::test_answers_walk_with_the_files_answers"
+          "test": "dev/test_signatures.py::TestTheAgent::test_answers_walk_with_the_files_note"
         },
         {
           "env": null,
@@ -451,32 +228,206 @@
           "result": "pass",
           "rule": "RULE-111",
           "test": "dev/test_signatures.py::TestTheAgent::test_a_stop_with_no_answer_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-229",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-114",
+          "test": "dev/test_signatures.py::TestTheWalk::test_a_weak_rule_and_one_never_audited_add_no_stop"
+        },
+        {
+          "env": null,
+          "id": "PROOF-230",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-115",
+          "test": "dev/test_signatures.py::TestTheWalk::test_list_prints_each_weak_rule_with_its_finding"
+        },
+        {
+          "env": null,
+          "id": "PROOF-233",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-118",
+          "test": "dev/test_signatures.py::TestTheSignOff::test_the_first_sign_off_ends_on_pushing_the_branch_and_the_tag"
+        },
+        {
+          "env": null,
+          "id": "PROOF-234",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-118",
+          "test": "dev/test_signatures.py::TestTheSignOff::test_a_second_signer_ends_on_the_tag_staying"
+        },
+        {
+          "env": null,
+          "id": "PROOF-236",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-120",
+          "test": "dev/test_signatures.py::TestTheSignOff::test_the_first_sign_off_is_one_commit_with_the_package_and_the_tag"
+        },
+        {
+          "env": null,
+          "id": "PROOF-237",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-120",
+          "test": "dev/test_signatures.py::TestTheSignOff::test_a_later_sign_off_adds_its_own_file_alone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-238",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-121",
+          "test": "dev/test_signatures.py::TestTheSignOff::test_it_fetches_nothing_and_pushes_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-240",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-122",
+          "test": "dev/test_signatures.py::TestTheAgent::test_check_passes_the_committed_package"
+        },
+        {
+          "env": null,
+          "id": "PROOF-241",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-122",
+          "test": "dev/test_signatures.py::TestTheAgent::test_check_names_a_package_changed_after"
+        },
+        {
+          "env": null,
+          "id": "PROOF-207",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-124",
+          "test": "dev/test_signatures.py::TestTheRefusals::test_a_host_copy_ahead_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-224",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-124",
+          "test": "dev/test_signatures.py::TestTheRefusals::test_a_tag_on_another_branch_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-225",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-124",
+          "test": "dev/test_signatures.py::TestTheRefusals::test_a_code_change_since_the_tag_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-162",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-125",
+          "test": "dev/test_signatures.py::TestTheRefusals::test_a_commit_git_refuses_names_gits_own_message"
+        },
+        {
+          "env": null,
+          "id": "PROOF-208",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-125",
+          "test": "dev/test_signatures.py::TestTheRefusals::test_the_same_signer_again_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-243",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-125",
+          "test": "dev/test_signatures.py::TestTheRefusals::test_no_version_stated_or_named_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-200",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-126",
+          "test": "dev/test_signatures.py::TestTheWalk::test_a_stop_names_the_test_under_its_proof"
+        },
+        {
+          "env": null,
+          "id": "PROOF-211",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-126",
+          "test": "dev/test_signatures.py::TestTheWalk::test_a_hand_check_stops_under_its_head_and_asks"
+        },
+        {
+          "env": null,
+          "id": "PROOF-242",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-126",
+          "test": "dev/test_signatures.py::TestTheWalk::test_a_proof_with_nothing_to_check_shows_its_reason"
+        },
+        {
+          "env": null,
+          "id": "PROOF-209",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-127",
+          "test": "dev/test_signatures.py::TestTheWalk::test_signing_follows_the_last_run_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-227",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-127",
+          "test": "dev/test_signatures.py::TestTheWalk::test_it_opens_on_who_ran_the_tests_where_and_when"
+        },
+        {
+          "env": null,
+          "id": "PROOF-232",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-127",
+          "test": "dev/test_signatures.py::TestTheWalk::test_the_overview_counts_per_system_and_the_audit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-247",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-128",
+          "test": "dev/test_signatures.py::TestTheRefusals::test_a_rule_with_no_proof_and_no_test_is_named_with_purlin_build"
         }
       ],
       "rules": {
-        "RULE-101": "passed",
         "RULE-102": "passed",
-        "RULE-103": "passed",
-        "RULE-104": "passed",
-        "RULE-105": "passed",
         "RULE-106": "passed",
-        "RULE-107": "passed",
         "RULE-108": "passed",
         "RULE-109": "passed",
         "RULE-110": "passed",
         "RULE-111": "passed",
-        "RULE-17": "not run",
-        "RULE-20": "not run",
-        "RULE-21": "passed",
-        "RULE-22": "passed",
-        "RULE-50": "not run",
-        "RULE-60": "not run",
-        "RULE-67": "passed",
-        "RULE-77": "passed",
-        "RULE-79": "passed",
-        "RULE-81": "passed",
-        "RULE-83": "passed",
-        "RULE-84": "passed",
+        "RULE-114": "passed",
+        "RULE-115": "passed",
+        "RULE-118": "passed",
+        "RULE-120": "passed",
+        "RULE-121": "passed",
+        "RULE-122": "passed",
+        "RULE-124": "passed",
+        "RULE-125": "passed",
+        "RULE-126": "passed",
+        "RULE-127": "passed",
+        "RULE-128": "passed",
+        "RULE-17": "passed",
+        "RULE-20": "passed",
+        "RULE-50": "passed",
+        "RULE-60": "passed",
         "RULE-89": "passed",
         "RULE-97": "passed"
       },

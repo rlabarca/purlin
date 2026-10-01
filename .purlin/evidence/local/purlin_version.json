@@ -2,13 +2,14 @@
   "feature": "purlin_version",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T01:14:49Z",
-      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
+      "at": "2026-10-01T18:13:43Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
       "dirty": false,
+      "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "452e53e25a393defa8ba4e0b2257ffdd3478cfe662644e5ffddd68459c630629",
-        "spec": "06100a4166b9c671377d764824968dbb957454c4a8370036ad58b13349fdacb5",
-        "tests": "08e630149189e42d3dcfbe1e293a981fe9e6a2ecb5473e4a043443dd076be007"
+        "code": "1ff5156354296f821b03f615271e6c0a1db87f9fcf1818c84ab5cc0dc043b7c9",
+        "spec": "c465199a12edfa1e2aa9c16295f1e6b3445242a5452da6153126629a34fc0262",
+        "tests": "d333b483ca2044b214e5afc588f37ba26afc99f40f82354b214684e784e7ccd1"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -22,43 +23,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-11",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_purlin_version.py::test_a_version_with_whitespace_at_either_end_passes"
-        },
-        {
-          "env": null,
-          "id": "PROOF-12",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_purlin_version.py::test_an_empty_version_file_fails"
-        },
-        {
-          "env": null,
-          "id": "PROOF-13",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_purlin_version.py::test_two_numbers_are_not_a_version"
-        },
-        {
-          "env": null,
           "id": "PROOF-14",
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
           "test": "dev/test_purlin_version.py::test_a_letter_before_the_numbers_fails"
-        },
-        {
-          "env": null,
-          "id": "PROOF-15",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_purlin_version.py::test_two_versions_on_two_lines_fail"
         },
         {
           "env": null,
@@ -78,35 +47,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-18",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_purlin_version.py::test_this_checkout_reports_its_own_version_file"
-        },
-        {
-          "env": null,
           "id": "PROOF-21",
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
           "test": "dev/test_purlin_version.py::test_a_project_init_sets_up_is_stamped_with_the_version_file"
-        },
-        {
-          "env": null,
-          "id": "PROOF-4",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_purlin_version.py::test_the_package_carries_no_version_literal"
-        },
-        {
-          "env": null,
-          "id": "PROOF-23",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_purlin_version.py::test_a_version_on_a_whole_line_comment_is_not_found"
         },
         {
           "env": null,
@@ -126,59 +71,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-37",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_purlin_version.py::test_every_version_field_the_scripts_write_is_read_from_the_file"
-        },
-        {
-          "env": null,
-          "id": "PROOF-8",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_purlin_version.py::test_the_one_version_row_names_the_version_file"
-        },
-        {
-          "env": null,
-          "id": "PROOF-17",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-11",
-          "test": "dev/test_purlin_version.py::test_with_no_version_file_the_package_and_server_report_zero"
-        },
-        {
-          "env": null,
           "id": "PROOF-7",
           "manual": false,
           "result": "pass",
           "rule": "RULE-12",
-          "test": "dev/test_purlin_version.py::test_the_bump_writes_the_version_everywhere"
-        },
-        {
-          "env": null,
-          "id": "PROOF-32",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_purlin_version.py::test_the_bump_skips_absent_settings_without_creating_them"
-        },
-        {
-          "env": null,
-          "id": "PROOF-31",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_purlin_version.py::test_the_bump_refuses_a_non_version_and_writes_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-28",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-14",
-          "test": "dev/test_purlin_version.py::test_the_check_passes_a_project_that_agrees"
+          "test": "dev/test_purlin_version.py::test_the_bump_writes_the_version_file_and_both_json_files"
         },
         {
           "env": null,
@@ -187,30 +84,6 @@
           "result": "pass",
           "rule": "RULE-14",
           "test": "dev/test_purlin_version.py::test_the_check_names_the_location_that_drifted"
-        },
-        {
-          "env": null,
-          "id": "PROOF-30",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-14",
-          "test": "dev/test_purlin_version.py::test_the_check_names_a_location_with_no_version_key"
-        },
-        {
-          "env": null,
-          "id": "PROOF-33",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-14",
-          "test": "dev/test_purlin_version.py::test_the_check_reports_absent_settings_and_passes"
-        },
-        {
-          "env": null,
-          "id": "PROOF-34",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_purlin_version.py::test_no_second_copy_of_the_version_row_exists"
         },
         {
           "env": null,
@@ -223,19 +96,13 @@
       ],
       "rules": {
         "RULE-1": "passed",
-        "RULE-11": "passed",
         "RULE-12": "passed",
-        "RULE-13": "passed",
         "RULE-14": "passed",
-        "RULE-15": "passed",
         "RULE-16": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
-        "RULE-4": "passed",
         "RULE-5": "passed",
-        "RULE-6": "passed",
-        "RULE-7": "passed",
-        "RULE-8": "passed"
+        "RULE-6": "passed"
       },
       "runner": "rich-labarca"
     }

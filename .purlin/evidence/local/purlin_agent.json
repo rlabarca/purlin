@@ -2,116 +2,37 @@
   "feature": "purlin_agent",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T01:14:49Z",
-      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
+      "at": "2026-10-01T18:13:43Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
       "dirty": false,
+      "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "85fcab4fe87afe36d86bb93098157db65103f509c18402a94ca584aff802c98e",
-        "spec": "aadc164710a77d54b5985d68c6c84698cc58f6c6add16e31ca27e00339f28d02",
-        "tests": "367b93186ec6f0f390f2cbe1a65d35f839a935ad23f288497393de844460fcfd"
+        "code": "4712b5bc3dcc71c0c43a63cc2ec32774ef7853e0fee6cb810221ab3d98933cd6",
+        "spec": "2ff2c8f7da319d42f7c315ecfddeebd2dcfbdcdc074e96f728b821ae8466107f",
+        "tests": "e7d487959d038a7b79952898f2b7ed91b139a2442a9c1eb60f94086b3ea472e4"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
-          "id": "PROOF-1",
+          "id": "PROOF-49",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_purlin_agent.py::TestFrontmatter::test_the_frontmatter_names_the_agent"
+          "rule": "RULE-18",
+          "test": "dev/test_purlin_agent.py::test_the_agent_definition_holds_each_command_and_file"
         },
         {
           "env": null,
-          "id": "PROOF-2",
+          "id": "PROOF-50",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_purlin_agent.py::TestCoreLoop::test_the_core_loop_is_stated_once_in_order"
-        },
-        {
-          "env": null,
-          "id": "PROOF-3",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_purlin_agent.py::TestNevers::test_the_four_nevers_each_forbid_their_own_thing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-4",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_purlin_agent.py::TestRouting::test_the_routing_table_covers_the_three_roles"
-        },
-        {
-          "env": null,
-          "id": "PROOF-5",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_purlin_agent.py::TestState::test_it_reads_the_state_before_it_answers"
-        },
-        {
-          "env": null,
-          "id": "PROOF-6",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_purlin_agent.py::TestCeiling::test_it_stays_under_its_ceiling"
-        },
-        {
-          "env": null,
-          "id": "PROOF-38",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_purlin_agent.py::TestCeiling::test_a_copy_of_exactly_135_lines_is_not_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-7",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_purlin_agent.py::TestRename::test_it_says_what_a_rename_moves"
-        },
-        {
-          "env": null,
-          "id": "PROOF-11",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_purlin_agent.py::TestLeftToDo::test_it_says_every_run_ends_on_left_to_do"
-        },
-        {
-          "env": null,
-          "id": "PROOF-47",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-16",
-          "test": "dev/test_purlin_agent.py::TestProjectRoot::test_the_first_call_names_the_project_root"
-        },
-        {
-          "env": null,
-          "id": "PROOF-48",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-17",
-          "test": "dev/test_purlin_agent.py::TestRelease::test_it_says_how_a_release_is_made"
+          "rule": "RULE-19",
+          "test": "dev/test_purlin_agent.py::test_one_sentence_names_a_worktree_merging_the_status_and_the_main_checkout"
         }
       ],
       "rules": {
-        "RULE-1": "passed",
-        "RULE-16": "passed",
-        "RULE-17": "passed",
-        "RULE-2": "passed",
-        "RULE-3": "passed",
-        "RULE-4": "passed",
-        "RULE-5": "passed",
-        "RULE-6": "passed",
-        "RULE-7": "passed",
-        "RULE-8": "passed"
+        "RULE-18": "passed",
+        "RULE-19": "passed"
       },
       "runner": "rich-labarca"
     }

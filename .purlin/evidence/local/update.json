@@ -2,39 +2,24 @@
   "feature": "update",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T01:14:50Z",
-      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
+      "at": "2026-10-01T18:13:44Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
       "dirty": false,
+      "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "f6167ad30a387fef40ad77ec335ef309f8415f2ff3f86639b0b47aea48dd9a1d",
-        "spec": "0d2ecbe6e7a5f6a8bae04b6dfed3dde052a8205344e40ea901ef86e38e43be9d",
-        "tests": "e9bfc02a22bff72fa5ff90a5f2d45aad49ac25705f541c718d1840b8b94020cc"
+        "code": "172ae012013f2d77fdfbdf61251a81b1991db544439d19c8e4ba8bc47929d81b",
+        "spec": "fbe8a2ba4652329ef381205b06c837d3772e3eb1e81451c62bb2d1747669f0a5",
+        "tests": "65bf3af90de60b89a06a0614fc68ff9ac04c8da92ef17afe9a717eecc75a20ea"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
-        {
-          "env": null,
-          "id": "PROOF-1",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_init_update.py::test_a_root_without_purlin_has_nothing_pending"
-        },
-        {
-          "env": null,
-          "id": "PROOF-67",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_init_update.py::test_every_pending_entry_says_what_it_does_and_to_which_files"
-        },
         {
           "env": null,
           "id": "PROOF-2",
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_init_update.py::test_the_v095_layout_needs_the_migrations_that_layout_left"
+          "test": "dev/test_init_update.py::test_the_v095_layout_needs_the_nine_migrations_in_order"
         },
         {
           "env": null,
@@ -42,15 +27,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_init_update.py::test_a_retired_hook_adds_the_hook_migration"
-        },
-        {
-          "env": null,
-          "id": "PROOF-4",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_init_update.py::test_a_root_without_purlin_exits_2"
+          "test": "dev/test_init_update.py::test_a_pre_commit_hook_v095_installed_adds_the_hook_migration"
         },
         {
           "env": null,
@@ -58,7 +35,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_init_update.py::test_yes_asks_nothing_and_applies_every_migration"
+          "test": "dev/test_init_update.py::test_yes_asks_nothing_and_leaves_nothing_pending"
         },
         {
           "env": null,
@@ -66,23 +43,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_init_update.py::test_running_yes_twice_changes_nothing_the_second_time"
-        },
-        {
-          "env": null,
-          "id": "PROOF-129",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_init_update.py::test_one_run_rewrites_a_tag_the_windows_tag_hid"
-        },
-        {
-          "env": null,
-          "id": "PROOF-69",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_init_update.py::test_yes_takes_the_default_of_the_gate_and_mutation_questions"
+          "test": "dev/test_init_update.py::test_a_second_run_finds_nothing_and_changes_nothing"
         },
         {
           "env": "windows",
@@ -90,7 +51,7 @@
           "manual": false,
           "result": "not run",
           "rule": "RULE-5",
-          "test": "dev/test_init_update.py::test_running_yes_twice_changes_nothing_the_second_time"
+          "test": "dev/test_init_update.py::test_on_windows_a_second_run_finds_nothing_and_changes_nothing"
         },
         {
           "env": null,
@@ -98,15 +59,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_init_update.py::test_a_declined_migration_is_left_pending"
-        },
-        {
-          "env": null,
-          "id": "PROOF-131",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_init_update.py::test_an_empty_answer_declines_a_migration"
+          "test": "dev/test_init_update.py::test_each_declined_migration_is_skipped_and_left_pending"
         },
         {
           "env": null,
@@ -133,44 +86,12 @@
           "test": "dev/test_init_update.py::test_every_backed_up_file_keeps_its_bytes_from_before_the_run"
         },
         {
-          "env": null,
-          "id": "PROOF-72",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_init_update.py::test_a_spec_two_migrations_rewrite_has_a_backup_from_each"
-        },
-        {
-          "env": null,
-          "id": "PROOF-73",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_init_update.py::test_the_config_backup_holds_what_it_said_before"
-        },
-        {
-          "env": null,
-          "id": "PROOF-74",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_init_update.py::test_a_backup_is_not_written_twice"
-        },
-        {
           "env": "windows",
           "id": "PROOF-118",
           "manual": false,
           "result": "not run",
           "rule": "RULE-7",
-          "test": "dev/test_init_update.py::test_every_backed_up_file_keeps_its_bytes_from_before_the_run"
-        },
-        {
-          "env": null,
-          "id": "PROOF-8",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_init_update.py::test_no_proof_or_run_file_is_left_on_disk_or_tracked"
+          "test": "dev/test_init_update.py::test_on_windows_every_backup_keeps_the_bytes_from_before"
         },
         {
           "env": null,
@@ -186,231 +107,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
-          "test": "dev/test_init_update.py::test_a_foreign_hook_beside_an_old_one_is_left_alone"
-        },
-        {
-          "env": null,
-          "id": "PROOF-77",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_init_update.py::test_hooks_another_tool_wrote_are_left_byte_for_byte"
-        },
-        {
-          "env": null,
-          "id": "PROOF-10",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_init_update.py::test_the_config_is_the_gate_shape"
-        },
-        {
-          "env": null,
-          "id": "PROOF-38",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_init_update.py::test_the_config_is_the_gate_shape_at_signed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-39",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_init_update.py::test_retired_keys_are_gone"
-        },
-        {
-          "env": null,
-          "id": "PROOF-40",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_init_update.py::test_no_remote_writes_ci_none"
-        },
-        {
-          "env": null,
-          "id": "PROOF-41",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_init_update.py::test_another_host_writes_ci_none"
-        },
-        {
-          "env": null,
-          "id": "PROOF-42",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_init_update.py::test_an_azure_remote_writes_ci_azure"
-        },
-        {
-          "env": null,
-          "id": "PROOF-43",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_init_update.py::test_a_ci_the_project_named_is_kept"
-        },
-        {
-          "env": null,
-          "id": "PROOF-78",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_init_update.py::test_an_audit_parallel_the_project_named_is_kept"
-        },
-        {
-          "env": null,
-          "id": "PROOF-11",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_init_update.py::test_a_dashboard_switch_set_on_is_not_written_back"
-        },
-        {
-          "env": null,
-          "id": "PROOF-44",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_init_update.py::test_a_dashboard_switch_set_off_is_not_written_back_either"
-        },
-        {
-          "env": null,
-          "id": "PROOF-12",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_init_update.py::test_the_gate_defaults_to_passed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-46",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_init_update.py::test_the_gate_question_takes_the_answer_you_type"
-        },
-        {
-          "env": null,
-          "id": "PROOF-47",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_init_update.py::test_an_answer_that_is_not_a_gate_leaves_the_default"
-        },
-        {
-          "env": null,
-          "id": "PROOF-48",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_init_update.py::test_the_gate_the_project_named_is_the_default"
-        },
-        {
-          "env": null,
-          "id": "PROOF-130",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_init_update.py::test_the_gate_question_prints_its_two_choices"
-        },
-        {
-          "env": null,
-          "id": "PROOF-13",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_init_update.py::test_the_retired_windows_tag_becomes_env"
-        },
-        {
-          "env": null,
-          "id": "PROOF-79",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_init_update.py::test_prose_that_is_not_a_tag_is_left_alone"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-124",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-13",
-          "test": "dev/test_init_update.py::test_the_retired_windows_tag_becomes_env"
-        },
-        {
-          "env": null,
-          "id": "PROOF-15",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_init_update.py::test_one_purlin_yml_replaces_the_retired_workflow"
-        },
-        {
-          "env": null,
-          "id": "PROOF-32",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_init_update.py::test_an_azure_remote_gets_the_pipeline_where_init_writes_it"
-        },
-        {
-          "env": null,
-          "id": "PROOF-49",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_init_update.py::test_declining_the_workflow_leaves_it_unwritten"
-        },
-        {
-          "env": null,
-          "id": "PROOF-50",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_init_update.py::test_a_project_with_no_remote_gets_no_workflow"
-        },
-        {
-          "env": null,
-          "id": "PROOF-51",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_init_update.py::test_a_host_init_writes_no_workflow_for_gets_none"
-        },
-        {
-          "env": null,
-          "id": "PROOF-80",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_init_update.py::test_no_proof_for_another_system_means_no_workflow"
-        },
-        {
-          "env": null,
-          "id": "PROOF-115",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_init_update.py::test_the_runner_file_names_only_the_systems_this_machine_is_not"
-        },
-        {
-          "env": null,
-          "id": "PROOF-16",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-16",
-          "test": "dev/test_init_update.py::test_the_plugin_copies_go"
-        },
-        {
-          "env": null,
-          "id": "PROOF-81",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-16",
-          "test": "dev/test_init_update.py::test_a_file_the_plugin_did_not_ship_is_left_alone"
+          "test": "dev/test_init_update.py::test_a_lint_staged_hook_beside_the_old_pre_push_is_left_alone"
         },
         {
           "env": null,
@@ -437,22 +134,6 @@
           "test": "dev/test_init_update.py::test_a_run_that_applies_nothing_writes_no_commit"
         },
         {
-          "env": "windows",
-          "id": "PROOF-121",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-18",
-          "test": "dev/test_init_update.py::test_nothing_is_left_uncommitted_but_the_backups"
-        },
-        {
-          "env": null,
-          "id": "PROOF-127",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_init_update.py::test_on_a_machine_read_as_windows_only_the_backups_are_left"
-        },
-        {
           "env": null,
           "id": "PROOF-19",
           "manual": false,
@@ -470,51 +151,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-92",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-19",
-          "test": "dev/test_init_update.py::test_status_says_it_even_when_the_config_is_already_clean"
-        },
-        {
-          "env": null,
-          "id": "PROOF-52",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-20",
-          "test": "dev/test_init_update.py::test_the_run_ends_as_the_status_ends"
-        },
-        {
-          "env": null,
-          "id": "PROOF-53",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-20",
-          "test": "dev/test_init_update.py::test_a_run_that_leaves_work_names_the_update_above_the_summary"
-        },
-        {
-          "env": null,
-          "id": "PROOF-128",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-20",
-          "test": "dev/test_init_update.py::test_a_run_over_no_spec_ends_on_the_two_no_spec_lines"
-        },
-        {
-          "env": null,
           "id": "PROOF-21",
           "manual": false,
           "result": "pass",
           "rule": "RULE-21",
           "test": "dev/test_init_update.py::test_a_framework_the_tree_cannot_run_is_dropped"
-        },
-        {
-          "env": null,
-          "id": "PROOF-93",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-21",
-          "test": "dev/test_init_update.py::test_a_framework_the_tree_carries_is_kept"
         },
         {
           "env": null,
@@ -526,22 +167,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-95",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-21",
-          "test": "dev/test_init_update.py::test_auto_writes_what_detection_finds"
-        },
-        {
-          "env": null,
-          "id": "PROOF-96",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-21",
-          "test": "dev/test_init_update.py::test_no_framework_named_writes_what_detection_finds"
-        },
-        {
-          "env": null,
           "id": "PROOF-97",
           "manual": false,
           "result": "pass",
@@ -550,187 +175,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-23",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-23",
-          "test": "dev/test_init_update.py::test_the_kind_of_test_is_dropped_from_every_proof_line"
-        },
-        {
-          "env": null,
-          "id": "PROOF-98",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-23",
-          "test": "dev/test_init_update.py::test_an_env_tag_after_the_kind_of_test_is_kept"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-125",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-23",
-          "test": "dev/test_init_update.py::test_an_env_tag_after_the_kind_of_test_is_kept"
-        },
-        {
-          "env": null,
-          "id": "PROOF-24",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-24",
-          "test": "dev/test_init_update.py::test_every_design_line_of_the_anchor_is_removed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-99",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-24",
-          "test": "dev/test_init_update.py::test_the_picture_reference_of_the_feature_is_removed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-100",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-24",
-          "test": "dev/test_init_update.py::test_each_design_rewrite_is_backed_up"
-        },
-        {
-          "env": null,
-          "id": "PROOF-101",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-24",
-          "test": "dev/test_init_update.py::test_a_figma_uri_source_goes_with_its_pin"
-        },
-        {
-          "env": null,
-          "id": "PROOF-102",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-24",
-          "test": "dev/test_init_update.py::test_a_git_source_and_its_pin_stay"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-126",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-24",
-          "test": "dev/test_init_update.py::test_the_picture_reference_of_the_feature_is_removed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-25",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-25",
-          "test": "dev/test_init_update.py::test_every_dropped_key_is_named"
-        },
-        {
-          "env": null,
-          "id": "PROOF-103",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-25",
-          "test": "dev/test_init_update.py::test_a_config_with_no_key_to_drop_prints_no_dropped_line"
-        },
-        {
-          "env": null,
-          "id": "PROOF-26",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-26",
-          "test": "dev/test_init_update.py::test_the_mutation_question_defaults_to_no"
-        },
-        {
-          "env": null,
-          "id": "PROOF-54",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-26",
-          "test": "dev/test_init_update.py::test_yes_turns_it_on"
-        },
-        {
-          "env": null,
-          "id": "PROOF-27",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-27",
-          "test": "dev/test_init_update.py::test_a_spec_with_no_scope_is_named_and_left_alone"
-        },
-        {
-          "env": null,
-          "id": "PROOF-104",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-27",
-          "test": "dev/test_init_update.py::test_the_scope_advice_is_given_again_when_nothing_is_pending"
-        },
-        {
-          "env": null,
-          "id": "PROOF-132",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-27",
-          "test": "dev/test_init_update.py::test_two_specs_with_no_scope_are_named_in_one_line"
-        },
-        {
-          "env": null,
-          "id": "PROOF-105",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-27",
-          "test": "dev/test_init_update.py::test_an_anchor_with_no_scope_gets_no_advice"
-        },
-        {
-          "env": null,
-          "id": "PROOF-28",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-28",
-          "test": "dev/test_init_update.py::test_the_evidence_folder_gets_its_readme"
-        },
-        {
-          "env": null,
-          "id": "PROOF-106",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-28",
-          "test": "dev/test_init_update.py::test_a_readme_already_there_is_left_alone"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-122",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-28",
-          "test": "dev/test_init_update.py::test_the_evidence_folder_gets_its_readme"
-        },
-        {
-          "env": null,
           "id": "PROOF-29",
           "manual": false,
           "result": "pass",
           "rule": "RULE-29",
-          "test": "dev/test_init_update.py::test_the_pytest_marks_become_comments"
-        },
-        {
-          "env": null,
-          "id": "PROOF-107",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-29",
-          "test": "dev/test_init_update.py::test_the_jest_title_tags_become_comments"
-        },
-        {
-          "env": null,
-          "id": "PROOF-108",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-29",
-          "test": "dev/test_init_update.py::test_the_xunit_trait_becomes_a_comment"
+          "test": "dev/test_init_update.py::test_the_two_pytest_marks_become_comments"
         },
         {
           "env": null,
@@ -742,107 +191,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-110",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-29",
-          "test": "dev/test_init_update.py::test_the_sql_comment_becomes_the_marker"
-        },
-        {
-          "env": null,
-          "id": "PROOF-111",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-29",
-          "test": "dev/test_init_update.py::test_each_rewritten_test_file_is_backed_up"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-123",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-29",
-          "test": "dev/test_init_update.py::test_the_shell_harness_calls_become_one_comment"
-        },
-        {
-          "env": null,
           "id": "PROOF-30",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-30",
-          "test": "dev/test_init_update.py::test_a_marker_it_cannot_place_is_named_and_left"
-        },
-        {
-          "env": "macos",
-          "id": "PROOF-31",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-31",
-          "test": "dev/test_init_update.py::test_the_page_linked_into_the_old_plugin_is_replaced"
-        },
-        {
-          "env": null,
-          "id": "PROOF-112",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-31",
-          "test": "dev/test_init_update.py::test_an_older_copy_of_the_page_is_replaced"
-        },
-        {
-          "env": null,
-          "id": "PROOF-113",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-31",
-          "test": "dev/test_init_update.py::test_a_project_with_no_page_is_left_without_one"
-        },
-        {
-          "env": null,
-          "id": "PROOF-34",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-33",
-          "test": "dev/test_init_update.py::test_the_dashboard_data_is_untracked_and_ignored"
-        },
-        {
-          "env": null,
-          "id": "PROOF-35",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-34",
-          "test": "dev/test_init_update.py::test_an_ignored_cache_is_deleted"
-        },
-        {
-          "env": null,
-          "id": "PROOF-36",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-34",
-          "test": "dev/test_init_update.py::test_a_committed_cache_is_deleted_from_git_and_from_disk"
-        },
-        {
-          "env": null,
-          "id": "PROOF-75",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-34",
-          "test": "dev/test_init_update.py::test_a_cache_the_gitignore_does_not_name_is_deleted_too"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-119",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-34",
-          "test": "dev/test_init_update.py::test_a_committed_cache_is_deleted_from_git_and_from_disk"
-        },
-        {
-          "env": null,
-          "id": "PROOF-82",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-35",
-          "test": "dev/test_init_update.py::test_a_conftest_holding_only_the_wiring_is_deleted"
+          "rule": "RULE-29",
+          "test": "dev/test_init_update.py::test_a_module_wide_marker_is_named_and_left_on_its_line"
         },
         {
           "env": null,
@@ -850,39 +203,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-35",
-          "test": "dev/test_init_update.py::test_a_conftest_holding_more_keeps_the_rest"
+          "test": "dev/test_init_update.py::test_a_conftest_holding_import_os_keeps_it_alone"
         },
         {
           "env": null,
-          "id": "PROOF-84",
+          "id": "PROOF-88",
           "manual": false,
           "result": "pass",
           "rule": "RULE-35",
-          "test": "dev/test_init_update.py::test_the_jest_config_keeps_its_other_reporter"
-        },
-        {
-          "env": null,
-          "id": "PROOF-85",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-35",
-          "test": "dev/test_init_update.py::test_the_vitest_config_keeps_its_other_reporter"
-        },
-        {
-          "env": null,
-          "id": "PROOF-86",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-35",
-          "test": "dev/test_init_update.py::test_the_package_json_keeps_its_other_reporter"
-        },
-        {
-          "env": null,
-          "id": "PROOF-87",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-35",
-          "test": "dev/test_init_update.py::test_each_file_the_wiring_leaves_is_backed_up"
+          "test": "dev/test_init_update.py::test_a_csproj_compiling_the_logger_is_named_and_left"
         },
         {
           "env": "windows",
@@ -890,340 +219,136 @@
           "manual": false,
           "result": "not run",
           "rule": "RULE-35",
-          "test": "dev/test_init_update.py::test_a_conftest_holding_more_keeps_the_rest"
+          "test": "dev/test_init_update.py::test_on_windows_the_conftest_keeps_import_os_and_its_ending"
         },
         {
           "env": null,
-          "id": "PROOF-88",
+          "id": "PROOF-162",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-36",
-          "test": "dev/test_init_update.py::test_a_csproj_compiling_the_logger_is_named_and_left"
+          "rule": "RULE-50",
+          "test": "dev/test_init_update.py::test_the_config_holds_version_and_tests_alone"
         },
         {
           "env": null,
-          "id": "PROOF-55",
+          "id": "PROOF-163",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-37",
-          "test": "dev/test_init_update.py::test_no_engine_means_no_question"
+          "rule": "RULE-50",
+          "test": "dev/test_init_update.py::test_every_key_the_config_carried_is_removed_and_named"
         },
         {
           "env": null,
-          "id": "PROOF-114",
+          "id": "PROOF-4",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-37",
-          "test": "dev/test_init_update.py::test_on_windows_a_pytest_project_is_not_asked_to_break_its_code"
-        },
-        {
-          "env": null,
-          "id": "PROOF-56",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-38",
-          "test": "dev/test_init_update.py::test_at_passed_no_mutation_question_is_asked"
-        },
-        {
-          "env": null,
-          "id": "PROOF-57",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-38",
-          "test": "dev/test_init_update.py::test_at_passed_no_engine_is_named"
-        },
-        {
-          "env": null,
-          "id": "PROOF-58",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-39",
-          "test": "dev/test_init_update.py::test_a_mutation_setting_already_written_is_kept"
+          "rule": "RULE-51",
+          "test": "dev/test_init_update.py::test_a_root_without_purlin_exits_2"
         },
         {
           "env": null,
           "id": "PROOF-116",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-40",
+          "rule": "RULE-51",
           "test": "dev/test_init_update.py::test_a_settings_file_that_cannot_be_read_stops_the_update"
-        },
-        {
-          "env": null,
-          "id": "PROOF-133",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-41",
-          "test": "dev/test_init_update.py::test_the_pending_list_opens_on_its_count"
-        },
-        {
-          "env": null,
-          "id": "PROOF-134",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-41",
-          "test": "dev/test_init_update.py::test_each_pending_migration_is_listed_with_its_files"
-        },
-        {
-          "env": null,
-          "id": "PROOF-135",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-41",
-          "test": "dev/test_init_update.py::test_a_long_file_list_ends_on_how_many_more"
-        },
-        {
-          "env": null,
-          "id": "PROOF-136",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-42",
-          "test": "dev/test_init_update.py::test_the_files_beside_the_specs_are_counted"
-        },
-        {
-          "env": null,
-          "id": "PROOF-137",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-42",
-          "test": "dev/test_init_update.py::test_the_removed_hooks_are_counted"
-        },
-        {
-          "env": null,
-          "id": "PROOF-138",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-42",
-          "test": "dev/test_init_update.py::test_the_rewritten_system_tags_are_counted"
-        },
-        {
-          "env": null,
-          "id": "PROOF-139",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-42",
-          "test": "dev/test_init_update.py::test_the_specs_that_lose_the_kind_of_test_are_counted"
-        },
-        {
-          "env": null,
-          "id": "PROOF-140",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-42",
-          "test": "dev/test_init_update.py::test_the_removed_workflows_are_counted"
-        },
-        {
-          "env": null,
-          "id": "PROOF-141",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-42",
-          "test": "dev/test_init_update.py::test_the_runner_reason_at_passed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-142",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-42",
-          "test": "dev/test_init_update.py::test_the_runner_reason_at_signed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-143",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-42",
-          "test": "dev/test_init_update.py::test_the_runner_reason_for_two_systems"
-        },
-        {
-          "env": null,
-          "id": "PROOF-144",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-42",
-          "test": "dev/test_init_update.py::test_the_runner_file_written_is_named"
-        },
-        {
-          "env": null,
-          "id": "PROOF-145",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-42",
-          "test": "dev/test_init_update.py::test_the_runner_file_says_when_it_runs"
-        },
-        {
-          "env": null,
-          "id": "PROOF-146",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-42",
-          "test": "dev/test_init_update.py::test_the_evidence_readme_written_is_named"
-        },
-        {
-          "env": null,
-          "id": "PROOF-147",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-42",
-          "test": "dev/test_init_update.py::test_the_replaced_page_is_named"
-        },
-        {
-          "env": null,
-          "id": "PROOF-148",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-42",
-          "test": "dev/test_init_update.py::test_the_removed_plugin_copies_are_counted"
-        },
-        {
-          "env": null,
-          "id": "PROOF-149",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-42",
-          "test": "dev/test_init_update.py::test_a_tests_setting_with_no_suite_says_so"
-        },
-        {
-          "env": null,
-          "id": "PROOF-150",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-43",
-          "test": "dev/test_init_update.py::test_the_commit_is_named_on_one_line"
         },
         {
           "env": null,
           "id": "PROOF-151",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-44",
+          "rule": "RULE-51",
           "test": "dev/test_init_update.py::test_a_commit_git_refuses_leaves_the_changes_staged"
         },
         {
           "env": null,
-          "id": "PROOF-152",
+          "id": "PROOF-129",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-45",
-          "test": "dev/test_init_update.py::test_each_backup_is_named_on_a_line_of_its_own"
+          "rule": "RULE-52",
+          "test": "dev/test_init_update.py::test_one_run_rewrites_a_tag_the_windows_tag_hid"
+        },
+        {
+          "env": null,
+          "id": "PROOF-24",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-52",
+          "test": "dev/test_init_update.py::test_every_design_line_of_the_anchor_is_removed"
         },
         {
           "env": null,
           "id": "PROOF-153",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-46",
+          "rule": "RULE-52",
           "test": "dev/test_init_update.py::test_no_spec_names_an_anchor_after_the_update"
         },
         {
           "env": null,
-          "id": "PROOF-154",
+          "id": "PROOF-8",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-46",
-          "test": "dev/test_init_update.py::test_each_file_rewritten_names_the_fields_it_lost"
+          "rule": "RULE-53",
+          "test": "dev/test_init_update.py::test_no_proof_or_run_file_is_left_on_disk_or_tracked"
         },
         {
           "env": null,
-          "id": "PROOF-155",
+          "id": "PROOF-81",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-46",
-          "test": "dev/test_init_update.py::test_an_anchor_one_spec_named_is_named_with_that_spec"
+          "rule": "RULE-53",
+          "test": "dev/test_init_update.py::test_a_reporter_the_plugin_never_shipped_is_left_alone"
         },
         {
           "env": null,
-          "id": "PROOF-156",
+          "id": "PROOF-34",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-46",
-          "test": "dev/test_init_update.py::test_each_file_that_lost_a_line_is_backed_up"
+          "rule": "RULE-53",
+          "test": "dev/test_init_update.py::test_the_dashboard_data_is_untracked_and_ignored"
         },
         {
           "env": null,
-          "id": "PROOF-157",
+          "id": "PROOF-28",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-46",
-          "test": "dev/test_init_update.py::test_an_anchor_three_specs_named_is_named_with_all_three"
+          "rule": "RULE-54",
+          "test": "dev/test_init_update.py::test_the_evidence_folder_gets_its_readme"
         },
         {
           "env": null,
-          "id": "PROOF-158",
+          "id": "PROOF-106",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-46",
-          "test": "dev/test_init_update.py::test_a_global_anchor_named_by_a_spec_gets_no_line"
+          "rule": "RULE-54",
+          "test": "dev/test_init_update.py::test_a_readme_already_there_is_left_alone"
         },
         {
-          "env": null,
-          "id": "PROOF-159",
+          "env": "macos",
+          "id": "PROOF-31",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-47",
-          "test": "dev/test_init_update.py::test_the_gate_strong_is_now_passed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-160",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-48",
-          "test": "dev/test_init_update.py::test_min_strength_is_taken_out"
-        },
-        {
-          "env": null,
-          "id": "PROOF-161",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-49",
-          "test": "dev/test_init_update.py::test_the_gate_offered_where_the_hook_was_strict_is_passed"
+          "rule": "RULE-54",
+          "test": "dev/test_init_update.py::test_the_page_linked_into_the_old_plugin_is_replaced"
         }
       ],
       "rules": {
-        "RULE-1": "passed",
-        "RULE-10": "passed",
-        "RULE-12": "passed",
-        "RULE-13": "not run",
-        "RULE-15": "passed",
-        "RULE-16": "passed",
-        "RULE-18": "not run",
+        "RULE-18": "passed",
         "RULE-19": "passed",
         "RULE-2": "passed",
-        "RULE-20": "passed",
         "RULE-21": "passed",
-        "RULE-23": "not run",
-        "RULE-24": "not run",
-        "RULE-25": "passed",
-        "RULE-26": "passed",
-        "RULE-27": "passed",
-        "RULE-28": "not run",
-        "RULE-29": "not run",
-        "RULE-30": "passed",
-        "RULE-31": "passed",
-        "RULE-33": "passed",
-        "RULE-34": "not run",
+        "RULE-29": "passed",
         "RULE-35": "not run",
-        "RULE-36": "passed",
-        "RULE-37": "passed",
-        "RULE-38": "passed",
-        "RULE-39": "passed",
-        "RULE-4": "passed",
-        "RULE-40": "passed",
-        "RULE-41": "passed",
-        "RULE-42": "passed",
-        "RULE-43": "passed",
-        "RULE-44": "passed",
-        "RULE-45": "passed",
-        "RULE-46": "passed",
-        "RULE-47": "passed",
-        "RULE-48": "passed",
-        "RULE-49": "passed",
         "RULE-5": "not run",
+        "RULE-50": "passed",
+        "RULE-51": "passed",
+        "RULE-52": "passed",
+        "RULE-53": "passed",
+        "RULE-54": "passed",
         "RULE-6": "passed",
         "RULE-7": "not run",
-        "RULE-8": "passed",
         "RULE-9": "passed"
       },
       "runner": "rich-labarca"

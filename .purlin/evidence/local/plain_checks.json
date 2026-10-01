@@ -1,0 +1,193 @@
+{
+  "feature": "plain_checks",
+  "platforms": {
+    "macos": {
+      "at": "2026-10-01T18:13:43Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
+      "dirty": false,
+      "email": "rich.labarca@gmail.com",
+      "fingerprint": {
+        "code": "f405e2acc63aa23b4984e8ce33a5af1073a1ece1c5fea23558fcc7bcd76aa498",
+        "spec": "234dc2a9ee6c157aac12bd9ab04c1ebca98ec34fcc56c6e902daad3ff2ad4a9b",
+        "tests": "26bd40b2a0b121123c774c4282efe2464c2d25c031bd81cd40ba924de6134d0c"
+      },
+      "machine": "Richs-MacBook-Pro.local",
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_plain_checks.py::test_a_test_that_asserts_nothing_checks_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_plain_checks.py::test_a_helper_from_another_file_may_assert"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_plain_checks.py::test_a_test_that_only_expects_an_error_asserts"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_plain_checks.py::test_a_value_compared_with_itself_cannot_fail"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_plain_checks.py::test_a_weak_but_failable_check_is_not_flagged"
+        },
+        {
+          "env": null,
+          "id": "PROOF-11",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_plain_checks.py::test_expect_true_to_be_true_cannot_fail"
+        },
+        {
+          "env": null,
+          "id": "PROOF-13",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_plain_checks.py::test_an_except_that_only_passes_swallows_the_error"
+        },
+        {
+          "env": null,
+          "id": "PROOF-14",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_plain_checks.py::test_an_except_that_asserts_on_the_error_is_not_flagged"
+        },
+        {
+          "env": null,
+          "id": "PROOF-17",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_plain_checks.py::test_an_empty_catch_in_csharp_swallows_the_error"
+        },
+        {
+          "env": null,
+          "id": "PROOF-18",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_plain_checks.py::test_an_expected_value_from_the_code_under_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-19",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_plain_checks.py::test_an_expected_value_from_another_function_is_not_flagged"
+        },
+        {
+          "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_plain_checks.py::test_an_expected_value_from_the_code_under_test_in_typescript"
+        },
+        {
+          "env": null,
+          "id": "PROOF-22",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_plain_checks.py::test_a_patch_of_the_function_it_checks"
+        },
+        {
+          "env": null,
+          "id": "PROOF-23",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_plain_checks.py::test_a_patch_of_a_dependency_is_not_flagged"
+        },
+        {
+          "env": null,
+          "id": "PROOF-24",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_plain_checks.py::test_a_spy_on_the_function_it_checks_in_typescript"
+        },
+        {
+          "env": null,
+          "id": "PROOF-25",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_plain_checks.py::test_a_value_the_proof_names_and_the_file_never_holds"
+        },
+        {
+          "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_plain_checks.py::test_the_same_number_written_another_way_is_held"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_plain_checks.py::test_a_value_held_in_a_data_file_the_test_names"
+        },
+        {
+          "env": null,
+          "id": "PROOF-28",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_plain_checks.py::test_a_check_shell_is_not_read_for_is_named_once"
+        },
+        {
+          "env": null,
+          "id": "PROOF-30",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_plain_checks.py::test_the_spot_tests_start_no_claude"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-2": "passed",
+        "RULE-3": "passed",
+        "RULE-4": "passed",
+        "RULE-5": "passed",
+        "RULE-6": "passed",
+        "RULE-7": "passed",
+        "RULE-9": "passed"
+      },
+      "runner": "rich-labarca"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "local",
+  "spec": "specs/review/plain_checks.md"
+}

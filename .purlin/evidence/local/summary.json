@@ -2,111 +2,88 @@
   "feature": "summary",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T01:14:50Z",
-      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
+      "at": "2026-10-01T18:13:44Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
       "dirty": false,
+      "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "418783ad426276e8e21781a78ec9e4ffab4dc9bcdc724ee807dd90ebf5d913bd",
-        "spec": "8d2147c9c1d134e35192375ffcc04a68765efe5bbd0bd210f7e66461763407f9",
-        "tests": "fea67336777b2fab31a2d8d9d230ae1f08327dd55baab81fc3012e8870818d3c"
+        "code": "208faeb99a9572c90fd074716815dd755a7935afee708376d1fc1bfddd98c3a3",
+        "spec": "edf40b3cf54138ef505ebbd4898d3682ff1d5e68617a7babc8cb9bf1a8c5920d",
+        "tests": "b5fa7e69bbf6f2a4ebf06bd6abd310f3e2860ac285076dfa15e79a402cc9b039"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
-          "id": "PROOF-2",
+          "id": "PROOF-48",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_summary.py::TestTheSentence::test_at_passed_it_names_the_tests_alone"
+          "rule": "RULE-20",
+          "test": "dev/test_summary.py::TestTheOpeningLines::test_the_status_opens_on_the_project_named_by_pyproject_then_tests_met"
         },
         {
           "env": null,
-          "id": "PROOF-4",
+          "id": "PROOF-53",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_summary.py::TestTheSentence::test_an_anchor_rule_is_counted_once_under_its_owner"
+          "rule": "RULE-20",
+          "test": "dev/test_summary.py::TestTheOpeningLines::test_one_failing_rule_makes_the_second_line_tests_not_met"
+        },
+        {
+          "env": null,
+          "id": "PROOF-50",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_summary.py::TestTheOpeningLines::test_a_commit_to_the_code_after_the_tag_reads_one_commit_since"
         },
         {
           "env": null,
           "id": "PROOF-5",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_summary.py::TestOneAndNone::test_one_rule_reads_singular"
+          "rule": "RULE-22",
+          "test": "dev/test_summary.py::TestTheSentence::test_one_rule_that_passes_reads_one_rule_one_passes_its_tests"
         },
         {
           "env": null,
-          "id": "PROOF-6",
+          "id": "PROOF-4",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_summary.py::TestOneAndNone::test_one_rule_left_reads_singular"
+          "rule": "RULE-22",
+          "test": "dev/test_summary.py::TestTheSentence::test_an_anchor_rule_beside_two_features_reads_three_rules"
         },
         {
           "env": null,
-          "id": "PROOF-7",
+          "id": "PROOF-43",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_summary.py::TestOneAndNone::test_zero_reads_plural"
+          "rule": "RULE-22",
+          "test": "dev/test_summary.py::TestTheSentence::test_fifty_rules_forty_two_strong_read_the_audits_share_84"
         },
         {
           "env": null,
           "id": "PROOF-8",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_summary.py::TestTheLines::test_each_kind_has_its_words_and_its_command"
+          "rule": "RULE-23",
+          "test": "dev/test_summary.py::TestTheLines::test_two_rules_of_each_of_the_six_kinds_read_in_rule_23s_order"
+        },
+        {
+          "env": null,
+          "id": "PROOF-40",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-23",
+          "test": "dev/test_summary.py::TestTheLines::test_a_broken_spec_reads_one_spec_to_repair_before_one_rule_to_fix"
         },
         {
           "env": null,
           "id": "PROOF-29",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_summary.py::TestTheLines::test_a_comment_naming_nothing_is_a_line_of_its_own"
-        },
-        {
-          "env": null,
-          "id": "PROOF-36",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_summary.py::TestTheLines::test_three_comments_naming_nothing_read_plural"
-        },
-        {
-          "env": null,
-          "id": "PROOF-10",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_summary.py::TestTheLines::test_the_lines_follow_the_order_of_the_work"
-        },
-        {
-          "env": null,
-          "id": "PROOF-35",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_summary.py::TestTheLines::test_a_comment_to_correct_comes_before_a_rule_to_fix"
-        },
-        {
-          "env": null,
-          "id": "PROOF-11",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_summary.py::TestTheLines::test_a_kind_at_zero_has_no_line"
-        },
-        {
-          "env": null,
-          "id": "PROOF-12",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_summary.py::TestNothingLeft::test_with_nothing_left_the_ending_is_two_lines"
+          "rule": "RULE-23",
+          "test": "dev/test_summary.py::TestTheLines::test_a_comment_naming_login_proof_9_on_committed_evidence"
         },
         {
           "env": null,
@@ -114,31 +91,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
-          "test": "dev/test_summary.py::TestOneKindPerRule::test_no_proof_comes_before_a_failing_test"
-        },
-        {
-          "env": null,
-          "id": "PROOF-16",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_summary.py::TestOneKindPerRule::test_a_failing_rule_is_only_to_fix"
-        },
-        {
-          "env": null,
-          "id": "PROOF-17",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_summary.py::TestOneKindPerRule::test_at_passed_a_rule_with_nothing_wants_a_test"
-        },
-        {
-          "env": null,
-          "id": "PROOF-18",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_summary.py::TestOneKindPerRule::test_out_of_date_is_to_test"
+          "test": "dev/test_summary.py::TestOneKindPerRule::test_a_rule_with_no_proof_whose_test_fails_is_one_rule_to_fix"
         },
         {
           "env": null,
@@ -158,75 +111,27 @@
         },
         {
           "env": null,
-          "id": "PROOF-34",
+          "id": "PROOF-47",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_summary.py::TestOneKindPerRule::test_a_rule_one_proof_of_which_no_test_backs_wants_a_test"
+          "rule": "RULE-19",
+          "test": "dev/test_summary.py::TestWhatLetsTheTestsBeMet::test_a_weak_rule_on_committed_evidence_is_to_strengthen_tests_met"
         },
         {
           "env": null,
-          "id": "PROOF-37",
+          "id": "PROOF-54",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_summary.py::TestOneKindPerRule::test_a_proof_listed_with_no_test_named_wants_a_test"
+          "rule": "RULE-19",
+          "test": "dev/test_summary.py::TestWhatLetsTheTestsBeMet::test_a_rule_with_no_proof_whose_test_passes_is_to_write_a_proof_for"
         },
         {
           "env": null,
-          "id": "PROOF-20",
+          "id": "PROOF-52",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_summary.py::TestTheSteps::test_a_rule_checked_by_hand_passes_and_adds_no_work"
-        },
-        {
-          "env": null,
-          "id": "PROOF-22",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_summary.py::TestTheSystems::test_two_systems_are_named_in_their_words_and_order"
-        },
-        {
-          "env": null,
-          "id": "PROOF-28",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-14",
-          "test": "dev/test_summary.py::TestTheSystems::test_this_machines_own_system_is_never_named_on_the_line"
-        },
-        {
-          "env": null,
-          "id": "PROOF-40",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-16",
-          "test": "dev/test_summary.py::TestASpecToRepair::test_one_broken_spec_is_the_first_line"
-        },
-        {
-          "env": null,
-          "id": "PROOF-41",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-16",
-          "test": "dev/test_summary.py::TestASpecToRepair::test_two_broken_specs_read_plural"
-        },
-        {
-          "env": null,
-          "id": "PROOF-42",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-17",
-          "test": "dev/test_summary.py::TestTheSentence::test_with_no_rule_audited_the_sentence_names_no_audit"
-        },
-        {
-          "env": null,
-          "id": "PROOF-43",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-17",
-          "test": "dev/test_summary.py::TestTheSentence::test_where_the_audit_read_a_rule_the_sentence_says_what_it_found"
+          "rule": "RULE-21",
+          "test": "dev/test_summary.py::TestTheLines::test_two_features_with_results_not_committed_end_on_the_commit"
         },
         {
           "env": null,
@@ -234,51 +139,17 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-18",
-          "test": "dev/test_summary.py::TestNothingLeft::test_at_passed_it_names_the_release_run"
-        },
-        {
-          "env": null,
-          "id": "PROOF-45",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_summary.py::TestNothingLeft::test_at_signed_it_names_the_release_run_and_the_sign_off"
-        },
-        {
-          "env": null,
-          "id": "PROOF-46",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_summary.py::TestNothingLeft::test_a_release_tag_on_head_names_the_push"
-        },
-        {
-          "env": null,
-          "id": "PROOF-47",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-19",
-          "test": "dev/test_summary.py::TestTheSteps::test_a_weak_rule_is_to_strengthen_and_blocks_no_release"
+          "test": "dev/test_summary.py::TestWhatLetsTheTestsBeMet::test_two_passing_rules_with_no_tag_end_on_the_sign_off"
         }
       ],
       "rules": {
-        "RULE-1": "passed",
-        "RULE-10": "passed",
-        "RULE-12": "passed",
-        "RULE-13": "passed",
-        "RULE-14": "passed",
-        "RULE-16": "passed",
-        "RULE-17": "passed",
         "RULE-18": "passed",
         "RULE-19": "passed",
-        "RULE-2": "passed",
-        "RULE-3": "passed",
-        "RULE-4": "passed",
-        "RULE-5": "passed",
-        "RULE-6": "passed",
-        "RULE-7": "passed",
-        "RULE-8": "passed",
-        "RULE-9": "passed"
+        "RULE-20": "passed",
+        "RULE-21": "passed",
+        "RULE-22": "passed",
+        "RULE-23": "passed",
+        "RULE-8": "passed"
       },
       "runner": "rich-labarca"
     }

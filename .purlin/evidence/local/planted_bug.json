@@ -1,0 +1,138 @@
+{
+  "feature": "planted_bug",
+  "platforms": {
+    "macos": {
+      "at": "2026-10-01T18:13:43Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
+      "dirty": false,
+      "email": "rich.labarca@gmail.com",
+      "fingerprint": {
+        "code": "03d290102abe62466c86e2d22f69b48ad79c4b24fba5c836a76e4ff80cc15dcf",
+        "spec": "2e641429a14008ac88a2e907ecbd6c91c8d9ff9a9dabd908a5a9a52b74fc6b4c",
+        "tests": "cee064358dac1243e95c797d246799678e7642f9081e6a9f1216ea619f369c43"
+      },
+      "machine": "Richs-MacBook-Pro.local",
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_planted_bug.py::test_the_project_holds_the_same_bytes_after_a_bug"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_planted_bug.py::test_a_test_that_still_passes_reads_survived"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_planted_bug.py::test_a_test_that_fails_reads_caught"
+        },
+        {
+          "env": null,
+          "id": "PROOF-6",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_planted_bug.py::test_a_file_outside_the_copy_is_not_made"
+        },
+        {
+          "env": null,
+          "id": "PROOF-7",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_planted_bug.py::test_a_project_that_changes_while_a_bug_is_planted_stops_the_audit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-13",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_planted_bug.py::test_three_bugs_with_nothing_else_touching_the_project"
+        },
+        {
+          "env": null,
+          "id": "PROOF-8",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_planted_bug.py::test_the_copy_is_removed_when_the_test_fails"
+        },
+        {
+          "env": null,
+          "id": "PROOF-14",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_planted_bug.py::test_the_copy_is_removed_when_the_test_runs_past_its_limit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_planted_bug.py::test_claude_resolves_under_this_tests_own_folder"
+        },
+        {
+          "env": null,
+          "id": "PROOF-12",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_planted_bug.py::test_only_the_proofs_own_test_runs_against_its_bug"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_planted_bug.py::test_a_change_that_matches_twice_is_not_made"
+        },
+        {
+          "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_planted_bug.py::test_a_file_the_scope_does_not_name_is_not_made"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_planted_bug.py::test_an_answer_of_no_break_is_not_made_with_its_reason"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-10": "passed",
+        "RULE-12": "passed",
+        "RULE-2": "passed",
+        "RULE-3": "passed",
+        "RULE-5": "passed",
+        "RULE-6": "passed",
+        "RULE-7": "passed",
+        "RULE-8": "passed"
+      },
+      "runner": "rich-labarca"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "local",
+  "spec": "specs/review/planted_bug.md"
+}

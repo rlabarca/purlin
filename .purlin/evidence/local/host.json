@@ -2,13 +2,14 @@
   "feature": "host",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T01:14:49Z",
-      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
+      "at": "2026-10-01T18:13:43Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
       "dirty": false,
+      "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "83aa90ce5c99d532dd5858e0502d34b29d9c90cec6331159e01602467d452d84",
-        "spec": "bde82c5b283866deab79d53347a9e0d5372eca440b0decc013b766341133b23b",
-        "tests": "5a896d71e396d0911365645572e5b755d9780613654def5e5048102daeed464d"
+        "code": "362e5d04017c26e85bc5ffbc97821def697fab2308a7651082eb8ce88b7f13e2",
+        "spec": "c895ea6b5cb7323f4fe4ea7b6ec88973ad8c8a58ece5d11742157c15fecf6482",
+        "tests": "b87f35086c1e7608b62cae7cc61de7c0af657f1f6bc6b82f806c9cc8de25a19c"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -17,96 +18,24 @@
           "id": "PROOF-5",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_host.py::test_the_ci_commit_is_one_tree_then_commit_then_ref"
+          "rule": "RULE-55",
+          "test": "dev/test_host.py::test_the_ci_commit_sends_five_requests_read_read_tree_commit_move"
         },
         {
           "env": null,
           "id": "PROOF-54",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_host.py::test_the_ci_commit_sends_no_author_and_no_committer"
-        },
-        {
-          "env": null,
-          "id": "PROOF-55",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_host.py::test_the_tree_entry_carries_the_file_and_its_permission"
-        },
-        {
-          "env": null,
-          "id": "PROOF-56",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_host.py::test_the_ci_commit_carries_every_file_in_one_tree"
-        },
-        {
-          "env": null,
-          "id": "PROOF-57",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_host.py::test_a_file_that_is_not_text_gets_a_blob_of_its_own"
+          "rule": "RULE-55",
+          "test": "dev/test_host.py::test_the_commit_request_carries_exactly_message_tree_and_parents"
         },
         {
           "env": "windows",
-          "id": "PROOF-116",
+          "id": "PROOF-118",
           "manual": false,
           "result": "not run",
-          "rule": "RULE-5",
-          "test": "dev/test_host.py::test_the_tree_entry_carries_the_file_and_its_permission"
-        },
-        {
-          "env": null,
-          "id": "PROOF-6",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_host.py::test_the_ref_update_is_retried_when_the_branch_moved"
-        },
-        {
-          "env": null,
-          "id": "PROOF-58",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_host.py::test_the_retry_gives_up_and_raises"
-        },
-        {
-          "env": null,
-          "id": "PROOF-59",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_host.py::test_a_refusal_that_is_not_a_moved_branch_is_raised_at_once"
-        },
-        {
-          "env": null,
-          "id": "PROOF-7",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_host.py::test_no_token_writes_no_commit"
-        },
-        {
-          "env": null,
-          "id": "PROOF-60",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_host.py::test_no_repository_name_writes_no_commit"
-        },
-        {
-          "env": null,
-          "id": "PROOF-127",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_host.py::test_no_azure_token_writes_no_commit"
+          "rule": "RULE-55",
+          "test": "dev/test_host_pathspec.py::test_a_run_that_spells_paths_the_windows_way_commits_the_removal"
         },
         {
           "env": null,
@@ -114,7 +43,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
-          "test": "dev/test_host.py::test_the_azure_push_sends_the_ref_and_the_content"
+          "test": "dev/test_host.py::test_one_azure_push_names_main_its_object_id_and_one_add_as_rawtext"
         },
         {
           "env": null,
@@ -126,579 +55,67 @@
         },
         {
           "env": null,
-          "id": "PROOF-61",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_host.py::test_the_azure_push_retries_when_the_object_id_is_stale"
-        },
-        {
-          "env": null,
           "id": "PROOF-62",
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
-          "test": "dev/test_host.py::test_a_file_the_branch_already_holds_is_pushed_as_an_edit"
+          "test": "dev/test_host.py::test_a_file_the_branch_already_holds_is_one_change_an_edit"
         },
         {
           "env": null,
-          "id": "PROOF-64",
+          "id": "PROOF-99",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_host.py::test_the_run_branch_names_the_branch_and_the_commit"
+          "rule": "RULE-49",
+          "test": "dev/test_host.py::test_a_refused_move_reads_the_file_twice_and_sends_linux_then_linux_and_macos"
         },
         {
           "env": null,
-          "id": "PROOF-24",
+          "id": "PROOF-39",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_host.py::test_a_green_run_pushes_watches_pulls_and_deletes"
+          "rule": "RULE-49",
+          "test": "dev/test_host.py::test_a_push_refused_with_409_is_sent_again_as_an_edit_carrying_both"
         },
         {
           "env": null,
-          "id": "PROOF-65",
+          "id": "PROOF-58",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_host.py::test_a_green_run_says_what_it_pushed_and_what_it_waits_for"
+          "rule": "RULE-49",
+          "test": "dev/test_host.py::test_every_move_refused_with_422_sends_exactly_3_moves_then_stops"
         },
         {
           "env": null,
-          "id": "PROOF-66",
+          "id": "PROOF-100",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_host.py::test_the_run_is_looked_up_by_its_branch_before_it_is_watched"
+          "rule": "RULE-40",
+          "test": "dev/test_host.py::test_a_windows_section_carrying_rule_9_is_sent_with_rule_1_alone"
         },
         {
           "env": null,
-          "id": "PROOF-67",
+          "id": "PROOF-7",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_host.py::test_the_evidence_comes_home_at_the_gate_passed"
+          "rule": "RULE-50",
+          "test": "dev/test_host.py::test_acme_widgets_with_no_token_sends_nothing_and_says_so"
         },
         {
           "env": null,
-          "id": "PROOF-110",
+          "id": "PROOF-127",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_host.py::test_the_evidence_comes_home_at_the_gate_signed"
+          "rule": "RULE-50",
+          "test": "dev/test_host.py::test_no_azure_token_writes_no_commit"
         },
         {
           "env": null,
-          "id": "PROOF-68",
+          "id": "PROOF-106",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_host.py::test_a_red_run_still_pulls_and_prints_the_table"
-        },
-        {
-          "env": null,
-          "id": "PROOF-69",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_host.py::test_the_lookup_is_asked_again_while_the_run_registers"
-        },
-        {
-          "env": null,
-          "id": "PROOF-70",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_host.py::test_a_run_that_never_registers_is_reported_and_the_branch_deleted"
-        },
-        {
-          "env": null,
-          "id": "PROOF-72",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_host.py::test_a_failed_push_starts_no_run"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-117",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-12",
-          "test": "dev/test_host.py::test_a_green_run_pushes_watches_pulls_and_deletes"
-        },
-        {
-          "env": null,
-          "id": "PROOF-12",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-36",
-          "test": "dev/test_host.py::test_a_detached_head_has_nothing_to_push"
-        },
-        {
-          "env": null,
-          "id": "PROOF-63",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-36",
-          "test": "dev/test_host.py::test_a_dirty_tree_is_refused_before_anything_is_pushed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-36",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-30",
-          "test": "dev/test_remote.py::test_the_https_form_names_the_organisation_and_the_project"
-        },
-        {
-          "env": null,
-          "id": "PROOF-111",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-30",
-          "test": "dev/test_remote.py::test_the_ssh_form_names_the_organisation_and_the_project"
-        },
-        {
-          "env": null,
-          "id": "PROOF-112",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-30",
-          "test": "dev/test_remote.py::test_the_visualstudio_form_names_the_organisation_and_the_project"
-        },
-        {
-          "env": null,
-          "id": "PROOF-73",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-30",
-          "test": "dev/test_remote.py::test_a_user_part_before_the_host_is_ignored"
-        },
-        {
-          "env": null,
-          "id": "PROOF-74",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-30",
-          "test": "dev/test_remote.py::test_a_percent_encoded_project_in_the_https_form_is_decoded"
-        },
-        {
-          "env": null,
-          "id": "PROOF-113",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-30",
-          "test": "dev/test_remote.py::test_a_percent_encoded_project_in_the_ssh_form_is_decoded"
-        },
-        {
-          "env": null,
-          "id": "PROOF-75",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-30",
-          "test": "dev/test_remote.py::test_a_remote_in_no_azure_form_is_refused_before_the_push"
-        },
-        {
-          "env": null,
-          "id": "PROOF-37",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-31",
-          "test": "dev/test_remote.py::test_the_lookup_names_the_organisation_the_project_and_the_run_branch"
-        },
-        {
-          "env": null,
-          "id": "PROOF-76",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-31",
-          "test": "dev/test_remote.py::test_the_poll_names_the_run_the_organisation_and_the_project"
-        },
-        {
-          "env": null,
-          "id": "PROOF-77",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-31",
-          "test": "dev/test_remote.py::test_a_run_not_registered_at_first_is_asked_for_again"
-        },
-        {
-          "env": null,
-          "id": "PROOF-78",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-31",
-          "test": "dev/test_remote.py::test_a_succeeded_run_is_brought_home_green"
-        },
-        {
-          "env": null,
-          "id": "PROOF-79",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-31",
-          "test": "dev/test_remote.py::test_a_failed_run_is_brought_home_red"
-        },
-        {
-          "env": null,
-          "id": "PROOF-114",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-31",
-          "test": "dev/test_remote.py::test_a_canceled_run_is_brought_home_red"
-        },
-        {
-          "env": null,
-          "id": "PROOF-115",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-31",
-          "test": "dev/test_remote.py::test_a_partly_succeeded_run_is_brought_home_red"
-        },
-        {
-          "env": null,
-          "id": "PROOF-80",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-31",
-          "test": "dev/test_remote.py::test_no_run_within_a_minute_deletes_the_branch_and_fails"
-        },
-        {
-          "env": null,
-          "id": "PROOF-81",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-31",
-          "test": "dev/test_remote.py::test_a_run_past_ninety_minutes_is_left_for_the_person"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-120",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-31",
-          "test": "dev/test_remote.py::test_a_succeeded_run_is_brought_home_green"
-        },
-        {
-          "env": null,
-          "id": "PROOF-83",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-38",
-          "test": "dev/test_remote.py::test_no_process_can_wait_forever_or_prompt"
-        },
-        {
-          "env": null,
-          "id": "PROOF-17",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-17",
-          "test": "dev/test_consumer_ci.py::test_the_fixture_workflow_is_what_the_template_renders"
-        },
-        {
-          "env": null,
-          "id": "PROOF-40",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-17",
-          "test": "dev/test_consumer_ci.py::test_the_template_still_carries_the_placeholders"
-        },
-        {
-          "env": null,
-          "id": "PROOF-41",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-39",
-          "test": "dev/test_consumer_ci.py::test_a_project_with_no_env_tag_gets_no_workflow"
-        },
-        {
-          "env": null,
-          "id": "PROOF-42",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-39",
-          "test": "dev/test_consumer_ci.py::test_a_proof_tagged_for_another_system_gets_a_workflow_for_that_reason"
-        },
-        {
-          "env": null,
-          "id": "PROOF-128",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-39",
-          "test": "dev/test_consumer_ci.py::test_proofs_tagged_for_two_other_systems_are_named_together"
-        },
-        {
-          "env": null,
-          "id": "PROOF-129",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-39",
-          "test": "dev/test_consumer_ci.py::test_tests_tagged_for_two_other_systems_are_named_together_at_passed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-43",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-39",
-          "test": "dev/test_consumer_ci.py::test_a_tag_naming_this_machines_own_system_gets_no_workflow"
-        },
-        {
-          "env": null,
-          "id": "PROOF-18",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_consumer_ci.py::test_the_workflow_is_shaped_like_a_workflow"
-        },
-        {
-          "env": null,
-          "id": "PROOF-44",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_consumer_ci.py::test_the_job_is_named_purlin"
-        },
-        {
-          "env": null,
-          "id": "PROOF-45",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_consumer_ci.py::test_the_workflow_ends_on_the_test_step_and_uploads_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-46",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_consumer_ci.py::test_the_workflow_clones_the_release_the_project_pins"
-        },
-        {
-          "env": null,
-          "id": "PROOF-47",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_consumer_ci.py::test_the_azure_pipeline_has_the_same_triggers_and_ends_on_the_test_step"
-        },
-        {
-          "env": null,
-          "id": "PROOF-121",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-41",
-          "test": "dev/test_consumer_ci.py::test_the_sqlite_step_comes_just_before_the_test_step"
-        },
-        {
-          "env": null,
-          "id": "PROOF-122",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-41",
-          "test": "dev/test_consumer_ci.py::test_a_windows_runner_gets_sqlite3_when_a_tracked_file_names_it"
-        },
-        {
-          "env": null,
-          "id": "PROOF-123",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-41",
-          "test": "dev/test_consumer_ci.py::test_a_macos_runner_installs_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-124",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-41",
-          "test": "dev/test_consumer_ci.py::test_a_project_where_only_the_runner_file_names_sqlite3_installs_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-125",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-41",
-          "test": "dev/test_consumer_ci.py::test_a_windows_runner_that_has_sqlite3_installs_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-126",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-41",
-          "test": "dev/test_consumer_ci.py::test_an_azure_windows_agent_gets_sqlite3_on_its_search_path"
-        },
-        {
-          "env": null,
-          "id": "PROOF-19",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-19",
-          "test": "dev/test_consumer_ci.py::test_the_matrix_follows_a_fixed_order"
-        },
-        {
-          "env": null,
-          "id": "PROOF-48",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-19",
-          "test": "dev/test_consumer_ci.py::test_a_project_that_names_windows_alone_gets_one_windows_job"
-        },
-        {
-          "env": null,
-          "id": "PROOF-49",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-19",
-          "test": "dev/test_consumer_ci.py::test_two_named_systems_get_two_jobs_and_no_linux_one"
-        },
-        {
-          "env": null,
-          "id": "PROOF-50",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-19",
-          "test": "dev/test_consumer_ci.py::test_a_name_that_is_no_operating_system_adds_no_job"
-        },
-        {
-          "env": null,
-          "id": "PROOF-51",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-19",
-          "test": "dev/test_consumer_ci.py::test_the_matrix_is_the_one_operating_system_the_spec_names"
-        },
-        {
-          "env": null,
-          "id": "PROOF-20",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-20",
-          "test": "dev/test_consumer_ci.py::test_the_fixture_is_complete_and_every_file_is_tracked"
-        },
-        {
-          "env": null,
-          "id": "PROOF-84",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-20",
-          "test": "dev/test_consumer_ci.py::test_the_config_is_the_shape_this_release_reads"
-        },
-        {
-          "env": null,
-          "id": "PROOF-85",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-20",
-          "test": "dev/test_consumer_ci.py::test_the_fixtures_own_test_file_names_nothing_of_purlin"
-        },
-        {
-          "env": null,
-          "id": "PROOF-86",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-20",
-          "test": "dev/test_consumer_ci.py::test_the_fixtures_own_test_file_runs_by_itself"
-        },
-        {
-          "env": null,
-          "id": "PROOF-87",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-20",
-          "test": "dev/test_consumer_ci.py::test_purlin_reads_the_fixture_as_one_feature_with_a_linux_proof"
-        },
-        {
-          "env": null,
-          "id": "PROOF-22",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_host.py::test_a_refusal_that_asks_for_a_pause_is_waited_out_and_retried"
-        },
-        {
-          "env": null,
-          "id": "PROOF-90",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_host.py::test_the_reset_time_is_read_when_there_is_no_retry_after"
-        },
-        {
-          "env": null,
-          "id": "PROOF-91",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_host.py::test_a_pause_longer_than_the_cap_is_shortened_to_it"
-        },
-        {
-          "env": null,
-          "id": "PROOF-92",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_host.py::test_a_429_asking_for_a_pause_is_waited_out_too"
-        },
-        {
-          "env": null,
-          "id": "PROOF-93",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_host.py::test_a_fourth_refusal_is_raised_with_its_status"
-        },
-        {
-          "env": null,
-          "id": "PROOF-94",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_host.py::test_a_refusal_that_asks_for_no_pause_is_raised_at_once"
-        },
-        {
-          "env": null,
-          "id": "PROOF-26",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-24",
-          "test": "dev/test_host_pathspec.py::test_git_is_handed_a_forward_slash_pathspec"
-        },
-        {
-          "env": null,
-          "id": "PROOF-95",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-24",
-          "test": "dev/test_host_pathspec.py::test_a_run_that_spells_paths_the_windows_way_commits_the_removal"
-        },
-        {
-          "env": null,
-          "id": "PROOF-27",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-24",
-          "test": "dev/test_host_pathspec.py::test_the_commit_carries_the_new_file_and_the_deletion"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-118",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-24",
-          "test": "dev/test_host_pathspec.py::test_a_run_that_spells_paths_the_windows_way_commits_the_removal"
-        },
-        {
-          "env": null,
-          "id": "PROOF-30",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-27",
-          "test": "dev/test_host.py::test_with_no_workspace_variable_every_project_is_its_own"
+          "rule": "RULE-50",
+          "test": "dev/test_host.py::test_a_commit_with_no_branch_named_sends_nothing"
         },
         {
           "env": null,
@@ -706,7 +123,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-27",
-          "test": "dev/test_host.py::test_a_project_that_is_not_the_workspace_commits_nothing"
+          "test": "dev/test_host.py::test_another_github_workspace_sends_nothing_and_names_the_project"
         },
         {
           "env": null,
@@ -722,262 +139,232 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-27",
-          "test": "dev/test_host.py::test_an_azure_project_that_is_not_the_workspace_commits_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-98",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-27",
-          "test": "dev/test_host.py::test_the_azure_project_that_is_the_workspace_pushes"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-119",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-27",
-          "test": "dev/test_host.py::test_the_project_that_is_the_workspace_commits"
-        },
-        {
-          "env": null,
-          "id": "PROOF-38",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-32",
-          "test": "dev/test_host.py::test_the_section_is_merged_into_what_the_branch_holds"
-        },
-        {
-          "env": null,
-          "id": "PROOF-99",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-32",
-          "test": "dev/test_host.py::test_a_retry_reads_the_file_again_at_the_new_parent"
-        },
-        {
-          "env": null,
-          "id": "PROOF-39",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-32",
-          "test": "dev/test_host.py::test_an_azure_retry_merges_and_turns_an_add_into_an_edit"
-        },
-        {
-          "env": null,
-          "id": "PROOF-100",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-40",
-          "test": "dev/test_host.py::test_a_rule_the_spec_does_not_carry_is_dropped_in_the_merge"
-        },
-        {
-          "env": null,
-          "id": "PROOF-33",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-28",
-          "test": "dev/test_host.py::test_off_a_runner_every_commit_is_the_persons_own"
+          "test": "dev/test_host.py::test_another_azure_sources_directory_sends_nothing_and_names_the_project"
         },
         {
           "env": null,
           "id": "PROOF-101",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-28",
-          "test": "dev/test_host.py::test_a_run_branch_commits"
-        },
-        {
-          "env": null,
-          "id": "PROOF-102",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-28",
-          "test": "dev/test_host.py::test_any_other_branch_commits_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-103",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-28",
-          "test": "dev/test_host.py::test_a_tag_run_commits_nothing_and_says_so"
+          "rule": "RULE-56",
+          "test": "dev/test_host.py::test_github_ref_name_run_main_4f1c2ab_is_a_run_that_commits"
         },
         {
           "env": null,
           "id": "PROOF-107",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-28",
-          "test": "dev/test_host.py::test_any_other_branch_says_it_is_neither_a_run_branch_nor_a_tag"
-        },
-        {
-          "env": null,
-          "id": "PROOF-104",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-37",
-          "test": "dev/test_host.py::test_the_last_part_of_an_azure_ref_alone_commits_nothing"
+          "rule": "RULE-56",
+          "test": "dev/test_host.py::test_a_run_on_topic_says_it_is_not_a_run_branch"
         },
         {
           "env": null,
           "id": "PROOF-105",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-37",
-          "test": "dev/test_host.py::test_the_whole_azure_ref_is_read_first"
+          "rule": "RULE-56",
+          "test": "dev/test_host.py::test_the_whole_azure_ref_run_main_4f1c2ab_is_read_so_the_run_commits"
+        },
+        {
+          "env": null,
+          "id": "PROOF-22",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_host.py::test_a_403_with_retry_after_1_waits_1_second_says_so_and_sends_again"
+        },
+        {
+          "env": null,
+          "id": "PROOF-91",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_host.py::test_a_retry_after_of_900_seconds_waits_exactly_120"
+        },
+        {
+          "env": null,
+          "id": "PROOF-94",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_host.py::test_a_403_naming_no_wait_sends_1_tree_request_and_stops_with_403"
+        },
+        {
+          "env": null,
+          "id": "PROOF-24",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_host.py::test_a_green_run_pushes_watches_pulls_and_deletes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-68",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_host.py::test_a_red_run_still_pulls_and_prints_the_table"
+        },
+        {
+          "env": "windows",
+          "id": "PROOF-117",
+          "manual": false,
+          "result": "not run",
+          "rule": "RULE-12",
+          "test": "dev/test_host.py::test_on_windows_gh_cmd_is_found_and_the_run_goes_round"
+        },
+        {
+          "env": null,
+          "id": "PROOF-63",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-51",
+          "test": "dev/test_host.py::test_one_uncommitted_file_exits_1_with_the_one_line_and_no_push"
         },
         {
           "env": null,
           "id": "PROOF-53",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-33",
-          "test": "dev/test_host.py::test_a_project_whose_settings_say_ci_none_pushes_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-106",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-34",
-          "test": "dev/test_host.py::test_a_commit_with_no_branch_named_sends_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-108",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-35",
-          "test": "dev/test_host.py::test_a_settings_file_that_cannot_be_read_pushes_nothing"
+          "rule": "RULE-51",
+          "test": "dev/test_host.py::test_a_gitlab_origin_exits_1_with_the_one_line_and_pushes_nothing"
         },
         {
           "env": null,
           "id": "PROOF-71",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-42",
+          "rule": "RULE-51",
           "test": "dev/test_host.py::test_without_gh_the_run_is_neither_watched_nor_pulled"
         },
         {
           "env": null,
-          "id": "PROOF-82",
+          "id": "PROOF-36",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-42",
-          "test": "dev/test_remote.py::test_without_az_the_run_is_neither_found_nor_pulled"
+          "rule": "RULE-30",
+          "test": "dev/test_remote.py::test_the_https_form_names_the_organisation_and_the_project"
         },
         {
           "env": null,
-          "id": "PROOF-130",
+          "id": "PROOF-112",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-43",
-          "test": "dev/test_remote.py::test_the_wait_on_azure_devops_is_announced_after_the_push"
+          "rule": "RULE-30",
+          "test": "dev/test_remote.py::test_the_visualstudio_form_names_the_organisation_and_the_project"
         },
         {
           "env": null,
-          "id": "PROOF-131",
+          "id": "PROOF-113",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-43",
-          "test": "dev/test_host.py::test_a_run_branch_that_cannot_be_deleted_is_named_with_its_command"
+          "rule": "RULE-30",
+          "test": "dev/test_remote.py::test_a_percent_encoded_project_in_the_ssh_form_is_decoded"
         },
         {
           "env": null,
-          "id": "PROOF-132",
+          "id": "PROOF-78",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-43",
-          "test": "dev/test_host.py::test_a_command_that_cannot_be_started_is_named_with_the_error"
+          "rule": "RULE-31",
+          "test": "dev/test_remote.py::test_a_succeeded_run_is_brought_home_green"
         },
         {
           "env": null,
-          "id": "PROOF-133",
+          "id": "PROOF-79",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-44",
-          "test": "dev/test_consumer_ci.py::test_the_runner_file_opens_on_why_it_exists"
+          "rule": "RULE-31",
+          "test": "dev/test_remote.py::test_a_failed_run_says_so_pulls_deletes_and_exits_1"
         },
         {
           "env": null,
-          "id": "PROOF-134",
+          "id": "PROOF-81",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-44",
-          "test": "dev/test_consumer_ci.py::test_the_runner_file_says_whom_the_matrix_holds"
+          "rule": "RULE-31",
+          "test": "dev/test_remote.py::test_a_run_past_ninety_minutes_is_polled_361_times_and_left"
         },
         {
           "env": null,
-          "id": "PROOF-135",
+          "id": "PROOF-83",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-44",
-          "test": "dev/test_consumer_ci.py::test_the_runner_file_says_what_starts_a_run"
-        },
-        {
-          "env": null,
-          "id": "PROOF-136",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-44",
-          "test": "dev/test_consumer_ci.py::test_the_runner_file_says_the_job_is_capped_at_ninety_minutes"
-        },
-        {
-          "env": null,
-          "id": "PROOF-137",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-44",
-          "test": "dev/test_consumer_ci.py::test_the_runner_file_says_no_breaks_and_no_audit_run_there"
-        },
-        {
-          "env": null,
-          "id": "PROOF-138",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-44",
-          "test": "dev/test_consumer_ci.py::test_the_runner_file_says_each_test_command_has_an_hour"
+          "rule": "RULE-52",
+          "test": "dev/test_remote.py::test_no_process_can_wait_forever_or_prompt"
         },
         {
           "env": null,
           "id": "PROOF-139",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-45",
+          "rule": "RULE-52",
           "test": "dev/test_host.py::test_no_github_process_can_prompt"
+        },
+        {
+          "env": null,
+          "id": "PROOF-142",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-53",
+          "test": "dev/test_consumer_ci.py::test_both_runner_files_start_on_a_run_branch_alone_and_no_tag"
+        },
+        {
+          "env": null,
+          "id": "PROOF-47",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-53",
+          "test": "dev/test_consumer_ci.py::test_the_azure_pipeline_reads_pr_none_and_ends_on_run_the_tests"
+        },
+        {
+          "env": null,
+          "id": "PROOF-48",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-53",
+          "test": "dev/test_consumer_ci.py::test_a_project_that_names_windows_alone_gets_one_windows_job"
+        },
+        {
+          "env": null,
+          "id": "PROOF-140",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-54",
+          "test": "dev/test_host.py::test_on_a_mac_a_github_origin_with_no_runner_file_gets_one_and_no_push"
+        },
+        {
+          "env": null,
+          "id": "PROOF-141",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-54",
+          "test": "dev/test_host.py::test_on_a_mac_an_azure_origin_with_no_runner_file_gets_one_and_no_push"
+        },
+        {
+          "env": null,
+          "id": "PROOF-143",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-54",
+          "test": "dev/test_host.py::test_commit_runner_commits_the_runner_file_alone_then_pushes"
         }
       ],
       "rules": {
         "RULE-12": "not run",
-        "RULE-17": "passed",
-        "RULE-18": "passed",
-        "RULE-19": "passed",
-        "RULE-20": "passed",
         "RULE-22": "passed",
-        "RULE-24": "not run",
-        "RULE-27": "not run",
-        "RULE-28": "passed",
+        "RULE-27": "passed",
         "RULE-30": "passed",
-        "RULE-31": "not run",
-        "RULE-32": "passed",
-        "RULE-33": "passed",
-        "RULE-34": "passed",
-        "RULE-35": "passed",
-        "RULE-36": "passed",
-        "RULE-37": "passed",
-        "RULE-38": "passed",
-        "RULE-39": "passed",
+        "RULE-31": "passed",
         "RULE-40": "passed",
-        "RULE-41": "passed",
-        "RULE-42": "passed",
-        "RULE-43": "passed",
-        "RULE-44": "passed",
-        "RULE-45": "passed",
-        "RULE-5": "not run",
-        "RULE-6": "passed",
-        "RULE-7": "passed",
+        "RULE-49": "passed",
+        "RULE-50": "passed",
+        "RULE-51": "passed",
+        "RULE-52": "passed",
+        "RULE-53": "passed",
+        "RULE-54": "passed",
+        "RULE-55": "not run",
+        "RULE-56": "passed",
         "RULE-8": "passed"
       },
       "runner": "rich-labarca"

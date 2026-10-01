@@ -2,13 +2,14 @@
   "feature": "package",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T01:14:49Z",
-      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
+      "at": "2026-10-01T18:13:43Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
       "dirty": false,
+      "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "3c74701b3b47cb541856aa4c4fb82ca48a60ffb16208f48b461fe544c21b58e3",
-        "spec": "4ddd171d588fe0baa76e7d86cba43406b3c6b7883c30d13f4ae523713550d045",
-        "tests": "ac9d77caa1953ca1c832edaa22f392959c36fcc274d9c5444a8af1df51be391d"
+        "code": "5f5ff04227c1c208a194ce4d702641ccd210c9e795caec937912df95dc88450d",
+        "spec": "7a6c04e7b33fe44cb88e878ba4bf5e5b62e45173e82737e58b5f0949486e2fd0",
+        "tests": "0b5cb3c033e4dbc3c535734ea493b9c6efe380b290e9337cf6af21a27b75ceb2"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -18,15 +19,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_export.py::TestTheFile::test_it_writes_the_version_file_prints_the_state_and_commits_nothing"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-38",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-1",
-          "test": "dev/test_export.py::TestTheFile::test_it_writes_the_version_file_prints_the_state_and_commits_nothing"
+          "test": "dev/test_export.py::TestTheFile::test_the_signed_commit_carries_the_package_and_no_worktree_is_left"
         },
         {
           "env": null,
@@ -34,7 +27,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_export.py::TestTheFile::test_release_names_the_version_the_file_and_the_tag"
+          "test": "dev/test_export.py::TestTheFile::test_version_names_the_file_and_the_tag"
         },
         {
           "env": null,
@@ -42,7 +35,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_export.py::TestTheFile::test_release_names_a_version_where_the_project_states_none"
+          "test": "dev/test_export.py::TestTheFile::test_version_names_one_where_the_project_states_none"
         },
         {
           "env": null,
@@ -50,7 +43,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_export.py::TestTheFile::test_the_top_level_keys_come_in_the_format_order"
+          "test": "dev/test_export.py::TestTheFile::test_the_sixteen_top_level_keys_come_in_order"
         },
         {
           "env": null,
@@ -58,15 +51,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-3",
-          "test": "dev/test_export.py::TestTheFile::test_a_code_change_committed_after_the_evidence_is_the_commit_named"
-        },
-        {
-          "env": null,
-          "id": "PROOF-4",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_export.py::TestTheState::test_a_project_with_no_evidence_is_not_finished"
+          "test": "dev/test_export.py::TestTheFile::test_a_later_version_names_the_code_not_the_sign_off"
         },
         {
           "env": null,
@@ -74,7 +59,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_export.py::TestTheState::test_a_rule_with_no_proof_is_left_to_write_one_for"
+          "test": "dev/test_export.py::TestMet::test_a_rule_with_no_proof_is_left_to_write_one_for"
         },
         {
           "env": null,
@@ -82,7 +67,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-5",
-          "test": "dev/test_export.py::TestTheState::test_at_passed_rules_that_pass_are_finished"
+          "test": "dev/test_export.py::TestMet::test_two_rules_that_pass_are_met"
+        },
+        {
+          "env": null,
+          "id": "PROOF-63",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_export.py::TestMet::test_a_rule_left_only_to_strengthen_leaves_it_met"
         },
         {
           "env": null,
@@ -102,27 +95,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-12",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_export.py::TestWhatGitHolds::test_evidence_not_committed_is_left_out_and_named"
-        },
-        {
-          "env": null,
           "id": "PROOF-13",
           "manual": false,
           "result": "pass",
           "rule": "RULE-8",
-          "test": "dev/test_export.py::TestTheBytes::test_exporting_twice_gives_the_same_bytes"
-        },
-        {
-          "env": null,
-          "id": "PROOF-14",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_export.py::TestTheBytes::test_a_second_clone_at_the_tag_gives_the_committed_bytes"
+          "test": "dev/test_export.py::TestTheBytes::test_two_clones_at_one_commit_give_the_same_bytes"
         },
         {
           "env": "windows",
@@ -130,15 +107,7 @@
           "manual": false,
           "result": "not run",
           "rule": "RULE-8",
-          "test": "dev/test_export.py::TestTheBytes::test_a_second_clone_at_the_tag_gives_the_committed_bytes"
-        },
-        {
-          "env": null,
-          "id": "PROOF-16",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_export.py::TestTheFingerprint::test_check_passes_a_package_as_written"
+          "test": "dev/test_export.py::TestTheBytes::test_on_windows_two_clones_give_the_same_bytes"
         },
         {
           "env": null,
@@ -146,7 +115,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
-          "test": "dev/test_export.py::TestTheFingerprint::test_the_fingerprint_is_the_sha256_of_the_file_with_it_emptied"
+          "test": "dev/test_export.py::TestTheFingerprint::test_the_fingerprint_is_the_sha256_with_it_emptied"
         },
         {
           "env": null,
@@ -158,43 +127,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-33",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_export.py::TestTheFingerprint::test_check_refuses_carriage_returns_before_each_newline"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-40",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-9",
-          "test": "dev/test_export.py::TestTheFingerprint::test_check_passes_a_package_as_written"
-        },
-        {
-          "env": null,
-          "id": "PROOF-10",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_export.py::TestCommitting::test_commit_commits_the_package_as_evidence_at_head"
-        },
-        {
-          "env": null,
-          "id": "PROOF-35",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_export.py::TestCommitting::test_commit_leaves_a_change_staged_elsewhere_out"
-        },
-        {
-          "env": null,
           "id": "PROOF-25",
           "manual": false,
           "result": "pass",
           "rule": "RULE-11",
-          "test": "dev/test_export.py::TestTheContent::test_one_rule_carries_its_result_and_the_machine"
+          "test": "dev/test_export.py::TestTheContent::test_a_remote_runners_result_names_its_machine"
         },
         {
           "env": null,
@@ -210,7 +147,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-14",
-          "test": "dev/test_export.py::TestTheContent::test_at_signed_a_rule_carries_two_statuses"
+          "test": "dev/test_export.py::TestTheContent::test_a_strong_rule_carries_passed_and_strong"
         },
         {
           "env": null,
@@ -218,23 +155,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-14",
-          "test": "dev/test_export.py::TestTheContent::test_at_passed_a_rule_carries_two_statuses"
-        },
-        {
-          "env": null,
-          "id": "PROOF-11",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_export.py::TestTheContent::test_nothing_names_who_last_changed_a_test"
-        },
-        {
-          "env": null,
-          "id": "PROOF-21",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-16",
-          "test": "dev/test_export.py::TestTheFile::test_with_no_version_it_writes_nothing_and_says_how_to_name_one"
+          "test": "dev/test_export.py::TestTheContent::test_a_rule_no_audit_read_carries_passed_and_not_audited"
         },
         {
           "env": null,
@@ -242,63 +163,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-17",
-          "test": "dev/test_export.py::TestTheBytes::test_every_time_is_utc"
-        },
-        {
-          "env": null,
-          "id": "PROOF-34",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_export.py::TestCommitting::test_a_second_commit_over_the_same_evidence_is_unchanged"
-        },
-        {
-          "env": null,
-          "id": "PROOF-36",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-19",
-          "test": "dev/test_export.py::TestTheSettings::test_a_settings_file_that_cannot_be_read_stops_the_export"
-        },
-        {
-          "env": null,
-          "id": "PROOF-37",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-19",
-          "test": "dev/test_export.py::TestTheSettings::test_a_settings_file_that_cannot_be_read_stops_the_check"
-        },
-        {
-          "env": null,
-          "id": "PROOF-41",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-20",
-          "test": "dev/test_export.py::TestTheRefusals::test_a_project_root_that_is_not_a_folder_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-42",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-21",
-          "test": "dev/test_export.py::TestTheRefusals::test_an_option_with_no_value_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-43",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-21",
-          "test": "dev/test_export.py::TestTheRefusals::test_an_argument_it_does_not_take_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-44",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-21",
-          "test": "dev/test_export.py::TestTheRefusals::test_check_beside_another_option_is_refused"
+          "test": "dev/test_export.py::TestTheContent::test_every_time_is_utc"
         },
         {
           "env": null,
@@ -306,7 +171,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-22",
-          "test": "dev/test_export.py::TestTheRefusals::test_check_names_a_file_that_is_not_utf8_json"
+          "test": "dev/test_export.py::TestTheFingerprint::test_check_names_a_file_that_is_not_utf8_json"
         },
         {
           "env": null,
@@ -314,47 +179,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-22",
-          "test": "dev/test_export.py::TestTheRefusals::test_check_names_another_schema"
-        },
-        {
-          "env": null,
-          "id": "PROOF-47",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_export.py::TestTheRefusals::test_check_names_a_key_the_format_does_not_name"
-        },
-        {
-          "env": null,
-          "id": "PROOF-48",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_export.py::TestTheRefusals::test_check_names_top_level_keys_out_of_the_format"
-        },
-        {
-          "env": null,
-          "id": "PROOF-49",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_export.py::TestTheRefusals::test_check_names_a_file_that_cannot_be_read"
-        },
-        {
-          "env": null,
-          "id": "PROOF-50",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-23",
-          "test": "dev/test_export.py::TestTheRefusals::test_a_project_with_no_commit_is_not_written"
-        },
-        {
-          "env": null,
-          "id": "PROOF-51",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-23",
-          "test": "dev/test_export.py::TestTheRefusals::test_a_commit_git_cannot_check_out_is_not_written"
+          "test": "dev/test_export.py::TestTheFingerprint::test_check_names_another_schema"
         },
         {
           "env": null,
@@ -362,23 +187,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-23",
-          "test": "dev/test_export.py::TestTheRefusals::test_a_package_folder_that_is_a_file_is_not_written"
-        },
-        {
-          "env": null,
-          "id": "PROOF-53",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-24",
-          "test": "dev/test_export.py::TestTheRefusals::test_a_commit_git_refuses_is_not_committed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-54",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-24",
-          "test": "dev/test_export.py::TestTheRefusals::test_a_file_git_cannot_add_is_not_committed"
+          "test": "dev/test_export.py::TestTheFile::test_a_package_folder_that_is_a_file_is_named_and_nothing_made"
         },
         {
           "env": null,
@@ -386,7 +195,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-25",
-          "test": "dev/test_export.py::TestTheContent::test_the_package_states_the_gate_and_claims_no_compliance"
+          "test": "dev/test_export.py::TestMet::test_it_states_met_and_claims_no_compliance"
         },
         {
           "env": null,
@@ -406,19 +215,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-60",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-28",
-          "test": "dev/test_export.py::TestABrokenSpec::test_a_broken_spec_is_left_to_repair"
-        },
-        {
-          "env": null,
           "id": "PROOF-61",
           "manual": false,
           "result": "pass",
           "rule": "RULE-29",
-          "test": "dev/test_export.py::TestTheAuditAndTheHandChecks::test_the_package_counts_what_the_audit_found"
+          "test": "dev/test_export.py::TestTheContent::test_the_package_counts_what_the_audit_found"
         },
         {
           "env": null,
@@ -426,55 +227,121 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-29",
-          "test": "dev/test_export.py::TestTheAuditAndTheHandChecks::test_a_hand_check_is_listed_at_signed"
+          "test": "dev/test_export.py::TestTheContent::test_a_hand_check_is_listed_in_the_sign_offs"
         },
         {
           "env": null,
-          "id": "PROOF-63",
+          "id": "PROOF-65",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-30",
-          "test": "dev/test_export.py::TestTheAuditAndTheHandChecks::test_a_rule_left_only_to_strengthen_leaves_it_finished"
+          "rule": "RULE-32",
+          "test": "dev/test_export.py::TestTheRuns::test_one_local_run_is_one_entry"
         },
         {
           "env": null,
-          "id": "PROOF-64",
+          "id": "PROOF-66",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-31",
-          "test": "dev/test_export.py::TestTheAuditAndTheHandChecks::test_at_passed_the_tag_is_passed"
+          "rule": "RULE-32",
+          "test": "dev/test_export.py::TestTheRuns::test_a_remote_run_follows_the_local_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-67",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_export.py::TestTheRuns::test_results_pulled_home_after_are_the_same_code"
+        },
+        {
+          "env": null,
+          "id": "PROOF-68",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_export.py::TestTheRuns::test_a_change_outside_the_records_after_the_run_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-69",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_export.py::TestTheRuns::test_the_project_is_named_by_its_own_files"
+        },
+        {
+          "env": null,
+          "id": "PROOF-70",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_export.py::TestTheFile::test_the_version_file_comes_before_package_json"
+        },
+        {
+          "env": null,
+          "id": "PROOF-71",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_export.py::TestTheFile::test_pyproject_states_the_version_where_nothing_before_it_does"
+        },
+        {
+          "env": null,
+          "id": "PROOF-72",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_export.py::TestAnchors::test_a_proof_with_nothing_to_check_carries_its_reason"
+        },
+        {
+          "env": null,
+          "id": "PROOF-74",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-37",
+          "test": "dev/test_export.py::TestTheAuthors::test_a_reworded_proof_names_who_wrote_it_and_who_changed_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-75",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-37",
+          "test": "dev/test_export.py::TestTheAuthors::test_a_test_names_who_last_changed_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-76",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-37",
+          "test": "dev/test_export.py::TestTheAuthors::test_a_renumbered_rule_names_who_first_wrote_its_words"
         }
       ],
       "rules": {
-        "RULE-1": "not run",
-        "RULE-10": "passed",
+        "RULE-1": "passed",
         "RULE-11": "passed",
         "RULE-12": "passed",
         "RULE-14": "passed",
-        "RULE-15": "passed",
-        "RULE-16": "passed",
         "RULE-17": "passed",
-        "RULE-18": "passed",
-        "RULE-19": "passed",
         "RULE-2": "passed",
-        "RULE-20": "passed",
-        "RULE-21": "passed",
         "RULE-22": "passed",
         "RULE-23": "passed",
-        "RULE-24": "passed",
         "RULE-25": "passed",
         "RULE-26": "passed",
-        "RULE-28": "passed",
         "RULE-29": "passed",
         "RULE-3": "passed",
-        "RULE-30": "passed",
-        "RULE-31": "passed",
+        "RULE-32": "passed",
+        "RULE-33": "passed",
+        "RULE-34": "passed",
+        "RULE-35": "passed",
+        "RULE-36": "passed",
+        "RULE-37": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",
-        "RULE-7": "passed",
         "RULE-8": "not run",
-        "RULE-9": "not run"
+        "RULE-9": "passed"
       },
       "runner": "rich-labarca"
     }

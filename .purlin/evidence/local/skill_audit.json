@@ -2,203 +2,36 @@
   "feature": "skill_audit",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T01:14:50Z",
-      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
+      "at": "2026-10-01T18:13:44Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
       "dirty": false,
+      "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "fb3c969f1acb2f639bf3e3c2b3668714ac23e1c7a368c193cb46546669ee7861",
-        "spec": "c5c267108accedfe3ad0019e5f42fa8b91e76f0ccf9e422f045b5d81b947403b",
-        "tests": "87581c45d603763ab7d8c29773295fec5bb34d7a9edf2badcbc4d83fabfce664"
+        "code": "e106ef97e6700f4a93ecd469430a965b931d7e8d418fd41cd736d743ea96bbd6",
+        "spec": "636b37d55b61f2b8192d6779dc6d0136d340218e25fbb219a955324baae4c749",
+        "tests": "b4e0218610a9b70453c17acd74e1950e4ab4a0fcae6d8a0dd753bba2d53baccc"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
-          "id": "PROOF-1",
+          "id": "PROOF-59",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_the_frontmatter_names_the_skill_on_one_line"
+          "rule": "RULE-29",
+          "test": "dev/test_skill_audit.py::test_a_reader_finds_each_command_and_path_named"
         },
         {
           "env": null,
-          "id": "PROOF-2",
+          "id": "PROOF-56",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_one_line_runs_the_run_script_with_audit"
-        },
-        {
-          "env": null,
-          "id": "PROOF-3",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_it_closes_on_the_first_line_of_left_to_do"
-        },
-        {
-          "env": null,
-          "id": "PROOF-4",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_it_stays_under_its_ceiling"
-        },
-        {
-          "env": null,
-          "id": "PROOF-31",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_a_copy_of_exactly_105_lines_is_not_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-32",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_a_copy_of_106_lines_is_refused_with_its_count"
-        },
-        {
-          "env": null,
-          "id": "PROOF-5",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_both_sources_count_under_every_gate"
-        },
-        {
-          "env": null,
-          "id": "PROOF-6",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_the_passed_row_reads_with_the_ai_audit_and_measures_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-38",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_the_signed_row_runs_what_passed_runs_and_counts_both"
-        },
-        {
-          "env": null,
-          "id": "PROOF-7",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_the_audit_is_written_into_the_local_file"
-        },
-        {
-          "env": null,
-          "id": "PROOF-11",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_the_audit_line_comes_before_the_ending"
-        },
-        {
-          "env": null,
-          "id": "PROOF-12",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_the_commit_sentence_names_the_evidence_subject"
-        },
-        {
-          "env": null,
-          "id": "PROOF-39",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_nothing_the_audit_found_sets_the_exit_code"
-        },
-        {
-          "env": null,
-          "id": "PROOF-50",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_the_arm_timeout_is_in_the_usage_and_passed_on"
-        },
-        {
-          "env": null,
-          "id": "PROOF-17",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-11",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_the_command_reference_has_a_row_with_a_purpose"
-        },
-        {
-          "env": null,
-          "id": "PROOF-26",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_one_sentence_says_nobody_runs_the_runner_arm"
-        },
-        {
-          "env": null,
-          "id": "PROOF-33",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_both_evidence_folders_are_named"
-        },
-        {
-          "env": null,
-          "id": "PROOF-44",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-14",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_one_sentence_says_what_a_file_keeps"
-        },
-        {
-          "env": null,
-          "id": "PROOF-45",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_remote_belongs_to_purlin_test"
-        },
-        {
-          "env": null,
-          "id": "PROOF-51",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-24",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_the_first_sync_status_names_the_project_root"
-        },
-        {
-          "env": null,
-          "id": "PROOF-52",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-25",
-          "test": "dev/test_skill_audit.py::TestSkillAudit::test_the_audit_is_a_tool_nothing_waits_on"
+          "rule": "RULE-29",
+          "test": "dev/test_skill_audit.py::test_a_copy_without_the_criteria_is_reported"
         }
       ],
       "rules": {
-        "RULE-1": "passed",
-        "RULE-10": "passed",
-        "RULE-11": "passed",
-        "RULE-12": "passed",
-        "RULE-13": "passed",
-        "RULE-14": "passed",
-        "RULE-15": "passed",
-        "RULE-2": "passed",
-        "RULE-24": "passed",
-        "RULE-25": "passed",
-        "RULE-3": "passed",
-        "RULE-4": "passed",
-        "RULE-5": "passed",
-        "RULE-6": "passed",
-        "RULE-7": "passed",
-        "RULE-8": "passed",
-        "RULE-9": "passed"
+        "RULE-29": "passed"
       },
       "runner": "rich-labarca"
     }

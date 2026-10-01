@@ -1,0 +1,34 @@
+{
+  "feature": "collaboration",
+  "platforms": {
+    "macos": {
+      "at": "2026-10-01T18:13:43Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
+      "dirty": false,
+      "email": "rich.labarca@gmail.com",
+      "fingerprint": {
+        "code": "e11f2c143671ad28e00f4fc5fdd429ea056232912f49be4757b1b1a09ebc62c0",
+        "spec": "b026fa40b9a842a7f6a086ebfd9dca3ab53ed493f03892dd80fc993a2cc1b313",
+        "tests": "902e9ed037c6b6ebe7b860d09dcbdce72b48757a596ebe2b209a23dec95a9060"
+      },
+      "machine": "Richs-MacBook-Pro.local",
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_collaboration.py::test_three_people_reach_a_signed_version"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed"
+      },
+      "runner": "rich-labarca"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "local",
+  "spec": "specs/workflow/collaboration.md"
+}

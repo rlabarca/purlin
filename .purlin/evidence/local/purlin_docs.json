@@ -2,110 +2,54 @@
   "feature": "purlin_docs",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T01:14:49Z",
-      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
+      "at": "2026-10-01T18:13:43Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
       "dirty": false,
+      "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "9cc1852266ed361addfb817426ce49fae4d2576fc30a702f3f5fad94b2f2a284",
-        "spec": "36f26333eef110c94ab8d4f52331d3d065a1132d6ac7725d86b5d301a5cd28b0",
-        "tests": "cc7e42f3e78b8c32d50b63c3f2346e0797fb483f9687f8bc73c780aa1c40a907"
+        "code": "3feeef55bcf171ab051a422bfacf746c3f5c6c6ce49940c20d5ff3ee07a0fc63",
+        "spec": "9f6515493cb7e4b5b6c042f77180f7a99864a7737416f2303ba0d22e722b541a",
+        "tests": "c44becfc8ac0ddca6eaac2004d699ccccc0c59c6c995f38a576712c9cd610295"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
-        {
-          "env": null,
-          "id": "PROOF-1",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_purlin_docs.py::TestCommandTable::test_each_row_carries_the_references_purpose_sentence"
-        },
-        {
-          "env": null,
-          "id": "PROOF-2",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_purlin_docs.py::TestCommandTable::test_every_command_of_the_reference_has_a_row"
-        },
-        {
-          "env": null,
-          "id": "PROOF-3",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_purlin_docs.py::TestQuotedLines::test_setups_lines_are_printed_by_setup"
-        },
-        {
-          "env": null,
-          "id": "PROOF-4",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_purlin_docs.py::TestQuotedLines::test_the_first_runs_lines_are_printed_by_it"
-        },
-        {
-          "env": null,
-          "id": "PROOF-5",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_purlin_docs.py::TestQuotedLines::test_the_confirmed_runs_lines_are_printed_by_it"
-        },
-        {
-          "env": null,
-          "id": "PROOF-6",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_purlin_docs.py::TestQuotedLines::test_the_commit_runs_lines_are_printed_by_it"
-        },
-        {
-          "env": null,
-          "id": "PROOF-7",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_purlin_docs.py::TestQuotedLines::test_the_failing_runs_lines_are_printed_by_it"
-        },
-        {
-          "env": null,
-          "id": "PROOF-8",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_purlin_docs.py::TestQuotedLines::test_the_no_tool_line_is_printed_by_that_run"
-        },
-        {
-          "env": null,
-          "id": "PROOF-9",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_purlin_docs.py::TestQuotedLines::test_every_quote_names_a_run_and_every_block_a_language"
-        },
         {
           "env": null,
           "id": "PROOF-17",
           "manual": false,
           "result": "pass",
           "rule": "RULE-12",
-          "test": "dev/test_purlin_docs.py::TestLinks::test_every_relative_link_names_a_file_and_a_heading"
+          "test": "dev/test_purlin_docs.py::test_every_relative_link_on_the_docs_pages_names_a_file_and_a_heading"
         },
         {
           "env": null,
-          "id": "PROOF-18",
+          "id": "PROOF-21",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_purlin_docs.py::TestReleasePage::test_the_table_of_tags_names_both_tags_and_their_commands"
+          "rule": "RULE-15",
+          "test": "dev/test_purlin_docs.py::test_the_audit_page_cites_the_five_papers_each_as_an_https_link"
+        },
+        {
+          "env": null,
+          "id": "PROOF-22",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_purlin_docs.py::test_every_link_of_the_audit_page_appears_again_under_sources"
+        },
+        {
+          "env": null,
+          "id": "PROOF-24",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_purlin_docs.py::test_one_paragraph_of_working_together_names_a_worktree"
         }
       ],
       "rules": {
-        "RULE-1": "passed",
         "RULE-12": "passed",
-        "RULE-13": "passed",
-        "RULE-2": "passed"
+        "RULE-15": "passed",
+        "RULE-16": "passed"
       },
       "runner": "rich-labarca"
     }

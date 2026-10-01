@@ -2,169 +2,36 @@
   "feature": "skill_anchor",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T01:14:50Z",
-      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
+      "at": "2026-10-01T18:13:44Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
       "dirty": false,
+      "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "f9013711863449e330375557f699ee1e79570ea3895b41e87c4411bcdcea8988",
-        "spec": "33dd9289f17670895509443e59244ca1b47674f9f4172a03c655a56b251feb4a",
-        "tests": "aed22d99d09838181923c66703c1910c1ada9149b89c9a72b03ece76f8797477"
+        "code": "72afa7ae1db3b5b5b0513cee7aead74b22dd4f983ae6f19c34f157305a93ace2",
+        "spec": "50a282b46333d9153e56618046d8bbc8300efcc7ee61921d990eea250ff29880",
+        "tests": "118c257e998b255aee17b4404b026de8df8bcf505f823a0ec6c6c91d51d28d31"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
-          "id": "PROOF-1",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_anchor.py::TestFrontmatter::test_the_skill_opens_with_its_name_and_a_one_line_description"
-        },
-        {
-          "env": null,
           "id": "PROOF-2",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_anchor.py::TestTheScript::test_the_script_is_given_with_add_and_with_sync"
-        },
-        {
-          "env": null,
-          "id": "PROOF-3",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_anchor.py::TestTheNextStep::test_every_closing_outcome_names_the_next_step"
-        },
-        {
-          "env": null,
-          "id": "PROOF-4",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_skill_anchor.py::TestTheCeiling::test_the_skill_holds_at_most_160_lines"
-        },
-        {
-          "env": null,
-          "id": "PROOF-24",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_skill_anchor.py::TestTheCeiling::test_a_skill_of_exactly_160_lines_passes"
-        },
-        {
-          "env": null,
-          "id": "PROOF-5",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_anchor.py::TestThePin::test_a_pin_is_a_commit_never_a_branch"
-        },
-        {
-          "env": null,
-          "id": "PROOF-7",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_skill_anchor.py::TestTheFolder::test_the_first_anchor_creates_the_folder"
-        },
-        {
-          "env": null,
-          "id": "PROOF-33",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_skill_anchor.py::TestTheSource::test_the_source_is_a_spec_in_a_repository"
-        },
-        {
-          "env": null,
-          "id": "PROOF-9",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_skill_anchor.py::TestFrontmatter::test_the_command_reference_has_a_row_for_the_command"
+          "rule": "RULE-18",
+          "test": "dev/test_skill_anchor.py::test_the_anchor_skill_holds_each_of_its_six_files"
         },
         {
           "env": null,
           "id": "PROOF-16",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_skill_anchor.py::TestTheScript::test_the_sync_section_names_the_check_drift_runs"
-        },
-        {
-          "env": null,
-          "id": "PROOF-27",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_skill_anchor.py::TestThePin::test_a_pinned_rule_is_never_edited_in_place"
-        },
-        {
-          "env": null,
-          "id": "PROOF-29",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-11",
-          "test": "dev/test_skill_anchor.py::TestThePin::test_a_change_goes_to_the_source_repository"
-        },
-        {
-          "env": null,
-          "id": "PROOF-31",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_skill_anchor.py::TestThePin::test_a_local_rule_goes_in_a_local_anchor_or_each_feature"
-        },
-        {
-          "env": null,
-          "id": "PROOF-34",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_skill_anchor.py::TestTheAnchorRepository::test_an_anchor_repository_is_for_two_or_more_projects"
-        },
-        {
-          "env": null,
-          "id": "PROOF-35",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-14",
-          "test": "dev/test_skill_anchor.py::test_a_new_anchor_is_committed_with_the_create_prefix"
-        },
-        {
-          "env": null,
-          "id": "PROOF-36",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_skill_anchor.py::TestTheWholeProject::test_an_anchor_carries_no_scope_and_names_no_spec"
-        },
-        {
-          "env": null,
-          "id": "PROOF-37",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_skill_anchor.py::TestTheWholeProject::test_a_rule_not_checkable_everywhere_goes_in_each_feature"
+          "rule": "RULE-18",
+          "test": "dev/test_skill_anchor.py::test_the_anchor_skill_holds_each_of_its_five_commands"
         }
       ],
       "rules": {
-        "RULE-1": "passed",
-        "RULE-10": "passed",
-        "RULE-11": "passed",
-        "RULE-12": "passed",
-        "RULE-13": "passed",
-        "RULE-14": "passed",
-        "RULE-15": "passed",
-        "RULE-2": "passed",
-        "RULE-3": "passed",
-        "RULE-4": "passed",
-        "RULE-5": "passed",
-        "RULE-6": "passed",
-        "RULE-7": "passed",
-        "RULE-8": "passed",
-        "RULE-9": "passed"
+        "RULE-18": "passed"
       },
       "runner": "rich-labarca"
     }

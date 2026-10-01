@@ -2,214 +2,44 @@
   "feature": "skill_init",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T01:14:50Z",
-      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
+      "at": "2026-10-01T18:13:44Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
       "dirty": false,
+      "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "830a44a192e31f597e7c8419c1e3650673a14ab1cc34bd7bd954e2af9546b289",
-        "spec": "53f5a8ac1b6a4e00be81e84032646edff53f5a4c8139d0b7e7fc1cdc83f08448",
-        "tests": "58e606be64a7046bb4eb2dffde4902312dd73fa1e4a4c7789c1c66edfbff1ebb"
+        "code": "195418f9858c85d242a0bad9cef538031e1ecb1caa22ebda172c626f03b570d5",
+        "spec": "5fcd9d9075c9289608c80397521fe146f1c021f4bda41a86c713ac196e5eed25",
+        "tests": "046ae44c69f30457a7f5bc357e69fef648e74bfffd42d83a48a7481d93bad8b2"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
-          "id": "PROOF-1",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_init.py::TestFrontmatter::test_the_frontmatter_names_the_skill_on_one_line"
-        },
-        {
-          "env": null,
-          "id": "PROOF-16",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_skill_init.py::TestFrontmatter::test_the_command_reference_has_a_row_for_init"
-        },
-        {
-          "env": null,
           "id": "PROOF-2",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_init.py::TestRunLine::test_one_line_runs_the_script_with_the_root_and_the_gate"
-        },
-        {
-          "env": null,
-          "id": "PROOF-23",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_init.py::TestRunLine::test_the_five_flags_are_handed_to_the_reader"
-        },
-        {
-          "env": null,
-          "id": "PROOF-96",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_init.py::TestRunLine::test_the_yes_row_says_it_commits"
+          "rule": "RULE-87",
+          "test": "dev/test_skill_init.py::test_one_line_runs_the_script_through_the_lookup_with_the_root"
         },
         {
           "env": null,
           "id": "PROOF-24",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_init.py::TestRunLine::test_every_flag_handed_is_one_the_script_takes"
-        },
-        {
-          "env": null,
-          "id": "PROOF-3",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_init.py::TestClosingSection::test_it_closes_with_a_directive_for_each_state"
-        },
-        {
-          "env": null,
-          "id": "PROOF-4",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_skill_init.py::TestCeiling::test_it_is_at_most_250_lines"
-        },
-        {
-          "env": null,
-          "id": "PROOF-5",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_init.py::TestQuestions::test_it_names_the_three_questions_in_order"
-        },
-        {
-          "env": null,
-          "id": "PROOF-30",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_init.py::TestQuestions::test_the_second_question_is_asked_only_where_it_runs"
-        },
-        {
-          "env": null,
-          "id": "PROOF-31",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_init.py::TestQuestions::test_the_gate_table_lists_the_two_answers_in_order"
-        },
-        {
-          "env": null,
-          "id": "PROOF-32",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_init.py::TestQuestions::test_setup_at_signed_asks_the_three_questions_the_skill_quotes"
-        },
-        {
-          "env": null,
-          "id": "PROOF-33",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_init.py::TestQuestions::test_setup_at_passed_asks_the_gate_then_the_commit"
-        },
-        {
-          "env": null,
-          "id": "PROOF-94",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_init.py::TestQuestions::test_the_third_question_is_the_commit"
-        },
-        {
-          "env": null,
-          "id": "PROOF-34",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_init.py::TestQuestions::test_the_gate_question_offers_the_two_gates_in_order"
-        },
-        {
-          "env": null,
-          "id": "PROOF-35",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_init.py::TestQuestions::test_no_answer_to_the_second_question_leaves_mutation_off"
-        },
-        {
-          "env": null,
-          "id": "PROOF-6",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_skill_init.py::TestSettings::test_it_shows_the_six_settings"
-        },
-        {
-          "env": null,
-          "id": "PROOF-38",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_skill_init.py::TestSettings::test_setup_writes_the_keys_the_skill_shows"
-        },
-        {
-          "env": null,
-          "id": "PROOF-39",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_skill_init.py::TestSettings::test_one_sentence_says_audit_parallel_is_not_asked"
-        },
-        {
-          "env": null,
-          "id": "PROOF-40",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_skill_init.py::TestSettings::test_one_sentence_says_it_writes_the_evidence_folder"
-        },
-        {
-          "env": null,
-          "id": "PROOF-7",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_skill_init.py::TestTestsSetting::test_it_writes_an_empty_tests_setting_and_installs_nothing"
+          "rule": "RULE-87",
+          "test": "dev/test_skill_init.py::test_every_flag_handed_is_one_the_usage_lists"
         },
         {
           "env": null,
           "id": "PROOF-42",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-11",
-          "test": "dev/test_skill_init.py::TestTestsSetting::test_it_points_at_the_two_references"
-        },
-        {
-          "env": null,
-          "id": "PROOF-95",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-85",
-          "test": "dev/test_skill_init.py::TestRunLine::test_run_it_says_how_the_answers_reach_the_script"
+          "rule": "RULE-87",
+          "test": "dev/test_skill_init.py::test_a_reader_finds_the_files_setup_writes_and_the_two_references"
         }
       ],
       "rules": {
-        "RULE-1": "passed",
-        "RULE-10": "passed",
-        "RULE-11": "passed",
-        "RULE-2": "passed",
-        "RULE-3": "passed",
-        "RULE-4": "passed",
-        "RULE-5": "passed",
-        "RULE-6": "passed",
-        "RULE-7": "passed",
-        "RULE-8": "passed",
-        "RULE-85": "passed",
-        "RULE-9": "passed"
+        "RULE-87": "passed"
       },
       "runner": "rich-labarca"
     }

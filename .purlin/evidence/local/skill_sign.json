@@ -2,161 +2,36 @@
   "feature": "skill_sign",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T01:14:50Z",
-      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
+      "at": "2026-10-01T18:13:44Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
       "dirty": false,
+      "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "0ca71c31234ee83af1cb3428e9bc1d441c85e61f8746663a3b312a12b4f256a5",
-        "spec": "da542d0c6ad43daf533d5d4df4ce92a9c41ba02aa3822f1d657b46df9d22a946",
-        "tests": "508af7db3febe21254fa0b1c64b4d5bb12dccbd228a4fdf9b05728b0a9e00b69"
+        "code": "47e248dc9cd4440bdc737e72060998b1ab96a99afc57835469d9265aedab252f",
+        "spec": "cd56a3eece5f25b6534fb6fd5529dc746e1843bf44e587796cc5ebefdfc84017",
+        "tests": "4bf149b85a07998050980edd81cbec6a8f3e5de526b1b047cc584dbdb343f036"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
-          "id": "PROOF-1",
+          "id": "PROOF-63",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_the_frontmatter_names_the_skill_on_one_line"
+          "rule": "RULE-35",
+          "test": "dev/test_skill_sign.py::test_the_sign_skill_holds_each_command_it_must_name"
         },
         {
           "env": null,
-          "id": "PROOF-3",
+          "id": "PROOF-64",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_closes_by_naming_the_next_step"
-        },
-        {
-          "env": null,
-          "id": "PROOF-4",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_stays_under_its_ceiling"
-        },
-        {
-          "env": null,
-          "id": "PROOF-5",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_sign_off_counts_on_two_conditions"
-        },
-        {
-          "env": null,
-          "id": "PROOF-21",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_shows_the_key_commands_and_offers_to_run_them"
-        },
-        {
-          "env": null,
-          "id": "PROOF-23",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-11",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_the_command_reference_carries_a_row_for_sign"
-        },
-        {
-          "env": null,
-          "id": "PROOF-38",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_says_whose_sign_off_counts"
-        },
-        {
-          "env": null,
-          "id": "PROOF-42",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_never_pushes"
-        },
-        {
-          "env": null,
-          "id": "PROOF-43",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-16",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_with_no_version_it_asks_and_offers_to_write_one"
-        },
-        {
-          "env": null,
-          "id": "PROOF-48",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-20",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_quotes_the_no_version_line"
-        },
-        {
-          "env": null,
-          "id": "PROOF-51",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-23",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_a_rule_is_never_narrowed_to_lose_an_observation"
-        },
-        {
-          "env": null,
-          "id": "PROOF-54",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-25",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_each_stop_shows_each_proofs_tied_test"
-        },
-        {
-          "env": null,
-          "id": "PROOF-59",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-29",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_shows_first_and_asks_about_each_stop"
-        },
-        {
-          "env": null,
-          "id": "PROOF-60",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-29",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_it_writes_the_answers_then_walks_with_them"
-        },
-        {
-          "env": null,
-          "id": "PROOF-61",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-30",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_at_passed_nothing_is_signed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-62",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-31",
-          "test": "dev/test_skill_sign.py::TestSkillSign::test_the_first_sign_off_writes_the_tag"
+          "rule": "RULE-35",
+          "test": "dev/test_skill_sign.py::test_the_sign_skill_holds_each_path_it_must_name"
         }
       ],
       "rules": {
-        "RULE-1": "passed",
-        "RULE-10": "passed",
-        "RULE-11": "passed",
-        "RULE-13": "passed",
-        "RULE-15": "passed",
-        "RULE-16": "passed",
-        "RULE-20": "passed",
-        "RULE-23": "passed",
-        "RULE-25": "passed",
-        "RULE-29": "passed",
-        "RULE-3": "passed",
-        "RULE-30": "passed",
-        "RULE-31": "passed",
-        "RULE-4": "passed",
-        "RULE-5": "passed"
+        "RULE-35": "passed"
       },
       "runner": "rich-labarca"
     }

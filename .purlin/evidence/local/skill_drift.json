@@ -2,155 +2,36 @@
   "feature": "skill_drift",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T01:14:50Z",
-      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
+      "at": "2026-10-01T18:13:44Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
       "dirty": false,
+      "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "22cfe92880176c83d097963b0b12d8e404a58def87fc4ba6b82ebe60d5a3cb5a",
-        "spec": "1b8127c25eb603a7ea50a6fe9c5a94081a83287699eb83c204a3bcc0a50417fc",
-        "tests": "dda343e0f5594404442603532bb8901651ff906c7ee535baabf16d8bdd1105e2"
+        "code": "0dfb4d3fb75022471562dd58f60422421ef16dd6fa924bb4bc9de5799aa32533",
+        "spec": "7fda8e80c27b7647693af68ebbb2ff1b0c5d22eeb83f741acd14c94ce8b0f74d",
+        "tests": "e766cd14519aa920baa42b4dcf17ff29b85e3144b5e32fab2d7f96b0c216ab4f"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "env": null,
-          "id": "PROOF-1",
+          "id": "PROOF-46",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_skill_drift.py::TestSkillDrift::test_the_frontmatter_names_the_skill_on_one_line"
+          "rule": "RULE-15",
+          "test": "dev/test_skill_drift.py::test_the_drift_skill_names_its_commands_and_its_criteria"
         },
         {
           "env": null,
-          "id": "PROOF-2",
+          "id": "PROOF-43",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_drift.py::TestSkillDrift::test_the_data_comes_from_the_drift_tool"
-        },
-        {
-          "env": null,
-          "id": "PROOF-19",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_drift.py::TestSkillDrift::test_it_points_at_the_criteria_for_what_a_line_means"
-        },
-        {
-          "env": null,
-          "id": "PROOF-20",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_drift.py::TestSkillDrift::test_it_says_to_restate_nothing_and_invent_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-21",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_drift.py::TestSkillDrift::test_it_says_to_print_the_lines_as_they_come"
-        },
-        {
-          "env": null,
-          "id": "PROOF-22",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_skill_drift.py::TestSkillDrift::test_it_repeats_no_definition_from_the_criteria"
-        },
-        {
-          "env": null,
-          "id": "PROOF-3",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_drift.py::TestSkillDrift::test_it_closes_by_naming_the_next_step"
-        },
-        {
-          "env": null,
-          "id": "PROOF-27",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_skill_drift.py::TestSkillDrift::test_every_kind_of_line_has_its_next_step"
-        },
-        {
-          "env": null,
-          "id": "PROOF-4",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_skill_drift.py::TestSkillDrift::test_it_stays_under_its_ceiling"
-        },
-        {
-          "env": null,
-          "id": "PROOF-34",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_skill_drift.py::TestSkillDrift::test_a_skill_of_exactly_150_lines_is_let_through"
-        },
-        {
-          "env": null,
-          "id": "PROOF-35",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_skill_drift.py::TestSkillDrift::test_a_skill_of_151_lines_is_reported"
-        },
-        {
-          "env": null,
-          "id": "PROOF-9",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_skill_drift.py::TestSkillDrift::test_the_command_reference_carries_a_row_for_drift"
-        },
-        {
-          "env": null,
-          "id": "PROOF-36",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_skill_drift.py::TestSkillDrift::test_it_infers_the_role_and_says_which"
-        },
-        {
-          "env": null,
-          "id": "PROOF-37",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-11",
-          "test": "dev/test_skill_drift.py::TestSkillDrift::test_it_says_drift_reads_only_this_checkout"
-        },
-        {
-          "env": null,
-          "id": "PROOF-38",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_skill_drift.py::TestSkillDrift::test_it_says_which_line_keeps_a_number_written_twice"
-        },
-        {
-          "env": null,
-          "id": "PROOF-39",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_skill_drift.py::TestSkillDrift::test_it_sends_a_number_written_twice_to_the_renumbering"
+          "rule": "RULE-15",
+          "test": "dev/test_skill_drift.py::test_a_copy_without_the_spec_command_is_reported"
         }
       ],
       "rules": {
-        "RULE-1": "passed",
-        "RULE-10": "passed",
-        "RULE-11": "passed",
-        "RULE-12": "passed",
-        "RULE-13": "passed",
-        "RULE-2": "passed",
-        "RULE-3": "passed",
-        "RULE-4": "passed",
-        "RULE-5": "passed"
+        "RULE-15": "passed"
       },
       "runner": "rich-labarca"
     }

@@ -2,80 +2,17 @@
   "feature": "config_engine",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T01:14:48Z",
-      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
+      "at": "2026-10-01T18:13:43Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
       "dirty": false,
+      "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "d2f1031a92fd29cd0d103658c31c9025cc6beab44b965b6d5cbd751488aeea45",
-        "spec": "748d346381010b1bf6c98805a23a242c7611c57c2fc7b5b2cc7288ff4339db2e",
-        "tests": "554b482571a46f58a3e68f49da5440dd2406801a443943c37c3db9328632f6f8"
+        "code": "07d88b6fe9851a38e1222d606e2050458be4e9733f44bd245cf4a7e7a825f9c5",
+        "spec": "730739c3667258621e761781b82e75fe0a92f5f3f59a84f7195e020780d8b5c4",
+        "tests": "67f4153924574af14a9f41dd9917da0034513ab9f6b71e7e4e6a886311af2960"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
-        {
-          "env": null,
-          "id": "PROOF-1",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_config_engine.py::TestProjectRoot::test_the_variable_naming_an_existing_folder_wins_over_a_marker"
-        },
-        {
-          "env": null,
-          "id": "PROOF-16",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_config_engine.py::TestProjectRoot::test_the_variable_naming_a_missing_path_gives_way_to_the_climb"
-        },
-        {
-          "env": null,
-          "id": "PROOF-17",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_config_engine.py::TestProjectRoot::test_the_variable_naming_a_file_gives_way_to_the_climb"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-36",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-1",
-          "test": "dev/test_config_engine.py::TestProjectRoot::test_the_variable_naming_an_existing_folder_wins_over_a_marker"
-        },
-        {
-          "env": null,
-          "id": "PROOF-2",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_config_engine.py::TestProjectRoot::test_the_climb_reaches_the_marker_above_the_start"
-        },
-        {
-          "env": null,
-          "id": "PROOF-18",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_config_engine.py::TestProjectRoot::test_the_climb_stops_at_the_nearest_marker"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-37",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-2",
-          "test": "dev/test_config_engine.py::TestProjectRoot::test_the_climb_reaches_the_marker_above_the_start"
-        },
-        {
-          "env": null,
-          "id": "PROOF-3",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_config_engine.py::TestProjectRoot::test_with_no_marker_the_root_is_the_working_directory"
-        },
         {
           "env": null,
           "id": "PROOF-4",
@@ -89,7 +26,7 @@
           "id": "PROOF-7",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-7",
+          "rule": "RULE-4",
           "test": "dev/test_config_engine.py::TestReading::test_no_settings_file_reads_as_empty"
         },
         {
@@ -109,44 +46,12 @@
           "test": "dev/test_config_engine.py::TestWriting::test_a_write_creates_the_settings_file_when_absent"
         },
         {
-          "env": null,
-          "id": "PROOF-12",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_config_engine.py::TestWriting::test_the_written_value_is_what_the_settings_read"
-        },
-        {
           "env": "windows",
           "id": "PROOF-38",
           "manual": false,
           "result": "not run",
           "rule": "RULE-8",
-          "test": "dev/test_config_engine.py::TestWriting::test_a_write_adds_its_key_to_the_settings_file"
-        },
-        {
-          "env": null,
-          "id": "PROOF-9",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_config_engine.py::TestWriting::test_adding_a_key_keeps_every_other_key_as_it_was"
-        },
-        {
-          "env": null,
-          "id": "PROOF-25",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_config_engine.py::TestWriting::test_changing_a_key_keeps_every_other_key_as_it_was"
-        },
-        {
-          "env": null,
-          "id": "PROOF-10",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_config_engine.py::TestAtomicWrite::test_the_whole_file_is_written_beside_and_moved_onto_it"
+          "test": "dev/test_config_engine.py::TestWriting::test_on_windows_a_write_ends_its_lines_with_no_carriage_return"
         },
         {
           "env": null,
@@ -174,54 +79,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-15",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_config_engine.py::TestHowTheRootWasFound::test_a_marker_above_the_start_is_found_by_climb"
-        },
-        {
-          "env": null,
-          "id": "PROOF-28",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_config_engine.py::TestHowTheRootWasFound::test_the_variable_is_found_by_env"
-        },
-        {
-          "env": null,
-          "id": "PROOF-29",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_config_engine.py::TestHowTheRootWasFound::test_a_missing_variable_path_is_passed_over_for_climb"
-        },
-        {
-          "env": null,
-          "id": "PROOF-30",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_config_engine.py::TestHowTheRootWasFound::test_no_marker_anywhere_is_named_cwd"
-        },
-        {
-          "env": null,
-          "id": "PROOF-31",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_config_engine.py::TestHowTheRootWasFound::test_each_way_has_its_own_sentence"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-40",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-13",
-          "test": "dev/test_config_engine.py::TestHowTheRootWasFound::test_the_variable_is_found_by_env"
-        },
-        {
-          "env": null,
           "id": "PROOF-32",
           "manual": false,
           "result": "pass",
@@ -238,68 +95,85 @@
         },
         {
           "env": null,
-          "id": "PROOF-34",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-14",
-          "test": "dev/test_config_engine.py::TestASettingsFileThatCannotBeRead::test_a_list_where_an_object_belongs_is_named"
-        },
-        {
-          "env": null,
           "id": "PROOF-35",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-15",
+          "rule": "RULE-14",
           "test": "dev/test_config_engine.py::TestASettingsFileThatCannotBeRead::test_a_write_is_refused_and_the_file_left_as_it_was"
         },
         {
           "env": null,
-          "id": "PROOF-41",
+          "id": "PROOF-45",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-16",
-          "test": "dev/test_config_engine.py::TestTheGate::test_a_gate_of_strong_reads_as_passed_with_one_warning"
+          "rule": "RULE-19",
+          "test": "dev/test_config_engine.py::TestTheProjectsName::test_the_name_under_project_in_pyproject_wins"
         },
         {
           "env": null,
-          "id": "PROOF-42",
+          "id": "PROOF-48",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-17",
-          "test": "dev/test_config_engine.py::TestTheGate::test_the_breaks_are_on_at_the_gate_passed"
+          "rule": "RULE-19",
+          "test": "dev/test_config_engine.py::TestTheProjectsName::test_with_no_project_file_the_origin_remote_names_it"
         },
         {
           "env": null,
-          "id": "PROOF-43",
+          "id": "PROOF-49",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-17",
-          "test": "dev/test_config_engine.py::TestTheGate::test_the_breaks_are_on_at_the_gate_signed"
+          "rule": "RULE-19",
+          "test": "dev/test_config_engine.py::TestTheProjectsName::test_with_no_project_file_and_no_remote_the_folder_names_it"
         },
         {
           "env": null,
-          "id": "PROOF-44",
+          "id": "PROOF-50",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_config_engine.py::TestTheGate::test_min_strength_is_named_as_a_key_not_read"
+          "rule": "RULE-20",
+          "test": "dev/test_config_engine.py::TestKeysThisVersionDoesNotRead::test_keys_the_upgrade_removes_name_the_upgrade"
+        },
+        {
+          "env": null,
+          "id": "PROOF-51",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_config_engine.py::TestKeysThisVersionDoesNotRead::test_a_key_the_upgrade_has_no_step_for_is_to_be_removed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-28",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_config_engine.py::TestProjectRoot::test_the_variable_is_found_by_env"
+        },
+        {
+          "env": null,
+          "id": "PROOF-18",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_config_engine.py::TestProjectRoot::test_the_climb_stops_at_the_nearest_marker"
+        },
+        {
+          "env": null,
+          "id": "PROOF-30",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_config_engine.py::TestProjectRoot::test_no_marker_anywhere_is_named_cwd"
         }
       ],
       "rules": {
-        "RULE-1": "not run",
         "RULE-10": "not run",
-        "RULE-13": "not run",
         "RULE-14": "passed",
-        "RULE-15": "passed",
-        "RULE-16": "passed",
-        "RULE-17": "passed",
-        "RULE-18": "passed",
-        "RULE-2": "not run",
-        "RULE-3": "passed",
+        "RULE-19": "passed",
+        "RULE-20": "passed",
+        "RULE-21": "passed",
         "RULE-4": "passed",
-        "RULE-7": "passed",
-        "RULE-8": "not run",
-        "RULE-9": "passed"
+        "RULE-8": "not run"
       },
       "runner": "rich-labarca"
     }

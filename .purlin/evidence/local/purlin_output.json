@@ -2,13 +2,14 @@
   "feature": "purlin_output",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T01:14:49Z",
-      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
+      "at": "2026-10-01T18:13:43Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
       "dirty": false,
+      "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "bcca3780b61a3384f38e2620b15a21cb3c2b2a07136aa32260602ea458e10cbf",
-        "spec": "b78a2df647c298e754514ea6f6cc770194764a1e3337074236e5ba2ec8e97866",
-        "tests": "c36ba63cc63ed28ee8c714d9607e1d6b3a6cdf924cef597303e5c17a16024378"
+        "code": "0e01f219f2fe6130969f43c56dd15b2da445f0a499af69ce62a16613bf6af593",
+        "spec": "81d2ce7cf5d701440e21046551b2439f62c3000813c6de45a1a6ebb8d14777a1",
+        "tests": "800847ad4924835a90c6f3c3ba246f093246708afd19f24f876d5dc0d57e2b7f"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -27,14 +28,6 @@
           "result": "pass",
           "rule": "RULE-2",
           "test": "dev/test_purlin_output.py::TestPython39::test_every_python_file_under_scripts_parses_as_39"
-        },
-        {
-          "env": null,
-          "id": "PROOF-3",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_purlin_output.py::TestPython39::test_setup_runs_on_39"
         },
         {
           "env": null,
@@ -59,12 +52,21 @@
           "result": "pass",
           "rule": "RULE-3",
           "test": "dev/test_purlin_output.py::TestNoProcessLeft::test_no_command_leaves_a_process_running"
+        },
+        {
+          "env": null,
+          "id": "PROOF-7",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_purlin_output.py::TestNoPictograph::test_no_skill_and_not_the_agent_definition_holds_a_pictograph"
         }
       ],
       "rules": {
         "RULE-1": "passed",
         "RULE-2": "passed",
-        "RULE-3": "passed"
+        "RULE-3": "passed",
+        "RULE-4": "passed"
       },
       "runner": "rich-labarca"
     }

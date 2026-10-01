@@ -2,13 +2,14 @@
   "feature": "drift",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T01:14:49Z",
-      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
+      "at": "2026-10-01T18:13:43Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
       "dirty": false,
+      "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "0034176560e359b7e3a19bf55d00861375e39fedc06412f64473e6328ff5219b",
-        "spec": "7dc441cc39264bf3998be0d7aaf0dd053a589526ea2e14a9da825efda759db31",
-        "tests": "c71d510e0ffe07abec050335a0f47b332da5cb73df30a554923abd3178952d8c"
+        "code": "98822ea4fb2e2072c100ef866876898f762fff0418a21446af4785e0de4c610d",
+        "spec": "83d4c35afb871cd4637aa8fe0897a23cb937a7184ad907469ca144b8b4277a70",
+        "tests": "077585d0597eb33d3463cbc413536e6cb6a280de13b24c9fd1b3c75855cfed71"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -22,14 +23,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-2",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-1",
-          "test": "dev/test_drift.py::TestSinceValidation::test_a_count_is_accepted_and_git_is_run"
-        },
-        {
-          "env": null,
           "id": "PROOF-3",
           "manual": false,
           "result": "pass",
@@ -38,51 +31,19 @@
         },
         {
           "env": null,
-          "id": "PROOF-4",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_drift.py::TestWhereDriftStarts::test_a_merge_is_measured_from_main_before_it"
-        },
-        {
-          "env": null,
           "id": "PROOF-29",
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_drift.py::TestWhereDriftStarts::test_a_merge_committed_after_its_conflicts_counts_as_a_merge"
+          "test": "dev/test_drift.py::TestWhereDriftStarts::test_a_merge_of_a_two_commit_branch_resolved_by_hand_runs_3_commits_from_main"
         },
         {
           "env": null,
-          "id": "PROOF-35",
+          "id": "PROOF-86",
           "manual": false,
           "result": "pass",
           "rule": "RULE-2",
-          "test": "dev/test_drift.py::TestWhereDriftStarts::test_a_plain_commit_after_the_merge_is_not_an_action"
-        },
-        {
-          "env": null,
-          "id": "PROOF-5",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_drift.py::TestWhereDriftStarts::test_a_rebase_is_measured_from_before_its_first_step"
-        },
-        {
-          "env": null,
-          "id": "PROOF-6",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_drift.py::TestWhereDriftStarts::test_a_checkout_is_measured_from_the_branch_it_left"
-        },
-        {
-          "env": null,
-          "id": "PROOF-7",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-2",
-          "test": "dev/test_drift.py::TestWhereDriftStarts::test_a_reset_after_a_pull_is_the_newest_action"
+          "test": "dev/test_drift.py::TestWhereDriftStarts::test_a_branch_made_at_head_after_a_pull_leaves_the_range_at_the_pull"
         },
         {
           "env": null,
@@ -94,35 +55,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-36",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_drift.py::TestTheLastTwentyCommits::test_a_repository_with_no_action_measures_its_last_twenty"
-        },
-        {
-          "env": null,
-          "id": "PROOF-37",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_drift.py::TestTheLastTwentyCommits::test_a_repository_of_three_commits_measures_all_three"
-        },
-        {
-          "env": null,
-          "id": "PROOF-62",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_drift.py::TestTheLastTwentyCommits::test_a_repository_of_one_commit_names_the_last_commit"
-        },
-        {
-          "env": null,
           "id": "PROOF-9",
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_drift.py::TestSinceOverrides::test_a_count_wins_over_the_pull"
+          "test": "dev/test_drift.py::TestSinceOverrides::test_since_3_after_a_pull_of_1_runs_the_last_3_commits"
         },
         {
           "env": null,
@@ -130,23 +67,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_drift.py::TestSinceOverrides::test_a_date_measures_the_commits_made_since"
-        },
-        {
-          "env": null,
-          "id": "PROOF-11",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_drift.py::TestTheFirstLine::test_every_view_opens_by_naming_the_pull"
-        },
-        {
-          "env": null,
-          "id": "PROOF-30",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_drift.py::TestTheFirstLine::test_every_view_opens_by_naming_a_merge_with_conflicts"
+          "test": "dev/test_drift.py::TestSinceOverrides::test_since_a_date_runs_the_last_2_of_3_dated_commits"
         },
         {
           "env": null,
@@ -154,7 +75,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_drift.py::TestPmView::test_rules_added_changed_and_removed"
+          "test": "dev/test_drift.py::TestRules::test_rules_added_changed_and_removed"
         },
         {
           "env": null,
@@ -162,103 +83,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_drift.py::TestPmView::test_a_spec_moved_with_its_rules_unchanged_is_named_nowhere"
-        },
-        {
-          "env": null,
-          "id": "PROOF-13",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_drift.py::TestPmView::test_a_change_to_no_spec_names_no_rule"
-        },
-        {
-          "env": null,
-          "id": "PROOF-14",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_drift.py::TestEngView::test_code_changed_under_a_directory_scope"
-        },
-        {
-          "env": null,
-          "id": "PROOF-51",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_drift.py::TestDeletedFiles::test_a_deleted_file_a_file_entry_names_counts"
-        },
-        {
-          "env": null,
-          "id": "PROOF-52",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_drift.py::TestDeletedFiles::test_a_deleted_file_under_a_folder_entry_counts"
-        },
-        {
-          "env": null,
-          "id": "PROOF-53",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_drift.py::TestDeletedFiles::test_a_deleted_file_a_glob_matches_counts"
-        },
-        {
-          "env": null,
-          "id": "PROOF-63",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_drift.py::TestEngView::test_a_scope_with_no_rule_behind_it"
-        },
-        {
-          "env": null,
-          "id": "PROOF-15",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_drift.py::TestEngView::test_changed_files_under_no_scope"
-        },
-        {
-          "env": null,
-          "id": "PROOF-54",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_drift.py::TestDeletedFiles::test_a_deleted_file_no_scope_covers_joins_the_uncovered"
-        },
-        {
-          "env": null,
-          "id": "PROOF-59",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_drift.py::TestDeletedFiles::test_a_covered_file_removed_after_the_pull_is_not_uncovered"
-        },
-        {
-          "env": null,
-          "id": "PROOF-16",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_drift.py::TestEngView::test_rules_no_test_has_run_for_are_named"
-        },
-        {
-          "env": null,
-          "id": "PROOF-64",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_drift.py::TestEngView::test_one_rule_no_test_has_run_for_is_named"
-        },
-        {
-          "env": null,
-          "id": "PROOF-39",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_drift.py::TestEngView::test_rules_with_a_passing_run_are_not_named"
+          "test": "dev/test_drift.py::TestRules::test_a_spec_moved_with_its_rules_unchanged_is_named_nowhere"
         },
         {
           "env": null,
@@ -266,15 +91,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-10",
-          "test": "dev/test_drift.py::TestAnchorsBehind::test_a_pin_behind_names_the_new_sha"
-        },
-        {
-          "env": null,
-          "id": "PROOF-18",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_drift.py::TestAnchorsBehind::test_an_anchor_with_rules_of_its_own_goes_behind"
+          "test": "dev/test_drift.py::TestAnchorsBehind::test_a_pin_behind_its_source_reads_behind_with_the_new_sha7"
         },
         {
           "env": null,
@@ -290,23 +107,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-10",
-          "test": "dev/test_drift.py::TestAnchorsBehind::test_a_source_that_cannot_be_read_reads_error"
-        },
-        {
-          "env": null,
-          "id": "PROOF-41",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_drift.py::TestAnchorsBehind::test_an_anchor_still_at_its_pin_is_not_named"
-        },
-        {
-          "env": null,
-          "id": "PROOF-55",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_drift.py::TestAnchorsBehind::test_an_azure_devops_source_out_of_reach_reads_error"
+          "test": "dev/test_drift.py::TestAnchorsBehind::test_a_source_path_with_no_repository_reads_error_naming_it"
         },
         {
           "env": null,
@@ -326,14 +127,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-43",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-11",
-          "test": "dev/test_drift.py::TestUnsafeSources::test_a_source_naming_the_fd_transport_is_refused"
-        },
-        {
-          "env": null,
           "id": "PROOF-44",
           "manual": false,
           "result": "pass",
@@ -342,235 +135,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-45",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-11",
-          "test": "dev/test_drift.py::TestUnsafeSources::test_a_source_carrying_a_newline_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-46",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-11",
-          "test": "dev/test_drift.py::TestUnsafeSources::test_a_source_holding_ext_and_a_dash_inside_is_not_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-21",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-12",
-          "test": "dev/test_drift.py::TestAnchorRows::test_three_anchors_of_one_source_list_it_once"
-        },
-        {
-          "env": null,
-          "id": "PROOF-22",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-13",
-          "test": "dev/test_drift.py::TestAnchorRows::test_the_row_names_the_spec_not_the_repository"
-        },
-        {
-          "env": null,
-          "id": "PROOF-23",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-14",
-          "test": "dev/test_drift.py::TestEngView::test_a_feature_with_a_run_is_out_of_date_and_one_without_is_not"
-        },
-        {
-          "env": null,
-          "id": "PROOF-65",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-14",
-          "test": "dev/test_drift.py::TestEngView::test_two_features_out_of_date_are_named_together"
-        },
-        {
-          "env": null,
-          "id": "PROOF-24",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-15",
-          "test": "dev/test_drift.py::TestQaView::test_test_files_changed_and_what_they_cover"
-        },
-        {
-          "env": null,
-          "id": "PROOF-26",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-17",
-          "test": "dev/test_drift.py::TestSpecsNotCommitted::test_one_spec_edited_ends_every_view_with_one"
-        },
-        {
-          "env": null,
-          "id": "PROOF-47",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-17",
-          "test": "dev/test_drift.py::TestSpecsNotCommitted::test_a_spec_edited_and_one_not_tracked_end_every_view_with_two"
-        },
-        {
-          "env": null,
-          "id": "PROOF-48",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-17",
-          "test": "dev/test_drift.py::TestSpecsNotCommitted::test_specs_all_committed_print_no_such_line"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-60",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-17",
-          "test": "dev/test_drift.py::TestSpecsNotCommitted::test_specs_all_committed_print_no_such_line"
-        },
-        {
-          "env": null,
-          "id": "PROOF-27",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-18",
-          "test": "dev/test_drift.py::TestReportShape::test_the_report_carries_the_range_and_three_roles"
-        },
-        {
-          "env": null,
-          "id": "PROOF-28",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-19",
-          "test": "dev/test_drift.py::TestReportShape::test_the_report_text_has_no_indent_and_no_space_after_a_separator"
-        },
-        {
-          "env": null,
           "id": "PROOF-56",
           "manual": false,
           "result": "pass",
           "rule": "RULE-20",
           "test": "dev/test_drift.py::TestSourceNamesNoRepository::test_a_text_file_in_the_project_reads_error"
-        },
-        {
-          "env": null,
-          "id": "PROOF-57",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-20",
-          "test": "dev/test_drift.py::TestSourceNamesNoRepository::test_a_description_in_words_reads_error"
-        },
-        {
-          "env": null,
-          "id": "PROOF-58",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-21",
-          "test": "dev/test_drift.py::TestSettingsCannotBeRead::test_a_trailing_comma_answers_the_sentence_alone"
-        },
-        {
-          "env": null,
-          "id": "PROOF-31",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_drift.py::TestQaView::test_a_rule_to_write_a_test_for"
-        },
-        {
-          "env": null,
-          "id": "PROOF-32",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_drift.py::TestQaView::test_the_rules_to_fix_and_not_the_rest"
-        },
-        {
-          "env": null,
-          "id": "PROOF-33",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_drift.py::TestQaView::test_nothing_that_stops_a_release_prints_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-49",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-23",
-          "test": "dev/test_drift.py::TestReportShape::test_the_pm_view_carries_its_fixed_keys"
-        },
-        {
-          "env": null,
-          "id": "PROOF-79",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-23",
-          "test": "dev/test_drift.py::TestReportShape::test_the_engineer_view_carries_its_fixed_keys"
-        },
-        {
-          "env": null,
-          "id": "PROOF-80",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-23",
-          "test": "dev/test_drift.py::TestReportShape::test_the_qa_view_carries_its_fixed_keys"
-        },
-        {
-          "env": null,
-          "id": "PROOF-34",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-24",
-          "test": "dev/test_drift.py::TestQaView::test_the_qa_view_carries_the_items_it_printed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-50",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-25",
-          "test": "dev/test_drift.py::TestReportShape::test_the_qa_role_narrows_the_answer_to_its_view"
-        },
-        {
-          "env": null,
-          "id": "PROOF-61",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-26",
-          "test": "dev/test_drift.py::TestNoCommit::test_a_repository_with_no_commit_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-66",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-27",
-          "test": "dev/test_drift.py::test_a_drift_call_writes_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-67",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-28",
-          "test": "dev/test_drift.py::TestProofsChanged::test_proofs_added"
-        },
-        {
-          "env": null,
-          "id": "PROOF-68",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-29",
-          "test": "dev/test_drift.py::TestProofsChanged::test_a_proof_changed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-69",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-30",
-          "test": "dev/test_drift.py::TestProofsChanged::test_a_proof_moved"
         },
         {
           "env": null,
@@ -586,15 +155,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-31",
-          "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_neither_line_on_the_default_branch"
+          "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_proof_7_twice_with_neither_line_on_origin_main_renumbers_to_8"
         },
         {
           "env": null,
-          "id": "PROOF-72",
+          "id": "PROOF-85",
           "manual": false,
           "result": "pass",
           "rule": "RULE-31",
-          "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_no_default_branch"
+          "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_a_number_written_twice_by_a_merge_is_never_a_proof_changed"
         },
         {
           "env": null,
@@ -602,15 +171,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-32",
-          "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_the_age_of_the_default_branch"
-        },
-        {
-          "env": null,
-          "id": "PROOF-74",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-32",
-          "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_drift_does_not_fetch"
+          "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_origin_main_fetched_three_days_ago_says_so"
         },
         {
           "env": null,
@@ -618,7 +179,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-33",
-          "test": "dev/test_drift.py::TestCommentsChanged::test_a_comment_whose_proof_was_reworded"
+          "test": "dev/test_drift.py::TestCommentsChanged::test_a_test_marked_while_proof_4_read_a_is_named_after_a_pull_rewords_it"
         },
         {
           "env": null,
@@ -626,50 +187,130 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-33",
-          "test": "dev/test_drift.py::TestCommentsChanged::test_a_comment_whose_old_wording_moved"
+          "test": "dev/test_drift.py::TestCommentsChanged::test_a_pull_that_puts_a_under_proof_6_says_move_the_comment_there"
         },
         {
           "env": null,
-          "id": "PROOF-77",
+          "id": "PROOF-82",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-33",
-          "test": "dev/test_drift.py::TestCommentsChanged::test_a_comment_whose_proof_is_unchanged"
+          "rule": "RULE-35",
+          "test": "dev/test_drift.py::TestCommentsChanged::test_a_test_changed_in_a_commit_after_the_pull_is_not_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-83",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_drift.py::TestCommentsChanged::test_a_test_changed_and_not_committed_is_not_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-84",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_drift.py::TestCommentsChanged::test_a_commit_that_rewrites_only_the_comment_line_leaves_it_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-58",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-40",
+          "test": "dev/test_drift.py::TestCannotRead::test_a_trailing_comma_answers_the_sentence_alone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-61",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-40",
+          "test": "dev/test_drift.py::TestCannotRead::test_a_repository_with_no_commit_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-66",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_drift.py::TestChangesNothing::test_two_reports_after_a_pull_of_a_spec_and_a_source_file_change_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-74",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_drift.py::TestChangesNothing::test_drift_does_not_fetch"
+        },
+        {
+          "env": null,
+          "id": "PROOF-88",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_drift.py::TestAnchorsBehind::test_a_pin_named_behind_leaves_the_anchor_file_and_this_checkouts_objects"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_drift.py::TestReportShape::test_the_report_carries_since_and_view_and_since_its_six_keys"
+        },
+        {
+          "env": null,
+          "id": "PROOF-49",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_drift.py::TestReportShape::test_the_view_carries_its_eleven_keys"
+        },
+        {
+          "env": null,
+          "id": "PROOF-67",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_drift.py::TestProofsChanged::test_a_pull_adding_proof_5_and_6_names_both_in_one_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-68",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_drift.py::TestProofsChanged::test_a_pull_rewording_proof_1_quotes_both_wordings"
+        },
+        {
+          "env": null,
+          "id": "PROOF-69",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_drift.py::TestProofsChanged::test_a_pull_moving_proof_4s_text_to_proof_6_names_the_move"
         }
       ],
       "rules": {
         "RULE-1": "passed",
         "RULE-10": "passed",
         "RULE-11": "passed",
-        "RULE-12": "passed",
-        "RULE-13": "passed",
-        "RULE-14": "passed",
-        "RULE-15": "passed",
-        "RULE-17": "not run",
-        "RULE-18": "passed",
-        "RULE-19": "passed",
         "RULE-2": "passed",
         "RULE-20": "passed",
-        "RULE-21": "passed",
-        "RULE-22": "passed",
-        "RULE-23": "passed",
-        "RULE-24": "passed",
-        "RULE-25": "passed",
-        "RULE-26": "passed",
-        "RULE-27": "passed",
-        "RULE-28": "passed",
-        "RULE-29": "passed",
         "RULE-3": "passed",
-        "RULE-30": "passed",
         "RULE-31": "passed",
         "RULE-32": "passed",
         "RULE-33": "passed",
+        "RULE-35": "passed",
         "RULE-4": "passed",
-        "RULE-5": "passed",
-        "RULE-6": "passed",
-        "RULE-7": "passed",
-        "RULE-8": "passed",
-        "RULE-9": "passed"
+        "RULE-40": "passed",
+        "RULE-41": "passed",
+        "RULE-42": "passed",
+        "RULE-43": "passed",
+        "RULE-6": "passed"
       },
       "runner": "rich-labarca"
     }

@@ -2,13 +2,14 @@
   "feature": "server",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T01:14:49Z",
-      "commit": "73a3ada8e87d2154efbb8a4105e2cdbb7268abb3",
+      "at": "2026-10-01T18:13:44Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
       "dirty": false,
+      "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "5c1eee6e294f1437ea1fb57bd5372d639cfec4c7aa44c3baffbdbb9d70524619",
-        "spec": "e4d33bdf7eee03d3b389275e3f12e357c7b6bc3a31093993ec52511a078d5388",
-        "tests": "d466f80d7f1fe6408bfc6bea1c9cfb4da9d0206de53be199464bc9f77f6e49bb"
+        "code": "64e625cd4afab2447a4d45bb2223d24a464b0a951e23e1ff682698e945e96cd7",
+        "spec": "48ca664b7ea570a417f443a65af208508599988b01445828d6a636ca2458c359",
+        "tests": "1d8c713698583e0b0f3437707736d0baf0f8b2afc59477de519d4de09a09ef74"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -30,38 +31,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-3",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_mcp_server.py::TestTransport::test_the_initialized_notification_gets_no_response"
-        },
-        {
-          "env": null,
-          "id": "PROOF-126",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_mcp_server.py::TestTransport::test_a_notification_the_server_does_not_know_gets_no_response"
-        },
-        {
-          "env": null,
-          "id": "PROOF-4",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-4",
-          "test": "dev/test_mcp_server.py::TestTransport::test_an_unknown_tool_is_an_error"
-        },
-        {
-          "env": null,
-          "id": "PROOF-5",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-5",
-          "test": "dev/test_mcp_server.py::TestTransport::test_stdout_holds_the_answer_alone_and_the_startup_line_is_on_stderr"
-        },
-        {
-          "env": null,
           "id": "PROOF-138",
           "manual": false,
           "result": "pass",
@@ -74,15 +43,7 @@
           "manual": false,
           "result": "not run",
           "rule": "RULE-5",
-          "test": "dev/test_mcp_server.py::TestTransport::test_stdout_holds_the_answer_alone_and_the_startup_line_is_on_stderr"
-        },
-        {
-          "env": null,
-          "id": "PROOF-6",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-6",
-          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_call_naming_a_project_root_answers_for_it"
+          "test": "dev/test_mcp_server.py::TestTransport::test_on_windows_the_answer_is_one_line_and_the_startup_line_is_on_stderr"
         },
         {
           "env": null,
@@ -98,55 +59,31 @@
           "manual": false,
           "result": "not run",
           "rule": "RULE-6",
-          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_workspace_named_from_the_home_folder_is_found"
+          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_on_windows_a_workspace_named_from_the_home_folder_is_found"
         },
         {
           "env": null,
-          "id": "PROOF-7",
+          "id": "PROOF-168",
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_root_with_no_project_says_how_to_fix_it_and_nothing_more"
+          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_status_naming_an_empty_folder_says_no_project_is_there"
         },
         {
           "env": null,
-          "id": "PROOF-162",
+          "id": "PROOF-169",
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_root_with_no_project_says_so_rather_than_reporting_nothing"
+          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_config_write_naming_an_empty_folder_writes_nothing"
         },
         {
           "env": null,
-          "id": "PROOF-130",
+          "id": "PROOF-141",
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_named_root_with_no_project_says_it_came_from_the_argument"
-        },
-        {
-          "env": null,
-          "id": "PROOF-131",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_config_write_where_there_is_no_project_writes_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-132",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_drift_where_there_is_no_project_says_so"
-        },
-        {
-          "env": null,
-          "id": "PROOF-8",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-8",
-          "test": "dev/test_mcp_server.py::TestAToolThatFails::test_a_tool_that_raises_answers_its_error_as_text"
+          "test": "dev/test_mcp_server.py::TestAnUnreadableSettingsFile::test_the_configuration_tool_answers_the_sentence_and_writes_nothing"
         },
         {
           "env": null,
@@ -162,7 +99,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
-          "test": "dev/test_mcp_server.py::TestTheConfigurationTool::test_a_read_of_one_key_answers_that_key"
+          "test": "dev/test_mcp_server.py::TestTheConfigurationTool::test_a_read_of_tests_answers_that_key"
         },
         {
           "env": null,
@@ -170,15 +107,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
-          "test": "dev/test_mcp_server.py::TestTheConfigurationTool::test_a_write_sets_the_key_in_the_settings_file"
-        },
-        {
-          "env": null,
-          "id": "PROOF-135",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_mcp_server.py::TestTheConfigurationTool::test_a_read_naming_no_key_answers_the_whole_file"
+          "test": "dev/test_mcp_server.py::TestTheConfigurationTool::test_a_write_of_tests_sets_it_and_keeps_the_version"
         },
         {
           "env": null,
@@ -186,47 +115,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
-          "test": "dev/test_mcp_server.py::TestTheConfigurationTool::test_a_read_of_an_absent_key_answers_it_as_null"
-        },
-        {
-          "env": null,
-          "id": "PROOF-143",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_mcp_server.py::TestTheConfigurationTool::test_a_read_of_a_key_stored_as_null_answers_it_as_null"
-        },
-        {
-          "env": null,
-          "id": "PROOF-144",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_mcp_server.py::TestTheConfigurationTool::test_a_save_that_fails_says_the_setting_was_not_saved"
-        },
-        {
-          "env": null,
-          "id": "PROOF-145",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-9",
-          "test": "dev/test_mcp_server.py::TestTheConfigurationTool::test_a_setting_purlin_does_not_know_is_written"
-        },
-        {
-          "env": null,
-          "id": "PROOF-10",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-10",
-          "test": "dev/test_mcp_server.py::TestTheConfigurationTool::test_a_write_naming_no_key_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-22",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-22",
-          "test": "dev/test_mcp_server.py::TestThePluginManifest::test_the_plugin_entry_point_names_the_package"
+          "test": "dev/test_mcp_server.py::TestTheConfigurationTool::test_a_read_of_an_absent_tests_answers_it_as_null"
         },
         {
           "env": null,
@@ -243,134 +132,6 @@
           "result": "pass",
           "rule": "RULE-22",
           "test": "dev/test_mcp_server.py::TestThePluginManifest::test_the_plugin_entry_asks_the_resolver_for_a_soft_exit"
-        },
-        {
-          "env": "windows",
-          "id": "PROOF-161",
-          "manual": false,
-          "result": "not run",
-          "rule": "RULE-22",
-          "test": "dev/test_mcp_server.py::TestThePluginManifest::test_the_manifest_command_starts_a_server_that_answers"
-        },
-        {
-          "env": null,
-          "id": "PROOF-125",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-23",
-          "test": "dev/test_mcp_server.py::TestTransport::test_a_line_that_is_not_json_gets_a_parse_error"
-        },
-        {
-          "env": null,
-          "id": "PROOF-127",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-24",
-          "test": "dev/test_mcp_server.py::TestTransport::test_an_unknown_method_is_an_error"
-        },
-        {
-          "env": null,
-          "id": "PROOF-128",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-25",
-          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_the_named_project_root_is_for_that_call_alone"
-        },
-        {
-          "env": null,
-          "id": "PROOF-136",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-26",
-          "test": "dev/test_mcp_server.py::TestTheConfigurationTool::test_an_unknown_action_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-139",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-27",
-          "test": "dev/test_mcp_server.py::TestAnUnreadableSettingsFile::test_sync_status_answers_the_sentence"
-        },
-        {
-          "env": null,
-          "id": "PROOF-140",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-27",
-          "test": "dev/test_mcp_server.py::TestAnUnreadableSettingsFile::test_drift_answers_the_sentence"
-        },
-        {
-          "env": null,
-          "id": "PROOF-141",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-27",
-          "test": "dev/test_mcp_server.py::TestAnUnreadableSettingsFile::test_the_configuration_tool_answers_the_sentence_and_writes_nothing"
-        },
-        {
-          "env": null,
-          "id": "PROOF-146",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-28",
-          "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_a_known_setting_given_no_value_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-147",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-29",
-          "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_a_gate_of_gold_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-148",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-29",
-          "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_an_engine_purlin_does_not_run_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-150",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-29",
-          "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_an_audit_parallel_above_16_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-151",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-29",
-          "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_tests_given_as_text_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-152",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-29",
-          "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_a_ci_of_gitlab_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-154",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-29",
-          "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_a_gate_of_null_is_refused"
-        },
-        {
-          "env": null,
-          "id": "PROOF-155",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-30",
-          "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_a_write_of_the_version_is_refused"
         },
         {
           "env": null,
@@ -390,30 +151,77 @@
         },
         {
           "env": null,
-          "id": "PROOF-163",
+          "id": "PROOF-3",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-32",
-          "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_a_key_this_release_does_not_read_is_refused"
+          "rule": "RULE-35",
+          "test": "dev/test_mcp_server.py::TestTransport::test_the_initialized_notification_gets_no_response"
+        },
+        {
+          "env": null,
+          "id": "PROOF-125",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_mcp_server.py::TestTransport::test_a_line_that_is_not_json_gets_a_parse_error"
+        },
+        {
+          "env": null,
+          "id": "PROOF-127",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_mcp_server.py::TestTransport::test_an_unknown_method_is_an_error"
+        },
+        {
+          "env": null,
+          "id": "PROOF-155",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_a_write_of_the_version_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-151",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_tests_given_as_text_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-164",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_a_write_of_gate_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-166",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-37",
+          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_call_naming_no_root_is_refused_in_one_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-167",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-37",
+          "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_root_named_by_an_earlier_call_is_not_used_by_the_next"
         }
       ],
       "rules": {
         "RULE-1": "passed",
-        "RULE-10": "passed",
         "RULE-2": "passed",
-        "RULE-22": "not run",
-        "RULE-23": "passed",
-        "RULE-24": "passed",
-        "RULE-25": "passed",
-        "RULE-26": "passed",
-        "RULE-27": "passed",
-        "RULE-28": "passed",
-        "RULE-29": "passed",
-        "RULE-3": "passed",
-        "RULE-30": "passed",
+        "RULE-22": "passed",
         "RULE-31": "passed",
-        "RULE-32": "passed",
-        "RULE-4": "passed",
+        "RULE-35": "passed",
+        "RULE-36": "passed",
+        "RULE-37": "passed",
         "RULE-5": "not run",
         "RULE-6": "not run",
         "RULE-7": "passed",

@@ -2,13 +2,14 @@
   "feature": "renumber",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T00:50:27Z",
-      "commit": "39171b09615ba6e5ba7c10524ae3dbd2dcab782d",
+      "at": "2026-10-01T18:13:43Z",
+      "commit": "9cce28ddbb125d16e4b23451b8d50719ea3ff45e",
       "dirty": false,
+      "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "7767789dba5fd3189e1cc1a751a63701ac380631cb5433d96236391d82c50ae4",
-        "spec": "88d00c001738c1f12b45df49376eb1ee78d86d4785248104d38877c081649db8",
-        "tests": "1bc1ec5c2da6ce7fa8258cd7b8ec9c32525344466070e6e84e1d74be38b2bc6d"
+        "code": "bcd91d803c730c808b03cc898a9bf7aa6745926cbcf5ddad91c8af805b6d5ea3",
+        "spec": "2e4375a479f4254f4ceed67e4e67e13bb994b17466f2db0de298ee58bb4648dc",
+        "tests": "91a18d9d777bf30e3116912ce912f9186a8fed295c4f9d149659f49fee44e452"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -74,7 +75,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_renumber.py::TestComments::test_a_comment_follows_its_old_wording"
+          "test": "dev/test_renumber.py::TestComments::test_a_test_marked_while_proof_4_read_a_moves_to_proof_6_where_a_is_now"
         },
         {
           "env": null,
