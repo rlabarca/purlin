@@ -1572,6 +1572,32 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **A proof a test carries out is pass or fail.** A judgment call is a `@manual` proof or no
       rule, and neither a test nor an AI decides one.
     - **The docs use the slides' language, tone and brevity**, with the deck as the model.
+120. **The clean-up after decision 119** (added 2026-10-01), the owner's answers to what the
+    round left open.
+    - **Approval before a test runs stays outside Purlin.** A GxP reviewer asked for test cases
+      approved before execution. Purlin signs once, at the end (decision 103). The approval of
+      proofs is a required review when they are merged, or the system of record's. The docs say
+      so, and say what Purlin does record: who wrote and last changed each proof, and that a
+      result stops counting when its proof is reworded.
+    - **The sign-off file is verified through its signed commit, and the docs say so.** The
+      evidence package is checkable alone, by its fingerprint; the sign-off file is not, and a
+      receiving system takes the signed commit as the record.
+    - **A hand check's stop shows the last note** with the version it was signed at and how many
+      commits have come since, as decision 110 said and the sign-off did not yet do.
+    - **Leftovers go:** `--ignore=mutants` from the suggested pytest command; the git host's
+      address from the dashboard's data; the settings of unreleased 0.10 builds from the upgrade,
+      which is from 0.9.5 only; `a break ran` where the product says a bug was planted.
+    - **Every text in the dark theme measures at least 7 to 1 too**, in any colour; one rule for
+      both themes.
+    - **The docs stay as long as they are**: plain and complete.
+    - **The deck:** numbers stand only on slides whose rows are steps; two rows are corrected
+      (drift names a collision and `purlin:spec` asks; a spot-test finding makes a rule weak
+      whatever the planted bug shows); one slide follows a requirement end to end.
+    - **Run now:** the review of what the weight pass removed, the measuring of the planted-bug
+      audit on a sample, and the real-skills QA check.
+    - **Removed:** stale evidence, the stashes, old worktrees and branches, the lane branches on
+      the git host, and the plan files of finished rounds but `three-levels.md`, `handoff.md` and
+      the deck.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
