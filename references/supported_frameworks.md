@@ -194,13 +194,14 @@ setting, after the files it names, or at its end where it names none.
 |-----------|--------------------------|
 | pytest | `--deselect <file>::<test>`, one per slow test |
 | vitest, jest | `--testNamePattern`, with a pattern every title but the slow tests' matches. Both match a title in every file, so a slow test that shares its full title with a test that is not slow is started |
-| dotnet | `--filter`, with `FullyQualifiedName!=<namespace>.<class>.<method>` for each slow test, joined by `&`. A test whose name carries its arguments, as NUnit's `TestCase` does, is not matched: it runs, and its result counts |
+| dotnet | `--filter`, with `FullyQualifiedName!=<namespace>.<class>.<method>` for each slow test, joined by `&`. A test NUnit names row by row, under `[TestCase]` or `[TestCaseSource]`, cannot be named by one filter, so it is started |
 | go | `-skip`, with the slow tests' names; needs Go 1.20. It matches a name in every package, so a slow test that shares its name with a test that is not slow in another package is started |
 | sql, shell, any `exit` suite | the file is the test, and a slow file is not run |
 
-In four cases a slow test is started all the same:
+In five cases a slow test is started all the same:
 
 - the suite's command is none of these tools';
+- the test is one NUnit names row by row, under `[TestCase]` or `[TestCaseSource]`;
 - the command already carries that option;
 - the command names no `{files}` and pipes, chains or redirects;
 - the slow test shares its title or name with another test, as the table says.
