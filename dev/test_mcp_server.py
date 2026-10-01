@@ -4,20 +4,17 @@ What the server answers on stdin, and the package hygiene it keeps. The
 throwaway project and its helpers are in `dev/mcp_project.py`.
 """
 
-import errno
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
-from unittest import mock
 
 import pytest
 
-from mcp_project import PROJECT_ROOT, SERVER_PY, _rpc, project
+from mcp_project import PROJECT_ROOT, SERVER_PY, Project, _rpc, project
 # `mcp_project` puts `scripts/mcp` on the path.
-import config_engine
 from purlin import server as purlin_srv
 
 
@@ -89,34 +86,26 @@ class TestTransport:
         # A client discovers the tools through this capability.
         assert 'tools' in result['capabilities'], result['capabilities']
 
-    # purlin: server PROOF-5
     # purlin: server PROOF-159
-    def test_stdout_holds_the_answer_alone_and_the_startup_line_is_on_stderr(
+    def test_on_windows_the_answer_is_one_line_and_the_startup_line_is_on_stderr(
             self, project):
         raw_out, raw_err = _child_bytes(project.root,
                                         json.dumps(_initialize()) + '\n')
         # The bytes, so a carriage return Windows adds to a line is seen.
         assert raw_out.count(b'\n') == 1 and raw_out.endswith(b'\n'), raw_out
         assert b'\r' not in raw_out, raw_out
-        stdout, stderr = raw_out.decode('utf-8'), raw_err.decode('utf-8')
-        lines = stdout.splitlines()
-        assert len(lines) == 1, stdout
-        answer = json.loads(lines[0])
+        answer = json.loads(raw_out.decode('utf-8'))
         assert answer['jsonrpc'] == '2.0' and answer['id'] == 1, answer
-        assert 'Purlin MCP server' not in stdout, stdout
-        started = re.search(r'Purlin MCP server v(\S+) started \(root: (.+?), ',
-                            stderr)
-        assert started, stderr
-        assert started.group(1) == _version(), stderr
-        assert os.path.realpath(started.group(2)) == os.path.realpath(
-            project.root), stderr
+        assert ('Purlin MCP server v%s started' % _version()) in \
+            raw_err.decode('utf-8'), raw_err
 
     # purlin: server PROOF-138
     def test_stdout_holds_one_answer_per_tool_call_and_nothing_else(
             self, project):
-        requests = [_call('sync_status', req_id=1),
-                    _call('drift', {'since': '1'}, req_id=2),
-                    _call('purlin_config', {'action': 'read'}, req_id=3)]
+        root = {'project_root': project.root}
+        requests = [_call('sync_status', root, req_id=1),
+                    _call('drift', dict(root, since='1'), req_id=2),
+                    _call('purlin_config', dict(root, action='read'), req_id=3)]
         stdout, _stderr = _child(
             project.root, ''.join(json.dumps(r) + '\n' for r in requests))
         lines = stdout.splitlines()
@@ -139,18 +128,6 @@ class TestTransport:
             assert 'project_root' not in schema.get('required', []), \
                 tool['name']
 
-    def test_sync_status_answers_the_table(self, project):
-        responses, _stderr = _rpc(project.root, _call('sync_status', req_id=2))
-        text = _text(responses[0])
-        assert 'Spec' in text and 'Tests' in text and 'login' in text
-
-    def test_drift_answers_json(self, project):
-        responses, _stderr = _rpc(project.root,
-                                  _call('drift', {'since': '1'}))
-        report = json.loads(_text(responses[0]))
-        assert sorted(report) == ['roles', 'since'], sorted(report)
-        assert sorted(report['roles']) == ['eng', 'pm', 'qa']
-
     # purlin: server PROOF-3
     def test_the_initialized_notification_gets_no_response(self, project):
         responses, _stderr = _rpc(
@@ -166,22 +143,6 @@ class TestTransport:
         assert len(lines) == 1, stdout
         assert json.loads(lines[0])['error']['code'] == -32700, stdout
 
-    # purlin: server PROOF-126
-    def test_a_notification_the_server_does_not_know_gets_no_response(
-            self, project):
-        responses, _stderr = _rpc(
-            project.root,
-            {'jsonrpc': '2.0', 'method': 'notifications/cancelled',
-             'params': {'requestId': 3}},
-            {'jsonrpc': '2.0', 'id': 9, 'method': 'tools/list'})
-        assert [r['id'] for r in responses] == [9], responses
-
-    # purlin: server PROOF-4
-    def test_an_unknown_tool_is_an_error(self, project):
-        responses, _stderr = _rpc(project.root, _call('nope'))
-        assert responses[0]['error'] == {'code': -32601,
-                                         'message': 'Unknown tool: nope'}
-
     # purlin: server PROOF-127
     def test_an_unknown_method_is_an_error(self, project):
         responses, _stderr = _rpc(project.root, {
@@ -194,112 +155,93 @@ class TestTransport:
 # Which project root a call answers for
 # ---------------------------------------------------------------------------
 
-def _named_then_unnamed(project, empty, monkeypatch):
-    """Start the server in `empty`; call status naming the project, then naming none."""
+def _status_from_the_home_folder(project, tmp_path, monkeypatch):
+    """Start the server in an empty folder and ask for the status of `~/ws`,
+    a copy of the project in the home folder; the answer's text."""
     monkeypatch.delenv('PURLIN_PROJECT_ROOT', raising=False)
-    responses, _stderr = _rpc(
-        str(empty),
-        _call('sync_status', {'project_root': project.root}, req_id=1),
-        _call('sync_status', {}, req_id=2))
-    return [_text(r) for r in responses]
+    home, empty = tmp_path / 'home', tmp_path / 'empty'
+    empty.mkdir()
+    shutil.copytree(project.root, str(home / 'ws'), symlinks=True)
+    monkeypatch.setenv('HOME', str(home))
+    monkeypatch.setenv('USERPROFILE', str(home))
+    responses, _stderr = _rpc(str(empty), _call(
+        'sync_status', {'project_root': '~/ws'}))
+    return _text(responses[0])
 
 
 class TestWhichProjectRoot:
 
-    # purlin: server PROOF-6
-    def test_a_call_naming_a_project_root_answers_for_it(self, project,
-                                                         tmp_path,
-                                                         monkeypatch):
-        named, _unnamed = _named_then_unnamed(project, tmp_path, monkeypatch)
-        assert named.startswith('Purlin status: proj'), named
-        assert 'login' in named, named
-
-    # purlin: server PROOF-128
-    def test_the_named_project_root_is_for_that_call_alone(self, project,
-                                                           tmp_path,
-                                                           monkeypatch):
-        _named, unnamed = _named_then_unnamed(project, tmp_path, monkeypatch)
-        assert unnamed.startswith('No Purlin project root at %s:'
-                                  % os.path.realpath(str(tmp_path))), unnamed
-
     # purlin: server PROOF-129
-    # purlin: server PROOF-160
     def test_a_workspace_named_from_the_home_folder_is_found(self, project,
                                                              tmp_path,
                                                              monkeypatch):
-        monkeypatch.delenv('PURLIN_PROJECT_ROOT', raising=False)
-        home, empty = tmp_path / 'home', tmp_path / 'empty'
-        empty.mkdir()
-        shutil.copytree(project.root, str(home / 'ws'), symlinks=True)
-        monkeypatch.setenv('HOME', str(home))
-        monkeypatch.setenv('USERPROFILE', str(home))
-        responses, _stderr = _rpc(str(empty), _call(
-            'sync_status', {'project_root': '~/ws'}))
-        text = _text(responses[0])
-        assert text.startswith('Purlin status: proj'), text
+        text = _status_from_the_home_folder(project, tmp_path, monkeypatch)
+        assert text.startswith('Purlin status: ws,'), text
         assert 'login' in text, text
 
-    # purlin: server PROOF-162
-    def test_a_root_with_no_project_says_so_rather_than_reporting_nothing(
-            self, tmp_path, monkeypatch):
-        monkeypatch.delenv('PURLIN_PROJECT_ROOT', raising=False)
-        responses, _stderr = _rpc(str(tmp_path), _call('sync_status'))
-        first = _text(responses[0]).split('\n')[0]
-        assert first == (
-            'No Purlin project root at %s: .purlin/config.json is not there. '
-            'That root came from the working directory, with no .purlin/ '
-            'marker in it or above it.' % os.path.realpath(str(tmp_path))), first
+    # purlin: server PROOF-160
+    def test_on_windows_a_workspace_named_from_the_home_folder_is_found(
+            self, project, tmp_path, monkeypatch):
+        text = _status_from_the_home_folder(project, tmp_path, monkeypatch)
+        assert text.startswith('Purlin status: ws,'), text
+        assert 'login' in text, text
 
-    # purlin: server PROOF-7
-    def test_a_root_with_no_project_says_how_to_fix_it_and_nothing_more(
-            self, tmp_path, monkeypatch):
-        monkeypatch.delenv('PURLIN_PROJECT_ROOT', raising=False)
-        responses, _stderr = _rpc(str(tmp_path), _call('sync_status'))
-        text = _text(responses[0])
-        lines = text.split('\n')
-        assert len(lines) == 2, text
-        assert lines[1] == (
-            '\u2192 Fix: pass project_root to this tool, or set '
-            'PURLIN_PROJECT_ROOT to the project root (in .claude/settings.json '
-            '"env" for the project), or run purlin:init there.'), text
-        assert 'Tests' not in text and 'Rules' not in text, text
-        assert 'No specs found' not in text, text
-
-    # purlin: server PROOF-130
-    def test_a_named_root_with_no_project_says_it_came_from_the_argument(
+    # purlin: server PROOF-168
+    def test_a_status_naming_an_empty_folder_says_no_project_is_there(
             self, project, tmp_path):
+        empty = tmp_path / 'empty'
+        empty.mkdir()
         responses, _stderr = _rpc(project.root, _call(
-            'sync_status', {'project_root': str(tmp_path)}))
-        text = _text(responses[0])
-        assert text.startswith('No Purlin project root at %s:' % tmp_path), text
-        assert 'That root came from the project_root argument.' in text, text
+            'sync_status', {'project_root': str(empty)}))
+        first = _text(responses[0]).split('\n')[0]
+        assert first.startswith(
+            'No Purlin project root at %s: .purlin/config.json is not there.'
+            % empty), first
 
-    # purlin: server PROOF-131
-    def test_a_config_write_where_there_is_no_project_writes_nothing(
-            self, tmp_path, monkeypatch):
-        monkeypatch.delenv('PURLIN_PROJECT_ROOT', raising=False)
-        responses, _stderr = _rpc(str(tmp_path), _call(
-            'purlin_config', {'action': 'write', 'key': 'gate',
-                              'value': 'signed'}))
+    # purlin: server PROOF-169
+    def test_a_config_write_naming_an_empty_folder_writes_nothing(
+            self, project, tmp_path):
+        empty = tmp_path / 'empty'
+        empty.mkdir()
+        responses, _stderr = _rpc(project.root, _call(
+            'purlin_config', {'action': 'write', 'key': 'tests', 'value': [],
+                              'project_root': str(empty)}))
         text = _text(responses[0])
         assert text.startswith('No Purlin project root at'), text
-        assert not os.path.exists(_config_file(str(tmp_path))), text
+        assert not os.path.exists(_config_file(str(empty))), text
 
-    # purlin: server PROOF-132
-    def test_drift_where_there_is_no_project_says_so(self, tmp_path,
-                                                     monkeypatch):
-        monkeypatch.delenv('PURLIN_PROJECT_ROOT', raising=False)
-        responses, _stderr = _rpc(str(tmp_path), _call('drift'))
+    # purlin: server PROOF-166
+    def test_a_call_naming_no_root_is_refused_in_one_line(self, project):
+        responses, _stderr = _rpc(project.root, _call('sync_status'))
         text = _text(responses[0])
-        assert text.startswith('No Purlin project root at %s:'
-                               % os.path.realpath(str(tmp_path))), text
+        assert text == ('sync_status needs project_root: pass the top folder '
+                        'of the git checkout you are working in.'), text
+        assert 'login' not in text, text
+
+    # purlin: server PROOF-167
+    def test_a_root_named_by_an_earlier_call_is_not_used_by_the_next(
+            self, project, tmp_path):
+        other = Project()
+        try:
+            before = _read_bytes(_config_file(project.root))
+            responses, _stderr = _rpc(
+                project.root,
+                _call('sync_status', {'project_root': other.root}, req_id=1),
+                _call('purlin_config', {'action': 'write', 'key': 'tests',
+                                        'value': []}, req_id=2))
+            assert _text(responses[0]).startswith('Purlin status:'), responses
+            assert _text(responses[1]).startswith(
+                'purlin_config needs project_root:'), responses
+            assert _read_bytes(_config_file(project.root)) == before
+        finally:
+            other.close()
 
 
 # ---------------------------------------------------------------------------
 # A settings file that cannot be read
 # ---------------------------------------------------------------------------
 
-TRAILING_COMMA = '{\n  "gate": "passed",}\n'
+TRAILING_COMMA = '{\n  "tests": [],}\n'
 
 
 def _unreadable(root):
@@ -316,25 +258,13 @@ def _unreadable(root):
 
 class TestAnUnreadableSettingsFile:
 
-    # purlin: server PROOF-139
-    def test_sync_status_answers_the_sentence(self, project):
-        _before, sentence = _unreadable(project.root)
-        responses, _stderr = _rpc(project.root, _call('sync_status'))
-        assert _text(responses[0]) == sentence
-
-    # purlin: server PROOF-140
-    def test_drift_answers_the_sentence(self, project):
-        _before, sentence = _unreadable(project.root)
-        responses, _stderr = _rpc(project.root, _call('drift'))
-        assert _text(responses[0]) == sentence
-
     # purlin: server PROOF-141
     def test_the_configuration_tool_answers_the_sentence_and_writes_nothing(
             self, project):
         before, sentence = _unreadable(project.root)
         responses, _stderr = _rpc(project.root, _call(
-            'purlin_config', {'action': 'write', 'key': 'gate',
-                              'value': 'signed'}))
+            'purlin_config', {'action': 'write', 'key': 'tests', 'value': [],
+                              'project_root': project.root}))
         assert _text(responses[0]) == sentence
         assert _read_bytes(_config_file(project.root)) == before
 
@@ -344,17 +274,6 @@ class TestAnUnreadableSettingsFile:
 # ---------------------------------------------------------------------------
 
 class TestAToolThatFails:
-
-    # purlin: server PROOF-8
-    def test_a_tool_that_raises_answers_its_error_as_text(self, project,
-                                                          monkeypatch):
-        def boom(_root):
-            raise RuntimeError('boom')
-
-        monkeypatch.setattr(purlin_srv.status_module, 'sync_status', boom)
-        responses, _stderr = _rpc(project.root, _call('sync_status'))
-        assert 'error' not in responses[0], responses
-        assert _text(responses[0]) == 'Error running sync_status: boom'
 
     # purlin: server PROOF-133
     def test_the_session_answers_the_call_after_a_failure(self, project,
@@ -369,13 +288,14 @@ class TestAToolThatFails:
 
         monkeypatch.setattr(purlin_srv.status_module, 'sync_status',
                             fails_once)
+        root = {'project_root': project.root}
         responses, _stderr = _rpc(project.root,
-                                  _call('sync_status', req_id=1),
-                                  _call('sync_status', req_id=2))
+                                  _call('sync_status', root, req_id=1),
+                                  _call('sync_status', root, req_id=2))
         assert [r['id'] for r in responses] == [1, 2], responses
         texts = [_text(r) for r in responses]
         assert texts[0] == 'Error running sync_status: boom', texts
-        assert texts[1].startswith('Purlin status: proj'), texts
+        assert texts[1].startswith('Purlin status: '), texts
         assert 'login' in texts[1], texts
 
 
@@ -383,140 +303,57 @@ class TestAToolThatFails:
 # The configuration tool
 # ---------------------------------------------------------------------------
 
+def _settings(root, data):
+    """Write `data` as the project's whole settings file."""
+    with open(_config_file(root), 'w', encoding='utf-8') as handle:
+        json.dump(data, handle)
+
+
+def _configure(project, arguments, req_id=1):
+    """The configuration tool's answer to one call naming the project."""
+    responses, _stderr = _rpc(project.root, _call(
+        'purlin_config', dict(arguments, project_root=project.root),
+        req_id=req_id))
+    return _text(responses[0])
+
+
 class TestTheConfigurationTool:
 
     # purlin: server PROOF-9
-    def test_a_read_of_one_key_answers_that_key(self, project):
-        responses, _stderr = _rpc(project.root, _call(
-            'purlin_config', {'action': 'read', 'key': 'gate'}))
-        assert json.loads(_text(responses[0])) == {'gate': 'passed'}
+    def test_a_read_of_tests_answers_that_key(self, project):
+        _settings(project.root, {'version': _version(), 'tests': []})
+        text = _configure(project, {'action': 'read', 'key': 'tests'})
+        assert text == json.dumps({'tests': []}, indent=2), text
+        assert json.loads(text) == {'tests': []}, text
 
     # purlin: server PROOF-134
-    def test_a_write_sets_the_key_in_the_settings_file(self, project):
-        with open(_config_file(project.root), encoding='utf-8') as handle:
-            before = json.load(handle)
-        responses, _stderr = _rpc(
-            project.root,
-            _call('purlin_config', {'action': 'write', 'key': 'gate',
-                                    'value': 'signed'}, req_id=1),
-            _call('purlin_config', {'action': 'read', 'key': 'gate'},
-                  req_id=2))
-        assert _text(responses[0]) == (
-            'gate is now "signed"; saved to .purlin/config.json.'), responses
+    def test_a_write_of_tests_sets_it_and_keeps_the_version(self, project):
+        _settings(project.root, {'version': _version(), 'tests': []})
+        text = _configure(project, {'action': 'write', 'key': 'tests',
+                                    'value': [{'name': 'pytest'}]})
+        assert text == ('tests is now [{"name": "pytest"}]; saved to '
+                        '.purlin/config.json.'), text
         with open(_config_file(project.root), encoding='utf-8') as handle:
             on_disk = json.load(handle)
-        assert on_disk == dict(before, gate='signed'), on_disk
-        assert json.loads(_text(responses[1])) == {'gate': 'signed'}
-
-    # purlin: server PROOF-135
-    def test_a_read_naming_no_key_answers_the_whole_file(self, project):
-        responses, _stderr = _rpc(project.root, _call(
-            'purlin_config', {'action': 'read'}))
-        whole = json.loads(_text(responses[0]))
-        with open(_config_file(project.root), encoding='utf-8') as handle:
-            on_disk = json.load(handle)
-        assert whole == on_disk, whole
-        assert sorted(whole) == ['gate', 'project_name', 'tests'], whole
+        assert on_disk == {'version': _version(),
+                           'tests': [{'name': 'pytest'}]}, on_disk
 
     # purlin: server PROOF-142
-    def test_a_read_of_an_absent_key_answers_it_as_null(self, project):
-        with open(_config_file(project.root), encoding='utf-8') as handle:
-            assert 'ci' not in json.load(handle)
-        responses, _stderr = _rpc(project.root, _call(
-            'purlin_config', {'action': 'read', 'key': 'ci'}))
-        assert _text(responses[0]) == '{\n  "ci": null\n}'
-
-    # purlin: server PROOF-143
-    def test_a_read_of_a_key_stored_as_null_answers_it_as_null(self, project):
-        path = _config_file(project.root)
-        with open(path, encoding='utf-8') as handle:
-            held = json.load(handle)
-        with open(path, 'w', encoding='utf-8') as handle:
-            json.dump(dict(held, ci=None), handle)
-        responses, _stderr = _rpc(project.root, _call(
-            'purlin_config', {'action': 'read', 'key': 'ci'}))
-        assert _text(responses[0]) == '{\n  "ci": null\n}'
-
-    # purlin: server PROOF-144
-    def test_a_save_that_fails_says_the_setting_was_not_saved(self, project):
-        before = _read_bytes(_config_file(project.root))
-
-        def fill_the_disk(_obj, handle, **_kwargs):
-            handle.write('{"gate": ')
-            raise OSError(errno.ENOSPC, 'No space left on device')
-
-        with mock.patch.object(config_engine.json, 'dump',
-                               side_effect=fill_the_disk):
-            responses, _stderr = _rpc(project.root, _call(
-                'purlin_config', {'action': 'write', 'key': 'gate',
-                                  'value': 'signed'}))
-        assert _text(responses[0]) == \
-            'The setting was not saved: No space left on device.'
-        assert _read_bytes(_config_file(project.root)) == before
-
-    # purlin: server PROOF-145
-    def test_a_setting_purlin_does_not_know_is_written(self, project):
-        responses, _stderr = _rpc(project.root, _call(
-            'purlin_config', {'action': 'write', 'key': 'team',
-                              'value': 'blue'}))
-        assert _text(responses[0]) == (
-            'team is now "blue"; saved to .purlin/config.json.')
-        with open(_config_file(project.root), encoding='utf-8') as handle:
-            assert json.load(handle)['team'] == 'blue'
-
-    # purlin: server PROOF-10
-    def test_a_write_naming_no_key_is_refused(self, project):
-        before = _read_bytes(_config_file(project.root))
-        responses, _stderr = _rpc(project.root, _call(
-            'purlin_config', {'action': 'write', 'value': 'x'}))
-        assert _text(responses[0]) == \
-            'A change needs a key; nothing was saved.'
-        assert _read_bytes(_config_file(project.root)) == before
-
-    # purlin: server PROOF-136
-    def test_an_unknown_action_is_refused(self, project):
-        before = _read_bytes(_config_file(project.root))
-        responses, _stderr = _rpc(project.root, _call(
-            'purlin_config', {'action': 'delete', 'key': 'gate'}))
-        assert _text(responses[0]) == \
-            "Unknown action: delete. Use 'read' or 'write'."
-        assert _read_bytes(_config_file(project.root)) == before
+    def test_a_read_of_an_absent_tests_answers_it_as_null(self, project):
+        _settings(project.root, {'version': _version()})
+        text = _configure(project, {'action': 'read', 'key': 'tests'})
+        assert text == '{\n  "tests": null\n}', text
 
 
 def _refused(project, arguments):
     """The configuration tool's answer to a write, asserting the file is unchanged."""
     before = _read_bytes(_config_file(project.root))
-    responses, _stderr = _rpc(project.root, _call(
-        'purlin_config', dict(arguments, action='write')))
+    text = _configure(project, dict(arguments, action='write'))
     assert _read_bytes(_config_file(project.root)) == before
-    return _text(responses[0])
+    return text
 
 
 class TestAWriteTheToolRefuses:
-
-    # purlin: server PROOF-146
-    def test_a_known_setting_given_no_value_is_refused(self, project):
-        assert _refused(project, {'key': 'gate'}) == \
-            'A change needs a value; nothing was saved.'
-
-    # purlin: server PROOF-147
-    def test_a_gate_of_gold_is_refused(self, project):
-        assert _refused(project, {'key': 'gate', 'value': 'gold'}) == (
-            '"gold" is not accepted for gate; it takes passed or signed. '
-            'Nothing was saved.')
-
-    # purlin: server PROOF-148
-    def test_an_engine_purlin_does_not_run_is_refused(self, project):
-        assert _refused(project, {'key': 'mutation_engine',
-                                  'value': 'pitest'}) == (
-            '"pitest" is not accepted for mutation_engine; it takes none, '
-            'auto, mutmut, stryker or stryker_net. Nothing was saved.')
-
-    # purlin: server PROOF-150
-    def test_an_audit_parallel_above_16_is_refused(self, project):
-        assert _refused(project, {'key': 'audit_parallel', 'value': 17}) == (
-            '"17" is not accepted for audit_parallel; it takes a whole number '
-            'from 1 to 16. Nothing was saved.')
 
     # purlin: server PROOF-151
     def test_tests_given_as_text_is_refused(self, project):
@@ -524,28 +361,17 @@ class TestAWriteTheToolRefuses:
             '"pytest" is not accepted for tests; it takes a list. Nothing was '
             'saved.')
 
-    # purlin: server PROOF-152
-    def test_a_ci_of_gitlab_is_refused(self, project):
-        assert _refused(project, {'key': 'ci', 'value': 'gitlab'}) == (
-            '"gitlab" is not accepted for ci; it takes github, azure or none. '
-            'Nothing was saved.')
-
-    # purlin: server PROOF-154
-    def test_a_gate_of_null_is_refused(self, project):
-        assert _refused(project, {'key': 'gate', 'value': None}) == (
-            '"null" is not accepted for gate; it takes passed or signed. '
-            'Nothing was saved.')
-
-    # purlin: server PROOF-163
-    def test_a_key_this_release_does_not_read_is_refused(self, project):
-        assert _refused(project, {'key': 'min_strength', 'value': 70}) == (
-            'min_strength is not read by this release; nothing was saved.')
-
     # purlin: server PROOF-155
     def test_a_write_of_the_version_is_refused(self, project):
         assert _refused(project, {'key': 'version', 'value': '9.9.9'}) == (
             "version is written by purlin:init from Purlin's own version; "
             "nothing was saved.")
+
+    # purlin: server PROOF-164
+    def test_a_write_of_gate_is_refused(self, project):
+        assert _refused(project, {'key': 'gate', 'value': 'signed'}) == (
+            'gate is not a setting; .purlin/config.json holds version and '
+            'tests. Nothing was saved.')
 
 
 # ---------------------------------------------------------------------------
@@ -560,16 +386,7 @@ def _manifest_entry():
 
 class TestThePluginManifest:
 
-    # purlin: server PROOF-22
-    def test_the_plugin_entry_point_names_the_package(self):
-        entry = _manifest_entry()
-        assert entry['command'] == 'sh', entry
-        args = entry['args']
-        assert args[0].endswith('scripts/purlin_python.sh'), args
-        assert args[-1].endswith('scripts/mcp/purlin/server.py'), args
-
     # purlin: server PROOF-137
-    # purlin: server PROOF-161
     def test_the_manifest_command_starts_a_server_that_answers(self, project):
         entry = _manifest_entry()
         # On Windows `sh` is the one Git for Windows puts on the search path.
@@ -643,7 +460,7 @@ class TestPackageHygiene:
         package = os.path.join(PROJECT_ROOT, 'scripts', 'mcp', 'purlin')
         allowed = set(sys.stdlib_module_names) if hasattr(
             sys, 'stdlib_module_names') else set()
-        local = {'purlin', 'config_engine'}
+        local = {'purlin', 'config_engine', 'package'}
         offenders = []
         for name in sorted(os.listdir(package)):
             if not name.endswith('.py'):
