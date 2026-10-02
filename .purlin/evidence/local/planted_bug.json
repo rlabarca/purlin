@@ -46,38 +46,36 @@
         "verdict": "strong"
       },
       "RULE-10": {
-        "at": "2026-10-02T09:23:03Z",
+        "at": "2026-10-02T15:35:59Z",
         "breaks": {
           "PROOF-12": {
-            "after": "    return ''",
+            "after": "            option=''))\n    entries = [e for key, found in purlin_run.marker_results(scan, suites, runs).items()\n               if key[0] == feature for e in found]\n    if tests and not entries:",
             "aim": "plain",
-            "before": "    return frameworks_module.leave_out(suite, others, own)[0]",
-            "break_key": "fcb334ac48c5248c06f7426c70c0e9f3978f96179635845c4117f6e2a8522003",
-            "case": "the bug for PROOF-1 fails PROOF-2's test and leaves PROOF-1's test passing; the proof says PROOF-1 reads survived; the changed code runs PROOF-2's test too, sees its failure and gives not run",
+            "before": "            option=_others_left_out(suite, files, scan, feature, proof_id)))\n    entries = purlin_run.marker_results(scan, suites, runs).get((feature, proof_id), [])\n    if tests:",
+            "break_key": "6cd6d915405b48cac2b8079c824d376cbb7634a916aefa901f37475a8a188a1d",
+            "case": "the bug planted for PROOF-1 fails only the test of PROOF-2; the proof says the result for PROOF-1 reads survived; the changed code runs and reads every test of the feature, so it reads caught",
             "file": "scripts/review/targeted_break.py",
-            "line": 475,
-            "result": "survived",
+            "line": 503,
+            "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "7b15ba3edde8df8b33585e82a92fc6d4ef63c782de67de0a8f0cec79261b07dd",
-        "commit": "0f224f569e012b1bcd542a301a095b3daaf6988f",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "0ca1dfd0dbae367f99d6314875996d386888d20634ae49a0404d112392484749",
+        "commit": "cf36778be567f2dfe45c65a00f2714a815b0c0ff",
+        "criteria": "368ad8896dbd166919bd0153828d80af76ecfab415e618515d9a89adf49bddf5",
         "explanation": [
-          "PROOF-12: the test plants one bug in a project where the test of PROOF-1 is weak and the test of PROOF-2 is strong, and compares the result for PROOF-1 with `survived` and the result for PROOF-2 with caught, which is the proof's case and the result it names.",
-          "PROOF-12: the test never reads which tests ran in the copy, so it sees the rule's \"only the proof's own test runs\" only through the two results.",
-          "PROOF-12: no spot test fired, and the proof's value `survived` is compared in the test."
+          "PROOF-12: the test plants one bug in a project where the test of PROOF-1 is weak and the test of PROOF-2 is strong, runs it once against each proof's own test, and compares the result for PROOF-1 with `survived`, the value the proof names.",
+          "PROOF-12: the test also compares the result for PROOF-2 with caught, so it shows the same bug does fail the other proof's test, which is the first half of the proof's case.",
+          "PROOF-12: the test checks the proof's case and its result, so the planted change is the plainest one: every test of the feature is run and read for each proof.",
+          "The spot tests found nothing, and nothing in the test contradicts that: both assertions can fail and the expected values are literals."
         ],
-        "findings": [
-          "PROOF-12: the test still passes when scripts/review/targeted_break.py:475 reads \"return ''\"",
-          "PROOF-12: the AI says this breaks: the bug for PROOF-1 fails PROOF-2's test and leaves PROOF-1's test passing; the proof says PROOF-1 reads survived; the changed code runs PROOF-2's test too, sees its failure and gives not run"
-        ],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "553bccfe4478153b2353fe78f2561d8d17206d6e54462759900744efbda5ba78",
         "rule_hash": "a3a3e02466237917199ac36eb25d36f954ee212794a5d05eefb83cc7ce5342c6",
         "test_hash": "6a718024062528b69e738363d66ab1a82aaf706fccddac6df238b3910f266ae5",
-        "verdict": "weak"
+        "verdict": "strong"
       },
       "RULE-12": {
         "at": "2026-10-02T09:23:03Z",
