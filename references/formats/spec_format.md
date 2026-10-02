@@ -1,4 +1,4 @@
-> Format-Version: 23
+> Format-Version: 24
 
 # Spec format
 
@@ -14,9 +14,22 @@ feature is warned of.
 specs/<category>/<name>.md
 ```
 
-A spec is known by `<name>` alone. Two specs with one name in different
-folders are warned of: only one is read, and the warning names both files and
-the `git mv` that renames the other.
+A spec is known by `<name>` alone. A name holds letters, digits, `_` and `-`,
+and does not start with `-`. This section is the one home of what a name holds:
+a test comment, an anchor's `--name` and the upgrade from 0.9.5 read the same
+name.
+
+A spec whose name holds any other character is still read, and no test comment
+can name it. The status warns of it in one line, with the `git mv` that renames
+its file. The new name is the old one with each such character, and a leading
+`-`, written `_`:
+
+```
+sample.age: the name holds a character other than letters, digits, _ and -, so no test comment can name it. Rename the file: git mv specs/intake/sample.age.md specs/intake/sample_age.md
+```
+
+Two specs with one name in different folders are warned of: only one is read,
+and the warning names both files and the `git mv` that renames the other.
 
 ## Template
 
@@ -165,8 +178,29 @@ proof counts under `Left to do` as a rule to write a proof for, which does not
 stop the tests reading `met`: a test marked with the rule's own id answers it.
 A rule whose test passes and that has no proof reads `no proof` in its strong cell, with the reason `the rule has
 a test and no proof`. Several proofs can name the same rule, and one proof can name
-several rules when it drives a flow through all of them. A list item under
-`## Proof` of any other form is not read as a proof and is warned of.
+several rules when it drives a flow through all of them.
+
+A tag stands at the end of the proof line, after the text, never before the
+rule ids:
+
+```
+- PROOF-7 (RULE-7): A technician reads the rejection message and finds it clear @manual
+- PROOF-8 (RULE-8): A batch of 500 samples is taken in; every sample has a result @slow
+```
+
+A list item under `## Proof` of any other form is not read as a proof. The
+status warns of it in one line that quotes the line whole and gives the reason.
+Where `@manual`, `@slow` or `@env(` stands between `PROOF-N` and the rule ids:
+
+```
+login: a line under ## Proof cannot be read, because a tag goes at the end of the line: "- PROOF-7 @manual (RULE-7): A rejection message for an aged sample is clear to a technician". Run purlin:spec login.
+```
+
+For any other line:
+
+```
+login: a line under ## Proof cannot be read, because a proof line reads `- PROOF-N (RULE-N): <text>`: "- PROOF-7: no rule named". Run purlin:spec login.
+```
 
 A proof id written twice is warned of; the proof is read once, with the text of
 its second line, and every rule of the spec reads `failed`, with the reason
@@ -194,7 +228,7 @@ Append `@manual` to a proof that no test can settle:
 | `@manual` | A person's judgment is the only instrument. No test, so the rule reads `checked at sign-off` in its strong cell. A person checks it in the sign-off walk of `purlin:sign` and may type a one-line note of what they saw, which the sign-off records; Enter alone records `no note`. Once signed, the cell also carries the newest note, as `noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red` |
 
 `@manual`, `@slow` and `@env` are the only tags a proof line carries, at most
-one of each, in any order. Any other trailing `@<name>` is not a tag: it stays
+one of each, in any order, at the end of the line. Any other trailing `@<name>` is not a tag: it stays
 in the proof text.
 
 ### The slow tag
