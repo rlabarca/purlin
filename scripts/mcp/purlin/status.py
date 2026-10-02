@@ -52,7 +52,6 @@ if _MCP_DIR not in sys.path:
 
 from config_engine import config_problem
 from purlin import (board as board_module, drift as drift_module,
-                    facts as facts_module,
                     fingerprint as fingerprint_module,
                     markers as markers_module,
                     payload as payload_module,
