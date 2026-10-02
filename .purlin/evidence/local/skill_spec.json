@@ -2,14 +2,14 @@
   "feature": "skill_spec",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T19:28:15Z",
-      "commit": "f8c8a7dabe79a97469d40c3a7e648404b22c89bc",
+      "at": "2026-10-02T21:02:50Z",
+      "commit": "d8a8f2cee1fb360791599fbc5af282dd7d1e4e8b",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "4f10982986d991e5de00beb1d89acd33f4df90486f90d29bd0996828a723e4c8",
-        "spec": "e52c7034dc5fe3ad593f5199e3d79ba2a639c3d42a5e655722fcdeff23856b0c",
-        "tests": "65617c85d775f5b24abb81d3d3be2d2a750871517fc4011ad196067022dda1d6"
+        "code": "dc07b096673768ba48cc69cdf56bfdf8745e57c5d22f94154f09a17058261f0b",
+        "spec": "22db7a4490b43698596e78828d096a5fc2f287b763136f69b825c18470e126f2",
+        "tests": "32c81cb89864a315efa7df24acef8b72f2744f3630a84f8afdf82f271e2244d9"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -20,10 +20,19 @@
           "result": "pass",
           "rule": "RULE-32",
           "test": "dev/test_skill_spec.py::test_the_spec_skill_holds_each_command_and_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-63",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_skill_spec.py::test_the_spec_skill_says_where_the_two_highest_lines_go"
         }
       ],
       "rules": {
-        "RULE-32": "passed"
+        "RULE-32": "passed",
+        "RULE-33": "passed"
       },
       "runner": "rich-labarca"
     }

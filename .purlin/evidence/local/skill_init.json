@@ -2,12 +2,12 @@
   "feature": "skill_init",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T19:28:15Z",
-      "commit": "f8c8a7dabe79a97469d40c3a7e648404b22c89bc",
+      "at": "2026-10-02T21:02:50Z",
+      "commit": "d8a8f2cee1fb360791599fbc5af282dd7d1e4e8b",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "a518fe6311095f6c1827426254b790aa7b26f877c1c5caeceb541fb551cc5c2c",
+        "code": "5b1ed37a0295daea95cb2a7c9b745c0b152f56e07f361aa09bf965f8fad0fb36",
         "spec": "09bbeeaaac75062a3b5e595b60cb18e984a9e9b843ff03d6407be99fff5c8de0",
         "tests": "a54794c609b6aedd5c62a872688138b9e4f6baaed6f280fcb9a9664799b75be7"
       },

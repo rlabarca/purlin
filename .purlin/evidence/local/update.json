@@ -2,14 +2,14 @@
   "feature": "update",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T19:33:40Z",
-      "commit": "a669e9001d4615d797d1d5efaa77d82c2154a038",
+      "at": "2026-10-02T21:02:51Z",
+      "commit": "d8a8f2cee1fb360791599fbc5af282dd7d1e4e8b",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "0642057b16fe84a38e7c135b264716f7f3b76cc93d29e26ae3288c606f9760ca",
-        "spec": "0adc60e1ed660bffedca248a582dad4823a243fd57278bb2ea7717ee2e8ceaf6",
-        "tests": "36a6e96e7cc55b7a5dc27e725baceefaa123e8648923e81c954c524943b61ef7"
+        "code": "381b0b691aae0f0c3945739c8b0895d253a91131a4fd29adecf9154aaf8bc0d6",
+        "spec": "ef414efcadafbdfb8badf227f7054161f8c8356e5e7126daf6c69be906465735",
+        "tests": "bee0d4842645decf34ff4cc2eb7dbf7e20fdc8ef921e4ee5c2f5a2c6f81a4971"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -431,6 +431,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-204",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-57",
+          "test": "dev/test_init_update.py::test_the_comment_to_put_is_in_the_file_s_own_comment_style"
+        },
+        {
+          "env": null,
           "id": "PROOF-173",
           "manual": false,
           "result": "pass",
@@ -588,6 +596,78 @@
           "result": "pass",
           "rule": "RULE-64",
           "test": "dev/test_init_update.py::test_a_run_that_applies_nothing_says_nothing_of_the_record"
+        },
+        {
+          "env": null,
+          "id": "PROOF-196",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-65",
+          "test": "dev/test_init_update.py::test_a_kind_tag_ending_a_proof_s_last_line_goes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-197",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-65",
+          "test": "dev/test_init_update.py::test_the_totals_line_counts_the_tags_and_the_specs"
+        },
+        {
+          "env": null,
+          "id": "PROOF-198",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-65",
+          "test": "dev/test_init_update.py::test_a_tag_no_marker_names_and_the_three_kept_tags_stay"
+        },
+        {
+          "env": null,
+          "id": "PROOF-199",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-65",
+          "test": "dev/test_init_update.py::test_the_windows_tag_on_a_continuation_line_is_rewritten"
+        },
+        {
+          "env": null,
+          "id": "PROOF-200",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-65",
+          "test": "dev/test_init_update.py::test_a_kind_is_still_known_once_the_markers_are_rewritten"
+        },
+        {
+          "env": null,
+          "id": "PROOF-205",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-65",
+          "test": "dev/test_init_update.py::test_a_kind_tag_goes_from_before_a_note_in_brackets"
+        },
+        {
+          "env": null,
+          "id": "PROOF-201",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-66",
+          "test": "dev/test_init_update.py::test_a_run_that_applied_nothing_ends_on_the_update_and_how_to_say_yes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-202",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-67",
+          "test": "dev/test_init_update.py::test_a_run_that_applied_everything_ends_on_the_test_run"
+        },
+        {
+          "env": null,
+          "id": "PROOF-203",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-67",
+          "test": "dev/test_init_update.py::test_a_run_that_left_a_migration_pending_ends_on_the_update"
         }
       ],
       "rules": {
@@ -614,6 +694,9 @@
         "RULE-62": "passed",
         "RULE-63": "passed",
         "RULE-64": "passed",
+        "RULE-65": "passed",
+        "RULE-66": "passed",
+        "RULE-67": "passed",
         "RULE-7": "not run",
         "RULE-9": "passed"
       },

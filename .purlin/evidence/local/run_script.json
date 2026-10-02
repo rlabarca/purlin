@@ -1566,14 +1566,14 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T19:33:40Z",
-      "commit": "a669e9001d4615d797d1d5efaa77d82c2154a038",
+      "at": "2026-10-02T21:02:50Z",
+      "commit": "d8a8f2cee1fb360791599fbc5af282dd7d1e4e8b",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "05dd207a3b81095e6ba33818ec52cce5eaa1eed82ae9110443777d85515ac9d4",
-        "spec": "480f210828b385b96630d87d6ae93ed3f4554af532ed99807be5528f328eaa53",
-        "tests": "f9f61f9e4ff359d37f5b28f2715c84dd856fc2aa31daf0f261d2ab81e1a41e81"
+        "spec": "f7a28c5d13855c201d63f0212c0adfe278bd51e22ea7ecc7893e4d723b8b2ea3",
+        "tests": "a7e59e9fb60bf678cc473069e555cbc7eefbffbf5d4e4e4ca2dd156657ee27d8"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -2131,6 +2131,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-302",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-112",
+          "test": "dev/test_run_script.py::TestAMarkerFrom095StillInATest::test_the_run_says_so_once_in_its_status"
+        },
+        {
+          "env": null,
           "id": "PROOF-275",
           "manual": false,
           "result": "pass",
@@ -2281,6 +2289,7 @@
         "RULE-11": "passed",
         "RULE-110": "passed",
         "RULE-111": "passed",
+        "RULE-112": "passed",
         "RULE-12": "passed",
         "RULE-17": "passed",
         "RULE-20": "passed",
