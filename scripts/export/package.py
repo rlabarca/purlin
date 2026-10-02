@@ -8,10 +8,12 @@ command line of its own.
 The package holds, for every rule, its words, its proofs, its tests, each
 result on each operating system with who ran it and on which machine, what
 the audit found, its two statuses, the one kind of work it waits for and
-who wrote and last changed its words, its proofs and its tests. Above them
-it carries whether the tests are met, the total, the count that pass, what
-the audit found, what is left to do, the runs the results came from and
-every hand check. It is written to
+who wrote and last changed its words, its proofs and its tests. A rule whose
+every proof is `@manual` has no test, so each of its results reads
+`checked at sign-off`. Above them it carries whether the tests are met, the
+total, the count that pass, what the audit found over the rules that pass
+their tests and have a tested proof, what is left to do, the runs the
+results came from and every hand check. It is written to
 
     .purlin/evidence/package/<version>.json
 
@@ -534,16 +536,20 @@ def _kept(section, ids):
 def _results(rule_id, proofs, sections, same):
     """One entry per section: what that run saw for this rule, by operating system.
 
-    `same_code` is false for a section taken on other code, and for one that
-    holds a kept result for the rule, whatever commit that result names."""
+    A rule whose every proof is `@manual` reads `checked at sign-off`,
+    whatever word the section holds: no test ran for it. `same_code` is false
+    for a section taken on other code, and for one that holds a kept result
+    for the rule, whatever commit that result names."""
     ids = {proof.get('id') for proof in proofs} or {rule_id}
+    by_hand = bool(proofs) and all(proof.get('manual') for proof in proofs)
     out = []
     for entry in sections:
         section = entry['section']
         if not _speaks(section, rule_id, ids):
             continue
         out.append({'os': entry['os'], 'source': entry['source'],
-                    'result': _word(section, rule_id, ids),
+                    'result': (states_module.CHECKED_AT_SIGNOFF if by_hand
+                               else _word(section, rule_id, ids)),
                     'at': section.get('at'),
                     'commit': section.get('commit'),
                     'runner': section.get('runner'),
@@ -594,15 +600,21 @@ _AUDIT_KEYS = {word: key for key, word in summary_module.AUDIT_WORDS}
 
 
 def audit_counts(entries):
-    """`{strong, weak, spot_checked, out_of_date, not_audited}` over every rule.
+    """`{strong, weak, spot_checked, out_of_date, not_audited}`, as
+    `summary.audit_counts` counts them.
 
-    A rule is counted by its strong cell's word, and under `not_audited`
-    where that word is none of the audit's own: no audit answers for it."""
+    A rule is counted where its passed status reads `passed`, under its
+    strong status's word where that is one of the five. No other rule is
+    counted: one that does not pass, and one checked by hand, whose strong
+    status reads `checked at sign-off`."""
     counts = {key: 0 for key, _word in summary_module.AUDIT_WORDS}
     for feature in entries:
         for rule in feature['rules']:
+            if (rule['statuses'].get('passed') or {}).get('word') != 'passed':
+                continue
             word = (rule['statuses'].get('strong') or {}).get('word')
-            counts[_AUDIT_KEYS.get(word, 'not_audited')] += 1
+            if word in _AUDIT_KEYS:
+                counts[_AUDIT_KEYS[word]] += 1
     return counts
 
 

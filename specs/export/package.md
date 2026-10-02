@@ -11,7 +11,7 @@
 > Scope: scripts/export/package.py
 > Stack: python/stdlib (json, hashlib, subprocess), git worktree
 > Highest-Rule: 37
-> Highest-Proof: 81
+> Highest-Proof: 83
 
 ## Rules
 
@@ -23,7 +23,7 @@
 - RULE-6: Each rule carries its words exactly as the spec has them, the one kind of work it waits for or null, its proofs and its tests
 - RULE-8: The same commit gives the same bytes: the package built twice over one commit, in two clones, is identical, with `\n` line ends and a trailing newline
 - RULE-9: `fingerprint` is the sha256 of the package's canonical bytes with that field empty, and a package changed after it was written does not match it
-- RULE-11: Each rule carries each result with its operating system, source, time, commit, runner and machine
+- RULE-11: Each rule carries each result with its operating system, source, time, commit, runner and machine, and a rule whose every proof is `@manual` reads `checked at sign-off` there, never `passed`
 - RULE-12: Each rule carries what the audit found with the model and the fingerprint of its instructions
 - RULE-14: Each rule carries two statuses, `passed` and `strong`
 - RULE-17: Every time in the package is in UTC, ending in `Z`
@@ -31,7 +31,7 @@
 - RULE-23: Where the package cannot be written, `purlin:sign` prints one line naming why, makes no commit and no tag, and exits 1
 - RULE-25: The evidence package states whether every rule's tests pass, as `met`, and no field of it says that the software complies with a regulation
 - RULE-26: Each feature entry holds exactly `name`, `spec`, `scope`, `anchor` and `rules`, and an anchor's `scope` is `[]`
-- RULE-29: The package carries `audit`, the count of rules the audit found `strong`, `weak` and `spot_checked`, of those whose audit is `out_of_date` and of those `not_audited`, and `hand_checks`, one entry per rule with a `@manual` proof naming its feature, rule and proofs
+- RULE-29: The package carries `audit`, the five counts `strong`, `weak`, `spot_checked`, `out_of_date` and `not_audited` as `purlin:status` gives them, over the rules that pass their tests and have a tested proof, and `hand_checks`, one entry per rule with a `@manual` proof naming its feature, rule and proofs
 - RULE-32: The package carries `runs`, one entry per group of counted results sharing a source, a system, who ran them and a machine, local first and then by system, each naming `by`, the email its sections record, `machine`, `os`, `source`, `at`, `commit` and the count of `rules`
 - RULE-33: Each result carries `same_code`, true when every commit from the one its tests ran at to the package's `commit` changes only files under `.purlin/` and leaves the `tests` setting as it was, and no proof of the rule holds a result kept from an earlier run
 - RULE-34: `project` is the name the project's own files give it, read when the package is built
@@ -84,3 +84,5 @@
 - PROOF-78 (RULE-33): `login`'s committed results name a commit on another branch, which `HEAD` does not descend from, the two trees holding the same files; `purlin:sign` prints only one line beginning `No sign-off: these results were not taken on this version of the code` and exits 1
 - PROOF-79 (RULE-33): `feat`'s committed section lists its slow `PROOF-2` as `pass` with `kept` naming the commit `<c>`, and every other result was taken at `HEAD`; `purlin:sign --show` prints only `No sign-off: these results were not taken on this version of the code, <sha7>: feat on Linux/Unix. Run purlin:test --all --commit, then purlin:sign.` and exits 1
 - PROOF-80 (RULE-22): A signed package is rewritten with every `\n` as `\r\n` and checked with `purlin:sign --check`; it exits 1 and prints only `The package does not match its fingerprint: the fingerprint matches the content, but the bytes are not in the canonical form.`
+- PROOF-82 (RULE-29): 3 rules pass their tests, 2 found `strong` by the audit and 1 never read, and a fourth rule's one proof is `@manual`; the package's `audit` reads `{"strong": 2, "weak": 0, "spot_checked": 0, "out_of_date": 0, "not_audited": 1}`
+- PROOF-83 (RULE-11): `login RULE-2`'s one proof is `@manual`, and its feature's committed section reads `RULE-2` `passed`; in the package each result of `RULE-2` reads `checked at sign-off`
