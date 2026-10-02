@@ -297,7 +297,8 @@ and the next audit without `--settle` plants a bug for that proof.
 
 The spot tests run again over the rule's tests, and "The verdict" sets the rule's word as in
 any audit, from the results the entry holds: `weak` where a spot test fires or a bug survived,
-else `strong` where a bug was caught, else `spot-checked`.
+else `strong` where a bug was caught, else `spot-checked`. A proof whose two bugs both survived
+holds no caught bug, and the rule still reads `strong` where another of its proofs does.
 
 A rule named with `--settle` that keeps no bug as `survived` prints
 `<feature> RULE-N has no planted bug that survived: nothing to settle.` and is left as it is.

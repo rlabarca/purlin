@@ -58,6 +58,9 @@ The audit found 42 of 50 rules strong (84%): 42 strong, 8 weak.
   sharper proof.
 - Never change a sound test or narrow a rule to clear a finding.
 
+A rule with several proofs reads what they give together: `weak` while a spot test fires or a
+bug still survives, else `strong` where any of its proofs has a caught bug, else
+`spot-checked`. A proof left with no bug gets a new one once its test or code changes.
 [Settling a finding](../references/review_criteria.md#settling-a-finding) gives each step.
 
 ## What you can count on

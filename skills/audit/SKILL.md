@@ -102,6 +102,16 @@ The audit found 4 of 6 rules strong (66%): 4 strong, 1 weak, 1 spot-checked.
   planted.` is printed by a settle: the test still passes with that bug in place, so the bug was
   dropped and one new bug was planted for the proof. Where the new bug survives too, the rule's
   block holds `No bug was caught for PROOF-N: two planted bugs left the proof's check passing.`
+  That proof gets no further bug until its test or code changes, and the rule can still read
+  `strong` through another proof.
+- The same line ending at `did not break what the proof says.` is printed by a settle where no
+  new bug can be planted. The rule's block says why.
+- A line `A bug was planted for PROOF-N and its test did not run.`, or one ending
+  `its test ended in an error, not a failure.`, says the bug reads `not run`. After a settle it
+  is the bug that survived, planted again.
+- After a settle the rule reads what the verdict gives, as after any audit: `weak` where a spot
+  test fires or a bug still survives, else `strong` where any of its proofs has a caught bug,
+  else `spot-checked`.
 - `<feature> RULE-N has no planted bug that survived: nothing to settle.` means the rule named
   with `--settle` is left as it is.
 - A line `No bug was planted: <why>.` is not a finding and does not make the rule weak. A rule

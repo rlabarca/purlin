@@ -165,13 +165,20 @@ survived. For each:
 3. Where the proof names too little to write that assertion, stop for that proof: say so,
    propose a sharper proof sentence, and send the person to `purlin:spec`.
 4. Run `purlin:test <feature>`, then `purlin:audit <feature> RULE-N --settle`.
-5. Report which of three ways it ended:
-   - the test now catches the bug, and the rule reads `strong`;
-   - the finding was wrong and a new bug was caught, and the rule reads `strong`;
-   - two bugs left the proof's check passing, and the rule reads `spot-checked`. Nothing more
-     is asked.
+5. Report what the settle printed for each proof, and the word the rule then reads:
+   - The test now catches the bug: the finding was right, and the bug reads `caught`.
+   - The bug did not break what the proof says, and a new bug was planted: the finding was
+     wrong. Where the new bug survives too, two bugs left the proof's check passing, and the
+     proof gets no further bug until its test or code changes.
+   - The same line ending at `did not break what the proof says.`: no new bug could be planted,
+     and the rule's block says why.
+   - The test did not run with the bug in place: the bug reads `not run`.
 
-A rule that still reads `weak` has a new finding: start again at step 1 with it.
+The rule then reads what the verdict gives: `weak` where a spot test fires or a bug still
+survives, else `strong` where any of its proofs has a caught bug, else `spot-checked`. A rule
+can read `strong` through another proof.
+
+A rule that still reads `weak` has a finding left: start again at step 1 with it.
 
 `skills/audit/SKILL.md`, Step 2 says how each line the settle prints reads.
 `references/review_criteria.md`, "Settling a finding", is the one home of what it does.
