@@ -2,14 +2,14 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T13:41:40Z",
-      "commit": "18ca025a5dbb9a9666a6fa941937375e81789f3a",
+      "at": "2026-10-02T13:42:22Z",
+      "commit": "a8596eb3cff24fb893b822901c97983c104fd816",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "2d807f298c4851eccc9593e0788e16dd1469e2d59e0b28e7b89e898a058af0d5",
         "spec": "0aca820f6004e803252be4f03a3634c569e5fce44cb9c7950155c622d57b0c2a",
-        "tests": "406ccd053382b55fad9e7ec757ab5783a8b555b82b9654149424459395ef8419"
+        "tests": "53ed78d92045eb8cbc97cb9deff0c9501bf3fbbf6b61e94eb30eb258c21ab7b8"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -139,7 +139,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
-          "test": "dev/test_purlin_report.py::test_a_project_whose_one_audit_result_is_spot_checked_shows_strong"
+          "test": "dev/test_purlin_report.py::test_one_spot_checked_result_draws_the_strong_column_and_box"
         },
         {
           "env": null,
