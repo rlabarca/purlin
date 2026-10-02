@@ -604,19 +604,17 @@ class TestTheRefusals:
             made.close()
 
     # purlin: signatures PROOF-258
-    def test_a_spec_that_holds_a_number_twice_is_refused(self, capsys):
+    def test_a_spec_that_holds_a_number_twice_is_refused_in_one_whole_line(
+            self, capsys):
         made = ready(spec=TWICE_SPEC)
         try:
             code, lines = run_main(made, capsys)
-            assert len(lines) == 1, lines
-            assert lines[0].startswith('No sign-off:'), lines
-            # The rule by its whole number: `RULE-20` does not name it.
-            assert 'login RULE-' in lines[0], lines
-            assert 'RULE-2' in re.findall(r'RULE-\d+', lines[0]), lines
-            # `login` and the number belong together: the feature's name,
-            # then its rule numbers alone, `RULE-2` among them.
-            assert re.search(r'(?<!\S)login (?:RULE-\d+, )*RULE-2(?!\d)',
-                             lines[0]), lines
+            # The whole line: every rule of the spec, the feature's name once
+            # and its rule numbers after it, each number written once.
+            assert lines == [
+                'No sign-off: 2 rules do not pass at %s: login RULE-1, '
+                'RULE-2. Run purlin:status to see what is left, then '
+                'purlin:sign.' % made.head()[:7]], lines
             assert (code, status(made.root)) == (1, '')
         finally:
             made.close()
