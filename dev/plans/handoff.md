@@ -1,3 +1,84 @@
+# Handoff, 2026-10-01: decision 121 is built
+
+This section is the newest. The integration report is `dev/plans/d121-reports/integration.md`:
+it holds every rule and proof integration added or reworded, word for word, and every line a
+person reads that it chose. Each lane's report is beside it, with the lines that lane chose.
+`main` is local only: nothing was pushed, tagged, signed or audited.
+
+- **Built:** decision 121, from six lanes (`evidence`, `audit`, `signoff`, `surfaces`, `setup`,
+  `words`) merged in that order, each rebased and fast-forwarded, then reconciled.
+  - The status reads `signed` only where a sign-off counts; a package is trusted by its
+    content; a sign-off is read as `HEAD` holds it; a tag git could not write is written by
+    the next run; two signers never share a file.
+  - A slow result a plain run kept is marked `kept`, and the sign-off does not count it.
+  - The audit's word is `strong`, `weak`, `spot-checked` or `not audited`, and `out of date`
+    once the rule, its proof, its test or its code changes. One bare model call per rule.
+  - A changed test command ends the results; a changed `version` alone does not, for an
+    anchor too.
+- **Built at integration, from the owner's answers:**
+  - A test that ends in an error is not a caught bug.
+  - `purlin:anchor add` refuses a `--path` that leaves the source.
+  - A tag passed over stays out of the package's `warnings`.
+  - A hand check reads the audit's `spot-checked` and `out of date`, as it reads `weak`.
+  - The upgrade asks before it removes each workflow; `--yes` removes none.
+  - `purlin:sign` refuses a `signed/<version>` tag it did not write.
+  - The dashboard's top bar holds a third box, `Audit`, on every board.
+- **Formats:** evidence 11, package 11, signature 16; anchor 12, marker 4 and spec 23 as
+  before. The dashboard's data is schema 15.
+
+### The numbers
+
+| | Result |
+|---|---|
+| `bash dev/run_tests.sh` | 906 passed, 0 failed, 9 skipped; 4 suites passed, 0 failed |
+| `purlin_run.py --test` | 910 markers tied, 0 not tied; 408 of 433 rules pass; left: 1 rule to test, 5 slow proofs, 19 rules to test on Windows |
+| `purlin_run.py --test --all --commit` | 910 markers tied, 0 not tied; 39 specs, 433 rules, 910 proofs; 413 rules pass; committed as `purlin: evidence at 71ad335` |
+| Appendix A's script over every `dev/test_*` | `0 gone, 6 reworded, 904 right as they stand.` |
+| The plan's three greps | each empty |
+| The deck's two checks | every slide ends at 920 of 920, no overlap; not published |
+
+The run ends:
+
+```
+433 rules. 413 pass their tests.
+Left to do:
+  1 rule to test: purlin:test
+  19 rules to test on Windows: run purlin:test on Windows
+```
+
+The one rule is `evidence RULE-32`, whose only proof is tagged `@env(windows)` and whose
+Windows result went out of date. The Windows run clears it; `purlin:test` here cannot.
+
+The last evidence commit was made by a plain run after this file was committed: it kept the
+five slow results of the `--all` run, marked `kept`. A sign-off needs `purlin:test --all
+--commit` again, and the Windows run.
+
+### Lines a person reads, chosen at integration
+
+| Line | Where it prints |
+|---|---|
+| `A bug was planted for PROOF-2 and its test ended in an error, not a failure.` | the audit, the strong cell's reason, the `Audit` panel |
+| `<name>: not added. --path takes a path inside the source, with no .. and no leading /. Run purlin:anchor add <source> --path <path> --name <name>.` | `purlin:anchor add` |
+| `.github/workflows/purlin-proofs.yml:9 names a proof file: - run: git add '*.proofs-*.json'` | `purlin:init --update` |
+| `Remove .github/workflows/purlin-proofs.yml? [y/N] ` | `purlin:init --update` |
+| `<path>: kept. It names a proof file and may be the old Purlin workflow; remove it by hand if it is.` | `purlin:init --update` |
+| `No sign-off: signed/2.1.0 names a commit that holds no evidence package for 2.1.0, so purlin:sign did not write it. Delete it: git tag -d signed/2.1.0, and git push origin --delete signed/2.1.0 if it was pushed. Then run purlin:sign again.` | `purlin:sign` |
+| `AUDIT` `not audited`; `AUDIT` `34 of 40 strong`; the hover `34 strong`, `4 weak`, `2 spot-checked`, `Last audit: 2026-09-13` | the dashboard's top bar |
+
+The lanes' lines are in their reports: `signoff.md` ("Lines a person reads"), `audit.md`,
+`surfaces.md` (section 6), `setup.md` (item 3), `evidence.md` (section 7) and `words.md`
+("Lines chosen here").
+
+### What is left
+
+1. **The real Windows run**, `python3 dev/windows_run.py`: 20 proofs tagged `@env(windows)`,
+   `ai_audit` PROOF-82 with its new arguments and `evidence` PROOF-84 among them.
+2. **The second cost measurement of the audit**, against $0.10 a rule, with the report at
+   `dev/plans/d121-reports/audit-measure-2.md`. Over it, the plan's section 6.9.
+3. **The real-skills QA check.**
+4. **The owner's review** of the docs, the slides and the differences from 0.9.5.
+5. **The calls left open**, each in one sentence, in section 9 of the integration report.
+
 # Handoff, 2026-10-01: decision 120 is built
 
 This section is the newest. The integration report is `dev/plans/d120-reports/integration.md`;
