@@ -17,7 +17,10 @@ echo "=== e2e_anchor_rules ==="
 
 FAILED=0
 TMPDIR_E2E="$(mktemp -d)"
-cleanup() { rm -rf "$TMPDIR_E2E"; }
+# The runs' output is kept outside the project, so the project holds only
+# what a person would commit.
+RUN_LOG="$(mktemp)"
+cleanup() { rm -rf "$TMPDIR_E2E" "$RUN_LOG"; }
 trap cleanup EXIT
 
 check() {
@@ -123,7 +126,7 @@ run_tests() {
   # written under .purlin/evidence/local/ and nothing committed. Each phase
   # checks what the run left for itself.
   python3 "$RUN" --all --test --project-root "$TMPDIR_E2E" \
-    > "$TMPDIR_E2E/.run.log" 2>&1 || true
+    > "$RUN_LOG" 2>&1 || true
 }
 
 # ── phase A: the count ────────────────────────────────────────────────
@@ -158,7 +161,7 @@ check "the summary counts three rules, each once" \
 echo "  --- phase D: the table ---"
 # The results committed, so the tests are met on the committed evidence.
 python3 "$RUN" --all --test --commit --project-root "$TMPDIR_E2E" \
-  > "$TMPDIR_E2E/.run.log" 2>&1 || true
+  > "$RUN_LOG" 2>&1 || true
 STATUS="$(python3 -c "
 import sys
 sys.path.insert(0, '$MCP_DIR')

@@ -865,7 +865,7 @@ class TestMarkersFrom095StillInATest:
         assert '2 rules. 0 pass their tests.' in printed.splitlines()
 
     # purlin: states PROOF-315
-    def test_a_pending_095_project_prints_its_three_lines_alone(
+    def test_a_pending_095_project_prints_its_three_lines_and_writes_nothing(
             self, set_up_by_095):
         project, three = set_up_by_095
         _tracked(project, {
