@@ -1,0 +1,103 @@
+planted_bug RULE-8   spot-checked
+  The spot tests found nothing. No bug was planted: the model found no change that would break PROOF-9: where `claude` resolves in a test is set by the tests' own fixture and the path it puts in place, not by scripts/review/targeted_break.py, which never looks up or sets `claude` or the path.
+planted_bug RULE-10   weak
+  PROOF-12: the test still passes when scripts/review/targeted_break.py:475 reads "return ''"
+  PROOF-12: the AI says this breaks: the bug for PROOF-1 fails PROOF-2's test and leaves PROOF-1's test passing; the proof says PROOF-1 reads survived; the changed code runs PROOF-2's test too, sees its failure and gives not run
+ai_audit RULE-1   weak
+  PROOF-4: the test still passes when scripts/review/audit_run.py:391 reads "to_read = rules_to_read(project_root, payload, features, selected, True,"
+  PROOF-4: the AI says this breaks: RULE-2 passes with a current `strong` entry and the audit is run without asking to read again; the proof says the audit does not read it; the changed run reads every passing rule, RULE-2 included
+  PROOF-51: the test still passes when scripts/review/audit_run.py:391 reads "to_read = rules_to_read(project_root, payload, features, selected, False,"
+  PROOF-51: the AI says this breaks: RULE-2 passes with a current entry and the audit is asked to read again; the proof says the audit reads it; the changed run drops the request and does not read RULE-2
+  PROOF-122: the test still passes when scripts/review/audit_run.py:341 reads "if answer['why'] == ai_audit.NOT_ON_PATH:"
+  PROOF-122: the AI says this breaks: RULE-2's entry reads `spot-checked` because claude was not on PATH and nothing has changed; the proof says the next audit reads RULE-2 and starts claude 1 time; the changed code records a result for the proof, so RULE-2 is not read and claude starts 0 times
+ai_audit RULE-3   weak
+  PROOF-14: the test still passes when scripts/review/ai_audit.py:522 reads "encoding='ascii', errors='replace', cwd=cwd,"
+  PROOF-14: the AI says this breaks: the audit asks about RULE-2 with a request holding a character outside ASCII; the proof says the request is the whole of standard input; the changed code writes `?` in place of each such character
+  No bug was planted: PROOF-82 needs Windows, and this machine is macOS.
+ai_audit RULE-4   weak
+  PROOF-55: the test still passes when scripts/review/audit_run.py:421 reads "for item, answer in zip(done, answers[::-1]):"
+  PROOF-55: the AI says this breaks: the audit is handed RULE-1 to RULE-6 with later rules answering sooner; the proof says the answers come back in the rules' order, `saw RULE-1` first and `saw RULE-6` last; the changed audit sets `saw RULE-6` against RULE-1 and `saw RULE-1` against RULE-6
+ai_audit RULE-38   weak
+  PROOF-98: the test still passes when scripts/review/ai_audit.py:431 reads "notes, explanation = read_answer(text)"
+  PROOF-98: the AI says this breaks: claude answers with the bare line `- The test calls login and reads no status.` and no `=== reading ===` line; the proof says the entry's explanation holds only that sentence; the changed code gives an empty explanation and files the sentence under notes
+ai_audit RULE-40   weak
+  PROOF-34: the test still passes when scripts/review/ai_audit.py:240 reads "tests.extend([_one_test(project_root, feature, proof.get('id'),"
+  PROOF-34: the AI says this breaks: two passing tests marked for PROOF-1 in one file; the proof says the audit lists exactly those two; the changed code lists each of them twice, four entries
+ai_audit RULE-41   weak
+  PROOF-74: the test still passes when scripts/review/ai_audit.py:695 reads "args.error = 'unexpected argument %s (see --help)' % item"
+  PROOF-74: the AI says this breaks: the command run with `--nope`; the proof says it prints `ai_audit.py: unexpected argument --nope`; the changed code prints `ai_audit.py: unexpected argument --nope (see --help)` and still exits 2
+ai_audit RULE-43   weak
+  PROOF-108: the test still passes when scripts/review/audit_run.py:470 reads "for lead in ('', '  ') if reasons else ():"
+  PROOF-108: the AI says this breaks: claude exits 1 with RULE-2 the one rule read; the proof says the could-not-be-reached line is printed once; the changed code prints it twice, the second time indented by two spaces
+specs RULE-17   weak
+  PROOF-19: the test still passes when scripts/mcp/purlin/specs.py:163 reads "return ' '.join(p for p in (text or '').replace('\n ', ' ').split(' ') if p)"
+  PROOF-19: the AI says this breaks: the rule `Tokens expire after 24 hours` written again with a line break after `expire` and no indent on the next line; the proof says the same rule text hash; the changed code gives a different hash
+package RULE-17   weak
+  PROOF-15: the test still passes when scripts/export/package.py:673 reads "'source': source, 'at': group['at'] and group['at'] + '\n' or None,"
+  PROOF-15: the AI says this breaks: the time stored under `at` for a run in a signed project's package; the proof says it reads as a date, `T`, a time to the second and `Z` with nothing after, as `2026-09-13T12:00:00Z` does; the changed code gives that time followed by a line break, so it no longer ends in `Z`
+package RULE-23   weak
+  PROOF-52: the test still passes when scripts/export/package.py:933 reads "try:"
+  PROOF-52: the AI says this breaks: `.purlin/evidence/package` is a file and the walk is answered yes; the proof says it prints one line carrying the operating system's message; the changed code prints a second line beside it
+evidence RULE-7   weak
+  PROOF-88: the test still passes when scripts/mcp/purlin/fingerprint.py:329 reads "str(len(text)).encode('utf-8')).hexdigest()"
+  PROOF-88: the AI says this breaks: the `run` command of the `tests` setting is changed to another command of the same length; the proof says the section reads out of date on exactly `tests`; the changed code reads it current
+evidence RULE-11   weak
+  PROOF-17: the test still passes when scripts/mcp/purlin/evidence.py:165 reads "files[source] = {'schema': data.get('schema'), 'source': source}"
+  PROOF-17: the AI says this breaks: only `.purlin/evidence/ci/login.json` is written, holding a linux section; the proof says loading reads the `ci` file; the changed code gives only the file's schema and source for `ci`, without its linux section
+evidence RULE-32   spot-checked
+  The spot tests found nothing. No bug was planted: PROOF-84 needs Windows, and this machine is macOS.
+evidence_writer RULE-16   weak
+  PROOF-41: the test still passes when scripts/run/evidence.py:80 reads "return 'unknown'"
+  PROOF-41: the AI says this breaks: a `--all --test` run on this machine; the proof says `machine` reads this machine's host name; the changed code gives `unknown`
+run_script RULE-10   weak
+  PROOF-115: the test still passes when scripts/run/purlin_run.py:346 reads "if env:"
+  PROOF-115: the AI says this breaks: PROOF-1 tagged `@env` for this machine's own system; the proof says no `needs` line is printed for it; the changed code prints `1 proof needs <this system>; this machine is <this system>. Run purlin:test on <this system>.`
+run_script RULE-12   weak
+  PROOF-117: the test still passes when scripts/run/purlin_run.py:927 reads "machine='build-7',"
+  PROOF-117: the AI says this breaks: `--all --ci` where the file holds only another system's section; the proof says this machine's section is added beside it; the changed code adds a section whose `machine` is `build-7`, not this machine
+run_script RULE-55   weak
+  PROOF-88: the test still passes when scripts/run/purlin_run.py:1523 reads "return [row['feature'] for row in rows]"
+  PROOF-88: the AI says this breaks: login and export with committed evidence, then src/login.py changes and --test runs with no feature named; the proof says export's evidence is left byte for byte unchanged; the changed code runs export as well and writes its evidence again
+run_script RULE-63   weak
+  PROOF-130: the test still passes when scripts/mcp/purlin/frameworks.py:53 reads ""--reporters=jest-junit-reporter"),"
+  PROOF-130: the AI says this breaks: the jest entry the run suggests; the proof says its command carries `--reporters=jest-junit`; the changed code gives `--reporters=jest-junit-reporter`, a reporter that is not the one that writes the report
+  PROOF-133: the test still passes when references/supported_frameworks.md:183 reads ""run": "sh {files}","
+  PROOF-133: the AI says this breaks: the shell entry on the supported-frameworks page; the proof says it reads word for word as the run suggests it, with one command `bash {files}`; the changed page also shows a command `sh {files}` the run never suggests
+run_script RULE-96   weak
+  PROOF-271: the test still passes when scripts/run/purlin_run.py:1307 reads "if args.action == 'ci':"
+  PROOF-271: the AI says this breaks: feat's PROOF-1 reworded and committed after its marked test at tests/test_feat.py:3 last changed, then `--all --test`; the proof says a line beginning `tests/test_feat.py:3 names feat PROOF-1, whose wording changed after the test was last changed in` is printed after the `Markers:` line; the changed
+run_script RULE-101   weak
+  PROOF-91: the test still passes when scripts/run/purlin_run.py:1523 reads "return [row['feature'] for row in rows]"
+  PROOF-91: the AI says this breaks: `invoice` committed and never run beside current `login` and `export`, then `--test` with no feature named; the proof says the run selects `invoice` alone; the changed code prints the same lines but runs export, invoice and login, ending `Ran pytest on 3 features.`
+  PROOF-93: the test still passes when scripts/run/purlin_run.py:1523 reads "return [row['feature'] for row in rows]"
+  PROOF-93: the AI says this breaks: untracked `src/auth/token.py` under `login`'s scope beside current `export`, then `--test`; the proof says the run selects `login` alone; the changed code prints the same lines but runs both export and login, ending `Ran pytest on 2 features.`
+run_script RULE-102   weak
+  PROOF-126: the test still passes when scripts/run/purlin_run.py:1176 reads "if entries:"
+  PROOF-126: the AI says this breaks: empty `tests` setting with a `conftest.py`, `--all --test` and no yes; the proof says nothing is written under `.purlin/`; the changed code writes the suggested tests setting into `.purlin/config.json` before it exits 1
+run_script RULE-103   weak
+  PROOF-138: the test still passes when scripts/run/purlin_run.py:1420 reads "with open(os.path.join(project_root, SETTINGS_PATH), 'a') as handle:"
+  PROOF-138: the AI says this breaks: a project whose `.purlin/config.json` carries no `tests` key, run with `--all --test`; the proof says it writes nothing under `.purlin/`; the changed code appends a line to `.purlin/config.json` before it stops
+  PROOF-224: the test still passes when scripts/run/purlin_run.py:1418 reads "with open(os.path.join(project_root, SETTINGS_PATH), 'a') as handle:"
+  PROOF-224: the AI says this breaks: a project whose `.purlin/config.json` holds a trailing comma after its last setting, run with `--all --test`; the proof says it writes nothing under `.purlin/`; the changed code appends a line to `.purlin/config.json` before it stops
+run_script RULE-107   weak
+  PROOF-288: the test still passes when scripts/mcp/purlin/frameworks.py:37 reads "'report': REPORTS + '/report.xml', 'format': 'junit',"
+  PROOF-288: the AI says this breaks: `--all --test --write-tests` in the conftest.py project; the proof says `tests` holds pytest's entry alone, whose report is `.purlin/runtime/reports/pytest.xml`; the changed code writes an entry whose report is `.purlin/runtime/reports/report.xml`
+  PROOF-289: the test still passes when scripts/mcp/purlin/frameworks.py:38 reads "'files': ['**/test_*.py'],"
+  PROOF-289: the AI says this breaks: `--all --test` answered `y`; the proof says pytest's entry is written as the `tests` setting, with the files `**/test_*.py` and `**/*_test.py`; the changed code writes an entry whose files are `**/test_*.py` alone
+signatures RULE-106   weak
+  PROOF-214: the test still passes when scripts/review/sign.py:925 reads "'audit_list_opened': list_opened,"
+  PROOF-214: the AI says this breaks: `login RULE-2` answered `the lockout page read 401`, the audit's list not opened, then `y` to sign; the proof says no answer word is recorded; the changed code records the sign answer as `Y` under `shown`
+signatures RULE-110   weak
+  PROOF-220: the test still passes when scripts/review/sign.py:859 reads "print(SIGN_ASK % (info['version'], info['email']), file=out)"
+  PROOF-220: the AI says this breaks: `--show` with login RULE-1 weak and login RULE-2 a hand check; the proof says the stop is printed with no question after it; the changed code prints `Sign the evidence package for 2.1.0 as <signer>? [y/N] ` after the stop
+  PROOF-228: the test still passes when scripts/review/sign.py:851 reads "_say([line for line in overview_lines(info, shown)"
+  PROOF-228: the AI says this breaks: `--show` with no signing key over committed evidence that passes; the proof says it prints the overview; the changed code prints the `Signing 2.1.0 at <sha>.` line without the overview's line counting the rules per system
+signatures RULE-115   weak
+  PROOF-230: the test still passes when scripts/review/sign.py:901 reads "_choose(ask, 'audit_again', AUDIT_AGAIN, ('go on',))"
+  PROOF-230: the AI says this breaks: login RULE-1 audited weak, the first question answered `list`; the proof says the finding line is printed and then `go on: ` is asked; the changed code asks `go on: ` first and prints the finding line only after it is answered
+signatures RULE-121   weak
+  PROOF-238: the test still passes when scripts/review/sign.py:320 reads "made = _git(project_root, 'branch', name, at)"
+  PROOF-238: the AI says this breaks: a clone holding one commit the host lacks signs 2.1.0; the proof says it writes the tag signed/2.1.0; the changed code writes no tag, only a branch named signed/2.1.0
+signatures RULE-132   weak
+  PROOF-258: the test still passes when scripts/review/sign.py:374 reads "named.setdefault(feature.get('name'), []).append('%s0' % rule.get('id'))"
+  PROOF-258: the AI says this breaks: specs/auth/login.md holds two lines numbered RULE-2; the proof says the one line names login RULE-2; the changed code names login RULE-20, a rule the spec does not hold
