@@ -369,6 +369,31 @@ class TestWhichRulesAreRead:
         assert len(fake_claude.calls(directory)) == 1
         assert rules_asked(directory) == ['RULE-2']
 
+    # purlin: ai_audit PROOF-160
+    def test_a_rule_whose_call_timed_out_is_read_again_with_one_call(
+            self, claude, monkeypatch):
+        install, directory = claude
+        # `claude` takes 3 seconds and the call is given 1.
+        install(sleep=3)
+        monkeypatch.setattr(audit_module, 'MODEL_TIMEOUT', 1)
+        with passing_project(source=LOGIN_SOURCE) as made:
+            settle(made, 'RULE-1')
+            audit(made)
+            entry = entry_of(made)
+            assert entry['verdict'] == 'spot-checked', entry
+            assert entry['no_bug'] == [
+                'No bug was planted: the model could not be reached: claude '
+                'timed out after 1 s.'], entry
+            # Nothing has changed since, and the model now answers at once.
+            assert to_read(made) == [('login', 'RULE-2')]
+            install()
+            code, printed = audit(made)
+        assert code == 0, printed
+        assert rules_printed(printed) == ['RULE-2'], printed
+        # `claude` is started exactly 1 time, and it is asked about RULE-2.
+        assert len(fake_claude.calls(directory)) == 1
+        assert rules_asked(directory) == ['RULE-2']
+
 
 # ---------------------------------------------------------------------------
 # The prompt

@@ -15,7 +15,7 @@
 > Scope: scripts/review/audit_run.py, scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
 > Highest-Rule: 64
-> Highest-Proof: 159
+> Highest-Proof: 160
 
 ## Rules
 
@@ -63,6 +63,7 @@
 - PROOF-103 (RULE-1): `RULE-2` carries an audit entry; a line of `src/login.py`, a file its feature covers, is changed from `return 401` to `return 403 if locked else 401` and its test passes again; the audit reads it
 - PROOF-51 (RULE-1): `RULE-2` passes and carries an audit entry for its current text, proof and test; asked to read again, the audit reads it
 - PROOF-122 (RULE-1): `RULE-2`'s entry reads `spot-checked` because the model could not be reached, whether `claude` exited with an error, was not on PATH or gave no answer, and nothing has changed since; the audit run again, with a `claude` that answers, reads `RULE-2` and starts `claude` exactly `1` time
+- PROOF-160 (RULE-1): With the limit lowered to 1 second and a `claude` that takes 3 seconds to answer, `RULE-2`'s entry reads `spot-checked` with the reason `No bug was planted: the model could not be reached: claude timed out after 1 s.`, and nothing has changed since; the audit run again, with a `claude` that answers at once, reads `RULE-2` and starts `claude` exactly `1` time
 - PROOF-11 (RULE-2): The prompt for `RULE-2` begins with the text of `references/review_criteria.md`, byte for byte; after it come `login RULE-2`, the rule's text, its proof `POST /login with a bad password; verify 401 and the body "denied"`, the test `test_a_bad_password_is_denied` and its line `assert login("ada", "wrong") == 401`
 - PROOF-106 (RULE-2): The spot tests found `tests/test_login.py::test_a_bad_password_is_denied: the test checks nothing.` for `RULE-2`; the prompt for `RULE-2` holds that line after the test's source
 - PROOF-114 (RULE-2): The project holds `.env` with `KEY=s3cret` and the scope of `login` names `src/login.py` alone; the request for `RULE-2` holds the text of `src/login.py` and does not hold `s3cret`
