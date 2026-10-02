@@ -370,7 +370,7 @@ class TestLoudFailureB:
 class TestATestCommentToCorrect:
 
     # purlin: run_script PROOF-271
-    def test_a_reworded_proof_is_named_after_the_markers_line(
+    def test_a_reworded_proof_is_named_straight_after_markers_before_ran(
             self, tmp_path):
         root = _pytest_project(tmp_path)
         _spec(root, 'feat')
@@ -390,6 +390,10 @@ class TestATestCommentToCorrect:
         # ends on names the comment again further down, so a line anywhere
         # after `Markers:` would not show the run printed one.
         assert named and named[0] == markers + 1, output
+        # Before the suite's own closing line, which is printed once.
+        ran = [index for index, line in enumerate(lines)
+               if line == 'Ran pytest on 1 feature.']
+        assert len(ran) == 1 and named[0] < ran[0], output
         assert code == 0, output
 
 
@@ -571,7 +575,7 @@ class TestTheCiArmWritesItsSection:
         assert code == 0, output
 
     # purlin: run_script PROOF-117
-    def test_another_systems_section_is_left_as_it_was(
+    def test_another_systems_section_is_left_and_this_hosts_is_added(
             self, tmp_path, evidence_run, capsys):
         root = self._ci(tmp_path)
         other = 'windows' if HERE_OS != 'windows' else 'linux'
@@ -951,7 +955,7 @@ class TestARunCoversWhatTheChangeTouched:
         return root, sha, export, code, output
 
     # purlin: run_script PROOF-88
-    def test_a_code_edit_runs_only_the_feature_that_covers_the_file(
+    def test_a_code_edit_selects_and_runs_alone_the_feature_that_covers_it(
             self, tmp_path):
         root, sha, export, code, output = self._login_after_a_code_change(tmp_path)
         assert code == 0, output
@@ -1003,7 +1007,8 @@ class TestARunCoversWhatTheChangeTouched:
         assert chosen['shared'].startswith('code changed since '), output
 
     # purlin: run_script PROOF-91
-    def test_a_feature_with_no_evidence_is_selected(self, tmp_path):
+    def test_a_feature_with_no_evidence_is_selected_and_run_alone(
+            self, tmp_path):
         root, _sha = _touched_project(tmp_path)
         (root / 'src' / 'invoice.py').write_text('VALUE = 1\n',
                                                  encoding='utf-8')
@@ -1044,7 +1049,7 @@ class TestARunCoversWhatTheChangeTouched:
         return root, sha
 
     # purlin: run_script PROOF-93
-    def test_an_untracked_file_selects_the_feature_and_is_named(
+    def test_an_untracked_file_runs_its_feature_alone_and_is_named(
             self, tmp_path):
         root, _sha = self._untracked_under_login(tmp_path)
         code, output = _run(root, '--test')
@@ -1213,17 +1218,6 @@ def _page_entries():
     return [(block, json.loads(block)) for block in blocks]
 
 
-def _pytest_entry():
-    """pytest's entry as the supported-frameworks page shows it, the one
-    place it is written down; on Windows its command starts `py -3`."""
-    (entry,) = [entry for _block, entry in _page_entries()
-                if entry['name'] == 'pytest']
-    if sys.platform.startswith('win'):
-        assert entry['run'].startswith('python3 -m pytest'), entry
-        entry['run'] = 'py -3' + entry['run'][len('python3'):]
-    return entry
-
-
 def _one_passing_test(tmp_path):
     """A project with an empty `tests` setting, a `conftest.py` and one
     marked passing test."""
@@ -1233,6 +1227,17 @@ def _one_passing_test(tmp_path):
         '# purlin: feat PROOF-1\ndef test_ok():\n    assert 1 + 1 == 2\n',
         encoding='utf-8')
     return root
+
+
+def _pytest_entry_in_words():
+    """pytest's entry field by field, as the proofs of the written setting
+    give it; on Windows its command opens `py -3`."""
+    launcher = 'py -3' if sys.platform.startswith('win') else 'python3'
+    return {'name': 'pytest',
+            'run': launcher + ' -m pytest {files} --junitxml={report}',
+            'report': '.purlin/runtime/reports/pytest.xml',
+            'format': 'junit',
+            'files': ['**/test_*.py', '**/*_test.py']}
 
 
 def _tests_setting(root):
@@ -1307,7 +1312,8 @@ class TestNoTestCommand:
         assert code == 1, output
 
     # purlin: run_script PROOF-288
-    def test_write_tests_writes_the_setting_unasked_and_runs(self, tmp_path):
+    def test_write_tests_writes_pytests_one_entry_unasked_and_runs(
+            self, tmp_path):
         root = _one_passing_test(tmp_path)
         code, output = _run(root, '--all', '--test', '--write-tests')
         lines = output.splitlines()
@@ -1315,15 +1321,15 @@ class TestNoTestCommand:
         wrote = lines.index('Wrote the tests setting to .purlin/config.json.')
         assert 'Markers: 1 tied to a test, 0 not tied.' in lines[wrote:], \
             output
-        assert _tests_setting(root) == [_pytest_entry()]
+        assert _tests_setting(root) == [_pytest_entry_in_words()]
         assert code == 0, output
 
     # purlin: run_script PROOF-289
-    def test_answered_y_the_setting_is_written_and_the_test_runs(
+    def test_answered_y_pytests_one_entry_is_written_and_the_test_runs(
             self, tmp_path):
         root = _one_passing_test(tmp_path)
         code, output = _run(root, '--all', '--test', answer='y\n')
-        assert _tests_setting(root) == [_pytest_entry()]
+        assert _tests_setting(root) == [_pytest_entry_in_words()]
         assert 'Markers: 1 tied to a test, 0 not tied.' in output, output
         section = list(_evidence(root)['platforms'].values())[0]
         assert [(entry['id'], entry['result'])
