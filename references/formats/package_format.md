@@ -1,4 +1,4 @@
-> Format-Version: 13
+> Format-Version: 14
 
 # Package format
 
@@ -185,11 +185,11 @@ Each `results` entry:
 |---|---|---|
 | `verdict` | string | `strong`, `weak` or `spot-checked`: the entry's last result, which may be out of date |
 | `findings` | array of strings | one sentence per finding |
-| `no_bug` | array of strings | one sentence per proof no planted bug was caught for, saying why |
+| `no_bug` | array of strings | one sentence per proof no planted bug was caught for, saying why, and one per proof settled with its test unchanged |
 | `out_of_date` | array of strings | the parts that changed since the audit read the rule, of `rule`, `proof`, `test` and `code`; `[]` for a current entry |
 | `notes` | array of strings | the model's notes, where it gave some |
 | `explanation` | array of strings | the model's reading of the rule's tests |
-| `breaks` | object | the planted bug per proof, as the evidence file's audit entry holds it, its `aim` and `case` included; `{}` for an anchor |
+| `breaks` | object | the planted bug per proof, as the evidence file's audit entry holds it, its `aim` and `case` included, and `test_key` and `test_unchanged` where that entry holds them; `{}` for an anchor |
 | `model` | string | the model that read the rule, or `unknown` |
 | `criteria` | string or null | sha256 of the instructions the model was given |
 | `at` | string | when the audit ran |

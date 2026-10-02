@@ -1,4 +1,4 @@
-> Format-Version: 13
+> Format-Version: 14
 
 # Evidence format
 
@@ -203,8 +203,8 @@ Each `audit.rules` entry:
 | `code_hash` | string | the `code` part of the feature's fingerprint when the audit read the rule |
 | `verdict` | string | `strong`, `weak` or `spot-checked` |
 | `findings` | array of strings | one sentence per finding; empty when the audit found nothing |
-| `no_bug` | array of strings | one sentence for each proof no bug was caught for, saying why; empty where a bug was caught for every proof |
-| `breaks` | object | `PROOF-N` to the bug the audit planted for that proof: `aim` (`past the test` or `plain`), `case` (the model's one line saying which case of the proof the bug breaks, at most 300 characters, empty where it gave none), `file`, `line`, `before`, `after`, `result` (`caught`, `survived`, `not made` or `not run`), `why` (empty where there is no reason) and `break_key`, the sha256 that says whether the proof needs a new bug. A proof the model could not be reached for, or one tagged for another system, has no entry. `{}` for an anchor's rule |
+| `no_bug` | array of strings | one sentence for each proof no bug was caught for, saying why, and one for each proof settled with its test unchanged; empty where a bug was caught for every proof and none was settled so |
+| `breaks` | object | `PROOF-N` to the bug the audit planted for that proof: `aim` (`past the test` or `plain`), `case` (the model's one line saying which case of the proof the bug breaks, at most 300 characters, empty where it gave none), `file`, `line`, `before`, `after`, `result` (`caught`, `survived`, `not made` or `not run`), `why` (empty where there is no reason) and `break_key`, the sha256 that says whether the proof needs a new bug. Two fields are optional: `test_key`, on a `survived` bug alone, the sha256 of the proof's own tests when the bug got past them, and `test_unchanged`, present and `true` only where a settle went on with the proof's test as it was. A proof the model could not be reached for, or one tagged for another system, has no entry. `{}` for an anchor's rule |
 | `explanation` | array of strings | the model's reading of the rule's tests, one sentence per line. It sets no verdict |
 | `model` | string | the model that answered, its name and version as the `claude` command's JSON reports them, or `unknown` where it reports none |
 | `criteria` | string | sha256 of `references/review_criteria.md` as it was sent to the model |
@@ -237,6 +237,27 @@ and was taken on another test or code has no entry under `breaks` after a
 settle, so the next audit plants a bug for it. An entry settled without a
 model being asked keeps the `model` and `criteria` of the entry it replaces,
 and its `explanation` is empty.
+
+`test_key` says whether a proof's test changed since its bug got past it.
+It is the sha256 of the sorted lines `<file> <test name> <sha256 of the
+test's source>`, one per test tied to that proof, the source as the audit
+reads it: the test's own lines, not its file. `break_key` covers the
+feature's code as well, so it cannot tell a changed test from changed code.
+A settle plants nothing for a proof whose `test_key` is the one taken now,
+and the bug stays `survived`. A `survived` bug with no `test_key` reads as
+unchanged only while its `break_key` is the one taken now or the entry is
+not out of date on `test`; once the rule's tests change it is settled as
+any bug is. A test whose source is not found is read as changed.
+
+`purlin:audit <feature> RULE-N --settle --sound PROOF-N` lets the settle go
+on for such a proof. The entry the settle then writes for the proof holds
+`test_unchanged`: `true`, whatever its `result`, unless a new bug for it
+reads `survived`, and `no_bug` holds
+`PROOF-N was settled with its test unchanged: it was judged to assert what the proof names.`
+Both stay while the entry is kept, and go when a later audit plants a new
+bug for the proof. Where the model could not be reached for the new bug,
+the proof has no entry and `no_bug` holds the sentence alone. `--sound` for
+a proof whose test did change writes neither.
 
 A rule the model could not be reached for is written with the model `unknown`
 and no bug recorded for a proof the model was not reached for, so the next
