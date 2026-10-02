@@ -178,8 +178,14 @@ def now_iso():
         datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
-def build_payload(project_root, generated_by='sync_status', config=None):
-    """The whole payload for a project root."""
+def build_payload(project_root, generated_by='sync_status', config=None,
+                  tag_warnings=True):
+    """The whole payload for a project root.
+
+    `tag_warnings` false leaves out the warning for each `signed/*` tag
+    passed over. Tags are a checkout's own and not part of a commit, so the
+    evidence package, which must come out the same in every clone of one
+    commit, is built without them."""
     from purlin import status as status_module
     config = resolve_config(project_root) if config is None else config
     warnings = list(settings_warnings(config))
@@ -247,7 +253,9 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     left = summary_module.left(feature_entries, here_os, corrections,
                                uncommitted)
     signoff = facts_module.signoff_fact(project_root)
-    warnings.extend(signoff.pop('warnings', None) or ())
+    passed_over = signoff.pop('warnings', None) or ()
+    if tag_warnings:
+        warnings.extend(passed_over)
 
     payload = {
         'schema_version': SCHEMA_VERSION,

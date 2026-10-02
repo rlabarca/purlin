@@ -346,7 +346,10 @@ def build(project_root, version):
     checkout = _Checkout(project_root, commit)
     try:
         tree = checkout.root
-        payload = payload_module.build_payload(tree, generated_by='sign')
+        # A warning about a tag passed over is left out: two clones of one
+        # commit may hold different tags, and must build the same bytes.
+        payload = payload_module.build_payload(tree, generated_by='sign',
+                                               tag_warnings=False)
         features = specs_module.scan_specs(tree)
         seen = []
         entries = _features(tree, payload, features, commit, seen)

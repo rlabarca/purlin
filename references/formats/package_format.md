@@ -119,7 +119,7 @@ Whether the tests are met is the first thing a reader sees after the schema.
 | `runs` | array | one entry per group of results sharing a source, a system, who ran them and a machine. See "Runs" |
 | `features` | array | one entry per spec, ordered by name |
 | `hand_checks` | array | one entry per rule with a `@manual` proof, by feature then rule number. See "Hand checks" |
-| `warnings` | array of strings | each warning reading the specs and the evidence raised |
+| `warnings` | array of strings | each warning reading the specs and the evidence raised. A warning about a `signed/*` tag is not among them: a tag is a checkout's own, and one commit gives the same bytes in every clone |
 | `fingerprint` | string | sha256 hex. See "The fingerprint" |
 
 ### Runs

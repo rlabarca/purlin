@@ -873,6 +873,23 @@ class TestTheBytes:
         finally:
             shutil.rmtree(parent, ignore_errors=True)
 
+    # purlin: package PROOF-81
+    def test_a_stray_tag_in_one_clone_leaves_the_bytes_the_same(self, project):
+        parent, clones = two_clones(project)
+        try:
+            done = git(clones[1].root, 'tag', 'signed/9.9.9')
+            assert done.returncode == 0, done.stderr
+            written = []
+            for clone in clones:
+                assert sign(clone)[0] == 0
+                written.append(git_bytes(clone.root, 'show', 'HEAD:' + PACKAGE))
+            assert written[0] == written[1]
+            for data in written:
+                assert not [line for line in json.loads(data)['warnings']
+                            if 'signed/9.9.9' in line]
+        finally:
+            shutil.rmtree(parent, ignore_errors=True)
+
     # purlin: package PROOF-39
     @pytest.mark.skipif(os.name != 'nt', reason='core.autocrlf is Windows git')
     def test_on_windows_two_clones_give_the_same_bytes(self, project):

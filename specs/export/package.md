@@ -11,7 +11,7 @@
 > Scope: scripts/export/package.py
 > Stack: python/stdlib (json, hashlib, subprocess), git worktree
 > Highest-Rule: 37
-> Highest-Proof: 80
+> Highest-Proof: 81
 
 ## Rules
 
@@ -53,6 +53,7 @@
 - PROOF-18 (RULE-6): A rule with no proof, `RULE-3`, has one passing test marked with its own id, and the project is signed; `RULE-3` carries no proofs, one test under `RULE-3`, `test_a_locked_account_returns_423` in `tests/test_login.py`, and one result `passed`, while `RULE-2` lists its test under `PROOF-2`
 - PROOF-13 (RULE-8): Two clones of one repository at the same commit each sign `2.1.0`, each by its own signer; the two committed packages are the same byte for byte, each ends in `}` and a newline, and neither holds a carriage return
 - PROOF-39 (RULE-8): On Windows, with `core.autocrlf` set to `true`, two clones of one repository at the same commit each sign `2.1.0`; the two committed packages are the same byte for byte and hold no carriage return @env(windows)
+- PROOF-81 (RULE-8): Two clones of one repository at the same commit each sign `2.1.0`, and the second also holds the tag `signed/9.9.9`, written by hand with `git tag`; the two committed packages are the same byte for byte, and neither's `warnings` names `signed/9.9.9`
 - PROOF-32 (RULE-9): In a signed package, `fingerprint` reads 64 lowercase hexadecimal characters, equal to the sha256 taken separately over the file's bytes with that field's value emptied to `""`
 - PROOF-17 (RULE-9): In a signed package the first `"passed"` is changed to `"failed"` and the file checked with `purlin:sign --check`; it exits 1 and its first line reads `The package does not match its fingerprint: the package records the fingerprint <as written> and its content gives <the sha256 of the edited bytes with that field emptied>.`, the two values differing
 - PROOF-25 (RULE-11): In a signed project one of whose results sits under the source `ci`, written on the machine `build-7` by `runner@example.com`, `RULE-2`'s one result reads source `ci`, `passed`, runner `runner`, the time `2026-09-13T12:00:00Z`, current, this machine's operating system, the machine `build-7` and the full sha of the commit the tests ran at
