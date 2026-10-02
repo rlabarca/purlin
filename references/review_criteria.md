@@ -196,7 +196,7 @@ after:
 ```
 
 or, under the same line, `no break: <why>` when no change to those files can break what the
-proof says.
+proof says. The reason is that one line; an `aim:` line may stand above it.
 
 - `aim:` reads `past the test`, or `plain` where the test leaves no way past it. Any other
   word, or no `aim:` line, is recorded `plain`.

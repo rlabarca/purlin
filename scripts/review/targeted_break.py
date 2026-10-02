@@ -13,7 +13,8 @@ proof's test, exactly
     after:
     <the lines>
 
-or `no break: <why>`. `aim` is recorded `past the test` or `plain`, and `plain`
+or `no break: <why>`, alone or under its `aim:` and `case:` lines, read as far as
+the end of that line. `aim` is recorded `past the test` or `plain`, and `plain`
 for any other word or none; `case` is the model's one line, kept as written, at
 most `CASE_LIMIT` characters. The audit checks neither: a bug that survived is
 shown with its case (`AI_SAYS`), and a person judges it.
@@ -89,7 +90,7 @@ TEST_DOES_NOT_PASS = 'test does not pass'
 _OWN_WORDS = (NO_CHANGE, NO_CASE, ONLY_COMMENT, OUTSIDE, NOT_IN_SCOPE, NO_FILE, NOT_FOUND, FOUND_MORE,
               NO_DIFFERENCE, TEST_FILE, NO_PART)
 
-_NO_BREAK_RE = re.compile(r'^\s*no break:\s*(.*?)\s*$', re.S)
+_NO_BREAK_RE = re.compile(r'^[ \t]*no break:(.*)$')
 _CHANGE_RE = re.compile(r'^file:[ \t]*(?P<file>[^\n]+?)[ \t]*\nbefore:[ \t]*\n(?P<before>.*?)\n'
                         r'after:[ \t]*\n?(?P<after>.*)$', re.S)
 _AIM_RE = re.compile(r'^aim:(.*)$')
@@ -118,19 +119,16 @@ class _Refused(Exception):
 def parse_answer(text):
     """`('change', file, before, after, aim, case)`, `('no break', why)`, or None for
     anything else. `aim` and `case` are read from the lines `aim:` and `case:` that
-    stand before `file:`: `aim` is `past the test` or `plain`, and `plain` for any other
+    open the part: `aim` is `past the test` or `plain`, and `plain` for any other
     word or no such line; `case` is its line with outer spaces cut, at most `CASE_LIMIT`
-    characters, and `''` where there is no such line."""
+    characters, and `''` where there is no such line. Where the next line reads
+    `no break: <why>`, the part names no bug, and `why` is that one line's."""
     text = (text or '').strip('\n')
     lines = text.split('\n')
     while lines and lines[0].strip().startswith('```'):
         lines.pop(0)
     while lines and lines[-1].strip().startswith('```'):
         lines.pop()
-    text = '\n'.join(lines)
-    found = _NO_BREAK_RE.match(text)
-    if found and found.group(1):
-        return ('no break', found.group(1))
     aim, case = PLAIN, ''
     while lines:
         head = lines[0]
@@ -143,6 +141,9 @@ def parse_answer(text):
         elif head.strip():
             break
         lines.pop(0)
+    found = _NO_BREAK_RE.match(lines[0]) if lines else None
+    if found and found.group(1).strip():
+        return ('no break', found.group(1).strip())
     found = _CHANGE_RE.match('\n'.join(lines).strip('\n'))
     if not found or not found.group('before').strip():
         return None

@@ -640,3 +640,38 @@ def test_a_change_that_adds_only_an_empty_line_is_not_planted(tmp_path, own_clau
     assert bug_of(after)['after'] == '\n    return days'
     assert (bug_of(after)['result'], bug_of(after)['why']) == (
         'not made', 'the change touches only a comment')
+
+
+# ---------------------------------------------------------------------------
+# Reading the part
+# ---------------------------------------------------------------------------
+
+def found_none(reason):
+    """The line the audit prints under a rule whose model named no bug, for `reason`."""
+    return ('  The spot tests found nothing. No bug was planted: the model found no change '
+            'that would break PROOF-1: %s.' % reason)
+
+
+# purlin: planted_bug PROOF-39
+def test_no_break_after_an_aim_line_is_read_as_no_break(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    fake_claude.install(own_claude, answers=[
+        {'PROOF-1': 'aim: plain\nno break: the test checks the case and its result\n'}])
+    code, lines, _before, after = audit(root)
+    assert code == 0
+    at = lines.index('age RULE-1   spot-checked')
+    assert lines[at + 1] == found_none('the test checks the case and its result'), lines
+    assert bug_of(after)['why'] == 'the test checks the case and its result'
+
+
+# purlin: planted_bug PROOF-40
+def test_a_no_break_reason_of_two_lines_is_cut_to_its_first(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    fake_claude.install(own_claude, answers=[
+        {'PROOF-1': 'no break: nothing here.\nThe code is a constant.\n'}])
+    code, lines, _before, after = audit(root)
+    assert code == 0
+    at = lines.index('age RULE-1   spot-checked')
+    assert lines[at + 1] == found_none('nothing here'), lines
+    assert bug_of(after)['why'] == 'nothing here.'
+    assert [line for line in lines if 'The code is a constant' in line] == [], lines

@@ -13,8 +13,8 @@
 >   and after the last bug stops the audit if the project changed.
 > Scope: scripts/review/targeted_break.py
 > Stack: python/stdlib (subprocess, tempfile, hashlib, shutil)
-> Highest-Rule: 19
-> Highest-Proof: 38
+> Highest-Rule: 20
+> Highest-Proof: 40
 
 ## Rules
 
@@ -34,6 +34,7 @@
 - RULE-17: A part that names a change and holds no `case:` line, or an empty one, is not planted: the result reads `not made` with the reason `the answer named no case of the proof`, the audit prints `No bug was planted: the model's answer for <PROOF-N> could not be used: the answer named no case of the proof.`, and the proof's test is not run
 - RULE-18: A change that differs from the lines it replaces only in blank lines and comment lines is not planted: the result reads `not made` with the reason `the change touches only a comment`, the audit prints `No bug was planted: the model's answer for <PROOF-N> could not be used: the change touches only a comment.`, and the proof's test is not run; a comment line starts, after its indent, with `//` in any file or with `#` in a file ending `.py`, `.sh`, `.bash`, `.rb`, `.yml`, `.yaml` or `.toml`
 - RULE-19: A change whose code lines differ from the lines they replace only in a comment at the line's end is not planted either, with the same reason, `the change touches only a comment`: that comment starts, after a space, at `#` in a file ending `.py`, `.sh`, `.bash`, `.rb`, `.yml`, `.yaml` or `.toml` and at `//` in any other file, and a line that holds a quotation mark before it is read as code throughout. The check is narrow on purpose: a `/* */` comment, a docstring, a `--` comment and a comment in any other kind of file are read as code, so a change to one is planted
+- RULE-20: A part reads as naming no bug where its first line, or the first line after its `aim:` and `case:` lines, reads `no break: <why>`: the result reads `not made`, and its reason is the rest of that one line, whatever lines follow it
 
 ## Proof
 
@@ -73,3 +74,5 @@
 - PROOF-36 (RULE-19): The feature covers `src/age.js`, and the model's change turns `return 90;` in it into `return 90; /* planted */`; the bug is planted, and its entry reads `survived`
 - PROOF-37 (RULE-18): The feature covers `src/limits.yml`, and the model's change adds the one line `# planted` above `oldest: 90` in it; the bug's entry reads `not made` with the reason `the change touches only a comment`
 - PROOF-38 (RULE-18): The model's change adds one empty line above `return days` in `src/age.py` and nothing else; the bug's entry reads `not made` with the reason `the change touches only a comment`
+- PROOF-39 (RULE-20): The part for `PROOF-1` reads `aim: plain` and under it `no break: the test checks the case and its result`; the audit prints `age RULE-1   spot-checked` and under it `  The spot tests found nothing. No bug was planted: the model found no change that would break PROOF-1: the test checks the case and its result.`
+- PROOF-40 (RULE-20): The part for `PROOF-1` reads `no break: nothing here.` and under it a second line, `The code is a constant.`; the bug's entry reads `not made` with the reason `nothing here.`, and no line the audit prints holds `The code is a constant`
