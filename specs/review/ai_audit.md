@@ -33,7 +33,6 @@
 - RULE-42: `ai_audit.py --feature <name>` prints, for the rule named with `--rule` or for every rule of the feature, its proofs, each test or `No test yet. Run purlin:build <feature>.`, and what the last audit found with the model and the time that read it, and starts no `claude`
 - RULE-43: When the model cannot be reached for a rule, the spot tests and the bugs kept from earlier audits set its verdict; a rule left `spot-checked` records `No bug was planted: the model could not be reached: <why>.`, and the audit prints `The model could not be reached: <why>. <n> rules are spot-checked alone. Run purlin:audit again.`, the middle sentence left out for none
 - RULE-44: The reply holds one part per proof asked for, under `=== PROOF-N ===`, and the reading under `=== reading ===`; a proof whose part is missing or names no usable change has no bug planted, with the reason recorded, and the other proofs' bugs are planted
-- RULE-45: Before its first call the audit prints `The audit reads <n> rules: <n> model calls.`, and after its last, where `claude` reported a cost, `The model was asked <n> times for <n> rules: $<total> in all, $<per rule> a rule.`, the sum of what each call reported
 
 ## Proof
 
@@ -90,4 +89,3 @@
 - PROOF-110 (RULE-43): `claude` exits with the code 1 at every call and the audit reads two rules that pass, with no spot test firing on either; both entries read `spot-checked`, and the audit prints `The model could not be reached: claude exited with an error. 2 rules are spot-checked alone. Run purlin:audit again.` once
 - PROOF-119 (RULE-43): A bug kept for `PROOF-2` reads `survived`, and `claude` exits `1` at every call; the audit entry of `RULE-2` reads `weak` with the finding `PROOF-2: the test still passes when src/login.py:12 reads "return 200"`
 - PROOF-120 (RULE-44): `RULE-1` has `PROOF-1` and `PROOF-2`; the reply holds a part for `PROOF-1`, whose bug is caught, and none for `PROOF-2`; the entry reads `strong`, `PROOF-1` reads `caught`, and `no_bug` is exactly `No bug was planted: the model's answer for PROOF-2 could not be used: it holds none.`
-- PROOF-121 (RULE-45): The audit reads 2 rules and each call reports `total_cost_usd` `0.05`; it prints `The audit reads 2 rules: 2 model calls.` before the first call and, after the last, `The model was asked 2 times for 2 rules: $0.10 in all, $0.05 a rule.`

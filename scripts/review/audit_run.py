@@ -1,4 +1,4 @@
-"""The audit's run: the spot tests, one model call per rule, the planted bugs.
+"""The audit's run: the spot tests, the model's request for each rule, the planted bugs.
 
 `purlin_run.py --audit` runs the tests, then calls `run`. For the rules the
 audit reads (`ai_audit.is_read`, ai_audit RULE-1) it runs, in this order:
@@ -23,20 +23,17 @@ through `evidence.write_audit`, with the feature's `code` part as `code_hash`.
 Where the model could not be reached for a rule, the spot tests and the bugs
 kept from earlier audits set its verdict, one line says so and names
 `purlin:audit`, and the next audit reads the rule again (ai_audit RULE-43).
-What the model cost is written to `.purlin/runtime/audit_run.json`, which git
-ignores. The run prints how many model calls it makes, the findings, the cost
-line and, last, the share of rules found strong (ai_audit RULE-35, RULE-45).
+The run prints each rule it read with its findings and, last, the share of
+rules found strong (ai_audit RULE-35).
 
 A project file that changes between the first model call and the last planted
 bug stops the run before anything is written (planted_bug RULE-6).
 """
 
 import hashlib
-import json
 import os
 import subprocess
 import sys
-import time
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _SCRIPTS = os.path.dirname(_HERE)
@@ -55,16 +52,9 @@ from purlin import payload as payload_module                   # noqa: E402
 from purlin import specs as specs_module                       # noqa: E402
 from purlin import summary as summary_module                   # noqa: E402
 
-RUNTIME_PATH = os.path.join('.purlin', 'runtime', 'audit_run.json')
-
-# The first line, where it is not empty: the coordinator sets it.
-EXPERIMENTAL = ''
-
-# Before the first call, and the two lines before the last.
-CALLS_ONE = 'The audit reads 1 rule: 1 model call.'
-CALLS_MANY = 'The audit reads %d rules: %d model calls.'
+# The last line where no rule passes, and the line before the last where the
+# model could not be reached.
 NO_RULE_PASSES = 'The audit found no rule that passes its tests.'
-COST = 'The model was asked %d %s for %d %s: $%.2f in all, $%.2f a rule.'
 NOT_REACHED = 'The model could not be reached: %s.%s Run purlin:audit again.'
 ALONE_ONE = ' 1 rule is spot-checked alone.'
 ALONE_MANY = ' %d rules are spot-checked alone.'
@@ -98,10 +88,6 @@ LANGUAGES = (
     (('.ts', '.tsx', '.mts', '.cts'), 'TypeScript'), (('.cs',), 'C#'),
     (('.go',), 'Go'),
 )
-
-
-def _plural(count, one, many):
-    return one if count == 1 else many
 
 
 def _git(project_root, *args):
@@ -184,11 +170,6 @@ def counted_rules(payload, selected):
             for rule in feature.get('rules') or ()
             if rule.get('feature') == feature.get('name')
             and ai_audit.passes(rule) and ai_audit.tested(rule)]
-
-
-def _number(rule_id):
-    digits = str(rule_id).rsplit('-', 1)[-1]
-    return int(digits) if digits.isdigit() else 0
 
 
 def _number(rule_id):
@@ -312,18 +293,17 @@ def no_bug_sentence(proof_id, made):
 
 def planted_bugs(project_root, reading, plan, scope_files, last, answer,
                  here=None):
-    """`(breaks, findings, no_bug, asked)` for one rule's proofs.
+    """`(breaks, findings, no_bug)` for one rule's proofs.
 
     `plan` is `bug_plan`'s and `answer` the model's one reply for the rule,
     as `ai_audit.audit_one` gives it. `breaks` is `{proof: entry}` as the
     evidence holds it; `findings` the sentence of each bug that survived;
-    `no_bug` one sentence for each proof no bug was caught for; `asked`
-    `{proof: result}` for the bugs planted this run. A proof the model could
-    not be reached for, or that is tagged for another system, has no entry
-    under `breaks`, so the first is asked for again.
+    `no_bug` one sentence for each proof no bug was caught for. A proof the
+    model could not be reached for, or that is tagged for another system, has
+    no entry under `breaks`, so the first is asked for again.
     """
     here = here or evidence_reader.host_os()
-    breaks, findings, no_bug, asked = {}, [], [], {}
+    breaks, findings, no_bug = {}, [], []
 
     def note(sentence):
         if sentence and sentence not in no_bug:
@@ -355,12 +335,11 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
                      'result': result.get('result') or 'not made',
                      'why': result.get('why') or '', 'break_key': value}
             breaks[proof_id] = entry
-            asked[proof_id] = entry['result']
             if entry['result'] == 'survived':
                 findings.append(result.get('finding') or _survived_finding(
                     proof_id, entry, {}))
             note(no_bug_sentence(proof_id, entry))
-    return breaks, findings, no_bug, asked
+    return breaks, findings, no_bug
 
 
 def verdict_of(spot, survived, breaks):
@@ -379,17 +358,15 @@ def verdict_of(spot, survived, breaks):
 
 def run(project_root, features, selected, again=False, out=None):
     """For the rules the audit reads (ai_audit RULE-1; `again` reads every passing rule):
-    the spot tests, then one model call per rule, then each planted bug. Writes one
-    audit.rules entry per rule read, through evidence.write_audit; writes
-    .purlin/runtime/audit_run.json; prints the number of calls, the findings, the cost
-    line and, last, the share. Returns 0, or 1 when the project changed while it ran
-    (planted_bug RULE-6)."""
+    the spot tests, then the model's request for each rule, then each planted bug.
+    Writes one audit.rules entry per rule read, through evidence.write_audit; prints
+    each rule read with its findings and, last, the share. Returns 0, or 1 when the
+    project changed while it ran (planted_bug RULE-6)."""
     out = out or sys.stdout
 
     def say(line=''):
         print(line, file=out)
 
-    started = time.time()
     if features is None:
         features = specs_module.scan_specs(project_root)
     selected = set(features if selected is None else selected)
@@ -417,29 +394,22 @@ def run(project_root, features, selected, again=False, out=None):
         reading['files'] = list(scope_files) if reading['plant'] else []
         done.append({'feature': feature, 'rule': rule, 'reading': reading,
                      'spot': spot, 'plan': plan, 'scope_files': scope_files,
-                     'last': last, 'code': code, 'spent': []})
+                     'last': last, 'code': code})
 
-    if EXPERIMENTAL:
-        say(EXPERIMENTAL)
-    if done:
-        say(CALLS_ONE if len(done) == 1 else CALLS_MANY % (len(done),
-                                                           len(done)))
-
-    # 2. One call per rule; 3. each bug planted, one at a time.
+    # 2. The model's request for each rule; 3. each bug planted, one at a time.
     try:
         before = targeted_break.snapshot(project_root) if done else None
         with ai_audit.empty_folder() as folder:
             answers = ai_audit.audit_all(
-                project_root, [item['reading'] for item in done], cwd=folder,
-                spent=[item['spent'] for item in done])
+                project_root, [item['reading'] for item in done], cwd=folder)
         for item, answer in zip(done, answers):
             item['answer'] = answer
-            breaks, survived, no_bug, asked = planted_bugs(
+            breaks, survived, no_bug = planted_bugs(
                 project_root, item['reading'], item['plan'],
                 item['scope_files'], item['last'], answer)
             targeted_break.check_unchanged(project_root, before)
             item.update(
-                breaks=breaks, no_bug=no_bug, asked=asked,
+                breaks=breaks, no_bug=no_bug,
                 findings=item['spot'] + [line for line in survived
                                          if line not in item['spot']],
                 verdict=verdict_of(item['spot'], survived, breaks))
@@ -486,11 +456,6 @@ def run(project_root, features, selected, again=False, out=None):
                            '' if not alone else ALONE_ONE if alone == 1
                            else ALONE_MANY % alone))
 
-    costs = write_costs(project_root, done, commit, time.time() - started)
-    if costs['cost_usd'] is not None and done:
-        say(COST % (costs['calls'], _plural(costs['calls'], 'time', 'times'),
-                    len(done), _plural(len(done), 'rule', 'rules'),
-                    costs['cost_usd'], costs['cost_usd'] / len(done)))
     say(share_line(project_root, payload, features, selected, done, cache))
     return 0
 
@@ -536,30 +501,3 @@ def share_line(project_root, payload, features, selected, done, cache=None):
         counts[key] = counts.get(key, 0) + 1
     return summary_module.audit_line(counts)
 
-
-def write_costs(project_root, done, commit, seconds):
-    """Write `.purlin/runtime/audit_run.json`; the totals it holds."""
-    rules = {}
-    calls, total, any_cost = 0, 0.0, False
-    for item in done:
-        spent = list(item['spent'])
-        costs = [one['cost_usd'] for one in spent
-                 if one.get('cost_usd') is not None]
-        cost = round(sum(costs), 6) if costs else None
-        any_cost = any_cost or bool(costs)
-        calls += len(spent)
-        total += sum(costs)
-        rules['%s %s' % (item['feature'], item['rule']['id'])] = {
-            'calls': len(spent), 'cost_usd': cost,
-            'seconds': int(round(sum(one.get('seconds') or 0.0
-                                     for one in spent))),
-            'breaks': dict(item.get('asked') or {})}
-    data = {'at': evidence_writer.now_iso(), 'commit': commit, 'calls': calls,
-            'cost_usd': round(total, 6) if any_cost else None,
-            'seconds': int(round(seconds)), 'rules': rules}
-    path = os.path.join(project_root, RUNTIME_PATH)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, 'w', encoding='utf-8') as handle:
-        json.dump(data, handle, indent=2, sort_keys=True)
-        handle.write('\n')
-    return data

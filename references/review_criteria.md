@@ -291,13 +291,9 @@ question.
 
 The audit reports. It recommends nothing.
 
-- **How many model calls it will make**, the first line, one for each rule it reads:
-  `The audit reads 12 rules: 12 model calls.`
 - **Each rule it read**, its verdict, then each finding: the spot tests' sentences and each
   planted bug that survived. Then one sentence for each proof no bug was caught for, which is not
   a finding. Under a `spot-checked` rule those sentences follow `The spot tests found nothing.`
-- **What the model was asked and what it cost**, the line before the last, where an answer
-  carried a cost: `The model was asked <n> times for <n> rules: $<total> in all, $<per rule> a rule.`
 - **The share of rules found strong**, the last line:
   `The audit found 34 of 40 rules strong (85%): 34 strong, 4 weak, 2 spot-checked.`, counted over
   the rules that pass their tests, a rule with a hand check counted where it also has a tested
@@ -308,8 +304,7 @@ rule, proofs, tests and code, the `verdict`, the `findings`, under `no_bug` one 
 proof no bug was caught for, each planted bug under `breaks` with its file, line, the lines
 before and after, and its result, the model's `explanation` and `notes`, the `model`, the sha256
 of these `criteria`, the time and the commit. A person reads it beside the rule, each proof and
-the source of each test, which is what the audit read. What the model cost is written to
-`.purlin/runtime/audit_run.json`, which git ignores.
+the source of each test, which is what the audit read.
 
 A rule the audit found weak shows under `Left to do` as a rule to strengthen, and `purlin:build`
 works on it. A case the test is missing is fixed by writing its proof line; the next

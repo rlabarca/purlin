@@ -87,7 +87,7 @@ NOT_NONE_TEST = TEST_FILE.replace(
 
 # The same tests under a fixture each takes, which calls `login` with a wrong
 # password before the test's body runs.
-SETUP_CALLS_LOGIN_TEST = TEST_FILE.replace(
+FIXTURE_USES_LOGIN_TEST = TEST_FILE.replace(
     'from src.login import login\n',
     'from src.login import login\n\n\n'
     '@pytest.fixture(autouse=True)\ndef refused():\n'
@@ -466,7 +466,7 @@ class TestTheCall:
         assert asked_for(calls[0]) == ['PROOF-1', 'PROOF-2', 'PROOF-3']
 
     # purlin: ai_audit PROOF-55
-    def test_six_rules_six_calls_each_answer_beside_its_rule(self, project):
+    def test_six_rules_are_each_asked_once_and_answered_in_order(self, project):
         base = read(project, 'RULE-2')
         readings = [dict(base, rule='RULE-%d' % n,
                          rule_text='Rule number %d holds' % n)
@@ -798,7 +798,7 @@ class TestTheVerdict:
         install(answers=[{'PROOF-2': bug('    return 401',
                                          '    raise KeyError(user)')}])
         with passing_project(source=LOGIN_SOURCE,
-                             test_file=SETUP_CALLS_LOGIN_TEST) as made:
+                             test_file=FIXTURE_USES_LOGIN_TEST) as made:
             settle(made, 'RULE-1')
             code, printed = audit(made)
             entry = entry_of(made)
@@ -976,20 +976,6 @@ class TestTheVerdict:
         assert entry['no_bug'] == [
             "No bug was planted: the model's answer for PROOF-2 could not be "
             "used: it holds none."], entry
-
-    # purlin: ai_audit PROOF-121
-    def test_the_calls_are_counted_first_and_their_cost_printed_after(
-            self, claude):
-        install, _directory = claude
-        install(cost=0.05)
-        with passing_project(source=LOGIN_SOURCE) as made:
-            assert to_read(made) == [('login', 'RULE-1'), ('login', 'RULE-2')]
-            code, printed = audit(made)
-        assert code == 0, printed
-        lines = printed.splitlines()
-        assert lines[0] == 'The audit reads 2 rules: 2 model calls.', printed
-        assert lines[-2] == ('The model was asked 2 times for 2 rules: $0.10 '
-                             'in all, $0.05 a rule.'), printed
 
 
 # ---------------------------------------------------------------------------

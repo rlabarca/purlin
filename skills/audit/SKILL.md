@@ -58,8 +58,6 @@ error with the bug in place is not a caught bug. An anchor's rule reads `spot-ch
 bug is planted on this machine for a proof tagged for another system.
 
 The model is started with no tools, no plugins and none of your settings, in an empty folder.
-Before the first call the audit prints how many model calls it will make, one for each rule
-it reads. After the last it prints what the run cost.
 
 `references/review_criteria.md` is the one home of each step: its checks, the research behind
 them and what the model is sent.
@@ -74,17 +72,15 @@ the code: a weak rule is listed, not failed.
 
 ## Step 2: read what came back
 
-The audit prints its calls, then one block per rule it read, then its cost, then the share, and
-the run ends on the status, as every run does:
+The audit prints one block per rule it read, then the share, and the run ends on the status, as
+every run does:
 
 ```
-The audit reads 12 rules: 12 model calls.
 login RULE-2   weak
   tests/test_login.py::test_wrong_password: the test checks nothing.
   PROOF-2: the test still passes when src/auth.py:12 reads "return 200"
 login RULE-3   spot-checked
   The spot tests found nothing. No bug was planted: PROOF-3 needs Windows, and this machine is macOS.
-The model was asked <n> times for <n> rules: $<total> in all, $<per rule> a rule.
 The audit found 4 of 6 rules strong (66%): 4 strong, 1 weak, 1 spot-checked.
 ```
 
@@ -104,8 +100,7 @@ The audit found 4 of 6 rules strong (66%): 4 strong, 1 weak, 1 spot-checked.
   evidence names a test the file no longer holds: run `purlin:test`, then `purlin:audit`.
 
 A finding is build work. `purlin:build <feature>` fixes the test, and the rule is read again by
-the next `purlin:audit`. Never narrow a rule or a proof to make a finding disappear. What the
-model cost is also written to `.purlin/runtime/audit_run.json`, which git ignores.
+the next `purlin:audit`. Never narrow a rule or a proof to make a finding disappear.
 
 ## Step 3: name the next step
 

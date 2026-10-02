@@ -32,7 +32,6 @@ What the fake answers is set in `fake_claude.json` beside it:
     exit      the exit code every call ends with, 0 by default
     sleep     seconds each call waits before it answers
     model     the model the JSON names under `modelUsage`, or null for none
-    cost      the `total_cost_usd` the JSON reports, or null for none
     writes    `[path, text]`: text the fake appends to that file as it answers
     raw       printed as-is instead of the JSON, when set
 
@@ -102,8 +101,6 @@ else:
             'result': answer, 'duration_ms': 5}
     if setup.get('model'):
         body['modelUsage'] = {setup['model']: {'outputTokens': 10}}
-    if setup.get('cost') is not None:
-        body['total_cost_usd'] = setup['cost']
     sys.stdout.write(json.dumps(body))
 sys.exit(int(setup.get('exit') or 0))
 '''
@@ -120,14 +117,14 @@ def reply(parts=None, reading=''):
 
 
 def install(directory, answers=(None,), exit_code=0, sleep=0,
-            model=DEFAULT_MODEL, raw=None, cost=None, writes=None):
+            model=DEFAULT_MODEL, raw=None, writes=None):
     """Write the fake into `directory`. The directory, to put first on PATH."""
     directory = str(directory)
     os.makedirs(directory, exist_ok=True)
     with open(os.path.join(directory, 'fake_claude.json'), 'w',
               encoding='utf-8') as handle:
         json.dump({'answers': list(answers), 'exit': exit_code,
-                   'sleep': sleep, 'model': model, 'raw': raw, 'cost': cost,
+                   'sleep': sleep, 'model': model, 'raw': raw,
                    'writes': list(writes) if writes else None,
                    'default': DEFAULT_ANSWER}, handle)
     script = os.path.join(directory, 'claude')

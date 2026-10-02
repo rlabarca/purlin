@@ -4,7 +4,7 @@
     ai_audit.py --feature <f> [--rule RULE-N] [--project-root DIR]
 
 `purlin:audit` runs through `scripts/review/audit_run.py`, which runs the
-heuristic spot tests, then asks the model once for each rule, then plants each
+heuristic spot tests, then asks the model about each rule, then plants each
 bug the reply names. This module holds the model's part. It sets a rule, its
 proofs, the source of each test that backs them and the findings of the spot
 tests beside `references/review_criteria.md`, names the proofs a bug is asked
@@ -19,8 +19,7 @@ settings, started in an empty folder outside the project with
 `DISABLE_PROMPT_CACHING=1`, the request on stdin, so no command line carries
 it, and stdin closed after it. One call per rule, `MODEL_TIMEOUT` seconds
 each, `AUDIT_PARALLEL` calls at once. The JSON's `result` is the reply; the
-model is the one its `modelUsage` names, or `unknown` where it names none;
-`total_cost_usd` is what the call cost.
+model is the one its `modelUsage` names, or `unknown` where it names none.
 
 **The reply.** Cut at each line `=== PROOF-N ===` or `=== reading ===`
 (`read_reply`). A proof's part names its planted bug, which
@@ -52,7 +51,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import time
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _MCP_DIR = os.path.join(os.path.dirname(_HERE), 'mcp')
@@ -460,13 +458,6 @@ def model_name(body):
     return 'unknown'
 
 
-def _cost(body):
-    cost = body.get('total_cost_usd') if isinstance(body, dict) else None
-    if isinstance(cost, bool) or not isinstance(cost, (int, float)):
-        return None
-    return float(cost)
-
-
 # ---------------------------------------------------------------------------
 # The call
 # ---------------------------------------------------------------------------
@@ -488,20 +479,18 @@ def empty_folder():
 
 
 def ask_model(prompt, command=None, runner=None, cwd=None):
-    """One call: `{'answer', 'model', 'why', 'cost_usd', 'seconds'}`.
+    """One call: `{'answer', 'model', 'why'}`.
 
     The request goes on stdin and stdin is closed after it, so the command
     line never carries it. `claude` is started in `cwd`, the audit's empty
     folder, or in one of its own, with `DISABLE_PROMPT_CACHING=1`. `why` is
     None when the model answered, and names the cause otherwise: an answer
-    that is empty, is not JSON or reports an error is `NO_ANSWER`.
-    `cost_usd` is the answer's `total_cost_usd`, or None. `runner` stands in
-    for `subprocess.run` in a test.
+    that is empty, is not JSON or reports an error is `NO_ANSWER`. `runner`
+    stands in for `subprocess.run` in a test.
     """
     command = command or claude_path()
     if not command:
-        return {'answer': None, 'model': None, 'why': NOT_ON_PATH,
-                'cost_usd': None, 'seconds': 0.0}
+        return {'answer': None, 'model': None, 'why': NOT_ON_PATH}
     if cwd is None:
         with empty_folder() as folder:
             return _call(prompt, command, runner or subprocess.run, folder)
@@ -509,9 +498,7 @@ def ask_model(prompt, command=None, runner=None, cwd=None):
 
 
 def _call(prompt, command, runner, cwd):
-    found = {'answer': None, 'model': None, 'why': None, 'cost_usd': None,
-             'seconds': 0.0}
-    started = time.time()
+    found = {'answer': None, 'model': None, 'why': None}
     try:
         result = runner([command] + list(COMMAND[1:]) + [SYSTEM_PROMPT],
                         input=prompt, capture_output=True, text=True,
@@ -524,7 +511,6 @@ def _call(prompt, command, runner, cwd):
     except (OSError, subprocess.SubprocessError):
         result = None
         found['why'] = EXITED
-    found['seconds'] = time.time() - started
     if result is None:
         return found
     if result.returncode != 0:
@@ -537,7 +523,6 @@ def _call(prompt, command, runner, cwd):
     if not isinstance(body, dict):
         found['why'] = NO_ANSWER
         return found
-    found['cost_usd'] = _cost(body)
     answer = body.get('result')
     if body.get('is_error') or not isinstance(answer, str) \
             or not answer.strip():
@@ -548,38 +533,32 @@ def _call(prompt, command, runner, cwd):
 
 
 def audit_one(project_root, reading, criteria, command=None, runner=None,
-              cwd=None, spent=None):
+              cwd=None):
     """The model's one reply for a rule, or why it could not be asked.
 
-    `{'parts', 'explanation', 'notes', 'model', 'criteria', 'cost_usd',
-    'seconds'}` when the model answered, where `parts` is `{proof: its part}`
-    for the proofs of `reading['plant']` the reply holds, and `criteria` the
-    sha256 of the criteria it was sent; only `{'why'}` when it could not be
-    reached. The reply sets no verdict. `spent`, a list, gains one
-    `{'cost_usd', 'seconds'}` for a call that was started.
+    `{'parts', 'explanation', 'notes', 'model', 'criteria'}` when the model
+    answered, where `parts` is `{proof: its part}` for the proofs of
+    `reading['plant']` the reply holds, and `criteria` the sha256 of the
+    criteria it was sent; only `{'why'}` when it could not be reached. The
+    reply sets no verdict.
     """
     prompt = model_prompt(project_root, reading, criteria)
     called = ask_model(prompt, command, runner, cwd)
-    if spent is not None and called['why'] != NOT_ON_PATH:
-        spent.append({'cost_usd': called['cost_usd'],
-                      'seconds': called['seconds']})
     if called['why']:
         return {'why': called['why']}
     parts, explanation, notes = read_reply(called['answer'],
                                            reading.get('plant') or ())
     return {'parts': parts, 'explanation': explanation, 'notes': notes,
-            'model': called['model'], 'criteria': criteria_hash(criteria),
-            'cost_usd': called['cost_usd'], 'seconds': called['seconds']}
+            'model': called['model'], 'criteria': criteria_hash(criteria)}
 
 
 def audit_all(project_root, readings, parallel=AUDIT_PARALLEL, runner=None,
-              cwd=None, spent=None):
+              cwd=None):
     """One result per reading, in order, `parallel` calls at once.
 
     With no `claude` on PATH nothing is called and every reading carries
     that reason. Every call is started in `cwd`, or in one empty folder made
-    here and removed after. `spent`, one list per reading, gains what each
-    call cost.
+    here and removed after.
     """
     readings = list(readings or ())
     command = claude_path()
@@ -588,14 +567,13 @@ def audit_all(project_root, readings, parallel=AUDIT_PARALLEL, runner=None,
     if cwd is None:
         with empty_folder() as folder:
             return audit_all(project_root, readings, parallel, runner,
-                             folder, spent)
+                             folder)
     criteria = criteria_text(project_root)
     workers = max(1, min(int(parallel or 1), len(readings) or 1))
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
         futures = [pool.submit(audit_one, project_root, reading, criteria,
-                               command, runner, cwd,
-                               spent[index] if spent else None)
-                   for index, reading in enumerate(readings)]
+                               command, runner, cwd)
+                   for reading in readings]
         return [future.result() for future in futures]
 
 
