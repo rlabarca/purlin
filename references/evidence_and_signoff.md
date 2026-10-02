@@ -242,6 +242,7 @@ sign-off from its files and names `git fetch --tags`.
 
 - tracked files are changed and not committed;
 - the evidence is written and not committed;
+- a test still carries a marker from Purlin 0.9.5;
 - a result was not taken on this version of the code, a slow result kept from an earlier run
   among them, or was taken while files were changed and not committed;
 - the committed package was changed after it was signed;

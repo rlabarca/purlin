@@ -291,6 +291,12 @@ def build_payload(project_root, generated_by='sync_status', config=None,
         'warnings': warnings,
     }
     payload['met'] = facts_module.tests_fact(payload) == facts_module.TESTS_MET
+    if payload['last_line'] == summary_module.LAST_LINE:
+        # The last line never names a sign-off `purlin:sign` would refuse,
+        # whichever command writes the data.
+        payload['last_line'] = summary_module.closing_line(
+            payload['last_line'],
+            facts_module.results_to_retake(project_root, feature_entries))
     return payload
 
 

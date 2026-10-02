@@ -86,7 +86,7 @@ run the walk again.
 - The script never fetches.
 - The first line counts tracked files alone, and reads `1 file is` for one. A file git does not
   track stops nothing.
-- The 0.9.5 line reads `1 test still carries` for one. `purlin:status` names each test and its
+- For one test the 0.9.5 line reads `No sign-off: 1 test still carries a marker from Purlin 0.9.5, which is not read. Run purlin:status to see it, rewrite it, then purlin:sign.` `purlin:status` names each test and its
   rule.
 - A tag typed by hand is no sign-off, and the script signs nothing while one stands for the
   version. **Stop and ask** before you delete a tag. The line names the remote only where the

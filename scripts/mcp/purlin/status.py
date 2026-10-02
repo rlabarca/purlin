@@ -165,11 +165,6 @@ def sync_status(project_root):
         # The last of the warnings, so it reads nearest `Left to do`; the
         # dashboard shows it as a notice, one line, from the same list.
         data['warnings'].append(old_marker_line(old))
-    if data.get('last_line') == summary_module.LAST_LINE:
-        # The last line never names a sign-off `purlin:sign` would refuse.
-        data['last_line'] = summary_module.closing_line(
-            data['last_line'],
-            facts_module.results_to_retake(project_root, data['features']))
     # The dashboard reads what the table reads: every command that ends on
     # this table refreshes the page's data file with the same payload.
     report_data.refresh(project_root, data)

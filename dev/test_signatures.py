@@ -876,6 +876,9 @@ OLD_TAGS = ('[proof:login:PROOF-1b:RULE-1:unit]',
             '[proof:login:PROOF-2c:RULE-2:unit]')
 OLD_REST = (' a marker from Purlin 0.9.5, which is not read. Run purlin:status '
             'to see each, rewrite them, then purlin:sign.')
+OLD_ONE = ('No sign-off: 1 test still carries a marker from Purlin 0.9.5, which '
+           'is not read. Run purlin:status to see it, rewrite it, then '
+           'purlin:sign.')
 
 
 def old_ts(tags):
@@ -907,8 +910,7 @@ class TestMarkersFrom095:
     def test_one_test_that_carries_one_is_refused(self, capsys):
         made = carrying(OLD_TAGS[:1])
         try:
-            assert run_main(made, capsys) == (1, [
-                'No sign-off: 1 test still carries' + OLD_REST])
+            assert run_main(made, capsys) == (1, [OLD_ONE])
             assert status(made.root) == ''
         finally:
             made.close()
@@ -956,8 +958,7 @@ class TestMarkersFrom095:
               old_ts(OLD_TAGS[:1]))
         commit_all(signed, 'test: a vitest test')
         capsys.readouterr()
-        assert run_main(signed, capsys, ['--show']) == (1, [
-            'No sign-off: 1 test still carries' + OLD_REST])
+        assert run_main(signed, capsys, ['--show']) == (1, [OLD_ONE])
         code = sign_module.main(['--check', os.path.join(
             signed.root, *PACKAGE.split('/'))])
         assert (code, capsys.readouterr().out.splitlines()) == (

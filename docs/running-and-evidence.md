@@ -334,6 +334,7 @@ purlin:audit --all              Run every feature, and read every rule again
 purlin:audit --commit           Commit the work and the evidence the run wrote
 purlin:audit --arm-timeout <seconds>  Give each suite, and each planted bug's run, longer
 purlin:audit <feature> RULE-N --settle  Plant each bug that survived again, and run its proof's test
+purlin:audit <feature> RULE-N --settle --sound PROOF-N  The same, where that proof's test was judged sound and left as it was
 ```
 
 A passing test is not proof that it checks anything. The audit tries to make each test fail.

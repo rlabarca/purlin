@@ -93,8 +93,8 @@ NO_SIGNOFF_EVIDENCE = ('No sign-off: the evidence is written and not committed. 
                        'purlin:test --commit, then purlin:sign.')
 # Tests that still carry a marker from Purlin 0.9.5, as the status counts them.
 NO_SIGNOFF_OLD_MARKER_ONE = ('No sign-off: 1 test still carries a marker from Purlin '
-                             '0.9.5, which is not read. Run purlin:status to see each, '
-                             'rewrite them, then purlin:sign.')
+                             '0.9.5, which is not read. Run purlin:status to see it, '
+                             'rewrite it, then purlin:sign.')
 NO_SIGNOFF_OLD_MARKER_MANY = ('No sign-off: %d tests still carry a marker from Purlin '
                               '0.9.5, which is not read. Run purlin:status to see each, '
                               'rewrite them, then purlin:sign.')

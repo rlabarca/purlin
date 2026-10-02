@@ -1717,7 +1717,12 @@ def _apply_markers(root, files, args, out):
     held = set((_spec_name(spec), old)
                for spec, pairs in _lettered_specs(root).items()
                for old, _new in pairs)
-    for rel, (_new, _count, left) in sorted(found.items()):
+    for rel, (_new, count, left) in sorted(found.items()):
+        if count and rel in files:
+            # The rewrite adds and drops lines above a marker it leaves, so
+            # the line is read again from the file as it now stands.
+            left = rewrite_markers(_read(os.path.join(root, rel)),
+                                   os.path.splitext(rel)[1].lower())[2]
         for number, lettered in left:
             if lettered is None:
                 out.owner(LEFT % (rel, number))

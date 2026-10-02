@@ -2070,3 +2070,28 @@ def test_a_run_with_apply_names_the_migrations_it_applies(tmp_path, capsys):
     assert printed[0] == 'Applying 1 migration: evidence.'
     assert [line for line in printed if line.startswith('  evidence: ')]
     assert not [line for line in printed if 'pending in' in line]
+
+
+MIXED_TS = 'packages/web/test/mixed.test.ts'
+MIXED_TS_OLD = (
+    "import { it } from 'vitest';\n\n"
+    "it('two keys sound two notes [proof:piano:PROOF-7b:RULE-6:unit]', "
+    "() => {\n});\n\n"
+    "it('a held key keeps sounding [proof:piano:PROOF-9c:RULE-2:unit]', "
+    "() => {\n});\n")
+
+
+# purlin: update PROOF-216
+def test_a_left_marker_is_named_at_its_line_after_the_rewrite(tmp_path,
+                                                             capsys):
+    root = _lettered(tmp_path, files=((MIXED_TS, MIXED_TS_OLD),
+                                      (KEYS_PY, KEYS_PY_OLD)))
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    lines = _read(root, MIXED_TS).splitlines()
+    at = next(number for number, text in enumerate(lines, 1)
+              if 'PROOF-9c' in text)
+    assert at == 7, lines
+    assert any(line.startswith('  left %s:%d as it was: it names piano '
+                               'PROOF-9c' % (MIXED_TS, at))
+               for line in printed), printed

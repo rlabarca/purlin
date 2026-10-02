@@ -10,7 +10,7 @@
 > Scope: scripts/init/update.py
 > Stack: python3 (stdlib only, 3.9 floor)
 > Highest-Rule: 71
-> Highest-Proof: 215
+> Highest-Proof: 216
 
 ## Rules
 
@@ -141,3 +141,4 @@
 - PROOF-212 (RULE-70): A project whose one script running vitest is `test` (`vitest run --coverage --reporter=dot`) is updated with its input empty; under the vitest proposal the one line reads `package.json, "test", runs it as: vitest run --coverage --reporter=dot`
 - PROOF-213 (RULE-71): The first line of the update with `--yes` on the sample 0.9.5 project reads `Applying 9 migrations: design-refs, anchor-lines, os-tags, kind-tags, untracked-files, config, evidence, workflows, plugins.`, the next names the workflow that names a proof file, the next is the line of totals for `design-refs`, and no line of the output holds `pending in` or names a spec under a migration
 - PROOF-214 (RULE-71): The first line of the update with `--apply evidence` on the sample 0.9.5 project reads `Applying 1 migration: evidence.`, and no line of the output holds `pending in`
+- PROOF-216 (RULE-57): A TypeScript test file holds a test marked for `piano` `PROOF-7b`, which the spec holds, then one marked for `PROOF-9c`, which it does not; after the update with `--yes` the second tag stands on line 7, and the output's `left` line names `packages/web/test/mixed.test.ts:7`
