@@ -49,9 +49,9 @@ Left to do:
 The one rule is `evidence RULE-32`, whose only proof is tagged `@env(windows)` and whose
 Windows result went out of date. The Windows run clears it; `purlin:test` here cannot.
 
-The last evidence commit was made by a plain run after this file was committed: it kept the
-five slow results of the `--all` run, marked `kept`. A sign-off needs `purlin:test --all
---commit` again, and the Windows run.
+The last evidence commit was made by a plain run after this file was committed. It ran the
+anchor alone, whose results any commit ends, and left the other 38 features' results as the
+`--all` run at `71ad335` took them. A sign-off needs the Windows run first.
 
 ### Lines a person reads, chosen at integration
 
