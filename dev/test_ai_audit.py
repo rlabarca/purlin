@@ -1105,8 +1105,8 @@ class TestWhenTheModelCannotBeReached:
         assert code == 0, printed
         assert {rule: entry['verdict'] for rule, entry in entries.items()} == {
             'RULE-1': 'spot-checked', 'RULE-2': 'spot-checked'}, entries
-        lines = printed.splitlines()
-        assert [line for line in lines if 'could not be reached' in line
+        assert [line for line in printed.splitlines()
+                if 'could not be reached' in line
                 and not line.startswith(' ')] == [
             self.UNREACHED % ' 2 rules are spot-checked alone.'], printed
 
