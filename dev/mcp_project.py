@@ -80,6 +80,20 @@ ONE_RULE_SPEC = (
 )
 
 
+def spec_with_a_hand_check(rules):
+    """`login` with `rules` rules of one proof each, the last one's proof
+    `@manual` and every other's tested."""
+    numbers = range(1, rules + 1)
+    return ('# Feature: login\n\n> Scope: src/login.py\n\n## Rules\n\n'
+            + ''.join('- RULE-%d: Case %d returns %d\n'
+                      % (number, number, 200 + number) for number in numbers)
+            + '\n## Proof\n\n'
+            + ''.join('- PROOF-%d (RULE-%d): Send case %d; verify %d%s\n'
+                      % (number, number, number, 200 + number,
+                         ' @manual' if number == rules else '')
+                      for number in numbers))
+
+
 class Project(object):
     """A throwaway project root with git, a config and one spec."""
 

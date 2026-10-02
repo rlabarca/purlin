@@ -12,11 +12,13 @@ The status opens on the project and the two facts:
     Sign-off: signed 0.1.0, 4 commits since
 
 It ends on one sentence, counting each rule once under the spec that owns
-it, anchors' included, and how many pass their tests; where a rule that
-passes has an audit entry, it gives the share the audit found strong and
-then each count:
+it, anchors' included, and how many pass their tests; then how many are
+checked at sign-off, the rules checked by hand alone that no sign-off has
+noted on their wording as it is; where a rule that passes has an audit
+entry, it gives the share the audit found strong and then each count:
 
     40 rules. 40 pass their tests. The audit found 34 of 40 rules strong (85%): 34 strong, 4 weak, 2 spot-checked.
+    10 rules. 9 pass their tests. 1 is checked at sign-off.
 
 `Left to do` follows it: one line per kind of work, in the order the work is
 done, each with its count and the command that clears it. A kind at zero is
@@ -95,6 +97,9 @@ AUDIT_WORDS = (('strong', 'strong'), ('weak', 'weak'),
                ('spot_checked', 'spot-checked'),
                ('out_of_date', 'out of date'), ('not_audited', 'not audited'))
 AUDIT_LINE = 'The audit found %d of %d rules strong (%d%%): %s.'
+# The sentence's third part, where a passed cell reads `checked at sign-off`.
+BY_HAND_ONE = '1 is checked at sign-off.'
+BY_HAND_MANY = '%d are checked at sign-off.'
 LAST_LINE = 'Every rule passes its tests on the committed evidence. To sign it: purlin:sign'
 
 # The order systems are named in, whatever order the rules name them.
@@ -114,9 +119,10 @@ def rule_kind(rule, here_os, broken=None):
     first. Otherwise the first that applies: a passed cell reading `failed`
     or `partial`, `no test`, `out of date` or `not run` where this machine
     can run part of it, `not run` for other systems only, no proof line with
-    its tests passing, a weak audit. A hand check adds no kind, and neither
-    does a rule no audit has read. A rule that waits for slow proofs alone
-    answers `to_run_slow`, which `left` counts by proof and not by rule.
+    its tests passing, a weak audit. A hand check adds no kind, a passed
+    cell reading `checked at sign-off` included, and neither does a rule no
+    audit has read. A rule that waits for slow proofs alone answers
+    `to_run_slow`, which `left` counts by proof and not by rule.
     """
     if broken:
         return 'to_repair'
@@ -124,6 +130,10 @@ def rule_kind(rule, here_os, broken=None):
     passed = cells.get('passed') or {}
     word = passed.get('word')
 
+    if word == states.CHECKED_AT_SIGNOFF:
+        # No test runs for the rule, so no work of any kind clears it: a
+        # person checks it at the sign-off.
+        return None
     if word in ('failed', 'partial'):
         return 'to_fix'
     if word == 'no test':
@@ -176,12 +186,18 @@ def _passes(rule):
 
 
 def steps(own_rules):
-    """`{"passed": p}` over the rules given.
+    """`{"passed": p, "by_hand": h}` over the rules given.
 
-    `p` counts the rules whose passed cell reads `passed`, a rule whose
-    every proof is `@manual` included.
+    `p` counts the rules whose passed cell reads `passed`, and `h` those
+    whose passed cell reads `checked at sign-off`: a rule is in one or
+    neither.
     """
-    return {'passed': sum(1 for rule in own_rules or () if _passes(rule))}
+    by_hand = sum(
+        1 for rule in own_rules or ()
+        if ((rule.get('cells') or {}).get('passed') or {}).get('word')
+        == states.CHECKED_AT_SIGNOFF)
+    return {'passed': sum(1 for rule in own_rules or () if _passes(rule)),
+            'by_hand': by_hand}
 
 
 def audit_counts(own_rules):
@@ -229,14 +245,18 @@ def has_audit(counts):
 
 
 def sentence(summary):
-    """`<N> rules. <p> pass their tests.`, then `audit_line` where a rule
-    that passes has an audit entry: one read `strong`, `weak`,
-    `spot-checked` or `out of date`."""
+    """`<N> rules. <p> pass their tests.`, then `BY_HAND_ONE` or
+    `BY_HAND_MANY` where a passed cell reads `checked at sign-off`, then
+    `audit_line` where a rule that passes has an audit entry: one read
+    `strong`, `weak`, `spot-checked` or `out of date`."""
     total = summary.get('rules') or 0
     count = (summary.get('steps') or {}).get('passed') or 0
+    by_hand = (summary.get('steps') or {}).get('by_hand') or 0
     parts = ['%d %s.' % (total, _words('rule', 'rules', total)),
              '%d %s.' % (count, _words('passes its tests',
                                         'pass their tests', count))]
+    if by_hand:
+        parts.append(BY_HAND_ONE if by_hand == 1 else BY_HAND_MANY % by_hand)
     audit = summary.get('audit') or {}
     if has_audit(audit):
         parts.append(audit_line(audit))

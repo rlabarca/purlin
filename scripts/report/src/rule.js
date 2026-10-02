@@ -182,7 +182,9 @@ function proofWord(proof) {
    `checked at sign-off`, and beneath it each note of the newest sign-off
    that holds one, `noted at the sign-off of <version> by <signer>, <since>:
    <note>`, which the payload writes as the reasons of the rule's strong cell
-   while that cell reads `checked at sign-off`. */
+   while that cell reads `checked at sign-off`. Where the rule or the proof
+   was reworded since that note, the payload writes one reason saying so
+   before it, so the line stands above the note. */
 function handCheckLines(rule) {
   var cell = cellOf(rule, 'strong') || {};
   var notes = cell.word === CHECKED_AT_SIGNOFF ? cell.reasons || [] : [];

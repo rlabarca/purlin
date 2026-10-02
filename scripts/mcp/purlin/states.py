@@ -6,15 +6,19 @@ One rule, read top to bottom.
             that is current: its spec, code and tests fingerprint equals the
             one taken now. Only current sections decide the cell.
             `passed`, `partial`, `failed`, `no test`, `not run`,
-            `out of date`. A rule no proof line names is answered by the
+            `out of date`, `checked at sign-off`. A rule no proof line names
+            is answered by the
             tests marked with the rule's own id, and reads `no test` with
             the reason `no proof written` when there are none. A rule some
             of whose proofs no test backs reads `no test`, naming them. The
             cell carries `platforms`, one entry per operating system a
             current section covers, and reads `partial` where two systems
             that each have a current section disagree. `partial` is not met.
-            A `@manual` proof is read out of it, so a rule whose every proof
-            is `@manual` reads `passed` with no test. A `@slow` proof no
+            A `@manual` proof is read out of it. A rule whose every proof is
+            `@manual` has no test to pass: it reads `checked at sign-off`,
+            and `passed` once a sign-off that counts holds a note for it on
+            the rule's and the proof's wording as they are, the note its
+            reason. A `@slow` proof no
             current section answers for reads `not run`, saying which run
             starts its test. An anchor's proof whose
             every tied test skipped with `nothing to check:` counts as
@@ -24,14 +28,14 @@ One rule, read top to bottom.
             `weak`, `spot-checked`, `out of date`, `not audited`, `checked
             at sign-off` for a rule with a hand check, and `no proof` for a
             rule whose passing test answers no proof. `waiting` while the
-            passed cell is not met, because the audit reads a test that
-            passes. The word comes from the rule's audit entry: its
+            passed cell reads neither `passed` nor `checked at sign-off`,
+            because the audit reads a test that passes. The word comes from the rule's audit entry: its
             `verdict` while the entry is current, a weak entry giving its
             findings as the reasons and a spot-checked one saying why no bug
             was caught; `out of date` once the rule, its proof, its test or
             the code it covers changed since, naming each part and the last
             result. A hand check carries the notes of the newest sign-off
-            that holds one.
+            that holds one, and before them what was reworded since.
 
 An anchor's rule is listed once, under the anchor.
 
@@ -46,8 +50,8 @@ reads the way it does.
 
     {'cells': {'passed': {...}, 'strong': {...}},
      'bucket': 'passed',
-     'flags': {'failing': False, 'partial': False, 'manual': False,
-               'not_audited': False, 'out_of_date': False,
+     'flags': {'failing': False, 'partial': False, 'by_hand': False,
+               'manual': False, 'not_audited': False, 'out_of_date': False,
                'no_proof': False, 'strong': True, 'weak': False,
                'spot_checked': False, 'audit_out_of_date': False}}
 
@@ -101,6 +105,14 @@ LAST_AUDIT = 'the last audit found it %s on %s'    # strong, 2026-09-13
 CHECKED_AT_SIGNOFF = 'checked at sign-off'
 HAND_NOTE = 'noted at the sign-off of %s by %s, %s: %s'
 
+# The passed cell's reason for a rule checked by hand alone that no sign-off
+# that counts has noted, and the reasons a cell reading `checked at sign-off`
+# opens with where the rule, or one of its `@manual` proofs, was reworded
+# since its newest note: `rule` first, then `proof`.
+NOT_CHECKED = 'no sign-off has checked it yet'
+HAND_CHANGED = {'rule': "the rule's wording changed since its last note",
+                'proof': "the proof's wording changed since its last note"}
+
 # The reason an anchor's proof gives where its every tied test skipped with
 # `nothing to check:`: the proof, then the reason after those words.
 NOTHING_TO_CHECK = '%s: %s'                                       # PROOF-3, the reason
@@ -142,7 +154,7 @@ NO_PROOF = 'no proof'
 NO_PROOF_REASON = 'the rule has a test and no proof'
 
 # The buckets a rollup counts, one per rule.
-BUCKETS = ('untested', 'failing', 'partial', 'passed')
+BUCKETS = ('untested', 'failing', 'partial', 'by_hand', 'passed')
 
 
 def cells_for():
@@ -176,6 +188,9 @@ def rule_cells(inp):
                     that changed since it was written; or None
     `hand_notes`    the reasons the newest sign-off holding a note on this
                     rule gives it, `HAND_NOTE` filled; [] before any
+    `hand_changed`  what was reworded since that sign-off, `'rule'` then
+                    `'proof'`, as `signatures.hand_notes` names it; [] where
+                    the note is on the wording as it is
     `spec_broken`   why every rule of the rule's own spec reads `failed`, as
                     `specs.broken_reasons` gives it: a number written twice,
                     a line left from a merge conflict; [] for a sound spec
@@ -245,6 +260,7 @@ def _flags(passed, strong, proofs):
     return {
         'failing': passed['word'] == 'failed',
         'partial': passed['word'] == 'partial',
+        'by_hand': passed['word'] == CHECKED_AT_SIGNOFF,
         'out_of_date': passed['word'] == OUT_OF_DATE,
         'manual': any(proof.get('manual') for proof in proofs or ()),
         'not_audited': strong['word'] == NOT_AUDITED,
@@ -296,7 +312,8 @@ def _passed_cell(inp):
 
     A `@manual` proof declares that no test is written for it, so the passed
     cell has no question to ask of it: it is read out here, and a person
-    checks it at the sign-off.
+    checks it at the sign-off. A rule whose every proof is `@manual` is
+    `_by_hand_cell`'s.
 
     `nothing_to_check` lists `{proof, reason}` for each proof whose every
     tied test in a current section skipped with `nothing to check:`.
@@ -319,8 +336,7 @@ def _passed_cell(inp):
     proofs = [proof for proof in written if not proof.get('manual')]
 
     if not proofs:
-        cell.update({'word': 'passed', 'current': True, 'counts': True})
-        return cell
+        return _by_hand_cell(cell, inp)
 
     answering = [entry for entry in inp.get('sections') or ()
                  if _word_of(proofs, entry) is not None]
@@ -407,6 +423,35 @@ def _passed_cell(inp):
         cell['word'] = 'not run'
         cell['reasons'] = ([SLOW_REASON] if _slow_waiting(proofs, ran)
                            else []) + said
+    return cell
+
+
+def _hand_reasons(inp):
+    """The reasons of a hand check: one `HAND_CHANGED` line per part reworded
+    since the newest note, `rule` first, then that sign-off's notes."""
+    changed = inp.get('hand_changed') or ()
+    return ([HAND_CHANGED[part] for part in ('rule', 'proof')
+             if part in changed] + list(inp.get('hand_notes') or ()))
+
+
+def _by_hand_cell(cell, inp):
+    """The passed cell of a rule whose every proof is `@manual`.
+
+    No test runs for it, so it has none to pass. It reads `checked at
+    sign-off`, with the reason `NOT_CHECKED`, until a sign-off that counts
+    holds a note for it. On the rule's and the proof's wording as they are
+    it then reads `passed`, the note its reason; where either was reworded
+    since, it reads `checked at sign-off` again, a `HAND_CHANGED` line
+    before the note. The cell is current and counts either way: nothing a
+    run could write would move it.
+    """
+    notes = list(inp.get('hand_notes') or ())
+    cell.update({'current': True, 'counts': True})
+    if notes and not inp.get('hand_changed'):
+        cell.update({'word': 'passed', 'reasons': notes})
+    else:
+        cell.update({'word': CHECKED_AT_SIGNOFF,
+                     'reasons': _hand_reasons(inp) or [NOT_CHECKED]})
     return cell
 
 
@@ -667,11 +712,21 @@ def _strong_cell(inp, passed):
     differs and last what the audit found and when; the entry's findings
     stay under `findings`. A rule with a `@manual` proof reads `checked at
     sign-off` unless its entry reads `weak` or `spot-checked` or is out of
-    date, with one reason per note of the newest sign-off holding one. A rule with no entry reads `not
+    date, with one `HAND_CHANGED` reason per part reworded since the newest
+    sign-off holding a note, then one reason per note of it. A rule whose
+    every proof is `@manual` has no test for an entry to speak of, and reads
+    `checked at sign-off` throughout. A rule with no entry reads `not
     audited`.
     """
     cell = {'word': NOT_AUDITED, 'findings': [], 'evidence': None,
             'reasons': []}
+
+    proofs = inp.get('proofs') or ()
+    if proofs and all(proof.get('manual') for proof in proofs) \
+            and passed['word'] in ('passed', CHECKED_AT_SIGNOFF):
+        cell['word'] = CHECKED_AT_SIGNOFF
+        cell['reasons'] = _hand_reasons(inp)
+        return cell
 
     if passed['word'] != 'passed':
         # The audit reads a test that passes, so until the tests pass there
@@ -726,7 +781,7 @@ def _strong_cell(inp, passed):
         # What the audit said of the rule's tested proofs comes first: only
         # a current `strong`, or no entry, leaves the cell to the hand check.
         cell['word'] = CHECKED_AT_SIGNOFF
-        cell['reasons'] = list(inp.get('hand_notes') or ())
+        cell['reasons'] = _hand_reasons(inp)
         return cell
 
     if not audit:
@@ -754,6 +809,8 @@ def _bucket(passed):
         return 'failing'
     if passed['word'] == 'partial':
         return 'partial'
+    if passed['word'] == CHECKED_AT_SIGNOFF:
+        return 'by_hand'
     if not cell_is_met('passed', passed):
         return 'untested'
     return 'passed'

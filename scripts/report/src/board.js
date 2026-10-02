@@ -6,7 +6,9 @@
    none yet; then `Passing`, the payload's `summary.steps.passed`, carrying
    the project's total under its label; then, where any rule has an audit
    entry, `Strong`, the payload's `summary.audit.strong`. A count is
-   green once it is complete, `No proof` at zero, and amber until then. Each
+   green once it is complete and amber until then: `No proof` at zero,
+   `Passing` once every rule passes or is checked at sign-off, `Strong` once
+   it equals the `<n>` of the `Audit` box. Each
    box carries the hover its column carries, read over every spec. The
    terminal prints a summary sentence; the boxes carry the same counts, so
    the page prints none. */
@@ -23,12 +25,13 @@ function statStrip() {
       missing.map(function (pair) { return pair[0] + DOT + pair[1]; })));
   }
   var passing = (summary.steps || {}).passed || 0;
-  boxes.push(box(PASSING, passing, passing === total ? 'pass' : 'warn',
+  var byHand = (summary.steps || {}).by_hand || 0;
+  boxes.push(box(PASSING, passing, passing + byHand === total ? 'pass' : 'warn',
                  platformLines(project),
                  total + (total === 1 ? ' rule total' : ' rules total')));
   if (audited()) {
     var strong = (summary.audit || {}).strong || 0;
-    boxes.push(box(STRONG, strong, strong === total ? 'pass' : 'warn',
+    boxes.push(box(STRONG, strong, strong === auditTotal() ? 'pass' : 'warn',
                    auditLines(project), null));
   }
   return '<div class="strip"><div class="tiles">' + boxes.join('')
@@ -105,10 +108,12 @@ function rulesCell(feature) {
   return '<span class="mono">' + (feature.rules || []).length + '</span>';
 }
 
-/* What the marked tests found, as the passed cells read it: how many of the
-   spec's rules passed everywhere they ran, then the two words that say a
-   test did not pass. The hover says which platforms ran and what each
-   found. */
+/* What the marked tests found, as the passed cells read it and as
+   `board.tests_cell` words it: how many of the spec's rules passed
+   everywhere they ran, then how many are checked by hand, which no test
+   runs for, then the two words that say a test did not pass. The share is
+   complete once every rule passes or is checked by hand. The hover says
+   which platforms ran and what each found. */
 function testsCell(feature) {
   var found = {};
   var rules = feature.rules || [];
@@ -116,30 +121,41 @@ function testsCell(feature) {
     var word = cellWord(rule, 'passed');
     found[word] = (found[word] || 0) + 1;
   });
+  var byHand = found['checked at sign-off'] || 0;
   return '<span' + hover(platformLines(feature)) + '>'
-    + counts([share(found.passed || 0, rules.length),
+    + counts([share(found.passed || 0, rules.length, byHand),
+      [byHand, WORDS.by_hand, 'neutral'],
       [found.partial || 0, WORDS.partial, 'warn'],
       [found.failed || 0, WORDS.failing, 'fail']]) + '</span>';
 }
 
 /* `n of m` as the first part of a count cell: the share reads pass when every
-   rule is there, warn while some are, and idle while none is. */
-function share(count, total) {
+   rule is there, warn while some are, and idle while none is. `aside` is
+   how many of the `m` the count never takes in, a rule checked by hand
+   among the rules that pass their tests. */
+function share(count, total, aside) {
   return [count + ' ' + WORDS.of + ' ' + total, '',
-          total && count === total ? 'pass' : count ? 'warn' : 'idle'];
+          total && count + (aside || 0) === total ? 'pass'
+            : count ? 'warn' : 'idle'];
 }
 
 /* How many of the spec's rules the audit found strong, as
-   `board.strong_cell` reads it. The hover says where the newest audit came
-   from and how old it is. */
+   `board.strong_cell` reads it: `<strong> of <n>`, `<n>` the spec's rules
+   that pass their tests and have a tested proof, which are the rules whose
+   strong cell reads one of the audit's five words. Empty where the spec has
+   none. The hover says where the newest audit came from and how old it
+   is. */
 function strongCell(feature) {
-  var rules = feature.rules || [];
-  if (!rules.length) { return ''; }
-  var strong = rules.filter(function (rule) {
+  var words = AUDIT_WORDS.map(function (pair) { return pair[1]; });
+  var read = (feature.rules || []).filter(function (rule) {
+    return words.indexOf(cellWord(rule, 'strong')) !== -1;
+  });
+  if (!read.length) { return ''; }
+  var strong = read.filter(function (rule) {
     return cellWord(rule, 'strong') === 'strong';
   }).length;
   return '<span' + hover(auditLines(feature)) + '>'
-    + counts([share(strong, rules.length)]) + '</span>';
+    + counts([share(strong, read.length)]) + '</span>';
 }
 
 function featureRow(feature, columns) {

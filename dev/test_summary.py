@@ -20,7 +20,8 @@ from purlin import evidence as purlin_evidence  # noqa: E402
 from purlin import status as purlin_status  # noqa: E402
 from purlin import summary  # noqa: E402
 from mcp_project import (NO_PROOF_SPEC, ONE_RULE_SPEC, SPEC,  # noqa: E402
-                         Project, _commit_tests, _entry, _git, _write)
+                         Project, _commit_tests, _entry, _git, _write,
+                         spec_with_a_hand_check)
 from sign_project import _Out, signing_key  # noqa: E402
 # `sign_project` puts `scripts/review` on the path.
 import sign as sign_module  # noqa: E402
@@ -166,6 +167,55 @@ class TestTheSentence:
             '40 rules. 40 pass their tests. The audit found 34 of 40 rules '
             'strong (85%): 34 strong, 4 weak, 2 spot-checked.')
 
+
+def _nine_tested_rules_and_a_hand_check(audited=False):
+    """A project of 10 rules on committed evidence: 9 pass their tests, and
+    the tenth's one proof is `@manual` and no sign-off has noted it. With
+    `audited` the audit found each of the 9 strong."""
+    made = Project(spec=spec_with_a_hand_check(10))
+    tested = ['PROOF-%d' % number for number in range(1, 10)]
+    _commit_tests(made, *tested)
+    made.evidence([_entry(proof_id, proof_id.replace('PROOF', 'RULE'))
+                   for proof_id in tested])
+    if audited:
+        for proof_id in tested:
+            made.audit(proof_id.replace('PROOF', 'RULE'))
+    return made
+
+
+class TestAHandCheckInTheSentence:
+
+    # purlin: summary PROOF-58
+    def test_nine_passing_rules_and_a_hand_check_read_one_is_checked(self):
+        made = _nine_tested_rules_and_a_hand_check()
+        try:
+            sentence = made.payload()['summary']['sentence']
+        finally:
+            made.close()
+        assert sentence == ('10 rules. 9 pass their tests. '
+                            '1 is checked at sign-off.'), sentence
+
+    # purlin: summary PROOF-60
+    def test_nine_strong_rules_and_a_hand_check_read_nine_of_nine_strong(self):
+        made = _nine_tested_rules_and_a_hand_check(audited=True)
+        try:
+            sentence = made.payload()['summary']['sentence']
+        finally:
+            made.close()
+        assert sentence == (
+            '10 rules. 9 pass their tests. 1 is checked at sign-off. '
+            'The audit found 9 of 9 rules strong (100%): 9 strong.'), sentence
+
+    # purlin: summary PROOF-59
+    def test_an_unchecked_hand_check_leaves_the_tests_met(self):
+        made = _nine_tested_rules_and_a_hand_check()
+        try:
+            lines = _status(made)
+        finally:
+            made.close()
+        assert lines[1] == 'Tests: met', lines
+        assert 'Left to do:' not in lines, lines
+        assert lines[-1] == LAST_LINE, lines
 
 # ---------------------------------------------------------------------------
 # Left to do

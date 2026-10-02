@@ -1,4 +1,4 @@
-"""The structured project payload, schema 15.
+"""The structured project payload, schema 16.
 
 One reader assembles specs and evidence into the cells of every rule, and
 every surface renders that: the status table, the dashboard, the evidence
@@ -6,7 +6,7 @@ package and the drift report. A surface that parsed the rendered table would
 be coupled to a layout; this is the shape they all read instead.
 
     {
-      "schema_version": 15,
+      "schema_version": 16,
       "generated_at": "2026-10-01T12:00:00Z",
       "generated_by": "sync_status",
       "project": "labconnect",
@@ -15,11 +15,12 @@ be coupled to a layout; this is the shape they all read instead.
       "commit": "<40 hex>",
       "dirty": false,
       "summary": {"rules": 8, "features": 4, "failing": 0,
-                  "partial": 1, "untested": 2, "passed": 5, "strong": 3,
+                  "partial": 1, "untested": 2, "by_hand": 0, "passed": 5,
+                  "strong": 3,
                   "weak": 1, "spot_checked": 0, "audit_out_of_date": 0,
                   "not_audited": 1, "manual": 0,
                   "incomplete": 0,
-                  "steps": {"passed": 5},
+                  "steps": {"passed": 5, "by_hand": 0},
                   "audit": {"strong": 3, "weak": 1, "spot_checked": 0,
                             "out_of_date": 0, "not_audited": 1},
                   "sentence": "8 rules. 5 pass their tests. The audit found 3 of 5 rules strong (60%): 3 strong, 1 weak, 1 not audited."},
@@ -29,7 +30,8 @@ be coupled to a layout; this is the shape they all read instead.
          "scope": ["src/auth/"], "incomplete": false,
          "incomplete_reason": null, "broken": [],
          "rollup": {"rules": 2, "untested": 0, "failing": 0, "partial": 0,
-                    "passed": 2, "strong": 1, "weak": 1, "spot_checked": 0,
+                    "by_hand": 0, "passed": 2, "strong": 1, "weak": 1,
+                    "spot_checked": 0,
                     "audit_out_of_date": 0, "not_audited": 0,
                     "manual": 0, "proofs": 6, "proofs_without_test": 1,
                     "proofs_without_test_ids": ["PROOF-4"],
@@ -109,9 +111,13 @@ or `> Scope: names nothing that exists`), its rollup carries `incomplete:
 true`, and `summary.incomplete` counts such specs. An anchor is never
 incomplete. Every cell reads as usual.
 
-`summary.steps` counts the rules that pass their tests, `summary.audit` the
-strong cell's word among them under `strong`, `weak`, `spot_checked`,
-`out_of_date` and `not_audited`, and `summary.sentence` says it in one line.
+`summary.steps` counts the rules that pass their tests under `passed` and
+those whose passed cell reads `checked at sign-off` under `by_hand`,
+`summary.audit` the strong cell's word among the rules that pass under
+`strong`, `weak`, `spot_checked`, `out_of_date` and `not_audited`, and
+`summary.sentence` says it in one line. `summary` and each rollup count the
+rules checked by hand alone that no sign-off has noted on their wording as
+it is under the bucket `by_hand`.
 A rule's `audit` is its audit entry, current or not: `verdict` is the
 entry's last result, and `out_of_date` names the parts of `rule`, `proof`,
 `test` and `code` that changed since it was written, `[]` for a current
@@ -167,7 +173,7 @@ from purlin import (PURLIN_VERSION,
                     summary as summary_module,
                     wording as wording_module)
 
-SCHEMA_VERSION = 15
+SCHEMA_VERSION = 16
 REPORT_DATA_PATH = os.path.join('.purlin', 'report-data.js')
 _PREFIX = 'const PURLIN_DATA = '
 
