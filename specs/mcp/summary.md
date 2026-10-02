@@ -4,19 +4,20 @@
 >   then the two facts: whether every rule passes its tests on the committed evidence, and
 >   whether this code is signed. It ends on one sentence and one list. The sentence counts the
 >   rules and how many pass their tests, and gives the share of rules the audit found strong
->   where it read any. `Left to do` names each kind of work left, with its count and the command
+>   where it read any, an anchor's rules left out of the share. `Left to do` names each kind of work left, with its count and the command
 >   that clears it, in the order the work is done. A last line names `purlin:sign` when the tests
 >   are met and this code is not signed. The status table, a test run, an audit and the evidence
 >   package read these words from the payload and write none of their own.
 > Scope: scripts/mcp/purlin/summary.py, scripts/mcp/purlin/facts.py, scripts/mcp/purlin/status.py
 > Stack: python/stdlib
-> Highest-Rule: 25
-> Highest-Proof: 60
+> Highest-Rule: 26
+> Highest-Proof: 62
 
 ## Rules
 
 - RULE-20: The status opens on three lines: `Purlin status: <project>, plugin <version>`; `Tests: met` where no line of `Left to do` is of a blocking kind, else `Tests: not met`; and `Sign-off: ` followed by, for the newest version whose sign-off counts, found by its `signed/*` tag on HEAD or an ancestor of it or by its sign-off files where this checkout holds no such tag, `signed <version> at <sha7>` where every commit since changes only `.purlin/`, else `signed <version>, <n> commits since` (`1 commit since` for one), or `not signed` where there is none
 - RULE-22: The sentence reads `<N> rules. <p> pass their tests.`, `1 rule.` and `1 passes its tests.` for a count of one, then ` <h> are checked at sign-off.`, `1 is checked at sign-off.` for one, where a passed cell reads `checked at sign-off`, counting each rule once under the spec that owns it; where a rule that passes has an audit entry it adds ` The audit found <s> of <n> rules strong (<p>%): <s> strong`, then `, <n> weak`, `, <n> spot-checked`, `, <n> out of date` and `, <n> not audited`, each only where not zero
+- RULE-26: The share `<s> of <n> rules strong (<p>%)` counts no rule of an anchor, since no bug is planted for an anchor's rule and it is never found strong; the counts after the colon count an anchor's rules with every other
 - RULE-23: While work is left, the sentence is followed by `Left to do:` and one line per kind of work any rule is counted under, indented two spaces, reading `<count> <words>: <command>`, singular for a count of one, in this order whatever order the rules come in: `specs to repair`, `purlin:spec`, counting specs that write a number twice or hold a line left from a merge conflict; `rules to write a proof for`, `purlin:spec`; `test comments to correct`, `purlin:build`, counting comments that name something no spec has, a rule that has proofs, or a proof whose wording changed after the test was last changed; `rules to fix`, `purlin:build`; `rules to write a test for`, `purlin:build`; `rules to test`, `purlin:test`; `slow proofs to run`, `purlin:test --all`, counting proofs; `rules to test on <systems>`, `run purlin:test on <systems>`, the same systems named in both places; `features whose results are not committed`, `purlin:test --commit`; and `rules to strengthen`, `purlin:build`. Where nothing is left there is no `Left to do:` line
 - RULE-8: Each rule is counted under at most one kind, the first that applies in this order: a passed cell reading `failed` or `partial` (`to fix`); `no test` (`to write a test for`); `out of date`, or `not run` where this machine's system is among those it waits for or it names none (`to test`), unless slow proofs are all it waits for, which RULE-24 counts; `not run` for other systems only (`to test on`); no proof line, its tests passing (`to write a proof for`); a strong cell reading `weak` (`to strengthen`); a hand check and a rule no audit has read add no kind
 - RULE-19: The kinds `no_proof` and `to_strengthen` are not blocking and every other kind is, so a rule with no proof line, or one the audit found weak, still lets the tests read `met`
@@ -36,6 +37,8 @@
 - PROOF-57 (RULE-22): 40 rules that all pass their tests, 34 found strong, 4 weak and 2 spot-checked, read `40 rules. 40 pass their tests. The audit found 34 of 40 rules strong (85%): 34 strong, 4 weak, 2 spot-checked.`
 - PROOF-58 (RULE-22): 10 rules, 9 that pass their tests and 1 whose one proof is `@manual` and that no sign-off has noted, read `10 rules. 9 pass their tests. 1 is checked at sign-off.`
 - PROOF-60 (RULE-22): 9 rules pass their tests and are found strong, and a tenth has one `@manual` proof; the sentence reads `10 rules. 9 pass their tests. 1 is checked at sign-off. The audit found 9 of 9 rules strong (100%): 9 strong.`
+- PROOF-61 (RULE-26): A feature of 3 rules, 2 found strong and 1 weak, beside an anchor of 8 rules found spot-checked, all 11 passing their tests, reads `11 rules. 11 pass their tests. The audit found 2 of 3 rules strong (66%): 2 strong, 1 weak, 8 spot-checked.`
+- PROOF-62 (RULE-26): On committed evidence, a feature's one rule found strong beside an anchor's one rule found spot-checked, both passing their tests, reads `2 rules. 2 pass their tests. The audit found 1 of 1 rules strong (100%): 1 strong, 1 spot-checked.`
 - PROOF-8 (RULE-23): On macOS, over committed evidence, two rules of each of the six kinds of rule work end on `Left to do:` and six lines in RULE-23's order, each reading `  2 rules <words>: <command>`, the fifth `  2 rules to test on Windows: run purlin:test on Windows`
 - PROOF-40 (RULE-23): A broken spec of three failing rules beside another spec of one failing rule ends on `Left to do:`, `  1 spec to repair: purlin:spec` and `  1 rule to fix: purlin:build`, in that order
 - PROOF-29 (RULE-23): A test comment naming `login PROOF-9`, which no spec has, beside two rules that pass their tests on committed evidence, ends on `Left to do:` and the one line `  1 test comment to correct: purlin:build`

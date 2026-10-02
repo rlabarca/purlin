@@ -114,8 +114,10 @@ incomplete. Every cell reads as usual.
 `summary.steps` counts the rules that pass their tests under `passed` and
 those whose passed cell reads `checked at sign-off` under `by_hand`,
 `summary.audit` the strong cell's word among the rules that pass under
-`strong`, `weak`, `spot_checked`, `out_of_date` and `not_audited`, and
-`summary.sentence` says it in one line. `summary` and each rollup count the
+`strong`, `weak`, `spot_checked`, `out_of_date` and `not_audited`, an
+anchor's rules among them, and `summary.sentence` says it in one line, its
+share of strong rules counting no rule of a feature whose `is_anchor` is
+true. `summary` and each rollup count the
 rules checked by hand alone that no sign-off has noted on their wording as
 it is under the bucket `by_hand`.
 A rule's `audit` is its audit entry, current or not: `verdict` is the
@@ -252,7 +254,8 @@ def build_payload(project_root, generated_by='sync_status', config=None,
     summary.update(proof_counts(own_rules, tied))
     summary['steps'] = summary_module.steps(own_rules)
     summary['audit'] = summary_module.audit_counts(own_rules)
-    summary['sentence'] = summary_module.sentence(summary)
+    summary['sentence'] = summary_module.sentence(
+        summary, summary_module.anchors_audit(feature_entries))
     uncommitted = [entry['name'] for entry in feature_entries
                    if any(found and not found.get('committed')
                           for found in (entry['evidence'] or {}).values())]
