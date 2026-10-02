@@ -1,7 +1,7 @@
 """The two facts: whether the tests are met, and whether this code is signed.
 
 Every surface states both in these words: the status opens on them, the
-dashboard's two boxes read them from the payload, and a test run ends on the
+dashboard's first two boxes read them from the payload, and a test run ends on the
 status. `Tests: met` where no work left is of a blocking kind;
 `Sign-off: signed 0.1.0 at a1b2c3d` where the newest `signed/*` tag on HEAD
 or an ancestor of it whose sign-off counts sits on code nothing has changed

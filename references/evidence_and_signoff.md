@@ -10,7 +10,7 @@ it stops a commit, a push or a merge.
 
 ## The two facts
 
-Every surface shows the same two facts: the status's opening lines, the dashboard's two boxes and
+Every surface shows the same two facts: the status's opening lines, the dashboard's first two boxes and
 the evidence package.
 
 ```
