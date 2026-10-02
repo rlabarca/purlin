@@ -2,14 +2,14 @@
   "feature": "states",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T23:46:14Z",
-      "commit": "afa143e1429bc564a184f39b4220f6557764478a",
+      "at": "2026-10-02T23:49:55Z",
+      "commit": "911f52d647d483fbed726d7d79ccbba34aeddd43",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "7a903f551590dee6b8df6d4a9b47a79ed17802270298b119f8845814a562d02c",
         "spec": "14cc4d5b2bf299f7c5968853a65430692da7b87c95ed3397cbb10b25f73effe1",
-        "tests": "024c2081e456bce806fac6f4b3ad815f05d5c25e82793d1112a821a0523e4876"
+        "tests": "9b8be17dd41b155a65a25f235b3c5866b59783b704f8e5321cd32844f5f01434"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -843,7 +843,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-132",
-          "test": "dev/test_mcp_server.py::TestMarkersFrom095StillInATest::test_a_pending_095_project_prints_its_three_lines_alone"
+          "test": "dev/test_mcp_server.py::TestMarkersFrom095StillInATest::test_a_pending_095_project_prints_its_three_lines_and_writes_nothing"
         },
         {
           "env": null,
