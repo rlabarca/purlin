@@ -171,7 +171,8 @@ used word for word. These are chosen:
 - The deck, with `DECK_ROOT` in the scratch folder: `check_deck.py` prints `contentBottom: 920`
   of `limit: 920` for each of the 14 slides, the `audit` slide included; `check_overlap.py`
   prints no hit.
-- `bash dev/run_tests.sh --fast`: `2 failed, 928 passed, 9 skipped`, then
-  `Suites: 0 passed, 1 failed`. The 2 are the same two. The sweep ran before the commit that
-  changed the two tests' names; the lane's test files were run again after it.
-- `git rebase main`: `main` had not moved.
+- `bash dev/run_tests.sh --fast`, on the branch rebased onto `main` at `f72f2517c`:
+  `2 failed, 928 passed, 9 skipped`, then `Suites: 0 passed, 1 failed`. The 2 are the same two.
+- `main` moved twice while the lane ran. The branch was rebased onto each, with no conflict.
+  After the last rebase the lane's test files were run again, with the same result; the fast
+  sweep was not.
