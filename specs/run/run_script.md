@@ -15,14 +15,15 @@
 >   tool it knows.
 > Scope: scripts/run/purlin_run.py, scripts/mcp/purlin/frameworks.py, references/supported_frameworks.md
 > Stack: python/stdlib (subprocess, re, hashlib), bash, pytest, sqlite3
-> Highest-Rule: 106
-> Highest-Proof: 286
+> Highest-Rule: 107
+> Highest-Proof: 289
 
 ## Rules
 
 - RULE-98: The command line names exactly one of `--test`, `--audit` and `--ci`, at most one of `--all` and `--feature`, only features a spec under `specs/` has, and a `--project-root` that is a directory. Each refusal exits 2 and prints one `purlin:` line naming what is wrong and, where there is one, the command to run instead, and a command line of the wrong shape also prints the usage line; `--help` or `-h` prints the usage line and exits 0
 - RULE-103: Before any test the run stops, writes nothing and exits 1, printing one line naming the cause and its fix, when the project has no `.purlin/config.json`, when that file cannot be read, and when an older Purlin set the project up and it was not upgraded
-- RULE-102: With the `tests` setting empty the run writes nothing and exits 1, printing `No test command is set`; for each test tool Purlin knows that it finds in the project it prints `Suggested for <name>: <run>`, then what that tool needs added where it needs something, then `Suggested tests setting: ` and the entries as one JSON array; where it finds none it says so and that the agent proposes a command for the person to confirm
+- RULE-102: With the `tests` setting empty the run prints `No test command is set`; for each test tool Purlin knows that it finds in the project it prints `Suggested for <name>: <run>`, then what that tool needs added where it needs something, then `Suggested tests setting: ` and the entries as one JSON array; where it finds none it says so and that the agent proposes a command for the person to confirm; and unless the question of RULE-107 is answered yes it writes nothing and exits 1
+- RULE-107: After a suggested `tests` setting the run asks `Write this tests setting to .purlin/config.json? [y/N] `: `y`, `yes` or `--write-tests` writes the suggested entries as the `tests` setting, prints `Wrote the tests setting to .purlin/config.json.` and runs the tests; any other answer, an empty one or the end of input writes nothing
 - RULE-63: The entries suggested are those of every tool found, in the order pytest, vitest, jest, dotnet, go, sql and shell: each the tool's own command with the flag that writes the report Purlin reads, the report's path under `.purlin/runtime/reports/`, its format and the globs its test files live under; on Windows the pytest command starts `py -3 -m pytest` in place of `python3 -m pytest`; the supported-frameworks page shows the same seven entries
 - RULE-88: A project whose `tests/` folder at the root holds, at any depth, a file named `test_*.py` is suggested pytest
 - RULE-83: The jest entry the run suggests names the test files a run hands it before its `--reporters` options, so jest reads each as a test file and none as a reporter
@@ -67,6 +68,9 @@
 - PROOF-126 (RULE-102): In a project whose `tests` setting is empty and that holds a `conftest.py`, `--all --test` prints `No test command is set in .purlin/config.json, so nothing ran.`, then `Suggested for pytest: python3 -m pytest {files} --junitxml={report}`, then `Suggested tests setting: ` and a JSON array holding pytest's entry alone, writes nothing under `.purlin/`, and exits 1
 - PROOF-127 (RULE-102): In a project whose `tests` setting is empty and that holds nothing a known test tool leaves, `--all --test` prints `No test command is set and no test tool Purlin knows was found, so nothing ran. The agent reads the project and proposes a command for you to confirm.`, writes nothing under `.purlin/`, and exits 1
 - PROOF-134 (RULE-102): In a project with an empty `tests` setting whose `package.json` names `jest`, holding neither `yarn.lock` nor `pnpm-lock.yaml`, the run prints `jest needs the package jest-junit to write its report: run npm install --save-dev jest-junit` right after the line `Suggested for jest:`
+- PROOF-287 (RULE-107): In a project whose `tests` setting is empty and that holds a `conftest.py` and one marked passing test, `--all --test` with nothing to answer from prints `Write this tests setting to .purlin/config.json? [y/N] ` last, leaves `.purlin/config.json` byte for byte as it was, and exits 1
+- PROOF-288 (RULE-107): That project run as `--all --test --write-tests` prints no question, prints `Wrote the tests setting to .purlin/config.json.` and then `Markers: 1 tied to a test, 0 not tied.`; `tests` holds pytest's entry alone, and it exits 0
+- PROOF-289 (RULE-107): That project run as `--all --test` and answered `y` on its input writes pytest's entry as the `tests` setting, runs the test and exits 0
 - PROOF-130 (RULE-63): Over the seven entries the run suggests, one per tool, each command carries the flag that writes the report Purlin reads: pytest's `--junitxml={report}`, vitest's `--outputFile.junit={report}`, jest's `--reporters=jest-junit`, dotnet's `--logger trx --results-directory {report}`, go's `go test -json`, sql's `sqlite3 -bail` and shell's `bash {files}`
 - PROOF-221 (RULE-63): In a project with an empty `tests` setting holding only a `conftest.py`, on a machine whose system is Windows, the one entry suggested runs `py -3 -m pytest {files} --junitxml={report}`
 - PROOF-133 (RULE-63): The supported-frameworks page shows the same seven entries as the run suggests them, in that order, word for word

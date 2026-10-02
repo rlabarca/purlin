@@ -45,6 +45,7 @@ if _MCP_DIR not in sys.path:
 
 from purlin import evidence as reader                           # noqa: E402
 from purlin import specs as spec_reader                          # noqa: E402
+from purlin import states as states_module                      # noqa: E402
 
 SCHEMA = reader.SCHEMA
 EVIDENCE_DIR = reader.EVIDENCE_DIR
@@ -103,7 +104,8 @@ def rule_word(proof_ids, proofs, observed, host_os):
     a tied test did not run or a proof another operating system owns waits
     on it; else `passed`. A `@manual` proof declares that no test is written
     for it, so a rule whose proofs are all manual has nothing for a run to
-    observe and reads `passed`, as its passed cell does.
+    observe and reads `checked at sign-off`, as its passed cell does until a
+    sign-off notes it.
     """
     written = list(proof_ids or ())
     if not written:
@@ -111,7 +113,7 @@ def rule_word(proof_ids, proofs, observed, host_os):
     runnable = [pid for pid in written
                 if not (proofs.get(pid) or {}).get('manual')]
     if not runnable:
-        return 'passed'
+        return states_module.CHECKED_AT_SIGNOFF
     foreign = [pid for pid in runnable
                if (proofs.get(pid) or {}).get('env')
                and (proofs.get(pid) or {}).get('env') != host_os]

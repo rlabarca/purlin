@@ -1,20 +1,23 @@
 """Run a project's marked tests, write the evidence, and audit it on request.
 
     purlin_run.py [--feature NAME ... | --all] (--test | --ci) [--commit]
-                  [--arm-timeout SECONDS] [--project-root DIR]
+                  [--write-tests] [--arm-timeout SECONDS] [--project-root DIR]
     purlin_run.py [--feature NAME ... | --all] --audit [--commit]
-                  [--arm-timeout SECONDS] [--project-root DIR]
+                  [--write-tests] [--arm-timeout SECONDS] [--project-root DIR]
     purlin_run.py --help | -h
 
 **Before anything runs.** With no `.purlin/config.json` the run says so,
 names `purlin:init`, writes nothing and exits 1. A settings file that cannot
 be read is named with its cause the same way (`config_problem`). In a
 project Purlin 0.9.5 set up and nobody upgraded (`set_up_by_095`) it names
-`purlin:init --update` the same way. With the `tests` setting empty it
-writes nothing and exits 1: where it detects test tools it knows, it prints
-each tool's command and the whole `tests` setting to add
-(`frameworks.suggest`), and otherwise it says that the agent reads the
-project and proposes a command.
+`purlin:init --update` the same way. With the `tests` setting empty, where
+it detects test tools it knows, it prints each tool's command and the whole
+`tests` setting to add (`frameworks.suggest`), then asks on its input whether
+to write that setting. `y` or `yes`, or `--write-tests` in place of the
+question, writes it and the run goes on. Any other answer, an empty one or
+the end of input writes nothing and exits 1, so a run nobody answers changes
+no setting. Where it detects no tool it says that the agent reads the project
+and proposes a command, writes nothing and exits 1.
 
 **Which features run.** `--feature` names them and `--all` runs every one.
 With neither, `--test` and `--audit` run the features the change touched:
@@ -93,7 +96,8 @@ Exit codes for `--test`: 0 everything asked happened; 1 a tied test failed
 or did not run, evidence is missing, a marker names nothing a spec has, a
 spec writes a number twice or holds a merge-conflict line, there is no
 settings file or it cannot be read, an older Purlin set the project up and
-it was not upgraded, or no test command is set; 2 the command line was
+it was not upgraded, or no test command is set and none was written; 2 the
+command line was
 wrong. A test comment to correct sets no code. `--audit` exits as its tests
 do, whatever the audit found, or 1 where the audit stopped because the
 project changed while the audit ran. `--help` and `-h` print the usage
@@ -132,7 +136,8 @@ for _path in (_MCP_DIR, _REVIEW_DIR, _HERE):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
-from config_engine import config_problem, resolve_config      # noqa: E402
+from config_engine import (config_problem, resolve_config,     # noqa: E402
+                           update_config)
 from purlin import (console as console_module,                # noqa: E402
                     evidence as evidence_reader,
                     fingerprint as fingerprint_module,
@@ -149,9 +154,9 @@ LOG_PATH = os.path.join('.purlin', 'runtime', 'run.log')
 
 USAGE = (
     'Usage: purlin_run.py [--feature NAME ... | --all] (--test | --ci) '
-    '[--commit] [--arm-timeout SECONDS] [--project-root DIR]\n'
+    '[--commit] [--write-tests] [--arm-timeout SECONDS] [--project-root DIR]\n'
     '       purlin_run.py [--feature NAME ... | --all] --audit [--commit] '
-    '[--arm-timeout SECONDS] [--project-root DIR]')
+    '[--write-tests] [--arm-timeout SECONDS] [--project-root DIR]')
 
 # What the run says about the proofs tagged for an operating system it is
 # not on, one line per system, each in the words a person reads. A proof
@@ -186,6 +191,9 @@ NO_TEST_COMMAND = ('No test command is set in .purlin/config.json, so nothing '
                    'ran.')
 SUGGESTED_FOR = 'Suggested for %s: %s'
 SUGGESTED_SETTING = 'Suggested tests setting: %s'
+# Asked after a suggested `tests` setting, as '%s [y/N] ', and what a yes prints.
+WRITE_QUESTION = 'Write this tests setting to .purlin/config.json?'
+WROTE_TESTS = 'Wrote the tests setting to .purlin/config.json.'
 NO_TEST_TOOL = ('No test command is set and no test tool Purlin knows was '
                 'found, so nothing ran. The agent reads the project and '
                 'proposes a command for you to confirm.')
@@ -249,6 +257,7 @@ class Args(object):
         self.all = False
         self.action = None          # 'test', 'audit' or 'ci'
         self.commit = False
+        self.write_tests = False
         self.arm_timeout = ARM_TIMEOUT_DEFAULT
         self.project_root = '.'
         self.help = False
@@ -276,6 +285,8 @@ def parse_args(argv):
             actions.append(token[2:])
         elif token == '--commit':
             args.commit = True
+        elif token == '--write-tests':
+            args.write_tests = True
         elif token == '--arm-timeout':
             index += 1
             value = argv[index] if index < len(argv) else ''
@@ -1161,7 +1172,18 @@ def main(argv=None):
     if not suites:
         for line in no_test_command_lines(project_root):
             print(line)
-        return 1
+        entries = frameworks_module.suggest(project_root)
+        if not entries or not (args.write_tests or asked_yes(WRITE_QUESTION)):
+            return 1
+        update_config(project_root, 'tests', entries)
+        print(WROTE_TESTS)
+        config = resolve_config(project_root)
+        suites, suite_problems = markers_module.read_suites(project_root,
+                                                            config)
+        for problem in suite_problems:
+            print(SUITE_PROBLEM % problem)
+        if not suites:
+            return 1
 
     os_name = host_os()
     if args.all or (not args.features and args.action == 'ci'):
@@ -1416,6 +1438,21 @@ def set_up_by_095(project_root):
     except (IOError, OSError, ValueError):
         return False
     return isinstance(config, dict) and 'tests' not in config
+
+
+def asked_yes(question):
+    """Ask `question` on the output and read one line of the input.
+
+    True for `y` or `yes`, in any case. Any other answer, an empty one or
+    the end of input is no: a run nobody answers does nothing.
+    """
+    sys.stdout.write('%s [y/N] ' % question)
+    sys.stdout.flush()
+    try:
+        answer = sys.stdin.readline()
+    except (OSError, ValueError):
+        return False
+    return answer.strip().lower() in ('y', 'yes')
 
 
 def no_test_command_lines(project_root):

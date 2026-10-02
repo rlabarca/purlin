@@ -1,4 +1,4 @@
-> Format-Version: 11
+> Format-Version: 12
 
 # Evidence format
 
@@ -125,13 +125,14 @@ first that holds gives the word:
 
 | Word | When it holds |
 |---|---|
+| `checked at sign-off` | every proof of the rule is `@manual`: no test is written for it, so no run observes it and a person checks it in the sign-off walk |
 | `failed` | a tied test of a proof that could run here failed; or a test marked with the rule's id failed |
 | `no test` | a proof of the rule that is not `@manual` has no test tied to it, whether it is tagged `@env` or not; or no proof names the rule and no test is marked with its id |
 | `not run` | a tied test did not run; or a proof of the rule is tagged `@env` for another operating system, so this machine could not answer; or the run left out the test of a proof tagged `@slow` |
 | `passed` | none of the rows above holds: every test tied to every proof of the rule that could run here ran and passed. For a rule with no proof, every test marked with the rule's own id passed |
 
-A rule whose proofs are all `@manual` reads `passed`, since no run was ever
-going to observe one. A proof that reads `nothing to check` counts as passed
+Where a `@manual` proof stands beside a proof that is not `@manual`, the
+rule reads from the rows below the first. A proof that reads `nothing to check` counts as passed
 in an anchor's section and as not run in any other.
 
 Each `proofs` entry:
