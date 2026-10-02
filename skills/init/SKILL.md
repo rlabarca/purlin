@@ -78,29 +78,60 @@ Each names what is wrong and what fixes it, and writes nothing more:
 
 ## Bringing a 0.9.5 project forward
 
-```bash
-sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" --update --project-root .
-```
+`--update` reads the layout Purlin 0.9.5 leaves in a project. It asks before each migration, and
+you put each of its questions to the person. Three steps:
 
-`--update` reads the layout Purlin 0.9.5 leaves in a project and lists each pending migration
-with the files it touches. It asks before each one, with a question ending `[y/N]`, and a
-declined one is left pending. Between them the migrations:
+1. **List.** Run it with its input empty, so every question takes its default, no, and nothing
+   changes:
+
+   ```bash
+   sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" --update --project-root . < /dev/null
+   ```
+
+   It prints each pending migration with its id, what it does and the files it touches, and
+   under `config` the command it proposes for each test tool with the project's own command it
+   was read from.
+
+2. **Stop and ask** the person about each migration listed and each proposed test command:
+   whether to apply the migration, by what it does, and whether the command is the one the
+   project uses. Take a corrected command word for word.
+
+3. **Apply.** Pass each answer as a flag, so the script asks nothing:
+
+   ```bash
+   sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" --update --project-root . --apply <id>,<id> --test-command "pytest=<command>"
+   ```
+
+| Flag | What it does |
+|------|--------------|
+| `--apply <id>[,<id>...]` | Applies exactly the migrations the person said yes to, and leaves the others pending |
+| `--test-command <tool>=<command>` | Writes the command the person gave for that test tool, in place of the one proposed; once per tool |
+| `--yes` | Applies every pending migration and uses each proposed command, when the person said yes to all of it |
+
+A migration can leave work for a later one. Where the run ends on `→ Run: purlin:init --update`,
+do the three steps again.
+
+Between them the migrations:
 
 - rewrite or remove each line 0.9.5 wrote into a spec that this version does not read;
 - remove the files 0.9.5 kept that this version does not use, and its two git hooks;
-- ask about each workflow that names a proof file, with `Remove <path>? [y/N]`, and remove the
-  ones answered yes. `--yes` removes none: each is kept and named, to remove by hand;
+- name each workflow that names a proof file. `--yes` and `--apply` remove none: each is kept and
+  named, and the person removes it by hand;
 - rewrite `.purlin/config.json` to `version` and `tests`, writing `tests` from the frameworks
-  the old settings named and naming every key they drop;
+  the old settings named, with the command the project runs each test tool by, and naming every
+  key they drop;
 - write `.purlin/evidence/` with its README;
 - replace the dashboard page at the project root;
+- give each proof numbered with a letter, such as `PROOF-7b`, the next free number in its spec;
 - rewrite each 0.9.5 marker as one comment above the same test;
-- remove the wiring 0.9.5 put in the project's test configuration.
+- remove what loaded 0.9.5's test plugins from the project's test configuration.
 
-Every file it rewrites is backed up beside the original as `<name>.local-<sha8>.bak`. It
-commits what it applied in one commit, `chore(update): migrate to <version> (<migrations>)`.
-While a migration is pending the status prints `→ Run: purlin:init --update` above its
-summary, and a test run stops and names it.
+Every file it rewrites is first copied to `.purlin/runtime/update-backup/`, which git ignores.
+It commits what it applied in one commit, `chore(update): migrate to <version> (<migrations>)`.
+It prints one line of totals for each migration, then `Purlin left these for you:` with the
+files that still hold text 0.9.5 used, and last `These need you:` with the lines the person has
+to act on. Read those two parts to the person as they are. While a migration is pending the
+status prints `→ Run: purlin:init --update`, and a test run stops and names it.
 
 ## When you are done
 
