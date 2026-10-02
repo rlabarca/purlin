@@ -954,3 +954,45 @@ def test_an_indented_go_directive_changed_is_planted(tmp_path, own_claude):
     assert bug_of(after)['after'] == '\t//go:norace'
     assert bug_of(after)['result'] == 'survived', bug_of(after)
 
+
+# The test of `PROOF-1` as it writes a file in the project each time it runs in
+# a copy the audit made, which is where a planted bug is.
+WRITES_IN_THE_PROJECT = (
+    'import os\n'
+    'if "purlin-break-" in os.path.abspath(__file__):\n'
+    '    with open(%r, "a") as handle:\n'
+    '        handle.write("the test ran\\n")\n'
+    + WEAK)
+
+
+# purlin: planted_bug PROOF-61
+def test_a_project_that_changes_as_a_bug_is_planted_again_stops_the_settle(
+        tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': WEAK})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': BREAK}])
+    code, _lines, _before, kept = audit(root)
+    assert code == 0
+    assert bug_of(kept)['result'] == 'survived', bug_of(kept)
+    path = os.path.join(root, 'tests', 'test_age.py')
+    with open(path, encoding='utf-8') as handle:
+        text = handle.read()
+    body = '\n'.join('    ' + line for line in (
+        WRITES_IN_THE_PROJECT % os.path.join(root, 'notes.txt')).split('\n'))
+    assert text.count('    ' + WEAK) == 1
+    write(root, 'tests/test_age.py', text.replace('    ' + WEAK, body))
+    subprocess.run([sys.executable, RUN_SCRIPT, '--project-root', root, '--all', '--test'],
+                   capture_output=True, text=True, cwd=root)
+    assert not os.path.exists(os.path.join(root, 'notes.txt'))
+    with open(os.path.join(root, *EVIDENCE.split('/')), 'rb') as handle:
+        before = handle.read()
+    out = io.StringIO()
+    code = audit_run.run(root, None, ['age'], out=out, settle=['RULE-1'])
+    lines = out.getvalue().splitlines()
+    assert lines[-1] == ('The audit stopped: notes.txt changed while the audit ran. Nothing '
+                         'in the project was written by the audit.'), lines
+    assert code == 1
+    with open(os.path.join(root, *EVIDENCE.split('/')), 'rb') as handle:
+        assert handle.read() == before
+    # The one call is the first audit's: the settle stopped before it asked the model.
+    assert len(fake_claude.calls(own_claude)) == 1
+

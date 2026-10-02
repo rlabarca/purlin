@@ -14,7 +14,7 @@
 > Scope: scripts/review/targeted_break.py
 > Stack: python/stdlib (subprocess, tempfile, hashlib, shutil)
 > Highest-Rule: 30
-> Highest-Proof: 60
+> Highest-Proof: 61
 
 ## Rules
 
@@ -106,3 +106,4 @@
 - PROOF-58 (RULE-30): The feature covers `src/age.ts`, and the model's change adds the one line `// @ts-ignore` above `return 90;` in it; the bug is planted, and its entry reads `survived`
 - PROOF-59 (RULE-30): The feature covers `src/age.ts`, where the line `// @ts-ignore` stands two spaces in, above `return 90;`, and the model's change turns that line into `// @ts-expect-error`; the bug is planted, and its entry reads `survived`
 - PROOF-60 (RULE-30): The feature covers `src/age.go`, where the line `//go:noinline` stands one tab in, and the model's change turns it into `//go:norace`; the bug is planted, and its entry reads `survived`
+- PROOF-61 (RULE-6): The bug kept for `PROOF-1` reads `survived`, and its test, each time it runs in a copy of the project, writes `notes.txt` in the project; `RULE-1` is settled; the audit prints `The audit stopped: notes.txt changed while the audit ran. Nothing in the project was written by the audit.`, exits `1`, and the settle starts `claude` `0` times

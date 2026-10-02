@@ -338,6 +338,7 @@ MORE_SURVIVE = dict(REPLY, **{
         'src/intake.py', "'%s-%d-%05d'", "'%s-%d-%04d'", case=CASE_11,
         aim='past the test'),
 })
+SPEC_SCOPE = '> Scope: src/intake.py\n'
 
 
 def _write(root, path, text):
@@ -484,6 +485,13 @@ def change_both_tests_of_rule_4(root):
     _replace(root, 'tests/test_intake.py',
              "    assert record['status'] == 'expired'",
              "    assert record['status']")
+
+
+def scope_without_the_code(root):
+    """Change the spec's `> Scope:` to name `src/__init__.py` alone, so the
+    feature no longer covers `src/intake.py`."""
+    _replace(root, 'specs/intake/sample_intake.md', SPEC_SCOPE,
+             '> Scope: src/__init__.py\n')
 
 
 def evidence_text(root):

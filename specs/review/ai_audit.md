@@ -14,8 +14,8 @@
 >   that still passes drops the bug and has one new bug planted in its place.
 > Scope: scripts/review/audit_run.py, scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
-> Highest-Rule: 65
-> Highest-Proof: 162
+> Highest-Rule: 67
+> Highest-Proof: 166
 
 ## Rules
 
@@ -57,6 +57,8 @@
 - RULE-63: A rule named with `--settle` whose tests do not pass is not settled: its entry is left as it is, and the run exits 1 and names the rule as failing
 - RULE-64: Only `--settle` plants a recorded bug again: any other audit asks the model for a new bug for a proof whose test changed
 - RULE-65: Settling a rule keeps no result other than `survived` that was taken on another test or code: the proof is left out of the rule's entry, the rule's verdict comes from the results the entry holds, and the next audit without `--settle` plants a bug for that proof
+- RULE-66: Settling a rule runs the spot tests again over the rule's tests, and a finding of theirs makes the rule `weak` as in any audit
+- RULE-67: A settled rule that needs no new bug is written with no model asked: its entry holds no `explanation` and keeps the `model` and the `criteria` of the entry it replaces
 
 ## Proof
 
@@ -151,3 +153,7 @@
 - PROOF-159 (RULE-35): `login` is an anchor whose two rules pass their tests and no spot test fires; the audit's last line reads `The audit found 2 spot-checked.`
 - PROOF-161 (RULE-65): The bug of `PROOF-6` reads `caught` and the bug of `PROOF-7` reads `survived`; the test of `PROOF-7` is changed to hand in a sample exactly 72 hours old, the test of `PROOF-6` to check only that a status is stored, and `RULE-4` is settled; `RULE-4` reads `strong`, and its entry holds a result for `PROOF-7` alone
 - PROOF-162 (RULE-65): `RULE-4` was settled after the test of `PROOF-6`, whose bug read `caught`, was changed to check only that a status is stored; `sample_intake` is then audited without `--settle`; `claude` is asked a bug for `PROOF-6` alone, its bug `MAX_AGE_HOURS = 73` reads `survived`, and `RULE-4` reads `weak`
+- PROOF-163 (RULE-66): The test of `PROOF-11` checks nothing and its bug reads `survived`; `RULE-7` is settled with the test as it was and a model that names no new bug; `RULE-7` reads `weak`, and its one finding is `tests/test_intake.py::test_accession_numbers_count_up: the test checks nothing.`
+- PROOF-164 (RULE-59): The test of `PROOF-2` is changed so that its setup raises an error where the status is not `401`, and `RULE-2` is settled; the entry of `PROOF-2` reads `not run`, and `no_bug` is exactly `A bug was planted for PROOF-2 and its test ended in an error, not a failure.`
+- PROOF-165 (RULE-67): The entry of `RULE-3` holds the explanation `PROOF-5: the test takes its expected age from the code.` and the model `claude-fake-1`; the test of `PROOF-5` is changed to expect `25` and `RULE-3` is settled; `claude` is started `0` times, the entry's `explanation` is empty, and its `model` still reads `claude-fake-1`
+- PROOF-166 (RULE-60): The spec's `> Scope:` is changed to name `src/__init__.py` alone, so the feature no longer covers `src/intake.py`, the file the bug kept for `PROOF-5` changes, and `RULE-3` is settled; `claude` is asked a bug for `PROOF-5`, and no line the audit prints holds `did not break what the proof says`
