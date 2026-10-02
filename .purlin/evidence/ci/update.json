@@ -2,14 +2,14 @@
   "feature": "update",
   "platforms": {
     "windows": {
-      "at": "2026-10-02T16:50:49Z",
-      "commit": "f30a6e0c2d14b7b5864dcc776bf68c13c034c1bf",
+      "at": "2026-10-02T19:54:11Z",
+      "commit": "a092cec9319d19bd90800982284fd92b803d678e",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "d9bb275fa1b50e1f75a5cbd630b4342be79653c326b793f78c9954aa37fccf25",
-        "spec": "bb40529272f322da9d73dc1d4712263f45934f33d2de1fc11196f9f3f77d2575",
-        "tests": "9427872f1b4b86bedb95cce2a90984e1edc81e1b83ff57f02c7a446335de5391"
+        "code": "0642057b16fe84a38e7c135b264716f7f3b76cc93d29e26ae3288c606f9760ca",
+        "spec": "0adc60e1ed660bffedca248a582dad4823a243fd57278bb2ea7717ee2e8ceaf6",
+        "tests": "36a6e96e7cc55b7a5dc27e725baceefaa123e8648923e81c954c524943b61ef7"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
@@ -35,7 +35,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-35",
-          "test": "dev/test_init_update.py::test_on_windows_the_conftest_keeps_import_os_and_its_ending"
+          "test": "dev/test_init_update.py::test_on_windows_the_conftest_keeps_its_own_line_and_its_ending"
         }
       ],
       "rules": {
