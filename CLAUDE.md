@@ -88,17 +88,18 @@ The version string lives in one file: `VERSION` at the root. Never hand-edit any
 4. The owner pushes the tag: `git push origin signed/<version>`.
 
 Derived locations, with the script's header comment as the authoritative list:
-`.claude-plugin/plugin.json` (what the plugin loader reports) and `.purlin/config.json` (this
-repository's own project stamp).
+`.claude-plugin/plugin.json` (what the plugin loader reports), `.purlin/config.json` (this
+repository's own project stamp) and `docs/running-and-evidence.md` (the tag `signed/<version>` its
+example clones Purlin at).
 Add a row there and `--check` guards it in the same edit. `scripts/mcp/purlin/__init__.py` reads
 `VERSION` at runtime through `_read_version()`, so it carries no literal (`purlin_version` RULE-2),
-and docs name the `VERSION` file rather than restating a number.
+and every other doc names the `VERSION` file rather than restating a number.
 
 `.github/workflows/version-check.yml` runs `bash dev/bump_version.sh --check` on every push or
 pull request touching a version-bearing file, then the `purlin_version` proofs. The job log prints
 `VERSION` beside each derived location marked `ok`, `DRIFT`, `FAIL` or `absent`. Run the same
-command locally before committing a bump. `specs/instructions/purlin_version.md` covers all three
-locations plus the script itself.
+command locally before committing a bump. `specs/instructions/purlin_version.md` covers every
+location plus the script itself.
 
 ## Tool folder separation
 

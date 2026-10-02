@@ -4,8 +4,8 @@
 >   says what to do with a finding and cites the research behind the audit, each paper by a link
 >   the page lists again under its sources.
 > Scope: docs/*.md
-> Highest-Rule: 17
-> Highest-Proof: 25
+> Highest-Rule: 18
+> Highest-Proof: 26
 
 ## Rules
 
@@ -13,6 +13,7 @@
 - RULE-15: `docs/audit.md` cites the papers behind the audit, each by a link, and lists every source it cites under its heading `Sources`
 - RULE-16: `docs/working-together.md` holds one paragraph on working in more than one checkout: each checkout has its own results and dashboard, and merging the work and running `purlin:status` in the main checkout brings the main one up to date
 - RULE-17: `docs/audit.md` says what to do with a finding under its heading `What to do with a finding`, which stands straight after `How it works`: run `purlin:build`, and the rule ends `strong` or `spot-checked`
+- RULE-18: The example on `docs/running-and-evidence.md` that fetches Purlin for a run on another system clones it at the tag a sign-off of this version writes, `signed/<version>`, the version being the `VERSION` file's
 
 ## Proof
 
@@ -21,3 +22,4 @@
 - PROOF-22 (RULE-15): Every link the text of `docs/audit.md` gives before its heading `Sources` appears again in the list under `Sources`
 - PROOF-24 (RULE-16): Exactly 1 paragraph of `docs/working-together.md` names a worktree; it says each checkout has its own results and its own dashboard, and names merging and `purlin:status`
 - PROOF-25 (RULE-17): In `docs/audit.md` the heading `What to do with a finding` is the next heading after `How it works`; the part under it holds exactly 6 bullets and names `purlin:build`, `strong` and `spot-checked`
+- PROOF-26 (RULE-18): `docs/running-and-evidence.md` holds exactly 1 `git clone` of the purlin repository that names a branch, and the branch it names is `signed/` followed by the content of the `VERSION` file

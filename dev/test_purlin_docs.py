@@ -215,3 +215,14 @@ def test_one_paragraph_of_working_together_names_a_worktree():
     assert 'its own dashboard' in paragraph
     assert 'merge' in paragraph
     assert '`purlin:status`' in paragraph
+
+
+# --- The example that fetches Purlin ----------------------------------------
+
+# purlin: purlin_docs PROOF-26
+def test_the_example_clones_purlin_at_the_signed_tag_of_this_version():
+    with open(os.path.join(ROOT, 'VERSION'), encoding='utf-8') as handle:
+        version = handle.read().strip()
+    text = read(os.path.join(DOCS, 'running-and-evidence.md'))
+    tags = re.findall(r'git clone [^\n]*--branch (\S+) [^\n]*/purlin\b', text)
+    assert tags == ['signed/' + version], tags

@@ -558,7 +558,7 @@ jobs:
           python-version: '3.11'
       - name: Get Purlin
         shell: bash
-        run: git clone --depth 1 --branch v0.10.0 https://github.com/rlabarca/purlin "$RUNNER_TEMP/purlin"
+        run: git clone --depth 1 --branch signed/0.10.0 https://github.com/rlabarca/purlin "$RUNNER_TEMP/purlin"
       - name: Install what the tests need
         shell: bash
         run: python3 -m pip install pytest
