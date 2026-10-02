@@ -1,9 +1,1055 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-1": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-1": {
+            "after": "    r\"\"\"^\\s*(?:\\#|//|--|;|'|/\\*|<!--)\\s*purlin:\\s+(?P<rest>.*?)\\s*\"\"\"",
+            "aim": "plain",
+            "before": "    r\"\"\"^\\s*(?:\\#|//|--|;|%|'|/\\*|<!--)\\s*purlin:\\s+(?P<rest>.*?)\\s*\"\"\"",
+            "break_key": "d57a7db1ead25ee51cdca1ca38f7b0519989b8814e735d526ed24f44bb395ef4",
+            "case": "a file of eight `login` markers, one per comment syntax; the proof says all eight read as markers on lines 1 to 8; the changed code reads seven, missing the `%` marker on line 5",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 79,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-124": {
+            "after": "_BODY_RE = re.compile(r'^(?P<feature>%s)\\s+(?P<id>(?:PROOF|RULE)-\\d+)$'\n                      % r'\\w+')",
+            "aim": "plain",
+            "before": "_BODY_RE = re.compile(r'^(?P<feature>%s)\\s+(?P<id>(?:PROOF|RULE)-\\d+)$'\n                      % specs_module.NAME)",
+            "break_key": "eff17bc410fd6aa6a2362e25b54b95889e8ce31ef5f137271f0c79a1c9398f8a",
+            "case": "`# purlin: sample-age PROOF-1` above the passing `test_age`; the proof says `Markers: 1 tied to a test, 0 not tied.` and `PROOF-1` as `pass`; the changed code reads no marker, so 0 are tied and `PROOF-1` has no pass",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 83,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-27": {
+            "after": "    r\"\"\"^.*?(?:\\#|//|--|;|%|'|/\\*|<!--)\\s*purlin:\\s+(?P<rest>.*?)\\s*\"\"\"",
+            "aim": "plain",
+            "before": "    r\"\"\"^\\s*(?:\\#|//|--|;|%|'|/\\*|<!--)\\s*purlin:\\s+(?P<rest>.*?)\\s*\"\"\"",
+            "break_key": "498ee649cdaa0cec9f3beacabc35d7f9715f89a98b448277a2abd595fe4d8156",
+            "case": "the line `x = 1  # purlin: login PROOF-1` in a plain text file; the proof says it is not read as a marker; the changed code reads it as a marker of login PROOF-1 on line 1",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 79,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-1: the test builds the eight lines the proof names and compares the full list of feature, id and line for all eight against literals, so a marker that is missed, misnumbered or misnamed fails it.",
+          "PROOF-27: the test passes the proof's exact line with a `.txt` ending and compares the result with an empty list, so any marker read from that line fails it.",
+          "PROOF-124: the test runs the project through a real run with the spec under `specs/intake`, looks for the exact `Markers: 1 tied to a test, 0 not tied.` line in the output and compares the evidence with `PROOF-1` as `pass`, which are the two results the proof names.",
+          "The spot tests found nothing, and each test compares the value its proof names against a literal the code does not supply."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "06db11d1918110575e304132bc7c95067e953957c7e8a72ae517f4e3e1f783c8",
+        "rule_hash": "eaa54af11f5d6d360b0e944e705a87c90b6eef506c947728eb464308caa8acb7",
+        "test_hash": "d1ce19c976700a2f8c70104b48a30af45ff3e9026f3cec1f40f27c354a0a3982",
+        "verdict": "strong"
+      },
+      "RULE-10": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-10": {
+            "after": "            modules.setdefault(path[:-3].replace('/', '_'), []).append(path)",
+            "aim": "plain",
+            "before": "            modules.setdefault(path[:-3].replace('/', '.'), []).append(path)",
+            "break_key": "3ff55e94dfdf97dd5141cc71fc2550f0bfcfee7f67c07786c8bd026626290108",
+            "case": "a passing Python case whose class reads tests.test_login.TestGroup; the proof says pass goes to test_same in tests/test_login.py; the changed code finds no file for the class and gives that test no result",
+            "file": "scripts/run/reports.py",
+            "line": 372,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-62": {
+            "after": "    if case.file and case.file.endswith('.py'):\n        path = _normalise_file(project_root, case.file)",
+            "aim": "plain",
+            "before": "    if case.file:\n        path = _normalise_file(project_root, case.file)",
+            "break_key": "ae39bc0f09c253c9881f5777c3e192a64e9d97b2aae711271c1932c09de2b456",
+            "case": "a Jest case `accepts` whose file reads tests/login.test.js and whose class names no file; the proof says pass for login PROOF-1; the changed code ignores the file attribute of a non-Python file and gives the marker no result",
+            "file": "scripts/run/reports.py",
+            "line": 477,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-63": {
+            "after": "        if len(candidates) > 2:",
+            "aim": "plain",
+            "before": "        if len(candidates) > 1:",
+            "break_key": "13a1b1605216768a6521987c1ba24f122c3fc0e95ea1a337b529416b53cc52ac",
+            "case": "two TRX cases of class GreetingTests in the namespaces App.Tests and Other.Tests; the proof says pass and fail to the two files with no problem; the changed code does not narrow by namespace, so each case matches 2 tests, neither file gets a result and a problem is reported",
+            "file": "scripts/run/reports.py",
+            "line": 465,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-10: the test checks the case's class reads `tests.test_login.TestGroup` and compares the whole outcome map with one `pass` at line 3 of `tests/test_login.py`, so a wrong file, a wrong test or a wrong outcome fails it.",
+          "PROOF-10: the test names the test by line 3 and not by `test_same` or `TestGroup`, so that the line is that method rests on the fixture, which is not shown.",
+          "PROOF-62: the test checks each case's file reads `tests/login.test.js` in the running system's spelling, that this is the one marked file, and that `login PROOF-1` reads `pass`, which is the result the proof names.",
+          "PROOF-62: the test never looks at the case's class, so that the class names no file rests on the captured report, which is not shown.",
+          "PROOF-63: the test checks that no problem is reported and that `App.Tests/GreetingTests.cs` line 7 reads `pass` and `App.Tests/OtherGreetingTests.cs` line 8 reads `fail`, which are the proof's two results.",
+          "PROOF-63: the namespaces and the shared class name come from a fixture that is not shown, and the test reads only two keys of the outcome map, so a result tied to a third test would pass unseen.",
+          "The spot tests found nothing, and each test holds an assertion on the values its proof names."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-10, PROOF-62 and PROOF-63 leave two parts of the rule unproved here: a class name that is a path, and a `gotest` case found by its package against `go.mod`."
+        ],
+        "proof_hash": "65ecce2b5bae2bae64c30b72e29602669a3e4868da27a18386ab8bcfc44b100c",
+        "rule_hash": "8b95330ae35ed72daa7ff7b07f73e9c37f678f6e0118738a5b4a25017186f124",
+        "test_hash": "3a6b60cb7fbb8339880de0aecfca99af3cea82f1c9ee48ca401d830ef6c3431a",
+        "verdict": "strong"
+      },
+      "RULE-11": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-68": {
+            "after": "    return re.sub(r'(?:\\[\\w*\\]|\\(.*\\))$', '', name).strip()",
+            "aim": "plain",
+            "before": "    return re.sub(r'(?:\\[.*\\]|\\(.*\\))$', '', name).strip()",
+            "break_key": "a65c2fe553a71ed0aac1ef974fa9689e03e581220db1c3b10e79bdc686889832",
+            "case": "a marked Python test run over the values 1 and -2, where -2 fails; the proof says fail; the changed code no longer ties the case `test_x[-2]` to its test, so only the passing case counts and it reads pass",
+            "file": "scripts/run/reports.py",
+            "line": 409,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-70": {
+            "after": "        if action not in (PASS, SKIP):",
+            "aim": "plain",
+            "before": "        if action not in (PASS, FAIL, SKIP):",
+            "break_key": "660157aac81f3a4e83b4718a99398172f99213c25ae39045b90fa99f3dac91cd",
+            "case": "a marked Go test whose subtest TestParse/empty failed beside a passing TestParse/one; the proof says fail; the changed code drops every fail event of the Go report, so only the passing subtest counts and it reads pass",
+            "file": "scripts/run/reports.py",
+            "line": 243,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-68: the test runs a parametrised Python test with the second value set to -2, ties the report's cases, and compares the whole result of the markers with `fail` for the one proof, so a wrong result or an extra marker fails it.",
+          "PROOF-68: the value 1 and how the helper builds the run are not shown in the test's source, so that the passing case sits beside the failing one rests on the helper `_pytest_run`.",
+          "PROOF-70: the test ties a Go report built by the helper `_go` and compares the result of one marker with `fail`, which is the value the proof names.",
+          "PROOF-70: the subtest names `TestParse/empty` and `TestParse/one` do not appear in the test's source, so whether the failure comes from the subtest alone or also from an event of the parent test rests on the helper's report.",
+          "The spot tests found nothing, and both tests hold an assertion on a literal that can fail."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-68 and PROOF-70 both name a failing case only; no proof of the rule names the case where every case passes and the test reads pass."
+        ],
+        "proof_hash": "8ecb4bb68ba8735a1dbba7ac29d97d3824471603d07a2e04864f7f34af1167d6",
+        "rule_hash": "14e35dff2d8d3f0e14528481ae1974ad2f8078866e748244b240dd46c2d07f0b",
+        "test_hash": "22fd4af9c981264e05e88fa0328be78d96db595e30a2966a151c3066f082085a",
+        "verdict": "strong"
+      },
+      "RULE-12": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-12": {
+            "after": "    if len(named) <= 2:",
+            "aim": "plain",
+            "before": "    if len(named) <= 1:",
+            "break_key": "91e57656b5d4d9c06900b19b83745bcea6d0aed4fb78e7839bac4174b44c3d73",
+            "case": "`same name` inside `outer` then `inner`, marked and passing, beside an unmarked failing `same name` directly inside `outer`; the proof says the marker reads `pass` and no case matches two tests; the changed code reports each case as matching 2 tests and the marker reads `not run`",
+            "file": "scripts/run/reports.py",
+            "line": 421,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-73": {
+            "after": "        path, chain = _python_owner(case.classname, marked)\n        scopes = scopes",
+            "aim": "plain",
+            "before": "        path, chain = _python_owner(case.classname, marked)\n        scopes = chain + scopes",
+            "break_key": "e510e9cb812dee9d44113b0cf2730391762fd34f141c4e701e5f2c2ad5c430d1",
+            "case": "`TestGroup` and `TestOther` each declare `test_same`, the marked one in `TestGroup` passing; the proof says the marker reads `pass` and no case matches two tests; the changed code drops the class from the narrowing, so each case matches 2 tests and the marker reads `not run`",
+            "file": "scripts/run/reports.py",
+            "line": 493,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-12: the test compares what the helper `_narrowed` returns with `pass`, which is the marker result the proof names; the helper's body is not shown, so whether it also checks that no case is reported as matching two tests cannot be read here.",
+          "PROOF-12: a narrowing that fails either leaves both cases uncounted or ties the failing case to the marked test, so the marker would read `not run` or `fail` and the comparison with `pass` would fail.",
+          "PROOF-73: the test runs a real pytest file with `test_same` in two classes, asserts the list of problems is empty and asserts the marker result is exactly `pass`, which are both results the proof names.",
+          "PROOF-73: the class names `TestGroup` and the marked test come from `_ONE_CLASS`, which is not shown, so the starting situation is taken from that fixture and not visible in the test itself.",
+          "The spot tests found nothing, and both tests hold failable assertions on the proofs' value `pass`.",
+          "The rule also names a C# class narrowing the same way, and neither proof shown covers a C# case."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "a878237c232019450dd3d7f361d7628e8528fa929c3c0258558de4dfa37796a3",
+        "rule_hash": "41685eee9af84b6e8edf661cd9dd28e1de03f374e26bc678e5ab489d3dc475b4",
+        "test_hash": "554f4fb1283f0842f6f7d4a09b4c620e5d2acd05f98a8b0a04bb37c93d211196",
+        "verdict": "strong"
+      },
+      "RULE-14": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-77": {
+            "after": "                if 'failure' in kinds:",
+            "aim": "plain",
+            "before": "                if set(kinds) & {'failure', 'error'}:",
+            "break_key": "603e1cde59f1d94b78c6a17fa4097f47c051b7df557aa59a3e2342c2d2a5d4d2",
+            "case": "five marked Python tests run together, one whose setup raises an error; the proof says `fail`; the changed code reads the errored case as passed and gives `pass`",
+            "file": "scripts/run/reports.py",
+            "line": 137,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-78": {
+            "after": "    if any(outcome == PASS for outcome in outcomes):",
+            "aim": "plain",
+            "before": "    if all(outcome == PASS for outcome in outcomes):",
+            "break_key": "b24ca10464b4f01613a5b6a40a60f16345ca7d98a3b2d18affd1b0cb8fea5560",
+            "case": "five marked Python tests run together, one run over two values, one passing and one skipped; the proof says `missing`; the changed code gives `pass`",
+            "file": "scripts/run/reports.py",
+            "line": 537,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-79": {
+            "after": "    if not outcomes:\n        return PASS",
+            "aim": "plain",
+            "before": "    if not outcomes:\n        return NOT_RUN",
+            "break_key": "43339fc7924f96bc4e6ecc7f9d9337f0a82414148ad2f8f138b9cc5272b5290d",
+            "case": "a report holding a passing case for `test_a` and none for `test_b`, both marked; the proof says `test_b`'s proof is `missing`; the changed code gives `pass` for a test with no case",
+            "file": "scripts/run/reports.py",
+            "line": 534,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-77: the test compares the evidence's result for the fixture's `PROOF-4` with the literal `fail`, so an errored setup read as anything else fails it; the fixture that builds the five tests is not shown, so whether `PROOF-4` is the test whose setup raises cannot be read here.",
+          "PROOF-78: the test compares the evidence's result for the fixture's `PROOF-5` with the literal `missing`, so a partly skipped test read as `pass` or `fail` fails it; the fixture is not shown, so whether `PROOF-5` is the test with one passing and one skipped value cannot be read here.",
+          "PROOF-79: the test runs a suite whose command copies a canned report, then compares the whole evidence with `PROOF-1` as `pass` and `PROOF-2` as `missing`, so a wrong result for either proof fails it; the canned report's text is not shown.",
+          "Findings: none were reported, and each test holds a comparison with a literal the proof names, so no spot test applies."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "323143c7a4ce48a7abe94362051cda2c0492dd6d3fe2f9e92535f780915f8ce0",
+        "rule_hash": "2a3abfedd11b54866ebc74ae6fea8d2212db8c727037f2355edf6ef9ee4f4e7d",
+        "test_hash": "16c6dec50833777b8ee655290fed0bb93c217b2cfbb7c71bd8a1e9a9b0c50110",
+        "verdict": "strong"
+      },
+      "RULE-15": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-15": {
+            "after": "    if test is None:\n        return path",
+            "aim": "plain",
+            "before": "    if test is None:\n        return path.rsplit('/', 1)[-1]",
+            "break_key": "bc46c938477eceb9cc5cda0883c4cb9f0196f414542b04d9af84f60d28a45dc9",
+            "case": "an `exit` suite over `tests/good.sh` (two markers, exits 0) and `tests/bad.sh` (one marker, exits 3); the proof says the results sit under `tests/good.sh::good.sh` and `tests/bad.sh::bad.sh`; the changed code gives `tests/good.sh::tests/good.sh` and `tests/bad.sh::tests/bad.sh`",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 820,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-80": {
+            "after": "    joined = ' '.join(shlex.quote(os.path.basename(path)) for path in files or ())",
+            "aim": "plain",
+            "before": "    joined = ' '.join(shlex.quote(path) for path in files or ())",
+            "break_key": "06ed7e12976cb93df26c265af05589fcb42a70afcf5e00da888fb9998f8ce761",
+            "case": "the same two scripts in an `exit` suite whose command writes down the files it is given; the proof says it ran once given `tests/bad.sh` alone and once given `tests/good.sh` alone; the changed code gives it `bad.sh` and `good.sh`",
+            "file": "scripts/run/reports.py",
+            "line": 318,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-15: the test compares the run's exit code with 1, checks the output never holds `Evidence is missing`, and compares the whole set of evidence results with the three markers, their `<file>::<name>` test names and their `pass` or `fail`, so every value the proof names is observed.",
+          "PROOF-15: the comparison is of the whole mapping, so an extra, missing or renamed entry fails it, and no change to the proof's case gets past it.",
+          "PROOF-80: the test reads the file the suite's command writes and compares its lines with exactly `call: tests/bad.sh` then `call: tests/good.sh`, so the number of runs and the one file each was given are both observed.",
+          "PROOF-80: the expected lines are literals and not taken from the code, so a run given both files, no file or a differently spelled path fails it.",
+          "The spot tests found nothing, and both tests hold assertions that compare literal expected values with what a real run left behind."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "50990ee5952de80ba1f0147033ea79b6259cc8e6af3810e9cb2dd7c0f96c86af",
+        "rule_hash": "512efc998f2178ffba5c8645578c2780c28a6981d4add187e4a78e12420a7f82",
+        "test_hash": "6832e4e25aff5d804b4df4ff501b1dc3e182a05955c8a653b297009beb5bc92a",
+        "verdict": "strong"
+      },
+      "RULE-16": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-82": {
+            "after": "    joined = ' '.join(path for path in files or ())",
+            "aim": "plain",
+            "before": "    joined = ' '.join(shlex.quote(path) for path in files or ())",
+            "break_key": "2e21ccf40aa2a4ebbb873d7e9b568c6934baa1ef438f39f3f7ef8f46a41ef9ba",
+            "case": "a run over `signup` alone, whose marked test file is `tests/test_sign up.py`; the proof says the command gets that path as one argument, then `.purlin/runtime/reports/pytest.xml`; the changed code gives two arguments, `tests/test_sign` and `up.py`, then the report path",
+            "file": "scripts/run/reports.py",
+            "line": 318,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-82: the test runs over `signup` with `--test` and compares the whole argument list the suite's command received with `x`, `tests/test_sign up.py` and `.purlin/runtime/reports/pytest.xml`, so it observes both the path as one argument and the report path after it, as the proof names them.",
+          "PROOF-82: the spot tests found nothing, and the exact comparison of the full list leaves no way for a split path, a missing report path or a changed order to pass.",
+          "PROOF-82: the helper `_arguments_run` is not shown, so how the arguments are captured and what the `x` stands for cannot be read from this test alone."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "fb898437c25b246eb91b70e190f1acbf90526f854e8f981be030567844027988",
+        "rule_hash": "2373418f0a77a8ca8db68c2aad8f10041d86f74f7f4bf662964c0e62f40f676b",
+        "test_hash": "e053beb5fc70c922ca714dae5c77c2ec64fa78353371aa709f9376012de78ba9",
+        "verdict": "strong"
+      },
+      "RULE-17": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-17": {
+            "after": "    elif os.path.islink(full):",
+            "aim": "plain",
+            "before": "    elif os.path.lexists(full):",
+            "break_key": "6a93a64de4dc73422e31e9bf3713ccbdbb393a75ae2d4c3339f99cd094aa9c61",
+            "case": "an old report file with one passing case sits at the suite's report path and the command writes nothing; the proof says exit 1 with `wrote no report` and the old report gone; the changed code leaves the old file in place, so it is read and no `wrote no report` is said",
+            "file": "scripts/run/reports.py",
+            "line": 337,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-17: the test leaves a stale report file at the report path, runs a suite whose command writes nothing, and checks the exit code `1`, the text `wrote no report` and that the file is gone, which is each result the proof names.",
+          "PROOF-17: the spot tests found nothing, and the test compares every result of the proof's case, so no change that breaks the case gets past it as written.",
+          "PROOF-17: the rule says \"file or folder\" and the test only puts a file at the report path, so a report folder left from an earlier run is not observed by this proof."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "567dd9700d55098ab51ee7e962aa87e9e663f7401c5f0848367eeeac4bee37ce",
+        "rule_hash": "11a1cfdd19ceafa5eab72fdaa9248f73c3f65f236052b093015d405105adf6d8",
+        "test_hash": "103dbc56dda25f5d68975e4071ee7f471f7728db4ff7a309aaf011e11b208c70",
+        "verdict": "strong"
+      },
+      "RULE-3": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-3": {
+            "after": "        out += _segment_regex(part) + ('' if last else '/(?:.*/)?')",
+            "aim": "plain",
+            "before": "        out += _segment_regex(part) + ('' if last else '/')",
+            "break_key": "e0c986c0cd39ded65cc9f24a4102132df58808880b55f7c561ccd0b97de08410",
+            "case": "the glob `dev/test_*.py` over `dev/test_a.py`, `dev/sub/test_b.py` and `a/b/c.test.ts`; the proof says it matches `dev/test_a.py` alone; the changed code also matches `dev/sub/test_b.py`",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 313,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-43": {
+            "after": "        pattern = '*/' + pattern",
+            "aim": "plain",
+            "before": "        pattern = '**/' + pattern",
+            "break_key": "201795c579459c469959436f8647ca8c0124b3e27950821135caa6e7bd0b0c7c",
+            "case": "the glob `test_*.py` over `dev/test_a.py`, `dev/sub/test_b.py` and `a/b/c.test.ts`; the proof says it matches the first two; the changed code matches `dev/test_a.py` alone",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 297,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-47": {
+            "after": "    for suite in reversed(suites or ()):",
+            "aim": "plain",
+            "before": "    for suite in suites or ():",
+            "break_key": "ac1f5f462a890df3e38212924821a0c000786adcf0e54344a53603a51e082b1f",
+            "case": "suites `first` on `tests/*.py` then `second` on `**/*.py`; the proof says `tests/test_a.py` belongs to `first`; the changed code gives `second`",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 272,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-3: the test compares the whole list of matched paths with `['dev/test_a.py']`, so any change to which of the three paths match fails it.",
+          "PROOF-3: with these three paths, a `*` that crossed a `/` would still match `dev/test_a.py` alone, because `dev/sub/test_b.py` does not start with `dev/test_`; the test does not show the reason the proof gives.",
+          "PROOF-43: the test compares the whole list with `['dev/test_a.py', 'dev/sub/test_b.py']`, so it observes both the two matches and the absence of `a/b/c.test.ts`.",
+          "PROOF-47: the test builds the two suites in the proof's order and compares the full path-to-suite mapping with `tests/test_a.py` under `first` and `other/test_b.py` under `second`, which is what the proof names.",
+          "No proof of the rule names a case for `?`, and none names a file that no suite matches being left unread.",
+          "The spot tests found nothing; each test holds its proof's values as literals and can fail."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-47 holds two cases: the file both suites match and the file only `second` matches."
+        ],
+        "proof_hash": "1980b0d01e05f0ac4373954adfccb338ba81822188b373ab095b74aa002ccd55",
+        "rule_hash": "20270baa8c99aeef0ab10d4f239da18d0f838e9653b0693e924c5d8db549f77d",
+        "test_hash": "0561e26064b4db6e27e3917c4f16a5962ed80934daa28d3dacd20728b7c0e562",
+        "verdict": "strong"
+      },
+      "RULE-32": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-115": {
+            "after": "                    reason = _text_of(skipped.text)",
+            "aim": "plain",
+            "before": "                    reason = (_text_of(skipped.get('message'))\n                              or _text_of(skipped.text))",
+            "break_key": "a4585eff47a6b2fa8c9270dac76716f43f074c6bdc88c5ec2cc2209597891372",
+            "case": "a JUnit case `test_screens` with `<skipped message=\"nothing to check: this project has no screens\"/>`; the proof says skip with the reason `nothing to check: this project has no screens`; the changed code gives skip with no reason",
+            "file": "scripts/run/reports.py",
+            "line": 142,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-117": {
+            "after": "            reason = _text_of(said[key])",
+            "aim": "plain",
+            "before": "            reason = _text_of(_GO_WHERE.sub('', said[key], count=1))",
+            "break_key": "b64d6a5f04ab1b44d8b3f0c28cbc1590115b3d93c382f083675a826efc629cb2",
+            "case": "`TestScreens` prints `screens_test.go:12: nothing to check: this project has no screens` then skips; the proof says the reason `nothing to check: this project has no screens`; the changed code gives `screens_test.go:12: nothing to check: this project has no screens`",
+            "file": "scripts/run/reports.py",
+            "line": 247,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-115: the test reads a JUnit document holding the proof's `skipped` element and compares the case's name, outcome and reason with `test_screens`, `skip` and the proof's exact reason, so a wrong or missing reason fails it.",
+          "PROOF-117: the test feeds a `go test -json` stream with the proof's output line between `go test`'s own `=== ` and `--- ` lines and compares the name, outcome and reason with `TestScreens`, `skip` and the proof's exact reason, so a reason that keeps the `screens_test.go:12: ` lead or takes the `--- SKIP` line fails it.",
+          "The spot tests found nothing, and both tests compare a literal expected value taken from the proof, not from the code.",
+          "Neither proof shown covers the rule's fallbacks (the `skipped` child's text in `junit`), the `trx` reasons or an `exit` suite giving no reason, so these two tests would not notice a change to those."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "f875f35dc766e3f420a0fdd9b91c210d2abb2d29b27d98b8060b0c3d3dd328af",
+        "rule_hash": "a3fc90b837c97a321ff1ab6e98c0356daf25615d6338d0dc9acc6b1c15d85839",
+        "test_hash": "3f1e437b6a91ac7b06ce398d965bc06e21d90b503bf6edce87bf469cb6133f57",
+        "verdict": "strong"
+      },
+      "RULE-33": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-120": {
+            "after": "RULE_HAS_PROOFS = ('%s:%d names %s %s, which has a proof; a comment names one '",
+            "aim": "plain",
+            "before": "RULE_HAS_PROOFS = ('%s:%d names %s %s, which has proofs; a comment names one '",
+            "break_key": "fe8f0de68556a93d4bb9d35c6ace94b07aa7d0c426f70ec853d78a040748756d",
+            "case": "a passing test on line 3 marked `purlin: login RULE-1` where RULE-1 has PROOF-1; the proof says the run prints `tests/test_login.py:3 names login RULE-1, which has proofs; a comment names one of its proofs. ...`; the changed code prints `..., which has a proof; a comment names one of its proofs. ...",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 960,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-13": {
+            "after": "        elif len(found) > 2:",
+            "aim": "plain",
+            "before": "        elif len(found) > 1:",
+            "break_key": "9d14bef21fc2efac7064c25d2261442216556cfb915b9063072d4adbbc75ada4",
+            "case": "`test_x` declared twice and its one case passing; the proof says the run prints `The report's test_x matches 2 tests in tests/test_login.py, so its result is not counted. ...`; the changed code prints no such line for a case that matches two tests",
+            "file": "scripts/run/reports.py",
+            "line": 519,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-19": {
+            "after": "NAMES_NOTHING = ('%s:%d names %s %s, which no spec holds. Correct the comment, '",
+            "aim": "plain",
+            "before": "NAMES_NOTHING = ('%s:%d names %s %s, which no spec has. Correct the comment, '",
+            "break_key": "e99cf20022f89b6a24280d6a9031125ba1f39b491ff56d8a708e27f484d0197a",
+            "case": "a passing test on line 13 marked `purlin: nosuch PROOF-1`; the proof says the run prints `tests/test_login.py:13 names nosuch PROOF-1, which no spec has. Correct the comment, ...`; the changed code prints `..., which no spec holds. Correct the comment, ...`",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 958,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-5": {
+            "after": "TIED_TO_NO_TEST = ('%s:%d names %s %s and no test comes after it. Put the comment '",
+            "aim": "plain",
+            "before": "TIED_TO_NO_TEST = ('%s:%d names %s %s and no test follows it. Put the comment '",
+            "break_key": "8b994818c4c51df03ca53d9e09801a5363b875d81bcb636ccf4ddcfaa491d6a4",
+            "case": "a marker `login PROOF-3` on line 9 with no test after it; the proof says the run prints `...and no test follows it. Put the comment directly above a test, or run purlin:build to repair it.`; the changed code prints `...and no test comes after it. Put the comment ...`",
+            "file": "scripts/run/reports.py",
+            "line": 58,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-5: the test looks for the proof's whole line among the output's lines, reads `PROOF-3` with no test as `missing` in the results and compares the exit code with 1, so each value the proof names is observed.",
+          "PROOF-19: the test looks for the proof's whole line, with line 13 and `nosuch PROOF-1`, among the output's lines and compares the exit code with 1, which is everything the proof names.",
+          "PROOF-13: the test looks for the proof's whole line among the output's lines, which also shows it on a line of its own, compares the results with exactly `PROOF-1` and `PROOF-2` both `missing`, and compares the exit code with 1.",
+          "PROOF-120: the test looks for the proof's whole line among the output's lines, compares the exit code with 1, and reads the evidence for `RULE-1` as not `passed` with its one proof `missing`, which is stricter than the proof's \"no `pass`\".",
+          "The spot tests found nothing, and each test compares literal values taken from its proof rather than from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "ea7d851d02b701cd1e4653d82b564b1d7b04779ae13bca20fdfd5bde3805efcb",
+        "rule_hash": "46c61e367ecdfd6bfd0c39c577dea89dfd00eeefa74699100726c0e91fc458ed",
+        "test_hash": "405082bca25a2a499c05aa789d5738bf78624c3e40232cb91bd6d56f5064d05c",
+        "verdict": "strong"
+      },
+      "RULE-34": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-114": {
+            "after": "            return [], 'wrote a report at %s that is not %s' % (\n                report, fmt)",
+            "aim": "plain",
+            "before": "            return [], 'wrote a report at %s that is not %s: %s' % (\n                report, fmt, error)",
+            "break_key": "4270e828c85f689f904abfae1c66417a73bc3ed3e0caa6f435fa0d6cedc7b953",
+            "case": "a pytest suite whose command writes `not xml` as its report; the proof says the line names `wrote a report at .purlin/runtime/reports/pytest.xml that is not junit: syntax error: line 1, column 0`; the changed code's reason ends at `that is not junit` and drops the syntax error",
+            "file": "scripts/run/reports.py",
+            "line": 293,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-18": {
+            "after": "            return [], 'left no report at %s' % report",
+            "aim": "plain",
+            "before": "            return [], 'wrote no report at %s' % report",
+            "break_key": "3aa1a8fce68b21729f8d13f31bdc17a38530dc2d88bfebc9f5d0053f024bcb83",
+            "case": "a pytest suite whose command exits 0 and writes no report; the proof says `Evidence is missing: the pytest suite wrote no report at .purlin/runtime/reports/pytest.xml.` and exit code 1; the changed code prints `left no report at .purlin/runtime/reports/pytest.xml` in that line",
+            "file": "scripts/run/reports.py",
+            "line": 285,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-18: the test runs a project whose suite writes no report and compares both the exit code `1` and the whole `Evidence is missing` sentence with the report's path, which is everything the proof names.",
+          "PROOF-114: the test has the suite write `not xml` as its report and compares the whole reason, including the path, `not junit` and `syntax error: line 1, column 0`, and the exit code `1`, which is everything the proof names.",
+          "The spot tests found nothing, and neither test leaves a value the proof names uncompared.",
+          "Both tests go through helpers not shown in the request (`_silent_project`, `_run`, `_report_written`), so the reading takes it from the proofs and the test names that these set up the case each proof describes."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "3eafddb332176b4eef06e385a11c70c87b0ba5b2a1fc8ecee47c3148f20f5d09",
+        "rule_hash": "bb7f19ca5105e98231685752f011febf63aa9669d5380c9dcdece3beb299ab6d",
+        "test_hash": "a4fe72f7a91c67cd2905aa523372ba3fe7c9375c33830dd32487db6d08c7e097",
+        "verdict": "strong"
+      },
+      "RULE-35": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-108": {
+            "after": "    if not raw:",
+            "aim": "plain",
+            "before": "    if raw is None:",
+            "break_key": "cc69815d45ae19312cc9d227adb1bc8fe5591cfd96ea913d5be16c9bace74177",
+            "case": "a settings file whose `tests` holds `{}`; the proof says no suite and the one problem `\"tests\" in .purlin/config.json is not a list`; the changed code gives no suite and no problem",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 232,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-20": {
+            "after": "            problems.append('%s names no run' % label)",
+            "aim": "plain",
+            "before": "            problems.append('%s names no run command' % label)",
+            "break_key": "8130a90fb87b23f0b059c725f3b5a6d305d7eb248138e8f677eba037a06703a2",
+            "case": "beside one complete suite, entry `a` names no `run`; the proof says the line reads `purlin: the a suite names no run command. Fix the tests setting ...`; the changed code prints `purlin: the a suite names no run. Fix the tests setting ...`",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 248,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-88": {
+            "after": "            problems.append('%s names the format \"%s\", which is none of %s'",
+            "aim": "plain",
+            "before": "            problems.append('%s names the format \"%s\", which is not one of %s'",
+            "break_key": "197e1197dddf8f45e09f394267b3d9f80875016345f6698126f66f042b2b3e02",
+            "case": "beside one complete suite, entry `b` names the format `tap`; the proof says the line reads `... names the format \"tap\", which is not one of junit, trx, gotest, exit. ...`; the changed code prints `... names the format \"tap\", which is none of junit, trx, gotest, exit. ...`",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 251,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-20: the test puts entry `a` with no `run` beside a complete suite and compares the whole printed line, the one `Running the pytest suite.` line and the exit code 0, which is every value the proof names.",
+          "PROOF-88: the test puts entry `b` of format `tap` beside a complete suite and compares the whole printed line, the suites started and the exit code 0, which is every value the proof names.",
+          "PROOF-108: the test reads a `tests` setting of `{}` and compares both the empty list of suites and the one problem sentence with the proof's text, so a changed sentence or a missing problem fails it.",
+          "PROOF-108: the test observes the suites read and not the line a run prints, so the `purlin: <problem>. Fix the tests setting ...` wording for this case is not observed here.",
+          "The spot tests found nothing, and each test holds its proof's values as literals in equality checks that can fail.",
+          "No proof shown for the rule names an entry that is not an object, an entry repeating an earlier suite's name, or an entry with no `files`, so those parts of the rule are not observed by these tests."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "2316afc1d099fde4526bf9226084f358387ae93d1fd024755993703f1675d25b",
+        "rule_hash": "a841db953ef760b19c04a652173da8823efb50d95c2a0b7623aca8db8ee923bb",
+        "test_hash": "fe606a2c749f7ef99385fdb1903970fece98546941e59a3dfd865281326f0984",
+        "verdict": "strong"
+      },
+      "RULE-36": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-125": {
+            "after": "                   \"letters, digits and `_`\")",
+            "aim": "plain",
+            "before": "                   \"letters, digits, `_` and `-`\")",
+            "break_key": "1c97a9660136523f7952b9103cd62f083f1e3393a906302224ce43a2ab6b5201",
+            "case": "`# purlin: sample.age PROOF-1`; the proof says the why ends \"a name holds letters, digits, `_` and `-`.\"; the changed code gives \"a name holds letters, digits and `_`.\"",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 1010,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-28": {
+            "after": "            out.append({'file': path, 'line': number + 1, 'text': line.strip(),",
+            "aim": "plain",
+            "before": "            out.append({'file': path, 'line': number, 'text': line.strip(),",
+            "break_key": "2e740acd41280acdddaac8f477dd1b04471316b7a0d27960ce172c1e64b19f54",
+            "case": "`# purln: login PROOF-1` on line 1 of tests/test_login.py; the proof says the entry's line is 1; the changed code gives line 2",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 1140,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-35": {
+            "after": "            why.append('`%s` is one edit from the feature `%s`'",
+            "aim": "plain",
+            "before": "            why.append('`%s` is one character from the feature `%s`'",
+            "break_key": "5d2508cd3f703c1b39d4dda63af45508556360b2987d8c92807bddfb3e9b1461",
+            "case": "`# purlin: logn PROOF-1` where the spec `login` exists; the proof says the why reads \"`logn` is one character from the feature `login`.\"; the changed code gives \"`logn` is one edit from the feature `login`.\"",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 1077,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-37": {
+            "after": "    return candidates[0] if candidates else None",
+            "aim": "plain",
+            "before": "    return candidates[0] if len(candidates) == 1 else None",
+            "break_key": "629aae58002d3a4e07d99c353059edb30b39e6554341e9f930f992bb1eb5cd4b",
+            "case": "`# purlin: login PROOF-4` where login has PROOF-1, PROOF-2 and PROOF-3; the proof says the array is empty; the changed code lists the comment with the fix `# purlin: login PROOF-1`",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 1031,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-28: the test runs the command on a file whose line 1 is `# purln: login PROOF-1`, unpacks exactly one entry, compares file, line, text and fix with the proof's values, checks the why holds `purln` and checks the exit code is 0, so each value the proof names is observed.",
+          "PROOF-35: the test compares the fix and the whole why sentence with the proof's literals through the helper `_fix_and_why`, whose source is not shown, so the existence of the spec `login` is taken on trust from that helper.",
+          "PROOF-37: the test compares what the helper `_listed` returns with an empty list, and the helper is not shown, so whether it sets up `login` with exactly `PROOF-1`, `PROOF-2` and `PROOF-3` cannot be read here.",
+          "PROOF-125: the test compares the fix with `None` and the why with the proof's full sentence, so both values the proof names are observed.",
+          "The spot tests found nothing, and each test holds its proof's expected values as literals, so that agrees with what is shown."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "d2dd11de22988dc5e243f89b6a8c6d85c41309b10f27398c774eda11a7712b65",
+        "rule_hash": "4708c7b6cb79caa43ecca6a69a7fa5148b374f1eb7e46c17df64343be126d458",
+        "test_hash": "6bb55de134e3df59f1cd99b50bb023361559a626ccbe6c0cf5d5da2c1cb47468",
+        "verdict": "strong"
+      },
+      "RULE-37": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-84": {
+            "after": "    text = 'cd .. && ' + suite.run.replace('{files}', joined)",
+            "aim": "plain",
+            "before": "    text = suite.run.replace('{files}', joined)",
+            "break_key": "5946ddf51d326aaac519717841cff10e71d0408736af700aa13b2822c6da3e75",
+            "case": "a run started from a folder outside the project, its command asking the folder it runs in; the proof says the project root; the changed code gives the folder above the project root",
+            "file": "scripts/run/reports.py",
+            "line": 321,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-86": {
+            "after": "            for name in sorted(os.listdir(full))[:1]:",
+            "aim": "plain",
+            "before": "            for name in sorted(os.listdir(full)):",
+            "break_key": "56f7cd64021df3a42fb54899768f78417d7199b750c6732053c1449800853f30",
+            "case": "a report folder holding two TRX reports, one passing `A` and one failing `B`; the proof says `A` `pass` and `B` `fail`; the changed code reads only the first file and gives `B` `missing`",
+            "file": "scripts/run/reports.py",
+            "line": 277,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-87": {
+            "after": "    if report == '-':\n        texts = ['']",
+            "aim": "plain",
+            "before": "    if report == '-':\n        texts = [stdout or '']",
+            "break_key": "9930006e428db97830e020de85d13e64dd8807bce81383960afdb91cbe978214",
+            "case": "a suite whose report path is `-` and whose command prints a Go run's stream; the proof says `TestTotal` `pass`, `TestLookupPanics` `fail` and `TestDiscount` `missing`; the changed code reads nothing from the output and gives `TestTotal` `missing` and `TestLookupPanics` `missing`",
+            "file": "scripts/run/reports.py",
+            "line": 272,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-84: the test starts a run from a folder outside the project with a command that writes the folder it runs in to a file, and compares that file's text with the project root's real path, also checking that no such file landed in the outside folder, so a command run anywhere else fails it.",
+          "PROOF-86: the test has the command copy two TRX reports into the report folder and compares the whole evidence with `PROOF-1` `pass` and `PROOF-2` `fail`, so a folder read in part or not at all fails it.",
+          "PROOF-87: the test sets the report path to `-`, has the command print a stored Go stream, and compares `TestTotal` with `pass`, `TestLookupPanics` with `fail` and `TestDiscount` with `missing`, the three results the proof names; any other Go test in the fixture is not compared.",
+          "The spot tests found nothing, and each test holds an assertion on the values its proof names."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "57e3a9f9bbebf7faac765a8f5d28742c52b91ef74470b458383a921b312f7774",
+        "rule_hash": "f5d8dcaa84761a5f6b999261e27293a8f428da13aacbc55cee3054ca07c4128a",
+        "test_hash": "7a6bd28bbe02845300d9f748473624a9b344ab706418be55f58ac9814055c5e5",
+        "verdict": "strong"
+      },
+      "RULE-38": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-119": {
+            "after": "        lines = None",
+            "aim": "plain",
+            "before": "        lines = _python_comment_lines(text)",
+            "break_key": "09e513b7be592cceb5e70c2884f8229a962082d36b4ba48a97ad583414a78f0d",
+            "case": "a Python test file with `# purlin: login PROOF-1` on line 2 inside a triple-quoted string and `# purlin: login PROOF-2` on line 5 above the passing test_ok; the proof says one marker is read, PROOF-2 at line 5, and no pass for PROOF-1; the changed code reads two markers and gives PROOF-1 a pass",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 402,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-123": {
+            "after": "        return list(enumerate(text.splitlines(), 1))",
+            "aim": "plain",
+            "before": "        return _shell_lines(text)",
+            "break_key": "718cdeca40389fc9ec60e196a1c1d0f376b6328ebbc6d5eee4c3407f394cc14a",
+            "case": "a shell test file exiting 0 with `# purlin: login PROOF-1` on line 3 inside a here document and `# purlin: login PROOF-2` on line 5; the proof says one marker is read, PROOF-2 at line 5, and no pass for PROOF-1; the changed code reads two markers and gives PROOF-1 a pass",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 406,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-119: the test writes the Python file the proof describes, runs it, and compares the markers read with exactly `PROOF-2` at line 5 and the evidence with `PROOF-1` missing and `PROOF-2` passing, so both results the proof names are checked.",
+          "PROOF-123: the test writes the shell file the proof describes with a quoted `EOF` here document, runs the exit suite, and compares the markers read with exactly `PROOF-2` at line 5 and the evidence with `PROOF-1` missing and `PROOF-2` passing, so both results the proof names are checked.",
+          "PROOF-123: the test's here document uses only a quoted delimiter, so an unquoted, `<<-` or double-quoted here document is not observed.",
+          "The spot tests found nothing, which fits: each test asserts literal expected values and the `5` and `PROOF-2` the proofs name appear in the test file."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "178996643f938a8e25ebe1a46028eeaeaf261ad2d6f52a5112300e7b429972e9",
+        "rule_hash": "6c4068a1a2844cc43cf240d6edf321f8024bd4e840d0f19141639c0411ddfa31",
+        "test_hash": "a22801fc3f009a9afce941574fc70bbc658d9cc1982397cd41e3b42a1871f3fd",
+        "verdict": "strong"
+      },
+      "RULE-39": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-121": {
+            "after": "                                  error=('error' in kinds\n                                         and 'failure' in kinds)))",
+            "aim": "plain",
+            "before": "                                  error=('error' in kinds\n                                         and 'failure' not in kinds)))",
+            "break_key": "233f2b9c2a99ed1161255bc9754ba160aad6d82d1ca1f64913503301455890c7",
+            "case": "a JUnit report from running `test_fails` and `test_errors`, whose fixture raises; the proof says `test_errors` is marked an error; the changed code leaves `test_errors` not marked an error",
+            "file": "scripts/run/reports.py",
+            "line": 151,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-122": {
+            "after": "_TRX_ERROR = ('error', 'aborted')",
+            "aim": "plain",
+            "before": "_TRX_ERROR = ('error', 'timeout', 'aborted')",
+            "break_key": "6668c5f13047f94003175fbf293c4224fa60ee162dad5d0c60e4ce923c079ece",
+            "case": "a trx document with results `E` Error, `T` Timeout, `B` Aborted and `F` Failed; the proof says `T` is marked an error; the changed code reads `T` as fail but not marked an error",
+            "file": "scripts/run/reports.py",
+            "line": 67,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-121: the test runs pytest on a failing test and a test whose fixture raises, then compares each case's name, outcome and error mark with the exact list the proof names, so a wrong outcome or a wrong mark on either case fails it.",
+          "PROOF-122: the test reads a trx document holding the four results the proof names and compares each one's name, outcome and error mark with literals, so a wrong outcome or mark on any of `E`, `T`, `B` or `F` fails it.",
+          "Findings: none, and both tests compare the values their proofs name against literals rather than values taken from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "3dad8702a6ca1b6b723a28900cea016e78b6810518b91b45ac2fbfeb5bf60f96",
+        "rule_hash": "bcb396319592fd29e825aa71a70a7e687451a3b77f9e35b7fa7c94d7653534bd",
+        "test_hash": "ffa6b5f5fba6de2e8386f87c62803abd542a3d6df3c2ea8c0eb2a309fd0b351c",
+        "verdict": "strong"
+      },
+      "RULE-4": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-49": {
+            "after": "            owner.markers = [marker]",
+            "aim": "plain",
+            "before": "            owner.markers.append(marker)",
+            "break_key": "4923ac93d38957818a71f33e253c126bc53268b7f4fa7b236c95a79c1b220c3d",
+            "case": "markers `login PROOF-1` and `login PROOF-2` one above the other over passing `test_two`; the proof says two results, each `pass` under `tests/test_login.py::test_two`; the changed code keeps only the last marker, so `PROOF-1` has no `pass`",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 842,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-50": {
+            "after": "            if test.line == marker.line + 1:",
+            "aim": "plain",
+            "before": "            if test.line > marker.line:",
+            "break_key": "694fdfbbcbe8f4ad56780eca83afe070b13a18aaa60c37c01183cefe3ddb4ed9",
+            "case": "marker `login PROOF-1`, then a blank line, a comment and a decorator above passing `test_decorated`; the proof says exactly one result, `PROOF-1` `pass` under `tests/test_login.py::test_decorated`; the changed code ties the marker to no test, so no `pass` is recorded for it",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 836,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-50: the test runs a file with the marker, a blank line, an ordinary comment and a decorator above `test_decorated`, and compares the whole result set with the single entry `PROOF-1` `pass` under `tests/test_login.py::test_decorated`, so a lost, extra or misnamed result fails it.",
+          "PROOF-49: the test runs a file with two markers over `test_two` and compares the whole result set with exactly the two entries the proof names, each `pass` under `tests/test_login.py::test_two`, so a dropped marker or a wrong outcome fails it.",
+          "The spot tests found nothing, and each test holds the values its proof names and compares them with literals, so there is no finding to explain."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "087209d74147c6dddef3c17f993a548f7d278669760b3497b45565589d6adfb2",
+        "rule_hash": "ad34106653a7ba6f0d219f87f770efa3c77956708d3c795d399c7a701d2d4e95",
+        "test_hash": "3fb3550dbd1149cf11ffc2deefc8f4e0eb4546cdd8e283db94aafb33a45f024a",
+        "verdict": "strong"
+      },
+      "RULE-6": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-53": {
+            "after": "                  if d_start < start]",
+            "aim": "plain",
+            "before": "                  if d_start < start < d_end]",
+            "break_key": "06d1e3df8466016c788d357bc8a8d286190e394c55c69c926fcb1b61fb0de276",
+            "case": "the TypeScript file's five `it` and `test` calls; the proof says the second `same name`, `skipped` and `param %i` sit inside `outer` only; the changed code places them inside `outer` and then `inner`",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 677,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-54": {
+            "after": "    r'\\[\\s*(?:[\\w.]+\\.)?(?:Fact|Test|TestCase|TestCaseSource|'",
+            "aim": "plain",
+            "before": "    r'\\[\\s*(?:[\\w.]+\\.)?(?:Fact|Theory|Test|TestCase|TestCaseSource|'",
+            "break_key": "273833d7229a04ab2037d05b5028f19bcac07a79d3c2a7ae08e0ded9fcd7fa00",
+            "case": "the C# file with `GreetsByName`, `Param`, `Skipped` and `Inner`; the proof says all four are declared, `Param` under `[Theory]`; the changed code declares three and leaves `Param` out",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 689,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-6": {
+            "after": "                visit(node.body, scopes)",
+            "aim": "plain",
+            "before": "                visit(node.body, scopes + [node.name])",
+            "break_key": "51b658b0a9fc0c1decfc08c984ec5246cbfe85c57c07a71d918fcfae1a5617e7",
+            "case": "a Python file with `helper`, `test_a` and class `TestB` holding `test_c` and `helper`; the proof says two tests, `test_a` and `test_c` in `TestB`; the changed code gives `test_c` with no enclosing class",
+            "file": "scripts/mcp/purlin/markers.py",
+            "line": 577,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-6: the test reads an inline Python file and compares the whole list of names and enclosing classes with `test_a` and `test_c` in `TestB`, so an extra, missing or wrongly placed test fails it.",
+          "PROOF-53: the test reads the fixture `login.test.ts` and compares the whole list of titles and `describe` chains with the five the proof names, so a wrong title, order or nesting fails it; the fixture's content is not shown here.",
+          "PROOF-54: the test reads the fixture `GreetingTests.cs` and compares each method's name, class chain and namespace with the four the proof names, so a wrong class, nesting or namespace fails it; it does not check which attribute each method carries.",
+          "No spot test fired, and each test compares the full result with literals, so none of the six checks applies.",
+          "The rule's Go declaration, the `it.each` form and the C# attributes other than `[Fact]` and `[Theory]` are named by no proof shown here."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "396e07ca58e127acb40d8d2f493bbc6a13d2242c3040a19a5171424cf72728ee",
+        "rule_hash": "ff42a8808114258187124304151015d0cdf761e9787ec96ee931b0986445cd65",
+        "test_hash": "b0655ab8826f30ef9d99db6f141b9c5631b143878f0b66209d31cb9a41a8e18b",
+        "verdict": "strong"
+      },
+      "RULE-7": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-7": {
+            "after": "                if set(kinds) & {'failure'}:",
+            "aim": "plain",
+            "before": "                if set(kinds) & {'failure', 'error'}:",
+            "break_key": "7f71b5d5f411f90320bfde74068021f406578d157d870e3e112381c222bad736",
+            "case": "four Python tests run, one whose setup raises an error; the proof says `test_errors` reads `fail`; the changed code gives `pass` for `test_errors`",
+            "file": "scripts/run/reports.py",
+            "line": 137,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-7: the test runs four real Python tests through pytest, reads the report it writes, and compares each case's class name, name and outcome, in order, with the four literal triples the proof names, so a wrong outcome, name, class name or order fails it.",
+          "PROOF-7: the test leaves no value of the proof uncompared, so the planted bug is the plain one, an `error` child no longer failing its case, and the comparison of `test_errors` with `fail` should catch it.",
+          "PROOF-7: the spot tests found nothing, which fits a test that asserts on literals taken from the proof and mocks nothing.",
+          "PROOF-7: the rule also says the case's `file` is read, and neither the proof nor the test observes the file of any case."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "67c74c6f2f9a817135720f171a190122c64b2d8f39b8749f0377e4124013c533",
+        "rule_hash": "ddb43bbc9a6e8759ff687ea591452f6a09c38bdd21eec73f6ea14abf518b16fe",
+        "test_hash": "a0c6f22b72f04fe918a9478efc9e81021b3f9d13b58fc57615077c0a2da9b87d",
+        "verdict": "strong"
+      },
+      "RULE-8": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-59": {
+            "after": "_TRX_FAIL = ('failed', 'error', 'aborted')",
+            "aim": "plain",
+            "before": "_TRX_FAIL = ('failed', 'error', 'timeout', 'aborted')",
+            "break_key": "0a800b815e5c8981f78f0ff56b8aee2078fd72c62600ba33ca4008728e85a0dd",
+            "case": "a TRX report of four results with outcomes Error, Timeout, Aborted and Inconclusive; the proof says `fail`, `fail`, `fail`, `skip`; the changed code gives `fail`, `skip`, `fail`, `skip`",
+            "file": "scripts/run/reports.py",
+            "line": 65,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-8": {
+            "after": "_TRX_PASS = ('passedbutrunaborted', 'warning', 'completed')",
+            "aim": "plain",
+            "before": "_TRX_PASS = ('passed', 'passedbutrunaborted', 'warning', 'completed')",
+            "break_key": "099f062ef7e7c639beab094c82d0c24c595b428986e83a0aa9445259b44bbd2d",
+            "case": "the TRX report dotnet wrote, whose first result is `GreetsByName` with outcome `Passed`; the proof says `pass`; the changed code gives `skip`",
+            "file": "scripts/run/reports.py",
+            "line": 68,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-8: the test reads the captured dotnet report and compares the class, method and outcome of all six results, in order, with the literals the proof names, so a wrong outcome, join or order fails it.",
+          "PROOF-8: the test does not read the skip reason, and the proof names none, so nothing the proof states is left unchecked.",
+          "PROOF-59: the test builds a report of the four outcomes `Error`, `Timeout`, `Aborted` and `Inconclusive` and compares each result with `fail`, `fail`, `fail` and `skip`, so a change to any of the four readings fails it.",
+          "The rule's passing outcomes `Warning`, `Completed` and `PassedButRunAborted` appear in neither proof, so a change to how those three read would pass both tests.",
+          "The spot tests found nothing, and both tests hold assertions against literal expected values that the code under test does not supply."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "156f3e61fa935a829c192b7111b7b32f33aae89ad1a3b9debc2e600c9db4cbc7",
+        "rule_hash": "06b4924e98ed7356a69868b1e869fa32eeffc4373fe7c6b34ced7df4fb5de6f8",
+        "test_hash": "022bca7f8a2d55d849c78bc3abb0834bd74fe9975591e520231d2c8aae8deb9c",
+        "verdict": "strong"
+      },
+      "RULE-9": {
+        "at": "2026-10-02T09:50:47Z",
+        "breaks": {
+          "PROOF-9": {
+            "after": "        if action not in (PASS, FAIL):",
+            "aim": "plain",
+            "before": "        if action not in (PASS, FAIL, SKIP):",
+            "break_key": "31e94fc6d02ec39230513dfe4398b33192eb6f713d4c760f50763d03d3c42b76",
+            "case": "the two-package stream with `TestDiscount` skipped in `example.com/shop/cart`; the proof says eight cases including `TestDiscount` `skip`; the changed code gives seven cases with no `TestDiscount`",
+            "file": "scripts/run/reports.py",
+            "line": 243,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-9: the test reads the stream with `read_gotest` and compares the full ordered list of package, name and outcome with `GO_CASES`, so a missing, extra, reordered or wrongly read case fails it.",
+          "PROOF-9: `GO_CASES` and `_go_stream()` are defined outside the test shown, so whether the list holds the eight cases the proof names, and whether the stream holds non-test events and non-JSON lines, cannot be seen from here.",
+          "PROOF-9: no spot test fired, which fits a test with one equality assertion against a list not computed by the code under test."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "6438751a0192f45043038a8deccdf468408f4dceca06cf9b1ba0eb8563986b9f",
+        "rule_hash": "eb3868a42b4e850bf7fa4a7110636653095d97f95ddfedb56469dca326828209",
+        "test_hash": "fbcd0d5ab7661a5f9e3cdecc9e08d91c7c30bb19d2f9c006edbc33107a016149",
+        "verdict": "strong"
+      }
+    }
+  },
   "feature": "reports",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T05:47:25Z",
-      "commit": "f9984dd30ac10183f0d8e95ed8bd52a3dd7a6b3e",
+      "at": "2026-10-02T09:47:50Z",
+      "commit": "ed599a1ce3e4d84a9b90e20858513d354cbafde5",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
