@@ -76,3 +76,42 @@ def test_both_screens_fit_every_width_in_the_dark_theme(browser, tmp_path):  # n
         wrong += [(width, screen, sideways, broken)
                   for screen, sideways, broken in seen if sideways or broken]
     assert wrong == [], wrong
+
+
+# Where the top bar's theme button and its two boxes stand, against the
+# mark: the button's distance from the bar's right edge, whether its middle is
+# on the mark's line, and how many boxes stand below the mark's line.
+TOP_BAR = """() => {
+  const bar = document.querySelector('.topbar').getBoundingClientRect();
+  const mark = document.querySelector('.brand').getBoundingClientRect();
+  const btn = document.querySelector('.topbar [data-act="theme"]')
+    .getBoundingClientRect();
+  const boxes = Array.from(document.querySelectorAll('.topbar .fact')).map(
+    f => f.getBoundingClientRect());
+  const middle = btn.top + btn.height / 2;
+  return {
+    gap: Math.round(bar.right - btn.right),
+    onMarkLine: middle > mark.top && middle < mark.bottom,
+    clear: boxes.every(b => b.right <= btn.left || b.top >= btn.bottom),
+    boxes: boxes.length,
+    below: boxes.filter(b => b.top >= mark.bottom).length,
+  };
+}"""
+
+
+# purlin: purlin_report PROOF-248
+def test_the_theme_button_keeps_the_top_right_and_the_boxes_move_whole(browser, tmp_path):  # noqa: F811
+    seen = {}
+    for width in (1500, 1280, 1120, 1024, 768, 390):
+        page = open_board(browser, tmp_path / str(width),
+                          payload_named('regulated'),
+                          viewport={'width': width, 'height': 900})
+        seen[width] = page.evaluate(TOP_BAR)
+        page.close()
+    for width, bar in seen.items():
+        assert bar['boxes'] == 2, (width, bar)
+        assert bar['onMarkLine'] and bar['clear'], (width, bar)
+        assert bar['gap'] == (32 if width >= 1024 else 20), (width, bar)
+        assert bar['below'] in (0, 2), (width, bar)
+    assert seen[1500]['below'] == 0, seen[1500]
+    assert seen[390]['below'] == 2, seen[390]

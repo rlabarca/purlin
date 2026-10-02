@@ -1069,22 +1069,12 @@ AUDIT_AND_PROOF_WORDS = re.compile(r'proof|strong|audit', re.I)
 STATUSES = ('passed', 'failed', 'partial', 'no test', 'not run',
             'out of date')
 
-# Every text a person can see on the page and every hover it carries, the top
-# bar's `Audit` box aside: it is on every board, and reads `not audited` on
-# one no audit has read.
-SEEN = """() => {
-  const box = Array.from(document.querySelectorAll('.topbar .fact')).find(
-    e => e.firstElementChild.textContent.trim() === 'Audit');
-  const held = box ? box.style.display : '';
-  if (box) { box.style.display = 'none'; }
-  const out = [document.body.innerText].concat(
-    Array.from(document.querySelectorAll('[title]')).filter(
-      e => e !== box).map(e => e.getAttribute('title')),
-    Array.from(document.querySelectorAll('[aria-label]')).map(
-      e => e.getAttribute('aria-label')));
-  if (box) { box.style.display = held; }
-  return out;
-}"""
+# Every text a person can see on the page and every hover it carries.
+SEEN = """() => [document.body.innerText].concat(
+  Array.from(document.querySelectorAll('[title]')).map(
+    e => e.getAttribute('title')),
+  Array.from(document.querySelectorAll('[aria-label]')).map(
+    e => e.getAttribute('aria-label')))"""
 
 
 def _walk_everything(page):
@@ -1111,15 +1101,13 @@ def _walk_everything(page):
 
 
 def words_shown(browser, tmp_path, payload, words):
-    """Walk every screen of one board: the words of `words` it showed
-    outside the top bar's `Audit` box, each rule's status in the order the
-    rules were opened, and that box's label and word."""
+    """Walk every screen of one board: the words of `words` it showed, and
+    each rule's status in the order the rules were opened."""
     page = open_board(browser, tmp_path, payload)
-    audit_box = facts(page)[-1]
     seen, statuses = _walk_everything(page)
     page.close()
     return sorted({match.group(0) for text in seen if text
-                   for match in words.finditer(text)}), statuses, audit_box
+                   for match in words.finditer(text)}), statuses
 
 
 # purlin: purlin_report PROOF-63
@@ -1129,9 +1117,7 @@ def test_a_project_no_audit_read_never_reads_strong_or_audit(browser,
     assert payload['summary']['audit'] == {
         'strong': 0, 'weak': 0, 'spot_checked': 0, 'out_of_date': 0,
         'not_audited': 2}
-    found, statuses, audit_box = words_shown(browser, tmp_path, payload,
-                                             AUDIT_WORDS)
-    assert audit_box == ['Audit', 'not audited'], audit_box
+    found, statuses = words_shown(browser, tmp_path, payload, AUDIT_WORDS)
     assert found == [], found
     assert len(statuses) == 5, statuses
     assert set(statuses) <= set(STATUSES), statuses
@@ -1143,9 +1129,8 @@ def test_a_project_with_no_proof_line_never_reads_proof(browser, tmp_path):
     assert payload['summary']['proofs'] == 0
     assert all(rule['proofs'] == [] for feature in payload['features']
                for rule in feature['rules'])
-    found, statuses, audit_box = words_shown(browser, tmp_path, payload,
-                                             AUDIT_AND_PROOF_WORDS)
-    assert audit_box == ['Audit', 'not audited'], audit_box
+    found, statuses = words_shown(browser, tmp_path, payload,
+                                  AUDIT_AND_PROOF_WORDS)
     assert found == [], found
     assert len(statuses) == 5, statuses
 
@@ -1206,7 +1191,6 @@ def _rule_marked_with_its_id(browser, tmp_path, passing):
     dots = test_dots(page, '.tests p')
     tone = resolved(page, '--state-pass' if passing else '--state-fail')
     seen = list(page.evaluate(SEEN))
-    audit_box = facts(page)[-1]
     page.close()
     assert lines == ['tests/test_lock.py :: test_five_wrong_passwords_lock'], \
         lines
@@ -1214,7 +1198,6 @@ def _rule_marked_with_its_id(browser, tmp_path, passing):
     found = sorted({match.group(0) for text in seen if text
                     for match in AUDIT_AND_PROOF_WORDS.finditer(text)})
     assert found == [], found
-    return audit_box
 
 
 # purlin: purlin_report PROOF-65
@@ -1222,9 +1205,8 @@ def test_a_passing_test_marked_with_the_rules_id_shows_passed(browser,
                                                              tmp_path):
     """The data lists the test with `pass`; the screen reads it behind a
     pass-coloured dot whose hover is `passed`, with no word of a proof or
-    of the audit but in the top bar's `Audit` box."""
-    audit_box = _rule_marked_with_its_id(browser, tmp_path, True)
-    assert audit_box == ['Audit', 'not audited'], audit_box
+    of the audit."""
+    _rule_marked_with_its_id(browser, tmp_path, True)
 
 
 # Every element that draws a text node of its own, its colour, the ground under
@@ -1744,8 +1726,7 @@ def test_the_top_bar_reads_met_and_the_sign_off_at_its_commit(browser,
     found = facts(page)
     page.close()
     assert found == [['Tests', 'met'],
-                     ['Sign-off', 'signed 0.1.0 at a1b2c3d'],
-                     ['Audit', '3 of 7 strong']], found
+                     ['Sign-off', 'signed 0.1.0 at a1b2c3d']], found
 
 
 # purlin: purlin_report PROOF-225
@@ -1759,8 +1740,8 @@ def test_a_failing_rule_and_no_sign_off_read_not_met_and_not_signed(
     page = open_board(browser, tmp_path, payload)
     found = facts(page)
     page.close()
-    assert found[:2] == [['Tests', 'not met'],
-                         ['Sign-off', 'not signed']], found
+    assert found == [['Tests', 'not met'],
+                     ['Sign-off', 'not signed']], found
 
 
 # The top bar's boxes, each with its label, its word, the colour it is drawn
@@ -1772,9 +1753,19 @@ FACT_BOXES = """() => Array.from(document.querySelectorAll('.topbar .fact')).map
          hover: e.getAttribute('title')}))"""
 
 
+# The count boxes, each with its label, its count, the colour the count is
+# drawn in and its hover.
+COUNT_BOXES = """() => Array.from(document.querySelectorAll('.tile')).map(e => {
+  const count = e.querySelector('.tile-v');
+  return {label: e.querySelector('.tile-l').textContent.trim(),
+          word: count.textContent.trim(),
+          color: getComputedStyle(count).color,
+          hover: e.getAttribute('title')};
+})"""
+
+
 # purlin: purlin_report PROOF-241
-def test_a_project_no_audit_read_says_not_audited_in_the_neutral_tone(
-        browser, tmp_path):
+def test_a_project_no_audit_read_shows_the_two_facts_alone(browser, tmp_path):
     payload = payload_named('solo')
     assert not [rule for feature in payload['features']
                 for rule in feature['rules'] if rule['audit']]
@@ -1784,18 +1775,16 @@ def test_a_project_no_audit_read_says_not_audited_in_the_neutral_tone(
     warn = resolved(page, '--state-warn')
     heads = head_labels(page)
     page.close()
-    assert list(found) == ['Tests', 'Sign-off', 'Audit'], found
-    assert found['Audit']['word'] == 'not audited'
+    assert list(found) == ['Tests', 'Sign-off'], found
     assert found['Sign-off']['word'] == 'not signed'
-    assert found['Audit']['color'] == found['Sign-off']['color'] == neutral
+    assert found['Sign-off']['color'] == neutral
     assert neutral != warn
-    assert found['Audit']['hover'] is None
     assert heads == ['Spec', 'Rules', 'Proofs', 'Tests'], heads
 
 
 # purlin: purlin_report PROOF-242
-def test_the_audit_box_reads_the_share_and_its_hover_the_counts(browser,
-                                                               tmp_path):
+def test_the_strong_box_reads_the_count_and_its_hover_the_counts(browser,
+                                                                tmp_path):
     payload = payload_named('regulated')
     assert payload['summary']['audit'] == {
         'strong': 3, 'weak': 3, 'spot_checked': 0, 'out_of_date': 0,
@@ -1804,12 +1793,12 @@ def test_the_audit_box_reads_the_share_and_its_hover_the_counts(browser,
                for rule in feature['rules'] if rule['audit']
                ).startswith('2026-09-12')
     page = open_board(browser, tmp_path, payload)
-    found = {box['label']: box for box in page.evaluate(FACT_BOXES)}
+    found = {box['label']: box for box in page.evaluate(COUNT_BOXES)}
     warn = resolved(page, '--state-warn')
     page.close()
-    assert found['Audit']['word'] == '3 of 7 strong', found
-    assert found['Audit']['color'] == warn
-    assert found['Audit']['hover'].split('\n') == [
+    assert found['Strong']['word'] == '3', found
+    assert found['Strong']['color'] == warn
+    assert found['Strong']['hover'].split('\n') == [
         '3 strong', '3 weak', '1 not audited', 'Last audit: 2026-09-12']
 
 
@@ -1841,16 +1830,12 @@ def test_a_project_whose_one_audit_result_is_spot_checked_shows_strong(
     cell = page.inner_text(
         '.tr[data-feature="login"] [data-label="Strong"]').strip()
     tiles = {box[0]: box[1] for box in boxes(page)}
-    found = {box['label']: box for box in page.evaluate(FACT_BOXES)}
-    passing = resolved(page, '--state-pass')
     open_rule(page, 'login', 'RULE-1')
     lines = panel_lines(page, 'Audit')
     page.close()
     assert heads == ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong'], heads
     assert cell == '0 of 1', cell
     assert tiles['Strong'] == '0', tiles
-    assert found['Audit']['word'] == '0 of 2 strong', found
-    assert found['Audit']['color'] == passing
     assert lines[0] == 'Spot-checked.', lines
 
 

@@ -5,8 +5,13 @@
 button{font-family:inherit}
 
 /* --- chrome ---------------------------------------------------------- */
-.topbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3) var(--space-6);min-height:56px;padding:var(--space-2) var(--space-8);background:var(--canvas-deep);border-bottom:1px solid var(--border-hairline)}
-.brand{display:inline-flex;align-items:center;gap:var(--space-3)}
+/* The theme button is taken out of the bar's flow and pinned to the right end
+   of its first line, which the mark's height fixes. The bar keeps room for it
+   on the right, so the two boxes, one item, move whole to the line below
+   the mark where they do not fit and the button stays where it is. */
+.topbar{--bar-pad:var(--space-2);--bar-side:var(--space-8);position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3) var(--space-6);min-height:56px;padding:var(--bar-pad) calc(var(--bar-side) + var(--space-12) + var(--space-4)) var(--bar-pad) var(--bar-side);background:var(--canvas-deep);border-bottom:1px solid var(--border-hairline)}
+.brand{display:inline-flex;align-items:center;gap:var(--space-3);min-height:var(--space-10)}
+.topbar>.btn{position:absolute;top:calc(var(--bar-pad) + var(--space-5));right:var(--bar-side);transform:translateY(-50%);width:var(--space-12);justify-content:center;padding:6px 0}
 .brand img{display:block;height:24px;width:auto}
 .brand span{font-size:18px;line-height:1;letter-spacing:var(--tracking-hero);color:var(--text-primary)}
 .stamp{min-width:0;font-family:var(--font-mono);font-size:var(--ui-base);color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -116,9 +121,9 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 /* Under 1024 pixels the columns cannot all fit, and the page neither shrinks
    its text nor scrolls sideways. Each spec and each rule becomes a block: its
    name first, then its values as labelled pairs that wrap whole. The boxes
-   and the top bar's three boxes wrap as whole items. */
+   and the top bar's two boxes wrap as whole items. */
 @media (max-width:1023px){
-.topbar{column-gap:var(--space-4);padding:var(--space-3) var(--space-5)}
+.topbar{--bar-pad:var(--space-3);--bar-side:var(--space-5);column-gap:var(--space-4)}
 .topbar .spacer{flex-basis:100%;height:0}
 .wrap{padding:var(--space-6) var(--space-5)}
 .strip{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -142,10 +147,10 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .bug .kv{grid-template-columns:1fr}
 }
 @media (max-width:599px){
-.stamp{white-space:normal;overflow:visible}
+.stamp{flex:none;width:calc(100% + var(--space-12) + var(--space-4));margin-right:calc(-1 * (var(--space-12) + var(--space-4)));white-space:normal;overflow:visible}
 .stamp>span{display:inline-block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
 .bug .nowrap{white-space:normal}
-.facts{display:flex;flex-basis:100%}
+.facts{display:flex;flex:none;width:calc(100% + var(--space-12) + var(--space-4));max-width:none;margin-right:calc(-1 * (var(--space-12) + var(--space-4)))}
 .fact{flex-direction:column;align-items:flex-start;gap:var(--space-1)}
 .fact b{max-width:100%}
 .strip{grid-template-columns:repeat(2,minmax(0,1fr))}

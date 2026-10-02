@@ -8,8 +8,9 @@
    entry, `Strong`, the payload's `summary.audit.strong`. A count is
    green once it is complete and amber until then: `No proof` at zero,
    `Passing` once every rule passes or is checked at sign-off, `Strong` once
-   it equals the `<n>` of the `Audit` box. Each
-   box carries the hover its column carries, read over every spec. The
+   every rule the audit could read is strong. Each
+   box carries the hover its column carries, read over every spec, but
+   `Strong`, whose hover reads the audit's counts. The
    terminal prints a summary sentence; the boxes carry the same counts, so
    the page prints none. */
 function statStrip() {
@@ -32,7 +33,7 @@ function statStrip() {
   if (audited()) {
     var strong = (summary.audit || {}).strong || 0;
     boxes.push(box(STRONG, strong, strong === auditTotal() ? 'pass' : 'warn',
-                   auditLines(project), null));
+                   auditCountLines(), null));
   }
   return '<div class="strip"><div class="tiles">' + boxes.join('')
     + '</div></div>';

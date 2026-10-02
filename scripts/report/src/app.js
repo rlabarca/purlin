@@ -23,12 +23,9 @@ var MET = 'met';
 var NOT_MET = 'not met';
 var NOT_SIGNED = 'not signed';
 
-/* The third box, which is information and no fact: what the audit found, as
-   the payload's `summary.audit` counts it for the summary line the terminal
-   prints, `summary.AUDIT_WORDS` in its order. It is on every board, and
-   reads `not audited` where no audit has read a rule. */
-var AUDIT = 'Audit';
-var NOT_AUDITED = 'not audited';
+/* What the audit found, as the payload's `summary.audit` counts it for the
+   summary line the terminal prints, `summary.AUDIT_WORDS` in its order. The
+   `Strong` box's hover reads these counts. */
 var AUDIT_WORDS = [['strong', 'strong'], ['weak', 'weak'],
   ['spot_checked', 'spot-checked'], ['out_of_date', 'out of date'],
   ['not_audited', 'not audited']];
@@ -424,8 +421,9 @@ function factBox(label, word, hue, lines) {
     + '</b></span>';
 }
 
-/* The `<n>` of the audit's box: the rules that pass their tests and have a
-   tested proof, the sum of the five counts of the payload's `summary.audit`. */
+/* How many rules the audit could read: the rules that pass their tests and
+   have a tested proof, the sum of the five counts of the payload's
+   `summary.audit`. */
 function auditTotal() {
   var found = ((DATA && DATA.summary) || {}).audit || {};
   return AUDIT_WORDS.reduce(function (sum, pair) {
@@ -433,16 +431,10 @@ function auditTotal() {
   }, 0);
 }
 
-/* The audit's box. Where no audit has read a rule it reads `not audited` in
-   the neutral tone, as `not signed` reads: nothing waits on the audit, so
-   that is no warning. Otherwise `<s> of <n> strong`, the counts the summary
-   line gives, in the pass tone while no rule is weak and the warn tone once
-   one is. Its hover gives every count that is not zero, `strong` always,
-   one to a line, then the date of the newest entry. */
-function auditBox() {
-  if (!audited()) { return factBox(AUDIT, NOT_AUDITED, 'neutral'); }
+/* The audit's counts, for the `Strong` box's hover: every count that is not
+   zero, `strong` always, one to a line, then the date of the newest entry. */
+function auditCountLines() {
   var found = ((DATA && DATA.summary) || {}).audit || {};
-  var total = auditTotal();
   var lines = [];
   AUDIT_WORDS.forEach(function (pair) {
     var count = found[pair[0]] || 0;
@@ -454,14 +446,13 @@ function auditBox() {
     if (newer(at, newest)) { newest = at; }
   });
   if (newest) { lines.push(LAST_AUDIT + when(newest)); }
-  return factBox(AUDIT, (found.strong || 0) + ' ' + WORDS.of + ' ' + total
-    + ' strong', found.weak ? 'warn' : 'pass', lines);
+  return lines;
 }
 
-/* The three boxes. The tests read in the pass tone once met and the warn
-   tone until then; the sign-off in the pass tone at the signed commit, the
-   warn tone once commits have followed it, and the neutral tone before any;
-   then the audit's. */
+/* The two boxes, one for each fact. The tests read in the pass tone once met
+   and the warn tone until then; the sign-off in the pass tone at the signed
+   commit, the warn tone once commits have followed it, and the neutral tone
+   before any. */
 function factBoxes() {
   var signoff = DATA.signoff || {};
   var word = signoff.word || NOT_SIGNED;
@@ -469,7 +460,7 @@ function factBoxes() {
     : / at [0-9a-f]+$/.test(word) ? 'pass' : 'warn';
   return '<span class="facts">'
     + factBox(TESTS, DATA.met ? MET : NOT_MET, DATA.met ? 'pass' : 'warn')
-    + factBox(SIGNOFF, word, hue) + auditBox() + '</span>';
+    + factBox(SIGNOFF, word, hue) + '</span>';
 }
 
 /* The top bar. Over data the page cannot read it draws the mark and the
