@@ -537,7 +537,7 @@ class TestTheCall:
 
     # purlin: ai_audit PROOF-55
     def test_six_rules_are_each_asked_once_and_answered_in_order(
-            self, project, claude, monkeypatch):
+            self, project, claude):
         base = read(project, 'RULE-2')
         readings = [dict(base, rule='RULE-%d' % n,
                          rule_text='Rule number %d holds' % n)
@@ -565,19 +565,36 @@ class TestTheCall:
         assert results[0]['explanation'] == ['saw RULE-1']
         assert results[-1]['explanation'] == ['saw RULE-6']
 
-        # The audit run whole over six rules, answered the same way: each
-        # rule's entry holds the answer to its own request.
-        del asked[:]
-        ask_all = audit_module.audit_all
-        monkeypatch.setattr(
-            audit_module, 'audit_all',
-            lambda root, readings, cwd=None: ask_all(root, readings, 4,
-                                                     runner=runner, cwd=cwd))
+        # The audit run whole over six rules, with nothing of the audit
+        # replaced: it starts the `claude` on PATH itself. That `claude`
+        # answers the same way, the later the rule the sooner, and keeps one
+        # file for each time it is started.
+        _install, directory = claude
+        starts = os.path.join(str(directory), 'starts')
+        os.mkdir(starts)
+        with open(os.path.join(str(directory), 'claude'), 'w',
+                  encoding='utf-8') as handle:
+            handle.write(
+                '#!%s\n'
+                'import json, os, re, sys, time\n'
+                'rule = re.search(r"^login (RULE-\\d)$", sys.stdin.read(),\n'
+                '                 re.M).group(1)\n'
+                'time.sleep(0.05 * (7 - int(rule[5:])))\n'
+                'kept = os.path.join(%r, "%%s-%%d-%%d" %% (\n'
+                '    rule, os.getpid(), time.time() * 1e6))\n'
+                'with open(kept, "w") as start:\n'
+                '    start.write(rule)\n'
+                'sys.stdout.write(json.dumps({"result": "- saw %%s" %% rule}))\n'
+                % (sys.executable, starts))
         with rules_project(['pass'] * 6) as made:
             code, printed = audit(made)
             entries = [entry_of(made, 'RULE-%d' % n) for n in range(1, 7)]
         assert code == 0, printed
-        assert sorted(asked) == ['RULE-%d' % n for n in range(1, 7)], asked
+        # `claude` was started exactly once for each rule: six starts, one
+        # per rule, and no second request about any of them.
+        started = sorted(name.split('-')[0] + '-' + name.split('-')[1]
+                         for name in os.listdir(starts))
+        assert started == ['RULE-%d' % n for n in range(1, 7)], started
         assert [entry['explanation'] for entry in entries] == [
             ['saw RULE-%d' % n] for n in range(1, 7)], entries
 
