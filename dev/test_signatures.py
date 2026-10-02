@@ -1510,7 +1510,8 @@ class TestTheAgent:
             made.close()
 
     # purlin: signatures PROOF-221
-    def test_answers_walk_with_the_files_note(self, hand_checked, capsys):
+    def test_answers_holding_the_signers_address_walk_with_the_files_note(
+            self, hand_checked, capsys):
         path = os.path.join(hand_checked.root, *ANSWERS.split('/'))
         write(path, json.dumps({
             'audit': 'go on',

@@ -15,7 +15,7 @@ PATHS = ('references/drift_criteria.md', 'scripts/run/purlin_drift.py')
 
 
 # purlin: skill_drift PROOF-46
-def test_the_drift_skill_names_its_commands_and_its_criteria():
+def test_the_drift_skill_names_its_commands_its_criteria_and_its_script():
     text = flat(read(SKILL))
     assert [name for name in COMMANDS + PATHS if name not in text] == []
     assert must_name('drift', commands=COMMANDS, paths=PATHS) == []
