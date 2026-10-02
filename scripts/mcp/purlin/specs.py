@@ -32,6 +32,29 @@ if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 # ---------------------------------------------------------------------------
+# A spec's name
+# ---------------------------------------------------------------------------
+
+# What a spec's name holds: a letter, a digit or `_`, then those and `-`. The
+# marker reader, the anchor's `--name` and the upgrade read the same pattern.
+NAME = r'\w[\w-]*'
+_NAME_RE = re.compile(NAME)
+_NOT_IN_A_NAME_RE = re.compile(r'[^\w-]')
+
+
+def name_ok(name):
+    """True where the whole name matches NAME."""
+    return bool(_NAME_RE.fullmatch(name or ''))
+
+
+def _renamed(name):
+    """The name with each character a name cannot hold, and a leading `-`,
+    written `_`."""
+    new = _NOT_IN_A_NAME_RE.sub('_', name)
+    return '_' + new[1:] if new.startswith('-') else new
+
+
+# ---------------------------------------------------------------------------
 # Line grammar
 # ---------------------------------------------------------------------------
 
@@ -46,6 +69,10 @@ _PROOF_LINE_RE = re.compile(
 _PROOF_TAG_RE = re.compile(r'(?<!\band)(?<!\bor)(?<!,)\s+@(\w+)(?:\(([^)]*)\))?\s*$')
 
 ENVIRONMENTS = ('windows', 'macos', 'linux')
+
+# A tag standing between a proof's id and its rule ids, where no tag is read.
+_TAG_BEFORE_RULES_RE = re.compile(
+    r'^-\s+PROOF-\d+\s*(?:@manual\b|@slow\b|@env\()')
 
 # A line git leaves in a file whose merge stopped on a conflict: seven of one
 # marker character at the start of the line, then a space or the line's end.
@@ -464,8 +491,13 @@ CONFLICT_ONE = ('%s: 1 line is left from a merge conflict, at line %d: %s. '
                 'Run purlin:spec %s.')
 CONFLICT_MANY = ('%s: %d lines are left from a merge conflict, the first at '
                  'line %d: %s. Run purlin:spec %s.')
-PROOF_LINE_UNREAD = ('%s: a line under ## Proof cannot be read: %s. '
-                     'Run purlin:spec %s.')
+NAME_REFUSED = ('%s: the name holds a character other than letters, digits, '
+                '_ and -, so no test comment can name it. Rename the file: '
+                'git mv %s %s')
+PROOF_LINE_UNREAD = ('%s: a line under ## Proof cannot be read, because %s: '
+                     '"%s". Run purlin:spec %s.')
+TAG_AT_END = 'a tag goes at the end of the line'
+NOT_A_PROOF_LINE = 'a proof line reads `- PROOF-N (RULE-N): <text>`'
 
 # Why every rule of a spec reads `failed`: `broken_reasons` gives them.
 DOUBLED_REASON = '%s is written twice in the spec'
@@ -485,7 +517,7 @@ REMOTE_UNREAD = ('%s: its source, %s, carries %s, which Purlin does not read '
                  'on an anchor, so %s read as nothing. Ask the owners of %s to '
                  'take %s out, then run purlin:anchor sync %s.')
 
-# How much of a proof line that cannot be read its warning quotes.
+# How much of a line left from a merge conflict its warning quotes.
 PROOF_LINE_SHOWN = 60
 
 
@@ -495,12 +527,13 @@ def spec_mistakes(project_root, features):
     `features` is `scan_specs`' answer. The lines are warned of; a number
     written twice and a line left from a merge conflict also make every rule
     of the spec read `failed` (`broken_reasons`). They come in the order of
-    the mistakes, each sorted by feature: two specs with one name, a rule id
-    written twice, a proof id written twice, the lines left from a merge
-    conflict (one line per spec), a line under `## Proof` that is not a
-    proof line, a first line naming another feature, a proof tagged both
-    `@slow` and `@manual`, then the fields Purlin
-    does not read: every `> Requires:`, then every `> Global:`, then every
+    the mistakes, each sorted by feature: two specs with one name, a name
+    holding a character a name cannot (with the `git mv` that renames the
+    file), a rule id written twice, a proof id written twice, the lines
+    left from a merge conflict (one line per spec), a line under `## Proof`
+    that is not a proof line (quoted whole, with the reason), a first line
+    naming another feature, a proof tagged both `@slow` and `@manual`, then
+    the fields Purlin does not read: every `> Requires:`, then every `> Global:`, then every
     anchor's `> Scope:`. A remote anchor carrying any of the three has one
     line naming them all and its source, sorted with the `> Scope:` lines.
     A `> Scope:` entry naming a file git does not have is no mistake: the
@@ -523,6 +556,14 @@ def spec_mistakes(project_root, features):
                                       dropped.rsplit('/', 1)[0]))
 
     for name in sorted(features):
+        if name_ok(name):
+            continue
+        path = features[name]['spec_path']
+        folder = path.rsplit('/', 1)[0]
+        lines.append(NAME_REFUSED % (name, path, '%s/%s.md'
+                                     % (folder, _renamed(name))))
+
+    for name in sorted(features):
         for rule_id in features[name].get('doubled_rules') or ():
             lines.append(RULE_WRITTEN_TWICE % (name, rule_id, name))
     for name in sorted(features):
@@ -540,8 +581,9 @@ def spec_mistakes(project_root, features):
                                           name))
     for name in sorted(features):
         for line in features[name].get('unread_proof_lines') or ():
-            lines.append(PROOF_LINE_UNREAD
-                         % (name, line[:PROOF_LINE_SHOWN], name))
+            why = (TAG_AT_END if _TAG_BEFORE_RULES_RE.match(line)
+                   else NOT_A_PROOF_LINE)
+            lines.append(PROOF_LINE_UNREAD % (name, why, line, name))
     for name in sorted(features):
         other = features[name].get('heading_name')
         if other and other != name:

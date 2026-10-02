@@ -346,6 +346,12 @@ class TestTheIgnoreFile:
         assert '.purlin/runtime/' in read(
             project.path('.gitignore')).splitlines()
 
+    # purlin: scaffold PROOF-176
+    def test_the_gitignore_names_the_bytecode_cache(self, project):
+        project.run()
+        assert '__pycache__/' in read(
+            project.path('.gitignore')).splitlines()
+
     # purlin: scaffold PROOF-130
     @ON_WINDOWS
     def test_on_windows_a_crlf_gitignore_is_the_same_after_a_second_run(
@@ -495,6 +501,49 @@ class TestTheCommit:
                                      '.purlin/evidence/README.md'], committed
         assert git(project.root, 'diff', '--cached',
                    '--name-only').stdout.split() == ['notes.txt']
+
+    # purlin: scaffold PROOF-174
+    def test_a_second_run_with_yes_commits_what_the_first_wrote(self):
+        made = Project('pytest', host=None)
+        try:
+            code, out, err = made.child()
+            assert code == 0, out + err
+            assert git(made.root, 'rev-parse', 'HEAD').returncode != 0
+            code, out, err = made.child('--yes')
+            assert code == 0, out + err
+            lines = masked(out, made.root).splitlines()
+            at = lines.index('Committed <sha7>, the files setup wrote:')
+            assert lines[at + 1:at + 4] == [
+                '  .purlin/config.json', '  .gitignore',
+                '  .purlin/evidence/README.md'], lines
+            assert git(made.root, 'log', '--format=%s').stdout.splitlines() \
+                == ['chore(init): set up Purlin']
+        finally:
+            made.close()
+
+    # purlin: scaffold PROOF-175
+    def test_a_tracked_gitignore_is_committed_by_the_second_run(self):
+        made = Project(None, host=None)
+        try:
+            write(made.path('README.md'), '# The project\n')
+            write(made.path('.gitignore'), 'node_modules/\n')
+            git(made.root, 'add', '-A')
+            git(made.root, 'commit', '-q', '-m', 'the project')
+            first = head(made.root)
+            code, out, err = made.child()
+            assert code == 0, out + err
+            assert head(made.root) == first
+            code, out, err = made.child('--yes')
+            assert code == 0, out + err
+            assert git(made.root, 'rev-parse', 'HEAD~1').stdout.strip() \
+                == first, out
+            committed = git(made.root, 'show', '--name-only', '--format=',
+                            'HEAD').stdout.split()
+            assert sorted(committed) == [
+                '.gitignore', '.purlin/config.json',
+                '.purlin/evidence/README.md'], committed
+        finally:
+            made.close()
 
 
 # ---------------------------------------------------------------------------

@@ -5,8 +5,8 @@
 
 Init asks one question, and nothing about how the tests run:
 
-    Commit the files setup wrote? [y/N], only once it wrote or changed a
-      file git does not ignore
+    Commit the files setup wrote? [y/N], asked while one of its files is
+      on disk and not committed
 
 It writes, in this order and naming every one in the summary: `.purlin/` and
 `specs/`, the settings file, the `.gitignore` block, `.purlin/evidence/` with
@@ -14,8 +14,8 @@ its README, and the dashboard. The settings file holds `version`, the
 plugin's `VERSION` file, and `tests`, an empty list where the project carried
 none: the first test run suggests the command. Nothing is written into the
 project's test suite or its test runner's configuration, and no git hook is
-installed. On `y`, `yes` or `--yes` it commits exactly the files it wrote, in
-one commit. It ends on the lines `purlin:status` ends on for the project as
+installed. On `y`, `yes` or `--yes` it commits exactly its own files that are
+not committed as they stand, whichever run wrote them, in one commit. It ends on the lines `purlin:status` ends on for the project as
 it now is.
 
 Both ways of loading Purlin work, and neither is written into a project: this
@@ -49,7 +49,7 @@ EXIT_BAD_INVOCATION = 2
 NOT_A_REPOSITORY = ('This is not a git repository. Run git init, then '
                     'purlin:init.')
 
-# Setup asks whether it may commit what it wrote, and commits only that.
+# Setup asks whether it may commit its own files, and commits only those.
 COMMIT_QUESTION = 'Commit the files setup wrote?'
 COMMIT_SUBJECT = 'chore(init): set up Purlin'
 COMMITTED = 'Committed %s, the files setup wrote:'
@@ -116,8 +116,8 @@ def yes_or_no(question):
 class Plan(object):
     """Every write, as one line, in the order the summary prints it.
 
-    Each path is named once, and `files` holds every file written or
-    changed, in the order it was first named.
+    Each path is named once, and `files` holds every file setup named,
+    written or kept, in the order it was first named.
     """
 
     def __init__(self, root):
@@ -139,7 +139,7 @@ class Plan(object):
         else:
             self.named[rel] = len(self.lines)
             self.lines.append(line)
-        if word != 'kept' and not rel.endswith('/') and rel not in self.files:
+        if not rel.endswith('/') and rel not in self.files:
             self.files.append(rel)
 
     def directory(self, rel):
@@ -254,20 +254,22 @@ def _git_run(root, *args):
         return subprocess.CompletedProcess(args, 1, '', str(error))
 
 
-def to_commit(root, written):
-    """The files setup wrote or changed that git does not ignore, in the
-    order setup named them: the ones git sees as new or changed."""
-    if not written:
+def to_commit(root, named):
+    """Setup's own files that git does not ignore and does not hold as they
+    stand, in the order setup named them: the ones git lists as new or
+    changed. `named` is every file the plan named, kept or written, so a
+    file an earlier run wrote and nobody committed is among them."""
+    if not named:
         return []
-    ignored = _git_run(root, 'check-ignore', '--no-index', '--', *written)
+    ignored = _git_run(root, 'check-ignore', '--no-index', '--', *named)
     skip = set(ignored.stdout.splitlines())
     status = subprocess.run(
         ['git', 'status', '--porcelain', '-z', '--untracked-files=all',
-         '--'] + [rel for rel in written if rel not in skip],
+         '--'] + [rel for rel in named if rel not in skip],
         cwd=root, capture_output=True)
     seen = {entry[3:].decode('utf-8', 'replace')
             for entry in status.stdout.split(b'\0') if len(entry) > 3}
-    return [rel for rel in written if rel not in skip and rel in seen]
+    return [rel for rel in named if rel not in skip and rel in seen]
 
 
 def commit(root, paths):
@@ -375,8 +377,8 @@ def main(argv=None):
     for line in plan.lines:
         print(line)
 
-    # The one question: whether setup may commit what it wrote. `--yes`
-    # answers yes without asking.
+    # The one question: whether setup may commit its files, asked while one
+    # of them is on disk and not committed. `--yes` answers yes without asking.
     paths = to_commit(root, plan.files)
     if paths and (args.yes or yes_or_no(COMMIT_QUESTION) in ('y', 'yes')):
         commit(root, paths)

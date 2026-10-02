@@ -273,10 +273,10 @@ NOT_A_SPEC = ("not added. %s is not a spec in Purlin's format kept in a git "
 
 WORDS_GIVEN = 'The description given'
 
-# The refusal of a name that is not letters, digits and `_`: a name with a
-# `/` or `..` in it would be written outside `specs/_anchors/`. The name the
-# line ends on is the one given with every other character taken out.
-NAME_REFUSED = ('not added. --name takes letters, digits and _ alone. Run '
+# The refusal of a name no spec may hold (`specs.NAME`): a name with a `/` or
+# `..` in it would be written outside `specs/_anchors/`. The name the line
+# ends on is the one given with every other character taken out.
+NAME_REFUSED = ('not added. --name takes letters, digits, _ and - alone. Run '
                 'purlin:anchor add <source> --path <path> --name %s.')
 # The refusal of a name an anchor in the project already holds: the path of
 # that anchor, then its name.
@@ -288,7 +288,7 @@ NAME_TAKEN = ('not added. %s already holds an anchor of that name. Run '
 PATH_REFUSED = ('not added. --path takes a path inside the source, with no .. '
                 'and no leading /. Run purlin:anchor add <source> --path '
                 '<path> --name %s.')
-_NAME_RE = re.compile(r'[A-Za-z0-9_]+')
+_NAME_RE = re.compile(specs_module.NAME)
 
 
 def _default_name(source, path):

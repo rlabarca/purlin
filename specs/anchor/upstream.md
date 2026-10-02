@@ -11,7 +11,7 @@
 > Scope: scripts/anchor/upstream.py
 > Stack: python/stdlib, git plumbing over subprocess, no third-party package
 > Highest-Rule: 41
-> Highest-Proof: 64
+> Highest-Proof: 65
 
 ## Rules
 
@@ -66,6 +66,7 @@
 - PROOF-45 (RULE-25): Two anchors are pinned from one repository, a third, `refunds`, carries `> Source: policy.txt`, a file in the project, and a new version is published; `sync` with no name exits 2, the two remote anchors read `synced`, `refunds` reads `error`, no process it starts names `policy.txt`, and the copy of `refunds` is unchanged
 - PROOF-60 (RULE-36): The anchor `no_eval` is pinned, a new version of it is published, and the status is read; it prints `no_eval: the pin <first sha7> is behind its source, now <new sha7>. Run purlin:anchor sync no_eval.`, and `specs/_anchors/no_eval.md` is byte for byte as it was
 - PROOF-61 (RULE-22): The published anchor is added with `--name ../../outside`; it exits 2, the answer reads `error`, `specs/_anchors/` stays empty and no `outside.md` exists under the folder around the project
+- PROOF-65 (RULE-22): The published anchor is added with `--name sample-age`; it exits 0, and `specs/_anchors/sample-age.md` holds its rules
 - PROOF-62 (RULE-40): With `specs/_anchors/no_eval.md` holding the project's own rule `No eval in scripts`, the published anchor is added as `no_eval`; it exits 2, the answer reads `error`, and the file holds exactly its text from before
 - PROOF-63 (RULE-41): The folder around the project holds `private_notes.md`, a spec in Purlin's format, and the published anchor is added with `--path ../../../../../private_notes.md`, which names that file from the fetched source; it exits 2, the answer reads `error`, and `specs/_anchors/` stays empty
 - PROOF-64 (RULE-41): The published anchor is added with `--path` naming `private_notes.md` by its absolute path; it exits 2, the answer's error reads `not added. --path takes a path inside the source, with no .. and no leading /. Run purlin:anchor add <source> --path <path> --name private_notes.`, and `specs/_anchors/` stays empty

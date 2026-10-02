@@ -269,6 +269,61 @@ def test_a_first_line_naming_another_feature_is_warned_of(tmp_path):
     assert names == ['login'], names
 
 
+_ONE_RULE = ('# Feature: %s\n\n## Rules\n\n- RULE-1: One\n\n'
+             '## Proof\n\n- PROOF-1 (RULE-1): Test one\n')
+
+
+# purlin: schema_spec_format PROOF-88
+def test_a_name_with_another_character_is_warned_of_with_the_rename(tmp_path):
+    root = _project(tmp_path)
+    _write(root, 'specs/intake/sample.age.md', _ONE_RULE % 'sample.age')
+    result = purlin_status.sync_status(str(root))
+    assert ('sample.age: the name holds a character other than letters, '
+            'digits, _ and -, so no test comment can name it. Rename the '
+            'file: git mv specs/intake/sample.age.md '
+            'specs/intake/sample_age.md') in result.splitlines(), result
+
+
+# purlin: schema_spec_format PROOF-89
+def test_a_name_with_a_hyphen_is_read_and_not_warned_of(tmp_path):
+    root = _project(tmp_path)
+    _write(root, 'specs/intake/sample-age.md', _ONE_RULE % 'sample-age')
+    data = purlin_payload.build_payload(str(root))
+    assert [f['name'] for f in data['features']] == ['sample-age'], data
+    assert not [line for line in data['warnings'] if 'sample-age' in line], \
+        data['warnings']
+    features = purlin_specs.scan_specs(str(root))
+    assert purlin_specs.spec_mistakes(str(root), features) == []
+
+
+# ---------------------------------------------------------------------------
+# RULE-43: a line under `## Proof` that cannot be read is quoted whole
+# ---------------------------------------------------------------------------
+
+# purlin: schema_spec_format PROOF-90
+def test_a_tag_before_the_rule_ids_is_quoted_whole_with_its_reason(tmp_path):
+    root = _project(tmp_path)
+    _login(root, proofs='- PROOF-1 (RULE-1): Test one\n'
+           '- PROOF-7 @manual (RULE-7): A rejection message for an aged '
+           'sample is clear to a technician\n')
+    result = purlin_status.sync_status(str(root))
+    assert ('login: a line under ## Proof cannot be read, because a tag goes '
+            'at the end of the line: "- PROOF-7 @manual (RULE-7): A '
+            'rejection message for an aged sample is clear to a technician". '
+            'Run purlin:spec login.') in result.splitlines(), result
+
+
+# purlin: schema_spec_format PROOF-91
+def test_a_line_that_is_no_proof_line_is_quoted_with_the_form(tmp_path):
+    root = _project(tmp_path)
+    _login(root, proofs='- PROOF-1 (RULE-1): Test one\n'
+           '- PROOF-7: no rule named\n')
+    result = purlin_status.sync_status(str(root))
+    assert ('login: a line under ## Proof cannot be read, because a proof '
+            'line reads `- PROOF-N (RULE-N): <text>`: "- PROOF-7: no rule '
+            'named". Run purlin:spec login.') in result.splitlines(), result
+
+
 # ---------------------------------------------------------------------------
 # RULE-9: the two tags, read off the end
 # ---------------------------------------------------------------------------

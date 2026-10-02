@@ -535,6 +535,21 @@ def test_the_two_pytest_marks_become_comments(tmp_path, capsys):
             in printed), printed
 
 
+# purlin: update PROOF-168
+def test_a_mark_naming_a_feature_with_a_hyphen_becomes_a_comment(tmp_path,
+                                                                 capsys):
+    old = ('import pytest\n\n\n'
+           '@pytest.mark.proof("sample-age", "PROOF-1", "RULE-1")\n'
+           'def test_age():\n    pass\n')
+    root, printed = _rewritten(tmp_path, capsys, 'tests/test_age.py', old)
+    assert _read(root, 'tests/test_age.py') == (
+        'import pytest\n\n\n'
+        '# purlin: sample-age PROOF-1\n'
+        'def test_age():\n    pass\n')
+    assert ('  rewrote 1 marker in tests/test_age.py as comments'
+            in printed), printed
+
+
 # purlin: update PROOF-109
 def test_the_shell_harness_calls_become_one_comment(tmp_path, capsys):
     root, printed = _rewritten(tmp_path, capsys, 'tests/login.test.sh',

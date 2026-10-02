@@ -1,4 +1,4 @@
-> Format-Version: 4
+> Format-Version: 5
 
 # Marker format
 
@@ -24,7 +24,9 @@ func TestRejectsAWrongPassword(t *testing.T) {
 ```
 
 The shape is `purlin: <feature> PROOF-<n>`: the feature is the spec's name,
-and the proof is one of its `## Proof` lines. The marker names the proof only;
+and the proof is one of its `## Proof` lines. The feature is any name a spec
+may hold, as [spec_format.md](spec_format.md), "Location", says: `sample-age`
+is one. The marker names the proof only;
 the spec already says which rule a proof serves.
 
 Where a rule has no proof, the marker names the rule instead: `purlin: <feature> RULE-<n>`. A rule that has proofs is
@@ -249,7 +251,7 @@ exits 0; a wrong command line exits 2. Each entry is one comment:
 | `file` | the file, relative to the project root, `/` separated |
 | `line` | the line number, from 1 |
 | `text` | the comment as written, leading whitespace aside |
-| `fix` | the marker it meant, or null where the comment cannot be read |
+| `fix` | the marker it meant, or null where the comment cannot be read or its feature holds a character no spec's name may hold |
 | `why` | one sentence saying what is wrong |
 
 A comment is a near miss when `purlin` is misspelled by one letter or written in
@@ -263,3 +265,8 @@ has the one proof `PROOF-3`, it reads
 `` `RULE-30` is one character from `RULE-3`, which login has; a comment names its one proof, `PROOF-3`. ``
 One character from a rule with two or more proofs, or from two or more ids
 that exist, is not a near miss: Purlin never guesses.
+
+A comment whose feature holds a character no spec's name may hold has no fix,
+and its `why` names the characters a name holds: for
+`# purlin: sample.age PROOF-1` it reads
+`` `sample.age` holds a character a spec's name cannot: a name holds letters, digits, `_` and `-`. ``

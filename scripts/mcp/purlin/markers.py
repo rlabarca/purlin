@@ -7,7 +7,8 @@ the test it marks:
     def test_rejects_a_wrong_password():
 
 It names a feature and one of its proofs, or, where a rule has no proof, the
-rule: `purlin: login RULE-2`. A test may carry several markers, one line each.
+rule: `purlin: login RULE-2`. The feature is any name a spec may hold
+(`specs.NAME`). A test may carry several markers, one line each.
 `purlin:` is read after any of `#`, `//`, `--`, `;`, `%` and `'`, and inside
 `/* */` and `<!-- -->` on one line. `references/formats/marker_format.md` is
 the one home of the contract; this module is the one reader of it.
@@ -42,7 +43,8 @@ edits:
 prints one JSON array of `{"file", "line", "text", "fix", "why"}` and exits 0;
 a wrong command line exits 2. A near miss is `purlin` misspelled by one
 letter or in capitals, no space after the colon, a `purlin:` comment that
-cannot be read (its `fix` is null), or a feature name, a PROOF or a RULE id
+cannot be read or whose feature holds a character no spec's name may hold
+(its `fix` is null), or a feature name, a PROOF or a RULE id
 one edit from one that exists.
 """
 
@@ -58,6 +60,8 @@ import tokenize
 _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
+
+from purlin import specs as specs_module                      # noqa: E402
 
 # The four report formats a suite may name.
 FORMATS = ('junit', 'trx', 'gotest', 'exit')
@@ -75,7 +79,8 @@ _COMMENT_RE = re.compile(
     r"""^\s*(?:\#|//|--|;|%|'|/\*|<!--)\s*purlin:\s+(?P<rest>.*?)\s*"""
     r"""(?:\*/|-->)?\s*$""")
 # What follows `purlin:` in a marker: a feature and one proof or rule id.
-_BODY_RE = re.compile(r'^(?P<feature>\w+)\s+(?P<id>(?:PROOF|RULE)-\d+)$')
+_BODY_RE = re.compile(r'^(?P<feature>%s)\s+(?P<id>(?:PROOF|RULE)-\d+)$'
+                      % specs_module.NAME)
 
 _PY_EXTENSIONS = ('.py',)
 _JS_EXTENSIONS = ('.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx', '.mts',
@@ -991,14 +996,18 @@ _LOOSE_RE = re.compile(
     r"""^(?P<lead>\s*(?:\#|//|--|;|%|'|/\*|<!--)\s*)"""
     r"""(?P<word>[A-Za-z0-9]{5,7}):(?P<gap>\s*)(?P<rest>.*?)"""
     r"""(?P<tail>\s*(?:\*/|-->)?\s*)$""")
-# What follows the colon, with an id of any spelling.
-_LOOSE_BODY_RE = re.compile(r'^(?P<feature>\w+)\s+(?P<kind>[A-Za-z]+)-'
+# What follows the colon, with a feature and an id of any spelling.
+_LOOSE_BODY_RE = re.compile(r'^(?P<feature>\S+)\s+(?P<kind>[A-Za-z]+)-'
                             r'(?P<number>\d+)$')
 _KINDS = ('PROOF', 'RULE')
 
 # Why a `purlin:` comment that cannot be read is a near miss.
 UNREADABLE = ('the comment names no `<feature> PROOF-<n>` or '
               '`<feature> RULE-<n>`')
+
+# Why a comment whose feature no spec's name could be has no fix.
+NAME_CHARACTERS = ("`%s` holds a character a spec's name cannot: a name holds "
+                   "letters, digits, `_` and `-`")
 
 NEAR_MISSES_USAGE = ('Usage: markers.py --near-misses '
                      '[--project-root DIR]')
@@ -1026,7 +1035,8 @@ def near_miss(line, features):
     """`(fix, why)` for a comment that is nearly a marker, else None.
 
     `features` is `specs.scan_specs`' answer. `fix` is the line as it should
-    read, or None where the comment cannot be read; `why` is one sentence.
+    read, or None where the comment cannot be read or its feature holds a
+    character no spec's name may hold; `why` is one sentence.
     An id one character from a rule offers the rule where it has no proof,
     its proof where it has one, and nothing where it has two or more.
     """
@@ -1057,6 +1067,9 @@ def near_miss(line, features):
         why.append('`%s` is `%s` in lower case' % (kind, fixed))
     kind = fixed
     feature = body.group('feature')
+    if not specs_module.name_ok(feature):
+        why.append(NAME_CHARACTERS % feature)
+        return None, _sentence(why)
     if feature not in features:
         fixed = _only(sorted(name for name in features
                              if one_edit(feature, name)))
@@ -1144,7 +1157,6 @@ def main(argv):
     if args is None or args or not os.path.isdir(root):
         print(NEAR_MISSES_USAGE, file=sys.stderr)
         return 2
-    from purlin import specs as specs_module
     features = specs_module.scan_specs(root)
     print(json.dumps(near_misses(root, features)))
     return 0

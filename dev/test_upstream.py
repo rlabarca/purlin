@@ -511,13 +511,26 @@ def test_a_name_that_leads_out_of_the_anchor_folder_is_refused(workspace):
     answer = json.loads(out)
     assert (code, answer['status']) == (2, 'error')
     assert answer['error'] == (
-        'not added. --name takes letters, digits and _ alone. Run '
+        'not added. --name takes letters, digits, _ and - alone. Run '
         'purlin:anchor add <source> --path <path> --name outside.')
     assert _anchors_held(workspace) == []
     around = os.path.dirname(workspace.root)
     assert [os.path.join(folder, name)
             for folder, _dirs, names in os.walk(around)
             for name in names if name == 'outside.md'] == []
+
+
+# purlin: upstream PROOF-65
+def test_a_name_holding_a_hyphen_is_added(workspace):
+    code, out = _cli(workspace, ['add', workspace.anchor_repo, '--path',
+                                 'specs/no_eval.md', '--name', 'sample-age',
+                                 '--json'])
+    assert code == 0, out
+    assert _anchors_held(workspace) == ['sample-age.md'], out
+    with open(os.path.join(workspace.root, 'specs', '_anchors',
+                           'sample-age.md'), encoding='utf-8') as handle:
+        held = handle.read()
+    assert '- RULE-1: No eval() in source files' in held.splitlines(), held
 
 
 OWN_ANCHOR = """# Anchor: no_eval

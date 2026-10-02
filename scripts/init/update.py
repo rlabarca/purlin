@@ -40,7 +40,8 @@ _MCP_DIR = os.path.join(PLUGIN_ROOT, 'scripts', 'mcp')
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from purlin import console as console_module                  # noqa: E402
+from purlin import (console as console_module,                # noqa: E402
+                    specs as specs_module)
 import config_engine                                          # noqa: E402
 # --- what 0.9.5 wrote, which the upgrade finds and rewrites --------------
 
@@ -74,20 +75,25 @@ NAMED_MANY = ('%s: its rules now cover the whole project, where %d specs '
               'in each of their specs: run purlin:spec %s.')
 # The markers v0.9.5's proof plugins read, one per framework, and the files
 # its init copied and wired. The upgrade rewrites the first and removes the
-# second; nothing else in this release reads either.
+# second; nothing else in this release reads either. A mark's feature is any
+# name a spec may hold.
+_NAME = specs_module.NAME
 PYTEST_MARK_RE = re.compile(r'^([ \t]*)@pytest\.mark\.proof\(')
-PYTEST_ARGS_RE = re.compile(r"""\(\s*["'](\w+)["']\s*,\s*["'](PROOF-\d+)["']""")
+PYTEST_ARGS_RE = re.compile(
+    r"""\(\s*["'](%s)["']\s*,\s*["'](PROOF-\d+)["']""" % _NAME)
 PYTESTMARK_RE = re.compile(r'pytest\.mark\.proof\(')
-TITLE_TAG_RE = re.compile(r' ?\[proof:(\w+):(PROOF-\d+):RULE-\d+(?::\w+)?\]')
+TITLE_TAG_RE = re.compile(
+    r' ?\[proof:(%s):(PROOF-\d+):RULE-\d+(?::\w+)?\]' % _NAME)
 TRAIT_RE = re.compile(r'(\[\s*)?,?\s*Trait\s*\(\s*"PurlinProof"\s*,\s*'
-                      r'"(\w+):(PROOF-\d+):RULE-\d+(?::\w+)?"\s*\)(\s*\])?')
-SHELL_CALL_RE = re.compile(r'^([ \t]*)purlin_proof\s+["\']?(\w+)["\']?\s+'
-                           r'["\']?(PROOF-\d+)["\']?.*$')
+                      r'"(%s):(PROOF-\d+):RULE-\d+(?::\w+)?"\s*\)(\s*\])?'
+                      % _NAME)
+SHELL_CALL_RE = re.compile(r'^([ \t]*)purlin_proof\s+["\']?(%s)["\']?\s+'
+                           r'["\']?(PROOF-\d+)["\']?.*$' % _NAME)
 SHELL_HARNESS_RE = re.compile(r'^([ \t]*)(?:source|\.)\s+\S*(?:purlin-proof|'
                               r'shell_purlin)\.sh\S*\s*$')
 SHELL_FINISH_RE = re.compile(r'^([ \t]*)purlin_proof_finish\b.*$')
-SQL_MARK_RE = re.compile(r'^--[ \t]*@purlin[ \t]+(\w+)[ \t]+(PROOF-\d+)'
-                         r'[ \t]+RULE-\d+(?:[ \t]+\w+)?[ \t]*$')
+SQL_MARK_RE = re.compile(r'^--[ \t]*@purlin[ \t]+(%s)[ \t]+(PROOF-\d+)'
+                         r'[ \t]+RULE-\d+(?:[ \t]+\w+)?[ \t]*$' % _NAME)
 PLUGIN_DIR = '.purlin/plugins'
 CONFTEST_PLUGIN_RE = re.compile(
     r"""["']\.purlin\.plugins\.pytest_purlin["']\s*,?\s*""")
