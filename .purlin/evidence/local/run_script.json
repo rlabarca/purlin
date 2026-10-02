@@ -2,7 +2,7 @@
   "audit": {
     "rules": {
       "RULE-10": {
-        "at": "2026-10-02T09:57:40Z",
+        "at": "2026-10-02T11:01:49Z",
         "breaks": {
           "PROOF-10": {
             "after": "        if feature not in selected:",
@@ -17,37 +17,35 @@
           },
           "PROOF-115": {
             "after": "            if env:",
-            "aim": "past the test",
+            "aim": "plain",
             "before": "            if env and env != os_name:",
-            "break_key": "ee0278c783b5f0aee6d547026de2aafaf7c9e8b8b1de79f9b28f660753937db9",
-            "case": "PROOF-1 tagged `@env` for this machine's own system; the proof says no `needs` line is printed for it; the changed code prints `1 proof needs <this system>; this machine is <this system>. Run purlin:test on <this system>.`",
+            "break_key": "f03705392667f6868280317d4280e6b3c7667b626c2ef1c6bb78c6e75e7eafe5",
+            "case": "PROOF-1 tagged `@env` for this machine's own system, run with `--all --test`; the proof says no `needs` line is printed for it; the changed code prints `1 proof needs <this system>; this machine is <this system>. Run purlin:test on <this system>.`",
             "file": "scripts/run/purlin_run.py",
             "line": 346,
-            "result": "survived",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "329289bc40e104168e656dbe4f69a83c68a285af03904ac7098b6f06e6f43437",
-        "commit": "c08b3ecbe1b4b4cf6629df2bd9e883c25a5d6413",
+        "commit": "3f599fc3e78044536a24548be8a38aa0b726a886",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
         "explanation": [
-          "PROOF-10: the test runs `--all --test` with PROOF-2 tagged for another system and its test skipped, and compares the whole `1 proof needs` line, the absence of `Evidence is missing`, both proofs' results and RULE-1's `passed` word, so each result the proof names is observed.",
-          "PROOF-10: the expected system words come from the evidence reader's own naming and from the run script's own answer for this machine, so a wrong name for this machine in both places would not be noticed.",
-          "PROOF-115: the test compares the evidence entry as `PROOF-1`, `pass` and this system, and the exit code as 0, which are the proof's values.",
-          "PROOF-115: the test looks for `needs` followed by the system's internal lowercase name, while the printed line uses the display word (`Windows`, `macOS` or `Linux/Unix`), so a `needs` line printed for this machine's own system still passes.",
-          "No finding was reported by the spot tests, and nothing in either test is an always-true check; what they miss is the wording gap in PROOF-115's `needs` check.",
-          "Neither proof covers the plural line `<n> proofs need <system>` or a tagged proof with no test tied to it, which the rule names."
+          "PROOF-10: the test compares the whole `1 proof needs \u2026` line against the output lines, checks `Evidence is missing` is absent, compares the evidence's proofs to `PROOF-1` `pass` and `PROOF-2` `not run`, and reads RULE-1's `passed` word for this system, so each value the proof names is observed.",
+          "PROOF-10: the expected system words come from `os_word`, the same code that writes the line, so a wrong spelling of `Windows`, `macOS` or `Linux/Unix` would still pass.",
+          "PROOF-10: the foreign proof's test is skipped here, so `not run` would be listed by the skip alone and the test does not show that the tag itself makes it `not run`.",
+          "PROOF-115: the test looks for any line starting with a count and `proof needs` or `proofs need`, compares the evidence's proofs to `PROOF-1`, `pass` and this system, and checks the exit code is 0, so each result the proof names is observed and no change gets past it.",
+          "PROOF-115: the line `assert _proofs(root, 'feat') is not None` adds nothing beyond the comparison that follows it.",
+          "No finding was reported by the spot tests, and nothing in either test contradicts that.",
+          "No proof of the rule covers the plural line `<n> proofs need <system>` or a tagged proof with no test tied to it being left out of the count."
         ],
-        "findings": [
-          "PROOF-115: the test still passes when scripts/run/purlin_run.py:346 reads \"if env:\"",
-          "PROOF-115: the AI says this breaks: PROOF-1 tagged `@env` for this machine's own system; the proof says no `needs` line is printed for it; the changed code prints `1 proof needs <this system>; this machine is <this system>. Run purlin:test on <this system>.`"
-        ],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "caa7fbf7530d45819ee6ec281680dd4f0b8e82c4768b76805d4fb561a2cdcf34",
         "rule_hash": "21ab9d6a63b19452da3cee7583fae2bff94fe0e66c7f4f4fe76bc31e9be396e2",
-        "test_hash": "3fe95787bba00883d107f7eb1f6640ae46767b9b6413aedc62ccdfa4be986e0e",
-        "verdict": "weak"
+        "test_hash": "70e57ef3e223dc7941ba1a31d72be803cf188dca8b9949f3e39f24d7ce26227d",
+        "verdict": "strong"
       },
       "RULE-100": {
         "at": "2026-10-02T09:57:40Z",
@@ -120,28 +118,28 @@
         "verdict": "strong"
       },
       "RULE-101": {
-        "at": "2026-10-02T09:57:40Z",
+        "at": "2026-10-02T11:01:49Z",
         "breaks": {
           "PROOF-91": {
-            "after": "    return [row['feature'] for row in rows]",
-            "aim": "past the test",
-            "before": "    return [row['feature'] for row in chosen]",
-            "break_key": "12ed4773d4082919d3c52e4154b7243832b4745e6ead4b1e9c1a0d94804e64e7",
-            "case": "`invoice` committed and never run beside current `login` and `export`, then `--test` with no feature named; the proof says the run selects `invoice` alone; the changed code prints the same lines but runs export, invoice and login, ending `Ran pytest on 3 features.`",
+            "after": "                                  _plural(len(skipped), 'their', 'its'),",
+            "aim": "plain",
+            "before": "                                  _plural(len(skipped), 'its', 'their'),",
+            "break_key": "731245cb25aa9ff48955176659c93d5acd862ccfc99e4edaf36c70a096f4ee59",
+            "case": "`invoice` committed and never run beside current `login` and `export`; the proof says `Skipped 2 features whose spec, code and tests match their evidence: export, login. purlin:test --all runs them too.`; the changed code prints `match its evidence` for the two skipped features",
             "file": "scripts/run/purlin_run.py",
-            "line": 1523,
-            "result": "survived",
+            "line": 1518,
+            "result": "caught",
             "why": ""
           },
           "PROOF-93": {
-            "after": "    return [row['feature'] for row in rows]",
-            "aim": "past the test",
-            "before": "    return [row['feature'] for row in chosen]",
-            "break_key": "c7a8daed7994899d31a83df4adefcbacf753620a41fa82df2bf3612e2f2e34bc",
-            "case": "untracked `src/auth/token.py` under `login`'s scope beside current `export`, then `--test`; the proof says the run selects `login` alone; the changed code prints the same lines but runs both export and login, ending `Ran pytest on 2 features.`",
+            "after": "            where = (\"in %s's scope\" % names[0] if kind == 'scope'",
+            "aim": "plain",
+            "before": "            where = (\"under %s's scope\" % names[0] if kind == 'scope'",
+            "break_key": "27295bec2ce1996e371db2a0b05c36796f8175b62059580dc1fe75fc5671afad",
+            "case": "`src/auth/token.py` written under `login`'s scope and not added to git; the proof says `src/auth/token.py is under login's scope and is not tracked, so its content is not part of the evidence until you git add it.`; the changed code prints `src/auth/token.py is in login's scope and is not tracked, .",
             "file": "scripts/run/purlin_run.py",
-            "line": 1523,
-            "result": "survived",
+            "line": 1540,
+            "result": "caught",
             "why": ""
           },
           "PROOF-94": {
@@ -157,44 +155,36 @@
           }
         },
         "code_hash": "329289bc40e104168e656dbe4f69a83c68a285af03904ac7098b6f06e6f43437",
-        "commit": "c08b3ecbe1b4b4cf6629df2bd9e883c25a5d6413",
+        "commit": "3f599fc3e78044536a24548be8a38aa0b726a886",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
         "explanation": [
-          "PROOF-94: the test compares the exit code with 0, looks for the whole `Selected 1 of 12 features: f01 (code changed since <sha7>).` line with the commit's own seven characters, and checks it comes before `Running the pytest suite.`, which is every value the proof names.",
-          "PROOF-91: the test compares the exit code with 0, the parsed selection with `invoice` alone and its reason `no run on <System> yet`, and looks for the `Skipped 2 features ... export, login. purlin:test --all runs them too.` text anywhere in the output.",
-          "PROOF-91: the test reads only what the run printed about its selection and never which features the run went on to cover, so a run that prints `invoice` alone and runs all three still passes.",
-          "PROOF-91: the Skipped text is looked for as a part of the output and not as a whole line, so words added before or after it on that line would not be noticed.",
-          "PROOF-93: the test compares the exit code with 0, the parsed selection with `login` alone and its reason `a file is not tracked`, and looks for the untracked-file sentence as a whole line of the output.",
-          "PROOF-93: the test reads only the printed selection and never the `Ran ... on 1 feature.` line or the evidence written, so a run that covers `export` as well still passes.",
-          "The spot tests found nothing, and that holds: each of the three tests asserts on the run's real output against literals the proofs name, with no mock of the run, no swallowed error and no expected value taken from the selection code."
+          "PROOF-94: the test compares the exit code with 0, looks for the whole line `Selected 1 of 12 features: f01 (code changed since <sha7>).` among the output lines and checks it comes before `Running the pytest suite.`, which is what the proof names.",
+          "PROOF-91: the test compares the exit code with 0, the selection with `invoice` alone and its reason, and looks for the whole `Skipped 2 features ...` line among the output lines, so the proof's results are all compared.",
+          "PROOF-91: the system word in the expected reason `no run on <System> yet` is taken from the code's own `os_word` and `host_os`, so a wrong system word would pass unnoticed.",
+          "PROOF-91: the test does not check that the skipped line comes before the suite runs, which the rule says and the proof does not name.",
+          "PROOF-93: the test compares the exit code with 0, the selection with `login` alone and the reason `a file is not tracked`, and looks for the whole untracked-file line among the output lines, so the proof's results are all compared.",
+          "PROOF-93: the test does not check that the untracked-file line comes before the suite runs or after the selected line, which the rule says and the proof does not name.",
+          "The spot tests found nothing, and each test holds the literal values its proof names, so there is no finding to explain."
         ],
-        "findings": [
-          "PROOF-91: the test still passes when scripts/run/purlin_run.py:1523 reads \"return [row['feature'] for row in rows]\"",
-          "PROOF-91: the AI says this breaks: `invoice` committed and never run beside current `login` and `export`, then `--test` with no feature named; the proof says the run selects `invoice` alone; the changed code prints the same lines but runs export, invoice and login, ending `Ran pytest on 3 features.`",
-          "PROOF-93: the test still passes when scripts/run/purlin_run.py:1523 reads \"return [row['feature'] for row in rows]\"",
-          "PROOF-93: the AI says this breaks: untracked `src/auth/token.py` under `login`'s scope beside current `export`, then `--test`; the proof says the run selects `login` alone; the changed code prints the same lines but runs both export and login, ending `Ran pytest on 2 features.`"
-        ],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-91 names its reason as `no run on <System> yet`, and the test takes the system's word from the software's own naming of the machine and not from a literal."
-        ],
         "proof_hash": "2d8e26c28af49fdc2a862c77cb0cf3756691a4178d3a6a4ff3f28d487dc1345b",
         "rule_hash": "7fff22e3d354593143b7d5ff113de4ed9f9f465fb791d6ff0c33e050d7df375b",
-        "test_hash": "6197b07d54de66167632a6be147afe2a67c4a5c4708473d36777e5b8a2074aaa",
-        "verdict": "weak"
+        "test_hash": "182df0ba63c74a36a8897a729c601d7d60cb6ae9fed77e80a69aeef63e0804d3",
+        "verdict": "strong"
       },
       "RULE-102": {
-        "at": "2026-10-02T09:57:40Z",
+        "at": "2026-10-02T11:01:49Z",
         "breaks": {
           "PROOF-126": {
-            "after": "        if entries:\n            update_config(project_root, 'tests', entries)\n        if not entries or not (args.write_tests or asked_yes(WRITE_QUESTION)):\n            return 1",
+            "after": "        'report': REPORTS + '/pytest.xml', 'format': 'trx',",
             "aim": "past the test",
-            "before": "        if not entries or not (args.write_tests or asked_yes(WRITE_QUESTION)):\n            return 1",
-            "break_key": "d549164b0924be5ebdfe60cac9e5392f10eb55c54c483be98219558a158a7a30",
-            "case": "empty `tests` setting with a `conftest.py`, `--all --test` and no yes; the proof says nothing is written under `.purlin/`; the changed code writes the suggested tests setting into `.purlin/config.json` before it exits 1",
-            "file": "scripts/run/purlin_run.py",
-            "line": 1176,
+            "before": "        'report': REPORTS + '/pytest.xml', 'format': 'junit',",
+            "break_key": "92050d96752beed522e3e78131174c7fedffced66d7b8bc000d85e1e35ee2787",
+            "case": "an empty `tests` setting and a `conftest.py`, run with `--all --test`; the proof says the JSON array holds pytest's entry alone, whose format is `junit`; the changed code prints an array whose one entry has the format `trx`",
+            "file": "scripts/mcp/purlin/frameworks.py",
+            "line": 37,
             "result": "survived",
             "why": ""
           },
@@ -222,31 +212,29 @@
           }
         },
         "code_hash": "329289bc40e104168e656dbe4f69a83c68a285af03904ac7098b6f06e6f43437",
-        "commit": "c08b3ecbe1b4b4cf6629df2bd9e883c25a5d6413",
+        "commit": "3f599fc3e78044536a24548be8a38aa0b726a886",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
         "explanation": [
-          "PROOF-126: the test compares the three lines before the last with the proof's two literal lines and a `Suggested tests setting:` line, and checks the exit code is 1.",
-          "PROOF-126: the JSON array it expects is built from `frameworks.entry_for('pytest')`, the code under test, so a wrong report path, format or file glob in pytest's entry still passes.",
-          "PROOF-126: the test checks that `.purlin/` holds only `config.json` and never reads that file's content, so a run that writes the tests setting into it without a yes still passes.",
-          "PROOF-127: the test compares the last printed line with the proof's full message, checks that `.purlin/` holds only `config.json` and checks exit code 1, which is the proof's case and results.",
-          "PROOF-127: the test does not read the content of `config.json`, so a write into that file would go unseen.",
-          "PROOF-134: the test finds the single line starting `Suggested for jest: ` and compares the line after it with the proof's full message, which is the proof's case and result.",
-          "PROOF-134: the test does not read the exit code, and the proof names none.",
-          "Findings: none were reported; the spot tests do not catch that PROOF-126's expected array comes from the code."
+          "PROOF-126: the test compares the first two printed lines with literals, the unchanged `.purlin/` tree and the exit code 1, which are the values the proof names.",
+          "PROOF-126: the test builds the expected JSON array from `frameworks.entry_for('pytest')`, the code that also builds the printed one, so a wrong report path, format or file globs in pytest's entry still passes.",
+          "PROOF-126: the test reads the three lines before the last one only, so a line printed above `No test command is set` is not observed.",
+          "PROOF-127: the test compares the last printed line with the proof's full sentence as a literal, the files under `.purlin/` with the settings file alone, and the exit code with 1.",
+          "PROOF-134: the test finds the single line starting `Suggested for jest: ` and compares the line right after it with the proof's sentence as a literal, which is what the proof names.",
+          "Findings: there are none, and the spot tests do not catch that PROOF-126's expected array comes from the code, because `entry_for` is a helper of the run and not the function whose result the test asserts on."
         ],
         "findings": [
-          "PROOF-126: the test still passes when scripts/run/purlin_run.py:1176 reads \"if entries:\"",
-          "PROOF-126: the AI says this breaks: empty `tests` setting with a `conftest.py`, `--all --test` and no yes; the proof says nothing is written under `.purlin/`; the changed code writes the suggested tests setting into `.purlin/config.json` before it exits 1"
+          "PROOF-126: the test still passes when scripts/mcp/purlin/frameworks.py:37 reads \"'report': REPORTS + '/pytest.xml', 'format': 'trx',\"",
+          "PROOF-126: the AI says this breaks: an empty `tests` setting and a `conftest.py`, run with `--all --test`; the proof says the JSON array holds pytest's entry alone, whose format is `junit`; the changed code prints an array whose one entry has the format `trx`"
         ],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "55fa113697362596ef619544873e86695a4993c60058366327379c947e7cceaf",
         "rule_hash": "ed4f1971e5bb1a543254612922f98fd763f9274c876e0194ba99221b9d9fb317",
-        "test_hash": "188bae8a6c8a038bac519801b7b2f19fce21a9fa9c32b8257d85969198197064",
+        "test_hash": "7508971773da42c187cf7e89b593dd74e1e6679b6df61fd7bdf0d71f70963538",
         "verdict": "weak"
       },
       "RULE-103": {
-        "at": "2026-10-02T09:57:40Z",
+        "at": "2026-10-02T11:01:49Z",
         "breaks": {
           "PROOF-137": {
             "after": "NO_SETTINGS = ('No .purlin/config.json here, so nothing ran. Run purlin:init '\n               'to create it.')",
@@ -260,48 +248,46 @@
             "why": ""
           },
           "PROOF-138": {
-            "after": "    if set_up_by_095(project_root):\n        with open(os.path.join(project_root, SETTINGS_PATH), 'a') as handle:\n            handle.write('\\n')\n        return SET_UP_BY_AN_OLDER_PURLIN",
+            "after": "    return (isinstance(config, dict) and 'tests' not in config\n            and config.get('version') == '0.9.5')",
             "aim": "past the test",
-            "before": "    if set_up_by_095(project_root):\n        return SET_UP_BY_AN_OLDER_PURLIN",
-            "break_key": "267d963561d5e4f961b08ca37f87da4d44795c3f4c092317286fc2e50cede432",
-            "case": "a project whose `.purlin/config.json` carries no `tests` key, run with `--all --test`; the proof says it writes nothing under `.purlin/`; the changed code appends a line to `.purlin/config.json` before it stops",
+            "before": "    return isinstance(config, dict) and 'tests' not in config",
+            "break_key": "93aab3e9a83fd3354987273d71a12a2b3099ac8612274ec5c41e69457994398a",
+            "case": "a `.purlin/config.json` with no `tests` key whose version stamp is not `0.9.5`; the proof says the run prints the older-Purlin line and exits 1; the changed code goes on and prints the no-test-command lines instead",
             "file": "scripts/run/purlin_run.py",
-            "line": 1420,
+            "line": 1440,
             "result": "survived",
             "why": ""
           },
           "PROOF-224": {
-            "after": "    if problem:\n        with open(os.path.join(project_root, SETTINGS_PATH), 'a') as handle:\n            handle.write('\\n')\n        return problem",
-            "aim": "past the test",
+            "after": "    if problem:\n        return SET_UP_BY_AN_OLDER_PURLIN",
+            "aim": "plain",
             "before": "    if problem:\n        return problem",
-            "break_key": "37d683ad10cbdb2dbc8d65110720fb5a4acb9a133b8144f5525ddee15e49b996",
-            "case": "a project whose `.purlin/config.json` holds a trailing comma after its last setting, run with `--all --test`; the proof says it writes nothing under `.purlin/`; the changed code appends a line to `.purlin/config.json` before it stops",
+            "break_key": "7da0064e263eae46782046d9bc656ed503454fc068124548802e925672be9437",
+            "case": "a `.purlin/config.json` with a trailing comma after its last setting; the proof says the run prints `.purlin/config.json cannot be read: ...`; the changed code prints `This project was set up by an older Purlin and not upgraded, so nothing ran. Run purlin:init --update.`",
             "file": "scripts/run/purlin_run.py",
             "line": 1418,
-            "result": "survived",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "329289bc40e104168e656dbe4f69a83c68a285af03904ac7098b6f06e6f43437",
-        "commit": "c08b3ecbe1b4b4cf6629df2bd9e883c25a5d6413",
+        "commit": "3f599fc3e78044536a24548be8a38aa0b726a886",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
         "explanation": [
-          "PROOF-137: the test removes the settings file, compares the whole output with the proof's one line, compares every file's path and bytes before and after the run, and checks exit code 1, so it observes everything the proof names.",
-          "PROOF-138: the test writes a settings file with no `tests` key, compares the whole output with the proof's line and checks exit code 1, but for \"writes nothing under `.purlin/`\" it compares only the list of file names, so a change to the content of `.purlin/config.json` still passes.",
-          "PROOF-224: the test writes a settings file with a trailing comma, takes the reader's message and line from Python's own JSON reader rather than from the code under test, compares the whole output and checks exit code 1, but it too compares only the names of the files under `.purlin/`, not their content.",
-          "The spot tests found nothing, and that holds: each test asserts on the output, the files and the exit code, and none takes its expected value from the run script."
+          "PROOF-137: the test deletes the settings file, runs `--all --test`, and compares the whole output with the proof's line, every file's bytes before and after, and the exit code with 1, so it observes all the proof names.",
+          "PROOF-138: the test compares the whole output with the proof's line, the files under `.purlin/` before and after, and the exit code with 1, but its settings file always carries the version `0.9.5`, so code that reads the version stamp instead of the missing `tests` key alone still passes.",
+          "PROOF-224: the test writes a settings file with a trailing comma, takes the message and line from Python's own JSON reader rather than from the code under test, and compares the whole output, the files under `.purlin/` and the exit code with 1, so a wrong line, a write or a wrong code fails it.",
+          "Findings: the spot tests found none, and each test holds the line its proof names in backticks and failable comparisons on the output, the files and the exit code."
         ],
         "findings": [
-          "PROOF-138: the test still passes when scripts/run/purlin_run.py:1420 reads \"with open(os.path.join(project_root, SETTINGS_PATH), 'a') as handle:\"",
-          "PROOF-138: the AI says this breaks: a project whose `.purlin/config.json` carries no `tests` key, run with `--all --test`; the proof says it writes nothing under `.purlin/`; the changed code appends a line to `.purlin/config.json` before it stops",
-          "PROOF-224: the test still passes when scripts/run/purlin_run.py:1418 reads \"with open(os.path.join(project_root, SETTINGS_PATH), 'a') as handle:\"",
-          "PROOF-224: the AI says this breaks: a project whose `.purlin/config.json` holds a trailing comma after its last setting, run with `--all --test`; the proof says it writes nothing under `.purlin/`; the changed code appends a line to `.purlin/config.json` before it stops"
+          "PROOF-138: the test still passes when scripts/run/purlin_run.py:1440 reads \"return (isinstance(config, dict) and 'tests' not in config\"",
+          "PROOF-138: the AI says this breaks: a `.purlin/config.json` with no `tests` key whose version stamp is not `0.9.5`; the proof says the run prints the older-Purlin line and exits 1; the changed code goes on and prints the no-test-command lines instead"
         ],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "ef66203dda1a16d201bfb1dcb9ad9cbe09f20c84396a47407320ad5913b5b957",
         "rule_hash": "1a3609a7df2e966d7c0b1c1eeeccafd92c197f07cb14e81aad81f4c6b2f4d90c",
-        "test_hash": "a8b2b05ef3606f2d3cef5cf5150254f8c11438e59ee8b9999691703359d41475",
+        "test_hash": "ee1e78fb9f493dd58d54900801f80e8a0fc2cd563246b47e28e31640345ea9bd",
         "verdict": "weak"
       },
       "RULE-104": {
@@ -479,7 +465,7 @@
         "verdict": "strong"
       },
       "RULE-107": {
-        "at": "2026-10-02T09:57:40Z",
+        "at": "2026-10-02T11:01:49Z",
         "breaks": {
           "PROOF-287": {
             "after": "    return answer.strip().lower() in ('y', 'yes', '')",
@@ -493,51 +479,47 @@
             "why": ""
           },
           "PROOF-288": {
-            "after": "        'report': REPORTS + '/report.xml', 'format': 'junit',",
-            "aim": "past the test",
-            "before": "        'report': REPORTS + '/pytest.xml', 'format': 'junit',",
-            "break_key": "9a8f68ea88626d9c781f8d5af1e1e7f96e56c1eee0cc48b0debe593f98b6c5d1",
-            "case": "`--all --test --write-tests` in the conftest.py project; the proof says `tests` holds pytest's entry alone, whose report is `.purlin/runtime/reports/pytest.xml`; the changed code writes an entry whose report is `.purlin/runtime/reports/report.xml`",
-            "file": "scripts/mcp/purlin/frameworks.py",
-            "line": 37,
-            "result": "survived",
-            "why": ""
-          },
-          "PROOF-289": {
             "after": "        'files': ['**/test_*.py'],",
             "aim": "past the test",
             "before": "        'files': ['**/test_*.py', '**/*_test.py'],",
-            "break_key": "05f96e486fdbed57a37040d811d7d9139339d931983557ab606d833da34a69dd",
-            "case": "`--all --test` answered `y`; the proof says pytest's entry is written as the `tests` setting, with the files `**/test_*.py` and `**/*_test.py`; the changed code writes an entry whose files are `**/test_*.py` alone",
+            "break_key": "d8e91cd52b4c8c2bf251b7c8ab31ef70d107a9cf8064a7bd5238d7f2cbf9d540",
+            "case": "the project run as `--all --test --write-tests`; the proof says `tests` holds pytest's entry alone; the changed code writes an entry whose `files` lacks `**/*_test.py`, which is not pytest's entry",
             "file": "scripts/mcp/purlin/frameworks.py",
             "line": 38,
-            "result": "survived",
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-289": {
+            "after": "    return answer.strip().lower() in ('yes',)",
+            "aim": "plain",
+            "before": "    return answer.strip().lower() in ('y', 'yes')",
+            "break_key": "470796d58791556c77f807f5fd65026aaca43b76b256a9c7e888d77e791bc8b8",
+            "case": "the project run as `--all --test` and answered `y`; the proof says pytest's entry is written, the test runs and it exits 0; the changed code reads `y` as a no, writes nothing and exits 1",
+            "file": "scripts/run/purlin_run.py",
+            "line": 1455,
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "329289bc40e104168e656dbe4f69a83c68a285af03904ac7098b6f06e6f43437",
-        "commit": "c08b3ecbe1b4b4cf6629df2bd9e883c25a5d6413",
+        "commit": "3f599fc3e78044536a24548be8a38aa0b726a886",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
         "explanation": [
-          "PROOF-287: the test compares the end of the output with the question, the settings file's bytes with those read before the run and the exit code with 1, which is each result the proof names.",
-          "PROOF-288: the test checks that `[y/N]` is absent, that the `Wrote` line comes before the `Markers:` line and that the exit code is 0, but it takes the expected `tests` setting from `frameworks.entry_for('pytest')`, so a wrong entry in the code still passes.",
-          "PROOF-289: the test reads the `Markers:` line, the one passing proof in the evidence and exit 0, which show the test ran, but it takes the expected setting from `frameworks.entry_for('pytest')`, so a wrong entry still passes.",
-          "PROOF-289: the proof names `Wrote the tests setting to .purlin/config.json.` nowhere and the test does not read it for the answered `y`, so that line is checked only under `--write-tests`.",
-          "No proof of the rule names the answer `yes`, or an answer other than a yes such as `n` or an empty line; the only refusal proved is the end of input.",
-          "The spot tests found nothing, and they do not look at where an expected value comes from when it is a different function from the one run, which is what PROOF-288 and PROOF-289 rest on."
+          "PROOF-287: the test runs `--all --test` with no input and checks that the output ends on the question, that the settings file's bytes are unchanged and that the exit code is 1, which are the three results the proof names.",
+          "PROOF-288: the test checks that `[y/N]` is absent, that the `Wrote` line comes before the `Markers: 1 tied to a test, 0 not tied.` line, and that the exit code is 0, as the proof names.",
+          "PROOF-288: the test compares the written setting with `_pytest_entry()`, a helper not shown, so if that helper takes its entry from the code, a wrong pytest entry still passes.",
+          "PROOF-289: the test answers `y` and checks the written setting, the `Markers` line, a `pass` recorded for `PROOF-1` in the evidence and the exit code 0, so it observes both the write and the test run the proof names.",
+          "PROOF-289: its expected setting comes from the same `_pytest_entry()` helper, so the same doubt applies to the entry's content.",
+          "The spot tests found nothing, and each test does hold assertions on the values its proof names.",
+          "No proof of the rule covers the answer `yes`, or a typed answer other than yes such as `n`, or an empty line; only the end of input is proved for the refusal side."
         ],
-        "findings": [
-          "PROOF-288: the test still passes when scripts/mcp/purlin/frameworks.py:37 reads \"'report': REPORTS + '/report.xml', 'format': 'junit',\"",
-          "PROOF-288: the AI says this breaks: `--all --test --write-tests` in the conftest.py project; the proof says `tests` holds pytest's entry alone, whose report is `.purlin/runtime/reports/pytest.xml`; the changed code writes an entry whose report is `.purlin/runtime/reports/report.xml`",
-          "PROOF-289: the test still passes when scripts/mcp/purlin/frameworks.py:38 reads \"'files': ['**/test_*.py'],\"",
-          "PROOF-289: the AI says this breaks: `--all --test` answered `y`; the proof says pytest's entry is written as the `tests` setting, with the files `**/test_*.py` and `**/*_test.py`; the changed code writes an entry whose files are `**/test_*.py` alone"
-        ],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "c83bc69361accc5f78593b5470c213aa63f8b5107c85c6f40b79edfee4cdcbe8",
         "rule_hash": "d6c29a67b6e186be6f3ed73ddd704a88b366514157417660c542e931503fabf2",
-        "test_hash": "0266e9cd9b8cfdf44de9384ec05c7d03299dbb5503632d61ad0fbe8339b382c9",
-        "verdict": "weak"
+        "test_hash": "fbcc91d4c8b43b61788753b5473d6a2274c3ee0bcc537bb0d9e7557a32118b11",
+        "verdict": "strong"
       },
       "RULE-11": {
         "at": "2026-10-02T09:57:40Z",
@@ -584,17 +566,17 @@
         "verdict": "strong"
       },
       "RULE-12": {
-        "at": "2026-10-02T09:57:40Z",
+        "at": "2026-10-02T11:01:49Z",
         "breaks": {
           "PROOF-117": {
-            "after": "            machine='build-7',",
-            "aim": "past the test",
-            "before": "            machine=machine,",
-            "break_key": "148bddae599b0734636303aa6ac59e1454731148a9c060d065e4afcce0c28ccc",
-            "case": "`--all --ci` where the file holds only another system's section; the proof says this machine's section is added beside it; the changed code adds a section whose `machine` is `build-7`, not this machine",
+            "after": "    paths = write_sections(project_root, features, sections, os_name, 'local')",
+            "aim": "plain",
+            "before": "    paths = write_sections(project_root, features, sections, os_name, 'ci')",
+            "break_key": "df99680cf12bb52f67ce3938e74b5be5205fb72cc8ddd5e588dab62bfe435e76",
+            "case": "`.purlin/evidence/ci/feat.json` holds only another system's section and `--all --ci` runs; the proof says this machine's section is added beside it; the changed code leaves the file with the other system's section alone",
             "file": "scripts/run/purlin_run.py",
-            "line": 927,
-            "result": "survived",
+            "line": 1630,
+            "result": "caught",
             "why": ""
           },
           "PROOF-12": {
@@ -632,26 +614,24 @@
           }
         },
         "code_hash": "329289bc40e104168e656dbe4f69a83c68a285af03904ac7098b6f06e6f43437",
-        "commit": "c08b3ecbe1b4b4cf6629df2bd9e883c25a5d6413",
+        "commit": "3f599fc3e78044536a24548be8a38aa0b726a886",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
         "explanation": [
-          "PROOF-12: the test reads the one section's system, its `machine` against the host name, `RULE-1` as `passed`, the printed line, the absence of the local folder, the unchanged HEAD and the exit code 0, which is every value the proof names.",
-          "PROOF-117: the test compares the other system's section with what was on disk and checks that both system names are present, but reads nothing inside this machine's section, so a wrong or empty section added beside it still passes.",
-          "PROOF-209: the test reads only the exit code 0, which is the only result the proof names; it does not read the evidence written for the tagged proof.",
-          "PROOF-283: the test reads the exit code 1, the proofs listed as `PROOF-2` `fail` alone and `RULE-1` as `failed`, which are the values the proof names.",
-          "The spot tests found nothing, and each test holds assertions that can fail against literals or the host's own name.",
-          "No proof of the rule covers a tagged test that could not run, the line printed where several features ran, or a feature with no tagged proof being left out."
+          "PROOF-12: the test reads the one section's system, its `machine` against the host name and its `RULE-1` as `passed`, the printed line, the absent `local` folder, the unchanged head commit and the exit code 0, which is every result the proof names.",
+          "PROOF-117: the test writes a file holding only another system's section, runs `--all --ci`, and compares that section whole with what it wrote, the two system names in the file, and this machine's host name and `RULE-1` `passed` in the added section, so both halves of the proof are observed.",
+          "PROOF-117: the test does not compare the other fields of the added section, such as its commit and its listed proofs, and the proof names none of them.",
+          "PROOF-209: the test puts a failing untagged test beside a passing tagged one in one file and reads only the exit code 0, which is the only result the proof names.",
+          "PROOF-283: the test reads the exit code 1, the listed proofs as `PROOF-2` `fail` alone and `RULE-1` as `failed`, which is each result the proof names.",
+          "No finding was reported, and none of the four tests shows a pattern the spot tests flag.",
+          "No proof of the rule covers a tagged test that could not run, which the rule says also exits 1."
         ],
-        "findings": [
-          "PROOF-117: the test still passes when scripts/run/purlin_run.py:927 reads \"machine='build-7',\"",
-          "PROOF-117: the AI says this breaks: `--all --ci` where the file holds only another system's section; the proof says this machine's section is added beside it; the changed code adds a section whose `machine` is `build-7`, not this machine"
-        ],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "dd3256ee1a3e974c008ae4278ae0f658b25986934c3c79bd2134fa21dd1e44c3",
         "rule_hash": "d528cf1b1c7a092f14b26f73b86a5bccafbae308f60210ad51a98226ac056b60",
-        "test_hash": "d27d70213cafc2d85ea05179b4fe6dc4e52541b7b3b0a42b4a2d5ffcdbc17740",
-        "verdict": "weak"
+        "test_hash": "ca1e46895ca954a880d7d80393447abf2c97c2508f1ce0cab2cd19ba21ad37f1",
+        "verdict": "strong"
       },
       "RULE-17": {
         "at": "2026-10-02T09:57:40Z",
@@ -927,17 +907,17 @@
         "verdict": "strong"
       },
       "RULE-55": {
-        "at": "2026-10-02T09:57:40Z",
+        "at": "2026-10-02T11:01:49Z",
         "breaks": {
           "PROOF-88": {
             "after": "    return [row['feature'] for row in rows]",
             "aim": "plain",
             "before": "    return [row['feature'] for row in chosen]",
-            "break_key": "d57a4e58d70ef9e9d68e35bb7929ce8974fbb8ae80f73bf860ba329f8b2468a4",
-            "case": "login and export with committed evidence, then src/login.py changes and --test runs with no feature named; the proof says export's evidence is left byte for byte unchanged; the changed code runs export as well and writes its evidence again",
+            "break_key": "83edf3099eca4f5c0a6f18a2aa8799657e0dfbc63980d0c183dec331934dfd03",
+            "case": "login and export with committed evidence, then src/login.py changes and --test runs with no feature named; the proof says login alone is run and export's evidence is left byte for byte unchanged; the changed code runs export too and rewrites its evidence section",
             "file": "scripts/run/purlin_run.py",
             "line": 1523,
-            "result": "survived",
+            "result": "caught",
             "why": ""
           },
           "PROOF-89": {
@@ -964,25 +944,23 @@
           }
         },
         "code_hash": "329289bc40e104168e656dbe4f69a83c68a285af03904ac7098b6f06e6f43437",
-        "commit": "c08b3ecbe1b4b4cf6629df2bd9e883c25a5d6413",
+        "commit": "3f599fc3e78044536a24548be8a38aa0b726a886",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
         "explanation": [
-          "PROOF-88: the test reads the exit code, compares the whole selection with `login` and `code changed since` the first seven characters of the commit its helper returns, and compares export's local evidence file with a copy taken earlier, so each result the proof names is observed; the setup lives in a helper not shown here.",
-          "PROOF-89: the test changes the rule text exactly as the proof says, reads the exit code and compares the whole selection with `export` and `spec changed since` the commit's seven characters, so each result the proof names is observed.",
-          "PROOF-90: the test commits the evidence of export, solo and the anchor, checks that a run then selects nothing, edits `src/solo.py`, and compares the sorted names selected with `shared` and `solo` and the start of shared's reason with `code changed since`, which is what the proof names; it reads no exit code and not solo's reason, and the proof names neither.",
-          "The spot tests found nothing, and each of the three tests holds an assertion on a value from the run's output that can fail; the `assert True` in the PROOF-90 test sits inside the text of a fixture file it writes, not in the test itself.",
-          "The code that decides which features are selected and why is not among the files shown, so each bug is planted where the run prints and returns the selection."
+          "PROOF-88: the test compares the exit code with 0, the printed selection with exactly `login` and `code changed since <sha7>`, the tests that ran with `test_login` alone, and export's local evidence file with its earlier bytes, so every result the proof names is checked.",
+          "PROOF-88: the planted change leaves the printed selection as it was and runs export as well, which the test's checks on the tests that ran, the `Ran pytest on 1 feature.` line and export's evidence bytes each observe.",
+          "PROOF-89: the test rewrites export's rule text from `does thing 1` to `does thing one`, then compares the exit code with 0 and the selection with exactly `export` and `spec changed since <sha7>`, which is what the proof names.",
+          "PROOF-90: the test edits `src/solo.py` after confirming that nothing is selected, then checks that the selected names are exactly `shared` and `solo` and that the reason for `shared` starts `code changed since `, which is what the proof names.",
+          "PROOF-90: the test reads neither the reason given for `solo` nor the exit code, and the proof names neither.",
+          "Findings: none were reported; the `assert True` in the PROOF-90 test sits inside the text of a fixture file it writes, not among the test's own checks."
         ],
-        "findings": [
-          "PROOF-88: the test still passes when scripts/run/purlin_run.py:1523 reads \"return [row['feature'] for row in rows]\"",
-          "PROOF-88: the AI says this breaks: login and export with committed evidence, then src/login.py changes and --test runs with no feature named; the proof says export's evidence is left byte for byte unchanged; the changed code runs export as well and writes its evidence again"
-        ],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "a8b3f471629871d32dc9210371994050d08175581d923e7c0b3b4e9373b11c31",
         "rule_hash": "a1f96337cc8fb1c5eb7bf459c1a82810b1389cdd5839730786e2383005babdab",
-        "test_hash": "c6d577e6eae4715ccb32b0755c09c172ab02dfe8e5dd06e26386681f2f84c2cc",
-        "verdict": "weak"
+        "test_hash": "76ddb2207815fab70705f5d502cdf6ebec04ca30fbd584345302d66f537925c3",
+        "verdict": "strong"
       },
       "RULE-58": {
         "at": "2026-10-02T09:57:40Z",
@@ -1061,27 +1039,27 @@
         "verdict": "strong"
       },
       "RULE-63": {
-        "at": "2026-10-02T09:57:40Z",
+        "at": "2026-10-02T11:01:49Z",
         "breaks": {
           "PROOF-130": {
-            "after": "                \"--reporters=jest-junit-reporter\"),",
-            "aim": "past the test",
-            "before": "                \"--reporters=jest-junit\"),",
-            "break_key": "49bb0c983e2fd2c76f930a1ab52b99b67d31fcf28ab635bc04602282f09c3e31",
-            "case": "the jest entry the run suggests; the proof says its command carries `--reporters=jest-junit`; the changed code gives `--reporters=jest-junit-reporter`, a reporter that is not the one that writes the report",
+            "after": "        'run': 'python3 -m pytest {files} --junit-xml={report}',",
+            "aim": "plain",
+            "before": "        'run': 'python3 -m pytest {files} --junitxml={report}',",
+            "break_key": "daa028b7931fab68e37aa5461c610edf90b35511201b64985daf2eb5608e9849",
+            "case": "the seven entries the run suggests; the proof says pytest's command carries `--junitxml={report}`; the changed code gives `python3 -m pytest {files} --junit-xml={report}`",
             "file": "scripts/mcp/purlin/frameworks.py",
-            "line": 53,
-            "result": "survived",
+            "line": 36,
+            "result": "caught",
             "why": ""
           },
           "PROOF-133": {
-            "after": "  \"name\": \"shell\",\n  \"run\": \"sh {files}\",",
+            "after": "    ('shell', lambda root: _any_file(root, lambda n: n.endswith('.test.sh'))),\n    ('sql', lambda root: _any_file(root, _SQL_TEST_NAME.match)),",
             "aim": "past the test",
-            "before": "  \"name\": \"shell\",",
-            "break_key": "ecd838a0c97241a7db3b2f8b27ea2d5802ea823e1a6d9460c701dc9c76cbf978",
-            "case": "the shell entry on the supported-frameworks page; the proof says it reads word for word as the run suggests it, with one command `bash {files}`; the changed page also shows a command `sh {files}` the run never suggests",
-            "file": "references/supported_frameworks.md",
-            "line": 183,
+            "before": "    ('sql', lambda root: _any_file(root, _SQL_TEST_NAME.match)),\n    ('shell', lambda root: _any_file(root, lambda n: n.endswith('.test.sh'))),",
+            "break_key": "16f509e61ca944355b0d6f97c6924a89e6f058a28a18c536d5444ed99d8db66d",
+            "case": "a project holding all seven tools; the proof says the page shows the entries in the order the run suggests them, sql before shell; the changed code suggests shell before sql while the page still shows sql first",
+            "file": "scripts/mcp/purlin/frameworks.py",
+            "line": 207,
             "result": "survived",
             "why": ""
           },
@@ -1098,28 +1076,28 @@
           }
         },
         "code_hash": "329289bc40e104168e656dbe4f69a83c68a285af03904ac7098b6f06e6f43437",
-        "commit": "c08b3ecbe1b4b4cf6629df2bd9e883c25a5d6413",
+        "commit": "3f599fc3e78044536a24548be8a38aa0b726a886",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
         "explanation": [
-          "PROOF-130: the test checks that the seven names are the suggested ones and that each named flag is a substring of its command, so a command that holds the flag's text inside a longer, different option still passes.",
-          "PROOF-130: the expected flags are literals written in the test, not taken from the code.",
-          "PROOF-221: the test builds a project with only pytest detected, asks for the Windows suggestion, and compares the single entry's command with the full literal the proof names, so any change to that command fails it.",
-          "PROOF-133: the test parses each JSON block of the page and compares the parsed values, in order, with the suggested entries, so the names, commands, reports, formats, globs and order are all compared.",
-          "PROOF-133: the comparison is of parsed JSON, not of the page's text, so a repeated key whose last value is the right one, or different spacing, reads as the same entry although the page is not word for word the same.",
-          "PROOF-133: the expected entries come from the code, which is what the proof asks the page to match, so a change to the code alone is caught against the page.",
-          "The spot tests found nothing, which fits: each test asserts on a value its proof names."
+          "PROOF-130: the test checks that exactly the seven tool names are suggested and that each command holds its flag as whole words, so a changed or missing flag fails it.",
+          "PROOF-130: the test reads the suggestions by name, so it does not observe the order the rule gives.",
+          "PROOF-221: the test asks for the suggestions of a project holding only pytest's sign with the system given as Windows, and compares the one entry's whole command with `py -3 -m pytest {files} --junitxml={report}`.",
+          "PROOF-133: the test compares each block of the page, as parsed and as text, with the suggested entry of the same name, so a wrong word on the page or in an entry fails it.",
+          "PROOF-133: the test looks the suggestions up by name in a fixed order, so the order in which the run itself suggests them is never read against the page's order.",
+          "No finding was reported by the spot tests; none of the three tests is empty, self-checking or mocked."
         ],
         "findings": [
-          "PROOF-130: the test still passes when scripts/mcp/purlin/frameworks.py:53 reads \"\"--reporters=jest-junit-reporter\"),\"",
-          "PROOF-130: the AI says this breaks: the jest entry the run suggests; the proof says its command carries `--reporters=jest-junit`; the changed code gives `--reporters=jest-junit-reporter`, a reporter that is not the one that writes the report",
-          "PROOF-133: the test still passes when references/supported_frameworks.md:183 reads \"\"run\": \"sh {files}\",\"",
-          "PROOF-133: the AI says this breaks: the shell entry on the supported-frameworks page; the proof says it reads word for word as the run suggests it, with one command `bash {files}`; the changed page also shows a command `sh {files}` the run never suggests"
+          "PROOF-133: the test still passes when scripts/mcp/purlin/frameworks.py:207 reads \"('shell', lambda root: _any_file(root, lambda n: n.endswith('.test.sh'))),\"",
+          "PROOF-133: the AI says this breaks: a project holding all seven tools; the proof says the page shows the entries in the order the run suggests them, sql before shell; the changed code suggests shell before sql while the page still shows sql first"
         ],
         "model": "claude-opus-5-5",
         "no_bug": [],
+        "notes": [
+          "PROOF-133 names no literal value, only \"the same seven entries\", so what it expects rests on the run's own output."
+        ],
         "proof_hash": "e6f448f72634c3a36abbd1a62a7b42690eb2aa7311392c26d909528bc44335c8",
         "rule_hash": "4aac672a8d4d4cbba4d6890d1b2a648ce33ace55d18bfbbbc1b5cd5861f1e47e",
-        "test_hash": "7f62db4467a263e65e516523535c18f01f60ab921765bf982a530482561ed010",
+        "test_hash": "80463f6821739f0723f192dbff8c124478747af94d57a74a5d1a0d973955082a",
         "verdict": "weak"
       },
       "RULE-67": {
@@ -1472,40 +1450,36 @@
         "verdict": "strong"
       },
       "RULE-96": {
-        "at": "2026-10-02T09:57:40Z",
+        "at": "2026-10-02T11:01:49Z",
         "breaks": {
           "PROOF-271": {
-            "after": "        if args.action == 'ci':\n            # A test comment to correct changes no exit code: it is work",
+            "after": "            for entry in ():",
             "aim": "plain",
-            "before": "        if args.action != 'ci':\n            # A test comment to correct changes no exit code: it is work",
-            "break_key": "693ab44b8e82ceeaf4e700c09a3fa352d1a4ab9b260a0ac1aa613cb9271ed3cd",
-            "case": "feat's PROOF-1 reworded and committed after its marked test at tests/test_feat.py:3 last changed, then `--all --test`; the proof says a line beginning `tests/test_feat.py:3 names feat PROOF-1, whose wording changed after the test was last changed in` is printed after the `Markers:` line; the changed",
+            "before": "            for entry in wording_module.stale_comments(project_root, features,\n                                                       scanned=scan):",
+            "break_key": "33246a6b5a16994c855ab874753099a5fd5a2931854f1d5233bc354b4a64ef48",
+            "case": "feat's PROOF-1 reworded and committed after its test at tests/test_feat.py:3 last changed, then `--all --test`; the proof says a line beginning `tests/test_feat.py:3 names feat PROOF-1, whose wording changed after the test was last changed in` is printed after the `Markers:` line; the changed code p",
             "file": "scripts/run/purlin_run.py",
-            "line": 1307,
-            "result": "survived",
+            "line": 1310,
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "329289bc40e104168e656dbe4f69a83c68a285af03904ac7098b6f06e6f43437",
-        "commit": "c08b3ecbe1b4b4cf6629df2bd9e883c25a5d6413",
+        "commit": "3f599fc3e78044536a24548be8a38aa0b726a886",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
         "explanation": [
-          "PROOF-271: the test rewords feat's PROOF-1 in a git checkout, commits it, runs `--all --test`, and requires the first line beginning with the proof's exact text to come after the first `Markers: ` line, so a missing or misplaced line fails it.",
-          "PROOF-271: the test compares the exit code with 0, as the proof names, so a run that printed the line and exited otherwise fails it.",
-          "PROOF-271: the test reads only the beginning of the line, as the proof does, so the rest of the line, where the rule says the correcting command is named, is not observed by this proof or its test.",
-          "PROOF-271: the proof and its test run `--test` alone, so the rule's `--audit` run is not observed here.",
-          "Findings: none were reported, and the test holds an assertion on the proof's literal text and on the exit code, so no spot test has a pattern to fire on."
+          "PROOF-271: the test rewords the proof in a git checkout, runs `--all --test`, and requires the first line with the proof's opening words to be the line straight after `Markers:` and the exit code to be 0, so it observes the proof's case and each result the proof names.",
+          "PROOF-271: the test compares only the start of the line, as the proof does, so the command the rule says the line names is not read by this test.",
+          "PROOF-271: the rule also speaks of `--audit` runs, and this proof and its test cover `--test` alone.",
+          "Findings: the spot tests found nothing, and the test's assertions on the line's position and the exit code can both fail."
         ],
-        "findings": [
-          "PROOF-271: the test still passes when scripts/run/purlin_run.py:1307 reads \"if args.action == 'ci':\"",
-          "PROOF-271: the AI says this breaks: feat's PROOF-1 reworded and committed after its marked test at tests/test_feat.py:3 last changed, then `--all --test`; the proof says a line beginning `tests/test_feat.py:3 names feat PROOF-1, whose wording changed after the test was last changed in` is printed after the `Markers:` line; the changed"
-        ],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "e83abf0e42b85d21201e239087c47d2b404cb79c7504dc9210f0a6fc6f118e34",
         "rule_hash": "87c33a0030431d2cbd89e40a96e0369ad7716df3d8a321ad66e66668ba14fb97",
-        "test_hash": "fee8bf8e6fbb211a7363bf4a270608674fdfdc0109bbd43b3cc3167280e83a8d",
-        "verdict": "weak"
+        "test_hash": "237abc42c2da7222eb28d3d64255fb9d010528677869dd231e62d02ebe4a4073",
+        "verdict": "strong"
       },
       "RULE-98": {
         "at": "2026-10-02T09:57:40Z",
@@ -1623,14 +1597,14 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T09:51:49Z",
-      "commit": "c08b3ecbe1b4b4cf6629df2bd9e883c25a5d6413",
+      "at": "2026-10-02T11:00:13Z",
+      "commit": "3f599fc3e78044536a24548be8a38aa0b726a886",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "329289bc40e104168e656dbe4f69a83c68a285af03904ac7098b6f06e6f43437",
         "spec": "f6df6bbf9bd9afb298590c9c28dc9e48993682f3d22cd87bb53ba7c1649b00e2",
-        "tests": "569ede21deee02cb3549588872ffa312a4b4e02e592e30125f92acb3490e5c6c"
+        "tests": "c3624c371e4428b3ab01b6e84661023d0b10e146d98b2494b61ea52b8d1f1af8"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
