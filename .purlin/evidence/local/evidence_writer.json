@@ -240,18 +240,18 @@
         "verdict": "strong"
       },
       "RULE-16": {
-        "at": "2026-10-02T09:47:21Z",
+        "at": "2026-10-02T15:34:07Z",
         "breaks": {
           "PROOF-41": {
-            "after": "    return 'unknown'",
+            "after": null,
             "aim": "plain",
-            "before": "    return platform.node() or 'unknown'",
-            "break_key": "9b2372e816299ef94ccb7f664ecb717d91ff20f6259f17812f7f811aab0cfbb2",
-            "case": "a `--all --test` run on this machine; the proof says `machine` reads this machine's host name; the changed code gives `unknown`",
-            "file": "scripts/run/evidence.py",
-            "line": 80,
-            "result": "survived",
-            "why": ""
+            "before": null,
+            "break_key": "47bb8e87918fe4c463fb06ab663a300bbd7d1b00fefa7c001d63363907fed101",
+            "case": "",
+            "file": null,
+            "line": null,
+            "result": "not made",
+            "why": "two planted bugs left the proof's check passing"
           },
           "PROOF-78": {
             "after": "    return (_git(project_root, ['config', 'user.email']) or '').strip().split('@')[0] or 'unknown'",
@@ -265,27 +265,25 @@
             "why": ""
           }
         },
-        "code_hash": "9b7baf344e35dac3d6133a3df1d910c2c519cb81e1a70955352ea1aa9a03baf0",
-        "commit": "d7424d0171113d8e03f012eeff6a47c748287ab7",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "b251964e0573c6029d40345cb034cce467b0ac9619eaf9a230b1e1c2b1abd06d",
+        "commit": "c921646eecbd2bff8d11adb84d8c5262d40d97ee",
+        "criteria": "368ad8896dbd166919bd0153828d80af76ecfab415e618515d9a89adf49bddf5",
         "explanation": [
-          "PROOF-41: the test makes a `--all --test` run, reads the section written for this system and compares its `machine` with the host name taken from the standard library, not from the writer, so a wrong name fails it.",
-          "PROOF-41: the test first asserts the host name is not empty, so the comparison cannot pass on an empty name.",
-          "PROOF-78: the test makes a `--all --ci` run, reads the `ci` section and compares its sorted keys with the nine names the proof lists, its `machine` with the host name and its `email` with the literal `runner@example.com`, so each result the proof names is checked.",
-          "PROOF-78: the git email is set by a helper the request does not show, so the reading takes it that the checkout's email is `runner@example.com`.",
-          "No proof of the rule names the case where the host reports no name and `machine` reads `unknown`, so that half of the rule is not observed by either test.",
-          "The spot tests found nothing, and both tests compare the proof's values against sources the code under test does not influence."
+          "PROOF-41: the test runs `--all --test`, reads this system's section from the local evidence file and compares its `machine` with the host name the standard library reports, after asserting that name is not empty, so a wrong or missing `machine` fails it.",
+          "PROOF-41: the expected value comes from the library and not from the writer's own code, so the test leaves no way past it for the proof's case.",
+          "PROOF-78: the test runs `--all --ci` in a checkout whose git email is `runner@example.com`, compares the section's sorted keys with the nine the proof names, its `machine` with the host name and its `email` with `runner@example.com`, which is each result the proof names.",
+          "No proof of the rule names the case where the host reports no name and `machine` reads `unknown`, so that half of the rule is observed by neither test.",
+          "The spot tests found nothing, and both tests hold assertions that can fail on the values their proofs name."
         ],
-        "findings": [
-          "PROOF-41: the test still passes when scripts/run/evidence.py:80 reads \"return 'unknown'\"",
-          "PROOF-41: the AI says this breaks: a `--all --test` run on this machine; the proof says `machine` reads this machine's host name; the changed code gives `unknown`"
-        ],
+        "findings": [],
         "model": "claude-opus-5-5",
-        "no_bug": [],
+        "no_bug": [
+          "No bug was caught for PROOF-41: two planted bugs left the proof's check passing."
+        ],
         "proof_hash": "c1fa060be9ce9e5179ccf58b4e1cb5e41ddc0d95b4bfb92b7b02f11e35c8d071",
         "rule_hash": "2e55e86bdd080736bc268e3de14d1a19d9beaf0909c3268065e945b292416d06",
         "test_hash": "c38752f4801790c48e4a1b7c1bf64f0666ca97914740c3095070ae838e624a0a",
-        "verdict": "weak"
+        "verdict": "strong"
       },
       "RULE-17": {
         "at": "2026-10-02T09:47:21Z",
@@ -985,8 +983,8 @@
   "feature": "evidence_writer",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T15:29:15Z",
-      "commit": "0cf0c983cdc2f5212a25a9b14a622756bedb00e6",
+      "at": "2026-10-02T15:33:41Z",
+      "commit": "c921646eecbd2bff8d11adb84d8c5262d40d97ee",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
