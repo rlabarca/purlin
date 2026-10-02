@@ -1682,6 +1682,28 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - Known and accepted: the aimed request flagged 1 and then 4 of the trial's 9 sound tests,
       each a strict reading of the proof's words, and which tests it flags can differ between
       two audits.
+124. **A test run settles every finding of the audit** (added 2026-10-02). The audit of Purlin
+    itself found 35 surviving bugs: 33 held, 2 were wrong, and 12 proofs named too little for a
+    test to be held to them. Every one printed `weak` and `to strengthen`, and a second audit
+    aimed new bugs past each strengthened test and found 14 more. In the owner's words: "I want
+    the audit to be informative and guide the user to the next step... I dont want users to
+    bang their heads on an impossible task to get the proof strong when it's not useful", and
+    "i dont want the human to be the judge".
+    - **`purlin:build` settles a surviving bug with a run.** It writes the assertion the proof
+      names, for the proof's own case, then the recorded bug is planted again in a copy and that
+      test runs. The test fails: the finding was right, and the test is now stronger. The test
+      passes: the bug does not break what the proof says, so the finding was wrong.
+    - **A caught replay makes the rule `strong`**, and it stays strong until its test or code
+      next changes. No fresh bug is planted after it. The docs state the limit: the test was
+      strengthened after seeing that bug.
+    - **A wrong finding is replaced once.** The bug is dropped and the audit plants one new bug
+      for that proof. Caught: `strong`. Wrong again: the rule reads `spot-checked`, with the
+      reason that two planted bugs left the proof's check passing, and nothing more is asked.
+    - **A dropped bug leaves no trace** in the evidence.
+    - **A proof too loose to write the assertion from stops the build**, which proposes a
+      sharper proof. No person judges a finding.
+    - **Purlin's 12 loose proofs are sharpened** with the sentences already proposed; the owner
+      reads them after.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
