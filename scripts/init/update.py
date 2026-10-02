@@ -19,9 +19,10 @@ and every file it rewrites is copied first to
 answers yes to every migration's question and accepts each test command
 proposed. `--apply <id>[,<id>...]` applies exactly the migrations named and
 asks nothing, and `--test-command <tool>=<command>` writes that command for a
-test tool in place of the one proposed. The run prints one line of totals for
-each migration, then what it left for the owner and the lines that need the
-owner; each file's own line goes to
+test tool in place of the one proposed. A run told to apply prints one line
+naming the migrations in place of the pending list. The run prints one line
+of totals for each migration, then what it left for the owner and the lines
+that need the owner; each file's own line goes to
 `.purlin/runtime/update-backup/update.log`. A workflow that names a proof
 file is removed only on a yes typed for that file, so under `--yes` and
 `--apply` each is kept and named. A file this release deletes rather than
@@ -38,6 +39,7 @@ import fnmatch
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -146,6 +148,13 @@ MARKER_KIND_RES = (
                r'(\w+)' % _NAME),
 )
 RENUMBERED = '%s %s is now %s'
+# A line of a Python docstring that holds a 0.9.5 tag and nothing else: the
+# plugin of 0.9.5 read the mark, and the tag beside it said the same thing.
+DOC_TAGS_RE = re.compile(
+    r'(?:\s*\[proof:%s:PROOF-\d+[a-z]*:RULE-\d+(?::\w+)?\])+\s*' % _NAME)
+DOC_OPENER_RE = re.compile(r'^([ \t]*[rRuU]?(?:"""|\'\'\'))(.*)$')
+DOC_CLOSER_RE = re.compile(r'^([ \t]*)(.*?)("""|\'\'\')[ \t]*$')
+TAG_LINES_WENT = 'removed %d docstring line%s that held only a 0.9.5 tag'
 LEFT = ('left %s:%d as it was: write the marker as a comment above each test '
         'by hand')
 LEFT_NO_SPEC = ('left %s:%d as it was: it names %s %s, which no spec has. '
@@ -178,9 +187,10 @@ IGNORE_LINES = ('.purlin/runtime/', '.purlin/report-data.js')
 # Each file the update changes is kept here as it was, at its own path. The
 # folder is under `.purlin/runtime/`, which git ignores.
 BACKUP_DIR = '.purlin/runtime/update-backup'
-BACKUPS_KEPT = ('Every file the update changed is kept as it was under %s/, '
-                'with each change listed in update.log there. Delete the '
+BACKUPS_KEPT = ('Every file the update rewrote is kept as it was under %s/, '
+                'with each change listed in update.log there.%s Delete the '
                 'folder once the tests pass.')
+DELETED_IN_GIT = ' A file it deleted is in git, at %s.'
 EVIDENCE_DIR = '.purlin/evidence'
 EVIDENCE_README = EVIDENCE_DIR + '/README.md'
 DASHBOARD_PAGE = 'purlin-report.html'
@@ -220,10 +230,19 @@ STILL_PENDING = ('%d migration%s still pending: %s. A test run stops until '
 RUN_TESTS = ARROW + ' Run: purlin:test --all --commit'
 RUN_TESTS_FIRST = ('Run it before anything else: every rule reads not run '
                    'until it has.')
+FAILS_IN_FULL_RUN = ('A test that fails in that run and passes when its '
+                     "feature is run alone is the project's own: purlin:test "
+                     '<feature>.')
 LEFT_HEADING = 'Purlin left these for you:'
 LEFT_NEEDLES = ('[proof:', 'pytest.mark.proof', '.purlin/plugins',
                 'purlin:verify', 'proofs-')
 LEFT_SHOWN = 20
+# The files that instruct an agent, which stand first: an agent that reads
+# one goes on writing what this release does not read.
+AGENT_FILES = ('CLAUDE.md', 'AGENTS.md')
+AGENT_DIR = '.claude/'
+CHANGE_FIRST = ('. Change it first: it tells the agent to write what this '
+                'release does not read.')
 LEFT_MORE = '  and %d more file%s'
 LEFT_WHY = ('  Each line counted names something 0.9.5 used: %s. This release '
             'reads none of them.')
@@ -232,6 +251,7 @@ OLD_RECORD = ("The `verify:` commits 0.9.5 made stay in git as the earlier "
               "record, and its receipts can be read from the commit before "
               "the upgrade, %s.")
 UPDATE_LOG = BACKUP_DIR + '/update.log'
+APPLYING = 'Applying %d migration%s: %s.'
 UNKNOWN_MIGRATION = ('%s is not a migration. The migrations are: %s.')
 BAD_TEST_COMMAND = ('--test-command takes <tool>=<command>, as in '
                     '--test-command "pytest=uv run pytest {files} '
@@ -607,8 +627,24 @@ _PLAIN_LAUNCHERS = {
     'jest': ('jest', 'npx jest'),
 }
 _INSTALLS_RE = re.compile(r'\b(?:install|add|uninstall|remove)\b')
+# The options by which a command of the project's own runs only some of a
+# tool's tests: True for one that takes a value. The command proposed
+# carries none of them, since a run hands the tool the files to run.
+_NARROWING = {
+    'pytest': {'-k': True, '-m': True, '--deselect': True, '--ignore': True,
+               '--ignore-glob': True, '--lf': False, '--last-failed': False},
+    'vitest': {'--project': True, '-t': True, '--testNamePattern': True,
+               '--dir': True, '--exclude': True, '--shard': True,
+               '--changed': False},
+    'jest': {'-t': True, '--testNamePattern': True,
+             '--testPathPattern': True, '--testPathPatterns': True,
+             '--testPathIgnorePatterns': True, '--selectProjects': True,
+             '--shard': True, '-o': False, '--onlyChanged': False,
+             '--changedSince': True},
+}
 PROPOSED = '%s: %s'
 RUNS_IT_AS = '  %s runs it as: %s'
+LEAVES_OUT = '  The proposal leaves out %s, so every %s test runs.'
 COMMAND_QUESTION = ('Use this command for %s? Press Enter to use it, or type '
                     'the command to use instead: ')
 
@@ -664,21 +700,61 @@ def _workflow_commands(lines):
     return commands
 
 
-def project_runs(root, tool):
-    """`(where, the command, its launcher)` for the first command of the
-    project's own that runs `tool`, or None. The launcher is what stands in
-    front of the tool's name, the name included: `uv run --project pipeline
-    pytest` in `uv run --project pipeline pytest pipeline/tests`."""
+def _runs_tool(tool, command):
+    """`(the launcher, what follows the tool's name)` for the part of
+    `command` that runs `tool`, or None where no part does."""
     pattern = _TOOL_RES.get(tool)
     if pattern is None:
         return None
-    for where, command in _own_commands(root):
-        for part in re.split(r'&&|\|\||[;|]', command):
-            found = pattern.search(part)
-            # A command that installs the tool does not run it.
-            if found and not _INSTALLS_RE.search(part[:found.start()]):
-                return where, command.strip(), part[:found.end()].strip()
+    for part in re.split(r'&&|\|\||[;|]', command):
+        found = pattern.search(part)
+        # A command that installs the tool does not run it.
+        if found and not _INSTALLS_RE.search(part[:found.start()]):
+            return part[:found.end()].strip(), part[found.end():]
     return None
+
+
+def narrowing(tool, command):
+    """Each option of `command` that runs only some of `tool`'s tests, with
+    its value: `['--project unit']`."""
+    runs = _runs_tool(tool, command)
+    known = _NARROWING.get(tool, {})
+    if runs is None:
+        return []
+    try:
+        words = shlex.split(runs[1])
+    except ValueError:
+        words = runs[1].split()
+    found, index = [], 0
+    while index < len(words):
+        word = words[index]
+        name = word.split('=', 1)[0]
+        index += 1
+        if name not in known:
+            continue
+        if known[name] and '=' not in word and index < len(words):
+            word += ' ' + shlex.quote(words[index])
+            index += 1
+        found.append(word)
+    return found
+
+
+def project_runs(root, tool):
+    """`(where, the command, its launcher)` for the command of the project's
+    own that runs `tool` and is closest to the one proposed: the one with the
+    fewest options that run only some of the tool's tests, the first of
+    those. None where no command runs it. The launcher is what stands in
+    front of the tool's name, the name included: `uv run --project pipeline
+    pytest` in `uv run --project pipeline pytest pipeline/tests`."""
+    best = None
+    for where, command in _own_commands(root):
+        runs = _runs_tool(tool, command)
+        if runs is None:
+            continue
+        narrowed = len(narrowing(tool, command))
+        if best is None or narrowed < best[0]:
+            best = (narrowed, where, command.strip(), runs[0])
+    return best[1:] if best else None
 
 
 def proposed_tests(root, old):
@@ -729,6 +805,11 @@ def _proposal_lines(entries, sources):
         lines.append(PROPOSED % (entry['name'], entry['run']))
         if entry['name'] in sources:
             lines.append(RUNS_IT_AS % sources[entry['name']])
+            left_out = [option for option in narrowing(
+                entry['name'], sources[entry['name']][1])
+                if option not in entry['run']]
+            if left_out:
+                lines.append(LEAVES_OUT % (_joined(left_out), entry['name']))
     return lines
 
 
@@ -1153,7 +1234,9 @@ def _closing_line(lines, index, start):
     return None
 
 
-def _rewrite_python(lines, ext):
+def _rewrite_python(lines, ext, written=None):
+    """`written`, where given, takes the line number of each comment
+    written, as the lines returned number them."""
     out, left, count = [], [], 0
     index = 0
     while index < len(lines):
@@ -1167,6 +1250,8 @@ def _rewrite_python(lines, ext):
             if end is not None and args:
                 out.append(_comment(ext, found.group(1), args.group(1),
                                     args.group(2)))
+                if written is not None:
+                    written.append(len(out))
                 count += 1
                 index = end + 1
                 continue
@@ -1403,19 +1488,138 @@ def rewrite_markers(text, ext):
     `lettered` is None for one such as a module-wide `pytestmark`, and
     `(feature, id)` for one naming a proof numbered with a letter.
     """
+    return _rewritten(text, ext)[:3]
+
+
+def _rewritten(text, ext):
+    """What `rewrite_markers` returns, and the line number of each comment
+    written into a Python file."""
     # A file whose every line ends `\r\n` keeps that ending, the comments
     # written into it included.
     eol = ('\r\n' if '\r\n' in text
            and text.count('\r\n') == text.count('\n') else '\n')
     rewrite = _REWRITERS.get(ext)
     if rewrite is None:
-        return _rewrite_js(text, eol)
+        return _rewrite_js(text, eol) + ([],)
     ending = eol if text.endswith(eol) else ''
     lines = text.split(eol)
     if ending:
         lines = lines[:-1]
-    out, count, left = rewrite(lines, ext)
-    return eol.join(out) + ending, count, left
+    written = []
+    if rewrite is _rewrite_python:
+        out, count, left = rewrite(lines, ext, written)
+    else:
+        out, count, left = rewrite(lines, ext)
+    return eol.join(out) + ending, count, left, written
+
+
+def _docstring(node):
+    """The statement that is the docstring of the function `node`, or None."""
+    first = node.body[0]
+    if (isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant)
+            and isinstance(first.value.value, str)):
+        return first
+    return None
+
+
+def _without_docstrings(tree):
+    """`tree` as text, every function's docstring left out."""
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) \
+                and _docstring(node) is not None:
+            node.body = node.body[1:] or [ast.Pass()]
+    return ast.dump(tree)
+
+
+def without_tag_lines(text, written):
+    """`(text, how many lines went)`: the Python test file `text` without
+    each docstring line that holds nothing but a 0.9.5 tag, in the tests
+    whose marker comment is on one of the lines `written`.
+
+    A docstring that was the tag alone goes whole, and stays where it is all
+    the test holds. A tag that opened a docstring goes with the blank lines
+    under it, and one that ended it with the blank lines above it. A tag
+    inside a sentence stays. The file reads as the same code afterwards, or
+    it is returned as it was.
+    """
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError):
+        return text, 0
+    lines = text.splitlines(True)
+    drop, edits, count = set(), {}, 0
+
+    def bare(number):
+        return lines[number - 1].rstrip('\r\n')
+
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        top = min([mark.lineno for mark in node.decorator_list]
+                  + [node.lineno])
+        while top > 1 and bare(top - 1).lstrip().startswith('#'):
+            top -= 1
+        doc = _docstring(node)
+        if doc is None or not any(top <= number < node.lineno
+                                  for number in written):
+            continue
+        first, last = doc.lineno, doc.end_lineno
+        raw = lines[last - 1].encode('utf-8')
+        if (lines[first - 1].encode('utf-8')[:doc.col_offset].strip()
+                or raw[doc.end_col_offset:].strip()):
+            continue
+        if DOC_TAGS_RE.fullmatch(doc.value.value):
+            if len(node.body) > 1 and node.body[1].lineno > last:
+                tagged = [number for number in range(first, last + 1)
+                          if '[proof:' in bare(number)]
+                drop.update(range(first, last + 1))
+                count += len(tagged)
+            continue
+        opener = DOC_OPENER_RE.match(bare(first))
+        closer = DOC_CLOSER_RE.match(bare(last))
+        if last == first or not opener or not closer:
+            continue
+        tags, body = set(), first + 1
+        if opener.group(2).strip() and DOC_TAGS_RE.fullmatch(opener.group(2)):
+            # The opening quotes move to the first line of text under it.
+            while body < last and not bare(body).strip():
+                body += 1
+            drop.update(range(first, body))
+            edits[body] = opener.group(1) + lines[body - 1].lstrip(' \t')
+            count += 1
+            if body == last:
+                continue
+            body += 1
+        for number in range(body, last):
+            if bare(number).strip() and DOC_TAGS_RE.fullmatch(bare(number)):
+                tags.add(number)
+        if closer.group(2).strip() and DOC_TAGS_RE.fullmatch(closer.group(2)):
+            ending = lines[last - 1][len(bare(last)):]
+            edits[last] = closer.group(1) + closer.group(3) + ending
+            tags.add(last)
+            count += 1
+            closer = DOC_CLOSER_RE.match(edits[last].rstrip('\r\n'))
+        count += len(tags - set((last,)))
+        drop.update(tags - set((last,)))
+        if not closer.group(2).strip():
+            # A tag that ended the docstring takes the blank lines above it.
+            run, number = [], last - 1
+            while number > first and (number in tags
+                                      or not bare(number).strip()):
+                run.append(number)
+                number -= 1
+            if tags.intersection(run + [last]):
+                drop.update(run)
+    if not count:
+        return text, 0
+    new = ''.join(edits.get(number, line)
+                  for number, line in enumerate(lines, 1)
+                  if number not in drop)
+    try:
+        same = _without_docstrings(ast.parse(new)) == _without_docstrings(tree)
+    except (SyntaxError, ValueError):
+        same = False
+    return (new, count) if same else (text, 0)
 
 
 ONE_TEST_NOW = '; the file is one test now, and passes when it exits 0'
@@ -1477,11 +1681,15 @@ def _detect_markers(root):
 def _apply_markers(root, files, args, out):
     """Each 0.9.5 marker becomes one comment above the same test."""
     found = _marked_old(root)
-    unread, total, written, whole = [], 0, 0, False
+    unread, total, written, whole, tag_lines = [], 0, 0, False, 0
     for rel in files:
         new, count, left = found.get(rel, (None, 0, []))
         if not count:
             continue
+        gone = 0
+        if os.path.splitext(rel)[1].lower() == '.py':
+            new, gone = without_tag_lines(*_rewritten(
+                _read(os.path.join(root, rel)), '.py')[::3])
         out.kept(_back_up_copy(root, rel))
         _write(os.path.join(root, rel), new)
         out.done(rel)
@@ -1491,6 +1699,10 @@ def _apply_markers(root, files, args, out):
             line += ONE_TEST_NOW
             whole = True
         out.note(line)
+        if gone:
+            out.note(TAG_LINES_WENT % (gone, '' if gone == 1 else 's')
+                     + ' in ' + rel)
+        tag_lines += gone
         total += count
         written += 1
         for number in unread_titles(rel, new):
@@ -1500,6 +1712,8 @@ def _apply_markers(root, files, args, out):
                '' if written == 1 else 's',
                '; a shell or SQL file is one test now, and passes when it '
                'exits 0' if whole else ''))
+    if tag_lines:
+        out.say(TAG_LINES_WENT % (tag_lines, '' if tag_lines == 1 else 's'))
     held = set((_spec_name(spec), old)
                for spec, pairs in _lettered_specs(root).items()
                for old, _new in pairs)
@@ -1859,9 +2073,22 @@ def _commit(root, applied, paths):
     print('The changes are staged and not committed: %s' % out)
     return None
 
+def _agent_rank(rel):
+    """Where a file that instructs an agent stands among what is left, or
+    None for any other file: `CLAUDE.md`, then `AGENTS.md`, each at the root
+    before one in a folder, then the files under `.claude/`."""
+    name = os.path.basename(rel)
+    if name in AGENT_FILES:
+        return (AGENT_FILES.index(name), rel.count('/'))
+    if rel.startswith(AGENT_DIR):
+        return (len(AGENT_FILES), 0)
+    return None
+
+
 def left_for_owner(root):
     """`[(file, lines)]`: each tracked file still holding text 0.9.5 used,
-    with how many of its lines do, most first and then by name."""
+    with how many of its lines do: the files that instruct an agent first,
+    then most first and then by name."""
     command = ['grep', '-c', '-I', '-F']
     for needle in LEFT_NEEDLES:
         command += ['-e', needle]
@@ -1871,14 +2098,17 @@ def left_for_owner(root):
         rel, _colon, count = line.rpartition(':')
         if rel and count.isdigit():
             found.append((rel, int(count)))
-    return sorted(found, key=lambda item: (-item[1], item[0]))
+    last = (len(AGENT_FILES) + 1, 0)
+    return sorted(found, key=lambda item: (_agent_rank(item[0]) or last,
+                                           -item[1], item[0]))
 
 def _left_lines(root):
     found = left_for_owner(root)
     if not found:
         return []
     lines = [LEFT_HEADING]
-    lines += ['  %s: %d line%s' % (rel, count, '' if count == 1 else 's')
+    lines += ['  %s: %d line%s%s' % (rel, count, '' if count == 1 else 's',
+                                     CHANGE_FIRST if _agent_rank(rel) else '')
               for rel, count in found[:LEFT_SHOWN]]
     more = len(found) - LEFT_SHOWN
     if more > 0:
@@ -1956,8 +2186,16 @@ def main(argv=None):
             print(advice)
         _print_ending(root)
         return EXIT_OK
-    _print_pending(items, root)
-    print('')
+    # A run told what to apply names it in one line; a run that asks, or
+    # one that will apply nothing, prints the list the answers are about.
+    listed = [item['id'] for item in items
+              if chosen is None or item['id'] in chosen]
+    told = not args.ask and bool(listed)
+    if told:
+        print(APPLYING % (len(listed), _s(listed), ', '.join(listed)))
+    else:
+        _print_pending(items, root)
+        print('')
     before = _git(root, 'rev-parse', '--short', 'HEAD')
     appliers = dict((m[0], m[3]) for m in MIGRATIONS)
     report, applied, asked = _Report(), [], set()
@@ -1983,7 +2221,8 @@ def main(argv=None):
         # at the end of its line.
         queue = [found for found in _found(root) if found['id'] not in asked]
     report.start(None)
-    print('')
+    if not told:
+        print('')
     for line in report.lines:
         print(line)
     sha = _commit(root, applied, report.paths)
@@ -2001,10 +2240,12 @@ def main(argv=None):
     if applied:
         print('')
         print(NOT_RUN)
-        if before[0] and before[1].strip():
-            print(OLD_RECORD % before[1].strip())
+        earlier = before[1].strip() if before[0] else ''
+        if earlier:
+            print(OLD_RECORD % earlier)
         if _write_log(root, report, sha):
-            print(BACKUPS_KEPT % BACKUP_DIR)
+            print(BACKUPS_KEPT % (BACKUP_DIR, DELETED_IN_GIT % earlier
+                                  if earlier else ''))
     left = _left_lines(root) if applied else []
     if left:
         print('')
@@ -2024,6 +2265,7 @@ def main(argv=None):
     else:
         print(RUN_TESTS)
         print(RUN_TESTS_FIRST)
+        print(FAILS_IN_FULL_RUN)
     return EXIT_OK
 
 

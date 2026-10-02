@@ -33,6 +33,10 @@ What each group proves:
               read-back with the test run's own reader
 *tags*        the tags that end a proof running over several lines
 *endings*     what a run that applied nothing ends on, and one that applied
+*agents*      the files that instruct an agent come first among what is left
+*docstrings*  a docstring line that is only a 0.9.5 tag goes
+*scripts*     the proposal cites the script of the project's it matches
+*applying*    a run told to apply prints one line in place of the pending list
 """
 
 import fnmatch
@@ -142,9 +146,10 @@ def _tracked(root):
 
 # Where the update keeps each file it changes, as it was before the run.
 BACKUPS = '.purlin/runtime/update-backup'
-BACKUPS_LINE = ('Every file the update changed is kept as it was under '
+BACKUPS_LINE = ('Every file the update rewrote is kept as it was under '
                 '.purlin/runtime/update-backup/, with each change listed in '
-                'update.log there. Delete the folder once the tests pass.')
+                'update.log there. A file it deleted is in git, at %s. Delete '
+                'the folder once the tests pass.')
 LOG = BACKUPS + '/update.log'
 
 
@@ -342,7 +347,12 @@ def test_every_backup_keeps_its_file_s_path_under_one_folder(tmp_path,
                for rel in backups), sorted(backups)
     for rel in backups:
         assert rel in before, rel
-    assert BACKUPS_LINE in printed, printed
+    earlier = _git(root, 'rev-parse', '--short', 'HEAD~1').stdout.strip()
+    assert BACKUPS_LINE % earlier in printed, printed
+    deleted = [rel for rel in before if rel.endswith('.receipt.json')][0]
+    assert not os.path.exists(os.path.join(root, deleted))
+    assert deleted not in backups
+    assert _git(root, 'show', '%s:%s' % (earlier, deleted)).returncode == 0
     assert not _walk(root, ('*.bak',), skip_backups=False)
 
 
@@ -1539,6 +1549,8 @@ OLD_CLAUDE_MD = ('# Notes for the agent\n\n'
                  'In Python use `@pytest.mark.proof("feature", "PROOF-1")`.\n'
                  'The plugin lives in `.purlin/plugins/`.\n'
                  'Run `purlin:verify` before a push.\n')
+CHANGE_FIRST = ('. Change it first: it tells the agent to write what this '
+                'release does not read.')
 DOCSTRING_PY = ('def test_documented():\n'
                 '    """[proof:login:PROOF-1:RULE-1:unit]"""\n')
 
@@ -1554,7 +1566,7 @@ def test_each_file_still_naming_what_0_9_5_used_is_listed_most_first(
     _apply(root)
     printed = capsys.readouterr().out.splitlines()
     heading = printed.index(LEFT_HEADING)
-    first = printed.index('  CLAUDE.md: 4 lines')
+    first = printed.index('  CLAUDE.md: 4 lines' + CHANGE_FIRST)
     second = printed.index('  tests/test_documented.py: 1 line')
     assert heading < first < second
     assert _read(root, 'CLAUDE.md') == OLD_CLAUDE_MD
@@ -1790,7 +1802,9 @@ def test_a_run_that_applied_nothing_ends_on_the_update_and_how_to_say_yes(
 
 RUN_TESTS = ['→ Run: purlin:test --all --commit',
              'Run it before anything else: every rule reads not run until '
-             'it has.']
+             'it has.',
+             'A test that fails in that run and passes when its feature is '
+             "run alone is the project's own: purlin:test <feature>."]
 
 
 # purlin: update PROOF-202
@@ -1798,7 +1812,7 @@ def test_a_run_that_applied_everything_ends_on_the_test_run(tmp_path, capsys):
     root = _project(tmp_path, V095)
     _apply(root)
     printed = capsys.readouterr().out.splitlines()
-    assert printed[-2:] == RUN_TESTS, printed[-2:]
+    assert printed[-3:] == RUN_TESTS, printed[-3:]
     assert 'Left to do:' not in printed
     assert not [line for line in printed if 'pass their tests' in line]
 
@@ -1816,3 +1830,243 @@ def test_a_run_that_left_a_migration_pending_ends_on_the_update(tmp_path,
                                   if n != 'evidence')
     ], printed[-2:]
     assert RUN_TESTS[0] not in printed
+
+
+# --- the files that instruct an agent come first ---------------------------------
+
+NOTES = 'Run purlin:verify.\n'
+
+
+def _left(tmp_path, capsys, files):
+    """What the update prints under `Purlin left these for you:` for the
+    sample 0.9.5 project holding `files`, up to the line that explains it."""
+    root = _project(tmp_path, V095)
+    for rel, text in files:
+        _write(root, rel, text)
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'what 0.9.5 left in the project')
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    heading = printed.index(LEFT_HEADING)
+    end = [index for index, line in enumerate(printed)
+           if line.startswith('  Each line counted names')][0]
+    return printed[heading + 1:end]
+
+
+# purlin: update PROOF-206
+def test_claude_md_stands_first_among_what_is_left(tmp_path, capsys):
+    listed = _left(tmp_path, capsys, (
+        ('notes/a.md', NOTES * 9), ('notes/b.md', NOTES * 7),
+        ('CLAUDE.md', 'Run `purlin:verify` before a push.\n')))
+    assert listed[:3] == [
+        '  CLAUDE.md: 1 line' + CHANGE_FIRST,
+        '  notes/a.md: 9 lines', '  notes/b.md: 7 lines'], listed
+
+
+# purlin: update PROOF-207
+def test_agents_md_and_the_claude_folder_follow_claude_md(tmp_path, capsys):
+    listed = _left(tmp_path, capsys, (
+        ('notes/a.md', NOTES * 9),
+        ('.claude/commands/ship.md', NOTES * 3),
+        ('.claude/RESUME.md', NOTES * 2),
+        ('AGENTS.md', NOTES * 2),
+        ('CLAUDE.md', NOTES)))
+    assert listed[:5] == [
+        '  CLAUDE.md: 1 line' + CHANGE_FIRST,
+        '  AGENTS.md: 2 lines' + CHANGE_FIRST,
+        '  .claude/commands/ship.md: 3 lines' + CHANGE_FIRST,
+        '  .claude/RESUME.md: 2 lines' + CHANGE_FIRST,
+        '  notes/a.md: 9 lines'], listed
+
+
+# --- a docstring line that is only a 0.9.5 tag -------------------------------------
+
+DOCS_PY = 'tests/test_docs.py'
+DOCS_PY_OLD = (
+    'import pytest\n\n\n'
+    '@pytest.mark.proof("piano", "PROOF-1", "RULE-1")\n'
+    'def test_a_key_sounds() -> None:\n'
+    '    """[proof:piano:PROOF-1:RULE-1:unit]"""\n'
+    '    assert 1 + 1 == 2\n\n\n'
+    '@pytest.mark.proof("piano", "PROOF-2", "RULE-2")\n'
+    'def test_a_key_stops() -> None:\n'
+    '    """[proof:piano:PROOF-2:RULE-2:unit]\n\n'
+    '    Measured on the long clip: the note ends within one line.\n'
+    '    """\n'
+    '    assert 2 + 2 == 4\n\n\n'
+    'class TestRelease:\n'
+    '    @pytest.mark.proof("piano", "PROOF-2b", "RULE-2")\n'
+    '    def test_stops_on_the_line(self) -> None:\n'
+    '        """\n'
+    '        Part way through a bar.\n\n'
+    '        [proof:piano:PROOF-2b:RULE-2:integration]\n'
+    '        """\n'
+    '        assert True\n')
+DOCS_PY_NEW = (
+    'import pytest\n\n\n'
+    '# purlin: piano PROOF-1\n'
+    'def test_a_key_sounds() -> None:\n'
+    '    assert 1 + 1 == 2\n\n\n'
+    '# purlin: piano PROOF-2\n'
+    'def test_a_key_stops() -> None:\n'
+    '    """Measured on the long clip: the note ends within one line.\n'
+    '    """\n'
+    '    assert 2 + 2 == 4\n\n\n'
+    'class TestRelease:\n'
+    '    # purlin: piano PROOF-10\n'
+    '    def test_stops_on_the_line(self) -> None:\n'
+    '        """\n'
+    '        Part way through a bar.\n'
+    '        """\n'
+    '        assert True\n')
+TAG_LINES_WENT = '    removed %d docstring line%s that held only a 0.9.5 tag'
+
+
+# purlin: update PROOF-208
+def test_a_docstring_line_that_is_only_a_tag_goes(tmp_path, capsys):
+    root = _lettered(tmp_path, files=((DOCS_PY, DOCS_PY_OLD),))
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    assert _read(root, DOCS_PY) == DOCS_PY_NEW
+    compile(_read(root, DOCS_PY), DOCS_PY, 'exec')
+    at = printed.index('  markers: rewrote 3 markers in 1 file')
+    assert printed[at + 1] == TAG_LINES_WENT % (3, 's'), printed[at:at + 2]
+    assert not [line for line in printed if line.startswith('  ' + DOCS_PY)]
+
+
+SENTENCE_PY = 'tests/test_sentence.py'
+SENTENCE_PY_OLD = (
+    'import pytest\n\n\n'
+    '@pytest.mark.proof("piano", "PROOF-1", "RULE-1")\n'
+    'def test_a_key_sounds():\n'
+    '    """Covers [proof:piano:PROOF-1:RULE-1:unit] on the long clip."""\n'
+    '    assert True\n')
+
+
+# purlin: update PROOF-209
+def test_a_tag_in_a_sentence_stays_and_is_counted(tmp_path, capsys):
+    root = _lettered(tmp_path, files=((SENTENCE_PY, SENTENCE_PY_OLD),))
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    assert _read(root, SENTENCE_PY) == SENTENCE_PY_OLD.replace(
+        '@pytest.mark.proof("piano", "PROOF-1", "RULE-1")',
+        '# purlin: piano PROOF-1')
+    assert printed.index('  %s: 1 line' % SENTENCE_PY) > printed.index(
+        LEFT_HEADING)
+    assert not [line for line in printed if 'held only a 0.9.5 tag' in line]
+
+
+KEPT_PY = 'tests/test_kept.py'
+KEPT_PY_OLD = (
+    'import pytest\n\n\n'
+    '@pytest.mark.proof("piano", "PROOF-2", "RULE-2")\n'
+    'def test_a_key_stops():\n'
+    '    """[proof:piano:PROOF-2:RULE-2:unit]"""\n\n\n'
+    '@pytest.mark.proof("piano", "PROOF-9c", "RULE-2")\n'
+    'def test_names_a_proof_no_spec_has():\n'
+    '    """[proof:piano:PROOF-9c:RULE-2:unit]"""\n'
+    '    assert True\n\n\n'
+    'def test_no_marker():\n'
+    '    """[proof:piano:PROOF-1:RULE-1:unit]"""\n'
+    '    assert True\n')
+
+
+# purlin: update PROOF-215
+def test_a_docstring_the_update_cannot_take_stays(tmp_path, capsys):
+    root = _lettered(tmp_path, files=((KEPT_PY, KEPT_PY_OLD),))
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    assert _read(root, KEPT_PY) == KEPT_PY_OLD.replace(
+        '@pytest.mark.proof("piano", "PROOF-2", "RULE-2")',
+        '# purlin: piano PROOF-2')
+    assert '  %s: 4 lines' % KEPT_PY in printed, printed
+    assert not [line for line in printed if 'held only a 0.9.5 tag' in line]
+
+
+# --- the script the proposal cites ---------------------------------------------------
+
+def _scripts_project(tmp_path, scripts):
+    root = _project(tmp_path, V095)
+    _set_config(root, test_framework='vitest')
+    _write(root, 'package.json', json.dumps({
+        'name': 'studio', 'scripts': scripts,
+        'devDependencies': {'vitest': '^3.0.0'}}, indent=2) + '\n')
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'vitest in tiers')
+    return root
+
+
+def _proposal(root, tool):
+    """The lines the listing run prints for `tool` under `config`."""
+    done = _piped(root, '')
+    assert done.returncode == 0, done.stderr
+    printed = done.stdout.splitlines()
+    at = [index for index, line in enumerate(printed)
+          if line.startswith('      %s: ' % tool)][0]
+    lines = [printed[at]]
+    for line in printed[at + 1:]:
+        if not line.startswith('        '):
+            break
+        lines.append(line)
+    return lines
+
+
+VITEST_PROPOSED = '      vitest: ' + frameworks.entry_for('vitest')['run']
+
+
+# purlin: update PROOF-210
+def test_the_proposal_cites_the_script_it_is_closest_to(tmp_path):
+    root = _scripts_project(tmp_path, {
+        'test': 'vitest run --project unit',
+        'test:integration': 'vitest run --project integration',
+        'test:all': 'vitest run'})
+    assert _proposal(root, 'vitest') == [
+        VITEST_PROPOSED,
+        '        package.json, "test:all", runs it as: vitest run']
+
+
+# purlin: update PROOF-211
+def test_the_proposal_says_which_option_of_the_script_it_leaves_out(tmp_path):
+    root = _scripts_project(tmp_path, {'test': 'vitest run --project unit'})
+    assert _proposal(root, 'vitest') == [
+        VITEST_PROPOSED,
+        '        package.json, "test", runs it as: vitest run --project unit',
+        '        The proposal leaves out --project unit, so every vitest '
+        'test runs.']
+
+
+# purlin: update PROOF-212
+def test_an_option_that_narrows_nothing_is_not_named(tmp_path):
+    root = _scripts_project(tmp_path, {
+        'test': 'vitest run --coverage --reporter=dot'})
+    assert _proposal(root, 'vitest') == [
+        VITEST_PROPOSED,
+        '        package.json, "test", runs it as: vitest run --coverage '
+        '--reporter=dot']
+
+
+# --- a run told to apply prints one line in place of the pending list ----------------
+
+# purlin: update PROOF-213
+def test_a_run_with_yes_prints_one_line_in_place_of_the_pending_list(
+        tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    assert printed[0] == 'Applying 9 migrations: %s.' % ', '.join(NINE)
+    assert printed[1].startswith('.github/workflows/') and \
+        ' names a proof file: ' in printed[1], printed[1]
+    assert printed[2].startswith('  design-refs: '), printed[2]
+    assert not [line for line in printed if 'pending in' in line]
+    assert not [line for line in printed
+                if line.startswith('      specs/')]
+
+
+# purlin: update PROOF-214
+def test_a_run_with_apply_names_the_migrations_it_applies(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    _apply(root, argv=('--apply', 'evidence'))
+    printed = capsys.readouterr().out.splitlines()
+    assert printed[0] == 'Applying 1 migration: evidence.'
+    assert [line for line in printed if line.startswith('  evidence: ')]
+    assert not [line for line in printed if 'pending in' in line]
