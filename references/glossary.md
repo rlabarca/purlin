@@ -10,6 +10,7 @@ other page points here rather than defining it again.
   a `## Proof` section. **feature**: what a spec describes, named by its file. **scope**: the
   `> Scope:` line, the files the feature's code lives in. It is optional; a spec without one
   runs on every `purlin:test`.
+- **name**: a spec's name, its file name without `.md`, in letters, digits, `_` and `-`.
 - **rule**: one line in a spec saying what must be true, `RULE-<n>`.
 - **proof**: one line in a spec saying in plain language how a rule is shown to hold,
   `PROOF-<n> (RULE-<n>)`. QA writes and reviews proofs, and AI may draft them against the
@@ -87,15 +88,18 @@ other page points here rather than defining it again.
   to check and skips with a reason starting `nothing to check:`. The rule passes, and the reason
   is shown.
 - **audit**: `purlin:audit`, run by hand. It runs the tests, then for each rule that passes it
-  takes three steps: the heuristic spot tests, one model call for the rule, and each planted
-  bug's test run. It writes what it found into each feature's evidence and ends on the share of
+  takes three steps: the heuristic spot tests, the model asked for a small bug for each proof
+  and for its reading, and each planted bug's test run. It writes what it found into each feature's evidence and ends on the share of
   rules it found strong. `references/review_criteria.md` is its one home.
 - **heuristic spot test**: one of six checks that read a test as text, with no model, and flag
   a test that cannot fail.
-- **planted bug**: the smallest change to the code that would break one proof, made in a copy
-  of the project to see whether the proof's own test catches it.
+- **planted bug**: the one small change to the code that breaks the case a proof names and that
+  the proof's test is most likely to miss, written by an AI and made in a copy of the project to
+  see whether the proof's own test catches it. Where the test leaves no way past, the bug is a
+  plain one.
 - **finding**: one line saying what a spot test flagged or which planted bug a test did not
-  catch. A finding makes the rule `weak`. A weak rule is left to do as `to strengthen`, and
+  catch. A surviving bug adds a second line, the case the AI says it breaks, which a person
+  judges. A finding makes the rule `weak`. A weak rule is left to do as `to strengthen`, and
   stops nothing.
 - **explanation**: the model's reading of the rule's tests. It decides nothing.
 - **strong**: the spot tests found nothing and a planted bug was caught by its proof's test.
@@ -105,8 +109,9 @@ other page points here rather than defining it again.
   counts it and the sign-off does not.
 - **waiting**: the word the strong cell
   reads while the passed cell is not met, `waiting for its tests to pass`. It is not `weak`.
-- **hand check**: a proof marked `@manual`, which no test runs. It reads `checked at sign-off`:
-  a person looks at it in the sign-off walk and may type what they saw. What they type is a
+- **hand check**: a proof marked `@manual`, which no test runs. A rule checked by hand alone
+  reads `checked at sign-off` until a sign-off that counts notes it, and is counted neither as
+  passing nor as failing. A person looks at it in the sign-off walk and may type what they saw. What they type is a
   **note**, kept in the sign-off; an empty answer is recorded as `no note`.
 - **version**: the name of what is signed, read from the `VERSION` file at the project root,
   then from the version the project's package description states; `purlin:sign --version
@@ -150,13 +155,14 @@ For one rule, top to bottom. Each row is a cell, and every rule has both.
 
 | Cell | Met when | Words the cell can read |
 |------|----------|-------------------------|
-| passed | every proof of the rule, or the rule itself where it has no proof, has a test in a current section, and every test tied to it ran and passed, each current section answering for the proofs it lists | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date` |
+| passed | every proof of the rule, or the rule itself where it has no proof, has a test in a current section, and every test tied to it ran and passed, each current section answering for the proofs it lists | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date`, `checked at sign-off` |
 | strong | passed, the spot tests found nothing and a planted bug was caught; nothing waits on it | `strong`, `weak`, `spot-checked`, `out of date`, `waiting`, `not audited`, `checked at sign-off`, `no proof` |
 
 A rule with neither a proof nor a marked test reads `no test` with the reason
 `no proof written`. A rule with a test and no proof reads `no proof` in its strong cell. A
 `@manual` proof is read out of the passed cell, so a rule whose every proof is `@manual` reads
-`passed` and `checked at sign-off`.
+`checked at sign-off` in both cells until a sign-off that counts notes it, and `passed` and
+`checked at sign-off` once one has.
 
 ## Where each is defined
 

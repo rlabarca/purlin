@@ -15,7 +15,7 @@ your machine.
 |---|---|---|
 | Runs the marked tests | yes | yes |
 | Runs the heuristic spot tests | no | yes, with no model |
-| Plants one bug per changed proof | no | yes, in a copy of the project |
+| Plants one bug per changed proof, aimed past its test | no | yes, in a copy of the project |
 | Writes the evidence, and commits it with `--commit` | yes | yes |
 | The cell it writes | `passed` | `passed` and `strong` |
 
@@ -41,8 +41,8 @@ Suggested tests setting: [{"name": "pytest", "run": "python3 -m pytest {files} -
 ```
 
 `purlin:test` compares each suggested command with how the project runs its tests itself, and
-shows you each difference. Once you confirm, it writes the entry into the `tests` setting and
-runs.
+shows you each difference. The run asks `Write this tests setting to .purlin/config.json? [y/N]`.
+On your yes it prints `Wrote the tests setting to .purlin/config.json.` and runs.
 
 Where the run finds no test tool it knows, it prints `No test command is set and no test tool
 Purlin knows was found, so nothing ran. The agent reads the project and proposes a command for
@@ -123,8 +123,8 @@ cart  3      3       3 of 3
 Every rule passes its tests on the committed evidence. To sign it: purlin:sign
 ```
 
-Each rule's passed cell reads one word: `passed`, `failed`, `partial`, `no test`, `not run` or
-`out of date`. The run writes one tracked file per feature it ran:
+Each rule's passed cell reads `passed`, `failed`, `partial`, `no test`, `not run`,
+`out of date` or, for a rule checked by hand alone, `checked at sign-off`. The run writes one tracked file per feature it ran:
 
 ```
 .purlin/evidence/local/<feature>.json   this operating system's section: the commit, the
@@ -309,14 +309,17 @@ An audit runs the tests as `purlin:test` does. Then it reads a rule when all of 
 1. **The heuristic spot tests**, in code, with no model: six checks over each test's source
    and its proof's words. [review_criteria.md](../references/review_criteria.md#heuristic-spot-tests)
    is their one home.
-2. **One model call for the rule**: a small bug for each proof, and the model's reading. A bug
-   is the smallest change to the code that would break what the proof says. A proof whose test
-   and covered code are as the audit last read them keeps its result and gets no new bug. The
-   reading explains the tests and sets no verdict. The model is started with no tools, no
-   plugins and none of your settings, in an empty folder.
+2. **The model is asked for a small bug for each proof and for its reading.** An AI reads the
+   proof, its test and the code, and writes the one small bug that test is most likely to miss.
+   The bug must break the case the proof names. Where the test leaves no way past, the AI
+   writes a plain bug. A proof whose test and covered code are as the audit last read them
+   keeps its result and gets no new bug. The reading explains the tests and sets no verdict.
+   The model is started with no tools, no plugins and none of your settings, in an empty
+   folder.
 3. **Each bug planted** in a copy of the project, and that proof's own test run. A test that
    still passes did not catch the bug. A test that is skipped, is not collected, runs past its
-   limit or ends in an error decides nothing. The copy is then removed.
+   limit or ends in an error decides nothing. The copy is then removed. A surviving bug is
+   shown with the case the AI says it breaks, and you judge it.
 
 A rule reads:
 
@@ -332,28 +335,31 @@ Where the model cannot be reached, the audit prints one line, such as
 `The model could not be reached: claude is not on PATH. 2 rules are spot-checked alone. Run purlin:audit again.`
 A rule a spot test fired on is still `weak`, and the next `purlin:audit` reads the others again.
 
-A finding is one line:
+A finding is one line. A bug that survived adds two, the second the AI's own claim:
 
 ```
 tests/test_age.py::test_age: the test checks nothing.
-PROOF-1: the test still passes when src/age.py:12 reads "return 0"
+PROOF-1: the test still passes when src/age.py:12 reads "return minutes + 60"
+PROOF-1: the AI says this breaks: a sample collected 90 minutes ago; the proof says 90; the changed code gives 150
 ```
+
+An answer that names no case of the proof, or whose change touches only a comment, is not
+planted, and the audit says so under the rule:
+`No bug was planted: the model's answer for PROOF-2 could not be used: the answer named no case of the proof.`
 
 The audit writes what it found under `audit` in `.purlin/evidence/local/<feature>.json`. Each
 planted bug is there with its file, its line, the change and whether it was caught. The audit
 commits only with `--commit`, in the same two commits as a test run.
 
-It prints how many model calls it will make, then each rule with what it found, then what the
-calls cost, and last the share of rules it found strong:
+It prints each rule with what it found, and last the share of rules it found strong:
 
 ```
-The audit reads 12 rules: 12 model calls.
 login RULE-2   weak
   tests/test_login.py::test_wrong_password: the test checks nothing.
   PROOF-2: the test still passes when src/auth.py:12 reads "return 200"
+  PROOF-2: the AI says this breaks: a wrong password; the proof says 401; the changed code gives 200
 login RULE-3   spot-checked
   The spot tests found nothing. No bug was planted: PROOF-3 needs Windows, and this machine is macOS.
-The model was asked <n> times for <n> rules: $<total> in all, $<per rule> a rule.
 The audit found 4 of 6 rules strong (66%): 4 strong, 1 weak, 1 spot-checked.
 ```
 
@@ -385,7 +391,7 @@ flowchart TD
     M --> C["with --commit, commit the specs,<br>the marked tests and the settings"]
     C --> W["write .purlin/evidence/<br>local/#lt;feature#gt;.json"]
     W --> Q{"purlin:audit?"}
-    Q -->|yes| A["the spot tests, one model call<br>per rule, one planted bug per<br>changed proof, into the same file"]
+    Q -->|yes| A["the spot tests, then one planted<br>bug per changed proof, aimed past<br>its test, into the same file"]
     Q -->|"no, purlin:test"| T
     A --> T["commit the evidence with --commit,<br>print the status"]
 ```
@@ -420,8 +426,8 @@ Each section carries:
 
 A proof's result is `pass`, `fail`, `missing`, `not run` or `nothing to check`, the last with
 its reason. The `audit` object carries, per rule, the hashes the audit read, its `verdict`, its
-findings, each planted bug, why a proof had no bug caught, the model's explanation and the
-model.
+findings, each planted bug with its aim and the case the AI says it breaks, why a proof had no
+bug caught, the model's explanation and the model.
 
 **A result stops counting when the rule, the test or the code changes, until the tests are run
 again.** A section is current while its fingerprint equals one taken now, committed or not.
@@ -430,6 +436,10 @@ names what changed: `code changed since <sha7>`, `spec changed since <sha7>` or
 `tests changed since <sha7>`. The next run clears it. A test command in `.purlin/config.json`
 is part of the tests: changing one ends the results, as changing the code does. Changing
 `version` alone does not.
+
+A change to a spec, even to one rule's words, puts every rule of that spec out of date. Its
+results are held under one fingerprint of the whole spec. `purlin:test` runs that spec's tests
+again.
 
 Outside tools read these files and the evidence package, whose formats are versioned for them.
 People inside the project read the status and the dashboard.

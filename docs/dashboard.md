@@ -83,12 +83,13 @@ states: 3 files its scope names are not written yet: facts.py, project.py, wordi
 
 - `No proof` counts the rules no proof line names. It comes first, and it is there wherever the
   project writes at least one proof line.
-- `Passing` counts the rules whose tests pass, a hand check included. The project's total is
-  beneath it, as `11 RULES TOTAL`.
-- `Strong` counts the rules the audit found strong. It is there once any rule has an audit
-  entry.
+- `Passing` counts the rules that pass their tests. The project's total is beneath it, as
+  `11 RULES TOTAL`. A rule checked at sign-off is not counted.
+- `Strong` counts the rules the audit found strong, of the rules that pass their tests and have
+  a tested proof. It is there once any rule has an audit entry.
 
 A box is green once its count is complete, and amber until then. `No proof` is complete at zero.
+`Passing` is complete once every rule passes or is checked at sign-off.
 
 **Columns.** `Spec`, `Rules` and `Tests` are always there. `Proofs` sits between `Rules` and
 `Tests` wherever the project writes at least one proof line. `Strong` comes last once any rule has
@@ -99,8 +100,8 @@ an audit entry. A column the project does not reach is absent, not empty.
 | `Spec` | the feature's name, or an anchor's | the spec's path |
 | `Rules` | how many rules the spec has, as `16` | |
 | `Proofs` | `5 · 1 no test`: how many proof lines the spec holds, then how many no test runs. A `@manual` proof is not counted as one | which proofs have no test |
-| `Tests` | `3 of 4 · 1 partial`: how many rules passed everywhere they ran, then `partial` and `failing` | one line per operating system a current run covered, with its newest run's source, age and results |
-| `Strong` | `2 of 4`: how many rules the audit found strong | where the newest audit came from and how old it is |
+| `Tests` | `3 of 4 · 1 partial`: how many rules passed everywhere they ran, then `by hand`, `partial` and `failing`. `2 of 3 · 1 by hand` holds one rule checked at sign-off | one line per operating system a current run covered, with its newest run's source, age and results |
+| `Strong` | `2 of 4`, as `<strong> of <n>`: how many rules the audit found strong, of the rules that pass their tests and have a tested proof | where the newest audit came from and how old it is |
 
 Every count names what it counts. The first part is always drawn. A later part is drawn only
 above zero, so a spec with nothing partial and nothing failing reads `3 of 3`. Each cell reads
@@ -154,8 +155,13 @@ The `Passed` row adds one box per operating system a counting run covered: `Lin`
 `Win`. A box is green where the rule passed and red where it failed. Its hover gives the system,
 the result, the source and the age.
 
-Three cases to know:
+Four cases to know:
 
+- **A rule checked by hand alone.** The row reads `CHECKED AT SIGN-OFF` with
+  `no sign-off has checked it yet`. Once a sign-off notes it, it reads `PASSED` with the note.
+  After a rewording it reads `CHECKED AT SIGN-OFF` again, with
+  `the rule's wording changed since its last note` or
+  `the proof's wording changed since its last note`.
 - **A slow proof not yet run.** The row reads `not run` with `slow: runs with purlin:test --all`,
   and the proof carries the tag `@slow`.
 - **An anchor's rule with nothing to check.** The row reads `passed` with the reason the test
@@ -167,7 +173,8 @@ Three cases to know:
 
 1. `Strong. It found nothing.`, or `Weak.` and each finding in the sentence the audit wrote, or
    `Spot-checked.`, then `The spot tests found nothing.` and why no bug was caught. An entry out
-   of date opens the panel with `Out of date:` and the row's reasons.
+   of date opens the panel with `Out of date:` and the row's reasons. A bug that survived is
+   followed by the case the AI says it breaks, as `PROOF-2: the AI says this breaks: <case>`.
 2. The model's explanation, each sentence on its own line. A strong rule has one too.
 3. Each planted bug the rule's tests missed, as
    `PROOF-2: its tests missed a bug planted at src/billing/invoice.py:12.` The lines before the

@@ -38,29 +38,79 @@ with a person and signs it; the first sign-off of a version writes `signed/<vers
 yours under `.purlin/evidence/local/`, and commit it only with `--commit`; the project's own run
 on another system writes its section under `.purlin/evidence/ci/`. Both sources count.
 
-Every Purlin tool call, `sync_status`, `drift` and `purlin_config`, names `project_root`, the top
-folder of the git checkout you are working in. A call that names none is refused:
+## The tools and their scripts
+
+Purlin's server gives a session three tools, and a session lists each under its full name. The
+status and drift have a script each, which prints what the tool answers. This section is the one
+home of the two names and the two scripts.
+
+| Tool | As a session lists it | The script |
+|------|-----------------------|------------|
+| `sync_status` | `mcp__plugin_purlin_purlin__sync_status` | `scripts/run/purlin_status.py [--project-root DIR] [--spec NAME]` |
+| `drift` | `mcp__plugin_purlin_purlin__drift` | `scripts/run/purlin_drift.py [--project-root DIR] [--since N-or-date] [--json]` |
+| `purlin_config` | `mcp__plugin_purlin_purlin__purlin_config` | none |
+
+Where the session lists a tool as a deferred tool, load it with ToolSearch first. Where the
+session does not have it, run the script.
+
+Every Purlin tool call names `project_root`, the top folder of the git checkout you are working
+in. A call that names none is refused:
 `sync_status needs project_root: pass the top folder of the git checkout you are working in.`
+A folder that is not set up, and Purlin's own folder, are refused by the tools and by both
+scripts, each in one line:
+
+```
+No Purlin project root at /work/empty: .purlin/config.json is not there. Run purlin:init.
+/home/user/purlin is Purlin's own folder, not your project. Pass the top folder of the git checkout you are working in.
+```
+
+`purlin_status.py` prints the status and exits 0, or the refusal and exits 1; a wrong command
+line exits 2. With `--spec <name>` it prints each mistake Purlin sees in that spec and exits 1,
+or one of these, exiting 0 on the first and 1 on the second:
+
+```
+login: 2 rules and 3 proofs read. No mistake found.
+login: no spec of this checkout has that name. Run purlin:status to see its specs.
+```
+
+`purlin_drift.py` prints the view's lines, one per line, and exits 0. `--json` prints the tool's
+answer. A `--since` drift refuses prints the reason and exits 2.
+
+## Stops
+
+A line marked **Stop and ask** in a skill is a question for the person: the agent prints it,
+ends its turn and acts only on the person's answer. It never answers it itself. This section is
+the one home of the mark.
+
+Four questions are asked by the scripts themselves. Each script does nothing by default: it asks
+on its input, takes the end of input as no, and goes on only with a typed answer or the flag.
+
+| The question | The script | What goes on |
+|--------------|------------|--------------|
+| `Commit the files setup wrote? [y/N]` | `scripts/init/scaffold.py` | `--yes` |
+| `Do it? [y/N]`, before renumbering | `scripts/spec/renumber.py` | `--yes` |
+| `Write this tests setting to .purlin/config.json? [y/N]` | `scripts/run/purlin_run.py` | `--write-tests` |
+| `Sign the evidence package for <version> as <email>? Type that address to sign:` | `scripts/review/sign.py --answers <file>` | the signer's address, typed by the person, as `sign` in the answers file |
 
 ## Core
 
 | Command | Purpose | Who runs it, and when |
 |---------|---------|------------------------|
-| `purlin:spec <name>` | Turn a requirement in any form into rules and proofs | A developer's agent, or product or QA in Claude Code, at intake and whenever a rule turns out to be wrong |
-| `purlin:build [name]` | Load a spec's rules, write the code and the marked tests, commit the changeset | A developer, on every change. With no name it reads `sync_status` and names the specs with rules that have no passing test. It repairs a marker comment that is nearly right, corrects a test whose proof was reworded, and ends by running `purlin:test` |
-| `purlin:test [feature ...] [--all] [--commit] [--arm-timeout <seconds>]` | Run the marked tests and print each rule's passed cell | A developer, constantly. Seconds; tests only, and never a slow proof's without `--all`. The first run in a project with no test command suggests one for each test tool it recognises and runs once you confirm it. It writes the evidence, commits it with `--commit`, and never pushes. `purlin:test --all --commit` is the hand-off to a sign-off |
-| `purlin:audit [feature ...] [--all] [--commit] [--arm-timeout <seconds>]` | Run the tests, the heuristic spot tests, one model call per rule and one planted bug per proof, then write what it found into the evidence | A developer, by hand, any time. It writes the evidence, commits it with `--commit`, and never pushes. Nothing waits on it |
-| `purlin:sign [--version <version>]` | Build the evidence package from the committed evidence, walk its hand checks with a person, then sign it in a signed commit | Anyone with a key to sign with, in any project, at any time, after the hand-off; the sign-off names them, and several people may sign. The first sign-off of a version writes `signed/<version>` |
-| `purlin:drift` | Report what changed since your last pull | Everyone, after a pull, a merge, a rebase, a checkout, a clone or a reset |
+| `purlin:spec <name>` | Write or change a spec: turn a requirement into rules and proofs, or add, sharpen, reword or remove a rule, a case or a proof of an existing spec. Use it for any change to a file under specs/, instead of editing the file by hand | A developer's agent, or product or QA in Claude Code, at intake and whenever a rule turns out to be wrong. It resolves a conflict in the spec where both sides only added lines |
+| `purlin:build [name]` | Write the code and the marked tests for a spec's rules, fix a failing rule, strengthen a weak test, and commit the changeset | A developer, on every change. With no name it reads the status and names the specs with rules that have no passing test. It repairs a marker comment that is nearly right, corrects a test whose proof was reworded, and ends by running `purlin:test` |
+| `purlin:test [feature ...] [--all] [--commit] [--arm-timeout <seconds>]` | Run the project's marked tests and record the results as evidence; with --all --commit, the hand-off before a sign-off | A developer, constantly. Seconds; tests only, and never a slow proof's without `--all`. The first run in a project with no test command suggests one for each test tool it recognises, asks before it writes them, and runs on your yes. It writes the evidence, commits it with `--commit`, and never pushes. `purlin:test --all --commit` is the hand-off to a sign-off |
+| `purlin:audit [feature ...] [--all] [--commit] [--arm-timeout <seconds>]` | Check how much the tests are worth: heuristic spot tests and one planted bug per proof, written into the evidence | A developer, by hand, any time. It writes the evidence, commits it with `--commit`, and never pushes. Nothing waits on it |
+| `purlin:sign [--version <version>]` | Sign off a version: build the evidence package from the committed evidence, walk its hand checks with a person, and sign it in a signed commit; also check a package against its fingerprint | Anyone with a key to sign with, in any project, at any time, after the hand-off; the sign-off names them, and several people may sign. The first sign-off of a version writes `signed/<version>` |
+| `purlin:drift` | Report what a pull, a merge, a rebase or a checkout changed in the rules, the proofs and the tests, and name a number two branches both took | Everyone, after a pull, a merge, a rebase, a checkout, a clone or a reset |
 
 ## Supporting
 
 | Command | Purpose | Who runs it, and when |
 |---------|---------|------------------------|
-| `purlin:init` | Set a project up for Purlin | A developer, once. One question: whether to commit what it wrote |
-| `purlin:anchor <cmd>` | Create anchors, pull them from another repository, and keep the pins current | A developer, or product in Claude Code |
-| `purlin:status [name]` | Show the two facts, every rule's cells and what is left to do | Anyone with a checkout, any time; with a name, to see one spec's rules. After merging work from a worktree, in the main checkout |
-| `purlin:spec-from-code [dir]` | Read an existing codebase and write the specs it already implies | A developer, once, on a codebase that has no specs. Optional |
+| `purlin:init` | Set a project up for Purlin, or bring a project Purlin 0.9.5 set up to this version | A developer, once. One question: whether to commit what it wrote |
+| `purlin:anchor <cmd>` | Write rules that hold across the whole project as an anchor, pull an anchor from another repository, and keep its pin current | A developer, or product in Claude Code |
+| `purlin:status [name]` | Show where the project stands: whether the tests are met, whether it is signed, each rule's two cells, and what is left to do | Anyone with a checkout, any time; with a name, to see one spec's rules. After merging work from a worktree, in the main checkout |
+| `purlin:spec-from-code [dir]` | Write the specs for a codebase that has none, from the code and the tests it already has | A developer, once, on a codebase that has no specs. Optional |
 
 ## Syntax
 
@@ -84,7 +134,7 @@ Purlin
 
   Proving
   ──────
-  purlin:audit [feature ...]      Tests, spot tests, one model call per rule and planted bugs, into the evidence
+  purlin:audit [feature ...]      Tests, spot tests and one planted bug per proof, into the evidence
   purlin:audit --all              The same, reading every passing rule again
   purlin:audit --commit           The same, then commit the work and the evidence
   purlin:audit --arm-timeout <seconds>  Give each suite, and each planted bug's test run, longer
@@ -121,9 +171,9 @@ Purlin
 |---------|--------|
 | `purlin:spec`, `purlin:spec-from-code` | `specs/<category>/<name>.md` |
 | `purlin:build` | Code, test files with a marker comment above each test, the repairs to marker comments it asked about, and the commit carrying the changeset |
-| `purlin:test` | Each suite's report under `.purlin/runtime/reports/`, which is not committed, and this system's section of `.purlin/evidence/local/<feature>.json`. `--commit` makes two commits: the specs of the features run, the test files carrying their markers and `.purlin/config.json` as `purlin: specs, tests and settings for <feature>, ...`, then the evidence as `purlin: evidence at <sha7>`; it never pushes. On the first run it writes the `tests` entry you confirm into `.purlin/config.json`. |
-| `purlin:audit` | The same section, plus what the audit found under `audit`, in `.purlin/evidence/local/<feature>.json`, which `--commit` commits in the same two commits; it never pushes. What the model cost goes to `.purlin/runtime/audit_run.json`, which is not committed. A planted bug is made in a copy of the project and nowhere else |
-| `purlin:sign` | Once the signer answers yes, one signed commit `sign(<version>): <signer email>`. The first sign-off of a version carries `.purlin/evidence/package/<version>.json` and `.purlin/evidence/package/<version>.signoffs/<signer-slug>.json`, and writes the signed tag `signed/<version>` on that commit, which a person pushes; a later sign-off adds its own file alone. `--show` and `--check` write nothing. The skill writes the answers it collects to `.purlin/runtime/signoff-answers.json`, which is not committed. On any refusal it writes nothing |
+| `purlin:test` | Each suite's report under `.purlin/runtime/reports/`, which is not committed, and this system's section of `.purlin/evidence/local/<feature>.json`. `--commit` makes two commits: the specs of the features run, the test files carrying their markers and `.purlin/config.json` as `purlin: specs, tests and settings for <feature>, ...`, then the evidence as `purlin: evidence at <sha7>`; it never pushes. On the first run it writes the `tests` entry once you answer yes, or with `--write-tests`. |
+| `purlin:audit` | The same section, plus what the audit found under `audit`, in `.purlin/evidence/local/<feature>.json`, which `--commit` commits in the same two commits; it never pushes. A planted bug is made in a copy of the project and nowhere else |
+| `purlin:sign` | Once the signer answers yes, or types their address where the agent asks, one signed commit `sign(<version>): <signer email>`. The first sign-off of a version carries `.purlin/evidence/package/<version>.json` and `.purlin/evidence/package/<version>.signoffs/<signer-slug>.json`, and writes the signed tag `signed/<version>` on that commit, which a person pushes; a later sign-off adds its own file alone. `--show` and `--check` write nothing. The skill writes the answers it collects to `.purlin/runtime/signoff-answers.json`, which is not committed. On any refusal it writes nothing |
 | `purlin:init` | `.purlin/`, `specs/`, `.purlin/config.json` holding `version` and an empty `tests` setting, a block in `.gitignore`, `.purlin/evidence/` with its README, and `purlin-report.html` at the project root. It commits the files it wrote in one commit, `chore(init): set up Purlin`, once you agree or with `--yes`. `--update` commits what it applied as `chore(update): migrate to <VERSION> (<ids>)` |
 | `purlin:anchor` | `specs/_anchors/<name>.md`, creating `specs/_anchors/` with the first anchor |
 | `purlin:status` | `.purlin/report-data.js`, the data the dashboard reads, and `purlin-report.html`, its page, where the project's copy is missing or differs from the plugin's; git ignores both. `purlin:test`, `purlin:audit` and `purlin:sign` write the same two when they finish |
@@ -135,7 +185,7 @@ Purlin
 |---------|---|---|---|
 | `scripts/run/purlin_run.py --test`, `--audit` | everything asked happened | a tied test failed or did not run; evidence is missing; a marker names nothing a spec has; a spec under `specs/` writes a number twice or holds a line left from a merge conflict, after every test ran; no settings file; the settings file cannot be read; a project set up by 0.9.5 and not upgraded; no test command; for `--audit`, a file of the project changed while the audit ran. A weak or unaudited rule never exits 1, and neither does a test comment to correct | a bad command line |
 | `scripts/run/purlin_run.py --ci` | the tests tied to the proofs tagged for this machine's system passed | one of those failed or could not run, and nothing else | a bad command line |
-| `scripts/review/sign.py` | signed, shown, checked and matching, stopped, or answered no | a refusal: tracked files changed and not committed, evidence not committed, no version, a tag of the version's name that `purlin:sign` did not write, the version's tag on a commit this checkout does not hold or on other code, results not taken on this version of the code, results taken while files were changed and not committed, a rule with no test, a rule that does not pass, the branch's copy on the host holding commits HEAD lacks, the signer has already signed, the committed package not matching its fingerprint, or a stop with no answer in the answers file; no key; the package was not written; the commit was not made; git could not write the tag; `--check` did not match | a bad command line |
+| `scripts/review/sign.py` | signed, shown, checked and matching, stopped, or answered no | a refusal: tracked files changed and not committed, evidence not committed, no version, a tag of the version's name that `purlin:sign` did not write, the version's tag on a commit this checkout does not hold or on other code, results not taken on this version of the code, results taken while files were changed and not committed, a rule with no test, a rule that does not pass, the branch's copy on the host holding commits HEAD lacks, the signer has already signed, the committed package not matching its fingerprint, a stop with no answer in the answers file, or a commit signed with another key than the one the checkout names; no key; the package was not written; the commit was not made; git could not write the tag; `--check` did not match | a bad command line |
 | `scripts/review/ai_audit.py` | a rule was printed | the rule is not in the project; the settings file cannot be read | a bad command line |
 | `scripts/init/scaffold.py` | set up | the settings file cannot be read | a bad command line, not a git repository, or no such project root |
 | `scripts/init/update.py` | nothing pending, or applied | the settings file cannot be read | no project |
@@ -149,7 +199,9 @@ A run that stops before running anything writes nothing and names the command th
 - `No test command is set in .purlin/config.json, so nothing ran.`, when it recognises a test
   tool, then for each tool it recognises `Suggested for <name>: <run>` followed by what that
   tool needs added where it needs something, then
-  `Suggested tests setting: <the entries as one JSON array on one line>`.
+  `Suggested tests setting: <the entries as one JSON array on one line>` and the question
+  `Write this tests setting to .purlin/config.json? [y/N]`. On a yes, or with `--write-tests`,
+  it prints `Wrote the tests setting to .purlin/config.json.` and runs.
 - `No test command is set and no test tool Purlin knows was found, so nothing ran. The agent reads the project and proposes a command for you to confirm.`
 
 A run names each rule where it reports the problem:
@@ -195,7 +247,7 @@ source and test files. A consumer project carries no `references/`, no `scripts/
 
 ## Pending migrations
 
-When `sync_status` carries the line `→ Run: purlin:init --update`, stop before doing the skill's
+When the status carries the line `→ Run: purlin:init --update`, stop before doing the skill's
 work, say so, and ask whether to run `purlin:init --update` now. A spec written against a
 layout the installed plugin does not read is written against an answer it drops.
 

@@ -110,7 +110,7 @@ The run prints, in this order:
 For a failed test the run also prints the last 60 lines of the suite's own output.
 
 The `Tests` column counts the words a passed cell can read: `passed`, `partial`, `failed`,
-`no test`, `not run` and `out of date`. `references/spec_quality_guide.md`, "When a rule is
+`no test`, `not run`, `out of date` and `checked at sign-off`. `references/spec_quality_guide.md`, "When a rule is
 stuck", says what each word means, with its reasons, and what moves it.
 
 A test comment to correct reads `<file>:<line> names <feature> <PROOF-N>, whose wording changed

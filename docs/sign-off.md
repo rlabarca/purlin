@@ -105,6 +105,7 @@ one line naming the cause and the command to run. It writes nothing and exits 1.
 | `No sign-off: origin/main holds 1 commit that 1cf829e does not, as this checkout last fetched it. Pull, then run purlin:sign.` | the branch's copy on the host holds commits the checkout lacks; `purlin:sign` fetches nothing |
 | `No sign-off: .purlin/evidence/package/2.1.0.json does not match its fingerprint: <why>. Restore it as it was signed, or name a new version: purlin:sign --version <version>.` | the committed package was changed after it was signed |
 | `quinn.qa@labconnect.example has already signed 0.1.0 over this package; nothing was written.` | one sign-off per signer per package |
+| `No sign-off: the commit was signed with the key ending ...8kuw, not the key this checkout names, ending ...JJ8w, so it was taken back and no tag was written. A global gpg.ssh.program or signing key is the usual cause. Run git config gpg.ssh.program ssh-keygen, then purlin:sign again.` | another key signed the commit than the one this checkout names; this one comes after the last question, and the commit is taken back |
 
 Two things are listed in the package and stop no sign-off: what the audit found, whatever its
 word, and a rule whose tests pass with no proof line.
@@ -139,11 +140,13 @@ shows:
 - the rule's last note, where an earlier sign-off holds one.
 
 The last note names the version it was signed at and how many commits have come since. You
-judge whether it still holds:
+judge whether it still holds. Where the rule or the proof was reworded since, a line above the
+note says so:
 
 ```text
 Last note
-  noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red
+  The rule's wording changed since this note.
+  noted at the sign-off of 0.1.0 by pat.product@labconnect.example, 3 commits since: I read the SST and EDTA rejection messages myself; both are clear.
 ```
 
 Then the walk asks what you saw:
@@ -155,7 +158,7 @@ Rule
 Proof
   PROOF-5: Read the error messages against the brand voice guide @manual
 Results
-  Linux/Unix: passed on dana-laptop
+  No test runs for this rule: you check it here.
 login RULE-2   what did you see, in one line, or Enter for no note, or stop: 
 ```
 
@@ -227,6 +230,12 @@ the walk in two calls.
  "sign": "quinn.qa@labconnect.example"}
 ```
 
+The agent asks the last question as
+`Sign the evidence package for 0.1.0 as quinn.qa@labconnect.example? Type that address to sign:`
+The script signs only where `sign` holds the signer's own address, typed by the person signing.
+Any other value ends on
+`Nothing was signed: "sign" in .purlin/runtime/signoff-answers.json must hold quinn.qa@labconnect.example, typed by the person signing.`
+
 The walk then runs with those answers and prints the same lines. A stop with no answer in the
 file refuses, with nothing written.
 
@@ -279,7 +288,9 @@ For a file changed after it was written, it prints
 carries:
 
 - the package's fingerprint;
-- the signer's email and name as git holds them, the key's fingerprint and the time;
+- the signer's email and name as git holds them, the key's fingerprint and the time. The key
+  recorded is the key that signed the commit. Where another key signed it, as a global
+  `gpg.ssh.program` can cause, the sign-off is taken back and names both keys;
 - what the walk showed: the overview, the runs, each hand check walked, whether the audit's
   list was opened, and every note typed.
 
@@ -300,6 +311,10 @@ sign-offs under one name. It is never moved.
 The status reads `signed` only where the tag names a commit that holds the package and a
 sign-off of it counts. A tag written by hand reads `not signed`, with one warning, and
 `purlin:sign` refuses to sign that version until the tag is deleted.
+
+After a `git pull` the tag may be missing: a pull fetches no tags. The status then reads the
+sign-off from its files and names `git fetch --tags`:
+`signed/0.1.0 is not in this checkout: the sign-off of 0.1.0 at f099b41 is read from its files. Run git fetch --tags, or purlin:sign if no one wrote the tag.`
 
 Changing a test command in `.purlin/config.json` ends the results, as changing the code does.
 Changing `version` alone does not.

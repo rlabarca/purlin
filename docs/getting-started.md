@@ -67,6 +67,8 @@ Committed e1a0b21, the files setup wrote:
   .purlin/evidence/README.md
 ```
 
+`purlin:init --yes` commits setup's files whenever they are not committed yet.
+
 The settings file holds two things. `version` is the Purlin that set the project up. `tests`
 is your test commands, empty until the first test run.
 
@@ -100,10 +102,13 @@ Suggested for pytest: python3 -m pytest {files} --junitxml={report}
 ```
 
 Your project may run its tests another way, with another interpreter or other options. The
-agent shows you the difference. Say yes to the entry you want. The agent writes it into
-`.purlin/config.json` and runs the tests again. The run prints:
+agent shows you the difference, then asks
+`Write this tests setting to .purlin/config.json? [y/N]`. On your yes the run writes the setting
+and runs the tests. It prints:
 
 ```text
+Wrote the tests setting to .purlin/config.json.
+
 Running the pytest suite.
 
 Markers: 3 tied to a test, 0 not tied.
@@ -157,7 +162,9 @@ No test command is set and no test tool Purlin knows was found, so nothing ran. 
 [supported_frameworks.md](../references/supported_frameworks.md) lists the test tools it
 recognises and the entry it suggests for each.
 
-**5. Read it.** The three opening lines name the project and state the two facts.
+**5. Read it.** The three opening lines name the project and state the two facts. The project's
+name is read from `pyproject.toml`, `package.json` or a `.csproj` file, then from the remote's
+name, then from the folder's.
 
 - `Tests: met` means every rule's tests pass on the committed evidence.
 - `Sign-off: not signed` means nobody has signed this code. The last line names the command
@@ -185,10 +192,23 @@ Left to do:
 Change `src/cart.py` and run `purlin:test` again. Every rule of `cart` is out of date until its
 tests run over the new code. The run's first line says why it picked the feature, and names the
 commit the last run saw: `Selected 1 of 1 feature: cart (code changed since <sha7>).` Run it
-once more with nothing changed and it runs nothing:
+once more with nothing changed and it runs nothing. The status follows, as after every run:
 
 ```text
 Nothing to run: every feature's spec, code and tests match its evidence. purlin:test --all runs them anyway.
+
+Purlin status: shop, plugin 0.10.0
+Tests: not met
+Sign-off: not signed
+
+Spec  Rules  Proofs  Tests
+───────────────────────────
+cart  3      3       3 of 3
+───────────────────────────
+
+3 rules. 3 pass their tests.
+Left to do:
+  1 feature whose results are not committed: purlin:test --commit
 ```
 
 That is the whole loop: a rule, a test, and whether the test passed over the code as it is now.
@@ -229,8 +249,9 @@ check. Then it takes one signature in a signed commit. The first sign-off writes
 [sign-off.md](sign-off.md) is the walk in full.
 
 **The audit is a tool you run when you want it.** `purlin:audit` runs heuristic spot tests over
-your tests. Then it plants one bug per proof in a copy of the project and sees whether the
-proof's own test catches it. A caught bug and no finding make the rule `strong`. A finding
+your tests. Then, for each proof, an AI writes the one small bug that proof's test is most
+likely to miss. The bug goes into a copy of the project, and the proof's own test runs. A
+surviving bug is shown with the case the AI says it breaks, and you judge it. A caught bug and no finding make the rule `strong`. A finding
 makes it `weak`, left to do as `to strengthen`.
 Nothing waits on it. [audit.md](audit.md) says what it checks and why.
 

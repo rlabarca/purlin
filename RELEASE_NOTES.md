@@ -20,12 +20,13 @@ a test is any test in your own suite with one comment above it.
 - **An anchor rule with nothing to check passes, and says so.**
 - **Slow proofs.** Tag a proof `@slow` and `purlin:test` never starts its test; `purlin:test --all` runs everything. Until it has passed, the status lists it: `1 slow proof to run: purlin:test --all`.
 - **A test comment whose proof was reworded is caught** until the test changes.
-- **The audit runs heuristic spot tests, then plants one bug per changed proof** in a copy of the project and sees whether the proof's own test catches it; it reports the share of rules it found strong. Run it by hand; nothing blocks on it.
+- **The audit runs heuristic spot tests, then plants one bug per changed proof** in a copy of the project and sees whether the proof's own test catches it; it reports the share of rules it found strong. Run it by hand; nothing blocks on it. The audit aims each planted bug past its proof's test, and shows the case the AI says a surviving bug breaks.
 - **The audit says how far it got.** `strong`: the spot tests found nothing and a planted bug
   was caught. `weak`: a spot test fired or a bug survived. `spot-checked`: the spot tests found
   nothing and no bug was planted and caught, with the reason. A result reads `out of date` once
   the rule, its proof, its test or its code changes.
-- **One model call per rule**, started with no tools, no plugins and none of your settings.
+- **The model is asked for a small bug for each proof and for its reading**, started with no
+  tools, no plugins and none of your settings.
 - **The status reads `signed` only where a sign-off counts.** A tag written by hand, an edited
   package and a sign-off changed after its commit each read `not signed`.
 - **A slow result must be taken on the version being signed.** A plain run marks an earlier
@@ -34,9 +35,19 @@ a test is any test in your own suite with one comment above it.
 - **The evidence package records who wrote and last changed each rule, proof and test**, from git.
 - **The dashboard names the branch and commit its data describes**, and its page is written with its data.
 - **A Purlin tool call names its folder**; a call that names none is refused with the fix.
+- **A spec's name may hold `-`.** A test comment, the upgrade from 0.9.5 and an anchor's name
+  read it. A name with any other character is warned of, with the rename.
+- **A hand check reads `checked at sign-off` until someone signs.** It is counted neither as
+  passing nor as failing, and it says so when its wording changed since its last note.
+- **`purlin:spec` resolves a merge conflict in a spec** where both sides only added lines, then
+  renumbers. It asks first.
+- **The status and drift have a script each**, for a session that does not load the tools.
+- **The sign-off records the key that signed**, and reads a sign-off whose tag was not fetched.
+- **Three questions are asked by the scripts themselves**: before renumbering, before the
+  `tests` setting is written, and before signing.
 - **Cut:** drift's role views, setup's questions but one, and most settings.
-- **The formats** stand at spec 23, anchor 12, evidence 11, signature 16, package 11 and marker 4,
-  the drift criteria at 13, and the dashboard's data at schema 15.
+- **The formats** stand at spec 24, anchor 12, evidence 12, signature 16, package 12 and marker 5,
+  the drift criteria at 14, and the dashboard's data at schema 16.
 
 In more words:
 
@@ -67,14 +78,14 @@ In more words:
   selected and why, `Selected 2 of 34 features: login (code changed since a1b2c3d), invoice (no
   run on macOS yet).` `purlin:test --all` runs everything.
 - **The audit.** `purlin:audit` runs the tests, then for each rule that passes: six heuristic
-  spot tests that read each test as text, with no model; one model call, which writes a small
-  bug for each proof whose test or covered code changed and explains the tests; and each bug
+  spot tests that read each test as text, with no model; the model asked for a small bug for
+  each proof whose test or covered code changed and for its reading; and each bug
   planted in a copy of the project, never in the project, with that proof's own test run. A spot
   test that fires, or a planted bug the proof's own test did not catch, makes the rule `weak`,
   left to do as `to strengthen`, and stops nothing. A caught bug and no finding make it
   `strong`. Only a test that ran and failed caught a bug. Otherwise the rule reads
-  `spot-checked`, with the reason. The audit prints how many model calls it will make, and ends
-  on what they cost and on `The audit found 4 of 5 rules strong (80%): 4 strong, 1 weak.`
+  `spot-checked`, with the reason. The audit ends on
+  `The audit found 4 of 5 rules strong (80%): 4 strong, 1 weak.`
 - **The sign-off.** `purlin:sign` reads the committed evidence, names who ran the tests, where
   and when, builds `.purlin/evidence/package/<version>.json`, and walks it: an overview, the
   audit's findings as a list you may open, and one stop per hand check, where you may type what

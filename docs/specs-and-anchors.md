@@ -22,6 +22,8 @@ This page explains the format. That file settles it.
 specs/<category>/<name>.md
 ```
 
+A name holds letters, digits, `_` and `-`.
+
 ```markdown
 # Feature: login
 
@@ -56,6 +58,10 @@ commits the spec on its own and ends on one line:
 ```
 Spec saved: login. Next: purlin:build login
 ```
+
+A change to a spec, even to one rule's words, puts every rule of that spec out of date. Its
+results are held under one fingerprint of the whole spec. `purlin:test` runs that spec's tests
+again.
 
 `## Rules` and `## Proof` are the only two sections anything reads. They are matched without
 regard to case, so `## rules` reads as `## Rules`. A spec with some other heading still parses,
@@ -171,9 +177,16 @@ Not everything needs a rule: look and feel can stay outside Purlin.
 A proof a test settles carries no `@manual`, whatever that test needs to run. A test may ask a
 model a question with one right answer, such as which commands it offers after an install.
 
-A `@manual` proof is a hand check. Nothing is left to do for it. Its rule's strong cell reads
-`checked at sign-off` until someone signs. At the stop the signer may type, in one line, what
-they saw.
+A `@manual` proof is a hand check. Nothing is left to do for it. At the stop the signer may
+type, in one line, what they saw.
+
+A rule checked by hand alone reads `checked at sign-off` and is counted as neither passing nor
+failing: `10 rules. 9 pass their tests. 1 is checked at sign-off.` It never stops the tests
+reading `met`. Once a sign-off notes it, it reads `passed`, with the note. Reword the rule or
+the proof and it reads `checked at sign-off` again, with
+`the rule's wording changed since its last note`.
+
+A tag stands at the end of the proof line, after the text.
 
 After a sign-off the rule carries its last note, with the version it was signed at and how many
 commits have come since:
@@ -259,9 +272,10 @@ twice. The number already on the default branch keeps it. The rule or proof from
 yet merged moves to the next free number.
 
 - `purlin:drift` names every number written twice and which line moves.
-- `purlin:spec` shows a dry run first: the spec lines and the test comments in this checkout
-  that would change. It asks `Do it? [y/N]`, and renumbers the line and its test comments when
-  you say yes. A moved rule's audit is read again.
+- `purlin:spec` resolves the conflict git left, where both sides only added lines, and shows a
+  dry run of the renumbering. It asks `Do it? [y/N]`. A line both sides changed is left for you
+  to choose. A moved rule's audit is read again.
+- Drift run before the merge is committed says `A merge is in progress and is not committed`.
 - A test comment on another branch is named and never touched.
 
 While a number is written twice, or a line git left from the conflict stays in the spec, every
