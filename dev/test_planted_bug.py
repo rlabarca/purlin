@@ -840,7 +840,7 @@ def test_a_no_break_reason_in_the_modules_own_words_is_the_models(tmp_path, own_
 
 
 # purlin: planted_bug PROOF-52
-def test_a_kept_no_break_reason_is_still_the_models_when_read_again(tmp_path, own_claude):
+def test_a_kept_no_break_reason_prints_as_the_models_when_read_again(tmp_path, own_claude):
     root = project(tmp_path, {'PROOF-1': STRONG})
     fake_claude.install(own_claude, answers=[{'PROOF-1': 'no break: %s\n' % OWN_WORDS}])
     code, _lines, _before, _after = audit(root)
