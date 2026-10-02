@@ -11,7 +11,7 @@ SKILL = skill_path('drift')
 
 COMMANDS = ('purlin:drift', 'purlin:spec', 'purlin:build',
             'purlin:anchor sync', 'git fetch')
-PATHS = ('references/drift_criteria.md',)
+PATHS = ('references/drift_criteria.md', 'scripts/run/purlin_drift.py')
 
 
 # purlin: skill_drift PROOF-46

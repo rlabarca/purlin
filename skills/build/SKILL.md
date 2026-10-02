@@ -1,6 +1,6 @@
 ---
 name: build
-description: Load a spec's rules, write the code and the marked tests, commit the changeset
+description: Write the code and the marked tests for a spec's rules, fix a failing rule, strengthen a weak test, and commit the changeset
 ---
 
 # purlin:build
@@ -11,14 +11,28 @@ and commit the result with a body that says which rule each change serves.
 **Paths.** Every `references/` and `scripts/` path below is inside the plugin and is reached
 through `${CLAUDE_PLUGIN_ROOT}`. A project carries none of them.
 
+A line marked **Stop and ask** is a question for the person: print it, end your turn, and act
+only on their answer. Never answer it yourself.
+
 ## Choosing what to build
 
 ```bash
 purlin:build [<name>]
 ```
 
-With no name, call `sync_status` and read the state. Pass `project_root` on every Purlin tool
-call: the top folder of the git checkout you are working in.
+With no name, read the state from the status.
+
+Get the status from the tool `mcp__plugin_purlin_purlin__sync_status`, passing `project_root`:
+the top folder of the git checkout you are working in. Where the session lists it as a
+deferred tool, load it with ToolSearch first. Where the session does not have it, run the
+script, which prints the same status:
+
+```bash
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_status.py" --project-root .
+```
+
+Never read `.purlin/report-data.js` or `purlin-report.html` as the status: they hold what the
+last command saw.
 
 | What the state says | What you do |
 |---------------------|-------------|
@@ -120,8 +134,8 @@ purlin:test <name>
 
 Never run the test framework directly. `purlin:test` runs the project's own test command, ties
 each result to the marker above its test, writes the evidence and prints the state of each rule;
-where no test command is set it suggests one for each test tool it recognises and writes them
-once the person confirms, so write no entry yourself. It names every marker it could not tie to
+where no test command is set it prints a suggestion and asks before it writes one, so write no
+entry yourself and never edit `.purlin/config.json` by hand. It names every marker it could not tie to
 exactly one test, by file and line; fix each before going on. Iterate until every rule the
 feature owns has a passing test. A proof tagged `@env` for another operating system is not run
 here: the run counts such proofs in one line per system; `skills/test/SKILL.md`, Step 5 says what

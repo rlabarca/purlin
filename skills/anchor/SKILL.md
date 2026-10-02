@@ -1,6 +1,6 @@
 ---
 name: anchor
-description: Create anchors, pull them from another repository, and keep the pins current
+description: Write rules that hold across the whole project as an anchor, pull an anchor from another repository, and keep its pin current
 ---
 
 # purlin:anchor
@@ -15,6 +15,9 @@ X in the project, Y holds", so a project with no X has nothing to break it;
 through `${CLAUDE_PLUGIN_ROOT}`. A project carries none of them. For the format, read
 `references/formats/anchor_format.md`; it is not restated here. Pass `project_root` on every
 Purlin tool call: the top folder of the git checkout you are working in.
+
+A line marked **Stop and ask** is a question for the person: print it, end your turn, and act
+only on their answer. Never answer it yourself.
 
 ## One repository is the default
 
@@ -37,12 +40,20 @@ checked across the whole project is not an anchor's: write it in the spec of eac
 needs it, with `purlin:spec <feature>`. Rules and proofs follow the grammar in
 `references/formats/spec_format.md`.
 
+1. Write what was asked and no more: one rule when one is asked for.
+2. Draft each rule and its proofs to `references/spec_quality_guide.md`, "A good anchor". A
+   proof a test cannot settle is tagged `@manual` or is not written.
+3. Print each rule with its proofs under it. **Stop and ask** whether to change any. Change
+   what the person asks and print them again.
+4. On their yes, write the file and check it, as `purlin:spec` checks a saved spec.
+5. Commit it with the `anchor(<name>): create` prefix.
+
 `references/spec_quality_guide.md`, "A good anchor", is the checklist for an anchor's rules and
 proofs: the skip with a reason starting `nothing to check:` where a test finds nothing to check
 in this project, which `purlin:status` then prints, the `@slow` tag for a long whole-project
 check and the `@manual` tag among them.
 
-Commit it with the `anchor(<name>): create` prefix from `references/commit_conventions.md`.
+`references/commit_conventions.md` holds the prefix.
 
 ## add
 
@@ -54,9 +65,9 @@ Fetches the anchor from another repository and writes the local copy under
 `specs/_anchors/`, with two tracking lines the author's own file does not carry. An anchor
 brought in this way is a remote anchor: its copy is pinned to one version of its source.
 
-The copy takes its name from the file. `--name <name>` gives it another, in letters, digits and
-`_`. A name an anchor in the project already holds is refused, with nothing written, and the
-refusal names `purlin:anchor sync <name>`. `--path` names a file inside the source: a path that
+The copy takes its name from the file. `--name <name>` gives it another, in the characters a
+spec's name may hold, which `references/formats/spec_format.md` lists. A name an anchor in the
+project already holds is refused, with nothing written, and the refusal names `purlin:anchor sync <name>`. `--path` names a file inside the source: a path that
 is absolute or holds `..` is refused.
 
 ```markdown

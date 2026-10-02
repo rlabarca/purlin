@@ -1,6 +1,6 @@
 ---
 name: drift
-description: Report what changed since your last pull
+description: Report what a pull, a merge, a rebase or a checkout changed in the rules, the proofs and the tests, and name a number two branches both took
 ---
 
 Report what changed since you last brought someone else's changes into your checkout, in one
@@ -9,7 +9,7 @@ view: a list of facts read from git. This skill writes nothing and judges nothin
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
 is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
 
-**Pending migrations:** when `sync_status` opens with a pending-migrations advisory, stop and
+**Pending migrations:** when the status opens with a pending-migrations advisory, stop and
 follow `references/purlin_commands.md#pending-migrations` before doing this skill's work.
 
 ## Usage
@@ -27,7 +27,8 @@ Plain language reaches the same place: "what changed", "what did that pull bring
 Run it right after a pull, a merge, a rebase or a checkout of someone else's branch. A merge
 that stopped on conflicts counts once you commit it, `commit (merge)` in git's log of HEAD. The
 range starts where HEAD stood before that action, so it shows what the action brought in and what
-you committed since.
+you committed since. Run mid-merge, drift says `A merge is in progress and is not committed`: its
+range stops before the merge.
 
 Drift reads only this checkout: it never fetches, pulls or reaches the host, and it never pulls
 an anchor. When it names a number written twice it also says how old this checkout's copy of the
@@ -35,12 +36,15 @@ default branch is. If that copy is old, run `git fetch`, then run drift again.
 
 ## Step 1: get the data
 
-```
-drift(project_root="<the top folder of the git checkout>")
+Call the tool `mcp__plugin_purlin_purlin__drift` with `project_root`, and `since` where the
+person gave `--since`. Where the session lists it as a deferred tool, load it with ToolSearch
+first. Where the session does not have it, run the script, which prints the view's lines:
+
+```bash
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_drift.py" --project-root . [--since <N or date>]
 ```
 
-Pass `project_root` on every Purlin tool call: the top folder of the git checkout you are working
-in. Add `since` where the person gave `--since`. The tool returns the range, `since`, and the one
+`project_root` is the top folder of the git checkout you are working in. The tool returns the range, `since`, and the one
 view: `lines`, the sentences to print, beside the facts each was built from: the rules added,
 changed and removed, the proofs added, changed and moved, the numbers written twice, the test
 comments whose proof's wording changed, and the anchors behind their source. What each line means
@@ -57,6 +61,7 @@ not drop one, and do not add a judgement of whether a change is right: drift rep
 The line already on the default branch keeps the number; the other line moves to the number
 drift names. To renumber it and move the test comments that name it, follow `Renumbering` in
 `purlin:spec`: it shows the plan and asks before anything changes.
+`<feature>: PROOF-n will name RULE-m.` names a proof that follows a moved rule.
 
 ## Step 3: what drift never does
 
