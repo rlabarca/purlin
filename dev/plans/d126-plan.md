@@ -236,3 +236,62 @@ a proof; `docs/upgrading.md`.
 4. Fix what that run shows that is certain; list the rest for the owner.
 5. The dashboard looked at on the upgraded copy's data, both themes, 1500 and 390.
 6. `dev/plans/handoff.md` rewritten for where it stands.
+
+## 5. The second round: five findings of the repeat test
+
+The repeat test (a fresh agent, a fresh copy, at `main` after section 4's merges) reached
+`Tests: met` with no hand repair: the first full run counted 474 of 476, the two misses being
+the project's own unstable tests. Its copy is at
+`/Users/richlabarca/LocalCode/purlin-wt/RLabGenMusic-upgrade-2` and its logs in
+`.../scratchpad/upgrade-test-2/` (read both, change neither). It found these, and the owner
+said: "Fix 1-5". Two lanes, `update2` and `run2`, with section 3's brief (worktrees
+`d126-update2`, `d126-run2`; reports `dev/plans/d126-reports/update2.md`, `run2.md`).
+
+### Lane `update2` (owns what lane `update` owned, plus `docs/specs-and-anchors.md`, `skills/spec/SKILL.md`, `specs/skills/skill_spec.md`, `dev/test_skill_spec.py`)
+
+1. **438 kind-of-test tags are still in the specs and nothing says so.** `@browser` 160,
+   `@integration` 160, `@unit` 114, `@e2e` 4, each on the last line of a proof that runs over
+   several lines; `kind-tags` reads a proof's first line only and names `unit`, `integration`
+   and `e2e` alone. Built: `kind-tags` and `os-tags` read a proof line with its continuation
+   lines (the lines after it up to the next `- PROOF-`, `- RULE-`, heading or blank line). The
+   kinds dropped are `unit`, `integration`, `e2e`, and every kind the project's own 0.9.5
+   markers name in their last field (`[proof:<feature>:<id>:<rule>:<kind>]`,
+   `pytest.mark.proof(..., kind)` where it has one), read before the markers are rewritten, so
+   `@browser` goes here. `@manual`, `@slow` and `@env(...)` are never dropped. The totals line
+   says how many tags went from how many specs.
+2. **The listing run ends on a wrong instruction.** A run that applied nothing ended on the
+   status, whose last line read `476 rules to write a test for: purlin:build`. Built: a run
+   that applied nothing prints the pending list, the proposed test commands, and ends on
+   `→ Run: purlin:init --update` with how to say yes (`--yes`, or `--apply`), and no status.
+3. **The first `Left to do` after the upgrade does not open on the test run.** It read
+   `1 test comment to correct: purlin:build` first, a state the project had before the
+   upgrade, where the page shows only `476 rules to test: purlin:test`. Built: a run that
+   applied a migration ends, after its other parts and in place of the status's `Left to do`,
+   on `→ Run: purlin:test --all --commit` and the sentence
+   `Run it before anything else: every rule reads not run until it has.` The upgrade page's
+   `What you will see` lists a test comment to correct among the lines about the project, and
+   says a test that passes when its feature is run alone is the project's own, not the
+   upgrade's.
+5. **The instruction for a marker the upgrade leaves is incomplete.** Built, word for word:
+   `left <file>:<line> as it was: it names <feature> <id>, which no spec has. Write the proof with purlin:spec <feature>, put # purlin: <feature> PROOF-<n> above the test, and take the old tag out of the test's title or decorator.`
+   (the comment in the file's own comment style). The spec page, the spec skill and
+   `references/formats/spec_format.md` (wording only, no version) say where `> Highest-Rule:`
+   and `> Highest-Proof:` go in a spec that has neither: after the last `>` line of the
+   header.
+
+### Lane `run2` (owns what lane `run` owned)
+
+4. **A marker 0.9.5 wrote that is still in a test stops counting, and is named once.** The
+   upgrade leaves nine (each names a lettered proof no spec holds). The first full run then
+   says `533 tied, 0 not tied`, and no status or run mentions them again. Built: the status and
+   every run print one warning while a tracked test file holds a 0.9.5 marker where 0.9.5 read
+   it, a test's title or a `pytest.mark.proof` decorator (not a docstring, not a comment):
+   `<n> tests still carry a marker from Purlin 0.9.5, which is not read: <file>:<line>, <file>:<line>, and <n-2> more. For each, write the proof with purlin:spec, put the comment above the test, and take the old tag out.`
+   One or two are named with no `and <n> more`; one reads `1 test still carries`. It shows
+   only in a project already brought to this version (a pending 0.9.5 project prints its three
+   lines alone). Lane `update2` keeps `scripts/init/update.py`'s way of finding an old marker
+   callable as it is today; read it or call it, and change none of that file. The dashboard
+   shows the line as a notice, which needs no change to the page: check that it does.
+
+Merge order: `run2`, `update2`. Then section 4's steps 1 to 6 again, the upgrade test by a
+fresh agent on a fresh copy (`RLabGenMusic-upgrade-3`) included.
