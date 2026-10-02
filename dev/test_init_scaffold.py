@@ -622,6 +622,24 @@ class TestTheRefusals:
         assert ('Nothing is pending: this project is at %s.' % VERSION
                 in out.splitlines()), out
 
+    # purlin: scaffold PROOF-177
+    def test_update_hands_over_the_migrations_named_and_a_test_command(
+            self, project):
+        project.run()
+        write(project.path('.purlin/config.json'), json.dumps(
+            {'version': '0.9.5', 'test_framework': 'pytest'}) + '\n')
+        git(project.root, 'add', '-A')
+        git(project.root, 'commit', '-q', '-m', 'the settings 0.9.5 wrote')
+        code, out, err = project.child(
+            '--update', '--apply', 'config', '--test-command',
+            'pytest=make test REPORT={report}')
+        assert code == 0, out + err
+        assert '[y/N]' not in out, out
+        assert [(entry['name'], entry['run'])
+                for entry in project.config()['tests']] == [
+                    ('pytest', 'make test REPORT={report}')]
+        assert project.config()['version'] == VERSION
+
 
 # ---------------------------------------------------------------------------
 # Both ways Purlin is loaded

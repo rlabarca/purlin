@@ -10,7 +10,7 @@
 > Scope: scripts/init/scaffold.py, templates/config.json, templates/gitignore.purlin, templates/evidence-readme.md
 > Stack: python3 (stdlib only, 3.9 floor)
 > Highest-Rule: 83
-> Highest-Proof: 176
+> Highest-Proof: 177
 
 ## Rules
 
@@ -19,7 +19,7 @@
 - RULE-20: A second run writes no file: every file outside `.git/` reads the same, a block init appended to a file the project also owns is there once, and a `tests` setting the project already carries is kept as it is
 - RULE-21: A project set up from a marketplace install of the plugin ends the same as one set up from this checkout, and no file init writes names the folder the plugin ran from or this repository's development folder
 - RULE-24: init installs no git hook at all and leaves a hook someone else wrote untouched: nothing runs at commit time and nothing runs at push time
-- RULE-33: `--update` hands the project to `scripts/init/update.py`
+- RULE-33: `--update` hands the project to `scripts/init/update.py`, with `--yes`, `--apply` and each `--test-command` it was given
 - RULE-36: A project init set up walks run, commit and sign-off: `purlin:test --all --commit` commits the work and then its evidence, and the first `purlin:sign` signs the evidence package in a signed commit and writes `signed/<version>`
 - RULE-37: Each language is set up the same way: init writes an empty `tests` setting and adds nothing to its tests, and with the entry its first test run suggests written, its one marked test runs through `purlin:test` and is tied to its marker
 - RULE-47: Init creates `.purlin/evidence/` holding one `README.md`, the same bytes as `templates/evidence-readme.md`
@@ -43,6 +43,7 @@
 - PROOF-24 (RULE-24): Init is run; the files under `.git/hooks/` are exactly those that were there before it ran, and neither `pre-push` nor `pre-commit` is among them
 - PROOF-112 (RULE-24): A project whose `.git/hooks/pre-push` reads `echo mine` is set up; the hook reads the same afterwards
 - PROOF-33 (RULE-33): On a project init has just set up, `--update --yes` exits 0 and prints `Nothing is pending: this project is at <version>.`, the version being the plugin's `VERSION` file
+- PROOF-177 (RULE-33): A project init set up is given settings holding `test_framework` as 0.9.5 wrote it; `--update --apply config --test-command "pytest=make test REPORT={report}"` exits 0, asks no question, and the settings then hold one suite, `pytest`, running `make test REPORT={report}`, and this release as `version`
 - PROOF-36 (RULE-36): A python project, with one committed spec, its marked test and its suggested test entry, runs `purlin:test --all --commit`; it exits 0, commits `purlin: specs, tests and settings for greeting`, then `purlin: evidence at <that commit's sha7>` holding `.purlin/evidence/local/greeting.json`, and ends `Every rule passes its tests on the committed evidence. To sign it: purlin:sign` @env(macos)
 - PROOF-119 (RULE-36): That audited python project, with a `VERSION` file reading `0.1.0` and an SSH signing key set up for `jane@acme.com`, runs `purlin:sign --answers` with the signature answered yes; it exits 0, its commit carries a signature, and it prints `Signed 0.1.0 as jane@acme.com with the key ending ...<the key fingerprint's last 4 characters>.` @env(macos)
 - PROOF-93 (RULE-36): That first sign-off writes the tag `signed/0.1.0` on its commit, and prints `Push the branch and the tag: git push origin <branch> signed/0.1.0`, `<branch>` being the branch it signed on @env(macos)

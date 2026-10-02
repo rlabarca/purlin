@@ -224,9 +224,10 @@ with
 The run goes in this order:
 
 1. It prints every pending migration with the files it touches, then asks before each one, with
-   a question ending `[y/N]`. `--yes` answers yes to each migration. A declined migration is
-   left pending. Every file it rewrites is copied beside itself first, as
-   `<name>.local-<sha8>.bak`.
+   a question ending `[y/N]` on a line of its own. `--yes` answers yes to each migration, and
+   `--apply <id>[,<id>...]` applies only the ones named. A declined migration is left pending.
+   Every file it rewrites is copied first to `.purlin/runtime/update-backup/`, at its own path,
+   which git ignores.
 2. It rewrites or removes each line 0.9.5 wrote into a spec that 0.10.0 does not read: the
    `> Visual-Reference:` and `> Visual-Hash:` lines, a `> Source:` that names Figma and the
    `> Pinned:` that goes with it; `> Requires:` and `> Global:` from every spec, and `> Scope:`
@@ -235,26 +236,39 @@ The run goes in this order:
 3. It removes the files 0.9.5 kept that 0.10.0 does not use: the proof files and the receipts
    beside the specs, `.purlin/cache/` and the plugin copies under `.purlin/plugins/`. It asks
    before it removes a workflow that names a proof file, and `--yes` removes none. It untracks
-   `.purlin/report-data.js` and adds it to `.gitignore`.
+   `.purlin/report-data.js` and adds it to `.gitignore`, and takes out the `.gitignore` lines
+   0.9.5 wrote for its cache and its plugin folder.
 4. It removes the `pre-commit` and `pre-push` hooks under `.git/hooks/` that 0.9.5 installed,
    and leaves a hook another tool wrote.
 5. It rewrites `.purlin/config.json` to `version` and `tests`, and names every key it drops. It
    turns `test_framework` into `tests`, one entry per framework the tree still runs (`xunit`
-   becomes `dotnet`), naming any it drops.
+   becomes `dotnet`), naming any it drops. It looks at how the project already runs each test
+   tool, in its `package.json` scripts, its `Makefile` and its workflows, shows the command it
+   proposes and asks you to accept it or type another.
 6. It writes `.purlin/evidence/README.md`, and replaces `purlin-report.html` at the project
    root, the link 0.9.5 left or a copy that differs, with the 0.10.0 page. A project with no page
    there is left without one; the first `purlin:status` writes it.
-7. It rewrites each 0.9.5 marker as a comment above the same test, one line per file. A shell or
-   SQL test file becomes one test that passes when it exits 0. A marker it cannot place, such as
-   a module-wide `pytestmark`, is named by file and line and left for you.
-8. It removes the `pytest_plugins` entry in `conftest.py` (the file too, when it held nothing
-   else) and the reporter entry in the Jest or Vitest configuration or `package.json`, and names
-   a `.csproj` that compiles the xUnit logger for you to edit by hand.
-9. It commits everything it changed in one commit,
-   `chore(update): migrate to 0.10.0 (<ids>)`.
+7. It gives each proof 0.9.5 numbered with a letter, such as `PROOF-7b`, the next free number
+   in its spec, rewrites the marker of each test that named it, and prints each change, as
+   `piano_roll PROOF-7b is now PROOF-23`.
+8. It rewrites each 0.9.5 marker as a comment above the line that opens the same test. A tag in
+   a test's title goes with the `+` that joined it, so the title is left a plain string. It
+   reads each file back as a test run reads it and names a marker whose test's title cannot be
+   read. A shell or SQL test file becomes one test that passes when it exits 0. A marker it
+   cannot place, such as a module-wide `pytestmark`, is named by file and line and left for you.
+9. It removes what loaded the pytest plugin from every `conftest.py` in the project (the file
+   too, when it held nothing else) and the reporter entry in the Jest or Vitest configuration or
+   `package.json`, and names a `.csproj` that compiles the xUnit logger for you to edit by hand.
+10. It commits everything it changed in one commit,
+    `chore(update): migrate to 0.10.0 (<ids>)`.
+11. It prints one line of totals for each migration, then the files that still hold text 0.9.5
+    used, under `Purlin left these for you:`, and last the lines that need you. Each file's own
+    line is in `.purlin/runtime/update-backup/update.log`.
 
-After it, run `purlin:test`. The receipts and `@manual` stamps 0.9.5 wrote do not carry
-forward: a version is signed through `purlin:sign`, after `purlin:test --all --commit`.
+After it, run `purlin:test --all --commit`. Every rule reads `not run` until its tests run. The
+`verify:` commits 0.9.5 made stay in git as the earlier record, and its receipts can be read
+from the commit before the upgrade. The receipts and `@manual` stamps do not carry forward: a
+version is signed through `purlin:sign`.
 
 ### Words from 0.9.5, and what to say now
 

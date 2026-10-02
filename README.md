@@ -45,6 +45,8 @@ claude plugin install purlin@purlin --scope project
 Start Claude Code in the project, or run `/reload-plugins` in a session that is already open.
 The `purlin:` commands are there.
 
+Coming from 0.9.5? See [docs/upgrading.md](docs/upgrading.md).
+
 ## Ten minutes
 
 1. **Set up.** Type `purlin:init`. It names each file it wrote and asks one question,
