@@ -87,7 +87,7 @@
         "verdict": "strong"
       },
       "RULE-17": {
-        "at": "2026-10-02T09:32:59Z",
+        "at": "2026-10-02T10:55:39Z",
         "breaks": {
           "PROOF-17": {
             "after": "    reflowing a long rule line does not end the signatures that bind it.\n    \"\"\"\n    return hashlib.sha256(_normalise(text)[:13].encode('utf-8')).hexdigest()",
@@ -101,11 +101,11 @@
             "why": ""
           },
           "PROOF-19": {
-            "after": "    return ' '.join(p for p in (text or '').replace('\\n ', ' ').split(' ') if p)",
+            "after": "    return ' '.join(re.split(r'(?:[ \\t]|\\r?\\n)+', (text or '').strip()))",
             "aim": "past the test",
             "before": "    return ' '.join((text or '').split())",
-            "break_key": "cb3618a0a70c8cfb83118de02ac18613271a2e1d4646416128b336f4b7de2964",
-            "case": "the rule `Tokens expire after 24 hours` written again with a line break after `expire` and no indent on the next line; the proof says the same rule text hash; the changed code gives a different hash",
+            "break_key": "85dc8bb01e1871063a3f500508bcc5e2806db8c38bfe768d855bb084f3b431b2",
+            "case": "the rule `Tokens expire after 24 hours` broken after `expire` by a bare carriage return, the line break old Mac files use; the proof says the same rule text hash; the changed code gives a different hash",
             "file": "scripts/mcp/purlin/specs.py",
             "line": 163,
             "result": "survived",
@@ -113,23 +113,24 @@
           }
         },
         "code_hash": "1fd2321e67953cb9a6fb1f5a81de8154bbf39fc89c36f02efd7937c7711e813c",
-        "commit": "455ffd5bb58f73e08e5a016c2b0bdf75410e30a5",
+        "commit": "e9bdafe9f56f54ebd8f9ae0dbf563bc408e69c0c",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
         "explanation": [
-          "PROOF-19: the test hashes the rule broken after `expire` with a two-space indent on the next line and compares it with the hash of the one-line rule, so a line break with no indent after it is never tried.",
-          "PROOF-19: the expected hash comes from the same function on a different input, which is the proof's own comparison, so no spot test fires and the finding of none holds.",
-          "PROOF-17: the test hashes the `12 hours` rule and the `24 hours` rule and checks the two hashes differ, which is the proof's case and its result.",
-          "Both tests call only the rule text hash, so the proof text hash the rule also names is observed by neither."
+          "PROOF-19: the test hashes the rule broken after `expire` by `\\n`, by `\\n` with an indented next line and by `\\r\\n`, and compares each with the hash of the unbroken rule, so it observes the proof's case and its result for those three forms of break.",
+          "PROOF-19: the test tries no break written as a bare carriage return and none with a space left before the break, so a normalisation that misses those forms still passes.",
+          "PROOF-19: the test reads only the rule text hash, and no proof of the rule reads the proof text hash the rule also names.",
+          "PROOF-17: the test hashes `Tokens expire after 12 hours` and `Tokens expire after 24 hours` and checks that the two differ, which is the proof's case and its result.",
+          "The spot tests found nothing; both tests assert on values the code computes against a separately computed hash of a literal, and both can fail."
         ],
         "findings": [
-          "PROOF-19: the test still passes when scripts/mcp/purlin/specs.py:163 reads \"return ' '.join(p for p in (text or '').replace('\\n ', ' ').split(' ') if p)\"",
-          "PROOF-19: the AI says this breaks: the rule `Tokens expire after 24 hours` written again with a line break after `expire` and no indent on the next line; the proof says the same rule text hash; the changed code gives a different hash"
+          "PROOF-19: the test still passes when scripts/mcp/purlin/specs.py:163 reads \"return ' '.join(re.split(r'(?:[ \\t]|\\r?\\n)+', (text or '').strip()))\"",
+          "PROOF-19: the AI says this breaks: the rule `Tokens expire after 24 hours` broken after `expire` by a bare carriage return, the line break old Mac files use; the proof says the same rule text hash; the changed code gives a different hash"
         ],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "4dec231f95af38874aacf09f0a807f4e0863be4faa39ab14249bf9de7c0e9f8d",
         "rule_hash": "f0515efad160d6aab691b0b2f8221ae20f5ab2eabf4aeed1b9c738fa8d39663a",
-        "test_hash": "08c9eee57882019e33a4da553e05885582e812e45afe7d3ea508e7ee6d567d26",
+        "test_hash": "546f29bf783c497f089fa696bf7cb91aa52aed020392babf9bac21fc71d90bfe",
         "verdict": "weak"
       },
       "RULE-20": {
@@ -267,14 +268,14 @@
   "feature": "specs",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T09:32:15Z",
-      "commit": "455ffd5bb58f73e08e5a016c2b0bdf75410e30a5",
+      "at": "2026-10-02T10:55:14Z",
+      "commit": "e9bdafe9f56f54ebd8f9ae0dbf563bc408e69c0c",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "1fd2321e67953cb9a6fb1f5a81de8154bbf39fc89c36f02efd7937c7711e813c",
         "spec": "27e14a30a19598595868adfcb9c540d484185c41d37cdf4766d6f4465f3a928c",
-        "tests": "5098a6d32417fbf3571a7c527e88e4f790d1bf646930096a2e1d05d25ccf9946"
+        "tests": "8ebc14d39dd4be2697910817064b3030aabd14fb3eb1b6dfe3b9d3c15481df36"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
