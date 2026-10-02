@@ -28,8 +28,10 @@ reads `strong` when none did and a planted bug was caught by its proof's test. I
 `spot-checked` when none did and no bug was planted and caught; the entry then says why. Nothing
 else sets it: the model's reading never changes it.
 
-When the model cannot be reached for a rule, the spot tests still report what they find as
-`weak`, and a rule that passed them is written `spot-checked` and read again by the next audit.
+When the model cannot be reached for a rule, the spot tests and the bugs kept from earlier
+audits still set its verdict: a finding of the spot tests or a kept bug that survived reads
+`weak`, and a kept bug that was caught, with neither, reads `strong`. Any other rule is written
+`spot-checked` and read again by the next audit.
 
 ## Heuristic spot tests
 
@@ -219,12 +221,13 @@ after.
   error its tool does not report as a failure, with the change in place. That decides nothing:
   the bug was neither caught nor missed.
 - **Not made.** The reply held no part for the proof, or the part named no change, or a change
-  and no case of the proof, or a change that touches only a comment, or a change that does not
-  match its file exactly once, or a file the feature does not cover, or a file that holds one of
-  the proof's tests, or the proof's test does not pass in the copy before any change. The test
-  is not run against a bug, the audit prints `No bug was planted: <why>.`, and it is not a
-  finding. Where the model could not be reached, nothing is recorded for the proof and its bug
-  is asked for at the next audit.
+  and no case of the proof, or a change that touches only a comment, or a change that leaves
+  the file as it was, or a change that does not match its file exactly once, or a path outside
+  the copy of the project, or a file that is not in the project, or a file the feature does not
+  cover, or a file that holds one of the proof's tests, or the proof's test does not pass in the
+  copy before any change. The test is not run against a bug, the audit prints
+  `No bug was planted: <why>.`, and it is not a finding. Where the model could not be reached,
+  nothing is recorded for the proof and its bug is asked for at the next audit.
 
 Two of those reasons are refusals of a change the model did name:
 
@@ -313,7 +316,9 @@ runs past its 300 seconds or gives no answer, no explanation is recorded and the
 line naming the reason, `claude is not on PATH`, `claude exited with an error`,
 `claude timed out after 300 s` or `claude gave no answer`:
 `The model could not be reached: claude is not on PATH. 2 rules are spot-checked alone. Run purlin:audit again.`
-A rule on which a spot test fired is still written `weak`; any other is written `spot-checked`.
+Bugs kept from earlier audits still count. A rule on which a spot test fired, or with a kept
+bug that survived, is still written `weak`; one with neither and a kept bug that was caught is
+written `strong`; any other is written `spot-checked`.
 
 ## Anchors and rules with no proof
 
