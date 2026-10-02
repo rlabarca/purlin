@@ -13,8 +13,8 @@
 >   and after the last bug stops the audit if the project changed.
 > Scope: scripts/review/targeted_break.py
 > Stack: python/stdlib (subprocess, tempfile, hashlib, shutil)
-> Highest-Rule: 23
-> Highest-Proof: 46
+> Highest-Rule: 24
+> Highest-Proof: 47
 
 ## Rules
 
@@ -38,6 +38,7 @@
 - RULE-21: Blank lines between the last line under `before:` and the line `after:` are no part of the change: the lines the change replaces end with the last line that is not blank
 - RULE-22: The lines under `before:` match a file whose lines end CRLF as they match one whose lines end LF, and the changed file keeps CRLF at the end of every line
 - RULE-23: Terminal escape sequences and control characters are removed from a part's `case:` line, from its `file:` value and from a `no break` reason before any of them is recorded or printed
+- RULE-24: The words `aim:` and `case:` that open their lines are read in any letter case and after any spaces
 
 ## Proof
 
@@ -85,3 +86,4 @@
 - PROOF-44 (RULE-23): The `case:` line reads `a stamp of 2026-01-01 `, then the escape sequences that clear a terminal's screen and turn its text red, then `gives 0` and a bell character, and the bug survives; the audit prints `  PROOF-1: the AI says this breaks: a stamp of 2026-01-01 gives 0`, and the entry's `case` reads `a stamp of 2026-01-01 gives 0`
 - PROOF-45 (RULE-23): The part reads `no break: the test checks the case`, with the escape sequence that clears a terminal's screen before `checks` and a bell character at its end; the audit prints `  The spot tests found nothing. No bug was planted: the model found no change that would break PROOF-1: the test checks the case.`
 - PROOF-46 (RULE-23): The part's `file:` value reads `src/age.py` with the escape sequence that turns a terminal's text red between `src/` and `age.py`; the bug's entry reads `file` `src/age.py`, and the bug is planted and reads `caught`
+- PROOF-47 (RULE-24): The part for `PROOF-1` opens with the line `  Aim: past the test`, two spaces before it, and then `CASE: a stamp of 2026-01-01; the proof says 90; the changed code gives 0`; the bug is planted and reads `caught`, and its entry reads `aim` `past the test` and `case` `a stamp of 2026-01-01; the proof says 90; the changed code gives 0`

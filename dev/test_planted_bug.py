@@ -770,3 +770,17 @@ def test_a_file_value_is_read_without_its_escape_sequences(tmp_path, own_claude)
     assert code == 0
     assert bug_of(after)['file'] == 'src/age.py'
     assert bug_of(after)['result'] == 'caught', bug_of(after)
+
+
+# purlin: planted_bug PROOF-47
+def test_aim_and_case_are_read_in_capitals_and_after_spaces(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    reply = ('  Aim: past the test\nCASE: %s\nfile: src/age.py\nbefore:\n    return days\n'
+             'after:\n    return 0\n' % CASE)
+    fake_claude.install(own_claude, answers=[{'PROOF-1': reply}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['result'] == 'caught', bug_of(after)
+    assert bug_of(after)['aim'] == 'past the test'
+    assert bug_of(after)['case'] == CASE
+

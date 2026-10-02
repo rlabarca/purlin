@@ -98,8 +98,8 @@ _CHANGE_RE = re.compile(r'^file:[ \t]*(?P<file>[^\n]+?)[ \t]*\nbefore:[ \t]*\n(?
 _ESCAPE_RE = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)?'
                         r'|\x1b[@-_]?')
 _CONTROL_RE = re.compile(r'[\x00-\x1f\x7f-\x9f]')
-_AIM_RE = re.compile(r'^aim:(.*)$')
-_CASE_RE = re.compile(r'^case:(.*)$')
+_AIM_RE = re.compile(r'^\s*aim:(.*)$', re.I)
+_CASE_RE = re.compile(r'^\s*case:(.*)$', re.I)
 
 # A comment line starts, after its indent, with `//` in any file, or with `#`
 # in a file with one of these endings. A comment at the end of a code line
@@ -130,7 +130,7 @@ def shown(text):
 def parse_answer(text):
     """`('change', file, before, after, aim, case)`, `('no break', why)`, or None for
     anything else. `aim` and `case` are read from the lines `aim:` and `case:` that
-    open the part: `aim` is `past the test` or `plain`, and `plain` for any other
+    open the part, in any letter case and after any indent: `aim` is `past the test` or `plain`, and `plain` for any other
     word or no such line; `case` is its line with outer spaces cut, at most `CASE_LIMIT`
     characters, and `''` where there is no such line. `case`, the file's path and
     `why` are each as `shown` gives them. Where the next line reads
