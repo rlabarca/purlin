@@ -760,7 +760,7 @@ class TestTheRefusals:
     def test_a_tag_typed_by_hand_for_this_version_is_refused(self, signed,
                                                              capsys):
         git(signed.root, 'tag', 'signed/2.1.0')
-        assert git(signed.root, 'remote').stdout == ''
+        assert git(signed.root, 'remote').stdout == '', 'a remote is set'
         assert run_main(signed, capsys) == (1, [self.HAND_TAG % ''])
         assert status(signed.root) == ''
         assert not os.path.exists(os.path.join(
