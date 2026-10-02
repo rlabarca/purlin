@@ -385,7 +385,7 @@ class TestTheFile:
 
     # purlin: package PROOF-52
     def test_a_package_folder_that_is_a_file_is_named_and_nothing_made(
-            self, project):
+            self, project, capsys):
         folder = os.path.join(project.root, '.purlin', 'evidence', 'package')
         write(folder, 'not a folder\n')
         try:
@@ -395,11 +395,18 @@ class TestTheFile:
         else:
             raise AssertionError('%s became a folder' % folder)
         before = project.head()
+        capsys.readouterr()
         code, lines = sign(project)
         assert code == 1
-        assert [text for text in lines if reason in text] == [
-            'The evidence package was not written: %s. Nothing was signed; '
-            'run purlin:sign again.' % reason]
+        named = ('The evidence package was not written: %s. Nothing was '
+                 'signed; run purlin:sign again.' % reason)
+        assert [text for text in lines if reason in text] == [named]
+        # One line: it is the last the walk prints, after the empty line
+        # that closes what the walk showed, and nothing is printed beside
+        # it anywhere else.
+        assert lines[-2:] == ['', named], lines
+        printed = capsys.readouterr()
+        assert (printed.out, printed.err) == ('', ''), printed
         assert project.head() == before
         assert git(project.root, 'tag', '--list').stdout == ''
 
@@ -569,7 +576,8 @@ class TestTheContent:
                     walk(item)
         walk(signed.package)
         assert len(times) >= 4
-        assert [t for t in times if not UTC.match(t)] == []
+        # The whole of each, with nothing after the `Z`.
+        assert [t for t in times if not UTC.fullmatch(t)] == []
 
     # purlin: package PROOF-61
     def test_the_package_counts_what_the_audit_found(self):

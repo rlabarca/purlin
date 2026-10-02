@@ -198,6 +198,17 @@ def audit(project, again=False):
     return code, out.getvalue()
 
 
+def rules_printed(printed):
+    """The rules the audit printed a line for, in order."""
+    return re.findall(r'^login (RULE-\d+)   ', printed, re.M)
+
+
+def rules_asked(directory):
+    """The rule each call to the fake `claude` asked about, in order."""
+    return [re.search(r'^login (RULE-\d+)$', call['prompt'], re.M).group(1)
+            for call in fake_claude.calls(directory)]
+
+
 def entry_of(project, rule='RULE-2'):
     """The audit entry the local evidence holds for `rule`."""
     path = os.path.join(project.root, '.purlin', 'evidence', 'local',
@@ -271,7 +282,8 @@ class TestWhichRulesAreRead:
 
     # purlin: ai_audit PROOF-4
     def test_a_rule_with_an_entry_for_its_text_proof_test_and_code_is_not_read(
-            self, project):
+            self, project, claude):
+        _install, directory = claude
         settle(project, 'RULE-2')
         rule = project.rule('RULE-2')
         assert rule['cells']['passed']['word'] == 'passed', rule
@@ -279,6 +291,12 @@ class TestWhichRulesAreRead:
         assert rule['audit']['commit'] == project.head(), rule
         assert ('login', 'RULE-2') not in to_read(project)
         assert ('login', 'RULE-1') in to_read(project)
+        # The audit itself, run without asking to read again, reads RULE-1
+        # and leaves RULE-2 alone: no line for it and no call about it.
+        code, printed = audit(project)
+        assert code == 0, printed
+        assert rules_printed(printed) == ['RULE-1'], printed
+        assert rules_asked(directory) == ['RULE-1']
 
     # purlin: ai_audit PROOF-103
     def test_a_rule_whose_feature_code_changed_since_its_entry_is_read(self):
@@ -298,31 +316,54 @@ class TestWhichRulesAreRead:
 
     # purlin: ai_audit PROOF-51
     def test_a_rule_with_a_current_entry_is_read_when_asked_again(
-            self, project):
+            self, project, claude):
+        _install, directory = claude
         settle(project, 'RULE-2')
         assert project.rule('RULE-2')['audit']
         assert ('login', 'RULE-2') not in to_read(project)
         assert ('login', 'RULE-2') in to_read(project, again=True)
+        # The audit itself, asked to read again, reads RULE-2.
+        code, printed = audit(project, again=True)
+        assert code == 0, printed
+        assert 'RULE-2' in rules_printed(printed), printed
+        assert 'RULE-2' in rules_asked(directory)
 
     # purlin: ai_audit PROOF-122
-    def test_a_rule_the_model_was_not_reached_for_is_read_again(self, claude):
+    @pytest.mark.parametrize('why', [
+        'claude exited with an error',
+        'claude is not on PATH',
+        'claude gave no answer'])
+    def test_a_rule_the_model_was_not_reached_for_is_read_again(
+            self, claude, monkeypatch, why):
         install, directory = claude
-        install(exit_code=1)
+        reached = os.environ['PATH']
+        # Each way the model is not reached: `claude` exits 1, no `claude`
+        # is on PATH at all, or `claude` prints nothing.
+        if why == 'claude exited with an error':
+            install(exit_code=1)
+        elif why == 'claude is not on PATH':
+            monkeypatch.setenv('PATH', os.pathsep.join(
+                folder for folder in reached.split(os.pathsep)
+                if not shutil.which('claude', path=folder)))
+            assert shutil.which('claude') is None
+        else:
+            install(raw='')
         with passing_project(source=LOGIN_SOURCE) as made:
             settle(made, 'RULE-1')
             audit(made)
             entry = entry_of(made)
             assert entry['verdict'] == 'spot-checked', entry
             assert entry['no_bug'] == [
-                'No bug was planted: the model could not be reached: claude '
-                'exited with an error.'], entry
+                'No bug was planted: the model could not be reached: %s.'
+                % why], entry
             # Nothing has changed since, and the model now answers.
             assert to_read(made) == [('login', 'RULE-2')]
+            monkeypatch.setenv('PATH', reached)
             install()
             code, printed = audit(made)
         assert code == 0, printed
-        assert 'login RULE-2' in printed, printed
-        assert len(fake_claude.calls(directory)) == 1
+        assert rules_printed(printed) == ['RULE-2'], printed
+        assert rules_asked(directory) == ['RULE-2']
 
 
 # ---------------------------------------------------------------------------
@@ -415,20 +456,30 @@ class TestTheCall:
 
     # purlin: ai_audit PROOF-14
     def test_the_call_is_bare_given_300_seconds_and_the_request_on_stdin(
-            self, project):
+            self, project, tmp_path):
         seen = []
-
-        class Done(object):
-            returncode = 0
-            stdout = json.dumps({'result': '- The test reads the status.'})
+        # The request holds characters outside ASCII, as a rule or a
+        # criteria file may.
+        criteria = 'criteria: caf\u00e9 \u2192 \u65e5\u672c'
+        stdin = str(tmp_path / 'stdin.bin')
+        # Stands in for `/bin/claude`: it keeps the bytes of its standard
+        # input, read to the end, and answers.
+        keeps_stdin = (
+            'import json, sys\n'
+            'with open(sys.argv[1], "wb") as kept:\n'
+            '    kept.write(sys.stdin.buffer.read())\n'
+            'print(json.dumps({"result": "- The test reads the status."}))\n')
 
         def runner(command, **kwargs):
             seen.append((command, kwargs))
-            return Done()
+            return subprocess.run([sys.executable, '-c', keeps_stdin, stdin],
+                                  **kwargs)
 
-        audit_module.audit_one(project.root, read(project, 'RULE-2'),
-                               'criteria', command='/bin/claude',
-                               runner=runner)
+        found = audit_module.audit_one(
+            project.root, read(project, 'RULE-2'), criteria,
+            command='/bin/claude', runner=runner)
+        assert found.get('explanation') == ['The test reads the status.'], \
+            found
         assert len(seen) == 1, seen
         command, kwargs = seen[0]
         assert command == [
@@ -441,9 +492,15 @@ class TestTheCall:
             "nothing else."]
         assert kwargs['timeout'] == 300
         # `input=` writes the prompt and closes stdin behind it.
-        assert kwargs['input'] == audit_module.model_prompt(
-            project.root, read(project, 'RULE-2'), 'criteria')
+        request = audit_module.model_prompt(
+            project.root, read(project, 'RULE-2'), criteria)
+        assert kwargs['input'] == request
         assert 'stdin' not in kwargs
+        # What arrived on standard input is the request, every character of
+        # it, and nothing else.
+        with open(stdin, 'rb') as handle:
+            arrived = handle.read().decode('utf-8')
+        assert arrived.replace('\r\n', '\n') == request
 
     # purlin: ai_audit PROOF-112
     def test_claude_is_started_in_an_empty_folder_outside_the_project(
@@ -475,7 +532,8 @@ class TestTheCall:
         assert asked_for(calls[0]) == ['PROOF-1', 'PROOF-2', 'PROOF-3']
 
     # purlin: ai_audit PROOF-55
-    def test_six_rules_are_each_asked_once_and_answered_in_order(self, project):
+    def test_six_rules_are_each_asked_once_and_answered_in_order(
+            self, project, claude, monkeypatch):
         base = read(project, 'RULE-2')
         readings = [dict(base, rule='RULE-%d' % n,
                          rule_text='Rule number %d holds' % n)
@@ -502,6 +560,22 @@ class TestTheCall:
             ['saw RULE-%d' % n] for n in range(1, 7)], results
         assert results[0]['explanation'] == ['saw RULE-1']
         assert results[-1]['explanation'] == ['saw RULE-6']
+
+        # The audit run whole over six rules, answered the same way: each
+        # rule's entry holds the answer to its own request.
+        del asked[:]
+        ask_all = audit_module.audit_all
+        monkeypatch.setattr(
+            audit_module, 'audit_all',
+            lambda root, readings, cwd=None: ask_all(root, readings, 4,
+                                                     runner=runner, cwd=cwd))
+        with rules_project(['pass'] * 6) as made:
+            code, printed = audit(made)
+            entries = [entry_of(made, 'RULE-%d' % n) for n in range(1, 7)]
+        assert code == 0, printed
+        assert sorted(asked) == ['RULE-%d' % n for n in range(1, 7)], asked
+        assert [entry['explanation'] for entry in entries] == [
+            ['saw RULE-%d' % n] for n in range(1, 7)], entries
 
 
 # ---------------------------------------------------------------------------
@@ -823,10 +897,8 @@ class TestTheVerdict:
     # purlin: ai_audit PROOF-98
     def test_the_findings_and_the_explanation_are_kept_apart(self, claude):
         install, _directory = claude
-        install(answers=[{'PROOF-2': 'no break: the proof names no value the '
-                                     'code computes',
-                          'reading': '- The test calls login and reads no '
-                                     'status.'}])
+        # The answer is that one line and nothing else.
+        install(answers=['- The test calls login and reads no status.'])
         with passing_project(test_file=CHECKS_NOTHING_TEST) as made:
             settle(made, 'RULE-1')
             audit(made)
@@ -1095,8 +1167,10 @@ class TestWhenTheModelCannotBeReached:
         assert entries['RULE-2']['breaks'] == {}, entries
         lines = printed.splitlines()
         assert 'login RULE-2   spot-checked' in lines, printed
-        assert [line for line in lines if 'could not be reached' in line
-                and not line.startswith(' ')] == [
+        # Once: no second copy of the line, indented or not. The line under
+        # the rule says `the model could not be reached`, in lower case.
+        assert [line for line in lines
+                if 'The model could not be reached' in line] == [
             self.UNREACHED % ' 1 rule is spot-checked alone.'], printed
 
     # purlin: ai_audit PROOF-117
@@ -1223,7 +1297,7 @@ class TestTheCommandLine:
     def test_an_unknown_option_exits_two(self, capsys):
         assert audit_module.main(['--nope']) == 2
         assert 'ai_audit.py: unexpected argument --nope' in \
-            capsys.readouterr().err
+            capsys.readouterr().err.splitlines()
 
     # purlin: ai_audit PROOF-76
     def test_an_unknown_rule_exits_one(self, project, capsys):
