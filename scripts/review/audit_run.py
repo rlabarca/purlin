@@ -5,7 +5,7 @@ audit reads (`ai_audit.is_read`, ai_audit RULE-1) it runs, in this order:
 
 1. the heuristic spot tests over each test tied to each rule's proofs
    (`plain_checks.check`), with no model;
-2. one model call per rule, four at once (`ai_audit.audit_all`), whose reply
+2. the model's request for each rule (`ai_audit.audit_all`), whose reply
    holds a planted bug for each proof that needs one, aimed past that proof's
    test, with the case the model says it breaks, and the model's reading,
    which becomes the explanation and sets no verdict;
@@ -644,15 +644,13 @@ def share_line(project_root, payload, selected):
     """The last line: the share of the rules that pass their tests the audit
     found strong, and each count as the status words it. The counts are
     `summary.audit_counts` over the project as it reads once the entries are
-    written, so the line and the status give the same numbers: a rule is
+    written, so the line and the status give the same numbers, the share counting no rule of an anchor: a rule is
     counted under the word its strong cell reads, and a rule whose strong
     cell reads `checked at sign-off` is in no count. `payload` is the one
     built before the audit, which says whether any rule passes."""
     if not counted_rules(payload, selected):
         return NO_RULE_PASSES
     now = payload_module.build_payload(project_root, generated_by='audit')
-    own = [rule for feature in now.get('features') or ()
-           if feature.get('name') in selected
-           for rule in feature.get('rules') or ()
-           if rule.get('feature') == feature.get('name')]
-    return summary_module.audit_line(summary_module.audit_counts(own))
+    return summary_module.features_audit_line(
+        [feature for feature in now.get('features') or ()
+         if feature.get('name') in selected])

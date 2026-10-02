@@ -69,7 +69,9 @@ under `Specs`. `Rules` counts the spec's rules. `Proofs` counts every proof line
 `· <k> by hand`, `· <k> partial` and `· <k> failing` where not zero; `by hand` counts the rules
 checked at sign-off, and `partial` means the tests pass on one operating system and not another.
 A `Strong` column shows only where the audit read a rule, as `<strong> of <n>`: of the rules
-that pass their tests and have a tested proof, the ones it found strong.
+that pass their tests and have a tested proof, the ones it found strong. An anchor's cell reads
+one word, `weak`, `out of date` or `spot-checked`, or nothing: no bug is planted for an anchor's
+rule.
 
 ## Step 3: print the summary and `Left to do`
 

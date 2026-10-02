@@ -1042,6 +1042,15 @@ class TestTheVerdict:
             entry
         assert entry['breaks'] == {}, entry
 
+    # purlin: ai_audit PROOF-159
+    def test_an_audit_of_an_anchor_alone_ends_on_what_it_found(self, claude):
+        with passing_project() as made:
+            as_anchor(made)
+            code, printed = audit(made)
+        assert code == 0, printed
+        assert printed.splitlines()[-1] == (
+            'The audit found 2 spot-checked.'), printed
+
     # purlin: ai_audit PROOF-116
     def test_a_proof_tagged_for_another_system_gets_no_planted_bug(
             self, claude, monkeypatch):

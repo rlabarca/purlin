@@ -15,7 +15,7 @@
 > Scope: scripts/review/audit_run.py, scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
 > Highest-Rule: 64
-> Highest-Proof: 158
+> Highest-Proof: 159
 
 ## Rules
 
@@ -27,7 +27,7 @@
 - RULE-11: The test source is read out of JavaScript and TypeScript by balancing the brackets of the test's call, with strings, comments and regex literals stepped over, so a nested options object, an apostrophe in a title, a regex literal, a comment or a division never cuts a body short or drops a test
 - RULE-12: Reading a rule, asking the model and printing the result write no file anywhere under `.purlin/`
 - RULE-33: A rule's verdict comes from the spot tests and the planted bugs alone: `weak` when a spot test fires on one of its tests or a planted bug survives; else `strong` when a planted bug was caught; else `spot-checked`; and the entry records under `no_bug` one sentence for each proof no bug was caught for
-- RULE-35: The audit's last line is `The audit found <s> of <n> rules strong (<p>%): ` and the counts as the status words them, with the numbers the status gives: each rule that passes its tests is counted under the word its strong cell reads, and a rule whose strong cell reads `checked at sign-off` is in no count
+- RULE-35: The audit's last line is `The audit found <s> of <n> rules strong (<p>%): ` and the counts as the status words them, with the numbers the status gives: each rule that passes its tests is counted under the word its strong cell reads, and a rule whose strong cell reads `checked at sign-off` is in no count. The share counts no rule of an anchor, and where every rule read is an anchor's the line is `The audit found <counts>.`
 - RULE-36: A proof whose test and whose feature's code are unchanged since its last planted bug keeps that bug's result, and no bug is planted for it again
 - RULE-37: No bug is planted, and the model is asked for none, for a proof of an anchor's rule or a proof tagged `@env` for a system this machine is not, and the entry's `no_bug` says which
 - RULE-38: The model's answer is written into the rule's audit entry as `explanation`, one sentence per line starting `- `, beside the `findings` it explains, and the lines under `notes:` are its notes; the answer sets no verdict
@@ -146,3 +146,4 @@
 - PROOF-156 (RULE-63): The test of `PROOF-5` is changed to expect `24`, so it fails, and `RULE-3` is named with `--settle`; the run exits 1 and prints `sample_intake RULE-3 fails: tests/test_intake.py::test_age_is_whole_hours. Run purlin:build sample_intake.`, the entry of `RULE-3` is as it was, and `claude` is started `0` times
 - PROOF-157 (RULE-64): The test of `PROOF-5` is changed to expect `25`, and `sample_intake` is audited without `--settle`; `claude` is asked a bug for `PROOF-5`, the entry of `PROOF-5` holds the model's change `return int(seconds // 1800)` and reads `caught`, and the audit prints no line under `sample_intake RULE-3`
 - PROOF-158 (RULE-56): The kept bug for `PROOF-5` and the model's new bug both survive; the audit prints `sample_intake RULE-3   spot-checked`, then `  PROOF-5: the bug at src/intake.py:17 did not break what the proof says. A new bug was planted.`, then `  The spot tests found nothing. No bug was caught for PROOF-5: two planted bugs left the proof's check passing.`
+- PROOF-159 (RULE-35): `login` is an anchor whose two rules pass their tests and no spot test fires; the audit's last line reads `The audit found 2 spot-checked.`

@@ -207,6 +207,17 @@ class TestTheSentence:
             '2 rules. 2 pass their tests. The audit found 1 of 1 rules '
             'strong (100%): 1 strong, 1 spot-checked.'), sentence
 
+    # purlin: summary PROOF-63
+    def test_an_audit_that_read_an_anchor_alone_lists_what_it_found(self):
+        features = [
+            feature([rule(strong='spot-checked', feature='security')] * 7
+                    + [rule(strong='weak', feature='security')],
+                    name='security', anchor=True),
+        ]
+        assert payload(features)['summary']['sentence'] == (
+            '8 rules. 8 pass their tests. The audit found 1 weak, '
+            '7 spot-checked.')
+
 
 def _nine_tested_rules_and_a_hand_check(audited=False):
     """A project of 10 rules on committed evidence: 9 pass their tests, and

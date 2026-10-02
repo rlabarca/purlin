@@ -26,7 +26,7 @@ The page has two screens: the board, and one rule.
 
 ## The top bar
 
-The top bar holds the logo, the header line, three boxes and the theme button.
+The top bar holds the logo, the header line, two boxes and the theme button.
 
 **The header line** says which checkout you are reading and when its data was written:
 
@@ -41,29 +41,23 @@ full date and the UTC time: `2026-10-01 06:42 EDT (10:42 UTC)`. The data keeps t
 and the page converts it. On a detached `HEAD` the line reads
 `detached at a1b2c3d, written 06:42 EDT`.
 
-**The first two boxes** state the two facts:
+**The two boxes** state the two facts:
 
 - `Tests` reads `met` where every rule's tests pass on the committed evidence, and `not met`
   otherwise.
 - `Sign-off` reads `signed 0.1.0 at a1b2c3d`, `signed 0.1.0, 4 commits since` or `not signed`.
+  It is green at the signed commit and amber once commits have followed it. `not signed` is
+  plain, in no state colour.
 
-**The third box**, `Audit`, is information. It is no third fact, and nothing waits on it:
+Where the two boxes do not fit beside the header line, both move to the line below the logo.
 
-- It reads `not audited` where no audit has read a rule. That is no warning: it is drawn in the
-  same tone as `not signed`.
-- Once an audit has read a rule it reads the share the summary gives, as `34 of 40 strong`. It is
-  green while no rule is weak and amber once one is.
-- Hover over it for the counts, one to a line, as `34 strong`, `4 weak`, `2 spot-checked`, then
-  `Last audit: 2026-09-13`.
-
-Under 600 pixels the three boxes stack.
-
-**The theme button** shows the glyph of the theme it turns to: `◐` in the dark theme, `◑` in the
-light. Its hover names that theme, `Light theme` or `Dark theme`.
+**The theme button** is always at the top right. It shows the glyph of the theme it turns to:
+`◐` in the dark theme, `◑` in the light. Its hover names that theme, `Light theme` or
+`Dark theme`.
 
 ## Board
 
-![The board: the header line naming the branch and commit, the Tests, Sign-off and Audit boxes, the count boxes, the Anchors section, and the specs under their categories](images/dashboard-board.png)
+![The board: the header line naming the branch and commit, the Tests and Sign-off boxes, the count boxes, the Anchors section, and the specs under their categories](images/dashboard-board.png)
 
 **Notices.** Notices sit above the count boxes, one per line. There is one when the working tree
 has uncommitted changes:
@@ -86,10 +80,13 @@ states: 3 files its scope names are not written yet: facts.py, project.py, wordi
 - `Passing` counts the rules that pass their tests. The project's total is beneath it, as
   `11 RULES TOTAL`. A rule checked at sign-off is not counted.
 - `Strong` counts the rules the audit found strong, of the rules that pass their tests and have
-  a tested proof. It is there once any rule has an audit entry.
+  a tested proof. It is there once the audit has read a rule that is not an anchor's. Hover over
+  it for the audit's counts, one to a line, as `34 strong`, `4 weak`, `2 spot-checked`, then
+  `Last audit: 2026-09-13`.
 
 A box is green once its count is complete, and amber until then. `No proof` is complete at zero.
-`Passing` is complete once every rule passes or is checked at sign-off.
+`Passing` is complete once every rule passes or is checked at sign-off. `Strong` is complete once
+every rule the audit could read that is not an anchor's is strong.
 
 **Columns.** `Spec`, `Rules` and `Tests` are always there. `Proofs` sits between `Rules` and
 `Tests` wherever the project writes at least one proof line. `Strong` comes last once any rule has
@@ -101,7 +98,7 @@ an audit entry. A column the project does not reach is absent, not empty.
 | `Rules` | how many rules the spec has, as `16` | |
 | `Proofs` | `5 · 1 no test`: how many proof lines the spec holds, then how many no test runs. A `@manual` proof is not counted as one | which proofs have no test |
 | `Tests` | `3 of 4 · 1 partial`: how many rules passed everywhere they ran, then `by hand`, `partial` and `failing`. `2 of 3 · 1 by hand` holds one rule checked at sign-off | one line per operating system a current run covered, with its newest run's source, age and results |
-| `Strong` | `2 of 4`, as `<strong> of <n>`: how many rules the audit found strong, of the rules that pass their tests and have a tested proof | where the newest audit came from and how old it is |
+| `Strong` | `2 of 4`, as `<strong> of <n>`: how many rules the audit found strong, of the rules that pass their tests and have a tested proof. An anchor reads one word, `weak`, `out of date` or `spot-checked`, or nothing | where the newest audit came from and how old it is; an anchor's opens on `No bug is planted for an anchor's rule.` |
 
 Every count names what it counts. The first part is always drawn. A later part is drawn only
 above zero, so a spec with nothing partial and nothing failing reads `3 of 3`. Each cell reads

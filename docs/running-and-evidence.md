@@ -352,7 +352,8 @@ The audit writes what it found under `audit` in `.purlin/evidence/local/<feature
 planted bug is there with its file, its line, the change and whether it was caught. The audit
 commits only with `--commit`, in the same two commits as a test run.
 
-It prints each rule with what it found, and last the share of rules it found strong:
+It prints each rule with what it found, and last the share of rules it found strong, which counts no rule of an
+anchor:
 
 ```
 login RULE-2   weak

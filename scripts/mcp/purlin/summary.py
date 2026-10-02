@@ -101,6 +101,9 @@ AUDIT_WORDS = (('strong', 'strong'), ('weak', 'weak'),
                ('spot_checked', 'spot-checked'),
                ('out_of_date', 'out of date'), ('not_audited', 'not audited'))
 AUDIT_LINE = 'The audit found %d of %d rules strong (%d%%): %s.'
+# The same line where no rule the audit read can be found strong, each being
+# an anchor's: there is nothing to take a share of, so it lists what was found.
+AUDIT_FOUND = 'The audit found %s.'
 # The sentence's third part, where a passed cell reads `checked at sign-off`.
 BY_HAND_ONE = '1 is checked at sign-off.'
 BY_HAND_MANY = '%d are checked at sign-off.'
@@ -257,9 +260,15 @@ def audit_share(counts, anchors=None):
 
 def audit_line(counts, anchors=None):
     """AUDIT_LINE: `audit_share(counts, anchors)`, the whole per cent rounded
-    down, then `audit_words(counts)`, which counts the anchors' rules too."""
+    down, then `audit_words(counts)`, which counts the anchors' rules too.
+    Where the share is over no rule, AUDIT_FOUND: each count that is not
+    zero, in AUDIT_WORDS' order."""
     strong, over = audit_share(counts, anchors)
-    return AUDIT_LINE % (strong, over, strong * 100 // over if over else 0,
+    if not over:
+        return AUDIT_FOUND % ', '.join(
+            '%d %s' % (counts[key], word) for key, word in AUDIT_WORDS
+            if (counts or {}).get(key))
+    return AUDIT_LINE % (strong, over, strong * 100 // over,
                          audit_words(counts))
 
 

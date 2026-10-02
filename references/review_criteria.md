@@ -406,7 +406,7 @@ The audit reports. It recommends nothing.
 - **The share of rules found strong**, the last line:
   `The audit found 34 of 40 rules strong (85%): 34 strong, 4 weak, 2 spot-checked.`, with the
   numbers the status gives. Each rule that passes its tests is counted under the word its strong
-  cell reads; a rule with a hand check whose strong cell reads `checked at sign-off` is in no
+  cell reads, and the share counts no rule of an anchor; a rule with a hand check whose strong cell reads `checked at sign-off` is in no
   count. A team can set its own target, such as 80 percent, and check it here.
 
 Each rule read gets one entry in its feature's evidence, under `audit.rules`: the hashes of its

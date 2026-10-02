@@ -47,7 +47,7 @@ other page points here rather than defining it again.
   in the chain below.
 - **summary**: the sentence every run, every audit and `purlin:status` end on:
   `40 rules. 35 pass their tests.`, and, where the audit has read a rule that passes,
-  `40 rules. 35 pass their tests. The audit found 30 of 35 rules strong (85%): 30 strong, 2 weak, 3 spot-checked.` A rule is counted
+  `40 rules. 35 pass their tests. The audit found 30 of 35 rules strong (85%): 30 strong, 2 weak, 3 spot-checked.` The share counts no rule of an anchor. A rule is counted
   once, under the spec that owns it.
 - **Left to do**: the list under the summary, one line per kind of remaining work, in the order
   the work is done, each with its count and the command that does it; a kind at zero is left

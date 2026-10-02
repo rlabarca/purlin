@@ -31,9 +31,9 @@ function statStrip() {
   boxes.push(box(PASSING, passing, passing + byHand === total ? 'pass' : 'warn',
                  platformLines(project),
                  total + (total === 1 ? ' rule total' : ' rules total')));
-  if (audited()) {
+  var found = auditShare();
+  if (audited() && found.over) {
     var strong = (summary.audit || {}).strong || 0;
-    var found = auditShare();
     boxes.push(box(STRONG, strong,
                    found.strong === found.over ? 'pass' : 'warn',
                    auditCountLines(), null));

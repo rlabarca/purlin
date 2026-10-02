@@ -1993,6 +1993,26 @@ def test_the_strong_box_waits_on_a_weak_rule_that_is_not_an_anchors(
     assert found['Strong']['color'] == warn, found
 
 
+# purlin: purlin_report PROOF-256
+def test_no_strong_box_where_the_audit_read_an_anchor_alone(browser,
+                                                           tmp_path):
+    def anchors_alone(payload):
+        payload['features'] = [feature for feature in payload['features']
+                               if feature['is_anchor']]
+        payload['summary']['audit'] = {
+            'strong': 0, 'weak': 0, 'spot_checked': 1, 'out_of_date': 0,
+            'not_audited': 0}
+    page = open_sample(browser, tmp_path, 'team', anchors_alone)
+    labels = [box['label'] for box in page.evaluate(COUNT_BOXES)]
+    heads = texts(page, '[data-table="anchors"] .th > div')
+    cell = page.inner_text(
+        '.tr[data-feature="checkout_design"] [data-label="Strong"]').strip()
+    page.close()
+    assert 'Passing' in labels and 'Strong' not in labels, labels
+    assert heads[-1] == 'Strong', heads
+    assert cell == 'spot-checked', cell
+
+
 def stamp(page):
     """The top bar's line naming the checkout state, and its hover."""
     return [page.inner_text('.topbar .stamp').strip(),
