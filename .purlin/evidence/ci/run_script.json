@@ -2,14 +2,14 @@
   "feature": "run_script",
   "platforms": {
     "windows": {
-      "at": "2026-10-01T21:12:52Z",
-      "commit": "9b203040de3c5565ee4f338285d2c3abf33c82ae",
+      "at": "2026-10-02T01:20:30Z",
+      "commit": "9a44727e86e32bf2b3861c54260f764743392b02",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "15b87cd1d25554911cd759d9a2b2e444e1b11fb07020e9a3a781bfb0bb5b124f",
-        "spec": "ace24c4eee23e5e128f30a35b9b5f32b1a678542a9ed41a56e2dcb26f740727c",
-        "tests": "6363c325828c1471efd05340d0c5c79dfd560cb9a0a4a7b6dad133841cabce29"
+        "code": "430f4445deb29f9a80c68e6b3789b8dbd89a18db719c201ca317198f16c8dba1",
+        "spec": "c1f8e9119f27c9ae5a67b7a729ff7aeabb8a8ae66454086af7c31b99118ea3ff",
+        "tests": "2e488daac19d4c667bb817f21970a69b3acfd4f35f3e04168aa62f1c940f46e6"
       },
       "machine": "runnervmfi6oq",
       "proofs": [

@@ -2,14 +2,14 @@
   "feature": "config_engine",
   "platforms": {
     "windows": {
-      "at": "2026-10-01T21:12:52Z",
-      "commit": "9b203040de3c5565ee4f338285d2c3abf33c82ae",
+      "at": "2026-10-02T01:20:29Z",
+      "commit": "9a44727e86e32bf2b3861c54260f764743392b02",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "07d88b6fe9851a38e1222d606e2050458be4e9733f44bd245cf4a7e7a825f9c5",
-        "spec": "730739c3667258621e761781b82e75fe0a92f5f3f59a84f7195e020780d8b5c4",
-        "tests": "67f4153924574af14a9f41dd9917da0034513ab9f6b71e7e4e6a886311af2960"
+        "code": "fbc1cd0b20c23dd0095dc543d64b2e0be644ab09a3611aeb9b8af395b75a015b",
+        "spec": "f81e711d5ae324d4346f0ed82891e596f4185aa14c29dd689bf2695410fc5b00",
+        "tests": "b4c3b96dd73bd50a5b72462b38a16c573eb7a13a2ccba00c54381e7ec4838296"
       },
       "machine": "runnervmfi6oq",
       "proofs": [

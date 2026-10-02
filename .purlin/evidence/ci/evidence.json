@@ -2,14 +2,14 @@
   "feature": "evidence",
   "platforms": {
     "windows": {
-      "at": "2026-10-01T21:12:52Z",
-      "commit": "9b203040de3c5565ee4f338285d2c3abf33c82ae",
+      "at": "2026-10-02T01:20:29Z",
+      "commit": "9a44727e86e32bf2b3861c54260f764743392b02",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "cc45e782652ebc7688387228cd6ee54f16f16c438570af5116b6e355feefc62d",
-        "spec": "efb8f45a792d2caa43528407e748df09921bd7a1398f03b8b2b72fc1950085ec",
-        "tests": "0f40ffe7aed80d756b8d7e6c17253fda730a89c95dfc3875db5fb2daa77c6885"
+        "code": "cbfc99b80b2372af0e6cc4b45bb62cf8529c77ac4f66ee99031aa7d1ca4c6f04",
+        "spec": "fb9ca351798d6ef3362b2ac452c5607ad1b49f9e6670a440b6a00be81b369990",
+        "tests": "8d57742c82af207a613002352b93948c0bb318d1f5ffb6db3324cd7f3b12b875"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
