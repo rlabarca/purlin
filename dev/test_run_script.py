@@ -1675,10 +1675,15 @@ class TestSlowProofs:
         assert all('kept' not in entry for entry in section['proofs']
                    if entry['id'] != 'PROOF-2'), section
 
+    # purlin: run_script PROOF-286
     def test_a_full_run_takes_a_kept_result_again(self, tmp_path):
-        """No proof names this case yet: a result `--all` takes itself
-        replaces the kept one, on the same code."""
+        """A result `--all` takes itself replaces the kept one, on the same
+        code, so the sign-off's own fix clears its refusal."""
         root, _taken = self._kept_after_another_commit(tmp_path)
+        kept = [entry['id'] for entry in
+                _evidence(root)['platforms'][HERE_OS]['proofs']
+                if 'kept' in entry]
+        assert kept == ['PROOF-2'], kept
         code, output = _run(root, '--all', '--test', '--commit')
         assert code == 0, output
         assert (root / 'started').exists()

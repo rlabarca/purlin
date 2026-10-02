@@ -16,7 +16,7 @@
 > Scope: scripts/run/purlin_run.py, scripts/mcp/purlin/frameworks.py, references/supported_frameworks.md
 > Stack: python/stdlib (subprocess, re, hashlib), bash, pytest, sqlite3
 > Highest-Rule: 106
-> Highest-Proof: 285
+> Highest-Proof: 286
 
 ## Rules
 
@@ -119,6 +119,7 @@
 - PROOF-279 (RULE-106): In a git checkout, after `--all --test` passes `feat`'s slow PROOF-2, `--feature feat --test` with nothing changed writes no `started` file again, the evidence still lists PROOF-2 as `pass`, and RULE-2's passed cell reads `passed`
 - PROOF-280 (RULE-106): In that checkout, after `src/feat.py` is then changed, `--test` with no feature named selects `feat`, the evidence lists PROOF-2 as `not run`, and the run ends on `  1 slow proof to run: purlin:test --all`
 - PROOF-281 (RULE-106): In a git checkout, `--all --test --commit` passes `feat`'s slow `PROOF-2` at the commit `<c>`; `README.md`, which no scope names, is changed and committed; `--feature feat --test --commit` runs; the evidence lists `PROOF-2` as `pass` with `kept` naming the commit `<c>`, and the section's own `commit` is the new one
+- PROOF-286 (RULE-106): In a git checkout whose evidence lists `feat`'s slow `PROOF-2` as `pass` with `kept`, `--all --test --commit` runs with nothing changed since; the slow test is started, and the evidence lists `PROOF-2` as `pass` and holds no `kept`
 - PROOF-98 (RULE-59): In a git checkout of `login` and `export` with committed evidence and nothing changed, `--all --test` exits 0, prints no `Selected` line and no `Nothing to run` line, prints `Running the pytest suite.`, and the suite's report holds both tests, `test_export` and `test_login`
 - PROOF-270 (RULE-95): In a git checkout where the spec `feat` was edited and not committed, `--all --test --commit` writes `feat`'s section with its `commit` the full sha of the commit `purlin: specs, tests and settings for feat`
 - PROOF-17 (RULE-17): In a git checkout, `--all --test --commit` prints `Evidence committed.` and writes nothing under `.purlin/evidence/ci/`
