@@ -11,11 +11,11 @@
 > Scope: scripts/run/reports.py, scripts/mcp/purlin/markers.py, references/formats/marker_format.md
 > Stack: python/stdlib (xml.etree, json, tokenize, ast, re, shlex), pytest, jest, vitest, dotnet, go, bash, sqlite3
 > Highest-Rule: 39
-> Highest-Proof: 123
+> Highest-Proof: 125
 
 ## Rules
 
-- RULE-1: A marker is one whole-line comment, `purlin: <feature> PROOF-<n>` or `purlin: <feature> RULE-<n>`, after any of `#`, `//`, `--`, `;`, `%` and `'`, or inside a one-line `/* */` or `<!-- -->`; a `purlin:` comment of any other shape ties nothing
+- RULE-1: A marker is one whole-line comment, `purlin: <feature> PROOF-<n>` or `purlin: <feature> RULE-<n>`, the feature any name a spec may hold, after any of `#`, `//`, `--`, `;`, `%` and `'`, or inside a one-line `/* */` or `<!-- -->`; a `purlin:` comment of any other shape ties nothing
 - RULE-38: A marker-shaped line inside a string of a test file, or inside a here document of a shell file, is not a marker and ties nothing
 - RULE-3: Only a file one suite's `files` globs match is read for markers; `*` and `?` match within one path segment, `**` matches any number of segments, a glob with no `/` matches that file name in any directory, and a file two suites match belongs to the first
 - RULE-4: A marker belongs to the next test declared after it in its file: blank lines, decorators, attributes and other comments may sit between them, every marker between the previous test's declaration and this one belongs to this one, and the test's result counts for each of them
@@ -36,12 +36,13 @@
 - RULE-11: The cases of one parametrised test, `test_x[a]` and `test_x[b]`, `TestX/a`, `Method(x: 1)`, or the rows of an `it.each` table, all belong to that one test, and the test passes only when every one of them passes
 - RULE-14: A test whose cases all passed reads `pass`; one with any failed or errored case reads `fail`; any other, its cases all or partly skipped with none failed, or none of them in the report, reads `not run`, which the evidence writes as `missing`
 - RULE-32: A skipped case carries the reason its test tool gave: in `junit` the `skipped` child's `message`, else its text; in `trx` the result's `Output/ErrorInfo/Message`, else the last line of `Output/StdOut`; in `gotest` the test's last `output` event before its `skip`, with its leading `<file>:<line>: ` cut; an `exit` suite gives no reason
-- RULE-36: `markers.py --near-misses --project-root <dir>` prints one JSON array of `{"file", "line", "text", "fix", "why"}`, one entry for each comment, in a file a suite's globs match, that is nearly a marker: `purlin` misspelled by one letter, in capitals or with no space after the colon, `PROOF` or `RULE` in lower case, or a feature or id one character from exactly one that exists, whose fix is the marker it meant; a `purlin:` comment that names no id has no fix; a marker naming what a spec has, or one character from two that exist, is not listed
+- RULE-36: `markers.py --near-misses --project-root <dir>` prints one JSON array of `{"file", "line", "text", "fix", "why"}`, one entry for each comment, in a file a suite's globs match, that is nearly a marker: `purlin` misspelled by one letter, in capitals or with no space after the colon, `PROOF` or `RULE` in lower case, or a feature or id one character from exactly one that exists, whose fix is the marker it meant; a `purlin:` comment that names no id has no fix; a comment whose feature holds a character no spec's name may hold has no fix, and its why names the characters a name holds; a marker naming what a spec has, or one character from two that exist, is not listed
 
 ## Proof
 
 - PROOF-1 (RULE-1): A file holds eight lines, each a marker of `login`: after `#`, `//`, `--`, `;`, `%` and `'`, inside `/* */` naming `RULE-7`, and inside `<!-- -->`; all eight read as markers, each with its feature, its id and its line, 1 to 8
 - PROOF-27 (RULE-1): In a plain text file, the line `x = 1  # purlin: login PROOF-1`, a marker after code on the same line, is not read as a marker
+- PROOF-124 (RULE-1): `specs/intake/sample-age.md` has `PROOF-1`, and `tests/test_age.py` holds `# purlin: sample-age PROOF-1` above the passing `test_age`; the run prints `Markers: 1 tied to a test, 0 not tied.`, and the evidence lists `PROOF-1` as `pass`
 - PROOF-119 (RULE-38): A Python test file holds `# purlin: login PROOF-1` on line 2, inside a triple-quoted string, and `# purlin: login PROOF-2` as a comment on line 5 above the passing `test_ok`; one marker is read, `PROOF-2` at line 5, and the evidence holds no `pass` for `PROOF-1`
 - PROOF-123 (RULE-38): A shell test file that exits 0 holds `# purlin: login PROOF-1` on line 3, inside a here document, and `# purlin: login PROOF-2` as a comment on line 5; one marker is read, `PROOF-2` at line 5, and the evidence holds no `pass` for `PROOF-1`
 - PROOF-3 (RULE-3): Of the paths `dev/test_a.py`, `dev/sub/test_b.py` and `a/b/c.test.ts`, the glob `dev/test_*.py` matches `dev/test_a.py` alone, since `*` does not cross a `/`
@@ -89,3 +90,4 @@
 - PROOF-28 (RULE-36): In a project whose pytest suite reads `tests/test_login.py`, where line 1 reads `# purln: login PROOF-1`, `--near-misses` prints one JSON array holding one entry: file `tests/test_login.py`, line 1, that text, the fix `# purlin: login PROOF-1`, and a `why` naming `purln`; it exits 0
 - PROOF-35 (RULE-36): Where the spec `login` exists, a test file carrying `# purlin: logn PROOF-1` is listed with the fix `# purlin: login PROOF-1`, and its why reads `` `logn` is one character from the feature `login`. ``
 - PROOF-37 (RULE-36): Where `login` has `PROOF-1`, `PROOF-2` and `PROOF-3`, a test file carrying `# purlin: login PROOF-4`, one character from all three, is not listed: the array is empty
+- PROOF-125 (RULE-36): A test file carrying `# purlin: sample.age PROOF-1` is listed with no fix, and its why reads `` `sample.age` holds a character a spec's name cannot: a name holds letters, digits, `_` and `-`. ``

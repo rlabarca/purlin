@@ -562,6 +562,19 @@ def _silent_project(tmp_path, report):
 
 class TestThroughARun:
 
+    # purlin: reports PROOF-124
+    def test_a_marker_naming_a_feature_with_a_hyphen_is_tied(self, tmp_path):
+        root = _project(tmp_path, [suites.pytest_suite()],
+                        spec=_spec('sample-age', 1), feature='sample-age')
+        os.rename(str(root / 'specs' / 'a'), str(root / 'specs' / 'intake'))
+        _write(root, 'tests/test_age.py', '# purlin: sample-age PROOF-1\n'
+                                          'def test_age():\n    pass\n')
+        _code, out = _run(root, '--all', '--test')
+        assert 'Markers: 1 tied to a test, 0 not tied.' in out.splitlines(), \
+            out
+        assert _by_id(_evidence(root, 'sample-age')) == {'PROOF-1': 'pass'}, \
+            out
+
     # purlin: reports PROOF-49
     def test_two_markers_over_one_passing_test_both_pass(self, tmp_path):
         _code, out, results = _login_run(tmp_path, (
@@ -915,6 +928,14 @@ class TestNearMisses:
     def test_an_id_one_character_from_several_is_not_a_near_miss(
             self, tmp_path):
         assert _listed(tmp_path, '# purlin: login PROOF-4') == []
+
+    # purlin: reports PROOF-125
+    def test_a_feature_holding_a_character_no_name_may_has_no_fix(
+            self, tmp_path):
+        assert _fix_and_why(tmp_path, '# purlin: sample.age PROOF-1') == (
+            None,
+            "`sample.age` holds a character a spec's name cannot: a name "
+            "holds letters, digits, `_` and `-`.")
 
 # ---------------------------------------------------------------------------
 # The captures are what the tools write today
