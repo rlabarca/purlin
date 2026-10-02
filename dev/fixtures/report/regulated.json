@@ -1340,7 +1340,7 @@
       "PROOF-1"
     ],
     "rules": 11,
-    "sentence": "11 rules. 7 pass their tests. 1 is checked at sign-off. The audit found 3 of 7 rules strong (42%): 3 strong, 3 weak, 1 not audited.",
+    "sentence": "11 rules. 7 pass their tests. 1 is checked at sign-off. The audit found 3 of 6 rules strong (50%): 3 strong, 3 weak, 1 not audited.",
     "spot_checked": 0,
     "steps": {
       "by_hand": 1,

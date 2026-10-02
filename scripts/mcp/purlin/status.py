@@ -185,7 +185,8 @@ SPECS = 'Specs'
 def _row(feature, proofs=1, audited=False):
     """One spec's row, rendered by the module the board renders from."""
     return board_module.row_cells(feature['name'], feature['rollup'],
-                                  proofs, audited)
+                                  proofs, audited,
+                                  bool(feature.get('is_anchor')))
 
 
 def _proof_lines(data):

@@ -8,7 +8,8 @@
    entry, `Strong`, the payload's `summary.audit.strong`. A count is
    green once it is complete and amber until then: `No proof` at zero,
    `Passing` once every rule passes or is checked at sign-off, `Strong` once
-   every rule the audit could read is strong. Each
+   every rule the audit could read that is not an anchor's is strong, the
+   share `summary.audit_share` gives the terminal's sentence. Each
    box carries the hover its column carries, read over every spec, but
    `Strong`, whose hover reads the audit's counts. The
    terminal prints a summary sentence; the boxes carry the same counts, so
@@ -32,7 +33,9 @@ function statStrip() {
                  total + (total === 1 ? ' rule total' : ' rules total')));
   if (audited()) {
     var strong = (summary.audit || {}).strong || 0;
-    boxes.push(box(STRONG, strong, strong === auditTotal() ? 'pass' : 'warn',
+    var found = auditShare();
+    boxes.push(box(STRONG, strong,
+                   found.strong === found.over ? 'pass' : 'warn',
                    auditCountLines(), null));
   }
   return '<div class="strip"><div class="tiles">' + boxes.join('')
@@ -145,18 +148,38 @@ function share(count, total, aside) {
    that pass their tests and have a tested proof, which are the rules whose
    strong cell reads one of the audit's five words. Empty where the spec has
    none. The hover says where the newest audit came from and how old it
-   is. */
+   is.
+
+   An anchor's cell is one word and never a share, as `board.anchor_word`
+   reads it: no bug is planted for an anchor's rule, so none is found
+   strong. `weak`, in the warn tone, where any of those rules is; else
+   `out of date` where any is; else `spot-checked` where every one is; else
+   empty. Its hover says so first, on a line of its own. */
 function strongCell(feature) {
-  var words = AUDIT_WORDS.map(function (pair) { return pair[1]; });
-  var read = (feature.rules || []).filter(function (rule) {
-    return words.indexOf(cellWord(rule, 'strong')) !== -1;
-  });
+  var read = auditRead(feature);
+  if (feature.is_anchor) {
+    var word = anchorWord(read);
+    return word ? '<span' + hover([NO_ANCHOR_BUG].concat(auditLines(feature)))
+      + '>' + counts([[word, '', word === 'weak' ? 'warn' : '']]) + '</span>'
+      : '';
+  }
   if (!read.length) { return ''; }
   var strong = read.filter(function (rule) {
     return cellWord(rule, 'strong') === 'strong';
   }).length;
   return '<span' + hover(auditLines(feature)) + '>'
     + counts([share(strong, read.length)]) + '</span>';
+}
+
+/* What the audit found for an anchor, in one word, or nothing: `read` is
+   the anchor's rules the audit can speak of. */
+function anchorWord(read) {
+  var words = read.map(function (rule) { return cellWord(rule, 'strong'); });
+  if (words.indexOf('weak') !== -1) { return 'weak'; }
+  if (words.indexOf('out of date') !== -1) { return 'out of date'; }
+  return words.length && words.every(function (word) {
+    return word === 'spot-checked';
+  }) ? 'spot-checked' : '';
 }
 
 function featureRow(feature, columns) {

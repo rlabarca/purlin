@@ -30,6 +30,8 @@ var AUDIT_WORDS = [['strong', 'strong'], ['weak', 'weak'],
   ['spot_checked', 'spot-checked'], ['out_of_date', 'out of date'],
   ['not_audited', 'not audited']];
 var LAST_AUDIT = 'Last audit: ';
+/* The first line of the hover of an anchor's `Strong` cell. */
+var NO_ANCHOR_BUG = 'No bug is planted for an anchor\'s rule.';
 
 /* The boxes: `No proof` counts the rules of the kind `no_proof`, drawn
    wherever the project writes a proof line; `Passing` counts the rules whose
@@ -421,14 +423,31 @@ function factBox(label, word, hue, lines) {
     + '</b></span>';
 }
 
-/* How many rules the audit could read: the rules that pass their tests and
-   have a tested proof, the sum of the five counts of the payload's
-   `summary.audit`. */
-function auditTotal() {
-  var found = ((DATA && DATA.summary) || {}).audit || {};
-  return AUDIT_WORDS.reduce(function (sum, pair) {
-    return sum + (found[pair[0]] || 0);
-  }, 0);
+/* A spec's rules the audit can speak of: those that pass their tests and
+   have a tested proof, whose strong cell reads one of the audit's five
+   words. */
+function auditRead(feature) {
+  var words = AUDIT_WORDS.map(function (pair) { return pair[1]; });
+  return (feature.rules || []).filter(function (rule) {
+    return words.indexOf(cellWord(rule, 'strong')) !== -1;
+  });
+}
+
+/* The share of strong rules, as `summary.audit_share` counts it for the
+   terminal's sentence: `over` is the rules the audit can find strong, those
+   it can speak of that are not an anchor's, and `strong` how many of them
+   it did. No bug is planted for an anchor's rule, so the share counts
+   none. */
+function auditShare() {
+  var share = {strong: 0, over: 0};
+  ((DATA && DATA.features) || []).forEach(function (feature) {
+    if (feature.is_anchor) { return; }
+    auditRead(feature).forEach(function (rule) {
+      share.over += 1;
+      if (cellWord(rule, 'strong') === 'strong') { share.strong += 1; }
+    });
+  });
+  return share;
 }
 
 /* The audit's counts, for the `Strong` box's hover: every count that is not
