@@ -10,8 +10,8 @@
 >   pulling. It reads only this checkout, reports facts and judges nothing.
 > Scope: scripts/mcp/purlin/drift.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib, json, re, subprocess (list-only)
-> Highest-Rule: 43
-> Highest-Proof: 88
+> Highest-Rule: 45
+> Highest-Proof: 90
 
 ## Rules
 
@@ -31,6 +31,8 @@
 - RULE-41: Drift changes nothing: it writes no file, leaves HEAD and the working tree as they were, fetches nothing from the remote, and checks an anchor's source without pulling it, so the anchor's file, its pin and this checkout's git objects stay as they were
 - RULE-42: The report carries exactly `since` and `view`, and the view carries its lines and the facts they were built from under fixed keys
 - RULE-43: The view names the proofs the range added, in one count line by feature; each proof whose wording the range changed, quoting its text at both ends; and each proof whose text the range moved, unchanged, to another id of the same spec
+- RULE-44: While a merge is in progress and not committed, the view's second line says so and what to do, and `merge_in_progress` is true
+- RULE-45: Where a rule written twice moves, the view names each proof that follows it to the new number
 
 ## Proof
 
@@ -65,7 +67,9 @@
 - PROOF-74 (RULE-41): Another clone pushes a commit to the bare repository this checkout was cloned from; after drift runs here, `origin/main` names the commit it named before
 - PROOF-88 (RULE-41): An anchor is pinned to its source's first commit and the source gains a second; after the view names it `behind`, the anchor's file reads byte for byte as before, and this checkout holds no object of the source's second commit
 - PROOF-27 (RULE-42): After a pull, the report carries exactly `since` and `view`, and `since` carries exactly `action`, `commits`, `from`, `line`, `to` and `when`
-- PROOF-49 (RULE-42): After a pull, the view carries exactly `anchors_behind`, `comments_changed`, `default_branch`, `lines`, `numbers_twice`, `proofs_added`, `proofs_changed`, `proofs_moved`, `rules_added`, `rules_changed` and `rules_removed`
+- PROOF-49 (RULE-42): After a pull, the view carries exactly `anchors_behind`, `comments_changed`, `default_branch`, `lines`, `merge_in_progress`, `numbers_twice`, `proofs_added`, `proofs_changed`, `proofs_moved`, `rules_added`, `rules_changed` and `rules_removed`
 - PROOF-67 (RULE-43): A pull adds `PROOF-5` and `PROOF-6` to `login`; the view holds `2 proofs added: login PROOF-5, PROOF-6.`
 - PROOF-68 (RULE-43): A pull changes `login`'s `PROOF-1` from `An age of 150 minutes` to `An age of 90 minutes`; the view holds `login PROOF-1 changed: it read "An age of 150 minutes" and now reads "An age of 90 minutes".`
 - PROOF-69 (RULE-43): A pull moves the text of `login`'s `PROOF-4` to `PROOF-6` and gives `PROOF-4` a new text; the view holds `login PROOF-4 moved to PROOF-6.`
+- PROOF-89 (RULE-44): A merge of a branch stops on a conflict in `specs/auth/login.md` and is not committed; the view's second line reads `A merge is in progress and is not committed, so the range above stops before it. Resolve it and commit, then run purlin:drift again.`, and `merge_in_progress` is true
+- PROOF-90 (RULE-45): After a merge, `login` writes `RULE-2` twice, the branch's with its proof `PROOF-3`; the view holds, directly after the line naming `RULE-2`, `login: PROOF-3 will name RULE-3.`

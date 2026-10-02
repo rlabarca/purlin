@@ -9,11 +9,13 @@ judges nothing.
 
 The one view names, after a first line naming the range: the rules added,
 changed and removed; the proofs added, changed and moved; each number a spec
-of this checkout writes twice, with the line that keeps it and how old this
-checkout's copy of the default branch is; each test comment whose proof's
+of this checkout writes twice, with the line that keeps it, each proof that
+follows a moved rule, and how old this checkout's copy of the default branch
+is; each test comment whose proof's
 wording changed after its test was last changed, as `wording.py` finds it;
 and each remote anchor that is not current, checked against its source
 without pulling it. Lines the status already prints are not repeated here.
+While a merge is in progress and not committed, the second line says so.
 
 Drift reads only this checkout: it writes no file, fetches nothing and
 pulls no anchor. The view is a list of lines beside the facts each line was
@@ -37,8 +39,9 @@ from purlin import (markers as markers_module, specs as specs_module,
 
 # The view's keys, the facts its lines are built from.
 VIEW_KEYS = ('anchors_behind', 'comments_changed', 'default_branch', 'lines',
-             'numbers_twice', 'proofs_added', 'proofs_changed', 'proofs_moved',
-             'rules_added', 'rules_changed', 'rules_removed')
+             'merge_in_progress', 'numbers_twice', 'proofs_added',
+             'proofs_changed', 'proofs_moved', 'rules_added', 'rules_changed',
+             'rules_removed')
 
 # How far back drift reads when git's log of HEAD names no action that
 # brought changes in, or names only the clone.
@@ -614,10 +617,21 @@ NUMBER_NO_DEFAULT = ('%s: %s is written twice, and this checkout has no copy '
                      'of a default branch to say which line keeps it. Renumber '
                      'the one not yet merged to %s and move its test comments '
                      'with it.')
+PROOF_WILL_NAME = '%s: %s will name %s.'
+MERGE_LINE = ('A merge is in progress and is not committed, so the range above '
+              'stops before it. Resolve it and commit, then run purlin:drift '
+              'again.')
 AGE_KNOWN = ('%s was last fetched %s ago, and drift does not fetch. Run git '
              'fetch, then purlin:drift again.')
 AGE_UNKNOWN = ('%s has no record of when it was last fetched, and drift does '
                'not fetch. Run git fetch, then purlin:drift again.')
+
+
+def merge_in_progress(project_root):
+    """True while a merge has stopped and is not committed: git holds
+    `MERGE_HEAD` until the commit that finishes it."""
+    return bool(_git(project_root, ['rev-parse', '-q', '--verify',
+                                    'MERGE_HEAD']))
 
 
 def default_branch(project_root):
@@ -711,7 +725,31 @@ def _next_free(parsed, kind, taken):
     return '%s-%d' % (kind, number)
 
 
-def numbers_twice(project_root, features, ref):
+def _spec_lines(project_root, info):
+    """The lines of the spec `info` as the file on disk holds them."""
+    try:
+        with open(os.path.join(project_root, *info['spec_path'].split('/')),
+                  encoding='utf-8') as handle:
+            return handle.read().splitlines()
+    except (OSError, UnicodeDecodeError):
+        return []
+
+
+def _follows(project_root, ref, info, rule_id, lines):
+    """`[{'proof', 'line'}]`: each proof line of `lines` that names
+    `rule_id` and is not on `ref`'s copy of the spec, in file order."""
+    on_default = set(_lines(_git(project_root, [
+        'show', '--end-of-options', '%s:%s' % (ref, info['spec_path'])])))
+    found = []
+    for number, text in enumerate(lines, 1):
+        match = specs_module._PROOF_LINE_RE.match(text.strip())
+        if (match and rule_id in specs_module._split_list(match.group(2))
+                and text.strip() not in on_default):
+            found.append({'proof': match.group(1), 'line': number})
+    return found
+
+
+def numbers_twice(project_root, features, ref, spec_lines=None):
     """One entry per number a spec of this checkout writes twice.
 
     `features` is `specs.scan_specs`'s answer. The line whose text equals the
@@ -720,12 +758,19 @@ def numbers_twice(project_root, features, ref):
     `ref`, `ref` writes the id twice too, or there is no `ref`, the later
     line in the file moves. `case` names which of the four it was, and
     `moves` is the line that moves, `{'line', 'text'}`.
+
+    An entry for a rule carries `follows`, `[{'proof', 'line'}]`: the proof
+    lines naming the rule that are not on `ref`'s copy, which follow it to
+    its new number; none where there is no `ref`. `spec_lines` gives a
+    spec's lines, `{feature: [line, ...]}`, where the caller read `features`
+    from them; any other spec's are read from its file.
     """
     found = []
     for name in sorted(features):
         info = features[name]
         taken = {}
         default = default_spec(project_root, ref, info)
+        lines = None
         for item in _written_twice(info):
             written = info['doubled_lines'][item]
             to = _next_free(info, item.split('-')[0], taken)
@@ -756,6 +801,14 @@ def numbers_twice(project_root, features, ref):
                     entry['text'] = other['text']
                     entry['line'] = NUMBER_KEPT % (name, item, ref, item, to,
                                                    entry['text'])
+            if item.startswith('RULE-'):
+                entry['follows'] = []
+                if ref:
+                    if lines is None:
+                        lines = ((spec_lines or {}).get(name)
+                                 or _spec_lines(project_root, info))
+                    entry['follows'] = _follows(project_root, ref, info, item,
+                                                lines)
             found.append(entry)
     return found
 
@@ -840,7 +893,11 @@ def compute_drift(project_root, since=None, network=True):
               if ref else None)
     twice = numbers_twice(project_root, features, ref)
     comments = comments_changed(project_root, rng, features, before, after)
-    lines += [entry['line'] for entry in twice]
+    for entry in twice:
+        lines.append(entry['line'])
+        lines += [PROOF_WILL_NAME % (entry['feature'], follow['proof'],
+                                     entry['to'])
+                  for follow in entry.get('follows') or ()]
     lines += [entry['text'] for entry in comments]
     if twice and ref:
         lines.append(_age_line(ref, branch['age_seconds']))
@@ -848,9 +905,12 @@ def compute_drift(project_root, since=None, network=True):
     anchors = pin_report(project_root, features, network=network)
     lines += [_anchor_line(row) for row in anchors]
 
+    merging = merge_in_progress(project_root)
     view.update({'anchors_behind': anchors, 'comments_changed': comments,
                  'default_branch': branch, 'numbers_twice': twice,
-                 'lines': [rng['line']] + lines})
+                 'merge_in_progress': merging,
+                 'lines': ([rng['line']] + ([MERGE_LINE] if merging else [])
+                           + lines)})
     since_out = {key: rng[key] for key in ('from', 'to', 'commits', 'action',
                                            'when', 'line')}
     return {'since': since_out, 'view': {key: view[key] for key in VIEW_KEYS}}

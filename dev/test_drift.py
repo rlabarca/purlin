@@ -270,6 +270,28 @@ class TestWhereDriftStarts:
         assert since['to'] == _sha(root), since
         assert since['commits'] == 3, since
 
+    # purlin: drift PROOF-89
+    def test_a_merge_stopped_on_a_conflict_is_named_on_the_second_line(
+            self, tmp_path):
+        one = _spec('login', {'RULE-1': 'Signs a person in'})
+        root = _repo(str(tmp_path / 'proj'), {'specs/auth/login.md': one})
+        _git(['checkout', '-q', '-b', 'topic'], root)
+        _change(root, {'specs/auth/login.md': one.replace(
+            'Signs a person in', 'Signs a person in by password')})
+        _git(['checkout', '-q', 'main'], root)
+        _change(root, {'specs/auth/login.md': one.replace(
+            'Signs a person in', 'Signs a person in by code')})
+        stopped = _git(['merge', '--no-edit', 'topic'], root, check=False)
+        assert 'CONFLICT' in stopped.stdout and 'specs/auth/login.md' in \
+            stopped.stdout, stopped
+
+        view = _view(_report(root))
+        assert view['lines'][1] == (
+            'A merge is in progress and is not committed, so the range above '
+            'stops before it. Resolve it and commit, then run purlin:drift '
+            'again.'), view['lines']
+        assert view['merge_in_progress'] is True
+
     # purlin: drift PROOF-86
     def test_a_branch_made_at_head_after_a_pull_leaves_the_range_at_the_pull(
             self, tmp_path):
@@ -688,6 +710,37 @@ class TestNumbersWrittenTwice:
                     if line.startswith('login PROOF-4 changed')], _lines(report)
         assert _view(report)['proofs_changed'] == []
 
+    # purlin: drift PROOF-90
+    def test_a_proof_that_follows_a_moved_rule_is_named_after_it(
+            self, tmp_path):
+        one = _spec('login', {'RULE-1': 'Signs a person in'},
+                    proofs={'PROOF-1': ('RULE-1', 'One')})
+        rules = '- RULE-1: Signs a person in\n'
+        upstream = _repo(str(tmp_path / 'upstream'),
+                         {'specs/auth/login.md': one})
+        checkout = _clone(upstream, str(tmp_path / 'checkout'))
+        _change(upstream, {'specs/auth/login.md': one.replace(
+            rules, rules + '- RULE-2: Main\n')
+            + '- PROOF-2 (RULE-2): Main proof\n'})
+        _change(checkout, {'specs/auth/login.md': one.replace(
+            rules, rules + '- RULE-2: Branch\n')
+            + '- PROOF-3 (RULE-2): Branch proof\n'})
+        stopped = _git(['pull', '-q', '--no-edit'], checkout, check=False)
+        assert stopped.returncode != 0, stopped
+        _write(os.path.join(checkout, 'specs', 'auth', 'login.md'), one.replace(
+            rules, rules + '- RULE-2: Branch\n- RULE-2: Main\n')
+            + '- PROOF-2 (RULE-2): Main proof\n'
+            + '- PROOF-3 (RULE-2): Branch proof\n')
+        _git(['add', '-A'], checkout)
+        _git(['commit', '-q', '--no-edit'], checkout)
+
+        lines = _lines(_report(checkout))
+        (named,) = [index for index, line in enumerate(lines)
+                    if line.startswith('login: RULE-2 is written twice.')]
+        assert lines[named + 1] == 'login: PROOF-3 will name RULE-3.', lines
+        assert not [line for line in lines if 'PROOF-2 will name' in line], \
+            lines
+
     # purlin: drift PROOF-73
     def test_origin_main_fetched_three_days_ago_says_so(self, tmp_path):
         checkout = _merged_twice(tmp_path)
@@ -892,13 +945,14 @@ class TestReportShape:
             'action', 'commits', 'from', 'line', 'to', 'when'], report['since']
 
     # purlin: drift PROOF-49
-    def test_the_view_carries_its_eleven_keys(self, tmp_path):
+    def test_the_view_carries_its_twelve_keys(self, tmp_path):
         report = _report(_pulled_source_change(tmp_path))
 
         assert sorted(report['view']) == [
             'anchors_behind', 'comments_changed', 'default_branch', 'lines',
-            'numbers_twice', 'proofs_added', 'proofs_changed', 'proofs_moved',
-            'rules_added', 'rules_changed', 'rules_removed']
+            'merge_in_progress', 'numbers_twice', 'proofs_added',
+            'proofs_changed', 'proofs_moved', 'rules_added', 'rules_changed',
+            'rules_removed']
 
 
 # ---------------------------------------------------------------------------
