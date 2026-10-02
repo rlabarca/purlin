@@ -333,7 +333,7 @@ class TestWhichRulesAreRead:
         'claude exited with an error',
         'claude is not on PATH',
         'claude gave no answer'])
-    def test_a_rule_the_model_was_not_reached_for_is_read_again(
+    def test_a_rule_the_model_was_not_reached_for_is_read_again_with_one_call(
             self, claude, monkeypatch, why):
         install, directory = claude
         reached = os.environ['PATH']
@@ -363,6 +363,8 @@ class TestWhichRulesAreRead:
             code, printed = audit(made)
         assert code == 0, printed
         assert rules_printed(printed) == ['RULE-2'], printed
+        # `claude` is started exactly 1 time, and it is asked about RULE-2.
+        assert len(fake_claude.calls(directory)) == 1
         assert rules_asked(directory) == ['RULE-2']
 
 
