@@ -35,7 +35,7 @@ if _MCP_DIR not in sys.path:
 # A spec's name
 # ---------------------------------------------------------------------------
 
-# What a spec's name holds: letters, digits and _, then those and -. The
+# What a spec's name holds: a letter, a digit or `_`, then those and `-`. The
 # marker reader, the anchor's `--name` and the upgrade read the same pattern.
 NAME = r'\w[\w-]*'
 _NAME_RE = re.compile(NAME)
