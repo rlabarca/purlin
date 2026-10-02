@@ -2,14 +2,14 @@
   "feature": "scaffold",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T16:35:04Z",
-      "commit": "881e125131b93612df6838e690916288886d2bd7",
+      "at": "2026-10-02T19:28:15Z",
+      "commit": "f8c8a7dabe79a97469d40c3a7e648404b22c89bc",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "9917b55a379398d73a2f869306bf62186d823aa29a1f3a72a28c984ed4782927",
-        "spec": "6bb06a5afc8b4d993a60b561f3148980ca4c421128a3ba29659c01d69c962e71",
-        "tests": "7cf7845f783c8f39ba22a9a8f29e0718685b897a3022af31b34249e768b6f8fe"
+        "code": "856929af38a94929595213aa85580f5c3bc4b58d7bc46239e26430505ad8bea1",
+        "spec": "95d5f54e416d5f7f40b9a302497710e8b55d90e877e6f60bbf877443c549febf",
+        "tests": "f59c351d9df704fccb4e1cdb8c2f21a38094bd464a9180ed994879cc6ed2c19c"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -108,6 +108,14 @@
           "result": "pass",
           "rule": "RULE-33",
           "test": "dev/test_init_scaffold.py::TestTheRefusals::test_update_hands_the_project_to_the_upgrade"
+        },
+        {
+          "env": null,
+          "id": "PROOF-177",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_init_scaffold.py::TestTheRefusals::test_update_hands_over_the_migrations_named_and_a_test_command"
         },
         {
           "env": "macos",

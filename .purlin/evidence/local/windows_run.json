@@ -2,8 +2,8 @@
   "feature": "windows_run",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T16:35:05Z",
-      "commit": "881e125131b93612df6838e690916288886d2bd7",
+      "at": "2026-10-02T19:28:15Z",
+      "commit": "f8c8a7dabe79a97469d40c3a7e648404b22c89bc",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {

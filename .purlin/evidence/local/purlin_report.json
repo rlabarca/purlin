@@ -2,14 +2,14 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T16:35:04Z",
-      "commit": "881e125131b93612df6838e690916288886d2bd7",
+      "at": "2026-10-02T19:28:14Z",
+      "commit": "f8c8a7dabe79a97469d40c3a7e648404b22c89bc",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "6a0f58211eaf1a8229da830823bd7ae08b075cc423e2d0543e02faff0e976c7f",
-        "spec": "6a32eb724f8cdb0069d0025c6615aa44ec0c93ffae0effcc0f16591960b5da9d",
-        "tests": "c5ed48894be045d4f07e295aecf9407be8867ca9fb317750b539313aed549454"
+        "code": "22038321d6a4bcdfe187bddcf7376e39f578bc02d3e9be7a1eccbeda646bf325",
+        "spec": "60eccf59da25c770b092e2fb9d04a537fab7f2208595249512efe38cd3973835",
+        "tests": "8423fc125e5a4bdf9b5f7c7c6ca4a6b153a748fc11c2dee6bf89b24b9c185ef1"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -679,6 +679,54 @@
         },
         {
           "env": null,
+          "id": "PROOF-257",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-81",
+          "test": "dev/test_purlin_report.py::test_thirty_three_warnings_of_one_kind_are_one_notice"
+        },
+        {
+          "env": null,
+          "id": "PROOF-258",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-81",
+          "test": "dev/test_purlin_report.py::test_two_of_a_kind_and_a_warning_about_no_spec_keep_their_notices"
+        },
+        {
+          "env": null,
+          "id": "PROOF-259",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-81",
+          "test": "dev/test_purlin_report.py::test_a_grouped_notice_counts_specs_and_stands_where_the_first_stood"
+        },
+        {
+          "env": null,
+          "id": "PROOF-260",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-81",
+          "test": "dev/test_purlin_report.py::test_three_lines_about_one_or_two_specs_name_each_spec"
+        },
+        {
+          "env": null,
+          "id": "PROOF-261",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-81",
+          "test": "dev/test_purlin_report.py::test_lines_of_information_group_in_the_neutral_tone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-262",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-82",
+          "test": "dev/test_purlin_report.py::test_every_kind_of_warning_about_a_spec_groups_under_its_own_words"
+        },
+        {
+          "env": null,
           "id": "PROOF-249",
           "manual": false,
           "result": "pass",
@@ -748,6 +796,8 @@
         "RULE-79": "passed",
         "RULE-8": "passed",
         "RULE-80": "passed",
+        "RULE-81": "passed",
+        "RULE-82": "passed",
         "RULE-9": "passed"
       },
       "runner": "rich-labarca"

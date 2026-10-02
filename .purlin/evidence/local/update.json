@@ -2,14 +2,14 @@
   "feature": "update",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T16:35:05Z",
-      "commit": "881e125131b93612df6838e690916288886d2bd7",
+      "at": "2026-10-02T19:28:15Z",
+      "commit": "f8c8a7dabe79a97469d40c3a7e648404b22c89bc",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "d9bb275fa1b50e1f75a5cbd630b4342be79653c326b793f78c9954aa37fccf25",
-        "spec": "bb40529272f322da9d73dc1d4712263f45934f33d2de1fc11196f9f3f77d2575",
-        "tests": "9427872f1b4b86bedb95cce2a90984e1edc81e1b83ff57f02c7a446335de5391"
+        "code": "0642057b16fe84a38e7c135b264716f7f3b76cc93d29e26ae3288c606f9760ca",
+        "spec": "0adc60e1ed660bffedca248a582dad4823a243fd57278bb2ea7717ee2e8ceaf6",
+        "tests": "a16a1d77b8d4e71f391a01c0d5986403c9bb5e24a60e15b526235b64d2f0a009"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -75,7 +75,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_init_update.py::test_every_backup_is_named_for_the_bytes_it_holds"
+          "test": "dev/test_init_update.py::test_every_backup_keeps_its_file_s_path_under_one_folder"
         },
         {
           "env": null,
@@ -92,6 +92,14 @@
           "result": "not run",
           "rule": "RULE-7",
           "test": "dev/test_init_update.py::test_on_windows_every_backup_keeps_the_bytes_from_before"
+        },
+        {
+          "env": null,
+          "id": "PROOF-195",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_init_update.py::test_every_backup_keeps_its_file_s_path_under_one_folder"
         },
         {
           "env": null,
@@ -123,7 +131,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-18",
-          "test": "dev/test_init_update.py::test_nothing_is_left_uncommitted_but_the_backups"
+          "test": "dev/test_init_update.py::test_nothing_is_left_uncommitted"
         },
         {
           "env": null,
@@ -211,7 +219,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-35",
-          "test": "dev/test_init_update.py::test_a_conftest_holding_import_os_keeps_it_alone"
+          "test": "dev/test_init_update.py::test_a_conftest_with_a_line_of_its_own_keeps_it"
         },
         {
           "env": null,
@@ -227,7 +235,23 @@
           "manual": false,
           "result": "not run",
           "rule": "RULE-35",
-          "test": "dev/test_init_update.py::test_on_windows_the_conftest_keeps_import_os_and_its_ending"
+          "test": "dev/test_init_update.py::test_on_windows_the_conftest_keeps_its_own_line_and_its_ending"
+        },
+        {
+          "env": null,
+          "id": "PROOF-180",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_init_update.py::test_every_conftest_that_only_loads_the_plugin_is_deleted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-181",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_init_update.py::test_a_conftest_with_more_loses_the_two_lines_alone"
         },
         {
           "env": null,
@@ -372,6 +396,198 @@
           "result": "pass",
           "rule": "RULE-56",
           "test": "dev/test_init_update.py::test_an_anchor_from_a_git_address_holding_figma_is_left_as_it_was"
+        },
+        {
+          "env": null,
+          "id": "PROOF-169",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-57",
+          "test": "dev/test_init_update.py::test_each_lettered_proof_takes_the_next_free_number"
+        },
+        {
+          "env": null,
+          "id": "PROOF-170",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-57",
+          "test": "dev/test_init_update.py::test_a_spec_with_no_highest_line_is_given_none"
+        },
+        {
+          "env": null,
+          "id": "PROOF-171",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-57",
+          "test": "dev/test_init_update.py::test_the_markers_of_a_lettered_proof_carry_its_new_number"
+        },
+        {
+          "env": null,
+          "id": "PROOF-172",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-57",
+          "test": "dev/test_init_update.py::test_a_marker_naming_a_lettered_proof_no_spec_has_is_left"
+        },
+        {
+          "env": null,
+          "id": "PROOF-173",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-57",
+          "test": "dev/test_init_update.py::test_declined_lettered_proofs_stay_and_their_markers_say_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-174",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-58",
+          "test": "dev/test_init_update.py::test_a_tag_joined_on_one_line_leaves_one_plain_title"
+        },
+        {
+          "env": null,
+          "id": "PROOF-175",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-58",
+          "test": "dev/test_init_update.py::test_a_tag_on_a_line_of_its_own_goes_with_its_plus"
+        },
+        {
+          "env": null,
+          "id": "PROOF-176",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-58",
+          "test": "dev/test_init_update.py::test_a_plus_ending_the_line_above_the_tag_goes_too"
+        },
+        {
+          "env": null,
+          "id": "PROOF-177",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-58",
+          "test": "dev/test_init_update.py::test_a_tag_opening_a_title_leaves_no_leading_space"
+        },
+        {
+          "env": null,
+          "id": "PROOF-178",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-58",
+          "test": "dev/test_init_update.py::test_the_comment_goes_above_the_line_that_opens_the_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-179",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-59",
+          "test": "dev/test_init_update.py::test_a_title_the_reader_cannot_read_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-182",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-60",
+          "test": "dev/test_init_update.py::test_the_command_proposed_starts_the_way_the_project_starts_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-183",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-60",
+          "test": "dev/test_init_update.py::test_the_owner_is_shown_each_command_and_may_type_another"
+        },
+        {
+          "env": null,
+          "id": "PROOF-184",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-61",
+          "test": "dev/test_init_update.py::test_each_migration_prints_one_line_of_totals"
+        },
+        {
+          "env": null,
+          "id": "PROOF-185",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-61",
+          "test": "dev/test_init_update.py::test_the_lines_that_need_the_owner_come_last_under_a_heading"
+        },
+        {
+          "env": null,
+          "id": "PROOF-186",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-62",
+          "test": "dev/test_init_update.py::test_each_question_is_on_its_own_line_with_the_answer_taken"
+        },
+        {
+          "env": null,
+          "id": "PROOF-187",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-62",
+          "test": "dev/test_init_update.py::test_apply_names_the_migrations_to_apply_and_asks_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-188",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-62",
+          "test": "dev/test_init_update.py::test_a_test_command_given_is_the_one_written"
+        },
+        {
+          "env": null,
+          "id": "PROOF-189",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-62",
+          "test": "dev/test_init_update.py::test_an_id_that_is_no_migration_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-190",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-63",
+          "test": "dev/test_init_update.py::test_each_file_still_naming_what_0_9_5_used_is_listed_most_first"
+        },
+        {
+          "env": null,
+          "id": "PROOF-191",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-63",
+          "test": "dev/test_init_update.py::test_at_most_20_files_are_listed_and_the_rest_counted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-192",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-63",
+          "test": "dev/test_init_update.py::test_the_gitignore_lines_for_the_cache_and_the_plugins_go"
+        },
+        {
+          "env": null,
+          "id": "PROOF-193",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-64",
+          "test": "dev/test_init_update.py::test_the_update_says_what_became_of_the_old_record"
+        },
+        {
+          "env": null,
+          "id": "PROOF-194",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-64",
+          "test": "dev/test_init_update.py::test_a_run_that_applies_nothing_says_nothing_of_the_record"
         }
       ],
       "rules": {
@@ -389,7 +605,15 @@
         "RULE-54": "passed",
         "RULE-55": "passed",
         "RULE-56": "passed",
+        "RULE-57": "passed",
+        "RULE-58": "passed",
+        "RULE-59": "passed",
         "RULE-6": "passed",
+        "RULE-60": "passed",
+        "RULE-61": "passed",
+        "RULE-62": "passed",
+        "RULE-63": "passed",
+        "RULE-64": "passed",
         "RULE-7": "not run",
         "RULE-9": "passed"
       },

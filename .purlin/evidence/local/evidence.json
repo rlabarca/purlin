@@ -869,12 +869,12 @@
   "feature": "evidence",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T16:35:04Z",
-      "commit": "881e125131b93612df6838e690916288886d2bd7",
+      "at": "2026-10-02T19:28:14Z",
+      "commit": "f8c8a7dabe79a97469d40c3a7e648404b22c89bc",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "a72d3fcb306ba01d3cc912b23af4350eda176ac2a9c64d29782fa4a021b50eb3",
+        "code": "121863bb4f94b8e4bf03fccf93c7918243397101059227a12ff0b7c55c04561f",
         "spec": "35fd3d9d78c5b7589e2142c0b6176c70e2c53318b54ec76c5d75d76414ec6711",
         "tests": "5c9bc85f718cbc92067c481ef79e14ab14352e0975979292ee4464ef6a5248ae"
       },

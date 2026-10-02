@@ -1048,14 +1048,14 @@
   "feature": "reports",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T16:35:04Z",
-      "commit": "881e125131b93612df6838e690916288886d2bd7",
+      "at": "2026-10-02T19:28:14Z",
+      "commit": "f8c8a7dabe79a97469d40c3a7e648404b22c89bc",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
-        "spec": "25d41611e639f74a892a0c2b18053ccddb5feee2b9b715d8bb388ec1ab7e76fc",
-        "tests": "829ccd12dd21af9de32286ff87c534f828f818da03d4fe76624fa5bd7003667e"
+        "code": "786a85cee61c4cb75a704ef207ec5de248af1468ebd6586f902b428648be046a",
+        "spec": "60520c275ebc17f5e00d942c66a358c45847c9a10da44aadae1a14e3d9c805ca",
+        "tests": "29e54583b5a10f6decfdd11992ff4108b8f7ccb5414495d5aed2ae7484d8a2e2"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -1162,6 +1162,38 @@
           "result": "pass",
           "rule": "RULE-6",
           "test": "dev/test_reports.py::TestTheMarker::test_csharp_declares_its_fact_and_theory_methods"
+        },
+        {
+          "env": null,
+          "id": "PROOF-126",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-40",
+          "test": "dev/test_reports.py::TestAJavaScriptTitle::test_an_escaped_apostrophe_is_read_as_the_apostrophe"
+        },
+        {
+          "env": null,
+          "id": "PROOF-127",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-40",
+          "test": "dev/test_reports.py::TestAJavaScriptTitle::test_pieces_joined_with_a_plus_are_one_title"
+        },
+        {
+          "env": null,
+          "id": "PROOF-128",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_reports.py::TestAJavaScriptTitle::test_a_filled_template_title_is_named_and_not_tied"
+        },
+        {
+          "env": null,
+          "id": "PROOF-129",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_reports.py::TestAJavaScriptTitle::test_a_variable_title_takes_no_marker_of_a_later_test"
         },
         {
           "env": null,
@@ -1487,6 +1519,8 @@
         "RULE-38": "passed",
         "RULE-39": "passed",
         "RULE-4": "passed",
+        "RULE-40": "passed",
+        "RULE-41": "passed",
         "RULE-6": "passed",
         "RULE-7": "passed",
         "RULE-8": "passed",

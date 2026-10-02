@@ -1566,14 +1566,14 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T16:35:04Z",
-      "commit": "881e125131b93612df6838e690916288886d2bd7",
+      "at": "2026-10-02T19:28:14Z",
+      "commit": "f8c8a7dabe79a97469d40c3a7e648404b22c89bc",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "ecfc49e21980fbbbcc3f8f40fe9bf3b5ac508e20f0504dccfd1f8517724bc115",
-        "spec": "0bd7c09d78da798ae7185c62694547d5cde55cc24f31c71f508a83a5f6fe21f3",
-        "tests": "8a91706f2bdfca312f195eadb6311120bab2dfd6b21d8e8c39254326b6a82d9e"
+        "code": "05dd207a3b81095e6ba33818ec52cce5eaa1eed82ae9110443777d85515ac9d4",
+        "spec": "480f210828b385b96630d87d6ae93ed3f4554af532ed99807be5528f328eaa53",
+        "tests": "906fc31e4dca7a3fdc8d373cb1ebc3ab57691861fd1625a43f521a1695037353"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -1784,6 +1784,22 @@
           "result": "pass",
           "rule": "RULE-8",
           "test": "dev/test_run_script.py::TestLoudFailureB::test_an_anchor_test_with_nothing_to_check_is_not_missing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-292",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-108",
+          "test": "dev/test_run_script.py::TestATestTheReportNamesDifferently::test_both_names_are_shown"
+        },
+        {
+          "env": null,
+          "id": "PROOF-293",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-108",
+          "test": "dev/test_run_script.py::TestATestTheReportNamesDifferently::test_the_skipped_sentence_is_not_printed"
         },
         {
           "env": null,
@@ -2051,6 +2067,70 @@
         },
         {
           "env": null,
+          "id": "PROOF-294",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-58",
+          "test": "dev/test_run_script.py::TestAllHandsTheSuiteItsFiles::test_a_project_with_its_pytest_settings_in_a_subfolder_passes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-295",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-58",
+          "test": "dev/test_run_script.py::TestAllHandsTheSuiteItsFiles::test_a_command_past_the_limit_is_started_with_no_file_list"
+        },
+        {
+          "env": null,
+          "id": "PROOF-296",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-109",
+          "test": "dev/test_run_script.py::TestTheLineASuiteStartsOn::test_the_line_is_out_before_the_command_ends"
+        },
+        {
+          "env": null,
+          "id": "PROOF-297",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-109",
+          "test": "dev/test_run_script.py::TestTheLineASuiteStartsOn::test_an_exit_suite_counts_its_files"
+        },
+        {
+          "env": null,
+          "id": "PROOF-298",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-110",
+          "test": "dev/test_run_script.py::TestAChangedTestsSetting::test_the_run_says_so_once_before_it_selects"
+        },
+        {
+          "env": null,
+          "id": "PROOF-299",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-111",
+          "test": "dev/test_run_script.py::TestWhatCommitLeftUncommitted::test_one_file_left_is_named_with_what_to_do"
+        },
+        {
+          "env": null,
+          "id": "PROOF-300",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-111",
+          "test": "dev/test_run_script.py::TestWhatCommitLeftUncommitted::test_twelve_files_left_name_ten_and_count_two"
+        },
+        {
+          "env": null,
+          "id": "PROOF-301",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-111",
+          "test": "dev/test_run_script.py::TestWhatCommitLeftUncommitted::test_nothing_left_prints_no_such_line"
+        },
+        {
+          "env": null,
           "id": "PROOF-275",
           "manual": false,
           "result": "pass",
@@ -2196,7 +2276,11 @@
         "RULE-105": "passed",
         "RULE-106": "passed",
         "RULE-107": "passed",
+        "RULE-108": "passed",
+        "RULE-109": "passed",
         "RULE-11": "passed",
+        "RULE-110": "passed",
+        "RULE-111": "passed",
         "RULE-12": "passed",
         "RULE-17": "passed",
         "RULE-20": "passed",
