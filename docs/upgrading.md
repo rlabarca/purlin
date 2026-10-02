@@ -85,6 +85,18 @@ Use this command for pytest? Press Enter to use it, or type the command to use i
 
 Press Enter to use it, or type the command to use. Keep `{files}` and `{report}` in a command
 you type: a run puts the test files and the report's path there.
+
+Where several of the project's commands run one tool, the update cites the one closest to its
+proposal: the one with the fewest options that run only some of the tool's tests. Where the
+command it cites still carries such an option, the next line says so:
+
+```
+vitest: npx vitest run --reporter=default --reporter=junit --outputFile.junit={report} {files}
+  package.json, "test", runs it as: vitest run --project unit
+  The proposal leaves out --project unit, so every vitest test runs.
+```
+
+A run hands the tool the files to run, so the proposal needs no such option.
 [running-and-evidence.md](running-and-evidence.md) says what each part of a test command is.
 
 **The tags.** A proof may run over several lines, and its tags end the last of them. The update
@@ -115,6 +127,15 @@ named it is rewritten, and each change is printed:
 the comment goes above the line that opens the test, and the tag leaves the title: a tag joined
 to the title with `+` goes with its `+`, so `'adds a line ' + '[proof:cart:PROOF-1:RULE-1:unit]'`
 is left as `'adds a line'`.
+
+In a Python test whose marker it rewrote, the update also removes a docstring line that holds
+nothing but a 0.9.5 tag, and the docstring too where the tag was all of it. A tag inside a
+sentence stays, and so does a docstring that is all its test holds:
+
+```
+  markers: rewrote 533 markers in 95 files
+    removed 85 docstring lines that held only a 0.9.5 tag
+```
 
 The update then reads each file back the way a test run reads it. A marker whose test's title
 cannot be read that way is named:
@@ -170,7 +191,8 @@ migration is pending.
 
 **Backups.** Before a migration rewrites a file, it copies the file to
 `.purlin/runtime/update-backup/`, at the file's own path under that folder. Git ignores the
-folder. Delete it once the tests pass.
+folder. Delete it once the tests pass. A file the update deleted, such as a proof file beside a
+spec, has no copy there: it is in git, at the commit before the update.
 
 **One commit.** Everything the run applied lands in one commit,
 `chore(update): migrate to <VERSION> (<ids>)`, naming every migration applied. A run that
@@ -186,6 +208,12 @@ applies nothing makes no commit, and the run leaves nothing uncommitted.
 
 `--yes` and `--apply` remove no workflow: each one that names a proof file is kept and named,
 for you to remove by hand.
+
+A run with `--yes` or `--apply` prints one line in place of the list of pending migrations:
+
+```
+Applying 3 migrations: anchor-lines, config, markers.
+```
 
 Answers can also be given on the command's input, one per line. Each question is then printed
 on its own line with the answer taken after it.
@@ -210,24 +238,25 @@ Each file's own line is in `.purlin/runtime/update-backup/update.log`.
 ```
 Every rule reads `not run` until the tests run again.
 The `verify:` commits 0.9.5 made stay in git as the earlier record, and its receipts can be read from the commit before the upgrade, e257e2c.
-Every file the update changed is kept as it was under .purlin/runtime/update-backup/, with each change listed in update.log there. Delete the folder once the tests pass.
+Every file the update rewrote is kept as it was under .purlin/runtime/update-backup/, with each change listed in update.log there. A file it deleted is in git, at e257e2c. Delete the folder once the tests pass.
 ```
 
 To read a receipt, name the commit and the file: `git show e257e2c:specs/web/cart.receipt.json`.
 
 **What Purlin left for you.** The update lists each tracked file that still holds text 0.9.5
-used, with how many of its lines do, most first. It changes none of them:
+used, with how many of its lines do. The files that instruct an agent come first: `CLAUDE.md`,
+then `AGENTS.md`, then each file under `.claude/`. The others follow, most first. It changes
+none of them:
 
 ```
 Purlin left these for you:
-  pipeline/tests/test_patch_search.py: 21 lines
-  CLAUDE.md: 4 lines
+  CLAUDE.md: 4 lines. Change it first: it tells the agent to write what this release does not read.
+  packages/web/test/parameter_lfo.test.ts: 2 lines
   Each line counted names something 0.9.5 used: [proof:, pytest.mark.proof, .purlin/plugins, purlin:verify, proofs-. This release reads none of them.
 ```
 
-At most 20 files are listed, then `and <n> more files`. A project's `CLAUDE.md` that tells the
-agent to write `[proof:...]` markers is the one to change first: say `purlin:build` writes the
-markers.
+At most 20 files are listed, then `and <n> more files`. In a `CLAUDE.md` that tells the agent
+to write `[proof:...]` markers, say `purlin:build` writes the markers.
 
 **The lines that need you** come last, under `These need you:`. Each names what to do.
 
@@ -235,14 +264,21 @@ A test the upgrade left with its 0.9.5 marker is not counted until you rewrite i
 and every run says so until none is left:
 
 ```
-9 tests still carry a marker from Purlin 0.9.5, which is not read: tests/test_lock.py:90, tests/test_export.py:12, and 7 more. For each, write the proof with purlin:spec, put the comment above the test, and take the old tag out.
+2 tests still carry a marker from Purlin 0.9.5, which is not read:
+  tests/test_export.py:12  export RULE-3
+  tests/test_lock.py:90  lock RULE-4
+For each, write the proof with purlin:spec, put the comment above the test, and take the old tag out.
 ```
+
+Each line names the test's file and line, then the feature and the rule its old marker names.
+Over 20, the first 20 are listed and then `and <n> more`.
 
 **The test run comes next.** A run that applied every pending migration ends on it:
 
 ```
 → Run: purlin:test --all --commit
 Run it before anything else: every rule reads not run until it has.
+A test that fails in that run and passes when its feature is run alone is the project's own: purlin:test <feature>.
 ```
 
 A run that left a migration pending ends on `→ Run: purlin:init --update` and names each one
