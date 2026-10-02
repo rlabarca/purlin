@@ -929,3 +929,28 @@ def test_a_typescript_directive_line_added_is_planted(tmp_path, own_claude):
     assert bug_of(after)['after'] == '  // @ts-ignore\n  return 90;'
     assert bug_of(after)['result'] == 'survived', bug_of(after)
 
+
+# purlin: planted_bug PROOF-59
+def test_an_indented_typescript_directive_changed_is_planted(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG}, files={
+        'src/age.ts': 'export function age(): number {\n  // @ts-ignore\n  return 90;\n}\n'})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': part(
+        '  // @ts-ignore\n  return 90;', '  // @ts-expect-error\n  return 90;',
+        path='src/age.ts')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['after'] == '  // @ts-expect-error\n  return 90;'
+    assert bug_of(after)['result'] == 'survived', bug_of(after)
+
+
+# purlin: planted_bug PROOF-60
+def test_an_indented_go_directive_changed_is_planted(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG}, files={
+        'src/age.go': 'package age\n\n\t//go:noinline\nfunc Age() int { return 90 }\n'})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': part(
+        '\t//go:noinline', '\t//go:norace', path='src/age.go')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['after'] == '\t//go:norace'
+    assert bug_of(after)['result'] == 'survived', bug_of(after)
+
