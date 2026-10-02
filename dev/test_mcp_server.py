@@ -13,9 +13,11 @@ import sys
 
 import pytest
 
-from mcp_project import PROJECT_ROOT, SERVER_PY, Project, _rpc, project
+from mcp_project import (PROJECT_ROOT, SERVER_PY, SPEC, Project, _git, _rpc,
+                         _write, project)
 # `mcp_project` puts `scripts/mcp` on the path.
 from purlin import server as purlin_srv
+from purlin import status as purlin_status
 
 
 # ---------------------------------------------------------------------------
@@ -193,10 +195,9 @@ class TestWhichProjectRoot:
         empty.mkdir()
         responses, _stderr = _rpc(project.root, _call(
             'sync_status', {'project_root': str(empty)}))
-        first = _text(responses[0]).split('\n')[0]
-        assert first.startswith(
-            'No Purlin project root at %s: .purlin/config.json is not there.'
-            % empty), first
+        assert _text(responses[0]) == (
+            'No Purlin project root at %s: .purlin/config.json is not there. '
+            'Run purlin:init.' % empty), responses
 
     # purlin: server PROOF-169
     def test_a_config_write_naming_an_empty_folder_writes_nothing(
@@ -235,6 +236,153 @@ class TestWhichProjectRoot:
             assert _read_bytes(_config_file(project.root)) == before
         finally:
             other.close()
+
+
+# ---------------------------------------------------------------------------
+# Purlin's own folder
+# ---------------------------------------------------------------------------
+
+def _plugin_copy(tmp_path):
+    """A copy of the plugin that is also a project: `scripts/` and `VERSION`,
+    `.purlin/config.json` and the spec `login`, committed. Its real path."""
+    copy = os.path.join(os.path.realpath(str(tmp_path)), 'plugin')
+    shutil.copytree(os.path.join(PROJECT_ROOT, 'scripts'),
+                    os.path.join(copy, 'scripts'),
+                    ignore=shutil.ignore_patterns('__pycache__'))
+    shutil.copy(os.path.join(PROJECT_ROOT, 'VERSION'), copy)
+    _write(os.path.join(copy, '.purlin', 'config.json'),
+           json.dumps({'version': _version(), 'tests': []}))
+    _write(os.path.join(copy, '.gitignore'), '.purlin/runtime/\n')
+    _write(os.path.join(copy, 'specs', 'auth', 'login.md'), SPEC)
+    _git(copy, 'init', '-q')
+    _git(copy, 'config', 'user.email', 'dev@example.com')
+    _git(copy, 'config', 'user.name', 'Dev')
+    _git(copy, 'config', 'commit.gpgsign', 'false')
+    _git(copy, 'add', '-A')
+    _git(copy, 'commit', '-q', '-m', 'chore: a copy of the plugin')
+    return copy
+
+
+def _status_of_the_copy(copy, started_in, monkeypatch):
+    """What the copy's own server, started in `started_in`, answers a
+    `sync_status` naming the copy."""
+    monkeypatch.delenv('PURLIN_PROJECT_ROOT', raising=False)
+    stdout, stderr = _child(
+        started_in,
+        json.dumps(_call('sync_status', {'project_root': copy})) + '\n',
+        command=[sys.executable, os.path.join(
+            copy, 'scripts', 'mcp', 'purlin', 'server.py')])
+    lines = stdout.splitlines()
+    assert len(lines) == 1, (stdout, stderr)
+    return _text(json.loads(lines[0]))
+
+
+class TestPurlinsOwnFolder:
+
+    # purlin: server PROOF-170
+    def test_the_copy_named_from_another_workspace_is_refused(
+            self, project, tmp_path, monkeypatch):
+        copy = _plugin_copy(tmp_path)
+        text = _status_of_the_copy(copy, project.root, monkeypatch)
+        assert text == (
+            "%s is Purlin's own folder, not your project. Pass the top folder "
+            "of the git checkout you are working in." % copy), text
+
+    # purlin: server PROOF-171
+    def test_a_server_started_in_the_copy_answers_for_it(
+            self, tmp_path, monkeypatch):
+        copy = _plugin_copy(tmp_path)
+        text = _status_of_the_copy(copy, copy, monkeypatch)
+        assert text.startswith('Purlin status:'), text
+        assert 'login' in text, text
+
+    # purlin: server PROOF-172
+    def test_a_server_started_in_a_second_checkout_answers_for_the_copy(
+            self, tmp_path, monkeypatch):
+        copy = _plugin_copy(tmp_path)
+        second = os.path.join(os.path.dirname(copy), 'second')
+        added = _git(copy, 'worktree', 'add', '-q', second)
+        assert added.returncode == 0, added.stderr
+        text = _status_of_the_copy(copy, second, monkeypatch)
+        assert text.startswith('Purlin status:'), text
+        assert 'login' in text, text
+
+
+# ---------------------------------------------------------------------------
+# The status and drift scripts
+# ---------------------------------------------------------------------------
+
+STATUS_PY = os.path.join(PROJECT_ROOT, 'scripts', 'run', 'purlin_status.py')
+DRIFT_PY = os.path.join(PROJECT_ROOT, 'scripts', 'run', 'purlin_drift.py')
+
+
+def _script(script, root, *args):
+    """A script started in `root` on `--project-root <root>`: `(exit code, stdout)`."""
+    result = subprocess.run(
+        [sys.executable, script, '--project-root', root] + list(args),
+        capture_output=True, text=True, encoding='utf-8', cwd=root,
+        stdin=subprocess.DEVNULL, timeout=180)
+    return result.returncode, result.stdout
+
+
+class TestTheStatusScript:
+
+    # purlin: server PROOF-173
+    def test_it_prints_what_the_tool_answers(self, project):
+        code, printed = _script(STATUS_PY, project.root)
+        assert printed == purlin_status.sync_status(project.root) + '\n'
+        assert printed.startswith('Purlin status:') and 'login' in printed
+        assert code == 0, printed
+
+    # purlin: server PROOF-174
+    def test_an_empty_folder_is_refused_in_one_line(self, tmp_path):
+        empty = str(tmp_path / 'empty')
+        os.mkdir(empty)
+        code, printed = _script(STATUS_PY, empty)
+        assert printed == (
+            'No Purlin project root at %s: .purlin/config.json is not there. '
+            'Run purlin:init.\n' % empty), printed
+        assert code == 1, printed
+
+    # purlin: server PROOF-175
+    def test_a_spec_with_a_mistake_prints_only_its_warning(self, project):
+        project.spec(SPEC.replace('> Scope:', '> Requires: api\n> Scope:'))
+        code, printed = _script(STATUS_PY, project.root, '--spec', 'login')
+        assert printed == (
+            'login: > Requires: is not read, because every anchor covers the '
+            'whole project. Run purlin:spec login.\n'), printed
+        assert code == 1, printed
+
+    # purlin: server PROOF-176
+    def test_a_spec_with_no_mistake_is_counted_in_one_line(self, project):
+        project.spec(SPEC + '- PROOF-3 (RULE-2): POST /login with no '
+                     'password; verify 401\n')
+        code, printed = _script(STATUS_PY, project.root, '--spec', 'login')
+        assert printed == ('login: 2 rules and 3 proofs read. No mistake '
+                           'found.\n'), printed
+        assert code == 0, printed
+
+
+class TestTheDriftScript:
+
+    # purlin: server PROOF-177
+    def test_it_prints_the_view_one_line_per_line(self, project, tmp_path):
+        checkout = str(tmp_path / 'checkout')
+        cloned = subprocess.run(['git', 'clone', '-q', project.root, checkout],
+                                capture_output=True, text=True)
+        assert cloned.returncode == 0, cloned.stderr
+        project.spec(SPEC.replace(
+            '\n\n## Proof', '\n- RULE-3: Five wrong passwords lock the '
+            'account\n\n## Proof'))
+        _git(project.root, 'add', '-A')
+        _git(project.root, 'commit', '-q', '-m', 'spec(login): RULE-3')
+        pulled = _git(checkout, 'pull', '-q', '--no-rebase')
+        assert pulled.returncode == 0, pulled.stderr
+        code, printed = _script(DRIFT_PY, checkout)
+        lines = printed.splitlines()
+        assert lines[0].startswith('Since your last pull, '), printed
+        assert lines[1:] == ['1 rule added: login RULE-3.'], printed
+        assert code == 0, printed
 
 
 # ---------------------------------------------------------------------------

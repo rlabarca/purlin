@@ -3,11 +3,12 @@
 > Description: The Purlin MCP server. It speaks JSON-RPC 2.0 on stdio and serves three
 >   tools: the status table, the drift report and the configuration reader and
 >   writer. Claude Code starts it when the plugin is enabled, and it answers only
->   what it is asked.
-> Scope: scripts/mcp/purlin/server.py, .claude-plugin/plugin.json, scripts/purlin_python.sh
+>   what it is asked. A script prints the status and another the drift report, for a session
+>   that does not have the tools.
+> Scope: scripts/mcp/purlin/server.py, scripts/mcp/purlin/project.py, scripts/run/purlin_status.py, scripts/run/purlin_drift.py, .claude-plugin/plugin.json, scripts/purlin_python.sh
 > Stack: python/stdlib, json
-> Highest-Rule: 37
-> Highest-Proof: 169
+> Highest-Rule: 41
+> Highest-Proof: 177
 
 ## Rules
 
@@ -15,7 +16,7 @@
 - RULE-2: `tools/list` returns exactly three tools, `sync_status`, `purlin_config` and `drift`, and every one of them declares the optional `project_root`
 - RULE-5: Stdout carries JSON-RPC responses and nothing else; the startup line naming the version and the root goes to stderr
 - RULE-6: A call names its project root with `project_root`, which is resolved, a leading `~` standing for the home folder
-- RULE-7: A tool called on a root holding no `.purlin/config.json`, or one that cannot be read, answers only what is wrong and what to do, and reports or writes nothing there
+- RULE-7: A tool called on a root holding no `.purlin/config.json` answers only `No Purlin project root at <root>: .purlin/config.json is not there. Run purlin:init.`, one whose settings file cannot be read answers only what is wrong and what to do, and neither reports or writes anything there
 - RULE-8: A tool that raises answers the text `Error running <tool>: <message>`, so one bad call never ends the session
 - RULE-9: The configuration tool reads the whole of `.purlin/config.json` or one named key, a key that is absent or stored as null answering `{"<key>": null}`, and a write sets that key in `.purlin/config.json`
 - RULE-22: The plugin manifest starts the server through `sh` and the interpreter resolver, with `PURLIN_PYTHON_SOFT` set to `1`, and the last argument it passes names `scripts/mcp/purlin/server.py`
@@ -23,6 +24,10 @@
 - RULE-35: The server keeps to JSON-RPC 2.0: a notification gets no response, input that is not JSON answers error code `-32700`, and an unknown method or tool answers error code `-32601`
 - RULE-36: Each write the configuration tool refuses names why and leaves `.purlin/config.json` byte for byte as it was: a write with no key or no value, an action neither read nor write, a `tests` that is not a list, a write of `version`, and a write of any key but `version` and `tests`
 - RULE-37: A tool call that names no `project_root` is refused with the one line `<tool> needs project_root: pass the top folder of the git checkout you are working in.`, and nothing is read from or written to the folder the server started in, whatever an earlier call named
+- RULE-38: A tool called on the plugin's own folder, or a folder under it, is refused with one line and reports nothing, unless the server was started in that folder, under it, or in another checkout of the same repository
+- RULE-39: `scripts/run/purlin_status.py --project-root <dir>` prints the status the `sync_status` tool answers for that folder and exits 0, and where the tool would refuse it prints only that refusal and exits 1
+- RULE-40: `scripts/run/purlin_drift.py --project-root <dir>` prints the lines of the view the `drift` tool answers, one per line, takes `--since` as the tool does, and refuses as the tool refuses
+- RULE-41: `purlin_status.py --spec <name>` prints only the warnings that name that spec and exits 1, or one line counting its rules and proofs and saying no mistake was found, and exits 0
 
 ## Proof
 
@@ -32,7 +37,7 @@
 - PROOF-159 (RULE-5): On Windows, a client starts the server in a workspace folder and sends `initialize`; its output holds exactly 1 line, the answer, with no carriage return, and its error stream holds the line `Purlin MCP server v<version> started` @env(windows)
 - PROOF-129 (RULE-6): The server is started in an empty folder, the home folder holds the workspace `ws` with the spec `login`, and a client calls `sync_status` with `project_root` written as `~/ws`; the answer is that workspace's status table, opening `Purlin status: ws,`, and names `login`
 - PROOF-160 (RULE-6): On Windows, the server is started in an empty folder, the home folder holds the workspace `ws` with the spec `login`, and a client asks for status with the folder written as `~/ws`; the answer opens `Purlin status: ws,` and names `login` @env(windows)
-- PROOF-168 (RULE-7): A client calls `sync_status` with `project_root` naming an empty folder; the first line of the answer opens `No Purlin project root at <that folder>: .purlin/config.json is not there.`
+- PROOF-168 (RULE-7): A client calls `sync_status` with `project_root` naming an empty folder; the answer is exactly `No Purlin project root at <that folder>: .purlin/config.json is not there. Run purlin:init.`
 - PROOF-169 (RULE-7): A client asks the configuration tool, with `project_root` naming an empty folder, to write `tests` as an empty list; the answer opens `No Purlin project root at`, and the folder still holds no `.purlin/config.json`
 - PROOF-141 (RULE-7): In a workspace whose `.purlin/config.json` holds `{` on one line and `  "tests": [],}` on the next, a client asks the configuration tool to write `tests` as `[]`; the answer is exactly `.purlin/config.json cannot be read: <the JSON reader's message> at line 2. Fix the file by hand; nothing ran and nothing was saved.`, and the file is unchanged
 - PROOF-133 (RULE-8): In a workspace where building the status table fails with `boom` the first time only, a client sends two `sync_status` calls in one session; 2 answers come back, with the ids 1 and 2, the first reading `Error running sync_status: boom` and the second the status table naming `login`
@@ -51,3 +56,11 @@
 - PROOF-164 (RULE-36): A client asks the configuration tool to write `gate` as `signed`; the answer reads exactly `gate is not a setting; .purlin/config.json holds version and tests. Nothing was saved.`, and `.purlin/config.json` is byte for byte as it was
 - PROOF-166 (RULE-37): The server is started in a workspace with the spec `login`; a client calls `sync_status` with no arguments; the answer is exactly `sync_status needs project_root: pass the top folder of the git checkout you are working in.` and does not name `login`
 - PROOF-167 (RULE-37): The server is started in a workspace; a client calls `sync_status` naming another workspace with `project_root`, then asks the configuration tool to write `tests` as `[]` naming none; the second answer opens `purlin_config needs project_root:`, and the startup workspace's `.purlin/config.json` is byte for byte as it was
+- PROOF-170 (RULE-38): A copy of the plugin holds `.purlin/config.json` and the spec `login`; its server is started in another workspace, and a client calls `sync_status` naming the copy; the answer is exactly `<the copy> is Purlin's own folder, not your project. Pass the top folder of the git checkout you are working in.`
+- PROOF-171 (RULE-38): That copy's server is started in the copy, and a client calls `sync_status` naming the copy; the answer opens `Purlin status:` and names `login`
+- PROOF-172 (RULE-38): That copy is a git repository with a second checkout made by `git worktree add`; its server is started in the second checkout, and a client calls `sync_status` naming the copy; the answer opens `Purlin status:` and names `login`
+- PROOF-173 (RULE-39): In a project with the spec `login`, `purlin_status.py --project-root <dir>` prints exactly the text `sync_status` answers for that folder, and exits 0
+- PROOF-174 (RULE-39): In an empty folder, `purlin_status.py --project-root <dir>` prints only `No Purlin project root at <dir>: .purlin/config.json is not there. Run purlin:init.` and exits 1
+- PROOF-175 (RULE-41): `login` carries `> Requires: api`; `purlin_status.py --project-root <dir> --spec login` prints only `login: > Requires: is not read, because every anchor covers the whole project. Run purlin:spec login.` and exits 1
+- PROOF-176 (RULE-41): `login` holds 2 rules and 3 proofs and no mistake; `purlin_status.py --project-root <dir> --spec login` prints only `login: 2 rules and 3 proofs read. No mistake found.` and exits 0
+- PROOF-177 (RULE-40): After a pull that adds `RULE-3` to `login`, `purlin_drift.py --project-root <dir>` prints the line naming the range, then `1 rule added: login RULE-3.`, and exits 0

@@ -15,6 +15,11 @@ Three tools, each naming the folder it answers for with `project_root`:
 
 A call that names no `project_root` is refused: the server never answers for
 the folder it was started in, since a session may work in several checkouts.
+A call that names a folder with no `.purlin/config.json`, or Purlin's own
+folder from a session started outside it, is refused the same way
+(`project.refusal`). `scripts/run/purlin_status.py` and
+`scripts/run/purlin_drift.py` print what the first and third tool answer, for
+a session that does not have the tools.
 """
 
 import json
@@ -25,12 +30,12 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from config_engine import (KNOWN_KEYS, PROJECT_ROOT_SOURCES, config_problem,
-                           resolve_config, resolve_project_root,
-                           update_config)
+from config_engine import (KNOWN_KEYS, PROJECT_ROOT_SOURCES, resolve_config,
+                           resolve_project_root, update_config)
 from purlin import PURLIN_VERSION
 from purlin import console as console_module
 from purlin import drift as drift_module
+from purlin import project as project_module
 from purlin import status as status_module
 
 SERVER_INFO = {"name": "purlin", "version": PURLIN_VERSION}
@@ -109,9 +114,9 @@ TOOL_NAMES = tuple(tool['name'] for tool in TOOLS)
 
 NEEDS_PROJECT_ROOT = ('%s needs project_root: pass the top folder of the git '
                       'checkout you are working in.')
-NO_PROJECT_HERE = ('No Purlin project root at %s: .purlin/config.json is not '
-                   'there. Run purlin:init there, or pass the top folder of a '
-                   'Purlin project as project_root.')
+# The folder the server was started in, set once when it starts. No call is
+# answered for it; it decides only whether a call may name Purlin's own folder.
+STARTED_IN = None
 NOT_SAVED = 'The setting was not saved: %s.'
 NO_KEY = 'A change needs a key; nothing was saved.'
 SAVED = '%s is now %s; saved to .purlin/config.json.'
@@ -218,16 +223,12 @@ def handle_request(request):
         call_root = _call_root(arguments)
         if call_root is None:
             return _text_result(req_id, NEEDS_PROJECT_ROOT % tool_name)
-        # One check for all three: a root with no config.json is not a
-        # project root, and every one of the three would otherwise answer as
-        # if it were an empty one.
-        if not os.path.isfile(os.path.join(call_root, '.purlin', 'config.json')):
-            return _text_result(req_id, NO_PROJECT_HERE % call_root)
-        # A settings file that cannot be read stops every tool the same way,
-        # before anything reads it as empty or writes over it.
-        problem = config_problem(call_root)
-        if problem:
-            return _text_result(req_id, problem)
+        # One check for all three, before anything is read or written:
+        # Purlin's own folder named from a session working elsewhere, a root
+        # with no config.json, and a settings file that cannot be read.
+        refused = project_module.refusal(call_root, STARTED_IN or os.getcwd())
+        if refused:
+            return _text_result(req_id, refused)
 
         try:
             if tool_name == 'sync_status':
@@ -259,7 +260,9 @@ def main():
         pass
     # The folder the server was started in, named for a person reading the
     # log; no call is answered for it.
+    global STARTED_IN
     project_root, root_source = resolve_project_root()
+    STARTED_IN = project_root
     print('Purlin MCP server v%s started (root: %s, from %s)'
           % (PURLIN_VERSION, project_root,
              PROJECT_ROOT_SOURCES.get(root_source, root_source)),
