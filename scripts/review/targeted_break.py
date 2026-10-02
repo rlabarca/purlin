@@ -147,7 +147,9 @@ def parse_answer(text):
     found = _CHANGE_RE.match('\n'.join(lines).strip('\n'))
     if not found or not found.group('before').strip():
         return None
-    return ('change', found.group('file').strip(), found.group('before'),
+    # Blank lines between the lines before and `after:` are no part of the change.
+    before = re.sub(r'(\n[ \t]*)+$', '', found.group('before'))
+    return ('change', found.group('file').strip(), before,
             found.group('after').rstrip('\n'), aim, case)
 
 

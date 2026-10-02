@@ -675,3 +675,16 @@ def test_a_no_break_reason_of_two_lines_is_cut_to_its_first(tmp_path, own_claude
     assert lines[at + 1] == found_none('nothing here'), lines
     assert bug_of(after)['why'] == 'nothing here.'
     assert [line for line in lines if 'The code is a constant' in line] == [], lines
+
+
+# purlin: planted_bug PROOF-41
+def test_an_empty_line_before_after_is_no_part_of_the_change(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    reply = ('case: %s\nfile: src/age.py\nbefore:\n    days = minutes(stamp)\n\n'
+             'after:\n    days = 0\n' % CASE)
+    fake_claude.install(own_claude, answers=[{'PROOF-1': reply}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['before'] == '    days = minutes(stamp)'
+    assert bug_of(after)['result'] == 'caught', bug_of(after)
+
