@@ -7,5 +7,8 @@
 # Dashboard data, regenerated locally, never committed
 .purlin/report-data.js
 
+# Python's bytecode cache, never committed
+__pycache__/
+
 # .purlin/evidence/ is tracked on purpose: it is the evidence of each run,
 # for somebody who did not make it to read.

@@ -1,8 +1,8 @@
 # Feature: scaffold
 
 > Description: `purlin:init`, which sets a project up. It asks one
->   question, whether it may commit the files it wrote, and commits only
->   those. It writes the settings file with `version` and an empty `tests`,
+>   question, whether it may commit its own files that are not committed
+>   yet, and commits only those. It writes the settings file with `version` and an empty `tests`,
 >   `specs/`, the evidence folder and its README, the `.gitignore` block and
 >   the dashboard copy, names every file in the summary, writes nothing into
 >   the project's test suite and installs no git hook. A project it sets up
@@ -10,7 +10,7 @@
 > Scope: scripts/init/scaffold.py, templates/config.json, templates/gitignore.purlin, templates/evidence-readme.md
 > Stack: python3 (stdlib only, 3.9 floor)
 > Highest-Rule: 83
-> Highest-Proof: 173
+> Highest-Proof: 176
 
 ## Rules
 
@@ -23,9 +23,9 @@
 - RULE-36: A project init set up walks run, commit and sign-off: `purlin:test --all --commit` commits the work and then its evidence, and the first `purlin:sign` signs the evidence package in a signed commit and writes `signed/<version>`
 - RULE-37: Each language is set up the same way: init writes an empty `tests` setting and adds nothing to its tests, and with the entry its first test run suggests written, its one marked test runs through `purlin:test` and is tied to its marker
 - RULE-47: Init creates `.purlin/evidence/` holding one `README.md`, the same bytes as `templates/evidence-readme.md`
-- RULE-67: A new project's `.gitignore` keeps out what a run writes locally: `/purlin-report.html` and `.purlin/runtime/`
+- RULE-67: A new project's `.gitignore` keeps out what a run writes locally: `/purlin-report.html`, `.purlin/runtime/` and `__pycache__/`
 - RULE-68: Setup commits only on `y`, `yes` or `--yes`, in one commit `chore(init): set up Purlin`, the project's first where it has none; any other answer, an empty one or the end of input commits nothing
-- RULE-70: The commit carries only the files setup wrote or changed that git does not ignore: a file the project had already staged stays staged and out of it
+- RULE-70: The commit carries only setup's own files that git does not ignore and does not hold as they stand, whether this run wrote them or an earlier one did: a file the project had already staged stays staged and out of it
 - RULE-82: Each refusal of setup names what is wrong and what fixes it, and writes nothing more: a folder that is not a git repository exits 2, a `.purlin/config.json` that cannot be read exits 1, and a commit git refuses leaves the files staged with git's own message
 - RULE-83: Setup asks one question, `Commit the files setup wrote? [y/N] `, and nothing about how the tests run, and writes a settings file holding exactly `version`, the plugin's `VERSION` file, and `tests`, an empty list where the project carried none
 
@@ -53,10 +53,13 @@
 - PROOF-136 (RULE-47): On Windows, init writes `.purlin/evidence/README.md`, byte for byte the same as the README Purlin ships and naming `local/` and `ci/`, and the summary reports it as `wrote` @env(windows)
 - PROOF-153 (RULE-67): A new project set up has a `.gitignore` holding the line `/purlin-report.html`
 - PROOF-154 (RULE-67): A new project set up has a `.gitignore` holding the line `.purlin/runtime/`
+- PROOF-176 (RULE-67): A new project set up has a `.gitignore` holding the line `__pycache__/`
 - PROOF-157 (RULE-68): A pytest project is set up with nothing to answer from; the line after the last file it names reads `Commit the files setup wrote? [y/N] `, no line starts `Committed`, and the project's last commit is the one it had before
 - PROOF-158 (RULE-68): A pytest project is set up with `--yes`; no commit question is shown, its last commit's subject is `chore(init): set up Purlin`, and the output has `Committed <sha7>, the files setup wrote:`, then `  .purlin/config.json`, `  .gitignore` and `  .purlin/evidence/README.md`
 - PROOF-160 (RULE-68): A git project with no commit yet is set up with `--yes`; afterwards it has one commit, `chore(init): set up Purlin`
 - PROOF-159 (RULE-70): A project with `notes.txt` staged is set up with `--yes`; the commit setup makes holds exactly `.gitignore`, `.purlin/config.json` and `.purlin/evidence/README.md`, and `notes.txt` is still staged
+- PROOF-174 (RULE-70): A git project with no commit yet is set up with nothing to answer from, then set up again with `--yes`; the second run prints `Committed <sha7>, the files setup wrote:`, then `  .purlin/config.json`, `  .gitignore` and `  .purlin/evidence/README.md`, and the project has one commit, `chore(init): set up Purlin`
+- PROOF-175 (RULE-70): A project whose one commit holds `README.md` and a `.gitignore` reading `node_modules/` is set up with nothing to answer from, then again with `--yes`; the commit the second run makes holds exactly `.gitignore`, `.purlin/config.json` and `.purlin/evidence/README.md`
 - PROOF-31 (RULE-82): Init with `--yes` in an empty folder that is not a git repository exits 2, its error output is the one line `This is not a git repository. Run git init, then purlin:init.`, and the folder is still empty
 - PROOF-128 (RULE-82): A project whose `.purlin/config.json` holds a comma after its last value is set up; it exits 1, prints `.purlin/config.json cannot be read: <the JSON reader's own message> at line <n>. Fix the file by hand; nothing ran and nothing was saved.`, and every file reads as before
 - PROOF-161 (RULE-82): A project whose git has no author email, with guessing it turned off, is set up with `--yes`; it prints `The files setup wrote are staged and not committed: no email was given and auto-detection is disabled.`, and `.purlin/config.json` is staged
