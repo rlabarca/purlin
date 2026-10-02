@@ -1277,7 +1277,13 @@ class TestNoTestCommand:
         root = _no_command(tmp_path, 'pytest')
         before = _purlin_tree(root)
         code, output = _run(root, '--all', '--test')
-        entry = frameworks.entry_for('pytest')
+        # pytest's entry written out here, field by field: one read from the
+        # code under test would agree with whatever that code holds.
+        entry = {'name': 'pytest',
+                 'run': 'python3 -m pytest {files} --junitxml={report}',
+                 'report': '.purlin/runtime/reports/pytest.xml',
+                 'format': 'junit',
+                 'files': ['**/test_*.py', '**/*_test.py']}
         assert output.splitlines()[-4:-1] == [
             'No test command is set in .purlin/config.json, so nothing ran.',
             'Suggested for pytest: python3 -m pytest {files} '
@@ -1372,8 +1378,18 @@ class TestNoTestCommand:
                              suggestions[name]['run']), name
 
     # purlin: run_script PROOF-133
-    def test_the_page_shows_the_same_entries(self, suggestions):
+    def test_the_page_shows_the_same_entries(self, suggestions, tmp_path):
         shown = _page_entries()
+        # The order is the run's own: one project holding what all seven
+        # tools leave, and the array the run suggests for it, read in order.
+        root = _no_command(tmp_path, *reversed(ORDER))
+        # vitest and jest are both read from the one `package.json`.
+        (root / 'package.json').write_text(
+            '{"devDependencies": {"jest": "^29.0.0", "vitest": "^1.0.0"}}',
+            encoding='utf-8')
+        _code, output = _run(root, '--all', '--test')
+        assert [entry for _block, entry in shown] == _suggested(output), \
+            output
         assert [entry for _block, entry in shown] == [
             suggestions[name] for name in ORDER]
         # Word for word: each block is the entry and nothing more, so a key
@@ -1462,19 +1478,31 @@ class TestTheSettingsFile:
 
     # purlin: run_script PROOF-138
     def test_a_project_an_older_purlin_set_up_stops_the_run(self, tmp_path):
-        root = _pytest_project(tmp_path)
-        _spec(root, 'feat')
-        (root / '.purlin' / 'config.json').write_text(
-            json.dumps({'version': '0.9.5', 'test_framework': 'pytest'}),
-            encoding='utf-8')
-        before = _purlin_tree(root)
-        code, output = _run(root, '--all', '--test')
-        assert output.strip().splitlines() == [
-            'This project was set up by an older Purlin and not upgraded, so '
-            'nothing ran. Run purlin:init --update.'], output
-        assert list(before) == [os.path.join('.purlin', 'config.json')]
-        assert _purlin_tree(root) == before, output
-        assert code == 1, output
+        # The settings file as Purlin 0.9.5 wrote it: the one this
+        # repository keeps of such a project, whose stamp is the release
+        # that first set the project up, and one stamped `0.9.5`.
+        with open(os.path.join(REPO, 'dev', 'fixtures', 'upgrade-0.9.5',
+                               '.purlin', 'config.json'),
+                  encoding='utf-8') as handle:
+            kept = handle.read()
+        assert 'tests' not in json.loads(kept)
+        assert json.loads(kept)['version'] != '0.9.5'
+        for name, text in (('kept', kept), ('stamped', json.dumps(
+                {'version': '0.9.5', 'test_framework': 'pytest'}))):
+            folder = tmp_path / name
+            folder.mkdir()
+            root = _pytest_project(folder)
+            _spec(root, 'feat')
+            (root / '.purlin' / 'config.json').write_text(
+                text, encoding='utf-8')
+            before = _purlin_tree(root)
+            code, output = _run(root, '--all', '--test')
+            assert output.strip().splitlines() == [
+                'This project was set up by an older Purlin and not '
+                'upgraded, so nothing ran. Run purlin:init --update.'], output
+            assert list(before) == [os.path.join('.purlin', 'config.json')]
+            assert _purlin_tree(root) == before, output
+            assert code == 1, output
 
 class TestEachRuleThatFailsOrHasNoTest:
 
