@@ -37,38 +37,34 @@
         "verdict": "strong"
       },
       "RULE-11": {
-        "at": "2026-10-02T09:41:48Z",
+        "at": "2026-10-02T10:58:27Z",
         "breaks": {
           "PROOF-17": {
-            "after": "        files[source] = {'schema': data.get('schema'), 'source': source}",
-            "aim": "past the test",
-            "before": "        files[source] = data",
-            "break_key": "224e375adef9aaa75446647f25f64727ce3df3a6cbf077a02372b61d3d4db01e",
-            "case": "only `.purlin/evidence/ci/login.json` is written, holding a linux section; the proof says loading reads the `ci` file; the changed code gives only the file's schema and source for `ci`, without its linux section",
+            "after": "        if not os.path.isfile(full):\n            warnings.append('%s is missing; it is ignored.' % path)\n            continue",
+            "aim": "plain",
+            "before": "        if not os.path.isfile(full):\n            continue",
+            "break_key": "90deaee66e641b34f730eefe5e9bb54cde5b20098ff0c825cb41c2a7969600be",
+            "case": "only `.purlin/evidence/ci/login.json` is written and the evidence of `login` is loaded; the proof says no warning is given; the changed code gives one warning naming `.purlin/evidence/local/login.json`",
             "file": "scripts/mcp/purlin/evidence.py",
-            "line": 165,
-            "result": "survived",
+            "line": 143,
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "cbfc99b80b2372af0e6cc4b45bb62cf8529c77ac4f66ee99031aa7d1ca4c6f04",
-        "commit": "b590830a5695a926b2ac2b1f3dd24fcdf52295e4",
+        "commit": "e71e425b8935ce0743c0019a2f0bdf37b2b7ab92",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
         "explanation": [
-          "PROOF-17: the test writes only the ci file, loads `login`, and compares the ci entry's `source` alone with `ci`, so it never observes that the rest of the file, such as its linux section, was read.",
-          "PROOF-17: the test compares the `local` entry with None, both paths with the two literals the proof names, and the warnings with an empty list, so those three results of the proof are checked exactly.",
-          "The spot tests found nothing, which holds for what they read: the test asserts, its expected values are literals, and both paths the proof names appear in the test's file."
+          "PROOF-17: the test writes only the `ci` file, loads `login`, and compares the `ci` file with what was written, the `local` file with None, both paths with the literals the proof names and the warnings with an empty list, so each result the proof names is checked.",
+          "PROOF-17: the spot tests found nothing, and the test leaves no result of the proof's case uncompared, so the planted bug is the plain one, a warning for the source with no file."
         ],
-        "findings": [
-          "PROOF-17: the test still passes when scripts/mcp/purlin/evidence.py:165 reads \"files[source] = {'schema': data.get('schema'), 'source': source}\"",
-          "PROOF-17: the AI says this breaks: only `.purlin/evidence/ci/login.json` is written, holding a linux section; the proof says loading reads the `ci` file; the changed code gives only the file's schema and source for `ci`, without its linux section"
-        ],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "66581e18e5650a49634da402ac7024ab7ef07b249f5de920d653fecb8972a7cd",
         "rule_hash": "0f7e87490d63a81544ba4a6038a485abbcc2fbee97ac0820da3144ef06af841b",
-        "test_hash": "5d61a6e92d222c4c370c8d67910e61930ed9a7a191b3579469674bfe3ce86be2",
-        "verdict": "weak"
+        "test_hash": "243cb081fc72744c3fdc5a4ca999800775f552844f0b97b10eb7188bfed2ea7d",
+        "verdict": "strong"
       },
       "RULE-14": {
         "at": "2026-10-02T09:41:48Z",
@@ -754,7 +750,7 @@
         "verdict": "strong"
       },
       "RULE-7": {
-        "at": "2026-10-02T09:41:48Z",
+        "at": "2026-10-02T10:58:27Z",
         "breaks": {
           "PROOF-11": {
             "after": "    lines = ['%s' % path for path in ids]",
@@ -779,11 +775,11 @@
             "why": ""
           },
           "PROOF-88": {
-            "after": "        str(len(text)).encode('utf-8')).hexdigest()",
+            "after": "    return 'tests-setting %s' % hashlib.sha256(\n        text.lower().encode('utf-8')).hexdigest()",
             "aim": "past the test",
-            "before": "        text.encode('utf-8')).hexdigest()",
-            "break_key": "6956741e5584afe1bf3ffc65375651a3c893c61c0e69cf5f756daa67be32aefa",
-            "case": "the `run` command of the `tests` setting is changed to another command of the same length; the proof says the section reads out of date on exactly `tests`; the changed code reads it current",
+            "before": "    return 'tests-setting %s' % hashlib.sha256(\n        text.encode('utf-8')).hexdigest()",
+            "break_key": "40c1b61882e3073904ab0b81f31ce007298403f77c8d5a9fffb49b4f0fe0d7af",
+            "case": "a `local` section of `login` stores the fingerprint, then the `run` command is changed only in the case of a letter, such as `-x` to `-X`; the proof says out of date on exactly `tests`; the changed code gives current",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 329,
             "result": "survived",
@@ -802,29 +798,24 @@
           }
         },
         "code_hash": "cbfc99b80b2372af0e6cc4b45bb62cf8529c77ac4f66ee99031aa7d1ca4c6f04",
-        "commit": "b590830a5695a926b2ac2b1f3dd24fcdf52295e4",
+        "commit": "e71e425b8935ce0743c0019a2f0bdf37b2b7ab92",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
         "explanation": [
-          "PROOF-11: the test appends a line to `tests/test_login.py` and compares the list of changed parts with `['tests']`, so it observes both the change and that no other part moved.",
-          "PROOF-43: the test commits a file marked for `billing`, rewrites it and compares the whole fingerprint of `login` with the one taken before, which is the result the proof names.",
-          "PROOF-43: the rewrite also removes the `billing` marker, so the test does not observe an edit that keeps the marker in place; a whole-fingerprint compare would still notice either way.",
-          "PROOF-88: the test first reads the section as current, then changes the `run` command once and compares the state with `(False, ['tests'])`, so it observes the proof's result for one new command whose length differs from the old one.",
-          "PROOF-88: a fingerprint that follows only some property of the setting, such as its length, would still pass this single change.",
-          "PROOF-89: the test stores a fingerprint at `0.10.0`, sets `0.10.1` and compares the state with `(True, [])`, which is the proof's case and result.",
-          "Findings: the spot tests found none, and each test holds a failable comparison against a literal or an earlier fingerprint taken before the edit."
+          "PROOF-11: the test edits `tests/test_login.py` and compares the list of changed parts with `['tests']`, so it observes both that `tests` changed and that no other part did.",
+          "PROOF-43: the test commits a file marked for `billing`, rewrites it and compares the whole fingerprint of `login` with the one taken before, which is what the proof names.",
+          "PROOF-88: the test stores the fingerprint, changes the `run` command twice (an added `-x`, then `python2` for `python3` at the same length) and reads out of date on exactly `tests` each time; it never tries a command that differs only in the case of a letter, so a fingerprint that ignores case still passes.",
+          "PROOF-89: the test changes `version` from `0.10.0` to `0.10.1` after storing the fingerprint and reads the section as current with no part out of date, which is what the proof names.",
+          "Findings: the spot tests found nothing, and each test holds a failable comparison against a literal expected value."
         ],
         "findings": [
-          "PROOF-88: the test still passes when scripts/mcp/purlin/fingerprint.py:329 reads \"str(len(text)).encode('utf-8')).hexdigest()\"",
-          "PROOF-88: the AI says this breaks: the `run` command of the `tests` setting is changed to another command of the same length; the proof says the section reads out of date on exactly `tests`; the changed code reads it current"
+          "PROOF-88: the test still passes when scripts/mcp/purlin/fingerprint.py:329 reads \"text.lower().encode('utf-8')).hexdigest()\"",
+          "PROOF-88: the AI says this breaks: a `local` section of `login` stores the fingerprint, then the `run` command is changed only in the case of a letter, such as `-x` to `-X`; the proof says out of date on exactly `tests`; the changed code gives current"
         ],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-11 does not show in the test's own text that the file is committed or named by a suite; that is left to the `project` fixture."
-        ],
         "proof_hash": "e33bb81464b4c1f4668628f1529feb912e1d8e01312a6123221f5adac9bc480a",
         "rule_hash": "e7698031b7f92c93a85b1e47a160b6eaec4ac299787a0ae09bd3861c732b875b",
-        "test_hash": "10330b3a5c73490123cba0e3ad893f5e27978e5d612a6c90420eb36ee9eb616d",
+        "test_hash": "431480e896eb3e2961cc1fb0684da7eacf4308ca2701f5d799832e661a6893f5",
         "verdict": "weak"
       },
       "RULE-8": {
@@ -887,14 +878,14 @@
   "feature": "evidence",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T09:39:37Z",
-      "commit": "b590830a5695a926b2ac2b1f3dd24fcdf52295e4",
+      "at": "2026-10-02T10:58:03Z",
+      "commit": "e71e425b8935ce0743c0019a2f0bdf37b2b7ab92",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "cbfc99b80b2372af0e6cc4b45bb62cf8529c77ac4f66ee99031aa7d1ca4c6f04",
         "spec": "fb9ca351798d6ef3362b2ac452c5607ad1b49f9e6670a440b6a00be81b369990",
-        "tests": "8d57742c82af207a613002352b93948c0bb318d1f5ffb6db3324cd7f3b12b875"
+        "tests": "5d9a701d241e8c1a0c5b1b2b3e5ed090f1ba59e361c571e9b6d98aee733a58e7"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
