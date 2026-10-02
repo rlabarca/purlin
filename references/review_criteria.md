@@ -239,9 +239,9 @@ Two of those reasons are refusals of a change the model did name:
   `//` in any file, or with `#` in a file ending `.py`, `.sh`, `.bash`, `.rb`, `.yml`, `.yaml`
   or `.toml`. A comment at the end of a code line starts, after a space, with `#` in a file
   with one of those endings and with `//` in any other file; a line that holds a quotation mark
-  before it is read as code. The check is narrow: a `/* */` comment, a docstring, a `--`
-  comment and a comment in any other kind of file are read as code, and such a change is
-  planted.
+  before it is read as code. A line opening `#!`, `//go:` or `// @ts-` is read as code. The
+  check is narrow: a `/* */` comment, a docstring, a `--` comment and a comment in any other
+  kind of file are read as code, and such a change is planted.
 
 A proof keeps its last result while its tests and its feature's code are unchanged, and no bug is
 planted for it again; a kept bug that survived adds its two findings again. No bug is planted for

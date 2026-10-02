@@ -818,3 +818,113 @@ def test_the_finding_passes_over_a_line_the_change_left_as_it_was(tmp_path, own_
     assert code == 0
     assert bug_of(after)['result'] == 'survived', bug_of(after)
     assert '  PROOF-1: the test still passes when src/age.py:12 reads "return 1"' in lines, lines
+
+
+# ---------------------------------------------------------------------------
+# Where a reason came from, a case over two lines, and lines that are code
+# ---------------------------------------------------------------------------
+
+# A reason the model gave whose words fit one of this module's own sentences.
+OWN_WORDS = 'the refund path the proof names is not in the project'
+
+
+# purlin: planted_bug PROOF-51
+def test_a_no_break_reason_in_the_modules_own_words_is_the_models(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': 'no break: %s\n' % OWN_WORDS}])
+    code, lines, _before, after = audit(root)
+    assert code == 0
+    at = lines.index('age RULE-1   spot-checked')
+    assert lines[at + 1] == found_none(OWN_WORDS), lines
+    assert bug_of(after)['why'] == OWN_WORDS
+
+
+# purlin: planted_bug PROOF-52
+def test_a_kept_no_break_reason_is_still_the_models_when_read_again(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': 'no break: %s\n' % OWN_WORDS}])
+    code, _lines, _before, _after = audit(root)
+    assert code == 0
+    out = io.StringIO()
+    assert audit_run.run(root, None, ['age'], again=True, out=out) == 0
+    lines = out.getvalue().splitlines()
+    # Nothing changed, so no bug is asked for and the kept result is read.
+    assert 'Plant one bug' not in fake_claude.calls(own_claude)[-1]['prompt']
+    at = lines.index('age RULE-1   spot-checked')
+    assert lines[at + 1] == found_none(OWN_WORDS), lines
+
+
+# purlin: planted_bug PROOF-53
+def test_a_case_wrapped_over_a_second_line_is_read_to_its_end(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    reply = ('case: a stamp of 2026-01-01; the proof says 90;\n'
+             'the changed code gives 0\n'
+             'file: src/age.py\nbefore:\n    return days\nafter:\n    return 0\n')
+    fake_claude.install(own_claude, answers=[{'PROOF-1': reply}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['result'] == 'caught', bug_of(after)
+    assert bug_of(after)['case'] == CASE
+
+
+# purlin: planted_bug PROOF-54
+def test_an_aim_line_after_the_case_is_no_part_of_the_case(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    reply = ('case: a stamp of 2026-01-01; the proof says 90\n'
+             'aim: past the test\n'
+             'file: src/age.py\nbefore:\n    return days\nafter:\n    return 0\n')
+    fake_claude.install(own_claude, answers=[{'PROOF-1': reply}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['result'] == 'caught', bug_of(after)
+    assert bug_of(after)['case'] == 'a stamp of 2026-01-01; the proof says 90'
+    assert bug_of(after)['aim'] == 'past the test'
+
+
+# purlin: planted_bug PROOF-55
+def test_a_case_line_between_file_and_before_is_read(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    reply = ('file: src/age.py\ncase: %s\nbefore:\n    return days\nafter:\n    return 0\n'
+             % CASE)
+    fake_claude.install(own_claude, answers=[{'PROOF-1': reply}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['file'] == 'src/age.py'
+    assert bug_of(after)['result'] == 'caught', bug_of(after)
+    assert bug_of(after)['case'] == CASE
+
+
+# purlin: planted_bug PROOF-56
+def test_a_change_to_a_line_opening_hash_bang_is_planted(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG}, files={
+        'src/run.sh': '#!/bin/sh\necho 90\n'})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': part(
+        '#!/bin/sh', '#!/bin/bash', path='src/run.sh')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['after'] == '#!/bin/bash'
+    assert bug_of(after)['result'] == 'survived', bug_of(after)
+
+
+# purlin: planted_bug PROOF-57
+def test_a_change_to_a_go_directive_line_is_planted(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG}, files={
+        'src/age.go': '//go:build linux\n\npackage age\n'})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': part(
+        '//go:build linux', '//go:build windows', path='src/age.go')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['after'] == '//go:build windows'
+    assert bug_of(after)['result'] == 'survived', bug_of(after)
+
+
+# purlin: planted_bug PROOF-58
+def test_a_typescript_directive_line_added_is_planted(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG}, files={
+        'src/age.ts': 'export function age(): number {\n  return 90;\n}\n'})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': part(
+        '  return 90;', '  // @ts-ignore\n  return 90;', path='src/age.ts')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['after'] == '  // @ts-ignore\n  return 90;'
+    assert bug_of(after)['result'] == 'survived', bug_of(after)

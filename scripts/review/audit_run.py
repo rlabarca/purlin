@@ -281,9 +281,13 @@ def bug_plan(reading, last, code_part, here=None):
     return plan
 
 
-def no_bug_sentence(proof_id, made):
+def no_bug_sentence(proof_id, made, cause=None, last=None):
     """The sentence of `no_bug` for one planted bug's result, or None where
-    the bug was caught or survived."""
+    the bug was caught or survived. A `not made` result is worded by where
+    its reason came from: `cause` is `targeted_break`'s for a bug this audit
+    asked for; for a result kept from an earlier audit it is the sentence
+    that audit wrote, found under `no_bug` of `last`, its entry. Only an
+    entry that holds no such sentence is read by the words of its reason."""
     result = made.get('result')
     if result == 'not run':
         if made.get('why') == targeted_break.ERRORED:
@@ -292,12 +296,18 @@ def no_bug_sentence(proof_id, made):
     if result != 'not made':
         return None
     why = str(made.get('why') or '').rstrip('.')
-    cause = targeted_break.cause_of(why)
-    if cause == targeted_break.TEST_DOES_NOT_PASS:
-        return NO_BUG % (BASELINE % proof_id)
-    if cause == targeted_break.ANSWER_UNUSABLE:
-        return NO_BUG % (ANSWER_UNUSABLE % (proof_id, why))
-    return NO_BUG % (MODEL_FOUND_NONE % (proof_id, why))
+    worded = {
+        targeted_break.TEST_DOES_NOT_PASS: NO_BUG % (BASELINE % proof_id),
+        targeted_break.ANSWER_UNUSABLE: NO_BUG % (ANSWER_UNUSABLE % (proof_id, why)),
+        targeted_break.MODEL_FOUND_NONE: NO_BUG % (MODEL_FOUND_NONE % (proof_id, why)),
+    }
+    if cause not in worded:
+        written = [str(line) for line in (last or {}).get('no_bug') or ()]
+        for sentence in worded.values():
+            if sentence in written:
+                return sentence
+        cause = targeted_break.cause_of(why)
+    return worded[cause]
 
 
 def planted_bugs(project_root, reading, plan, scope_files, last, answer,
@@ -335,7 +345,7 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
             breaks[proof_id] = value
             if value.get('result') == 'survived':
                 findings.extend(survived_findings(proof_id, value, last))
-            note(no_bug_sentence(proof_id, value))
+            note(no_bug_sentence(proof_id, value, last=last))
         elif answer.get('why'):
             note(NO_BUG % (UNREACHED % answer['why']))
         else:
@@ -354,7 +364,7 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
             if entry['result'] == 'survived':
                 findings.extend(survived_findings(proof_id, entry, {},
                                                   result.get('finding')))
-            note(no_bug_sentence(proof_id, entry))
+            note(no_bug_sentence(proof_id, entry, result.get('cause')))
     return breaks, findings, no_bug
 
 

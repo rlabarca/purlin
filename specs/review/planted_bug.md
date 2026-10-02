@@ -13,8 +13,8 @@
 >   and after the last bug stops the audit if the project changed.
 > Scope: scripts/review/targeted_break.py
 > Stack: python/stdlib (subprocess, tempfile, hashlib, shutil)
-> Highest-Rule: 26
-> Highest-Proof: 50
+> Highest-Rule: 30
+> Highest-Proof: 58
 
 ## Rules
 
@@ -41,6 +41,10 @@
 - RULE-24: The words `aim:` and `case:` that open their lines are read in any letter case and after any spaces
 - RULE-25: The line the finding of a bug that survived names is the first line the change made different that is neither blank nor a comment line; where the change left no such line, it is the first line the change made different
 - RULE-26: Where the suite's test tool can leave a test out by name, the other marked tests of the proof's test file are not started against the bug, before it is planted or with it in place; where it cannot, the whole file runs and only the proof's own tests are read
+- RULE-27: A `not made` result is worded by where its reason came from: a reason the model gave on a `no break:` line prints `No bug was planted: the model found no change that would break <PROOF-N>: <why>.` whatever its words, when the bug is asked for and each time the kept result is read again
+- RULE-28: A `case:` line wrapped over a second line is read to the end of that second line, the two joined by one space, where the second line is not blank and opens none of `aim:`, `case:`, `file:`, `before:`, `after:`, `no break:` or `===`
+- RULE-29: A `case:` line standing after the `file:` line and before `before:` is read as one above `file:` is
+- RULE-30: A line opening `#!`, `//go:` or `// @ts-` is code to the comment check, so a change to one is planted
 
 ## Proof
 
@@ -92,3 +96,11 @@
 - PROOF-48 (RULE-25): The model's change turns `return days`, line 12 of `src/age.py`, into three lines, `# planted`, an empty line and `return 0`, and the test of `PROOF-1` still passes; the audit prints `  PROOF-1: the test still passes when src/age.py:14 reads "return 0"`
 - PROOF-49 (RULE-25): The model's change puts the line `# planted` above `days = minutes(stamp)`, leaves that line and the next as they were and turns `return 0` into `return 1`, and the test of `PROOF-1` still passes; the audit prints `  PROOF-1: the test still passes when src/age.py:12 reads "return 1"`
 - PROOF-50 (RULE-26): `tests/test_age.py` holds the test of `PROOF-1` and the test of `PROOF-2`, which writes a line to a log each time it runs; a bug is planted for `PROOF-1` and its test catches it; the log was never written
+- PROOF-51 (RULE-27): The part for `PROOF-1` reads `no break: the refund path the proof names is not in the project`; the audit prints `age RULE-1   spot-checked` and under it `  The spot tests found nothing. No bug was planted: the model found no change that would break PROOF-1: the refund path the proof names is not in the project.`
+- PROOF-52 (RULE-27): The result of `no break: the refund path the proof names is not in the project` is on record for `PROOF-1`; the rule is read again with nothing changed, the request asks for no bug, and under `age RULE-1   spot-checked` the audit prints `  The spot tests found nothing. No bug was planted: the model found no change that would break PROOF-1: the refund path the proof names is not in the project.`
+- PROOF-53 (RULE-28): The part for `PROOF-1` holds the line `case: a stamp of 2026-01-01; the proof says 90;`, then the line `the changed code gives 0`, then `file: src/age.py`; the bug is planted and reads `caught`, and its entry reads `case` `a stamp of 2026-01-01; the proof says 90; the changed code gives 0`
+- PROOF-54 (RULE-28): The line after `case: a stamp of 2026-01-01; the proof says 90` reads `aim: past the test`; the bug's entry reads `case` `a stamp of 2026-01-01; the proof says 90` and `aim` `past the test`
+- PROOF-55 (RULE-29): The part for `PROOF-1` reads `file: src/age.py`, then `case: a stamp of 2026-01-01; the proof says 90; the changed code gives 0`, then `before:`; the bug is planted and reads `caught`, and its entry reads `case` `a stamp of 2026-01-01; the proof says 90; the changed code gives 0`
+- PROOF-56 (RULE-30): The feature covers `src/run.sh`, and the model's change turns its first line, `#!/bin/sh`, into `#!/bin/bash`; the bug is planted, and its entry reads `survived`
+- PROOF-57 (RULE-30): The feature covers `src/age.go`, and the model's change turns its line `//go:build linux` into `//go:build windows`; the bug is planted, and its entry reads `survived`
+- PROOF-58 (RULE-30): The feature covers `src/age.ts`, and the model's change adds the one line `// @ts-ignore` above `return 90;` in it; the bug is planted, and its entry reads `survived`
