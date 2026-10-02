@@ -2134,6 +2134,38 @@ class TestAChangedTestsSetting:
 
 
 # ---------------------------------------------------------------------------
+# A marker Purlin 0.9.5 wrote that is still in a test
+# ---------------------------------------------------------------------------
+
+class TestAMarkerFrom095StillInATest:
+
+    # purlin: run_script PROOF-302
+    def test_the_run_says_so_once_in_its_status(self, tmp_path):
+        root = _pytest_project(tmp_path, body='')
+        (root / 'tests' / 'test_feat.py').write_text(
+            'import pytest\n\n'
+            '# purlin: feat PROOF-1\n'
+            'def test_ok():\n'
+            '    assert True\n'
+            '@pytest.mark.proof("feat", "PROOF-1b", "RULE-1")\n'
+            'def test_more():\n'
+            '    assert True\n', encoding='utf-8')
+        _spec(root, 'feat')
+        _git_repo(root)
+        code, output = _run(root, '--all', '--test')
+        lines = output.splitlines()
+        said = ('1 test still carries a marker from Purlin 0.9.5, which is '
+                'not read: tests/test_feat.py:6. For each, write the proof '
+                'with purlin:spec, put the comment above the test, and take '
+                'the old tag out.')
+        assert code == 0, output
+        assert lines.count(said) == 1, output
+        assert lines.index(said) > next(
+            index for index, line in enumerate(lines)
+            if line.startswith('Purlin status:')), output
+
+
+# ---------------------------------------------------------------------------
 # What `--commit` left uncommitted
 # ---------------------------------------------------------------------------
 
