@@ -1049,18 +1049,23 @@ class TestARunCoversWhatTheChangeTouched:
         return root, sha
 
     # purlin: run_script PROOF-93
-    def test_an_untracked_file_runs_its_feature_alone_and_is_named(
+    def test_an_untracked_file_selects_its_feature_alone_and_is_named(
             self, tmp_path):
         root, _sha = self._untracked_under_login(tmp_path)
         code, output = _run(root, '--test')
         assert code == 0, output
         assert _selection(output) == {'login': 'a file is not tracked'}, output
-        # Selected alone is run alone: login's one test and no other.
-        assert _ran(root) == ['test_login'], output
-        assert 'Ran pytest on 1 feature.' in output.splitlines(), output
         assert ("src/auth/token.py is under login's scope and is not "
                 'tracked, so its content is not part of the evidence until '
                 'you git add it.') in output.splitlines(), output
+
+    # purlin: run_script PROOF-290
+    def test_an_untracked_file_runs_its_feature_alone(self, tmp_path):
+        root, _sha = self._untracked_under_login(tmp_path)
+        _code, output = _run(root, '--test')
+        assert 'Ran pytest on 1 feature.' in output.splitlines(), output
+        # Run alone: the report holds login's one test and no other.
+        assert _ran(root) == ['test_login'], output
 
     # purlin: run_script PROOF-94
     def test_the_selected_line_comes_before_the_suite_runs(

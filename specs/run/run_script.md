@@ -16,7 +16,7 @@
 > Scope: scripts/run/purlin_run.py, scripts/mcp/purlin/frameworks.py, references/supported_frameworks.md
 > Stack: python/stdlib (subprocess, re, hashlib), bash, pytest, sqlite3
 > Highest-Rule: 107
-> Highest-Proof: 289
+> Highest-Proof: 290
 
 ## Rules
 
@@ -106,9 +106,10 @@
 - PROOF-88 (RULE-55): `login` and `export` each scope one source file, their passing tests' evidence committed by `--test --commit`; `src/login.py` then changes. The next `--test`, no feature named, exits 0, selects `login` alone, reason `code changed since <sha7>`, that run's commit, prints `Ran pytest on 1 feature.`, the report holding login's test alone, and leaves export's evidence unchanged byte for byte
 - PROOF-89 (RULE-55): In that checkout of `login` and `export` with committed evidence, export's rule text is changed from `does thing 1` to `does thing one`; the next `--test` with no feature named exits 0 and selects `export` alone with the reason `spec changed since <sha7>`, the commit the committed evidence was taken on
 - PROOF-90 (RULE-55): With committed evidence of the features `export` and `solo` and the anchor `shared`, after `src/solo.py` is edited, a `--test` with no feature named selects exactly `shared` and `solo`, not `export`, the reason for `shared` beginning `code changed since`
+- PROOF-290 (RULE-55): `login`, current like `export`, scopes `src/login.py, src/auth/`; `src/auth/token.py` is untracked; the next `--test` with no feature named prints `Ran pytest on 1 feature.`, and the report holds login's test alone
 - PROOF-94 (RULE-101): Of twelve features, `f01` to `f12`, each with one source file, one passing test and committed evidence, `f01`'s source file is changed; the next `--test` with no feature named exits 0 and prints `Selected 1 of 12 features: f01 (code changed since <sha7>).` before the line `Running the pytest suite.`
 - PROOF-91 (RULE-101): `login` and `export` are current; `invoice`, committed with a passing test, was never run; the next `--test` exits 0, selects `invoice` alone, reason `no run on <System> yet`, prints `Skipped 2 features whose spec, code and tests match their evidence: export, login. purlin:test --all runs them too.` and `Ran pytest on 1 feature.`, the report holding invoice's test alone
-- PROOF-93 (RULE-101): `login`, current like `export`, scopes `src/login.py, src/auth/`; `src/auth/token.py` is untracked; the next `--test` exits 0, selects `login` alone, reason `a file is not tracked`, prints `src/auth/token.py is under login's scope and is not tracked, so its content is not part of the evidence until you git add it.` and `Ran pytest on 1 feature.`, the report holding login's test alone
+- PROOF-93 (RULE-101): `login`, current like `export`, scopes `src/login.py, src/auth/`; `src/auth/token.py` is untracked; the next `--test` exits 0, selects `login` alone, reason `a file is not tracked`, and prints `src/auth/token.py is under login's scope and is not tracked, so its content is not part of the evidence until you git add it.`
 - PROOF-95 (RULE-100): In a git checkout of `login` and `export` with committed evidence and nothing changed since, a `--test` with no feature named prints `Nothing to run`, no `Selected` or `Running the` line, leaves both evidence files as they were, ends on `Every rule passes its tests on the committed evidence. To sign it: purlin:sign`, and exits 0
 - PROOF-96 (RULE-100): In a checkout of `login` and `export`, a committed change to `src/login.py` is run with `--test` and its evidence left uncommitted; a following `--test --commit`, nothing changed, exits 0, prints `Nothing to run` and `Evidence committed.`, the newest commit reads `purlin: evidence at <sha7>` for the commit the run started on, and nothing under `.purlin/evidence` is left uncommitted
 - PROOF-257 (RULE-100): In a git checkout of `feat` whose run is committed, with the spec, its marked test file and the settings edited and a `--test` run over them, `--test --commit` prints `Nothing to run`, commits exactly those three files as `purlin: specs, tests and settings for feat`, then `purlin: evidence at <sha7 of that commit>`
