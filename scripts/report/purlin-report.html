@@ -782,8 +782,8 @@ function stampLine() {
 }
 function factBox(label, word, hue, lines) {
   return '<span class="fact"' + (lines && lines.length ? hover(lines) : '')
-    + ' style="color:var(--state-' + hue + ')">'
-    + '<span class="fact-l">' + esc(label) + '</span><b>' + esc(word)
+    + ' style="color:var(--' + (hue ? 'state-' + hue : 'text-secondary')
+    + ')"><span class="fact-l">' + esc(label) + '</span><b>' + esc(word)
     + '</b></span>';
 }
 function auditTotal() {
@@ -810,7 +810,7 @@ function auditCountLines() {
 function factBoxes() {
   var signoff = DATA.signoff || {};
   var word = signoff.word || NOT_SIGNED;
-  var hue = !signoff.version ? 'neutral'
+  var hue = !signoff.version ? ''
     : / at [0-9a-f]+$/.test(word) ? 'pass' : 'warn';
   return '<span class="facts">'
     + factBox(TESTS, DATA.met ? MET : NOT_MET, DATA.met ? 'pass' : 'warn')

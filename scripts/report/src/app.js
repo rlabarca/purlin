@@ -412,12 +412,12 @@ function stampLine() {
     full: local ? moment(at) + ' (' + at.slice(11, 16) + ' UTC)' : when(at)};
 }
 
-/* One of the top bar's three boxes: its label, then the payload's word in
+/* One of the top bar's two boxes: its label, then the payload's word in
    the tone it reads in, and its hover where it has one. */
 function factBox(label, word, hue, lines) {
   return '<span class="fact"' + (lines && lines.length ? hover(lines) : '')
-    + ' style="color:var(--state-' + hue + ')">'
-    + '<span class="fact-l">' + esc(label) + '</span><b>' + esc(word)
+    + ' style="color:var(--' + (hue ? 'state-' + hue : 'text-secondary')
+    + ')"><span class="fact-l">' + esc(label) + '</span><b>' + esc(word)
     + '</b></span>';
 }
 
@@ -451,12 +451,12 @@ function auditCountLines() {
 
 /* The two boxes, one for each fact. The tests read in the pass tone once met
    and the warn tone until then; the sign-off in the pass tone at the signed
-   commit, the warn tone once commits have followed it, and the neutral tone
-   before any. */
+   commit, the warn tone once commits have followed it, and in no tone before
+   any: `not signed` and its box are drawn in the secondary text colour. */
 function factBoxes() {
   var signoff = DATA.signoff || {};
   var word = signoff.word || NOT_SIGNED;
-  var hue = !signoff.version ? 'neutral'
+  var hue = !signoff.version ? ''
     : / at [0-9a-f]+$/.test(word) ? 'pass' : 'warn';
   return '<span class="facts">'
     + factBox(TESTS, DATA.met ? MET : NOT_MET, DATA.met ? 'pass' : 'warn')

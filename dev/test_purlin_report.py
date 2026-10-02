@@ -1765,20 +1765,24 @@ COUNT_BOXES = """() => Array.from(document.querySelectorAll('.tile')).map(e => {
 
 
 # purlin: purlin_report PROOF-241
-def test_a_project_no_audit_read_shows_the_two_facts_alone(browser, tmp_path):
+def test_no_audit_and_no_sign_off_show_two_boxes_and_not_signed_plain(
+        browser, tmp_path):
     payload = payload_named('solo')
     assert not [rule for feature in payload['features']
                 for rule in feature['rules'] if rule['audit']]
     page = open_board(browser, tmp_path, payload)
     found = {box['label']: box for box in page.evaluate(FACT_BOXES)}
-    neutral = resolved(page, '--state-neutral')
-    warn = resolved(page, '--state-warn')
+    plain = resolved(page, '--text-secondary')
+    tones = [resolved(page, '--state-' + tone)
+             for tone in ('pass', 'warn', 'fail', 'neutral')]
+    border = page.eval_on_selector_all(
+        '.topbar .fact', 'els => getComputedStyle(els[1]).borderTopColor')
     heads = head_labels(page)
     page.close()
     assert list(found) == ['Tests', 'Sign-off'], found
     assert found['Sign-off']['word'] == 'not signed'
-    assert found['Sign-off']['color'] == neutral
-    assert neutral != warn
+    assert found['Sign-off']['color'] == border == plain
+    assert plain not in tones
     assert heads == ['Spec', 'Rules', 'Proofs', 'Tests'], heads
 
 
