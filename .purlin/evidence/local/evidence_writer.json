@@ -983,12 +983,12 @@
   "feature": "evidence_writer",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T21:02:49Z",
-      "commit": "d8a8f2cee1fb360791599fbc5af282dd7d1e4e8b",
+      "at": "2026-10-02T23:46:12Z",
+      "commit": "afa143e1429bc564a184f39b4220f6557764478a",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "e7add5d37b39d0ac31b211e384e7be4d9b87ee5c0d58c5583d5a0beb3e90414d",
+        "code": "420346be567742fe826d57de105c7119f5b229f7258b6580bbe18e065d1d3ebe",
         "spec": "bdaf0daa664231ddd943150f53464b8c398f7ab43c0634788a9976cabd1fc5f2",
         "tests": "e08a9fa789e2c19ba9a3862d54ea2a7d34f028f675700fb5a82cd7ae32fdea3a"
       },

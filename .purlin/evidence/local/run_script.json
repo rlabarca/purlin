@@ -1566,14 +1566,14 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T21:02:50Z",
-      "commit": "d8a8f2cee1fb360791599fbc5af282dd7d1e4e8b",
+      "at": "2026-10-02T23:46:13Z",
+      "commit": "afa143e1429bc564a184f39b4220f6557764478a",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "05dd207a3b81095e6ba33818ec52cce5eaa1eed82ae9110443777d85515ac9d4",
-        "spec": "f7a28c5d13855c201d63f0212c0adfe278bd51e22ea7ecc7893e4d723b8b2ea3",
-        "tests": "a7e59e9fb60bf678cc473069e555cbc7eefbffbf5d4e4e4ca2dd156657ee27d8"
+        "code": "470ce0dcd87b24c720c306cac415a5040793dd7cf2a7e9e5e79610990018bd67",
+        "spec": "2fdd3d3da395663d747d855626898d9b985254cf4e5efeea33eba46d98ff4ffc",
+        "tests": "99924d2e008569988444ed4712e53e7633e3d0a6fcdb6fc8f074365dc1bb0678"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -2083,6 +2083,46 @@
         },
         {
           "env": null,
+          "id": "PROOF-303",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-113",
+          "test": "dev/test_run_script.py::TestTheTestFilesAFullRunLeavesOut::test_twelve_are_counted_under_the_markers_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-304",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-113",
+          "test": "dev/test_run_script.py::TestTheTestFilesAFullRunLeavesOut::test_one_reads_carries"
+        },
+        {
+          "env": null,
+          "id": "PROOF-305",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-113",
+          "test": "dev/test_run_script.py::TestTheTestFilesAFullRunLeavesOut::test_with_none_nothing_is_said"
+        },
+        {
+          "env": null,
+          "id": "PROOF-306",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-113",
+          "test": "dev/test_run_script.py::TestTheTestFilesAFullRunLeavesOut::test_a_run_without_all_says_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-307",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-113",
+          "test": "dev/test_run_script.py::TestTheTestFilesAFullRunLeavesOut::test_a_suite_started_whole_runs_them_and_counts_none"
+        },
+        {
+          "env": null,
           "id": "PROOF-296",
           "manual": false,
           "result": "pass",
@@ -2290,6 +2330,7 @@
         "RULE-110": "passed",
         "RULE-111": "passed",
         "RULE-112": "passed",
+        "RULE-113": "passed",
         "RULE-12": "passed",
         "RULE-17": "passed",
         "RULE-20": "passed",

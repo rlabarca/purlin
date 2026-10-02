@@ -2,14 +2,14 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T21:02:49Z",
-      "commit": "d8a8f2cee1fb360791599fbc5af282dd7d1e4e8b",
+      "at": "2026-10-02T23:46:13Z",
+      "commit": "afa143e1429bc564a184f39b4220f6557764478a",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "22038321d6a4bcdfe187bddcf7376e39f578bc02d3e9be7a1eccbeda646bf325",
-        "spec": "60eccf59da25c770b092e2fb9d04a537fab7f2208595249512efe38cd3973835",
-        "tests": "8423fc125e5a4bdf9b5f7c7c6ca4a6b153a748fc11c2dee6bf89b24b9c185ef1"
+        "code": "b71d6cd6516ac6504ba341cd67a5a40e4f72f089f3db4a6befd0ee8946461a88",
+        "spec": "93cf191ae179233b14c3025888f98ac6692b1a55dc25411a588f298d48385bf0",
+        "tests": "a9fa66f07ca1f6d4a16dbdde74ae81eadc8eac719da4bbf64ee3d1c9471be9b0"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -727,6 +727,134 @@
         },
         {
           "env": null,
+          "id": "PROOF-275",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-82",
+          "test": "dev/test_purlin_report.py::test_rules_with_nothing_to_check_group_in_the_neutral_tone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-263",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-83",
+          "test": "dev/test_purlin_report.py::test_a_failing_box_counts_the_rules_that_failed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-264",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-83",
+          "test": "dev/test_purlin_report.py::test_the_failing_box_stands_between_passing_and_strong"
+        },
+        {
+          "env": null,
+          "id": "PROOF-265",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-83",
+          "test": "dev/test_purlin_report.py::test_no_failing_box_where_no_rule_failed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-266",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-84",
+          "test": "dev/test_purlin_report.py::test_a_spec_and_a_category_with_a_failing_rule_come_first"
+        },
+        {
+          "env": null,
+          "id": "PROOF-267",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-84",
+          "test": "dev/test_purlin_report.py::test_an_anchor_with_a_failing_rule_comes_first"
+        },
+        {
+          "env": null,
+          "id": "PROOF-268",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-84",
+          "test": "dev/test_purlin_report.py::test_two_failing_specs_keep_the_datas_order"
+        },
+        {
+          "env": null,
+          "id": "PROOF-269",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-84",
+          "test": "dev/test_purlin_report.py::test_the_failing_box_and_the_failing_spec_are_on_the_first_screen"
+        },
+        {
+          "env": null,
+          "id": "PROOF-278",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-84",
+          "test": "dev/test_purlin_report.py::test_the_spec_table_stands_first_where_a_spec_fails_and_no_anchor_does"
+        },
+        {
+          "env": null,
+          "id": "PROOF-279",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-84",
+          "test": "dev/test_purlin_report.py::test_the_anchors_stand_first_where_an_anchor_fails"
+        },
+        {
+          "env": null,
+          "id": "PROOF-270",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-85",
+          "test": "dev/test_report_refresh.py::test_the_data_file_carries_the_line_for_a_spec_that_names_no_files"
+        },
+        {
+          "env": null,
+          "id": "PROOF-271",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-85",
+          "test": "dev/test_report_refresh.py::test_the_data_file_carries_an_anchor_rule_with_nothing_to_check"
+        },
+        {
+          "env": null,
+          "id": "PROOF-272",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-85",
+          "test": "dev/test_report_refresh.py::test_the_data_file_carries_a_changed_tests_setting_first"
+        },
+        {
+          "env": null,
+          "id": "PROOF-273",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-85",
+          "test": "dev/test_report_refresh.py::test_the_data_file_carries_an_anchor_whose_pin_is_behind"
+        },
+        {
+          "env": null,
+          "id": "PROOF-274",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-85",
+          "test": "dev/test_report_refresh.py::test_the_data_file_carries_the_uncommitted_spec_files_on_one_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-277",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-85",
+          "test": "dev/test_report_refresh.py::test_the_data_file_names_no_update_once_the_page_is_replaced"
+        },
+        {
+          "env": null,
           "id": "PROOF-249",
           "manual": false,
           "result": "pass",
@@ -798,6 +926,9 @@
         "RULE-80": "passed",
         "RULE-81": "passed",
         "RULE-82": "passed",
+        "RULE-83": "passed",
+        "RULE-84": "passed",
+        "RULE-85": "passed",
         "RULE-9": "passed"
       },
       "runner": "rich-labarca"

@@ -2,14 +2,14 @@
   "feature": "skill_status",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T21:02:50Z",
-      "commit": "d8a8f2cee1fb360791599fbc5af282dd7d1e4e8b",
+      "at": "2026-10-02T23:46:14Z",
+      "commit": "afa143e1429bc564a184f39b4220f6557764478a",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "9dff24065092af2153d4550e84a8d636a461bbae817dff38a9575d0818ffbec1",
-        "spec": "77f4b8d6171d2f2d773aa48de8cb02bb98eb101786144c6c104b501910f54495",
-        "tests": "10b9c7dc4006a717a8af7cb5b25a495796d5d0ea2e45a0848936c1738c97170c"
+        "code": "605762d614a9f5e506861efe52552a096ea77af8eed78142973bc2d8d4342c9d",
+        "spec": "58f4b3d727fa27adda209d4413003ed2919396624401096d291b522afae16686",
+        "tests": "a23d2a17db056fb13fb0ba4257a0f621c2c23e13c556b1155ff09705148d1d20"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -36,10 +36,27 @@
           "result": "pass",
           "rule": "RULE-16",
           "test": "dev/test_skill_status.py::test_the_status_skill_names_its_two_paths"
+        },
+        {
+          "env": null,
+          "id": "PROOF-41",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_skill_status.py::test_one_sentence_says_when_the_uncommitted_results_line_shows"
+        },
+        {
+          "env": null,
+          "id": "PROOF-42",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_skill_status.py::test_a_copy_without_those_words_holds_no_such_sentence"
         }
       ],
       "rules": {
-        "RULE-16": "passed"
+        "RULE-16": "passed",
+        "RULE-17": "passed"
       },
       "runner": "rich-labarca"
     }

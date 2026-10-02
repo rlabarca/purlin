@@ -2,14 +2,14 @@
   "feature": "skill_audit",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T21:02:50Z",
-      "commit": "d8a8f2cee1fb360791599fbc5af282dd7d1e4e8b",
+      "at": "2026-10-02T23:46:13Z",
+      "commit": "afa143e1429bc564a184f39b4220f6557764478a",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "ddde313b7f0736bdf8d3f5fbfe0524321191d3f123664290bfe07a8c0b6704ae",
-        "spec": "f6799ff1e647b93c86cf38fbb8055f83955cb7efcdcc324de51ad6d21cbbcd8e",
-        "tests": "6ad3a16f377a0f46d0b22ff8893b501e04ec6332a43a864e7717d1344e4a148f"
+        "code": "fe46dabc3a56272e4ff1662a82d11130f5bf4c8f432d8b2697b1b4e3caa64a91",
+        "spec": "171fbfe9579f51e180d1208bd6ef9bc80b8e4bc4bc0822080dda75fab1e32f8b",
+        "tests": "c93859b423d916b372ab40ddc065bfb9d32bf07a028b1f67c2f3fdd4c4b489b3"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -36,11 +36,20 @@
           "result": "pass",
           "rule": "RULE-30",
           "test": "dev/test_skill_audit.py::test_the_skill_and_the_criteria_hold_the_two_lines_a_settle_prints"
+        },
+        {
+          "env": null,
+          "id": "PROOF-61",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_skill_audit.py::test_the_skill_and_the_criteria_hold_the_refusal_and_the_sound_sentence"
         }
       ],
       "rules": {
         "RULE-29": "passed",
-        "RULE-30": "passed"
+        "RULE-30": "passed",
+        "RULE-31": "passed"
       },
       "runner": "rich-labarca"
     }

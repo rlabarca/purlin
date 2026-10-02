@@ -2,14 +2,14 @@
   "feature": "summary",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T21:02:51Z",
-      "commit": "d8a8f2cee1fb360791599fbc5af282dd7d1e4e8b",
+      "at": "2026-10-02T23:46:14Z",
+      "commit": "afa143e1429bc564a184f39b4220f6557764478a",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "278bf214f6bbfca4dc91d255150016dd25fab01084dfbb4a3a35e7a0ff1b7693",
-        "spec": "b56c0b9f49feacc9a6ba4d2ded91d7458bfaeae6055ccfa9bc1faf85d5a80955",
-        "tests": "3fc668a02212a7e5ac193839954c9dc44b7e22bce336001de19911723f864b11"
+        "code": "b0cab7902d01d540b8d3ff4e097391485caf377b355779ce4db4e3dec20d73d7",
+        "spec": "f28b20d627b0a8e4c19d321317c8ba37262dd29100b202eb71495363d6fea856",
+        "tests": "cc6a6b84f7cee11145e294bf5562e0dad7ebe80fd46e14556560b63723434f51"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -207,6 +207,54 @@
         },
         {
           "env": null,
+          "id": "PROOF-65",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_summary.py::TestTheLastLineAgreesWithTheSignOff::test_results_taken_on_this_code_end_on_the_sign_off"
+        },
+        {
+          "env": null,
+          "id": "PROOF-64",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_summary.py::TestTheLastLineAgreesWithTheSignOff::test_results_taken_before_a_later_commit_name_the_run_first"
+        },
+        {
+          "env": null,
+          "id": "PROOF-66",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_summary.py::TestTheLastLineAgreesWithTheSignOff::test_a_kept_slow_result_names_the_run_first"
+        },
+        {
+          "env": null,
+          "id": "PROOF-67",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_summary.py::TestTheLastLineAgreesWithTheSignOff::test_results_from_another_system_name_the_run_there"
+        },
+        {
+          "env": null,
+          "id": "PROOF-68",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-28",
+          "test": "dev/test_summary.py::TestTheLastLineAgreesWithTheSignOff::test_results_taken_with_files_uncommitted_name_the_run_first"
+        },
+        {
+          "env": null,
+          "id": "PROOF-69",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-29",
+          "test": "dev/test_summary.py::TestTheLastLineAgreesWithTheSignOff::test_the_dashboard_data_carries_the_same_last_line"
+        },
+        {
+          "env": null,
           "id": "PROOF-59",
           "manual": false,
           "result": "pass",
@@ -224,6 +272,9 @@
         "RULE-24": "passed",
         "RULE-25": "passed",
         "RULE-26": "passed",
+        "RULE-27": "passed",
+        "RULE-28": "passed",
+        "RULE-29": "passed",
         "RULE-8": "passed"
       },
       "runner": "rich-labarca"

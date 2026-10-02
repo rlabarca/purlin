@@ -1258,14 +1258,14 @@
   "feature": "ai_audit",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T21:02:49Z",
-      "commit": "d8a8f2cee1fb360791599fbc5af282dd7d1e4e8b",
+      "at": "2026-10-02T23:46:12Z",
+      "commit": "afa143e1429bc564a184f39b4220f6557764478a",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "a20f1caba291fd3546a0079b2b8616dbdbad0636550714da626111fe6a3c13bd",
-        "spec": "a3a6d181e9b4b501b18345000e0e638b31801eacad3b94a731bd293e3e86c5d3",
-        "tests": "eab37acf5fac877305e69e44eea2423b4f95244e2396454269a46acdc059bf2d"
+        "code": "eef0e84dc4e3b477fb61c5c59cc3a941a8b321930695e3069f0ffb993455791b",
+        "spec": "3694592f800d41e43619440078b182f4c0d73b290a045dbc47a32dd0763f6023",
+        "tests": "f287de2b0cf1b5b558ffdb3503e1c2e76fd5a88ebb6ab912b342e9a7382e7238"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -2028,6 +2028,110 @@
           "result": "pass",
           "rule": "RULE-67",
           "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_a_settle_that_asks_no_model_writes_no_explanation"
+        },
+        {
+          "env": null,
+          "id": "PROOF-167",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-68",
+          "test": "dev/test_ai_audit.py::TestASettleOnAnUnchangedTest::test_a_settle_is_refused_where_the_test_has_not_changed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-168",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-68",
+          "test": "dev/test_ai_audit.py::TestASettleOnAnUnchangedTest::test_of_two_surviving_bugs_the_changed_test_settles_and_the_other_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-169",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-68",
+          "test": "dev/test_ai_audit.py::TestASettleOnAnUnchangedTest::test_a_refused_bug_keeps_its_two_findings_and_no_other"
+        },
+        {
+          "env": null,
+          "id": "PROOF-170",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-69",
+          "test": "dev/test_ai_audit.py::TestASettleOnAnUnchangedTest::test_sound_lets_the_settle_go_on_and_the_entry_says_the_test_was_not_changed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-171",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-69",
+          "test": "dev/test_ai_audit.py::TestASettleOnAnUnchangedTest::test_the_audit_prints_that_the_proof_was_settled_with_its_test_unchanged"
+        },
+        {
+          "env": null,
+          "id": "PROOF-172",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-69",
+          "test": "dev/test_ai_audit.py::TestASettleOnAnUnchangedTest::test_a_later_audit_keeps_the_sentence_and_the_field"
+        },
+        {
+          "env": null,
+          "id": "PROOF-174",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-70",
+          "test": "dev/test_ai_audit.py::TestASettleOnAnUnchangedTest::test_sound_without_settle_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-175",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-70",
+          "test": "dev/test_ai_audit.py::TestASettleOnAnUnchangedTest::test_sound_naming_a_proof_of_a_rule_not_being_settled_exits_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-176",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-70",
+          "test": "dev/test_ai_audit.py::TestASettleOnAnUnchangedTest::test_sound_naming_a_proof_with_no_surviving_bug_exits_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-177",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-71",
+          "test": "dev/test_ai_audit.py::TestASettleOnAnUnchangedTest::test_a_bug_that_survived_records_the_key_of_its_proofs_tests"
+        },
+        {
+          "env": null,
+          "id": "PROOF-178",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-71",
+          "test": "dev/test_ai_audit.py::TestASettleOnAnUnchangedTest::test_a_bug_recorded_without_the_key_is_refused_while_nothing_changed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-179",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-71",
+          "test": "dev/test_ai_audit.py::TestASettleOnAnUnchangedTest::test_a_bug_recorded_without_the_key_is_settled_once_its_test_changes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-173",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-72",
+          "test": "dev/test_ai_audit.py::TestASettleOnAnUnchangedTest::test_sound_for_a_test_that_did_change_records_nothing"
         }
       ],
       "rules": {
@@ -2070,7 +2174,12 @@
         "RULE-64": "passed",
         "RULE-65": "passed",
         "RULE-66": "passed",
-        "RULE-67": "passed"
+        "RULE-67": "passed",
+        "RULE-68": "passed",
+        "RULE-69": "passed",
+        "RULE-70": "passed",
+        "RULE-71": "passed",
+        "RULE-72": "passed"
       },
       "runner": "rich-labarca"
     }

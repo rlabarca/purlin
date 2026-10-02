@@ -2,14 +2,14 @@
   "feature": "states",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T21:02:50Z",
-      "commit": "d8a8f2cee1fb360791599fbc5af282dd7d1e4e8b",
+      "at": "2026-10-02T23:46:14Z",
+      "commit": "afa143e1429bc564a184f39b4220f6557764478a",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "ef7e38f1dc6362d9f95086f916b98b3c4464dee0b57098dc654de0d26705bf07",
-        "spec": "da67db797528284011cbe567ad4539489d0b548f8711fb4caf27adf8523646f8",
-        "tests": "642529cbaa5678a8ec34981024301455f1e640783a598972344ad26b096c01dc"
+        "code": "7a903f551590dee6b8df6d4a9b47a79ed17802270298b119f8845814a562d02c",
+        "spec": "14cc4d5b2bf299f7c5968853a65430692da7b87c95ed3397cbb10b25f73effe1",
+        "tests": "024c2081e456bce806fac6f4b3ad815f05d5c25e82793d1112a821a0523e4876"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -795,7 +795,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-131",
-          "test": "dev/test_mcp_server.py::TestMarkersFrom095StillInATest::test_the_status_command_names_two_and_counts_the_rest"
+          "test": "dev/test_mcp_server.py::TestMarkersFrom095StillInATest::test_the_status_command_names_each_test_with_its_rule"
         },
         {
           "env": null,
@@ -831,14 +831,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-313",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-131",
-          "test": "dev/test_mcp_server.py::TestMarkersFrom095StillInATest::test_the_dashboard_data_carries_it_last"
-        },
-        {
-          "env": null,
           "id": "PROOF-314",
           "manual": false,
           "result": "pass",
@@ -852,6 +844,70 @@
           "result": "pass",
           "rule": "RULE-132",
           "test": "dev/test_mcp_server.py::TestMarkersFrom095StillInATest::test_a_pending_095_project_prints_its_three_lines_alone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-316",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-133",
+          "test": "dev/test_mcp_server.py::TestMarkersFrom095StillInATest::test_the_line_named_is_the_tags_own_as_the_file_stands"
+        },
+        {
+          "env": null,
+          "id": "PROOF-317",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-133",
+          "test": "dev/test_mcp_server.py::TestMarkersFrom095StillInATest::test_a_marker_that_names_no_rule_shows_its_feature_alone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-318",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-134",
+          "test": "dev/test_mcp_server.py::TestMarkersFrom095StillInATest::test_over_twenty_the_first_twenty_and_a_count"
+        },
+        {
+          "env": null,
+          "id": "PROOF-313",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-135",
+          "test": "dev/test_mcp_server.py::TestMarkersFrom095StillInATest::test_the_dashboard_data_carries_one_line_last"
+        },
+        {
+          "env": null,
+          "id": "PROOF-319",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-135",
+          "test": "dev/test_mcp_server.py::TestMarkersFrom095StillInATest::test_one_in_the_dashboard_data_reads_still_carries"
+        },
+        {
+          "env": null,
+          "id": "PROOF-320",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-136",
+          "test": "dev/test_mcp_server.py::TestThePending095ProjectIsLeftAsItWas::test_the_status_command_changes_no_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-321",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-136",
+          "test": "dev/test_mcp_server.py::TestThePending095ProjectIsLeftAsItWas::test_the_tool_changes_no_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-322",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-136",
+          "test": "dev/test_mcp_server.py::TestThePending095ProjectIsLeftAsItWas::test_with_no_page_and_no_data_file_it_writes_neither"
         }
       ],
       "rules": {
@@ -880,6 +936,10 @@
         "RULE-130": "passed",
         "RULE-131": "passed",
         "RULE-132": "passed",
+        "RULE-133": "passed",
+        "RULE-134": "passed",
+        "RULE-135": "passed",
+        "RULE-136": "passed",
         "RULE-14": "passed",
         "RULE-16": "passed",
         "RULE-23": "passed",

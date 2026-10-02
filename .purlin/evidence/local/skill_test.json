@@ -2,14 +2,14 @@
   "feature": "skill_test",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T21:02:50Z",
-      "commit": "d8a8f2cee1fb360791599fbc5af282dd7d1e4e8b",
+      "at": "2026-10-02T23:46:14Z",
+      "commit": "afa143e1429bc564a184f39b4220f6557764478a",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "725a955ca7e0f8f7b28c5a01b6f3463e765b3090e1e6a30b5bc5750edd87664c",
-        "spec": "eef47d42d63eedc0bd1a9da0a06774e233628d870186407a5b745094fbe87e40",
-        "tests": "89fe6a7787f963d63f8b27b9fd182bef922f3832bb3cddbf462090f43e90dbb5"
+        "code": "8add7b08c3eb05fab30dd9d28e8d7d7bd2c19dda178abf7a83675cecd7f47254",
+        "spec": "8db10d3909b0dfce2d3cfdf780414f40ff078fedcf7c3e42055db9dd30795e05",
+        "tests": "da103b633098ece357cd924fd4d871afac4e3aab8b9fa4eba3fa16eb02a7e7ba"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -28,10 +28,27 @@
           "result": "pass",
           "rule": "RULE-23",
           "test": "dev/test_skill_test.py::test_a_copy_without_the_evidence_and_signoff_reference_is_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-56",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_skill_test.py::test_one_line_passes_commit_to_the_run_script"
+        },
+        {
+          "env": null,
+          "id": "PROOF-57",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_skill_test.py::test_a_copy_that_passes_no_commit_is_reported"
         }
       ],
       "rules": {
-        "RULE-23": "passed"
+        "RULE-23": "passed",
+        "RULE-24": "passed"
       },
       "runner": "rich-labarca"
     }
