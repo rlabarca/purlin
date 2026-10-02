@@ -333,6 +333,9 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
                 proof_id, evidence_reader.os_word(value),
                 evidence_reader.os_word(here))))
         elif what == 'kept':
+            # An entry written before the aim and the case were kept gains both.
+            value = dict(value, aim=value.get('aim') or targeted_break.PLAIN,
+                         case=value.get('case') or '')
             breaks[proof_id] = value
             if value.get('result') == 'survived':
                 findings.extend(survived_findings(proof_id, value, last))

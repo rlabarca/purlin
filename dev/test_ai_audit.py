@@ -879,6 +879,26 @@ class TestTheVerdict:
         assert entry['breaks']['PROOF-2']['result'] == 'caught', entry
         assert entry['breaks']['PROOF-2']['after'] == '    return 200', entry
 
+    # purlin: ai_audit PROOF-136
+    def test_a_kept_entry_with_no_aim_or_case_is_written_back_with_both(
+            self, claude):
+        with passing_project(source=LOGIN_SOURCE) as made:
+            settle(made, 'RULE-2')
+            settle(made, 'RULE-1')
+            kept = entry_of(made)['breaks']['PROOF-2']
+            assert 'aim' not in kept and 'case' not in kept, kept
+            # Only RULE-2's text changes, so the audit reads it again.
+            made.spec(SPEC.replace('return 401 and the body',
+                                   'return 401 with the body'))
+            made.evidence()
+            code, printed = audit(made)
+            entry = entry_of(made)
+        assert code == 0, printed
+        made_now = entry['breaks']['PROOF-2']
+        assert made_now['result'] == 'caught', entry
+        assert made_now.get('aim') == 'plain', made_now
+        assert made_now.get('case') == '', made_now
+
     # purlin: ai_audit PROOF-115
     def test_a_changed_test_has_its_bug_asked_for_again(self, claude):
         _install, directory = claude

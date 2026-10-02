@@ -11,8 +11,8 @@
 >   it was sent. The audit's last line is the share of rules it found strong.
 > Scope: scripts/review/audit_run.py, scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
-> Highest-Rule: 50
-> Highest-Proof: 135
+> Highest-Rule: 51
+> Highest-Proof: 136
 
 ## Rules
 
@@ -39,6 +39,7 @@
 - RULE-48: A planted bug's entry under `breaks` carries `aim`, either `past the test` or `plain`, and `case`, the model's line for it
 - RULE-49: A planted bug that survived adds two findings to its rule, `<PROOF-N>: the test still passes when <file>:<line> reads "<the changed line>"` and directly after it `<PROOF-N>: the AI says this breaks: <case>`, whether the bug was planted by this audit or kept from an earlier one, and the audit prints both under the rule
 - RULE-50: A planted bug that was caught adds no finding to its rule
+- RULE-51: A planted bug's entry kept from an earlier audit that holds no `aim` or no `case` is written, when the audit next writes its rule's entry, with `aim` `plain` and `case` empty
 
 ## Proof
 
@@ -106,3 +107,4 @@
 - PROOF-133 (RULE-49): The model's bug for `PROOF-3` hands back the record of `LC-12345678` and stores nothing, and the test still passes; the second finding of `sample_intake RULE-2` reads `PROOF-3: the AI says this breaks: ` and then the model's case word for word, ending ``never stores it, so the bench's `received` stays empty``
 - PROOF-134 (RULE-49): The sample lab project is audited again, every rule read again and nothing changed; the request for `sample_intake RULE-3` asks for no bug, and the entry of `RULE-3` holds the same two findings for `PROOF-5`, in the same order
 - PROOF-135 (RULE-50): The test of `PROOF-6` checks the proof's own case, and the model's bug sets the limit to 73 hours with `aim: plain`; the bug is caught, `sample_intake RULE-4` reads `strong`, its `findings` are empty, and no line the audit prints names `PROOF-6`
+- PROOF-136 (RULE-51): A bug kept for `PROOF-2` reads `caught`, and its entry holds neither `aim` nor `case`; `RULE-2`'s text changes, so the audit reads the rule again and plants no bug for `PROOF-2`; afterwards the entry of `PROOF-2` under `breaks` still reads `caught`, and reads `aim` `plain` and `case` empty
