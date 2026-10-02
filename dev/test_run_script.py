@@ -1179,6 +1179,22 @@ def _purlin_files(root):
                   for name in names)
 
 
+def _one_passing_test(tmp_path):
+    """A project with an empty `tests` setting, a `conftest.py` and one
+    marked passing test."""
+    root = _no_command(tmp_path, 'pytest')
+    (root / 'tests').mkdir(exist_ok=True)
+    (root / 'tests' / 'test_feat.py').write_text(
+        '# purlin: feat PROOF-1\ndef test_ok():\n    assert 1 + 1 == 2\n',
+        encoding='utf-8')
+    return root
+
+
+def _tests_setting(root):
+    with open(str(root / '.purlin' / 'config.json'), encoding='utf-8') as handle:
+        return json.load(handle)['tests']
+
+
 SUGGESTED_SETTING = 'Suggested tests setting: '
 
 
@@ -1211,7 +1227,7 @@ class TestNoTestCommand:
         root = _no_command(tmp_path, 'pytest')
         code, output = _run(root, '--all', '--test')
         entry = frameworks.entry_for('pytest')
-        assert output.strip().splitlines()[-3:] == [
+        assert output.splitlines()[-4:-1] == [
             'No test command is set in .purlin/config.json, so nothing ran.',
             'Suggested for pytest: python3 -m pytest {files} '
             '--junitxml={report}',
@@ -1231,6 +1247,42 @@ class TestNoTestCommand:
         assert _purlin_files(root) == [
             os.path.join('.purlin', 'config.json')], output
         assert code == 1, output
+
+    # purlin: run_script PROOF-287
+    def test_with_nothing_to_answer_from_the_setting_is_not_written(
+            self, tmp_path):
+        root = _one_passing_test(tmp_path)
+        before = (root / '.purlin' / 'config.json').read_bytes()
+        code, output = _run(root, '--all', '--test')
+        assert output.endswith(
+            '\nWrite this tests setting to .purlin/config.json? [y/N] '), \
+            output
+        assert (root / '.purlin' / 'config.json').read_bytes() == before
+        assert code == 1, output
+
+    # purlin: run_script PROOF-288
+    def test_write_tests_writes_the_setting_unasked_and_runs(self, tmp_path):
+        root = _one_passing_test(tmp_path)
+        code, output = _run(root, '--all', '--test', '--write-tests')
+        lines = output.splitlines()
+        assert '[y/N]' not in output, output
+        wrote = lines.index('Wrote the tests setting to .purlin/config.json.')
+        assert 'Markers: 1 tied to a test, 0 not tied.' in lines[wrote:], \
+            output
+        assert _tests_setting(root) == [frameworks.entry_for('pytest')]
+        assert code == 0, output
+
+    # purlin: run_script PROOF-289
+    def test_answered_y_the_setting_is_written_and_the_test_runs(
+            self, tmp_path):
+        root = _one_passing_test(tmp_path)
+        code, output = _run(root, '--all', '--test', answer='y\n')
+        assert _tests_setting(root) == [frameworks.entry_for('pytest')]
+        assert 'Markers: 1 tied to a test, 0 not tied.' in output, output
+        section = list(_evidence(root)['platforms'].values())[0]
+        assert [(entry['id'], entry['result'])
+                for entry in section['proofs']] == [('PROOF-1', 'pass')]
+        assert code == 0, output
 
     # purlin: run_script PROOF-262
     def test_a_plain_tests_folder_is_suggested_pytest(self, tmp_path):
@@ -1276,9 +1328,11 @@ class TestNoTestCommand:
     # purlin: run_script PROOF-134
     def test_jest_is_told_it_needs_jest_junit(self, tmp_path):
         _code, output = _run(_no_command(tmp_path, 'jest'), '--all', '--test')
-        lines = output.strip().splitlines()
-        assert lines[-3].startswith('Suggested for jest: '), output
-        assert lines[-2] == (
+        lines = output.splitlines()
+        suggested = [index for index, line in enumerate(lines)
+                     if line.startswith('Suggested for jest: ')]
+        assert len(suggested) == 1, output
+        assert lines[suggested[0] + 1] == (
             'jest needs the package jest-junit to write its report: run npm '
             'install --save-dev jest-junit'), output
 

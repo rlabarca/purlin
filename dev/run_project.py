@@ -74,12 +74,18 @@ def _pytest_project(tmp_path, body=None):
     return root
 
 
-def _run(root, *args):
-    """The run script as a subprocess. `(returncode, stdout + stderr)`."""
+def _run(root, *args, answer=None):
+    """The run script as a subprocess. `(returncode, stdout + stderr)`.
+
+    `answer` is what its input holds; with none the input is at its end, as
+    it is for a run nobody can answer.
+    """
     cwd = str(root) if os.path.isdir(str(root)) else REPO
     result = subprocess.run(
         [sys.executable, RUN_SCRIPT, '--project-root', str(root)] + list(args),
-        capture_output=True, encoding='utf-8', cwd=cwd)
+        capture_output=True, encoding='utf-8', cwd=cwd,
+        **({'stdin': subprocess.DEVNULL} if answer is None
+           else {'input': answer}))
     return result.returncode, result.stdout + result.stderr
 
 
