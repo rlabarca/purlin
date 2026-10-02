@@ -69,7 +69,7 @@ Every field is REQUIRED, in this order.
 | `commit` | string | the full sha the package describes, its own `commit` field |
 | `signer` | string | the signer's email as git holds it |
 | `signer_name` | string or null | git's `user.name` |
-| `key_fingerprint` | string | `SHA256:` and the unpadded base64 of the sha256 of the SSH key the signer signs with, as `ssh-keygen -l` prints it |
+| `key_fingerprint` | string | `SHA256:` and the unpadded base64 of the sha256 of the key that signed the sign-off's commit, as `ssh-keygen -l` prints it |
 | `timestamp` | string | ISO 8601 UTC with `Z`, when the file was written |
 | `shown` | object | what the walk showed the signer. See below |
 | `notes` | array | every note typed, one per hand check walked, in the order walked: `{feature, rule, note}`. An empty answer is recorded as `no note` |
@@ -78,7 +78,7 @@ Every field is REQUIRED, in this order.
 
 | Field | Type | What it holds |
 |---|---|---|
-| `overview` | object | the overview's numbers: `systems`, one `{os, rules, passing, hand_checks}` per operating system the package holds results for, in the order `linux`, `macos`, `windows`; and `audit`, `{strong, weak, spot_checked, out_of_date, not_audited}` as the package counts them, or null where the audit read no rule. The walk prints them as `  The audit: 34 strong, 4 weak, 2 spot-checked.`, a count of zero left out but `strong` |
+| `overview` | object | the overview's numbers: `systems`, one `{os, rules, passing, hand_checks}` per operating system the package holds results for, in the order `linux`, `macos`, `windows`, `passing` counting the rules that pass their tests, a rule checked by hand alone not among them; and `audit`, `{strong, weak, spot_checked, out_of_date, not_audited}` as the package counts them, or null where the audit read no rule. The walk prints them as `  The audit: 34 strong, 4 weak, 2 spot-checked.`, a count of zero left out but `strong` |
 | `runs` | array | the package's `runs`, as the walk's opening lines named them |
 | `hand_checks` | array | every hand check walked, in the order walked: `{feature, rule}` |
 | `audit_list_opened` | bool | whether the signer asked to see the audit's findings |
@@ -103,6 +103,17 @@ the tag on the commit that added the package, while the code has not changed
 since. A signer who already signed gets the tag alone and no second sign-off;
 `purlin:sign --show` then prints `signed/<version> is not written yet: <signer>
 signed <version> at <sha7>. Run purlin:sign to write the tag.`
+
+Once the commit is made, `purlin:sign` reads the key that signed it from the
+commit's own signature. Where that is not the key `user.signingkey` names,
+as when a global `gpg.ssh.program` signs with a key of its own, the commit is
+taken back, the files are left as they were, no tag is written, and
+`purlin:sign` prints `No sign-off: the commit was signed with the key ending
+...<4 characters>, not the key this checkout names, ending ...<4 characters>,
+so it was taken back and no tag was written. A global gpg.ssh.program or
+signing key is the usual cause. Run git config gpg.ssh.program ssh-keygen,
+then purlin:sign again.` and exits 1. The `key_fingerprint` a sign-off records
+is therefore the key on its commit.
 
 ## When a sign-off counts
 
@@ -141,11 +152,21 @@ compared with the signer.
 
 ## Where the status reads `signed`
 
-The status reads `signed <version>` only where `signed/<version>` names a
-commit that holds the package for that version and a sign-off of it counts.
-The newest such tag on `HEAD` or an ancestor of it answers. A tag that does
-not is passed over, with one warning, and the status reads `not signed`
-where no tag is left:
+The status reads `signed <version>` only where a sign-off of that version
+counts, and one of two things holds:
+
+- `signed/<version>` is on `HEAD` or an ancestor of it and names a commit that
+  holds the package for that version.
+- This checkout holds no tag `signed/<version>`, as after a pull that fetched
+  no tag, and `HEAD` holds the version's package. The sign-off is then read
+  at the commit that added the oldest sign-off that counts, and the status
+  adds one line: `signed/<version> is not in this checkout: the sign-off of
+  <version> at <sha7> is read from its files. Run git fetch --tags, or
+  purlin:sign if no one wrote the tag.`
+
+The newest such version answers. A tag that names no such commit is passed
+over, with one warning, and the status reads `not signed` where no version
+is left:
 
 | The tag | The warning |
 |---|---|

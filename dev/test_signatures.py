@@ -18,6 +18,7 @@ What each group holds:
 *the walk*       the run lines, the overview, the audit's findings, the stops
 *the sign-off*   the file, its commit, the tag, a second signer, a tag git
                  could not write
+*the key that signed*  a commit signed with another key than the one named
 *the last note*  what a hand check's stop shows of the sign-off before
 *the agent*      `--show`, `--answers` and `--check`
 """
@@ -497,6 +498,41 @@ class TestWhereItReadsSigned:
             'it is not signed'), warned
 
 
+    # purlin: signatures PROOF-274
+    def test_a_tag_this_checkout_lacks_is_read_from_the_sign_off_files(self):
+        made = noted_by_quinn()
+        try:
+            signed_at = made.head()
+            assert git(made.root, 'tag', '-d', 'signed/0.1.0').returncode == 0
+            assert git(made.root, 'tag', '--list').stdout == ''
+            word, warned = signoff_and_warnings(made)
+            assert word == 'signed 0.1.0 at %s' % signed_at[:7]
+            assert warned == [
+                'signed/0.1.0 is not in this checkout: the sign-off of 0.1.0 '
+                'at %s is read from its files. Run git fetch --tags, or '
+                'purlin:sign if no one wrote the tag.' % signed_at[:7]]
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-275
+    def test_with_no_tag_a_sign_off_that_does_not_count_is_not_signed(self):
+        made = noted_by_quinn()
+        try:
+            git(made.root, 'tag', '-d', 'signed/0.1.0')
+            assert signoff_and_warnings(made)[0].startswith('signed 0.1.0 at ')
+            rel = '.purlin/evidence/package/0.1.0.signoffs/quinn-qa.json'
+            body = read_json(made.root, rel)
+            body['notes'][0]['note'] = 'the tube is blue'
+            write(os.path.join(made.root, *rel.split('/')),
+                  json.dumps(body, indent=2) + '\n')
+            commit_all(made, 'chore: the note edited')
+            assert 'gpgsig' not in git(made.root, 'cat-file', 'commit',
+                                       'HEAD').stdout
+            assert signoff_and_warnings(made)[0] == 'not signed'
+        finally:
+            made.close()
+
+
 # ---------------------------------------------------------------------------
 # The refusals
 # ---------------------------------------------------------------------------
@@ -844,8 +880,8 @@ def nineteen_rules():
 @pytest.fixture(scope='module')
 def nineteen():
     """Dana ran 19 rules' tests on dana-laptop, a Linux machine, at 12:17 UTC
-    on 2026-10-01; 17 rules are audited strong, 1 weak, and the hand check
-    is not audited."""
+    on 2026-10-01; 17 rules are audited strong and 1 weak, and the 19th is
+    checked by hand alone."""
     spec, tests = nineteen_rules()
     made = Project(spec=spec)
     made.edit_test(tests)
@@ -903,8 +939,8 @@ class TestTheWalk:
     def test_the_overview_counts_per_system_and_the_audit(self, nineteen):
         lines = walked(nineteen, [])[1]
         assert lines[2:4] == [
-            '  19 rules on Linux/Unix: 19 pass their tests, 1 has a hand check.',
-            '  The audit: 17 strong, 1 weak, 1 not audited.']
+            '  19 rules on Linux/Unix: 18 pass their tests, 1 has a hand check.',
+            '  The audit: 17 strong, 1 weak.']
 
     # purlin: signatures PROOF-229
     def test_a_weak_rule_and_one_never_audited_add_no_stop(self):
@@ -1256,6 +1292,67 @@ class TestTheSignOff:
                                            '') == ''
 
 
+def signed_with_another_key(made):
+    """Quinn's key is the one `user.signingkey` names, and `gpg.ssh.program`
+    names a program that signs with another key, as a global setting of a
+    password manager does. The walk is answered yes: `(exit, lines, the
+    ending of the key that signed, the ending of Quinn's key)`."""
+    quinns = key(made.root, email=QUINN, name='Quinn', file='quinn')
+    other = os.path.join(made.root, '.git', 'another-key')
+    subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-C',
+                    'another', '-f', other], check=True)
+    owner_only(other)
+    program = os.path.join(made.root, '.git', 'sign-with-another-key')
+    with open(program, 'w', encoding='utf-8', newline='\n') as handle:
+        handle.write('#!/bin/sh\n'
+                     '# Signs what git hands over with another key than the '
+                     'one git names.\n'
+                     'for last; do :; done\n'
+                     'exec ssh-keygen -Y sign -n git -f "%s" "$last"\n'
+                     % other.replace(os.sep, '/'))
+    os.chmod(program, 0o755)
+    git(made.root, 'config', 'gpg.ssh.program', program.replace(os.sep, '/'))
+    code, lines, _asked = walked(made, ['y'])
+    return (code, lines, fingerprint_of(other + '.pub')[-4:],
+            fingerprint_of(quinns)[-4:])
+
+
+class TestTheKeyThatSigned:
+
+    # purlin: signatures PROOF-269
+    def test_a_commit_signed_with_another_key_is_taken_back(self):
+        made = ready(signer=False)
+        try:
+            before = made.head()
+            code, lines, signed_by, named = signed_with_another_key(made)
+            assert signed_by != named
+            assert lines[-1] == (
+                'No sign-off: the commit was signed with the key ending ...%s, '
+                'not the key this checkout names, ending ...%s, so it was '
+                'taken back and no tag was written. A global gpg.ssh.program '
+                'or signing key is the usual cause. Run git config '
+                'gpg.ssh.program ssh-keygen, then purlin:sign again.'
+                % (signed_by, named))
+            assert not [line for line in lines if line.startswith('Signed ')]
+            assert (code, made.head()) == (1, before)
+            assert git(made.root, 'tag', '--list', 'signed/2.1.0').stdout == ''
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-270
+    def test_the_refusal_leaves_no_file_and_nothing_staged(self):
+        made = ready(signer=False)
+        try:
+            assert signed_with_another_key(made)[0] == 1
+            assert not os.path.exists(os.path.join(made.root,
+                                                   *PACKAGE.split('/')))
+            folder = os.path.join(made.root, *SIGNOFFS.split('/'))
+            assert not os.path.isdir(folder) or os.listdir(folder) == []
+            assert git(made.root, 'status', '--porcelain').stdout == ''
+        finally:
+            made.close()
+
+
 QUINN = 'quinn.qa@labconnect.example'
 STOP_HEAD = 'login RULE-2   hand check'
 
@@ -1316,11 +1413,49 @@ class TestTheLastNote:
         made = ready(spec=MANUAL_SPEC, test_file=MANUAL_TEST_FILE)
         try:
             stop = shown_stop(made)
-            assert stop[-2:] == ['Results', '  Linux/Unix: passed on dana-laptop']
+            assert stop[-2:] == [
+                'Results', '  No test runs for this rule: you check it here.']
             assert 'Last note' not in stop
         finally:
             made.close()
 
+    # purlin: signatures PROOF-272
+    def test_a_rule_reworded_since_the_note_says_so_above_it(self):
+        made = noted_by_quinn()
+        try:
+            reworded = MANUAL_SPEC.replace(
+                'RULE-2: Invalid credentials return 401',
+                'RULE-2: A wrong password returns 401')
+            assert reworded != MANUAL_SPEC
+            made.spec(reworded)
+            commit_all(made, 'spec(login): reword RULE-2')
+            manual_results(made)
+            stop = shown_stop(made, '0.2.0')
+            assert stop[stop.index('Last note') + 1:] == [
+                "  The rule's wording changed since this note.",
+                '  noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, '
+                '2 commits since: the tube is red']
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-273
+    def test_a_proof_reworded_since_the_note_says_so_above_it(self):
+        made = noted_by_quinn()
+        try:
+            reworded = MANUAL_SPEC.replace(
+                'POST /login with a bad password',
+                'POST /login with a wrong password')
+            assert reworded != MANUAL_SPEC
+            made.spec(reworded)
+            commit_all(made, 'spec(login): reword PROOF-2')
+            manual_results(made)
+            stop = shown_stop(made, '0.2.0')
+            assert stop[stop.index('Last note') + 1:] == [
+                "  The proof's wording changed since this note.",
+                '  noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, '
+                '2 commits since: the tube is red']
+        finally:
+            made.close()
 
     # purlin: signatures PROOF-259
     def test_a_note_edited_and_not_committed_is_not_shown(self):
@@ -1359,8 +1494,8 @@ class TestTheAgent:
                              '--answers <file>.')
         at = lines.index('Signing 2.1.0 at %s.' % hand_checked.head()[:7])
         assert lines[at + 1:at + 3] == [
-            '  2 rules on Linux/Unix: 2 pass their tests, 1 has a hand check.',
-            '  The audit: 0 strong, 1 weak, 1 not audited.']
+            '  2 rules on Linux/Unix: 1 passes its tests, 1 has a hand check.',
+            '  The audit: 0 strong, 1 weak.']
         assert (code, status(hand_checked.root)) == (0, '')
 
     # purlin: signatures PROOF-228
@@ -1393,19 +1528,40 @@ class TestTheAgent:
              'note': 'the lockout page read 401'}]
 
     # purlin: signatures PROOF-264
-    def test_answers_that_do_not_say_true_sign_nothing(self, hand_checked,
-                                                       capsys):
-        path = os.path.join(hand_checked.root, *ANSWERS.split('/'))
-        write(path, json.dumps({
-            'audit': 'go on',
-            'stops': {'login RULE-2': {'answer': 'note',
-                                       'note': 'the lockout page read 401'}},
-            'sign': 'yes'}))
+    def test_answers_whose_sign_is_true_sign_nothing(self, hand_checked,
+                                                     capsys, monkeypatch):
+        write(os.path.join(hand_checked.root, *ANSWERS.split('/')),
+              json.dumps({
+                  'audit': 'go on',
+                  'stops': {'login RULE-2': {
+                      'answer': 'note', 'note': 'the lockout page read 401'}},
+                  'sign': True}))
+        monkeypatch.chdir(hand_checked.root)
         before = hand_checked.head()
-        code = sign_module.main(['--answers', path, '--project-root',
-                                 hand_checked.root])
+        code = sign_module.main(['--answers', ANSWERS])
         lines = capsys.readouterr().out.splitlines()
-        assert lines[-1] == 'Nothing was signed.'
+        assert lines[-1] == (
+            'Nothing was signed: "sign" in .purlin/runtime/signoff-answers.json '
+            'must hold jane@acme.com, typed by the person signing.')
+        assert (code, hand_checked.head(), status(hand_checked.root)) == (
+            0, before, '')
+
+    # purlin: signatures PROOF-271
+    def test_answers_holding_another_address_sign_nothing(self, hand_checked,
+                                                          capsys, monkeypatch):
+        write(os.path.join(hand_checked.root, *ANSWERS.split('/')),
+              json.dumps({
+                  'audit': 'go on',
+                  'stops': {'login RULE-2': {
+                      'answer': 'note', 'note': 'the lockout page read 401'}},
+                  'sign': 'quinn@acme.com'}))
+        monkeypatch.chdir(hand_checked.root)
+        before = hand_checked.head()
+        code = sign_module.main(['--answers', ANSWERS])
+        lines = capsys.readouterr().out.splitlines()
+        assert lines[-1] == (
+            'Nothing was signed: "sign" in .purlin/runtime/signoff-answers.json '
+            'must hold jane@acme.com, typed by the person signing.')
         assert (code, hand_checked.head(), status(hand_checked.root)) == (
             0, before, '')
 

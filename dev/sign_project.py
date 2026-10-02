@@ -238,12 +238,16 @@ class Project(object):
 
 
 def signing_key(root, email='jane@acme.com'):
-    """A throwaway ssh signing key, configured in this checkout alone."""
+    """A throwaway ssh signing key, configured in this checkout alone.
+
+    `gpg.ssh.program` is set here too, so a program the machine names for
+    every checkout does not sign with a key of its own."""
     key = os.path.join(root, '.git', 'signing-key')
     subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-C', email,
                     '-f', key], check=True)
     for name, value in (('user.email', email), ('user.name', 'Jane'),
                         ('gpg.format', 'ssh'),
+                        ('gpg.ssh.program', 'ssh-keygen'),
                         ('user.signingkey', key + '.pub')):
         git(root, 'config', name, value)
     return key + '.pub'

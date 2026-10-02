@@ -3,11 +3,15 @@
 Every surface states both in these words: the status opens on them, the
 dashboard's first two boxes read them from the payload, and a test run ends on the
 status. `Tests: met` where no work left is of a blocking kind;
-`Sign-off: signed 0.1.0 at a1b2c3d` where the newest `signed/*` tag on HEAD
-or an ancestor of it whose sign-off counts sits on code nothing has changed
-since, else `signed 0.1.0, 4 commits since`, or `not signed` where there is
-no such tag. `signatures.standing` decides whether a tag's sign-off counts; a
-tag written by hand is passed over, with one warning.
+`Sign-off: signed 0.1.0 at a1b2c3d` where the newest version whose sign-off
+counts sits on code nothing has changed since, else
+`signed 0.1.0, 4 commits since`, or `not signed` where there is none. A
+version is read from its `signed/*` tag on HEAD or an ancestor of it, where
+`signatures.standing` decides whether the tag's sign-off counts and a tag
+written by hand is passed over, with one warning. Where this checkout holds
+no tag for a version whose sign-off files HEAD holds, as after a pull that
+fetched no tag, `signatures.standing_by_files` reads the sign-off from those
+files, with one line naming `git fetch --tags`.
 """
 
 import os
@@ -31,6 +35,11 @@ ONE_COMMIT_SINCE = '1 commit since'
 
 TAG_PREFIX = 'signed/'
 
+# A sign-off read from its files: the tag, the version, the sha7 of the commit
+# that added the sign-off.
+TAG_NOT_HERE = ('%s is not in this checkout: the sign-off of %s at %s is read from its '
+                'files. Run git fetch --tags, or purlin:sign if no one wrote the tag.')
+
 
 def tests_fact(payload):
     """`met` when no entry of `left` is of a kind in summary.BLOCKING, else `not met`."""
@@ -41,24 +50,40 @@ def tests_fact(payload):
 
 
 def signoff_fact(project_root):
-    """{'word','version','commit','since','warnings'} for the newest signed/* tag on
-    HEAD or an ancestor of it for which `signatures.standing` holds, numbered versions
-    compared as numbers: SIGNED_AT where package.only_records_between(tag commit, HEAD),
-    else SIGNED_SINCE with the count of commits from the tag to HEAD; word NOT_SIGNED
-    and the rest None where there is none. `warnings` holds one line per tag passed
-    over on the way, newest first: the tag and why it is no sign-off."""
+    """{'word','version','commit','since','warnings'} for the newest version whose
+    sign-off counts, numbered versions compared as numbers. The versions read are
+    those of the signed/* tags on HEAD or an ancestor of it, where
+    `signatures.standing` answers, and those of the `.signoffs` folders HEAD holds
+    with no tag of that name in this checkout, where `signatures.standing_by_files`
+    answers with the commit that added the sign-off. SIGNED_AT where
+    package.only_records_between(that commit, HEAD), else SIGNED_SINCE with the
+    count of commits from it to HEAD; word NOT_SIGNED and the rest None where there
+    is none. `warnings` holds one line per tag passed over on the way, newest
+    first, the tag and why it is no sign-off, and TAG_NOT_HERE where the sign-off
+    is read from its files."""
     from purlin import signatures
     warnings = []
     none = {'word': NOT_SIGNED, 'version': None, 'commit': None, 'since': None,
             'warnings': warnings}
     tags = git_line(project_root, 'tag', '--merged', 'HEAD', '--list', TAG_PREFIX + '*')
-    for name in sorted(tags.split(), key=version_order, reverse=True):
-        version = name[len(TAG_PREFIX):]
-        stands, why = signatures.standing(project_root, version)
-        if not stands:
-            warnings.append(why)
-            continue
-        commit = git_line(project_root, 'rev-list', '-n', '1', name)
+    tagged = {name[len(TAG_PREFIX):] for name in tags.split()}
+    versions = tagged | set(signatures.signed_versions(project_root))
+    for version in sorted(versions, key=version_order, reverse=True):
+        name = TAG_PREFIX + version
+        if version in tagged:
+            stands, why = signatures.standing(project_root, version)
+            if not stands:
+                warnings.append(why)
+                continue
+            commit = git_line(project_root, 'rev-list', '-n', '1', name)
+        else:
+            # No tag on HEAD: the files answer where the checkout holds no
+            # tag of that name at all. A tag on another branch, or files no
+            # sign-off of which counts, leave the version not signed.
+            commit, _why = signatures.standing_by_files(project_root, version)
+            if not commit:
+                continue
+            warnings.append(TAG_NOT_HERE % (name, version, commit[:7]))
         since = commits_since(project_root, commit)
         if records_only_since(project_root, commit):
             word = SIGNED_AT % (version, commit[:7])
@@ -113,7 +138,8 @@ def commits_since(project_root, commit):
 
 
 def version_order(name):
-    """A sort key for a tag name: numbered versions as numbers, after any other name."""
+    """A sort key for a tag name or a version: numbered versions as numbers, after
+    any other name."""
     version = str(name)[len(TAG_PREFIX):] if str(name).startswith(TAG_PREFIX) else str(name)
     parts = re.split(r'[.\-+]', version)
     numbers = []

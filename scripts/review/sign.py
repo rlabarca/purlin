@@ -9,7 +9,7 @@
 Any project may run it whenever it chooses. It reads the evidence committed
 at HEAD, builds the evidence package for the version and walks it with a
 person: who ran the tests, where and when; an overview counting per system
-the rules that pass and the hand checks, and what the audit found; the
+the rules that pass their tests and the hand checks, and what the audit found; the
 audit's findings as a list the signer may open; then one stop per hand check,
 which shows the rule's last note where a sign-off holds one, and where the
 person types what they saw or presses Enter for no note. On yes to
@@ -37,15 +37,22 @@ host, as this checkout last fetched it, holds commits HEAD lacks; the signer
 already signed this package. Then, for the walk and `--answers`, no key to
 sign with. Nothing is fetched and nothing is pushed.
 
+**The key that signed** is read from the sign-off's commit once it is made.
+Where it is not the key `user.signingkey` names, as when a global
+`gpg.ssh.program` signs with a key of its own, the commit is taken back, no
+tag is written, and one line names both keys.
+
 `--show` prints what the walk shows, asks nothing, writes nothing and needs
 no key. `--answers FILE` walks with the answers a JSON file gives, for an
-agent whose shell has no terminal to ask in. `--check FILE` checks a package
+agent whose shell has no terminal to ask in; it signs only where the file's
+`sign` holds the signer's email address. `--check FILE` checks a package
 against its fingerprint. `--version <version>` names the version in place of
 the one the project states.
 
 Exit codes: 0 signed, shown, checked and matching, stopped, or declined; 1
-refused, no key, the package or the commit not written, the tag not written,
-or not matching; 2 the command line was wrong.
+refused, no key, the package or the commit not written, the commit signed
+with another key, the tag not written, or not matching; 2 the command line
+was wrong.
 """
 
 import json
@@ -144,6 +151,18 @@ STOPPED = ('Stopped at %s %s: nothing was signed. After the fix, run purlin:test
            '--commit, then purlin:sign.')
 SIGN_ASK = 'Sign the evidence package for %s as %s? [y/N] '
 NOT_SIGNED = 'Nothing was signed.'
+# The last question as an answers file is asked it, and where its `sign` is
+# not the signer's address: the file, the address.
+SIGN_ASK_TYPED = 'Sign the evidence package for %s as %s? Type that address to sign: '
+NOT_SIGNED_ANSWERS = 'Nothing was signed: "sign" in %s must hold %s, typed by the person signing.'
+# The commit was signed with another key than the one `user.signingkey`
+# names: KEY_ENDING or NO_SSH_KEY, then the ending of the key named.
+WRONG_KEY = ('No sign-off: the commit was signed with %s, not the key this checkout names, '
+             'ending ...%s, so it was taken back and no tag was written. A global '
+             'gpg.ssh.program or signing key is the usual cause. Run git config '
+             'gpg.ssh.program ssh-keygen, then purlin:sign again.')
+KEY_ENDING = 'the key ending ...%s'
+NO_SSH_KEY = 'no SSH key this checkout can read'
 SIGNED_AS = 'Signed %s as %s with the key ending ...%s.'
 TAGGED = 'Tagged %s at %s.'
 SIGNED_PUSH = 'Push the branch and the tag: git push origin %s'
@@ -159,6 +178,11 @@ TIED_TO = '    tied to %s'
 TIED_TO_NONE = '    tied to no test'
 AUDIT_WEAK = 'What the audit found'
 LAST_NOTE = 'Last note'
+NO_TEST_RUNS = '  No test runs for this rule: you check it here.'
+# What was reworded since a hand check's last note, by `hand_notes`' `changed`.
+NOTE_CHANGED = {('rule',): "  The rule's wording changed since this note.",
+                ('proof',): "  The proof's wording changed since this note.",
+                ('rule', 'proof'): "  The rule's and the proof's wording changed since this note."}
 
 # The agent's walk.
 ANSWERS_MISSING = ('No sign-off: %s has no answer in %s. Answer every stop, '
@@ -616,6 +640,12 @@ def _hand_check(rule):
     return any(proof.get('manual') for proof in rule.get('proofs') or ())
 
 
+def _by_hand_alone(rule):
+    """True where the rule's every proof is `@manual`: no test runs for it."""
+    proofs = rule.get('proofs') or ()
+    return bool(proofs) and all(proof.get('manual') for proof in proofs)
+
+
 def _weak(rule):
     """True where the rule's strong cell reads `weak`."""
     strong = (rule.get('statuses') or {}).get('strong') or {}
@@ -663,7 +693,7 @@ def plan(package, notes=None):
             counts = per_system.setdefault(system, {'rules': 0, 'passing': 0,
                                                     'hand_checks': 0})
             counts['rules'] += 1
-            if result.get('result') == 'passed':
+            if result.get('result') == 'passed' and not _by_hand_alone(rule):
                 counts['passing'] += 1
             if _hand_check(rule):
                 counts['hand_checks'] += 1
@@ -742,7 +772,10 @@ def tied_lines(entry, proof_id, manual=False):
 
 def result_lines(entry):
     """One line per system: its words, the word its results read, the machine,
-    and each proof that found nothing to check, with its reason."""
+    and each proof that found nothing to check, with its reason. A rule whose
+    every proof is `@manual` has one line, saying no test runs for it."""
+    if _by_hand_alone(entry):
+        return [NO_TEST_RUNS]
     chosen = _chosen_results(entry)
     lines = []
     for system in _systems(chosen):
@@ -760,7 +793,8 @@ def result_lines(entry):
 def render_stop(stop):
     """One hand check's stop: its head, the rule, each proof with its tests,
     the results on each system, the audit's findings where it found the rule
-    weak, and its last note where a sign-off holds one."""
+    weak, and its last note where a sign-off holds one, under the line saying
+    what was reworded since it."""
     entry = stop['entry']
     lines = [STOP_HEAD % (stop['feature'], stop['rule']),
              'Rule', '  %s' % (entry.get('text') or ''), 'Proof']
@@ -777,6 +811,9 @@ def render_stop(stop):
                      (entry.get('audit') or {}).get('findings') or ())
     if stop.get('last_notes'):
         lines.append(LAST_NOTE)
+        changed = NOTE_CHANGED.get(tuple(stop.get('changed') or ()))
+        if changed:
+            lines.append(changed)
         lines.extend('  %s' % note for note in stop['last_notes'])
     return lines
 
@@ -849,7 +886,10 @@ def walk(project_root, name=None, ask=None, out=None):
     return _walk(project_root, info, ask, out)
 
 
-def _walk(project_root, info, ask, out):
+def _walk(project_root, info, ask, out, answers_path=None):
+    """The walk once nothing refuses. `answers_path` is the answers file an
+    agent's walk reads: the last question then asks for the signer's
+    address, and `ask` answers yes only where the file holds it."""
     shown = plan(info['package'], last_notes(project_root))
     _say(overview_lines(info, shown), out)
     list_opened = False
@@ -872,9 +912,12 @@ def _walk(project_root, info, ask, out):
               file=out)
         return EXIT_OK
     print('', file=out)
-    given = ask('sign', None, SIGN_ASK % (info['version'], info['email']))
+    question = SIGN_ASK if answers_path is None else SIGN_ASK_TYPED
+    given = ask('sign', None, question % (info['version'], info['email']))
     if str(given or '').strip().lower() not in ('y', 'yes'):
-        print(NOT_SIGNED, file=out)
+        print(NOT_SIGNED if answers_path is None
+              else NOT_SIGNED_ANSWERS % (answers_path, info['email']),
+              file=out)
         return EXIT_OK
     record = {'overview': shown['overview'],
               'runs': list(info['package'].get('runs') or ()),
@@ -997,7 +1040,16 @@ def _sign(project_root, info, record, notes, out):
         _take_back(project_root, kept)
         print(NOT_MADE % why, file=out)
         return EXIT_NOTHING
-    key = signatures_module.key_fingerprint(project_root) or ''
+    named = signatures_module.key_fingerprint(project_root) or ''
+    key = signatures_module.signed_with(project_root, sha)
+    if key != named:
+        # Another key signed than the one the sign-off file records: the
+        # branch goes back to where it stood and the files with it.
+        _git(project_root, 'reset', '-q', '--soft', info['head'])
+        _take_back(project_root, kept)
+        print(WRONG_KEY % (KEY_ENDING % key[-4:] if key else NO_SSH_KEY,
+                           named[-4:]), file=out)
+        return EXIT_NOTHING
     print(SIGNED_AS % (version, email, key[-4:]), file=out)
     tag = info['tag']
     code = EXIT_OK
@@ -1071,7 +1123,9 @@ def answers_ask(answers, out, email):
     """An `ask` that reads the answers file and prints each answer after its question.
 
     The last question is answered yes only where `sign` is a string equal to
-    `email`, the signer's address, case and outer spaces set aside."""
+    `email`, the signer's address, case and outer spaces set aside. What is
+    printed after that question is what the file holds, as JSON writes it
+    where it is no string."""
     signer = str(email or '').strip().lower()
     typed = answers.get('sign')
     signs = (isinstance(typed, str) and bool(signer)
@@ -1089,6 +1143,10 @@ def answers_ask(answers, out, email):
                      else str(one.get('note') or ''))
         else:
             given = 'y' if signs else 'n'
+            held = ('' if typed is None else typed if isinstance(typed, str)
+                    else json.dumps(typed))
+            print('%s%s' % (prompt, held), file=out)
+            return given
         print('%s%s' % (prompt, given), file=out)
         return given
     return ask
@@ -1115,7 +1173,8 @@ def walk_with_answers(project_root, path, name=None, out=None):
         print(ANSWERS_MISSING % (missing, path, path), file=out)
         return EXIT_NOTHING
     return _walk(project_root, info,
-                 answers_ask(answers, out, info['email']), out)
+                 answers_ask(answers, out, info['email']), out,
+                 answers_path=path)
 
 
 def check(path, out=None):
