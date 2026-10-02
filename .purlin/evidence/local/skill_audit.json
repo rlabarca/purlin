@@ -2,14 +2,14 @@
   "feature": "skill_audit",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T11:16:25Z",
-      "commit": "31eaef7566316f2b4e75da4efe0528cf0486e3df",
+      "at": "2026-10-02T15:29:16Z",
+      "commit": "0cf0c983cdc2f5212a25a9b14a622756bedb00e6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "6b16b59c1e1ccaa086326067517a34356b5b0ca108a5d354afb0b864bf46bb8f",
-        "spec": "636b37d55b61f2b8192d6779dc6d0136d340218e25fbb219a955324baae4c749",
-        "tests": "a281e40364ae2e6a5505e602d67cde623b3e4607349908d9394b49aac805730e"
+        "code": "f8ed796c03c7592124d0f9b8f6d9abbd15926953a85846377608dc0bde39f44c",
+        "spec": "f6799ff1e647b93c86cf38fbb8055f83955cb7efcdcc324de51ad6d21cbbcd8e",
+        "tests": "6ad3a16f377a0f46d0b22ff8893b501e04ec6332a43a864e7717d1344e4a148f"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -19,7 +19,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-29",
-          "test": "dev/test_skill_audit.py::test_a_reader_finds_each_command_and_path_named"
+          "test": "dev/test_skill_audit.py::test_a_reader_finds_each_command_and_path_named_the_settle_included"
         },
         {
           "env": null,
@@ -28,10 +28,19 @@
           "result": "pass",
           "rule": "RULE-29",
           "test": "dev/test_skill_audit.py::test_a_copy_without_the_criteria_is_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-60",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_skill_audit.py::test_the_skill_and_the_criteria_hold_the_two_lines_a_settle_prints"
         }
       ],
       "rules": {
-        "RULE-29": "passed"
+        "RULE-29": "passed",
+        "RULE-30": "passed"
       },
       "runner": "rich-labarca"
     }

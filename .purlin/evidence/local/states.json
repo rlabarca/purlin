@@ -2,14 +2,14 @@
   "feature": "states",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T11:16:25Z",
-      "commit": "31eaef7566316f2b4e75da4efe0528cf0486e3df",
+      "at": "2026-10-02T15:29:17Z",
+      "commit": "0cf0c983cdc2f5212a25a9b14a622756bedb00e6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "33871bba6e2fa820511620d0706358bff06e19214cb6e48b2b9db18728571e91",
-        "spec": "ac5d3d89c9888c92ee56d3df07f67c1c87c66044d4656845eccd1c9c1803b03b",
-        "tests": "aac97e54fbfb036f01720ba8e3fe5e88de1c23e4af0c9fbd48a2df11d1ab7b67"
+        "code": "008db8f00e02371e2abcefb6555ecb46aaf927ebf5df55af9231698f37392ad2",
+        "spec": "dea65b232c90c49a697a2752300cc4b5e63168a05966f6f5cb655b0f5360101b",
+        "tests": "8e857323e875223a2ad28f88d3544236a7816ca7cfc465f150d52f52f027f60b"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -511,6 +511,38 @@
         },
         {
           "env": null,
+          "id": "PROOF-300",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-128",
+          "test": "dev/test_states.py::TestAnchors::test_an_anchor_whose_rules_are_all_spot_checked_reads_spot_checked"
+        },
+        {
+          "env": null,
+          "id": "PROOF-301",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-128",
+          "test": "dev/test_states.py::TestAnchors::test_an_anchor_with_one_weak_rule_reads_weak"
+        },
+        {
+          "env": null,
+          "id": "PROOF-302",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-128",
+          "test": "dev/test_states.py::TestAnchors::test_an_anchor_with_an_entry_out_of_date_reads_out_of_date"
+        },
+        {
+          "env": null,
+          "id": "PROOF-303",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-128",
+          "test": "dev/test_states.py::TestAnchors::test_an_anchor_with_a_rule_no_audit_read_has_an_empty_strong_cell"
+        },
+        {
+          "env": null,
           "id": "PROOF-58",
           "manual": false,
           "result": "pass",
@@ -747,6 +779,7 @@
         "RULE-125": "passed",
         "RULE-126": "passed",
         "RULE-127": "passed",
+        "RULE-128": "passed",
         "RULE-14": "passed",
         "RULE-16": "passed",
         "RULE-23": "passed",

@@ -1000,14 +1000,14 @@
   "feature": "package",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T10:57:10Z",
-      "commit": "b284a2d266fc3221fc78cc1d2e6bea69308540c6",
+      "at": "2026-10-02T15:29:15Z",
+      "commit": "0cf0c983cdc2f5212a25a9b14a622756bedb00e6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "spec": "bea6552952e06b467f48d4fd87275278f5b8b78a2bae61fe08c5656e4716b3e0",
-        "tests": "21d58e240af265c799aacb387ca4105a60ecd9c540b03a571e457ab604af95b4"
+        "spec": "d88c90152bbce4728cfe87b638e598ed14d1f40886159ba486177994e6b7968b",
+        "tests": "41d8fa8f9411d8fd3d0e948780dc0f064596919c488ec0a144265ae5fa8ac43d"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -1209,7 +1209,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-23",
-          "test": "dev/test_export.py::TestTheFile::test_a_package_folder_that_is_a_file_is_named_and_nothing_made"
+          "test": "dev/test_export.py::TestTheFile::test_a_package_folder_that_is_a_file_ends_on_one_line_no_commit_no_tag"
         },
         {
           "env": null,

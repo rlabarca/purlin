@@ -2,14 +2,14 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T13:46:27Z",
-      "commit": "389721c13db90cb4e308cc06281122e43e7197da",
+      "at": "2026-10-02T15:29:16Z",
+      "commit": "0cf0c983cdc2f5212a25a9b14a622756bedb00e6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "0536a56d78e394ffc99d392d3f310df147f59f0db8077ed4e40f995ef461673f",
-        "spec": "cbd24465722fdc50a25dab8848e9b93d77ed78aed70b85ec6073c1ed7ead3ee0",
-        "tests": "3f792daab20a4bc0677ebf418745b86679a55f0d02bd877fd822a175c79c58f1"
+        "code": "6a0f58211eaf1a8229da830823bd7ae08b075cc423e2d0543e02faff0e976c7f",
+        "spec": "6a32eb724f8cdb0069d0025c6615aa44ec0c93ffae0effcc0f16591960b5da9d",
+        "tests": "c5ed48894be045d4f07e295aecf9407be8867ca9fb317750b539313aed549454"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -116,6 +116,30 @@
           "result": "pass",
           "rule": "RULE-8",
           "test": "dev/test_purlin_report.py::test_the_passing_box_carries_the_total"
+        },
+        {
+          "env": null,
+          "id": "PROOF-254",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_purlin_report.py::test_the_strong_box_is_complete_beside_a_spot_checked_anchor"
+        },
+        {
+          "env": null,
+          "id": "PROOF-255",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_purlin_report.py::test_the_strong_box_waits_on_a_weak_rule_that_is_not_an_anchors"
+        },
+        {
+          "env": null,
+          "id": "PROOF-256",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_purlin_report.py::test_no_strong_box_where_the_audit_read_an_anchor_alone"
         },
         {
           "env": null,
@@ -652,6 +676,46 @@
           "result": "pass",
           "rule": "RULE-79",
           "test": "dev/test_purlin_report_board_layout.py::test_the_theme_button_keeps_the_top_right_and_the_boxes_move_whole"
+        },
+        {
+          "env": null,
+          "id": "PROOF-249",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-80",
+          "test": "dev/test_purlin_report.py::test_an_anchor_whose_rule_is_spot_checked_reads_the_word_alone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-250",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-80",
+          "test": "dev/test_purlin_report.py::test_an_anchor_with_a_weak_rule_reads_weak_in_the_warn_tone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-251",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-80",
+          "test": "dev/test_purlin_report.py::test_an_anchor_whose_entry_is_out_of_date_reads_out_of_date"
+        },
+        {
+          "env": null,
+          "id": "PROOF-252",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-80",
+          "test": "dev/test_purlin_report.py::test_an_anchor_no_audit_read_has_an_empty_strong_cell"
+        },
+        {
+          "env": null,
+          "id": "PROOF-253",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-80",
+          "test": "dev/test_purlin_report.py::test_an_anchors_strong_hover_says_first_that_no_bug_is_planted"
         }
       ],
       "rules": {
@@ -683,6 +747,7 @@
         "RULE-78": "passed",
         "RULE-79": "passed",
         "RULE-8": "passed",
+        "RULE-80": "passed",
         "RULE-9": "passed"
       },
       "runner": "rich-labarca"

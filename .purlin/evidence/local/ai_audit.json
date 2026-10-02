@@ -1285,14 +1285,14 @@
   "feature": "ai_audit",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T10:53:27Z",
-      "commit": "349dad5e65d509da6a9a47992409dade3231c66a",
+      "at": "2026-10-02T15:29:15Z",
+      "commit": "0cf0c983cdc2f5212a25a9b14a622756bedb00e6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "d1f7003ebe30f80d56761824e38471ed113aaccf8954fa6a858197384df84682",
-        "spec": "79bdcd4ae92b95ab3385fd15813e81e665925dc6cff36a2af50e3af12af24c3d",
-        "tests": "f1f4af7dc45230a4af26fbf066716499ea9ec2f99340458f41fdbba6c1a155ea"
+        "code": "730757d67cbd2f41b50a4865243413b83ca494ab5bd6c93378c7dbbaf66785c2",
+        "spec": "2e56b9398dd9d147e3bdb4584f6a7e1203191e59f16c79509ba5d214be9f94f6",
+        "tests": "4128d134868d04932c1129b69f5d7d328e4ae541bcfb829dddc2059d9f51ca25"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -1326,7 +1326,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-1",
-          "test": "dev/test_ai_audit.py::TestWhichRulesAreRead::test_a_rule_the_model_was_not_reached_for_is_read_again"
+          "test": "dev/test_ai_audit.py::TestWhichRulesAreRead::test_a_rule_the_model_was_not_reached_for_is_read_again_with_one_call"
+        },
+        {
+          "env": null,
+          "id": "PROOF-160",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_ai_audit.py::TestWhichRulesAreRead::test_a_rule_whose_call_timed_out_is_read_again_with_one_call"
         },
         {
           "env": null,
@@ -1530,6 +1538,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-159",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_ai_audit.py::TestTheVerdict::test_an_audit_of_an_anchor_alone_ends_on_what_it_found"
+        },
+        {
+          "env": null,
           "id": "PROOF-100",
           "manual": false,
           "result": "pass",
@@ -1614,7 +1630,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-40",
-          "test": "dev/test_ai_audit_tests_named.py::TestEachTestShowsItsOwnSource::test_two_passing_tests_of_one_proof_each_show_their_own_source"
+          "test": "dev/test_ai_audit_tests_named.py::TestEachTestShowsItsOwnSource::test_two_tests_of_one_proof_each_show_their_file_and_own_source"
         },
         {
           "env": null,
@@ -1823,6 +1839,174 @@
           "result": "pass",
           "rule": "RULE-51",
           "test": "dev/test_ai_audit.py::TestTheVerdict::test_a_kept_entry_with_no_aim_or_case_is_written_back_with_both"
+        },
+        {
+          "env": null,
+          "id": "PROOF-138",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-52",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_settle_without_audit_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-139",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-52",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_settle_without_a_feature_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-140",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-52",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_settle_with_two_features_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-141",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-52",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_settle_naming_a_rule_the_spec_does_not_have_exits_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-142",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-53",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_only_the_rules_named_are_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-143",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-54",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_a_test_that_now_catches_its_kept_bug_makes_the_rule_strong"
+        },
+        {
+          "env": null,
+          "id": "PROOF-144",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-54",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_the_audit_says_the_test_now_catches_the_bug"
+        },
+        {
+          "env": null,
+          "id": "PROOF-145",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-55",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_a_wrong_finding_is_replaced_by_one_new_bug"
+        },
+        {
+          "env": null,
+          "id": "PROOF-146",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-55",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_the_audit_says_the_bug_did_not_break_what_the_proof_says"
+        },
+        {
+          "env": null,
+          "id": "PROOF-147",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-56",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_a_second_survivor_is_not_kept_and_the_entry_says_why"
+        },
+        {
+          "env": null,
+          "id": "PROOF-148",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-56",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_a_later_audit_plants_nothing_for_that_proof"
+        },
+        {
+          "env": null,
+          "id": "PROOF-158",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-56",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_a_second_survivor_leaves_the_rule_spot_checked_and_says_why"
+        },
+        {
+          "env": null,
+          "id": "PROOF-149",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-57",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_a_dropped_bug_is_nowhere_in_the_evidence"
+        },
+        {
+          "env": null,
+          "id": "PROOF-150",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-58",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_no_new_bug_named_is_said_as_in_any_audit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-151",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-58",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_a_model_not_reached_after_a_drop_is_said_as_in_any_audit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-152",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-59",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_a_test_that_does_not_run_with_the_kept_bug_reads_not_run"
+        },
+        {
+          "env": null,
+          "id": "PROOF-153",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-60",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_a_kept_bug_that_can_no_longer_be_planted_is_asked_for_anew"
+        },
+        {
+          "env": null,
+          "id": "PROOF-154",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-61",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_a_proof_with_no_surviving_bug_keeps_its_entry"
+        },
+        {
+          "env": null,
+          "id": "PROOF-155",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-62",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_a_rule_with_no_surviving_bug_has_nothing_to_settle"
+        },
+        {
+          "env": null,
+          "id": "PROOF-156",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-63",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_a_rule_whose_test_fails_is_not_settled"
+        },
+        {
+          "env": null,
+          "id": "PROOF-157",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-64",
+          "test": "dev/test_ai_audit.py::TestSettlingAFinding::test_an_audit_without_settle_replays_nothing"
         }
       ],
       "rules": {
@@ -1849,7 +2033,20 @@
         "RULE-49": "passed",
         "RULE-50": "passed",
         "RULE-51": "passed",
-        "RULE-6": "passed"
+        "RULE-52": "passed",
+        "RULE-53": "passed",
+        "RULE-54": "passed",
+        "RULE-55": "passed",
+        "RULE-56": "passed",
+        "RULE-57": "passed",
+        "RULE-58": "passed",
+        "RULE-59": "passed",
+        "RULE-6": "passed",
+        "RULE-60": "passed",
+        "RULE-61": "passed",
+        "RULE-62": "passed",
+        "RULE-63": "passed",
+        "RULE-64": "passed"
       },
       "runner": "rich-labarca"
     }

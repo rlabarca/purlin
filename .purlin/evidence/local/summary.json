@@ -2,14 +2,14 @@
   "feature": "summary",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T11:16:25Z",
-      "commit": "31eaef7566316f2b4e75da4efe0528cf0486e3df",
+      "at": "2026-10-02T15:29:17Z",
+      "commit": "0cf0c983cdc2f5212a25a9b14a622756bedb00e6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "ce8b2f9f7356dcd0ddd0e069fb3ae355e0e852d918b8d9cbf84e9d632b52c642",
-        "spec": "38356e68dc4a4347e8fc4ece66621eacad75314aec3214a13eb16b1f6a966564",
-        "tests": "ba593fdc5a398a757e7f6425ace04db0b4d9313dece4bae9b7b03d6f769ff9d4"
+        "code": "177212d602ca84e8032f03b07a1e1fbc761971e243cb2faf0d78afa8ce78de11",
+        "spec": "1a48bb5810a539c62e54c6d52ee2d6cca73a7cf946bf15fd2abdf2db500e2c71",
+        "tests": "3fc668a02212a7e5ac193839954c9dc44b7e22bce336001de19911723f864b11"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -84,6 +84,30 @@
           "result": "pass",
           "rule": "RULE-22",
           "test": "dev/test_summary.py::TestAHandCheckInTheSentence::test_nine_strong_rules_and_a_hand_check_read_nine_of_nine_strong"
+        },
+        {
+          "env": null,
+          "id": "PROOF-61",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-26",
+          "test": "dev/test_summary.py::TestTheSentence::test_an_anchors_rules_are_left_out_of_the_share_and_kept_in_the_counts"
+        },
+        {
+          "env": null,
+          "id": "PROOF-62",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-26",
+          "test": "dev/test_summary.py::TestTheSentence::test_a_project_reaches_100_per_cent_beside_a_spot_checked_anchor"
+        },
+        {
+          "env": null,
+          "id": "PROOF-63",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-26",
+          "test": "dev/test_summary.py::TestTheSentence::test_an_audit_that_read_an_anchor_alone_lists_what_it_found"
         },
         {
           "env": null,
@@ -199,6 +223,7 @@
         "RULE-23": "passed",
         "RULE-24": "passed",
         "RULE-25": "passed",
+        "RULE-26": "passed",
         "RULE-8": "passed"
       },
       "runner": "rich-labarca"

@@ -2,8 +2,8 @@
   "feature": "drift",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T11:16:24Z",
-      "commit": "31eaef7566316f2b4e75da4efe0528cf0486e3df",
+      "at": "2026-10-02T15:29:15Z",
+      "commit": "0cf0c983cdc2f5212a25a9b14a622756bedb00e6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {

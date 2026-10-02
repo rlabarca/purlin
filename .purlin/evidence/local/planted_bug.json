@@ -1050,14 +1050,14 @@
   "feature": "planted_bug",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T10:51:59Z",
-      "commit": "8919cabab657da2b3eabf6fa5ad3236049f0dc4f",
+      "at": "2026-10-02T15:29:15Z",
+      "commit": "0cf0c983cdc2f5212a25a9b14a622756bedb00e6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "7b15ba3edde8df8b33585e82a92fc6d4ef63c782de67de0a8f0cec79261b07dd",
-        "spec": "3810986439b8d5745b98ea821723dd86030c0a80eeaeb3dcb36d1fb2baa00b24",
-        "tests": "430de40526cb57a5ff543de4726cfbdefbad32b4f77ce2dd185a5df08fb9f77e"
+        "code": "0ca1dfd0dbae367f99d6314875996d386888d20634ae49a0404d112392484749",
+        "spec": "cbf1246fdeedc85986d35ace9e056608dcafb34923533eace7ea6651b0a3e9e2",
+        "tests": "ae2427af0cf13ca2900f384082b8405a0824ee580abf267b181ca405568844fd"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -1444,6 +1444,70 @@
           "result": "pass",
           "rule": "RULE-26",
           "test": "dev/test_planted_bug.py::test_another_proofs_test_in_the_same_file_is_not_started"
+        },
+        {
+          "env": null,
+          "id": "PROOF-51",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_planted_bug.py::test_a_no_break_reason_in_the_modules_own_words_is_the_models"
+        },
+        {
+          "env": null,
+          "id": "PROOF-52",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-27",
+          "test": "dev/test_planted_bug.py::test_a_kept_no_break_reason_is_still_the_models_when_read_again"
+        },
+        {
+          "env": null,
+          "id": "PROOF-53",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-28",
+          "test": "dev/test_planted_bug.py::test_a_case_wrapped_over_a_second_line_is_read_to_its_end"
+        },
+        {
+          "env": null,
+          "id": "PROOF-54",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-28",
+          "test": "dev/test_planted_bug.py::test_an_aim_line_after_the_case_is_no_part_of_the_case"
+        },
+        {
+          "env": null,
+          "id": "PROOF-55",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-29",
+          "test": "dev/test_planted_bug.py::test_a_case_line_between_file_and_before_is_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-56",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_planted_bug.py::test_a_change_to_a_line_opening_hash_bang_is_planted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-57",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_planted_bug.py::test_a_change_to_a_go_directive_line_is_planted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-58",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_planted_bug.py::test_a_typescript_directive_line_added_is_planted"
         }
       ],
       "rules": {
@@ -1465,7 +1529,11 @@
         "RULE-24": "passed",
         "RULE-25": "passed",
         "RULE-26": "passed",
+        "RULE-27": "passed",
+        "RULE-28": "passed",
+        "RULE-29": "passed",
         "RULE-3": "passed",
+        "RULE-30": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",
         "RULE-7": "passed",

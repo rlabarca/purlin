@@ -1551,14 +1551,14 @@
   "feature": "signatures",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T11:03:49Z",
-      "commit": "dc74593b108a5df02377e89bfa2f8ddbc4a6cbfa",
+      "at": "2026-10-02T15:29:16Z",
+      "commit": "0cf0c983cdc2f5212a25a9b14a622756bedb00e6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "7a4ea88825f933977c848ec0d9b77f200636f43c6c39fc4298598dc97fe77561",
-        "spec": "005628eeab16043514457735af9b39a2e599a4a1ed098453100c9fc95184c41e",
-        "tests": "f6a74bf7ff9e96ead5ab647db075cf621b80b28a79c4a83933affd1de26697eb"
+        "spec": "0afffbe53e225843093215c93a7b07dd8c2af939c3a3024fba4cbc8f53b1873b",
+        "tests": "1e4542e102dca5e4d2f1c766511ba8ce5753c5d0a7e1967fd78165dc3780f312"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -1776,7 +1776,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-110",
-          "test": "dev/test_signatures.py::TestTheAgent::test_show_needs_no_key"
+          "test": "dev/test_signatures.py::TestTheAgent::test_show_with_no_key_prints_the_overview_after_the_signing_line"
         },
         {
           "env": null,
@@ -1864,7 +1864,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-121",
-          "test": "dev/test_signatures.py::TestTheSignOff::test_it_fetches_nothing_and_pushes_nothing"
+          "test": "dev/test_signatures.py::TestTheSignOff::test_it_tags_the_sign_off_commit_and_fetches_and_pushes_nothing"
         },
         {
           "env": null,
@@ -2136,7 +2136,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-132",
-          "test": "dev/test_signatures.py::TestTheRefusals::test_a_spec_that_holds_a_number_twice_is_refused"
+          "test": "dev/test_signatures.py::TestTheRefusals::test_a_spec_that_holds_a_number_twice_is_refused_in_one_whole_line"
         },
         {
           "env": null,

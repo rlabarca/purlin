@@ -2,14 +2,14 @@
   "feature": "skill_build",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T11:16:25Z",
-      "commit": "31eaef7566316f2b4e75da4efe0528cf0486e3df",
+      "at": "2026-10-02T15:29:16Z",
+      "commit": "0cf0c983cdc2f5212a25a9b14a622756bedb00e6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "e70c39cabc19dcd906e3d5256669c2a98d9d072002322578bd3323a21756968b",
-        "spec": "1ac833138702c218fca898f3542270e638df5b950840a1718fa5c4ea281da2e0",
-        "tests": "45b4d19c203030062eb9e2adcce5f3fc04fa8731b81a817899710f038328ddb4"
+        "code": "addc2c87cc65782766517ae1314e870faaffbdc33f48300d9c81a9d8ae0b33e5",
+        "spec": "986f667b815b9248ac7a26f879a2f5c5a1dabac0b17c4a9ae79be37db21b4299",
+        "tests": "d37f5431492594c9394fb738e00edd510b134a9e7ff42aa05f8b9cc8d323f5ca"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -19,7 +19,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-21",
-          "test": "dev/test_skill_build.py::test_the_build_skill_holds_each_command_and_file"
+          "test": "dev/test_skill_build.py::test_the_build_skill_holds_each_command_and_file_the_settle_included"
         }
       ],
       "rules": {

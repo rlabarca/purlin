@@ -446,14 +446,14 @@
   "feature": "plain_checks",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T11:16:24Z",
-      "commit": "31eaef7566316f2b4e75da4efe0528cf0486e3df",
+      "at": "2026-10-02T15:29:15Z",
+      "commit": "0cf0c983cdc2f5212a25a9b14a622756bedb00e6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "2f5b968b63b2629509730610210f661096fc26ca3f01214be0f39956875ecc5c",
         "spec": "a55d018259fb6b1a97c1d9fbfeb4b35a3f5ad38cfb05a1f8da43048e2b70c08d",
-        "tests": "b0f58a172cda91415575a8f73bb238e6fe8d835559322064d6162552ecb1de46"
+        "tests": "89f1c23755609b40d79055477536e71b58ce41e72969c02845a3b8e640425b91"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [

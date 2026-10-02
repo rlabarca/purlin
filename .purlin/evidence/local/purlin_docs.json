@@ -2,14 +2,14 @@
   "feature": "purlin_docs",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T11:16:24Z",
-      "commit": "31eaef7566316f2b4e75da4efe0528cf0486e3df",
+      "at": "2026-10-02T15:29:15Z",
+      "commit": "0cf0c983cdc2f5212a25a9b14a622756bedb00e6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "1fce7580379de7f491a7e0dea19f46210c332bbb9bc0173517d0ee6b3cbc02f4",
-        "spec": "9f6515493cb7e4b5b6c042f77180f7a99864a7737416f2303ba0d22e722b541a",
-        "tests": "1d332582f459507e674312e85185fee6191e76d1646f9ed3ffed8eaeec76b7c4"
+        "code": "d1a08f59ed8ce0e7d1e7701cf0d6f7671f6ad8b5026a037ba565a101903065db",
+        "spec": "44db4b1204d44b6d51ddf0a62f4a1dea45d02b94c831159db1318739a14df752",
+        "tests": "f23b80ecb727555775f958d808ff2387c44beecaf7d044542ef27ad746b8e8d3"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -44,12 +44,21 @@
           "result": "pass",
           "rule": "RULE-16",
           "test": "dev/test_purlin_docs.py::test_one_paragraph_of_working_together_names_a_worktree"
+        },
+        {
+          "env": null,
+          "id": "PROOF-25",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_purlin_docs.py::test_the_audit_page_says_what_to_do_with_a_finding_after_how_it_works"
         }
       ],
       "rules": {
         "RULE-12": "passed",
         "RULE-15": "passed",
-        "RULE-16": "passed"
+        "RULE-16": "passed",
+        "RULE-17": "passed"
       },
       "runner": "rich-labarca"
     }
