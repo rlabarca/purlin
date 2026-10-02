@@ -166,12 +166,13 @@ function statStrip() {
       missing.map(function (pair) { return pair[0] + DOT + pair[1]; })));
   }
   var passing = (summary.steps || {}).passed || 0;
-  boxes.push(box(PASSING, passing, passing === total ? 'pass' : 'warn',
+  var byHand = (summary.steps || {}).by_hand || 0;
+  boxes.push(box(PASSING, passing, passing + byHand === total ? 'pass' : 'warn',
                  platformLines(project),
                  total + (total === 1 ? ' rule total' : ' rules total')));
   if (audited()) {
     var strong = (summary.audit || {}).strong || 0;
-    boxes.push(box(STRONG, strong, strong === total ? 'pass' : 'warn',
+    boxes.push(box(STRONG, strong, strong === auditTotal() ? 'pass' : 'warn',
                    auditLines(project), null));
   }
   return '<div class="strip"><div class="tiles">' + boxes.join('')
@@ -225,23 +226,29 @@ function testsCell(feature) {
     var word = cellWord(rule, 'passed');
     found[word] = (found[word] || 0) + 1;
   });
+  var byHand = found['checked at sign-off'] || 0;
   return '<span' + hover(platformLines(feature)) + '>'
-    + counts([share(found.passed || 0, rules.length),
+    + counts([share(found.passed || 0, rules.length, byHand),
+      [byHand, WORDS.by_hand, 'neutral'],
       [found.partial || 0, WORDS.partial, 'warn'],
       [found.failed || 0, WORDS.failing, 'fail']]) + '</span>';
 }
-function share(count, total) {
+function share(count, total, aside) {
   return [count + ' ' + WORDS.of + ' ' + total, '',
-          total && count === total ? 'pass' : count ? 'warn' : 'idle'];
+          total && count + (aside || 0) === total ? 'pass'
+            : count ? 'warn' : 'idle'];
 }
 function strongCell(feature) {
-  var rules = feature.rules || [];
-  if (!rules.length) { return ''; }
-  var strong = rules.filter(function (rule) {
+  var words = AUDIT_WORDS.map(function (pair) { return pair[1]; });
+  var read = (feature.rules || []).filter(function (rule) {
+    return words.indexOf(cellWord(rule, 'strong')) !== -1;
+  });
+  if (!read.length) { return ''; }
+  var strong = read.filter(function (rule) {
     return cellWord(rule, 'strong') === 'strong';
   }).length;
   return '<span' + hover(auditLines(feature)) + '>'
-    + counts([share(strong, rules.length)]) + '</span>';
+    + counts([share(strong, read.length)]) + '</span>';
 }
 function featureRow(feature, columns) {
   var rollup = feature.rollup || {};
@@ -515,7 +522,7 @@ function renderRule() {
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null,
             features: {}, groups: {}};
-var SCHEMA = 15;
+var SCHEMA = 16;
 var TESTS = 'Tests';
 var SIGNOFF = 'Sign-off';
 var MET = 'met';
@@ -532,9 +539,9 @@ var STRONG = 'Strong';
 var NO_PROOF = 'No proof';
 var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong'];
 var DOT = ' \u00b7 ';
-var WORDS = {of: 'of', no_test: 'no test', partial: 'partial',
-             failing: 'failing', passed: 'passed', failed: 'failed',
-             not_run: 'not run'};
+var WORDS = {of: 'of', no_test: 'no test', by_hand: 'by hand',
+             partial: 'partial', failing: 'failing', passed: 'passed',
+             failed: 'failed', not_run: 'not run'};
 var CELL_TONES = {'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
   'out of date': 'warn', 'strong': 'pass', 'weak': 'warn',
@@ -780,14 +787,19 @@ function factBox(label, word, hue, lines) {
     + '<span class="fact-l">' + esc(label) + '</span><b>' + esc(word)
     + '</b></span>';
 }
+function auditTotal() {
+  var found = ((DATA && DATA.summary) || {}).audit || {};
+  return AUDIT_WORDS.reduce(function (sum, pair) {
+    return sum + (found[pair[0]] || 0);
+  }, 0);
+}
 function auditBox() {
   if (!audited()) { return factBox(AUDIT, NOT_AUDITED, 'neutral'); }
   var found = ((DATA && DATA.summary) || {}).audit || {};
-  var total = 0;
+  var total = auditTotal();
   var lines = [];
   AUDIT_WORDS.forEach(function (pair) {
     var count = found[pair[0]] || 0;
-    total += count;
     if (pair[0] === 'strong' || count) { lines.push(count + ' ' + pair[1]); }
   });
   var newest = '';
