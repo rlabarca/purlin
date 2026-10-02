@@ -6,15 +6,15 @@ gradient, no request to anything outside the file. The second opens
 it in a headless browser over `file://` with a fixture payload beside it, one
 fixture per process, and reads what a person would see.
 
-The samples under `dev/fixtures/report/` are payloads at schema 15, written on
+The samples under `dev/fixtures/report/` are payloads at schema 16, written on
 the branch `main` at the commit `a1b2c3d` and stamped `2026-10-01T10:42:13Z`:
 solo, which no audit has read and no one has signed, with one rule failing
 its tests; team, with an audit, one spec to repair, which writes a proof
 number twice, and one spec whose scope names a file not written yet;
 regulated, signed as `0.1.0` four commits ago, with a rule whose audit found
 a gap and a planted bug its test missed, a rule no audit has run on, a hand
-check, a rule that passed on one system and failed on another, and a rule of
-a remote anchor with no test.
+check no sign-off has noted, a rule that passed on one system and failed on
+another, and a rule of a remote anchor with no test.
 
     python3 -m pytest dev/test_purlin_report.py -q
 """
@@ -449,18 +449,55 @@ RESOLVE_TOKEN = """(name) => {
 # purlin: purlin_report PROOF-8
 def test_a_step_box_counts_the_rules_that_reached_it(browser, tmp_path):
     payload = payload_named('regulated')
-    assert payload['summary']['steps'] == {'passed': 8}
+    assert payload['summary']['steps'] == {'passed': 7, 'by_hand': 1}
     assert payload['summary']['audit']['strong'] == 3
     page = open_board(browser, tmp_path, payload)
     found = boxes(page)
     assert [(label, count) for label, count, _ in found] == [
-        ('No proof', '0'), ('Passing', '8'), ('Strong', '3')], found
+        ('No proof', '0'), ('Passing', '7'), ('Strong', '3')], found
     assert page.eval_on_selector_all(
         '.tile-l', 'els => els.map(e => getComputedStyle(e).textTransform)'
     ) == ['uppercase'] * 4
     warn = page.evaluate(RESOLVE_TOKEN, '--state-warn')
     assert [colour for _, _, colour in found[1:]] == [warn] * 2, found
     page.close()
+
+
+def every_tested_rule_passing(payload):
+    """The regulated sample with every rule but invoice `RULE-3`, the hand
+    check no sign-off has noted, given a passing test, as the payload
+    carries it: the passed cell, the bucket, the kind of work left, and the
+    counts over them."""
+    for feature in payload['features']:
+        for rule in feature['rules']:
+            if rule['cells']['passed']['word'] == 'checked at sign-off':
+                continue
+            rule['cells']['passed'].update(word='passed', reasons=[])
+            rule['bucket'] = 'passed'
+            rule['left'] = None
+            for flag in ('failing', 'partial', 'out_of_date'):
+                rule['flags'][flag] = False
+        rollup = feature['rollup']
+        rollup.update(untested=0, failing=0, partial=0,
+                      passed=rollup['rules'] - rollup['by_hand'])
+    summary = payload['summary']
+    summary.update(untested=0, failing=0, partial=0,
+                   passed=summary['rules'] - summary['by_hand'])
+    summary['steps']['passed'] = summary['passed']
+
+
+# purlin: purlin_report PROOF-247
+def test_passing_is_complete_once_every_other_rule_is_checked_at_sign_off(
+        browser, tmp_path):
+    payload = payload_named('regulated')
+    every_tested_rule_passing(payload)
+    assert payload['summary']['rules'] == 11
+    assert payload['summary']['steps'] == {'passed': 10, 'by_hand': 1}
+    page = open_board(browser, tmp_path, payload)
+    found = {label: (count, colour) for label, count, colour in boxes(page)}
+    passing = page.evaluate(RESOLVE_TOKEN, '--state-pass')
+    page.close()
+    assert found['Passing'] == ('10', passing), found
 
 
 def second_lines(page):
@@ -523,7 +560,7 @@ def test_every_count_carries_the_word_it_counts(browser, tmp_path):
     assert cells['login']['Tests'] == (
         '2 of 4 · 1 partial · 1 failing')
     assert cells['login']['Proofs'] == '5'
-    assert cells['login']['Strong'] == '2 of 4'
+    assert cells['login']['Strong'] == '2 of 3'
     # One of export's two rules is behind changed code: it passed nothing
     # and failed nothing, so the share alone reads it.
     assert cells['export']['Tests'] == '1 of 2'
@@ -532,6 +569,16 @@ def test_every_count_carries_the_word_it_counts(browser, tmp_path):
     # total alone.
     assert cells['invoice']['Proofs'] == '3'
     page.close()
+
+
+# purlin: purlin_report PROOF-245
+def test_a_hand_check_is_counted_by_hand_and_out_of_the_strong_share(
+        browser, tmp_path):
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    cells = count_cells(page)
+    page.close()
+    assert cells['invoice']['Tests'] == '2 of 3 · 1 by hand', cells
+    assert cells['invoice']['Strong'] == '1 of 2', cells
 
 
 # purlin: purlin_report PROOF-44
@@ -586,7 +633,7 @@ def test_the_group_band_says_what_its_numbers_are(browser, tmp_path):
         '.group',
         r'els => els.map(e => e.innerText.replace(/\s+/g, " ").trim())')
     assert bands == ['▼ AUTH 1 spec 3 of 4 rules pass',
-                     '▼ BILLING 2 specs 4 of 5 rules pass']
+                     '▼ BILLING 2 specs 3 of 5 rules pass']
     page.close()
 
 
@@ -719,7 +766,7 @@ def test_data_of_another_schema_shows_one_notice_and_nothing_else(browser,
         payload['schema_version'] = 3
     page = open_sample(browser, tmp_path, 'team', marked_as_schema_3)
     assert texts(page, '.notice') == [
-        'This data was written for schema 3 and this page reads schema 15. '
+        'This data was written for schema 3 and this page reads schema 16. '
         'Run purlin:status to write it again.']
     assert page.query_selector_all('.tile') == []
     assert page.query_selector_all('.fact') == []
@@ -966,6 +1013,33 @@ def test_a_rule_out_of_date_reads_what_changed(browser, tmp_path):
     assert passed.startswith('OUT OF DATE'), passed
     assert 'code changed since 9f8e7d6' in passed
     reg.close()
+
+
+# The pill of the open rule's passed row: its text and the colour it is in.
+PASSED_PILL = """() => {
+  const row = Array.from(document.querySelectorAll('.kv dt')).find(
+    dt => dt.textContent.trim() === 'Passed');
+  const pill = row.nextElementSibling.querySelector('.pill');
+  return [pill.innerText.trim(), getComputedStyle(pill).color];
+}"""
+
+
+# purlin: purlin_report PROOF-244
+def test_a_hand_check_no_sign_off_noted_reads_checked_at_sign_off_as_passed(
+        browser, tmp_path):
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    page.click('[data-act="feature"][data-feature="invoice"]')
+    badges = row_badges(page, 'invoice')
+    page.click('.rule[data-feature="invoice"][data-rule="RULE-3"]')
+    passed = page.evaluate(KV_ROWS)['Passed']
+    pill = page.evaluate(PASSED_PILL)
+    neutral = page.evaluate(RESOLVE_TOKEN, '--state-neutral')
+    page.close()
+    assert passed == ('CHECKED AT SIGN-OFF no sign-off has checked it '
+                      'yet'), passed
+    assert pill == ['CHECKED AT SIGN-OFF', neutral], pill
+    assert 'PASSED' not in badges['RULE-3'], badges
+    assert 'PASSED' in badges['RULE-1'], badges
 
 
 # purlin: purlin_report PROOF-238
@@ -1450,8 +1524,8 @@ def test_the_badges_add_up_to_the_step_boxes(browser, tmp_path):
     seen = texts(page, '.rule .rp .pill')
     found = boxes(page)
     page.close()
-    assert [seen.count(word) for word in ('PASSED', 'STRONG')] == [8, 3], seen
-    assert [int(count) for _, count, _ in found[1:]] == [8, 3]
+    assert [seen.count(word) for word in ('PASSED', 'STRONG')] == [7, 3], seen
+    assert [int(count) for _, count, _ in found[1:]] == [7, 3]
 
 
 # ---------------------------------------------------------------------------
@@ -1596,6 +1670,30 @@ def test_a_hand_check_reads_the_newest_sign_offs_note_beneath_it(browser,
         'noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, '
         '4 commits since: the tube is red']
     page.close()
+
+
+# purlin: purlin_report PROOF-246
+def test_a_note_written_before_the_rule_was_reworded_says_so_above_it(
+        browser, tmp_path):
+    sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
+    from purlin import states
+    note = states.HAND_NOTE % ('0.1.0', 'quinn.qa@labconnect.example',
+                               '4 commits since', 'the tube is red')
+
+    def reworded_since_its_note(payload):
+        """What `states` writes for a hand check whose rule was reworded
+        after the sign-off of `0.1.0` noted it."""
+        reasons = [states.HAND_CHANGED['rule'], note]
+        cells = hand_check_rule(payload)['cells']
+        cells['passed']['reasons'] = list(reasons)
+        cells['strong']['reasons'] = list(reasons)
+    page = open_sample(browser, tmp_path, 'regulated', reworded_since_its_note)
+    open_rule(page, 'invoice', 'RULE-3')
+    lines = hand_check_tests(page)
+    page.close()
+    assert lines == ['checked at sign-off',
+                     "the rule's wording changed since its last note",
+                     note], lines
 
 
 # purlin: purlin_report PROOF-227
@@ -1749,7 +1847,7 @@ def test_a_project_whose_one_audit_result_is_spot_checked_shows_strong(
     lines = panel_lines(page, 'Audit')
     page.close()
     assert heads == ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong'], heads
-    assert cell == '0 of 3', cell
+    assert cell == '0 of 1', cell
     assert tiles['Strong'] == '0', tiles
     assert found['Audit']['word'] == '0 of 2 strong', found
     assert found['Audit']['color'] == passing

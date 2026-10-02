@@ -94,6 +94,7 @@
       "pinned": null,
       "rollup": {
         "audit_out_of_date": 0,
+        "by_hand": 0,
         "failing": 0,
         "incomplete": false,
         "manual": 0,
@@ -169,6 +170,7 @@
           "feature": "login",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
@@ -267,6 +269,7 @@
           "feature": "login",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
@@ -375,6 +378,7 @@
           "feature": "login",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
@@ -454,6 +458,7 @@
           "feature": "login",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
@@ -546,12 +551,13 @@
       "pinned": null,
       "rollup": {
         "audit_out_of_date": 0,
+        "by_hand": 1,
         "failing": 0,
         "incomplete": false,
         "manual": 1,
         "not_audited": 0,
         "partial": 0,
-        "passed": 3,
+        "passed": 2,
         "proofs": 3,
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
@@ -621,6 +627,7 @@
           "feature": "invoice",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
@@ -726,6 +733,7 @@
           "feature": "invoice",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
@@ -767,7 +775,7 @@
         },
         {
           "audit": null,
-          "bucket": "passed",
+          "bucket": "by_hand",
           "cells": {
             "passed": {
               "counts": true,
@@ -775,9 +783,11 @@
               "missing_env": [],
               "nothing_to_check": [],
               "platforms": {},
-              "reasons": [],
+              "reasons": [
+                "no sign-off has checked it yet"
+              ],
               "source": null,
-              "word": "passed"
+              "word": "checked at sign-off"
             },
             "strong": {
               "evidence": null,
@@ -789,6 +799,7 @@
           "feature": "invoice",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": true,
             "failing": false,
             "manual": true,
             "no_proof": false,
@@ -853,6 +864,7 @@
       "pinned": null,
       "rollup": {
         "audit_out_of_date": 0,
+        "by_hand": 0,
         "failing": 0,
         "incomplete": false,
         "manual": 0,
@@ -919,6 +931,7 @@
           "feature": "checkout_design",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
@@ -979,6 +992,7 @@
       "pinned": "4c1d9e2",
       "rollup": {
         "audit_out_of_date": 0,
+        "by_hand": 0,
         "failing": 0,
         "incomplete": false,
         "manual": 0,
@@ -1025,6 +1039,7 @@
           "feature": "security_baseline",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
@@ -1087,6 +1102,7 @@
       "pinned": null,
       "rollup": {
         "audit_out_of_date": 0,
+        "by_hand": 0,
         "failing": 0,
         "incomplete": false,
         "manual": 0,
@@ -1131,6 +1147,7 @@
           "feature": "export",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
@@ -1199,6 +1216,7 @@
           "feature": "export",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
@@ -1292,7 +1310,7 @@
     }
   },
   "project": "ledger",
-  "schema_version": 15,
+  "schema_version": 16,
   "signoff": {
     "commit": "9f8e7d6c5b4a39281706f5e4d3c2b1a098765432",
     "since": 4,
@@ -1308,23 +1326,25 @@
       "weak": 3
     },
     "audit_out_of_date": 0,
+    "by_hand": 1,
     "failing": 0,
     "features": 5,
     "incomplete": 0,
     "manual": 1,
     "not_audited": 1,
     "partial": 1,
-    "passed": 8,
+    "passed": 7,
     "proofs": 12,
     "proofs_without_test": 1,
     "proofs_without_test_ids": [
       "PROOF-1"
     ],
     "rules": 11,
-    "sentence": "11 rules. 8 pass their tests. The audit found 3 of 7 rules strong (42%): 3 strong, 3 weak, 1 not audited.",
+    "sentence": "11 rules. 7 pass their tests. 1 is checked at sign-off. The audit found 3 of 7 rules strong (42%): 3 strong, 3 weak, 1 not audited.",
     "spot_checked": 0,
     "steps": {
-      "passed": 8
+      "by_hand": 1,
+      "passed": 7
     },
     "strong": 3,
     "untested": 2,

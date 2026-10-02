@@ -86,6 +86,7 @@
       "pinned": null,
       "rollup": {
         "audit_out_of_date": 0,
+        "by_hand": 0,
         "failing": 0,
         "incomplete": false,
         "manual": 0,
@@ -150,6 +151,7 @@
           "feature": "login",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
@@ -230,6 +232,7 @@
           "feature": "login",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
@@ -310,6 +313,7 @@
           "feature": "login",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
@@ -382,6 +386,7 @@
       "pinned": null,
       "rollup": {
         "audit_out_of_date": 0,
+        "by_hand": 0,
         "failing": 0,
         "incomplete": true,
         "manual": 0,
@@ -442,6 +447,7 @@
           "feature": "invoice",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
@@ -506,6 +512,7 @@
           "feature": "invoice",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
@@ -568,6 +575,7 @@
       "pinned": null,
       "rollup": {
         "audit_out_of_date": 0,
+        "by_hand": 0,
         "failing": 0,
         "incomplete": false,
         "manual": 0,
@@ -626,6 +634,7 @@
           "feature": "receipt",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
@@ -700,6 +709,7 @@
       "pinned": null,
       "rollup": {
         "audit_out_of_date": 0,
+        "by_hand": 0,
         "failing": 2,
         "incomplete": false,
         "manual": 0,
@@ -750,6 +760,7 @@
           "feature": "refund",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": true,
             "manual": false,
             "no_proof": false,
@@ -822,6 +833,7 @@
           "feature": "refund",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": true,
             "manual": false,
             "no_proof": false,
@@ -894,6 +906,7 @@
       "pinned": null,
       "rollup": {
         "audit_out_of_date": 0,
+        "by_hand": 0,
         "failing": 0,
         "incomplete": false,
         "manual": 0,
@@ -952,6 +965,7 @@
           "feature": "checkout_design",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
@@ -1012,6 +1026,7 @@
       "pinned": "4c1d9e2",
       "rollup": {
         "audit_out_of_date": 0,
+        "by_hand": 0,
         "failing": 0,
         "incomplete": false,
         "manual": 0,
@@ -1058,6 +1073,7 @@
           "feature": "security_baseline",
           "flags": {
             "audit_out_of_date": false,
+            "by_hand": false,
             "failing": false,
             "manual": false,
             "no_proof": false,
@@ -1137,7 +1153,7 @@
     }
   },
   "project": "ledger",
-  "schema_version": 15,
+  "schema_version": 16,
   "signoff": {
     "commit": null,
     "since": null,
@@ -1153,6 +1169,7 @@
       "weak": 1
     },
     "audit_out_of_date": 0,
+    "by_hand": 0,
     "failing": 2,
     "features": 6,
     "incomplete": 1,
@@ -1170,6 +1187,7 @@
     "sentence": "10 rules. 6 pass their tests. The audit found 5 of 6 rules strong (83%): 5 strong, 1 weak.",
     "spot_checked": 0,
     "steps": {
+      "by_hand": 0,
       "passed": 6
     },
     "strong": 5,

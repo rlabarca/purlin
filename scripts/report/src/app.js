@@ -10,7 +10,7 @@
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null,
             features: {}, groups: {}};
-var SCHEMA = 15;
+var SCHEMA = 16;
 
 /* The two facts the top bar states, as the payload gives them: whether the
    tests are met on the committed evidence, the payload's `met`, and whether
@@ -36,9 +36,10 @@ var LAST_AUDIT = 'Last audit: ';
 
 /* The boxes: `No proof` counts the rules of the kind `no_proof`, drawn
    wherever the project writes a proof line; `Passing` counts the rules whose
-   tests pass now, the payload's `summary.steps.passed`; `Strong` counts the
-   rules the audit found strong, the payload's `summary.audit.strong`, drawn
-   only where a rule has an audit entry. */
+   tests pass now, the payload's `summary.steps.passed`, and is complete once
+   every other rule is checked at sign-off, `summary.steps.by_hand`; `Strong`
+   counts the rules the audit found strong, the payload's
+   `summary.audit.strong`, drawn only where a rule has an audit entry. */
 var PASSING = 'Passing';
 var STRONG = 'Strong';
 var NO_PROOF = 'No proof';
@@ -55,9 +56,9 @@ var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong'];
 /* The one separator every cell, hover and line puts between two parts, which
    is `board.DOT`. */
 var DOT = ' \u00b7 ';
-var WORDS = {of: 'of', no_test: 'no test', partial: 'partial',
-             failing: 'failing', passed: 'passed', failed: 'failed',
-             not_run: 'not run'};
+var WORDS = {of: 'of', no_test: 'no test', by_hand: 'by hand',
+             partial: 'partial', failing: 'failing', passed: 'passed',
+             failed: 'failed', not_run: 'not run'};
 
 /* Every word a cell can read, and the tone it reads in. A word carries the
    same hue wherever it is drawn, so a pill on the board, a row on the rule
@@ -350,11 +351,12 @@ function cellWord(rule, name) {
   return (cellOf(rule, name) || {}).word || null;
 }
 
-/* What a rule has reached, as the boxes count it: its tests pass, a
-   `@manual` proof's hand check included, and then, where the audit read the
-   project, the audit found it strong. The audit reads only a rule whose
-   tests pass, so a rule that has not reached the first has not reached the
-   second. */
+/* What a rule has reached, as the boxes count it: its passed cell reads
+   `passed`, and then, where the audit read the project, the audit found it
+   strong. A rule checked by hand alone reads `checked at sign-off` there
+   until a sign-off notes it, and has reached neither. The audit reads only
+   a rule whose tests pass, so a rule that has not reached the first has not
+   reached the second. */
 function reachedSteps(rule) {
   var out = [];
   if (cellWord(rule, 'passed') !== 'passed') { return out; }
@@ -422,6 +424,15 @@ function factBox(label, word, hue, lines) {
     + '</b></span>';
 }
 
+/* The `<n>` of the audit's box: the rules that pass their tests and have a
+   tested proof, the sum of the five counts of the payload's `summary.audit`. */
+function auditTotal() {
+  var found = ((DATA && DATA.summary) || {}).audit || {};
+  return AUDIT_WORDS.reduce(function (sum, pair) {
+    return sum + (found[pair[0]] || 0);
+  }, 0);
+}
+
 /* The audit's box. Where no audit has read a rule it reads `not audited` in
    the neutral tone, as `not signed` reads: nothing waits on the audit, so
    that is no warning. Otherwise `<s> of <n> strong`, the counts the summary
@@ -431,11 +442,10 @@ function factBox(label, word, hue, lines) {
 function auditBox() {
   if (!audited()) { return factBox(AUDIT, NOT_AUDITED, 'neutral'); }
   var found = ((DATA && DATA.summary) || {}).audit || {};
-  var total = 0;
+  var total = auditTotal();
   var lines = [];
   AUDIT_WORDS.forEach(function (pair) {
     var count = found[pair[0]] || 0;
-    total += count;
     if (pair[0] === 'strong' || count) { lines.push(count + ' ' + pair[1]); }
   });
   var newest = '';

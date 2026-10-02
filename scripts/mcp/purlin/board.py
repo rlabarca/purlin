@@ -14,9 +14,11 @@ The columns, left to right:
     Rules    how many rules the spec has
     Proofs   how many proof lines it writes, and how many have no test;
              only where the project writes a proof line at all
-    Tests    how many rules pass, and how many are partial or are failing
-    Strong   how many of its rules the audit found strong, wherever a
-             rule of the project has an audit entry
+    Tests    how many rules pass, and how many are checked by hand, are
+             partial or are failing
+    Strong   how many of its rules the audit found strong, of those that
+             pass their tests and have a tested proof, wherever a rule of
+             the project has an audit entry
 
 Every when, who and platform detail lives in a hover on the dashboard and on
 the rule screen; a cell here carries counts and nothing else.
@@ -68,19 +70,36 @@ def passing(rollup):
     """How many of a spec's rules pass their tests.
 
     A rule is counted in exactly one bucket, so the rules that pass are the
-    ones left after the three that do not: untested, failing, and partial.
-    Reading it this way means the four buckets always add up to the rule
-    total.
+    ones left after the four that do not: untested, failing, partial and
+    checked by hand. Reading it this way means the five buckets always add
+    up to the rule total.
     """
     total = rollup.get('rules') or 0
     short = sum(rollup.get(key) or 0
-                for key in ('untested', 'failing', 'partial'))
+                for key in ('untested', 'failing', 'partial', 'by_hand'))
     return max(total - short, 0)
 
 
 def strong_met(rollup):
     """How many of a spec's rules the audit found strong."""
     return rollup.get('strong') or 0
+
+
+# The rollup's five audit flags, one per word `summary.AUDIT_WORDS` counts.
+AUDIT_FLAGS = ('strong', 'weak', 'spot_checked', 'audit_out_of_date',
+               'not_audited')
+
+
+def audited_rules(rollup):
+    """How many of a spec's rules the audit can speak of: those that pass
+    their tests and have a tested proof.
+
+    The sum of the rollup's five audit flags, which is what
+    `summary.audit_counts` counts over the same rules: a strong cell reads
+    one of the five words only where the passed cell reads `passed` and a
+    test answers a proof.
+    """
+    return sum(rollup.get(key) or 0 for key in AUDIT_FLAGS)
 
 
 def rules_cell(rollup):
@@ -103,8 +122,11 @@ def proofs_cell(rollup):
 
 
 def tests_cell(rollup):
-    """`<passed> of <rules>`, then `· <k> partial` and `· <k> failing`."""
+    """`<passed> of <rules>`, then `· <k> by hand`, `· <k> partial` and
+    `· <k> failing`."""
     text = '%d of %d' % (passing(rollup), rollup.get('rules') or 0)
+    if rollup.get('by_hand'):
+        text += '%s%d by hand' % (DOT, rollup['by_hand'])
     if rollup.get('partial'):
         text += '%s%d partial' % (DOT, rollup['partial'])
     if rollup.get('failing'):
@@ -113,11 +135,13 @@ def tests_cell(rollup):
 
 
 def strong_cell(rollup):
-    """`<n> of <rules>`: how many of the spec's rules the audit found strong.
+    """`<strong> of <n>`: how many of the spec's rules the audit found
+    strong, `<n>` being `audited_rules`.
 
-    Empty for a spec with no rules.
+    Empty where `<n>` is 0: no rule of the spec passes its tests with a
+    tested proof.
     """
-    total = rollup.get('rules') or 0
+    total = audited_rules(rollup)
     if not total:
         return ''
     return '%d of %d' % (strong_met(rollup), total)

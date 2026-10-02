@@ -15,7 +15,7 @@ import pytest
 
 from mcp_project import (NO_PROOF_SPEC, PROJECT_ROOT, Project, SPEC,
                          _commit_tests, _entry, _git, _listed, _marked_tests,
-                         _write, project)
+                         _write, project, spec_with_a_hand_check)
 from sign_project import _Out, signing_key
 # `mcp_project` puts `scripts/mcp` on the path, `sign_project` `scripts/review`.
 import sign as sign_module
@@ -506,19 +506,22 @@ class TestTheStrongCell:
         assert result['flags']['manual'] is True, result
 
     # purlin: states PROOF-264
-    def test_a_manual_rule_with_nothing_run_passes_and_is_checked_at_sign_off(
-            self):
+    def test_a_manual_rule_no_sign_off_has_noted_is_checked_at_sign_off(self):
         manual = ('# Feature: login\n\n> Scope: src/login.py\n\n## Rules\n\n'
                   '- RULE-1: The expired tube reads red\n\n## Proof\n\n'
                   '- PROOF-1 (RULE-1): Look at an expired tube; verify it is '
                   'red @manual\n')
         made = Project(spec=manual)
         try:
-            cells = made.rule('RULE-1')['cells']
+            rule = made.rule('RULE-1')
         finally:
             made.close()
-        assert cells['passed']['word'] == 'passed', cells
+        cells = rule['cells']
+        assert cells['passed']['word'] == 'checked at sign-off', cells
+        assert cells['passed']['reasons'] == [
+            'no sign-off has checked it yet'], cells
         assert cells['strong']['word'] == 'checked at sign-off', cells
+        assert rule['bucket'] == 'by_hand', rule['bucket']
 
     # purlin: states PROOF-262
     def test_a_weak_audit_leaves_the_rule_passing_and_to_strengthen(
@@ -660,6 +663,50 @@ class TestAHandCheck:
             'noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, '
             'at this commit: the tube is red'], cell
 
+    # purlin: states PROOF-295
+    def test_a_hand_check_noted_at_head_reads_passed_with_the_note(self):
+        made = Project(spec=MANUAL_SPEC)
+        try:
+            _signed_with_a_note(made)
+            cell = made.cell('RULE-2', 'passed')
+        finally:
+            made.close()
+        assert cell['word'] == 'passed', cell
+        assert cell['reasons'] == [
+            'noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, '
+            'at this commit: the tube is red'], cell
+
+    # purlin: states PROOF-296
+    def test_a_rule_reworded_since_its_note_is_checked_at_sign_off_again(self):
+        note = ('noted at the sign-off of 0.1.0 by '
+                'quinn.qa@labconnect.example, 1 commit since: the tube is red')
+        result = purlin_states.rule_cells({
+            'proofs': [{'id': 'PROOF-1', 'manual': True, 'env': None,
+                        'text': 'x', 'tests': []}],
+            'sections': [], 'hand_notes': [note], 'hand_changed': ['rule'],
+        })
+        cell = result['cells']['passed']
+        assert cell['word'] == 'checked at sign-off', cell
+        assert cell['reasons'] == [
+            "the rule's wording changed since its last note", note], cell
+
+    # purlin: states PROOF-297
+    def test_a_proof_reworded_since_its_note_says_so_in_the_strong_cell(self):
+        note = ('noted at the sign-off of 0.1.0 by '
+                'quinn.qa@labconnect.example, 1 commit since: the name shows')
+        result = purlin_states.rule_cells({
+            'proofs': [{'id': 'PROOF-1', 'manual': True, 'env': None,
+                        'text': 'x', 'tests': []}] + [
+                            dict(ONE_TESTED_PROOF[0], id='PROOF-2')],
+            'sections': [_section(statuses={'PROOF-2': 'pass'})],
+            'hand_notes': [note], 'hand_changed': ['proof'],
+        })
+        cells = result['cells']
+        assert cells['passed']['word'] == 'passed', cells
+        assert cells['strong']['word'] == 'checked at sign-off', cells
+        assert cells['strong']['reasons'] == [
+            "the proof's wording changed since its last note", note], cells
+
     # purlin: states PROOF-277
     def test_four_commits_after_the_sign_off_the_note_reads_four_since(self):
         made = Project(spec=MANUAL_SPEC)
@@ -777,9 +824,9 @@ class TestBuckets:
 class TestPayload:
 
     # purlin: states PROOF-31
-    def test_schema_fifteen_carries_exactly_the_seventeen_keys(self, project):
+    def test_schema_sixteen_carries_exactly_the_seventeen_keys(self, project):
         data = project.payload()
-        assert data['schema_version'] == 15
+        assert data['schema_version'] == 16
         assert sorted(data) == sorted((
             'schema_version', 'generated_at', 'generated_by', 'project',
             'version', 'branch', 'commit', 'dirty', 'summary', 'features',
@@ -893,7 +940,7 @@ class TestPayload:
             sentence, 'Left to do:',
             '  1 rule to write a test for: purlin:build'], text
         assert data['summary']['rules'] == 2
-        assert data['summary']['steps'] == {'passed': 1}
+        assert data['summary']['steps'] == {'passed': 1, 'by_hand': 0}
         assert [(item['text'], item['command'], item['count'])
                 for item in data['left']] == [
             ('1 rule to write a test for', 'purlin:build', 1)]
@@ -1397,15 +1444,50 @@ class TestStatusTable:
     # purlin: states PROOF-294
     def test_an_audit_entry_on_a_rule_that_now_fails_keeps_the_strong_column(
             self, project):
-        self._one_of_two_passing(project)
+        _commit_tests(project, 'PROOF-1', 'PROOF-2')
+        project.evidence(PASSING)
         project.audit('RULE-2')
         assert _header(_status_lines(project.root)).split()[-1] == 'Strong'
-        project.evidence([_entry('PROOF-2', 'RULE-2', 'fail')])
+        project.evidence([_entry('PROOF-1', 'RULE-1'),
+                          _entry('PROOF-2', 'RULE-2', 'fail')])
         assert project.rule('RULE-2')['audit'] is not None
         assert project.cell('RULE-2', 'strong')['word'] == 'waiting'
+        assert project.cell('RULE-1', 'strong')['word'] == 'not audited'
         lines = _status_lines(project.root)
         assert _header(lines).split()[-1] == 'Strong', lines
-        assert _cell_under(lines, 'login', 'Strong') == '0 of 2', lines
+        assert _cell_under(lines, 'login', 'Strong') == '0 of 1', lines
+
+    # purlin: states PROOF-298
+    def test_two_passing_rules_and_a_hand_check_read_two_of_three_one_by_hand(
+            self):
+        made = Project(spec=spec_with_a_hand_check(3))
+        try:
+            _commit_tests(made, 'PROOF-1', 'PROOF-2')
+            made.evidence([_entry('PROOF-1', 'RULE-1'),
+                           _entry('PROOF-2', 'RULE-2')])
+            lines = _status_lines(made.root)
+        finally:
+            made.close()
+        assert _cell_under(lines, 'login', 'Tests') == (
+            '2 of 3 · 1 by hand'), lines
+
+    # purlin: states PROOF-299
+    def test_nine_strong_rules_and_a_hand_check_read_nine_of_nine_strong(
+            self):
+        made = Project(spec=spec_with_a_hand_check(10))
+        tested = ['PROOF-%d' % number for number in range(1, 10)]
+        try:
+            _commit_tests(made, *tested)
+            made.evidence([_entry(proof_id, proof_id.replace('PROOF', 'RULE'))
+                           for proof_id in tested])
+            for proof_id in tested:
+                made.audit(proof_id.replace('PROOF', 'RULE'))
+            lines = _status_lines(made.root)
+        finally:
+            made.close()
+        assert _cell_under(lines, 'login', 'Tests') == (
+            '9 of 10 · 1 by hand'), lines
+        assert _cell_under(lines, 'login', 'Strong') == '9 of 9', lines
 
     # purlin: states PROOF-100
     def test_one_passing_and_one_failing_here_read_one_of_two_one_failing(
