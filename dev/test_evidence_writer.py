@@ -324,9 +324,9 @@ def test_a_rule_with_one_proof_tested_and_one_not_reads_no_test():
 
 
 # purlin: evidence_writer PROOF-21
-def test_a_rule_whose_one_proof_is_manual_reads_passed():
+def test_a_rule_whose_one_proof_is_manual_reads_checked_at_sign_off():
     assert _rule_word({'PROOF-1': {'manual': True, 'env': None}},
-                      {}) == 'passed'
+                      {}) == 'checked at sign-off'
 
 
 # purlin: evidence_writer PROOF-24
