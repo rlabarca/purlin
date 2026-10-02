@@ -2,14 +2,14 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T13:42:22Z",
-      "commit": "a8596eb3cff24fb893b822901c97983c104fd816",
+      "at": "2026-10-02T13:46:27Z",
+      "commit": "389721c13db90cb4e308cc06281122e43e7197da",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "2d807f298c4851eccc9593e0788e16dd1469e2d59e0b28e7b89e898a058af0d5",
-        "spec": "0aca820f6004e803252be4f03a3634c569e5fce44cb9c7950155c622d57b0c2a",
-        "tests": "53ed78d92045eb8cbc97cb9deff0c9501bf3fbbf6b61e94eb30eb258c21ab7b8"
+        "code": "0536a56d78e394ffc99d392d3f310df147f59f0db8077ed4e40f995ef461673f",
+        "spec": "cbd24465722fdc50a25dab8848e9b93d77ed78aed70b85ec6073c1ed7ead3ee0",
+        "tests": "3f792daab20a4bc0677ebf418745b86679a55f0d02bd877fd822a175c79c58f1"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -75,7 +75,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_purlin_report.py::test_a_project_no_audit_read_shows_the_two_facts_alone"
+          "test": "dev/test_purlin_report.py::test_no_audit_and_no_sign_off_show_two_boxes_and_not_signed_plain"
         },
         {
           "env": null,
