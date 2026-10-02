@@ -1704,6 +1704,24 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       sharper proof. No person judges a finding.
     - **Purlin's 12 loose proofs are sharpened** with the sentences already proposed; the owner
       reads them after.
+125. **The top bar holds the two facts, and an anchor is never rated strong** (added 2026-10-02),
+    the owner's calls while decision 124 was being built.
+    - **The theme button is always at the top right.** Where the top bar's boxes do not all fit
+      beside the header line, they move together to the line below the logo.
+    - **The top bar's `Audit` box goes.** The `Strong` count box carries the count; the audit's
+      counts and the date of the last audit are its hover.
+    - **`not signed` is drawn plain**, in no state colour: the box's border and its words in the
+      page's secondary text colour. Signed at this commit is green; signed with commits since is
+      orange. No other look.
+    - **An anchor's `Strong` cell says what the audit found, in one word.** No bug is planted for
+      an anchor, so its rule can read `weak` or `spot-checked` and never `strong`. The cell reads
+      `weak` where any of its rules is weak, else `out of date` where any is, else `spot-checked`
+      where every rule is, else nothing. It never reads `<s> of <n>`. In the owner's words: "need
+      what the audit found but MUCH SHORTER".
+    - **An anchor's rules are left out of the share of strong rules.** The summary's
+      `<s> of <n> rules strong (<p>%)` counts only rules that can be strong, so 100% is reachable
+      and the `Strong` box turns green once every such rule is strong. The counts after it still
+      list what the audit found for the anchor's rules.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
