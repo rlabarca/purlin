@@ -386,7 +386,10 @@ class TestATestCommentToCorrect:
         named = [index for index, line in enumerate(lines) if line.startswith(
             'tests/test_feat.py:3 names feat PROOF-1, whose wording changed '
             'after the test was last changed in')]
-        assert named and named[0] > markers, output
+        # The run's own line, straight after `Markers:`. The status the run
+        # ends on names the comment again further down, so a line anywhere
+        # after `Markers:` would not show the run printed one.
+        assert named and named[0] == markers + 1, output
         assert code == 0, output
 
 
@@ -439,7 +442,8 @@ class TestEnvScopedProofs:
         root = _pytest_project(tmp_path)
         _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ' @env(%s)' % here),))
         code, output = _run(root, '--all', '--test')
-        assert 'needs %s' % here not in output
+        assert not [line for line in output.splitlines()
+                    if re.match(r'\d+ proofs? needs? ', line)], output
         assert _proofs(root, 'feat') is not None, output
         assert [(entry['id'], entry['result'], entry['env'])
                 for entry in _proofs(root, 'feat')] == [
@@ -587,6 +591,11 @@ class TestTheCiArmWritesItsSection:
         platforms = _evidence(root, source='ci')['platforms']
         assert sorted(platforms) == sorted([HERE_OS, other]), output
         assert platforms[other] == theirs, platforms[other]
+        # The section added is this machine's own: its host name, not the
+        # other section's.
+        assert platform.node() and platform.node() != theirs['machine']
+        assert platforms[HERE_OS]['machine'] == platform.node(), platforms
+        assert platforms[HERE_OS]['rules'] == {'RULE-1': 'passed'}, platforms
 
     # purlin: run_script PROOF-209
     def test_an_untagged_test_that_fails_beside_a_tagged_one_does_not_fail_it(
@@ -948,6 +957,9 @@ class TestARunCoversWhatTheChangeTouched:
         assert code == 0, output
         assert _selection(output) == {
             'login': 'code changed since %s' % sha[:7]}, output
+        # Selected alone is run alone: login's one test and no other.
+        assert _ran(root) == ['test_login'], output
+        assert 'Ran pytest on 1 feature.' in output.splitlines(), output
         assert _file(root, '.purlin/evidence/local/export.json') == export
 
     # purlin: run_script PROOF-89
@@ -1008,9 +1020,12 @@ class TestARunCoversWhatTheChangeTouched:
         assert _selection(output) == {
             'invoice': 'no run on %s yet' % purlin_evidence.os_word(
                 purlin_run.host_os())}, output
+        # Selected alone is run alone: invoice's one test and no other.
+        assert _ran(root) == ['test_invoice'], output
+        assert 'Ran pytest on 1 feature.' in output.splitlines(), output
         assert ('Skipped 2 features whose spec, code and tests match their '
                 'evidence: export, login. purlin:test --all runs them too.'
-                in output), output
+                in output.splitlines()), output
 
     @staticmethod
     def _untracked_under_login(tmp_path):
@@ -1035,6 +1050,9 @@ class TestARunCoversWhatTheChangeTouched:
         code, output = _run(root, '--test')
         assert code == 0, output
         assert _selection(output) == {'login': 'a file is not tracked'}, output
+        # Selected alone is run alone: login's one test and no other.
+        assert _ran(root) == ['test_login'], output
+        assert 'Ran pytest on 1 feature.' in output.splitlines(), output
         assert ("src/auth/token.py is under login's scope and is not "
                 'tracked, so its content is not part of the evidence until '
                 'you git add it.') in output.splitlines(), output
@@ -1179,6 +1197,33 @@ def _purlin_files(root):
                   for name in names)
 
 
+def _purlin_tree(root):
+    """`{path: bytes}` of every file under `.purlin/`, so a file changed in
+    place shows as well as one added."""
+    return {rel: (root / rel).read_bytes() for rel in _purlin_files(root)}
+
+
+def _page_entries():
+    """`[(the block as written, the entry it holds)]`, one per JSON block of
+    the supported-frameworks page, in the page's order."""
+    with open(os.path.join(REPO, 'references', 'supported_frameworks.md'),
+              encoding='utf-8') as handle:
+        page = handle.read()
+    blocks = [block.split('```', 1)[0] for block in page.split('```json\n')[1:]]
+    return [(block, json.loads(block)) for block in blocks]
+
+
+def _pytest_entry():
+    """pytest's entry as the supported-frameworks page shows it, the one
+    place it is written down; on Windows its command starts `py -3`."""
+    (entry,) = [entry for _block, entry in _page_entries()
+                if entry['name'] == 'pytest']
+    if sys.platform.startswith('win'):
+        assert entry['run'].startswith('python3 -m pytest'), entry
+        entry['run'] = 'py -3' + entry['run'][len('python3'):]
+    return entry
+
+
 def _one_passing_test(tmp_path):
     """A project with an empty `tests` setting, a `conftest.py` and one
     marked passing test."""
@@ -1225,6 +1270,7 @@ class TestNoTestCommand:
     # purlin: run_script PROOF-126
     def test_a_known_tool_gets_its_entry_suggested(self, tmp_path):
         root = _no_command(tmp_path, 'pytest')
+        before = _purlin_tree(root)
         code, output = _run(root, '--all', '--test')
         entry = frameworks.entry_for('pytest')
         assert output.splitlines()[-4:-1] == [
@@ -1232,8 +1278,8 @@ class TestNoTestCommand:
             'Suggested for pytest: python3 -m pytest {files} '
             '--junitxml={report}',
             'Suggested tests setting: %s' % json.dumps([entry])], output
-        assert _purlin_files(root) == [
-            os.path.join('.purlin', 'config.json')], output
+        assert list(before) == [os.path.join('.purlin', 'config.json')]
+        assert _purlin_tree(root) == before, output
         assert code == 1, output
 
     # purlin: run_script PROOF-127
@@ -1269,7 +1315,7 @@ class TestNoTestCommand:
         wrote = lines.index('Wrote the tests setting to .purlin/config.json.')
         assert 'Markers: 1 tied to a test, 0 not tied.' in lines[wrote:], \
             output
-        assert _tests_setting(root) == [frameworks.entry_for('pytest')]
+        assert _tests_setting(root) == [_pytest_entry()]
         assert code == 0, output
 
     # purlin: run_script PROOF-289
@@ -1277,7 +1323,7 @@ class TestNoTestCommand:
             self, tmp_path):
         root = _one_passing_test(tmp_path)
         code, output = _run(root, '--all', '--test', answer='y\n')
-        assert _tests_setting(root) == [frameworks.entry_for('pytest')]
+        assert _tests_setting(root) == [_pytest_entry()]
         assert 'Markers: 1 tied to a test, 0 not tied.' in output, output
         section = list(_evidence(root)['platforms'].values())[0]
         assert [(entry['id'], entry['result'])
@@ -1314,16 +1360,20 @@ class TestNoTestCommand:
             'shell': 'bash {files}'}
         assert sorted(suggestions) == sorted(expected)
         for name, flag in expected.items():
-            assert flag in suggestions[name]['run'], name
+            # The flag as whole words: `--reporters=jest-junit-reporter`
+            # names another reporter and does not carry it.
+            assert re.search(r'(?<!\S)%s(?!\S)' % re.escape(flag),
+                             suggestions[name]['run']), name
 
     # purlin: run_script PROOF-133
     def test_the_page_shows_the_same_entries(self, suggestions):
-        with open(os.path.join(REPO, 'references', 'supported_frameworks.md'),
-                  encoding='utf-8') as handle:
-            page = handle.read()
-        shown = [json.loads(block.split('```', 1)[0])
-                 for block in page.split('```json\n')[1:]]
-        assert shown == [suggestions[name] for name in ORDER]
+        shown = _page_entries()
+        assert [entry for _block, entry in shown] == [
+            suggestions[name] for name in ORDER]
+        # Word for word: each block is the entry and nothing more, so a key
+        # written twice, which a JSON reader passes over, is seen.
+        assert [block for block, _entry in shown] == [
+            json.dumps(suggestions[name], indent=2) + '\n' for name in ORDER]
 
     # purlin: run_script PROOF-134
     def test_jest_is_told_it_needs_jest_junit(self, tmp_path):
@@ -1394,13 +1444,14 @@ class TestTheSettingsFile:
         # between versions of Python.
         with pytest.raises(json.JSONDecodeError) as reading:
             json.loads(text)
+        before = _purlin_tree(root)
         code, output = _run(root, '--all', '--test')
         assert output.strip().splitlines() == [
             '.purlin/config.json cannot be read: %s at line %d. Fix the file '
             'by hand; nothing ran and nothing was saved.'
             % (reading.value.msg, reading.value.lineno)], output
-        assert _purlin_files(root) == [
-            os.path.join('.purlin', 'config.json')], output
+        assert list(before) == [os.path.join('.purlin', 'config.json')]
+        assert _purlin_tree(root) == before, output
         assert code == 1, output
 
     # purlin: run_script PROOF-138
@@ -1410,12 +1461,13 @@ class TestTheSettingsFile:
         (root / '.purlin' / 'config.json').write_text(
             json.dumps({'version': '0.9.5', 'test_framework': 'pytest'}),
             encoding='utf-8')
+        before = _purlin_tree(root)
         code, output = _run(root, '--all', '--test')
         assert output.strip().splitlines() == [
             'This project was set up by an older Purlin and not upgraded, so '
             'nothing ran. Run purlin:init --update.'], output
-        assert _purlin_files(root) == [
-            os.path.join('.purlin', 'config.json')], output
+        assert list(before) == [os.path.join('.purlin', 'config.json')]
+        assert _purlin_tree(root) == before, output
         assert code == 1, output
 
 class TestEachRuleThatFailsOrHasNoTest:
