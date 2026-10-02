@@ -985,8 +985,8 @@
   "feature": "evidence_writer",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T09:42:22Z",
-      "commit": "d7424d0171113d8e03f012eeff6a47c748287ab7",
+      "at": "2026-10-02T10:59:03Z",
+      "commit": "41f542eb88600cf93daf45cee184da6bc60ce641",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
