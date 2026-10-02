@@ -2,14 +2,14 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T11:16:24Z",
-      "commit": "31eaef7566316f2b4e75da4efe0528cf0486e3df",
+      "at": "2026-10-02T13:41:40Z",
+      "commit": "18ca025a5dbb9a9666a6fa941937375e81789f3a",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "9b75dbfc1ca380a294ff00362d1d4dc266778a56b31dc7b2661a83351bb69863",
-        "spec": "0bedcbff88702e127ef7d69f69f16604d3e5c50e27a37c441ee0a2e1e9a0dcd4",
-        "tests": "93b5123b59f1df0c6a36852476a5ec304d4259a78f1f28acbd0ef2ae121a5fc5"
+        "code": "2d807f298c4851eccc9593e0788e16dd1469e2d59e0b28e7b89e898a058af0d5",
+        "spec": "0aca820f6004e803252be4f03a3634c569e5fce44cb9c7950155c622d57b0c2a",
+        "tests": "406ccd053382b55fad9e7ec757ab5783a8b555b82b9654149424459395ef8419"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -75,15 +75,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-7",
-          "test": "dev/test_purlin_report.py::test_a_project_no_audit_read_says_not_audited_in_the_neutral_tone"
+          "test": "dev/test_purlin_report.py::test_a_project_no_audit_read_shows_the_two_facts_alone"
         },
         {
           "env": null,
           "id": "PROOF-242",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-7",
-          "test": "dev/test_purlin_report.py::test_the_audit_box_reads_the_share_and_its_hover_the_counts"
+          "rule": "RULE-8",
+          "test": "dev/test_purlin_report.py::test_the_strong_box_reads_the_count_and_its_hover_the_counts"
         },
         {
           "env": null,
@@ -644,6 +644,14 @@
           "result": "pass",
           "rule": "RULE-78",
           "test": "dev/test_purlin_report.py::test_a_planted_bug_the_tests_caught_is_not_shown"
+        },
+        {
+          "env": null,
+          "id": "PROOF-248",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-79",
+          "test": "dev/test_purlin_report_board_layout.py::test_the_theme_button_keeps_the_top_right_and_the_boxes_move_whole"
         }
       ],
       "rules": {
@@ -673,6 +681,7 @@
         "RULE-76": "passed",
         "RULE-77": "passed",
         "RULE-78": "passed",
+        "RULE-79": "passed",
         "RULE-8": "passed",
         "RULE-9": "passed"
       },
