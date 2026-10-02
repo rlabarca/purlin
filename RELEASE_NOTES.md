@@ -46,7 +46,7 @@ a test is any test in your own suite with one comment above it.
 - **Three questions are asked by the scripts themselves**: before renumbering, before the
   `tests` setting is written, and before signing.
 - **Cut:** drift's role views, setup's questions but one, and most settings.
-- **The formats** stand at spec 24, anchor 12, evidence 12, signature 16, package 12 and marker 5,
+- **The formats** stand at spec 24, anchor 12, evidence 13, signature 16, package 13 and marker 5,
   the drift criteria at 14, and the dashboard's data at schema 16.
 
 In more words:

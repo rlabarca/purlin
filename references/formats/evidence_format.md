@@ -1,4 +1,4 @@
-> Format-Version: 12
+> Format-Version: 13
 
 # Evidence format
 
@@ -73,7 +73,9 @@ operating system that ran the feature, one section each.
       "RULE-1": {"rule_hash": "<sha256>", "proof_hash": "<sha256>",
                  "test_hash": "<sha256>", "code_hash": "<sha256>",
                  "verdict": "strong", "findings": [], "no_bug": [],
-                 "breaks": {"PROOF-1": {"file": "src/login.py", "line": 12,
+                 "breaks": {"PROOF-1": {"aim": "past the test",
+                                        "case": "a wrong password; the proof says refused; the changed code signs in",
+                                        "file": "src/login.py", "line": 12,
                                         "before": "return check(password)",
                                         "after": "return True",
                                         "result": "caught", "why": "",
@@ -202,7 +204,7 @@ Each `audit.rules` entry:
 | `verdict` | string | `strong`, `weak` or `spot-checked` |
 | `findings` | array of strings | one sentence per finding; empty when the audit found nothing |
 | `no_bug` | array of strings | one sentence for each proof no bug was caught for, saying why; empty where a bug was caught for every proof |
-| `breaks` | object | `PROOF-N` to the bug the audit planted for that proof: `file`, `line`, `before`, `after`, `result` (`caught`, `survived`, `not made` or `not run`), `why` (empty where there is no reason) and `break_key`, the sha256 that says whether the proof needs a new bug. A proof the model could not be reached for, or one tagged for another system, has no entry. `{}` for an anchor's rule |
+| `breaks` | object | `PROOF-N` to the bug the audit planted for that proof: `aim` (`past the test` or `plain`), `case` (the model's one line saying which case of the proof the bug breaks, at most 300 characters, empty where it gave none), `file`, `line`, `before`, `after`, `result` (`caught`, `survived`, `not made` or `not run`), `why` (empty where there is no reason) and `break_key`, the sha256 that says whether the proof needs a new bug. A proof the model could not be reached for, or one tagged for another system, has no entry. `{}` for an anchor's rule |
 | `explanation` | array of strings | the model's reading of the rule's tests, one sentence per line. It sets no verdict |
 | `model` | string | the model that answered, its name and version as the `claude` command's JSON reports them, or `unknown` where it reports none |
 | `criteria` | string | sha256 of `references/review_criteria.md` as it was sent to the model |

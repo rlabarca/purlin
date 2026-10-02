@@ -13,7 +13,7 @@ runs it by hand, when they choose; nothing waits on it, and a weak rule stops no
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below is
 relative to the plugin root; see `references/purlin_commands.md#path-resolution`. Pass
 `project_root` on every Purlin tool call: the top folder of the git checkout you are working in.
-**Pending migrations:** when `sync_status` opens with a pending-migrations advisory, stop and
+**Pending migrations:** when the status opens with a pending-migrations advisory, stop and
 follow `references/purlin_commands.md#pending-migrations` before doing this skill's work.
 
 ## Usage

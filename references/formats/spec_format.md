@@ -225,7 +225,7 @@ Append `@manual` to a proof that no test can settle:
 | Tag | When to use |
 |-----|-------------|
 | (none) | A marked test settles the proof, whatever it needs to run |
-| `@manual` | A person's judgment is the only instrument. No test, so the rule reads `checked at sign-off` in its strong cell. A person checks it in the sign-off walk of `purlin:sign` and may type a one-line note of what they saw, which the sign-off records; Enter alone records `no note`. Once signed, the cell also carries the newest note, as `noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red` |
+| `@manual` | A person's judgment is the only instrument. No test, so the rule reads `checked at sign-off` in its strong cell, and in its passed cell where its every proof is `@manual`. A person checks it in the sign-off walk of `purlin:sign` and may type a one-line note of what they saw, which the sign-off records; Enter alone records `no note`. Once signed, the cell also carries the newest note, as `noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red` |
 
 `@manual`, `@slow` and `@env` are the only tags a proof line carries, at most
 one of each, in any order, at the end of the line. Any other trailing `@<name>` is not a tag: it stays

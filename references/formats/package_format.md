@@ -1,4 +1,4 @@
-> Format-Version: 12
+> Format-Version: 13
 
 # Package format
 
@@ -189,7 +189,7 @@ Each `results` entry:
 | `out_of_date` | array of strings | the parts that changed since the audit read the rule, of `rule`, `proof`, `test` and `code`; `[]` for a current entry |
 | `notes` | array of strings | the model's notes, where it gave some |
 | `explanation` | array of strings | the model's reading of the rule's tests |
-| `breaks` | object | the planted bug per proof, as the evidence file's audit entry holds it; `{}` for an anchor |
+| `breaks` | object | the planted bug per proof, as the evidence file's audit entry holds it, its `aim` and `case` included; `{}` for an anchor |
 | `model` | string | the model that read the rule, or `unknown` |
 | `criteria` | string or null | sha256 of the instructions the model was given |
 | `at` | string | when the audit ran |
