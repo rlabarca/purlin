@@ -61,6 +61,7 @@ of the code, so most name the run that takes them again:
 ```
 No sign-off: 2 files are changed and not committed. Commit them or set them aside, then run purlin:sign again.
 No sign-off: the evidence is written and not committed. Run purlin:test --commit, then purlin:sign.
+No sign-off: signed/2.1.0 names a commit that holds no evidence package for 2.1.0, so purlin:sign did not write it. Delete it: git tag -d signed/2.1.0, and git push origin --delete signed/2.1.0 if it was pushed. Then run purlin:sign again.
 No sign-off: signed/2.1.0 is at 3c9d2e1, which this checkout does not hold. Pull, then run purlin:sign.
 No sign-off: signed/2.1.0 is at 3c9d2e1, and the code has changed since. To sign this code, name a new version: purlin:sign --version <version>.
 No sign-off: these results were not taken on this version of the code, 8de0b6e: sample_age, stability on Linux/Unix; visit_window on Windows. Run purlin:test --all --commit and purlin:test on Windows, then purlin:sign.
@@ -79,6 +80,9 @@ Ask the person for the version, offer to write it to a `VERSION` file, and run t
 - The script never fetches.
 - The first line counts tracked files alone, and reads `1 file is` for one. A file git does not
   track stops nothing.
+- A tag typed by hand is no sign-off, and the script signs nothing while one stands for the
+  version. Delete a tag only when the person says to. The line names the remote only where the
+  checkout has one, and the script does not know whether the tag was pushed.
 - Run what a refusal names only when the person asks.
 - `purlin:test --all --commit` takes this machine's results again.
 - A slow result kept from an earlier run reads `not taken on this version of the code`. A slow
@@ -198,6 +202,7 @@ fingerprint.` and exits 0, or `The package does not match its fingerprint: <why>
 | `No sign-off:` ending `Pull, then run purlin:sign.` | `→ Pull, then run: purlin:sign` |
 | `No sign-off:` naming `purlin:sign --version <version>` | `→ Ask the person for the new version, then run: purlin:sign --version <version>` |
 | `No sign-off: <rule> has no answer` | `→ Ask the person about that stop, then run: purlin:sign --answers <file>` |
+| `No sign-off:` naming `git tag -d` | `→ Ask the person whether to delete the tag, then run: purlin:sign` |
 | `has already signed` | `→ Ask another person to run: purlin:sign` |
 | `No version:` | `→ Write the version the person gives to VERSION, then run: purlin:sign` |
 | `No key to sign with.` | `→ Run the commands it printed, then run: purlin:sign` |

@@ -88,6 +88,12 @@ NO_SIGNOFF_ELSEWHERE = ('No sign-off: %s is at %s, which this checkout does not 
                         'Pull, then run purlin:sign.')
 NO_SIGNOFF_MOVED = ('No sign-off: %s is at %s, and the code has changed since. To sign this '
                     'code, name a new version: purlin:sign --version <version>.')
+# A tag for this version that purlin:sign did not write: the tag, the version,
+# the tag, and HAND_TAG_PUSHED where the checkout has a remote.
+NO_SIGNOFF_HAND_TAG = ('No sign-off: %s names a commit that holds no evidence package '
+                       'for %s, so purlin:sign did not write it. Delete it: git tag -d '
+                       '%s%s. Then run purlin:sign again.')
+HAND_TAG_PUSHED = ', and git push %s --delete %s if it was pushed'   # the remote, the tag
 NO_SIGNOFF_PACKAGE = ('No sign-off: %s does not match its fingerprint: %s. Restore it as it '
                       'was signed, or name a new version: purlin:sign --version <version>.')
 NO_SIGNOFF_NOT_THIS_CODE = ('No sign-off: these results were not taken on this version of '
@@ -271,6 +277,12 @@ def behind_words(count):
 def _branch(project_root):
     """The checked-out branch's short name, or '' on a detached HEAD."""
     return _git_out(project_root, 'symbolic-ref', '--quiet', '--short', 'HEAD')
+
+
+def _remote(project_root):
+    """`origin` where the checkout has it, else its first remote, else ''."""
+    names = _git_out(project_root, 'remote').split()
+    return 'origin' if 'origin' in names else (names[0] if names else '')
 
 
 def tag_exists(project_root, name):
@@ -487,6 +499,15 @@ def refusal(project_root, name=None):
         tag_at = unwritten_tag_at(project_root, version)
     else:
         at = _git_out(project_root, 'rev-parse', '%s^{commit}' % tag)
+        if _git(project_root, 'cat-file', '-e', '%s:%s' % (
+                at, signatures_module.package_rel(version))).returncode != 0:
+            # No sign-off writes a tag without the package beside it: this
+            # one was typed by hand, and signing after it would count for
+            # nothing while it stands.
+            remote = _remote(project_root)
+            pushed = HAND_TAG_PUSHED % (remote, tag) if remote else ''
+            return ([NO_SIGNOFF_HAND_TAG % (tag, version, tag, pushed)],
+                    EXIT_NOTHING, None)
         if _git(project_root, 'merge-base', '--is-ancestor', at,
                 'HEAD').returncode != 0:
             return [NO_SIGNOFF_ELSEWHERE % (tag, at[:7])], EXIT_NOTHING, None

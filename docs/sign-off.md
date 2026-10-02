@@ -94,6 +94,7 @@ one line naming the cause and the command to run. It writes nothing and exits 1.
 | `No sign-off: 2 files are changed and not committed. Commit them or set them aside, then run purlin:sign again.` | tracked files are changed and not committed; for one it reads `1 file is`. A file git does not track stops nothing |
 | `No sign-off: the evidence is written and not committed. Run purlin:test --commit, then purlin:sign.` | a run wrote results that are not in git |
 | `No version: nothing in this project states one. Run purlin:sign --version <version>, or write it to a VERSION file.` | no version is stated and none is named |
+| `No sign-off: signed/2.1.0 names a commit that holds no evidence package for 2.1.0, so purlin:sign did not write it. Delete it: git tag -d signed/2.1.0, and git push origin --delete signed/2.1.0 if it was pushed. Then run purlin:sign again.` | a tag of that name was written by hand; nothing is signed while it stands. The push half is printed only where the checkout has a remote |
 | `No sign-off: signed/2.1.0 is at 8de0b6e, which this checkout does not hold. Pull, then run purlin:sign.` | the version is already signed on a commit you have not pulled |
 | `No sign-off: signed/2.1.0 is at 8de0b6e, and the code has changed since. To sign this code, name a new version: purlin:sign --version <version>.` | the version is already signed, over other code; a tag that exists is never moved |
 | `No sign-off: these results were not taken on this version of the code, 1cf829e: login on Windows. Run purlin:test on Windows, then purlin:sign.` | a result was taken before the code last changed; the line names the features and the system, and the run that takes them again |
@@ -297,7 +298,8 @@ the key `user.signingkey` names. It pins the code, every evidence file, the pack
 sign-offs under one name. It is never moved.
 
 The status reads `signed` only where the tag names a commit that holds the package and a
-sign-off of it counts. A tag written by hand reads `not signed`, with one warning.
+sign-off of it counts. A tag written by hand reads `not signed`, with one warning, and
+`purlin:sign` refuses to sign that version until the tag is deleted.
 
 Changing a test command in `.purlin/config.json` ends the results, as changing the code does.
 Changing `version` alone does not.

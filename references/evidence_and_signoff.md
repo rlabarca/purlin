@@ -202,7 +202,8 @@ A sign-off counts when two things are true:
 A sign-off is read as `HEAD` holds it. A sign-off file changed and not committed does not count.
 
 The status reads `signed` only where the tag names a commit that holds the package and a
-sign-off of it counts. A tag written by hand reads `not signed`, with one warning.
+sign-off of it counts. A tag written by hand reads `not signed`, with one warning, and
+`purlin:sign` refuses to sign that version until the tag is deleted.
 
 **How each is checked.**
 

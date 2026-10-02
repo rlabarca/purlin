@@ -9,8 +9,8 @@
 >   package with it and writes the tag `signed/<version>`; later ones are added beside it.
 > Scope: scripts/mcp/purlin/signatures.py, scripts/review/sign.py, scripts/mcp/purlin/facts.py
 > Stack: python/stdlib (json, subprocess), git signed commits, SSH keys
-> Highest-Rule: 134
-> Highest-Proof: 265
+> Highest-Rule: 135
+> Highest-Proof: 268
 
 ## Rules
 
@@ -40,6 +40,7 @@
 - RULE-129: A hand check's stop shows, under `Last note`, each note of the newest sign-off that holds one for the rule, worded as the dashboard words it: `noted at the sign-off of <version> by <signer>, <at this commit | 1 commit since | <n> commits since>: <note>`; where no sign-off has noted the rule the stop shows neither
 - RULE-130: The sign-off reads `signed <version>` only where `signed/<version>` names a commit holding the package for that version and a sign-off of it counts; a tag that does not is passed over, with one warning naming the tag and why, and the sign-off reads `not signed` where no tag is left
 - RULE-131: Where the sign-off's commit is made and git cannot write `signed/<version>`, the command prints one line naming the tag and git's reason and exits 1, and the next `purlin:sign` writes the tag on that commit and adds no second sign-off
+- RULE-135: The command refuses, with one line and nothing written, where `signed/<version>` exists for the version it is to sign and names a commit holding no evidence package for that version: the line names the tag, why it is no sign-off, and `git tag -d`, with `git push origin --delete` where the checkout has a remote; a tag that is the version's sign-off refuses nothing
 - RULE-132: The command refuses in the same way while a rule has no result that counts, naming each: a rule never run, a slow proof not run, a rule with no result on a system one of its proofs is tagged for, the rules of a spec that holds a number twice or a merge-conflict line, and each test comment to correct
 - RULE-133: A sign-off is read as `HEAD` holds it: a file not tracked, or changed and not committed, does not count, and no note of a sign-off that does not count is shown
 - RULE-134: Two signers whose addresses differ each keep a sign-off of one version: the second takes a file name of its own, and the first signer's file is left as it was
@@ -112,3 +113,6 @@
 - PROOF-263 (RULE-126): `login RULE-2`, a hand check, has `PROOF-3` tagged `@env(windows)`, run under the source `ci` on the machine `build-7`; its stop holds the two lines `  Linux/Unix: passed on dana-laptop` and `  Windows: passed on build-7`, in that order
 - PROOF-264 (RULE-111): An answers file gives `login RULE-2` a note and holds `"sign": "yes"`, a string and not `true`; `--answers` prints `Nothing was signed.`, exits 0 and adds no commit and no file
 - PROOF-265 (RULE-125): With `.purlin/config.json` holding `{"version": "0.10.0",`, the walk prints only `.purlin/config.json cannot be read: Expecting property name enclosed in double quotes at line 1. Fix the file by hand; nothing ran and nothing was saved.`, adds no commit and exits 1
+- PROOF-266 (RULE-135): A project with committed evidence that passes and no remote carries the tag `signed/2.1.0`, written by hand with `git tag`; the walk for `2.1.0` prints only `No sign-off: signed/2.1.0 names a commit that holds no evidence package for 2.1.0, so purlin:sign did not write it. Delete it: git tag -d signed/2.1.0. Then run purlin:sign again.`, adds no commit and exits 1
+- PROOF-267 (RULE-135): A project with a remote named `origin` carries the tag `signed/2.1.0`, written by hand with `git tag`; the one line the walk for `2.1.0` prints ends `Delete it: git tag -d signed/2.1.0, and git push origin --delete signed/2.1.0 if it was pushed. Then run purlin:sign again.`
+- PROOF-268 (RULE-135): `jane@acme.com` signs `2.1.0` by the walk, which writes `signed/2.1.0`; `omar@example.org` then signs `2.1.0`; that walk exits 0, prints no line starting `No sign-off:`, and the folder `2.1.0.signoffs` holds `jane.json` and `omar.json`

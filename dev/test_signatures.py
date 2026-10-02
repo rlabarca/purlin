@@ -730,8 +730,10 @@ class TestTheRefusals:
     def test_a_tag_on_another_branch_is_refused(self, signed, capsys):
         git(signed.root, 'switch', '-q', '-c', 'other')
         git(signed.root, 'commit', '-q', '--allow-empty', '-m', 'chore: other')
-        git(signed.root, 'tag', 'signed/2.1.0')
-        tagged = signed.head()
+        assert walked(signed, ['y'])[0] == 0
+        tagged = git(signed.root, 'rev-parse', 'signed/2.1.0^{commit}'
+                     ).stdout.strip()
+        assert tagged == signed.head()
         git(signed.root, 'switch', '-q', 'main')
         assert run_main(signed, capsys) == (1, [
             'No sign-off: signed/2.1.0 is at %s, which this checkout does not '
@@ -739,7 +741,7 @@ class TestTheRefusals:
 
     # purlin: signatures PROOF-225
     def test_a_code_change_since_the_tag_is_refused(self, signed, capsys):
-        git(signed.root, 'tag', 'signed/2.1.0')
+        assert walked(signed, ['y'])[0] == 0
         tagged = signed.head()
         write(os.path.join(signed.root, 'src', 'login.py'),
               'def login(user, password):\n    return 401\n')
@@ -748,6 +750,44 @@ class TestTheRefusals:
             'No sign-off: signed/2.1.0 is at %s, and the code has changed '
             'since. To sign this code, name a new version: purlin:sign '
             '--version <version>.' % tagged[:7]])
+
+    HAND_TAG = ('No sign-off: signed/2.1.0 names a commit that holds no '
+                'evidence package for 2.1.0, so purlin:sign did not write it. '
+                'Delete it: git tag -d signed/2.1.0%s. Then run purlin:sign '
+                'again.')
+
+    # purlin: signatures PROOF-266
+    def test_a_tag_typed_by_hand_for_this_version_is_refused(self, signed,
+                                                             capsys):
+        git(signed.root, 'tag', 'signed/2.1.0')
+        assert git(signed.root, 'remote').stdout == ''
+        assert run_main(signed, capsys) == (1, [self.HAND_TAG % ''])
+        assert status(signed.root) == ''
+        assert not os.path.exists(os.path.join(
+            signed.root, '.purlin', 'evidence', 'package'))
+
+    # purlin: signatures PROOF-267
+    def test_the_refusal_names_the_remote_where_there_is_one(
+            self, signed, tmp_path, capsys):
+        host = str(tmp_path / 'host.git')
+        git(signed.root, 'init', '-q', '--bare', host)
+        git(signed.root, 'remote', 'add', 'origin', host)
+        git(signed.root, 'tag', 'signed/2.1.0')
+        assert run_main(signed, capsys) == (1, [self.HAND_TAG % (
+            ', and git push origin --delete signed/2.1.0 if it was pushed')])
+
+    # purlin: signatures PROOF-268
+    def test_a_tag_that_is_the_sign_off_lets_a_second_signer_sign(self,
+                                                                  signed):
+        assert walked(signed, ['y'])[0] == 0
+        tagged = signed.head()
+        code, lines, _asked = sign_as(signed, 'omar@example.org', 'Omar')
+        assert code == 0, lines
+        assert not [line for line in lines if line.startswith('No sign-off:')]
+        folder = os.path.join(signed.root, *SIGNOFFS.split('/'))
+        assert sorted(os.listdir(folder)) == ['jane.json', 'omar.json']
+        assert git(signed.root, 'rev-parse', 'signed/2.1.0^{commit}'
+                   ).stdout.strip() == tagged
 
     # purlin: signatures PROOF-162
     def test_a_commit_git_refuses_names_gits_own_message(self, signed):
