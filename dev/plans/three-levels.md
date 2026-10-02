@@ -1722,6 +1722,31 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       `<s> of <n> rules strong (<p>%)` counts only rules that can be strong, so 100% is reachable
       and the `Strong` box turns green once every such rule is strong. The counts after it still
       list what the audit found for the anchor's rules.
+126. **The upgrade from 0.9.5 survives a real project** (added 2026-10-02). A fresh agent
+    upgraded a copy of a real 0.9.5 project (54 specs, 476 rules) from the README and the
+    upgrade page alone. The upgrade ran cleanly and the first full test run then counted 57 of
+    476 rules, where 0.9.5 read every feature verified; reaching 474 took hand repairs no page
+    describes. In the owner's words: "we need to fix up to 20", the first twenty of its list
+    of improvements. The build plan is `dev/plans/d126-plan.md`.
+    - **A lettered proof is renumbered.** 0.9.5 allowed `PROOF-3b`. The upgrade gives each one
+      the next free number in its spec, rewrites its test's marker, and lists each change, as
+      `piano_roll PROOF-7b is now PROOF-23`. It asks first, as every migration does.
+    - **The upgrade looks at how the project runs its tests and asks**, as first setup does:
+      it shows the command it proposes for each test tool and the owner accepts or corrects it.
+    - **While an upgrade is pending the status prints only that**: the project was set up by
+      0.9.5, nothing counts until it is upgraded, and the command. No table, no warning, no
+      `Left to do`.
+    - **The dashboard shows warnings of one kind as one card with a count**, naming the first
+      two specs, so the board stays on the first screen.
+    - **The rest, fixed as bugs or plain gaps:** a rewritten marker leaves one plain test
+      title, and the upgrade checks each with the test run's own reader; a title with an
+      escaped quote or joined from pieces is read; every file that loads the old pytest plugin
+      is cleaned; a marker's comment goes above the test's opening line; backups go in one
+      ignored folder; the update says what became of the old record and what it left for the
+      owner; its output is totals first and the lines that need the owner last; a full run
+      hands the test tool its files and prints a line as each suite starts; a run says when
+      the tests setting changed, and names what `--commit` left uncommitted; the commit's
+      subject stays short; the README points at the upgrade page.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
