@@ -1371,7 +1371,7 @@ def test_the_command_proposed_starts_the_way_the_project_starts_it(
 
 
 # purlin: update PROOF-183
-def test_the_owner_is_shown_each_command_and_may_type_another(
+def test_the_owner_is_shown_where_each_command_runs_and_may_type_another(
         tmp_path, capsys, monkeypatch):
     root = _subfolder_project(tmp_path)
     asked = _answers(monkeypatch, [(COMMAND_QUESTION % 'pytest', TYPED),

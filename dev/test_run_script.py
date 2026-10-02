@@ -1123,7 +1123,7 @@ class TestARunCoversWhatTheChangeTouched:
             if line.startswith('Running pytest: ')), output
 
     # purlin: run_script PROOF-95
-    def test_nothing_changed_runs_nothing_and_ends_on_the_sign_off(
+    def test_nothing_changed_starts_no_suite_and_ends_on_the_sign_off(
             self, tmp_path):
         root, _sha = _touched_project(tmp_path)
         before = {name: _file(root, '.purlin/evidence/local/%s.json' % name)
