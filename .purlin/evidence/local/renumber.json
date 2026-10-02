@@ -2,14 +2,14 @@
   "feature": "renumber",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T00:43:53Z",
-      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
+      "at": "2026-10-02T04:47:28Z",
+      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "bcd91d803c730c808b03cc898a9bf7aa6745926cbcf5ddad91c8af805b6d5ea3",
-        "spec": "2e4375a479f4254f4ceed67e4e67e13bb994b17466f2db0de298ee58bb4648dc",
-        "tests": "7ac06d2ca21f1b8874339444e965e61247eab5583e3b0f67ce046d72d61ab175"
+        "code": "cdd516f5b5e2126c4e72ef207bd5489e1a8a37b5011cbc211e2b42021a041615",
+        "spec": "dca6fbd47142575445b3d47929d07ab394c7dcb4f1c6ec2df2a9e99b4e08687b",
+        "tests": "41d2da4420a087ddfd4118540c78f3bac8f420eba4d576fb56f66166935daa6c"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -107,11 +107,70 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-9",
-          "test": "dev/test_renumber.py::TestTheRest::test_a_run_makes_the_edits_and_commits_nothing"
+          "test": "dev/test_renumber.py::TestTheRest::test_a_run_with_yes_makes_the_edits_and_commits_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_renumber.py::TestAsking::test_a_run_with_nothing_to_answer_from_changes_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-16",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-11",
+          "test": "dev/test_renumber.py::TestAsking::test_a_run_answered_y_renumbers"
+        },
+        {
+          "env": null,
+          "id": "PROOF-17",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_renumber.py::TestConflicts::test_a_conflict_of_two_added_rules_keeps_both"
+        },
+        {
+          "env": null,
+          "id": "PROOF-18",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_renumber.py::TestConflicts::test_a_conflict_of_two_highest_lines_takes_the_higher"
+        },
+        {
+          "env": null,
+          "id": "PROOF-19",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_renumber.py::TestConflicts::test_one_conflict_resolved_and_nothing_renumbered"
+        },
+        {
+          "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_renumber.py::TestConflicts::test_a_line_both_sides_changed_is_left"
+        },
+        {
+          "env": null,
+          "id": "PROOF-21",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_renumber.py::TestConflicts::test_a_conflict_holding_another_kind_of_line_is_left"
         }
       ],
       "rules": {
         "RULE-1": "passed",
+        "RULE-11": "passed",
+        "RULE-12": "passed",
+        "RULE-13": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

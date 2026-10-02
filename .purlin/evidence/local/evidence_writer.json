@@ -2,14 +2,14 @@
   "feature": "evidence_writer",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T00:43:53Z",
-      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
+      "at": "2026-10-02T04:47:27Z",
+      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "00912e70a77c8038b8c62b74ed4ff9cedc7e9e0de6078900d133a11f0c67bee6",
-        "spec": "2d85d1c0049f5e668545361b976657242498f7ac803eb7ee26bc42b53b4ea38e",
-        "tests": "e9917576b099724370c417e33e51ce35eea22d9f46b02c2deb3cb71ecd5df26e"
+        "code": "d8dc1e3d82dd3d5b38daace06636203361b9d4d15f376e5052e579af20f355eb",
+        "spec": "7c36b6a637678a66c40aeb028525fb508608b4b03685de5aaf8b86cabed9e2de",
+        "tests": "bddda42572ae87e1a1a32e737f487f684c496eef945016fa25c5fd6c11e8548e"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -91,7 +91,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-30",
-          "test": "dev/test_evidence_writer.py::test_a_rule_whose_one_proof_is_manual_reads_passed"
+          "test": "dev/test_evidence_writer.py::test_a_rule_whose_one_proof_is_manual_reads_checked_at_sign_off"
         },
         {
           "env": null,

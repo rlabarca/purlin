@@ -2,12 +2,12 @@
   "feature": "skill_spec",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T00:43:54Z",
-      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
+      "at": "2026-10-02T04:47:28Z",
+      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "ecbcd8125c4839e5224b3ce486ffaa4fc9b7ea38a3c2ab963e0a2cce2ef1315f",
+        "code": "d7e0c6bfadf45c5a9d1719550c54c5ccb7cbf4c4ac979fead3be9b7ef0a2026e",
         "spec": "e52c7034dc5fe3ad593f5199e3d79ba2a639c3d42a5e655722fcdeff23856b0c",
         "tests": "65617c85d775f5b24abb81d3d3be2d2a750871517fc4011ad196067022dda1d6"
       },

@@ -2,14 +2,14 @@
   "feature": "planted_bug",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T00:43:53Z",
-      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
+      "at": "2026-10-02T04:47:27Z",
+      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "375b62691bb1b4004ac21d900570d649f88d56aa80f822a5c19cd14a616915b8",
-        "spec": "fda44db63c222de87eca1709e1777f261bbadf1420461eba0e93ab40a339f068",
-        "tests": "97ef7185730ad6c7527479fc973dbb91c1593575aa3c6a1bf789973866fb829b"
+        "code": "e96ba42316ce2f2e73d95f402e97ddc30596958395ef655d957d0b1a69699548",
+        "spec": "45e27389bb49f0d6d6a5ab499061e5fac20e495e1a17f22f35efc2eba8df9cd5",
+        "tests": "b110e2664986b53fbedebcdbfb9af88f59844fb930c0bb8920991a2ad51c8d55"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -164,6 +164,86 @@
           "result": "pass",
           "rule": "RULE-14",
           "test": "dev/test_planted_bug.py::test_a_change_that_keeps_the_files_size_is_still_run"
+        },
+        {
+          "env": null,
+          "id": "PROOF-22",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_planted_bug.py::test_an_aim_past_the_test_is_recorded"
+        },
+        {
+          "env": null,
+          "id": "PROOF-23",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_planted_bug.py::test_any_other_aim_and_no_aim_are_recorded_plain"
+        },
+        {
+          "env": null,
+          "id": "PROOF-24",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_planted_bug.py::test_a_case_is_kept_as_written_with_its_outer_spaces_cut"
+        },
+        {
+          "env": null,
+          "id": "PROOF-25",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_planted_bug.py::test_a_case_longer_than_300_characters_is_cut_to_its_first_300"
+        },
+        {
+          "env": null,
+          "id": "PROOF-26",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_planted_bug.py::test_a_part_that_names_no_case_is_not_planted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-27",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-17",
+          "test": "dev/test_planted_bug.py::test_a_part_whose_case_is_empty_is_not_planted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-28",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_planted_bug.py::test_a_change_that_adds_only_a_comment_is_not_planted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-29",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_planted_bug.py::test_a_line_of_two_slashes_is_a_comment_in_any_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-30",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_planted_bug.py::test_a_hash_line_in_a_text_file_is_no_comment"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_planted_bug.py::test_a_comment_beside_a_changed_line_is_still_planted"
         }
       ],
       "rules": {
@@ -172,6 +252,10 @@
         "RULE-12": "passed",
         "RULE-13": "passed",
         "RULE-14": "passed",
+        "RULE-15": "passed",
+        "RULE-16": "passed",
+        "RULE-17": "passed",
+        "RULE-18": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-5": "passed",

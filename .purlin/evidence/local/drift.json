@@ -2,14 +2,14 @@
   "feature": "drift",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T00:43:53Z",
-      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
+      "at": "2026-10-02T04:47:27Z",
+      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "199fbdac088c77debd576f1b5120873c2fb94714255a039b004ca301b7e09daf",
-        "spec": "8def3c9b5d0b2615a5ece05f43a827fbb58b6faf6154b1aa5c8366ae5e3c8e7f",
-        "tests": "d860b2fff04d3299eeaca954f20db73d11eac2ab83fc2f813379d15c973542a7"
+        "code": "7784b9d77189818945adbf7ca23e4d6526f1d7e551792acb1a5b1c348509fe23",
+        "spec": "c735e3d720c2d8dafc2cc75f3d617f0eac7a5d3b915da5e260c2ab603431799c",
+        "tests": "1fe401843efbb399040445f921e4de6d80c256ba4a96a9645088de01e55dda9e"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -267,7 +267,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-42",
-          "test": "dev/test_drift.py::TestReportShape::test_the_view_carries_its_eleven_keys"
+          "test": "dev/test_drift.py::TestReportShape::test_the_view_carries_its_twelve_keys"
         },
         {
           "env": null,
@@ -292,6 +292,22 @@
           "result": "pass",
           "rule": "RULE-43",
           "test": "dev/test_drift.py::TestProofsChanged::test_a_pull_moving_proof_4s_text_to_proof_6_names_the_move"
+        },
+        {
+          "env": null,
+          "id": "PROOF-89",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-44",
+          "test": "dev/test_drift.py::TestWhereDriftStarts::test_a_merge_stopped_on_a_conflict_is_named_on_the_second_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-90",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-45",
+          "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_a_proof_that_follows_a_moved_rule_is_named_after_it"
         }
       ],
       "rules": {
@@ -310,6 +326,8 @@
         "RULE-41": "passed",
         "RULE-42": "passed",
         "RULE-43": "passed",
+        "RULE-44": "passed",
+        "RULE-45": "passed",
         "RULE-6": "passed"
       },
       "runner": "rich-labarca"

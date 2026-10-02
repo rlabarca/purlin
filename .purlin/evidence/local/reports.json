@@ -2,14 +2,14 @@
   "feature": "reports",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T00:43:53Z",
-      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
+      "at": "2026-10-02T04:47:28Z",
+      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "e7a876ba0147dedbc473a99f8e15b515b8bf2f912f5dae76667db2e13628b3d6",
-        "spec": "1aa00a9d2d694844f47a72de4dcb71a0753c61b27fee718713bd2a77ee64eca6",
-        "tests": "dc28d310c929f03e0be3f25e09e24b5782cd8896fca7f7d7d5786e592aef69db"
+        "code": "273afd518b91f68e88b522f0c1d7d4aa33df33459912e6cbcdf3f9bd9fa8e519",
+        "spec": "25d41611e639f74a892a0c2b18053ccddb5feee2b9b715d8bb388ec1ab7e76fc",
+        "tests": "829ccd12dd21af9de32286ff87c534f828f818da03d4fe76624fa5bd7003667e"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -28,6 +28,14 @@
           "result": "pass",
           "rule": "RULE-1",
           "test": "dev/test_reports.py::TestTheMarker::test_a_marker_after_code_in_a_text_file_is_not_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-124",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_marker_naming_a_feature_with_a_hyphen_is_tied"
         },
         {
           "env": null,
@@ -404,6 +412,14 @@
           "result": "pass",
           "rule": "RULE-36",
           "test": "dev/test_reports.py::TestNearMisses::test_an_id_one_character_from_several_is_not_a_near_miss"
+        },
+        {
+          "env": null,
+          "id": "PROOF-125",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_reports.py::TestNearMisses::test_a_feature_holding_a_character_no_name_may_has_no_fix"
         }
       ],
       "rules": {

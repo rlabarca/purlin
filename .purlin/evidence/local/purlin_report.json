@@ -2,14 +2,14 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T00:43:53Z",
-      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
+      "at": "2026-10-02T04:47:28Z",
+      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "132d3651803a79d6ba7dd2656207df4001f3b9bf75d9d989c46567651991f49b",
-        "spec": "5cd2eb6f93db280eb5bea49f19d55558e66835d622c72ed58d328bda0b8ebfb7",
-        "tests": "ee5e4b87f30bec8e3b6a43537b5a47de3c0d609b980c2728428fcc9c1ee8f4a1"
+        "code": "9b75dbfc1ca380a294ff00362d1d4dc266778a56b31dc7b2661a83351bb69863",
+        "spec": "0bedcbff88702e127ef7d69f69f16604d3e5c50e27a37c441ee0a2e1e9a0dcd4",
+        "tests": "93b5123b59f1df0c6a36852476a5ec304d4259a78f1f28acbd0ef2ae121a5fc5"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -95,6 +95,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-247",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_purlin_report.py::test_passing_is_complete_once_every_other_rule_is_checked_at_sign_off"
+        },
+        {
+          "env": null,
           "id": "PROOF-114",
           "manual": false,
           "result": "pass",
@@ -140,6 +148,14 @@
           "result": "pass",
           "rule": "RULE-9",
           "test": "dev/test_purlin_report.py::test_every_count_carries_the_word_it_counts"
+        },
+        {
+          "env": null,
+          "id": "PROOF-245",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_purlin_report.py::test_a_hand_check_is_counted_by_hand_and_out_of_the_strong_share"
         },
         {
           "env": null,
@@ -220,6 +236,14 @@
           "result": "pass",
           "rule": "RULE-15",
           "test": "dev/test_purlin_report.py::test_a_slow_proof_not_run_shows_its_tag_and_its_reason"
+        },
+        {
+          "env": null,
+          "id": "PROOF-244",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-15",
+          "test": "dev/test_purlin_report.py::test_a_hand_check_no_sign_off_noted_reads_checked_at_sign_off_as_passed"
         },
         {
           "env": null,
@@ -516,6 +540,14 @@
           "result": "pass",
           "rule": "RULE-71",
           "test": "dev/test_purlin_report.py::test_a_hand_check_reads_the_newest_sign_offs_note_beneath_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-246",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-71",
+          "test": "dev/test_purlin_report.py::test_a_note_written_before_the_rule_was_reworded_says_so_above_it"
         },
         {
           "env": null,

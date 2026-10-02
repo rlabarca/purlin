@@ -2,14 +2,14 @@
   "feature": "collaboration",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T00:53:32Z",
-      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
+      "at": "2026-10-02T04:47:27Z",
+      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "06c7565bf00aeb8b3410aaff9d3e65d6c78f74013e33f997ad0fb61b0a554557",
+        "code": "ea894ccd6ea46d4cecf7d635ede1c75255a3eccf467e24eb74783b2252e471b9",
         "spec": "288338e527e74393978cafd86960a75157c22cc5cf5d84eb92b504f76083ce74",
-        "tests": "4b926d29b2829934ed3f12c86a5afab54ff737ff867f1febde856cdc93b40d3c"
+        "tests": "cbe87ecc31864458235cd239970e44fef36905c53e4c256d0bcb886ad553f2e0"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [

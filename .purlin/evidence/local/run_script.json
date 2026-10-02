@@ -2,14 +2,14 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T00:43:53Z",
-      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
+      "at": "2026-10-02T04:47:28Z",
+      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "430f4445deb29f9a80c68e6b3789b8dbd89a18db719c201ca317198f16c8dba1",
-        "spec": "c1f8e9119f27c9ae5a67b7a729ff7aeabb8a8ae66454086af7c31b99118ea3ff",
-        "tests": "2e488daac19d4c667bb817f21970a69b3acfd4f35f3e04168aa62f1c940f46e6"
+        "code": "329289bc40e104168e656dbe4f69a83c68a285af03904ac7098b6f06e6f43437",
+        "spec": "f6df6bbf9bd9afb298590c9c28dc9e48993682f3d22cd87bb53ba7c1649b00e2",
+        "tests": "569ede21deee02cb3549588872ffa312a4b4e02e592e30125f92acb3490e5c6c"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -92,6 +92,30 @@
           "result": "pass",
           "rule": "RULE-102",
           "test": "dev/test_run_script.py::TestNoTestCommand::test_jest_is_told_it_needs_jest_junit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-287",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-107",
+          "test": "dev/test_run_script.py::TestNoTestCommand::test_with_nothing_to_answer_from_the_setting_is_not_written"
+        },
+        {
+          "env": null,
+          "id": "PROOF-288",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-107",
+          "test": "dev/test_run_script.py::TestNoTestCommand::test_write_tests_writes_the_setting_unasked_and_runs"
+        },
+        {
+          "env": null,
+          "id": "PROOF-289",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-107",
+          "test": "dev/test_run_script.py::TestNoTestCommand::test_answered_y_the_setting_is_written_and_the_test_runs"
         },
         {
           "env": null,
@@ -591,6 +615,7 @@
         "RULE-104": "passed",
         "RULE-105": "passed",
         "RULE-106": "passed",
+        "RULE-107": "passed",
         "RULE-11": "passed",
         "RULE-12": "passed",
         "RULE-17": "passed",

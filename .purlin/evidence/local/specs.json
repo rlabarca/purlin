@@ -2,12 +2,12 @@
   "feature": "specs",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T00:43:54Z",
-      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
+      "at": "2026-10-02T04:47:28Z",
+      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "3b1e589cbf4d0cac73d62f65df642891c92d7ec674767635c5b76a040e1e994d",
+        "code": "1fd2321e67953cb9a6fb1f5a81de8154bbf39fc89c36f02efd7937c7711e813c",
         "spec": "27e14a30a19598595868adfcb9c540d484185c41d37cdf4766d6f4465f3a928c",
         "tests": "5098a6d32417fbf3571a7c527e88e4f790d1bf646930096a2e1d05d25ccf9946"
       },

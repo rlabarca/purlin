@@ -2,14 +2,14 @@
   "feature": "summary",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T00:43:54Z",
-      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
+      "at": "2026-10-02T04:47:29Z",
+      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "c061d184d7954c2616256b7734d9b0e0d3fac9d7c61872e248b09050004e92c4",
-        "spec": "260d7e3b331dfbd74c1da4cc5c9dc008290a97b91ed9641990ab3dbe37512b77",
-        "tests": "7c1a58d2043f9875ae0a9f2473979a9419f8cb5da96299f1f71ff75e200902ec"
+        "code": "ce8b2f9f7356dcd0ddd0e069fb3ae355e0e852d918b8d9cbf84e9d632b52c642",
+        "spec": "38356e68dc4a4347e8fc4ece66621eacad75314aec3214a13eb16b1f6a966564",
+        "tests": "ba593fdc5a398a757e7f6425ace04db0b4d9313dece4bae9b7b03d6f769ff9d4"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -68,6 +68,22 @@
           "result": "pass",
           "rule": "RULE-22",
           "test": "dev/test_summary.py::TestTheSentence::test_forty_rules_read_each_count_that_is_not_zero"
+        },
+        {
+          "env": null,
+          "id": "PROOF-58",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_summary.py::TestAHandCheckInTheSentence::test_nine_passing_rules_and_a_hand_check_read_one_is_checked"
+        },
+        {
+          "env": null,
+          "id": "PROOF-60",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_summary.py::TestAHandCheckInTheSentence::test_nine_strong_rules_and_a_hand_check_read_nine_of_nine_strong"
         },
         {
           "env": null,
@@ -164,6 +180,14 @@
           "result": "pass",
           "rule": "RULE-18",
           "test": "dev/test_summary.py::TestWhatLetsTheTestsBeMet::test_two_passing_rules_with_no_tag_end_on_the_sign_off"
+        },
+        {
+          "env": null,
+          "id": "PROOF-59",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-25",
+          "test": "dev/test_summary.py::TestAHandCheckInTheSentence::test_an_unchecked_hand_check_leaves_the_tests_met"
         }
       ],
       "rules": {
@@ -174,6 +198,7 @@
         "RULE-22": "passed",
         "RULE-23": "passed",
         "RULE-24": "passed",
+        "RULE-25": "passed",
         "RULE-8": "passed"
       },
       "runner": "rich-labarca"

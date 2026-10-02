@@ -2,14 +2,14 @@
   "feature": "purlin_agent",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T00:43:53Z",
-      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
+      "at": "2026-10-02T04:47:27Z",
+      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "beb276573a600e93ed97a260fb3b6ca10d785ca191cc886ef6a63285b8aaabec",
-        "spec": "e8500e86152d259ab53578fc4702a68cfee32f3f5bfe5f046ec4b89d06c833d5",
-        "tests": "d22a94a8f26ec6d788ef7436565a078b914e0394bb37340c1dec91b7cd154a73"
+        "code": "11ec494286392b31cff9d9d64c6e5637894dc518539d603f54c33b132036b810",
+        "spec": "c99a9e39a79abc4593fe83d907bd62b32c322081b93cb5de7c2766a905b53fc5",
+        "tests": "fd818529da1c32ffb675890d364b7c6c8bb846589dc6107cbf33ab462d95a9ee"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -60,6 +60,14 @@
           "result": "pass",
           "rule": "RULE-23",
           "test": "dev/test_purlin_agent.py::test_no_skill_agent_definition_or_reference_names_a_path_under_dev"
+        },
+        {
+          "env": null,
+          "id": "PROOF-55",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_purlin_agent.py::test_every_skill_naming_the_status_names_the_tool_and_the_script"
         }
       ],
       "rules": {
@@ -68,7 +76,8 @@
         "RULE-20": "passed",
         "RULE-21": "passed",
         "RULE-22": "passed",
-        "RULE-23": "passed"
+        "RULE-23": "passed",
+        "RULE-24": "passed"
       },
       "runner": "rich-labarca"
     }

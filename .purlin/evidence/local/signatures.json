@@ -2,14 +2,14 @@
   "feature": "signatures",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T00:43:54Z",
-      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
+      "at": "2026-10-02T04:47:28Z",
+      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "84f37e0172a497b97c0b6d4424916da0e88bc90b27487be6e7c9bb0314453854",
-        "spec": "5d79e4ae1d611ca7ffa6199a3b767a93d2c4438d61b449bdb3196d508f75935f",
-        "tests": "ce4eca0e0b8db10472b8c47af8d0c34195a6f1b955c2e79be8fd58c009482938"
+        "code": "7a4ea88825f933977c848ec0d9b77f200636f43c6c39fc4298598dc97fe77561",
+        "spec": "005628eeab16043514457735af9b39a2e599a4a1ed098453100c9fc95184c41e",
+        "tests": "bc97d48db459efd7f90a79dd618b817cfe58af83bb6759af0088e3d50d60c244"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -251,7 +251,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-111",
-          "test": "dev/test_signatures.py::TestTheAgent::test_answers_that_do_not_say_true_sign_nothing"
+          "test": "dev/test_signatures.py::TestTheAgent::test_answers_whose_sign_is_true_sign_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-271",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-111",
+          "test": "dev/test_signatures.py::TestTheAgent::test_answers_holding_another_address_sign_nothing"
         },
         {
           "env": null,
@@ -479,6 +487,22 @@
         },
         {
           "env": null,
+          "id": "PROOF-272",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-129",
+          "test": "dev/test_signatures.py::TestTheLastNote::test_a_rule_reworded_since_the_note_says_so_above_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-273",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-129",
+          "test": "dev/test_signatures.py::TestTheLastNote::test_a_proof_reworded_since_the_note_says_so_above_it"
+        },
+        {
+          "env": null,
           "id": "PROOF-252",
           "manual": false,
           "result": "pass",
@@ -492,6 +516,22 @@
           "result": "pass",
           "rule": "RULE-130",
           "test": "dev/test_signatures.py::TestWhereItReadsSigned::test_a_sign_off_changed_in_an_unsigned_commit_is_no_sign_off"
+        },
+        {
+          "env": null,
+          "id": "PROOF-274",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-130",
+          "test": "dev/test_signatures.py::TestWhereItReadsSigned::test_a_tag_this_checkout_lacks_is_read_from_the_sign_off_files"
+        },
+        {
+          "env": null,
+          "id": "PROOF-275",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-130",
+          "test": "dev/test_signatures.py::TestWhereItReadsSigned::test_with_no_tag_a_sign_off_that_does_not_count_is_not_signed"
         },
         {
           "env": null,
@@ -564,6 +604,22 @@
           "result": "pass",
           "rule": "RULE-134",
           "test": "dev/test_signatures.py::TestTheSignOff::test_two_signers_who_share_a_name_each_keep_a_sign_off"
+        },
+        {
+          "env": null,
+          "id": "PROOF-269",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-136",
+          "test": "dev/test_signatures.py::TestTheKeyThatSigned::test_a_commit_signed_with_another_key_is_taken_back"
+        },
+        {
+          "env": null,
+          "id": "PROOF-270",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-136",
+          "test": "dev/test_signatures.py::TestTheKeyThatSigned::test_the_refusal_leaves_no_file_and_nothing_staged"
         }
       ],
       "rules": {
@@ -591,6 +647,7 @@
         "RULE-133": "passed",
         "RULE-134": "passed",
         "RULE-135": "passed",
+        "RULE-136": "passed",
         "RULE-17": "passed",
         "RULE-20": "passed",
         "RULE-50": "passed",

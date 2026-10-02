@@ -2,14 +2,14 @@
   "feature": "scaffold",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T00:43:53Z",
-      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
+      "at": "2026-10-02T04:47:28Z",
+      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "fc679d0b35578ce4678b3fe46ac565929e3f739d75c022df1cf320041914b961",
-        "spec": "615ca2dcf59ce9a57bddafbd210e12e99034c1264490d9e5b57cff123521da59",
-        "tests": "0b312b9f9ec4e4122cc9e129ad311e3084b09bd3a1e6d01e39d4a8594b7432d6"
+        "code": "9917b55a379398d73a2f869306bf62186d823aa29a1f3a72a28c984ed4782927",
+        "spec": "6bb06a5afc8b4d993a60b561f3148980ca4c421128a3ba29659c01d69c962e71",
+        "tests": "7cf7845f783c8f39ba22a9a8f29e0718685b897a3022af31b34249e768b6f8fe"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -191,6 +191,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-176",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-67",
+          "test": "dev/test_init_scaffold.py::TestTheIgnoreFile::test_the_gitignore_names_the_bytecode_cache"
+        },
+        {
+          "env": null,
           "id": "PROOF-157",
           "manual": false,
           "result": "pass",
@@ -220,6 +228,22 @@
           "result": "pass",
           "rule": "RULE-70",
           "test": "dev/test_init_scaffold.py::TestTheCommit::test_a_file_already_staged_stays_out_of_the_commit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-174",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-70",
+          "test": "dev/test_init_scaffold.py::TestTheCommit::test_a_second_run_with_yes_commits_what_the_first_wrote"
+        },
+        {
+          "env": null,
+          "id": "PROOF-175",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-70",
+          "test": "dev/test_init_scaffold.py::TestTheCommit::test_a_tracked_gitignore_is_committed_by_the_second_run"
         },
         {
           "env": null,

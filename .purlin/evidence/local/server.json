@@ -2,14 +2,14 @@
   "feature": "server",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T00:43:54Z",
-      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
+      "at": "2026-10-02T04:47:28Z",
+      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "7665b9dc77123863a480e4a57177ddaafeb84011569030c8c356db74c15f40fb",
-        "spec": "48ca664b7ea570a417f443a65af208508599988b01445828d6a636ca2458c359",
-        "tests": "b4860b4e1275dbcd2ebf48fb79539ee5828f27008a86f53ee823ca524c7624f2"
+        "code": "9bbdf2060390f29fa9175738a6bdd729575541b93851b303bb61b501d659ac33",
+        "spec": "85c87fd31ae4bb29e811851c43013eb428c040ab3d491cf65985836d4c1a102e",
+        "tests": "ef33406c0aa9904c08fc4f4b8e8439533b81221ae7e770ba6cad8bcc65f1b909"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -212,6 +212,70 @@
           "result": "pass",
           "rule": "RULE-37",
           "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_root_named_by_an_earlier_call_is_not_used_by_the_next"
+        },
+        {
+          "env": null,
+          "id": "PROOF-170",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-38",
+          "test": "dev/test_mcp_server.py::TestPurlinsOwnFolder::test_the_copy_named_from_another_workspace_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-171",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-38",
+          "test": "dev/test_mcp_server.py::TestPurlinsOwnFolder::test_a_server_started_in_the_copy_answers_for_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-172",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-38",
+          "test": "dev/test_mcp_server.py::TestPurlinsOwnFolder::test_a_server_started_in_a_second_checkout_answers_for_the_copy"
+        },
+        {
+          "env": null,
+          "id": "PROOF-173",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-39",
+          "test": "dev/test_mcp_server.py::TestTheStatusScript::test_it_prints_what_the_tool_answers"
+        },
+        {
+          "env": null,
+          "id": "PROOF-174",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-39",
+          "test": "dev/test_mcp_server.py::TestTheStatusScript::test_an_empty_folder_is_refused_in_one_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-177",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-40",
+          "test": "dev/test_mcp_server.py::TestTheDriftScript::test_it_prints_the_view_one_line_per_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-175",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_mcp_server.py::TestTheStatusScript::test_a_spec_with_a_mistake_prints_only_its_warning"
+        },
+        {
+          "env": null,
+          "id": "PROOF-176",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_mcp_server.py::TestTheStatusScript::test_a_spec_with_no_mistake_is_counted_in_one_line"
         }
       ],
       "rules": {
@@ -222,6 +286,10 @@
         "RULE-35": "passed",
         "RULE-36": "passed",
         "RULE-37": "passed",
+        "RULE-38": "passed",
+        "RULE-39": "passed",
+        "RULE-40": "passed",
+        "RULE-41": "passed",
         "RULE-5": "not run",
         "RULE-6": "not run",
         "RULE-7": "passed",

@@ -2,12 +2,12 @@
   "feature": "config_engine",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T00:43:53Z",
-      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
+      "at": "2026-10-02T04:47:27Z",
+      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "fbc1cd0b20c23dd0095dc543d64b2e0be644ab09a3611aeb9b8af395b75a015b",
+        "code": "2358a6baaa963b03aa919d98081d5aa01853b78571a896b997d12bb7c5265e1c",
         "spec": "f81e711d5ae324d4346f0ed82891e596f4185aa14c29dd689bf2695410fc5b00",
         "tests": "b4c3b96dd73bd50a5b72462b38a16c573eb7a13a2ccba00c54381e7ec4838296"
       },

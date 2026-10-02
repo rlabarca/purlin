@@ -2,14 +2,14 @@
   "feature": "schema_spec_format",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T00:43:53Z",
-      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
+      "at": "2026-10-02T04:47:28Z",
+      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "fa801eb238c36f0d6ac93971928811a261882f54c1f6401a66d7f961e85f434c",
-        "spec": "466043abc6bd2ff765dd1954d30e07d4df0e0788f6f9fbd541b906cac922aad8",
-        "tests": "9b632ef4413f3924a1cb3f18504971a0926cdf76d64f8da90f7e645bd537fe91"
+        "code": "3aff338f20658971a11c0501d9a750c12346915e0fdfa1250777c98b00666505",
+        "spec": "31c754bf7239253973aa00b6d458ed6342c2dda1f26534f8c46101f1a1ff1a6b",
+        "tests": "19964887f1120bfed0be3754dd711a3083f1731e58497d5533d356bf3169e6f5"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -52,6 +52,22 @@
           "result": "pass",
           "rule": "RULE-7",
           "test": "dev/test_schema_spec_format.py::test_a_first_line_naming_another_feature_is_warned_of"
+        },
+        {
+          "env": null,
+          "id": "PROOF-88",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_schema_spec_format.py::test_a_name_with_another_character_is_warned_of_with_the_rename"
+        },
+        {
+          "env": null,
+          "id": "PROOF-89",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_schema_spec_format.py::test_a_name_with_a_hyphen_is_read_and_not_warned_of"
         },
         {
           "env": null,
@@ -207,6 +223,22 @@
         },
         {
           "env": null,
+          "id": "PROOF-90",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_schema_spec_format.py::test_a_tag_before_the_rule_ids_is_quoted_whole_with_its_reason"
+        },
+        {
+          "env": null,
+          "id": "PROOF-91",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_schema_spec_format.py::test_a_line_that_is_no_proof_line_is_quoted_with_the_form"
+        },
+        {
+          "env": null,
           "id": "PROOF-14",
           "manual": false,
           "result": "pass",
@@ -260,6 +292,7 @@
         "RULE-40": "passed",
         "RULE-41": "passed",
         "RULE-42": "passed",
+        "RULE-43": "passed",
         "RULE-6": "passed",
         "RULE-7": "passed",
         "RULE-9": "passed"

@@ -2,14 +2,14 @@
   "feature": "ai_audit",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T00:43:53Z",
-      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
+      "at": "2026-10-02T04:47:27Z",
+      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "fd48670860fa392722cd5410237d7858527684d621d02bea2232e05fd80ad021",
-        "spec": "abbbf46e32f93a6e90607a361d4a2d0a9651e6f68ad52fab957af7146fe4de8d",
-        "tests": "efde7cf3e7abf984b54dc09f7f8a16c6e84fb6a7a81e750b9686cca54661c0ef"
+        "code": "87fa1df71c46beec300ab62ef772aba6204871185be2b72c5182e46b0442edc5",
+        "spec": "906d17d91519ba53b913c43bbee8334647a9ab852b049c6175e7cf686a696877",
+        "tests": "f6cba80bc011f953c9789cb00030cdd49c662378c78694d3c9bb17a4ec5e1cbe"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -99,7 +99,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-4",
-          "test": "dev/test_ai_audit.py::TestTheCall::test_six_rules_six_calls_each_answer_beside_its_rule"
+          "test": "dev/test_ai_audit.py::TestTheCall::test_six_rules_are_each_asked_once_and_answered_in_order"
         },
         {
           "env": null,
@@ -439,11 +439,91 @@
         },
         {
           "env": null,
-          "id": "PROOF-121",
+          "id": "PROOF-125",
           "manual": false,
           "result": "pass",
-          "rule": "RULE-45",
-          "test": "dev/test_ai_audit.py::TestTheVerdict::test_the_calls_are_counted_first_and_their_cost_printed_after"
+          "rule": "RULE-46",
+          "test": "dev/test_ai_audit.py::TestTheBugAimedPastTheTest::test_the_request_says_the_test_is_shown_and_the_case_must_change"
+        },
+        {
+          "env": null,
+          "id": "PROOF-126",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-46",
+          "test": "dev/test_ai_audit.py::TestTheBugAimedPastTheTest::test_the_request_says_to_choose_the_change_the_test_would_miss"
+        },
+        {
+          "env": null,
+          "id": "PROOF-127",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-46",
+          "test": "dev/test_ai_audit.py::TestTheBugAimedPastTheTest::test_the_request_asks_for_a_plain_bug_where_the_test_leaves_no_way"
+        },
+        {
+          "env": null,
+          "id": "PROOF-128",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-47",
+          "test": "dev/test_ai_audit.py::TestTheBugAimedPastTheTest::test_the_request_shows_a_part_with_its_aim_and_its_case"
+        },
+        {
+          "env": null,
+          "id": "PROOF-129",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-48",
+          "test": "dev/test_ai_audit.py::TestTheBugAimedPastTheTest::test_the_entry_of_a_bug_holds_its_aim_and_its_case"
+        },
+        {
+          "env": null,
+          "id": "PROOF-130",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-48",
+          "test": "dev/test_ai_audit.py::TestTheBugAimedPastTheTest::test_the_entry_of_a_plain_bug_reads_plain"
+        },
+        {
+          "env": null,
+          "id": "PROOF-131",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-49",
+          "test": "dev/test_ai_audit.py::TestTheBugAimedPastTheTest::test_a_bug_in_the_helper_the_test_trusts_survives"
+        },
+        {
+          "env": null,
+          "id": "PROOF-132",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-49",
+          "test": "dev/test_ai_audit.py::TestTheBugAimedPastTheTest::test_the_case_the_ai_named_is_printed_on_the_line_after_the_finding"
+        },
+        {
+          "env": null,
+          "id": "PROOF-133",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-49",
+          "test": "dev/test_ai_audit.py::TestTheBugAimedPastTheTest::test_the_second_finding_carries_the_models_case_word_for_word"
+        },
+        {
+          "env": null,
+          "id": "PROOF-134",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-49",
+          "test": "dev/test_ai_audit.py::TestTheBugAimedPastTheTest::test_a_kept_bug_that_survived_adds_both_findings_again"
+        },
+        {
+          "env": null,
+          "id": "PROOF-135",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-50",
+          "test": "dev/test_ai_audit.py::TestTheBugAimedPastTheTest::test_a_bug_the_test_catches_adds_no_finding"
         }
       ],
       "rules": {
@@ -464,7 +544,11 @@
         "RULE-42": "passed",
         "RULE-43": "passed",
         "RULE-44": "passed",
-        "RULE-45": "passed",
+        "RULE-46": "passed",
+        "RULE-47": "passed",
+        "RULE-48": "passed",
+        "RULE-49": "passed",
+        "RULE-50": "passed",
         "RULE-6": "passed"
       },
       "runner": "rich-labarca"

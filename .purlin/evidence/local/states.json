@@ -2,14 +2,14 @@
   "feature": "states",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T00:43:54Z",
-      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
+      "at": "2026-10-02T04:47:29Z",
+      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "dba361ed344a97f7379c593e6a78f3b77515aed8eef173d5d76aebabd29ff352",
-        "spec": "4fe1025d2e2c5ae776097b4340f125991714e8abf39b648ea1c8ed82907f4f69",
-        "tests": "f805859f300cdd439ca553fa7c2a6b68fccf00a4c817b0b07f79e52dc7e74291"
+        "code": "33871bba6e2fa820511620d0706358bff06e19214cb6e48b2b9db18728571e91",
+        "spec": "ac5d3d89c9888c92ee56d3df07f67c1c87c66044d4656845eccd1c9c1803b03b",
+        "tests": "aac97e54fbfb036f01720ba8e3fe5e88de1c23e4af0c9fbd48a2df11d1ab7b67"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -275,7 +275,31 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-109",
-          "test": "dev/test_states.py::TestTheStrongCell::test_a_manual_rule_with_nothing_run_passes_and_is_checked_at_sign_off"
+          "test": "dev/test_states.py::TestTheStrongCell::test_a_manual_rule_no_sign_off_has_noted_is_checked_at_sign_off"
+        },
+        {
+          "env": null,
+          "id": "PROOF-295",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-109",
+          "test": "dev/test_states.py::TestAHandCheck::test_a_hand_check_noted_at_head_reads_passed_with_the_note"
+        },
+        {
+          "env": null,
+          "id": "PROOF-296",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-127",
+          "test": "dev/test_states.py::TestAHandCheck::test_a_rule_reworded_since_its_note_is_checked_at_sign_off_again"
+        },
+        {
+          "env": null,
+          "id": "PROOF-297",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-127",
+          "test": "dev/test_states.py::TestAHandCheck::test_a_proof_reworded_since_its_note_says_so_in_the_strong_cell"
         },
         {
           "env": null,
@@ -339,7 +363,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-27",
-          "test": "dev/test_states.py::TestPayload::test_schema_fifteen_carries_exactly_the_seventeen_keys"
+          "test": "dev/test_states.py::TestPayload::test_schema_sixteen_carries_exactly_the_seventeen_keys"
         },
         {
           "env": null,
@@ -452,6 +476,22 @@
           "result": "pass",
           "rule": "RULE-121",
           "test": "dev/test_states.py::TestStatusTable::test_an_audit_entry_on_a_rule_that_now_fails_keeps_the_strong_column"
+        },
+        {
+          "env": null,
+          "id": "PROOF-298",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-121",
+          "test": "dev/test_states.py::TestStatusTable::test_two_passing_rules_and_a_hand_check_read_two_of_three_one_by_hand"
+        },
+        {
+          "env": null,
+          "id": "PROOF-299",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-121",
+          "test": "dev/test_states.py::TestStatusTable::test_nine_strong_rules_and_a_hand_check_read_nine_of_nine_strong"
         },
         {
           "env": null,
@@ -706,6 +746,7 @@
         "RULE-124": "passed",
         "RULE-125": "passed",
         "RULE-126": "passed",
+        "RULE-127": "passed",
         "RULE-14": "passed",
         "RULE-16": "passed",
         "RULE-23": "passed",
