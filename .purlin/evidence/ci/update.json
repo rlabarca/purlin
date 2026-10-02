@@ -2,8 +2,8 @@
   "feature": "update",
   "platforms": {
     "windows": {
-      "at": "2026-10-02T16:05:30Z",
-      "commit": "c9196119afd8fed5364d600ca0b1b4a687e3888d",
+      "at": "2026-10-02T16:50:49Z",
+      "commit": "f30a6e0c2d14b7b5864dcc776bf68c13c034c1bf",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
