@@ -636,6 +636,25 @@ class TestThroughARun:
         assert results == {('PROOF-1', ''): 'missing',
                            ('PROOF-2', 'tests/test_login.py::test_ok'): 'pass'}
 
+    # purlin: reports PROOF-123
+    def test_a_marker_inside_a_here_document_is_not_a_marker(self, tmp_path):
+        root = _project(tmp_path, [suites.shell_suite(('tests/*.sh',))],
+                        spec=_spec('login', 2))
+        _write_lf(root, 'tests/check.sh', '#!/usr/bin/env bash\n'
+                  "cat <<'EOF' > /dev/null\n"
+                  '# purlin: login PROOF-1\n'
+                  'EOF\n'
+                  '# purlin: login PROOF-2\n'
+                  'exit 0\n')
+        code, out = _run(root, '--all', '--test')
+        found = markers.scan(str(root))
+        read = [(marker.id, marker.line)
+                for marker in found['tests/check.sh'].markers]
+        assert read == [('PROOF-2', 5)], read
+        assert _results(_evidence(root)) == {
+            ('PROOF-1', ''): 'missing',
+            ('PROOF-2', 'tests/check.sh::check.sh'): 'pass'}, out
+
     # purlin: reports PROOF-77
     def test_a_test_whose_setup_errors_is_fail(self, five_outcomes):
         assert five_outcomes['PROOF-4'] == 'fail'

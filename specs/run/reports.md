@@ -11,7 +11,7 @@
 > Scope: scripts/run/reports.py, scripts/mcp/purlin/markers.py, references/formats/marker_format.md
 > Stack: python/stdlib (xml.etree, json, tokenize, ast, re, shlex), pytest, jest, vitest, dotnet, go, bash, sqlite3
 > Highest-Rule: 39
-> Highest-Proof: 122
+> Highest-Proof: 123
 
 ## Rules
 
@@ -43,6 +43,7 @@
 - PROOF-1 (RULE-1): A file holds eight lines, each a marker of `login`: after `#`, `//`, `--`, `;`, `%` and `'`, inside `/* */` naming `RULE-7`, and inside `<!-- -->`; all eight read as markers, each with its feature, its id and its line, 1 to 8
 - PROOF-27 (RULE-1): In a plain text file, the line `x = 1  # purlin: login PROOF-1`, a marker after code on the same line, is not read as a marker
 - PROOF-119 (RULE-38): A Python test file holds `# purlin: login PROOF-1` on line 2, inside a triple-quoted string, and `# purlin: login PROOF-2` as a comment on line 5 above the passing `test_ok`; one marker is read, `PROOF-2` at line 5, and the evidence holds no `pass` for `PROOF-1`
+- PROOF-123 (RULE-38): A shell test file that exits 0 holds `# purlin: login PROOF-1` on line 3, inside a here document, and `# purlin: login PROOF-2` as a comment on line 5; one marker is read, `PROOF-2` at line 5, and the evidence holds no `pass` for `PROOF-1`
 - PROOF-3 (RULE-3): Of the paths `dev/test_a.py`, `dev/sub/test_b.py` and `a/b/c.test.ts`, the glob `dev/test_*.py` matches `dev/test_a.py` alone, since `*` does not cross a `/`
 - PROOF-43 (RULE-3): Of the paths `dev/test_a.py`, `dev/sub/test_b.py` and `a/b/c.test.ts`, the glob `test_*.py`, which has no `/`, matches the first two and not the third
 - PROOF-47 (RULE-3): With a suite `first` on `tests/*.py` and then a suite `second` on `**/*.py`, `tests/test_a.py`, which both match, belongs to `first`, and `other/test_b.py`, which only `second` matches, belongs to `second`
