@@ -200,7 +200,7 @@ project.
 
 | | |
 |---|---|
-| Mark it once | Add `@slow` to the end of a proof whose tests take a long time, like integration tests. |
+| Mark it once | Add `@slow` to the end of a proof whose tests take a long time, like integration tests and acceptance tests. |
 | `purlin:test` | While you build. It runs what changed and skips every slow test, with a feature named or not. |
 | `purlin:test --all` | When you want to check the whole project. It runs everything, slow tests included. |
 | Purlin remembers it | When a slow test is due, every status says so: `1 slow proof to run: purlin:test --all` |
@@ -211,6 +211,9 @@ project.
 
 A slow proof is a proof like any other: one sentence saying how a rule is shown, and one test
 with a comment above it. Nothing in the test changes. The tag changes only when its test runs.
+
+An acceptance test that walks a feature end to end makes a good slow proof. It stays out of
+every build run, and `purlin:test --all --commit`, the hand-off before a sign-off, runs it.
 
 A `purlin:test` that skipped the checkout test says so before it runs anything:
 

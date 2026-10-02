@@ -19,7 +19,7 @@ other page points here rather than defining it again.
   test.
   **`@env(<os>)`**: a proof that can only be shown on `windows`, `macos` or `linux`.
 - **slow proof**: a proof tagged `@slow`, whose test takes a long time, like an integration
-  test. It is a proof like any other, with one test and its comment; the tag changes only when
+  test or an acceptance test. It is a proof like any other, with one test and its comment; the tag changes only when
   the test starts. `purlin:test` never starts it and `purlin:test --all` does. Until it has
   passed on the spec, code and tests as they stand it reads `not run`, and it is left to do as
   `1 slow proof to run: purlin:test --all`. An anchor's proof may be one.

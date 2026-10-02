@@ -145,7 +145,8 @@ Tag a proof `@manual` when only human judgment settles it. A `@manual` proof has
 person checks it in the sign-off walk of `purlin:sign` and may type what they saw. Until then
 it reads `checked at sign-off`.
 
-Tag a proof `@slow` when its test takes a long time, like an integration test;
+Tag a proof `@slow` when its test takes a long time, like an integration test or an
+acceptance test;
 `references/spec_quality_guide.md`, "A test that takes a long time", says when, and
 `references/purlin_commands.md` which run starts it.
 

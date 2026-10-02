@@ -141,7 +141,7 @@ slide('together', 'Working together', 'Product, QA and developers improve the sp
  'shows its renumbering plan before changing anything. A test comment whose proof was reworded '
  'since the test last changed is named on every run.', width=560, pad=16)
 slide('slow', 'Slow tests', 'Slow tests stay out of your way', [
-    ('Mark it once', 'Add %s to the end of a proof whose tests take a long time, like integration tests.' % m('@slow')),
+    ('Mark it once', 'Add %s to the end of a proof whose tests take a long time, like integration and acceptance tests.' % m('@slow')),
     ('`purlin:test`', 'While you build. It runs what changed and skips every slow test.'),
     ('`purlin:test --all`', 'When you want to check the whole project. It runs everything, slow tests included.'),
     ('Purlin remembers it', 'When a slow test is due, every status says so: %s' % m('1 slow proof to run: purlin:test --all')),

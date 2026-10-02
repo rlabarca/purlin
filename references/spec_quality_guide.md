@@ -321,7 +321,7 @@ Which run proves each is in [references/evidence_and_signoff.md](evidence_and_si
 ### A test that takes a long time
 
 Add `@slow` to a proof whose test takes a long time, like an integration test that starts a
-server, a browser or a real service. The proof and its test are written like any other, and
+server, a browser or a real service, or an acceptance test that walks a feature end to end. The proof and its test are written like any other, and
 nothing in the test changes. `purlin:test` then leaves that test out while you build, and
 `purlin:test --all` runs it; `references/purlin_commands.md` says exactly which run starts
 what. Tag a proof slow when its test is slow enough that you would stop running the tests
