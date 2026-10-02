@@ -158,8 +158,9 @@ write a proof for, with `purlin:spec`.
 - `strong`: the spot tests found nothing, and a planted bug was caught by the proof's test. An
   AI writes the bug: the one small change that test is most likely to miss.
 - `weak`: a spot test fired on one of the rule's tests, or a planted bug was not caught. A
-  surviving bug is shown with the case the AI says it breaks, and you judge it. The rule is left
-  to do as `to strengthen`, with `purlin:build`.
+  surviving bug is shown with the case the AI says it breaks. The rule is left to do as
+  `to strengthen`, with `purlin:build`, which strengthens the test and settles the finding with
+  a test run. [audit.md](audit.md#what-to-do-with-a-finding) says how it ends.
 - `spot-checked`: the spot tests found nothing, and no bug was planted and caught. The audit
   says why.
 - `not audited`: no audit has read the rule. `purlin:audit` reads it when you run it.

@@ -24,6 +24,7 @@ purlin:audit <feature> [...]    One feature, or several
 purlin:audit --all              Run every feature, and read every passing rule again
 purlin:audit --commit           Commit the work and the evidence the run wrote
 purlin:audit --arm-timeout <seconds>  Give each suite, and each planted bug's test run, longer
+purlin:audit <feature> RULE-N --settle  Plant each bug that survived again, and run its proof's test
 ```
 
 Plain language reaches the same place: "audit this", "how strong are the tests". A team may set
@@ -38,7 +39,9 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scrip
 
 Add `--arm-timeout <seconds>` when the person gave it. Add `--all` for `purlin:audit --all` and
 `--feature <name>` for each feature named; with neither, the run covers the features `purlin:test`
-would select. It runs the tests, then reads each rule whose tests pass, that has a proof with a
+would select. For `purlin:audit <feature> RULE-N --settle`, add the one `--feature <name>` and
+`--settle RULE-N`, once per rule; `purlin:build` runs it on a weak rule once the test is
+stronger. It runs the tests, then reads each rule whose tests pass, that has a proof with a
 test, and whose text, proofs, tests or covered code changed since its last audit. It takes three
 steps for each rule:
 
@@ -61,7 +64,8 @@ bug is planted on this machine for a proof tagged for another system.
 The model is started with no tools, no plugins and none of your settings, in an empty folder.
 
 `references/review_criteria.md` is the one home of each step: its checks, the research behind
-them and what the model is sent.
+them and what the model is sent. Its section "Settling a finding" is the one home of what
+`--settle` does.
 
 The run writes each feature's section and its `audit` into `.purlin/evidence/local/<feature>.json`
 and prints `Evidence written to .purlin/evidence/local/<feature>.json.` It commits nothing unless
@@ -88,9 +92,18 @@ The audit found 4 of 6 rules strong (66%): 4 strong, 1 weak, 1 spot-checked.
 
 - A line `<file>::<test>: ...` is a spot test's finding: fix the test.
 - A line `PROOF-N: the test still passes when <file>:<line> reads "<line>"` is a planted bug the
-  test did not catch: add the case that tells the right behaviour from that change.
+  test did not catch: `purlin:build <feature>` settles it.
 - A line `PROOF-N: the AI says this breaks: ...` is the model's claim about which case the bug
-  breaks; read it to judge the finding.
+  breaks. A test run settles whether it holds.
+- A line `PROOF-N: the test now catches the bug it missed at <file>:<line>.` is printed by a
+  settle: the bug that survived was planted again and the test fails on it. The finding was
+  right, and it is gone.
+- A line `PROOF-N: the bug at <file>:<line> did not break what the proof says. A new bug was
+  planted.` is printed by a settle: the test still passes with that bug in place, so the bug was
+  dropped and one new bug was planted for the proof. Where the new bug survives too, the rule's
+  block holds `No bug was caught for PROOF-N: two planted bugs left the proof's check passing.`
+- `<feature> RULE-N has no planted bug that survived: nothing to settle.` means the rule named
+  with `--settle` is left as it is.
 - A line `No bug was planted: <why>.` is not a finding and does not make the rule weak. A rule
   with no finding and no caught bug reads `spot-checked`.
 - `<check> is not read in <language> tests.` says a spot test does not read that language.
@@ -105,14 +118,15 @@ The audit found 4 of 6 rules strong (66%): 4 strong, 1 weak, 1 spot-checked.
 - `<file>::<test>: its source was not found, so the spot tests did not read it.` means the
   evidence names a test the file no longer holds: run `purlin:test`, then `purlin:audit`.
 
-A finding is build work. `purlin:build <feature>` fixes the test, and the rule is read again by
-the next `purlin:audit`. Never narrow a rule or a proof to make a finding disappear.
+A finding is build work. `purlin:build <feature>` strengthens the test, then settles the rule
+with `purlin:audit <feature> RULE-N --settle`. Never narrow a rule or a proof to make a finding
+disappear.
 
 ## Step 3: name the next step
 
 Show the ending as the run printed it, then name the next step:
 
-- A rule reads `weak`: `→ Run: purlin:build <feature>`, then `purlin:audit` again.
+- A rule reads `weak`: `→ Run: purlin:build <feature>`
 - A rule reads `spot-checked`: say why, in the audit's own sentence. Where the reason is another
   system or an anchor's rule, there is nothing to run.
 - `Left to do:` lists other work: `→ Run:` the command its first line names.

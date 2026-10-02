@@ -9,9 +9,10 @@ from skill_checks import flat, must_name, read, skill_path
 SKILL = skill_path('build')
 
 COMMANDS = ('sync_status', 'purlin:test', 'purlin:test --all --commit',
-            'purlin:spec')
+            'purlin:spec', 'purlin:audit <feature> RULE-N --settle')
 FILES = ('scripts/purlin_python.sh', 'scripts/mcp/purlin/markers.py',
-         'scripts/mcp/purlin/wording.py', 'references/commit_conventions.md')
+         'scripts/mcp/purlin/wording.py', 'references/commit_conventions.md',
+         'references/review_criteria.md')
 
 
 # purlin: skill_build PROOF-51

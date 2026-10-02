@@ -1,17 +1,18 @@
 # Feature: purlin_docs
 
 > Description: The docs under `docs/`. Every relative link on them resolves. The audit page
->   cites the research behind the audit, each paper by a link the page lists again under its
->   sources.
+>   says what to do with a finding and cites the research behind the audit, each paper by a link
+>   the page lists again under its sources.
 > Scope: docs/*.md
-> Highest-Rule: 16
-> Highest-Proof: 24
+> Highest-Rule: 17
+> Highest-Proof: 25
 
 ## Rules
 
 - RULE-12: Every relative link on the pages under `docs/` names a file in the repository, and every `#` part names a heading of that file
 - RULE-15: `docs/audit.md` cites the papers behind the audit, each by a link, and lists every source it cites under its heading `Sources`
 - RULE-16: `docs/working-together.md` holds one paragraph on working in more than one checkout: each checkout has its own results and dashboard, and merging the work and running `purlin:status` in the main checkout brings the main one up to date
+- RULE-17: `docs/audit.md` says what to do with a finding under its heading `What to do with a finding`, which stands straight after `How it works`: run `purlin:build`, and the rule ends `strong` or `spot-checked`
 
 ## Proof
 
@@ -19,3 +20,4 @@
 - PROOF-21 (RULE-15): The text of `docs/audit.md` cites Inozemtseva and Holmes, ICSE 2014; Just et al., FSE 2014; Petrović et al., TSE 2021; Foster et al., FSE 2025; and LLMorpheus, each as a link starting `https://`
 - PROOF-22 (RULE-15): Every link the text of `docs/audit.md` gives before its heading `Sources` appears again in the list under `Sources`
 - PROOF-24 (RULE-16): Exactly 1 paragraph of `docs/working-together.md` names a worktree; it says each checkout has its own results and its own dashboard, and names merging and `purlin:status`
+- PROOF-25 (RULE-17): In `docs/audit.md` the heading `What to do with a finding` is the next heading after `How it works`; the part under it holds exactly 6 bullets and names `purlin:build`, `strong` and `spot-checked`

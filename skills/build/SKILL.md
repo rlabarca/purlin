@@ -146,6 +146,36 @@ test; `purlin:test` leaves it out and names it, and `purlin:test --all` runs it
 write evidence or a sign-off by hand. `purlin:test` and `purlin:audit` write the evidence,
 and `purlin:sign` the evidence package and a sign-off.
 
+## Strengthening a weak rule
+
+A rule the audit found `weak` is left to do as a rule to strengthen. The status carries each
+finding as a reason of the rule's `strong` cell.
+
+A line `<file>::<test>: ...` is a spot test's finding: fix the test as the finding says.
+
+A line `PROOF-N: the test still passes when <file>:<line> reads "<line>"` is a planted bug that
+survived. For each:
+
+1. Read the proof, its test, the finding and the case line under it,
+   `PROOF-N: the AI says this breaks: <case>`.
+2. Write the assertion the proof names, for the proof's own case: the exact value, line or
+   absence the proof gives. Never change the code under test for a finding. Never narrow or
+   reword a rule or a proof to make a finding go away. Never change a test that already asserts
+   what its proof names.
+3. Where the proof names too little to write that assertion, stop for that proof: say so,
+   propose a sharper proof sentence, and send the person to `purlin:spec`.
+4. Run `purlin:test <feature>`, then `purlin:audit <feature> RULE-N --settle`.
+5. Report which of three ways it ended:
+   - the test now catches the bug, and the rule reads `strong`;
+   - the finding was wrong and a new bug was caught, and the rule reads `strong`;
+   - two bugs left the proof's check passing, and the rule reads `spot-checked`. Nothing more
+     is asked.
+
+A rule that still reads `weak` has a new finding: start again at step 1 with it.
+
+`skills/audit/SKILL.md`, Step 2 says how each line the settle prints reads.
+`references/review_criteria.md`, "Settling a finding", is the one home of what it does.
+
 ## Committing
 
 One commit per build, with the `feat(<name>):` prefix and the changeset body described in
@@ -168,5 +198,5 @@ rewrite the line in the same commit as the code. Commit the code and the tests t
   `→ Run: purlin:test --all --commit`, after which a person may sign with `purlin:sign`
 - A test comment to correct: fix the test as above, `→ Run: purlin:build <feature>`
 - Some rules still have no test: name them and what is missing, `→ Run: purlin:build <feature>`
-- A rule to strengthen: add the case the audit's finding names, `→ Run: purlin:build <feature>`
+- A rule to strengthen: do as "Strengthening a weak rule" says, `→ Run: purlin:build <feature>`
 - A proof needs another operating system: name it, then do as `skills/test/SKILL.md`, Step 5 says

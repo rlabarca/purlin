@@ -98,9 +98,12 @@ other page points here rather than defining it again.
   see whether the proof's own test catches it. Where the test leaves no way past, the bug is a
   plain one.
 - **finding**: one line saying what a spot test flagged or which planted bug a test did not
-  catch. A surviving bug adds a second line, the case the AI says it breaks, which a person
-  judges. A finding makes the rule `weak`. A weak rule is left to do as `to strengthen`, and
-  stops nothing.
+  catch. A surviving bug adds a second line, the case the AI says it breaks. A finding makes
+  the rule `weak`. A weak rule is left to do as `to strengthen`, and stops nothing.
+- **settle**: to decide a surviving bug's finding with a test run.
+  `purlin:audit <feature> RULE-N --settle` plants each bug that survived again and runs its
+  proof's test as it stands now. `purlin:build` runs it once the test is stronger.
+  `references/review_criteria.md`, "Settling a finding", is its one home.
 - **explanation**: the model's reading of the rule's tests. It decides nothing.
 - **strong**: the spot tests found nothing and a planted bug was caught by its proof's test.
 - **spot-checked**: the spot tests found nothing and no bug was planted and caught; the audit

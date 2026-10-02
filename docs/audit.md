@@ -22,8 +22,8 @@ PROOF-1: the test still passes when src/age.py:12 reads "return minutes + 60"
 PROOF-1: the AI says this breaks: a sample collected 90 minutes ago; the proof says 90; the changed code gives 150
 ```
 
-You judge a surviving bug. Most show a case the test does not check. Some rest on a strict
-reading of the proof's words, and you decide whether the test or the proof should change.
+Most surviving bugs show a case the test does not check. Some rest on a strict reading of the
+proof's words. A test run tells them apart.
 
 A rule reads `strong` when the spot tests found nothing and a planted bug was caught. Where
 no bug could be planted, the rule reads `spot-checked`, and the audit says why:
@@ -45,6 +45,20 @@ ends on that share:
 ```
 The audit found 42 of 50 rules strong (84%): 42 strong, 8 weak.
 ```
+
+## What to do with a finding
+
+- Read each `weak` finding. It names the missed bug and the case the AI says it breaks.
+- Run `purlin:build`. It writes the check the proof names and runs it against that bug.
+- **The check fails**: the finding was right. The test is now stronger and the rule reads
+  `strong`.
+- **The check passes**: the bug did not break what the proof says. The audit plants one more.
+  If that one is wrong too, the rule reads `spot-checked` and nothing more is asked.
+- **The proof is too loose to write a check from**: `purlin:build` stops and proposes a
+  sharper proof.
+- Never change a sound test or narrow a rule to clear a finding.
+
+[Settling a finding](../references/review_criteria.md#settling-a-finding) gives each step.
 
 ## What you can count on
 
@@ -69,7 +83,8 @@ The audit found 42 of 50 rules strong (84%): 42 strong, 8 weak.
 ## What it does not do
 
 - It does not prove your tests catch every bug. It tests what each proof says, one bug at a time.
-- It does not check the AI's claim about which case a bug breaks. You read that line and judge.
+- It does not check the AI's claim about which case a bug breaks. `purlin:build` puts the
+  claim to a test run.
 - It does not give the same bug every time. Two audits of the same code may plant different
   bugs, so a result is kept until the rule, its proof, its test or its code changes.
 - It reads only rules whose tests pass. A failing test is fixed first.
@@ -80,6 +95,9 @@ The audit found 42 of 50 rules strong (84%): 42 strong, 8 weak.
 - A test that is skipped, cannot be collected, runs past its limit or ends in an error with the
   bug in place decides nothing. Only a test that ran and failed caught the bug.
 - A rule with no proof has nothing to plant a bug against.
+- A rule made `strong` by a strengthened test caught the bug it once missed. That test was
+  written after the bug was seen.
+- The share of strong rules is a guide, not a score. A high share with the rest read is done.
 
 ## Three ways to judge a test
 
@@ -196,10 +214,12 @@ is often wrong.
 So Purlin prints the AI's line under a surviving bug as the AI's claim, and the verdict comes
 from the test run alone.
 
-**A person judges a surviving bug.** Kiele et al. say what a survivor is outside a benchmark:
-"In real workflows, these mutants should be interpreted primarily as concrete suggestions for
-stronger tests and developer inspection rather than automatically validated defects." Google
-gives each one a "Not useful" button. In Purlin a weak rule is listed and blocks nothing.
+**A test run settles a surviving bug.** Kiele et al. say what a survivor is outside a
+benchmark: "In real workflows, these mutants should be interpreted primarily as concrete
+suggestions for stronger tests and developer inspection rather than automatically validated
+defects." Google gives each one a "Not useful" button. In Purlin a weak rule is listed and
+blocks nothing. `purlin:build` writes the check the proof names, and the bug is planted again.
+The check fails: the finding held. The check passes: the bug did not break what the proof says.
 
 **The guards that are code.** A change that leaves the file as it was, touches only a comment,
 changes a test file, or cannot be applied exactly once is not planted. At Meta, 61% of the
@@ -260,7 +280,25 @@ What the numbers hide:
 
 The trial is 12 proofs, one project, one language, one model and two runs. It supports this
 much: the aimed request is the one that reaches a subtle weak test every time, and it is the
-one that raises the most flags a person must judge.
+one that raises the most flags on sound tests.
+
+### On Purlin's own tests
+
+Purlin audited ten of its own specs.
+
+- **The first audit found 28 rules weak, with 35 surviving bugs.**
+- **33 findings held.** Each bug was put in by hand and its test read against the proof. Each
+  of the 33 tests was strengthened until it failed with its bug in place.
+- **2 findings were wrong.** For one, the AI named a wrong result for the changed code: the
+  code still gave what the proof says. For the other, the bug sat on a path no run
+  reaches.
+- **12 proofs were too loose.** Each named too little for a test to be held to it, and each
+  got a sharper sentence.
+- **A second audit aimed new bugs past the stronger tests and found 14 rules weak.**
+
+A new bug aimed past each stronger test finds a new gap, so auditing again does not end at zero
+in one pass. So a finding is settled against the bug the test missed, and a wrong finding is
+replaced once.
 
 ### Why plant a bug at all
 
@@ -321,7 +359,7 @@ bug. The test run decides.
   will be detected more often"
   ([Inozemtseva and Holmes](https://cs.ubc.ca/~rtholmes/papers/icse_2014_inozemtseva.pdf),
   section 6.1).
-- **That a surviving bug is a real fault.** It is a case for a person to look at. In the
+- **That a surviving bug is a real fault.** It is a case to settle with a test run. In the
   papers, 14% to 36% of an AI's surviving bugs changed nothing; in the trial, every doubtful
   survivor was a strict reading of the proof.
 - **That a caught bug means the test catches real faults.** It means the test noticed this
@@ -335,6 +373,8 @@ bug. The test run decides.
 
 Each paper is linked. The six checks are in
 [the heuristic spot tests reference](../references/review_criteria.md#heuristic-spot-tests).
+What a settle does is in
+[Settling a finding](../references/review_criteria.md#settling-a-finding).
 
 **How the bug is chosen**
 

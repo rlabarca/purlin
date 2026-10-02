@@ -251,8 +251,9 @@ check. Then it takes one signature in a signed commit. The first sign-off writes
 **The audit is a tool you run when you want it.** `purlin:audit` runs heuristic spot tests over
 your tests. Then, for each proof, an AI writes the one small bug that proof's test is most
 likely to miss. The bug goes into a copy of the project, and the proof's own test runs. A
-surviving bug is shown with the case the AI says it breaks, and you judge it. A caught bug and no finding make the rule `strong`. A finding
-makes it `weak`, left to do as `to strengthen`.
+surviving bug is shown with the case the AI says it breaks. A caught bug and no finding make
+the rule `strong`. A finding makes it `weak`, left to do as `to strengthen`. `purlin:build`
+strengthens the test and settles the finding with a test run.
 Nothing waits on it. [audit.md](audit.md) says what it checks and why.
 
 ## Where to go next

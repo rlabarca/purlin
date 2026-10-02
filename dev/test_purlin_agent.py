@@ -1,9 +1,9 @@
-"""What the agent definition, `agents/purlin.md`, must name, and five checks
+"""What the agent definition, `agents/purlin.md`, must name, and six checks
 on what every skill, the agent definition and the references tell an agent
 to run.
 
 One test per proof of `specs/instructions/purlin_agent.md`. The readers are
-in `dev/skill_checks.py`. The five checks read the skills as they stand, so
+in `dev/skill_checks.py`. The checks read the skills and the references as they stand, so
 a skill that names a path the repository does not hold, or passes a flag its
 script does not take, fails here with the file and what it named.
 """
@@ -182,3 +182,12 @@ def test_every_skill_naming_the_status_names_the_tool_and_the_script():
     assert copy != build
     assert status_unnamed('build', copy) == [
         'build does not name scripts/run/purlin_status.py']
+
+
+SETTLE = 'purlin:audit <feature> RULE-N --settle'
+
+
+# purlin: purlin_agent PROOF-56
+def test_the_command_reference_and_the_glossary_name_the_settle_command():
+    assert not_named(read('references/purlin_commands.md'), (SETTLE,)) == []
+    assert not_named(read('references/glossary.md'), (SETTLE,)) == []
