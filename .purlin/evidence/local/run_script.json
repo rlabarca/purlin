@@ -175,17 +175,17 @@
         "verdict": "strong"
       },
       "RULE-102": {
-        "at": "2026-10-02T11:01:49Z",
+        "at": "2026-10-02T15:41:07Z",
         "breaks": {
           "PROOF-126": {
             "after": "        'report': REPORTS + '/pytest.xml', 'format': 'trx',",
             "aim": "past the test",
             "before": "        'report': REPORTS + '/pytest.xml', 'format': 'junit',",
-            "break_key": "92050d96752beed522e3e78131174c7fedffced66d7b8bc000d85e1e35ee2787",
+            "break_key": "a82cca047676ecfb6ccd22bbdce36b34424334750ba0232b1b90a0739e003d3d",
             "case": "an empty `tests` setting and a `conftest.py`, run with `--all --test`; the proof says the JSON array holds pytest's entry alone, whose format is `junit`; the changed code prints an array whose one entry has the format `trx`",
             "file": "scripts/mcp/purlin/frameworks.py",
             "line": 37,
-            "result": "survived",
+            "result": "caught",
             "why": ""
           },
           "PROOF-127": {
@@ -211,30 +211,20 @@
             "why": ""
           }
         },
-        "code_hash": "329289bc40e104168e656dbe4f69a83c68a285af03904ac7098b6f06e6f43437",
-        "commit": "3f599fc3e78044536a24548be8a38aa0b726a886",
+        "code_hash": "ecfc49e21980fbbbcc3f8f40fe9bf3b5ac508e20f0504dccfd1f8517724bc115",
+        "commit": "5e5d861b0220c5f55f528f4aae2c159fa77b1532",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
-        "explanation": [
-          "PROOF-126: the test compares the first two printed lines with literals, the unchanged `.purlin/` tree and the exit code 1, which are the values the proof names.",
-          "PROOF-126: the test builds the expected JSON array from `frameworks.entry_for('pytest')`, the code that also builds the printed one, so a wrong report path, format or file globs in pytest's entry still passes.",
-          "PROOF-126: the test reads the three lines before the last one only, so a line printed above `No test command is set` is not observed.",
-          "PROOF-127: the test compares the last printed line with the proof's full sentence as a literal, the files under `.purlin/` with the settings file alone, and the exit code with 1.",
-          "PROOF-134: the test finds the single line starting `Suggested for jest: ` and compares the line right after it with the proof's sentence as a literal, which is what the proof names.",
-          "Findings: there are none, and the spot tests do not catch that PROOF-126's expected array comes from the code, because `entry_for` is a helper of the run and not the function whose result the test asserts on."
-        ],
-        "findings": [
-          "PROOF-126: the test still passes when scripts/mcp/purlin/frameworks.py:37 reads \"'report': REPORTS + '/pytest.xml', 'format': 'trx',\"",
-          "PROOF-126: the AI says this breaks: an empty `tests` setting and a `conftest.py`, run with `--all --test`; the proof says the JSON array holds pytest's entry alone, whose format is `junit`; the changed code prints an array whose one entry has the format `trx`"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "55fa113697362596ef619544873e86695a4993c60058366327379c947e7cceaf",
         "rule_hash": "ed4f1971e5bb1a543254612922f98fd763f9274c876e0194ba99221b9d9fb317",
-        "test_hash": "7508971773da42c187cf7e89b593dd74e1e6679b6df61fd7bdf0d71f70963538",
-        "verdict": "weak"
+        "test_hash": "8c8c74f161b58d48a82ace4c36aaa930f6194d377e04297db52dae871b170956",
+        "verdict": "strong"
       },
       "RULE-103": {
-        "at": "2026-10-02T11:01:49Z",
+        "at": "2026-10-02T15:41:07Z",
         "breaks": {
           "PROOF-137": {
             "after": "NO_SETTINGS = ('No .purlin/config.json here, so nothing ran. Run purlin:init '\n               'to create it.')",
@@ -251,11 +241,11 @@
             "after": "    return (isinstance(config, dict) and 'tests' not in config\n            and config.get('version') == '0.9.5')",
             "aim": "past the test",
             "before": "    return isinstance(config, dict) and 'tests' not in config",
-            "break_key": "93aab3e9a83fd3354987273d71a12a2b3099ac8612274ec5c41e69457994398a",
+            "break_key": "812fc60d10d4fe7f71b17b0e3a29820459d1748808e887a00d899cdca17076eb",
             "case": "a `.purlin/config.json` with no `tests` key whose version stamp is not `0.9.5`; the proof says the run prints the older-Purlin line and exits 1; the changed code goes on and prints the no-test-command lines instead",
             "file": "scripts/run/purlin_run.py",
             "line": 1440,
-            "result": "survived",
+            "result": "caught",
             "why": ""
           },
           "PROOF-224": {
@@ -270,25 +260,17 @@
             "why": ""
           }
         },
-        "code_hash": "329289bc40e104168e656dbe4f69a83c68a285af03904ac7098b6f06e6f43437",
-        "commit": "3f599fc3e78044536a24548be8a38aa0b726a886",
+        "code_hash": "ecfc49e21980fbbbcc3f8f40fe9bf3b5ac508e20f0504dccfd1f8517724bc115",
+        "commit": "5e5d861b0220c5f55f528f4aae2c159fa77b1532",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
-        "explanation": [
-          "PROOF-137: the test deletes the settings file, runs `--all --test`, and compares the whole output with the proof's line, every file's bytes before and after, and the exit code with 1, so it observes all the proof names.",
-          "PROOF-138: the test compares the whole output with the proof's line, the files under `.purlin/` before and after, and the exit code with 1, but its settings file always carries the version `0.9.5`, so code that reads the version stamp instead of the missing `tests` key alone still passes.",
-          "PROOF-224: the test writes a settings file with a trailing comma, takes the message and line from Python's own JSON reader rather than from the code under test, and compares the whole output, the files under `.purlin/` and the exit code with 1, so a wrong line, a write or a wrong code fails it.",
-          "Findings: the spot tests found none, and each test holds the line its proof names in backticks and failable comparisons on the output, the files and the exit code."
-        ],
-        "findings": [
-          "PROOF-138: the test still passes when scripts/run/purlin_run.py:1440 reads \"return (isinstance(config, dict) and 'tests' not in config\"",
-          "PROOF-138: the AI says this breaks: a `.purlin/config.json` with no `tests` key whose version stamp is not `0.9.5`; the proof says the run prints the older-Purlin line and exits 1; the changed code goes on and prints the no-test-command lines instead"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "ef66203dda1a16d201bfb1dcb9ad9cbe09f20c84396a47407320ad5913b5b957",
         "rule_hash": "1a3609a7df2e966d7c0b1c1eeeccafd92c197f07cb14e81aad81f4c6b2f4d90c",
-        "test_hash": "ee1e78fb9f493dd58d54900801f80e8a0fc2cd563246b47e28e31640345ea9bd",
-        "verdict": "weak"
+        "test_hash": "5e69e272fd24a30662036c61770ca60fbfe764329725d3f19a4c62bc0e5fb7bc",
+        "verdict": "strong"
       },
       "RULE-104": {
         "at": "2026-10-02T09:57:40Z",
@@ -1039,7 +1021,7 @@
         "verdict": "strong"
       },
       "RULE-63": {
-        "at": "2026-10-02T11:01:49Z",
+        "at": "2026-10-02T15:41:07Z",
         "breaks": {
           "PROOF-130": {
             "after": "        'run': 'python3 -m pytest {files} --junit-xml={report}',",
@@ -1056,11 +1038,11 @@
             "after": "    ('shell', lambda root: _any_file(root, lambda n: n.endswith('.test.sh'))),\n    ('sql', lambda root: _any_file(root, _SQL_TEST_NAME.match)),",
             "aim": "past the test",
             "before": "    ('sql', lambda root: _any_file(root, _SQL_TEST_NAME.match)),\n    ('shell', lambda root: _any_file(root, lambda n: n.endswith('.test.sh'))),",
-            "break_key": "16f509e61ca944355b0d6f97c6924a89e6f058a28a18c536d5444ed99d8db66d",
+            "break_key": "5a0c301915d7ccdec58a388a4c7ca44fc40e95bd7fe5bf493a9f97d6d72bbc90",
             "case": "a project holding all seven tools; the proof says the page shows the entries in the order the run suggests them, sql before shell; the changed code suggests shell before sql while the page still shows sql first",
             "file": "scripts/mcp/purlin/frameworks.py",
             "line": 207,
-            "result": "survived",
+            "result": "caught",
             "why": ""
           },
           "PROOF-221": {
@@ -1075,30 +1057,17 @@
             "why": ""
           }
         },
-        "code_hash": "329289bc40e104168e656dbe4f69a83c68a285af03904ac7098b6f06e6f43437",
-        "commit": "3f599fc3e78044536a24548be8a38aa0b726a886",
+        "code_hash": "ecfc49e21980fbbbcc3f8f40fe9bf3b5ac508e20f0504dccfd1f8517724bc115",
+        "commit": "5e5d861b0220c5f55f528f4aae2c159fa77b1532",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
-        "explanation": [
-          "PROOF-130: the test checks that exactly the seven tool names are suggested and that each command holds its flag as whole words, so a changed or missing flag fails it.",
-          "PROOF-130: the test reads the suggestions by name, so it does not observe the order the rule gives.",
-          "PROOF-221: the test asks for the suggestions of a project holding only pytest's sign with the system given as Windows, and compares the one entry's whole command with `py -3 -m pytest {files} --junitxml={report}`.",
-          "PROOF-133: the test compares each block of the page, as parsed and as text, with the suggested entry of the same name, so a wrong word on the page or in an entry fails it.",
-          "PROOF-133: the test looks the suggestions up by name in a fixed order, so the order in which the run itself suggests them is never read against the page's order.",
-          "No finding was reported by the spot tests; none of the three tests is empty, self-checking or mocked."
-        ],
-        "findings": [
-          "PROOF-133: the test still passes when scripts/mcp/purlin/frameworks.py:207 reads \"('shell', lambda root: _any_file(root, lambda n: n.endswith('.test.sh'))),\"",
-          "PROOF-133: the AI says this breaks: a project holding all seven tools; the proof says the page shows the entries in the order the run suggests them, sql before shell; the changed code suggests shell before sql while the page still shows sql first"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-133 names no literal value, only \"the same seven entries\", so what it expects rests on the run's own output."
-        ],
         "proof_hash": "e6f448f72634c3a36abbd1a62a7b42690eb2aa7311392c26d909528bc44335c8",
         "rule_hash": "4aac672a8d4d4cbba4d6890d1b2a648ce33ace55d18bfbbbc1b5cd5861f1e47e",
-        "test_hash": "80463f6821739f0723f192dbff8c124478747af94d57a74a5d1a0d973955082a",
-        "verdict": "weak"
+        "test_hash": "0cfec2cc650c65855fa628abd42f9940668a67c62905f461ce6c6a0641735bed",
+        "verdict": "strong"
       },
       "RULE-67": {
         "at": "2026-10-02T09:57:40Z",
@@ -1597,8 +1566,8 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T15:29:16Z",
-      "commit": "0cf0c983cdc2f5212a25a9b14a622756bedb00e6",
+      "at": "2026-10-02T15:40:56Z",
+      "commit": "5e5d861b0220c5f55f528f4aae2c159fa77b1532",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
