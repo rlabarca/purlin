@@ -62,11 +62,12 @@ cell reads `passed`. Where a rule's passed cell reads `checked at sign-off`,
 ` 1 is checked at sign-off.` follows, or ` <h> are checked at sign-off.` for more than one:
 `10 rules. 9 pass their tests. 1 is checked at sign-off.` Where the audit has read a
 rule that passes, ` The audit found <s> of <a> rules strong (<n>%): <s> strong` follows, `a`
-counting the rules that pass their tests, have a tested proof and are not an anchor's, then
+counting the rules that pass their tests, have a tested proof and are not an anchor's, read by
+the audit or not, then
 `, <n> weak`, `, <n> spot-checked`, `, <n> out of date` and `, <n> not audited`, each only where
-it is not zero. Those counts take in an anchor's rules. Where every rule the audit read is an
-anchor's, the part is ` The audit found <counts>.`, as `The audit found 8 spot-checked.` A rule is
-counted once, under the spec that owns it.
+it is not zero. Those counts take in an anchor's rules. Where `a` counts no rule, the part is
+` The audit found <counts>.`, as `The audit found 8 spot-checked.` A rule is counted once, under
+the spec that owns it.
 
 **`Left to do`** lists only work. It gives each rule at most one kind, the first that applies, in
 this order. A line carries a count and a command and names no rule; a run names each rule where it
