@@ -2,14 +2,14 @@
   "feature": "signatures",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T04:47:28Z",
-      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
+      "at": "2026-10-02T04:49:45Z",
+      "commit": "04d03a076e0821c4d739075539430c0fbff5956c",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "7a4ea88825f933977c848ec0d9b77f200636f43c6c39fc4298598dc97fe77561",
         "spec": "005628eeab16043514457735af9b39a2e599a4a1ed098453100c9fc95184c41e",
-        "tests": "bc97d48db459efd7f90a79dd618b817cfe58af83bb6759af0088e3d50d60c244"
+        "tests": "dfed911ed825a045e98f5953444549ab075236d840af212484078f96355d836c"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -235,7 +235,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-111",
-          "test": "dev/test_signatures.py::TestTheAgent::test_answers_walk_with_the_files_note"
+          "test": "dev/test_signatures.py::TestTheAgent::test_answers_holding_the_signers_address_walk_with_the_files_note"
         },
         {
           "env": null,

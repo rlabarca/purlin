@@ -2,14 +2,14 @@
   "feature": "skill_drift",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T04:47:28Z",
-      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
+      "at": "2026-10-02T04:49:45Z",
+      "commit": "04d03a076e0821c4d739075539430c0fbff5956c",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "fb8d7afd4a809665237f97a3df3006bb987eae8572b63bf87447ef99adcb97cc",
         "spec": "7af9d62a935b99940c0fc25ece0169ccb6c937f51880fa273d77edac81916486",
-        "tests": "76fc6c0e022a7aedde3c6b12428e485b8f79eb8bde2f572642c7d3fbe0e2acd1"
+        "tests": "24747c5e9570c5dd02c532e62b3d82746a45bf1939777f360e9b706201908054"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -19,7 +19,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-15",
-          "test": "dev/test_skill_drift.py::test_the_drift_skill_names_its_commands_and_its_criteria"
+          "test": "dev/test_skill_drift.py::test_the_drift_skill_names_its_commands_its_criteria_and_its_script"
         },
         {
           "env": null,
