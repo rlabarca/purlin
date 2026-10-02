@@ -130,8 +130,8 @@ def shown(text):
 def parse_answer(text):
     """`('change', file, before, after, aim, case)`, `('no break', why)`, or None for
     anything else. `aim` and `case` are read from the lines `aim:` and `case:` that
-    open the part, in any letter case and after any indent: `aim` is `past the test` or `plain`, and `plain` for any other
-    word or no such line; `case` is its line with outer spaces cut, at most `CASE_LIMIT`
+    open the part, in any letter case and after any indent: `aim` is `past the test`
+    or `plain`, and `plain` for any other word or no such line; `case` is its line with outer spaces cut, at most `CASE_LIMIT`
     characters, and `''` where there is no such line. `case`, the file's path and
     `why` are each as `shown` gives them. Where the next line reads
     `no break: <why>`, the part names no bug, and `why` is that one line's."""
