@@ -1823,7 +1823,7 @@ def only_spot_checked(payload):
 
 
 # purlin: purlin_report PROOF-243
-def test_a_project_whose_one_audit_result_is_spot_checked_shows_strong(
+def test_one_spot_checked_result_draws_the_strong_column_and_box(
         browser, tmp_path):
     page = open_sample(browser, tmp_path, 'solo', only_spot_checked)
     heads = head_labels(page)
