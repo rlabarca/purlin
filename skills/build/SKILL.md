@@ -159,12 +159,22 @@ survived. For each:
 1. Read the proof, its test, the finding and the case line under it,
    `PROOF-N: the AI says this breaks: <case>`.
 2. Write the assertion the proof names, for the proof's own case: the exact value, line or
-   absence the proof gives. Never change the code under test for a finding. Never narrow or
-   reword a rule or a proof to make a finding go away. Never change a test that already asserts
-   what its proof names.
+   absence the proof gives. Write it in the test's own body: a change to a helper, a fixture
+   or another test alone is not a change to the test, and the settle is refused for it. Never
+   change the code under test for a finding. Never narrow or reword a rule or a proof to make
+   a finding go away. Never change a test that already asserts what its proof names: where
+   you have read the test against the proof, line by line, and it already asserts the exact
+   value, line or absence the proof gives for the proof's own case, leave it as it is and
+   settle that proof with `--sound PROOF-N`, as step 4 says. Say which line of the test
+   asserts which words of the proof before you do.
 3. Where the proof names too little to write that assertion, stop for that proof: say so,
    propose a sharper proof sentence, and send the person to `purlin:spec`.
-4. Run `purlin:test <feature>`, then `purlin:audit <feature> RULE-N --settle`.
+4. Run `purlin:test <feature>`, then `purlin:audit <feature> RULE-N --settle`. For each proof
+   whose test you left alone under step 2, and for no other, add `--sound PROOF-N`:
+   `purlin:audit <feature> RULE-N --settle --sound PROOF-N`. A settle is refused for a proof
+   whose test is as it was when the bug got past it; `--sound` is the recorded judgment that
+   the test was sound already, and the evidence then says the test was not changed. Never
+   pass it for a test you did not read against its proof, and never to get past a refusal.
 5. Report what the settle printed for each proof, and the word the rule then reads:
    - The test now catches the bug: the finding was right, and the bug reads `caught`.
    - The bug did not break what the proof says, and a new bug was planted: the finding was
@@ -173,6 +183,11 @@ survived. For each:
    - The same line ending at `did not break what the proof says.`: no new bug could be planted,
      and the rule's block says why.
    - The test did not run with the bug in place: the bug reads `not run`.
+   - `PROOF-N: its test is as it was when the bug got past it. Strengthen it with purlin:build,
+     then settle.`: nothing was planted, and the bug still reads `survived`. Go back to
+     step 2 for that proof.
+   - `PROOF-N was settled with its test unchanged: it was judged to assert what the proof
+     names.`: the settle went on under `--sound`, and the evidence records it.
 
 The rule then reads what the verdict gives: `weak` where a spot test fires or a bug still
 survives, else `strong` where any of its proofs has a caught bug, else `spot-checked`. A rule
