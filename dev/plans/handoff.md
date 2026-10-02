@@ -872,6 +872,26 @@ For the session that continues Purlin 0.10.0. Read this, then `dev/plans/three-l
 decisions 60 to 100 (together with this file they are the product as the owner settled it), then
 `dev/plans/next-agent-prompt.md`, the prompt that session is given.
 
+## Where it stands, 2026-10-02
+
+Local `main` is green and not pushed: 433 rules, every one passing on committed evidence, the
+Windows rules included (`python3 dev/windows_run.py`, run on GitHub). Decisions 100 to 121 are
+built. Nothing is signed or tagged. GitHub holds `main` (far behind local) and
+`qa/0.10.0-report`, which carries the real-skills check's transcripts.
+
+Open, in this order; `dev/plans/next-agent-prompt.md` is the prompt for the session that does it:
+
+1. **How the audit plants a bug** (decision 123, to be made): the next session reads the papers
+   in full, writes `dev/plans/audit-research.md`, and settles the approach with the owner.
+2. **The fix round, decision 122**: `dev/plans/d122-plan.md`, planned, not started. It also
+   takes the cost and call count out of the audit.
+3. **One audit of Purlin itself**, after the build: ten specs, named in the prompt. No audit
+   result is committed today; the dashboard's `Audit` box reads `not audited`.
+4. **The deck** brought in step, and the plan files of finished rounds removed.
+
+Then the owner's: the review of the release notes, README, docs and deck; `purlin:sign` on
+Purlin, the tag pushed, `main` pushed.
+
 ## The end of the round, 2026-10-01
 
 After the reading pass (77 findings, 54 fixed, 23 left for the owner in

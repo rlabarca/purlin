@@ -1624,6 +1624,32 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       planted bug is marked experimental.
     - **A change to the test commands in the settings ends results**; a change to the version
       alone does not.
+122. **What the real-skills check found, and no cost in what ships** (added 2026-10-02). Three
+    real headless Claude Code sessions with the plugin played product, QA and a developer on a
+    fresh project (`dev/plans/qa-real-skills.md`). They reached `signed/0.1.0` and got stuck three
+    times: a spec named with a hyphen could not be tied to a test; the renumbering after a
+    collision needed a hand edit of git's conflict lines; `purlin:init` committed nothing after
+    a yes.
+    - **Findings 1 to 13 and 17 are fixed in one round**, planned in `dev/plans/d122-plan.md` and
+      not started. Among them: `-` is allowed in a spec's name everywhere; a hand check nobody
+      has done reads `checked at sign-off` and counts as neither passing nor failing; the
+      confirmations a model skipped move into the scripts, the sign-off's asking the signer to
+      type their own address; the status and drift get a command a skill can run.
+    - **A change to a spec reruns that whole spec's tests**; the docs say so in one sentence.
+      Making only the changed rule go out of date is not built.
+    - **Nothing that ships states a cost.** In the owner's words: "Don't make a statement about
+      the cost. Prices change. Plans are different", and "Don't track any costs or number of
+      calls." The audit prints and records neither, and no doc, skill, reference, release note
+      or slide gives a dollar figure or a count of model calls. Decision 116's limit of $0.10 a
+      rule is dropped with it.
+    - **How the audit plants a bug is reopened.** The model is sent the test with the proof and
+      the code, and the request does not say whether to use it. The research describes two
+      deliberate designs, test-blind and test-aware, and Purlin's request is neither. The next
+      session reads the papers in full and settles the approach with the owner as decision 123;
+      the audit page then stays simple at the top and gives the reasoning at the bottom, with
+      citations and quotes.
+    - The first audit of Purlin itself was stopped before it finished, since its results would
+      have been taken with the request under review; Purlin is audited once, after the build.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
