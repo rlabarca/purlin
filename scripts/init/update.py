@@ -13,7 +13,7 @@ before it asks, and `sync_status` reads the same function, so the advisory you
 see and the work this script does cannot disagree. The detectors read the
 layout v0.9.5 left, and a project lands straight on this release's layout.
 Every migration asks before it writes, and every file it rewrites is copied
-beside itself first as `<name>.local-<sha8>.bak`. `--yes` answers yes to every
+first to `.purlin/runtime/update-backup/`, at its own path, which git ignores. `--yes` answers yes to every
 migration's question. A workflow that names a proof file is removed only on a
 yes typed for that file, so under `--yes` each is kept and named. A file this release deletes rather than rewrites is left in git
 history instead of copied.
@@ -25,7 +25,6 @@ file cannot be read, 2 no Purlin project at that root.
 import argparse
 import ast
 import fnmatch
-import hashlib
 import json
 import os
 import re
@@ -142,7 +141,12 @@ OLD_FRAMEWORKS = {'pytest': 'pytest', 'jest': 'jest', 'vitest': 'vitest',
                   'xunit': 'dotnet', 'sql': 'sql', 'shell': 'shell'}
 
 # --- what this release writes instead --------------------------------------
-IGNORE_LINES = ('.purlin/report-data.js',)
+IGNORE_LINES = ('.purlin/runtime/', '.purlin/report-data.js')
+# Each file the update changes is kept here as it was, at its own path. The
+# folder is under `.purlin/runtime/`, which git ignores.
+BACKUP_DIR = '.purlin/runtime/update-backup'
+BACKUPS_KEPT = ('Every file the update changed is kept as it was under %s/. '
+                'Delete the folder once the tests pass.')
 EVIDENCE_DIR = '.purlin/evidence'
 EVIDENCE_README = EVIDENCE_DIR + '/README.md'
 DASHBOARD_PAGE = 'purlin-report.html'
@@ -185,20 +189,23 @@ def _git(root, *args):
 def _untrack(root, rel):
     _git(root, 'rm', '-r', '-q', '--cached', '--ignore-unmatch', '--', rel)
 
-def _back_up_copy(path, rel):
-    """Copy the bytes about to change, named for their sha256, and say where."""
-    try:
-        with open(path, 'rb') as handle:
-            previous = handle.read()
-    except (IOError, OSError):
+def _back_up_copy(root, rel):
+    """Keep `rel` as it is now under the backup folder, at its own path, and
+    say where. A file an earlier migration of the run already kept is not
+    kept again: its backup holds the bytes from before the run."""
+    kept = '%s/%s' % (BACKUP_DIR, rel)
+    target = os.path.join(root, *kept.split('/'))
+    if os.path.lexists(target):
         return None
-    suffix = '.local-%s.bak' % hashlib.sha256(previous).hexdigest()[:8]
     try:
-        with open(path + suffix, 'wb') as handle:
+        with open(os.path.join(root, *rel.split('/')), 'rb') as handle:
+            previous = handle.read()
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        with open(target, 'wb') as handle:
             handle.write(previous)
     except (IOError, OSError):
         return None
-    return rel + suffix
+    return kept
 
 def _files_under(root, subdir, patterns):
     hits = []
@@ -293,7 +300,7 @@ def _apply_design_refs(root, files, args, out):
     """No design file is tied to a spec in this release: the lines go."""
     for rel in files:
         path = os.path.join(root, rel)
-        out.kept(_back_up_copy(path, rel))
+        out.kept(_back_up_copy(root, rel))
         text, removed = _design_lines(_read(path))
         _write(path, text)
         out.done(rel)
@@ -371,7 +378,7 @@ def _apply_anchor_lines(root, files, args, out):
     named = _named_anchors(root)
     for rel in files:
         path = os.path.join(root, rel)
-        out.kept(_back_up_copy(path, rel))
+        out.kept(_back_up_copy(root, rel))
         text, removed = _anchor_lines(rel, _read(path))
         _write(path, text)
         out.done(rel)
@@ -414,7 +421,7 @@ def _apply_untracked(root, files, args, out):
     if '.gitignore' in files:
         path = os.path.join(root, '.gitignore')
         text = _read(path) if os.path.isfile(path) else ''
-        out.kept(_back_up_copy(path, '.gitignore'))
+        out.kept(_back_up_copy(root, '.gitignore'))
         missing = [l for l in IGNORE_LINES if l not in text.splitlines()]
         if text and not text.endswith('\n'):
             text += '\n'
@@ -444,7 +451,7 @@ def _apply_hooks(root, files, args, out):
     """
     for rel in files:
         path = os.path.join(root, rel)
-        out.kept(_back_up_copy(path, rel))
+        out.kept(_back_up_copy(root, rel))
         _untrack(root, rel)
         try:
             os.remove(path)
@@ -617,7 +624,7 @@ def _apply_config(root, files, args, out):
     """
     old = _config(root)
     path = os.path.join(root, '.purlin', 'config.json')
-    out.kept(_back_up_copy(path, '.purlin/config.json'))
+    out.kept(_back_up_copy(root, '.purlin/config.json'))
     tests, sources, unwired = proposed_tests(root, old)
     for name in unwired:
         out.say(DROPPED_FRAMEWORK % name)
@@ -652,7 +659,7 @@ def _apply_os_tags(root, files, args, out):
     """A proof names an operating system now, or names none and runs anywhere."""
     for rel in files:
         path = os.path.join(root, rel)
-        out.kept(_back_up_copy(path, rel))
+        out.kept(_back_up_copy(root, rel))
         _write(path, WINDOWS_TAG_RE.sub(' @env(windows)', _read(path)))
         out.done(rel)
     out.say('rewrote the operating-system tags in %d spec%s'
@@ -667,7 +674,7 @@ def _apply_kind_tags(root, files, args, out):
     """A proof line names an operating system or `@manual`, and nothing else."""
     for rel in files:
         path = os.path.join(root, rel)
-        out.kept(_back_up_copy(path, rel))
+        out.kept(_back_up_copy(root, rel))
         _write(path, KIND_TAG_RE.sub(lambda m: m.group(1), _read(path)))
         out.done(rel)
     out.say('dropped the kind of test from the proof lines of %d spec%s: '
@@ -713,7 +720,7 @@ def _apply_workflows(root, files, args, out):
         if args.yes or not _confirm(WORKFLOW_QUESTION % rel, False):
             out.say(WORKFLOW_KEPT % rel)
             continue
-        out.kept(_back_up_copy(os.path.join(root, rel), rel))
+        out.kept(_back_up_copy(root, rel))
         _untrack(root, rel)
         os.remove(os.path.join(root, rel))
         out.done(rel)
@@ -862,7 +869,7 @@ def _apply_lettered(root, files, args, out):
         new, pairs = _renumbered(_read(path))
         if not pairs:
             continue
-        out.kept(_back_up_copy(path, rel))
+        out.kept(_back_up_copy(root, rel))
         _write(path, new)
         out.done(rel)
         for old, number in pairs:
@@ -881,7 +888,7 @@ def _apply_lettered(root, files, args, out):
                                      moved)
         if not count:
             continue
-        out.kept(_back_up_copy(path, rel))
+        out.kept(_back_up_copy(root, rel))
         _write(path, new)
         out.done(rel)
         marks += count
@@ -1258,7 +1265,7 @@ def _apply_markers(root, files, args, out):
         if not count:
             continue
         path = os.path.join(root, rel)
-        out.kept(_back_up_copy(path, rel))
+        out.kept(_back_up_copy(root, rel))
         _write(path, new)
         out.done(rel)
         line = 'rewrote %d marker%s in %s as comments' % (count, _s(range(
@@ -1467,7 +1474,7 @@ def _apply_plugins(root, files, args, out):
         if new is False:
             out.say(CONFTEST_UNREAD % rel)
             continue
-        out.kept(_back_up_copy(path, rel))
+        out.kept(_back_up_copy(root, rel))
         if new is None:
             _untrack(root, rel)
             os.remove(path)
@@ -1647,6 +1654,9 @@ def main(argv=None):
               % (sha, _COMMIT % (_version(), ', '.join(applied))))
     if advice:
         print('  %s' % advice)
+    if os.path.isdir(os.path.join(root, *BACKUP_DIR.split('/'))):
+        print('')
+        print(BACKUPS_KEPT % BACKUP_DIR)
     _print_ending(root)
     return EXIT_OK
 

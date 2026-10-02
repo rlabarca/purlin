@@ -11,7 +11,7 @@ What each group proves:
 *pending*     what the update finds in the old layout, and the root it refuses
 *applying*    `--yes` applies every migration, a second run finds nothing, and
               a declined migration stays pending
-*backups*     every rewritten file leaves its previous bytes beside it
+*backups*     every changed file is kept as it was under one ignored folder
 *hooks*       the pre-commit and pre-push hooks v0.9.5 installed go
 *commit*      one commit, naming the migrations it carries
 *status*      `sync_status` says to run the update while anything is pending
@@ -30,7 +30,6 @@ What each group proves:
 """
 
 import fnmatch
-import hashlib
 import json
 import os
 import re
@@ -135,19 +134,37 @@ def _tracked(root):
     return _git(root, 'ls-files').stdout.split()
 
 
+# Where the update keeps each file it changes, as it was before the run.
+BACKUPS = '.purlin/runtime/update-backup'
+BACKUPS_LINE = ('Every file the update changed is kept as it was under '
+                '.purlin/runtime/update-backup/. Delete the folder once the '
+                'tests pass.')
+
+
 def _walk(root, patterns, skip_backups=True):
-    """Every project-relative path whose name matches one of `patterns`."""
+    """Every project-relative path whose name matches one of `patterns`,
+    the folder of backups left out unless asked for."""
     hits = []
     for dirpath, dirs, names in os.walk(root):
         if '.git' in dirs:
             dirs.remove('.git')
         for name in names:
-            if skip_backups and name.endswith('.bak'):
+            rel = os.path.relpath(os.path.join(dirpath, name), root)
+            rel = rel.replace(os.sep, '/')
+            if skip_backups and rel.startswith(BACKUPS + '/'):
                 continue
             if any(fnmatch.fnmatch(name, p) for p in patterns):
-                rel = os.path.relpath(os.path.join(dirpath, name), root)
-                hits.append(rel.replace(os.sep, '/'))
+                hits.append(rel)
     return sorted(hits)
+
+
+def _backups(root):
+    """`{file: the bytes of its backup}` for every backup the update kept."""
+    held = {}
+    for rel in _walk(root, ('*',), skip_backups=False):
+        if rel.startswith(BACKUPS + '/'):
+            held[rel[len(BACKUPS) + 1:]] = _read_bytes(root, rel)
+    return held
 
 
 def _answers(monkeypatch, rules=(), default='y'):
@@ -291,65 +308,48 @@ def test_one_declined_migration_does_not_stop_the_others(tmp_path, capsys,
 
 # --- backups -----------------------------------------------------------------
 
-def _backed_up(tmp_path):
-    """`(root, every file's bytes before the run, every backup after it)`."""
+def _backed_up(tmp_path, capsys):
+    """`(root, every file's bytes before the run, every backup after it,
+    the lines printed)`."""
     root = _project(tmp_path, V095)
     before = {}
     for rel in _walk(root, ('*',)):
-        with open(os.path.join(root, rel), 'rb') as handle:
-            before[rel] = handle.read()
+        before[rel] = _read_bytes(root, rel)
     _apply(root)
-    return root, before, _walk(root, ('*.bak',), skip_backups=False)
-
-
-BACKUP_NAME = re.compile(r'^(.+)\.local-([0-9a-f]{8})\.bak$')
+    return root, before, _backups(root), capsys.readouterr().out.splitlines()
 
 
 # purlin: update PROOF-7
-def test_every_backup_is_named_for_the_bytes_it_holds(tmp_path):
-    root, before, backups = _backed_up(tmp_path)
-    beside = [BACKUP_NAME.match(rel).group(1) for rel in backups
-              if BACKUP_NAME.match(rel)]
-    assert '.purlin/config.json' in beside, backups
-    assert '.gitignore' in beside, backups
+def test_every_backup_keeps_its_file_s_path_under_one_folder(tmp_path,
+                                                             capsys):
+    root, before, backups, printed = _backed_up(tmp_path, capsys)
+    assert '.purlin/config.json' in backups, sorted(backups)
+    assert '.gitignore' in backups, sorted(backups)
     assert any(rel.startswith('specs/') and rel.endswith('.md')
-               for rel in beside), backups
+               for rel in backups), sorted(backups)
     for rel in backups:
-        named = BACKUP_NAME.match(rel)
-        assert named, rel
-        assert named.group(1) in before, rel
-        with open(os.path.join(root, rel), 'rb') as handle:
-            data = handle.read()
-        assert hashlib.sha256(data).hexdigest()[:8] == named.group(2), rel
-
-
-def _held(root, backups):
-    """`{file: [the bytes of each backup beside it]}`."""
-    held = {}
-    for rel in backups:
-        with open(os.path.join(root, rel), 'rb') as handle:
-            held.setdefault(BACKUP_NAME.match(rel).group(1), []).append(
-                handle.read())
-    return held
+        assert rel in before, rel
+    assert BACKUPS_LINE in printed, printed
+    assert not _walk(root, ('*.bak',), skip_backups=False)
 
 
 # purlin: update PROOF-71
-def test_every_backed_up_file_keeps_its_bytes_from_before_the_run(tmp_path):
-    root, before, backups = _backed_up(tmp_path)
-    held = _held(root, backups)
-    assert held
-    for rel, copies in held.items():
-        assert before[rel] in copies, rel
+def test_every_backed_up_file_keeps_its_bytes_from_before_the_run(tmp_path,
+                                                                  capsys):
+    _root, before, backups, _printed = _backed_up(tmp_path, capsys)
+    assert backups
+    for rel, data in backups.items():
+        assert data == before[rel], rel
 
 
 # purlin: update PROOF-118
 @ON_WINDOWS
-def test_on_windows_every_backup_keeps_the_bytes_from_before(tmp_path):
-    root, before, backups = _backed_up(tmp_path)
-    held = _held(root, backups)
-    assert held
-    for rel, copies in held.items():
-        assert before[rel] in copies, rel
+def test_on_windows_every_backup_keeps_the_bytes_from_before(tmp_path,
+                                                             capsys):
+    _root, before, backups, _printed = _backed_up(tmp_path, capsys)
+    assert backups
+    for rel, data in backups.items():
+        assert data == before[rel], rel
 
 
 # --- hooks -------------------------------------------------------------------
@@ -401,15 +401,12 @@ def test_one_commit_carries_every_migration_id(tmp_path):
 
 
 # purlin: update PROOF-89
-def test_nothing_is_left_uncommitted_but_the_backups(tmp_path):
+def test_nothing_is_left_uncommitted(tmp_path):
     root = _project(tmp_path, V095)
     _apply(root)
-    left = _git(root, 'status', '--porcelain',
-                '--untracked-files=all').stdout.splitlines()
-    assert left, 'the backups should still be sitting there'
-    for line in left:
-        assert line.startswith('?? '), line
-        assert line.endswith('.bak'), line
+    assert _backups(root), 'the backups should be on disk'
+    assert _git(root, 'status', '--porcelain',
+                '--untracked-files=all').stdout == ''
 
 
 # purlin: update PROOF-90
@@ -954,7 +951,7 @@ def _two_workflows(tmp_path):
 
 
 def _workflows(root):
-    return [rel for rel in _walk(root, ('*',), skip_backups=False)
+    return [rel for rel in _walk(root, ('*',))
             if rel.startswith('.github/workflows/')]
 
 
@@ -976,10 +973,8 @@ def test_a_workflow_is_removed_only_on_a_yes_for_that_file(tmp_path, capsys,
     printed = capsys.readouterr().out.splitlines()
     assert WORKFLOW_LINE in printed, printed
     assert WORKFLOW_QUESTION in asked, asked
-    backup = '%s.local-%s.bak' % (
-        PROOF_WORKFLOW, hashlib.sha256(PROOF_WORKFLOW_TEXT).hexdigest()[:8])
-    assert _workflows(root) == [OWN_WORKFLOW, backup]
-    assert _read_bytes(root, backup) == PROOF_WORKFLOW_TEXT
+    assert _workflows(root) == [OWN_WORKFLOW]
+    assert _backups(root)[PROOF_WORKFLOW] == PROOF_WORKFLOW_TEXT
     assert _read_bytes(root, OWN_WORKFLOW) == OWN_WORKFLOW_TEXT
     assert WORKFLOW_REMOVED in printed
     assert PROOF_WORKFLOW not in _tracked(root)
