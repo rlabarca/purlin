@@ -16,8 +16,14 @@ A project set up with this release has nothing to upgrade, and the command says 
 Nothing is pending: this project is at <VERSION>.
 ```
 
-While a migration is pending, `purlin:status` carries `→ Run: purlin:init --update`, and a test
-run stops, writes nothing and exits 1:
+Until a 0.9.5 project is upgraded, `purlin:status` prints only this after its first line:
+
+```
+This project was set up by Purlin 0.9.5. Nothing here counts until it is brought to <VERSION>.
+→ Run: purlin:init --update
+```
+
+A test run stops, writes nothing and exits 1:
 
 ```
 This project was set up by an older Purlin and not upgraded, so nothing ran. Run purlin:init --update.

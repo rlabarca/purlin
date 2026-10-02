@@ -1735,7 +1735,8 @@ class TestSettlingAFinding:
             '--settle', 'RULE-3')
         assert code == 2, (lines, errors)
         assert errors[0] == 'purlin: --settle goes with --audit.', errors
-        assert 'Running the pytest suite.' not in lines
+        assert not [line for line in lines
+                    if line.startswith('Running pytest: ')], lines
 
     # purlin: ai_audit PROOF-139
     def test_settle_without_a_feature_is_refused(self, built_lab):
@@ -1745,7 +1746,8 @@ class TestSettlingAFinding:
         assert code == 2, (lines, errors)
         assert errors[0] == ('purlin: --settle needs exactly one '
                              '--feature.'), errors
-        assert 'Running the pytest suite.' not in lines
+        assert not [line for line in lines
+                    if line.startswith('Running pytest: ')], lines
 
     # purlin: ai_audit PROOF-140
     def test_settle_with_two_features_is_refused(self, built_lab):
@@ -1756,7 +1758,8 @@ class TestSettlingAFinding:
         assert code == 2, (lines, errors)
         assert errors[0] == ('purlin: --settle needs exactly one '
                              '--feature.'), errors
-        assert 'Running the pytest suite.' not in lines
+        assert not [line for line in lines
+                    if line.startswith('Running pytest: ')], lines
 
     # purlin: ai_audit PROOF-141
     def test_settle_naming_a_rule_the_spec_does_not_have_exits_one(

@@ -109,7 +109,7 @@ and runs the tests. It prints:
 ```text
 Wrote the tests setting to .purlin/config.json.
 
-Running the pytest suite.
+Running pytest: python3 -m pytest tests/test_cart.py --junitxml=.purlin/runtime/reports/pytest.xml
 
 Markers: 3 tied to a test, 0 not tied.
 Ran pytest on 1 feature.
