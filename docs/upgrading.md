@@ -25,8 +25,10 @@ This project was set up by an older Purlin and not upgraded, so nothing ran. Run
 
 ## What the update does
 
-The update first lists the pending migrations, each with its id and what it does. Then it asks
-before each one: `Apply <id>, which will <what it does>? [y/N]`.
+The update first lists the pending migrations, each with its id, what it does and the files it
+touches. Under `config` it shows the test command it proposes for each test tool. Then it asks
+before each migration, each question on a line of its own:
+`Apply <id>, which will <what it does>? [y/N]`.
 
 - `y` or `yes` applies it.
 - Any other answer declines it, an empty one included. A declined migration is reported as
@@ -40,14 +42,15 @@ The migrations run in this order:
 | `anchor-lines` | removes `> Requires:` and `> Global:` from every spec and `> Scope:` from every anchor, since every anchor covers the whole project |
 | `os-tags` | rewrites the Windows tag 0.9.5 wrote at the end of a proof line to `@env(windows)` |
 | `kind-tags` | drops the tag naming the kind of test from every proof line |
-| `untracked-files` | deletes the proof and run files 0.9.5 committed beside the specs and its cache folder, and untracks the dashboard data, which stays on disk and is named in `.gitignore` |
+| `untracked-files` | deletes the proof and run files 0.9.5 committed beside the specs and its cache folder, untracks the dashboard data, which stays on disk and is named in `.gitignore`, and takes out the `.gitignore` lines 0.9.5 wrote for its cache and its plugin folder |
 | `hooks` | deletes the pre-commit and pre-push hooks 0.9.5 installed, and leaves a hook another tool wrote |
-| `config` | writes `.purlin/config.json` holding `version` and `tests` alone, and names every other key it removes |
+| `config` | writes `.purlin/config.json` holding `version` and `tests` alone, asks about the command for each test tool, and names every other key it removes |
 | `evidence` | creates `.purlin/evidence/` with its README; a README the project wrote itself is kept |
 | `dashboard` | replaces a `purlin-report.html` at the project root that is a link or is not the page the plugin ships; a project with no page there is left without one |
 | `workflows` | asks about each workflow under `.github/workflows/` that names a proof file, and removes the ones you say yes to |
+| `lettered-proofs` | gives each proof numbered with a letter, such as `PROOF-7b`, the next free number in its spec, and rewrites the marker of each test that named it |
 | `markers` | rewrites each 0.9.5 marker in the project's tests as one comment above the same test |
-| `plugins` | removes the test plugins 0.9.5 copied into the project and the wiring that loaded them |
+| `plugins` | removes the test plugins 0.9.5 copied into the project and what loaded them |
 
 Only the migrations the project needs are listed. A project with no hook from 0.9.5 has no
 `hooks` migration pending.
@@ -55,19 +58,44 @@ Only the migrations the project needs are listed. A project with no hook from 0.
 **The settings.** The settings file ends with exactly two keys: `version`, this release, and
 `tests`. The `tests` setting is written from the test frameworks the old settings named. A
 framework nothing in the tree runs is dropped, with a line saying so. Settings that already
-carry `tests` keep it. Each key this release does not read is taken out and named:
+carry `tests` keep it. Each key this release does not read is taken out and named.
+
+**The test commands.** The update looks at how the project already runs each test tool: in its
+`package.json` scripts, its `Makefile` and its workflows. It proposes the command setup suggests
+for the tool, started the way the project starts it, and shows both:
 
 ```
-  removed from .purlin/config.json: digest, pre_push, report, spec_dir
-  wrote the tests setting: pytest
+pytest: uv run --project pipeline pytest {files} --junitxml={report}
+  package.json, "test:python", runs it as: uv run --project pipeline pytest pipeline/tests
+Use this command for pytest? Press Enter to use it, or type the command to use instead:
+```
+
+Press Enter to use it, or type the command to use. Keep `{files}` and `{report}` in a command
+you type: a run puts the test files and the report's path there.
+[running-and-evidence.md](running-and-evidence.md) says what each part of a test command is.
+
+**The lettered proofs.** 0.9.5 allowed a proof numbered `PROOF-7b`. This release numbers a proof
+with digits alone, so each lettered proof takes the next free number in its spec, and
+`> Highest-Proof:` moves with it where the spec has that line. The marker of each test that
+named it is rewritten, and each change is printed:
+
+```
+  lettered-proofs: renumbered 2 proofs in 1 spec and 2 markers in 2 files
+    piano_roll PROOF-7b is now PROOF-23
+    piano_roll PROOF-8b is now PROOF-24
 ```
 
 **The markers.** Each marker 0.9.5's plugins read becomes one comment above the same test,
-`# purlin: <feature> PROOF-<n>`, in the file's own comment syntax. Every other line stays as it
-was:
+`# purlin: <feature> PROOF-<n>`, in the file's own comment syntax. In JavaScript and TypeScript
+the comment goes above the line that opens the test, and the tag leaves the title: a tag joined
+to the title with `+` goes with its `+`, so `'adds a line ' + '[proof:cart:PROOF-1:RULE-1:unit]'`
+is left as `'adds a line'`.
+
+The update then reads each file back the way a test run reads it. A marker whose test's title
+cannot be read that way is named:
 
 ```
-  rewrote 2 markers in tests/test_login.py as comments
+  packages/web/test/cart.test.ts:12: the title of the test under this marker cannot be read, so its result cannot be matched. Write it as one plain string.
 ```
 
 Some markers cannot be placed above one test, such as one that covers a whole module. The
@@ -75,6 +103,23 @@ upgrade leaves such a marker as it was, and names it by file and line with what 
 
 ```
   left tests/test_module.py:3 as it was: write the marker as a comment above each test by hand
+```
+
+A marker naming a lettered proof that no spec holds is left too:
+
+```
+  left tests/test_cart.py:40 as it was: it names cart PROOF-9c, which no spec has. Write the proof with purlin:spec cart, then write the marker as a comment above the test by hand
+```
+
+**The plugin's loading lines.** Every `conftest.py` in the project that loads the pytest plugin
+0.9.5 copied loses the entry naming it in `pytest_plugins` and the `sys.path` line pointing at
+`.purlin/plugins`. Text inside a comment or a docstring is left as it is. A `conftest.py` left
+with nothing but comments, a docstring and imports nothing uses is deleted. Each file is named:
+
+```
+  plugins: removed the 3 plugin copies under .purlin/plugins/: Purlin reads the report your own test command writes
+    removed conftest.py: it held only the plugin's wiring
+    removed the plugin's wiring from tests/conftest.py
 ```
 
 **The workflows.** 0.9.5 wrote a workflow that committed proof files. A pipeline of your own may
@@ -86,7 +131,7 @@ it prints the line and asks:
 Remove .github/workflows/purlin-proofs.yml? [y/N]
 ```
 
-A yes backs the file up and removes it. Any other answer keeps it:
+A yes keeps a copy of the file and removes it. Any other answer keeps it:
 
 ```
   .github/workflows/purlin-proofs.yml: kept. It names a proof file and may be the old Purlin workflow; remove it by hand if it is.
@@ -95,16 +140,92 @@ A yes backs the file up and removes it. Any other answer keeps it:
 A workflow you kept holds no update pending. It is asked about again only while another
 migration is pending.
 
-**Backups.** Before a migration rewrites a file, it copies the file beside it as
-`<name>.local-<sha8>.bak`. The eight characters are the start of the SHA-256 of the file's
-bytes. The backups are the only files the run leaves uncommitted.
+**Backups.** Before a migration rewrites a file, it copies the file to
+`.purlin/runtime/update-backup/`, at the file's own path under that folder. Git ignores the
+folder. Delete it once the tests pass.
 
 **One commit.** Everything the run applied lands in one commit,
 `chore(update): migrate to <VERSION> (<ids>)`, naming every migration applied. A run that
-applies nothing makes no commit.
+applies nothing makes no commit, and the run leaves nothing uncommitted.
 
-`--yes` asks nothing and applies every pending migration. It removes no workflow: each one that
-names a proof file is kept and named, for you to remove by hand.
+## Answering without typing
+
+| Flag | What it does |
+|------|--------------|
+| `--yes` | asks nothing, applies every pending migration and uses each test command proposed |
+| `--apply <id>[,<id>...]` | asks nothing, applies exactly the migrations named and leaves the others pending |
+| `--test-command <tool>=<command>` | writes that command for the test tool, in place of the one proposed; give it once per tool |
+
+`--yes` and `--apply` remove no workflow: each one that names a proof file is kept and named,
+for you to remove by hand.
+
+Answers can also be given on the command's input, one per line. Each question is then printed
+on its own line with the answer taken after it.
+
+## What you will see
+
+The update prints one line of totals for each migration, then the commit:
+
+```
+  anchor-lines: removed the lines naming anchors from 53 specs
+  config: wrote the tests setting: pytest, vitest
+    pytest: uv run --project pipeline pytest {files} --junitxml={report}
+    vitest: npx vitest run --reporter=default --reporter=junit --outputFile.junit={report} {files}
+  markers: rewrote 533 markers in 95 files
+  committed 670def1 as chore(update): migrate to <VERSION> (anchor-lines, config, markers)
+```
+
+Each file's own line is in `.purlin/runtime/update-backup/update.log`.
+
+**The old record.** The update then says what became of it:
+
+```
+Every rule reads `not run` until the tests run again.
+The `verify:` commits 0.9.5 made stay in git as the earlier record, and its receipts can be read from the commit before the upgrade, e257e2c.
+Every file the update changed is kept as it was under .purlin/runtime/update-backup/, with each change listed in update.log there. Delete the folder once the tests pass.
+```
+
+To read a receipt, name the commit and the file: `git show e257e2c:specs/web/cart.receipt.json`.
+
+**What Purlin left for you.** The update lists each tracked file that still holds text 0.9.5
+used, with how many of its lines do, most first. It changes none of them:
+
+```
+Purlin left these for you:
+  pipeline/tests/test_patch_search.py: 21 lines
+  CLAUDE.md: 4 lines
+  Each line counted names something 0.9.5 used: [proof:, pytest.mark.proof, .purlin/plugins, purlin:verify, proofs-. This release reads none of them.
+```
+
+At most 20 files are listed, then `and <n> more files`. A project's `CLAUDE.md` that tells the
+agent to write `[proof:...]` markers is the one to change first: say `purlin:build` writes the
+markers.
+
+**The lines that need you** come last, under `These need you:`. Each names what to do.
+
+**Every rule reads `not run`.** The status after the update ends like this:
+
+```
+476 rules. 0 pass their tests.
+Left to do:
+  476 rules to test: purlin:test
+```
+
+**The first full run takes as long as the test suites.** `purlin:test --all --commit` runs
+every test of the project.
+
+**Lines about the project, not the upgrade.** The status and the run print notices about the
+project as it stands. They were true before the upgrade too, and nothing in the upgrade is
+waiting on them:
+
+```
+cart: 1 file its scope names is not written yet: src/cart/totals.py. Run purlin:build cart, or correct the path with purlin:spec cart.
+1 spec names no files, so its tests run every time: patch_graph. Run purlin:spec patch_graph to add its > Scope: line.
+```
+
+**Done, for an upgrade,** is `purlin:status` printing no `→ Run: purlin:init --update` line
+and, after `purlin:test --all --commit`, a count of passing rules. A rule that still reads
+`no test` or `not run` has a line under `Left to do` naming the command for it.
 
 ## When it refuses
 
@@ -113,6 +234,7 @@ Each refusal names what is wrong and what fixes it, and changes nothing more.
 | What it prints | Exit |
 |---|---|
 | `There is no .purlin/ under <folder>, so there is nothing to update. Run purlin:init first.` | 2 |
+| `<id> is not a migration. The migrations are: <ids>.` | 2 |
 | `.purlin/config.json cannot be read: <the reader's message> at line <n>. Fix the file by hand; nothing ran and nothing was saved.` | 1 |
 | `The changes are staged and not committed: <git's own message>` where git refuses the commit | the changes stay staged |
 
