@@ -116,6 +116,13 @@ Each test was written and run on `main`'s `renumber.py` and `drift.py` before th
   code at `drift.MERGE_LINE`, which that code does not have. The hand run above is what shows
   the fault it guards.
 
+The first fast sweep on this branch then failed 3 tests, all on `drift.py` as first written and
+all fixed there: an `open(` whose `encoding=` stood on the next line
+(`test_every_open_passes_an_encoding`), a docstring line opening on the word `from`
+(`test_the_package_imports_nothing_outside_the_standard_library`), and `MERGE_HEAD` handed to
+git with no `--end-of-options` before it
+(`test_drift_hands_rev_list_diff_and_show_each_commit_after_end_of_options`).
+
 ## Lines a person reads that this lane chose
 
 Every other line is K6's or K7's, word for word.
@@ -162,7 +169,9 @@ Every other line is K6's or K7's, word for word.
 6. **`numbers_twice(project_root, features, ref, spec_lines=None)`.** `follows` needs the spec's
    lines. Drift reads them from the file; `renumber` hands over the resolved lines it parsed, so
    the line numbers agree.
-7. **No `takes` line for a kind both sides wrote alike**, unless no kind differs.
+7. **No `takes` line for a kind both sides wrote alike**, unless no kind differs. A
+   `> Highest-` line one side alone holds, where the starting version has none of that kind, is
+   kept.
 8. **PROOF-19's spec carries no `> Highest-` lines.** With them, two sides that each add a proof
    under its own number also conflict on `> Highest-Proof:`, and the run would end
    `Resolved 2 conflicts`. The format allows a spec without the lines.
@@ -178,6 +187,9 @@ Every other line is K6's or K7's, word for word.
 11. **Stability's lines in the collaboration test end in the order `RULE-4`, `RULE-3`** and
     `PROOF-5`, `PROOF-4`: K6 keeps the first side's lines first, Dana's, and hers are the ones
     that move. The test's last check reads that order.
+12. **`merge_in_progress` runs `git rev-parse -q --verify --end-of-options MERGE_HEAD`.** Section
+    4.3 writes it without `--end-of-options`; the security test for drift requires it before
+    every revision.
 
 ## Left, or waiting on another lane
 
