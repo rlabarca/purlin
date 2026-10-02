@@ -35,6 +35,7 @@ def plugin_root():
 
 def _within(path, folder):
     """True where the real path `path` is `folder` or under it."""
+    path, folder = os.path.normcase(path), os.path.normcase(folder)
     try:
         return os.path.commonpath([path, folder]) == folder
     except ValueError:      # two drives on Windows
@@ -50,7 +51,9 @@ def _git_common_dir(folder):
     except (subprocess.SubprocessError, OSError):
         return None
     found = result.stdout.strip() if result.returncode == 0 else ''
-    return os.path.realpath(os.path.join(folder, found)) if found else None
+    if not found:
+        return None
+    return os.path.normcase(os.path.realpath(os.path.join(folder, found)))
 
 
 def same_repository(a, b):
