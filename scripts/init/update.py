@@ -60,9 +60,22 @@ PROOF_FILE_GLOB = '*.proofs-*.json'
 RUN_FILE_GLOB = '*.receipt.json'
 DASHBOARD_DATA = '.purlin/report-data.js'
 CACHE_DIR = '.purlin/cache'
-WINDOWS_TAG_RE = re.compile(r'(?m)[ \t]*@windows[ \t]*(?=\r?$)')
-KIND_TAG_RE = re.compile(r'(?m)^(- PROOF-.*?)[ \t]+@(?:unit|integration|e2e)'
-                         r'(?=(?:[ \t]+@env\([a-z]+\))?[ \t]*\r?$)')
+# A proof is its line and the lines that continue it, up to the next proof,
+# rule, heading or blank line. Its tags are the `@word`s that end it, on
+# whichever of those lines the last one is, with or without a note in
+# brackets after them; an `@word` after `and`, `or` or a comma is prose, as
+# the spec reader takes it.
+PROOF_START_RE = re.compile(r'^- PROOF-')
+PROOF_END_RE = re.compile(r'^(?:- PROOF-|- RULE-|#|[ \t]*\r?\n?$)')
+TAGS_AT_END_RE = re.compile(
+    r'((?:(?<!\band)(?<!\bor)(?<!,)[ \t\r\n]+@\w+(?:\([^)\n]*\))?)+)'
+    r'([ \t\r\n]+\([^()]*\))?[ \t]*\Z')
+TAG_RE = re.compile(r'([ \t\r\n]+)@(\w+)(\([^)\n]*\))?')
+WINDOWS_TAG = 'windows'
+# The kinds of test 0.9.5 named. A project's own markers may name more, such
+# as `browser`; the upgrade reads those from the markers themselves.
+KINDS = ('unit', 'integration', 'e2e')
+KEPT_TAGS = ('manual', 'slow', 'env')
 WORKFLOW_MARKER = '.proofs-'
 WORKFLOWS = 'workflows'
 PRE_PUSH_HOOK = '.git/hooks/pre-push'
@@ -122,12 +135,22 @@ LETTERED_MARK_RES = (
     re.compile(r'(@purlin[ \t]+(%s)[ \t]+)(%s)\b' % (_NAME, _LETTERED)),
     re.compile(r'(purlin:[ \t]+(%s)[ \t]+)(%s)\b' % (_NAME, _LETTERED)),
 )
+MARKER_KIND_RES = (
+    re.compile(r'\[proof:%s:PROOF-\d+[a-z]*:RULE-\d+:(\w+)\]' % _NAME),
+    re.compile(r"""pytest\.mark\.proof\(\s*["']%s["']\s*,\s*["']PROOF-\d+"""
+               r"""[a-z]*["']\s*,\s*["']RULE-\d+["']\s*,\s*(?:\w+\s*=\s*)?"""
+               r"""["'](\w+)["']""" % _NAME),
+    re.compile(r'"PurlinProof"\s*,\s*"%s:PROOF-\d+[a-z]*:RULE-\d+:(\w+)"'
+               % _NAME),
+    re.compile(r'@purlin[ \t]+%s[ \t]+PROOF-\d+[a-z]*[ \t]+RULE-\d+[ \t]+'
+               r'(\w+)' % _NAME),
+)
 RENUMBERED = '%s %s is now %s'
 LEFT = ('left %s:%d as it was: write the marker as a comment above each test '
         'by hand')
 LEFT_NO_SPEC = ('left %s:%d as it was: it names %s %s, which no spec has. '
-                'Write the proof with purlin:spec %s, then write the marker '
-                'as a comment above the test by hand')
+                'Write the proof with purlin:spec %s, put %s above the test, '
+                "and take the old tag out of the test's title or decorator.")
 LEFT_LETTERED = ('left %s:%d as it was: it names %s %s, which is numbered '
                  'with a letter. Run purlin:init --update again and apply '
                  'lettered-proofs')
@@ -185,6 +208,18 @@ REWORDED_IGNORE = {
         '# Dashboard page, rewritten with its data, never committed'}
 # What the update prints after its totals.
 OWNER_HEADING = 'These need you:'
+KIND_TAGS_WENT = ('dropped %d kind-of-test tag%s from %d spec%s: purlin:test '
+                  'runs every marked test')
+ARROW = '\u2192'
+RUN_UPDATE = ARROW + ' Run: purlin:init --update'
+HOW_TO_APPLY = ('Nothing was applied. Add --yes to apply every migration and '
+                'use each proposed test command, or --apply <id>[,<id>...] '
+                'to apply the migrations named.')
+STILL_PENDING = ('%d migration%s still pending: %s. A test run stops until '
+                 'nothing is pending.')
+RUN_TESTS = ARROW + ' Run: purlin:test --all --commit'
+RUN_TESTS_FIRST = ('Run it before anything else: every rule reads not run '
+                   'until it has.')
 LEFT_HEADING = 'Purlin left these for you:'
 LEFT_NEEDLES = ('[proof:', 'pytest.mark.proof', '.purlin/plugins',
                 'purlin:verify', 'proofs-')
@@ -731,34 +766,136 @@ def _apply_config(root, files, args, out):
     if removed:
         out.say(REMOVED_KEYS % ', '.join(removed))
 
+def retag(text, change):
+    """`(text, changed)`: `text` with `change` applied to each tag that ends
+    a proof, its continuation lines read with it.
+
+    `change(name, argument)` returns the tag to write in its place, None to
+    drop it, or False to leave it. A line a dropped tag leaves empty goes.
+    """
+    lines = text.splitlines(True)
+    out, changed, index = [], 0, 0
+    while index < len(lines):
+        if not PROOF_START_RE.match(lines[index]):
+            out.append(lines[index])
+            index += 1
+            continue
+        end = index + 1
+        while end < len(lines) and not PROOF_END_RE.match(lines[end]):
+            end += 1
+        block = ''.join(lines[index:end])
+        body = block.rstrip('\r\n')
+        eol = block[len(body):]
+        index = end
+        tail = TAGS_AT_END_RE.search(body)
+        if not tail:
+            out.append(block)
+            continue
+        kept, carry, here = [], None, 0
+        for space, name, argument in TAG_RE.findall(tail.group(1)):
+            new = change(name, argument)
+            if new is False:
+                new = '@' + name + argument
+            else:
+                here += 1
+            if new is None:
+                # A tag that opened its line hands its indent to the next
+                # tag on that line, and takes the line with it if alone.
+                if '\n' in space and carry is None:
+                    carry = space
+                continue
+            if '\n' in space or carry is None:
+                kept.append(space + new)
+            else:
+                kept.append(carry + new)
+            carry = None
+        if not here:
+            out.append(block)
+            continue
+        changed += here
+        out.append(body[:tail.start()] + ''.join(kept)
+                   + (tail.group(2) or '') + eol)
+    return ''.join(out), changed
+
+def _end_tags(text):
+    """The name of every tag that ends a proof of the spec `text`."""
+    names = []
+    retag(text, lambda name, argument: names.append(name) or False)
+    return names
+
+def _to_env(name, argument):
+    return '@env(windows)' if name == WINDOWS_TAG and not argument else False
+
 def _detect_os_tags(root):
     return [rel for rel in _files_under(root, 'specs', ('*.md',))
-            if WINDOWS_TAG_RE.search(_read(os.path.join(root, rel)))]
+            if WINDOWS_TAG in _end_tags(_read(os.path.join(root, rel)))]
 
 def _apply_os_tags(root, files, args, out):
     """A proof names an operating system now, or names none and runs anywhere."""
     for rel in files:
         path = os.path.join(root, rel)
         out.kept(_back_up_copy(root, rel))
-        _write(path, WINDOWS_TAG_RE.sub(' @env(windows)', _read(path)))
+        _write(path, retag(_read(path), _to_env)[0])
         out.done(rel)
     out.say('rewrote the operating-system tags in %d spec%s'
             % (len(files), _s(files)))
 
+def marker_kinds(root):
+    """Each kind of test the project's own 0.9.5 markers name in their last
+    field, read from its test files and from the copies of them an earlier
+    run of the update kept."""
+    kinds = set()
+    paths = [os.path.join(root, rel) for rel in _test_files(root)]
+    for dirpath, _dirnames, names in os.walk(
+            os.path.join(root, *BACKUP_DIR.split('/'))):
+        paths += [os.path.join(dirpath, name) for name in sorted(names)
+                  if name.endswith(TEST_EXTENSIONS)]
+    for path in paths:
+        try:
+            text = _read(path)
+        except (IOError, OSError, UnicodeDecodeError):
+            continue
+        for pattern in MARKER_KIND_RES:
+            for match in pattern.finditer(text):
+                kinds.add(match.group(pattern.groups))
+    return kinds
+
+def _kinds(root, texts):
+    """The tags the upgrade drops: the three kinds 0.9.5 named, and each
+    kind the project's own markers name. The test files are read only where
+    a proof ends with a tag that is neither one of the three nor kept."""
+    kinds = set(KINDS)
+    if any(name not in kinds and name not in KEPT_TAGS + (WINDOWS_TAG,)
+           for text in texts for name in _end_tags(text)):
+        kinds |= marker_kinds(root)
+    return kinds - set(KEPT_TAGS) - set((WINDOWS_TAG,))
+
 def _detect_kind_tags(root):
-    """Every spec with a proof line that still names what kind of test it is."""
-    return [rel for rel in _files_under(root, 'specs', ('*.md',))
-            if KIND_TAG_RE.search(_read(os.path.join(root, rel)))]
+    """Every spec with a proof that still names what kind of test it is."""
+    texts = dict((rel, _read(os.path.join(root, rel)))
+                 for rel in _files_under(root, 'specs', ('*.md',)))
+    kinds = _kinds(root, texts.values())
+    return [rel for rel in sorted(texts)
+            if any(name in kinds for name in _end_tags(texts[rel]))]
 
 def _apply_kind_tags(root, files, args, out):
-    """A proof line names an operating system or `@manual`, and nothing else."""
+    """A proof ends with an operating system, `@slow` or `@manual`, and
+    names no kind of test."""
+    texts = dict((rel, _read(os.path.join(root, rel))) for rel in files)
+    kinds = _kinds(root, texts.values())
+    total = 0
     for rel in files:
-        path = os.path.join(root, rel)
+        new, count = retag(
+            texts[rel], lambda name, argument: None if name in kinds
+            and not argument else False)
         out.kept(_back_up_copy(root, rel))
-        _write(path, KIND_TAG_RE.sub(lambda m: m.group(1), _read(path)))
+        _write(os.path.join(root, rel), new)
         out.done(rel)
-    out.say('dropped the kind of test from the proof lines of %d spec%s: '
-            'purlin:test runs every marked test' % (len(files), _s(files)))
+        out.note('dropped %d tag%s from %s' % (count, '' if count == 1
+                                               else 's', rel))
+        total += count
+    out.say(KIND_TAGS_WENT % (total, '' if total == 1 else 's', len(files),
+                              _s(files)))
 
 def _detect_workflows(root):
     """The workflow files whose text names a proof file.
@@ -1373,8 +1510,10 @@ def _apply_markers(root, files, args, out):
             elif lettered in held:
                 out.owner(LEFT_LETTERED % ((rel, number) + lettered))
             else:
-                out.owner(LEFT_NO_SPEC % ((rel, number) + lettered
-                                          + lettered[:1]))
+                out.owner(LEFT_NO_SPEC % (
+                    (rel, number) + lettered + lettered[:1]
+                    + (_comment(os.path.splitext(rel)[1].lower(), '',
+                                lettered[0], 'PROOF-<n>'),)))
     for line in unread:
         out.owner(line)
 
@@ -1851,6 +1990,12 @@ def main(argv=None):
     if sha:
         print('  committed %s as %s'
               % (sha, _COMMIT % (_version(), ', '.join(applied))))
+    if not applied:
+        # Nothing changed, so the run says how to change it and no more.
+        print('')
+        print(RUN_UPDATE)
+        print(HOW_TO_APPLY)
+        return EXIT_OK
     if advice:
         report.owner(advice)
     if applied:
@@ -1870,7 +2015,15 @@ def main(argv=None):
         print(OWNER_HEADING)
         for line in report.owners:
             print(line)
-    _print_ending(root)
+    print('')
+    left_pending = [item['id'] for item in pending(root)]
+    if left_pending:
+        print(RUN_UPDATE)
+        print(STILL_PENDING % (len(left_pending), ' is' if len(left_pending)
+                               == 1 else 's are', ', '.join(left_pending)))
+    else:
+        print(RUN_TESTS)
+        print(RUN_TESTS_FIRST)
     return EXIT_OK
 
 

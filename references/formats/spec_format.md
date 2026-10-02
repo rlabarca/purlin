@@ -128,7 +128,9 @@ names the old id.
 
 A new rule takes one more than the highest of `> Highest-Rule:` and every
 rule number the spec holds. `> Highest-Rule:` is raised to that number, so a
-number is never used again.
+number is never used again. In a spec that has neither `> Highest-Rule:` nor
+`> Highest-Proof:`, both go after the last `>` line of the header,
+`> Highest-Rule:` first.
 
 Two branches can take the same number. The rule or proof already on the
 default branch keeps it. The one from the branch not yet merged moves to the

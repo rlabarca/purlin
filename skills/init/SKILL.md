@@ -90,7 +90,8 @@ you put each of its questions to the person. Three steps:
 
    It prints each pending migration with its id, what it does and the files it touches, and
    under `config` the command it proposes for each test tool with the project's own command it
-   was read from.
+   was read from. It ends on `→ Run: purlin:init --update` and a line naming `--yes` and
+   `--apply`, and prints no status.
 
 2. **Stop and ask** the person about each migration listed and each proposed test command:
    whether to apply the migration, by what it does, and whether the command is the one the
@@ -108,12 +109,16 @@ you put each of its questions to the person. Three steps:
 | `--test-command <tool>=<command>` | Writes the command the person gave for that test tool, in place of the one proposed; once per tool |
 | `--yes` | Applies every pending migration and uses each proposed command, when the person said yes to all of it |
 
-A migration can leave work for a later one. Where the run ends on `→ Run: purlin:init --update`,
-do the three steps again.
+A run that applied every pending migration ends on `→ Run: purlin:test --all --commit`. Run
+that next, before any other command: every rule reads `not run` until it has. A run that left a
+migration pending ends on `→ Run: purlin:init --update` and names each one still pending; do the
+three steps again.
 
 Between them the migrations:
 
-- rewrite or remove each line 0.9.5 wrote into a spec that this version does not read;
+- rewrite or remove each line 0.9.5 wrote into a spec that this version does not read, the tag
+  naming a kind of test at the end of each proof included; `@manual`, `@slow` and `@env(...)`
+  stay;
 - remove the files 0.9.5 kept that this version does not use, and its two git hooks;
 - name each workflow that names a proof file. `--yes` and `--apply` remove none: each is kept and
   named, and the person removes it by hand;

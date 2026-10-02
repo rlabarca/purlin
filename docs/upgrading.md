@@ -40,14 +40,21 @@ before each migration, each question on a line of its own:
 - Any other answer declines it, an empty one included. A declined migration is reported as
   `skipped <id>` and stays pending. The others still run.
 
+A run that applied nothing changes nothing and ends by saying how to apply:
+
+```
+→ Run: purlin:init --update
+Nothing was applied. Add --yes to apply every migration and use each proposed test command, or --apply <id>[,<id>...] to apply the migrations named.
+```
+
 The migrations run in this order:
 
 | Migration | What it changes |
 |-----------|-----------------|
 | `design-refs` | removes each spec's design reference: its Figma `> Source:` with its `> Pinned:`, and its `> Visual-Reference:` and `> Visual-Hash:` lines |
 | `anchor-lines` | removes `> Requires:` and `> Global:` from every spec and `> Scope:` from every anchor, since every anchor covers the whole project |
-| `os-tags` | rewrites the Windows tag 0.9.5 wrote at the end of a proof line to `@env(windows)` |
-| `kind-tags` | drops the tag naming the kind of test from every proof line |
+| `os-tags` | rewrites the Windows tag 0.9.5 wrote at the end of a proof to `@env(windows)` |
+| `kind-tags` | drops the tag naming the kind of test from the end of every proof |
 | `untracked-files` | deletes the proof and run files 0.9.5 committed beside the specs and its cache folder, untracks the dashboard data, which stays on disk and is named in `.gitignore`, and takes out the `.gitignore` lines 0.9.5 wrote for its cache and its plugin folder |
 | `hooks` | deletes the pre-commit and pre-push hooks 0.9.5 installed, and leaves a hook another tool wrote |
 | `config` | writes `.purlin/config.json` holding `version` and `tests` alone, asks about the command for each test tool, and names every other key it removes |
@@ -79,6 +86,18 @@ Use this command for pytest? Press Enter to use it, or type the command to use i
 Press Enter to use it, or type the command to use. Keep `{files}` and `{report}` in a command
 you type: a run puts the test files and the report's path there.
 [running-and-evidence.md](running-and-evidence.md) says what each part of a test command is.
+
+**The tags.** A proof may run over several lines, and its tags end the last of them. The update
+reads a proof's line together with the lines that continue it, up to the next proof, rule,
+heading or blank line. The kinds of test it drops are `@unit`, `@integration` and `@e2e`, and
+every kind the project's own 0.9.5 markers name in their last field, so a project whose markers
+read `[proof:cart:PROOF-1:RULE-1:browser]` loses `@browser` too. A tag followed only by a note
+in brackets goes and the note stays. `@manual`, `@slow` and `@env(...)` always stay. The line of
+totals counts the tags:
+
+```
+  kind-tags: dropped 438 kind-of-test tags from 54 specs: purlin:test runs every marked test
+```
 
 **The lettered proofs.** 0.9.5 allowed a proof numbered `PROOF-7b`. This release numbers a proof
 with digits alone, so each lettered proof takes the next free number in its spec, and
@@ -114,8 +133,11 @@ upgrade leaves such a marker as it was, and names it by file and line with what 
 A marker naming a lettered proof that no spec holds is left too:
 
 ```
-  left tests/test_cart.py:40 as it was: it names cart PROOF-9c, which no spec has. Write the proof with purlin:spec cart, then write the marker as a comment above the test by hand
+  left tests/test_cart.py:40 as it was: it names cart PROOF-9c, which no spec has. Write the proof with purlin:spec cart, put # purlin: cart PROOF-<n> above the test, and take the old tag out of the test's title or decorator.
 ```
+
+The comment is shown in the file's own comment style, and `<n>` is the number `purlin:spec`
+gives the proof.
 
 **The plugin's loading lines.** Every `conftest.py` in the project that loads the pytest plugin
 0.9.5 copied loses the entry naming it in `pytest_plugins` and the `sys.path` line pointing at
@@ -209,7 +231,17 @@ markers.
 
 **The lines that need you** come last, under `These need you:`. Each names what to do.
 
-**Every rule reads `not run`.** The status after the update ends like this:
+**The test run comes next.** A run that applied every pending migration ends on it:
+
+```
+→ Run: purlin:test --all --commit
+Run it before anything else: every rule reads not run until it has.
+```
+
+A run that left a migration pending ends on `→ Run: purlin:init --update` and names each one
+still pending. A test run stops until nothing is pending.
+
+**Every rule reads `not run`.** Until that test run, `purlin:status` ends like this:
 
 ```
 476 rules. 0 pass their tests.
@@ -228,6 +260,17 @@ waiting on them:
 cart: 1 file its scope names is not written yet: src/cart/totals.py. Run purlin:build cart, or correct the path with purlin:spec cart.
 1 spec names no files, so its tests run every time: patch_graph. Run purlin:spec patch_graph to add its > Scope: line.
 ```
+
+A line under `Left to do` may be about the project too. This one names a comment above a test
+whose proof was reworded after the test was written, which the project held before the upgrade:
+
+```
+  1 test comment to correct: purlin:build
+```
+
+A test that fails in the full run and passes when its feature is run alone, with
+`purlin:test <feature>`, is a test of the project's own that does not pass every time. The
+upgrade did not change it.
 
 **Done, for an upgrade,** is `purlin:status` printing no `→ Run: purlin:init --update` line
 and, after `purlin:test --all --commit`, a count of passing rules. A rule that still reads
