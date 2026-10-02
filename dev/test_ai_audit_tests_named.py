@@ -72,8 +72,12 @@ class TestEachTestShowsItsOwnSource:
         rule = project.rule('RULE-1')
         assert [test['result'] for proof in rule['proofs']
                 for test in proof['tests']] == ['pass', 'pass'], rule
+        reading = audit_module.reading_for(project.root, None, 'login',
+                                           'RULE-1')
+        # Exactly those two: each listed once and no third entry.
+        assert sorted(test['name'] for test in reading['tests']) == sorted(
+            NAMES), reading['tests']
         tests = _tests_by_name(project)
-        assert sorted(tests) == sorted(NAMES), tests
         first = tests['test_valid_credentials_return_200']['body']
         second = tests['test_a_token_comes_back']['body']
         assert 'def test_valid_credentials_return_200' in first, first
