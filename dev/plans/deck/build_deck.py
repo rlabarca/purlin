@@ -133,7 +133,7 @@ slide('together', 'Working together', 'Product, QA and developers improve the sp
     ('`purlin:spec`', 'Anyone writes or sharpens rules and proofs, with help from AI or by hand.'),
     ('`purlin:build`', 'Writes the code and the tests, with one comment above each test naming its proof.'),
     ('`purlin:test`', 'Runs what changed and states the first fact, %s, or what fails.' % m('Tests: met')),
-    ('`purlin:drift`', 'After a pull: which rules and proofs changed, and any number two branches both took. %s then shows the fix and asks before it changes anything.' % m('purlin:spec')),
+    ('`purlin:drift`', 'After a pull: which rules and proofs changed, and any number two branches both took. %s resolves the conflict and renumbers. It asks first.' % m('purlin:spec')),
 ], '<b>Nothing is signed while the work goes on.</b> Purlin has no roles: whoever knows the answer edits the spec.',
  'Purlin keeps two facts: whether every rule\'s tests pass on the committed evidence, and whether that '
  'evidence is signed. Nothing waits on a person while the specs change. When two branches take the '
@@ -218,7 +218,7 @@ slide('manual', 'Judgment calls', 'Pass or fail. What about judgment calls?', [
  'A proof a test carries out ends in pass or fail, settled by a value the proof names. A claim '
  'that is a judgment, such as it looks good or it is easy to use, is not a test\'s to settle. '
  'For now the way to sign off on one is a hand check: a proof tagged manual, which the status '
- 'shows as checked at sign-off until someone signs. After a sign-off the status and the dashboard '
+ 'shows as checked at sign-off, and not counted as passing, until someone signs. After a sign-off the status and the dashboard '
  'show the last note with the version it was signed at and how many commits have come since, so '
  'a reader can judge whether it still holds. The next walk shows that note at the rule\'s stop. An AI may help a person look, but a test does not pass or fail on an AI\'s '
  'opinion; a test may ask a model a question with one right answer.',
