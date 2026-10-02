@@ -73,6 +73,16 @@ spec ahead of its code gets one line of information:
 states: 3 files its scope names are not written yet: facts.py, project.py, wording.py. Run purlin:build states, or correct the path with purlin:spec states.
 ```
 
+Three or more warnings of one kind about a spec are one notice. It counts the specs and names the
+first two, and its hover names every one:
+
+```
+33 specs hold a proof line Purlin cannot read: piano_roll, sample_voice, and 31 more. Run purlin:status for each.
+```
+
+One or two of a kind keep a notice each, and so does a warning that is about no one spec. The
+lines of information group the same way.
+
 **Count boxes.** Up to three boxes count the project's rules:
 
 - `No proof` counts the rules no proof line names. It comes first, and it is there wherever the

@@ -803,6 +803,202 @@ def test_each_warning_is_a_notice_after_the_working_tree_one(browser,
     assert lowest_notice <= first_box['y']
 
 
+# ---------------------------------------------------------------------------
+# Three or more warnings of one kind are one notice
+# ---------------------------------------------------------------------------
+
+def status_sentences():
+    """The modules whose sentences the status writes about one spec."""
+    mcp = os.path.join(ROOT, 'scripts', 'mcp')
+    if mcp not in sys.path:
+        sys.path.insert(0, mcp)
+    from purlin import evidence, specs, status, wording
+    return specs, status, wording, evidence
+
+
+def unread_proof_line(name, proof='PROOF-7b', rule='RULE-6'):
+    """The warning the status writes for one lettered proof line of `name`."""
+    specs = status_sentences()[0]
+    return specs.PROOF_LINE_UNREAD % (
+        name, specs.NOT_A_PROOF_LINE,
+        '- %s (%s): On a real engine, apply an edit' % (proof, rule), name)
+
+
+def reworded_proof_line(name='pitch_crosscheck'):
+    """The warning the status writes for a test whose proof was reworded."""
+    wording = status_sentences()[2]
+    return (wording.STALE % ('pipeline/tests/test_%s.py' % name, 175, name,
+                             'PROOF-7', 'ebfe120', 'Transcribe the lead',
+                             'Transcribe a stem')
+            + wording.STALE_BUILD % name)
+
+
+def thirty_three_specs():
+    return ['piano_roll', 'sample_voice'] + [
+        'spec_%02d' % number for number in range(3, 34)]
+
+
+def notice_hovers(page):
+    return page.eval_on_selector_all(
+        '.notice', 'els => els.map(e => e.getAttribute("title"))')
+
+
+# purlin: purlin_report PROOF-257
+def test_thirty_three_warnings_of_one_kind_are_one_notice(browser, tmp_path):
+    payload = payload_named('regulated')
+    payload['dirty'] = False
+    names = thirty_three_specs()
+    other = reworded_proof_line()
+    payload['warnings'] = [unread_proof_line(name) for name in names] + [other]
+    assert len(payload['warnings']) == 34
+    page = open_board(browser, tmp_path, payload,
+                      viewport={'width': 1500, 'height': 900})
+    assert texts(page, '.notice-text') == [
+        '33 specs hold a proof line Purlin cannot read: piano_roll, '
+        'sample_voice, and 31 more. Run purlin:status for each.', other]
+    assert notice_hovers(page) == ['\n'.join(names), None]
+    rows = [page.query_selector('[data-table="%s"] .tr' % table).bounding_box()
+            for table in ('anchors', 'specs')]
+    page.close()
+    assert all(row['y'] + row['height'] <= 900 for row in rows)
+
+
+# purlin: purlin_report PROOF-258
+def test_two_of_a_kind_and_a_warning_about_no_spec_keep_their_notices(
+        browser, tmp_path):
+    status_sentences()
+    from purlin import facts as facts_module
+    payload = payload_named('regulated')
+    payload['dirty'] = False
+    tags = [facts_module.TAG_NOT_HERE % ('signed/' + version, version, sha)
+            for version, sha in (('0.3.0', 'c3c3c3c'), ('0.2.0', 'b2b2b2b'),
+                                 ('0.1.0', 'a1b2c3d'))]
+    two = [unread_proof_line('login'), unread_proof_line('invoice')]
+    payload['warnings'] = two + tags
+    page = open_board(browser, tmp_path, payload)
+    assert texts(page, '.notice-text') == two + tags
+    assert notice_hovers(page) == [None] * 5
+    page.close()
+
+
+# purlin: purlin_report PROOF-259
+def test_a_grouped_notice_counts_specs_and_stands_where_the_first_stood(
+        browser, tmp_path):
+    payload = payload_named('regulated')
+    payload['dirty'] = False
+    other = reworded_proof_line()
+    payload['warnings'] = [
+        unread_proof_line('export'), other,
+        unread_proof_line('export', 'PROOF-8b'), unread_proof_line('invoice'),
+        unread_proof_line('login'), unread_proof_line('login', 'PROOF-9b')]
+    page = open_board(browser, tmp_path, payload)
+    assert texts(page, '.notice-text') == [
+        '3 specs hold a proof line Purlin cannot read: export, invoice, and '
+        '1 more. Run purlin:status for each.', other]
+    page.close()
+
+
+# purlin: purlin_report PROOF-260
+def test_three_lines_about_one_or_two_specs_name_each_spec(browser, tmp_path):
+    payload = payload_named('regulated')
+    payload['dirty'] = False
+    payload['warnings'] = [unread_proof_line('login', 'PROOF-%db' % number)
+                           for number in (1, 2, 3)]
+    page = open_board(browser, tmp_path / 'one', payload)
+    assert texts(page, '.notice-text') == [
+        'login holds a proof line Purlin cannot read, in 3 places. '
+        'Run purlin:status login.']
+    page.close()
+    payload['warnings'][2] = unread_proof_line('invoice')
+    page = open_board(browser, tmp_path / 'two', payload)
+    assert texts(page, '.notice-text') == [
+        '2 specs hold a proof line Purlin cannot read: login and invoice. '
+        'Run purlin:status for each.']
+    page.close()
+
+
+# purlin: purlin_report PROOF-261
+def test_lines_of_information_group_in_the_neutral_tone(browser, tmp_path):
+    status = status_sentences()[1]
+    payload = payload_named('regulated')
+    payload['dirty'] = False
+    payload['warnings'] = []
+    names = ['export', 'invoice', 'login', 'refund']
+    payload['information'] = [
+        status.NOT_WRITTEN_ONE % (names[0], 'src/a.py', names[0], names[0]),
+        status.NOT_WRITTEN_MANY % (names[1], 2, 'src/b.py, src/c.py',
+                                   names[1], names[1])] + [
+        status.NOT_WRITTEN_ONE % (name, 'src/d.py', name, name)
+        for name in names[2:]]
+    page = open_board(browser, tmp_path, payload)
+    assert texts(page, '.notice-text') == [
+        '4 specs name a file in the scope that is not written yet: export, '
+        'invoice, and 2 more. Run purlin:status for each.']
+    assert notice_hovers(page) == ['\n'.join(names)]
+    dot = page.eval_on_selector('.notice .dot', 'e => e.getAttribute("style")')
+    page.close()
+    assert dot == 'color:var(--state-neutral)'
+
+
+def one_line_of_each_kind(name):
+    """`[(what, the line the status writes about `name`)]`, one per kind of
+    warning the status writes about one spec, from the sentences it uses."""
+    specs, _status, wording, evidence = status_sentences()
+    path = evidence.evidence_path('local', name)
+    return [
+        ('hold a line under ## Rules with no number',
+         '%s: 1 line under ## Rules is not numbered; a rule is '
+         '`- RULE-N: <text>`. Run purlin:spec %s.' % (name, name)),
+        ("write a rule's number twice",
+         specs.RULE_WRITTEN_TWICE % (name, 'RULE-2', name)),
+        ("write a proof's number twice",
+         specs.PROOF_WRITTEN_TWICE % (name, 'PROOF-2', name)),
+        ('hold a line left from a merge conflict',
+         specs.CONFLICT_MANY % (name, 3, 12, '<<<<<<< HEAD', name)),
+        ('have a name no test comment can name',
+         specs.NAME_REFUSED % (name, 'specs/a/%s.md' % name,
+                               'specs/a/renamed.md')),
+        ('hold a proof line Purlin cannot read',
+         specs.PROOF_LINE_UNREAD % (name, specs.TAG_AT_END,
+                                    '- PROOF-1 @slow (RULE-1): text', name)),
+        ('name another spec on the first line',
+         specs.HEADING_NAMES_OTHER % (name, 'other', name, name, name)),
+        ('tag a proof @slow and @manual',
+         specs.SLOW_AND_MANUAL % (name, 'PROOF-3', name)),
+        ('carry > Requires:, which Purlin does not read',
+         specs.UNREAD_REQUIRES % (name, name)),
+        ('carry > Global:, which Purlin does not read',
+         specs.UNREAD_GLOBAL % (name, name)),
+        ('carry > Scope:, which Purlin does not read on an anchor',
+         specs.UNREAD_SCOPE % (name, name)),
+        ('come from a source with a line Purlin does not read',
+         specs.REMOTE_UNREAD % (name, 'git@example.com:a/b.git',
+                                '> Scope:', 'the line is',
+                                'git@example.com:a/b.git', 'it', name)),
+        ('have a proof reworded after its test was last changed',
+         reworded_proof_line(name)),
+        ('have an evidence file Purlin ignores',
+         '%s is not valid JSON; it is ignored. %s'
+         % (path, evidence.rewrite_fix('local', name))),
+    ]
+
+
+# purlin: purlin_report PROOF-262
+def test_every_kind_of_warning_about_a_spec_groups_under_its_own_words(
+        browser, tmp_path):
+    payload = payload_named('regulated')
+    payload['dirty'] = False
+    names = ['export', 'invoice', 'login']
+    kinds = [one_line_of_each_kind(name) for name in names]
+    payload['warnings'] = [line for kind in zip(*kinds) for _what, line in kind]
+    assert len(payload['warnings']) == 42
+    page = open_board(browser, tmp_path, payload)
+    assert texts(page, '.notice-text') == [
+        '3 specs %s: export, invoice, and 1 more. Run purlin:status for each.'
+        % what for what, _line in kinds[0]]
+    page.close()
+
+
 # purlin: purlin_report PROOF-22
 def test_a_rule_screen_draws_no_notice(browser, tmp_path):
     payload = payload_named('regulated')

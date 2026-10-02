@@ -851,20 +851,92 @@ function topBar(readable) {
     + '<span class="spacer"></span>' + (readable ? factBoxes() : '')
     + themeButton() + '</header>';
 }
-function notice(line, hue) {
-  return '<div class="notice"><span class="dot" '
+function notice(line, hue, names) {
+  return '<div class="notice"' + (names ? hover(names) : '')
+    + '><span class="dot" '
     + 'style="color:var(--state-' + hue + ')"></span><span class="notice-text">'
     + line.split(' ').map(noticeWord).join(' ') + '</span></div>';
 }
+var NOTICE_KINDS = [
+  [/^(\S+): \d+ lines? under ## Rules (?:is|are) not numbered/,
+    'hold', 'holds', 'a line under ## Rules with no number'],
+  [/^(\S+): RULE-\d+ is written twice/,
+    'write', 'writes', 'a rule\'s number twice'],
+  [/^(\S+): PROOF-\d+ is written twice/,
+    'write', 'writes', 'a proof\'s number twice'],
+  [/^(\S+): \d+ lines? (?:is|are) left from a merge conflict/,
+    'hold', 'holds', 'a line left from a merge conflict'],
+  [/^(.+?): the name holds a character other than letters/,
+    'have', 'has', 'a name no test comment can name'],
+  [/^(\S+): a line under ## Proof cannot be read/,
+    'hold', 'holds', 'a proof line Purlin cannot read'],
+  [/^(\S+): the first line names /,
+    'name', 'names', 'another spec on the first line'],
+  [/^(\S+): PROOF-\d+ is tagged @slow and @manual/,
+    'tag', 'tags', 'a proof @slow and @manual'],
+  [/^(\S+): > Requires: is not read/,
+    'carry', 'carries', '> Requires:, which Purlin does not read'],
+  [/^(\S+): > Global: is not read/,
+    'carry', 'carries', '> Global:, which Purlin does not read'],
+  [/^(\S+): > Scope: is not read on an anchor/,
+    'carry', 'carries', '> Scope:, which Purlin does not read on an anchor'],
+  [/^(\S+): its source, .* which Purlin does not read on an anchor/,
+    'come', 'comes', 'from a source with a line Purlin does not read'],
+  [/^.+:\d+ names (\S+) (?:PROOF|RULE)-\d+, whose wording changed after/,
+    'have', 'has', 'a proof reworded after its test was last changed'],
+  [/^\.purlin\/evidence\/[^\/ ]+\/(\S+)\.json (?:is not valid JSON|is not a JSON object|carries the schema |names the source )/,
+    'have', 'has', 'an evidence file Purlin ignores'],
+  [/^(\S+): \d+ files? its scope names (?:is|are) not written yet/,
+    'name', 'names', 'a file in the scope that is not written yet']
+];
+function groupedLines(lines) {
+  var found = lines.map(function (line) {
+    for (var kind = 0; kind < NOTICE_KINDS.length; kind++) {
+      var match = NOTICE_KINDS[kind][0].exec(line);
+      if (match) { return {kind: kind, name: match[1]}; }
+    }
+    return null;
+  });
+  var groups = {};
+  found.forEach(function (hit) {
+    if (!hit) { return; }
+    var group = groups[hit.kind] = groups[hit.kind] || {lines: 0, names: []};
+    group.lines += 1;
+    if (group.names.indexOf(hit.name) < 0) { group.names.push(hit.name); }
+  });
+  var out = [];
+  lines.forEach(function (line, index) {
+    var hit = found[index];
+    var group = hit && groups[hit.kind];
+    if (!group || group.lines < 3) { out.push({line: line}); return; }
+    if (group.drawn) { return; }
+    group.drawn = true;
+    out.push({line: groupLine(NOTICE_KINDS[hit.kind], group),
+              names: group.names});
+  });
+  return out;
+}
+function groupLine(kind, group) {
+  var names = group.names;
+  if (names.length === 1) {
+    return names[0] + ' ' + kind[2] + ' ' + kind[3] + ', in ' + group.lines
+      + ' places. Run purlin:status ' + names[0] + '.';
+  }
+  return names.length + ' specs ' + kind[1] + ' ' + kind[3] + ': '
+    + (names.length === 2 ? names[0] + ' and ' + names[1]
+      : names[0] + ', ' + names[1] + ', and ' + (names.length - 2) + ' more')
+    + '. Run purlin:status for each.';
+}
 function notices() {
   var lines = DATA.dirty
-    ? ['The working tree has uncommitted changes, so what is on this board is '
-       + 'not what a commit would carry.'] : [];
-  (DATA.warnings || []).forEach(function (warning) { lines.push(warning); });
-  return lines.map(function (line) { return notice(line, 'warn'); }).join('')
-    + (DATA.information || []).map(function (line) {
-      return notice(line, 'neutral');
-    }).join('');
+    ? [{line: 'The working tree has uncommitted changes, so what is on this '
+       + 'board is not what a commit would carry.'}] : [];
+  lines = lines.concat(groupedLines(DATA.warnings || []));
+  return lines.map(function (item) {
+    return notice(item.line, 'warn', item.names);
+  }).join('') + groupedLines(DATA.information || []).map(function (item) {
+    return notice(item.line, 'neutral', item.names);
+  }).join('');
 }
 function pathText(path) {
   return (String(path == null ? '' : path).match(/[^\/_]*[\/_]|[^\/_]+$/g)
