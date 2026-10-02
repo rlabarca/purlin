@@ -98,6 +98,14 @@ It is met by `purlin:test` on a machine of that system, or by the project's own 
 **When the tests are met and this code is not signed**, the status ends on one line:
 `Every rule passes its tests on the committed evidence. To sign it: purlin:sign`.
 
+**Where `purlin:sign` would refuse those results as they stand**, that line names the run to
+make first. For a result not taken on this version of the code, one taken before a commit that
+changes a file outside `.purlin/` or a slow result a plain run kept, it reads
+`Every rule passes its tests on the committed evidence. Before a sign-off, run purlin:test --all --commit: a sign-off counts only results taken on this version of the code.`
+For a result from a project's own run on another system the command reads
+`purlin:test on <systems>`. For a result taken while files were changed and not committed the
+line ends `a sign-off counts only results taken with nothing uncommitted.`
+
 ## Which evidence counts
 
 **The evidence is one file per feature per source.** `purlin:test` runs the marked tests and

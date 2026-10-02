@@ -39,10 +39,14 @@ tests read `met` beside them.
 
 Where the tests are met and this code is not signed, the last line names the
 sign-off: `Every rule passes its tests on the committed evidence. To sign it:
-purlin:sign`.
+purlin:sign`. Where `purlin:sign` would refuse those results as they stand,
+the line names the run to make first and why (`closing_line`):
+
+    Every rule passes its tests on the committed evidence. Before a sign-off, run purlin:test --all --commit: a sign-off counts only results taken on this version of the code.
 
 `payload.build_payload` is the one caller of `rule_kind`, `steps`,
-`sentence`, `left` and `last_line`. `audit_share` is the one home of the
+`sentence`, `left` and `last_line`; `status.sync_status` is the one caller of
+`closing_line`. `audit_share` is the one home of the
 share: the sentence, the audit's last line and the status table read it. Everything else reads the
 payload they fill, through `opening`, `left_lines` and `ending`.
 """
@@ -108,6 +112,16 @@ AUDIT_FOUND = 'The audit found %s.'
 BY_HAND_ONE = '1 is checked at sign-off.'
 BY_HAND_MANY = '%d are checked at sign-off.'
 LAST_LINE = 'Every rule passes its tests on the committed evidence. To sign it: purlin:sign'
+# The last line where the sign-off would refuse the results as they stand:
+# the run to make first, then why. `%s` is `run_again`'s commands.
+LAST_LINE_RUN_FIRST = ('Every rule passes its tests on the committed evidence. Before a '
+                       'sign-off, run %s: a sign-off counts only results taken on this '
+                       'version of the code.')
+LAST_LINE_RUN_CLEAN = ('Every rule passes its tests on the committed evidence. Before a '
+                       'sign-off, run %s: a sign-off counts only results taken with '
+                       'nothing uncommitted.')
+# The run that takes a source's results again; `%s` is the systems.
+RUN_AGAIN = {'local': 'purlin:test --all --commit', 'ci': 'purlin:test on %s'}
 
 # The order systems are named in, whatever order the rules name them.
 SYSTEM_ORDER = states.SYSTEM_ORDER
@@ -377,6 +391,42 @@ def last_line(left_items, signoff):
     if facts.is_signed_here(signoff):
         return None
     return LAST_LINE
+
+
+def run_again(found):
+    """The runs that take results again, joined ` and `: this machine's
+    first, then the one on each other system, as `purlin:test on Windows`.
+
+    `found` is `[(source, system)]`, `facts.results_to_retake`'s second
+    answer.
+    """
+    systems = [name for name in SYSTEM_ORDER
+               if ('ci', name) in found]
+    systems += sorted(name for source, name in found
+                      if source == 'ci' and name not in systems)
+    commands = []
+    if any(source != 'ci' for source, _name in found):
+        commands.append(RUN_AGAIN['local'])
+    if systems:
+        commands.append(RUN_AGAIN['ci'] % systems_text(systems))
+    return ' and '.join(commands)
+
+
+def closing_line(last, retake):
+    """The status's last line, given what the sign-off would refuse.
+
+    `last` is `last_line`'s answer and `retake` is
+    `facts.results_to_retake`'s. Any other line than `LAST_LINE` stays as it
+    is, and so does `LAST_LINE` where nothing would be refused. Otherwise
+    the line names the run to make before a sign-off: `LAST_LINE_RUN_FIRST`
+    for results taken on another version of the code, `LAST_LINE_RUN_CLEAN`
+    for results taken while files were changed and not committed.
+    """
+    if last != LAST_LINE or not retake:
+        return last
+    why, found = retake
+    words = LAST_LINE_RUN_FIRST if why == 'code' else LAST_LINE_RUN_CLEAN
+    return words % run_again(found)
 
 
 def opening(payload):

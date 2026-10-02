@@ -22,9 +22,17 @@ Below the table come each anchor rule that passes with nothing to check here,
 the specs that name no files, one line per spec whose `> Scope:` names files
 not written yet, and the anchors whose pin is not current, then the warnings,
 the last of them the one for the markers Purlin 0.9.5 wrote that are still in
-a test. The report ends on
-the summary sentence, `Left to do` and the last line, with `→ Run:
-purlin:init --update` above them while an upgrade is pending.
+a test: its opening line, one line per test with the feature and the rule the
+marker names, and what to do. The dashboard's data carries that warning as
+one line. The report ends on the summary sentence, `Left to do` and the last
+line, with `→ Run: purlin:init --update` above them while an upgrade is
+pending. Where every rule passes and `purlin:sign` would refuse the results
+as they stand, the last line names the run to make first
+(`facts.results_to_retake`).
+
+The status of a project Purlin 0.9.5 set up, while its upgrade is pending, is
+three lines, and it writes no file: the dashboard page and its data file stay
+as they are until the project is brought to this version.
 
 Copy follows `references/writing_style.md`: sentence case, second person for what you
 do, third person for what Purlin does, exact numbers, and the only glyphs are
@@ -33,6 +41,7 @@ do, third person for what Purlin does, exact numbers, and the only glyphs are
 
 import io
 import os
+import re
 import subprocess
 import sys
 import tokenize
@@ -43,6 +52,7 @@ if _MCP_DIR not in sys.path:
 
 from config_engine import config_problem
 from purlin import (board as board_module, drift as drift_module,
+                    facts as facts_module,
                     fingerprint as fingerprint_module,
                     markers as markers_module,
                     payload as payload_module,
@@ -66,12 +76,18 @@ PENDING = ('This project was set up by Purlin 0.9.5. Nothing here counts '
 SETTING_CHANGED = 'The tests setting changed, so every result is out of date.'
 
 # What the status says while a tracked test file still holds a marker Purlin
-# 0.9.5 wrote, where that release read it: the count, the places, the rest.
+# 0.9.5 wrote, where that release read it. In the terminal: the count, one
+# line per test, `OLD_MARKERS_SHOWN` of them and then the rest counted, and
+# what to do. In the dashboard's data: one line.
 OLD_MARKER_ONE = '1 test still carries'
 OLD_MARKER_MANY = '%d tests still carry'
-OLD_MARKERS = ('%s a marker from Purlin 0.9.5, which is not read: %s. For '
-               'each, write the proof with purlin:spec, put the comment '
-               'above the test, and take the old tag out.')
+OLD_MARKERS_OPEN = '%s a marker from Purlin 0.9.5, which is not read:'
+OLD_MARKERS_SHOWN = 20
+OLD_MARKERS_MORE = '  and %d more'
+OLD_MARKERS_DO = ('For each, write the proof with purlin:spec, put the '
+                  'comment above the test, and take the old tag out.')
+OLD_MARKERS_DATA = ('%s a marker from Purlin 0.9.5, which is not read. Run '
+                    'purlin:status to see each.')
 
 # A spec ahead of its code: one line for the spec, as information.
 NOT_WRITTEN_ONE = ('%s: 1 file its scope names is not written yet: %s. Run purlin:build %s, '
@@ -137,20 +153,26 @@ def sync_status(project_root):
     problem = config_problem(project_root)
     if problem:
         return problem
+    if (project_module.set_up_by_095(project_root)
+            and _update_pending(project_root)):
+        # Nothing is read and nothing is written: the page and the data file
+        # the project holds are the ones its own release wrote.
+        return '\n'.join(pending_lines(project_root))
     data = payload_module.build_payload(project_root, generated_by='sync_status')
-    pending = (project_module.set_up_by_095(project_root)
-               and _update_pending(project_root))
-    if not pending:
+    warnings = list(data['warnings'])
+    old = _old_markers_found(project_root)
+    if old:
         # The last of the warnings, so it reads nearest `Left to do`; the
-        # dashboard shows it as a notice, from the same list.
-        old = old_marker_line(project_root)
-        if old:
-            data['warnings'].append(old)
+        # dashboard shows it as a notice, one line, from the same list.
+        data['warnings'].append(old_marker_line(old))
+    if data.get('last_line') == summary_module.LAST_LINE:
+        # The last line never names a sign-off `purlin:sign` would refuse.
+        data['last_line'] = summary_module.closing_line(
+            data['last_line'],
+            facts_module.results_to_retake(project_root, data['features']))
     # The dashboard reads what the table reads: every command that ends on
     # this table refreshes the page's data file with the same payload.
     report_data.refresh(project_root, data)
-    if pending:
-        return '\n'.join(pending_lines(project_root))
     if not data['features']:
         return '\n'.join(no_spec_lines(project_root))
 
@@ -183,9 +205,10 @@ def sync_status(project_root):
         lines.append('Uncommitted spec changes:')
         lines.extend('  ' + line for line in uncommitted)
 
-    if data['warnings']:
+    if warnings or old:
         lines.append('')
-        lines.extend(data['warnings'])
+        lines.extend(warnings)
+        lines.extend(old_marker_lines(old))
 
     lines.append('')
     lines.extend(ending_lines(data, project_root))
@@ -269,18 +292,57 @@ def _proof_mark_lines(text):
     return lines
 
 
-def old_markers(project_root):
-    """`(file, line)` for each 0.9.5 marker a tracked test file still holds
-    where that release read it, sorted: a tag in a test's title, or a
-    `pytest.mark.proof` mark.
+# The feature and the rule an old marker names, read from the marker itself:
+# a title tag's first and third fields, a mark's first and third arguments.
+_OLD_TAG_RULE_RE = re.compile(r':(RULE-\d+)[:\]]')
+_OLD_MARK_RE = re.compile(
+    r"pytest\.mark\.proof\(\s*[\"']([^\"']+)[\"']"
+    r"(?:\s*,\s*[\"'][^\"']*[\"'](?:\s*,\s*[\"'](RULE-\d+)[\"'])?)?")
 
-    These are the places `purlin:init --update` names as left: its own
-    reader finds them (`update.rewrite_markers`), so the status and the
-    upgrade name the same lines. A tag in a comment, in a docstring or in a
-    string that is no test's title is not one.
+
+def _line_start(text, line):
+    """The offset at which line `line` of `text`, counted from 1, starts."""
+    offset = 0
+    for _ in range(line - 1):
+        offset = text.find('\n', offset) + 1
+        if not offset:
+            return len(text)
+    return offset
+
+
+def _named(text, ext, line, pair):
+    """`(feature, rule)` as the old marker at `line` names them, each None
+    where the marker does not name it."""
+    start = _line_start(text, line)
+    if ext == '.py':
+        mark = _OLD_MARK_RE.search(text, start)
+        if mark is None or text.count('\n', start, mark.start()):
+            return (pair[0] if pair else None), None
+        return mark.group(1), mark.group(2)
+    if not pair:
+        return None, None
+    tag = '[proof:%s:%s' % pair
+    at = text.find(tag, start)
+    if at < 0:
+        return pair[0], None
+    rule = _OLD_TAG_RULE_RE.match(text, at + len(tag))
+    return pair[0], rule.group(1) if rule else None
+
+
+def old_markers(project_root):
+    """`(file, line, feature, rule)` for each 0.9.5 marker a tracked test
+    file still holds where that release read it, sorted by file then line: a
+    tag in a test's title, or a `pytest.mark.proof` mark.
+
+    `line` is the line the tag or the mark is on in the file as it stands.
+    `feature` and `rule` are read from the marker itself, each None where it
+    does not name one. `purlin:init --update`'s own reader finds the places
+    (`update.rewrite_markers`), so the status names the markers the upgrade
+    leaves. A tag in a comment, in a docstring or in a string that is no
+    test's title is not one.
     """
     update = _update_module()
-    found = set()
+    found = {}
     for rel in _tracked(project_root):
         ext = os.path.splitext(rel)[1].lower()
         if ext == '.py':
@@ -311,28 +373,47 @@ def old_markers(project_root):
             code = _proof_mark_lines(text)
             if code is not None:
                 left = [entry for entry in left if entry[0] in code]
-        found.update((rel, entry[0]) for entry in left)
-    return sorted(found)
+        for line, pair in left:
+            if (rel, line) not in found:
+                found[(rel, line)] = _named(text, ext, line, pair)
+    return [place + found[place] for place in sorted(found)]
 
 
-def old_marker_line(project_root):
-    """The one warning for the 0.9.5 markers still in the tests, or None.
-
-    The first two places are named and the rest counted. Whatever goes
-    wrong while looking, the status is still printed.
-    """
+def _old_markers_found(project_root):
+    """`old_markers`, or [] whatever goes wrong while looking: the status is
+    still printed."""
     try:
-        found = old_markers(project_root)
+        return old_markers(project_root)
     except Exception:                       # noqa: BLE001 - never block status
-        return None
+        return []
+
+
+def _old_marker_opening(found):
+    return (OLD_MARKER_ONE if len(found) == 1
+            else OLD_MARKER_MANY % len(found))
+
+
+def old_marker_line(found):
+    """The warning for the 0.9.5 markers `old_markers` found, as the one
+    line the dashboard's data carries."""
+    return OLD_MARKERS_DATA % _old_marker_opening(found)
+
+
+def old_marker_lines(found):
+    """The same warning as the terminal prints it, or [] with none found:
+    the count, one line per test, `<file>:<line>` then the feature and the
+    rule its marker names, the first `OLD_MARKERS_SHOWN` and then the rest
+    counted, and what to do."""
     if not found:
-        return None
-    places = ['%s:%d' % place for place in found[:2]]
-    if len(found) > 2:
-        places.append('and %d more' % (len(found) - 2))
-    opening = (OLD_MARKER_ONE if len(found) == 1
-               else OLD_MARKER_MANY % len(found))
-    return OLD_MARKERS % (opening, ', '.join(places))
+        return []
+    lines = [OLD_MARKERS_OPEN % _old_marker_opening(found)]
+    for rel, line, feature, rule in found[:OLD_MARKERS_SHOWN]:
+        named = ' '.join(word for word in (feature, rule) if word)
+        lines.append(('  %s:%d  %s' % (rel, line, named)).rstrip())
+    if len(found) > OLD_MARKERS_SHOWN:
+        lines.append(OLD_MARKERS_MORE % (len(found) - OLD_MARKERS_SHOWN))
+    lines.append(OLD_MARKERS_DO)
+    return lines
 
 
 # ---------------------------------------------------------------------------

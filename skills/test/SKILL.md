@@ -34,8 +34,14 @@ purlin:test --arm-timeout <seconds>  Give each suite longer than an hour
 sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --test --project-root .
 ```
 
-Add `--all` for `purlin:test --all` and `--feature <name>` for each feature named. Add
-`--arm-timeout <seconds>` when the person gave it.
+Each option of `purlin:test` goes on that command line, before `--project-root`: `--all` for
+`purlin:test --all`, `--feature <name>` for each feature named, `--commit` for
+`purlin:test --commit`, and `--arm-timeout <seconds>` when the person gave it. The hand-off,
+`purlin:test --all --commit`, is:
+
+```bash
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --test --all --commit --project-root .
+```
 
 With neither `--all` nor a feature, the run selects a feature in any of these cases:
 
@@ -53,6 +59,10 @@ since a1b2c3d), ...`, the skipped ones ending `purlin:test --all runs them too.`
 untracked file. With nothing selected it prints `Nothing to run: every feature's spec, code and
 tests match its evidence. purlin:test --all runs them anyway.` and exits 1 only where the
 evidence holds a failing test. The status follows it, as after every run.
+
+A test file that carries no marker is never run, under `--all` too. A run with `--all` says how
+many the `files` patterns of the `tests` setting match: `12 test files carry no marker and were
+not run.`
 
 Without `--all` the run never starts a slow proof's test and prints `Left out <n> slow proofs`,
 naming each; `references/purlin_commands.md` says what each run starts, and the status then
@@ -103,7 +113,8 @@ feature on the code as committed, then commits the results.
 
 The run prints, in this order:
 
-1. `Markers: <n> tied to a test, <k> not tied.`
+1. `Markers: <n> tied to a test, <k> not tied.`, and under `--all` the line
+   `<n> test files carry no marker and were not run.` where there are any.
 2. Each test comment to correct.
 3. `Ran <suite> on <n> features.`
 4. One line per rule that fails or has no test. It is one of:
@@ -166,5 +177,6 @@ step:
 | A line `<feature> RULE-<n> fails: ...` above the status | `→ Run: purlin:build <feature>` (fix the code or the test) |
 | `<n> features whose results are not committed: purlin:test --commit` | `→ Run: purlin:test --commit` |
 | `Every rule passes its tests on the committed evidence. To sign it: purlin:sign` | `→ Run: purlin:sign`, when a person chooses to sign |
+| `Every rule passes its tests on the committed evidence. Before a sign-off, run <command>: ...` | `→ Run: <command>`, as Step 1 passes it. `purlin:sign` refuses these results as they stand |
 
 Diagnose a failure first: `references/spec_quality_guide.md` says which part is at fault.

@@ -8,6 +8,7 @@ feature, then the last line. The opening lines and the commit of results are
 read from a throwaway git project, `dev/mcp_project.py`'s.
 """
 
+import json
 import os
 import sys
 
@@ -40,6 +41,17 @@ SECURITY_ANCHOR = (
     '## Proof\n\n- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\n')
 LAST_LINE = ('Every rule passes its tests on the committed evidence. To sign '
              'it: purlin:sign')
+# The last line where `purlin:sign` would refuse the results as they stand:
+# the run to make first, and why.
+OPENS = 'Every rule passes its tests on the committed evidence. '
+RUN_FIRST = (OPENS + 'Before a sign-off, run %s: a sign-off counts only '
+             'results taken on this version of the code.')
+RUN_CLEAN = (OPENS + 'Before a sign-off, run purlin:test --all --commit: a '
+             'sign-off counts only results taken with nothing uncommitted.')
+NOT_THIS_CODE = ('No sign-off: these results were not taken on this version '
+                 'of the code')
+TAKEN_DIRTY = ('No sign-off: these results were taken while files were '
+               'changed and not committed')
 PASSING = [_entry('PROOF-1', 'RULE-1'), _entry('PROOF-2', 'RULE-2')]
 
 
@@ -455,3 +467,132 @@ class TestWhatLetsTheTestsBeMet:
             made.close()
         assert lines[-1] == LAST_LINE, lines
         assert lines[-2] == '2 rules. 2 pass their tests.', lines
+
+
+# ---------------------------------------------------------------------------
+# The last line, where the sign-off would refuse the results
+# ---------------------------------------------------------------------------
+
+def _commit_all(made, subject):
+    _git(made.root, 'add', '-A')
+    _git(made.root, 'commit', '-q', '-m', subject)
+
+
+def _local_section(made):
+    """`(path, data, section)` of login's local evidence file."""
+    path = os.path.join(made.root, '.purlin', 'evidence', 'local',
+                        'login.json')
+    with open(path, encoding='utf-8') as handle:
+        data = json.load(handle)
+    return path, data, data['platforms'][purlin_evidence.host_os()]
+
+
+def _refusal(made):
+    """The first line `purlin:sign` refuses the project with, '' for none."""
+    lines = sign_module.refusal(made.root, '1.0.0')[0]
+    return lines[0] if lines else ''
+
+
+class TestTheLastLineAgreesWithTheSignOff:
+
+    # purlin: summary PROOF-64
+    def test_results_taken_before_a_later_commit_name_the_run_first(self):
+        made = Project(spec=SPEC)
+        try:
+            made.evidence(PASSING)
+            _write(os.path.join(made.root, 'notes.txt'), 'a note\n')
+            _commit_all(made, 'docs: a note')
+            lines = _status(made)
+            refused = _refusal(made)
+        finally:
+            made.close()
+        assert lines[1] == 'Tests: met', lines
+        assert lines[-1] == RUN_FIRST % 'purlin:test --all --commit', lines
+        assert refused.startswith(NOT_THIS_CODE), refused
+        assert refused.endswith('Run purlin:test --all --commit, then '
+                                'purlin:sign.'), refused
+
+    # purlin: summary PROOF-65
+    def test_results_taken_on_this_code_end_on_the_sign_off(self):
+        made = Project(spec=SPEC)
+        try:
+            made.evidence(PASSING)
+            lines = _status(made)
+            refused = _refusal(made)
+        finally:
+            made.close()
+        assert lines[-1] == LAST_LINE, lines
+        assert not refused.startswith((NOT_THIS_CODE, TAKEN_DIRTY)), refused
+
+    # purlin: summary PROOF-66
+    def test_a_kept_slow_result_names_the_run_first(self):
+        made = Project(spec=SPEC)
+        try:
+            made.evidence(PASSING, commit_it=False)
+            path, data, section = _local_section(made)
+            section['proofs'][1]['kept'] = {
+                'commit': made.head(), 'at': '2026-09-12T12:00:00Z',
+                'machine': 'dev-machine', 'email': 'dev@example.com'}
+            _write(path, json.dumps(data, indent=2, sort_keys=True))
+            _commit_all(made, 'purlin: evidence at abc1234')
+            lines = _status(made)
+            refused = _refusal(made)
+        finally:
+            made.close()
+        assert lines[1] == 'Tests: met', lines
+        assert lines[-1] == RUN_FIRST % 'purlin:test --all --commit', lines
+        assert refused.startswith(NOT_THIS_CODE), refused
+
+    # purlin: summary PROOF-67
+    def test_results_from_another_system_name_the_run_there(self):
+        other = 'windows' if purlin_evidence.host_os() != 'windows' else 'linux'
+        word = purlin_evidence.os_word(other)
+        made = Project(spec=SPEC)
+        try:
+            made.evidence(PASSING, ci=True, os_name=other)
+            _write(os.path.join(made.root, 'notes.txt'), 'a note\n')
+            _commit_all(made, 'docs: a note')
+            made.evidence(PASSING)
+            lines = _status(made)
+            refused = _refusal(made)
+        finally:
+            made.close()
+        assert lines[1] == 'Tests: met', lines
+        assert lines[-1] == RUN_FIRST % ('purlin:test on %s' % word), lines
+        assert refused.startswith(NOT_THIS_CODE), refused
+        assert refused.endswith('Run purlin:test on %s, then purlin:sign.'
+                                % word), refused
+
+    # purlin: summary PROOF-68
+    def test_results_taken_with_files_uncommitted_name_the_run_first(self):
+        made = Project(spec=SPEC)
+        try:
+            made.evidence(PASSING, commit_it=False)
+            path, data, section = _local_section(made)
+            section['dirty'] = True
+            _write(path, json.dumps(data, indent=2, sort_keys=True))
+            _commit_all(made, 'purlin: evidence at abc1234')
+            lines = _status(made)
+            refused = _refusal(made)
+        finally:
+            made.close()
+        assert lines[1] == 'Tests: met', lines
+        assert lines[-1] == RUN_CLEAN, lines
+        assert refused.startswith(TAKEN_DIRTY), refused
+
+    # purlin: summary PROOF-69
+    def test_the_dashboard_data_carries_the_same_last_line(self):
+        made = Project(spec=SPEC)
+        try:
+            made.evidence(PASSING)
+            _write(os.path.join(made.root, 'notes.txt'), 'a note\n')
+            _commit_all(made, 'docs: a note')
+            lines = _status(made)
+            with open(os.path.join(made.root, '.purlin', 'report-data.js'),
+                      encoding='utf-8') as handle:
+                written = handle.read()
+        finally:
+            made.close()
+        data = json.loads(written[written.index('{'):written.rindex('}') + 1])
+        assert data['last_line'] == lines[-1], data['last_line']
+        assert data['last_line'] == RUN_FIRST % 'purlin:test --all --commit'

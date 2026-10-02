@@ -12,6 +12,11 @@ written by hand is passed over, with one warning. Where this checkout holds
 no tag for a version whose sign-off files HEAD holds, as after a pull that
 fetched no tag, `signatures.standing_by_files` reads the sign-off from those
 files, with one line naming `git fetch --tags`.
+
+`results_to_retake` answers a third question for the status's last line:
+whether `purlin:sign` would refuse the committed results as they stand,
+because some were taken on an earlier version of the code or while files
+were changed and not committed.
 """
 
 import os
@@ -129,6 +134,64 @@ def records_only_since(project_root, commit):
         sys.path.insert(0, _EXPORT_DIR)
     import package
     return bool(package.only_records_between(project_root, commit, head))
+
+
+def _speaks(section, rule_id, ids):
+    """`(speaks, kept)` for one section and one rule: whether the section
+    holds a result for the rule, under its own id or one of its proofs',
+    and whether one of those results is a slow one a plain run carried over."""
+    entries = [entry for entry in section.get('proofs') or ()
+               if isinstance(entry, dict) and entry.get('id') in ids]
+    speaks = rule_id in (section.get('rules') or {}) or bool(entries)
+    return speaks, any(entry.get('kept') for entry in entries)
+
+
+def results_to_retake(project_root, features):
+    """Why `purlin:sign` would refuse the results as they stand, or None:
+    `(why, [(source, system)])`, each source and system once, in the order
+    the sections are read.
+
+    `why` is `code` where a section that holds a result for a rule was taken
+    on another version of the code than HEAD's, one from which a commit
+    since changes a path outside `.purlin/` or the `tests` setting, or holds
+    a kept result for the rule; else `dirty` where such a section was taken
+    while files were changed and not committed. `features` is the payload's
+    feature entries; each rule is read under the spec that owns it. This is
+    what `scripts/export/package.py` records for the sign-off, `off_code`
+    then `taken_dirty`, read here from the working tree.
+    """
+    from purlin import evidence
+    same = {}
+    off, dirty = [], []
+    for feature in features or ():
+        name = feature.get('name')
+        own = [rule for rule in feature.get('rules') or ()
+               if rule.get('feature') == name]
+        if not own:
+            continue
+        for entry in evidence.sections(evidence.load(project_root, name)):
+            section = entry['section']
+            spoken = [_speaks(section, rule.get('id'),
+                              {proof.get('id') for proof
+                               in rule.get('proofs') or ()}
+                              or {rule.get('id')})
+                      for rule in own]
+            if not any(speaks for speaks, _kept in spoken):
+                continue
+            key = (entry['source'], entry['os'])
+            commit = section.get('commit') or ''
+            if commit not in same:
+                same[commit] = records_only_since(project_root, commit)
+            if (not same[commit] or any(kept for _s, kept in spoken)) \
+                    and key not in off:
+                off.append(key)
+            if section.get('dirty') is True and key not in dirty:
+                dirty.append(key)
+    if off:
+        return 'code', off
+    if dirty:
+        return 'dirty', dirty
+    return None
 
 
 def commits_since(project_root, commit):

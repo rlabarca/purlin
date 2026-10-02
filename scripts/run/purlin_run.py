@@ -55,7 +55,11 @@ files that carry a marker of a feature it runs, and starts no suite that
 has none; a run over every feature hands over every marked file. Where the
 command with its files would be longer than `COMMAND_LIMIT` characters the
 suite is started with no file list, and the run says so. Before each suite
-starts the run prints `Running <suite>: <the command as run>`.
+starts the run prints `Running <suite>: <the command as run>`. A test file
+the suites' `files` patterns match that carries no marker is never handed
+over, and a `--test` or `--audit` run with `--all` says how many there are,
+after the `Markers:` line (`unmarked_line`); the files of a suite started
+with no file list, which runs them all, are not counted.
 
 `--test` is what `purlin:test` runs: the suites run, and the run writes this
 operating system's section of `.purlin/evidence/local/<feature>.json` for
@@ -302,6 +306,10 @@ NOTHING_TO_CHECK = 'nothing to check:'
 
 # What the run says about the markers it read, once per run.
 TIED_LINE = 'Markers: %d tied to a test, %d not tied.'
+# What a run with `--all` says, after that line, of the test files the suites'
+# `files` patterns match that carry no marker: no run hands one to its suite.
+UNMARKED_ONE = '1 test file carries no marker and was not run.'
+UNMARKED_MANY = '%d test files carry no marker and were not run.'
 
 
 
@@ -939,6 +947,26 @@ def marked_files(scan, suite, selected, proofs=None):
 # Who ran, and on what
 # ---------------------------------------------------------------------------
 
+def unmarked_line(project_root, suites, scan, given):
+    """`UNMARKED_ONE` or `UNMARKED_MANY` for the test files the suites'
+    `files` patterns match that are not in `scan`, the files that carry a
+    marker; None where every one carries a marker.
+
+    `given` is the files each suite started was handed. A suite started
+    with no file list, or whose command names no `{files}`, runs every file
+    it matches, so its files are not counted.
+    """
+    whole = {suite.name for suite in suites
+             if suite.name in given and suite.format != 'exit'
+             and (not given[suite.name] or '{files}' not in suite.run)}
+    count = sum(1 for path, suite in markers_module.test_files(
+        project_root, suites).items()
+        if path not in scan and suite.name not in whole)
+    if not count:
+        return None
+    return UNMARKED_ONE if count == 1 else UNMARKED_MANY % count
+
+
 def runner_name(project_root):
     """The slug of the git email set in this checkout, under every action."""
     return evidence_writer.runner_slug(_git_email(project_root))
@@ -1461,9 +1489,17 @@ def main(argv=None):
                                                    path, marker.line))
     # A marker naming nothing a spec has fails the run, whatever the tests did.
     wrong = reports_module.marker_problems(scan, features)
-    if scan:
+    # A run over every feature says how many test files it left out for
+    # carrying no marker; a `--ci` run answers for its own proofs alone.
+    unmarked = (unmarked_line(project_root, suites, scan, given)
+                if args.all and args.action != 'ci' else None)
+    if scan or unmarked:
         print('')
+    if scan:
         print(TIED_LINE % (tied, untied))
+    if unmarked:
+        print(unmarked)
+    if scan:
         for line in reports_module.untied_lines(scan) + wrong:
             print(line)
         if args.action != 'ci':

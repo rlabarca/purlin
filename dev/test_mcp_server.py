@@ -663,9 +663,11 @@ class TestAProjectSetUpBy095:
 # The markers Purlin 0.9.5 wrote that are still in a test
 # ---------------------------------------------------------------------------
 
-OLD_REST = (' a marker from Purlin 0.9.5, which is not read: %s. For each, '
-            'write the proof with purlin:spec, put the comment above the '
-            'test, and take the old tag out.')
+OLD_OPENS = ' a marker from Purlin 0.9.5, which is not read:'
+OLD_DO = ('For each, write the proof with purlin:spec, put the comment above '
+          'the test, and take the old tag out.')
+OLD_DATA = (' a marker from Purlin 0.9.5, which is not read. Run '
+            'purlin:status to see each.')
 OLD_TS = ("import { it } from 'vitest';\n"
           "it('signs in ' + '[proof:login:PROOF-1b:RULE-1:unit]', () => {});\n")
 OLD_MARK = ('@pytest.mark.proof("login", "%s", "RULE-2")\n'
@@ -683,12 +685,26 @@ def _tracked(project, files):
     _git(project.root, 'commit', '-q', '-m', 'test: the tests')
 
 
+def _old_block(opening, places):
+    """The warning as the terminal prints it: its opening line, one line per
+    test, and what to do."""
+    return [opening + OLD_OPENS] + ['  ' + place for place in places] + [OLD_DO]
+
+
+def _holds(lines, block):
+    """How many times `lines` holds `block`, its lines one after another."""
+    return sum(1 for at in range(len(lines))
+               if lines[at:at + len(block)] == block)
+
+
 @pytest.fixture
 def three_old_markers(project):
     _tracked(project, {'tests/login.test.ts': OLD_TS,
                        'tests/test_login.py': OLD_PY})
-    return project, '3 tests still carry' + OLD_REST % (
-        'tests/login.test.ts:2, tests/test_login.py:4, and 1 more')
+    return project, _old_block('3 tests still carry', [
+        'tests/login.test.ts:2  login RULE-1',
+        'tests/test_login.py:4  login RULE-2',
+        'tests/test_login.py:9  login RULE-2'])
 
 
 def _report_data(root):
@@ -698,23 +714,35 @@ def _report_data(root):
     return json.loads(text[text.index('{'):text.rindex('}') + 1])
 
 
+def _tree(root):
+    """`{path: bytes}` for every file under `root` outside `.git`."""
+    held = {}
+    for folder, names, files in os.walk(root):
+        names[:] = [name for name in names if name != '.git']
+        for name in files:
+            full = os.path.join(folder, name)
+            held[os.path.relpath(full, root)] = _read_bytes(full)
+    return held
+
+
 class TestMarkersFrom095StillInATest:
 
     # purlin: states PROOF-308
-    def test_the_status_command_names_two_and_counts_the_rest(
+    def test_the_status_command_names_each_test_with_its_rule(
             self, three_old_markers):
-        project, line = three_old_markers
+        project, block = three_old_markers
         _code, printed = _script(STATUS_PY, project.root)
-        assert printed.splitlines().count(line) == 1, printed
+        assert _holds(printed.splitlines(), block) == 1, printed
+        assert printed.count('a marker from Purlin 0.9.5') == 1, printed
 
     # purlin: states PROOF-309
     def test_the_tool_answers_what_the_command_prints(self, three_old_markers):
-        project, line = three_old_markers
+        project, block = three_old_markers
         _code, printed = _script(STATUS_PY, project.root)
         responses, _stderr = _rpc(project.root, _call(
             'sync_status', {'project_root': project.root}))
         assert _text(responses[0]).splitlines() == printed.splitlines()
-        assert line in _text(responses[0]).splitlines()
+        assert _holds(_text(responses[0]).splitlines(), block) == 1
 
     # purlin: states PROOF-310
     def test_two_are_both_named(self, project):
@@ -723,8 +751,9 @@ class TestMarkersFrom095StillInATest:
             'tests/test_login.py': OLD_PY.split('\n\n\n')[0] + '\n\n\n'
             + OLD_MARK % ('PROOF-2b', 'denied')})
         lines = purlin_status.sync_status(project.root).splitlines()
-        assert '2 tests still carry' + OLD_REST % (
-            'tests/login.test.ts:2, tests/test_login.py:4') in lines, lines
+        assert _holds(lines, _old_block('2 tests still carry', [
+            'tests/login.test.ts:2  login RULE-1',
+            'tests/test_login.py:4  login RULE-2'])) == 1, lines
 
     # purlin: states PROOF-311
     def test_one_reads_still_carries(self, project):
@@ -732,26 +761,84 @@ class TestMarkersFrom095StillInATest:
             'tests/test_login.py': 'import pytest\n\n\n'
             + OLD_MARK % ('PROOF-2b', 'denied')})
         lines = purlin_status.sync_status(project.root).splitlines()
-        assert '1 test still carries' + OLD_REST % (
-            'tests/test_login.py:4') in lines, lines
+        assert _holds(lines, _old_block('1 test still carries', [
+            'tests/test_login.py:4  login RULE-2'])) == 1, lines
 
     # purlin: states PROOF-312
     def test_it_is_the_last_of_the_warnings(self, three_old_markers):
-        project, line = three_old_markers
+        project, block = three_old_markers
         project.spec(SPEC.replace('\n## Proof', '- A line with no number\n\n'
                                   '## Proof'))
         lines = purlin_status.sync_status(project.root).splitlines()
-        at = lines.index(line)
+        at = lines.index(block[0])
         assert 'not numbered' in lines[at - 1], lines
-        assert lines[at + 1] == '', lines
-        assert all(later.strip() for later in lines[at + 2:]), lines
-        assert '2 rules. 0 pass their tests.' in lines[at + 2:], lines
+        assert lines[at:at + 5] == block, lines
+        assert lines[at + 5] == '', lines
+        assert all(later.strip() for later in lines[at + 6:]), lines
+        assert '2 rules. 0 pass their tests.' in lines[at + 6:], lines
 
     # purlin: states PROOF-313
-    def test_the_dashboard_data_carries_it_last(self, three_old_markers):
-        project, line = three_old_markers
+    def test_the_dashboard_data_carries_one_line_last(self, three_old_markers):
+        project, _block = three_old_markers
         purlin_status.sync_status(project.root)
-        assert _report_data(project.root)['warnings'][-1] == line
+        warnings = _report_data(project.root)['warnings']
+        assert warnings[-1] == '3 tests still carry' + OLD_DATA, warnings
+        assert sum('a marker from Purlin 0.9.5' in line
+                   for line in warnings) == 1, warnings
+
+    # purlin: states PROOF-316
+    def test_the_line_named_is_the_tags_own_as_the_file_stands(self, project):
+        _tracked(project, {
+            'tests/login.test.ts':
+                "import { test } from 'vitest';\n"
+                "// purlin: login PROOF-1\n"
+                "test(\n"
+                "  'signs in',\n"
+                "  () => {});\n"
+                "test(\n"
+                "  'signs in again '\n"
+                "  + '[proof:login:PROOF-1b:RULE-1:unit]',\n"
+                "  () => {});\n"})
+        lines = purlin_status.sync_status(project.root).splitlines()
+        assert '  tests/login.test.ts:8  login RULE-1' in lines, lines
+
+    # purlin: states PROOF-317
+    def test_a_marker_that_names_no_rule_shows_its_feature_alone(
+            self, project):
+        _tracked(project, {
+            'tests/test_login.py':
+                'import pytest\n\n\n'
+                '@pytest.mark.proof("login", "PROOF-2b")\n'
+                'def test_denied():\n'
+                '    assert True\n',
+            'tests/login.test.ts':
+                "import { it } from 'vitest';\n"
+                "it('signs in [proof:login:PROOF-1b:unit]', () => {});\n"})
+        lines = purlin_status.sync_status(project.root).splitlines()
+        assert _holds(lines, _old_block('2 tests still carry', [
+            'tests/login.test.ts:2  login',
+            'tests/test_login.py:4  login'])) == 1, lines
+
+    # purlin: states PROOF-318
+    def test_over_twenty_the_first_twenty_and_a_count(self, project):
+        _tracked(project, {
+            'tests/test_login.py': 'import pytest\n' + ''.join(
+                '\n\n' + OLD_MARK % ('PROOF-2b', 'denied_%02d' % number)
+                for number in range(1, 23))})
+        lines = purlin_status.sync_status(project.root).splitlines()
+        at = lines.index('22 tests still carry' + OLD_OPENS)
+        assert lines[at + 1:at + 23] == [
+            '  tests/test_login.py:%d  login RULE-2' % (4 + 5 * number)
+            for number in range(20)] + ['  and 2 more', OLD_DO], lines
+
+    # purlin: states PROOF-319
+    def test_one_in_the_dashboard_data_reads_still_carries(self, project):
+        _tracked(project, {
+            'tests/test_login.py': 'import pytest\n\n\n'
+            + OLD_MARK % ('PROOF-2b', 'denied')})
+        purlin_status.sync_status(project.root)
+        assert _report_data(project.root)['warnings'][-1] == (
+            '1 test still carries' + OLD_DATA)
 
     # purlin: states PROOF-314
     def test_a_comment_a_docstring_and_an_untracked_file_are_not_one(
@@ -786,6 +873,49 @@ class TestMarkersFrom095StillInATest:
             + OLD_MARK % ('PROOF-2b', 'denied')})
         _code, printed = _script(STATUS_PY, project.root)
         assert printed.splitlines() == three, printed
-        with open(os.path.join(project.root, '.purlin', 'report-data.js'),
-                  encoding='utf-8') as handle:
-            assert 'a marker from Purlin 0.9.5' not in handle.read()
+
+
+class TestThePending095ProjectIsLeftAsItWas:
+
+    PAGE = '<html>the page Purlin 0.9.5 wrote</html>\n'
+    DATA = 'window.PURLIN_DATA = {"written": "by 0.9.5"};\n'
+
+    @pytest.fixture
+    def with_its_page(self, set_up_by_095):
+        project, three = set_up_by_095
+        _write(os.path.join(project.root, '.gitignore'),
+               '.purlin/runtime/\npurlin-report.html\n.purlin/report-data.js\n')
+        _write(os.path.join(project.root, 'purlin-report.html'), self.PAGE)
+        _write(os.path.join(project.root, '.purlin', 'report-data.js'),
+               self.DATA)
+        return project, three
+
+    # purlin: states PROOF-320
+    def test_the_status_command_changes_no_file(self, with_its_page):
+        project, three = with_its_page
+        before = _tree(project.root)
+        _code, printed = _script(STATUS_PY, project.root)
+        assert printed.splitlines() == three, printed
+        assert _tree(project.root) == before
+
+    # purlin: states PROOF-321
+    def test_the_tool_changes_no_file(self, with_its_page):
+        project, three = with_its_page
+        before = _tree(project.root)
+        responses, _stderr = _rpc(project.root, _call(
+            'sync_status', {'project_root': project.root}))
+        assert _text(responses[0]).splitlines() == three
+        assert _tree(project.root) == before
+
+    # purlin: states PROOF-322
+    def test_with_no_page_and_no_data_file_it_writes_neither(
+            self, set_up_by_095):
+        project, three = set_up_by_095
+        _write(os.path.join(project.root, '.gitignore'),
+               '.purlin/runtime/\npurlin-report.html\n.purlin/report-data.js\n')
+        _code, printed = _script(STATUS_PY, project.root)
+        assert printed.splitlines() == three, printed
+        assert not os.path.exists(os.path.join(project.root,
+                                               'purlin-report.html'))
+        assert not os.path.exists(os.path.join(project.root, '.purlin',
+                                               'report-data.js'))
