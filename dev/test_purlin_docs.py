@@ -1,7 +1,7 @@
 """The pages under `docs/`, read as a person on the git host reads them.
 
-`specs/instructions/purlin_docs.md` holds three rules: every relative link
-on the pages resolves, the audit page cites its research by links it lists
+`specs/instructions/purlin_docs.md` holds four rules: every relative link
+on the pages resolves, the audit page says what to do with a finding, it cites its research by links it lists
 again under `Sources`, and the page on working together holds one paragraph
 on working in more than one checkout.
 """
@@ -159,6 +159,39 @@ def test_every_link_of_the_audit_page_appears_again_under_sources():
     sample = ('[a](https://example.com/a.pdf) [b](https://example.com/b.pdf)'
               '\n\n## Sources\n\n- [a](https://example.com/a.pdf)\n')
     assert links_not_listed(sample) == ['https://example.com/b.pdf']
+
+
+# --- What to do with a finding ----------------------------------------------
+
+def headings(text):
+    """The text of each `##` heading of a Markdown page, in order."""
+    return re.findall(r'^## (.+)$', text, re.M)
+
+
+def under(text, heading):
+    """The part of the page under the `##` heading `heading`, up to the next
+    `##` heading or a rule line."""
+    _, found, rest = text.partition('\n## %s\n' % heading)
+    assert found, 'docs/audit.md has no heading %s' % heading
+    return re.split(r'^(?:## |---$)', rest, maxsplit=1, flags=re.M)[0]
+
+
+def bullets(part):
+    """Each top-level bullet of the part, as one line."""
+    return [' '.join(block.split())
+            for block in re.split(r'^(?=- )', part, flags=re.M)
+            if block.startswith('- ')]
+
+
+# purlin: purlin_docs PROOF-25
+def test_the_audit_page_says_what_to_do_with_a_finding_after_how_it_works():
+    text = read(AUDIT_PAGE)
+    found = headings(text)
+    assert found[found.index('How it works') + 1] == 'What to do with a finding'
+    part = under(text, 'What to do with a finding')
+    assert len(bullets(part)) == 6, bullets(part)
+    assert [name for name in ('`purlin:build`', '`strong`', '`spot-checked`')
+            if name not in part] == []
 
 
 # --- Working in more than one checkout --------------------------------------

@@ -99,7 +99,7 @@ on its input, takes the end of input as no, and goes on only with a typed answer
 | `purlin:spec <name>` | Write or change a spec: turn a requirement into rules and proofs, or add, sharpen, reword or remove a rule, a case or a proof of an existing spec. Use it for any change to a file under specs/, instead of editing the file by hand | A developer's agent, or product or QA in Claude Code, at intake and whenever a rule turns out to be wrong. It resolves a conflict in the spec where both sides only added lines |
 | `purlin:build [name]` | Write the code and the marked tests for a spec's rules, fix a failing rule, strengthen a weak test, and commit the changeset | A developer, on every change. With no name it reads the status and names the specs with rules that have no passing test. It repairs a marker comment that is nearly right, corrects a test whose proof was reworded, and ends by running `purlin:test` |
 | `purlin:test [feature ...] [--all] [--commit] [--arm-timeout <seconds>]` | Run the project's marked tests and record the results as evidence; with --all --commit, the hand-off before a sign-off | A developer, constantly. Seconds; tests only, and never a slow proof's without `--all`. The first run in a project with no test command suggests one for each test tool it recognises, asks before it writes them, and runs on your yes. It writes the evidence, commits it with `--commit`, and never pushes. `purlin:test --all --commit` is the hand-off to a sign-off |
-| `purlin:audit [feature ...] [--all] [--commit] [--arm-timeout <seconds>]` | Check how much the tests are worth: heuristic spot tests and one planted bug per proof, written into the evidence | A developer, by hand, any time. It writes the evidence, commits it with `--commit`, and never pushes. Nothing waits on it |
+| `purlin:audit [feature ...] [--all] [--commit] [--arm-timeout <seconds>]`, `purlin:audit <feature> RULE-N --settle` | Check how much the tests are worth: heuristic spot tests and one planted bug per proof, written into the evidence | A developer, by hand, any time. It writes the evidence, commits it with `--commit`, and never pushes. Nothing waits on it. `purlin:build` runs it with `--settle` on a weak rule, as `references/review_criteria.md`, "Settling a finding", says |
 | `purlin:sign [--version <version>]` | Sign off a version: build the evidence package from the committed evidence, walk its hand checks with a person, and sign it in a signed commit; also check a package against its fingerprint | Anyone with a key to sign with, in any project, at any time, after the hand-off; the sign-off names them, and several people may sign. The first sign-off of a version writes `signed/<version>` |
 | `purlin:drift` | Report what a pull, a merge, a rebase or a checkout changed in the rules, the proofs and the tests, and name a number two branches both took | Everyone, after a pull, a merge, a rebase, a checkout, a clone or a reset |
 
@@ -138,6 +138,7 @@ Purlin
   purlin:audit --all              The same, reading every passing rule again
   purlin:audit --commit           The same, then commit the work and the evidence
   purlin:audit --arm-timeout <seconds>  Give each suite, and each planted bug's test run, longer
+  purlin:audit <feature> RULE-N --settle  Plant each bug that survived again, and run its proof's test
 
   Signing
   ──────

@@ -293,6 +293,7 @@ purlin:audit <feature> [...]    One feature, or several
 purlin:audit --all              Run every feature, and read every rule again
 purlin:audit --commit           Commit the work and the evidence the run wrote
 purlin:audit --arm-timeout <seconds>  Give each suite, and each planted bug's run, longer
+purlin:audit <feature> RULE-N --settle  Plant each bug that survived again, and run its proof's test
 ```
 
 A passing test is not proof that it checks anything. The audit tries to make each test fail.
@@ -319,7 +320,7 @@ An audit runs the tests as `purlin:test` does. Then it reads a rule when all of 
 3. **Each bug planted** in a copy of the project, and that proof's own test run. A test that
    still passes did not catch the bug. A test that is skipped, is not collected, runs past its
    limit or ends in an error decides nothing. The copy is then removed. A surviving bug is
-   shown with the case the AI says it breaks, and you judge it.
+   shown with the case the AI says it breaks.
 
 A rule reads:
 
@@ -371,6 +372,24 @@ each weak rule is left to strengthen:
 Left to do:
   1 rule to strengthen: purlin:build
 ```
+
+`purlin:build` does the work for a weak rule. It fixes a test a spot test flagged. For a bug
+that survived, it writes the check the proof names, runs `purlin:test`, then settles the rule:
+
+```
+purlin:audit login RULE-2 --settle
+```
+
+The settle plants the bug the test missed again and runs the proof's test as it stands now.
+
+- The test fails: the finding was right, and the rule reads `strong`.
+- The test still passes: the bug did not break what the proof says. It is dropped, and one new
+  bug is planted. Caught, the rule reads `strong`. If that one survives too, the rule reads
+  `spot-checked`, with the reason.
+
+[audit.md](audit.md#what-to-do-with-a-finding) says what to do with a finding.
+[Settling a finding](../references/review_criteria.md#settling-a-finding) is the one home of
+each step.
 
 An audit exits 1 when a test it ran failed or did not run, or a file of the project changed
 while it ran, and 0 whatever it found. The audit

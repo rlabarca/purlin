@@ -10,8 +10,8 @@
 
 ## Rules
 
-- RULE-21: The build skill names the commands `sync_status`, `purlin:test`, `purlin:test --all --commit` and `purlin:spec`, and the files `scripts/purlin_python.sh`, `scripts/mcp/purlin/markers.py`, `scripts/mcp/purlin/wording.py` and `references/commit_conventions.md`
+- RULE-21: The build skill names the commands `sync_status`, `purlin:test`, `purlin:test --all --commit`, `purlin:spec` and `purlin:audit <feature> RULE-N --settle`, and the files `scripts/purlin_python.sh`, `scripts/mcp/purlin/markers.py`, `scripts/mcp/purlin/wording.py`, `references/commit_conventions.md` and `references/review_criteria.md`
 
 ## Proof
 
-- PROOF-51 (RULE-21): The text of `skills/build/SKILL.md` holds each of `sync_status`, `purlin:test`, `purlin:test --all --commit`, `purlin:spec`, `scripts/purlin_python.sh`, `scripts/mcp/purlin/markers.py`, `scripts/mcp/purlin/wording.py` and `references/commit_conventions.md`; none is missing
+- PROOF-51 (RULE-21): The text of `skills/build/SKILL.md` holds each of `sync_status`, `purlin:test`, `purlin:test --all --commit`, `purlin:spec`, `purlin:audit <feature> RULE-N --settle`, `scripts/purlin_python.sh`, `scripts/mcp/purlin/markers.py`, `scripts/mcp/purlin/wording.py`, `references/commit_conventions.md` and `references/review_criteria.md`; none is missing

@@ -57,7 +57,8 @@ test tool it recognises and runs once the person confirms them. Run `purlin:audi
 wants to know what its tests are worth: it runs the heuristic spot tests, has an AI
 write for each proof the one small bug that proof's test is most likely to miss, plants it in a
 copy of the project to see whether the test catches it, and reports the share of rules it found
-strong. Nothing waits on it.
+strong. Nothing waits on it. A rule it found `weak` is `purlin:build`'s: the build strengthens
+the test and settles the finding with a test run.
 
 The hand-off is run and commit: `purlin:test --all --commit` runs every test and commits the
 specs, tests and settings, then the evidence that names them, and the project's own run does the
@@ -126,6 +127,7 @@ read what the person wants and run the command that serves it.
 | Developer | "build it", "implement RULE-4" | `purlin:build` |
 | Developer | "run the tests" | `purlin:test` |
 | Developer | "how good are these tests?" | `purlin:audit` |
+| Developer | "strengthen the weak tests", "the audit found a rule weak" | `purlin:build` |
 | Developer | "prove it on Windows too" | `skills/test/SKILL.md`, Step 5 |
 | Developer | "it is ready for sign-off", "hand it to QA" | `purlin:test --all --commit`, and the project's own run where a proof is tagged for another system |
 | Developer | "where is the rule about passwords?" | `purlin:status <name>` |

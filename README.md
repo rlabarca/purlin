@@ -117,7 +117,8 @@ hand check, and takes one signature over the package. Several people may sign.
 **The audit asks whether your tests would catch a bug.** `purlin:audit` runs heuristic spot
 tests. Then, for each proof, an AI writes the one small bug that proof's test is most likely to
 miss, and the bug is planted in a copy of the project. It reports the share of rules it found
-strong. Nothing waits on it.
+strong. Nothing waits on it. `purlin:build` strengthens a weak test and settles the finding with
+a test run.
 
 The whole loop runs on one machine.
 [references/evidence_and_signoff.md](references/evidence_and_signoff.md) is the one definition.
@@ -130,7 +131,7 @@ The whole loop runs on one machine.
 | `purlin:spec <name>` | Write or change a spec: turn a requirement into rules and proofs, or add, sharpen, reword or remove a rule, a case or a proof of an existing spec. Use it for any change to a file under specs/, instead of editing the file by hand |
 | `purlin:build [name]` | Write the code and the marked tests for a spec's rules, fix a failing rule, strengthen a weak test, and commit the changeset |
 | `purlin:test [feature ...] [--all] [--commit] [--arm-timeout <seconds>]` | Run the project's marked tests and record the results as evidence; with --all --commit, the hand-off before a sign-off |
-| `purlin:audit [feature ...] [--all] [--commit] [--arm-timeout <seconds>]` | Check how much the tests are worth: heuristic spot tests and one planted bug per proof, written into the evidence |
+| `purlin:audit [feature ...] [--all] [--commit] [--arm-timeout <seconds>]`, `purlin:audit <feature> RULE-N --settle` | Check how much the tests are worth: heuristic spot tests and one planted bug per proof, written into the evidence |
 | `purlin:sign [--version <version>]` | Sign off a version: build the evidence package from the committed evidence, walk its hand checks with a person, and sign it in a signed commit; also check a package against its fingerprint |
 | `purlin:status [name]` | Show where the project stands: whether the tests are met, whether it is signed, each rule's two cells, and what is left to do |
 | `purlin:drift` | Report what a pull, a merge, a rebase or a checkout changed in the rules, the proofs and the tests, and name a number two branches both took |
