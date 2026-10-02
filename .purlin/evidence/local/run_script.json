@@ -1566,14 +1566,14 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T19:28:14Z",
-      "commit": "f8c8a7dabe79a97469d40c3a7e648404b22c89bc",
+      "at": "2026-10-02T19:33:40Z",
+      "commit": "a669e9001d4615d797d1d5efaa77d82c2154a038",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "05dd207a3b81095e6ba33818ec52cce5eaa1eed82ae9110443777d85515ac9d4",
         "spec": "480f210828b385b96630d87d6ae93ed3f4554af532ed99807be5528f328eaa53",
-        "tests": "906fc31e4dca7a3fdc8d373cb1ebc3ab57691861fd1625a43f521a1695037353"
+        "tests": "f9f61f9e4ff359d37f5b28f2715c84dd856fc2aa31daf0f261d2ab81e1a41e81"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -2023,7 +2023,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-100",
-          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_nothing_changed_runs_nothing_and_ends_on_the_sign_off"
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_nothing_changed_starts_no_suite_and_ends_on_the_sign_off"
         },
         {
           "env": null,

@@ -2,14 +2,14 @@
   "feature": "update",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T19:28:15Z",
-      "commit": "f8c8a7dabe79a97469d40c3a7e648404b22c89bc",
+      "at": "2026-10-02T19:33:40Z",
+      "commit": "a669e9001d4615d797d1d5efaa77d82c2154a038",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "0642057b16fe84a38e7c135b264716f7f3b76cc93d29e26ae3288c606f9760ca",
         "spec": "0adc60e1ed660bffedca248a582dad4823a243fd57278bb2ea7717ee2e8ceaf6",
-        "tests": "a16a1d77b8d4e71f391a01c0d5986403c9bb5e24a60e15b526235b64d2f0a009"
+        "tests": "36a6e96e7cc55b7a5dc27e725baceefaa123e8648923e81c954c524943b61ef7"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -499,7 +499,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-60",
-          "test": "dev/test_init_update.py::test_the_owner_is_shown_each_command_and_may_type_another"
+          "test": "dev/test_init_update.py::test_the_owner_is_shown_where_each_command_runs_and_may_type_another"
         },
         {
           "env": null,
