@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Bring a project an older Purlin set up onto this release.
 
-    python3 scripts/init/update.py [--yes] [--project-root DIR]
+    python3 scripts/init/update.py [--yes | --apply ID[,ID...]]
+        [--test-command TOOL=COMMAND ...] [--project-root DIR]
 
 `purlin:init --update` is the command you run, and init hands it here. This
 file is the part of the upgrade that has to be deterministic, so the skill
@@ -12,14 +13,23 @@ line saying what it does, and the files it touches. The run prints that list
 before it asks, and `sync_status` reads the same function, so the advisory you
 see and the work this script does cannot disagree. The detectors read the
 layout v0.9.5 left, and a project lands straight on this release's layout.
-Every migration asks before it writes, and every file it rewrites is copied
-first to `.purlin/runtime/update-backup/`, at its own path, which git ignores. `--yes` answers yes to every
-migration's question. A workflow that names a proof file is removed only on a
-yes typed for that file, so under `--yes` each is kept and named. A file this release deletes rather than rewrites is left in git
-history instead of copied.
+Every migration asks before it writes, each question on a line of its own,
+and every file it rewrites is copied first to
+`.purlin/runtime/update-backup/`, at its own path, which git ignores. `--yes`
+answers yes to every migration's question and accepts each test command
+proposed. `--apply <id>[,<id>...]` applies exactly the migrations named and
+asks nothing, and `--test-command <tool>=<command>` writes that command for a
+test tool in place of the one proposed. The run prints one line of totals for
+each migration, then what it left for the owner and the lines that need the
+owner; each file's own line goes to
+`.purlin/runtime/update-backup/update.log`. A workflow that names a proof
+file is removed only on a yes typed for that file, so under `--yes` and
+`--apply` each is kept and named. A file this release deletes rather than
+rewrites is left in git history instead of copied.
 
 Exit codes: 0 nothing pending or the run applied what was, 1 the settings
-file cannot be read, 2 no Purlin project at that root.
+file cannot be read, 2 no Purlin project at that root or a flag's value
+cannot be used.
 """
 
 import argparse
@@ -145,8 +155,9 @@ IGNORE_LINES = ('.purlin/runtime/', '.purlin/report-data.js')
 # Each file the update changes is kept here as it was, at its own path. The
 # folder is under `.purlin/runtime/`, which git ignores.
 BACKUP_DIR = '.purlin/runtime/update-backup'
-BACKUPS_KEPT = ('Every file the update changed is kept as it was under %s/. '
-                'Delete the folder once the tests pass.')
+BACKUPS_KEPT = ('Every file the update changed is kept as it was under %s/, '
+                'with each change listed in update.log there. Delete the '
+                'folder once the tests pass.')
 EVIDENCE_DIR = '.purlin/evidence'
 EVIDENCE_README = EVIDENCE_DIR + '/README.md'
 DASHBOARD_PAGE = 'purlin-report.html'
@@ -163,6 +174,33 @@ _COMMIT = 'chore(update): migrate to %s (%s)'
 SETTINGS = ('version', 'tests')
 REMOVED_KEYS = 'removed from .purlin/config.json: %s'
 EVIDENCE_TEMPLATE = 'templates/evidence-readme.md'
+
+# The lines 0.9.5 wrote into `.gitignore` for files this release does not
+# write, which go, and the comment it wrote above the dashboard page's line.
+STALE_IGNORE = ('.purlin/cache/', '.purlin/plugins/__pycache__/',
+                '# Purlin cache (audit results, additional criteria)',
+                '# Purlin plugin cache')
+REWORDED_IGNORE = {
+    '# Dashboard HTML (symlinked from framework)':
+        '# Dashboard page, rewritten with its data, never committed'}
+# What the update prints after its totals.
+OWNER_HEADING = 'These need you:'
+LEFT_HEADING = 'Purlin left these for you:'
+LEFT_NEEDLES = ('[proof:', 'pytest.mark.proof', '.purlin/plugins',
+                'purlin:verify', 'proofs-')
+LEFT_SHOWN = 20
+LEFT_MORE = '  and %d more file%s'
+LEFT_WHY = ('  Each line counted names something 0.9.5 used: %s. This release '
+            'reads none of them.')
+NOT_RUN = 'Every rule reads `not run` until the tests run again.'
+OLD_RECORD = ("The `verify:` commits 0.9.5 made stay in git as the earlier "
+              "record, and its receipts can be read from the commit before "
+              "the upgrade, %s.")
+UPDATE_LOG = BACKUP_DIR + '/update.log'
+UNKNOWN_MIGRATION = ('%s is not a migration. The migrations are: %s.')
+BAD_TEST_COMMAND = ('--test-command takes <tool>=<command>, as in '
+                    '--test-command "pytest=uv run pytest {files} '
+                    '--junitxml={report}"; it was given %s.')
 
 # --- helpers ---------------------------------------------------------------
 # Both open with `newline=''`: a file the project owns keeps each line's own
@@ -246,21 +284,39 @@ def _plugin_module(subdir, name):
 def _frameworks():
     return _plugin_module('mcp', 'purlin.frameworks').frameworks
 
+def _piped():
+    """True where the answers are not typed at a terminal, so nothing shows
+    them and no line ends after them."""
+    try:
+        return not sys.stdin.isatty()
+    except (AttributeError, ValueError):
+        return True
+
 def _confirm(question, assume_yes):
+    """A yes or a no to `question`, on a line of its own. Where the answer
+    is not typed at a terminal the answer taken is printed after it."""
     if assume_yes:
         return True
     try:
         answer = input('%s [y/N] ' % question)
     except (EOFError, KeyboardInterrupt):
-        return False
-    return answer.strip().lower() in ('y', 'yes')
+        answer = ''
+    yes = answer.strip().lower() in ('y', 'yes')
+    if _piped():
+        print('y' if yes else 'n')
+    return yes
 
 def _answer(question, default):
-    """What is typed after `question`; the end of input answers nothing."""
+    """What is typed after `question`, `default` for an empty answer, `y`,
+    `yes` or the end of input; printed after it where no terminal shows it."""
     try:
-        return input(question)
+        typed = input(question).strip()
     except (EOFError, KeyboardInterrupt):
-        return ''
+        typed = ''
+    taken = default if typed.lower() in ('', 'y', 'yes') else typed
+    if _piped():
+        print(taken)
+    return taken
 
 def _s(items):
     return '' if len(items) == 1 else 's'
@@ -304,8 +360,10 @@ def _apply_design_refs(root, files, args, out):
         text, removed = _design_lines(_read(path))
         _write(path, text)
         out.done(rel)
-        out.say('removed the design reference from %s: %s'
-                % (rel, ', '.join('> ' + name for name in removed)))
+        out.note('removed the design reference from %s: %s'
+                 % (rel, ', '.join('> ' + name for name in removed)))
+    out.say('removed the design reference from %d spec%s'
+            % (len(files), _s(files)))
 
 def _is_anchor(rel, text):
     return (rel.startswith('specs/_anchors/')
@@ -382,12 +440,14 @@ def _apply_anchor_lines(root, files, args, out):
         text, removed = _anchor_lines(rel, _read(path))
         _write(path, text)
         out.done(rel)
-        out.say('removed from %s: %s'
-                % (rel, _joined(['> %s:' % name for name in removed])))
+        out.note('removed from %s: %s'
+                 % (rel, _joined(['> %s:' % name for name in removed])))
+    out.say('removed the lines naming anchors from %d spec%s'
+            % (len(files), _s(files)))
     for anchor in sorted(named):
         specs = named[anchor]
-        out.say((NAMED_ONE if len(specs) == 1 else NAMED_MANY)
-                % (anchor, len(specs), ', '.join(specs), anchor))
+        out.owner((NAMED_ONE if len(specs) == 1 else NAMED_MANY)
+                  % (anchor, len(specs), ', '.join(specs), anchor))
 
 def _detect_untracked(root):
     hits = _files_under(root, 'specs', (PROOF_FILE_GLOB, RUN_FILE_GLOB))
@@ -400,9 +460,27 @@ def _detect_untracked(root):
         hits.append(CACHE_DIR + '/')
     path = os.path.join(root, '.gitignore')
     lines = _read(path).splitlines() if os.path.isfile(path) else []
-    if any(line not in lines for line in IGNORE_LINES):
+    if (any(line not in lines for line in IGNORE_LINES)
+            or any(line in STALE_IGNORE or line in REWORDED_IGNORE
+                   for line in lines)):
         hits.append('.gitignore')
     return sorted(set(hits))
+
+
+def _fresh_ignore(text):
+    """A `.gitignore` without the lines 0.9.5 wrote for files this release
+    does not write, a blank line they leave doubled written once."""
+    kept = []
+    for line in text.splitlines(True):
+        bare = line.rstrip('\r\n')
+        if bare in STALE_IGNORE:
+            continue
+        if bare in REWORDED_IGNORE:
+            line = REWORDED_IGNORE[bare] + line[len(bare):]
+        if not bare.strip() and kept and not kept[-1].strip():
+            continue
+        kept.append(line)
+    return ''.join(kept)
 
 def _apply_untracked(root, files, args, out):
     gone, cache = 0, False
@@ -422,11 +500,14 @@ def _apply_untracked(root, files, args, out):
         path = os.path.join(root, '.gitignore')
         text = _read(path) if os.path.isfile(path) else ''
         out.kept(_back_up_copy(root, '.gitignore'))
+        text = _fresh_ignore(text)
         missing = [l for l in IGNORE_LINES if l not in text.splitlines()]
-        if text and not text.endswith('\n'):
-            text += '\n'
-        _write(path, text + '\n# Regenerated locally, never committed\n'
-               + ''.join(line + '\n' for line in missing))
+        if missing:
+            if text and not text.endswith('\n'):
+                text += '\n'
+            text += ('\n# Regenerated locally, never committed\n'
+                     + ''.join(line + '\n' for line in missing))
+        _write(path, text)
         out.done('.gitignore')
     out.say('deleted %d file%s beside the specs%s, and untracked the '
             'dashboard data; a run writes no file beside a spec, and evidence '
@@ -626,30 +707,29 @@ def _apply_config(root, files, args, out):
     path = os.path.join(root, '.purlin', 'config.json')
     out.kept(_back_up_copy(root, '.purlin/config.json'))
     tests, sources, unwired = proposed_tests(root, old)
-    for name in unwired:
-        out.say(DROPPED_FRAMEWORK % name)
     given = dict(getattr(args, 'commands', None) or {})
     for entry in ([] if isinstance(old.get('tests'), list) else tests):
         if entry['name'] in given:
             entry['run'] = given[entry['name']]
-        elif not args.yes:
+        elif args.ask:
             for line in _proposal_lines([entry], sources):
                 print(line)
-            typed = _answer(COMMAND_QUESTION % entry['name'], entry['run'])
-            if typed.strip() and typed.strip().lower() not in ('y', 'yes'):
-                entry['run'] = typed.strip()
+            entry['run'] = _answer(COMMAND_QUESTION % entry['name'],
+                                   entry['run'])
     config = {'version': _version(), 'tests': tests}
     _write(path, json.dumps(config, indent=2) + '\n')
     out.done('.purlin/config.json')
-    removed = [key for key in old if key not in SETTINGS]
-    if removed:
-        out.say(REMOVED_KEYS % ', '.join(removed))
     names = [entry.get('name') for entry in tests if isinstance(entry, dict)]
     out.say('wrote the tests setting: %s' % (', '.join(names) or 'no suite; '
             'add one under "tests" in .purlin/config.json'))
     for entry in tests:
         if isinstance(entry, dict) and entry.get('name'):
-            out.say('  ' + PROPOSED % (entry['name'], entry.get('run')))
+            out.say(PROPOSED % (entry['name'], entry.get('run')))
+    for name in unwired:
+        out.say(DROPPED_FRAMEWORK % name)
+    removed = [key for key in old if key not in SETTINGS]
+    if removed:
+        out.say(REMOVED_KEYS % ', '.join(removed))
 
 def _detect_os_tags(root):
     return [rel for rel in _files_under(root, 'specs', ('*.md',))
@@ -717,8 +797,8 @@ def _apply_workflows(root, files, args, out):
         number = next(index for index, line in enumerate(lines, 1)
                       if WORKFLOW_MARKER in line)
         print(WORKFLOW_NAMES % (rel, number, lines[number - 1].strip()))
-        if args.yes or not _confirm(WORKFLOW_QUESTION % rel, False):
-            out.say(WORKFLOW_KEPT % rel)
+        if not args.ask or not _confirm(WORKFLOW_QUESTION % rel, False):
+            out.owner(WORKFLOW_KEPT % rel)
             continue
         out.kept(_back_up_copy(root, rel))
         _untrack(root, rel)
@@ -897,7 +977,7 @@ def _apply_lettered(root, files, args, out):
             % (len(changes), _s(changes), len(files), _s(files), marks,
                '' if marks == 1 else 's', marked, '' if marked == 1 else 's'))
     for line in changes:
-        out.say('  ' + line)
+        out.say(line)
 
 
 # --- the markers and the plugins -------------------------------------------
@@ -1201,6 +1281,7 @@ def rewrite_markers(text, ext):
     return eol.join(out) + ending, count, left
 
 
+ONE_TEST_NOW = '; the file is one test now, and passes when it exits 0'
 TITLE_UNREAD = ('%s:%d: the title of the test under this marker cannot be '
                 'read, so its result cannot be matched. Write it as one plain '
                 'string.')
@@ -1259,37 +1340,43 @@ def _detect_markers(root):
 def _apply_markers(root, files, args, out):
     """Each 0.9.5 marker becomes one comment above the same test."""
     found = _marked_old(root)
-    unread = []
+    unread, total, written, whole = [], 0, 0, False
     for rel in files:
         new, count, left = found.get(rel, (None, 0, []))
         if not count:
             continue
-        path = os.path.join(root, rel)
         out.kept(_back_up_copy(root, rel))
-        _write(path, new)
+        _write(os.path.join(root, rel), new)
         out.done(rel)
         line = 'rewrote %d marker%s in %s as comments' % (count, _s(range(
             count)), rel)
-        ext = os.path.splitext(rel)[1].lower()
-        if ext in ('.sh', '.bash', '.sql'):
-            line += ('; the file is one test now, and passes when it exits 0')
-        out.say(line)
+        if os.path.splitext(rel)[1].lower() in ('.sh', '.bash', '.sql'):
+            line += ONE_TEST_NOW
+            whole = True
+        out.note(line)
+        total += count
+        written += 1
         for number in unread_titles(rel, new):
             unread.append(TITLE_UNREAD % (rel, number))
+    out.say('rewrote %d marker%s in %d file%s%s'
+            % (total, '' if total == 1 else 's', written,
+               '' if written == 1 else 's',
+               '; a shell or SQL file is one test now, and passes when it '
+               'exits 0' if whole else ''))
     held = set((_spec_name(spec), old)
                for spec, pairs in _lettered_specs(root).items()
                for old, _new in pairs)
     for rel, (_new, _count, left) in sorted(found.items()):
         for number, lettered in left:
             if lettered is None:
-                out.say(LEFT % (rel, number))
+                out.owner(LEFT % (rel, number))
             elif lettered in held:
-                out.say(LEFT_LETTERED % ((rel, number) + lettered))
+                out.owner(LEFT_LETTERED % ((rel, number) + lettered))
             else:
-                out.say(LEFT_NO_SPEC % ((rel, number) + lettered
-                                        + lettered[:1]))
+                out.owner(LEFT_NO_SPEC % ((rel, number) + lettered
+                                          + lettered[:1]))
     for line in unread:
-        out.say(line)
+        out.owner(line)
 
 
 def _strings(node):
@@ -1472,7 +1559,7 @@ def _apply_plugins(root, files, args, out):
     for rel, new in _wiring(root):
         path = os.path.join(root, rel)
         if new is False:
-            out.say(CONFTEST_UNREAD % rel)
+            out.owner(CONFTEST_UNREAD % rel)
             continue
         out.kept(_back_up_copy(root, rel))
         if new is None:
@@ -1484,9 +1571,9 @@ def _apply_plugins(root, files, args, out):
             out.say('removed the plugin\'s wiring from %s' % rel)
         out.done(rel)
     for rel in _logger_projects(root):
-        out.say('%s compiles the xUnit logger v0.9.5 shipped; remove that '
-                'line by hand, since dotnet test --logger trx needs nothing '
-                'added' % rel)
+        out.owner('%s compiles the xUnit logger v0.9.5 shipped; remove that '
+                  'line by hand, since dotnet test --logger trx needs nothing '
+                  'added' % rel)
 
 
 # Order matters: a migration can leave work for a later one, as the Windows
@@ -1567,17 +1654,40 @@ def scope_advice(project_root):
 
 # --- running ---------------------------------------------------------------
 class _Report(object):
-    """What one run changed: the lines it prints and the paths it commits."""
+    """What one run changed: what it prints, what it logs and what it commits.
+
+    `say` is a line of the migration being applied: its first is the line of
+    totals, printed after the migration's id, and any later one a detail
+    under it. `note` is one file's own line, which goes to the log alone.
+    `owner` is a line the owner has to act on, printed last under its own
+    heading. The log holds all three, in the order they were made.
+    """
     def __init__(self):
-        self.lines, self.paths = [], []
+        self.lines, self.owners, self.log, self.paths = [], [], [], []
+        self.current, self.started = None, False
+    def start(self, migration):
+        self.current, self.started = migration, False
     def say(self, line):
-        self.lines.append(line)
+        if self.current is None:
+            shown = '  ' + line
+        elif not self.started:
+            shown = '  %s: %s' % (self.current, line)
+        else:
+            shown = '    ' + line
+        self.started = True
+        self.lines.append(shown)
+        self.log.append(shown)
+    def note(self, line):
+        self.log.append('    ' + line)
+    def owner(self, line):
+        self.owners.append('  ' + line)
+        self.log.append('  ' + line)
     def done(self, rel):
         if not rel.startswith('.git/') and rel not in self.paths:
             self.paths.append(rel)
     def kept(self, rel):
         if rel:
-            self.say('kept the previous bytes at %s' % rel)
+            self.note('kept the previous bytes at %s' % rel)
 
 def _print_pending(items, root):
     print('%d migration%s pending in %s:' % (len(items), _s(items), root))
@@ -1586,6 +1696,16 @@ def _print_pending(items, root):
                                      if len(item['files']) > 6 else [])
         print('  %s: %s\n      %s'
               % (item['id'], item['description'], '\n      '.join(names)))
+        if item['id'] == 'config':
+            try:
+                old = _config(root)
+            except (IOError, OSError, ValueError):
+                continue
+            if isinstance(old.get('tests'), list):
+                continue
+            entries, sources, _dropped = proposed_tests(root, old)
+            for line in _proposal_lines(entries, sources):
+                print('      ' + line)
 
 def _commit(root, applied, paths):
     """One commit for the whole update, naming the migrations it carries."""
@@ -1600,20 +1720,91 @@ def _commit(root, applied, paths):
     print('The changes are staged and not committed: %s' % out)
     return None
 
-def main(argv=None):
-    console_module.force_utf8_stdio()
+def left_for_owner(root):
+    """`[(file, lines)]`: each tracked file still holding text 0.9.5 used,
+    with how many of its lines do, most first and then by name."""
+    command = ['grep', '-c', '-I', '-F']
+    for needle in LEFT_NEEDLES:
+        command += ['-e', needle]
+    ok, out = _git(root, *command)
+    found = []
+    for line in (out.splitlines() if ok else []):
+        rel, _colon, count = line.rpartition(':')
+        if rel and count.isdigit():
+            found.append((rel, int(count)))
+    return sorted(found, key=lambda item: (-item[1], item[0]))
+
+def _left_lines(root):
+    found = left_for_owner(root)
+    if not found:
+        return []
+    lines = [LEFT_HEADING]
+    lines += ['  %s: %d line%s' % (rel, count, '' if count == 1 else 's')
+              for rel, count in found[:LEFT_SHOWN]]
+    more = len(found) - LEFT_SHOWN
+    if more > 0:
+        lines.append(LEFT_MORE % (more, '' if more == 1 else 's'))
+    lines.append(LEFT_WHY % ', '.join(LEFT_NEEDLES))
+    return lines
+
+def _write_log(root, report, sha):
+    """Every line of the run, each file's own included, added to the log."""
+    path = os.path.join(root, *UPDATE_LOG.split('/'))
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'a', encoding='utf-8') as handle:
+            handle.write('purlin:init --update to %s%s\n'
+                         % (_version(), ', committed as %s' % sha if sha
+                            else ''))
+            handle.write(''.join(line + '\n' for line in report.log))
+    except (IOError, OSError):
+        return False
+    return True
+
+def _parse(argv):
     parser = argparse.ArgumentParser(
         prog='update.py', description=__doc__.splitlines()[0])
     parser.add_argument('--yes', action='store_true',
                         help='answer yes to every question')
+    parser.add_argument('--apply', metavar='ID[,ID...]',
+                        help='apply these migrations and no other, asking '
+                             'nothing')
+    parser.add_argument('--test-command', action='append', default=[],
+                        metavar='TOOL=COMMAND',
+                        help='the command to write for one test tool, in '
+                             'place of the one proposed')
     parser.add_argument('--project-root', default='.')
-    args = parser.parse_args(argv)
+    return parser.parse_args(argv)
+
+def main(argv=None):
+    console_module.force_utf8_stdio()
+    args = _parse(argv)
 
     root = os.path.abspath(args.project_root)
     if not os.path.isdir(os.path.join(root, '.purlin')):
         print('There is no .purlin/ under %s, so there is nothing to update. '
               'Run purlin:init first.' % root, file=sys.stderr)
         return EXIT_BAD_INVOCATION
+    known = [m[0] for m in MIGRATIONS]
+    chosen = None
+    if args.apply is not None:
+        chosen = [part.strip() for part in args.apply.split(',')
+                  if part.strip()]
+        for name in chosen:
+            if name not in known:
+                print(UNKNOWN_MIGRATION % (name, ', '.join(known)),
+                      file=sys.stderr)
+                return EXIT_BAD_INVOCATION
+    args.commands = {}
+    for given in args.test_command:
+        tool, equals, command = given.partition('=')
+        if not equals or not tool.strip() or not command.strip():
+            print(BAD_TEST_COMMAND % given, file=sys.stderr)
+            return EXIT_BAD_INVOCATION
+        args.commands[tool.strip()] = command.strip()
+    # The questions inside a migration are asked only where each migration
+    # is asked about too.
+    args.ask = not args.yes and chosen is None
     problem = config_engine.config_problem(root)
     if problem:
         print(problem, file=sys.stderr)
@@ -1628,35 +1819,57 @@ def main(argv=None):
         return EXIT_OK
     _print_pending(items, root)
     print('')
+    before = _git(root, 'rev-parse', '--short', 'HEAD')
     appliers = dict((m[0], m[3]) for m in MIGRATIONS)
     report, applied, asked = _Report(), [], set()
     queue = items
     while queue:
         item = queue[0]
         asked.add(item['id'])
-        if not _confirm('Apply %s, which will %s?'
-                        % (item['id'], item['description']), args.yes):
+        report.start(None)
+        if chosen is not None:
+            wanted = item['id'] in chosen
+        else:
+            wanted = _confirm('Apply %s, which will %s?'
+                              % (item['id'], item['description']), args.yes)
+        if not wanted:
             report.say('skipped %s' % item['id'])
             queue = queue[1:]
             continue
+        report.start(item['id'])
         appliers[item['id']](root, item['files'], args, report)
         applied.append(item['id'])
         # Read again: a migration can leave work for a later one, as the
         # Windows tag rewritten to `@env(windows)` leaves a kind-of-test tag
         # at the end of its line.
         queue = [found for found in _found(root) if found['id'] not in asked]
+    report.start(None)
     print('')
     for line in report.lines:
-        print('  %s' % line)
+        print(line)
     sha = _commit(root, applied, report.paths)
     if sha:
         print('  committed %s as %s'
               % (sha, _COMMIT % (_version(), ', '.join(applied))))
     if advice:
-        print('  %s' % advice)
-    if os.path.isdir(os.path.join(root, *BACKUP_DIR.split('/'))):
+        report.owner(advice)
+    if applied:
         print('')
-        print(BACKUPS_KEPT % BACKUP_DIR)
+        print(NOT_RUN)
+        if before[0] and before[1].strip():
+            print(OLD_RECORD % before[1].strip())
+        if _write_log(root, report, sha):
+            print(BACKUPS_KEPT % BACKUP_DIR)
+    left = _left_lines(root) if applied else []
+    if left:
+        print('')
+        for line in left:
+            print(line)
+    if report.owners:
+        print('')
+        print(OWNER_HEADING)
+        for line in report.owners:
+            print(line)
     _print_ending(root)
     return EXIT_OK
 

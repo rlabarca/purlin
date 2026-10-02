@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """purlin:init: one question, then every file a project needs.
 
-    scaffold.py [--update] [--project-root DIR] [--plugin-root DIR] [--yes]
+    scaffold.py [--project-root DIR] [--plugin-root DIR] [--yes]
+    scaffold.py --update [--yes | --apply ID[,ID...]]
+        [--test-command TOOL=COMMAND ...] [--project-root DIR]
 
 Init asks one question, and nothing about how the tests run:
 
@@ -314,6 +316,10 @@ def parse_args(argv):
     parser.add_argument('--plugin-root', default=None)
     for flag in ('--update', '--yes'):
         parser.add_argument(flag, action='store_true')
+    # The two flags `--update` alone takes; scripts/init/update.py reads them.
+    parser.add_argument('--apply', metavar='ID[,ID...]')
+    parser.add_argument('--test-command', action='append', default=[],
+                        metavar='TOOL=COMMAND')
     return parser.parse_args(argv)
 
 
@@ -322,8 +328,14 @@ def delegate_update(args):
     if _HERE not in sys.path:
         sys.path.insert(0, _HERE)
     import update                                              # noqa: PLC0415
-    return update.main(['--project-root', args.project_root]
-                       + (['--yes'] if args.yes else []))
+    handed = ['--project-root', args.project_root]
+    if args.yes:
+        handed.append('--yes')
+    if args.apply is not None:
+        handed += ['--apply', args.apply]
+    for command in args.test_command:
+        handed += ['--test-command', command]
+    return update.main(handed)
 
 
 def _existing_config(root):

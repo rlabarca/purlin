@@ -25,6 +25,10 @@ What each group proves:
 *evidence*    `.purlin/evidence/` and its README, and the dashboard page
 *lettered*    a proof 0.9.5 numbered with a letter takes a number of its own
 *commands*    the command proposed for each test tool, and the owner's own
+*output*      one line of totals for each migration, each file's line in the
+              log, the lines that need the owner last
+*questions*   each on its own line, `--apply` and `--test-command`
+*leftovers*   what the update leaves for the owner, and the old record
 *titles*      a title tag in the shapes a real project writes it, and the
               read-back with the test run's own reader
 """
@@ -137,8 +141,9 @@ def _tracked(root):
 # Where the update keeps each file it changes, as it was before the run.
 BACKUPS = '.purlin/runtime/update-backup'
 BACKUPS_LINE = ('Every file the update changed is kept as it was under '
-                '.purlin/runtime/update-backup/. Delete the folder once the '
-                'tests pass.')
+                '.purlin/runtime/update-backup/, with each change listed in '
+                'update.log there. Delete the folder once the tests pass.')
+LOG = BACKUPS + '/update.log'
 
 
 def _walk(root, patterns, skip_backups=True):
@@ -162,9 +167,14 @@ def _backups(root):
     """`{file: the bytes of its backup}` for every backup the update kept."""
     held = {}
     for rel in _walk(root, ('*',), skip_backups=False):
-        if rel.startswith(BACKUPS + '/'):
+        if rel.startswith(BACKUPS + '/') and rel != LOG:
             held[rel[len(BACKUPS) + 1:]] = _read_bytes(root, rel)
     return held
+
+
+def _log(root):
+    """The lines of the update's log, each without the space around it."""
+    return [line.strip() for line in _read(root, LOG).splitlines()]
 
 
 def _answers(monkeypatch, rules=(), default='y'):
@@ -320,6 +330,7 @@ def _backed_up(tmp_path, capsys):
 
 
 # purlin: update PROOF-7
+# purlin: update PROOF-195
 def test_every_backup_keeps_its_file_s_path_under_one_folder(tmp_path,
                                                              capsys):
     root, before, backups, printed = _backed_up(tmp_path, capsys)
@@ -447,12 +458,12 @@ def test_a_framework_the_tree_cannot_run_is_dropped(tmp_path, capsys):
     _write(root, 'conftest.py', '')
     assert _config(root)['test_framework'] == 'pytest,jest,shell,vitest'
     _apply(root)
-    printed = capsys.readouterr().out.splitlines()
+    printed = [line.strip() for line in capsys.readouterr().out.splitlines()]
     assert _config(root)['tests'] == [frameworks.entry_for('pytest')]
     for name in ('jest', 'shell', 'vitest'):
-        assert ('  dropped %s from the tests: nothing in the tree runs it'
+        assert ('dropped %s from the tests: nothing in the tree runs it'
                 % name) in printed, printed
-    assert '  wrote the tests setting: pytest' in printed, printed
+    assert 'config: wrote the tests setting: pytest' in printed, printed
 
 
 # purlin: update PROOF-94
@@ -465,7 +476,7 @@ def test_xunit_is_read_as_dotnet(tmp_path, capsys):
     _apply(root)
     printed = capsys.readouterr().out
     assert _config(root)['tests'] == [frameworks.entry_for('dotnet')]
-    assert '  wrote the tests setting: dotnet\n' in printed
+    assert '  config: wrote the tests setting: dotnet\n' in printed
     assert 'from the tests' not in printed
 
 
@@ -532,8 +543,9 @@ def test_the_two_pytest_marks_become_comments(tmp_path, capsys):
     root, printed = _rewritten(tmp_path, capsys, 'tests/test_login.py',
                                OLD_PYTEST)
     assert _read(root, 'tests/test_login.py') == NEW_PYTEST
-    assert ('  rewrote 2 markers in tests/test_login.py as comments'
-            in printed), printed
+    assert '  markers: rewrote 2 markers in 1 file' in printed, printed
+    assert ('rewrote 2 markers in tests/test_login.py as comments'
+            in _log(root)), _log(root)
 
 
 # purlin: update PROOF-168
@@ -547,8 +559,7 @@ def test_a_mark_naming_a_feature_with_a_hyphen_becomes_a_comment(tmp_path,
         'import pytest\n\n\n'
         '# purlin: sample-age PROOF-1\n'
         'def test_age():\n    pass\n')
-    assert ('  rewrote 1 marker in tests/test_age.py as comments'
-            in printed), printed
+    assert '  markers: rewrote 1 marker in 1 file' in printed, printed
 
 
 # purlin: update PROOF-109
@@ -556,8 +567,11 @@ def test_the_shell_harness_calls_become_one_comment(tmp_path, capsys):
     root, printed = _rewritten(tmp_path, capsys, 'tests/login.test.sh',
                                OLD_SHELL)
     assert _read(root, 'tests/login.test.sh') == NEW_SHELL
-    assert ('  rewrote 1 marker in tests/login.test.sh as comments; the file '
-            'is one test now, and passes when it exits 0' in printed), printed
+    assert ('  markers: rewrote 1 marker in 1 file; a shell or SQL file is '
+            'one test now, and passes when it exits 0' in printed), printed
+    assert ('rewrote 1 marker in tests/login.test.sh as comments; the file '
+            'is one test now, and passes when it exits 0'
+            in _log(root)), _log(root)
 
 
 # purlin: update PROOF-30
@@ -722,9 +736,9 @@ def test_every_key_the_config_carried_is_removed_and_named(tmp_path, capsys):
         assert key in old, key
     _apply(root)
     printed = capsys.readouterr().out.splitlines()
-    (line,) = [row for row in printed
-               if row.startswith('  removed from .purlin/config.json:')]
-    named = line[len('  removed from .purlin/config.json:'):].split(',')
+    (line,) = [row.strip() for row in printed
+               if row.strip().startswith('removed from .purlin/config.json:')]
+    named = line[len('removed from .purlin/config.json:'):].split(',')
     for key in ('digest', 'pre_push', 'report', 'spec_dir'):
         assert key in [name.strip() for name in named], line
     written = _config(root)
@@ -840,8 +854,11 @@ def test_every_design_line_of_the_anchor_is_removed(tmp_path, capsys):
     # the comparison stops short of the proof lines.
     assert _without(after, ('- PROOF-',)) == _without(
         before, DESIGN_FIELDS + ('- PROOF-',))
-    assert ('  removed the design reference from %s: > Source:, > Pinned:, '
-            '> Visual-Reference:, > Visual-Hash:' % DESIGN_ANCHOR) in printed
+    assert ('removed the design reference from %s: > Source:, > Pinned:, '
+            '> Visual-Reference:, > Visual-Hash:' % DESIGN_ANCHOR) in _log(
+                root)
+    assert ('  design-refs: removed the design reference from 2 specs'
+            in printed), printed
 
 
 # A remote anchor: its source is a git address that only holds the word.
@@ -961,7 +978,8 @@ WORKFLOW_QUESTION = 'Remove .github/workflows/purlin-proofs.yml? [y/N] '
 WORKFLOW_KEPT = ('  .github/workflows/purlin-proofs.yml: kept. It names a '
                  'proof file and may be the old Purlin workflow; remove it '
                  'by hand if it is.')
-WORKFLOW_REMOVED = '  removed 1 workflow that committed proof files'
+WORKFLOW_REMOVED = ('  workflows: removed 1 workflow that committed proof '
+                    'files')
 
 
 # purlin: update PROOF-164
@@ -1348,7 +1366,7 @@ def test_the_command_proposed_starts_the_way_the_project_starts_it(
         'vitest': frameworks.entry_for('vitest')['run']}
     assert ('    pytest: uv run --project pipeline pytest {files} '
             '--junitxml={report}') in printed, printed
-    assert '  dropped shell from the tests: nothing in the tree runs it' \
+    assert '    dropped shell from the tests: nothing in the tree runs it' \
         in printed, printed
 
 
@@ -1368,3 +1386,219 @@ def test_the_owner_is_shown_each_command_and_may_type_another(
                                + UV_PYTEST), printed[at:at + 2]
     assert _runs(root) == {'pytest': TYPED,
                            'vitest': frameworks.entry_for('vitest')['run']}
+
+
+# --- what the update prints -----------------------------------------------------
+
+def _three_marked_files(tmp_path, capsys, more=()):
+    root = _project(tmp_path, V095)
+    for rel, text in (('tests/test_login.py', OLD_PYTEST),
+                      ('tests/test_keys.py', KEYS_PY_OLD.replace(
+                          '"piano"', '"login"')),
+                      ('tests/test_more.py', KEYS_PY_OLD.replace(
+                          '"piano"', '"login"'))) + tuple(more):
+        _write_bytes(root, rel, text.encode('utf-8'))
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'the tests 0.9.5 marked')
+    _apply(root)
+    return root, capsys.readouterr().out.splitlines()
+
+
+# purlin: update PROOF-184
+def test_each_migration_prints_one_line_of_totals(tmp_path, capsys):
+    root, printed = _three_marked_files(tmp_path, capsys)
+    assert '  markers: rewrote 4 markers in 3 files' in printed, printed
+    assert not [line for line in printed if 'as comments' in line]
+    assert not [line for line in printed if 'kept the previous bytes' in line]
+    log = _log(root)
+    assert 'rewrote 2 markers in tests/test_login.py as comments' in log
+    assert 'rewrote 1 marker in tests/test_keys.py as comments' in log
+    assert ('kept the previous bytes at %s/tests/test_login.py' % BACKUPS
+            in log), log
+
+
+MODULE_WIDE = ('import pytest\n\n'
+               'pytestmark = pytest.mark.proof("login", "PROOF-3", "RULE-3")\n')
+LEFT_LINE = ('  left tests/test_module.py:3 as it was: write the marker as a '
+             'comment above each test by hand')
+
+
+# purlin: update PROOF-185
+def test_the_lines_that_need_the_owner_come_last_under_a_heading(tmp_path,
+                                                                 capsys):
+    _root, printed = _three_marked_files(
+        tmp_path, capsys, more=(('tests/test_module.py', MODULE_WIDE),))
+    heading = printed.index('These need you:')
+    committed = [index for index, line in enumerate(printed)
+                 if line.startswith('  committed ')]
+    assert committed and committed[0] < heading
+    assert printed.index(LEFT_LINE) > heading
+    assert printed.index('  markers: rewrote 4 markers in 3 files') < heading
+    assert LEFT_LINE.strip() in _log(_root)
+
+
+# --- the questions --------------------------------------------------------------
+
+def _piped(root, answers, *flags):
+    """The update run as a command with `answers` on its input."""
+    env = dict(os.environ, PYTHONIOENCODING='utf-8')
+    return subprocess.run(
+        [sys.executable, UPDATE, '--project-root', root] + list(flags),
+        input=answers, capture_output=True, encoding='utf-8', env=env,
+        timeout=300)
+
+
+# purlin: update PROOF-186
+def test_each_question_is_on_its_own_line_with_the_answer_taken(tmp_path):
+    root = _project(tmp_path, V095)
+    done = _piped(root, 'y\nn\n')
+    assert done.returncode == 0, done.stderr
+    asked = [line for line in done.stdout.splitlines() if '[y/N]' in line]
+    assert len(asked) == len(NINE), asked
+    for line in asked:
+        assert line.count('[y/N]') == 1, line
+        assert line.startswith('Apply '), line
+    assert asked[0].startswith('Apply design-refs,') and asked[0].endswith(
+        '[y/N] y'), asked[0]
+    for line in asked[1:]:
+        assert line.endswith('[y/N] n'), line
+    assert _ids(root) == NINE[1:]
+
+
+# purlin: update PROOF-187
+def test_apply_names_the_migrations_to_apply_and_asks_nothing(tmp_path):
+    root = _project(tmp_path, V095)
+    done = _piped(root, '', '--apply', 'evidence,config')
+    assert done.returncode == 0, done.stderr
+    assert '[y/N]' not in done.stdout
+    assert _ids(root) == [name for name in NINE
+                          if name not in ('config', 'evidence')]
+    assert _git(root, 'log', '-1', '--format=%s').stdout.strip() == (
+        'chore(update): migrate to %s (config, evidence)' % VERSION)
+
+
+GIVEN = 'uv run pytest {files} --junitxml={report}'
+
+
+# purlin: update PROOF-188
+def test_a_test_command_given_is_the_one_written(tmp_path):
+    root = _project(tmp_path, V095)
+    _write(root, 'conftest.py', '')
+    done = _piped(root, '', '--apply', 'config', '--test-command',
+                  'pytest=' + GIVEN)
+    assert done.returncode == 0, done.stderr
+    assert _runs(root) == {'pytest': GIVEN}
+    assert '    pytest: ' + GIVEN in done.stdout.splitlines()
+
+
+# purlin: update PROOF-189
+def test_an_id_that_is_no_migration_is_refused(tmp_path):
+    root = _project(tmp_path, V095)
+    head = _git(root, 'rev-parse', 'HEAD').stdout
+    done = _piped(root, '', '--apply', 'config,everything')
+    assert done.returncode == 2
+    assert done.stderr.splitlines() == [
+        'everything is not a migration. The migrations are: %s.'
+        % ', '.join(m[0] for m in update.MIGRATIONS)], done.stderr
+    assert _git(root, 'rev-parse', 'HEAD').stdout == head
+    assert _git(root, 'status', '--porcelain').stdout == ''
+
+
+# --- what the update leaves for the owner ------------------------------------------
+
+LEFT_HEADING = 'Purlin left these for you:'
+OLD_CLAUDE_MD = ('# Notes for the agent\n\n'
+                 'Mark each test `[proof:feature:PROOF-1:RULE-1:unit]`.\n'
+                 'In Python use `@pytest.mark.proof("feature", "PROOF-1")`.\n'
+                 'The plugin lives in `.purlin/plugins/`.\n'
+                 'Run `purlin:verify` before a push.\n')
+DOCSTRING_PY = ('def test_documented():\n'
+                '    """[proof:login:PROOF-1:RULE-1:unit]"""\n')
+
+
+# purlin: update PROOF-190
+def test_each_file_still_naming_what_0_9_5_used_is_listed_most_first(
+        tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    _write(root, 'CLAUDE.md', OLD_CLAUDE_MD)
+    _write(root, 'tests/test_documented.py', DOCSTRING_PY)
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'what 0.9.5 told the agent')
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    heading = printed.index(LEFT_HEADING)
+    first = printed.index('  CLAUDE.md: 4 lines')
+    second = printed.index('  tests/test_documented.py: 1 line')
+    assert heading < first < second
+    assert _read(root, 'CLAUDE.md') == OLD_CLAUDE_MD
+    assert _read(root, 'tests/test_documented.py') == DOCSTRING_PY
+
+
+# purlin: update PROOF-191
+def test_at_most_20_files_are_listed_and_the_rest_counted(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    for number in range(1, 23):
+        _write(root, 'notes/n%02d.md' % number,
+               'Run purlin:verify.\n' * (60 - number))
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', '22 files of notes')
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    heading = printed.index(LEFT_HEADING)
+    assert printed[heading + 1:heading + 21] == [
+        '  notes/n%02d.md: %d lines' % (number, 60 - number)
+        for number in range(1, 21)]
+    more = re.match(r'^  and (\d+) more files$', printed[heading + 21])
+    assert more and int(more.group(1)) >= 2, printed[heading + 21]
+    assert not [line for line in printed if 'notes/n21.md' in line]
+
+
+# purlin: update PROOF-192
+def test_the_gitignore_lines_for_the_cache_and_the_plugins_go(tmp_path):
+    root = _project(tmp_path, V095)
+    before = _read(root, '.gitignore').splitlines()
+    for line in ('.purlin/cache/', '.purlin/plugins/__pycache__/', '.venv/',
+                 '/purlin-report.html'):
+        assert line in before, line
+    _apply(root)
+    after = _read(root, '.gitignore').splitlines()
+    assert '.purlin/cache/' not in after
+    assert '.purlin/plugins/__pycache__/' not in after
+    assert [line for line in before if line not in after] == [
+        '.purlin/plugins/__pycache__/', '.purlin/cache/',
+        '# Dashboard HTML (symlinked from framework)']
+    assert '.venv/' in after and '/purlin-report.html' in after
+
+
+# --- what became of the old record --------------------------------------------------
+
+NOT_RUN = 'Every rule reads `not run` until the tests run again.'
+OLD_RECORD = ('The `verify:` commits 0.9.5 made stay in git as the earlier '
+              'record, and its receipts can be read from the commit before '
+              'the upgrade, %s.')
+
+
+# purlin: update PROOF-193
+def test_the_update_says_what_became_of_the_old_record(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    before = _git(root, 'rev-parse', '--short', 'HEAD').stdout.strip()
+    receipt = _walk(root, ('*.receipt.json',))[0]
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    assert NOT_RUN in printed, printed
+    assert OLD_RECORD % before in printed, printed
+    assert not os.path.exists(os.path.join(root, receipt))
+    assert _git(root, 'show', '%s:%s' % (before, receipt)).returncode == 0
+
+
+# purlin: update PROOF-194
+def test_a_run_that_applies_nothing_says_nothing_of_the_record(
+        tmp_path, capsys, monkeypatch):
+    root = _project(tmp_path, V095)
+    _answers(monkeypatch, default='n')
+    _apply(root, argv=())
+    printed = capsys.readouterr().out
+    assert NOT_RUN not in printed
+    assert 'the commit before the upgrade' not in printed
+    assert LEFT_HEADING not in printed
+    assert not os.path.exists(os.path.join(root, BACKUPS))
