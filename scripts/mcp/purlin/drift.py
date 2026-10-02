@@ -631,7 +631,7 @@ def merge_in_progress(project_root):
     """True while a merge has stopped and is not committed: git holds
     `MERGE_HEAD` until the commit that finishes it."""
     return bool(_git(project_root, ['rev-parse', '-q', '--verify',
-                                    'MERGE_HEAD']))
+                                    '--end-of-options', 'MERGE_HEAD']))
 
 
 def default_branch(project_root):
@@ -727,9 +727,9 @@ def _next_free(parsed, kind, taken):
 
 def _spec_lines(project_root, info):
     """The lines of the spec `info` as the file on disk holds them."""
+    path = os.path.join(project_root, *info['spec_path'].split('/'))
     try:
-        with open(os.path.join(project_root, *info['spec_path'].split('/')),
-                  encoding='utf-8') as handle:
+        with open(path, encoding='utf-8') as handle:
             return handle.read().splitlines()
     except (OSError, UnicodeDecodeError):
         return []
@@ -762,8 +762,8 @@ def numbers_twice(project_root, features, ref, spec_lines=None):
     An entry for a rule carries `follows`, `[{'proof', 'line'}]`: the proof
     lines naming the rule that are not on `ref`'s copy, which follow it to
     its new number; none where there is no `ref`. `spec_lines` gives a
-    spec's lines, `{feature: [line, ...]}`, where the caller read `features`
-    from them; any other spec's are read from its file.
+    spec's lines, `{feature: [line, ...]}`, where the caller parsed
+    `features` out of them; any other spec's are read out of its file.
     """
     found = []
     for name in sorted(features):
