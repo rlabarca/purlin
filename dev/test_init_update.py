@@ -31,6 +31,8 @@ What each group proves:
 *leftovers*   what the update leaves for the owner, and the old record
 *titles*      a title tag in the shapes a real project writes it, and the
               read-back with the test run's own reader
+*tags*        the tags that end a proof running over several lines
+*endings*     what a run that applied nothing ends on, and one that applied
 """
 
 import fnmatch
@@ -1215,8 +1217,31 @@ def test_a_marker_naming_a_lettered_proof_no_spec_has_is_left(tmp_path,
     assert _read(root, ORPHAN_PY) == ORPHAN_PY_OLD
     assert ('  left tests/test_orphan.py:4 as it was: it names piano '
             'PROOF-9c, which no spec has. Write the proof with purlin:spec '
-            'piano, then write the marker as a comment above the test by '
-            'hand') in printed, printed
+            'piano, put # purlin: piano PROOF-<n> above the test, and take '
+            "the old tag out of the test's title or decorator."
+            ) in printed, printed
+
+
+ORPHAN_TS = 'packages/web/test/orphan.test.ts'
+ORPHAN_TS_OLD = (
+    "import { it } from 'vitest';\n\n"
+    "it('a held key keeps sounding [proof:piano:PROOF-9c:RULE-2:unit]', "
+    "() => {\n});\n")
+
+
+# purlin: update PROOF-204
+def test_the_comment_to_put_is_in_the_file_s_own_comment_style(tmp_path,
+                                                               capsys):
+    root = _lettered(tmp_path, files=((ORPHAN_TS, ORPHAN_TS_OLD),
+                                      (KEYS_PY, KEYS_PY_OLD)))
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    assert _read(root, ORPHAN_TS) == ORPHAN_TS_OLD
+    assert ('  left packages/web/test/orphan.test.ts:3 as it was: it names '
+            'piano PROOF-9c, which no spec has. Write the proof with '
+            'purlin:spec piano, put // purlin: piano PROOF-<n> above the '
+            "test, and take the old tag out of the test's title or "
+            'decorator.') in printed, printed
 
 
 # purlin: update PROOF-173
@@ -1229,7 +1254,9 @@ def test_declined_lettered_proofs_stay_and_their_markers_say_so(
     _answers(monkeypatch, [('Apply lettered-proofs', 'n')])
     _apply(root, argv=())
     printed = capsys.readouterr().out.splitlines()
-    assert _read(root, PIANO) == PIANO_SPEC
+    assert _proof_ids(root, PIANO) == ['PROOF-1', 'PROOF-2', 'PROOF-2b',
+                                       'PROOF-7b']
+    assert '> Highest-Proof: 9' in _read(root, PIANO).splitlines()
     assert _read(root, PIANO_PY) == PIANO_PY_OLD
     assert ('  left tests/test_piano.py:4 as it was: it names piano '
             'PROOF-2b, which is numbered with a letter. Run purlin:init '
@@ -1602,3 +1629,190 @@ def test_a_run_that_applies_nothing_says_nothing_of_the_record(
     assert 'the commit before the upgrade' not in printed
     assert LEFT_HEADING not in printed
     assert not os.path.exists(os.path.join(root, BACKUPS))
+
+
+# --- the tags that end a proof running over several lines -----------------------
+
+TABS = 'specs/web/tabs.md'
+TABS_HEAD = ('# Feature: tabs\n\n> Description: The tab strip.\n'
+             '> Scope: tabs.py\n\n## Rules\n\n'
+             '- RULE-1: A tab opens\n- RULE-2: A tab closes\n'
+             '- RULE-3: A tab moves\n\n## Proof\n\n')
+TABS_SPEC = TABS_HEAD + (
+    '- PROOF-1 (RULE-1): Choose a tab; its page shows and the others\n'
+    '  are hidden. @unit\n'
+    '- PROOF-2 (RULE-2): Close the tab; the strip holds one fewer and the\n'
+    '  page beside it shows.\n'
+    '  @browser\n'
+    '- PROOF-3 (RULE-3): Drag the tab past its neighbour; the two change\n'
+    '  places @integration @slow\n')
+TABS_AFTER = TABS_HEAD + (
+    '- PROOF-1 (RULE-1): Choose a tab; its page shows and the others\n'
+    '  are hidden.\n'
+    '- PROOF-2 (RULE-2): Close the tab; the strip holds one fewer and the\n'
+    '  page beside it shows.\n'
+    '- PROOF-3 (RULE-3): Drag the tab past its neighbour; the two change\n'
+    '  places @slow\n')
+TABS_TS = 'packages/web/test/tabs.browser.test.ts'
+TABS_TS_OLD = (
+    "import { it } from 'vitest';\n\n"
+    "it('closing a tab shows the page beside it "
+    "[proof:tabs:PROOF-2:RULE-2:browser]', () => {\n});\n")
+WENT_RE = re.compile(r'^  kind-tags: dropped (\d+) kind-of-test tags from '
+                     r'(\d+) specs: purlin:test runs every marked test$')
+
+
+def _tabs(tmp_path, spec=TABS_SPEC, files=((TABS_TS, TABS_TS_OLD),)):
+    root = _project(tmp_path, V095)
+    _write_bytes(root, TABS, spec.encode('utf-8'))
+    for rel, text in files:
+        _write_bytes(root, rel, text.encode('utf-8'))
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'the tab strip, as 0.9.5 tagged it')
+    return root
+
+
+# purlin: update PROOF-196
+def test_a_kind_tag_ending_a_proof_s_last_line_goes(tmp_path, capsys):
+    root = _tabs(tmp_path)
+    _apply(root)
+    capsys.readouterr()
+    assert _read(root, TABS) == TABS_AFTER
+
+
+def _went(printed):
+    found = [WENT_RE.match(line) for line in printed.splitlines()]
+    found = [match for match in found if match]
+    assert len(found) == 1, printed
+    return int(found[0].group(1)), int(found[0].group(2))
+
+
+# purlin: update PROOF-197
+def test_the_totals_line_counts_the_tags_and_the_specs(tmp_path, capsys):
+    plain = _project(tmp_path / 'plain', V095)
+    _apply(plain)
+    tags, specs = _went(capsys.readouterr().out)
+    root = _tabs(tmp_path / 'tabs')
+    _apply(root)
+    assert _went(capsys.readouterr().out) == (tags + 3, specs + 1)
+
+
+TAGS_KEPT = TABS_HEAD + (
+    '- PROOF-1 (RULE-1): Choose a tab and look at the page it\n'
+    '  shows @manual\n'
+    '- PROOF-2 (RULE-2): Close each of 500 tabs; the strip\n'
+    '  is empty @slow\n'
+    '- PROOF-3 (RULE-3): Drag the tab past its neighbour; the two change\n'
+    '  places @env(linux)\n'
+    '- PROOF-4 (RULE-3): Drag the tab off the strip; it comes back\n'
+    '  @browser\n')
+
+
+# purlin: update PROOF-198
+def test_a_tag_no_marker_names_and_the_three_kept_tags_stay(tmp_path, capsys):
+    root = _tabs(tmp_path, spec=TAGS_KEPT, files=())
+    _apply(root)
+    capsys.readouterr()
+    assert _read(root, TABS) == TAGS_KEPT
+    assert update.pending(root) == []
+
+
+WINDOWS_THEN_KIND = TABS_HEAD + (
+    '- PROOF-1 (RULE-1): Choose a tab; its page shows and the others\n'
+    '  are hidden @windows @unit\n')
+
+
+# purlin: update PROOF-199
+def test_the_windows_tag_on_a_continuation_line_is_rewritten(tmp_path,
+                                                             capsys):
+    root = _tabs(tmp_path, spec=WINDOWS_THEN_KIND, files=())
+    _apply(root)
+    capsys.readouterr()
+    assert _read(root, TABS).splitlines()[-2:] == [
+        '- PROOF-1 (RULE-1): Choose a tab; its page shows and the others',
+        '  are hidden @env(windows)']
+    assert update.pending(root) == []
+
+
+# purlin: update PROOF-200
+def test_a_kind_is_still_known_once_the_markers_are_rewritten(tmp_path,
+                                                             capsys):
+    root = _tabs(tmp_path)
+    assert _apply(root, argv=('--apply', 'markers')) == 0
+    assert '[proof:' not in _read(root, TABS_TS)
+    assert '@browser' in _read(root, TABS)
+    _apply(root)
+    capsys.readouterr()
+    assert _read(root, TABS) == TABS_AFTER
+
+
+NOTED = TABS_HEAD + (
+    '- PROOF-1 (RULE-1): Choose a tab; its page shows and the others\n'
+    '  are hidden. @unit (python: the collector owns\n'
+    '  this file)\n'
+    '- PROOF-2 (RULE-2): Close the tab (the last one) and the strip is empty\n')
+
+
+# purlin: update PROOF-205
+def test_a_kind_tag_goes_from_before_a_note_in_brackets(tmp_path, capsys):
+    root = _tabs(tmp_path, spec=NOTED, files=())
+    _apply(root)
+    capsys.readouterr()
+    assert _read(root, TABS) == NOTED.replace(' @unit', '')
+
+
+# --- what a run ends on -----------------------------------------------------------
+
+HOW_TO_APPLY = ('Nothing was applied. Add --yes to apply every migration and '
+                'use each proposed test command, or --apply <id>[,<id>...] '
+                'to apply the migrations named.')
+
+
+# purlin: update PROOF-201
+def test_a_run_that_applied_nothing_ends_on_the_update_and_how_to_say_yes(
+        tmp_path):
+    root = _project(tmp_path, V095)
+    _write(root, 'conftest.py', '')
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'a pytest project')
+    done = _piped(root, '')
+    assert done.returncode == 0, done.stderr
+    printed = done.stdout.splitlines()
+    assert printed[0].startswith('9 migrations pending in '), printed[0]
+    assert ('      pytest: python3 -m pytest {files} --junitxml={report}'
+            in printed), printed
+    assert printed[-2:] == [UPDATE_LINE, HOW_TO_APPLY], printed[-2:]
+    assert 'Left to do:' not in printed
+    assert not [line for line in printed if 'pass their tests' in line]
+    assert not [line for line in printed if 'purlin:build' in line]
+    assert not [line for line in printed if 'purlin:test' in line]
+
+
+RUN_TESTS = ['→ Run: purlin:test --all --commit',
+             'Run it before anything else: every rule reads not run until '
+             'it has.']
+
+
+# purlin: update PROOF-202
+def test_a_run_that_applied_everything_ends_on_the_test_run(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    assert printed[-2:] == RUN_TESTS, printed[-2:]
+    assert 'Left to do:' not in printed
+    assert not [line for line in printed if 'pass their tests' in line]
+
+
+# purlin: update PROOF-203
+def test_a_run_that_left_a_migration_pending_ends_on_the_update(tmp_path,
+                                                                capsys):
+    root = _project(tmp_path, V095)
+    _apply(root, argv=('--apply', 'evidence'))
+    printed = capsys.readouterr().out.splitlines()
+    assert printed[-2:] == [
+        UPDATE_LINE,
+        '8 migrations are still pending: %s. A test run stops until nothing '
+        'is pending.' % ', '.join(n for n in NINE
+                                  if n != 'evidence')
+    ], printed[-2:]
+    assert RUN_TESTS[0] not in printed
