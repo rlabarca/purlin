@@ -1,6 +1,6 @@
 ---
 name: spec-from-code
-description: Read an existing codebase and write the specs it already implies
+description: Write the specs for a codebase that has none, from the code and the tests it already has
 ---
 
 # purlin:spec-from-code
@@ -11,6 +11,9 @@ optional: run it once, on the way in. Afterwards every new rule comes from `purl
 **Paths.** Every `references/` and `scripts/` path below is inside the plugin and is reached
 through `${CLAUDE_PLUGIN_ROOT}`. A project carries none of them.
 
+A line marked **Stop and ask** is a question for the person: print it, end your turn, and act
+only on their answer. Never answer it yourself.
+
 **The honest limit.** Every rule is written from what its test expects, passing or not, and
 no test is run first: a failing test keeps its rule failing until the code is fixed. Where no
 test covers the code, the rule says what the code does, not what it should do, so every rule
@@ -18,8 +21,19 @@ this skill writes is a draft until a person reads it. Say so when you hand the r
 
 ## Before you start
 
-Call `sync_status`. Pass `project_root` on every Purlin tool call: the top folder of the git
-checkout you are working in. When the project has no `.purlin/config.json`, run `purlin:init` first. Run
+Get the status from the tool `mcp__plugin_purlin_purlin__sync_status`, passing `project_root`:
+the top folder of the git checkout you are working in. Where the session lists it as a
+deferred tool, load it with ToolSearch first. Where the session does not have it, run the
+script, which prints the same status:
+
+```bash
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_status.py" --project-root .
+```
+
+Never read `.purlin/report-data.js` or `purlin-report.html` as the status: they hold what the
+last command saw.
+
+When the project has no `.purlin/config.json`, run `purlin:init` first. Run
 `git branch --show-current`; when it prints nothing the checkout is on no branch, so make one
 with `git switch -c <name>` before the first commit.
 
@@ -32,9 +46,9 @@ with `git switch -c <name>` before the first commit.
    the list with a one-line description and the files each would carry in `> Scope:`. Twenty
    to forty features is normal for a mid-sized service; two hundred means the grouping is too
    fine.
-3. **Let the person edit it.** Show the list and stop. Merge, split and rename until they say
-   it is right. Everything after this point is mechanical, so this is the only step worth a
-   conversation.
+3. **Let the person edit it.** Show the list. **Stop and ask** whether it is right. Merge,
+   split and rename until they say it is. Everything after this point is mechanical, so this
+   is the only step worth a conversation.
 4. **Shared rules first.** Rules that hold across the whole project, it writes once in an
    anchor, with `purlin:anchor create <name>`. A rule that several features share and that
    does not hold everywhere is written in each of their specs.

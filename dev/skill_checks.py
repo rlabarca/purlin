@@ -171,6 +171,22 @@ def unknown_flags(text):
             if (ROOT / script).is_file() and flag not in script_flags(script)]
 
 
+STATUS_TOOL = 'mcp__plugin_purlin_purlin__sync_status'
+STATUS_SCRIPT = 'scripts/run/purlin_status.py'
+
+
+def status_unnamed(skill, text):
+    """The problems with how a skill's text names the status: for a text
+    holding `sync_status`, one `<skill> does not name <x>` for the tool as a
+    session lists it and for the script that prints the same status, where
+    the text does not hold it. A text that never names `sync_status` has
+    none."""
+    if 'sync_status' not in text:
+        return []
+    return ['%s does not name %s' % (skill, name)
+            for name in not_named(text, (STATUS_TOOL, STATUS_SCRIPT))]
+
+
 def dev_paths(text):
     """Each line of the text that holds `dev/`, every `/dev/null` set aside."""
     return [line for line in text.splitlines()

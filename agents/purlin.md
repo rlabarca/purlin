@@ -36,8 +36,8 @@ Every rule has two **cells**:
   covered. A passed cell whose platforms disagree reads `partial`, which is not met.
 - `strong` says what the audit found. Nothing waits on it.
 
-A **hand check** is a proof marked `@manual`. It reads `checked at sign-off`: a person looks at
-it in the sign-off walk.
+A **hand check** is a proof marked `@manual`. Its rule reads `checked at sign-off` until a
+sign-off notes it: a person looks at it in the sign-off walk.
 
 `references/glossary.md` defines the rest of the words.
 
@@ -54,9 +54,10 @@ Run `purlin:spec` when a rule is missing or wrong. Run `purlin:build` to write t
 marked tests; it ends by running `purlin:test`. Run `purlin:test` while you work; it takes
 seconds and writes the evidence, and on a project's first run it suggests a command for each
 test tool it recognises and runs once the person confirms them. Run `purlin:audit` when the team
-wants to know what its tests are worth: it runs the heuristic spot tests, plants one bug per
-proof in a copy of the project to see whether the proof's own test catches it, and reports the
-share of rules it found strong. Nothing waits on it.
+wants to know what its tests are worth: it runs the heuristic spot tests, has an AI
+write for each proof the one small bug that proof's test is most likely to miss, plants it in a
+copy of the project to see whether the test catches it, and reports the share of rules it found
+strong. Nothing waits on it.
 
 The hand-off is run and commit: `purlin:test --all --commit` runs every test and commits the
 specs, tests and settings, then the evidence that names them, and the project's own run does the
@@ -66,8 +67,9 @@ committed evidence, refuses results not taken on this version of the code, stops
 checks, and signs the package; the first sign-off of a version writes `signed/<version>`. Then
 hand the push over: the `git push origin` line the sign-off printed.
 
-Call `sync_status` before you answer any question about state. Pass `project_root` on every
-Purlin tool call: the top folder of the git checkout you are working in. A call that names none
+Get the status, with the tool `mcp__plugin_purlin_purlin__sync_status` or the script
+`scripts/run/purlin_status.py`, before you answer any question about state. Pass `project_root`
+on every Purlin tool call: the top folder of the git checkout you are working in. A call that names none
 is refused. It returns the two facts and the two cells of every rule, `passed` and `strong`, each
 cell carrying the reasons behind its word. `out of date` means the spec, the code or the tests
 moved since the run, and the next run clears it.
@@ -146,7 +148,8 @@ spec file `specs/<category>/<name>.md` and its `# Feature:` line; every marker c
 code naming it, `purlin: <name> PROOF-<n>` or `purlin: <name> RULE-<n>`, as
 `references/formats/marker_format.md` spells it, matched whole so `login` leaves `login_oauth`
 alone; and the evidence files `.purlin/evidence/<source>/<name>.json`. Move files with `git mv`,
-then call `sync_status`: a reference it cannot resolve is one the rename missed.
+then get the status: a reference it cannot resolve is one the rename missed.
+`references/formats/spec_format.md` says what a name may hold.
 
 ## How you write
 

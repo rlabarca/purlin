@@ -22,7 +22,9 @@ Sign-off: signed 0.1.0, 4 commits since
 **The tests** read `met` when every rule passes its tests on the committed evidence, and
 `not met` otherwise. They read `not met` while any kind of work that blocks is left: a spec to
 repair, a test comment to correct, a rule to fix, a rule to write a test for, a rule to test here
-or on another system, or results written and not committed.
+or on another system, or results written and not committed. What they require is that every
+rule that has a test passes it on the committed evidence: a rule checked by hand alone reads
+`checked at sign-off`, is counted under no kind of work and never stops the tests reading `met`.
 
 **The sign-off** reads one of three things, from the newest `signed/*` tag on `HEAD` or an
 ancestor of it:
@@ -55,8 +57,11 @@ Left to do:
 ```
 
 **The summary** is `<N> rules. <p> pass their tests.`, where `p` counts the rules whose passed
-cell reads `passed`, a rule whose every proof is `@manual` among them. Where the audit has read a
-rule that passes, ` The audit found <s> of <p> rules strong (<n>%): <s> strong` follows, then
+cell reads `passed`. Where a rule's passed cell reads `checked at sign-off`,
+` 1 is checked at sign-off.` follows, or ` <h> are checked at sign-off.` for more than one:
+`10 rules. 9 pass their tests. 1 is checked at sign-off.` Where the audit has read a
+rule that passes, ` The audit found <s> of <a> rules strong (<n>%): <s> strong` follows, `a`
+counting the rules that pass their tests and have a tested proof, then
 `, <n> weak`, `, <n> spot-checked`, `, <n> out of date` and `, <n> not audited`, each only where
 it is not zero. A rule is counted once, under the spec that owns it.
 
@@ -205,6 +210,12 @@ The status reads `signed` only where the tag names a commit that holds the packa
 sign-off of it counts. A tag written by hand reads `not signed`, with one warning, and
 `purlin:sign` refuses to sign that version until the tag is deleted.
 
+The key recorded is the key that signed the commit. Where another key signed it, as a global
+`gpg.ssh.program` can cause, the sign-off is taken back and names both keys.
+
+After a `git pull` the tag may be missing: a pull fetches no tags. The status then reads the
+sign-off from its files and names `git fetch --tags`.
+
 **How each is checked.**
 
 - The evidence package is checkable alone, by its fingerprint: `purlin:sign --check <file>`
@@ -232,13 +243,20 @@ may type what they saw; an empty answer is recorded as `no note`. What the audit
 blocks the sign-off, whatever its word. The first sign-off of a version is one signed commit carrying
 the package and the sign-off; a later one adds its own file alone.
 
-**A hand check** reads `checked at sign-off` everywhere else. Where its rule also has a tested
-proof and the audit found it `weak` or `spot-checked`, or its audit is out of date, the rule
-reads that word, as any other rule does. Once a sign-off holds a note for
-it, the rule also shows its last note, there and in its stop of the next walk, with the version
-it was signed at and how many commits have come since, as in
-`noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red`;
-the reader judges whether it still holds.
+**A hand check** is read from the sign-offs that count:
+
+| The rule | Passed cell | Strong cell |
+|----------|-------------|-------------|
+| every proof `@manual`, no sign-off has noted it | `checked at sign-off`, with the reason `no sign-off has checked it yet` | `checked at sign-off` |
+| every proof `@manual`, noted by a sign-off that counts, on the wording as it is | `passed`, with the note's line as its reason | `checked at sign-off`, with the note's line |
+| every proof `@manual`, noted, and the rule or the proof reworded since | `checked at sign-off`, with `the rule's wording changed since its last note` or `the proof's wording changed since its last note`, then the note's line | the same |
+| a `@manual` proof beside tested proofs | as its tests make it | `checked at sign-off`, with the same reasons, unless the audit reads `weak`, `spot-checked` or `out of date` |
+
+The note's line names the version it was signed at and how many commits have come since, as in
+`noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red`.
+The rule shows it there and in its stop of the next walk, under `The rule's wording changed
+since this note.` where it was reworded; the reader judges whether it still holds. A note is
+compared with the wording through the package of the version it was signed at.
 
 ## What `signed/<version>` means
 

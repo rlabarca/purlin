@@ -340,7 +340,8 @@ layout logic, and code producing HTML are a signal that the proofs go through th
 or are `@manual`. Where no test could observe what the proof names, the proof is `@manual`.
 
 `@manual` means there is no test, so nothing can run and there is no test body for the audit
-to read. The rule's strong cell reads `checked at sign-off`. A person looks at it in the
+to read. A rule checked by hand alone reads `checked at sign-off` in both cells until a sign-off
+notes it. A person looks at it in the
 sign-off walk of `purlin:sign` and may type what they saw, and the sign-off records that note;
 the rule then shows its last note, the version it was signed at and how many commits have come
 since. Use `@manual` where judgment is the only instrument.
@@ -357,15 +358,16 @@ whose row says what moves both.
 | passed | `no test`, with `no proof written` | No proof line names the rule, and no test is marked with the rule's own id. | Write the proof under `## Proof` so it names what is done and an expected value a test can reach. `purlin:spec`. A test marked with the rule's id answers it too. |
 | passed | `no test`, with `no test for <PROOF-N>` | One of the rule's proofs has no test carrying its marker comment; the reason names each such proof. | `purlin:build` writes the test, then `purlin:test`. |
 | passed | `failed` | A test for the rule failed. The reason names the file and the test. | Fix the code, or the test. See the next section. |
-| passed | `failed`, with `<RULE-N or PROOF-N> is written twice in the spec` or `the spec holds a line left from a merge conflict` | The spec writes a number twice or holds a line git left from a merge conflict, so every rule of it reads `failed` whatever its tests show. | `purlin:spec`, whose "Renumbering" moves the line from the branch not yet merged when you say yes, or take out the conflict lines. |
+| passed | `failed`, with `<RULE-N or PROOF-N> is written twice in the spec` or `the spec holds a line left from a merge conflict` | The spec writes a number twice or holds a line git left from a merge conflict, so every rule of it reads `failed` whatever its tests show. | `purlin:spec`, whose "Renumbering" resolves the conflict where both sides only added lines, and moves the line from the branch not yet merged when you say yes. |
 | passed | `not run` | The rule's tests have no result in a current section. | Run `purlin:test`. |
 | passed | `not run`, with `slow: runs with purlin:test --all` | A proof of the rule is tagged `@slow`, and no run that starts its test has passed it on the spec, code and tests as they stand. `Left to do` counts it under `slow proofs to run`. | Run `purlin:test --all`. |
 | passed | `not run`, with `<System>: no run yet` | A proof carries `@env` for an operating system that has not run the rule's tests: no current section comes from it. | Run `purlin:test` on that system, or start the project's own run there, or drop the `@env` tag if any operating system could show it. |
 | passed | `not run`, with `<PROOF-N>: <reason>` | The proof's every test skipped with `nothing to check: <reason>`, and the rule is a feature's own. Only an anchor's rule passes that way. | Give the test something to check, or move the rule to an anchor if it holds across the whole project. |
 | passed | `partial` | The rule's tests passed on one operating system and failed on another. `partial` is not met. | Fix the code or the test for the system that failed, then run the tests there again. |
 | passed | `out of date` | A pass exists but the spec, the code or the tests moved since; the reason names which. | Run the tests again; the next run clears it. |
+| passed | `checked at sign-off` | Every proof of the rule is `@manual`, and no sign-off has noted it on its wording as it is. | Nothing to run. A person checks it in `purlin:sign`. |
 | strong | `weak`, with `<file>::<test>: ...` | A heuristic spot test read the test and found it cannot fail as written: it checks nothing, its check cannot fail, it swallows the error, it checks the code against itself, it replaces what it is testing, or it never checks the result the proof expects. | Fix the test as the finding says. `purlin:build`, then `purlin:audit`. |
-| strong | `weak`, with `PROOF-N: the test still passes when <file>:<line> reads "<line>"` | The audit planted that bug in a copy of the project and the proof's own test still passed. | Add the case that tells the right behaviour from that change. `purlin:build`, then `purlin:audit`. |
+| strong | `weak`, with `PROOF-N: the test still passes when <file>:<line> reads "<line>"` | The audit planted that bug in a copy of the project and the proof's own test still passed. The line under it, `PROOF-N: the AI says this breaks: <case>`, is the AI's claim about which case the bug breaks; read it to judge the finding. | Add the case that tells the right behaviour from that change. `purlin:build`, then `purlin:audit`. |
 | strong | `no proof` | The rule's test passes and no proof says what it shows, so the audit has nothing to read the test against. | Write the proof with `purlin:spec`, then `purlin:audit`. |
 | strong | `checked at sign-off` | The proof is `@manual`, so no test can be written and a person checks it. Where the rule also has a tested proof, the audit's `weak`, `spot-checked` or `out of date` is shown in its place. | Nothing: the sign-off walk of `purlin:sign` shows it and asks what the person saw. |
 | strong | `not audited` | No audit has read this rule. | `purlin:audit`, when you want one, which writes the entry into the evidence. |

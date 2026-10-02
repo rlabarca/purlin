@@ -16,8 +16,16 @@ Suggested tests setting: [{"name": "pytest", ...}, {"name": "vitest", ...}]
 ```
 
 A framework that needs something added before it can write that report gets one more line,
-right after its own, saying what. `purlin:test` shows you each command, asks once, writes the
-suggested setting under `tests` and runs again. Where the run detects none, it prints:
+right after its own, saying what. The run then asks:
+
+```
+Write this tests setting to .purlin/config.json? [y/N]
+```
+
+On a yes it writes the suggested setting under `tests`, prints
+`Wrote the tests setting to .purlin/config.json.` and runs. Any other answer, or no answer,
+writes nothing. `--write-tests` writes it without the question, which is how `purlin:test` goes
+on once you have said yes. Where the run detects none, it prints:
 
 ```
 No test command is set and no test tool Purlin knows was found, so nothing ran. The agent reads the project and proposes a command for you to confirm.

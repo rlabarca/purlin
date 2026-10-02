@@ -41,7 +41,9 @@ proof says in plain language how a rule is shown.
 [spec_quality_guide.md](../references/spec_quality_guide.md) is the guideline an AI draft is
 held to.
 
-Adding a case is plain language. Say "it should also reject an expired token" to `purlin:spec`.
+To add or change a rule, a case or a proof, name the command:
+`purlin:spec login: it should also reject an expired token`. A request typed without the command
+may not reach it, and the agent may then edit the file by hand.
 The proof line is written into the spec with the next free proof id. The test arrives on the
 next `purlin:build`. That is how QA's judgment reaches the code without QA writing it.
 
@@ -143,8 +145,10 @@ not yet merged moves to the next free number.
 - After the merge, `purlin:drift` names every number written twice and which line moves.
 - Until it is fixed, every rule of that spec reads `failed`, and `Left to do` reads
   `1 spec to repair: purlin:spec`.
-- `purlin:spec` shows a dry run of the renumbering: the spec lines and the test comments in
-  this checkout that would change. It asks `Do it? [y/N]`.
+- `purlin:spec` resolves the conflict git left, where both sides only added lines, and shows a
+  dry run of the renumbering. It asks `Do it? [y/N]`. A line both sides changed is left for you
+  to choose.
+- Drift run before the merge is committed says `A merge is in progress and is not committed`.
 - Comments on another branch are named, never touched.
 
 **A proof reworded under its test.** When a proof's wording changes after its test was last

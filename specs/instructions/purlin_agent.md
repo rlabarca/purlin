@@ -3,12 +3,12 @@
 > Description: What `agents/purlin.md` must name. The agent definition is the only text every
 >   Purlin session loads before it does anything, so it names the commands of the work, the
 >   hand-off and the sign-off, and the files that say what each word means; this spec holds
->   the one list of those commands and files. It also holds four checks on what every skill,
+>   the one list of those commands and files. It also holds five checks on what every skill,
 >   the agent definition and the references tell an agent to run.
 > Scope: agents/purlin.md, skills/, references/
 > Stack: markdown, Claude Code agent definition
-> Highest-Rule: 23
-> Highest-Proof: 54
+> Highest-Rule: 24
+> Highest-Proof: 55
 
 ## Rules
 
@@ -18,6 +18,7 @@
 - RULE-21: Every flag a skill writes on a line that runs a script is one that script takes
 - RULE-22: The answers file the sign skill shows is one `purlin:sign --answers` walks without a refusal about the file
 - RULE-23: No skill, agent definition or reference names a path under `dev/`, `/dev/null` aside
+- RULE-24: Every skill that names `sync_status` names the tool as a session lists it, `mcp__plugin_purlin_purlin__sync_status`, and the script that prints the same status, `scripts/run/purlin_status.py`
 
 ## Proof
 
@@ -27,3 +28,4 @@
 - PROOF-52 (RULE-21): Each `--flag` on a line of a `SKILL.md` naming a `scripts/**/*.py` is in that script's `--help`; the same check on a copy of the test skill passing `--remote` to `purlin_run.py` lists `--remote`
 - PROOF-53 (RULE-22): The JSON block under `Step 5` of `skills/sign/SKILL.md`, written to `.purlin/runtime/signoff-answers.json` in a project whose hand checks are `accession_screen RULE-1` and `sample_age RULE-6`, is walked with `--answers`; it exits 0 and the sign-off holds the note `the tube is red`
 - PROOF-54 (RULE-23): No line of `skills/*/SKILL.md`, `agents/purlin.md` or `references/**/*.md` holds `dev/` once every `/dev/null` is set aside; the same check on a copy of the build skill naming `dev/test_x.py` lists that line
+- PROOF-55 (RULE-24): Each `SKILL.md` holding `sync_status` holds `mcp__plugin_purlin_purlin__sync_status` and `scripts/run/purlin_status.py`; the same check on a copy of the build skill with the script's line taken out lists `build does not name scripts/run/purlin_status.py`

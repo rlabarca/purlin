@@ -1,6 +1,6 @@
 ---
 name: init
-description: Set a project up for Purlin
+description: Set a project up for Purlin, or bring a project Purlin 0.9.5 set up to this version
 ---
 
 # purlin:init
@@ -9,6 +9,9 @@ Set a project up for spec-driven development. **Paths.** Every `references/`, `t
 `scripts/` path below is inside the plugin and is reached through `${CLAUDE_PLUGIN_ROOT}`; a
 project carries none of them. Pass `project_root` on every Purlin tool call: the top folder of
 the git checkout you are working in.
+
+A line marked **Stop and ask** is a question for the person: print it, end your turn, and act
+only on their answer. Never answer it yourself.
 
 ## The one question
 
@@ -23,16 +26,17 @@ the project's name is read from the project's own files each time it is needed.
 sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" --project-root .
 ```
 
-Ask the person the question yourself. Pass `--yes` when they say yes to the commit; otherwise run
+**Stop and ask** the question yourself. Pass `--yes` when they say yes to the commit; otherwise run
 the script with its input empty, `< /dev/null`, so the question takes its default.
 
 | Flag | What it does |
 |------|--------------|
 | `--project-root <dir>` | The top folder of the git checkout to set up |
-| `--yes` | Commits the files setup wrote without asking |
+| `--yes` | Commits setup's files that are not committed yet, without asking |
 | `--update` | Brings a project Purlin 0.9.5 set up to the installed version. See below |
 
-A second run writes no file: what is there is kept.
+A second run writes no file: what is there is kept. With `--yes` it commits what the first run
+wrote.
 
 ## What setup writes
 
@@ -95,7 +99,7 @@ declined one is left pending. Between them the migrations:
 
 Every file it rewrites is backed up beside the original as `<name>.local-<sha8>.bak`. It
 commits what it applied in one commit, `chore(update): migrate to <version> (<migrations>)`.
-While a migration is pending `sync_status` prints `→ Run: purlin:init --update` above its
+While a migration is pending the status prints `→ Run: purlin:init --update` above its
 summary, and a test run stops and names it.
 
 ## When you are done

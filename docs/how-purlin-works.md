@@ -154,9 +154,11 @@ write a proof for, with `purlin:spec`.
 
 **What do `strong`, `weak`, `spot-checked` and `not audited` mean?**
 
-- `strong`: the spot tests found nothing, and a planted bug was caught by the proof's test.
-- `weak`: a spot test fired on one of the rule's tests, or a planted bug was not caught. The
-  rule is left to do as `to strengthen`, with `purlin:build`.
+- `strong`: the spot tests found nothing, and a planted bug was caught by the proof's test. An
+  AI writes the bug: the one small change that test is most likely to miss.
+- `weak`: a spot test fired on one of the rule's tests, or a planted bug was not caught. A
+  surviving bug is shown with the case the AI says it breaks, and you judge it. The rule is left
+  to do as `to strengthen`, with `purlin:build`.
 - `spot-checked`: the spot tests found nothing, and no bug was planted and caught. The audit
   says why.
 - `not audited`: no audit has read the rule. `purlin:audit` reads it when you run it.
@@ -165,8 +167,9 @@ write a proof for, with `purlin:spec`.
 - `waiting`: the rule's tests have not passed, so it reads neither.
 
 **What is a hand check?** A proof tagged `@manual`: a judgment call, which only a person can
-make. It has no test. Its rule reads `checked at sign-off`. `purlin:sign` stops there, and the
-signer may type what they saw. After a sign-off the rule shows its last note, as
+make. It has no test. A rule checked by hand alone reads `checked at sign-off` and is counted
+as neither passing nor failing. `purlin:sign` stops there, and the signer may type what they
+saw. After a sign-off the rule shows its last note, as
 `noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red`.
 
 **When do I say which operating system a test needs?** On the proof line, with `@env(windows)`,

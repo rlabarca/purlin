@@ -1,4 +1,4 @@
-> Criteria-Version: 13
+> Criteria-Version: 14
 
 # Drift criteria
 
@@ -45,8 +45,8 @@ The report carries exactly two keys, `since` and `view`.
 
 - `since` is the range: `action`, `commits`, `from`, `line`, `to` and `when`. `line` is the
   sentence that names the range.
-- `view` carries exactly eleven keys. `lines` holds every sentence to print after the one naming
-  the range, in the order of the table below. The other ten are the keys of the table, each
+- `view` carries exactly twelve keys. `lines` holds every sentence to print after the one naming
+  the range, in the order of the table below. The other eleven are the keys of the table, each
   holding the facts its lines were built from.
 
 Lines the status already prints, such as the work left to do or the spec files not committed,
@@ -54,6 +54,7 @@ are not repeated here.
 
 | Key | Line |
 |-----|------|
+| `merge_in_progress` | `A merge is in progress and is not committed, so the range above stops before it. Resolve it and commit, then run purlin:drift again.` |
 | `rules_added` | `3 rules added: login RULE-7, RULE-8; export RULE-2.` |
 | `rules_changed` | `2 rules changed: login RULE-3, billing RULE-1.` |
 | `rules_removed` | `1 rule removed: cart RULE-4.` |
@@ -65,6 +66,13 @@ are not repeated here.
 | `comments_changed` | `tests/test_age.py:14 names sample_age PROOF-4, whose wording changed after the test was last changed in a1b2c3d: it read "<old>" and now reads "<new>". Run purlin:build sample_age to make the test show it; the line clears once the test changes.` |
 | `default_branch` | `origin/main was last fetched 3 days ago, and drift does not fetch. Run git fetch, then purlin:drift again.`, printed only after a `numbers_twice` line |
 | `anchors_behind` | `anchor proof_common: the pin 1a2b3c4 is behind its source, now 3c4d5e6. Run purlin:anchor sync proof_common.` |
+
+### A merge in progress
+
+`merge_in_progress` is true where `git rev-parse -q --verify MERGE_HEAD` answers: a merge
+stopped on conflicts and is not committed. Its line is then the view's second, right after the
+one naming the range. The range reads git's log of HEAD, which holds the merge only once it is
+committed.
 
 ### Rules and proofs
 
@@ -97,6 +105,10 @@ keeps the number; the other moves to the next free number, one above the spec's
 `> Highest-Rule:` or `> Highest-Proof:` and above every number of that kind the spec holds.
 Where one spec writes several numbers twice, each takes the next number after the one before.
 `purlin:spec` makes the edit, and moves the test comments, when you say yes to its plan.
+
+**A proof that follows a moved rule.** An entry for a rule holds `follows`, each proof naming
+that rule that is not on the default branch's copy, with its line. For each, drift prints one
+line after the entry's own: `login: PROOF-3 will name RULE-3.`
 
 | Case | Line |
 |------|------|
@@ -144,7 +156,7 @@ somewhere else gets read before it is adopted.
 | Field | Written by | Read by | Default |
 |-------|-----------|---------|---------|
 | `version` | `purlin:init`, `purlin:init --update` | `purlin:init --update`, which compares it with the plugin's `VERSION` file to find an upgrade | From the plugin's `VERSION` file |
-| `tests` | `purlin:test`, at the first run, once you confirm the command it suggests | `scripts/run/purlin_run.py`, which runs each suite's own command and reads its report; the fingerprint, which reads markers only from the files a suite names | `[]` in the template; see `references/formats/marker_format.md` |
+| `tests` | `purlin:test`, at the first run, once you answer yes to its question, or with `--write-tests` | `scripts/run/purlin_run.py`, which runs each suite's own command and reads its report; the fingerprint, which reads markers only from the files a suite names | `[]` in the template; see `references/formats/marker_format.md` |
 
 `purlin:init` is the only command that writes the settings unprompted. `purlin:test` writes
 `tests` once you confirm it, and every other command reads. The project's name is read from the
@@ -162,3 +174,5 @@ checkout's state is never read as another's. A script run on the command line ta
 `--project-root`; without it, `PURLIN_PROJECT_ROOT` answers where it names a folder that exists,
 else the climb from the working directory to the first `.purlin/` folder. A tool that finds no
 `.purlin/config.json` at the root it was given says which folder it looked at and names the fix.
+Purlin's own folder is refused as a project root; `references/purlin_commands.md`, "The tools
+and their scripts", gives both lines.

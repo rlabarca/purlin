@@ -1,9 +1,9 @@
-"""What the agent definition, `agents/purlin.md`, must name, and four checks
+"""What the agent definition, `agents/purlin.md`, must name, and five checks
 on what every skill, the agent definition and the references tell an agent
 to run.
 
 One test per proof of `specs/instructions/purlin_agent.md`. The readers are
-in `dev/skill_checks.py`. The four checks read the skills as they stand, so
+in `dev/skill_checks.py`. The five checks read the skills as they stand, so
 a skill that names a path the repository does not hold, or passes a flag its
 script does not take, fails here with the file and what it named.
 """
@@ -20,7 +20,7 @@ import tempfile
 from skill_checks import (AGENT, ROOT, absent_paths, dev_paths,
                           json_block_under, named_paths, not_named, read,
                           reference_files, sentences_with, skill_files,
-                          skill_path, unknown_flags)
+                          skill_path, status_unnamed, unknown_flags)
 from sign_project import git, signing_key, write
 
 sys.path.insert(0, str(ROOT / 'scripts' / 'mcp'))
@@ -167,3 +167,18 @@ def test_no_skill_agent_definition_or_reference_names_a_path_under_dev():
     line = 'Run `dev/test_x.py` to see it.'
     copy = read(skill_path('build')) + line + '\n'
     assert dev_paths(copy) == [line]
+
+
+# purlin: purlin_agent PROOF-55
+def test_every_skill_naming_the_status_names_the_tool_and_the_script():
+    holding = [rel for rel in skill_files() if 'sync_status' in read(rel)]
+    assert skill_path('build') in holding, holding
+    problems = [line for rel in holding
+                for line in status_unnamed(rel.split('/')[1], read(rel))]
+    assert problems == []
+    build = read(skill_path('build'))
+    copy = '\n'.join(line for line in build.splitlines()
+                     if 'scripts/run/purlin_status.py' not in line)
+    assert copy != build
+    assert status_unnamed('build', copy) == [
+        'build does not name scripts/run/purlin_status.py']

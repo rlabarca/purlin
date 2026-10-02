@@ -1,6 +1,6 @@
 ---
 name: spec
-description: Turn a requirement in any form into rules and proofs
+description: "Write or change a spec: turn a requirement into rules and proofs, or add, sharpen, reword or remove a rule, a case or a proof of an existing spec. Use it for any change to a file under specs/, instead of editing the file by hand"
 ---
 
 # purlin:spec
@@ -13,22 +13,43 @@ skill.
 **Paths.** Every `references/` and `scripts/` path below is inside the plugin and is reached
 through `${CLAUDE_PLUGIN_ROOT}`. A project carries none of them.
 
+A line marked **Stop and ask** is a question for the person: print it, end your turn, and act
+only on their answer. Never answer it yourself.
+
 For the syntax, read `references/formats/spec_format.md`. For what makes a rule worth writing,
 read `references/spec_quality_guide.md`. Neither is restated here.
 
 ## Procedure
 
-1. Call `sync_status` and read the state of the feature, if it already has one. Pass
-   `project_root` on every Purlin tool call: the top folder of the git checkout you are working
-   in.
+1. Get the status from the tool `mcp__plugin_purlin_purlin__sync_status`, passing `project_root`:
+   the top folder of the git checkout you are working in. Where the session lists it as a
+   deferred tool, load it with ToolSearch first. Where the session does not have it, run the
+   script, which prints the same status:
+
+   ```bash
+   sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_status.py" --project-root .
+   ```
+
+   Never read `.purlin/report-data.js` or `purlin-report.html` as the status: they hold what the
+   last command saw.
+
+   Read the state of the feature, if it already has one.
 2. Read the input whole before writing anything.
-3. Decide the feature name and the category folder: `specs/<category>/<name>.md`.
+3. Decide the feature name and the category folder: `specs/<category>/<name>.md`, never
+   `specs/<name>.md`. `references/formats/spec_format.md` says what a name may hold.
 4. Write the metadata, `> Scope:` included, then the rules, then one proof for every rule.
 5. Allocate ids as "Ids" below says, never against the working tree alone.
-6. Print each rule with its proofs under it and ask whether to change any. Change what the
-   person asks and print them again.
-7. Save the spec when the person is satisfied, commit it on its own, and name `purlin:build`
-   as the next step. This skill never starts building.
+6. Print each rule with its proofs under it. **Stop and ask** whether to change any. Change
+   what the person asks and print them again.
+7. Save the spec when the person is satisfied, then check it:
+
+   ```bash
+   sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_status.py" --project-root . --spec <name>
+   ```
+
+   It prints each mistake Purlin sees in the spec, or `<name>: <n> rules and <m> proofs read. No
+   mistake found.` Fix every mistake and run it again. Only then commit the spec on its own and
+   name `purlin:build` as the next step. This skill never starts building.
 
 ## Intake
 
@@ -113,6 +134,13 @@ one is left to write a proof for. Several
 proofs may name one rule, and one proof may name several rules when it drives a flow through
 all of them: `- PROOF-7 (RULE-2, RULE-3, RULE-4): ...`.
 
+A tag stands at the end of the proof line, after the text, never before the rule ids:
+
+```
+- PROOF-7 (RULE-7): A technician reads the rejection message and finds it clear @manual
+- PROOF-8 (RULE-8): A batch of 500 samples is taken in; every sample has a result @slow
+```
+
 Tag a proof `@manual` when only human judgment settles it. A `@manual` proof has no test: a
 person checks it in the sign-off walk of `purlin:sign` and may type what they saw. Until then
 it reads `checked at sign-off`.
@@ -153,22 +181,28 @@ text in place, keep the id, and say in the commit what changed and why.
 
 ## After a merge conflict
 
-Two branches that took the same number before either merged leave a spec with one id twice, and
-git may merge one of the two lines outside the conflict. The number already on the default
-branch keeps it; the rule or proof from the branch not yet merged moves to the next free number.
-Run `purlin:drift` after the merge: it names every number written twice and which line moves.
-Move it as "Renumbering" says. A moved rule's audit is read again.
-Tell the person whose line moved, so the test comments on their branch move with it. When the
-conflict is two different texts on the same line, show both versions and ask which survives.
-Take out every line git left from the conflict: while one stays, every rule of the spec reads
-`failed`.
+Two branches that took the same number before either merged leave a spec with one id twice,
+often inside a conflict git could not merge. The number already on the default branch keeps
+it; the rule or proof from the branch not yet merged moves to the next free number.
+
+Do not edit git's conflict lines yourself. The renumbering resolves them: where both sides
+only added lines it keeps both sides, it takes the higher `> Highest-` line, and then it
+renumbers. Run it as "Renumbering" says.
+
+A conflict it prints as `is left` is one it will not decide, such as one line both sides
+changed. Show the person both versions. **Stop and ask** which survives. Edit that conflict
+alone, and run the renumbering again.
+
+Then stage the spec and the test files and commit. Where a merge is in progress, that commit
+finishes it. Tell the person whose line moved, so the test comments on their branch move with
+it. A moved rule's audit is read again.
 
 Two branches that advanced the same anchor pin resolve to the newer sha.
 
 ## Renumbering
 
-Where drift, the status, `purlin:build` or this skill finds a number written twice, or a test
-comment whose proof's old wording now stands under another id, run the dry run first:
+Where `purlin:drift`, the status, `purlin:build` or this skill finds a number written twice, or a
+test comment whose proof's old wording now stands under another id, run the dry run first:
 
 ```bash
 sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/spec/renumber.py" <name> --dry-run
@@ -178,21 +212,27 @@ It reads this checkout alone, fetches nothing and changes nothing. Show every li
 spec line that moves to the next free number, the side not already on the default branch; each
 proof line that follows a moved rule; each test comment in this checkout that moves; the raised
 `> Highest-` line; and each comment on another branch that names the moved id. Where it prints
-`<name>: nothing to renumber.`, say so and ask nothing. Otherwise ask exactly:
+`<name>: nothing to renumber.`, say so and ask nothing. Otherwise **Stop and ask**, exactly:
 
 ```
 Do it? [y/N]
 ```
 
-On yes, run the same command without `--dry-run`. It makes the edits, commits nothing, and ends
-on `Renumbered in <name>: ...`; commit the spec and the test files with the `spec(<name>):`
-prefix. On anything else, renumber nothing. A comment on another branch is named, never
-touched: tell the person whose branch it is which id to move it to there.
+On yes, run it with `--yes`:
+
+```bash
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/spec/renumber.py" <name> --yes
+```
+
+It makes the edits, commits nothing, and ends on `Renumbered in <name>: ...` or `Resolved <n>
+conflicts in <name>. Nothing is committed.` On anything else, renumber nothing. Run without
+`--yes` the script asks the same question itself and, with nobody at a terminal, changes
+nothing.
 
 ## When you are done
 
-Once the person is satisfied with the rules and proofs you printed, write the file, commit it
-with the `spec(<name>):` prefix from `references/commit_conventions.md`, then end with exactly
+Once the person is satisfied with the rules and proofs you printed, write the file, check it as
+step 7 says, commit it with the `spec(<name>):` prefix from `references/commit_conventions.md`, then end with exactly
 this and nothing after it:
 
 ```

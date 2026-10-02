@@ -1,6 +1,6 @@
 ---
 name: sign
-description: Build the evidence package from the committed evidence, walk its hand checks with a person, then sign it in a signed commit
+description: "Sign off a version: build the evidence package from the committed evidence, walk its hand checks with a person, and sign it in a signed commit; also check a package against its fingerprint"
 ---
 
 Sign this version of the code. `purlin:sign` reads the committed evidence, builds the evidence
@@ -14,8 +14,11 @@ the same package.
 is relative to the plugin root; see `references/purlin_commands.md#path-resolution`. Pass
 `project_root` on every Purlin tool call: the top folder of the git checkout you are working in.
 
-**Pending migrations:** when `sync_status` opens with a pending-migrations advisory, stop and
+**Pending migrations:** when the status opens with a pending-migrations advisory, stop and
 follow `references/purlin_commands.md#pending-migrations` before doing this skill's work.
+
+A line marked **Stop and ask** is a question for the person: print it, end your turn, and act
+only on their answer. Never answer it yourself.
 
 ## Usage
 
@@ -70,20 +73,25 @@ No sign-off: 1 rule has no test at 8de0b6e: sample_age RULE-3. Run purlin:build 
 No sign-off: 1 rule does not pass at 8de0b6e: sample_age RULE-2. Run purlin:status to see what is left, then purlin:sign.
 No sign-off: origin/main holds 1 commit that 8de0b6e does not, as this checkout last fetched it. Pull, then run purlin:sign.
 No sign-off: .purlin/evidence/package/2.1.0.json does not match its fingerprint: <why>. Restore it as it was signed, or name a new version: purlin:sign --version <version>.
+No sign-off: the commit was signed with the key ending ...8kuw, not the key this checkout names, ending ...JJ8w, so it was taken back and no tag was written. A global gpg.ssh.program or signing key is the usual cause. Run git config gpg.ssh.program ssh-keygen, then purlin:sign again.
 quinn.qa@labconnect.example has already signed 0.1.0 over this package; nothing was written.
 ```
 
 With no version stated it prints
 `No version: nothing in this project states one. Run purlin:sign --version <version>, or write it to a VERSION file.`
-Ask the person for the version, offer to write it to a `VERSION` file, and run the walk again.
+**Stop and ask** the person for the version and whether to write it to a `VERSION` file, then
+run the walk again.
 
 - The script never fetches.
 - The first line counts tracked files alone, and reads `1 file is` for one. A file git does not
   track stops nothing.
 - A tag typed by hand is no sign-off, and the script signs nothing while one stands for the
-  version. Delete a tag only when the person says to. The line names the remote only where the
+  version. **Stop and ask** before you delete a tag. The line names the remote only where the
   checkout has one, and the script does not know whether the tag was pushed.
-- Run what a refusal names only when the person asks.
+- **Stop and ask** before you run what a refusal names. Show the refusal, ask whether to run
+  that command, and run it only on a yes.
+- The wrong-key line comes after the commit: the script reads the key that signed it, and takes
+  the commit back where it is not the key this checkout names.
 - `purlin:test --all --commit` takes this machine's results again.
 - A slow result kept from an earlier run reads `not taken on this version of the code`. A slow
   result must be taken on the version being signed, and `purlin:test --all --commit` takes it.
@@ -105,7 +113,8 @@ No key to sign with. These commands set one up:
 ```
 
 The `ssh-keygen` line shows only when that key file does not exist. Show the person the commands,
-offer to run them, and once they say yes and the commands ran, carry on with the walk.
+**Stop and ask** whether to run them, and once they say yes and the commands ran, carry on with
+the walk.
 
 ## Step 4: the stops and their answers
 
@@ -118,8 +127,9 @@ The walk stops only at hand checks, one at a time, in the order printed. Each st
 head, such as `accession_screen RULE-1   hand check`, then `Rule`, `Proof`, `Results` and, where
 the audit found the rule weak, `What the audit found`. Where an earlier sign-off noted the rule,
 the stop ends on `Last note` and that note, with the version it was signed at and how many
-commits have come since. Show the stop as printed; add nothing of your own to what it says. Then
-ask what the walk asks:
+commits have come since. Where a stop shows `The rule's wording changed since this note.`, say
+so to the person: the note was written about other words. Show the stop as printed; add nothing
+of your own to what it says. Then **Stop and ask** what the walk asks:
 `accession_screen RULE-1   what did you see, in one line, or Enter for no note, or stop:`
 
 | The person's answer | What it does |
@@ -128,9 +138,13 @@ ask what the walk asks:
 | Nothing | The note is recorded as `no note` |
 | `stop` | The walk ends with nothing signed: `Stopped at <feature> <RULE-N>: nothing was signed. After the fix, run purlin:test --all --commit, then purlin:sign.` |
 
-Never narrow a rule or a proof to make a finding disappear. After the last stop, ask whether to
-sign the package for the version as their email, and take only a yes as yes. Every answer and
-every note is the person's own.
+Never narrow a rule or a proof to make a finding disappear. Every answer and every note is the
+person's own.
+
+After the last stop, **Stop and ask**, in these words:
+`Sign the evidence package for <version> as <email>? Type that address to sign:`
+Write what the person typed, as they typed it, as `sign` in the answers file. The script signs
+only where it is the signer's address. Never write the address yourself.
 
 ## Step 5: write the answers and walk
 
@@ -144,7 +158,7 @@ Write the answers to `.purlin/runtime/signoff-answers.json`, each stop keyed `<f
 ```
 
 `audit` is `list` or `go on`. A hand check takes `note` with the line seen, empty for no note, or
-`stop`. Then run:
+`stop`. `sign` is what the person typed at the last question. Then run:
 
 ```bash
 sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py" --answers .purlin/runtime/signoff-answers.json [--version <version>] --project-root .
@@ -152,11 +166,13 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scrip
 
 It walks with those answers, printing each after its question. A stop with no answer refuses with
 nothing written: `No sign-off: sample_age RULE-6 has no answer in .purlin/runtime/signoff-answers.json. Answer every stop, then run purlin:sign --answers .purlin/runtime/signoff-answers.json again.`
+Where `sign` is not the signer's address it signs nothing and ends on
+`Nothing was signed: "sign" in .purlin/runtime/signoff-answers.json must hold quinn.qa@labconnect.example, typed by the person signing.`
 A person at a terminal may instead run `sign.py` with no option and answer each question there.
 
 ## Step 6: the sign-off and the tag
 
-On yes the script makes one signed commit, `sign(<version>): <email>`. For the first sign-off of
+Where the person typed their address the script makes one signed commit, `sign(<version>): <email>`. For the first sign-off of
 a version it carries the package, `.purlin/evidence/package/<version>.json`, and the sign-off,
 `.purlin/evidence/package/<version>.signoffs/<signer-slug>.json`, and the script writes
 `signed/<version>` on it:
@@ -196,6 +212,8 @@ fingerprint.` and exits 0, or `The package does not match its fingerprint: <why>
 | `signed/<version> stays at <sha>; this sign-off is added after it.` | `→ Run: git push origin <branch>` |
 | `Stopped at <feature> <RULE-N>:` | `→ Run: purlin:build <feature>, then purlin:test --all --commit` |
 | `Nothing was signed.` | `→ Run: purlin:sign` when the person is ready |
+| `Nothing was signed: "sign" in` | `→ Ask the person the last question again, then run: purlin:sign --answers <file>` |
+| `No sign-off: the commit was signed with` | `→ Run: git config gpg.ssh.program ssh-keygen, then purlin:sign` |
 | `No sign-off:` naming `purlin:test --all --commit` or `purlin:test --commit` | `→ Run:` the command it names |
 | `No sign-off:` naming `purlin:test on <System>` | `→ Run purlin:test on <System>`, as `skills/test/SKILL.md`, Step 5 says, then `purlin:sign` |
 | `No sign-off:` naming `purlin:status` | `→ Run: purlin:status` |
