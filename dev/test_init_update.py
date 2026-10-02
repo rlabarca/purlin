@@ -23,6 +23,7 @@ What each group proves:
 *specs*       the lines 0.9.5 wrote into a spec that this release does not read
 *files*       the files 0.9.5 kept that this release does not use
 *evidence*    `.purlin/evidence/` and its README, and the dashboard page
+*lettered*    a proof 0.9.5 numbered with a letter takes a number of its own
 """
 
 import fnmatch
@@ -1005,3 +1006,139 @@ def test_the_page_linked_into_the_old_plugin_is_replaced(tmp_path):
     with open(page, 'rb') as handle:
         assert handle.read() == _shipped_page()
     assert 'dashboard' not in _ids(root)
+
+
+# --- the proofs 0.9.5 numbered with a letter ----------------------------------
+# The shapes of a real 0.9.5 project: a spec whose proofs carry a letter,
+# and the tests whose markers name them.
+
+PIANO = 'specs/web/piano.md'
+PIANO_SPEC = (
+    '# Feature: piano\n\n'
+    '> Description: The piano roll.\n'
+    '> Scope: piano.py\n'
+    '> Highest-Proof: 9\n\n'
+    '## Rules\n\n'
+    '- RULE-1: A note sounds\n'
+    '- RULE-2: A note stops\n\n'
+    '## Proof\n\n'
+    '- PROOF-1 (RULE-1): Press a key; one note sounds\n'
+    '- PROOF-2 (RULE-2): Release the key; the note stops\n'
+    '- PROOF-2b (RULE-2): Release the key part way through a bar; the note\n'
+    '  stops on that line @integration\n'
+    '- PROOF-7b (RULE-1): Press two keys; two notes sound\n')
+PIANO_TS = 'packages/web/test/piano.test.ts'
+PIANO_TS_OLD = (
+    "import { it } from 'vitest';\n\n"
+    "it('two keys sound two notes [proof:piano:PROOF-7b:RULE-1:unit]', "
+    "() => {\n});\n")
+PIANO_PY = 'tests/test_piano.py'
+PIANO_PY_OLD = (
+    'import pytest\n\n\n'
+    '@pytest.mark.proof("piano", "PROOF-2b", "RULE-2")\n'
+    'def test_stops_on_the_line():\n    pass\n')
+KEYS_PY = 'tests/test_keys.py'
+KEYS_PY_OLD = (
+    'import pytest\n\n\n'
+    '@pytest.mark.proof("piano", "PROOF-1", "RULE-1")\n'
+    'def test_a_key_sounds():\n    pass\n')
+ORPHAN_PY = 'tests/test_orphan.py'
+ORPHAN_PY_OLD = (
+    'import pytest\n\n\n'
+    '@pytest.mark.proof("piano", "PROOF-9c", "RULE-2")\n'
+    'def test_names_a_proof_no_spec_has():\n    pass\n')
+
+
+def _lettered(tmp_path, spec=PIANO_SPEC, files=()):
+    """The sample 0.9.5 project with the spec `piano` and these test files,
+    committed."""
+    root = _project(tmp_path, V095)
+    _write_bytes(root, PIANO, spec.encode('utf-8'))
+    for rel, text in files:
+        _write_bytes(root, rel, text.encode('utf-8'))
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'the piano roll, as 0.9.5 numbered it')
+    return root
+
+
+def _proof_ids(root, rel):
+    return re.findall(r'(?m)^- (PROOF-\w+) ', _read(root, rel))
+
+
+# purlin: update PROOF-169
+def test_each_lettered_proof_takes_the_next_free_number(tmp_path, capsys):
+    root = _lettered(tmp_path)
+    assert 'lettered-proofs' in _ids(root)
+    assert _apply(root) == 0
+    printed = [line.strip() for line in capsys.readouterr().out.splitlines()]
+    assert _proof_ids(root, PIANO) == ['PROOF-1', 'PROOF-2', 'PROOF-10',
+                                       'PROOF-11']
+    assert '> Highest-Proof: 11' in _read(root, PIANO).splitlines()
+    assert 'piano PROOF-2b is now PROOF-10' in printed, printed
+    assert 'piano PROOF-7b is now PROOF-11' in printed, printed
+    assert 'lettered-proofs' not in _ids(root)
+
+
+# purlin: update PROOF-170
+def test_a_spec_with_no_highest_line_is_given_none(tmp_path, capsys):
+    spec = PIANO_SPEC.replace('> Highest-Proof: 9\n', '')
+    root = _lettered(tmp_path, spec=spec)
+    _apply(root)
+    printed = [line.strip() for line in capsys.readouterr().out.splitlines()]
+    assert _proof_ids(root, PIANO) == ['PROOF-1', 'PROOF-2', 'PROOF-8',
+                                       'PROOF-9']
+    assert 'Highest-Proof' not in _read(root, PIANO)
+    assert 'piano PROOF-2b is now PROOF-8' in printed, printed
+    assert 'piano PROOF-7b is now PROOF-9' in printed, printed
+
+
+# purlin: update PROOF-171
+def test_the_markers_of_a_lettered_proof_carry_its_new_number(tmp_path,
+                                                              capsys):
+    root = _lettered(tmp_path, files=((PIANO_TS, PIANO_TS_OLD),
+                                      (PIANO_PY, PIANO_PY_OLD)))
+    _apply(root)
+    capsys.readouterr()
+    assert _read(root, PIANO_TS) == (
+        "import { it } from 'vitest';\n\n"
+        "// purlin: piano PROOF-11\n"
+        "it('two keys sound two notes', () => {\n});\n")
+    assert _read(root, PIANO_PY) == (
+        'import pytest\n\n\n'
+        '# purlin: piano PROOF-10\n'
+        'def test_stops_on_the_line():\n    pass\n')
+    for rel in (PIANO_TS, PIANO_PY):
+        assert 'PROOF-7b' not in _read(root, rel)
+        assert 'PROOF-2b' not in _read(root, rel)
+
+
+# purlin: update PROOF-172
+def test_a_marker_naming_a_lettered_proof_no_spec_has_is_left(tmp_path,
+                                                              capsys):
+    root = _lettered(tmp_path, files=((ORPHAN_PY, ORPHAN_PY_OLD),
+                                      (KEYS_PY, KEYS_PY_OLD)))
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    assert _read(root, ORPHAN_PY) == ORPHAN_PY_OLD
+    assert ('  left tests/test_orphan.py:4 as it was: it names piano '
+            'PROOF-9c, which no spec has. Write the proof with purlin:spec '
+            'piano, then write the marker as a comment above the test by '
+            'hand') in printed, printed
+
+
+# purlin: update PROOF-173
+def test_declined_lettered_proofs_stay_and_their_markers_say_so(
+        tmp_path, capsys, monkeypatch):
+    root = _lettered(tmp_path, files=((PIANO_PY, PIANO_PY_OLD),
+                                      (KEYS_PY, KEYS_PY_OLD)))
+    order = _ids(root)
+    assert order.index('lettered-proofs') < order.index('markers')
+    _answers(monkeypatch, [('Apply lettered-proofs', 'n')])
+    _apply(root, argv=())
+    printed = capsys.readouterr().out.splitlines()
+    assert _read(root, PIANO) == PIANO_SPEC
+    assert _read(root, PIANO_PY) == PIANO_PY_OLD
+    assert ('  left tests/test_piano.py:4 as it was: it names piano '
+            'PROOF-2b, which is numbered with a letter. Run purlin:init '
+            '--update again and apply lettered-proofs') in printed, printed
+    assert _ids(root) == ['lettered-proofs']

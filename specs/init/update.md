@@ -9,8 +9,8 @@
 >   tool or person wrote is left alone, and one commit carries the whole run.
 > Scope: scripts/init/update.py
 > Stack: python3 (stdlib only, 3.9 floor)
-> Highest-Rule: 56
-> Highest-Proof: 168
+> Highest-Rule: 57
+> Highest-Proof: 173
 
 ## Rules
 
@@ -31,6 +31,7 @@
 - RULE-54: A project with no `.purlin/evidence/README.md` gets the one `purlin:init` writes, and a `purlin-report.html` that is a link or not the page the plugin ships is replaced with that page; a README the project wrote itself is kept, and a project with no page at the root is not given one
 - RULE-55: The update removes no workflow on its own: for each file under `.github/workflows/` that names a proof file it prints the line that does and asks `Remove <path>? [y/N]`, backing up what it removes; `--yes` answers for none, and a workflow not removed is kept, named with what to do, and alone holds no update pending
 - RULE-56: An anchor whose `> Source:` is a git address keeps its `> Source:` and `> Pinned:` lines through the update, byte for byte
+- RULE-57: A proof 0.9.5 numbered with a letter, such as `PROOF-7b`, is given the next free number in its spec, `> Highest-Proof:` moving with it where the spec has that line; the marker of each test that named it is rewritten with the new number, and each change is printed as `<spec> PROOF-7b is now PROOF-<n>`; a marker naming a lettered proof no spec holds is left as it was and named by file and line
 
 ## Proof
 
@@ -79,3 +80,8 @@
 - PROOF-166 (RULE-55): The same project is updated with `--yes`; no question is asked, `purlin-proofs.yml` is byte for byte as it was and still tracked, the output holds `.github/workflows/purlin-proofs.yml: kept. It names a proof file and may be the old Purlin workflow; remove it by hand if it is.`, and no migration is pending afterwards
 - PROOF-167 (RULE-55): With the question `Remove .github/workflows/purlin-proofs.yml?` answered `n` and every other `y`, the update of the same project leaves `purlin-proofs.yml` byte for byte as it was, and prints the same `kept` line for it and no `removed` line
 - PROOF-165 (RULE-56): An anchor whose `> Source:` is `https://github.com/acme/figma-tokens.git specs/tokens.md` with a `> Pinned:` sha of 40 characters is exactly what it was after the update with `--yes`, and no backup is written beside it
+- PROOF-169 (RULE-57): A spec `piano` with `> Highest-Proof: 9` whose proof lines are `PROOF-1`, `PROOF-2`, `PROOF-2b` and `PROOF-7b` is updated with `--yes`; its proof lines then read `PROOF-1`, `PROOF-2`, `PROOF-10` and `PROOF-11`, the spec holds `> Highest-Proof: 11`, and the output holds `piano PROOF-2b is now PROOF-10` and `piano PROOF-7b is now PROOF-11`
+- PROOF-170 (RULE-57): The same spec written with no `> Highest-Proof:` line is updated with `--yes`; its proof lines read `PROOF-1`, `PROOF-2`, `PROOF-8` and `PROOF-9`, the output holds `piano PROOF-2b is now PROOF-8`, and the spec still holds no `> Highest-Proof:` line
+- PROOF-171 (RULE-57): A TypeScript test whose title ends `[proof:piano:PROOF-7b:RULE-1:unit]` and a pytest test marked for `piano` `PROOF-2b` carry, after the update with `--yes`, `// purlin: piano PROOF-11` and `# purlin: piano PROOF-10` above them, and neither file holds `PROOF-7b` or `PROOF-2b`
+- PROOF-172 (RULE-57): A pytest test marked for `piano` `PROOF-9c`, which the spec does not hold, is byte for byte as it was after the update with `--yes`, and the output holds `left tests/test_orphan.py:4 as it was: it names piano PROOF-9c, which no spec has. Write the proof with purlin:spec piano, then write the marker as a comment above the test by hand`
+- PROOF-173 (RULE-57): `lettered-proofs` is pending before `markers`; with its question alone answered `n`, the spec and the test marked for `PROOF-2b` are as they were, the output holds `left tests/test_piano.py:4 as it was: it names piano PROOF-2b, which is numbered with a letter. Run purlin:init --update again and apply lettered-proofs`, and only `lettered-proofs` is pending

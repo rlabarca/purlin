@@ -94,6 +94,32 @@ SHELL_HARNESS_RE = re.compile(r'^([ \t]*)(?:source|\.)\s+\S*(?:purlin-proof|'
 SHELL_FINISH_RE = re.compile(r'^([ \t]*)purlin_proof_finish\b.*$')
 SQL_MARK_RE = re.compile(r'^--[ \t]*@purlin[ \t]+(%s)[ \t]+(PROOF-\d+)'
                          r'[ \t]+RULE-\d+(?:[ \t]+\w+)?[ \t]*$' % _NAME)
+# A proof 0.9.5 numbered with a letter, on its spec line and in each form
+# of marker; the upgrade gives it a number of its own.
+_LETTERED = r'PROOF-\d+[a-z]+'
+LETTERED_LINE_RE = re.compile(r'^(-\s+)(%s)(?=\s*\()' % _LETTERED)
+PROOF_NUMBER_RE = re.compile(r'^-\s+PROOF-(\d+)')
+HIGHEST_PROOF_RE = re.compile(r'^(>[ \t]*Highest-Proof:[ \t]*)(\d+)')
+LETTERED_PYTEST_RE = re.compile(
+    r"""(pytest\.mark\.proof\(\s*["'](%s)["']\s*,\s*["'])(%s)(?=["'])"""
+    % (_NAME, _LETTERED))
+LETTERED_TAG_RE = re.compile(r'(\[proof:(%s):)(%s)(?=:)' % (_NAME, _LETTERED))
+LETTERED_MARK_RES = (
+    re.compile(r'("PurlinProof"\s*,\s*"(%s):)(%s)(?=:)' % (_NAME, _LETTERED)),
+    re.compile(r"""(purlin_proof\s+["']?(%s)["']?\s+["']?)(%s)\b"""
+               % (_NAME, _LETTERED)),
+    re.compile(r'(@purlin[ \t]+(%s)[ \t]+)(%s)\b' % (_NAME, _LETTERED)),
+    re.compile(r'(purlin:[ \t]+(%s)[ \t]+)(%s)\b' % (_NAME, _LETTERED)),
+)
+RENUMBERED = '%s %s is now %s'
+LEFT = ('left %s:%d as it was: write the marker as a comment above each test '
+        'by hand')
+LEFT_NO_SPEC = ('left %s:%d as it was: it names %s %s, which no spec has. '
+                'Write the proof with purlin:spec %s, then write the marker '
+                'as a comment above the test by hand')
+LEFT_LETTERED = ('left %s:%d as it was: it names %s %s, which is numbered '
+                 'with a letter. Run purlin:init --update again and apply '
+                 'lettered-proofs')
 PLUGIN_DIR = '.purlin/plugins'
 CONFTEST_PLUGIN_RE = re.compile(
     r"""["']\.purlin\.plugins\.pytest_purlin["']\s*,?\s*""")
@@ -605,6 +631,124 @@ def _apply_dashboard(root, files, args, out):
     out.say('replaced %s with the page this release ships' % DASHBOARD_PAGE)
 
 
+# --- the proofs numbered with a letter ---------------------------------------
+
+def _spec_name(rel):
+    return os.path.basename(rel)[:-len('.md')]
+
+
+def _renumbered(text):
+    """`(the spec's text with each lettered proof numbered, [(old, new)])`.
+
+    Each takes the next free number of the spec, in the order the lines
+    stand: one above every proof number the spec holds and above
+    `> Highest-Proof:`, which moves with it where the spec has the line.
+    Only the lines under `## Proof` are read.
+    """
+    lines = text.splitlines(True)
+    inside, lettered, top, highest = False, [], 0, None
+    for index, line in enumerate(lines):
+        if line.startswith('## '):
+            inside = line.strip() == '## Proof'
+            continue
+        found = HIGHEST_PROOF_RE.match(line)
+        if found and highest is None:
+            highest = index
+            top = max(top, int(found.group(2)))
+        if not inside:
+            continue
+        number = PROOF_NUMBER_RE.match(line)
+        if number:
+            top = max(top, int(number.group(1)))
+        if LETTERED_LINE_RE.match(line):
+            lettered.append(index)
+    moved = []
+    for index in lettered:
+        top += 1
+        found = LETTERED_LINE_RE.match(lines[index])
+        moved.append((found.group(2), 'PROOF-%d' % top))
+        lines[index] = (found.group(1) + 'PROOF-%d' % top
+                        + lines[index][found.end():])
+    if moved and highest is not None:
+        lines[highest] = HIGHEST_PROOF_RE.sub(
+            lambda m: m.group(1) + str(top), lines[highest], count=1)
+    return ''.join(lines), moved
+
+
+def _lettered_specs(root):
+    """`{spec path: [(old id, new id)]}` for each spec with a lettered proof."""
+    found = {}
+    for rel in _files_under(root, 'specs', ('*.md',)):
+        moved = _renumbered(_read(os.path.join(root, rel)))[1]
+        if moved:
+            found[rel] = moved
+    return found
+
+
+def _detect_lettered(root):
+    return sorted(_lettered_specs(root))
+
+
+def _renumber_marks(text, ext, moved):
+    """`(text, how many)`: each marker naming a `(feature, lettered id)` of
+    `moved` names its new number. A `[proof:...]` tag in a Python file is a
+    docstring's, not a marker, and is left."""
+    count = [0]
+
+    def swap(found):
+        new = moved.get((found.group(2), found.group(3)))
+        if new is None:
+            return found.group(0)
+        count[0] += 1
+        return found.group(1) + new
+
+    patterns = LETTERED_MARK_RES + (
+        (LETTERED_PYTEST_RE,) if ext == '.py' else (LETTERED_TAG_RE,))
+    for pattern in patterns:
+        text = pattern.sub(swap, text)
+    return text, count[0]
+
+
+def _apply_lettered(root, files, args, out):
+    """Each lettered proof takes a number of its own, in its spec and in the
+    marker of each test that named it, before the markers are rewritten."""
+    moved, changes = {}, []
+    for rel in files:
+        path = os.path.join(root, rel)
+        new, pairs = _renumbered(_read(path))
+        if not pairs:
+            continue
+        out.kept(_back_up_copy(path, rel))
+        _write(path, new)
+        out.done(rel)
+        for old, number in pairs:
+            moved[(_spec_name(rel), old)] = number
+            changes.append(RENUMBERED % (_spec_name(rel), old, number))
+    marks, marked = 0, 0
+    for rel in _test_files(root):
+        path = os.path.join(root, rel)
+        try:
+            text = _read(path)
+        except (IOError, OSError, UnicodeDecodeError):
+            continue
+        if 'PROOF-' not in text:
+            continue
+        new, count = _renumber_marks(text, os.path.splitext(rel)[1].lower(),
+                                     moved)
+        if not count:
+            continue
+        out.kept(_back_up_copy(path, rel))
+        _write(path, new)
+        out.done(rel)
+        marks += count
+        marked += 1
+    out.say('renumbered %d proof%s in %d spec%s and %d marker%s in %d file%s'
+            % (len(changes), _s(changes), len(files), _s(files), marks,
+               '' if marks == 1 else 's', marked, '' if marked == 1 else 's'))
+    for line in changes:
+        out.say('  ' + line)
+
+
 # --- the markers and the plugins -------------------------------------------
 
 def _test_files(root):
@@ -649,18 +793,20 @@ def _rewrite_python(lines, ext):
         found = PYTEST_MARK_RE.match(line)
         if found:
             end = _closing_line(lines, index, found.end() - 1)
-            args = PYTEST_ARGS_RE.search('\n'.join(
-                lines[index:(end if end is not None else index) + 1]))
+            call = '\n'.join(lines[index:(end if end is not None
+                                          else index) + 1])
+            args = PYTEST_ARGS_RE.search(call)
             if end is not None and args:
                 out.append(_comment(ext, found.group(1), args.group(1),
                                     args.group(2)))
                 count += 1
                 index = end + 1
                 continue
-        if PYTESTMARK_RE.search(line) and not found:
-            left.append(index + 1)
-        elif found:
-            left.append(index + 1)
+            lettered = LETTERED_PYTEST_RE.search(call)
+            left.append((index + 1, lettered.group(2, 3) if lettered
+                         else None))
+        elif PYTESTMARK_RE.search(line):
+            left.append((index + 1, None))
         out.append(line)
         index += 1
     return out, count, left
@@ -766,9 +912,10 @@ _REWRITERS = {'.py': _rewrite_python, '.sh': _rewrite_shell,
 def rewrite_markers(text, ext):
     """`(the text with every 0.9.5 marker a comment, how many, lines left)`.
 
-    `lines left` are the line numbers of a marker the upgrade could not
-    place above one test, such as a module-wide `pytestmark`, which it names
-    and leaves as it was.
+    `lines left` holds `(line number, lettered)` for each marker the upgrade
+    could not place above one test, which it names and leaves as it was:
+    `lettered` is None for one such as a module-wide `pytestmark`, and
+    `(feature, id)` for one naming a proof numbered with a letter.
     """
     rewrite = _REWRITERS.get(ext, _rewrite_js)
     # A file whose every line ends `\r\n` keeps that ending, the comments
@@ -826,10 +973,18 @@ def _apply_markers(root, files, args, out):
         if ext in ('.sh', '.bash', '.sql'):
             line += ('; the file is one test now, and passes when it exits 0')
         out.say(line)
+    held = set((_spec_name(spec), old)
+               for spec, pairs in _lettered_specs(root).items()
+               for old, _new in pairs)
     for rel, (_new, _count, left) in sorted(found.items()):
-        for number in left:
-            out.say('left %s:%d as it was: write the marker as a comment '
-                    'above each test by hand' % (rel, number))
+        for number, lettered in left:
+            if lettered is None:
+                out.say(LEFT % (rel, number))
+            elif lettered in held:
+                out.say(LEFT_LETTERED % ((rel, number) + lettered))
+            else:
+                out.say(LEFT_NO_SPEC % ((rel, number) + lettered
+                                        + lettered[:1]))
 
 
 def _wiring(root):
@@ -949,6 +1104,9 @@ MIGRATIONS = (
      'ships', _detect_dashboard, _apply_dashboard),
     (WORKFLOWS, 'remove each workflow that names a proof file, asking for '
      'each', _detect_workflows, _apply_workflows),
+    ('lettered-proofs', 'give each proof numbered with a letter, such as '
+     'PROOF-3b, the next free number in its spec', _detect_lettered,
+     _apply_lettered),
     ('markers', 'rewrite each 0.9.5 marker as a comment above its test',
      _detect_markers, _apply_markers),
     ('plugins', 'remove the proof plugin copies and the wiring that loaded '
