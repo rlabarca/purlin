@@ -227,8 +227,9 @@ The run goes in this order:
    a question ending `[y/N]` on a line of its own. `--yes` answers yes to each migration, and
    `--apply <id>[,<id>...]` applies only the ones named. A declined migration is left pending.
    A run that applied nothing ends on `→ Run: purlin:init --update` and how to apply.
+   A run with `--yes` or `--apply` prints `Applying <n> migrations: <ids>.` in place of the list.
    Every file it rewrites is copied first to `.purlin/runtime/update-backup/`, at its own path,
-   which git ignores.
+   which git ignores. A file it deletes is in git, at the commit before the update.
 2. It rewrites or removes each line 0.9.5 wrote into a spec that 0.10.0 does not read: the
    `> Visual-Reference:` and `> Visual-Hash:` lines, a `> Source:` that names Figma and the
    `> Pinned:` that goes with it; `> Requires:` and `> Global:` from every spec, and `> Scope:`
@@ -246,7 +247,9 @@ The run goes in this order:
    turns `test_framework` into `tests`, one entry per framework the tree still runs (`xunit`
    becomes `dotnet`), naming any it drops. It looks at how the project already runs each test
    tool, in its `package.json` scripts, its `Makefile` and its workflows, shows the command it
-   proposes and asks you to accept it or type another.
+   proposes and asks you to accept it or type another. It cites the script of the project's
+   closest to the proposal, and says which option of that script the proposal leaves out, as
+   `The proposal leaves out --project unit, so every vitest test runs.`
 6. It writes `.purlin/evidence/README.md`, and replaces `purlin-report.html` at the project
    root, the link 0.9.5 left or a copy that differs, with the 0.10.0 page. A project with no page
    there is left without one; the first `purlin:status` writes it.
@@ -258,15 +261,19 @@ The run goes in this order:
    reads each file back as a test run reads it and names a marker whose test's title cannot be
    read. A shell or SQL test file becomes one test that passes when it exits 0. A marker it
    cannot place, such as a module-wide `pytestmark`, is named by file and line and left for you.
+   In a Python test whose marker it rewrote, a docstring line that holds nothing but a
+   `[proof:...]` tag is removed; a tag inside a sentence stays.
 9. It removes what loaded the pytest plugin from every `conftest.py` in the project (the file
    too, when it held nothing else) and the reporter entry in the Jest or Vitest configuration or
    `package.json`, and names a `.csproj` that compiles the xUnit logger for you to edit by hand.
 10. It commits everything it changed in one commit,
     `chore(update): migrate to 0.10.0 (<ids>)`.
 11. It prints one line of totals for each migration, then the files that still hold text 0.9.5
-    used, under `Purlin left these for you:`, and last the lines that need you. Each file's own
+    used, under `Purlin left these for you:`, `CLAUDE.md`, `AGENTS.md` and the files under
+    `.claude/` first, and last the lines that need you. Each file's own
     line is in `.purlin/runtime/update-backup/update.log`. It ends on
-    `→ Run: purlin:test --all --commit`.
+    `→ Run: purlin:test --all --commit`, and says a test that fails in that run and passes when
+    its feature is run alone is the project's own.
 
 After it, run `purlin:test --all --commit`. Every rule reads `not run` until its tests run. The
 `verify:` commits 0.9.5 made stay in git as the earlier record, and its receipts can be read

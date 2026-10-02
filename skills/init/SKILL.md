@@ -110,7 +110,9 @@ you put each of its questions to the person. Three steps:
 | `--yes` | Applies every pending migration and uses each proposed command, when the person said yes to all of it |
 
 A run that applied every pending migration ends on `→ Run: purlin:test --all --commit`. Run
-that next, before any other command: every rule reads `not run` until it has. A run that left a
+that next, before any other command: every rule reads `not run` until it has. A test that fails
+in that run and passes when its feature is run alone, with `purlin:test <feature>`, is the
+project's own and not the update's. A run that left a
 migration pending ends on `→ Run: purlin:init --update` and names each one still pending; do the
 three steps again.
 
@@ -128,14 +130,19 @@ Between them the migrations:
 - write `.purlin/evidence/` with its README;
 - replace the dashboard page at the project root;
 - give each proof numbered with a letter, such as `PROOF-7b`, the next free number in its spec;
-- rewrite each 0.9.5 marker as one comment above the same test;
+- rewrite each 0.9.5 marker as one comment above the same test, and remove a docstring line of
+  that test that holds nothing but a 0.9.5 tag;
 - remove what loaded 0.9.5's test plugins from the project's test configuration.
 
-Every file it rewrites is first copied to `.purlin/runtime/update-backup/`, which git ignores.
+Every file it rewrites is first copied to `.purlin/runtime/update-backup/`, which git ignores;
+a file it deletes is in git, at the commit before the update.
 It commits what it applied in one commit, `chore(update): migrate to <version> (<migrations>)`.
-It prints one line of totals for each migration, then `Purlin left these for you:` with the
-files that still hold text 0.9.5 used, and last `These need you:` with the lines the person has
-to act on. Read those two parts to the person as they are. While a migration is pending the
+It prints `Applying <n> migrations: <ids>.`, one line of totals for each migration, then
+`Purlin left these for you:` with the files that still hold text 0.9.5 used, and last
+`These need you:` with the lines the person has to act on. Read those two parts to the person
+as they are. A `CLAUDE.md`, an `AGENTS.md` or a file under `.claude/` stands first among what is
+left, and is the one to change first: it tells the agent to write what this version does not
+read. While a migration is pending the
 status prints `→ Run: purlin:init --update`, and a test run stops and names it.
 
 ## When you are done
