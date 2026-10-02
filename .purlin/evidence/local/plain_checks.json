@@ -1,9 +1,453 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-1": {
+        "at": "2026-10-02T09:24:26Z",
+        "breaks": {
+          "PROOF-1": {
+            "after": "CHECKS_NOTHING = '%s::%s: the test checks nothing'",
+            "aim": "plain",
+            "before": "CHECKS_NOTHING = '%s::%s: the test checks nothing.'",
+            "break_key": "bedc7a0b135021dfb028f520c923b2b0d6cc986a890182a89b3a7f9f3f13ebd9",
+            "case": "test_age calls age(\"2026-01-01\") and asserts nothing; the proof says the finding is `tests/test_age.py::test_age: the test checks nothing.`; the changed code gives `tests/test_age.py::test_age: the test checks nothing` with no full stop",
+            "file": "scripts/review/plain_checks.py",
+            "line": 47,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-3": {
+            "after": "        if not text or asserts.search(text):",
+            "aim": "plain",
+            "before": "        if not text or not asserts.search(text):",
+            "break_key": "bbe07abe67ad522241af60ca62bcbc014b9960b4c69732ecfe1ebe4d443842d6",
+            "case": "test_age asserts nothing and calls check_age() imported from tests/helpers.py, which asserts; the proof says nothing is found; the changed code gives `tests/test_age.py::test_age: the test checks nothing.`",
+            "file": "scripts/review/plain_checks.py",
+            "line": 272,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-4": {
+            "after": "        return (name.startswith('assert') or name in ('warns', 'fail')",
+            "aim": "plain",
+            "before": "        return (name.startswith('assert') or name in ('raises', 'warns', 'fail')",
+            "break_key": "352528ee41fbb6b693c53dd6733fc4828f81c51f470d4e12a1853dac2d261738",
+            "case": "test_bad_zone holds only a pytest.raises(ValueError) block around age(\"2026-01-01\", zone=\"Mars\"); the proof says nothing is found; the changed code gives `tests/test_age.py::test_bad_zone: the test checks nothing.`",
+            "file": "scripts/review/plain_checks.py",
+            "line": 452,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2f5b968b63b2629509730610210f661096fc26ca3f01214be0f39956875ecc5c",
+        "commit": "64f794a6a247ad32b92915c6928975a6d4d8e84b",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-1: the test writes a test_age that only calls age(\"2026-01-01\") and compares the whole list of findings with the one exact sentence the proof names, so a missing, extra or reworded finding fails it.",
+          "PROOF-3: the test writes check_age with an assertion in tests/helpers.py, imports it into tests/test_age.py and compares the findings with the empty list, which is the proof's case and result.",
+          "PROOF-4: the test writes test_bad_zone holding only the pytest.raises block the proof names and compares the findings with the empty list, which is the proof's case and result.",
+          "The spot tests found nothing, and each test holds a failable equality on the list of findings, with expected values written as literals.",
+          "No proof shown covers a helper in the same file, with or without an assertion, so that part of the rule is not observed by these tests.",
+          "All three tests are in Python, so the rule is not observed here for the other languages the checks read."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "16ff6436c07034a8b652aa645a01f7c5e6404e7f17b75e5497eebf03dec39906",
+        "rule_hash": "45c35d5b8cf6d4b9f69b321bbf6b3a354707ea21d97037a297027af138cf7dd4",
+        "test_hash": "f6af1e570f26f58197a1625a25156995924de09f2361c7ce312e5781c5b15e32",
+        "verdict": "strong"
+      },
+      "RULE-10": {
+        "at": "2026-10-02T09:24:26Z",
+        "breaks": {
+          "PROOF-31": {
+            "after": "NOT_FOUND = '%s::%s: its source was not found, so the spot tests did not read it'",
+            "aim": "plain",
+            "before": "NOT_FOUND = '%s::%s: its source was not found, so the spot tests did not read it.'",
+            "break_key": "4903883af5114b6cb34fb6179e697b1bc655b54c076ebbd7a78523378d5c9aa4",
+            "case": "the evidence names test_renamed_away, which tests/test_login.py no longer holds; the proof says the line `tests/test_login.py::test_renamed_away: its source was not found, so the spot tests did not read it.` is printed exactly once; the changed code prints `tests/test_login.py::test_renamed_away: it",
+            "file": "scripts/review/plain_checks.py",
+            "line": 43,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2f5b968b63b2629509730610210f661096fc26ca3f01214be0f39956875ecc5c",
+        "commit": "64f794a6a247ad32b92915c6928975a6d4d8e84b",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-31: the test records `test_renamed_away` as a test the file does not hold, runs the audit on `login`, and counts the proof's full line among the printed lines as exactly 1, so it observes both the exact wording and the \"once\" the proof names.",
+          "PROOF-31: the test also requires the line `login RULE-1   spot-checked`, which the proof does not name, so a change to that verdict would fail the test for a reason outside the proof.",
+          "Findings: none were reported, and the test holds assertions that can fail and the literal message the proof marks in backticks, so no spot test has anything to fire on."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "518188fbd0d785a795169b4af8ed6e373eab3f9ff563779c994f9f4cd7f66c62",
+        "rule_hash": "671e7f8d7e4d7252d278569e191f23ba164eb7a5c8eb55e695ec0d42ef222939",
+        "test_hash": "a7db0dd00b8729592184362837e26b04458a2be26e3a6dab7de73232233cbb19",
+        "verdict": "strong"
+      },
+      "RULE-2": {
+        "at": "2026-10-02T09:24:26Z",
+        "breaks": {
+          "PROOF-10": {
+            "after": "        left, right = values[0], values[1]\n        if isinstance(kind, ast.IsNot):\n            return True",
+            "aim": "plain",
+            "before": "        left, right = values[0], values[1]",
+            "break_key": "0c1025197541bf986ccbb3b58ad068011a244b3a10279b20ea684c771c758526",
+            "case": "test_age holds only `assert result is not None`; the proof says nothing is found; the changed code gives `tests/test_age.py::test_age: the check cannot fail: assert result is not None.`",
+            "file": "scripts/review/plain_checks.py",
+            "line": 529,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-11": {
+            "after": "_EQUALS = frozenset(('toEqual', 'toStrictEqual', 'equal', 'strictEqual', 'deepEqual',",
+            "aim": "plain",
+            "before": "_EQUALS = frozenset(('toBe', 'toEqual', 'toStrictEqual', 'equal', 'strictEqual', 'deepEqual',",
+            "break_key": "99eeae8769981e876041a30b0ebbd488b4dc29bf97449bb6038138c141e7c9c3",
+            "case": "tests/age.test.ts holds the test `age` with `expect(true).toBe(true)`; the proof says the finding `tests/age.test.ts::age: the check cannot fail: expect(true).toBe(true).`; the changed code gives no finding",
+            "file": "scripts/review/plain_checks.py",
+            "line": 716,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-9": {
+            "after": "        if same and (isinstance(kind, (ast.Is, ast.LtE, ast.GtE)) or kind in (",
+            "aim": "plain",
+            "before": "        if same and (isinstance(kind, (ast.Eq, ast.Is, ast.LtE, ast.GtE)) or kind in (",
+            "break_key": "8dc0b8c1cfd7e312fd8d19980d119f7060cc57b8f28583dd50b05e66db886264",
+            "case": "test_age holds `assert days == days`; the proof says the finding `tests/test_age.py::test_age: the check cannot fail: assert days == days.`; the changed code gives no finding",
+            "file": "scripts/review/plain_checks.py",
+            "line": 530,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2f5b968b63b2629509730610210f661096fc26ca3f01214be0f39956875ecc5c",
+        "commit": "64f794a6a247ad32b92915c6928975a6d4d8e84b",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-9: the test writes a Python test holding `assert days == days` and compares the whole list of findings with the one exact sentence the proof names, so a missing, extra or reworded finding fails it.",
+          "PROOF-10: the test writes a Python test holding only `assert result is not None` and compares the findings with an empty list, so any finding from any check on that test fails it.",
+          "PROOF-11: the test writes a TypeScript file with the test `age` holding `expect(true).toBe(true)` and compares the whole list of findings with the exact sentence the proof names.",
+          "The spot tests found nothing, and each of the three tests holds the values its proof names and compares them with literals written in the test, not taken from the code.",
+          "The rule names three always-true forms, and these three proofs cover a value compared with itself and a literal true; none of them covers a size compared as at least zero."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "6ba4b2be74d91cc48f63e1a10c2dfffe7566ae300d63f6faef17e21e1889fb68",
+        "rule_hash": "5d4aa97b3e75f65d2650b2ffa9fd4e145c8c03f0f3d3b4e168206c7201c2b62d",
+        "test_hash": "fe1d97505914f0eef7297ebb7fcfaf78306f1a394d5634a95aecf0dff12067bf",
+        "verdict": "strong"
+      },
+      "RULE-3": {
+        "at": "2026-10-02T09:24:26Z",
+        "breaks": {
+          "PROOF-13": {
+            "after": "                if all(isinstance(stmt, ast.Break) or",
+            "aim": "plain",
+            "before": "                if all(isinstance(stmt, ast.Pass) or",
+            "break_key": "5a19bf706eebf9dd0b5e791ec3baa6f87b02d1378429fba208d285c848fc7a47",
+            "case": "test_bad_zone calls age inside a try whose except ValueError: holds only pass; the proof says the finding is tests/test_age.py::test_bad_zone: the test swallows the error the code raises.; the changed code gives no such finding",
+            "file": "scripts/review/plain_checks.py",
+            "line": 551,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-14": {
+            "after": "                if all(isinstance(stmt, (ast.Pass, ast.Assert)) or",
+            "aim": "plain",
+            "before": "                if all(isinstance(stmt, ast.Pass) or",
+            "break_key": "128ba66a604f0e37637ccdd31f890e48098f5433c43c65f82f3f22b53ebf2fb1",
+            "case": "test_bad_zone calls age inside a try whose except ValueError as e: holds assert \"zone\" in str(e); the proof says nothing is found; the changed code gives tests/test_age.py::test_bad_zone: the test swallows the error the code raises.",
+            "file": "scripts/review/plain_checks.py",
+            "line": 551,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-17": {
+            "after": "                if mask[start + 1:end - 1].strip():",
+            "aim": "plain",
+            "before": "                if not mask[start + 1:end - 1].strip():",
+            "break_key": "072eb272808c398a065496fb04928f0bbe35f2560b3e229ec9206ed5038a07f3",
+            "case": "Tests/AgeTests.cs holds BadZone calling Age inside a try whose catch { } is empty; the proof says the finding is Tests/AgeTests.cs::BadZone: the test swallows the error the code raises.; the changed code gives no finding",
+            "file": "scripts/review/plain_checks.py",
+            "line": 878,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2f5b968b63b2629509730610210f661096fc26ca3f01214be0f39956875ecc5c",
+        "commit": "64f794a6a247ad32b92915c6928975a6d4d8e84b",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-13: the test writes the proof's `except ValueError:` with only `pass` and looks for the exact finding sentence in the findings, so a missing or reworded finding fails it; it uses `in`, so any other finding beside it goes unseen.",
+          "PROOF-14: the test writes the proof's handler holding `assert \"zone\" in str(e)` and compares the findings with an empty list, so any finding on that test fails it.",
+          "PROOF-17: the test writes the C# `BadZone` with an empty `catch { }` and compares the findings with a list holding only the proof's sentence, so a missing, reworded or extra finding fails it.",
+          "PROOF-13, PROOF-14, PROOF-17: no proof of the rule names a `try` used only for cleanup, a handler that re-raises, or a JavaScript `catch`, so those parts of the rule have no test here.",
+          "Findings: the spot tests found nothing, and each test holds an assertion that compares the proof's own sentence or the empty result."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "da880785958469dbad5571148a15df7565280ff736498a333677fbb8d2ec94e3",
+        "rule_hash": "95178c76ac6e960b857ffd5e1cfc1cb8345527a2fa3cead6f180d0aed023f3d6",
+        "test_hash": "ac5338c0e62451a7a064792c3db5cf2ce77e6cad3d94273f5963b585a0b6e90c",
+        "verdict": "strong"
+      },
+      "RULE-4": {
+        "at": "2026-10-02T09:24:26Z",
+        "breaks": {
+          "PROOF-18": {
+            "after": "            return None",
+            "aim": "plain",
+            "before": "            return bound.get(node.id)",
+            "break_key": "43be6b3c2c8725427cb6de26b84875ce503be24ef05ddccd169cec64df983957",
+            "case": "test_age holds `expected = age(s)` then `assert age(s) == expected`; the proof says the finding `tests/test_age.py::test_age: the expected value comes from age(), the code under test.`; the changed code gives no finding",
+            "file": "scripts/review/plain_checks.py",
+            "line": 580,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-19": {
+            "after": "            if _callee(first) and _callee(second) and not any(",
+            "aim": "plain",
+            "before": "            if _callee(first) and ast.dump(first) == ast.dump(second) and not any(",
+            "break_key": "10d896dd6a2a90b3d9c9eaa05faa4b2f7626e4495cb94b3d700c98b9497ed2e7",
+            "case": "test_age holds `assert age(s) == days_between(s, today)`; the proof says nothing is found; the changed code gives the finding `tests/test_age.py::test_age: the expected value comes from age(), the code under test.`",
+            "file": "scripts/review/plain_checks.py",
+            "line": 596,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-20": {
+            "after": "            if first and second and first[1] != second[1] and not (",
+            "aim": "plain",
+            "before": "            if first and second and first[1] == second[1] and not (",
+            "break_key": "8bf114df4177e46310e61a4c3de413f48b96b6fa952d2881b62a431bb239673d",
+            "case": "tests/age.test.ts holds the test `age` with `const expected = age(s)` then `expect(age(s)).toBe(expected)`; the proof says the finding `tests/age.test.ts::age: the expected value comes from age(), the code under test.`; the changed code gives no finding",
+            "file": "scripts/review/plain_checks.py",
+            "line": null,
+            "result": "not made",
+            "why": "the test does not pass in a copy of the project"
+          }
+        },
+        "code_hash": "2f5b968b63b2629509730610210f661096fc26ca3f01214be0f39956875ecc5c",
+        "commit": "64f794a6a247ad32b92915c6928975a6d4d8e84b",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-18: the test writes the Python file the proof describes and compares the whole list of findings with the one sentence the proof names, so a missing, extra or reworded finding fails it.",
+          "PROOF-19: the test writes the proof's assertion against `days_between` and compares the findings with an empty list, so any finding from any check on that file fails it.",
+          "PROOF-20: the test writes the TypeScript file the proof describes and compares the whole list of findings with the proof's sentence, so a missing or reworded finding fails it.",
+          "PROOF-19: this is the rule's only case that is not flagged, and it covers a different function; a library and a literal as the expected value, which the rule also names, have no proof.",
+          "Findings: the spot tests found nothing, and each test holds an assertion on the proof's own value that can fail."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [
+          "No bug was planted: the test of PROOF-20 does not pass in a copy of the project."
+        ],
+        "proof_hash": "98b67f59838aab5101109e0d043e86ea7fa7d9bac09625cef86fb4ac2a935db7",
+        "rule_hash": "a98985f314492292d0fda51dee7713064b1d1242fab3de1f6cadb20ac22407d2",
+        "test_hash": "23bc849afac17cd16fe67b5c36fe0464e0fcf5ea3c83804c62e851eac8624331",
+        "verdict": "strong"
+      },
+      "RULE-5": {
+        "at": "2026-10-02T09:24:26Z",
+        "breaks": {
+          "PROOF-22": {
+            "after": "            if parts[-1] == 'patched' and child.args:",
+            "aim": "plain",
+            "before": "            if parts[-1] == 'patch' and child.args:",
+            "break_key": "24b3cda2a231bff4f67699a6ddfddd835126c61cd5affaa3a9f3d74ca76aa97a",
+            "case": "test_age patches app.age to return 90 and asserts age(s) == 90; the proof says the finding is `tests/test_age.py::test_age: the test mocks age(), the function it checks.`; the changed code finds nothing",
+            "file": "scripts/review/plain_checks.py",
+            "line": 623,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-23": {
+            "after": "            if target:\n                return MOCKS_IT, (target,)\n        return None\n\n\n# ---------------------------------------------------------------------------\n# JavaScript, TypeScript, C#, Go and shell, by their tokens",
+            "aim": "plain",
+            "before": "            if target in checked:\n                return MOCKS_IT, (target,)\n        return None\n\n\n# ---------------------------------------------------------------------------\n# JavaScript, TypeScript, C#, Go and shell, by their tokens",
+            "break_key": "99e1a3430e64480eaeea21f32843cb97e53e4b03496e9106698dd73426744adb",
+            "case": "test_age patches app.clock.now to a fixed date and asserts age(s) == 90; the proof says nothing is found; the changed code gives `tests/test_age.py::test_age: the test mocks now(), the function it checks.`",
+            "file": "scripts/review/plain_checks.py",
+            "line": 642,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-24": {
+            "after": "                if len(call.args) > 2:",
+            "aim": "plain",
+            "before": "                if len(call.args) > 1:",
+            "break_key": "424588b57ea4464ce139e6d4aca76b8bb6d2d2424f8ed4372383186755cbec32",
+            "case": "tests/age.test.ts test `age` spies on lib.age with mockReturnValue(90) and expects lib.age(s) to be 90; the proof says the finding is `tests/age.test.ts::age: the test mocks age(), the function it checks.`; the changed code finds nothing",
+            "file": "scripts/review/plain_checks.py",
+            "line": 950,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2f5b968b63b2629509730610210f661096fc26ca3f01214be0f39956875ecc5c",
+        "commit": "64f794a6a247ad32b92915c6928975a6d4d8e84b",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-22: the test writes the test file the proof describes, with a patch of `app.age` returning 90 and an assertion on `app.age(s) == 90`, and compares the whole list of findings with the one sentence the proof names, so a missing, extra or reworded finding fails it.",
+          "PROOF-23: the test writes a test file that patches `app.clock.now` to a fixed date and asserts `app.age(s) == 90`, and compares the findings with the empty list, so any finding on the dependency mock fails it.",
+          "PROOF-24: the test writes `tests/age.test.ts` with the `jest.spyOn(lib, \"age\").mockReturnValue(90)` and `expect(lib.age(s)).toBe(90)` lines the proof names and compares the whole list of findings with the proof's sentence, so a missing or reworded finding fails it.",
+          "The spot tests found nothing, and each test holds a failable equality against a literal list, with the values its proof names present in its file.",
+          "The rule's silent side is proved by one Python case only; no proof names a dependency mock in TypeScript or C#, or a mock of the checked function in C#."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "49b605605ffb4f7afb9dcc1336947dae9d22bbc4cbe237c2f5a73c69fb7d2252",
+        "rule_hash": "972fb014e11be5b9e47212bc27b6aaa196d1ef15465f1906aa196cf573b21f89",
+        "test_hash": "f43c5097db31956266bf780a3c4a2d1c2736c832da6a625d414e72023dfe3010",
+        "verdict": "strong"
+      },
+      "RULE-6": {
+        "at": "2026-10-02T09:24:26Z",
+        "breaks": {
+          "PROOF-25": {
+            "after": "    return None",
+            "aim": "plain",
+            "before": "    return values[0]",
+            "break_key": "eb418329923846473e561557d8108be939f40adda23bcafc38afc166b6f32b5b",
+            "case": "the proof reads \"has an age of `90` minutes\" and tests/test_age.py holds no 90; the proof says the finding is \"tests/test_age.py::test_age: the proof expects 90 and the test never checks it.\"; the changed code finds nothing",
+            "file": "scripts/review/plain_checks.py",
+            "line": 302,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-26": {
+            "after": "        return any(n == value for n in _NUMBERS_RE.findall(body))",
+            "aim": "plain",
+            "before": "        return any(float(n) == wanted for n in _NUMBERS_RE.findall(body))",
+            "break_key": "2200c3d928ff0da688239989183cbcfcf577e19cd83d9edad7588bc000d0b9db",
+            "case": "the proof reads \"has an age of `90` minutes\" and tests/test_age.py holds assert minutes == 90.0; the proof says nothing is found; the changed code gives the finding that the proof expects 90 and the test never checks it",
+            "file": "scripts/review/plain_checks.py",
+            "line": 320,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-27": {
+            "after": "_DATA_FILE_RE = re.compile(r'[\"\\'`]([^\"\\'`\\s]+\\.(?:ya?ml|csv|tsv|txt|xml|toml|ini))[\"\\'`]')",
+            "aim": "plain",
+            "before": "_DATA_FILE_RE = re.compile(r'[\"\\'`]([^\"\\'`\\s]+\\.(?:json|ya?ml|csv|tsv|txt|xml|toml|ini))[\"\\'`]')",
+            "break_key": "99d524dfb151bd03f1a49812a0615321a006d07739935d94328f297abe384ff7",
+            "case": "tests/test_age.py holds no 90 but names tests/data/ages.json, which holds 90; the proof says nothing is found; the changed code no longer reads a .json file and gives the finding that the proof expects 90 and the test never checks it",
+            "file": "scripts/review/plain_checks.py",
+            "line": 90,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-32": {
+            "after": "_BACKTICK_RE = re.compile(r'`([^`]+)`')",
+            "aim": "plain",
+            "before": "_BACKTICK_RE = re.compile(r'`([^`]*)`')",
+            "break_key": "bbe1e0ff9f4b06a5cba5cdad042ded81b15422244b95459f7efe013ede195e40",
+            "case": "the proof holds an empty pair of backticks and `barcode is required`, and tests/test_intake.py holds barcode is required; the proof says nothing is found; the changed code pairs the backticks wrongly and gives the finding that the proof expects \"is handed in; it is refused with\"",
+            "file": "scripts/review/plain_checks.py",
+            "line": 95,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2f5b968b63b2629509730610210f661096fc26ca3f01214be0f39956875ecc5c",
+        "commit": "64f794a6a247ad32b92915c6928975a6d4d8e84b",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-25: the test writes a test file holding 60 and no 90 and compares the whole list of findings with the one exact sentence the proof names, so a missing finding or a wrong word in it fails.",
+          "PROOF-26: the test writes a test file holding `assert minutes == 90.0` and compares the findings with an empty list, so a number matched only as written fails it.",
+          "PROOF-27: the test writes tests/data/ages.json holding 90, first checks that the test file itself holds no 90, then compares the findings with an empty list, so a data file left unread fails it.",
+          "PROOF-32: the test hands in the proof's own text, with its empty pair of backticks, and a test file holding `barcode is required`, and compares the findings with an empty list, so a wrong pairing of the backticks fails it.",
+          "The spot tests found nothing, and each test holds the values its proof names and compares the full result.",
+          "The rule also says a proof with no value in backticks is not flagged, and none of these four proofs names that case."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "aebfe08130554a3755e7363ea6e7ba882701a871a5b61b68fe555ba2701fecae",
+        "rule_hash": "148e1442e0588526eec5278bc3139e6a64862a79928dff26aa5c863cb5a78170",
+        "test_hash": "1085433bdad4c9c64b4d78afdfe545d9e001fe19e432855f5dbc0cfc08c1848c",
+        "verdict": "strong"
+      },
+      "RULE-7": {
+        "at": "2026-10-02T09:24:26Z",
+        "breaks": {
+          "PROOF-28": {
+            "after": "                        if key not in said:\n                            print(NOT_READ % key, file=out)",
+            "aim": "plain",
+            "before": "                        if key not in said:\n                            said.add(key)\n                            print(NOT_READ % key, file=out)",
+            "break_key": "c961cdb5c8e058c095bfdcaa1dcca7bddac61bf7941fa2d179c658841eb25df2",
+            "case": "a project whose marked tests are two shell tests; the proof says the line `The test replaces what it is testing is not read in shell tests.` is printed exactly once; the changed code prints it twice, once for each shell test",
+            "file": "scripts/review/plain_checks.py",
+            "line": 188,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2f5b968b63b2629509730610210f661096fc26ca3f01214be0f39956875ecc5c",
+        "commit": "64f794a6a247ad32b92915c6928975a6d4d8e84b",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-28: the test builds a project with two marked shell tests, runs the spot tests over it and counts the exact line `The test replaces what it is testing is not read in shell tests.` in the printed output as 1, which is the case and the result the proof names.",
+          "PROOF-28: because the count is compared with exactly 1, the test fails if the line is printed twice, not at all, or with different wording.",
+          "PROOF-28: the test reads only the line for this one check, so the lines for the other two checks that shell is not read for go unobserved, and the proof does not name them.",
+          "The spot tests found nothing, which holds: the test asserts a count that can fail, against a literal the proof gives."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "9af81daff049e3bb0e4e9ffede281cd5120eb1a6b2574cfadb3a7e5abbddac66",
+        "rule_hash": "e84062dea0502a033d99c5baff3153eadc37857bcca7fa26e080ad86652f48a0",
+        "test_hash": "1a7c1834bf59bc0bbb65c0331cc9821ee6cd7eb840bbcbab7eb391d1cebc5d2d",
+        "verdict": "strong"
+      },
+      "RULE-9": {
+        "at": "2026-10-02T09:24:26Z",
+        "breaks": {
+          "PROOF-30": {
+            "after": "    subprocess.run(['claude', '--version'], capture_output=True)\n    specs = specs_module.scan_specs(project_root)",
+            "aim": "plain",
+            "before": "    specs = specs_module.scan_specs(project_root)",
+            "break_key": "38aecc7f6d29982441333fd3c8f62510438d66a7aa2f717084fab0494ce2b861",
+            "case": "the spot tests read every marked test of a three-feature project with a recording `claude` on the path; the proof says `claude` is started 0 times; the changed code starts it 1 time",
+            "file": "scripts/review/plain_checks.py",
+            "line": 160,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2f5b968b63b2629509730610210f661096fc26ca3f01214be0f39956875ecc5c",
+        "commit": "64f794a6a247ad32b92915c6928975a6d4d8e84b",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-30: the test builds a project of three features with one marked test each, puts a recording `claude` on the path, runs the spot tests over the whole project and asserts the recorded starts number 0, which is the value the proof names.",
+          "PROOF-30: the test also asserts that a finding came back for each of the three features, so a run that read no test at all would fail and not pass for having started nothing.",
+          "PROOF-30: the three tests in the project are all Python, so a start of `claude` reached only when reading a test in another language would not be seen by this test.",
+          "The spot tests found nothing, and the test's assertion on the count of starts can fail, so no finding is missing here."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "57f681ab8eb634bd23219699a56537e97c50e9433a7be266219600558b8bcf95",
+        "rule_hash": "2f79a191ab4297c8d6cc744e10b9583f16311056806eb896eafb2397330f7666",
+        "test_hash": "8bf7174b687a05e268693293863fc1d24e4d8265b6dbeb85fff3e473f20a736f",
+        "verdict": "strong"
+      }
+    }
+  },
   "feature": "plain_checks",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T05:47:24Z",
-      "commit": "f9984dd30ac10183f0d8e95ed8bd52a3dd7a6b3e",
+      "at": "2026-10-02T09:23:17Z",
+      "commit": "64f794a6a247ad32b92915c6928975a6d4d8e84b",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
