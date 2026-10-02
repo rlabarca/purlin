@@ -5,7 +5,8 @@ description: "Show where the project stands: whether the tests are met, whether 
 
 Show where every feature stands: whether the tests are met, whether this code is signed, how many
 rules pass their tests, what is left to do, and what to do next. This skill writes no file you
-commit; it refreshes the dashboard's data, which git ignores.
+commit; it refreshes the dashboard's data, which git ignores. For a project Purlin 0.9.5 set up,
+while its upgrade is pending, it writes nothing.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
 is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
@@ -75,7 +76,8 @@ rule.
 
 For a project Purlin 0.9.5 set up, while its upgrade is pending, the tool answers three lines
 and no table: the first line, `This project was set up by Purlin 0.9.5. Nothing here counts
-until it is brought to <version>.` and `→ Run: purlin:init --update`. Print them and stop.
+until it is brought to <version>.` and `→ Run: purlin:init --update`. Print them and stop. The
+dashboard page and its data file are left as they were.
 
 ## Step 3: print the summary and `Left to do`
 
@@ -93,12 +95,30 @@ it read any. `Left to do` holds one line per kind of work, in the order it is do
 and its command. Print the lines the status holds. Never recount them: the command line and
 the dashboard must show one answer from one computation.
 
+The line `<n> features whose results are not committed: purlin:test --commit` shows only once
+nothing else stops the tests being met. While a rule is still to fix, to test or to write a test
+for, results that are written and not committed are not listed: the run that clears that work
+writes them again.
+
 Anything the tool prints between the table and the sentence is its own: a rule of an anchor that
 passes with nothing to check, a spec whose scope names files not written yet, an anchor behind its
 source, the line saying the tests setting changed, each test comment to correct, its warnings
 and `→ Run: purlin:init --update`. Print them
 as they are, or nothing when the tool returned nothing. Where a warning says a number is written
 twice, follow `Renumbering` in `skills/spec/SKILL.md`.
+
+The last warning lists each test that still carries a marker from Purlin 0.9.5, one per line,
+with the feature and the rule the marker names:
+
+```
+9 tests still carry a marker from Purlin 0.9.5, which is not read:
+  packages/web/test/parameter_lfo.test.ts:154  parameter_lfo RULE-4
+  ...
+For each, write the proof with purlin:spec, put the comment above the test, and take the old tag out.
+```
+
+The line number is the old tag's own, in the file as it stands. Over 20 tests, the first 20 are
+listed and the rest counted. `purlin:sign` refuses while one remains.
 
 ## With a name
 
@@ -131,3 +151,4 @@ The next step is the first line of `Left to do`. Add no line of your own; a
 | `<n> rules to test on <systems>` | `→ Run purlin:test on <systems>`. It is an instruction, not a command line: do as `skills/test/SKILL.md`, Step 5 says |
 | `<n> features whose results are not committed` | `→ Run: purlin:test --commit` |
 | `Every rule passes its tests on the committed evidence. To sign it: purlin:sign` | `→ Run: purlin:sign`, when a person chooses to sign |
+| `Every rule passes its tests on the committed evidence. Before a sign-off, run <command>: ...` | `→ Run: <command>`. `purlin:sign` refuses these results as they stand: some were taken on an earlier version of the code, or while files were changed and not committed |

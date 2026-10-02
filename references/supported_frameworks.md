@@ -58,7 +58,7 @@ frameworks is suggested an entry for each, one suite per entry under `tests`.
 
 Each entry is written under `tests` in `.purlin/config.json`. `{report}` is where Purlin wants
 the report, and `{files}` is replaced by the test files that carry a marker of the features a
-run covers; `--all` covers every feature, so it hands over every marked file. In the jest entry `{files}` comes before `--reporters`, because
+run covers; `--all` covers every feature, so it hands over every marked file. A test file with no marker is never handed over, and a run with `--all` prints how many the `files` patterns match: `12 test files carry no marker and were not run.` In the jest entry `{files}` comes before `--reporters`, because
 jest reads every word after that option as another reporter.
 
 One limit holds. Windows refuses a command line longer than 32,767 characters, and Linux one

@@ -904,6 +904,10 @@ def _touched_project(tmp_path, names=('login', 'export')):
     """
     root = _pytest_project(tmp_path, body='')
     (root / 'tests' / 'test_feat.py').unlink()
+    # What `purlin:init` has git ignore, so a run leaves nothing uncommitted
+    # and its results are ones a sign-off counts.
+    (root / '.gitignore').write_text('.purlin/runtime/\n__pycache__/\n'
+                                     '.pytest_cache/\n', encoding='utf-8')
     (root / 'src').mkdir()
     for name in names:
         (root / 'src' / ('%s.py' % name)).write_text(
@@ -2154,13 +2158,17 @@ class TestAMarkerFrom095StillInATest:
         _git_repo(root)
         code, output = _run(root, '--all', '--test')
         lines = output.splitlines()
-        said = ('1 test still carries a marker from Purlin 0.9.5, which is '
-                'not read: tests/test_feat.py:6. For each, write the proof '
-                'with purlin:spec, put the comment above the test, and take '
-                'the old tag out.')
+        said = ['1 test still carries a marker from Purlin 0.9.5, which is '
+                'not read:',
+                '  tests/test_feat.py:6  feat RULE-1',
+                'For each, write the proof with purlin:spec, put the comment '
+                'above the test, and take the old tag out.']
         assert code == 0, output
-        assert lines.count(said) == 1, output
-        assert lines.index(said) > next(
+        assert lines.count(said[0]) == 1, output
+        at = lines.index(said[0])
+        assert lines[at:at + 3] == said, output
+        assert output.count('a marker from Purlin 0.9.5') == 1, output
+        assert at > next(
             index for index, line in enumerate(lines)
             if line.startswith('Purlin status:')), output
 
@@ -2218,3 +2226,74 @@ class TestWhatCommitLeftUncommitted:
         lines = self._checkout(tmp_path, [])
         assert not [line for line in lines
                     if 'still not committed' in line], lines
+
+
+# ---------------------------------------------------------------------------
+# The test files a full run leaves out
+# ---------------------------------------------------------------------------
+
+def _with_unmarked(tmp_path, count):
+    """A project whose one marked test passes, beside `count` test files
+    that carry no marker and whose test fails."""
+    root = _pytest_project(tmp_path)
+    for index in range(1, count + 1):
+        (root / 'tests' / ('test_plain_%02d.py' % index)).write_text(
+            'def test_plain():\n    assert False\n', encoding='utf-8')
+    _spec(root, 'feat')
+    return root
+
+
+class TestTheTestFilesAFullRunLeavesOut:
+
+    # purlin: run_script PROOF-303
+    def test_twelve_are_counted_under_the_markers_line(self, tmp_path):
+        root = _with_unmarked(tmp_path, 12)
+        code, output = _run(root, '--all', '--test')
+        lines = output.splitlines()
+        at = lines.index('Markers: 1 tied to a test, 0 not tied.')
+        assert lines[at + 1] == ('12 test files carry no marker and were '
+                                 'not run.'), output
+        assert code == 0, output
+        running = [line for line in lines if line.startswith('Running ')]
+        assert len(running) == 1 and 'tests/test_feat.py' in running[0], output
+        assert 'test_plain' not in running[0], output
+
+    # purlin: run_script PROOF-304
+    def test_one_reads_carries(self, tmp_path):
+        root = _with_unmarked(tmp_path, 1)
+        _code, output = _run(root, '--all', '--test')
+        lines = output.splitlines()
+        at = lines.index('Markers: 1 tied to a test, 0 not tied.')
+        assert lines[at + 1] == ('1 test file carries no marker and was not '
+                                 'run.'), output
+
+    # purlin: run_script PROOF-305
+    def test_with_none_nothing_is_said(self, tmp_path):
+        root = _with_unmarked(tmp_path, 0)
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        assert 'no marker' not in output, output
+
+    # purlin: run_script PROOF-306
+    def test_a_run_without_all_says_nothing(self, tmp_path):
+        root = _with_unmarked(tmp_path, 12)
+        code, output = _run(root, '--feature', 'feat', '--test')
+        assert code == 0, output
+        assert 'no marker' not in output, output
+
+    # purlin: run_script PROOF-307
+    def test_a_suite_started_whole_runs_them_and_counts_none(self, tmp_path):
+        whole = suites.pytest_suite()
+        whole['run'] = whole['run'].replace('{files}', 'tests')
+        root = _project(tmp_path, tests=[whole])
+        (root / 'tests').mkdir()
+        (root / 'tests' / 'test_feat.py').write_text(
+            '# purlin: feat PROOF-1\ndef test_ok():\n    pass\n',
+            encoding='utf-8')
+        (root / 'tests' / 'test_plain_01.py').write_text(
+            'def test_plain():\n    pass\n', encoding='utf-8')
+        _spec(root, 'feat')
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        assert _ran(root) == ['test_ok', 'test_plain'], output
+        assert 'no marker' not in output, output

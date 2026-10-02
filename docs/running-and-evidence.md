@@ -103,6 +103,10 @@ The run takes three steps:
 As each suite starts the run prints `Running <suite>: <the command as run>`, so a long run
 shows where it is.
 
+A test file with no marker comment is never run, under `--all` too. A run with `--all` counts
+the ones the `files` patterns of the `tests` setting match, after the `Markers:` line:
+`12 test files carry no marker and were not run.`
+
 A project with one feature and three marked tests, run with `--all --commit`, reads:
 
 ```
@@ -202,6 +206,18 @@ met. While a rule fails, has no test or waits for a run, the list names that wor
 
 Where the tests are met and this code is not signed, the run's last line reads
 `Every rule passes its tests on the committed evidence. To sign it: purlin:sign`.
+
+A sign-off counts only results taken on this version of the code, with nothing uncommitted.
+Where every rule passes and some result is not one of those, the last line names the run to
+make first:
+
+```
+Every rule passes its tests on the committed evidence. Before a sign-off, run purlin:test --all --commit: a sign-off counts only results taken on this version of the code.
+```
+
+That happens after a commit that changes a file outside `.purlin/`, such as a `--commit` run
+of one feature, and for a slow result a plain run kept. Results from a project's own run on
+another system read `run purlin:test on Windows` in place of the command.
 
 A test run exits on the tests alone:
 
