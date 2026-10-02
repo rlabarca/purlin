@@ -64,6 +64,7 @@ of the code, so most name the run that takes them again:
 ```
 No sign-off: 2 files are changed and not committed. Commit them or set them aside, then run purlin:sign again.
 No sign-off: the evidence is written and not committed. Run purlin:test --commit, then purlin:sign.
+No sign-off: 9 tests still carry a marker from Purlin 0.9.5, which is not read. Run purlin:status to see each, rewrite them, then purlin:sign.
 No sign-off: signed/2.1.0 names a commit that holds no evidence package for 2.1.0, so purlin:sign did not write it. Delete it: git tag -d signed/2.1.0, and git push origin --delete signed/2.1.0 if it was pushed. Then run purlin:sign again.
 No sign-off: signed/2.1.0 is at 3c9d2e1, which this checkout does not hold. Pull, then run purlin:sign.
 No sign-off: signed/2.1.0 is at 3c9d2e1, and the code has changed since. To sign this code, name a new version: purlin:sign --version <version>.
@@ -85,6 +86,8 @@ run the walk again.
 - The script never fetches.
 - The first line counts tracked files alone, and reads `1 file is` for one. A file git does not
   track stops nothing.
+- The 0.9.5 line reads `1 test still carries` for one. `purlin:status` names each test and its
+  rule.
 - A tag typed by hand is no sign-off, and the script signs nothing while one stands for the
   version. **Stop and ask** before you delete a tag. The line names the remote only where the
   checkout has one, and the script does not know whether the tag was pushed.
