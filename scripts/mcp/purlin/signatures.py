@@ -374,8 +374,12 @@ def _fingerprint_of(public_key):
     return 'SHA256:' + digest.rstrip('=')
 
 
-def hand_notes(project_root):
-    """`{(feature, rule): [reason]}` from the newest sign-off holding a note on each rule.
+def hand_notes(project_root, features=None):
+    """`{(feature, rule): {'notes': [line, ...], 'changed': [...]}}` from the newest
+    sign-off that counts and holds a note on each rule. `notes` are `states.HAND_NOTE`
+    lines. `changed` names what was reworded since that sign-off's package was built,
+    `'rule'` then `'proof'`; it is always `[]` here. `features` is
+    `specs.scan_specs`' answer; None reads it.
 
     Every sign-off HEAD holds, of every version, is read, whatever code it
     was taken on, and only one that counts is shown. Each note becomes
@@ -406,9 +410,11 @@ def hand_notes(project_root):
                 continue
             if rel not in distances:
                 distances[rel] = _distance(project_root, version, rel)
-            found[key] = [states.HAND_NOTE % (version, data.get('signer'),
+            found[key] = {
+                'notes': [states.HAND_NOTE % (version, data.get('signer'),
                                               distances[rel], note)
-                          for note in notes]
+                          for note in notes],
+                'changed': []}
     return found
 
 

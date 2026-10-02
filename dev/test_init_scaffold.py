@@ -907,7 +907,8 @@ def sign_off(walk):
     walk.facts['key ending'] = fingerprint[-4:]
     walk.facts['branch'] = walk.git('rev-parse', '--abbrev-ref', 'HEAD')
     answers = os.path.join(os.path.dirname(walk.root), 'answers.json')
-    write(answers, json.dumps({'audit': 'go on', 'stops': {}, 'sign': True}))
+    write(answers, json.dumps({'audit': 'go on', 'stops': {},
+                               'sign': 'jane@acme.com'}))
     walk.sign('sign', '--answers', answers)
     walk.facts['signed commit'] = git(walk.root, 'cat-file', 'commit',
                                       'HEAD').stdout

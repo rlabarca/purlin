@@ -140,7 +140,7 @@ Write the answers to `.purlin/runtime/signoff-answers.json`, each stop keyed `<f
 {"audit": "go on",
  "stops": {"accession_screen RULE-1": {"answer": "note", "note": "the tube is red"},
            "sample_age RULE-6": {"answer": "note", "note": ""}},
- "sign": true}
+ "sign": "quinn.qa@labconnect.example"}
 ```
 
 `audit` is `list` or `go on`. A hand check takes `note` with the line seen, empty for no note, or

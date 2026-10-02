@@ -224,7 +224,7 @@ the walk in two calls.
 ```json
 {"audit": "go on",
  "stops": {"login RULE-2": {"answer": "note", "note": "the wording matches the guide"}},
- "sign": true}
+ "sign": "quinn.qa@labconnect.example"}
 ```
 
 The walk then runs with those answers and prints the same lines. A stop with no answer in the

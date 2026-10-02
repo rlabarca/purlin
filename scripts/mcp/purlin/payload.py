@@ -215,7 +215,7 @@ def build_payload(project_root, generated_by='sync_status', config=None,
         project_root, name, features) for name in sorted(features)}
     head = head_sha(project_root)
     here_os = evidence_module.host_os()
-    notes = signatures_module.hand_notes(project_root)
+    notes = signatures_module.hand_notes(project_root, features)
 
     # Which proofs have a test is read from the markers in the test files,
     # not from the evidence: a marked test that has not run yet is a test.
@@ -328,9 +328,10 @@ def _feature_entry(project_root, name, info, evidence, sources,
     marked = {rule for feature, rule in (tied or ()) if feature == name}
     broken = spec_broken(info)
     for rule_id in info.get('rule_order') or ():
+        noted = (hand_notes or {}).get((name, rule_id)) or {}
         result = _rule_entry(
             project_root, name, info, rule_id, own, sources, marked, here_os,
-            broken, (hand_notes or {}).get((name, rule_id)))
+            broken, noted.get('notes'), noted.get('changed'))
         rule_entries.append(result)
         summary = {'bucket': result['bucket'], 'flags': result['flags']}
         rule_results[(name, rule_id)] = summary
@@ -484,7 +485,7 @@ def _evidence_map(evidence):
 
 def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
                 sources, marked=None, here_os=None, broken=None,
-                hand_notes=None):
+                hand_notes=None, hand_changed=None):
     text = owner_info['rules'].get(rule_id, '')
     anchor = bool(owner_info.get('is_anchor'))
     proof_ids = owner_info.get('proofs_by_rule', {}).get(rule_id, [])
@@ -532,6 +533,8 @@ def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
         'marked': marked or set(),
         # What the newest sign-off holding a note on this rule noted.
         'hand_notes': list(hand_notes or ()),
+        # What was reworded since that note: 'rule', 'proof'.
+        'hand_changed': list(hand_changed or ()),
         # Why the rule's own spec is broken, which fails it.
         'spec_broken': list(broken or ()),
     })

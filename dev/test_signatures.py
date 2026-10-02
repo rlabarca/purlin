@@ -1381,7 +1381,7 @@ class TestTheAgent:
             'audit': 'go on',
             'stops': {'login RULE-2': {'answer': 'note',
                                        'note': 'the lockout page read 401'}},
-            'sign': True}))
+            'sign': EMAIL}))
         code = sign_module.main(['--answers', path, '--project-root',
                                  hand_checked.root])
         lines = capsys.readouterr().out.splitlines()
@@ -1413,7 +1413,7 @@ class TestTheAgent:
     def test_a_stop_with_no_answer_is_refused(self, hand_checked, capsys,
                                               monkeypatch):
         write(os.path.join(hand_checked.root, *ANSWERS.split('/')),
-              json.dumps({'audit': 'go on', 'stops': {}, 'sign': True}))
+              json.dumps({'audit': 'go on', 'stops': {}, 'sign': EMAIL}))
         monkeypatch.chdir(hand_checked.root)
         before = hand_checked.head()
         code = sign_module.main(['--answers', ANSWERS])

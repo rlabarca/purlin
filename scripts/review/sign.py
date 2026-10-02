@@ -643,15 +643,17 @@ def _systems(names):
 
 
 def last_notes(project_root):
-    """`{(feature, rule): [line]}`: each hand check's last note, from the same
-    source and in the same words as the dashboard shows it."""
+    """`{(feature, rule): {'notes': [line], 'changed': [...]}}`: each hand
+    check's last note, from the same source and in the same words as the
+    dashboard shows it, and what was reworded since."""
     return signatures_module.hand_notes(project_root)
 
 
 def plan(package, notes=None):
     """What the walk shows: the overview's numbers, the weak rules and the stops.
 
-    `notes` is what `last_notes` gives; each stop carries its rule's lines."""
+    `notes` is what `last_notes` gives; each stop carries its rule's lines
+    as `last_notes` and what was reworded since them as `changed`."""
     notes = notes or {}
     rules = package_rules(package)
     per_system = {}
@@ -669,10 +671,11 @@ def plan(package, notes=None):
             weak.append({'feature': feature, 'rule': rule.get('id'),
                          'entry': rule})
         if _hand_check(rule):
+            noted = notes.get((feature, rule.get('id'))) or {}
             stops.append({'feature': feature, 'rule': rule.get('id'),
                           'entry': rule,
-                          'last_notes': list(notes.get(
-                              (feature, rule.get('id'))) or ())})
+                          'last_notes': list(noted.get('notes') or ()),
+                          'changed': list(noted.get('changed') or ())})
     audit = package.get('audit') or {}
     keys = [key for key, _word in summary_module.AUDIT_WORDS]
     audited = any(audit.get(key) for key in keys if key != 'not_audited')
@@ -1064,8 +1067,15 @@ def missing_answer(answers, stops):
     return None
 
 
-def answers_ask(answers, out):
-    """An `ask` that reads the answers file and prints each answer after its question."""
+def answers_ask(answers, out, email):
+    """An `ask` that reads the answers file and prints each answer after its question.
+
+    The last question is answered yes only where `sign` is a string equal to
+    `email`, the signer's address, case and outer spaces set aside."""
+    signer = str(email or '').strip().lower()
+    typed = answers.get('sign')
+    signs = (isinstance(typed, str) and bool(signer)
+             and typed.strip().lower() == signer)
     audit = str(answers.get('audit') or 'go on').strip().lower()
 
     def ask(kind, key, prompt):
@@ -1078,7 +1088,7 @@ def answers_ask(answers, out):
             given = ('stop' if one.get('answer') == 'stop'
                      else str(one.get('note') or ''))
         else:
-            given = 'y' if answers.get('sign') is True else 'n'
+            given = 'y' if signs else 'n'
         print('%s%s' % (prompt, given), file=out)
         return given
     return ask
@@ -1104,7 +1114,8 @@ def walk_with_answers(project_root, path, name=None, out=None):
     if missing:
         print(ANSWERS_MISSING % (missing, path, path), file=out)
         return EXIT_NOTHING
-    return _walk(project_root, info, answers_ask(answers, out), out)
+    return _walk(project_root, info,
+                 answers_ask(answers, out, info['email']), out)
 
 
 def check(path, out=None):

@@ -353,7 +353,7 @@ class Person(object):
         self.write(rel, json.dumps({
             'audit': 'go on',
             'stops': {HAND_CHECK: {'answer': 'note', 'note': ''}},
-            'sign': True}))
+            'sign': self.email}))
         return rel
 
     def set_up_the_key(self, printed):

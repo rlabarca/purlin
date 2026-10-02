@@ -75,7 +75,8 @@ def test_a_sign_off_writes_the_data_file_naming_the_sign_off(capsys):
                                'signoff-answers.json')
         os.makedirs(os.path.dirname(answers), exist_ok=True)
         with open(answers, 'w', encoding='utf-8') as handle:
-            json.dump({'audit': 'go on', 'stops': {}, 'sign': True}, handle)
+            json.dump({'audit': 'go on', 'stops': {},
+                       'sign': 'jane@acme.com'}, handle)
         code = sign_module.main(['--answers', answers, '--version', '1.0.0',
                                  '--project-root', made.root])
         assert code == 0, capsys.readouterr().out
