@@ -730,3 +730,43 @@ def test_the_changed_file_keeps_its_crlf_line_ends(tmp_path, own_claude):
         held = handle.read()
     assert held == CRLF_AGE.replace(b'return 0', b'return 1')
     assert held.count(b'\r\n') == held.count(b'\n') == 12
+
+
+# The sequences a terminal obeys: clear the screen, red text, and the bell.
+CLEAR, RED, BELL = '\x1b[2J', '\x1b[31m', '\x07'
+
+
+# purlin: planted_bug PROOF-44
+def test_a_case_is_printed_and_kept_without_its_escape_sequences(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': WEAK})
+    case = 'a stamp of 2026-01-01 %s%sgives 0%s' % (CLEAR, RED, BELL)
+    fake_claude.install(own_claude, answers=[
+        {'PROOF-1': part('    return days', '    return 0', case=case)}])
+    code, lines, _before, after = audit(root)
+    assert code == 0
+    assert '  PROOF-1: the AI says this breaks: a stamp of 2026-01-01 gives 0' in lines, lines
+    assert bug_of(after)['case'] == 'a stamp of 2026-01-01 gives 0'
+    assert json.loads(after)['audit']['rules']['RULE-1']['findings'][1] == (
+        'PROOF-1: the AI says this breaks: a stamp of 2026-01-01 gives 0')
+
+
+# purlin: planted_bug PROOF-45
+def test_a_no_break_reason_is_printed_without_its_escape_sequences(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    fake_claude.install(own_claude, answers=[
+        {'PROOF-1': 'no break: the test %schecks the case%s\n' % (CLEAR, BELL)}])
+    code, lines, _before, after = audit(root)
+    assert code == 0
+    assert found_none('the test checks the case') in lines, lines
+    assert bug_of(after)['why'] == 'the test checks the case'
+
+
+# purlin: planted_bug PROOF-46
+def test_a_file_value_is_read_without_its_escape_sequences(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    fake_claude.install(own_claude, answers=[
+        {'PROOF-1': part('    return days', '    return 0', path='src/%sage.py' % RED)}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['file'] == 'src/age.py'
+    assert bug_of(after)['result'] == 'caught', bug_of(after)

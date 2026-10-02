@@ -13,8 +13,8 @@
 >   and after the last bug stops the audit if the project changed.
 > Scope: scripts/review/targeted_break.py
 > Stack: python/stdlib (subprocess, tempfile, hashlib, shutil)
-> Highest-Rule: 22
-> Highest-Proof: 43
+> Highest-Rule: 23
+> Highest-Proof: 46
 
 ## Rules
 
@@ -37,6 +37,7 @@
 - RULE-20: A part reads as naming no bug where its first line, or the first line after its `aim:` and `case:` lines, reads `no break: <why>`: the result reads `not made`, and its reason is the rest of that one line, whatever lines follow it
 - RULE-21: Blank lines between the last line under `before:` and the line `after:` are no part of the change: the lines the change replaces end with the last line that is not blank
 - RULE-22: The lines under `before:` match a file whose lines end CRLF as they match one whose lines end LF, and the changed file keeps CRLF at the end of every line
+- RULE-23: Terminal escape sequences and control characters are removed from a part's `case:` line, from its `file:` value and from a `no break` reason before any of them is recorded or printed
 
 ## Proof
 
@@ -81,3 +82,6 @@
 - PROOF-41 (RULE-21): The part for `PROOF-1` holds `days = minutes(stamp)` under `before:`, then one empty line, then `after:` and `days = 0`, and the test of `PROOF-1` expects an age of `90`; the bug's entry reads `caught`
 - PROOF-42 (RULE-22): Every line of `src/age.py` ends CRLF, the model's change names two lines, `if stamp == "":` and `return 0`, and turns the second into `return 1`, and the test of `PROOF-1` expects an age of `0` for an empty stamp; the bug's entry reads `caught`, at line `11`
 - PROOF-43 (RULE-22): Every one of the 12 lines of `src/age.py` ends CRLF and the same two-line change is planted; the `src/age.py` the test of `PROOF-1` runs against reads `return 1` and still ends each of its 12 lines CRLF
+- PROOF-44 (RULE-23): The `case:` line reads `a stamp of 2026-01-01 `, then the escape sequences that clear a terminal's screen and turn its text red, then `gives 0` and a bell character, and the bug survives; the audit prints `  PROOF-1: the AI says this breaks: a stamp of 2026-01-01 gives 0`, and the entry's `case` reads `a stamp of 2026-01-01 gives 0`
+- PROOF-45 (RULE-23): The part reads `no break: the test checks the case`, with the escape sequence that clears a terminal's screen before `checks` and a bell character at its end; the audit prints `  The spot tests found nothing. No bug was planted: the model found no change that would break PROOF-1: the test checks the case.`
+- PROOF-46 (RULE-23): The part's `file:` value reads `src/age.py` with the escape sequence that turns a terminal's text red between `src/` and `age.py`; the bug's entry reads `file` `src/age.py`, and the bug is planted and reads `caught`

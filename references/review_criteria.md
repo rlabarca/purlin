@@ -202,7 +202,7 @@ proof says. The reason is that one line; an `aim:` line may stand above it.
   word, or no `aim:` line, is recorded `plain`.
 - `case:` is one line: the proof's case, the result the proof names and the result the changed
   code gives. It is the model's claim, and the audit does not check it. It is kept as written,
-  up to 300 characters.
+  up to 300 characters, without control characters and terminal escape sequences.
 
 The change is made in a copy of the project, never in the project itself. Only the proof's own
 tests run there, once before the change and once with it in place, and the copy is deleted

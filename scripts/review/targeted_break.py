@@ -93,6 +93,11 @@ _OWN_WORDS = (NO_CHANGE, NO_CASE, ONLY_COMMENT, OUTSIDE, NOT_IN_SCOPE, NO_FILE, 
 _NO_BREAK_RE = re.compile(r'^[ \t]*no break:(.*)$')
 _CHANGE_RE = re.compile(r'^file:[ \t]*(?P<file>[^\n]+?)[ \t]*\nbefore:[ \t]*\n(?P<before>.*?)\n'
                         r'after:[ \t]*\n?(?P<after>.*)$', re.S)
+# What a terminal obeys and a person does not read: an escape sequence, then any
+# other control character.
+_ESCAPE_RE = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)?'
+                        r'|\x1b[@-_]?')
+_CONTROL_RE = re.compile(r'[\x00-\x1f\x7f-\x9f]')
 _AIM_RE = re.compile(r'^aim:(.*)$')
 _CASE_RE = re.compile(r'^case:(.*)$')
 
@@ -116,12 +121,19 @@ class _Refused(Exception):
     """A write to a path outside the copy."""
 
 
+def shown(text):
+    """`text` as it is printed and stored: without escape sequences and control
+    characters, outer spaces cut."""
+    return _CONTROL_RE.sub('', _ESCAPE_RE.sub('', str(text or ''))).strip()
+
+
 def parse_answer(text):
     """`('change', file, before, after, aim, case)`, `('no break', why)`, or None for
     anything else. `aim` and `case` are read from the lines `aim:` and `case:` that
     open the part: `aim` is `past the test` or `plain`, and `plain` for any other
     word or no such line; `case` is its line with outer spaces cut, at most `CASE_LIMIT`
-    characters, and `''` where there is no such line. Where the next line reads
+    characters, and `''` where there is no such line. `case`, the file's path and
+    `why` are each as `shown` gives them. Where the next line reads
     `no break: <why>`, the part names no bug, and `why` is that one line's."""
     text = (text or '').strip('\n')
     lines = text.split('\n')
@@ -137,19 +149,19 @@ def parse_answer(text):
             aim = (PAST_THE_TEST if said.group(1).strip().lower() == PAST_THE_TEST
                    else PLAIN)
         elif named:
-            case = named.group(1).strip()[:CASE_LIMIT]
+            case = shown(named.group(1))[:CASE_LIMIT]
         elif head.strip():
             break
         lines.pop(0)
     found = _NO_BREAK_RE.match(lines[0]) if lines else None
-    if found and found.group(1).strip():
-        return ('no break', found.group(1).strip())
+    if found and shown(found.group(1)):
+        return ('no break', shown(found.group(1)))
     found = _CHANGE_RE.match('\n'.join(lines).strip('\n'))
     if not found or not found.group('before').strip():
         return None
     # Blank lines between the lines before and `after:` are no part of the change.
     before = re.sub(r'(\n[ \t]*)+$', '', found.group('before'))
-    return ('change', found.group('file').strip(), before,
+    return ('change', shown(found.group('file')), before,
             found.group('after').rstrip('\n'), aim, case)
 
 
