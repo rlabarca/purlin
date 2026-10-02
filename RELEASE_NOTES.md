@@ -86,6 +86,8 @@ In more words:
   `strong`. Only a test that ran and failed caught a bug. Otherwise the rule reads
   `spot-checked`, with the reason. The audit ends on
   `The audit found 4 of 5 rules strong (80%): 4 strong, 1 weak.`
+  `purlin:build` settles a weak rule with a test run: it strengthens the test, replays the bug
+  the test missed, and the rule reads `strong` once the test catches it.
 - **The sign-off.** `purlin:sign` reads the committed evidence, names who ran the tests, where
   and when, builds `.purlin/evidence/package/<version>.json`, and walks it: an overview, the
   audit's findings as a list you may open, and one stop per hand check, where you may type what
