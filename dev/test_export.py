@@ -69,6 +69,16 @@ SPEC_WITH_A_THIRD_RULE = SPEC.replace(
     '\n\n## Proof',
     '\n- RULE-3: A locked account returns 423 (URS-042)\n\n## Proof')
 
+# Four rules: two tested, a third tested and never audited, a fourth checked
+# by hand alone.
+FOUR_RULES_SPEC = SPEC.replace(
+    '\n\n## Proof',
+    '\n- RULE-3: A locked account returns 423\n'
+    '- RULE-4: The lockout page says how long the lock lasts\n\n## Proof'
+) + ('- PROOF-3 (RULE-3): POST /login to a locked account; verify 423\n'
+     '- PROOF-4 (RULE-4): Read the lockout page against the support guide '
+     '@manual\n')
+
 # `PROOF-2` is a hand check, and no test carries it.
 MANUAL_SPEC = SPEC.replace('verify 401 and the body "denied"',
                            'verify 401 and the body "denied" @manual')
@@ -579,6 +589,55 @@ class TestTheContent:
             assert signed_package(made)['hand_checks'] == [
                 {'feature': 'login', 'rule': 'RULE-2', 'proofs': ['PROOF-2'],
                  'checked': 'in the sign-offs'}]
+        finally:
+            made.close()
+
+    # purlin: package PROOF-82
+    def test_the_audit_counts_only_rules_that_pass_and_have_a_tested_proof(
+            self):
+        made = Project(spec=FOUR_RULES_SPEC)
+        try:
+            made.edit_test(TEST_FILE + (
+                '\n\n# purlin: login PROOF-3\n'
+                'def test_a_locked_account_returns_423():\n'
+                '    assert True\n'))
+            write(os.path.join(made.root, 'VERSION'), '2.1.0\n')
+            commit_all(made, 'chore: version')
+            section(made, [(proof_id, 'RULE-%s' % proof_id[-1], 'pass', name,
+                            None) for proof_id, name in (
+                                ('PROOF-1', TEST_NAMES['PROOF-1']),
+                                ('PROOF-2', TEST_NAMES['PROOF-2']),
+                                ('PROOF-3',
+                                 'test_a_locked_account_returns_423'))],
+                    {'RULE-1': 'passed', 'RULE-2': 'passed',
+                     'RULE-3': 'passed', 'RULE-4': 'passed'})
+            made.audit('RULE-1')
+            made.audit('RULE-2')
+            commit_all(made)
+            key(made.root)
+            package = signed_package(made)
+            assert package['rules'] == 4
+            assert package['audit'] == {
+                'strong': 2, 'weak': 0, 'spot_checked': 0, 'out_of_date': 0,
+                'not_audited': 1}
+        finally:
+            made.close()
+
+    # purlin: package PROOF-83
+    def test_a_rule_checked_by_hand_alone_never_reads_passed(self):
+        made = made_project(spec=MANUAL_SPEC, test_file=MANUAL_TEST_FILE,
+                            strong=())
+        try:
+            evidence = json.loads(git_bytes(
+                made.root, 'show',
+                'HEAD:.purlin/evidence/local/login.json').decode('utf-8'))
+            assert evidence['platforms']['linux']['rules']['RULE-2'] == 'passed'
+            package = signed_package(made)
+            assert [result['result'] for result
+                    in rule_of(package, 'RULE-2')['results']] == [
+                'checked at sign-off']
+            assert [result['result'] for result
+                    in rule_of(package, 'RULE-1')['results']] == ['passed']
         finally:
             made.close()
 

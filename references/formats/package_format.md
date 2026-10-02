@@ -1,4 +1,4 @@
-> Format-Version: 11
+> Format-Version: 12
 
 # Package format
 
@@ -73,8 +73,8 @@ built at the tag again reads the same commit.
   "schema": "purlin-package/4",
   "met": true,
   "rules": 42,
-  "steps": {"passed": 42},
-  "audit": {"not_audited": 4, "out_of_date": 1, "spot_checked": 3,
+  "steps": {"passed": 41},
+  "audit": {"not_audited": 3, "out_of_date": 1, "spot_checked": 3,
             "strong": 32, "weak": 2},
   "left": [
     {"command": "purlin:build", "count": 2, "kind": "to_strengthen",
@@ -109,8 +109,8 @@ Whether the tests are met is the first thing a reader sees after the schema.
 | `schema` | string | `purlin-package/4` |
 | `met` | bool | true when no line of `left` is of a kind that stops the tests being met. See "Met" |
 | `rules` | int | the rules of the project, each counted once under the feature that owns it |
-| `steps` | object | `{"passed": p}`: the rules whose tests pass, a hand check included |
-| `audit` | object | `{"strong", "weak", "spot_checked", "out_of_date", "not_audited"}`: every rule counted once, by the word its `strong` status reads: `strong`, `weak`, `spot-checked` or `out of date`, and under `not_audited` for any other word, since no audit answers for the rule |
+| `steps` | object | `{"passed": p}`: the rules whose `passed` status reads `passed` |
+| `audit` | object | `{"strong", "weak", "spot_checked", "out_of_date", "not_audited"}`, as `purlin:status` counts them: the rules that pass their tests and have a tested proof, each counted once under the word its `strong` status reads, `strong`, `weak`, `spot-checked`, `out of date` or `not audited`. A rule whose `passed` status does not read `passed` is in none of the five, and neither is a rule checked by hand, whose `strong` status reads `checked at sign-off` |
 | `left` | array | the lines of `Left to do`, in the order the work is done: `{kind, count, text, command}` each. See "What is left" |
 | `purlin_version` | string | the version of Purlin that wrote the package |
 | `project` | string | the name the project's own files give it, read when the package is built: `name` under `[project]` or `[tool.poetry]` in `pyproject.toml`, `name` in `package.json`, the first root `*.csproj` file's name, the last segment of the `origin` remote, else the folder's name |
@@ -160,7 +160,7 @@ A feature entry holds exactly these five fields.
 | `tests` | array | `{proof, file, name}` per test backing a proof, then per test marked with the rule's own id, whose `proof` is then the `RULE-N` |
 | `results` | array | one entry per evidence section that holds a result for the rule, ordered by operating system then source. See below |
 | `audit` | object or null | what the audit last found for the rule, which may be out of date. Null where no audit has read it |
-| `statuses` | object | `{"passed": {word, reasons}, "strong": {word, reasons}}`. `strong` is what the audit found, and nothing waits on it: its word reads `strong`, `weak`, `spot-checked`, `out of date`, `not audited`, `checked at sign-off`, `no proof` or `waiting` |
+| `statuses` | object | `{"passed": {word, reasons}, "strong": {word, reasons}}`. `passed` reads `checked at sign-off` for a rule whose every proof is `@manual`, until a sign-off that counts has noted it on its wording as it stands, and then `passed`. `strong` is what the audit found, and nothing waits on it: its word reads `strong`, `weak`, `spot-checked`, `out of date`, `not audited`, `checked at sign-off`, `no proof` or `waiting` |
 | `authors` | object | who wrote and last changed the rule, its proofs and its tests. See "Authors" |
 
 Each `results` entry:
@@ -169,7 +169,7 @@ Each `results` entry:
 |---|---|---|
 | `os` | string | `windows`, `macos` or `linux` |
 | `source` | string | `local` or `ci` |
-| `result` | string | `passed`, `failed`, `no test` or `not run`, what that run saw for the rule |
+| `result` | string | `passed`, `failed`, `no test` or `not run`, what that run saw for the rule; `checked at sign-off` for a rule whose every proof is `@manual`, whatever word the run wrote, since no test runs for it |
 | `at` | string | when the run finished |
 | `commit` | string | the full sha the run's tests ran at |
 | `runner` | string | who ran it: the slug of the email the section records |
