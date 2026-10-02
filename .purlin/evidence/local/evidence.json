@@ -878,8 +878,8 @@
   "feature": "evidence",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T15:29:15Z",
-      "commit": "0cf0c983cdc2f5212a25a9b14a622756bedb00e6",
+      "at": "2026-10-02T15:32:06Z",
+      "commit": "c01fa69f8ba515e508fe5c4c40c18e099d276c01",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {

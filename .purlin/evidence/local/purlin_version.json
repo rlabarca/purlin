@@ -2,14 +2,14 @@
   "feature": "purlin_version",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T15:29:16Z",
-      "commit": "0cf0c983cdc2f5212a25a9b14a622756bedb00e6",
+      "at": "2026-10-02T15:32:07Z",
+      "commit": "c01fa69f8ba515e508fe5c4c40c18e099d276c01",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "232fa01f9502bb6afa4ecb1f386e4d7b7bc59c1ec39a43dfe72a3583534259a0",
-        "spec": "c465199a12edfa1e2aa9c16295f1e6b3445242a5452da6153126629a34fc0262",
-        "tests": "cecb34542ed2891c5bf2e6fb002a83c8cb08eb0e975ce671e5ce6dd9aee537a7"
+        "code": "55a23cd63a7b9a81a6d150cb039ed20ba441fc985aa0602f97864f18cd4f63a0",
+        "spec": "ec359b7b281610d4db6875143ff256fb84a3c9881442c25f9c4ffce45f7d7525",
+        "tests": "c161b365e6fab147a330970678e6ee19e9e236d7e3334e3820b83ab0a8cfbf51"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -76,6 +76,14 @@
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_purlin_version.py::test_the_bump_writes_the_version_file_and_both_json_files"
+        },
+        {
+          "env": null,
+          "id": "PROOF-39",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_purlin_version.py::test_the_bump_moves_the_docs_examples_tag_and_the_check_names_its_drift"
         },
         {
           "env": null,

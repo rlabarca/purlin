@@ -1050,14 +1050,14 @@
   "feature": "planted_bug",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T15:29:15Z",
-      "commit": "0cf0c983cdc2f5212a25a9b14a622756bedb00e6",
+      "at": "2026-10-02T15:32:06Z",
+      "commit": "c01fa69f8ba515e508fe5c4c40c18e099d276c01",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "0ca1dfd0dbae367f99d6314875996d386888d20634ae49a0404d112392484749",
         "spec": "cbf1246fdeedc85986d35ace9e056608dcafb34923533eace7ea6651b0a3e9e2",
-        "tests": "ae2427af0cf13ca2900f384082b8405a0824ee580abf267b181ca405568844fd"
+        "tests": "6df83dad38afcf8a51f9921260b6318f571b7e427cd6ce1eca1aa1520d0f807e"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -1459,7 +1459,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-27",
-          "test": "dev/test_planted_bug.py::test_a_kept_no_break_reason_is_still_the_models_when_read_again"
+          "test": "dev/test_planted_bug.py::test_a_kept_no_break_reason_prints_as_the_models_when_read_again"
         },
         {
           "env": null,
