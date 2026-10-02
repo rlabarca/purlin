@@ -10,7 +10,7 @@
 > Scope: scripts/init/update.py
 > Stack: python3 (stdlib only, 3.9 floor)
 > Highest-Rule: 56
-> Highest-Proof: 167
+> Highest-Proof: 168
 
 ## Rules
 
@@ -55,6 +55,7 @@
 - PROOF-94 (RULE-21): A sample v0.9.5 config naming the framework `xunit`, in a tree holding a test project that references xunit, gets only the dotnet suite `purlin:init` writes after the update with `--yes`; the output says `wrote the tests setting: dotnet` and drops nothing
 - PROOF-97 (RULE-21): A config already carrying a `tests` setting of its own, one suite named `pytest` running `pytest -q tests`, holds exactly that setting after the update with `--yes`, and the output drops nothing
 - PROOF-29 (RULE-29): A test file with two pytest `proof` marks of 0.9.5, the second above a `parametrize` decorator in a class, carries after the update with `--yes` `# purlin: login PROOF-1` and `# purlin: login PROOF-2` where the marks were, every other line as it was, and the output holds `rewrote 2 markers in tests/test_login.py as comments`
+- PROOF-168 (RULE-29): A test file carrying the 0.9.5 mark `@pytest.mark.proof("sample-age", "PROOF-1", "RULE-1")` carries after the update with `--yes` `# purlin: sample-age PROOF-1` where the mark was, and the output holds `rewrote 1 marker in tests/test_age.py as comments`
 - PROOF-109 (RULE-29): A shell script that loads the harness, calls it for `login` `PROOF-1` and closes it carries after the update with `--yes` `# purlin: login PROOF-1` under its first line and `:` in place of those three lines, and the output holds `rewrote 1 marker in tests/login.test.sh as comments; the file is one test now, and passes when it exits 0`
 - PROOF-30 (RULE-29): A test file whose line 3 is a module-wide `pytestmark` naming a proof, with one test marked the 0.9.5 way below it: after the update that test has `# purlin: login PROOF-1` directly above it, line 3 is unchanged, and the output holds `left tests/test_module.py:3 as it was: write the marker as a comment above each test by hand`
 - PROOF-83 (RULE-35): A `conftest.py` holding `import os` above the plugin's `pytest_plugins` line holds `import os` alone after the update with `--yes`
