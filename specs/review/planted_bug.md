@@ -13,8 +13,8 @@
 >   and after the last bug stops the audit if the project changed.
 > Scope: scripts/review/targeted_break.py
 > Stack: python/stdlib (subprocess, tempfile, hashlib, shutil)
-> Highest-Rule: 18
-> Highest-Proof: 31
+> Highest-Rule: 25
+> Highest-Proof: 49
 
 ## Rules
 
@@ -33,6 +33,13 @@
 - RULE-16: A part's `case:` line is kept as the model wrote it, with outer spaces cut and at most its first 300 characters
 - RULE-17: A part that names a change and holds no `case:` line, or an empty one, is not planted: the result reads `not made` with the reason `the answer named no case of the proof`, the audit prints `No bug was planted: the model's answer for <PROOF-N> could not be used: the answer named no case of the proof.`, and the proof's test is not run
 - RULE-18: A change that differs from the lines it replaces only in blank lines and comment lines is not planted: the result reads `not made` with the reason `the change touches only a comment`, the audit prints `No bug was planted: the model's answer for <PROOF-N> could not be used: the change touches only a comment.`, and the proof's test is not run; a comment line starts, after its indent, with `//` in any file or with `#` in a file ending `.py`, `.sh`, `.bash`, `.rb`, `.yml`, `.yaml` or `.toml`
+- RULE-19: A change whose code lines differ from the lines they replace only in a comment at the line's end is not planted either, with the same reason, `the change touches only a comment`: that comment starts, after a space, at `#` in a file ending `.py`, `.sh`, `.bash`, `.rb`, `.yml`, `.yaml` or `.toml` and at `//` in any other file, and a line that holds a quotation mark before it is read as code throughout. The check is narrow on purpose: a `/* */` comment, a docstring, a `--` comment and a comment in any other kind of file are read as code, so a change to one is planted
+- RULE-20: A part reads as naming no bug where its first line, or the first line after its `aim:` and `case:` lines, reads `no break: <why>`: the result reads `not made`, and its reason is the rest of that one line, whatever lines follow it
+- RULE-21: Blank lines between the last line under `before:` and the line `after:` are no part of the change: the lines the change replaces end with the last line that is not blank
+- RULE-22: The lines under `before:` match a file whose lines end CRLF as they match one whose lines end LF, and the changed file keeps CRLF at the end of every line
+- RULE-23: Terminal escape sequences and control characters are removed from a part's `case:` line, from its `file:` value and from a `no break` reason before any of them is recorded or printed
+- RULE-24: The words `aim:` and `case:` that open their lines are read in any letter case and after any spaces
+- RULE-25: The line the finding of a bug that survived names is the first line the change made different that is neither blank nor a comment line; where the change left no such line, it is the first line the change made different
 
 ## Proof
 
@@ -65,3 +72,21 @@
 - PROOF-29 (RULE-18): The feature covers `src/age.js`, and the model's change adds the one line `// planted` to it; the bug's entry reads `not made` with the reason `the change touches only a comment`
 - PROOF-30 (RULE-18): The feature covers `src/notes.txt`, and the model's change adds the one line `# 90` to it; the bug is planted, and its entry reads `survived`
 - PROOF-31 (RULE-18): The model's change turns `return days` into the two lines `# planted` and `return 0`; the bug is planted, and its entry reads `caught`
+- PROOF-32 (RULE-19): The model's change turns `return days` in `src/age.py` into `return days  # planted bug`; the audit prints `age RULE-1   spot-checked` and under it `  The spot tests found nothing. No bug was planted: the model's answer for PROOF-1 could not be used: the change touches only a comment.`, and the test of `PROOF-1` runs in no copy of the project
+- PROOF-33 (RULE-19): The feature covers `src/age.js`, and the model's change turns `return 90;` in it into `return 90; // planted`; the bug's entry reads `not made` with the reason `the change touches only a comment`
+- PROOF-34 (RULE-19): The model's change turns `if stamp == "":` into `if stamp == " #":`, and the test of `PROOF-1` expects an age of `0` for an empty stamp; the bug is planted, and its entry reads `caught`
+- PROOF-35 (RULE-19): `src/age.py` ends `return days // 1`, and the model's change turns it into `return days // 2`; the bug is planted, and its entry reads `caught`
+- PROOF-36 (RULE-19): The feature covers `src/age.js`, and the model's change turns `return 90;` in it into `return 90; /* planted */`; the bug is planted, and its entry reads `survived`
+- PROOF-37 (RULE-18): The feature covers `src/limits.yml`, and the model's change adds the one line `# planted` above `oldest: 90` in it; the bug's entry reads `not made` with the reason `the change touches only a comment`
+- PROOF-38 (RULE-18): The model's change adds one empty line above `return days` in `src/age.py` and nothing else; the bug's entry reads `not made` with the reason `the change touches only a comment`
+- PROOF-39 (RULE-20): The part for `PROOF-1` reads `aim: plain` and under it `no break: the test checks the case and its result`; the audit prints `age RULE-1   spot-checked` and under it `  The spot tests found nothing. No bug was planted: the model found no change that would break PROOF-1: the test checks the case and its result.`
+- PROOF-40 (RULE-20): The part for `PROOF-1` reads `no break: nothing here.` and under it a second line, `The code is a constant.`; the bug's entry reads `not made` with the reason `nothing here.`, and no line the audit prints holds `The code is a constant`
+- PROOF-41 (RULE-21): The part for `PROOF-1` holds `days = minutes(stamp)` under `before:`, then one empty line, then `after:` and `days = 0`, and the test of `PROOF-1` expects an age of `90`; the bug's entry reads `caught`
+- PROOF-42 (RULE-22): Every line of `src/age.py` ends CRLF, the model's change names two lines, `if stamp == "":` and `return 0`, and turns the second into `return 1`, and the test of `PROOF-1` expects an age of `0` for an empty stamp; the bug's entry reads `caught`, at line `11`
+- PROOF-43 (RULE-22): Every one of the 12 lines of `src/age.py` ends CRLF and the same two-line change is planted; the `src/age.py` the test of `PROOF-1` runs against reads `return 1` and still ends each of its 12 lines CRLF
+- PROOF-44 (RULE-23): The `case:` line reads `a stamp of 2026-01-01 `, then the escape sequences that clear a terminal's screen and turn its text red, then `gives 0` and a bell character, and the bug survives; the audit prints `  PROOF-1: the AI says this breaks: a stamp of 2026-01-01 gives 0`, and the entry's `case` reads `a stamp of 2026-01-01 gives 0`
+- PROOF-45 (RULE-23): The part reads `no break: the test checks the case`, with the escape sequence that clears a terminal's screen before `checks` and a bell character at its end; the audit prints `  The spot tests found nothing. No bug was planted: the model found no change that would break PROOF-1: the test checks the case.`
+- PROOF-46 (RULE-23): The part's `file:` value reads `src/age.py` with the escape sequence that turns a terminal's text red between `src/` and `age.py`; the bug's entry reads `file` `src/age.py`, and the bug is planted and reads `caught`
+- PROOF-47 (RULE-24): The part for `PROOF-1` opens with the line `  Aim: past the test`, two spaces before it, and then `CASE: a stamp of 2026-01-01; the proof says 90; the changed code gives 0`; the bug is planted and reads `caught`, and its entry reads `aim` `past the test` and `case` `a stamp of 2026-01-01; the proof says 90; the changed code gives 0`
+- PROOF-48 (RULE-25): The model's change turns `return days`, line 12 of `src/age.py`, into three lines, `# planted`, an empty line and `return 0`, and the test of `PROOF-1` still passes; the audit prints `  PROOF-1: the test still passes when src/age.py:14 reads "return 0"`
+- PROOF-49 (RULE-25): The model's change puts the line `# planted` above `days = minutes(stamp)`, leaves that line and the next as they were and turns `return 0` into `return 1`, and the test of `PROOF-1` still passes; the audit prints `  PROOF-1: the test still passes when src/age.py:12 reads "return 1"`

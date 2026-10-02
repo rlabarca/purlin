@@ -51,9 +51,10 @@ The audit found 42 of 50 rules strong (84%): 42 strong, 8 weak.
 - **Your code is never changed.** Every bug is planted in a copy, and the copy is thrown away.
 - **Nothing waits on it.** A weak rule is work to do, listed as `to strengthen`. The tests still
   read `met`, and a sign-off goes ahead.
-- **`strong` means a bug was caught.** If the AI cannot be reached, a rule the spot tests flag
-  is still `weak`. Every other rule reads `spot-checked`, with the reason, and the next
-  `purlin:audit` reads it again.
+- **`strong` means a bug was caught.** If the AI cannot be reached, bugs kept from earlier
+  audits still count: a rule the spot tests flag, or with a kept bug that survived, is still
+  `weak`, and a rule with neither and a kept bug that was caught is still `strong`. Every other
+  rule reads `spot-checked`, with the reason, and the next `purlin:audit` reads it again.
 - **The test run decides.** The AI writes the bug and says which case it breaks. Whether the
   bug was caught is the test's own pass or fail.
 - **A result goes out of date.** When a rule, its proof, its test or the code it covers changes,
@@ -188,7 +189,7 @@ is often wrong.
   of those calls were right.
 - A model's verdict can repeat and still be wrong: "High stability with high bias is a failure
   mode, not a strength."
-  ([Norman, Rivera and Hughes, 2026](https://arxiv.org/pdf/2606.19544), section 5.3.) Their 21
+  ([Norman, Rivera and Hughes, 2026](https://arxiv.org/pdf/2606.19544), section 5.3.) Their
   judges gave the same verdict on a rerun (0.943) and agreed only moderately with people (0.376
   to 0.511 once chance is removed).
 
@@ -207,8 +208,8 @@ to the original, took the share of harmless bugs found from 0.47 to 0.96
 ([Foster et al.](https://arxiv.org/pdf/2501.12862), section 5.3). A test that ends in an error
 with the bug in place is not a caught bug.
 
-**One bug per proof.** Google plants one per changed line and shows a few survivors
-([Petrović et al.](https://arxiv.org/pdf/2102.11378)). Meta keeps few and specific ones
+**One bug per proof.** Google plants at most one per changed line that a test covers and shows
+a few survivors ([Petrović et al.](https://arxiv.org/pdf/2102.11378)). Meta keeps few and specific ones
 ([Foster et al.](https://arxiv.org/pdf/2501.12862)). One request can ask for more: "using
 onemutation dramatically reduces the number of mutants from 6,712 to 2,333, demonstrating that
 it is helpful to request multiple suggestions" ([LLMorpheus](https://arxiv.org/pdf/2404.09952),

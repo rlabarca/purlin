@@ -28,8 +28,10 @@ reads `strong` when none did and a planted bug was caught by its proof's test. I
 `spot-checked` when none did and no bug was planted and caught; the entry then says why. Nothing
 else sets it: the model's reading never changes it.
 
-When the model cannot be reached for a rule, the spot tests still report what they find as
-`weak`, and a rule that passed them is written `spot-checked` and read again by the next audit.
+When the model cannot be reached for a rule, the spot tests and the bugs kept from earlier
+audits still set its verdict: a finding of the spot tests or a kept bug that survived reads
+`weak`, and a kept bug that was caught, with neither, reads `strong`. Any other rule is written
+`spot-checked` and read again by the next audit.
 
 ## Heuristic spot tests
 
@@ -196,13 +198,13 @@ after:
 ```
 
 or, under the same line, `no break: <why>` when no change to those files can break what the
-proof says.
+proof says. The reason is that one line; an `aim:` line may stand above it.
 
 - `aim:` reads `past the test`, or `plain` where the test leaves no way past it. Any other
   word, or no `aim:` line, is recorded `plain`.
 - `case:` is one line: the proof's case, the result the proof names and the result the changed
   code gives. It is the model's claim, and the audit does not check it. It is kept as written,
-  up to 300 characters.
+  up to 300 characters, without control characters and terminal escape sequences.
 
 The change is made in a copy of the project, never in the project itself. Only the proof's own
 tests run there, once before the change and once with it in place, and the copy is deleted
@@ -219,21 +221,27 @@ after.
   error its tool does not report as a failure, with the change in place. That decides nothing:
   the bug was neither caught nor missed.
 - **Not made.** The reply held no part for the proof, or the part named no change, or a change
-  and no case of the proof, or a change that touches only a comment, or a change that does not
-  match its file exactly once, or a file the feature does not cover, or a file that holds one of
-  the proof's tests, or the proof's test does not pass in the copy before any change. The test
-  is not run against a bug, the audit prints `No bug was planted: <why>.`, and it is not a
-  finding. Where the model could not be reached, nothing is recorded for the proof and its bug
-  is asked for at the next audit.
+  and no case of the proof, or a change that touches only a comment, or a change that leaves
+  the file as it was, or a change that does not match its file exactly once, or a path outside
+  the copy of the project, or a file that is not in the project, or a file the feature does not
+  cover, or a file that holds one of the proof's tests, or the proof's test does not pass in the
+  copy before any change. The test is not run against a bug, the audit prints
+  `No bug was planted: <why>.`, and it is not a finding. Where the model could not be reached,
+  nothing is recorded for the proof and its bug is asked for at the next audit.
 
 Two of those reasons are refusals of a change the model did name:
 
 - `No bug was planted: the model's answer for PROOF-1 could not be used: the answer named no case of the proof.`
   The part holds no `case:` line, or an empty one.
 - `No bug was planted: the model's answer for PROOF-1 could not be used: the change touches only a comment.`
-  The lines after the change differ from the lines before it only in blank lines and comment
-  lines. A comment line starts, after its indent, with `//` in any file, or with `#` in a file
-  ending `.py`, `.sh`, `.bash`, `.rb`, `.yml`, `.yaml` or `.toml`.
+  The lines after the change differ from the lines before it only in blank lines, comment
+  lines and a comment at the end of a code line. A comment line starts, after its indent, with
+  `//` in any file, or with `#` in a file ending `.py`, `.sh`, `.bash`, `.rb`, `.yml`, `.yaml`
+  or `.toml`. A comment at the end of a code line starts, after a space, with `#` in a file
+  with one of those endings and with `//` in any other file; a line that holds a quotation mark
+  before it is read as code. The check is narrow: a `/* */` comment, a docstring, a `--`
+  comment and a comment in any other kind of file are read as code, and such a change is
+  planted.
 
 A proof keeps its last result while its tests and its feature's code are unchanged, and no bug is
 planted for it again; a kept bug that survived adds its two findings again. No bug is planted for
@@ -308,7 +316,9 @@ runs past its 300 seconds or gives no answer, no explanation is recorded and the
 line naming the reason, `claude is not on PATH`, `claude exited with an error`,
 `claude timed out after 300 s` or `claude gave no answer`:
 `The model could not be reached: claude is not on PATH. 2 rules are spot-checked alone. Run purlin:audit again.`
-A rule on which a spot test fired is still written `weak`; any other is written `spot-checked`.
+Bugs kept from earlier audits still count. A rule on which a spot test fired, or with a kept
+bug that survived, is still written `weak`; one with neither and a kept bug that was caught is
+written `strong`; any other is written `spot-checked`.
 
 ## Anchors and rules with no proof
 
@@ -329,9 +339,10 @@ The audit reports. It recommends nothing.
   sentence for each proof no bug was caught for, which is not a finding. Under a `spot-checked`
   rule those sentences follow `The spot tests found nothing.`
 - **The share of rules found strong**, the last line:
-  `The audit found 34 of 40 rules strong (85%): 34 strong, 4 weak, 2 spot-checked.`, counted over
-  the rules that pass their tests, a rule with a hand check counted where it also has a tested
-  proof. A team can set its own target, such as 80 percent, and check it here.
+  `The audit found 34 of 40 rules strong (85%): 34 strong, 4 weak, 2 spot-checked.`, with the
+  numbers the status gives. Each rule that passes its tests is counted under the word its strong
+  cell reads; a rule with a hand check whose strong cell reads `checked at sign-off` is in no
+  count. A team can set its own target, such as 80 percent, and check it here.
 
 Each rule read gets one entry in its feature's evidence, under `audit.rules`: the hashes of its
 rule, proofs, tests and code, the `verdict`, the `findings`, under `no_bug` one sentence for each

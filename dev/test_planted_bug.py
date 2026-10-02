@@ -549,3 +549,260 @@ def test_a_comment_beside_a_changed_line_is_still_planted(tmp_path, own_claude):
     assert code == 0
     assert bug_of(after)['after'] == '    # planted\n    return 0'
     assert bug_of(after)['result'] == 'caught'
+
+
+# ---------------------------------------------------------------------------
+# A comment at the end of a code line
+# ---------------------------------------------------------------------------
+
+# purlin: planted_bug PROOF-32
+def test_a_comment_added_at_the_end_of_a_code_line_is_not_planted(tmp_path, own_claude):
+    log, body = logs_where_it_runs(tmp_path)
+    root = project(tmp_path, {'PROOF-1': body})
+    fake_claude.install(own_claude, answers=[
+        {'PROOF-1': part('    return days', '    return days  # planted bug')}])
+    code, lines, _before, after = audit(root)
+    assert code == 0
+    at = lines.index('age RULE-1   spot-checked')
+    assert lines[at + 1] == refused('the change touches only a comment'), lines
+    assert bug_of(after)['after'] == '    return days  # planted bug'
+    assert bug_of(after)['result'] == 'not made'
+    assert ran_in_a_copy(log) == []
+
+
+# purlin: planted_bug PROOF-33
+def test_two_slashes_at_the_end_of_a_code_line_are_a_comment(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG}, files={
+        'src/age.js': 'export function age() {\n  return 90;\n}\n'})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': part(
+        '  return 90;', '  return 90; // planted', path='src/age.js')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert (bug_of(after)['result'], bug_of(after)['why']) == (
+        'not made', 'the change touches only a comment')
+
+
+# purlin: planted_bug PROOF-34
+def test_a_hash_inside_a_quoted_string_is_code(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': 'assert age("") == 0'})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': part(
+        '    if stamp == "":', '    if stamp == " #":')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['after'] == '    if stamp == " #":'
+    assert bug_of(after)['result'] == 'caught', bug_of(after)
+
+
+# purlin: planted_bug PROOF-35
+def test_two_slashes_in_a_python_file_are_code(tmp_path, own_claude):
+    halves = AGE.replace('    return days\n', '    return days // 1\n')
+    root = project(tmp_path, {'PROOF-1': STRONG}, age=halves)
+    fake_claude.install(own_claude, answers=[{'PROOF-1': part(
+        '    return days // 1', '    return days // 2')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['after'] == '    return days // 2'
+    assert bug_of(after)['result'] == 'caught', bug_of(after)
+
+
+# purlin: planted_bug PROOF-36
+def test_a_block_comment_is_code_to_the_check(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG}, files={
+        'src/age.js': 'export function age() {\n  return 90;\n}\n'})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': part(
+        '  return 90;', '  return 90; /* planted */', path='src/age.js')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['after'] == '  return 90; /* planted */'
+    assert bug_of(after)['result'] == 'survived', bug_of(after)
+
+
+# purlin: planted_bug PROOF-37
+def test_a_hash_line_in_a_yaml_file_is_a_comment(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG}, files={
+        'src/limits.yml': 'oldest: 90\n'})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': part(
+        'oldest: 90', '# planted\noldest: 90', path='src/limits.yml')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['file'] == 'src/limits.yml'
+    assert (bug_of(after)['result'], bug_of(after)['why']) == (
+        'not made', 'the change touches only a comment')
+
+
+# purlin: planted_bug PROOF-38
+def test_a_change_that_adds_only_an_empty_line_is_not_planted(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    fake_claude.install(own_claude, answers=[
+        {'PROOF-1': part('    return days', '\n    return days')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['after'] == '\n    return days'
+    assert (bug_of(after)['result'], bug_of(after)['why']) == (
+        'not made', 'the change touches only a comment')
+
+
+# ---------------------------------------------------------------------------
+# Reading the part
+# ---------------------------------------------------------------------------
+
+def found_none(reason):
+    """The line the audit prints under a rule whose model named no bug, for `reason`."""
+    return ('  The spot tests found nothing. No bug was planted: the model found no change '
+            'that would break PROOF-1: %s.' % reason)
+
+
+# purlin: planted_bug PROOF-39
+def test_no_break_after_an_aim_line_is_read_as_no_break(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    fake_claude.install(own_claude, answers=[
+        {'PROOF-1': 'aim: plain\nno break: the test checks the case and its result\n'}])
+    code, lines, _before, after = audit(root)
+    assert code == 0
+    at = lines.index('age RULE-1   spot-checked')
+    assert lines[at + 1] == found_none('the test checks the case and its result'), lines
+    assert bug_of(after)['why'] == 'the test checks the case and its result'
+
+
+# purlin: planted_bug PROOF-40
+def test_a_no_break_reason_of_two_lines_is_cut_to_its_first(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    fake_claude.install(own_claude, answers=[
+        {'PROOF-1': 'no break: nothing here.\nThe code is a constant.\n'}])
+    code, lines, _before, after = audit(root)
+    assert code == 0
+    at = lines.index('age RULE-1   spot-checked')
+    assert lines[at + 1] == found_none('nothing here'), lines
+    assert bug_of(after)['why'] == 'nothing here.'
+    assert [line for line in lines if 'The code is a constant' in line] == [], lines
+
+
+# purlin: planted_bug PROOF-41
+def test_an_empty_line_before_after_is_no_part_of_the_change(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    reply = ('case: %s\nfile: src/age.py\nbefore:\n    days = minutes(stamp)\n\n'
+             'after:\n    days = 0\n' % CASE)
+    fake_claude.install(own_claude, answers=[{'PROOF-1': reply}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['before'] == '    days = minutes(stamp)'
+    assert bug_of(after)['result'] == 'caught', bug_of(after)
+
+CRLF_AGE = AGE.replace('\n', '\r\n').encode('utf-8')
+
+
+def crlf_project(tmp_path, body):
+    """A project whose `src/age.py` is committed with every line ending CRLF."""
+    root = project(tmp_path, {'PROOF-1': body})
+    git(root, 'config', 'core.autocrlf', 'false')
+    with open(os.path.join(root, 'src', 'age.py'), 'wb') as handle:
+        handle.write(CRLF_AGE)
+    git(root, '-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-qam', 'crlf')
+    return root
+
+
+TWO_LINES = part('    if stamp == "":\n        return 0', '    if stamp == "":\n        return 1')
+
+
+# purlin: planted_bug PROOF-42
+def test_two_lines_match_a_file_whose_lines_end_crlf(tmp_path, own_claude):
+    root = crlf_project(tmp_path, 'assert age("") == 0')
+    with open(os.path.join(root, 'src', 'age.py'), 'rb') as handle:
+        assert handle.read().count(b'\r\n') == 12
+    fake_claude.install(own_claude, answers=[{'PROOF-1': TWO_LINES}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['line'] == 11, bug_of(after)
+    assert bug_of(after)['result'] == 'caught', bug_of(after)
+
+
+# purlin: planted_bug PROOF-43
+def test_the_changed_file_keeps_its_crlf_line_ends(tmp_path, own_claude):
+    seen = os.path.join(str(tmp_path), 'seen.bin')
+    body = ('open(%r, "wb").write(open("src/age.py", "rb").read())\n'
+            'assert age("") is not None' % seen)
+    root = crlf_project(tmp_path, body)
+    fake_claude.install(own_claude, answers=[{'PROOF-1': TWO_LINES}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['result'] == 'survived', bug_of(after)
+    with open(seen, 'rb') as handle:
+        held = handle.read()
+    assert held == CRLF_AGE.replace(b'return 0', b'return 1')
+    assert held.count(b'\r\n') == held.count(b'\n') == 12
+
+
+# The sequences a terminal obeys: clear the screen, red text, and the bell.
+CLEAR, RED, BELL = '\x1b[2J', '\x1b[31m', '\x07'
+
+
+# purlin: planted_bug PROOF-44
+def test_a_case_is_printed_and_kept_without_its_escape_sequences(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': WEAK})
+    case = 'a stamp of 2026-01-01 %s%sgives 0%s' % (CLEAR, RED, BELL)
+    fake_claude.install(own_claude, answers=[
+        {'PROOF-1': part('    return days', '    return 0', case=case)}])
+    code, lines, _before, after = audit(root)
+    assert code == 0
+    assert '  PROOF-1: the AI says this breaks: a stamp of 2026-01-01 gives 0' in lines, lines
+    assert bug_of(after)['case'] == 'a stamp of 2026-01-01 gives 0'
+    assert json.loads(after)['audit']['rules']['RULE-1']['findings'][1] == (
+        'PROOF-1: the AI says this breaks: a stamp of 2026-01-01 gives 0')
+
+
+# purlin: planted_bug PROOF-45
+def test_a_no_break_reason_is_printed_without_its_escape_sequences(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    fake_claude.install(own_claude, answers=[
+        {'PROOF-1': 'no break: the test %schecks the case%s\n' % (CLEAR, BELL)}])
+    code, lines, _before, after = audit(root)
+    assert code == 0
+    assert found_none('the test checks the case') in lines, lines
+    assert bug_of(after)['why'] == 'the test checks the case'
+
+
+# purlin: planted_bug PROOF-46
+def test_a_file_value_is_read_without_its_escape_sequences(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    fake_claude.install(own_claude, answers=[
+        {'PROOF-1': part('    return days', '    return 0', path='src/%sage.py' % RED)}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['file'] == 'src/age.py'
+    assert bug_of(after)['result'] == 'caught', bug_of(after)
+
+
+# purlin: planted_bug PROOF-47
+def test_aim_and_case_are_read_in_capitals_and_after_spaces(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    reply = ('  Aim: past the test\nCASE: %s\nfile: src/age.py\nbefore:\n    return days\n'
+             'after:\n    return 0\n' % CASE)
+    fake_claude.install(own_claude, answers=[{'PROOF-1': reply}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['result'] == 'caught', bug_of(after)
+    assert bug_of(after)['aim'] == 'past the test'
+    assert bug_of(after)['case'] == CASE
+
+# purlin: planted_bug PROOF-48
+def test_the_finding_names_the_first_changed_line_of_code(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': WEAK})
+    fake_claude.install(own_claude, answers=[
+        {'PROOF-1': part('    return days', '    # planted\n\n    return 0')}])
+    code, lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['result'] == 'survived', bug_of(after)
+    assert bug_of(after)['line'] == 14
+    assert '  PROOF-1: the test still passes when src/age.py:14 reads "return 0"' in lines, lines
+
+
+# purlin: planted_bug PROOF-49
+def test_the_finding_passes_over_a_line_the_change_left_as_it_was(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': WEAK})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': part(
+        '    days = minutes(stamp)\n    if stamp == "":\n        return 0',
+        '    # planted\n    days = minutes(stamp)\n    if stamp == "":\n        return 1')}])
+    code, lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['result'] == 'survived', bug_of(after)
+    assert '  PROOF-1: the test still passes when src/age.py:12 reads "return 1"' in lines, lines

@@ -13,7 +13,8 @@ proof's test, exactly
     after:
     <the lines>
 
-or `no break: <why>`. `aim` is recorded `past the test` or `plain`, and `plain`
+or `no break: <why>`, alone or under its `aim:` and `case:` lines, read as far as
+the end of that line. `aim` is recorded `past the test` or `plain`, and `plain`
 for any other word or none; `case` is the model's one line, kept as written, at
 most `CASE_LIMIT` characters. The audit checks neither: a bug that survived is
 shown with its case (`AI_SAYS`), and a person judges it.
@@ -29,10 +30,11 @@ change and once with it in place; the copy is removed whatever they do.
     not run    anything else with the bug in place: a skip, a test not collected, a
                timeout. It is neither caught nor survived
     not made   the part is missing or names no change, it names a change and no case
-               of the proof, the change touches only a comment, it cannot be applied
-               exactly once to a file the feature's `> Scope:` reaches, it names a file
-               that holds one of the proof's tests, it would write outside the copy, or
-               the proof's tests do not pass in the copy before the change
+               of the proof, the change touches only a comment (`only_comment`), it
+               cannot be applied exactly once to a file the feature's `> Scope:`
+               reaches, it names a file that holds one of the proof's tests, it would
+               write outside the copy, or the proof's tests do not pass in the copy
+               before the change
 
 `snapshot` takes the project's `git status --porcelain -z` and the hash of
 every file it lists; the audit takes one before it asks the model and compares
@@ -88,15 +90,23 @@ TEST_DOES_NOT_PASS = 'test does not pass'
 _OWN_WORDS = (NO_CHANGE, NO_CASE, ONLY_COMMENT, OUTSIDE, NOT_IN_SCOPE, NO_FILE, NOT_FOUND, FOUND_MORE,
               NO_DIFFERENCE, TEST_FILE, NO_PART)
 
-_NO_BREAK_RE = re.compile(r'^\s*no break:\s*(.*?)\s*$', re.S)
+_NO_BREAK_RE = re.compile(r'^[ \t]*no break:(.*)$')
 _CHANGE_RE = re.compile(r'^file:[ \t]*(?P<file>[^\n]+?)[ \t]*\nbefore:[ \t]*\n(?P<before>.*?)\n'
                         r'after:[ \t]*\n?(?P<after>.*)$', re.S)
-_AIM_RE = re.compile(r'^aim:(.*)$')
-_CASE_RE = re.compile(r'^case:(.*)$')
+# What a terminal obeys and a person does not read: an escape sequence, then any
+# other control character.
+_ESCAPE_RE = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)?'
+                        r'|\x1b[@-_]?')
+_CONTROL_RE = re.compile(r'[\x00-\x1f\x7f-\x9f]')
+_AIM_RE = re.compile(r'^\s*aim:(.*)$', re.I)
+_CASE_RE = re.compile(r'^\s*case:(.*)$', re.I)
 
 # A comment line starts, after its indent, with `//` in any file, or with `#`
-# in a file with one of these endings.
+# in a file with one of these endings. A comment at the end of a code line
+# starts, after white space, with `#` in a file with one of these endings and
+# with `//` in any other file.
 HASH_COMMENTS = ('.py', '.sh', '.bash', '.rb', '.yml', '.yaml', '.toml')
+_QUOTES = '\'"`'
 
 
 class ProjectChanged(Exception):
@@ -111,22 +121,26 @@ class _Refused(Exception):
     """A write to a path outside the copy."""
 
 
+def shown(text):
+    """`text` as it is printed and stored: without escape sequences and control
+    characters, outer spaces cut."""
+    return _CONTROL_RE.sub('', _ESCAPE_RE.sub('', str(text or ''))).strip()
+
+
 def parse_answer(text):
     """`('change', file, before, after, aim, case)`, `('no break', why)`, or None for
     anything else. `aim` and `case` are read from the lines `aim:` and `case:` that
-    stand before `file:`: `aim` is `past the test` or `plain`, and `plain` for any other
-    word or no such line; `case` is its line with outer spaces cut, at most `CASE_LIMIT`
-    characters, and `''` where there is no such line."""
+    open the part, in any letter case and after any indent: `aim` is `past the test`
+    or `plain`, and `plain` for any other word or no such line; `case` is its line with outer spaces cut, at most `CASE_LIMIT`
+    characters, and `''` where there is no such line. `case`, the file's path and
+    `why` are each as `shown` gives them. Where the next line reads
+    `no break: <why>`, the part names no bug, and `why` is that one line's."""
     text = (text or '').strip('\n')
     lines = text.split('\n')
     while lines and lines[0].strip().startswith('```'):
         lines.pop(0)
     while lines and lines[-1].strip().startswith('```'):
         lines.pop()
-    text = '\n'.join(lines)
-    found = _NO_BREAK_RE.match(text)
-    if found and found.group(1):
-        return ('no break', found.group(1))
     aim, case = PLAIN, ''
     while lines:
         head = lines[0]
@@ -135,33 +149,61 @@ def parse_answer(text):
             aim = (PAST_THE_TEST if said.group(1).strip().lower() == PAST_THE_TEST
                    else PLAIN)
         elif named:
-            case = named.group(1).strip()[:CASE_LIMIT]
+            case = shown(named.group(1))[:CASE_LIMIT]
         elif head.strip():
             break
         lines.pop(0)
+    found = _NO_BREAK_RE.match(lines[0]) if lines else None
+    if found and shown(found.group(1)):
+        return ('no break', shown(found.group(1)))
     found = _CHANGE_RE.match('\n'.join(lines).strip('\n'))
     if not found or not found.group('before').strip():
         return None
-    return ('change', found.group('file').strip(), found.group('before'),
+    # Blank lines between the lines before and `after:` are no part of the change.
+    before = re.sub(r'(\n[ \t]*)+$', '', found.group('before'))
+    return ('change', shown(found.group('file')), before,
             found.group('after').rstrip('\n'), aim, case)
 
 
+def _hashes(path):
+    return str(path or '').lower().endswith(HASH_COMMENTS)
+
+
+def _code_lines(path, text):
+    """`[(index, line)]` for each line of `text` that is neither blank nor a comment
+    line, its trailing white space cut."""
+    hashes = _hashes(path)
+    kept = []
+    for index, line in enumerate(str(text).split('\n')):
+        start = line.strip()
+        if not start or start.startswith('//') or (hashes and start.startswith('#')):
+            continue
+        kept.append((index, line.rstrip()))
+    return kept
+
+
+def _without_end_comment(path, line):
+    """`line` without the comment at its end. The comment starts at the first `#`
+    (a file ending as `HASH_COMMENTS` lists) or `//` (any other file) that follows
+    white space. A line holding a quotation mark before it is left whole: the mark
+    may stand inside a string."""
+    found = re.search(r'\s#' if _hashes(path) else r'\s//', line)
+    if not found or any(mark in line[:found.start()] for mark in _QUOTES):
+        return line
+    return line[:found.start()].rstrip()
+
+
 def only_comment(path, before, after):
-    """True where `after` differs from `before` only in blank lines and comment lines.
-    A comment line starts, after its indent, with `//` in any file, or with `#` in a
-    file ending as `HASH_COMMENTS` lists."""
+    """True where `after` differs from `before` only in blank lines, comment lines
+    and the comment at the end of a code line. A comment line starts, after its
+    indent, with `//` in any file, or with `#` in a file ending as `HASH_COMMENTS`
+    lists; `_without_end_comment` says what the comment at a line's end is. A block
+    comment, a docstring and any other comment are code to this check."""
     if before == after:
         return False
-    hashes = str(path or '').lower().endswith(HASH_COMMENTS)
 
     def code(text):
-        kept = []
-        for line in str(text).split('\n'):
-            start = line.strip()
-            if not start or start.startswith('//') or (hashes and start.startswith('#')):
-                continue
-            kept.append(line.rstrip())
-        return kept
+        return [_without_end_comment(path, line) for _index, line in _code_lines(path, text)]
 
     return code(before) == code(after)
 
@@ -252,6 +294,9 @@ def _plant(project_root, feature, proof, tests, scope_files, answer, timeout):
             return _result(proof_id, 'not made', OUTSIDE % path, change)
         if text is None:
             return _result(proof_id, 'not made', NO_FILE % path, change)
+        if old not in text and '\r\n' in text:
+            # The model was shown the file's lines with `\n` ends; the file's are CRLF.
+            old, new = _crlf(old), _crlf(new)
         count = text.count(old)
         if count == 0:
             return _result(proof_id, 'not made', NOT_FOUND % path, change)
@@ -271,7 +316,7 @@ def _plant(project_root, feature, proof, tests, scope_files, answer, timeout):
             os.utime(_inside(copy, normal), (stamp + 2, stamp + 2))
         except (_Refused, OSError):
             return _result(proof_id, 'not made', OUTSIDE % path, change)
-        line, words = _changed_line(changed, at, old, new)
+        line, words = _changed_line(normal, changed, at, old, new)
         ran = _run_tests(copy, feature, proof_id, tests, timeout)
         if ran == 'pass':
             return _result(proof_id, 'survived', '', change, line,
@@ -284,15 +329,30 @@ def _plant(project_root, feature, proof, tests, scope_files, answer, timeout):
         shutil.rmtree(copy, ignore_errors=True)
 
 
-def _changed_line(changed, at, old, new):
-    """`(line number, the line's words)` of the first line the change made different."""
+def _crlf(text):
+    """`text` with every line end as CRLF."""
+    return text.replace('\r\n', '\n').replace('\n', '\r\n')
+
+
+def _changed_line(path, changed, at, old, new):
+    """`(line number, the line's words)` of the first line the change made different
+    that is neither blank nor a comment line; where it left no such line, of the
+    first line it made different."""
     first = changed.count('\n', 0, at) + 1
     old_lines, new_lines = old.split('\n'), new.split('\n')
-    step = 0
-    while step < min(len(old_lines), len(new_lines)) and old_lines[step] == new_lines[step]:
-        step += 1
-    if step >= len(new_lines):
-        step = max(len(new_lines) - 1, 0)
+    was = [line for _index, line in _code_lines(path, old)]
+    step = None
+    for place, (index, line) in enumerate(_code_lines(path, new)):
+        if place >= len(was) or was[place] != line:
+            step = index
+            break
+    if step is None:
+        step = 0
+        while (step < min(len(old_lines), len(new_lines))
+               and old_lines[step] == new_lines[step]):
+            step += 1
+        if step >= len(new_lines):
+            step = max(len(new_lines) - 1, 0)
     lines = changed.split('\n')
     number = first + step
     words = lines[number - 1].strip() if number - 1 < len(lines) else ''

@@ -858,6 +858,31 @@ class TestTheVerdict:
             'The audit found 3 of 4 rules strong (75%): 3 strong, 1 weak.'), \
             printed
 
+    # purlin: ai_audit PROOF-137
+    def test_the_last_line_counts_a_rule_with_a_hand_check_as_the_status_does(
+            self, claude):
+        spec = _rules_spec(2) + '- PROOF-3 (RULE-2): Read the page @manual\n'
+        made = Project(spec=spec)
+        try:
+            made.edit_test(_rules_tests(2))
+            _rules_evidence(made, ['pass', 'pass'])
+            settle(made, 'RULE-1')
+            settle(made, 'RULE-2')
+            git(made.root, 'add', '-A')
+            git(made.root, 'commit', '-q', '-m', 'purlin: audit at abc1234')
+            cells = made.rule('RULE-2')['cells']
+            assert cells['passed']['word'] == 'passed', cells
+            assert cells['strong']['word'] == 'checked at sign-off', cells
+            code, printed = audit(made)
+            status = audit_run.summary_module.audit_line(
+                made.payload()['summary']['audit'])
+        finally:
+            made.close()
+        assert code == 0, printed
+        assert printed.splitlines()[-1] == (
+            'The audit found 1 of 1 rules strong (100%): 1 strong.'), printed
+        assert printed.splitlines()[-1] == status
+
     # purlin: ai_audit PROOF-100
     def test_a_caught_bug_is_kept_while_its_test_and_code_stand(self, claude):
         _install, directory = claude
@@ -878,6 +903,26 @@ class TestTheVerdict:
         assert asked_for(calls[0]) == [], calls[0]['prompt'][-600:]
         assert entry['breaks']['PROOF-2']['result'] == 'caught', entry
         assert entry['breaks']['PROOF-2']['after'] == '    return 200', entry
+
+    # purlin: ai_audit PROOF-136
+    def test_a_kept_entry_with_no_aim_or_case_is_written_back_with_both(
+            self, claude):
+        with passing_project(source=LOGIN_SOURCE) as made:
+            settle(made, 'RULE-2')
+            settle(made, 'RULE-1')
+            kept = entry_of(made)['breaks']['PROOF-2']
+            assert 'aim' not in kept and 'case' not in kept, kept
+            # Only RULE-2's text changes, so the audit reads it again.
+            made.spec(SPEC.replace('return 401 and the body',
+                                   'return 401 with the body'))
+            made.evidence()
+            code, printed = audit(made)
+            entry = entry_of(made)
+        assert code == 0, printed
+        made_now = entry['breaks']['PROOF-2']
+        assert made_now['result'] == 'caught', entry
+        assert made_now.get('aim') == 'plain', made_now
+        assert made_now.get('case') == '', made_now
 
     # purlin: ai_audit PROOF-115
     def test_a_changed_test_has_its_bug_asked_for_again(self, claude):

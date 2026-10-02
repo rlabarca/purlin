@@ -95,8 +95,10 @@ The audit found 4 of 6 rules strong (66%): 4 strong, 1 weak, 1 spot-checked.
   with no finding and no caught bug reads `spot-checked`.
 - `<check> is not read in <language> tests.` says a spot test does not read that language.
 - `The model could not be reached: <why>. <n> rules are spot-checked alone. Run purlin:audit
-  again.` means `claude` gave no usable answer. A rule a spot test fired on is still written
-  `weak`. Any other rule is written `spot-checked`, and the next `purlin:audit` reads it again.
+  again.` means `claude` gave no usable answer. Bugs kept from earlier audits still count: a rule
+  a spot test fired on, or with a kept bug that survived, is still written `weak`, and one with
+  neither and a kept bug that was caught is written `strong`. Any other rule is written
+  `spot-checked`, and the next `purlin:audit` reads it again.
 - `The audit stopped: <file> changed while the audit ran. Nothing in the project was written by
   the audit.` means a file changed under the run: leave the project alone while the audit runs,
   then run it again.
