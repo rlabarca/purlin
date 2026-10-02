@@ -386,10 +386,16 @@ purlin:audit login RULE-2 --settle
 
 The settle plants the bug the test missed again and runs the proof's test as it stands now.
 
-- The test fails: the finding was right, and the rule reads `strong`.
+- The test fails: the finding was right, and the bug reads `caught`.
 - The test still passes: the bug did not break what the proof says. It is dropped, and one new
-  bug is planted. Caught, the rule reads `strong`. If that one survives too, the rule reads
-  `spot-checked`, with the reason.
+  bug is planted. If that one survives too, the proof gets no further bug until its test or
+  code changes.
+- The test does not run: the bug reads `not run`.
+
+The rule then reads what the verdict gives: `weak` where a spot test fires or a bug still
+survives, else `strong` where any of its proofs has a caught bug, else `spot-checked`, with the
+reason. A rule can read `strong` through another proof. Where no new bug can be planted, the
+printed line ends at `did not break what the proof says.`
 
 [audit.md](audit.md#what-to-do-with-a-finding) says what to do with a finding.
 [Settling a finding](../references/review_criteria.md#settling-a-finding) is the one home of

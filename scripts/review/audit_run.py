@@ -279,9 +279,11 @@ def bug_plan(reading, last, code_part, here=None, settle=False):
     carry.
 
     Under `settle` a proof whose last result reads `survived` is `replay`,
-    with that result and the key, whatever its `break_key`; any other proof
-    keeps what it has, `kept` with its last result, and a proof with no
-    result on record is left out."""
+    with that result and the key, whatever its `break_key`. Any other result
+    is `kept` only where its `break_key` is unchanged. A result taken on
+    another test or code is left out, as a proof with no result on record
+    is, so the entry holds none for it and the next audit plants a bug for
+    that proof (`ai_audit.is_read`)."""
     here = here or evidence_reader.host_os()
     kept_breaks = last.get('breaks') if isinstance(last.get('breaks'),
                                                    dict) else {}
@@ -303,7 +305,7 @@ def bug_plan(reading, last, code_part, here=None, settle=False):
         if settle:
             if isinstance(kept, dict) and kept.get('result') == 'survived':
                 plan.append((proof['id'], 'replay', (kept, key)))
-            elif isinstance(kept, dict):
+            elif isinstance(kept, dict) and kept.get('break_key') == key:
                 plan.append((proof['id'], 'kept', kept))
             continue
         if isinstance(kept, dict) and kept.get('break_key') == key:

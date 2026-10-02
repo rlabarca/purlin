@@ -14,7 +14,7 @@
 > Scope: scripts/review/targeted_break.py
 > Stack: python/stdlib (subprocess, tempfile, hashlib, shutil)
 > Highest-Rule: 30
-> Highest-Proof: 58
+> Highest-Proof: 61
 
 ## Rules
 
@@ -44,7 +44,7 @@
 - RULE-27: A `not made` result is worded by where its reason came from: a reason the model gave on a `no break:` line prints `No bug was planted: the model found no change that would break <PROOF-N>: <why>.` whatever its words, when the bug is asked for and each time the kept result is read again
 - RULE-28: A `case:` line wrapped over a second line is read to the end of that second line, the two joined by one space, where the second line is not blank and opens none of `aim:`, `case:`, `file:`, `before:`, `after:`, `no break:` or `===`
 - RULE-29: A `case:` line standing after the `file:` line and before `before:` is read as one above `file:` is
-- RULE-30: A line opening `#!`, `//go:` or `// @ts-` is code to the comment check, so a change to one is planted
+- RULE-30: A line opening `#!`, `//go:` or `// @ts-`, after any indent, is code to the comment check, so a change to one is planted
 
 ## Proof
 
@@ -104,3 +104,6 @@
 - PROOF-56 (RULE-30): The feature covers `src/run.sh`, and the model's change turns its first line, `#!/bin/sh`, into `#!/bin/bash`; the bug is planted, and its entry reads `survived`
 - PROOF-57 (RULE-30): The feature covers `src/age.go`, and the model's change turns its line `//go:build linux` into `//go:build windows`; the bug is planted, and its entry reads `survived`
 - PROOF-58 (RULE-30): The feature covers `src/age.ts`, and the model's change adds the one line `// @ts-ignore` above `return 90;` in it; the bug is planted, and its entry reads `survived`
+- PROOF-59 (RULE-30): The feature covers `src/age.ts`, where the line `// @ts-ignore` stands two spaces in, above `return 90;`, and the model's change turns that line into `// @ts-expect-error`; the bug is planted, and its entry reads `survived`
+- PROOF-60 (RULE-30): The feature covers `src/age.go`, where the line `//go:noinline` stands one tab in, and the model's change turns it into `//go:norace`; the bug is planted, and its entry reads `survived`
+- PROOF-61 (RULE-6): The bug kept for `PROOF-1` reads `survived`, and its test, each time it runs in a copy of the project, writes `notes.txt` in the project; `RULE-1` is settled; the audit prints `The audit stopped: notes.txt changed while the audit ran. Nothing in the project was written by the audit.`, exits `1`, and the settle starts `claude` `0` times

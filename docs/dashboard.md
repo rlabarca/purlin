@@ -80,9 +80,9 @@ states: 3 files its scope names are not written yet: facts.py, project.py, wordi
 - `Passing` counts the rules that pass their tests. The project's total is beneath it, as
   `11 RULES TOTAL`. A rule checked at sign-off is not counted.
 - `Strong` counts the rules the audit found strong, of the rules that pass their tests and have
-  a tested proof. It is there once the audit has read a rule that is not an anchor's. Hover over
-  it for the audit's counts, one to a line, as `34 strong`, `4 weak`, `2 spot-checked`, then
-  `Last audit: 2026-09-13`.
+  a tested proof. It is there once any rule has an audit entry and at least one rule that is not
+  an anchor's passes its tests with a tested proof. Hover over it for the audit's counts, one to
+  a line, as `34 strong`, `4 weak`, `2 spot-checked`, then `Last audit: 2026-09-13`.
 
 A box is green once its count is complete, and amber until then. `No proof` is complete at zero.
 `Passing` is complete once every rule passes or is checked at sign-off. `Strong` is complete once

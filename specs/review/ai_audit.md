@@ -14,8 +14,8 @@
 >   that still passes drops the bug and has one new bug planted in its place.
 > Scope: scripts/review/audit_run.py, scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
-> Highest-Rule: 64
-> Highest-Proof: 160
+> Highest-Rule: 67
+> Highest-Proof: 166
 
 ## Rules
 
@@ -27,7 +27,7 @@
 - RULE-11: The test source is read out of JavaScript and TypeScript by balancing the brackets of the test's call, with strings, comments and regex literals stepped over, so a nested options object, an apostrophe in a title, a regex literal, a comment or a division never cuts a body short or drops a test
 - RULE-12: Reading a rule, asking the model and printing the result write no file anywhere under `.purlin/`
 - RULE-33: A rule's verdict comes from the spot tests and the planted bugs alone: `weak` when a spot test fires on one of its tests or a planted bug survives; else `strong` when a planted bug was caught; else `spot-checked`; and the entry records under `no_bug` one sentence for each proof no bug was caught for
-- RULE-35: The audit's last line is `The audit found <s> of <n> rules strong (<p>%): ` and the counts as the status words them, with the numbers the status gives: each rule that passes its tests is counted under the word its strong cell reads, and a rule whose strong cell reads `checked at sign-off` is in no count. The share counts no rule of an anchor, and where every rule read is an anchor's the line is `The audit found <counts>.`
+- RULE-35: The audit's last line is `The audit found <s> of <n> rules strong (<p>%): ` and the counts as the status words them, with the numbers the status gives: each rule that passes its tests is counted under the word its strong cell reads, and a rule whose strong cell reads `checked at sign-off` is in no count. The share counts no rule of an anchor, and where no rule counted is other than an anchor's the line is `The audit found <counts>.`
 - RULE-36: A proof whose test and whose feature's code are unchanged since its last planted bug keeps that bug's result, and no bug is planted for it again
 - RULE-37: No bug is planted, and the model is asked for none, for a proof of an anchor's rule or a proof tagged `@env` for a system this machine is not, and the entry's `no_bug` says which
 - RULE-38: The model's answer is written into the rule's audit entry as `explanation`, one sentence per line starting `- `, beside the `findings` it explains, and the lines under `notes:` are its notes; the answer sets no verdict
@@ -52,10 +52,13 @@
 - RULE-58: Where no new bug is planted after a drop, because the model names none, its part cannot be used or the model cannot be reached, `no_bug` holds the sentence that case has in any audit, and the line the audit prints for the drop ends at `did not break what the proof says.`
 - RULE-59: A bug planted again whose test does not run with it in place, because it is skipped, ends in an error or runs past its limit, reads `not run`
 - RULE-60: A kept bug whose recorded change can no longer be planted is read as any audit reads its proof: one new bug is asked for, and one that survives reads `survived`
-- RULE-61: Settling a rule leaves a proof with no bug kept as `survived` with the entry it has
+- RULE-61: Settling a rule leaves a proof whose result is not `survived`, and whose test and code are unchanged since that result, with the entry it has
 - RULE-62: A rule named with `--settle` that keeps no bug as `survived` prints `<feature> <RULE-N> has no planted bug that survived: nothing to settle.`, and its entry is left as it is
 - RULE-63: A rule named with `--settle` whose tests do not pass is not settled: its entry is left as it is, and the run exits 1 and names the rule as failing
 - RULE-64: Only `--settle` plants a recorded bug again: any other audit asks the model for a new bug for a proof whose test changed
+- RULE-65: Settling a rule keeps no result other than `survived` that was taken on another test or code: the proof is left out of the rule's entry, the rule's verdict comes from the results the entry holds, and the next audit without `--settle` plants a bug for that proof
+- RULE-66: Settling a rule runs the spot tests again over the rule's tests, and a finding of theirs makes the rule `weak` as in any audit
+- RULE-67: A settled rule that needs no new bug is written with no model asked: its entry holds no `explanation` and keeps the `model` and the `criteria` of the entry it replaces
 
 ## Proof
 
@@ -148,3 +151,9 @@
 - PROOF-157 (RULE-64): The test of `PROOF-5` is changed to expect `25`, and `sample_intake` is audited without `--settle`; `claude` is asked a bug for `PROOF-5`, the entry of `PROOF-5` holds the model's change `return int(seconds // 1800)` and reads `caught`, and the audit prints no line under `sample_intake RULE-3`
 - PROOF-158 (RULE-56): The kept bug for `PROOF-5` and the model's new bug both survive; the audit prints `sample_intake RULE-3   spot-checked`, then `  PROOF-5: the bug at src/intake.py:17 did not break what the proof says. A new bug was planted.`, then `  The spot tests found nothing. No bug was caught for PROOF-5: two planted bugs left the proof's check passing.`
 - PROOF-159 (RULE-35): `login` is an anchor whose two rules pass their tests and no spot test fires; the audit's last line reads `The audit found 2 spot-checked.`
+- PROOF-161 (RULE-65): The bug of `PROOF-6` reads `caught` and the bug of `PROOF-7` reads `survived`; the test of `PROOF-7` is changed to hand in a sample exactly 72 hours old, the test of `PROOF-6` to check only that a status is stored, and `RULE-4` is settled; `RULE-4` reads `strong`, and its entry holds a result for `PROOF-7` alone
+- PROOF-162 (RULE-65): `RULE-4` was settled after the test of `PROOF-6`, whose bug read `caught`, was changed to check only that a status is stored; `sample_intake` is then audited without `--settle`; `claude` is asked a bug for `PROOF-6` alone, its bug `MAX_AGE_HOURS = 73` reads `survived`, and `RULE-4` reads `weak`
+- PROOF-163 (RULE-66): The test of `PROOF-11` checks nothing and its bug reads `survived`; `RULE-7` is settled with the test as it was and a model that names no new bug; `RULE-7` reads `weak`, and its one finding is `tests/test_intake.py::test_accession_numbers_count_up: the test checks nothing.`
+- PROOF-164 (RULE-59): The test of `PROOF-2` is changed so that its setup raises an error where the status is not `401`, and `RULE-2` is settled; the entry of `PROOF-2` reads `not run`, and `no_bug` is exactly `A bug was planted for PROOF-2 and its test ended in an error, not a failure.`
+- PROOF-165 (RULE-67): The entry of `RULE-3` holds the explanation `PROOF-5: the test takes its expected age from the code.` and the model `claude-fake-1`; the test of `PROOF-5` is changed to expect `25` and `RULE-3` is settled; `claude` is started `0` times, the entry's `explanation` is empty, and its `model` still reads `claude-fake-1`
+- PROOF-166 (RULE-60): The spec's `> Scope:` is changed to name `src/__init__.py` alone, so the feature no longer covers `src/intake.py`, the file the bug kept for `PROOF-5` changes, and `RULE-3` is settled; `claude` is asked a bug for `PROOF-5`, and no line the audit prints holds `did not break what the proof says`

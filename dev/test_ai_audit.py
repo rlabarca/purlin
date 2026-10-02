@@ -1693,6 +1693,38 @@ SKIPS_ON_THE_BUG = TEST_FILE.replace(
     '    assert login("ada", "wrong") == 401\n')
 
 
+# The same test under a setup that raises where the status is not `401`, so
+# with the kept bug in place the test ends in an error and not a failure.
+ERRORS_ON_THE_BUG = NOT_NONE_TEST.replace(
+    'from src.login import login\n',
+    'from src.login import login\n\n\n'
+    '@pytest.fixture(autouse=True)\ndef refused():\n'
+    '    if login("ada", "wrong") != 401:\n'
+    '        raise ValueError("not the status this test reads")\n', 1)
+
+CHECKS_NOTHING_11 = ('tests/test_intake.py::test_accession_numbers_count_up: '
+                     'the test checks nothing.')
+
+
+@pytest.fixture(scope='module')
+def another_test_changed(tmp_path_factory):
+    """`RULE-4` settled after both its tests changed: `PROOF-7`, whose bug
+    survived, now hands in the proof's own case, and `PROOF-6`, whose bug was
+    caught, now checks only that a status is stored. Then `sample_intake` is
+    audited without `--settle`, by a model that answers `REPLY`."""
+    made = sample_lab.settled(
+        tmp_path_factory.mktemp('another-test'), rules=('RULE-4',),
+        reply=sample_lab.MORE_SURVIVE,
+        change=sample_lab.change_both_tests_of_rule_4)
+    fake_claude.install(made.directory, answers=[sample_lab.REPLY])
+    code, lines, _errors = sample_lab.run_script(
+        made.root, made.directory, '--audit', '--feature', 'sample_intake')
+    made.next = {'code': code, 'lines': lines,
+                 'entries': sample_lab.entries(made.root),
+                 'calls': fake_claude.calls(made.directory)}
+    return made
+
+
 class TestSettlingAFinding:
 
     # purlin: ai_audit PROOF-138
@@ -1963,3 +1995,99 @@ class TestSettlingAFinding:
         assert bug_now['result'] == 'caught', bug_now
         assert made.under('RULE-3') == [], made.lines
         assert ROUNDED not in made.text
+
+    # purlin: ai_audit PROOF-161
+    def test_a_result_taken_on_another_test_is_left_out_of_the_entry(
+            self, another_test_changed):
+        made = another_test_changed
+        assert made.code == 0, made.lines
+        before = made.before['RULE-4']['breaks']
+        assert (before['PROOF-6']['result'], before['PROOF-7']['result']) == (
+            'caught', 'survived'), before
+        entry = made.entries['RULE-4']
+        assert sorted(entry['breaks']) == ['PROOF-7'], entry
+        assert entry['breaks']['PROOF-7']['result'] == 'caught', entry
+        assert entry['verdict'] == 'strong', entry
+        assert made.rule_lines('RULE-4') == [
+            'sample_intake RULE-4   strong'], made.lines
+        assert made.calls == []
+
+    # purlin: ai_audit PROOF-162
+    def test_the_next_audit_plants_a_bug_for_the_proof_left_out(
+            self, another_test_changed):
+        after = another_test_changed.next
+        assert after['code'] == 0, after['lines']
+        assert [asked_for(call) for call in after['calls']] == [['PROOF-6']]
+        entry = after['entries']['RULE-4']
+        made = entry['breaks']['PROOF-6']
+        assert made['after'] == 'MAX_AGE_HOURS = 73', made
+        assert made['result'] == 'survived', made
+        assert entry['verdict'] == 'weak', entry
+        assert 'sample_intake RULE-4   weak' in after['lines'], after['lines']
+
+    # purlin: ai_audit PROOF-163
+    def test_a_settle_runs_the_spot_tests(self, tmp_path):
+        made = sample_lab.settled(tmp_path, rules=('RULE-7',),
+                                  reply=sample_lab.MORE_SURVIVE)
+        assert made.code == 0, made.lines
+        kept = made.before['RULE-7']['breaks']['PROOF-11']
+        assert kept['result'] == 'survived', kept
+        entry = made.entries['RULE-7']
+        assert entry['findings'] == [CHECKS_NOTHING_11], entry
+        assert entry['verdict'] == 'weak', entry
+        assert made.rule_lines('RULE-7') == [
+            'sample_intake RULE-7   weak'], made.lines
+        assert '  ' + CHECKS_NOTHING_11 in made.under('RULE-7'), made.lines
+
+    # purlin: ai_audit PROOF-164
+    def test_a_test_that_ends_in_an_error_with_the_kept_bug_says_so(
+            self, claude):
+        _install, directory = claude
+        with weak_login(claude) as made:
+            made.edit_test(ERRORS_ON_THE_BUG)
+            made.evidence()
+            code, lines = settle_run(made, 'RULE-2')
+            entry = entry_of(made)
+        assert code == 0, lines
+        made_now = entry['breaks']['PROOF-2']
+        assert (made_now['result'], made_now['why']) == (
+            'not run', 'the test ended in an error, not a failure'), made_now
+        assert entry['no_bug'] == [
+            'A bug was planted for PROOF-2 and its test ended in an error, '
+            'not a failure.'], entry
+        assert entry['verdict'] == 'spot-checked', entry
+        assert fake_claude.calls(directory) == []
+
+    # purlin: ai_audit PROOF-165
+    def test_a_settle_that_asks_no_model_writes_no_explanation(
+            self, strengthened):
+        before = strengthened.before['RULE-3']
+        assert before['explanation'] == [
+            'PROOF-5: the test takes its expected age from the code.'], before
+        assert before['model'] == 'claude-fake-1', before
+        entry = strengthened.entries['RULE-3']
+        assert strengthened.calls == []
+        assert entry['explanation'] == [], entry
+        assert entry['model'] == 'claude-fake-1', entry
+        assert entry['criteria'] == before['criteria'], entry
+
+    # purlin: ai_audit PROOF-166
+    def test_a_kept_bug_in_a_file_the_scope_no_longer_names_is_asked_for_anew(
+            self, tmp_path):
+        made = sample_lab.settled(
+            tmp_path, change=sample_lab.scope_without_the_code)
+        assert made.code == 0, (made.lines, made.errors)
+        kept = made.before['RULE-3']['breaks']['PROOF-5']
+        assert (kept['file'], kept['result']) == (
+            'src/intake.py', 'survived'), kept
+        assert [asked_for(call) for call in made.calls] == [['PROOF-5']]
+        assert [line for line in made.lines
+                if 'did not break what the proof says' in line] == [], \
+            made.lines
+        bug_now = made.entries['RULE-3']['breaks']['PROOF-5']
+        assert (bug_now['result'], bug_now['after']) == ('not made', None), \
+            bug_now
+        assert made.under('RULE-3') == [
+            '  The spot tests found nothing. No bug was planted: the model '
+            'found no change that would break PROOF-5: the fake model plants '
+            'no bug.'], made.lines

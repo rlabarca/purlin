@@ -30,7 +30,8 @@ run on: it builds the lab, audits it once with `REPLY`, so `RULE-2` and
 `RULE-3` read `weak` with a bug kept as `survived`, makes the change a test
 asks for, and runs `purlin_run.py --audit --feature sample_intake` with
 `--settle` for each rule named, as its own process, with a fake `claude`
-that answers what the test hands it.
+that answers what the test hands it. `MORE_SURVIVE` is a first reply that
+leaves a bug kept as `survived` for `PROOF-7` and `PROOF-11` as well.
 """
 
 import io
@@ -320,6 +321,24 @@ ANOTHER_BUG = {
         aim='plain'),
     'reading': '- PROOF-5: the test compares the age with 25.',
 }
+# The first audit's reply with two more bugs, each of which survives: the
+# limit taken one hour early, which the test of `PROOF-7`, at 71 hours, never
+# reaches, and a sequence four digits wide, which the test of `PROOF-11`,
+# checking nothing, cannot see.
+CASE_7 = ('a sample received exactly 72 hours after collection; the proof '
+          'names it stored as `accepted`; the changed code stores it as '
+          '`expired`')
+CASE_11 = ('two samples from `BOS` received in 2026; the proof names '
+           '`BOS-2026-00001`; the changed code gives `BOS-2026-0001`')
+MORE_SURVIVE = dict(REPLY, **{
+    'PROOF-7': fake_claude.change(
+        'src/intake.py', '        if age > MAX_AGE_HOURS:',
+        '        if age >= MAX_AGE_HOURS:', case=CASE_7, aim='past the test'),
+    'PROOF-11': fake_claude.change(
+        'src/intake.py', "'%s-%d-%05d'", "'%s-%d-%04d'", case=CASE_11,
+        aim='past the test'),
+})
+SPEC_SCOPE = '> Scope: src/intake.py\n'
 
 
 def _write(root, path, text):
@@ -457,6 +476,24 @@ def rewrite_the_helper(root):
     _replace(root, 'src/intake.py', HELPER, HELPER_IN_TWO)
 
 
+def change_both_tests_of_rule_4(root):
+    """Change the test of `PROOF-7` to hand in a sample exactly 72 hours
+    old, the proof's own case, and the test of `PROOF-6` to check only that
+    a status is stored."""
+    _replace(root, 'tests/test_intake.py', "at('2026-03-04T07:00'))",
+             "at('2026-03-04T08:00'))")
+    _replace(root, 'tests/test_intake.py',
+             "    assert record['status'] == 'expired'",
+             "    assert record['status']")
+
+
+def scope_without_the_code(root):
+    """Change the spec's `> Scope:` to name `src/__init__.py` alone, so the
+    feature no longer covers `src/intake.py`."""
+    _replace(root, 'specs/intake/sample_intake.md', SPEC_SCOPE,
+             '> Scope: src/__init__.py\n')
+
+
 def evidence_text(root):
     """The project's evidence file, as text."""
     with open(os.path.join(root, *EVIDENCE.split('/')),
@@ -497,15 +534,17 @@ class Settled(object):
 
 
 def settled(folder, rules=('RULE-3',), change=None, answers=(None,),
-            exit_code=0):
-    """Build the sample lab under `folder`, audit it once with `REPLY`, make
-    `change(root)`, then run the audit of `sample_intake` with `--settle` for
-    each of `rules` (a plain audit for none), a fake `claude` answering
-    `answers`. No call reaches a real model."""
+            exit_code=0, reply=None):
+    """Build the sample lab under `folder`, audit it once with `reply`,
+    `REPLY` by default, make `change(root)`, then run the audit of
+    `sample_intake` with `--settle` for each of `rules` (a plain audit for
+    none), a fake `claude` answering `answers`. No call reaches a real
+    model."""
     folder = str(folder)
     root = build(folder)
     directory = fake_claude.install(os.path.join(folder, 'claude'),
-                                    answers=[REPLY])
+                                    answers=[REPLY if reply is None
+                                             else reply])
     previous = os.environ.get('PATH', '')
     os.environ['PATH'] = directory + os.pathsep + previous
     try:

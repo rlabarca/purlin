@@ -216,7 +216,7 @@ after.
   rule reads `weak`, with two findings, the change and then the case the model says it breaks:
   `PROOF-1: the test still passes when src/age.py:12 reads "return minutes + 60"`
   `PROOF-1: the AI says this breaks: a sample collected 90 minutes ago; the proof says 90; the changed code gives 150`
-  A person reads the second line to judge the first.
+  A test run settles the first, as "Settling a finding" says.
 - **Not run.** The test was skipped, could not be collected, ran past its limit or ended in an
   error its tool does not report as a failure, with the change in place. That decides nothing:
   the bug was neither caught nor missed.
@@ -239,9 +239,9 @@ Two of those reasons are refusals of a change the model did name:
   `//` in any file, or with `#` in a file ending `.py`, `.sh`, `.bash`, `.rb`, `.yml`, `.yaml`
   or `.toml`. A comment at the end of a code line starts, after a space, with `#` in a file
   with one of those endings and with `//` in any other file; a line that holds a quotation mark
-  before it is read as code. A line opening `#!`, `//go:` or `// @ts-` is read as code. The
-  check is narrow: a `/* */` comment, a docstring, a `--` comment and a comment in any other
-  kind of file are read as code, and such a change is planted.
+  before it is read as code. A line opening `#!`, `//go:` or `// @ts-`, after any indent, is
+  read as code. The check is narrow: a `/* */` comment, a docstring, a `--` comment and a
+  comment in any other kind of file are read as code, and such a change is planted.
 
 A proof keeps its last result while its tests and its feature's code are unchanged, and no bug is
 planted for it again; a kept bug that survived adds its two findings again. No bug is planted for
@@ -291,9 +291,14 @@ per rule, beside `--audit` and exactly one `--feature`, and `--commit` works as 
    file exactly once or another refusal of "The planted bug" holds: the proof is read as any
    audit reads it, with a new bug, and one that survives reads `survived`.
 
-A proof of the rule with no `survived` entry keeps what it has. The spot tests run again over
-the rule's tests, and "The verdict" sets the rule's word as in any audit: `weak` where a spot
-test fires or a bug survived, else `strong` where a bug was caught, else `spot-checked`.
+A proof of the rule with no `survived` entry keeps what it has where its test and code are
+unchanged since that result. A result taken on another test or code is left out of the entry,
+and the next audit without `--settle` plants a bug for that proof.
+
+The spot tests run again over the rule's tests, and "The verdict" sets the rule's word as in
+any audit, from the results the entry holds: `weak` where a spot test fires or a bug survived,
+else `strong` where a bug was caught, else `spot-checked`. A proof whose two bugs both survived
+holds no caught bug, and the rule still reads `strong` where another of its proofs does.
 
 A rule named with `--settle` that keeps no bug as `survived` prints
 `<feature> RULE-N has no planted bug that survived: nothing to settle.` and is left as it is.

@@ -214,7 +214,10 @@ def _without_end_comment(path, line):
     """`line` without the comment at its end. The comment starts at the first `#`
     (a file ending as `HASH_COMMENTS` lists) or `//` (any other file) that follows
     white space. A line holding a quotation mark before it is left whole: the mark
-    may stand inside a string."""
+    may stand inside a string. A line opening, after its indent, with one of
+    `DIRECTIVES` is left whole too: it is code from its first character."""
+    if line.strip().startswith(DIRECTIVES):
+        return line
     found = re.search(r'\s#' if _hashes(path) else r'\s//', line)
     if not found or any(mark in line[:found.start()] for mark in _QUOTES):
         return line
@@ -225,7 +228,7 @@ def only_comment(path, before, after):
     """True where `after` differs from `before` only in blank lines, comment lines
     and the comment at the end of a code line. A comment line starts, after its
     indent, with `//` in any file, or with `#` in a file ending as `HASH_COMMENTS`
-    lists, and a line opening `#!`, `//go:` or `// @ts-` is code;
+    lists, and a line opening `#!`, `//go:` or `// @ts-`, after any indent, is code;
     `_without_end_comment` says what the comment at a line's end is. A block
     comment, a docstring and any other comment are code to this check."""
     if before == after:
