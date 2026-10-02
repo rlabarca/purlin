@@ -2,8 +2,8 @@
   "feature": "scaffold",
   "platforms": {
     "windows": {
-      "at": "2026-10-02T11:34:00Z",
-      "commit": "ba25cab517a9d340d52eff829933dee2e54f57ef",
+      "at": "2026-10-02T16:05:29Z",
+      "commit": "c9196119afd8fed5364d600ca0b1b4a687e3888d",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
