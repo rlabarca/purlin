@@ -53,7 +53,7 @@ operating system that ran the feature, one section each.
       "email": "jane@example.com",
       "machine": "jane-mbp",
       "fingerprint": {"spec": "<sha256>", "code": "<sha256>", "tests": "<sha256>"},
-      "rules": {"RULE-1": "passed", "RULE-2": "no test"},
+      "rules": {"RULE-1": "passed", "RULE-2": "not run"},
       "proofs": [
         {"id": "PROOF-1", "rule": "RULE-1", "result": "pass", "env": null,
          "manual": false, "test": "tests/test_login.py::test_rejects_a_wrong_password"},

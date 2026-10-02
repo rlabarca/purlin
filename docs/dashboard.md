@@ -143,7 +143,7 @@ path. `Last run` is the newest run's source and age.
 **The `Passed` and `Strong` rows.** Each carries the cell's word as a badge, then its reasons:
 `failing: Linux/Unix, local`, `Windows: no run yet` or `code changed since 9f8e7d6`.
 
-The `Strong` row reads `STRONG`, `WEAK`, `SPOT-CHECKED` or `OUT OF DATE`:
+The `Strong` row reads `STRONG`, `WEAK`, `SPOT-CHECKED`, `OUT OF DATE` or `CHECKED AT SIGN-OFF`:
 
 - `SPOT-CHECKED`: the spot tests found nothing and no bug was planted and caught. The reason
   says why, as `The spot tests found nothing. No bug was planted: no bug is planted for an anchor's rule.`

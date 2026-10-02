@@ -22,18 +22,19 @@ Sign-off: signed 0.1.0, 4 commits since
 **The tests** read `met` when every rule passes its tests on the committed evidence, and
 `not met` otherwise. They read `not met` while any kind of work that blocks is left: a spec to
 repair, a test comment to correct, a rule to fix, a rule to write a test for, a rule to test here
-or on another system, or results written and not committed. What they require is that every
+or on another system, a slow proof to run, or results written and not committed. What they require is that every
 rule that has a test passes it on the committed evidence: a rule checked by hand alone reads
 `checked at sign-off`, is counted under no kind of work and never stops the tests reading `met`.
 
-**The sign-off** reads one of three things, from the newest `signed/*` tag on `HEAD` or an
-ancestor of it:
+**The sign-off** reads one of three things, for the newest version whose sign-off counts, found
+by its `signed/*` tag on `HEAD` or an ancestor of it, or by its sign-off files where this
+checkout holds no such tag:
 
 | It reads | When |
 |----------|------|
 | `signed 0.1.0 at a1b2c3d` | the tag's commit is this code: every commit since it changes only Purlin's own records under `.purlin/` and leaves the `tests` setting as it was |
 | `signed 0.1.0, 4 commits since` | the code has changed since the tag, by that many commits; for one, `1 commit since` |
-| `not signed` | no `signed/*` tag on `HEAD` or behind it has a sign-off that counts |
+| `not signed` | no version has a sign-off that counts |
 
 Neither fact is a bar a rule clears, and no setting changes what either means. Any project may
 run `purlin:sign` whenever it chooses.
@@ -206,8 +207,8 @@ A sign-off counts when two things are true:
 
 A sign-off is read as `HEAD` holds it. A sign-off file changed and not committed does not count.
 
-The status reads `signed` only where the tag names a commit that holds the package and a
-sign-off of it counts. A tag written by hand reads `not signed`, with one warning, and
+The status reads `signed` only where a sign-off of that version counts, and the tag names a
+commit that holds the package or this checkout holds no tag of that name. A tag written by hand reads `not signed`, with one warning, and
 `purlin:sign` refuses to sign that version until the tag is deleted.
 
 The key recorded is the key that signed the commit. Where another key signed it, as a global

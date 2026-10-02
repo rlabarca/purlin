@@ -222,7 +222,7 @@ with
 The run goes in this order:
 
 1. It prints every pending migration with the files it touches, then asks before each one, with
-   a question ending `[y/N]`. `--yes` answers yes to every question. A declined migration is
+   a question ending `[y/N]`. `--yes` answers yes to each migration. A declined migration is
    left pending. Every file it rewrites is copied beside itself first, as
    `<name>.local-<sha8>.bak`.
 2. It rewrites or removes each line 0.9.5 wrote into a spec that 0.10.0 does not read: the

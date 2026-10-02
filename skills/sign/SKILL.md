@@ -48,8 +48,8 @@ overview, the audit's findings and every stop, and last `Answer each stop, then 
 ```
 Tests run by dana.dev@labconnect.example on dana-laptop at 2026-10-01 12:17 UTC on 1cf829e: 19 rules on Linux/Unix.
 Signing 0.1.0 at 1cf829e.
-  19 rules on Linux/Unix: 19 pass their tests, 1 has a hand check.
-  The audit: 17 strong, 1 weak, 1 spot-checked.
+  19 rules on Linux/Unix: 18 pass their tests, 1 has a hand check.
+  The audit: 17 strong, 1 weak.
 The audit's findings: 1 weak.
 ```
 

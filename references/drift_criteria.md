@@ -45,8 +45,8 @@ The report carries exactly two keys, `since` and `view`.
 
 - `since` is the range: `action`, `commits`, `from`, `line`, `to` and `when`. `line` is the
   sentence that names the range.
-- `view` carries exactly twelve keys. `lines` holds every sentence to print after the one naming
-  the range, in the order of the table below. The other eleven are the keys of the table, each
+- `view` carries exactly twelve keys. `lines` holds every sentence to print: first the one naming
+  the range, then the rest in the order of the table below. The other eleven are the keys of the table, each
   holding the facts its lines were built from.
 
 Lines the status already prints, such as the work left to do or the spec files not committed,
@@ -171,8 +171,7 @@ No setting names the project root, because the root is what the reader of the se
 find first. Every Purlin tool call names it: `project_root` is the top folder of the git
 checkout you are working in, and a call that names none is refused with that fix, so one
 checkout's state is never read as another's. A script run on the command line takes
-`--project-root`; without it, `PURLIN_PROJECT_ROOT` answers where it names a folder that exists,
-else the climb from the working directory to the first `.purlin/` folder. A tool that finds no
+`--project-root`, and without it reads the working directory. A tool that finds no
 `.purlin/config.json` at the root it was given says which folder it looked at and names the fix.
 Purlin's own folder is refused as a project root; `references/purlin_commands.md`, "The tools
 and their scripts", gives both lines.

@@ -414,7 +414,7 @@ one version of its source.
 purlin:anchor add <url> --path <file> [--name <name>]
 ```
 
-Your copy takes its name from the file. `--name` gives it another, in letters, digits and `_`.
+Your copy takes its name from the file. `--name` gives it another, in letters, digits, `_` and `-`.
 A name an anchor in the project already holds is refused, and the refusal names
 `purlin:anchor sync <name>`. `--path` names a file inside the source: a path that is absolute or
 holds `..` is refused.

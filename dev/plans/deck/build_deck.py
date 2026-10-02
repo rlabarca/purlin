@@ -168,7 +168,7 @@ slide('audit', 'Are the tests any good?', 'The audit: would your tests catch a b
  'shown to you with the AI\'s line, and you judge it: most show a case the test does not check, '
  'and some rest on a strict reading of the proof. Only proofs whose test or code changed since '
  'the last audit are tried again, so it stays fast, and nothing waits on it. The AI has no tools: '
- 'it can read and change nothing. In one study a bug aimed past the tests found a real gap 87.8 '
+ 'it can read and change nothing. In one study a bug aimed past the tests found a real gap 87.7 '
  'percent of the time, against 12.2 percent for a bug written without seeing them (Kiele et al., '
  'ESEM 2026). The full reasoning, the sources and a trial on a sample project are on the audit '
  'page of the docs.',

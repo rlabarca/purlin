@@ -121,8 +121,8 @@ Then it shows an overview of the package:
 ```text
 Tests run by dana.dev@labconnect.example on dana-laptop at 2026-10-01 12:17 UTC on 1cf829e: 19 rules on Linux/Unix.
 Signing 0.1.0 at 1cf829e.
-  19 rules on Linux/Unix: 19 pass their tests, 1 has a hand check.
-  The audit: 17 strong, 1 weak, 1 spot-checked.
+  19 rules on Linux/Unix: 18 pass their tests, 1 has a hand check.
+  The audit: 17 strong, 1 weak.
 The audit's findings: 1 weak. list / go on: 
 ```
 
@@ -308,8 +308,8 @@ one definition.
 the key `user.signingkey` names. It pins the code, every evidence file, the package and the
 sign-offs under one name. It is never moved.
 
-The status reads `signed` only where the tag names a commit that holds the package and a
-sign-off of it counts. A tag written by hand reads `not signed`, with one warning, and
+The status reads `signed` only where a sign-off of that version counts, and the tag names a
+commit that holds the package or this checkout holds no tag of that name. A tag written by hand reads `not signed`, with one warning, and
 `purlin:sign` refuses to sign that version until the tag is deleted.
 
 After a `git pull` the tag may be missing: a pull fetches no tags. The status then reads the

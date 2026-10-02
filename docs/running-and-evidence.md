@@ -186,7 +186,7 @@ A test run exits on the tests alone:
 
 | Exit | When |
 |---|---|
-| 1 | a test failed, evidence is missing, or a comment names nothing a spec has |
+| 1 | a test failed, evidence is missing, a comment names nothing a spec has, or a spec writes a number twice or holds a merge-conflict line |
 | 1, before anything runs | there is no settings file, the settings file cannot be read, an older Purlin set the project up and nobody upgraded it, or no test command is set |
 | 2 | the command line cannot be read |
 | 0 | otherwise |
@@ -372,7 +372,8 @@ Left to do:
   1 rule to strengthen: purlin:build
 ```
 
-An audit exits 1 when a test it ran failed or did not run, and 0 whatever it found. The audit
+An audit exits 1 when a test it ran failed or did not run, or a file of the project changed
+while it ran, and 0 whatever it found. The audit
 is a tool, and nothing waits on it.
 
 Your code is never changed by a planted bug. Where a file of the project changes while the

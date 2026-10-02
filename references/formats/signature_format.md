@@ -43,10 +43,10 @@ same version writes over it.
   "timestamp": "2026-10-02T09:14:00Z",
   "shown": {
     "overview": {
-      "systems": [{"os": "linux", "rules": 19, "passing": 19,
+      "systems": [{"os": "linux", "rules": 19, "passing": 18,
                    "hand_checks": 1}],
       "audit": {"strong": 17, "weak": 1, "spot_checked": 0, "out_of_date": 0,
-                "not_audited": 1}
+                "not_audited": 0}
     },
     "runs": [{"at": "2026-10-01T12:17:13Z", "by": "dana.dev@labconnect.example",
               "commit": "<40 hex>", "machine": "dana-laptop", "os": "linux",

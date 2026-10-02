@@ -22,8 +22,8 @@ Every command takes `--project-root DIR`; without it the root is the one
 `add` fetches the file at the source's default branch head and writes the local
 copy. The file is a spec in Purlin's format kept in a git repository: `add`
 refuses a file on disk, a description in words or a file that holds no rule,
-and writes nothing. It also refuses a `--name` that is not letters, digits and
-`_`, a name an anchor in the project already holds, and a `--path` that is
+and writes nothing. It also refuses a `--name` that is not letters, digits,
+`_` and `-`, a name an anchor in the project already holds, and a `--path` that is
 absolute or holds `..`: only a file of the source is read.
 
 `sync` names the rules that changed and advances the pin, fetching each distinct

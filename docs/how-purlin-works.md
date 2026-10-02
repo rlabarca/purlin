@@ -122,6 +122,7 @@ an operating system yours is not.
 **When does `purlin:test` exit 1?** In any of these cases:
 
 - a tied test failed or did not run;
+- a spec writes a number twice or holds a merge-conflict line;
 - evidence is missing;
 - a comment above a test names nothing a spec has;
 - the settings file is missing or cannot be read;
