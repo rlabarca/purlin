@@ -384,7 +384,7 @@ class TestTheFile:
             made.close()
 
     # purlin: package PROOF-52
-    def test_a_package_folder_that_is_a_file_is_named_and_nothing_made(
+    def test_a_package_folder_that_is_a_file_ends_on_one_line_no_commit_no_tag(
             self, project, capsys):
         folder = os.path.join(project.root, '.purlin', 'evidence', 'package')
         write(folder, 'not a folder\n')
@@ -408,6 +408,7 @@ class TestTheFile:
         printed = capsys.readouterr()
         assert (printed.out, printed.err) == ('', ''), printed
         assert project.head() == before
+        assert git(project.root, 'tag', '--list').stdout == ''
         assert git(project.root, 'tag', '--list').stdout == ''
 
 
