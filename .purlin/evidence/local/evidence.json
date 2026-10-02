@@ -750,7 +750,7 @@
         "verdict": "strong"
       },
       "RULE-7": {
-        "at": "2026-10-02T10:58:27Z",
+        "at": "2026-10-02T15:32:58Z",
         "breaks": {
           "PROOF-11": {
             "after": "    lines = ['%s' % path for path in ids]",
@@ -778,11 +778,11 @@
             "after": "    return 'tests-setting %s' % hashlib.sha256(\n        text.lower().encode('utf-8')).hexdigest()",
             "aim": "past the test",
             "before": "    return 'tests-setting %s' % hashlib.sha256(\n        text.encode('utf-8')).hexdigest()",
-            "break_key": "40c1b61882e3073904ab0b81f31ce007298403f77c8d5a9fffb49b4f0fe0d7af",
+            "break_key": "00b6c34e25caa462d1af71dca73d268242f9792f9ec3fea57179df1ab2c64646",
             "case": "a `local` section of `login` stores the fingerprint, then the `run` command is changed only in the case of a letter, such as `-x` to `-X`; the proof says out of date on exactly `tests`; the changed code gives current",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 329,
-            "result": "survived",
+            "result": "caught",
             "why": ""
           },
           "PROOF-89": {
@@ -797,26 +797,17 @@
             "why": ""
           }
         },
-        "code_hash": "cbfc99b80b2372af0e6cc4b45bb62cf8529c77ac4f66ee99031aa7d1ca4c6f04",
-        "commit": "e71e425b8935ce0743c0019a2f0bdf37b2b7ab92",
+        "code_hash": "a72d3fcb306ba01d3cc912b23af4350eda176ac2a9c64d29782fa4a021b50eb3",
+        "commit": "958f2fbf842d315519466165baf5401e34071c27",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
-        "explanation": [
-          "PROOF-11: the test edits `tests/test_login.py` and compares the list of changed parts with `['tests']`, so it observes both that `tests` changed and that no other part did.",
-          "PROOF-43: the test commits a file marked for `billing`, rewrites it and compares the whole fingerprint of `login` with the one taken before, which is what the proof names.",
-          "PROOF-88: the test stores the fingerprint, changes the `run` command twice (an added `-x`, then `python2` for `python3` at the same length) and reads out of date on exactly `tests` each time; it never tries a command that differs only in the case of a letter, so a fingerprint that ignores case still passes.",
-          "PROOF-89: the test changes `version` from `0.10.0` to `0.10.1` after storing the fingerprint and reads the section as current with no part out of date, which is what the proof names.",
-          "Findings: the spot tests found nothing, and each test holds a failable comparison against a literal expected value."
-        ],
-        "findings": [
-          "PROOF-88: the test still passes when scripts/mcp/purlin/fingerprint.py:329 reads \"text.lower().encode('utf-8')).hexdigest()\"",
-          "PROOF-88: the AI says this breaks: a `local` section of `login` stores the fingerprint, then the `run` command is changed only in the case of a letter, such as `-x` to `-X`; the proof says out of date on exactly `tests`; the changed code gives current"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "proof_hash": "e33bb81464b4c1f4668628f1529feb912e1d8e01312a6123221f5adac9bc480a",
+        "proof_hash": "44be1aa7ba0e32f287468ca4635d27ce6cf490c9e8647d244011c8983e839e09",
         "rule_hash": "e7698031b7f92c93a85b1e47a160b6eaec4ac299787a0ae09bd3861c732b875b",
-        "test_hash": "431480e896eb3e2961cc1fb0684da7eacf4308ca2701f5d799832e661a6893f5",
-        "verdict": "weak"
+        "test_hash": "b757fd1360d250f9e898987afe6c7031329e61e2898608f870497ff4d8a5a3bb",
+        "verdict": "strong"
       },
       "RULE-8": {
         "at": "2026-10-02T09:41:48Z",
