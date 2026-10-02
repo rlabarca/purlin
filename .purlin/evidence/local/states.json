@@ -2,14 +2,14 @@
   "feature": "states",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T22:23:56Z",
-      "commit": "e79e00d5cc5cfb37c5bb91842c42c7107c11e07c",
+      "at": "2026-10-02T00:43:54Z",
+      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "7980001d0267b657d022944ea1c41e3b556924fb268e16b40715c247b1a00bba",
-        "spec": "bffe4f91e6619bfd79272fcc6870fa95c9f097f492f5be4066edf48ccead772b",
-        "tests": "4be089c39c011b03dfbae979eb16ca515aef68f163dff8a610a9a458dfaa5f23"
+        "code": "dba361ed344a97f7379c593e6a78f3b77515aed8eef173d5d76aebabd29ff352",
+        "spec": "4fe1025d2e2c5ae776097b4340f125991714e8abf39b648ea1c8ed82907f4f69",
+        "tests": "f805859f300cdd439ca553fa7c2a6b68fccf00a4c817b0b07f79e52dc7e74291"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -175,6 +175,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-289",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_failing.py::test_a_failure_under_ci_is_not_hidden_by_a_later_local_pass"
+        },
+        {
+          "env": null,
           "id": "PROOF-159",
           "manual": false,
           "result": "pass",
@@ -183,11 +191,11 @@
         },
         {
           "env": null,
-          "id": "PROOF-160",
+          "id": "PROOF-290",
           "manual": false,
           "result": "pass",
           "rule": "RULE-14",
-          "test": "dev/test_states.py::TestTheStrongCell::test_a_weak_entry_for_another_rule_hash_leaves_rule_2_not_audited"
+          "test": "dev/test_states.py::TestTheStrongCell::test_a_spot_checked_entry_says_why_no_bug_was_caught"
         },
         {
           "env": null,
@@ -199,14 +207,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-71",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-118",
-          "test": "dev/test_states.py::TestTheStrongCell::test_a_rule_the_model_could_not_be_reached_for_says_why"
-        },
-        {
-          "env": null,
           "id": "PROOF-139",
           "manual": false,
           "result": "pass",
@@ -215,11 +215,59 @@
         },
         {
           "env": null,
+          "id": "PROOF-286",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-126",
+          "test": "dev/test_states.py::TestAnAuditOutOfDate::test_code_rewritten_after_a_strong_audit_reads_out_of_date"
+        },
+        {
+          "env": null,
+          "id": "PROOF-287",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-126",
+          "test": "dev/test_states.py::TestAnAuditOutOfDate::test_a_weak_entry_for_another_rule_text_is_out_of_date_and_kept"
+        },
+        {
+          "env": null,
           "id": "PROOF-19",
           "manual": false,
           "result": "pass",
           "rule": "RULE-16",
           "test": "dev/test_states.py::TestTheStrongCell::test_before_any_sign_off_a_manual_rule_is_checked_at_sign_off"
+        },
+        {
+          "env": null,
+          "id": "PROOF-288",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_states.py::TestAHandCheckTheAuditFoundWeak::test_a_hand_check_with_a_tested_proof_found_weak_reads_weak"
+        },
+        {
+          "env": null,
+          "id": "PROOF-291",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_states.py::TestAHandCheckReadsTheAuditsWord::test_a_hand_check_the_audit_spot_checked_reads_spot_checked"
+        },
+        {
+          "env": null,
+          "id": "PROOF-292",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_states.py::TestAHandCheckReadsTheAuditsWord::test_a_hand_check_whose_audit_is_out_of_date_reads_out_of_date"
+        },
+        {
+          "env": null,
+          "id": "PROOF-293",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_states.py::TestAHandCheckReadsTheAuditsWord::test_a_hand_check_the_audit_found_strong_is_checked_at_sign_off"
         },
         {
           "env": null,
@@ -291,7 +339,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-27",
-          "test": "dev/test_states.py::TestPayload::test_schema_fourteen_carries_exactly_the_seventeen_keys"
+          "test": "dev/test_states.py::TestPayload::test_schema_fifteen_carries_exactly_the_seventeen_keys"
         },
         {
           "env": null,
@@ -399,6 +447,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-294",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-121",
+          "test": "dev/test_states.py::TestStatusTable::test_an_audit_entry_on_a_rule_that_now_fails_keeps_the_strong_column"
+        },
+        {
+          "env": null,
           "id": "PROOF-100",
           "manual": false,
           "result": "pass",
@@ -451,7 +507,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-59",
-          "test": "dev/test_states.py::TestTheSignOff::test_a_tag_on_head_reads_its_version_head_and_signed_at"
+          "test": "dev/test_states.py::TestTheSignOff::test_a_walk_at_head_reads_its_version_the_signed_commit_and_signed_at"
         },
         {
           "env": null,
@@ -467,7 +523,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-59",
-          "test": "dev/test_states.py::TestTheSignOff::test_of_three_tags_on_head_version_1_10_0_is_the_newest"
+          "test": "dev/test_states.py::TestTheSignOff::test_of_three_versions_signed_1_10_0_is_the_newest"
         },
         {
           "env": null,
@@ -475,7 +531,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-61",
-          "test": "dev/test_states.py::TestTheAuditOnTheRule::test_a_weak_entry_naming_no_model_carries_exactly_nine_fields"
+          "test": "dev/test_states.py::TestTheAuditOnTheRule::test_a_weak_entry_naming_no_model_carries_exactly_eleven_fields"
         },
         {
           "env": null,
@@ -649,6 +705,7 @@
         "RULE-123": "passed",
         "RULE-124": "passed",
         "RULE-125": "passed",
+        "RULE-126": "passed",
         "RULE-14": "passed",
         "RULE-16": "passed",
         "RULE-23": "passed",

@@ -2,14 +2,14 @@
   "feature": "purlin_docs",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T22:23:56Z",
-      "commit": "e79e00d5cc5cfb37c5bb91842c42c7107c11e07c",
+      "at": "2026-10-02T00:43:53Z",
+      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "0e7ad1d2cdd1f4d129b26eb0a060b91145cbe4c8bdde69d34c5a9d55ce541597",
+        "code": "00a1b9ca2248e09c2bf5ff444158660f6fefb1a78b8e89db7fdb38f4a34c4bbc",
         "spec": "9f6515493cb7e4b5b6c042f77180f7a99864a7737416f2303ba0d22e722b541a",
-        "tests": "c44becfc8ac0ddca6eaac2004d699ccccc0c59c6c995f38a576712c9cd610295"
+        "tests": "1d332582f459507e674312e85185fee6191e76d1646f9ed3ffed8eaeec76b7c4"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [

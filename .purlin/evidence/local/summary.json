@@ -2,14 +2,14 @@
   "feature": "summary",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T22:30:15Z",
-      "commit": "e79e00d5cc5cfb37c5bb91842c42c7107c11e07c",
+      "at": "2026-10-02T00:43:54Z",
+      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "52bd2426f3b3880ca264e10d316208838462e2a886bf9b154365013fc1393181",
-        "spec": "284e20a381c8719ff30f0336c54f7364ad1ef9c01edf54cd4dba772817caf99e",
-        "tests": "d27fe79df526064abe3396f55a290897007adb36b04f2616b5aab1d40e9d453d"
+        "code": "c061d184d7954c2616256b7734d9b0e0d3fac9d7c61872e248b09050004e92c4",
+        "spec": "260d7e3b331dfbd74c1da4cc5c9dc008290a97b91ed9641990ab3dbe37512b77",
+        "tests": "7c1a58d2043f9875ae0a9f2473979a9419f8cb5da96299f1f71ff75e200902ec"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -35,7 +35,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-20",
-          "test": "dev/test_summary.py::TestTheOpeningLines::test_a_commit_to_the_code_after_the_tag_reads_one_commit_since"
+          "test": "dev/test_summary.py::TestTheOpeningLines::test_a_commit_to_the_code_after_the_walk_reads_one_commit_since"
         },
         {
           "env": null,
@@ -60,6 +60,14 @@
           "result": "pass",
           "rule": "RULE-22",
           "test": "dev/test_summary.py::TestTheSentence::test_fifty_rules_forty_two_strong_read_the_audits_share_84"
+        },
+        {
+          "env": null,
+          "id": "PROOF-57",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_summary.py::TestTheSentence::test_forty_rules_read_each_count_that_is_not_zero"
         },
         {
           "env": null,

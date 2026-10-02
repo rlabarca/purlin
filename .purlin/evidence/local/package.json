@@ -2,14 +2,14 @@
   "feature": "package",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T22:30:14Z",
-      "commit": "e79e00d5cc5cfb37c5bb91842c42c7107c11e07c",
+      "at": "2026-10-02T00:43:53Z",
+      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "70f92e29546fcfc0358d23be2ba813d99e3a04c4fd9d1858d11af46a7a73a7c8",
-        "spec": "ce644110ad52e03b16916927feda8b195c33a61ec9d0e55f2b28d7758dad2203",
-        "tests": "c7fa84c9a92d138e87557fe250eeccbeca3e79e2e48aea419f0367eef4ded132"
+        "code": "ce3b46e6e3fb2959d00563c175418893b46e8db135444bd9759e25ee08b006c7",
+        "spec": "0a455cb6d8dac778b764c45ca552da4e9a8b7c215b5f474a4a1bd5a6cdc12515",
+        "tests": "c394de21756f5db21e79519bfcce071382a98dc22749e9988ebceb2b30805bbb"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -111,6 +111,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-81",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_export.py::TestTheBytes::test_a_stray_tag_in_one_clone_leaves_the_bytes_the_same"
+        },
+        {
+          "env": null,
           "id": "PROOF-32",
           "manual": false,
           "result": "pass",
@@ -180,6 +188,14 @@
           "result": "pass",
           "rule": "RULE-22",
           "test": "dev/test_export.py::TestTheFingerprint::test_check_names_another_schema"
+        },
+        {
+          "env": null,
+          "id": "PROOF-80",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_export.py::TestTheFingerprint::test_check_names_bytes_not_in_the_canonical_form"
         },
         {
           "env": null,
@@ -260,6 +276,30 @@
           "result": "pass",
           "rule": "RULE-33",
           "test": "dev/test_export.py::TestTheRuns::test_a_change_outside_the_records_after_the_run_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-77",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_export.py::TestTheRuns::test_a_changed_test_command_after_the_run_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-78",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_export.py::TestTheRuns::test_results_from_a_commit_head_does_not_hold_are_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-79",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_export.py::TestTheRuns::test_a_slow_result_kept_from_an_earlier_run_is_refused"
         },
         {
           "env": null,

@@ -2,14 +2,14 @@
   "feature": "update",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T22:30:16Z",
-      "commit": "e79e00d5cc5cfb37c5bb91842c42c7107c11e07c",
+      "at": "2026-10-02T00:43:54Z",
+      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "1fbc86515e84910d2aae9a5b2b04d36a96f06f47e3ebd5a31fdf9761ffab7966",
-        "spec": "7714b54cc073a2e13eeae2dc59071a8ace661b2d14eda941a5010404864ccd84",
-        "tests": "65bf3af90de60b89a06a0614fc68ff9ac04c8da92ef17afe9a717eecc75a20ea"
+        "code": "e119a81c0822e4453afbc5750c2845e4ed74cfbac3768c516238163033e5d5c6",
+        "spec": "3fd8448e6d58e09ae32bb4aea0f72048cf24a66e06a00db0463067e33d518f04",
+        "tests": "bd50383beeb04d5a074c6ebf5a068e8d39b2d584342d743086a0c80075bfd91a"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -332,6 +332,38 @@
           "result": "pass",
           "rule": "RULE-54",
           "test": "dev/test_init_update.py::test_the_page_linked_into_the_old_plugin_is_replaced"
+        },
+        {
+          "env": null,
+          "id": "PROOF-164",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-55",
+          "test": "dev/test_init_update.py::test_a_workflow_is_removed_only_on_a_yes_for_that_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-166",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-55",
+          "test": "dev/test_init_update.py::test_yes_removes_no_workflow_and_names_the_one_it_kept"
+        },
+        {
+          "env": null,
+          "id": "PROOF-167",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-55",
+          "test": "dev/test_init_update.py::test_a_workflow_answered_no_is_kept_and_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-165",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-56",
+          "test": "dev/test_init_update.py::test_an_anchor_from_a_git_address_holding_figma_is_left_as_it_was"
         }
       ],
       "rules": {
@@ -347,6 +379,8 @@
         "RULE-52": "passed",
         "RULE-53": "passed",
         "RULE-54": "passed",
+        "RULE-55": "passed",
+        "RULE-56": "passed",
         "RULE-6": "passed",
         "RULE-7": "not run",
         "RULE-9": "passed"

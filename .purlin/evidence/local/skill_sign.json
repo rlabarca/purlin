@@ -2,14 +2,14 @@
   "feature": "skill_sign",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T22:23:56Z",
-      "commit": "e79e00d5cc5cfb37c5bb91842c42c7107c11e07c",
+      "at": "2026-10-02T00:43:54Z",
+      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "0bdeb752720e91088e9e00baf6e80fcf88912b8dc91eb8de9c4ac6138ae64d46",
+        "code": "1508613b6baea4d5b970c15d170765a4c29155e637becd4c5bde751b554ae5ef",
         "spec": "048da7008597567dacdf30381598a8730e7da3836df6d0ff5b04eb311f911639",
-        "tests": "1a0e2a08f75020a153feb17c57ba5c500cd158de1278ea937bf44ca419c8abd4"
+        "tests": "93ee5419deca1fcb2b2057af765c741035cb1a2d5a42befacf48f340e9240f85"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [

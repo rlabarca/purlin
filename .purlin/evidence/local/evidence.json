@@ -2,14 +2,14 @@
   "feature": "evidence",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T22:30:14Z",
-      "commit": "e79e00d5cc5cfb37c5bb91842c42c7107c11e07c",
+      "at": "2026-10-02T00:43:53Z",
+      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "cc45e782652ebc7688387228cd6ee54f16f16c438570af5116b6e355feefc62d",
-        "spec": "efb8f45a792d2caa43528407e748df09921bd7a1398f03b8b2b72fc1950085ec",
-        "tests": "0f40ffe7aed80d756b8d7e6c17253fda730a89c95dfc3875db5fb2daa77c6885"
+        "code": "cbfc99b80b2372af0e6cc4b45bb62cf8529c77ac4f66ee99031aa7d1ca4c6f04",
+        "spec": "fb9ca351798d6ef3362b2ac452c5607ad1b49f9e6670a440b6a00be81b369990",
+        "tests": "8d57742c82af207a613002352b93948c0bb318d1f5ffb6db3324cd7f3b12b875"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -111,6 +111,22 @@
         },
         {
           "env": null,
+          "id": "PROOF-88",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_evidence_reader.py::test_a_changed_test_command_puts_the_section_out_of_date_on_tests"
+        },
+        {
+          "env": null,
+          "id": "PROOF-89",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_evidence_reader.py::test_a_changed_version_leaves_the_section_current"
+        },
+        {
+          "env": null,
           "id": "PROOF-13",
           "manual": false,
           "result": "pass",
@@ -148,6 +164,22 @@
           "result": "pass",
           "rule": "RULE-30",
           "test": "dev/test_fingerprint.py::test_an_untracked_file_leaves_an_anchor_as_it_was"
+        },
+        {
+          "env": null,
+          "id": "PROOF-90",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_fingerprint.py::test_a_changed_version_leaves_an_anchor_as_it_was"
+        },
+        {
+          "env": null,
+          "id": "PROOF-91",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_fingerprint.py::test_a_changed_test_command_changes_an_anchors_tests_alone"
         },
         {
           "env": null,
@@ -251,7 +283,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-16",
-          "test": "dev/test_evidence_reader.py::test_an_audit_entry_answers_while_its_three_hashes_match"
+          "test": "dev/test_evidence_reader.py::test_an_audit_entry_answers_while_its_four_hashes_match"
         },
         {
           "env": null,
@@ -259,7 +291,23 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-16",
-          "test": "dev/test_evidence_reader.py::test_an_audit_entry_for_another_test_hash_does_not_answer"
+          "test": "dev/test_evidence_reader.py::test_an_audit_entry_for_another_test_hash_is_out_of_date_on_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-86",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_evidence_reader.py::test_of_two_current_audit_entries_the_later_one_answers"
+        },
+        {
+          "env": null,
+          "id": "PROOF-87",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-16",
+          "test": "dev/test_evidence_reader.py::test_an_audit_entry_for_another_code_hash_is_out_of_date_on_code"
         },
         {
           "env": null,

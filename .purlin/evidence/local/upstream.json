@@ -2,14 +2,14 @@
   "feature": "upstream",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T22:30:16Z",
-      "commit": "e79e00d5cc5cfb37c5bb91842c42c7107c11e07c",
+      "at": "2026-10-02T00:43:54Z",
+      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "c4a619054314ae1fa8200385064c513b7ae5015973925843cda097a7fc397480",
-        "spec": "8cb53aeadfd091fd9f8650084640ccd2418ebeebd7728448b94605fbd9465f91",
-        "tests": "29d396655f6ae446c083e36fd9d48b65cd2ad5d7b93dc79ddce6d690b898139d"
+        "code": "8bb3e1bac0c9c3135f5b9caafcd1e485c5b6359ee343e45ff2ae1598b0aae764",
+        "spec": "c50e53d723f357ddae4d1391ed1ce8aafdfb2c08f6ad0dfe9519b6650e681677",
+        "tests": "afa20f5e018520c9d493b75a083cb23bd534f0072aeba4479a74d65fb9bbfed4"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -108,6 +108,14 @@
           "result": "pass",
           "rule": "RULE-22",
           "test": "dev/test_upstream.py::test_nothing_is_written_outside_the_project_root"
+        },
+        {
+          "env": null,
+          "id": "PROOF-61",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_upstream.py::test_a_name_that_leads_out_of_the_anchor_folder_is_refused"
         },
         {
           "env": null,
@@ -244,6 +252,30 @@
           "result": "pass",
           "rule": "RULE-36",
           "test": "dev/test_upstream.py::test_the_status_names_a_pin_behind_its_source_and_leaves_the_copy_as_it_was"
+        },
+        {
+          "env": null,
+          "id": "PROOF-62",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-40",
+          "test": "dev/test_upstream.py::test_a_name_an_anchor_already_holds_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-63",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_upstream.py::test_a_path_that_leads_out_of_the_source_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-64",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_upstream.py::test_an_absolute_path_is_refused"
         }
       ],
       "rules": {
@@ -261,6 +293,8 @@
         "RULE-38": "passed",
         "RULE-39": "passed",
         "RULE-4": "passed",
+        "RULE-40": "passed",
+        "RULE-41": "passed",
         "RULE-6": "passed",
         "RULE-8": "not run"
       },

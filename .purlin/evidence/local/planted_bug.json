@@ -2,14 +2,14 @@
   "feature": "planted_bug",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T22:23:55Z",
-      "commit": "e79e00d5cc5cfb37c5bb91842c42c7107c11e07c",
+      "at": "2026-10-02T00:43:53Z",
+      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "4777a8870ab774dbdc1f8cce113e64b0762a58ce8013da4cff38e37e381c0c1c",
-        "spec": "66e69cd34220ab6cf4a1089fd4ca76d08d1f14d4902be789314edfb6fb63c6e3",
-        "tests": "65c77dc4a35895513a62e317f579e103976f5b9f5c99a9ffc4a6e397e0fde255"
+        "code": "375b62691bb1b4004ac21d900570d649f88d56aa80f822a5c19cd14a616915b8",
+        "spec": "fda44db63c222de87eca1709e1777f261bbadf1420461eba0e93ab40a339f068",
+        "tests": "97ef7185730ad6c7527479fc973dbb91c1593575aa3c6a1bf789973866fb829b"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -20,6 +20,14 @@
           "result": "pass",
           "rule": "RULE-1",
           "test": "dev/test_planted_bug.py::test_the_project_holds_the_same_bytes_after_a_bug"
+        },
+        {
+          "env": null,
+          "id": "PROOF-19",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_planted_bug.py::test_the_project_holds_the_same_bytes_after_a_test_runs_past_its_limit"
         },
         {
           "env": null,
@@ -39,6 +47,22 @@
         },
         {
           "env": null,
+          "id": "PROOF-17",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_planted_bug.py::test_a_test_that_can_no_longer_be_collected_reads_not_run"
+        },
+        {
+          "env": null,
+          "id": "PROOF-20",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_planted_bug.py::test_a_test_that_ends_in_an_error_reads_not_run"
+        },
+        {
+          "env": null,
           "id": "PROOF-6",
           "manual": false,
           "result": "pass",
@@ -51,7 +75,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-6",
-          "test": "dev/test_planted_bug.py::test_a_project_that_changes_while_a_bug_is_planted_stops_the_audit"
+          "test": "dev/test_planted_bug.py::test_a_project_that_changes_while_the_audit_runs_stops_the_audit"
         },
         {
           "env": null,
@@ -116,12 +140,38 @@
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_planted_bug.py::test_an_answer_of_no_break_is_not_made_with_its_reason"
+        },
+        {
+          "env": null,
+          "id": "PROOF-18",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_planted_bug.py::test_a_change_to_the_proofs_own_test_file_is_not_made"
+        },
+        {
+          "env": null,
+          "id": "PROOF-16",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-13",
+          "test": "dev/test_planted_bug.py::test_a_test_that_does_not_pass_in_the_copy_has_no_bug_planted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-21",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-14",
+          "test": "dev/test_planted_bug.py::test_a_change_that_keeps_the_files_size_is_still_run"
         }
       ],
       "rules": {
         "RULE-1": "passed",
         "RULE-10": "passed",
         "RULE-12": "passed",
+        "RULE-13": "passed",
+        "RULE-14": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-5": "passed",

@@ -2,14 +2,14 @@
   "feature": "plain_checks",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T22:30:14Z",
-      "commit": "e79e00d5cc5cfb37c5bb91842c42c7107c11e07c",
+      "at": "2026-10-02T00:43:53Z",
+      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "f405e2acc63aa23b4984e8ce33a5af1073a1ece1c5fea23558fcc7bcd76aa498",
-        "spec": "234dc2a9ee6c157aac12bd9ab04c1ebca98ec34fcc56c6e902daad3ff2ad4a9b",
-        "tests": "26bd40b2a0b121123c774c4282efe2464c2d25c031bd81cd40ba924de6134d0c"
+        "code": "2f5b968b63b2629509730610210f661096fc26ca3f01214be0f39956875ecc5c",
+        "spec": "a55d018259fb6b1a97c1d9fbfeb4b35a3f5ad38cfb05a1f8da43048e2b70c08d",
+        "tests": "da7548444b9beb672f9bd49c22939505c0102c27493f3977a159459c5643f7a0"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -159,6 +159,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_plain_checks.py::test_an_empty_pair_of_backticks_names_no_value"
+        },
+        {
+          "env": null,
           "id": "PROOF-28",
           "manual": false,
           "result": "pass",
@@ -172,10 +180,19 @@
           "result": "pass",
           "rule": "RULE-9",
           "test": "dev/test_plain_checks.py::test_the_spot_tests_start_no_claude"
+        },
+        {
+          "env": null,
+          "id": "PROOF-31",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-10",
+          "test": "dev/test_ai_audit_tests_named.py::TestEachTestShowsItsOwnSource::test_a_test_whose_source_is_not_found_is_named_once"
         }
       ],
       "rules": {
         "RULE-1": "passed",
+        "RULE-10": "passed",
         "RULE-2": "passed",
         "RULE-3": "passed",
         "RULE-4": "passed",

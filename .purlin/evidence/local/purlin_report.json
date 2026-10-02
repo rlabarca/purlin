@@ -2,14 +2,14 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T22:23:56Z",
-      "commit": "e79e00d5cc5cfb37c5bb91842c42c7107c11e07c",
+      "at": "2026-10-02T00:43:53Z",
+      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "6923bd1dce7f17a88318d307c008afe608b9df59f0bcf16cbb31e10dedd22251",
-        "spec": "a205fc7f7231022ccd0ae2b67610e80bd865b9db005959243659e05b33437168",
-        "tests": "25e71457a3278a2d9806b3f9eb40c4eb0467dedb72c20a92e8fae779f506fe62"
+        "code": "132d3651803a79d6ba7dd2656207df4001f3b9bf75d9d989c46567651991f49b",
+        "spec": "5cd2eb6f93db280eb5bea49f19d55558e66835d622c72ed58d328bda0b8ebfb7",
+        "tests": "ee5e4b87f30bec8e3b6a43537b5a47de3c0d609b980c2728428fcc9c1ee8f4a1"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -71,6 +71,22 @@
         },
         {
           "env": null,
+          "id": "PROOF-241",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_purlin_report.py::test_a_project_no_audit_read_says_not_audited_in_the_neutral_tone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-242",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_purlin_report.py::test_the_audit_box_reads_the_share_and_its_hover_the_counts"
+        },
+        {
+          "env": null,
           "id": "PROOF-8",
           "manual": false,
           "result": "pass",
@@ -108,6 +124,14 @@
           "result": "pass",
           "rule": "RULE-9",
           "test": "dev/test_purlin_report.py::test_an_audit_that_found_strong_and_weak_adds_the_strong_column"
+        },
+        {
+          "env": null,
+          "id": "PROOF-243",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_purlin_report.py::test_a_project_whose_one_audit_result_is_spot_checked_shows_strong"
         },
         {
           "env": null,
@@ -324,6 +348,22 @@
           "result": "pass",
           "rule": "RULE-39",
           "test": "dev/test_purlin_report.py::test_the_audit_panel_of_a_rule_no_audit_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-239",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-39",
+          "test": "dev/test_purlin_report.py::test_a_spot_checked_rule_reads_why_no_bug_was_caught"
+        },
+        {
+          "env": null,
+          "id": "PROOF-240",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-39",
+          "test": "dev/test_purlin_report.py::test_an_audit_out_of_date_keeps_its_last_result_on_screen"
         },
         {
           "env": null,

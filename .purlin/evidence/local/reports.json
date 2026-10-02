@@ -2,14 +2,14 @@
   "feature": "reports",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T22:30:15Z",
-      "commit": "e79e00d5cc5cfb37c5bb91842c42c7107c11e07c",
+      "at": "2026-10-02T00:43:53Z",
+      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "fcfcdd758858c5764a4bb5421472a66c7a8f8f303ab5276a1e2281f8301bc35c",
-        "spec": "5e6dba5cce9040362c6a5897475608cea448392ae744968a5235a8a6b33adfbf",
-        "tests": "28591d122b1f042e27b9e59141700ffd4bb3bcae969e42289108884d7a67a9ab"
+        "code": "e7a876ba0147dedbc473a99f8e15b515b8bf2f912f5dae76667db2e13628b3d6",
+        "spec": "1aa00a9d2d694844f47a72de4dcb71a0753c61b27fee718713bd2a77ee64eca6",
+        "tests": "dc28d310c929f03e0be3f25e09e24b5782cd8896fca7f7d7d5786e592aef69db"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -28,6 +28,22 @@
           "result": "pass",
           "rule": "RULE-1",
           "test": "dev/test_reports.py::TestTheMarker::test_a_marker_after_code_in_a_text_file_is_not_read"
+        },
+        {
+          "env": null,
+          "id": "PROOF-119",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-38",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_marker_inside_a_string_is_not_a_marker"
+        },
+        {
+          "env": null,
+          "id": "PROOF-123",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-38",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_marker_inside_a_here_document_is_not_a_marker"
         },
         {
           "env": null,
@@ -116,6 +132,14 @@
           "result": "pass",
           "rule": "RULE-33",
           "test": "dev/test_reports.py::TestThroughARun::test_a_case_that_is_two_tests_is_counted_for_neither"
+        },
+        {
+          "env": null,
+          "id": "PROOF-120",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_reports.py::TestThroughARun::test_a_comment_naming_a_rule_that_has_proofs_exits_1"
         },
         {
           "env": null,
@@ -220,6 +244,22 @@
           "result": "pass",
           "rule": "RULE-8",
           "test": "dev/test_reports.py::TestTheReports::test_the_trx_outcomes_the_capture_does_not_hold"
+        },
+        {
+          "env": null,
+          "id": "PROOF-121",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-39",
+          "test": "dev/test_reports.py::TestTheReports::test_a_fixture_that_raises_is_marked_an_error_and_a_failure_is_not"
+        },
+        {
+          "env": null,
+          "id": "PROOF-122",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-39",
+          "test": "dev/test_reports.py::TestTheReports::test_a_trx_error_timeout_or_abort_is_marked_an_error"
         },
         {
           "env": null,
@@ -382,6 +422,8 @@
         "RULE-35": "passed",
         "RULE-36": "passed",
         "RULE-37": "passed",
+        "RULE-38": "passed",
+        "RULE-39": "passed",
         "RULE-4": "passed",
         "RULE-6": "passed",
         "RULE-7": "passed",

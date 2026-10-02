@@ -2,14 +2,14 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T22:23:56Z",
-      "commit": "e79e00d5cc5cfb37c5bb91842c42c7107c11e07c",
+      "at": "2026-10-02T00:43:53Z",
+      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "da78a1c8e0558275b5d0fbf0eeda311bd2219684158e7b2f9c1ecd3dc671b157",
-        "spec": "0317d83408b70daf49e0a663262a7e07f572cd4e1285c6ff9d56312f19b830b3",
-        "tests": "6d4a3088cc8e16a06a120d895c81ad8fe07d5e134f46b2d742f009658fea6be7"
+        "code": "430f4445deb29f9a80c68e6b3789b8dbd89a18db719c201ca317198f16c8dba1",
+        "spec": "c1f8e9119f27c9ae5a67b7a729ff7aeabb8a8ae66454086af7c31b99118ea3ff",
+        "tests": "2e488daac19d4c667bb817f21970a69b3acfd4f35f3e04168aa62f1c940f46e6"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -36,6 +36,14 @@
           "result": "pass",
           "rule": "RULE-98",
           "test": "dev/test_run_script.py::TestTheCommandLine::test_help_prints_the_usage_and_exits_0"
+        },
+        {
+          "env": null,
+          "id": "PROOF-284",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-98",
+          "test": "dev/test_run_script.py::TestTheCommandLine::test_an_empty_project_root_is_refused_and_nothing_is_written"
         },
         {
           "env": null,
@@ -415,6 +423,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-282",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-100",
+          "test": "dev/test_run_script.py::TestNothingToRunOverAFailure::test_nothing_to_run_exits_1_while_the_evidence_holds_a_failure"
+        },
+        {
+          "env": null,
           "id": "PROOF-191",
           "manual": false,
           "result": "pass",
@@ -463,6 +479,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-285",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-105",
+          "test": "dev/test_run_script.py::TestSlowProofs::test_a_slow_nunit_row_test_is_started_and_the_run_says_so"
+        },
+        {
+          "env": null,
           "id": "PROOF-279",
           "manual": false,
           "result": "pass",
@@ -476,6 +500,22 @@
           "result": "pass",
           "rule": "RULE-106",
           "test": "dev/test_run_script.py::TestSlowProofs::test_a_code_change_puts_the_slow_proof_back_on_the_list"
+        },
+        {
+          "env": null,
+          "id": "PROOF-281",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-106",
+          "test": "dev/test_run_script.py::TestSlowProofs::test_a_kept_slow_result_names_the_run_that_took_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-286",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-106",
+          "test": "dev/test_run_script.py::TestSlowProofs::test_a_full_run_takes_a_kept_result_again"
         },
         {
           "env": null,
@@ -524,6 +564,14 @@
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_run_script.py::TestTheCiArmWritesItsSection::test_an_untagged_test_that_fails_beside_a_tagged_one_does_not_fail_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-283",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-12",
+          "test": "dev/test_run_script.py::TestTheCiArmWritesItsSection::test_a_tagged_test_that_fails_exits_1_and_is_written_as_failed"
         },
         {
           "env": null,

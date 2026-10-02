@@ -2,14 +2,14 @@
   "feature": "purlin_agent",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T22:23:56Z",
-      "commit": "e79e00d5cc5cfb37c5bb91842c42c7107c11e07c",
+      "at": "2026-10-02T00:43:53Z",
+      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "45f6ce832ca1c3c47300a9bbcd4eff670c93a099ed1261c9bea1e4eee1c55211",
-        "spec": "019c0f5f996d5f8fcc1cf6a6d8ef6e00934c45aaa6444184799d866e3383a2a9",
-        "tests": "f1a9d09cdadbf0c7e695b21504e142cee91c83086e4eea333f432063ba384218"
+        "code": "beb276573a600e93ed97a260fb3b6ca10d785ca191cc886ef6a63285b8aaabec",
+        "spec": "e8500e86152d259ab53578fc4702a68cfee32f3f5bfe5f046ec4b89d06c833d5",
+        "tests": "d22a94a8f26ec6d788ef7436565a078b914e0394bb37340c1dec91b7cd154a73"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -28,11 +28,47 @@
           "result": "pass",
           "rule": "RULE-19",
           "test": "dev/test_purlin_agent.py::test_one_sentence_names_a_worktree_merging_the_status_and_the_main_checkout"
+        },
+        {
+          "env": null,
+          "id": "PROOF-51",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_purlin_agent.py::test_every_path_a_skill_or_the_agent_definition_names_exists"
+        },
+        {
+          "env": null,
+          "id": "PROOF-52",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_purlin_agent.py::test_every_flag_a_skill_passes_is_one_its_script_takes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-53",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_purlin_agent.py::test_the_answers_file_the_sign_skill_shows_is_walked"
+        },
+        {
+          "env": null,
+          "id": "PROOF-54",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-23",
+          "test": "dev/test_purlin_agent.py::test_no_skill_agent_definition_or_reference_names_a_path_under_dev"
         }
       ],
       "rules": {
         "RULE-18": "passed",
-        "RULE-19": "passed"
+        "RULE-19": "passed",
+        "RULE-20": "passed",
+        "RULE-21": "passed",
+        "RULE-22": "passed",
+        "RULE-23": "passed"
       },
       "runner": "rich-labarca"
     }

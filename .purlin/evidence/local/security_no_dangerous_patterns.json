@@ -2,14 +2,14 @@
   "feature": "security_no_dangerous_patterns",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T22:32:23Z",
-      "commit": "99204ba29e1f276ac514c5585e2bf2823bdd815e",
+      "at": "2026-10-02T00:43:54Z",
+      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "02f13e21846077d5304b9fc8fb17da8772b798198b114de34c295ffb3817337d",
+        "code": "414bbd7755387b1e8b6dfd978f1cd60dce96e930e235f0464119353a89df17b2",
         "spec": "3ee7f78c55c86a9f6ee1ba5569146d40bca108196fe5d7d5128ce9959a6a28f6",
-        "tests": "9e4a3ef9a3548ed2f945d4bf6b1c33aaf80619a6fe9ee4de617bad21642b8287"
+        "tests": "778751afdf9b8fd0839a78359f5bc01f7af3f0e4b5b14d2e8cfe209e0bf1596c"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [

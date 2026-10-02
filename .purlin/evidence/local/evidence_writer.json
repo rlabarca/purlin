@@ -2,14 +2,14 @@
   "feature": "evidence_writer",
   "platforms": {
     "macos": {
-      "at": "2026-10-01T22:23:55Z",
-      "commit": "e79e00d5cc5cfb37c5bb91842c42c7107c11e07c",
+      "at": "2026-10-02T00:43:53Z",
+      "commit": "71ad33579a48e388d13a418f3a20164110796ce9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "aeb0411eb3f937629db55ca2b85b6efc7ff43323985f3cc2678308e6b149277e",
-        "spec": "693c1c35c46b59eeb2b956762b2f61b59693cb4556aa25045084688399299c98",
-        "tests": "b5b917c34acdd7e3a9300401bfce6d2ffcabcd2eb3949ddfe1afb5af0cd91cbb"
+        "code": "00912e70a77c8038b8c62b74ed4ff9cedc7e9e0de6078900d133a11f0c67bee6",
+        "spec": "2d85d1c0049f5e668545361b976657242498f7ac803eb7ee26bc42b53b4ea38e",
+        "tests": "e9917576b099724370c417e33e51ce35eea22d9f46b02c2deb3cb71ecd5df26e"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -207,6 +207,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-97",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-31",
+          "test": "dev/test_evidence_writer.py::test_a_run_over_a_tree_no_longer_changed_writes_dirty_false"
+        },
+        {
+          "env": null,
           "id": "PROOF-43",
           "manual": false,
           "result": "pass",
@@ -260,6 +268,14 @@
           "result": "pass",
           "rule": "RULE-19",
           "test": "dev/test_evidence_writer.py::test_committed_work_makes_no_commit_and_the_results_name_head"
+        },
+        {
+          "env": null,
+          "id": "PROOF-98",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_evidence_writer.py::test_a_commit_run_leaves_other_work_uncommitted_and_reads_dirty"
         },
         {
           "env": null,
