@@ -439,7 +439,8 @@ def _run_tests(copy, feature, proof_id, tests, timeout):
         suite, files = by_suite[name]
         runs.append(purlin_run.run_suite(
             copy, suite, files, log,
-            timeout=timeout or purlin_run.ARM_TIMEOUT_DEFAULT, marked=scan, action='audit'))
+            timeout=timeout or purlin_run.ARM_TIMEOUT_DEFAULT, marked=scan, action='audit',
+            option=_others_left_out(suite, files, scan, feature, proof_id)))
     entries = purlin_run.marker_results(scan, suites, runs).get((feature, proof_id), [])
     if tests:
         named = {(t['file'], t.get('name')) for t in tests}
@@ -453,6 +454,25 @@ def _run_tests(copy, feature, proof_id, tests, timeout):
             run.failures for run in runs):
         return 'pass'
     return 'not run'
+
+
+def _others_left_out(suite, files, scan, feature, proof_id):
+    """The option that leaves out of one suite's run every marked test of
+    `files` that is not the proof's own, or '' where the suite's tool cannot
+    leave a test out by name: the whole file then runs, and only the proof's
+    own tests are read (planted_bug RULE-26)."""
+    from purlin import frameworks as frameworks_module
+    own, others = [], []
+    for path in files:
+        found = scan.get(path)
+        if found is None or found.whole:
+            continue
+        for test in found.tests:
+            mine = any(marker.key() == (feature, proof_id) for marker in test.markers)
+            (own if mine else others).append((path, test))
+    if not own or not others:
+        return ''
+    return frameworks_module.leave_out(suite, others, own)[0]
 
 
 # ---------------------------------------------------------------------------

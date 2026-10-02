@@ -13,8 +13,8 @@
 >   and after the last bug stops the audit if the project changed.
 > Scope: scripts/review/targeted_break.py
 > Stack: python/stdlib (subprocess, tempfile, hashlib, shutil)
-> Highest-Rule: 25
-> Highest-Proof: 49
+> Highest-Rule: 26
+> Highest-Proof: 50
 
 ## Rules
 
@@ -40,6 +40,7 @@
 - RULE-23: Terminal escape sequences and control characters are removed from a part's `case:` line, from its `file:` value and from a `no break` reason before any of them is recorded or printed
 - RULE-24: The words `aim:` and `case:` that open their lines are read in any letter case and after any spaces
 - RULE-25: The line the finding of a bug that survived names is the first line the change made different that is neither blank nor a comment line; where the change left no such line, it is the first line the change made different
+- RULE-26: Where the suite's test tool can leave a test out by name, the other marked tests of the proof's test file are not started against the bug, before it is planted or with it in place; where it cannot, the whole file runs and only the proof's own tests are read
 
 ## Proof
 
@@ -90,3 +91,4 @@
 - PROOF-47 (RULE-24): The part for `PROOF-1` opens with the line `  Aim: past the test`, two spaces before it, and then `CASE: a stamp of 2026-01-01; the proof says 90; the changed code gives 0`; the bug is planted and reads `caught`, and its entry reads `aim` `past the test` and `case` `a stamp of 2026-01-01; the proof says 90; the changed code gives 0`
 - PROOF-48 (RULE-25): The model's change turns `return days`, line 12 of `src/age.py`, into three lines, `# planted`, an empty line and `return 0`, and the test of `PROOF-1` still passes; the audit prints `  PROOF-1: the test still passes when src/age.py:14 reads "return 0"`
 - PROOF-49 (RULE-25): The model's change puts the line `# planted` above `days = minutes(stamp)`, leaves that line and the next as they were and turns `return 0` into `return 1`, and the test of `PROOF-1` still passes; the audit prints `  PROOF-1: the test still passes when src/age.py:12 reads "return 1"`
+- PROOF-50 (RULE-26): `tests/test_age.py` holds the test of `PROOF-1` and the test of `PROOF-2`, which writes a line to a log each time it runs; a bug is planted for `PROOF-1` and its test catches it; the log was never written

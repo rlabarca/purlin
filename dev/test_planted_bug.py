@@ -320,6 +320,18 @@ def test_only_the_proofs_own_test_runs_against_its_bug(tmp_path):
     assert result['result'] == 'survived'
 
 
+# purlin: planted_bug PROOF-50
+def test_another_proofs_test_in_the_same_file_is_not_started(tmp_path):
+    log, logging = logs_where_it_runs(tmp_path)
+    root = project(tmp_path, {'PROOF-1': STRONG, 'PROOF-2': logging})
+    result = targeted_break.break_proof(root, 'age', PROOF, own_test('PROOF-1'), SCOPE,
+                                        BREAK)
+    assert result['result'] == 'caught'
+    # The test of PROOF-2 writes a line each time it runs, and it never ran:
+    # not before the bug and not with it in place.
+    assert not os.path.exists(log)
+
+
 def ran_marker(tmp_path):
     ran = os.path.join(str(tmp_path), 'ran.txt')
     return ran, 'open(%r, "w").write("ran")\n%s' % (ran, STRONG)
