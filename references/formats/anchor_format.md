@@ -61,7 +61,9 @@ it by repo URL plus path.
 Every rule of an anchor holds across the whole project, and its tests check the
 whole project. The project is every file git tracks but the records Purlin
 writes: the results of a run, and the evidence package and its sign-offs under
-`.purlin/evidence/`. Any change to the project ends an anchor's results. Its
+`.purlin/evidence/`. Any change to the project ends an anchor's results. A change
+to the settings file `.purlin/config.json` ends them as it ends a feature's:
+changing a test command does, and changing `version` alone does not. Its
 rules are signed with every other rule, in the one sign-off over the evidence
 package. No bug is planted for an anchor's proof: the audit reads its tests with
 the spot tests and the model alone. A rule that cannot be checked across the

@@ -12,7 +12,7 @@
 > Scope: scripts/mcp/purlin/fingerprint.py, scripts/mcp/purlin/evidence.py
 > Stack: python/stdlib, hashlib, json, subprocess (list-only)
 > Highest-Rule: 35
-> Highest-Proof: 89
+> Highest-Proof: 91
 
 ## Rules
 
@@ -23,7 +23,7 @@
 - RULE-6: A spec with no `> Scope:` line is reported incomplete with the reason `no > Scope: line`, and its fingerprint is still taken, with a `code` part that is the sha256 of the empty string
 - RULE-7: The `tests` part covers every tracked test file, one a suite of the `tests` setting names, carrying a marker for the feature, and the `tests` setting itself; editing such a file or that setting changes `tests` and no other part; a marker for another feature is not counted, and neither is the settings file's `version`
 - RULE-8: An untracked file changes no part of the fingerprint; an untracked file under the feature's scope or in the directory of one of its marker files is listed as untracked, and a file git ignores is not listed
-- RULE-30: An anchor's `code` part covers every file git tracks but the records Purlin writes, so an edit to any other tracked file changes it and an untracked file does not
+- RULE-30: An anchor's `code` part covers every file git tracks but the records Purlin writes and the settings file `.purlin/config.json`, whose `tests` setting the `tests` part covers, so an edit to any other tracked file changes it and an untracked file does not
 - RULE-31: Writing Purlin's records, the evidence under `.purlin/evidence/`, the evidence package and its sign-offs, leaves an anchor's `code` part as it was
 - RULE-32: An anchor's `code` part is taken the same on Windows, where git writes each text file out with CRLF, as the blob ids the commit holds
 - RULE-11: The reader loads `.purlin/evidence/local/<feature>.json` and `.purlin/evidence/ci/<feature>.json`; a source with no file reads as no evidence and adds no warning
@@ -57,10 +57,12 @@
 - PROOF-47 (RULE-8): `login` covers `src`, `.gitignore` lists `src/*.log`, and `src/debug.log` and `src/new_token.py` are written and not added to git; the one file listed as untracked is `src/new_token.py`
 - PROOF-78 (RULE-30): The anchor `security` stands beside `login`, which covers `src/login.py`; `docs/guide.md`, a tracked file no `> Scope:` names, is edited and not committed; the fingerprint of `security` differs from the one taken before in `code` alone
 - PROOF-79 (RULE-30): Beside the anchor `security`, `docs/draft.md` is written and not added to git; all three parts of the fingerprint of `security` are as they were
+- PROOF-90 (RULE-30): Beside the anchor `security`, the `version` in `.purlin/config.json` is changed from `0.10.0` to `0.10.1` and nothing else; all three parts of the fingerprint of `security` are as they were
+- PROOF-91 (RULE-30): Beside the anchor `security`, the `run` command of the `tests` setting in `.purlin/config.json` is changed; the fingerprint of `security` differs from the one taken before in `tests` alone
 - PROOF-80 (RULE-31): A new evidence file `.purlin/evidence/local/login.json` is written and committed; the fingerprint of the anchor `security` is the same as before
 - PROOF-82 (RULE-31): A sign-off file `.purlin/evidence/package/1.0.0.signoffs/jane.json` is written and committed; the fingerprint of the anchor `security` is the same as before
 - PROOF-83 (RULE-31): An evidence package `.purlin/evidence/package/1.0.0.json` is written and committed; the fingerprint of the anchor `security` is the same as before
-- PROOF-84 (RULE-32): In a checkout with `core.autocrlf` set to `true`, whose text files git writes out with CRLF, the anchor `security`'s `code` part equals the sha256 over each tracked file's path and the blob id the commit holds for it, the records aside @env(windows)
+- PROOF-84 (RULE-32): In a checkout with `core.autocrlf` set to `true`, whose text files git writes out with CRLF, the anchor `security`'s `code` part equals the sha256 over each tracked file's path and the blob id the commit holds for it, the records and the settings file aside @env(windows)
 - PROOF-17 (RULE-11): Only `.purlin/evidence/ci/login.json` is written; loading the evidence of `login` reads the `ci` file, reads no `local` file, gives the paths `.purlin/evidence/local/login.json` and `.purlin/evidence/ci/login.json`, and gives no warning
 - PROOF-18 (RULE-35): `.purlin/evidence/local/login.json` holds `{not json`; loading the evidence of `login` reads no `local` file and gives exactly one warning, `.purlin/evidence/local/login.json is not valid JSON; it is ignored. Run purlin:test login to write it again.`
 - PROOF-52 (RULE-35): `.purlin/evidence/local/login.json` is well formed and its `schema` reads `purlin-evidence/1`; loading the evidence of `login` reads no `local` file and gives exactly one warning, `.purlin/evidence/local/login.json carries the schema "purlin-evidence/1", not purlin-evidence/2; it is ignored. Run purlin:test login to write it again.`

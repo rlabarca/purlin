@@ -4,7 +4,7 @@ A fingerprint has three parts, each a sha256 hex string:
 
     spec   the spec's own rule and proof lines
     code   the files its `> Scope:` names; for an anchor, the project: every
-           tracked file but `RECORDS`
+           tracked file but `RECORDS`, Purlin's records and the settings file
     tests  the test files that carry a marker for it, and the `tests`
            setting of `.purlin/config.json`
 
@@ -41,9 +41,11 @@ PARTS = ('spec', 'code', 'tests')
 
 _GLOB_CHARS = ('*', '?', '[')
 
-# The records Purlin itself writes, which no anchor's code part reads:
-# the results of every run, the evidence package and its sign-offs.
-RECORDS = (':(exclude).purlin/evidence',)
+# What no anchor's code part reads: the records Purlin itself writes, the
+# results of every run, the evidence package and its sign-offs; and the
+# settings file, whose `tests` setting the `tests` part covers for an anchor
+# as for a feature, so a changed `version` alone ends no result.
+RECORDS = (':(exclude).purlin/evidence', ':(exclude).purlin/config.json')
 
 
 # ---------------------------------------------------------------------------

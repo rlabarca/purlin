@@ -305,7 +305,9 @@ Every rule of an anchor holds across the whole project, and its tests check the 
 The project is every file git tracks, except the records Purlin writes under
 `.purlin/evidence/`: the results of a run, the evidence package and its sign-offs.
 
-Any change to the project leaves an anchor's results out of date until the next run.
+Any change to the project leaves an anchor's results out of date until the next run. The
+settings file counts as it does for a feature: changing a test command in `.purlin/config.json`
+ends the results, and changing `version` alone does not.
 
 The audit plants no bug for an anchor's proof. The heuristic spot tests alone judge its tests.
 

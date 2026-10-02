@@ -322,6 +322,35 @@ def test_an_untracked_file_leaves_an_anchor_as_it_was(anchored):
     assert anchored.fp('security') == first
 
 
+def _settings(project, **changed):
+    """Rewrite `.purlin/config.json` with `changed` over what it holds."""
+    path = os.path.join(project.root, '.purlin', 'config.json')
+    with open(path, encoding='utf-8') as handle:
+        held = json.load(handle)
+    held.update(changed)
+    project.write('.purlin/config.json', json.dumps(held))
+    return held
+
+
+# purlin: evidence PROOF-90
+def test_a_changed_version_leaves_an_anchor_as_it_was(anchored):
+    _settings(anchored, version='0.10.0')
+    anchored.commit()
+    first = anchored.fp('security')
+    _settings(anchored, version='0.10.1')
+    assert anchored.fp('security') == first
+
+
+# purlin: evidence PROOF-91
+def test_a_changed_test_command_changes_an_anchors_tests_alone(anchored):
+    held = _settings(anchored, version='0.10.0')
+    anchored.commit()
+    first = anchored.fp('security')
+    tests = [dict(held['tests'][0], run='pytest -x {files}')] + held['tests'][1:]
+    _settings(anchored, tests=tests)
+    assert _changed(first, anchored.fp('security')) == ['tests']
+
+
 def _record_leaves_the_anchor(project, rel, text):
     first = project.fp('security')
     project.write(rel, text)
@@ -356,7 +385,7 @@ def test_an_anchors_code_part_is_the_blob_ids_the_commit_holds(anchored):
     anchored.commit()
     anchored.check_out_again('true')
     assert b'\r\n' in anchored.read_bytes('docs/guide.md')
-    records = ('.purlin/evidence/',)
+    records = ('.purlin/evidence/', '.purlin/config.json')
     held = []
     for line in anchored.git('ls-tree', '-r', 'HEAD').splitlines():
         head, path = line.split('\t', 1)
