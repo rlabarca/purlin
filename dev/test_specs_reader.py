@@ -43,11 +43,18 @@ class TestRuleText:
     # purlin: specs PROOF-19
     def test_a_line_break_in_a_rule_keeps_its_hash(self):
         plain = purlin_specs.rule_text_hash('Tokens expire after 24 hours')
-        # The break alone, the break with the next line indented, and the
-        # break as Windows writes it.
+        # The break alone, the break with the next line indented, the break
+        # as Windows writes it, the break as a bare carriage return, which
+        # is how old Mac files end a line, and each break with a space left
+        # before it.
         for broken in ('Tokens expire\nafter 24 hours',
                        'Tokens expire\n  after 24 hours',
-                       'Tokens expire\r\nafter 24 hours'):
+                       'Tokens expire\r\nafter 24 hours',
+                       'Tokens expire\rafter 24 hours',
+                       'Tokens expire\r  after 24 hours',
+                       'Tokens expire \nafter 24 hours',
+                       'Tokens expire \r\nafter 24 hours',
+                       'Tokens expire \rafter 24 hours'):
             assert purlin_specs.rule_text_hash(broken) == plain, repr(broken)
 
     # purlin: specs PROOF-17
