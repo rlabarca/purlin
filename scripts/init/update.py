@@ -248,6 +248,13 @@ def _confirm(question, assume_yes):
         return False
     return answer.strip().lower() in ('y', 'yes')
 
+def _answer(question, default):
+    """What is typed after `question`; the end of input answers nothing."""
+    try:
+        return input(question)
+    except (EOFError, KeyboardInterrupt):
+        return ''
+
 def _s(items):
     return '' if len(items) == 1 else 's'
 
@@ -457,42 +464,173 @@ def _detect_config(root):
              or config.get('version') != _version())
     return ['.purlin/config.json'] if stale else []
 
-def _tests_setting(root, old):
-    """`(the tests setting, the names dropped)` from the config v0.9.5 wrote.
+# How a project starts each test tool where it differs from the command
+# setup suggests: the words in front of the tool's name. A launcher listed
+# here is the suggested one in another spelling, and the suggestion stays.
+_TOOL_RES = {
+    'pytest': re.compile(r'(?<![\w./-])(?:pytest|py\.test)(?![\w.-])'),
+    'vitest': re.compile(r'(?<![\w./-])vitest(?![\w.-])'),
+    'jest': re.compile(r'(?<![\w./-])jest(?![\w.-])'),
+}
+_SUGGESTED_RES = {
+    'pytest': re.compile(r'(?:python3 -m |py -3 -m )pytest'),
+    'vitest': re.compile(r'npx vitest'),
+    'jest': re.compile(r'npx jest'),
+}
+_PLAIN_LAUNCHERS = {
+    'pytest': ('pytest', 'py.test', 'python -m pytest', 'python3 -m pytest',
+               'py -3 -m pytest'),
+    'vitest': ('vitest', 'npx vitest'),
+    'jest': ('jest', 'npx jest'),
+}
+_INSTALLS_RE = re.compile(r'\b(?:install|add|uninstall|remove)\b')
+PROPOSED = '%s: %s'
+RUNS_IT_AS = '  %s runs it as: %s'
+COMMAND_QUESTION = ('Use this command for %s? Press Enter to use it, or type '
+                    'the command to use instead: ')
 
-    Each framework `test_framework` named becomes the suite init writes for
-    it, xunit read as dotnet. v0.9.5 wrote down every plugin it shipped, so a
-    Python-only tree can carry `pytest,jest,shell,vitest`: a name detection
-    does not find in the tree is dropped rather than written, because its
-    suite would fail on every run. `auto`, or no value, writes what detection
-    finds. A config that already carries `tests` keeps it.
+
+def _own_commands(root):
+    """`[(where, command)]`: each command the project keeps for its own use,
+    in its `package.json` scripts, its `Makefile` and its workflows."""
+    found = []
+    try:
+        scripts = json.loads(_read(os.path.join(root, 'package.json'))).get(
+            'scripts')
+    except (IOError, OSError, ValueError, AttributeError):
+        scripts = None
+    if isinstance(scripts, dict):
+        found += [('package.json, "%s",' % name, command)
+                  for name, command in scripts.items()
+                  if isinstance(command, str)]
+    try:
+        found += [('Makefile', line.strip())
+                  for line in _read(os.path.join(root, 'Makefile')).splitlines()
+                  if line.startswith('\t')]
+    except (IOError, OSError, UnicodeDecodeError):
+        pass
+    for rel in _files_under(root, WORKFLOW_DIR, ('*.yml', '*.yaml')):
+        try:
+            lines = _read(os.path.join(root, rel)).splitlines()
+        except (IOError, OSError, UnicodeDecodeError):
+            continue
+        found += [(rel, command) for command in _workflow_commands(lines)]
+    return found
+
+
+_RUN_KEY_RE = re.compile(r'^(\s*)(?:-\s*)?run:\s*(.*)$')
+
+
+def _workflow_commands(lines):
+    """The commands a workflow's `run:` keys hold, a block's lines each one."""
+    commands, block = [], None
+    for line in lines:
+        key = _RUN_KEY_RE.match(line)
+        if key:
+            block = None
+            if key.group(2).strip() in ('|', '>', '|-', '>-', '|+', '>+'):
+                block = len(key.group(1))
+            elif key.group(2).strip():
+                commands.append(key.group(2).strip())
+        elif block is not None:
+            indent = len(line) - len(line.lstrip())
+            if line.strip() and indent <= block:
+                block = None
+            elif line.strip():
+                commands.append(line.strip())
+    return commands
+
+
+def project_runs(root, tool):
+    """`(where, the command, its launcher)` for the first command of the
+    project's own that runs `tool`, or None. The launcher is what stands in
+    front of the tool's name, the name included: `uv run --project pipeline
+    pytest` in `uv run --project pipeline pytest pipeline/tests`."""
+    pattern = _TOOL_RES.get(tool)
+    if pattern is None:
+        return None
+    for where, command in _own_commands(root):
+        for part in re.split(r'&&|\|\||[;|]', command):
+            found = pattern.search(part)
+            # A command that installs the tool does not run it.
+            if found and not _INSTALLS_RE.search(part[:found.start()]):
+                return where, command.strip(), part[:found.end()].strip()
+    return None
+
+
+def proposed_tests(root, old):
+    """`(entries, sources, dropped)`: the `tests` setting the update proposes.
+
+    Each framework `test_framework` named becomes the suite setup suggests
+    for it, xunit read as dotnet. v0.9.5 wrote down every plugin it shipped,
+    so a Python-only tree can carry `pytest,jest,shell,vitest`: a name that
+    neither detection nor a command of the project's own finds is dropped
+    rather than written, because its suite would fail on every run. `auto`,
+    or no value, writes what detection finds. Where the project starts a
+    tool its own way, the entry's command starts that way too, and
+    `sources` holds `{name: (where, the project's command)}` for it. A
+    config that already carries `tests` keeps it.
     """
     frameworks = _frameworks()
     if isinstance(old.get('tests'), list):
-        return old['tests'], []
+        return old['tests'], {}, []
     detected = frameworks.detect_frameworks(root)
     raw = str(old.get('test_framework') or '')
     names = [part.strip() for part in raw.split(',') if part.strip()]
-    if not names or 'auto' in names:
-        return frameworks.entries_for(detected), []
     wanted, dropped = [], []
-    for name in names:
+    if not names or 'auto' in names:
+        wanted = list(detected)
+    for name in ([] if wanted else names):
         suite = OLD_FRAMEWORKS.get(name)
-        if suite is None or suite not in detected:
+        if suite is None or (suite not in detected
+                             and project_runs(root, suite) is None):
             dropped.append(name)
         elif suite not in wanted:
             wanted.append(suite)
-    return frameworks.entries_for(wanted), dropped
+    entries, sources = frameworks.entries_for(wanted), {}
+    for entry in entries:
+        runs = project_runs(root, entry['name'])
+        if runs is None:
+            continue
+        where, command, launcher = runs
+        sources[entry['name']] = (where, command)
+        if launcher not in _PLAIN_LAUNCHERS[entry['name']]:
+            entry['run'] = _SUGGESTED_RES[entry['name']].sub(
+                lambda _found: launcher, entry['run'], count=1)
+    return entries, sources, dropped
+
+
+def _proposal_lines(entries, sources):
+    lines = []
+    for entry in entries:
+        lines.append(PROPOSED % (entry['name'], entry['run']))
+        if entry['name'] in sources:
+            lines.append(RUNS_IT_AS % sources[entry['name']])
+    return lines
 
 
 def _apply_config(root, files, args, out):
-    """`version` and `tests`, and every other key removed and named."""
+    """`version` and `tests`, and every other key removed and named.
+
+    The command proposed for each test tool is shown, and the owner accepts
+    it or types the one to use; `--yes` accepts each.
+    """
     old = _config(root)
     path = os.path.join(root, '.purlin', 'config.json')
     out.kept(_back_up_copy(path, '.purlin/config.json'))
-    tests, unwired = _tests_setting(root, old)
+    tests, sources, unwired = proposed_tests(root, old)
     for name in unwired:
         out.say(DROPPED_FRAMEWORK % name)
+    given = dict(getattr(args, 'commands', None) or {})
+    for entry in ([] if isinstance(old.get('tests'), list) else tests):
+        if entry['name'] in given:
+            entry['run'] = given[entry['name']]
+        elif not args.yes:
+            for line in _proposal_lines([entry], sources):
+                print(line)
+            typed = _answer(COMMAND_QUESTION % entry['name'], entry['run'])
+            if typed.strip() and typed.strip().lower() not in ('y', 'yes'):
+                entry['run'] = typed.strip()
     config = {'version': _version(), 'tests': tests}
     _write(path, json.dumps(config, indent=2) + '\n')
     out.done('.purlin/config.json')
@@ -502,6 +640,9 @@ def _apply_config(root, files, args, out):
     names = [entry.get('name') for entry in tests if isinstance(entry, dict)]
     out.say('wrote the tests setting: %s' % (', '.join(names) or 'no suite; '
             'add one under "tests" in .purlin/config.json'))
+    for entry in tests:
+        if isinstance(entry, dict) and entry.get('name'):
+            out.say('  ' + PROPOSED % (entry['name'], entry.get('run')))
 
 def _detect_os_tags(root):
     return [rel for rel in _files_under(root, 'specs', ('*.md',))

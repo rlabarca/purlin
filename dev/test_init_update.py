@@ -24,6 +24,7 @@ What each group proves:
 *files*       the files 0.9.5 kept that this release does not use
 *evidence*    `.purlin/evidence/` and its README, and the dashboard page
 *lettered*    a proof 0.9.5 numbered with a letter takes a number of its own
+*commands*    the command proposed for each test tool, and the owner's own
 *titles*      a title tag in the shapes a real project writes it, and the
               read-back with the test run's own reader
 """
@@ -1305,3 +1306,70 @@ def test_a_title_the_reader_cannot_read_is_named(tmp_path, capsys):
     assert now == ["const NAME = 'forwarded';",
                    '// purlin: dev_proxy PROOF-1', 'it(NAME, () => {', '});']
     assert ('  %s:2: %s' % (PROXY_TS, UNREAD)) in printed, printed
+
+
+# --- the command proposed for each test tool -------------------------------------
+
+UV_PYTEST = 'uv run --project pipeline pytest pipeline/tests'
+PACKAGE_JSON = json.dumps({
+    'name': 'studio',
+    'scripts': {'test': 'vitest run --project unit',
+                'test:python': UV_PYTEST},
+    'devDependencies': {'vitest': '^3.0.0'}}, indent=2) + '\n'
+TYPED = ('uv run --project pipeline python -m pytest -c '
+         'pipeline/pyproject.toml {files} --junitxml={report}')
+COMMAND_QUESTION = ('Use this command for %s? Press Enter to use it, or type '
+                    'the command to use instead: ')
+
+
+def _subfolder_project(tmp_path):
+    """The sample as a project whose pytest lives in `pipeline/` and is run
+    through `uv` from a `package.json` script, with vitest beside it."""
+    root = _project(tmp_path, V095)
+    _set_config(root, test_framework='pytest,vitest,shell')
+    _write(root, 'package.json', PACKAGE_JSON)
+    _write(root, 'pipeline/pyproject.toml',
+           '[tool.pytest.ini_options]\ntestpaths = ["tests"]\n')
+    _write(root, 'pipeline/tests/test_x.py', 'def test_x():\n    pass\n')
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'pytest in a subfolder, run through uv')
+    return root
+
+
+def _runs(root):
+    return dict((entry['name'], entry['run'])
+                for entry in _config(root)['tests'])
+
+
+# purlin: update PROOF-182
+def test_the_command_proposed_starts_the_way_the_project_starts_it(
+        tmp_path, capsys):
+    root = _subfolder_project(tmp_path)
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    assert _runs(root) == {
+        'pytest': 'uv run --project pipeline pytest {files} '
+                  '--junitxml={report}',
+        'vitest': frameworks.entry_for('vitest')['run']}
+    assert ('    pytest: uv run --project pipeline pytest {files} '
+            '--junitxml={report}') in printed, printed
+    assert '  dropped shell from the tests: nothing in the tree runs it' \
+        in printed, printed
+
+
+# purlin: update PROOF-183
+def test_the_owner_is_shown_each_command_and_may_type_another(
+        tmp_path, capsys, monkeypatch):
+    root = _subfolder_project(tmp_path)
+    asked = _answers(monkeypatch, [(COMMAND_QUESTION % 'pytest', TYPED),
+                                   (COMMAND_QUESTION % 'vitest', '')])
+    _apply(root, argv=())
+    printed = capsys.readouterr().out.splitlines()
+    assert COMMAND_QUESTION % 'pytest' in asked, asked
+    assert COMMAND_QUESTION % 'vitest' in asked, asked
+    at = printed.index('pytest: uv run --project pipeline pytest {files} '
+                       '--junitxml={report}')
+    assert printed[at + 1] == ('  package.json, "test:python", runs it as: '
+                               + UV_PYTEST), printed[at:at + 2]
+    assert _runs(root) == {'pytest': TYPED,
+                           'vitest': frameworks.entry_for('vitest')['run']}

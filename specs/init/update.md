@@ -9,8 +9,8 @@
 >   tool or person wrote is left alone, and one commit carries the whole run.
 > Scope: scripts/init/update.py
 > Stack: python3 (stdlib only, 3.9 floor)
-> Highest-Rule: 59
-> Highest-Proof: 181
+> Highest-Rule: 60
+> Highest-Proof: 183
 
 ## Rules
 
@@ -34,6 +34,7 @@
 - RULE-57: A proof 0.9.5 numbered with a letter, such as `PROOF-7b`, is given the next free number in its spec, `> Highest-Proof:` moving with it where the spec has that line; the marker of each test that named it is rewritten with the new number, and each change is printed as `<spec> PROOF-7b is now PROOF-<n>`; a marker naming a lettered proof no spec holds is left as it was and named by file and line
 - RULE-58: A tag in a JavaScript or TypeScript test's title becomes one comment directly above the line that opens the test, however many lines the title runs over; a tag that was a string piece of its own goes with the `+` that joined it and the space beside it, so a title of one piece and its tag is left one plain string, and a tag that opened a title leaves no space in front of it
 - RULE-59: After rewriting a test file the update reads it back as a test run reads it, and for each marker whose test's title that reading cannot read it prints `<file>:<line>: the title of the test under this marker cannot be read, so its result cannot be matched. Write it as one plain string.`
+- RULE-60: The update looks at how the project already runs each test tool, in its `package.json` scripts, its `Makefile` and its workflows, and proposes for each tool the command setup suggests, started the way the project starts it; it shows each proposal with the project's own command and asks the owner to accept it or type another, `--yes` accepting each, and a tool the old settings named that a command of the project's own runs is kept
 
 ## Proof
 
@@ -95,3 +96,5 @@
 - PROOF-179 (RULE-59): A test opening `it(NAME + ' [proof:dev_proxy:PROOF-1:RULE-1:unit]', () => {` on line 2 opens `it(NAME, () => {` after the update with `--yes`, under its comment, and the output holds `packages/web/test/dev_proxy.test.ts:2: the title of the test under this marker cannot be read, so its result cannot be matched. Write it as one plain string.`
 - PROOF-180 (RULE-35): A `conftest.py` at the root and a `pipeline/conftest.py`, each a docstring, two imports, a `sys.path.insert` line pointing at `.purlin/plugins` and `pytest_plugins = ["pytest_purlin"]`, are both listed under `plugins`; after the update with `--yes` neither is on disk or tracked, and the output holds `removed <file>: it held only the plugin's wiring` for each
 - PROOF-181 (RULE-35): A `conftest.py` with a fixture, the entries `"pytest_purlin", "house_plugin"`, a `sys.path.insert(0, ".purlin/plugins")` line, and a docstring and a comment that both quote those lines, holds after the update with `--yes` `pytest_plugins = ["house_plugin"]` and no `sys.path.insert` line outside the comment; the docstring, the comment and the fixture are as they were
+- PROOF-182 (RULE-60): A project whose old settings name `pytest,vitest,shell`, whose `package.json` script `test:python` reads `uv run --project pipeline pytest pipeline/tests`, with its only Python test under `pipeline/tests/`, is updated with `--yes`; its pytest command reads `uv run --project pipeline pytest {files} --junitxml={report}`, its vitest command is the one setup suggests, and the output holds that pytest command and `dropped shell from the tests: nothing in the tree runs it`
+- PROOF-183 (RULE-60): The same project is updated with every migration answered `y`; it prints the proposed pytest command, then `  package.json, "test:python", runs it as: uv run --project pipeline pytest pipeline/tests`, and asks `Use this command for pytest? Press Enter to use it, or type the command to use instead: `; a command typed there is the pytest command written, and an empty answer for vitest writes the command proposed
