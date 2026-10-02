@@ -156,19 +156,22 @@ slide('slow', 'Slow tests', 'Slow tests stay out of your way', [
  lead='Tag a proof %s. Its test is skipped while you build and runs when you check the whole project.' % m('@slow'), width=560, pad=16, numbers=False)
 slide('audit', 'Are the tests any good?', 'The audit: would your tests catch a bug?', [
     ('Heuristic spot tests', 'Purlin flags tests that check nothing, check the code against itself, or never check the result the proof expects.'),
-    ('Plant one bug', 'For each proof, an AI puts one small bug in a throwaway copy of your code, such as a sample age off by one hour.'),
+    ('Plant one bug', 'For each proof, an AI writes the one small bug its test is most likely to miss, in a throwaway copy of your code.'),
     ('Run that proof\'s test', 'The test fails and the spot tests found nothing: the rule is %s. The test still passes: the rule is %s, and you see the bug it missed. No bug could be planted: the rule is %s, and you see why.' % (m('strong'), m('weak'), m('spot-checked'))),
     ('`purlin:audit`', 'Tell the agent: <i>"Build and audit until 80% of rules are strong."</i>'),
-], 'Why: AI-written tests often check what the code does, not what was asked (<a href="https://arxiv.org/pdf/2410.21136" style="color:#E6BEB0">Konstantinou et al., 2024</a>), and planting bugs is the most reliable test of a test (<a href="https://homes.cs.washington.edu/~mernst/pubs/mutation-effectiveness-fse2014.pdf" style="color:#E6BEB0">Just et al., FSE 2014</a>).',
+], 'Why: AI-written tests often check what the code does, not what was asked (<a href="https://arxiv.org/pdf/2410.21136" style="color:#E6BEB0">Konstantinou et al., 2024</a>). A bug aimed past the test finds 7 times the gaps (<a href="https://arxiv.org/pdf/2609.35841" style="color:#E6BEB0">Kiele et al., ESEM 2026</a>).',
  'A passing test only shows the code did what the test checked. The audit asks the harder '
- 'question: if the code were wrong, would the test notice? It plants one small bug per proof, aimed '
- 'at the exact claim the proof makes, in a copy of the project that is thrown away, and runs only '
- 'that proof\'s test. Your code is never changed. Only proofs whose test or code changed since the '
- 'last audit are tried again, so it stays fast, and nothing waits on it. One AI call per rule, '
- 'with no tools: it can read and change nothing. Google plants bugs only in '
- 'changed code (Petrovic et al., TSE 2021) and Meta has a model write a few targeted ones (Foster '
- 'et al., FSE 2025); Purlin follows both. The full reasoning and sources are on the audit page of '
- 'the docs.',
+ 'question: if the code were wrong, would the test notice? For each proof the AI reads the test '
+ 'and writes the one small bug that test is most likely to miss. The bug must break the case the '
+ 'proof names, and the AI says which case that is. It goes in a copy of the project that is thrown '
+ 'away, and only that proof\'s test runs. Your code is never changed. A bug the test misses is '
+ 'shown to you with the AI\'s line, and you judge it: most show a case the test does not check, '
+ 'and some rest on a strict reading of the proof. Only proofs whose test or code changed since '
+ 'the last audit are tried again, so it stays fast, and nothing waits on it. The AI has no tools: '
+ 'it can read and change nothing. In one study a bug aimed past the tests found a real gap 87.8 '
+ 'percent of the time, against 12.2 percent for a bug written without seeing them (Kiele et al., '
+ 'ESEM 2026). The full reasoning, the sources and a trial on a sample project are on the audit '
+ 'page of the docs.',
  lead='A passing test is not proof that it checks anything. The audit tries to make each test fail.', width=560, pad=16)
 slide('signoff', 'The sign-off', 'When everyone is done, a person signs the evidence once', [
     ('Run and commit', 'A developer runs every test on the version to sign, the run on Windows included, and commits the results.'),

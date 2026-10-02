@@ -1650,6 +1650,38 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       citations and quotes.
     - The first audit of Purlin itself was stopped before it finished, since its results would
       have been taken with the request under review; Purlin is audited once, after the build.
+123. **The audit aims its bug past the test** (added 2026-10-02). 23 papers were read in full
+    (`dev/plans/audit-research.md`) and three requests were tried twice on a sample project with
+    3 weak tests among 12. No paper studies Purlin's case, and none gives an unbiased way to
+    choose a bug: one chosen without the test is usually caught and says little; one aimed past
+    the test finds more, and some of what survives a person must judge. The owner chose "Aim
+    past the test" over hiding the test, both shown apart, and today's wording.
+    - **One bug per proof, aimed past its test.** The request shows the test and says what to do
+      with it: make the smallest change after which the case the proof names gives a different
+      result, and choose the change the test as written is most likely to miss. Where the test
+      checks the proof's case and its result, the model makes the plainest such change. A request
+      never leaves the test in view with nothing said about it.
+    - **The model names the case its bug breaks**: the proof's case, the result the proof names
+      and the result the changed code gives. It is the model's claim; Purlin does not check it.
+      A part that names no case is not planted.
+    - **A surviving bug shows that line under it, everywhere**: the audit's printout, the
+      dashboard, the sign-off's findings, the evidence and the package, as
+      `PROOF-2: the AI says this breaks: <case>`.
+    - **A change that touches only a comment is not planted.**
+    - **Decision 121 holds**: the four results and `out of date`; only a test that ran and failed
+      is a caught bug; no bug for an anchor's rule or a proof tagged for another system; the
+      model started bare; nothing blocked; a surviving bug makes the rule `weak`.
+    - **The audit page says so**: simple at the top; below it the reasoning, with citations,
+      quotes and the trial's results. In the owner's words: "Simple at the top then the deep
+      research with references and citations and our own test results at the bottom." Five
+      sentences that said more than their sources are reworded, on the page and in the
+      spot-tests reference.
+    - **The tests of the audit's rules run on sample projects**, and Purlin is then audited
+      with it. In the owner's words: "dogfood it on purlin but use sample projects as the tests
+      for the actual proofs for the rules."
+    - Known and accepted: the aimed request flagged 1 and then 4 of the trial's 9 sound tests,
+      each a strict reading of the proof's words, and which tests it flags can differ between
+      two audits.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
