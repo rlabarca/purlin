@@ -127,6 +127,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .topbar .spacer{flex-basis:100%;height:0}
 .wrap{padding:var(--space-6) var(--space-5)}
 .strip{grid-template-columns:repeat(3,minmax(0,1fr))}
+.strip.four{grid-template-columns:repeat(4,minmax(0,1fr))}
 .tiles{display:contents}
 .tbl.specs{display:block}
 .specs .th{display:none}
@@ -145,6 +146,11 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .kv{grid-template-columns:1fr;gap:var(--space-1) 0}
 .kv dd{margin-bottom:var(--space-3)}
 .bug .kv{grid-template-columns:1fr}
+}
+/* Four boxes stand on one line down to 768 pixels, and two to a line
+   under that, where the total under `Passing` would not fit a quarter. */
+@media (max-width:767px){
+.strip.four{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:599px){
 .stamp{flex:none;width:calc(100% + var(--space-12) + var(--space-4));margin-right:calc(-1 * (var(--space-12) + var(--space-4)));white-space:normal;overflow:visible}

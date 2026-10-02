@@ -117,7 +117,8 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .bug{margin:var(--space-4) 0;padding-top:var(--space-4);border-top:1px solid var(--border-hairline)}
 .bug .kv{grid-template-columns:auto 1fr;align-items:start;margin-top:var(--space-3)}
 .bug pre.code{padding:var(--space-2) var(--space-4);white-space:pre}
-@media (max-width:1023px){.topbar{--bar-pad:var(--space-3);--bar-side:var(--space-5);column-gap:var(--space-4)}.topbar .spacer{flex-basis:100%;height:0}.wrap{padding:var(--space-6) var(--space-5)}.strip{grid-template-columns:repeat(3,minmax(0,1fr))}.tiles{display:contents}.tbl.specs{display:block}.specs .th{display:none}.specs .tr{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--space-6);row-gap:var(--space-2);padding:var(--space-4) var(--space-5)}.specs .tr>div{flex:none}.specs .tr>div:first-child{flex-basis:100%}.specs .tr>div:empty{display:none}.tr>div[data-label]{display:inline-flex;align-items:baseline;gap:var(--space-2);white-space:nowrap}.tr>div[data-label]::before{content:attr(data-label);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}.rule{grid-template-columns:auto 1fr;gap:var(--space-2) var(--space-4);padding:var(--space-3) var(--space-5)}.rule .rt{grid-row:2;grid-column:1/-1}.rule .rp{justify-content:flex-start}.specs>.desc{padding:var(--space-4) var(--space-5)}.group{padding:var(--space-4) var(--space-5)}.group .gr{margin-left:0;flex-basis:100%}.kv{grid-template-columns:1fr;gap:var(--space-1) 0}.kv dd{margin-bottom:var(--space-3)}.bug .kv{grid-template-columns:1fr}}
+@media (max-width:1023px){.topbar{--bar-pad:var(--space-3);--bar-side:var(--space-5);column-gap:var(--space-4)}.topbar .spacer{flex-basis:100%;height:0}.wrap{padding:var(--space-6) var(--space-5)}.strip{grid-template-columns:repeat(3,minmax(0,1fr))}.strip.four{grid-template-columns:repeat(4,minmax(0,1fr))}.tiles{display:contents}.tbl.specs{display:block}.specs .th{display:none}.specs .tr{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--space-6);row-gap:var(--space-2);padding:var(--space-4) var(--space-5)}.specs .tr>div{flex:none}.specs .tr>div:first-child{flex-basis:100%}.specs .tr>div:empty{display:none}.tr>div[data-label]{display:inline-flex;align-items:baseline;gap:var(--space-2);white-space:nowrap}.tr>div[data-label]::before{content:attr(data-label);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}.rule{grid-template-columns:auto 1fr;gap:var(--space-2) var(--space-4);padding:var(--space-3) var(--space-5)}.rule .rt{grid-row:2;grid-column:1/-1}.rule .rp{justify-content:flex-start}.specs>.desc{padding:var(--space-4) var(--space-5)}.group{padding:var(--space-4) var(--space-5)}.group .gr{margin-left:0;flex-basis:100%}.kv{grid-template-columns:1fr;gap:var(--space-1) 0}.kv dd{margin-bottom:var(--space-3)}.bug .kv{grid-template-columns:1fr}}
+@media (max-width:767px){.strip.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:599px){.stamp{flex:none;width:calc(100% + var(--space-12) + var(--space-4));margin-right:calc(-1 * (var(--space-12) + var(--space-4)));white-space:normal;overflow:visible}.stamp>span{display:inline-block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}.bug .nowrap{white-space:normal}.facts{display:flex;flex:none;width:calc(100% + var(--space-12) + var(--space-4));max-width:none;margin-right:calc(-1 * (var(--space-12) + var(--space-4)))}.fact{flex-direction:column;align-items:flex-start;gap:var(--space-1)}.fact b{max-width:100%}.strip{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:var(--space-5) var(--space-4)}}
 </style>
 </head>
@@ -160,7 +161,9 @@ function statStrip() {
   var project = wholeProject();
   var boxes = [];
   if (showsProofs()) {
-    var missing = noProofLines();
+    var missing = ruleCounts(function (rule) {
+      return rule.left === 'no_proof';
+    });
     var count = missing.reduce(function (sum, pair) { return sum + pair[1]; },
                                0);
     boxes.push(box(NO_PROOF, count, count ? 'warn' : 'pass',
@@ -171,6 +174,16 @@ function statStrip() {
   boxes.push(box(PASSING, passing, passing + byHand === total ? 'pass' : 'warn',
                  platformLines(project),
                  total + (total === 1 ? ' rule total' : ' rules total')));
+  var failing = ruleCounts(function (rule) {
+    return cellWord(rule, 'passed') === 'failed';
+  });
+  if (failing.length) {
+    boxes.push(box(FAILING, failing.reduce(function (sum, pair) {
+      return sum + pair[1];
+    }, 0), 'fail', failing.map(function (pair) {
+      return pair[0] + DOT + pair[1];
+    })));
+  }
   var found = auditShare();
   if (audited() && found.over) {
     var strong = (summary.audit || {}).strong || 0;
@@ -178,8 +191,8 @@ function statStrip() {
                    found.strong === found.over ? 'pass' : 'warn',
                    auditCountLines(), null));
   }
-  return '<div class="strip"><div class="tiles">' + boxes.join('')
-    + '</div></div>';
+  return '<div class="strip' + (boxes.length > 3 ? ' four' : '')
+    + '"><div class="tiles">' + boxes.join('') + '</div></div>';
 }
 function box(label, count, hue, lines, under) {
   return '<div class="tile"' + (lines.length ? hover(lines) : '')
@@ -188,11 +201,11 @@ function box(label, count, hue, lines, under) {
     + (under ? '<div class="tile-l tile-t">' + esc(under) + '</div>' : '')
     + '</div>';
 }
-function noProofLines() {
+function ruleCounts(counted) {
   var byFeature = {};
   var names = [];
   everyRule().forEach(function (pair) {
-    if (pair.rule.left !== 'no_proof') { return; }
+    if (!counted(pair.rule)) { return; }
     var name = pair.feature.name;
     if (!(name in byFeature)) { byFeature[name] = 0; names.push(name); }
     byFeature[name] += 1;
@@ -324,10 +337,16 @@ function specTable(label, columns, body) {
       return '<div>' + esc(c.label) + '</div>';
     }).join('') + '</div>' + body + '</div></section>';
 }
+function firstThose(list, first) {
+  return list.filter(first).concat(list.filter(function (item) {
+    return !first(item);
+  }));
+}
 function renderBoard() {
   var columns = boardColumns();
   var shown = DATA.features || [];
-  var anchors = shown.filter(function (f) { return f.is_anchor; });
+  var anchors = firstThose(shown.filter(function (f) { return f.is_anchor; }),
+                           hasFailing);
   var order = [];
   var groups = {};
   shown.forEach(function (feature) {
@@ -336,13 +355,22 @@ function renderBoard() {
     if (!groups[name]) { groups[name] = []; order.push(name); }
     groups[name].push(feature);
   });
+  order.forEach(function (name) {
+    groups[name] = firstThose(groups[name], hasFailing);
+  });
+  order = firstThose(order, function (name) {
+    return groups[name].some(hasFailing);
+  });
+  var anchorTable = anchors.length ? specTable('Anchors', columns, anchors.map(
+    function (feature) { return featureRow(feature, columns); }).join('')) : '';
+  var specsTable = order.length ? specTable('Specs', columns, order.map(
+    function (name) { return groupBand(name, groups[name], columns); }
+  ).join('')) : '';
+  var specsFirst = !anchors.some(hasFailing) && order.some(function (name) {
+    return groups[name].some(hasFailing);
+  });
   return '<section>' + statStrip() + '</section>'
-    + (anchors.length ? specTable('Anchors', columns, anchors.map(
-      function (feature) { return featureRow(feature, columns); }).join(''))
-      : '')
-    + (order.length ? specTable('Specs', columns, order.map(function (name) {
-      return groupBand(name, groups[name], columns);
-    }).join('')) : '');
+    + (specsFirst ? specsTable + anchorTable : anchorTable + specsTable);
 }
 function ruleInView() {
   var feature = featureNamed(VIEW.feature);
@@ -548,6 +576,7 @@ var AUDIT_WORDS = [['strong', 'strong'], ['weak', 'weak'],
 var LAST_AUDIT = 'Last audit: ';
 var NO_ANCHOR_BUG = 'No bug is planted for an anchor\'s rule.';
 var PASSING = 'Passing';
+var FAILING = 'Failing';
 var STRONG = 'Strong';
 var NO_PROOF = 'No proof';
 var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong'];
@@ -774,6 +803,11 @@ function testFailed(rule) {
     return platforms[os].word === 'failed';
   });
 }
+function hasFailing(feature) {
+  return (feature.rules || []).some(function (rule) {
+    return cellWord(rule, 'passed') === 'failed';
+  });
+}
 function badges(rule) {
   return reachedSteps(rule).map(pill).join('')
     + (testFailed(rule) ? pill('failed') : '');
@@ -887,7 +921,9 @@ var NOTICE_KINDS = [
   [/^\.purlin\/evidence\/[^\/ ]+\/(\S+)\.json (?:is not valid JSON|is not a JSON object|carries the schema |names the source )/,
     'have', 'has', 'an evidence file Purlin ignores'],
   [/^(\S+): \d+ files? its scope names (?:is|are) not written yet/,
-    'name', 'names', 'a file in the scope that is not written yet']
+    'name', 'names', 'a file in the scope that is not written yet'],
+  [/^(\S+) RULE-\d+ passes with nothing to check here: /,
+    'have', 'has', 'a rule that passes with nothing to check here']
 ];
 function groupedLines(lines) {
   var found = lines.map(function (line) {

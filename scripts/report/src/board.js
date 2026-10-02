@@ -4,14 +4,18 @@
 /* The boxes, in the order the work is done. Wherever the project writes a
    proof line the `No proof` box comes first, counting the rules that have
    none yet; then `Passing`, the payload's `summary.steps.passed`, carrying
-   the project's total under its label; then, where any rule has an audit
+   the project's total under its label; then, where a rule's passed cell
+   reads `failed`, `Failing`, counting those rules in the fail tone, so a
+   failing rule is on the first screen however many specs the board lists;
+   then, where any rule has an audit
    entry, `Strong`, the payload's `summary.audit.strong`. A count is
    green once it is complete and amber until then: `No proof` at zero,
    `Passing` once every rule passes or is checked at sign-off, `Strong` once
    every rule the audit could read that is not an anchor's is strong, the
    share `summary.audit_share` gives the terminal's sentence. Each
    box carries the hover its column carries, read over every spec, but
-   `Strong`, whose hover reads the audit's counts. The
+   `Failing`, whose hover names each spec with a failing rule and how many
+   it holds, and `Strong`, whose hover reads the audit's counts. The
    terminal prints a summary sentence; the boxes carry the same counts, so
    the page prints none. */
 function statStrip() {
@@ -20,7 +24,9 @@ function statStrip() {
   var project = wholeProject();
   var boxes = [];
   if (showsProofs()) {
-    var missing = noProofLines();
+    var missing = ruleCounts(function (rule) {
+      return rule.left === 'no_proof';
+    });
     var count = missing.reduce(function (sum, pair) { return sum + pair[1]; },
                                0);
     boxes.push(box(NO_PROOF, count, count ? 'warn' : 'pass',
@@ -31,6 +37,16 @@ function statStrip() {
   boxes.push(box(PASSING, passing, passing + byHand === total ? 'pass' : 'warn',
                  platformLines(project),
                  total + (total === 1 ? ' rule total' : ' rules total')));
+  var failing = ruleCounts(function (rule) {
+    return cellWord(rule, 'passed') === 'failed';
+  });
+  if (failing.length) {
+    boxes.push(box(FAILING, failing.reduce(function (sum, pair) {
+      return sum + pair[1];
+    }, 0), 'fail', failing.map(function (pair) {
+      return pair[0] + DOT + pair[1];
+    })));
+  }
   var found = auditShare();
   if (audited() && found.over) {
     var strong = (summary.audit || {}).strong || 0;
@@ -38,8 +54,11 @@ function statStrip() {
                    found.strong === found.over ? 'pass' : 'warn',
                    auditCountLines(), null));
   }
-  return '<div class="strip"><div class="tiles">' + boxes.join('')
-    + '</div></div>';
+  /* Under 1024 pixels the boxes stand three to a line. Four boxes stand
+     four to a line, and two to a line under 768 pixels, so the fourth never
+     stands alone under the other three. */
+  return '<div class="strip' + (boxes.length > 3 ? ' four' : '')
+    + '"><div class="tiles">' + boxes.join('') + '</div></div>';
 }
 
 /* One box: its count in its tone, its label, a second line under the label
@@ -52,13 +71,13 @@ function box(label, count, hue, lines, under) {
     + '</div>';
 }
 
-/* The specs that hold a rule with no proof, and how many each holds, as
-   `[[spec, count]]`: the kind `no_proof` the payload gives each such rule. */
-function noProofLines() {
+/* The specs that hold a rule `counted` answers for, and how many each
+   holds, as `[[spec, count]]`, by name. */
+function ruleCounts(counted) {
   var byFeature = {};
   var names = [];
   everyRule().forEach(function (pair) {
-    if (pair.rule.left !== 'no_proof') { return; }
+    if (!counted(pair.rule)) { return; }
     var name = pair.feature.name;
     if (!(name in byFeature)) { byFeature[name] = 0; names.push(name); }
     byFeature[name] += 1;
@@ -262,14 +281,31 @@ function specTable(label, columns, body) {
     }).join('') + '</div>' + body + '</div></section>';
 }
 
+/* A list with the members `first` answers for moved to its front, each
+   part in the order it had. */
+function firstThose(list, first) {
+  return list.filter(first).concat(list.filter(function (item) {
+    return !first(item);
+  }));
+}
+
 /* The board opens on the step boxes, then the two tables beneath them: the
    anchors, where the project has one, and then the specs, grouped by
    category. The anchors' section says what they are, so they carry no band
-   and no mark of their own. */
+   and no mark of their own.
+
+   The order is the data's, but a spec with a failing rule comes before one
+   with none, among the anchors and within each category, and a category
+   holding such a spec before one holding none: the failing spec's row is
+   the first of its table. The two tables follow the same line: where a
+   spec has a failing rule and no anchor has one, the spec table stands
+   above the anchors, so that row is on the first screen. The status table lists the spec with the most
+   rules left to do first, of every kind of work, and has no categories. */
 function renderBoard() {
   var columns = boardColumns();
   var shown = DATA.features || [];
-  var anchors = shown.filter(function (f) { return f.is_anchor; });
+  var anchors = firstThose(shown.filter(function (f) { return f.is_anchor; }),
+                           hasFailing);
   var order = [];
   var groups = {};
   shown.forEach(function (feature) {
@@ -278,11 +314,20 @@ function renderBoard() {
     if (!groups[name]) { groups[name] = []; order.push(name); }
     groups[name].push(feature);
   });
+  order.forEach(function (name) {
+    groups[name] = firstThose(groups[name], hasFailing);
+  });
+  order = firstThose(order, function (name) {
+    return groups[name].some(hasFailing);
+  });
+  var anchorTable = anchors.length ? specTable('Anchors', columns, anchors.map(
+    function (feature) { return featureRow(feature, columns); }).join('')) : '';
+  var specsTable = order.length ? specTable('Specs', columns, order.map(
+    function (name) { return groupBand(name, groups[name], columns); }
+  ).join('')) : '';
+  var specsFirst = !anchors.some(hasFailing) && order.some(function (name) {
+    return groups[name].some(hasFailing);
+  });
   return '<section>' + statStrip() + '</section>'
-    + (anchors.length ? specTable('Anchors', columns, anchors.map(
-      function (feature) { return featureRow(feature, columns); }).join(''))
-      : '')
-    + (order.length ? specTable('Specs', columns, order.map(function (name) {
-      return groupBand(name, groups[name], columns);
-    }).join('')) : '');
+    + (specsFirst ? specsTable + anchorTable : anchorTable + specsTable);
 }

@@ -14,7 +14,8 @@ number twice, and one spec whose scope names a file not written yet;
 regulated, signed as `0.1.0` four commits ago, with a rule whose audit found
 a gap and a planted bug its test missed, a rule no audit has run on, a hand
 check no sign-off has noted, a rule that passed on one system and failed on
-another, and a rule of a remote anchor with no test.
+another, and a rule of a remote anchor with no test. No rule of regulated
+reads `failed`; one of solo's and two of team's do.
 
     python3 -m pytest dev/test_purlin_report.py -q
 """
@@ -180,8 +181,9 @@ def open_rule(page, feature, rule_id):
 
 
 # How many step boxes each sample draws: `No proof`, since all three write
-# proof lines, `Passing`, and `Strong` where the audit read the project.
-TILES = {'solo': 2, 'team': 3, 'regulated': 3}
+# proof lines, `Passing`, `Failing` where a rule's passed cell reads `failed`,
+# and `Strong` where the audit read the project.
+TILES = {'solo': 3, 'team': 4, 'regulated': 3}
 
 
 def rule_ids(page):
@@ -526,6 +528,224 @@ def test_the_passing_box_carries_the_total(browser, tmp_path):
     label = total.evaluate_handle('el => el.previousElementSibling')
     assert label.evaluate(LOOK) == total.evaluate(LOOK)
     page.close()
+
+
+# ---------------------------------------------------------------------------
+# A failing rule is on the first screen
+# ---------------------------------------------------------------------------
+
+def box_hovers(page):
+    """Each box's label and its hover."""
+    return dict(page.eval_on_selector_all(
+        '.tile', "els => els.map(e => [e.querySelector('.tile-l')"
+        ".textContent.trim(), e.getAttribute('title')])"))
+
+
+def failed_rules(payload):
+    """`[(spec, rule id)]` for each rule whose passed cell reads `failed`."""
+    return [(feature['name'], rule['id']) for feature in payload['features']
+            for rule in feature['rules']
+            if rule['cells']['passed']['word'] == 'failed']
+
+
+def given_failed(payload, feature, rule_id):
+    """The payload with one more rule's passed cell reading `failed`."""
+    rule = rule_of(payload, feature, rule_id)
+    rule['cells']['passed'].update(word='failed', reasons=['a test failed'])
+
+
+# purlin: purlin_report PROOF-263
+def test_a_failing_box_counts_the_rules_that_failed(browser, tmp_path):
+    payload = payload_named('solo')
+    assert failed_rules(payload) == [('invoice', 'RULE-2')]
+    page = open_board(browser, tmp_path, payload)
+    found = boxes(page)
+    fail = page.evaluate(RESOLVE_TOKEN, '--state-fail')
+    hover = box_hovers(page)['Failing']
+    page.close()
+    assert [label for label, _, _ in found] == ['No proof', 'Passing',
+                                                'Failing'], found
+    assert found[2][1:] == ['1', fail], found
+    assert hover == 'invoice · 1', hover
+
+
+# purlin: purlin_report PROOF-264
+def test_the_failing_box_stands_between_passing_and_strong(browser, tmp_path):
+    payload = payload_named('team')
+    given_failed(payload, 'security_baseline', 'RULE-1')
+    assert failed_rules(payload) == [
+        ('refund', 'RULE-1'), ('refund', 'RULE-2'),
+        ('security_baseline', 'RULE-1')]
+    page = open_board(browser, tmp_path, payload)
+    found = boxes(page)
+    hover = box_hovers(page)['Failing']
+    page.close()
+    assert [(label, count) for label, count, _ in found][1:] == [
+        ('Passing', str(payload['summary']['steps']['passed'])),
+        ('Failing', '3'),
+        ('Strong', str(payload['summary']['audit']['strong']))], found
+    assert hover == 'refund · 2\nsecurity_baseline · 1', hover
+
+
+# purlin: purlin_report PROOF-265
+def test_no_failing_box_where_no_rule_failed(browser, tmp_path):
+    payload = payload_named('regulated')
+    assert failed_rules(payload) == []
+    assert rule_of(payload, 'login', 'RULE-4')['cells']['passed'][
+        'word'] == 'partial'
+    page = open_board(browser, tmp_path, payload)
+    found = boxes(page)
+    specs = listed_in(page, 'specs')
+    anchors = listed_in(page, 'anchors')
+    bands = texts(page, '.group .gt')
+    page.close()
+    assert [label for label, _, _ in found] == ['No proof', 'Passing',
+                                                'Strong'], found
+    names = [feature['name'] for feature in payload['features']]
+    assert specs == [name for name in names if name in specs] == [
+        'login', 'invoice', 'export'], specs
+    assert anchors == ['checkout_design', 'security_baseline'], anchors
+    assert bands == ['auth', 'billing'], bands
+
+
+# purlin: purlin_report PROOF-266
+def test_a_spec_and_a_category_with_a_failing_rule_come_first(browser,
+                                                              tmp_path):
+    payload = payload_named('team')
+    assert [(feature['category'], feature['name'])
+            for feature in payload['features'] if not feature['is_anchor']
+            ] == [('auth', 'login'), ('billing', 'invoice'),
+                  ('billing', 'receipt'), ('billing', 'refund')]
+    assert {name for name, _ in failed_rules(payload)} == {'refund'}
+    page = open_board(browser, tmp_path, payload)
+    bands = texts(page, '.group .gt')
+    specs = listed_in(page, 'specs')
+    page.close()
+    assert bands == ['billing', 'auth'], bands
+    assert specs == ['refund', 'invoice', 'receipt', 'login'], specs
+
+
+# purlin: purlin_report PROOF-267
+def test_an_anchor_with_a_failing_rule_comes_first(browser, tmp_path):
+    payload = payload_named('team')
+    given_failed(payload, 'security_baseline', 'RULE-1')
+    page = open_board(browser, tmp_path, payload)
+    anchors = listed_in(page, 'anchors')
+    page.close()
+    assert anchors == ['security_baseline', 'checkout_design'], anchors
+
+
+# purlin: purlin_report PROOF-278
+def test_the_spec_table_stands_first_where_a_spec_fails_and_no_anchor_does(
+        browser, tmp_path):
+    payload = payload_named('team')
+    assert {name for name, _ in failed_rules(payload)} == {'refund'}
+    page = open_board(browser, tmp_path, payload)
+    labels = section_labels(page)
+    order = page.evaluate(
+        "() => { const top = s => document.querySelector(s)"
+        ".getBoundingClientRect().top; return [top('.strip'),"
+        " top('[data-table=\"specs\"]'), top('[data-table=\"anchors\"]')]; }")
+    page.close()
+    assert labels == ['SPECS', 'ANCHORS'], labels
+    assert order == sorted(order), order
+
+
+# purlin: purlin_report PROOF-279
+def test_the_anchors_stand_first_where_an_anchor_fails(browser, tmp_path):
+    payload = payload_named('team')
+    given_failed(payload, 'security_baseline', 'RULE-1')
+    assert {name for name, _ in failed_rules(payload)} == {
+        'refund', 'security_baseline'}
+    page = open_board(browser, tmp_path, payload)
+    labels = section_labels(page)
+    page.close()
+    assert labels == ['ANCHORS', 'SPECS'], labels
+
+
+# purlin: purlin_report PROOF-268
+def test_two_failing_specs_keep_the_datas_order(browser, tmp_path):
+    payload = payload_named('team')
+    given_failed(payload, 'invoice', 'RULE-2')
+    page = open_board(browser, tmp_path, payload)
+    specs = listed_in(page, 'specs')
+    page.close()
+    assert specs == ['invoice', 'refund', 'receipt', 'login'], specs
+
+
+def forty_passing_specs_then_one_failing(payload):
+    """The regulated sample grown by 40 specs whose rules pass, 10 in each
+    of the categories `gamma`, `delta`, `kappa` and `sigma`, then `zz_last`
+    in the category `zeta`, whose one rule reads `failed`: the last spec of
+    the last category the data lists."""
+    model = next(f for f in payload['features'] if f['name'] == 'export')
+
+    def spec(name, category, word):
+        made = json.loads(json.dumps(model))
+        made.update(name=name, category=category,
+                    spec_path='specs/%s/%s.md' % (category, name))
+        made['rules'] = made['rules'][1:]
+        for rule in made['rules']:
+            rule['feature'] = name
+            rule['cells']['passed'].update(word=word, reasons=[])
+        return made
+    for category in ('gamma', 'delta', 'kappa', 'sigma'):
+        payload['features'] += [spec('%s_%02d' % (category, number), category,
+                                     'passed') for number in range(10)]
+    payload['features'].append(spec('zz_last', 'zeta', 'failed'))
+
+
+# The four lines a real project's status printed between its table and its
+# sentence: two warnings, of three lines and of two on a 1500-pixel screen,
+# and two lines of information.
+FOUR_LINES = [
+    'pipeline/tests/test_pitch_crosscheck.py:175 names pitch_crosscheck '
+    'PROOF-7, whose wording changed after the test was last changed in '
+    'ebfe120: it read "Transcribe the reference lead with the cross-check '
+    'disabled in config and" and now reads "Transcribe a synthesised stem '
+    'with the cross-check disabled in config,". Run purlin:build '
+    'pitch_crosscheck to make the test show it; the line clears once the '
+    'test changes.',
+    '9 tests still carry a marker from Purlin 0.9.5, which is not read: '
+    'packages/sunvox-project/test/generated_track.unit.test.ts:334, '
+    'packages/web/test/parameter_lfo.test.ts:154, and 7 more. For each, '
+    'write the proof with purlin:spec, put the comment above the test, and '
+    'take the old tag out.',
+    '1 spec names no files, so its tests run every time: patch_graph. Run '
+    'purlin:spec patch_graph to add its > Scope: line.',
+    'pack_acceptance: 1 file its scope names is not written yet: '
+    'projects/1-groovevox-13-3-samplepack2. Run purlin:build '
+    'pack_acceptance, or correct the path with purlin:spec pack_acceptance.']
+
+
+# purlin: purlin_report PROOF-269
+def test_the_failing_box_and_the_failing_spec_are_on_the_first_screen(
+        browser, tmp_path):
+    payload = payload_named('regulated')
+    forty_passing_specs_then_one_failing(payload)
+    assert payload['features'][-1]['name'] == 'zz_last'
+    assert len(payload['features']) == 46
+    payload['dirty'] = False
+    payload['warnings'] = FOUR_LINES[:2]
+    payload['information'] = FOUR_LINES[2:]
+    page = open_board(browser, tmp_path, payload,
+                      viewport={'width': 1500, 'height': 900})
+    first = page.query_selector('[data-table="specs"] .tr')
+    name = first.query_selector('.name .n').text_content().strip()
+    row = first.bounding_box()
+    tile = page.eval_on_selector_all(
+        '.tile', "els => els.filter(e => e.querySelector('.tile-l')"
+        ".textContent.trim() === 'Failing').map(e => "
+        "e.getBoundingClientRect().bottom)")
+    band = texts(page, '.group .gt')[0]
+    notices = len(page.query_selector_all('.notice'))
+    labels = section_labels(page)
+    page.close()
+    assert notices == 4
+    assert labels == ['SPECS', 'ANCHORS'], labels
+    assert (band, name) == ('zeta', 'zz_last'), (band, name)
+    assert len(tile) == 1 and tile[0] <= 900, tile
+    assert row['y'] + row['height'] <= 900, row
 
 
 # Every count cell of every spec row, keyed by the spec name, as the text a
@@ -938,6 +1158,32 @@ def test_lines_of_information_group_in_the_neutral_tone(browser, tmp_path):
     dot = page.eval_on_selector('.notice .dot', 'e => e.getAttribute("style")')
     page.close()
     assert dot == 'color:var(--state-neutral)'
+
+
+# purlin: purlin_report PROOF-275
+def test_rules_with_nothing_to_check_group_in_the_neutral_tone(browser,
+                                                               tmp_path):
+    status = status_sentences()[1]
+    payload = payload_named('regulated')
+    payload['dirty'] = False
+    payload['warnings'] = []
+    reason = 'this project has no screens'
+    incomplete = status.incomplete_line(['export'])
+    payload['information'] = [
+        status.NOTHING_LINE % ('checkout_design', 'RULE-%d' % number, reason)
+        for number in (1, 2, 3)] + [incomplete]
+    page = open_board(browser, tmp_path, payload)
+    found = texts(page, '.notice-text')
+    dots = page.eval_on_selector_all(
+        '.notice .dot', 'els => els.map(e => e.getAttribute("style"))')
+    page.close()
+    assert found == [
+        'checkout_design has a rule that passes with nothing to check here, '
+        'in 3 places. Run purlin:status checkout_design.', incomplete], found
+    assert incomplete == (
+        '1 spec names no files, so its tests run every time: export. Run '
+        'purlin:spec export to add its > Scope: line.')
+    assert dots == ['color:var(--state-neutral)'] * 2, dots
 
 
 def one_line_of_each_kind(name):

@@ -66,12 +66,18 @@ has uncommitted changes:
 The working tree has uncommitted changes, so what is on this board is not what a commit would carry.
 ```
 
-There is one for each warning the status prints, such as a spec mistake. Below the warnings, a
-spec ahead of its code gets one line of information:
+The notices then hold every line the status prints between its table and its summary sentence,
+but `→ Run: purlin:init --update`.
+The warnings come first, such as a spec mistake or an anchor whose pin is behind its source.
+Below them come the lines of information, such as a spec ahead of its code:
 
 ```
 states: 3 files its scope names are not written yet: facts.py, project.py, wording.py. Run purlin:build states, or correct the path with purlin:spec states.
 ```
+
+Each line reads as the terminal prints it. Two are set on one line here: an anchor's pin line
+stands without the `Anchors:` heading, and the uncommitted spec files follow their heading, as
+`Uncommitted spec changes: M specs/auth/login.md, ?? specs/auth/logout.md`.
 
 Three or more warnings of one kind about a spec are one notice. It counts the specs and names the
 first two, and its hover names every one:
@@ -83,12 +89,15 @@ first two, and its hover names every one:
 One or two of a kind keep a notice each, and so does a warning that is about no one spec. The
 lines of information group the same way.
 
-**Count boxes.** Up to three boxes count the project's rules:
+**Count boxes.** Up to four boxes count the project's rules:
 
 - `No proof` counts the rules no proof line names. It comes first, and it is there wherever the
   project writes at least one proof line.
 - `Passing` counts the rules that pass their tests. The project's total is beneath it, as
   `11 RULES TOTAL`. A rule checked at sign-off is not counted.
+- `Failing` counts the rules whose tests failed, in red. It is there only while a rule's status
+  is `failed`. Hover over it for each spec that holds one, as `invoice · 1`. A rule that failed
+  on one operating system and passed on another reads `partial` and is not counted here.
 - `Strong` counts the rules the audit found strong, of the rules that pass their tests and have
   a tested proof. It is there once any rule has an audit entry and at least one rule that is not
   an anchor's passes its tests with a tested proof. Hover over it for the audit's counts, one to
@@ -120,6 +129,13 @@ which platform are all in hovers.
 **Anchors.** The anchors have a section of their own, headed `ANCHORS`, between the count boxes
 and the spec table. It has the same columns and rows, and no band. A project with no anchor shows
 no such section.
+
+**Failing specs first.** A spec with a failing rule is listed before a spec with none, among the
+anchors and within each category, and a category that holds one comes before a category that
+holds none. Where a spec fails and no anchor does, the spec table stands above the anchors. So the
+`Failing` box and the first failing spec are on the first screen. Nothing else moves: specs are
+listed by name. The status table in the terminal has its own order, the spec with the most rules
+left to do first.
 
 **Bands and rows.** The other specs are grouped by category. A band heads each group:
 
