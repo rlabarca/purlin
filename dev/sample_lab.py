@@ -24,6 +24,13 @@ each case word for word:
                so no change gets past it
 
 The reply names no other proof, so no bug is planted for the other nine.
+
+`settled(folder, ...)` is the project the tests of `purlin:audit --settle`
+run on: it builds the lab, audits it once with `REPLY`, so `RULE-2` and
+`RULE-3` read `weak` with a bug kept as `survived`, makes the change a test
+asks for, and runs `purlin_run.py --audit --feature sample_intake` with
+`--settle` for each rule named, as its own process, with a fake `claude`
+that answers what the test hands it.
 """
 
 import io
@@ -272,6 +279,49 @@ REPLY = {
 }
 
 
+# The test of `PROOF-5` as `purlin:build` strengthens it: the proof's own
+# value, `25`, in place of the code's helper.
+FROM_THE_HELPER = ("    assert record['age_hours'] == age_hours(collected, "
+                   "received)\n")
+THE_PROOFS_VALUE = "    assert record['age_hours'] == 25\n"
+
+# A second bug for `PROOF-5` that the test, left as it was, still passes
+# with: the helper it trusts is an hour out.
+SECOND_SURVIVES = {
+    'PROOF-5': fake_claude.change(
+        'src/intake.py', '    return int(seconds // 3600)',
+        '    return int(seconds // 3600) + 1', case=CASE_5,
+        aim='past the test'),
+    'reading': '- PROOF-5: the test takes its expected age from the code.',
+}
+# A second bug the same test catches: the record's age leaves the helper's.
+SECOND_CAUGHT = {
+    'PROOF-5': fake_claude.change(
+        'src/intake.py', '        age = age_hours(collected, received)',
+        '        age = age_hours(collected, received) + 1', case=CASE_5,
+        aim='plain'),
+    'reading': "- PROOF-5: the record's age is compared with the helper's.",
+}
+# The helper written over two lines, so the kept bug's `before` line is gone,
+# and a bug for the helper as it then reads.
+HELPER = '    return int(seconds // 3600)\n'
+HELPER_IN_TWO = '    hours = seconds // 3600\n    return int(hours)\n'
+AFTER_THE_REWRITE = {
+    'PROOF-5': fake_claude.change(
+        'src/intake.py', '    hours = seconds // 3600',
+        '    hours = seconds // 3600 + 1', case=CASE_5, aim='past the test'),
+    'reading': '- PROOF-5: the test takes its expected age from the code.',
+}
+# A bug the strengthened test catches, which is not the one on record.
+ANOTHER_BUG = {
+    'PROOF-5': fake_claude.change(
+        'src/intake.py', '    return int(seconds // 3600)',
+        '    return int(seconds // 1800)', case=CASE_5.replace('26', '51'),
+        aim='plain'),
+    'reading': '- PROOF-5: the test compares the age with 25.',
+}
+
+
 def _write(root, path, text):
     full = os.path.join(root, *path.split('/'))
     os.makedirs(os.path.dirname(full), exist_ok=True)
@@ -379,3 +429,104 @@ def audited(folder, reply=None):
         return made
     finally:
         os.environ['PATH'] = previous
+
+
+def _replace(root, path, old, new):
+    full = os.path.join(root, *path.split('/'))
+    with open(full, encoding='utf-8') as handle:
+        text = handle.read()
+    assert text.count(old) == 1, (path, old)
+    with open(full, 'w', encoding='utf-8') as handle:
+        handle.write(text.replace(old, new))
+
+
+def strengthen(root):
+    """Change the test of `PROOF-5` to expect the proof's own value, `25`."""
+    _replace(root, 'tests/test_intake.py', FROM_THE_HELPER, THE_PROOFS_VALUE)
+
+
+def expect_24(root):
+    """Change the test of `PROOF-5` to expect `24`, so it fails."""
+    _replace(root, 'tests/test_intake.py', FROM_THE_HELPER,
+             THE_PROOFS_VALUE.replace('25', '24'))
+
+
+def rewrite_the_helper(root):
+    """Write the helper's one line as two, so the bug kept for `PROOF-5`
+    names a line the file no longer holds."""
+    _replace(root, 'src/intake.py', HELPER, HELPER_IN_TWO)
+
+
+def evidence_text(root):
+    """The project's evidence file, as text."""
+    with open(os.path.join(root, *EVIDENCE.split('/')),
+              encoding='utf-8') as handle:
+        return handle.read()
+
+
+def run_script(root, directory, *args):
+    """`purlin_run.py` with `args`, as its own process in the project, the
+    fake `claude` of `directory` first on PATH. `(exit code, the lines it
+    printed, the lines it wrote to its error output)`."""
+    env = dict(os.environ)
+    env['PATH'] = str(directory) + os.pathsep + env.get('PATH', '')
+    done = subprocess.run(
+        [sys.executable, RUN_SCRIPT, '--project-root', root] + list(args),
+        capture_output=True, text=True, cwd=root, env=env)
+    return (done.returncode, done.stdout.splitlines(),
+            done.stderr.splitlines())
+
+
+class Settled(object):
+    """The sample lab after its first audit and one more run of the script:
+    `before`, the entries the first audit wrote; `code`, `lines`, `errors`,
+    `entries`, `calls` and `text`, the evidence file, after the run."""
+
+    def __init__(self, root, directory):
+        self.root = root
+        self.directory = directory
+
+    def under(self, rule):
+        """The lines the run printed under `rule`, without the rule's own."""
+        return Audited.under({'lines': self.lines}, rule)
+
+    def rule_lines(self, rule):
+        """The lines the audit printed that open `sample_intake <rule>   `."""
+        return [line for line in self.lines
+                if line.startswith('%s %s   ' % (FEATURE, rule))]
+
+
+def settled(folder, rules=('RULE-3',), change=None, answers=(None,),
+            exit_code=0):
+    """Build the sample lab under `folder`, audit it once with `REPLY`, make
+    `change(root)`, then run the audit of `sample_intake` with `--settle` for
+    each of `rules` (a plain audit for none), a fake `claude` answering
+    `answers`. No call reaches a real model."""
+    folder = str(folder)
+    root = build(folder)
+    directory = fake_claude.install(os.path.join(folder, 'claude'),
+                                    answers=[REPLY])
+    previous = os.environ.get('PATH', '')
+    os.environ['PATH'] = directory + os.pathsep + previous
+    try:
+        found = shutil.which('claude')
+        assert found and os.path.realpath(found).startswith(
+            os.path.realpath(folder)), found
+        code, lines = audit(root)
+        assert code == 0, lines
+    finally:
+        os.environ['PATH'] = previous
+    made = Settled(root, directory)
+    made.before = entries(root)
+    if change is not None:
+        change(root)
+    fake_claude.install(directory, answers=list(answers),
+                        exit_code=exit_code)
+    args = ['--audit', '--feature', FEATURE]
+    for rule in rules:
+        args += ['--settle', rule]
+    made.code, made.lines, made.errors = run_script(root, directory, *args)
+    made.entries = entries(root)
+    made.calls = fake_claude.calls(directory)
+    made.text = evidence_text(root)
+    return made

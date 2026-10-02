@@ -4,6 +4,9 @@
                   [--write-tests] [--arm-timeout SECONDS] [--project-root DIR]
     purlin_run.py [--feature NAME ... | --all] --audit [--commit]
                   [--write-tests] [--arm-timeout SECONDS] [--project-root DIR]
+    purlin_run.py --feature NAME --audit --settle RULE-N [--settle RULE-N ...]
+                  [--commit] [--write-tests] [--arm-timeout SECONDS]
+                  [--project-root DIR]
     purlin_run.py --help | -h
 
 **Before anything runs.** With no `.purlin/config.json` the run says so,
@@ -68,6 +71,14 @@ the audit (`scripts/review/audit_run.py`): the spot tests, the planted bugs
 and the model's reading, written into the same evidence file under `audit`,
 which `--commit` commits the same way. With features named it reads their
 rules; otherwise every feature's, and `--all` reads every passing rule again.
+
+`--settle RULE-N`, given once per rule beside `--audit` and exactly one
+`--feature`, is what `purlin:audit <feature> RULE-N --settle` runs: the
+feature's tests, then the audit of the rules named alone, each bug it keeps
+as `survived` planted again and its proof's test run as it stands
+(`references/review_criteria.md`, "Settling a finding"). Without `--audit`,
+without `--feature` or with two features it is refused, exit 2; a rule the
+feature's spec does not have is named, exit 1. Both before anything runs.
 
 `--ci` is what a project's own run on another system runs. It answers only
 for the proofs tagged `@env` for this machine's own system: a feature with
@@ -156,7 +167,10 @@ USAGE = (
     'Usage: purlin_run.py [--feature NAME ... | --all] (--test | --ci) '
     '[--commit] [--write-tests] [--arm-timeout SECONDS] [--project-root DIR]\n'
     '       purlin_run.py [--feature NAME ... | --all] --audit [--commit] '
-    '[--write-tests] [--arm-timeout SECONDS] [--project-root DIR]')
+    '[--write-tests] [--arm-timeout SECONDS] [--project-root DIR]\n'
+    '       purlin_run.py --feature NAME --audit --settle RULE-N '
+    '[--settle RULE-N ...] [--commit] [--write-tests] '
+    '[--arm-timeout SECONDS] [--project-root DIR]')
 
 # What the run says about the proofs tagged for an operating system it is
 # not on, one line per system, each in the words a person reads. A proof
@@ -257,6 +271,7 @@ class Args(object):
         self.all = False
         self.action = None          # 'test', 'audit' or 'ci'
         self.commit = False
+        self.settle = []            # the rules `--settle` names, in order
         self.write_tests = False
         self.arm_timeout = ARM_TIMEOUT_DEFAULT
         self.project_root = '.'
@@ -285,6 +300,13 @@ def parse_args(argv):
             actions.append(token[2:])
         elif token == '--commit':
             args.commit = True
+        elif token == '--settle':
+            index += 1
+            if index >= len(argv):
+                args.error = '--settle needs a rule, as RULE-N'
+                return args
+            if argv[index] not in args.settle:
+                args.settle.append(argv[index])
         elif token == '--write-tests':
             args.write_tests = True
         elif token == '--arm-timeout':
@@ -319,6 +341,12 @@ def parse_args(argv):
     args.action = actions[0]
     if args.all and args.features:
         args.error = 'name features or --all, not both'
+        return args
+    if args.settle and args.action != 'audit':
+        args.error = '--settle goes with --audit'
+        return args
+    if args.settle and len(set(args.features)) != 1:
+        args.error = '--settle needs exactly one --feature'
         return args
     return args
 
@@ -1195,6 +1223,15 @@ def main(argv=None):
             print(NO_SUCH_SPEC % name, file=sys.stderr)
         if unknown:
             return 2
+        # A rule named with `--settle` that the feature's spec does not have
+        # is named before anything runs.
+        import ai_audit
+        owned = (features.get(selected[0]) or {}).get('rule_order') or ()
+        strangers = [rule for rule in args.settle if rule not in owned]
+        for rule in strangers:
+            print(ai_audit.not_a_rule(selected[0], rule))
+        if strangers:
+            return 1
     else:
         selected = print_selection(
             fingerprint_module.selection(project_root, features, os_name),
@@ -1597,15 +1634,16 @@ def _audit(project_root, args, features, selected, exit_code):
     """The `--audit` arm, after the tests have written their evidence.
 
     `audit_run.run` reads the rules of `selected` (`ai_audit RULE-1`), every
-    passing one again under `--all`, writes what it found under `audit` in
-    each feature's local evidence and prints it. The exit code is the tests'
+    passing one again under `--all`, or the rules `--settle` names alone,
+    writes what it found under `audit` in each feature's local evidence and
+    prints it. The exit code is the tests'
     (`run_script RULE-48`), or 1 where the audit stopped because the project
     changed while the audit ran.
     """
     import audit_run
     print('')
     stopped = audit_run.run(project_root, features, selected, again=args.all,
-                            out=sys.stdout)
+                            out=sys.stdout, settle=args.settle)
     sys.stdout.flush()
     return 1 if stopped == 1 else exit_code
 

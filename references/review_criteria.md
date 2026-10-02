@@ -248,6 +248,71 @@ planted for it again; a kept bug that survived adds its two findings again. No b
 an anchor's proof, a `@manual` proof or a proof tagged for a system this machine is not. When a
 file of the project changes while the audit runs, the audit stops and writes nothing.
 
+## Settling a finding
+
+A planted bug that survived is settled by a test run. `purlin:build` strengthens the test, then
+runs `purlin:audit <feature> RULE-N --settle`, which is
+`scripts/run/purlin_run.py --audit --feature <feature> --settle RULE-N`. `--settle` is given once
+per rule, beside `--audit` and exactly one `--feature`, and `--commit` works as on any audit.
+
+- Without `--audit`, without `--feature` or with two features, the run is refused before
+  anything runs and exits 2.
+- A rule the feature's spec does not have is named before anything runs, and the run exits 1:
+  `<feature> RULE-N is not a rule any spec has. Run purlin:status <feature> to see its rules.`
+- The feature's tests run first, as on any audit. A rule whose tests do not pass is not
+  settled, and the run names it as failing.
+- Only the rules named are read.
+
+**Settling one rule.** For each proof of the rule whose entry under `breaks` reads `survived`:
+
+1. **The bug is planted again.** The recorded change, its `file`, `before` and `after`, is made
+   in a copy of the project, with every refusal of "The planted bug", and the proof's own tests
+   run, once before the change and once with it in place. No model is asked.
+2. **The test fails.** The finding was right, and the test now catches the bug. The entry reads
+   `caught`, with the same `file`, `line`, `before`, `after`, `aim` and `case`, and the
+   `break_key` of the test and code as they stand. Its two findings leave the rule. The audit
+   prints, under the rule,
+   `  PROOF-2: the test now catches the bug it missed at src/auth.py:12.`
+3. **The test still passes.** The bug did not break what the proof says, so it is dropped. The
+   model is asked for one new bug for that proof, in the usual request, and it is planted as
+   any bug is. The audit prints
+   `  PROOF-2: the bug at src/auth.py:12 did not break what the proof says. A new bug was planted.`
+   - The new bug is caught: the entry reads `caught`, as any caught bug.
+   - The new bug survives too: no bug is kept. The entry reads `not made`, with the `why`
+     `two planted bugs left the proof's check passing` and the `break_key` of the test and code
+     as they stand, and `no_bug` gains
+     `No bug was caught for PROOF-2: two planted bugs left the proof's check passing.`
+   - No new bug is planted, because the model answers `no break`, its part cannot be used or
+     the model cannot be reached: `no_bug` holds the sentence that case has in any audit, and
+     the printed line ends at `did not break what the proof says.`
+4. **The test does not run** with the recorded bug in place, because it is skipped, ends in an
+   error or runs past its limit: the entry reads `not run`.
+5. **The recorded change can no longer be planted**, because its `before` lines are not in the
+   file exactly once or another refusal of "The planted bug" holds: the proof is read as any
+   audit reads it, with a new bug, and one that survives reads `survived`.
+
+A proof of the rule with no `survived` entry keeps what it has. The spot tests run again over
+the rule's tests, and "The verdict" sets the rule's word as in any audit: `weak` where a spot
+test fires or a bug survived, else `strong` where a bug was caught, else `spot-checked`.
+
+A rule named with `--settle` that keeps no bug as `survived` prints
+`<feature> RULE-N has no planted bug that survived: nothing to settle.` and is left as it is.
+
+A dropped bug is kept nowhere: not under `breaks`, not among the `findings`, not in the evidence
+package. The `not made` entry of step 3 holds the state, so no audit plants a bug for that proof
+until its test or code changes. The lines of steps 2 and 3 are printed and not stored. One run
+drops a bug, plants one more and ends: nothing counts the bugs between runs.
+
+Where a settled rule needs no new bug, no model is asked. Its entry keeps the `model` and the
+`criteria` of the entry it replaces and holds no `explanation`, since that reading was of the
+test as it was.
+
+Only `--settle` plants a recorded bug again. Any other audit asks for a new bug for a proof
+whose test changed, and a survivor reads `weak`.
+
+The audit does not check that the changed test asserts what its proof names. A rule made
+`strong` by settling caught the bug it once missed, with a test written after that bug was seen.
+
 ## What the model is sent, and what it decides
 
 The model is asked for a small bug for each proof and for its reading. The request holds this
@@ -352,8 +417,9 @@ of these `criteria`, the time and the commit. A person reads it beside the rule,
 the source of each test, which is what the audit read.
 
 A rule the audit found weak shows under `Left to do` as a rule to strengthen, and `purlin:build`
-works on it. A case the test is missing is fixed by writing its proof line; the next
-`purlin:build` writes the test for it.
+works on it: it strengthens the test, then settles the rule as "Settling a finding" says. A case
+the test is missing is fixed by writing its proof line; the next `purlin:build` writes the test
+for it.
 
 ## What the audit holds back
 

@@ -225,6 +225,17 @@ place, or ended in an error its tool does not report as a failure, which is
 neither caught nor survived. For such an error `why` reads
 `the test ended in an error, not a failure`.
 
+`purlin:audit <feature> RULE-N --settle` plants a `survived` bug again
+(`references/review_criteria.md`, "Settling a finding"). Where the test then
+fails, the entry reads `caught` with the same change. Where the test still
+passes and one new bug survives too, no bug is kept: `result` reads
+`not made`, `why` reads `two planted bugs left the proof's check passing`,
+`file`, `line`, `before` and `after` are null, and `no_bug` holds
+`No bug was caught for PROOF-N: two planted bugs left the proof's check passing.`
+A dropped bug is in no field. An entry settled without a model being asked
+keeps the `model` and `criteria` of the entry it replaces, and its
+`explanation` is empty.
+
 A rule the model could not be reached for is written with the model `unknown`
 and no bug recorded for a proof the model was not reached for, so the next
 audit reads it again.
