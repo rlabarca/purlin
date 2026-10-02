@@ -191,7 +191,7 @@ def _settings(root, version='0.10.0', run='python3 -m pytest {files}'):
 
 
 # purlin: evidence PROOF-88
-def test_a_changed_test_command_puts_the_section_out_of_date_on_tests(root):
+def test_a_test_command_changed_to_one_as_long_is_out_of_date_on_tests(root):
     _settings(root)
     _stored_now(root)
     assert _state(root) == (True, [])
