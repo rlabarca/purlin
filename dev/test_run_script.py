@@ -723,7 +723,7 @@ class TestTheEvidenceMeetsThePassedCell:
         assert code == 0, out
         return root, seen
 
-    def _code_changed(self, tmp_path, committed):
+    def _after_a_code_change(self, tmp_path, committed):
         """Committed evidence, then the scoped file changed, and committed
         when `committed`. `(root, the sha the run started on)`."""
         root, seen = self._with_evidence(tmp_path)
@@ -736,7 +736,7 @@ class TestTheEvidenceMeetsThePassedCell:
     # purlin: run_script PROOF-163
     def test_a_code_change_not_committed_leaves_the_cell_out_of_date(
             self, tmp_path):
-        root, seen = self._code_changed(tmp_path, committed=False)
+        root, seen = self._after_a_code_change(tmp_path, committed=False)
         rule = _rule(root, 'feat', 'RULE-1')
         cell = rule['cells']['passed']
         assert cell['word'] == 'out of date', cell
@@ -747,7 +747,7 @@ class TestTheEvidenceMeetsThePassedCell:
     def test_the_next_run_clears_out_of_date(self, tmp_path):
         """After `--all --test --commit` and a change to `src/feat.py`, left
         uncommitted, a further `--all --test` reads `passed` again."""
-        root, _seen = self._code_changed(tmp_path, committed=False)
+        root, _seen = self._after_a_code_change(tmp_path, committed=False)
         code, out = _run(root, '--all', '--test')
         assert code == 0, out
         assert _passed_word(root, 'feat', 'RULE-1') == 'passed'
@@ -931,7 +931,7 @@ class TestARunCoversWhatTheChangeTouched:
     """With no feature named, a run runs the features its change touched."""
 
     @staticmethod
-    def _login_code_changed(tmp_path):
+    def _login_after_a_code_change(tmp_path):
         """`src/login.py` changed after committed evidence, then a `--test`
         with no feature named. `(root, sha, export's evidence before, code,
         output)`."""
@@ -944,7 +944,7 @@ class TestARunCoversWhatTheChangeTouched:
     # purlin: run_script PROOF-88
     def test_a_code_edit_runs_only_the_feature_that_covers_the_file(
             self, tmp_path):
-        root, sha, export, code, output = self._login_code_changed(tmp_path)
+        root, sha, export, code, output = self._login_after_a_code_change(tmp_path)
         assert code == 0, output
         assert _selection(output) == {
             'login': 'code changed since %s' % sha[:7]}, output
