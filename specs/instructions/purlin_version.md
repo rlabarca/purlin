@@ -5,10 +5,10 @@
 >   `dev/bump_version.sh`, and `bash dev/bump_version.sh --check` is the check
 >   that fails when a derived location disagrees, so the version a user installs
 >   and the one Purlin reports are the same.
-> Scope: VERSION, .claude-plugin/plugin.json, .claude-plugin/marketplace.json, .purlin/config.json, scripts/mcp/purlin/__init__.py, scripts/mcp/purlin/server.py, dev/bump_version.sh, scripts/init/scaffold.py
+> Scope: VERSION, .claude-plugin/plugin.json, .claude-plugin/marketplace.json, .purlin/config.json, scripts/mcp/purlin/__init__.py, scripts/mcp/purlin/server.py, dev/bump_version.sh, scripts/init/scaffold.py, docs/running-and-evidence.md
 > Stack: python/stdlib for the reader, bash for the propagation script, json for the derived locations
 > Highest-Rule: 16
-> Highest-Proof: 38
+> Highest-Proof: 39
 
 ## Rules
 
@@ -17,7 +17,7 @@
 - RULE-3: A project `purlin:init` sets up is stamped with `VERSION`
 - RULE-5: The `version` field of `.claude-plugin/plugin.json`, which is what the plugin loader reports and what a consumer installs against, equals the `VERSION` file
 - RULE-6: Where `.purlin/config.json` exists, because the repository is itself a Purlin project, its `version` field equals the `VERSION` file: the project's own stamp never lags the framework it ships
-- RULE-12: `dev/bump_version.sh <semver>` writes the `VERSION` file and sets the version field in every derived location
+- RULE-12: `dev/bump_version.sh <semver>` writes the `VERSION` file and sets the version in every derived location: the `version` field of the two JSON files, and the tag `signed/<version>` the example on `docs/running-and-evidence.md` clones at
 - RULE-14: `dev/bump_version.sh --check` exits non-zero naming each location that disagrees while still reporting the ones that match
 - RULE-16: The plugin's marketplace manifest, `.claude-plugin/marketplace.json`, is named `purlin` and lists one plugin, `purlin`, whose source is the repository root
 
@@ -33,3 +33,4 @@
 - PROOF-7 (RULE-12): A temporary project holds its own copy of the bump script, a `VERSION` file, `.claude-plugin/plugin.json` and `.purlin/config.json`, all at `1.2.3`. The script run with `9.8.7` exits 0, and the `VERSION` file and both JSON files then read `9.8.7`
 - PROOF-29 (RULE-14): In a temporary project with its own copy of the bump script, its `VERSION` file at `9.8.7` and `.purlin/config.json` at `1.2.3`, `--check` exits 1; its line for `.purlin/config.json` reads `DRIFT 1.2.3 (expected 9.8.7)`, and its line for `.claude-plugin/plugin.json` reads `ok 9.8.7`
 - PROOF-38 (RULE-16): The plugin's marketplace manifest reads the name `purlin` and holds one plugin entry, named `purlin`, whose source is `./`, the repository root
+- PROOF-39 (RULE-12): A temporary project at `1.2.3` also holds `docs/running-and-evidence.md` with a `git clone --branch signed/1.2.3`. The script run with `9.8.7` leaves the page reading `signed/9.8.7` and otherwise unchanged; with the page set back to `signed/1.2.3`, `--check` exits 1 and its line for the page reads `DRIFT 1.2.3 (expected 9.8.7)`

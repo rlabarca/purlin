@@ -21,6 +21,7 @@ on:
       - 'VERSION'
       - '.claude-plugin/plugin.json'
       - '.purlin/config.json'
+      - 'docs/running-and-evidence.md'
       - 'dev/bump_version.sh'
       - '.github/workflows/version-check.yml'
   pull_request:
@@ -28,6 +29,7 @@ on:
       - 'VERSION'
       - '.claude-plugin/plugin.json'
       - '.purlin/config.json'
+      - 'docs/running-and-evidence.md'
       - 'dev/bump_version.sh'
       - '.github/workflows/version-check.yml'
   workflow_dispatch:

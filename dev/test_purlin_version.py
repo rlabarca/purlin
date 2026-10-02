@@ -299,6 +299,32 @@ def test_the_check_names_the_location_that_drifted(tmp_path):
         bad.stdout
 
 
+EXAMPLE_REL = 'docs/running-and-evidence.md'
+EXAMPLE = ('      - name: Get Purlin\n'
+           '        run: git clone --depth 1 --branch signed/%s '
+           'https://github.com/rlabarca/purlin "$RUNNER_TEMP/purlin"\n')
+
+
+# purlin: purlin_version PROOF-39
+def test_the_bump_moves_the_docs_examples_tag_and_the_check_names_its_drift(
+        tmp_path):
+    root, script = fake_project(tmp_path, '1.2.3')
+    page = os.path.join(root, EXAMPLE_REL)
+    os.makedirs(os.path.dirname(page))
+    with open(page, 'w', encoding='utf-8') as handle:
+        handle.write('# Running\n\n' + EXAMPLE % '1.2.3' + '\nMore.\n')
+    bump = run_script(script, '9.8.7')
+    assert bump.returncode == 0, bump.stdout + bump.stderr
+    with open(page, encoding='utf-8') as handle:
+        assert handle.read() == '# Running\n\n' + EXAMPLE % '9.8.7' + '\nMore.\n'
+    with open(page, 'w', encoding='utf-8') as handle:
+        handle.write(EXAMPLE % '1.2.3')
+    bad = run_script(script, '--check')
+    assert bad.returncode == 1, bad.stdout
+    assert check_line(bad.stdout, EXAMPLE_REL) == \
+        ['DRIFT', '1.2.3', '(expected', '9.8.7)'], bad.stdout
+
+
 # --- RULE-16: the marketplace manifest ------------------------------------
 
 MARKETPLACE = os.path.join(PROJECT_ROOT, '.claude-plugin', 'marketplace.json')
