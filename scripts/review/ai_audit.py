@@ -8,7 +8,8 @@ heuristic spot tests, then asks the model about each rule, then plants each
 bug the reply names. This module holds the model's part. It sets a rule, its
 proofs, the source of each test that backs them and the findings of the spot
 tests beside `references/review_criteria.md`, names the proofs a bug is asked
-for with the text of each file the feature's scope reaches, sends that request
+for, says to aim each past its proof's test (`REQUEST_BUGS`), holds the text
+of each file the feature's scope reaches, sends that request
 to the model, and reads the reply back: one part per proof, and the reading,
 which becomes the explanation under the findings. It decides no verdict and
 writes no file.
@@ -22,8 +23,8 @@ each, `AUDIT_PARALLEL` calls at once. The JSON's `result` is the reply; the
 model is the one its `modelUsage` names, or `unknown` where it names none.
 
 **The reply.** Cut at each line `=== PROOF-N ===` or `=== reading ===`
-(`read_reply`). A proof's part names its planted bug, which
-`targeted_break.parse_answer` reads. Under the reading, one sentence per line
+(`read_reply`). A proof's part names its planted bug, with its aim and the
+case it breaks, which `targeted_break.parse_answer` reads. Under the reading, one sentence per line
 opening `- ` is the explanation, and the lines under a `notes:` line are the
 notes. A reply with no such line at all is read whole as the reading. The
 reply sets no verdict.
@@ -258,14 +259,25 @@ def _one_test(project_root, feature, proof_id, test):
 # The request
 # ---------------------------------------------------------------------------
 
-# What asks for the planted bugs: the proofs, then each file of the scope.
+# What asks for the planted bugs, each aimed past its proof's test: the
+# proofs, the instruction, then each file of the scope.
 REQUEST_BUGS = (
     '---',
     '',
     'Plant one bug for each of: %s.',
-    'For each, make the smallest change to one of the files below that would '
-    'break what that proof',
-    'says, so that a test checking the proof fails.',
+    "Each proof's test is shown above. For each proof, make the smallest "
+    'change to one of the files',
+    'below after which what the proof says no longer holds: the case the '
+    'proof names gives a',
+    "different result from the one it names. Choose the change the proof's "
+    'test, as it is written,',
+    'is most likely to miss: a value it never compares, a case other than '
+    "the proof's, an expected",
+    "value taken from the code. Where the test checks the proof's case and "
+    'its result, make the',
+    "plainest such change. Never a change that leaves the proof's case as it "
+    'was, and no comment',
+    'about the bug.',
 )
 
 # The shape of the reply, the request's last part: with a part per proof
@@ -275,9 +287,14 @@ REPLY_PARTS = (
     '',
     'Answer in this shape and with nothing else. One part for each proof '
     'named above, the lines',
-    'under before: copied exactly from the file:',
+    'under before: copied exactly from the file, and aim: reading plain '
+    "where the proof's test",
+    'leaves no way past it:',
     '',
     '=== %(proof)s ===',
+    'aim: <past the test, or plain>',
+    "case: <the proof's case; the result the proof names; the result the "
+    'changed code gives>',
     'file: <the path, as given above>',
     'before:',
     '<the exact lines>',

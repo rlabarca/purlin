@@ -1,8 +1,9 @@
 """Tests for the AI audit: `scripts/review/audit_run.py` and `ai_audit.py`.
 
-The throwaway project is `dev/sign_project.py`'s, so a spec, a test file and
-the evidence are written by the test and nothing reads this repository's own
-specs. No test reaches the real model: every call lands on a fake `claude`
+The throwaway project is `dev/sign_project.py`'s, or the sample lab project
+of `dev/sample_lab.py`, so a spec, a test file and the evidence are written
+by the test and nothing reads this repository's own specs or audits its code.
+No test reaches the real model: every call lands on a fake `claude`
 that `dev/fake_claude.py` writes under the test's own temporary folder, first
 on PATH, or on a runner handed in its place.
 
@@ -18,6 +19,8 @@ What each group holds:
 *failure*   the ways the model cannot be reached, each with its reason
 *writing*   reading, asking and printing a rule write no file
 *command*   the command line: its exits and what it prints
+*aim*       the bug aimed past the test, on the sample lab project: the
+            request's instruction, the aim and the case, and the two findings
 """
 
 import contextlib
@@ -43,6 +46,7 @@ import ai_audit as audit_module  # noqa: E402
 import audit_run  # noqa: E402
 import fake_claude  # noqa: E402
 import marked_tests  # noqa: E402
+import sample_lab  # noqa: E402
 import suites  # noqa: E402
 from purlin import evidence as purlin_evidence  # noqa: E402
 from purlin import fingerprint as purlin_fingerprint  # noqa: E402
@@ -94,9 +98,14 @@ FIXTURE_USES_LOGIN_TEST = TEST_FILE.replace(
     '    return login("ada", "wrong")\n', 1)
 
 
-def bug(before, after, path='src/login.py'):
-    """The model's answer naming one planted bug."""
-    return 'file: %s\nbefore:\n%s\nafter:\n%s\n' % (path, before, after)
+# What a part says its bug breaks: the proof's case, the result the proof
+# names and the result the changed code gives.
+CASE = 'a wrong password; the proof says 401; the changed code gives 200'
+
+
+def bug(before, after, path='src/login.py', case=CASE):
+    """The model's part naming one planted bug, with its case."""
+    return fake_claude.change(path, before, after, case=case)
 
 
 @contextlib.contextmanager
@@ -755,7 +764,9 @@ class TestTheVerdict:
         assert entry['verdict'] == 'weak', entry
         assert entry['findings'] == [
             'PROOF-2: the test still passes when src/login.py:12 reads '
-            '"return 200"'], entry
+            '"return 200"',
+            'PROOF-2: the AI says this breaks: a wrong password; the proof '
+            'says 401; the changed code gives 200'], entry
 
     # purlin: ai_audit PROOF-97
     def test_no_spot_finding_and_every_bug_caught_is_strong_whatever_claude_says(
@@ -1260,3 +1271,154 @@ class TestTheCommandLine:
         assert result.returncode == 0, result.stdout + result.stderr
         assert result.stdout.splitlines()[0] == 'login RULE-1'
         assert fake_claude.calls(directory) == []
+
+
+# ---------------------------------------------------------------------------
+# The bug aimed past the test, on the sample lab project
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope='module')
+def lab(tmp_path_factory):
+    """The sample lab project, audited twice with the fake `claude`
+    answering what `sample_lab.REPLY` holds."""
+    return sample_lab.audited(tmp_path_factory.mktemp('lab'))
+
+
+def flat(text):
+    """`text` with each run of white space, line ends included, as one
+    space, so a sentence the request wraps is found whole."""
+    return ' '.join(text.split())
+
+
+CASE_5 = ('a sample collected at 2026-03-01T08:00 and received at '
+          '2026-03-02T09:30; the proof names an age of 25 hours; the changed '
+          'code gives 26 hours')
+SURVIVED_5 = ('PROOF-5: the test still passes when src/intake.py:17 reads '
+              '"return int(round(seconds / 3600))"')
+AI_SAYS_5 = 'PROOF-5: the AI says this breaks: ' + CASE_5
+
+
+class TestTheBugAimedPastTheTest:
+
+    @staticmethod
+    def _asked(lab):
+        """The request for `RULE-3` from where it asks for the bug, flat."""
+        request = lab.request(lab.first, 'RULE-3')
+        source = request.index('def test_age_is_whole_hours')
+        return flat(request[request.index(
+            'Plant one bug for each of: PROOF-5.\n', source):])
+
+    # purlin: ai_audit PROOF-125
+    def test_the_request_says_the_test_is_shown_and_the_case_must_change(
+            self, lab):
+        asked = self._asked(lab)
+        assert asked.startswith('Plant one bug for each of: PROOF-5. Each '
+                                "proof's test is shown above."), asked[:200]
+        assert ('the case the proof names gives a different result from the '
+                'one it names') in asked, asked[:600]
+
+    # purlin: ai_audit PROOF-126
+    def test_the_request_says_to_choose_the_change_the_test_would_miss(
+            self, lab):
+        assert ("Choose the change the proof's test, as it is written, is "
+                'most likely to miss: a value it never compares, a case other '
+                "than the proof's, an expected value taken from the code."
+                ) in self._asked(lab)
+
+    # purlin: ai_audit PROOF-127
+    def test_the_request_asks_for_a_plain_bug_where_the_test_leaves_no_way(
+            self, lab):
+        asked = self._asked(lab)
+        assert ("Where the test checks the proof's case and its result, make "
+                'the plainest such change.') in asked, asked[:900]
+        assert ("Never a change that leaves the proof's case as it was, and "
+                'no comment about the bug.') in asked, asked[:900]
+
+    # purlin: ai_audit PROOF-128
+    def test_the_request_shows_a_part_with_its_aim_and_its_case(self, lab):
+        request = lab.request(lab.first, 'RULE-3')
+        assert ('\n=== PROOF-5 ===\n'
+                'aim: <past the test, or plain>\n'
+                "case: <the proof's case; the result the proof names; the "
+                'result the changed code gives>\n'
+                'file: <the path, as given above>\n') in request, \
+            request[-900:]
+
+    # purlin: ai_audit PROOF-129
+    def test_the_entry_of_a_bug_holds_its_aim_and_its_case(self, lab):
+        assert sample_lab.REPLY['PROOF-5'].startswith(
+            'aim: past the test\ncase: %s\n' % CASE_5)
+        made = lab.first['entries']['RULE-3']['breaks']['PROOF-5']
+        assert made['aim'] == 'past the test', made
+        assert made['case'] == CASE_5, made
+
+    # purlin: ai_audit PROOF-130
+    def test_the_entry_of_a_plain_bug_reads_plain(self, lab):
+        assert sample_lab.REPLY['PROOF-6'].startswith('aim: plain\n')
+        made = lab.first['entries']['RULE-4']['breaks']['PROOF-6']
+        assert made['aim'] == 'plain', made
+
+    # purlin: ai_audit PROOF-131
+    def test_a_bug_in_the_helper_the_test_trusts_survives(self, lab):
+        # The test's expected age is what the code's own helper answers.
+        assert ("assert record['age_hours'] == age_hours(collected, received)"
+                ) in lab.request(lab.first, 'RULE-3')
+        entry = lab.first['entries']['RULE-3']
+        assert entry['breaks']['PROOF-5']['after'] == (
+            '    return int(round(seconds / 3600))'), entry
+        assert entry['breaks']['PROOF-5']['result'] == 'survived', entry
+        assert entry['verdict'] == 'weak', entry
+        assert 'sample_intake RULE-3   weak' in lab.first['lines']
+        assert entry['findings'][0] == SURVIVED_5, entry
+
+    # purlin: ai_audit PROOF-132
+    def test_the_case_the_ai_named_is_printed_on_the_line_after_the_finding(
+            self, lab):
+        under = lab.under(lab.first, 'RULE-3')
+        at = under.index('  ' + SURVIVED_5)
+        assert under[at + 1] == '  ' + AI_SAYS_5, under
+
+    # purlin: ai_audit PROOF-133
+    def test_the_second_finding_carries_the_models_case_word_for_word(
+            self, lab):
+        entry = lab.first['entries']['RULE-2']
+        made = entry['breaks']['PROOF-3']
+        assert made['before'] == ('        self.received[barcode] = record\n'
+                                  '        return record'), made
+        assert made['after'] == '        return record', made
+        assert made['result'] == 'survived', made
+        assert sample_lab.CASE_3.endswith(
+            "never stores it, so the bench's `received` stays empty")
+        assert len(entry['findings']) == 2, entry
+        assert entry['findings'][0].startswith(
+            'PROOF-3: the test still passes when src/intake.py:'), entry
+        assert entry['findings'][1] == (
+            'PROOF-3: the AI says this breaks: ' + sample_lab.CASE_3), entry
+
+    # purlin: ai_audit PROOF-134
+    def test_a_kept_bug_that_survived_adds_both_findings_again(self, lab):
+        assert lab.again['code'] == 0, lab.again['lines']
+        assert len(lab.again['calls']) == 8, len(lab.again['calls'])
+        assert 'Plant one bug' not in lab.request(lab.again, 'RULE-3')
+        entry = lab.again['entries']['RULE-3']
+        assert entry['breaks']['PROOF-5']['result'] == 'survived', entry
+        assert entry['findings'] == [SURVIVED_5, AI_SAYS_5], entry
+        assert lab.first['entries']['RULE-3']['findings'] == [
+            SURVIVED_5, AI_SAYS_5]
+        under = lab.under(lab.again, 'RULE-3')
+        assert under[:2] == ['  ' + SURVIVED_5, '  ' + AI_SAYS_5], under
+
+    # purlin: ai_audit PROOF-135
+    def test_a_bug_the_test_catches_adds_no_finding(self, lab):
+        # The test hands in the proof's own case and reads its result.
+        request = lab.request(lab.first, 'RULE-4')
+        assert "at('2026-03-04T09:00'))" in request
+        assert sample_lab.REPLY['PROOF-6'].startswith('aim: plain\n')
+        entry = lab.first['entries']['RULE-4']
+        assert entry['breaks']['PROOF-6']['after'] == 'MAX_AGE_HOURS = 73'
+        assert entry['breaks']['PROOF-6']['result'] == 'caught', entry
+        assert entry['verdict'] == 'strong', entry
+        assert 'sample_intake RULE-4   strong' in lab.first['lines']
+        assert entry['findings'] == [], entry
+        assert [line for line in lab.first['lines']
+                if 'PROOF-6' in line] == [], lab.first['lines']

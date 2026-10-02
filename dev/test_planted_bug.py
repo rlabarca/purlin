@@ -1,4 +1,9 @@
-"""The planted bug: one change per proof, made in a copy of the project and never in it."""
+"""The planted bug: one change per proof, made in a copy of the project and never in it.
+
+Each test builds a small project of its own, `src/age.py` with one marked test per proof,
+and either hands one part of a reply to `targeted_break.break_proof` or runs the audit there
+with the fake `claude`. No test audits this repository's code and none reaches a real model.
+"""
 
 import io
 import json
@@ -44,10 +49,19 @@ STRONG = 'assert age("2026-01-01") == 90'
 SCOPE = ['src/age.py']
 PROOF = {'id': 'PROOF-1', 'text': 'has an age of `90` minutes', 'rule': 'RULE-1',
          'rule_text': 'A stamp has an age in minutes'}
-BREAK = 'file: src/age.py\nbefore:\n    return days\nafter:\n    return 0\n'
+# What a part says its bug breaks: the proof's case, the result the proof names and
+# the result the changed code gives.
+CASE = 'a stamp of 2026-01-01; the proof says 90; the changed code gives 0'
+
+
+def part(before, after, path='src/age.py', case=CASE, aim=None):
+    """A proof's part naming one change, with its case."""
+    return fake_claude.change(path, before, after, case=case, aim=aim)
+
+
+BREAK = part('    return days', '    return 0')
 # A bug that makes the test run past a limit of 2 seconds.
-SLOW = ('file: src/age.py\nbefore:\n    return days\nafter:\n'
-        '    __import__("time").sleep(20)\n    return days\n')
+SLOW = part('    return days', '    __import__("time").sleep(20)\n    return days')
 
 
 @pytest.fixture(autouse=True)
@@ -75,20 +89,24 @@ def git(root, *args):
                           text=True).stdout
 
 
-def project(tmp_path, tests, age=AGE, extra=''):
+def project(tmp_path, tests, age=AGE, extra='', files=None):
     """A git project: `src/age.py`, and one test per entry of `tests`, `{proof: body}`,
-    each marked for that proof of `age`. `extra` is added to the top of the test file."""
+    each marked for that proof of `age`. `extra` is added to the top of the test file.
+    `files` is `{path: text}`, each a further file the feature's scope names."""
     root = tmp_path / 'project'
     root.mkdir()
     write(root, 'src/__init__.py', '')
     write(root, 'src/age.py', age)
+    for path, text in (files or {}).items():
+        write(root, path, text)
     lines = ['import time', 'from src.age import age', extra, '']
     for proof, body in tests.items():
         lines += ['', '# purlin: age %s' % proof,
                   'def test_%s():' % proof.lower().replace('-', '_')]
         lines += ['    ' + line for line in body.split('\n')]
     write(root, 'tests/test_age.py', '\n'.join(lines) + '\n')
-    write(root, 'specs/age.md', '# Feature: age\n\n> Scope: src/age.py\n\n## Rules\n\n'
+    write(root, 'specs/age.md', '# Feature: age\n\n> Scope: %s\n\n## Rules\n\n'
+          % ', '.join(['src/age.py'] + sorted(files or {})) +
           '- RULE-1: A stamp has an age in minutes\n\n## Proof\n\n'
           + ''.join('- %s (RULE-1): it holds\n' % proof for proof in tests))
     write(root, '.purlin/config.json', json.dumps({'version': '0.10.0', 'tests': [
@@ -183,7 +201,7 @@ def test_a_test_that_fails_reads_caught(tmp_path):
 # purlin: planted_bug PROOF-17
 def test_a_test_that_can_no_longer_be_collected_reads_not_run(tmp_path):
     root = project(tmp_path, {'PROOF-1': STRONG})
-    answer = 'file: src/age.py\nbefore:\ndef age(\nafter:\ndef age_(\n'
+    answer = part('def age(', 'def age_(')
     result = targeted_break.break_proof(root, 'age', PROOF, own_test(), SCOPE, answer)
     assert result['line'] == 8, result
     assert result['result'] == 'not run'
@@ -195,8 +213,7 @@ def test_a_test_that_can_no_longer_be_collected_reads_not_run(tmp_path):
 SETUP = ('import pytest\nfrom src.age import minutes\n\n\n'
          '@pytest.fixture(autouse=True)\ndef stamped():\n'
          '    return minutes("2026-01-01")\n')
-RAISES = ('file: src/age.py\nbefore:\n    return 90\nafter:\n'
-          '    raise ValueError(stamp)\n')
+RAISES = part('    return 90', '    raise ValueError(stamp)')
 
 
 # purlin: planted_bug PROOF-20
@@ -211,7 +228,7 @@ def test_a_test_that_ends_in_an_error_reads_not_run(tmp_path):
 
 
 # A change that keeps the file's size: a cache keyed by time and size cannot tell.
-SAME_SIZE = 'file: src/age.py\nbefore:\n    return 90\nafter:\n    return 91\n'
+SAME_SIZE = part('    return 90', '    return 91')
 
 
 # purlin: planted_bug PROOF-21
@@ -226,10 +243,11 @@ def test_a_change_that_keeps_the_files_size_is_still_run(tmp_path):
 # purlin: planted_bug PROOF-6
 def test_a_file_outside_the_copy_is_not_made(tmp_path):
     root = project(tmp_path, {'PROOF-1': STRONG})
-    answer = 'file: ../outside.py\nbefore:\n    return days\nafter:\n    return 0\n'
+    answer = part('    return days', '    return 0', path='../outside.py')
     result = targeted_break.break_proof(root, 'age', PROOF, own_test(), SCOPE + ['../outside.py'],
                                         answer)
     assert result['result'] == 'not made'
+    assert result['why'] == '../outside.py is outside the copy of the project'
     assert not os.path.exists(os.path.join(str(tmp_path), 'outside.py'))
     assert not os.path.exists(os.path.join(str(tmp_path), 'tmp', 'outside.py'))
 
@@ -315,6 +333,7 @@ def test_a_change_that_matches_twice_is_not_made(tmp_path):
     result = targeted_break.break_proof(root, 'age', PROOF, own_test(), SCOPE,
                                         BREAK)
     assert result['result'] == 'not made'
+    assert result['why'] == 'the lines before the change are in src/age.py 2 times, not once'
     assert not os.path.exists(ran)
 
 
@@ -323,10 +342,11 @@ def test_a_file_the_scope_does_not_name_is_not_made(tmp_path):
     ran, body = ran_marker(tmp_path)
     root = project(tmp_path, {'PROOF-1': body})
     write(root, 'README.md', 'return days\n')
-    answer = 'file: README.md\nbefore:\nreturn days\nafter:\nreturn 0\n'
+    answer = part('return days', 'return 0', path='README.md')
     result = targeted_break.break_proof(root, 'age', PROOF, own_test(), SCOPE,
                                         answer)
     assert result['result'] == 'not made'
+    assert result['why'] == "README.md is not a file the feature's scope names"
     assert not os.path.exists(ran)
 
 
@@ -346,8 +366,8 @@ def test_a_change_to_the_proofs_own_test_file_is_not_made(tmp_path):
     ran, body = ran_marker(tmp_path)
     body = body.replace(STRONG, 's = "2026-01-01"\nassert age(s) == 90')
     root = project(tmp_path, {'PROOF-1': body})
-    answer = ('file: tests/test_age.py\nbefore:\n    assert age(s) == 90\nafter:\n'
-              '    assert age(s) == 0\n')
+    answer = part('    assert age(s) == 90', '    assert age(s) == 0',
+                  path='tests/test_age.py')
     result = targeted_break.break_proof(root, 'age', PROOF, own_test(),
                                         SCOPE + ['tests/test_age.py'], answer)
     assert result['result'] == 'not made'
@@ -369,3 +389,163 @@ def test_a_test_that_does_not_pass_in_the_copy_has_no_bug_planted(tmp_path):
     assert result['result'] != 'caught'
     assert result['why'] == 'the test does not pass in a copy of the project'
     assert result['cause'] == 'test does not pass'
+
+
+# ---------------------------------------------------------------------------
+# The aim and the case: each read from what the audit wrote and printed
+# ---------------------------------------------------------------------------
+
+def bug_of(after, proof='PROOF-1'):
+    """The entry under `breaks` the audit wrote for `proof`."""
+    return json.loads(after)['audit']['rules']['RULE-1']['breaks'][proof]
+
+
+def logs_where_it_runs(tmp_path):
+    """`(path, test body)`: a sound test that adds the folder it runs in to `path`."""
+    log = os.path.join(str(tmp_path), 'ran-in.txt')
+    return log, ('open(%r, "a").write(__import__("os").getcwd() + "\\n")\n%s'
+                 % (log, STRONG))
+
+
+def ran_in_a_copy(log):
+    """The folders named `purlin-break-*` the test ran in."""
+    with open(log, encoding='utf-8') as handle:
+        folders = handle.read().split('\n')
+    assert [folder for folder in folders if folder], 'the test never ran'
+    return [folder for folder in folders
+            if os.path.basename(folder).startswith('purlin-break-')]
+
+
+def refused(reason):
+    """The line the audit prints under a rule whose one bug was refused for `reason`."""
+    return ("  The spot tests found nothing. No bug was planted: the model's answer for "
+            "PROOF-1 could not be used: %s." % reason)
+
+
+# purlin: planted_bug PROOF-22
+def test_an_aim_past_the_test_is_recorded(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    reply = part('    return days', '    return 0', aim='past the test')
+    assert reply.startswith('aim: past the test\n')
+    fake_claude.install(own_claude, answers=[{'PROOF-1': reply}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['result'] == 'caught'
+    assert bug_of(after)['aim'] == 'past the test'
+
+
+# purlin: planted_bug PROOF-23
+def test_any_other_aim_and_no_aim_are_recorded_plain(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG, 'PROOF-2': STRONG})
+    other = part('    return days', '    return 0', aim='around the test')
+    none = part('    return days', '    return 0')
+    assert other.startswith('aim: around the test\n')
+    assert 'aim:' not in none
+    fake_claude.install(own_claude, answers=[{'PROOF-1': other, 'PROOF-2': none}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert [bug_of(after, proof)['result'] for proof in ('PROOF-1', 'PROOF-2')] == [
+        'caught', 'caught']
+    assert bug_of(after, 'PROOF-1')['aim'] == 'plain'
+    assert bug_of(after, 'PROOF-2')['aim'] == 'plain'
+
+
+# purlin: planted_bug PROOF-24
+def test_a_case_is_kept_as_written_with_its_outer_spaces_cut(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    reply = ('case:   a stamp of 2026-01-01; the proof says 90; the changed code gives 0  \n'
+             'file: src/age.py\nbefore:\n    return days\nafter:\n    return 0\n')
+    fake_claude.install(own_claude, answers=[{'PROOF-1': reply}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['result'] == 'caught'
+    assert bug_of(after)['case'] == (
+        'a stamp of 2026-01-01; the proof says 90; the changed code gives 0')
+
+
+# purlin: planted_bug PROOF-25
+def test_a_case_longer_than_300_characters_is_cut_to_its_first_300(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    case = 'a stamp of 2026-01-01; the proof says 90; ' + 'x' * 278
+    assert len(case) == 320
+    fake_claude.install(own_claude, answers=[
+        {'PROOF-1': part('    return days', '    return 0', case=case)}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['result'] == 'caught'
+    assert bug_of(after)['case'] == case[:300]
+    assert len(bug_of(after)['case']) == 300
+
+
+# purlin: planted_bug PROOF-26
+def test_a_part_that_names_no_case_is_not_planted(tmp_path, own_claude):
+    log, body = logs_where_it_runs(tmp_path)
+    root = project(tmp_path, {'PROOF-1': body})
+    reply = part('    return days', '    return 0', case=None)
+    assert reply == 'file: src/age.py\nbefore:\n    return days\nafter:\n    return 0\n'
+    fake_claude.install(own_claude, answers=[{'PROOF-1': reply}])
+    code, lines, _before, after = audit(root)
+    assert code == 0
+    at = lines.index('age RULE-1   spot-checked')
+    assert lines[at + 1] == refused('the answer named no case of the proof'), lines
+    assert bug_of(after)['result'] == 'not made'
+    assert ran_in_a_copy(log) == []
+
+
+# purlin: planted_bug PROOF-27
+def test_a_part_whose_case_is_empty_is_not_planted(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    reply = 'case:\n' + part('    return days', '    return 0', case=None)
+    fake_claude.install(own_claude, answers=[{'PROOF-1': reply}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert (bug_of(after)['result'], bug_of(after)['why']) == (
+        'not made', 'the answer named no case of the proof')
+
+
+# purlin: planted_bug PROOF-28
+def test_a_change_that_adds_only_a_comment_is_not_planted(tmp_path, own_claude):
+    log, body = logs_where_it_runs(tmp_path)
+    root = project(tmp_path, {'PROOF-1': body})
+    fake_claude.install(own_claude, answers=[
+        {'PROOF-1': part('    return days', '    # off by one\n    return days')}])
+    code, lines, _before, after = audit(root)
+    assert code == 0
+    assert refused('the change touches only a comment') in lines, lines
+    assert bug_of(after)['result'] == 'not made'
+    assert ran_in_a_copy(log) == []
+
+
+# purlin: planted_bug PROOF-29
+def test_a_line_of_two_slashes_is_a_comment_in_any_file(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG}, files={
+        'src/age.js': 'export function age() {\n  return 90;\n}\n'})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': part(
+        '  return 90;', '  // planted\n  return 90;', path='src/age.js')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert (bug_of(after)['result'], bug_of(after)['why']) == (
+        'not made', 'the change touches only a comment')
+
+
+# purlin: planted_bug PROOF-30
+def test_a_hash_line_in_a_text_file_is_no_comment(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG}, files={
+        'src/notes.txt': 'An age is in minutes.\n'})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': part(
+        'An age is in minutes.', '# 90\nAn age is in minutes.', path='src/notes.txt')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['file'] == 'src/notes.txt'
+    assert bug_of(after)['result'] == 'survived'
+
+
+# purlin: planted_bug PROOF-31
+def test_a_comment_beside_a_changed_line_is_still_planted(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    fake_claude.install(own_claude, answers=[
+        {'PROOF-1': part('    return days', '    # planted\n    return 0')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['after'] == '    # planted\n    return 0'
+    assert bug_of(after)['result'] == 'caught'

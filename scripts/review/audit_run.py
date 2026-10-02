@@ -6,7 +6,8 @@ audit reads (`ai_audit.is_read`, ai_audit RULE-1) it runs, in this order:
 1. the heuristic spot tests over each test tied to each rule's proofs
    (`plain_checks.check`), with no model;
 2. one model call per rule, four at once (`ai_audit.audit_all`), whose reply
-   holds a planted bug for each proof that needs one and the model's reading,
+   holds a planted bug for each proof that needs one, aimed past that proof's
+   test, with the case the model says it breaks, and the model's reading,
    which becomes the explanation and sets no verdict;
 3. each bug planted in a copy of the project and its proof's own test run
    (`targeted_break.break_proof`), one at a time. No bug is asked for an
@@ -15,7 +16,8 @@ audit reads (`ai_audit.is_read`, ai_audit RULE-1) it runs, in this order:
    result (ai_audit RULE-36).
 
 A rule reads `weak` when a spot test fires on one of its tests or a planted
-bug survived, else `strong` when a planted bug was caught, else `spot-checked`
+bug survived, which adds the change and the model's case to its findings
+(ai_audit RULE-49), else `strong` when a planted bug was caught, else `spot-checked`
 (ai_audit RULE-33). Each entry records under `no_bug` one sentence for each
 proof no bug was caught for. One `audit.rules` entry per rule read is written
 through `evidence.write_audit`, with the feature's `code` part as `code_hash`.
@@ -240,6 +242,17 @@ def _survived_finding(proof_id, kept, last):
                                       kept.get('line') or 0, changed.strip())
 
 
+def survived_findings(proof_id, made, last, finding=None):
+    """The findings of a bug that survived, in order: the change the test
+    still passes with, `finding` or the line the entry `made` rebuilds, then,
+    where the entry holds a case, what the model says the bug breaks."""
+    found = [finding or _survived_finding(proof_id, made, last)]
+    case = str(made.get('case') or '').strip()
+    if case:
+        found.append(targeted_break.AI_SAYS % (proof_id, case))
+    return found
+
+
 def bug_plan(reading, last, code_part, here=None):
     """`[(proof, what, value)]` for each proof of the rule that has a test and
     is not checked by hand, in the spec's order. `what` is `anchor` for an
@@ -297,7 +310,9 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
 
     `plan` is `bug_plan`'s and `answer` the model's one reply for the rule,
     as `ai_audit.audit_one` gives it. `breaks` is `{proof: entry}` as the
-    evidence holds it; `findings` the sentence of each bug that survived;
+    evidence holds it, each with its `aim` and `case`; `findings` the two
+    sentences of each bug that survived, the change and the case the model
+    says it breaks;
     `no_bug` one sentence for each proof no bug was caught for. A proof the
     model could not be reached for, or that is tagged for another system, has
     no entry under `breaks`, so the first is asked for again.
@@ -320,7 +335,7 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
         elif what == 'kept':
             breaks[proof_id] = value
             if value.get('result') == 'survived':
-                findings.append(_survived_finding(proof_id, value, last))
+                findings.extend(survived_findings(proof_id, value, last))
             note(no_bug_sentence(proof_id, value))
         elif answer.get('why'):
             note(NO_BUG % (UNREACHED % answer['why']))
@@ -329,15 +344,17 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
                 project_root, reading['feature'], proof_id,
                 _proof_tests(reading, proof_id), scope_files,
                 parts.get(proof_id))
-            entry = {'file': result.get('file'), 'line': result.get('line'),
+            entry = {'aim': result.get('aim') or targeted_break.PLAIN,
+                     'case': result.get('case') or '',
+                     'file': result.get('file'), 'line': result.get('line'),
                      'before': result.get('before'),
                      'after': result.get('after'),
                      'result': result.get('result') or 'not made',
                      'why': result.get('why') or '', 'break_key': value}
             breaks[proof_id] = entry
             if entry['result'] == 'survived':
-                findings.append(result.get('finding') or _survived_finding(
-                    proof_id, entry, {}))
+                findings.extend(survived_findings(proof_id, entry, {},
+                                                  result.get('finding')))
             note(no_bug_sentence(proof_id, entry))
     return breaks, findings, no_bug
 

@@ -2,9 +2,9 @@
 
 What the audit reads on one rule, and what a person reads after. `purlin:audit` runs when a
 person asks, and nothing waits on it. For each rule it reads it takes three steps: the heuristic
-spot tests, then one model call for the rule's planted bugs and its reading, then each bug
-planted and its proof's test run. The spot tests and the planted bugs set the rule's verdict; the
-model's reading explains the tests and decides nothing. The model's request opens with this file
+spot tests; then the model is asked for a small bug for each proof, aimed past that proof's test,
+and for its reading; then each bug is planted and its proof's test run. The spot tests and the
+planted bugs set the rule's verdict; the model's reading explains the tests and decides nothing. The model's request opens with this file
 verbatim, so every sentence here is written to be read by a person and by a model.
 
 ## Which rules the audit reads
@@ -110,8 +110,7 @@ result it checks, as in `assert age(s) == age(s)` or `expected = age(s)` then
 **Finding:** `tests/test_age.py::test_age: the expected value comes from age(), the code under test.`
 
 **Why:** a test whose expected answer comes from the code under test confirms whatever the code
-does, bug included. Model-written tests tend to capture what the code actually does rather than
-what it should do
+does, bug included. Shown buggy code, a model more often rejects the right expected answer
 ([Konstantinou, Degiovanni and Papadakis, 2024](https://arxiv.org/pdf/2410.21136)); the expected
 value should come from somewhere the code cannot influence, the problem at the heart of
 [the test oracle survey (Barr et al., TSE 2015)](https://discovery-pp.ucl.ac.uk/id/eprint/1471263/1/06963470.pdf).
@@ -146,7 +145,7 @@ marks an empty value and names nothing to look for; the same number written anot
 **Why:** this check needs a specification, so no general tool can make it, and it is Purlin's
 own. It follows from the oracle problem: the expected value should come from the requirement,
 not the code ([Barr et al., TSE 2015](https://discovery-pp.ucl.ac.uk/id/eprint/1471263/1/06963470.pdf)),
-and model-written tests drift to the code's actual behaviour
+and a model shown buggy code more often rejects the right expected answer
 ([Konstantinou et al., 2024](https://arxiv.org/pdf/2410.21136)). The proof is the requirement's
 expected value, written by a person; a test that never mentions it is checking something else.
 
@@ -169,14 +168,26 @@ expected value, written by a person; a test that never mentions it is checking s
 
 ## The planted bug
 
-The audit runs each proof's own test against a small change to the code. For a proof whose test
-or whose feature's code changed since its last planted bug, the model is asked for the smallest
-change to one file the feature covers that would break what the proof says. Its one reply for
-the rule holds a part for each such proof, under a line naming the proof: the file, the exact
-lines to change and what they become,
+The audit runs each proof's own test against one small change to the code, aimed past that test.
+For a proof whose test or whose feature's code changed since its last planted bug, the model is
+shown the proof, its test and each file the feature covers. It is asked for the smallest change
+to one of those files after which what the proof says no longer holds: the case the proof names
+gives a different result from the one it names.
+
+**The aim.** Of the changes that break the proof's case, the model chooses the one the proof's
+test, as it is written, is most likely to miss: a value the test never compares, a case other
+than the proof's, an expected value the test takes from the code. Where the test checks the
+proof's case and its result, no change gets past it, and the model makes the plainest change
+that breaks the case. A change that leaves the proof's case as it was is never the bug, and the
+change carries no comment about the bug.
+
+**The part.** The model's reply holds a part for each such proof, under a line naming the proof:
+the aim, the case, the file, the exact lines to change and what they become,
 
 ```
 === PROOF-1 ===
+aim: past the test
+case: a sample collected 90 minutes ago; the proof says 90; the changed code gives 150
 file: src/age.py
 before:
 <the exact lines>
@@ -185,35 +196,58 @@ after:
 ```
 
 or, under the same line, `no break: <why>` when no change to those files can break what the
-proof says. The change is made in a copy of the project, never in the project itself. Only the
-proof's own tests run there, once before the change and once with it in place, and the copy is
-deleted after.
+proof says.
 
-- **Caught.** A test of the proof ran and failed with the change in place. The test noticed.
+- `aim:` reads `past the test`, or `plain` where the test leaves no way past it. Any other
+  word, or no `aim:` line, is recorded `plain`.
+- `case:` is one line: the proof's case, the result the proof names and the result the changed
+  code gives. It is the model's claim, and the audit does not check it. It is kept as written,
+  up to 300 characters.
+
+The change is made in a copy of the project, never in the project itself. Only the proof's own
+tests run there, once before the change and once with it in place, and the copy is deleted
+after.
+
+- **Caught.** A test of the proof ran and failed with the change in place. The test noticed, and
+  nothing is added to the rule's findings.
 - **Survived.** Every one of the proof's own tests still passes with the change in place. The
-  rule reads `weak`, with the finding
-  `PROOF-1: the test still passes when src/age.py:12 reads "return 0"`.
+  rule reads `weak`, with two findings, the change and then the case the model says it breaks:
+  `PROOF-1: the test still passes when src/age.py:12 reads "return minutes + 60"`
+  `PROOF-1: the AI says this breaks: a sample collected 90 minutes ago; the proof says 90; the changed code gives 150`
+  A person reads the second line to judge the first.
 - **Not run.** The test was skipped, could not be collected, ran past its limit or ended in an
   error its tool does not report as a failure, with the change in place. That decides nothing:
   the bug was neither caught nor missed.
 - **Not made.** The reply held no part for the proof, or the part named no change, or a change
-  that does not match its file exactly once, or a file the feature does not cover, or a file that
-  holds one of the proof's tests, or the proof's test does not pass in the copy before any
-  change. The test is not run against a bug, the audit prints `No bug was planted: <why>.`, and it
-  is not a finding. Where the model could not be reached, nothing is recorded for the proof and
-  its bug is asked for at the next audit.
+  and no case of the proof, or a change that touches only a comment, or a change that does not
+  match its file exactly once, or a file the feature does not cover, or a file that holds one of
+  the proof's tests, or the proof's test does not pass in the copy before any change. The test
+  is not run against a bug, the audit prints `No bug was planted: <why>.`, and it is not a
+  finding. Where the model could not be reached, nothing is recorded for the proof and its bug
+  is asked for at the next audit.
+
+Two of those reasons are refusals of a change the model did name:
+
+- `No bug was planted: the model's answer for PROOF-1 could not be used: the answer named no case of the proof.`
+  The part holds no `case:` line, or an empty one.
+- `No bug was planted: the model's answer for PROOF-1 could not be used: the change touches only a comment.`
+  The lines after the change differ from the lines before it only in blank lines and comment
+  lines. A comment line starts, after its indent, with `//` in any file, or with `#` in a file
+  ending `.py`, `.sh`, `.bash`, `.rb`, `.yml`, `.yaml` or `.toml`.
 
 A proof keeps its last result while its tests and its feature's code are unchanged, and no bug is
-planted for it again. No bug is planted for an anchor's proof, a `@manual` proof or a proof tagged
-for a system this machine is not. When a file of the project changes while the audit runs, the
-audit stops and writes nothing.
+planted for it again; a kept bug that survived adds its two findings again. No bug is planted for
+an anchor's proof, a `@manual` proof or a proof tagged for a system this machine is not. When a
+file of the project changes while the audit runs, the audit stops and writes nothing.
 
 ## What the model is sent, and what it decides
 
-The model is asked once for each rule: this file, then the rule's text, its proofs, the source of
-each test, and under `Findings:` each finding of the spot tests, or `none`; then the proofs to
-plant a bug for and the text of each file the feature covers. It answers with one part for each of
-those proofs and then its reading. The model decides nothing; its reading explains.
+The model is asked for a small bug for each proof and for its reading. The request holds this
+file, then the rule's text, its proofs, the source of each test, and under `Findings:` each
+finding of the spot tests, or `none`; then the proofs to plant a bug for, the aim of "The planted
+bug" and the text of each file the feature covers. It answers with one part for each of those
+proofs and then its reading. The model decides nothing: the test run says whether a bug was
+caught, the case it names is shown as its claim, and its reading explains.
 
 **The reading.** Under a line `=== reading ===`, one sentence per line, each opening `- `: what
 each test observes against what its proof names, and why each finding holds or what it misses. Then, where there is one, a line
@@ -258,8 +292,7 @@ it, in at most 60 words, as `references/spec_quality_guide.md`, "One proof, one 
 proof longer than 60 words, or one holding a second case, such as a refusal beside the case that
 is allowed, is written under `notes:`, one sentence naming the proof.
 
-**The call.** One call per rule, four at once, 300 seconds each, the request on its standard
-input:
+**The call.** Each request is written to the command's standard input and given 300 seconds:
 
 ```
 claude -p --output-format json --max-turns 1 --tools "" --strict-mcp-config --safe-mode \
@@ -291,9 +324,10 @@ question.
 
 The audit reports. It recommends nothing.
 
-- **Each rule it read**, its verdict, then each finding: the spot tests' sentences and each
-  planted bug that survived. Then one sentence for each proof no bug was caught for, which is not
-  a finding. Under a `spot-checked` rule those sentences follow `The spot tests found nothing.`
+- **Each rule it read**, its verdict, then each finding: the spot tests' sentences and, for each
+  planted bug that survived, the change and then the case the model says it breaks. Then one
+  sentence for each proof no bug was caught for, which is not a finding. Under a `spot-checked`
+  rule those sentences follow `The spot tests found nothing.`
 - **The share of rules found strong**, the last line:
   `The audit found 34 of 40 rules strong (85%): 34 strong, 4 weak, 2 spot-checked.`, counted over
   the rules that pass their tests, a rule with a hand check counted where it also has a tested
@@ -301,8 +335,8 @@ The audit reports. It recommends nothing.
 
 Each rule read gets one entry in its feature's evidence, under `audit.rules`: the hashes of its
 rule, proofs, tests and code, the `verdict`, the `findings`, under `no_bug` one sentence for each
-proof no bug was caught for, each planted bug under `breaks` with its file, line, the lines
-before and after, and its result, the model's `explanation` and `notes`, the `model`, the sha256
+proof no bug was caught for, each planted bug under `breaks` with its `aim`, its `case`, its
+file, line, the lines before and after, and its result, the model's `explanation` and `notes`, the `model`, the sha256
 of these `criteria`, the time and the commit. A person reads it beside the rule, each proof and
 the source of each test, which is what the audit read.
 

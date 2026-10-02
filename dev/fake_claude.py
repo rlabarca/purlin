@@ -12,13 +12,24 @@ was started in (`cwd`) and what that folder held (`listing`), the value of
 can read how many calls were made, what they carried and how many ran at once.
 
 The audit asks once per rule, and the reply holds one part per proof it asks
-a bug for and then the reading (`reply`):
+a bug for and then the reading (`reply`). A part names no bug,
 
     === PROOF-2 ===
     no break: the fake model plants no bug
 
     === reading ===
     - The test reads the status.
+
+or one change, with its aim and the case it breaks (`change`):
+
+    === PROOF-2 ===
+    aim: past the test
+    case: a wrong password; the proof says 401; the changed code gives 200
+    file: src/login.py
+    before:
+        return 401
+    after:
+        return 200
 
 What the fake answers is set in `fake_claude.json` beside it:
 
@@ -113,6 +124,18 @@ def reply(parts=None, reading=''):
     for proof, text in (parts or {}).items():
         lines.extend(['=== %s ===' % proof, str(text).rstrip('\n'), ''])
     lines.extend(['=== reading ===', reading or ''])
+    return '\n'.join(lines) + '\n'
+
+
+def change(path, before, after, case=None, aim=None):
+    """A proof's part naming one change: the `aim:` and `case:` lines where
+    given, then the file, the lines before and the lines after."""
+    lines = []
+    if aim is not None:
+        lines.append('aim: %s' % aim)
+    if case is not None:
+        lines.append('case: %s' % case)
+    lines.extend(['file: %s' % path, 'before:', before, 'after:', after])
     return '\n'.join(lines) + '\n'
 
 

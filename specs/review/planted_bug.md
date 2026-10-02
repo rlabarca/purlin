@@ -1,17 +1,20 @@
 # Feature: planted_bug
 
-> Description: One planted bug per proof, the audit's third step. For a proof whose test or
->   covered code changed since the audit last read it, the model is asked for the smallest change
->   to one file the feature covers that would break what the proof says. The change is made in a
->   copy of the project, never in the project itself, and only the proof's own test runs against
->   it there; the copy is then deleted. A test that still passes reads `survived`, with
->   the change as the finding; a test that ran and failed reads `caught`; a test that did not
->   run reads `not run`; a change that cannot be made reads `not made`. A check before the model
->   is asked and after the last bug stops the audit if the project changed.
+> Description: One planted bug per proof, aimed past that proof's test, the audit's third step.
+>   For a proof whose test or covered code changed since the audit last read it, the model is
+>   shown the proof, its test and the code, and asked for the smallest change to one file the
+>   feature covers after which the case the proof names gives a different result, choosing the
+>   change that test is most likely to miss, and for the case the change breaks. The change is
+>   made in a copy of the project, never in the project itself, and only the proof's own test
+>   runs against it there; the copy is then deleted. A test that still passes reads `survived`,
+>   with the change as the finding and the case the model named under it; a test that ran and
+>   failed reads `caught`; a test that did not run reads `not run`; a change that cannot be made,
+>   names no case or touches only a comment reads `not made`. A check before the model is asked
+>   and after the last bug stops the audit if the project changed.
 > Scope: scripts/review/targeted_break.py
 > Stack: python/stdlib (subprocess, tempfile, hashlib, shutil)
-> Highest-Rule: 14
-> Highest-Proof: 21
+> Highest-Rule: 18
+> Highest-Proof: 31
 
 ## Rules
 
@@ -26,6 +29,10 @@
 - RULE-12: A change that cannot be applied exactly once to a file the feature covers, a change to a file that holds one of the proof's tests, or an answer that names no change, is not applied and reads `not made` with its reason, and the proof's test is not run
 - RULE-13: The proof's test is run in the copy before the bug is planted; where it does not pass there, no bug is planted and the result reads `not made` with the reason `the test does not pass in a copy of the project`
 - RULE-14: The file the bug changes is given a later time than it had, so the test, which already ran once in the copy, runs the changed code and not a compiled copy kept from that first run
+- RULE-15: A part's `aim:` line is recorded as `past the test` or `plain`, and any other word, or a part with no `aim:` line, is recorded `plain`
+- RULE-16: A part's `case:` line is kept as the model wrote it, with outer spaces cut and at most its first 300 characters
+- RULE-17: A part that names a change and holds no `case:` line, or an empty one, is not planted: the result reads `not made` with the reason `the answer named no case of the proof`, the audit prints `No bug was planted: the model's answer for <PROOF-N> could not be used: the answer named no case of the proof.`, and the proof's test is not run
+- RULE-18: A change that differs from the lines it replaces only in blank lines and comment lines is not planted: the result reads `not made` with the reason `the change touches only a comment`, the audit prints `No bug was planted: the model's answer for <PROOF-N> could not be used: the change touches only a comment.`, and the proof's test is not run; a comment line starts, after its indent, with `//` in any file or with `#` in a file ending `.py`, `.sh`, `.bash`, `.rb`, `.yml`, `.yaml` or `.toml`
 
 ## Proof
 
@@ -48,3 +55,13 @@
 - PROOF-18 (RULE-12): The feature's `> Scope:` names `tests/test_age.py` and the model answers `file: tests/test_age.py`, `before:` `assert age(s) == 90`, `after:` `assert age(s) == 0`; the result reads `not made` and the test of `PROOF-1` is not run
 - PROOF-16 (RULE-13): The test of `PROOF-1` reads `data/built.json`, a file git ignores; the model answers `file: src/age.py`, `before:` `return days`, `after:` `return 0`; the result reads `not made` with the reason `the test does not pass in a copy of the project`, not `caught`
 - PROOF-21 (RULE-14): The model answers `file: src/age.py`, `before:` `return 90`, `after:` `return 91`, a change that keeps the file's size, and the test of `PROOF-1` expects `90`; the result reads `caught`, not `survived`
+- PROOF-22 (RULE-15): The model's part for `PROOF-1` opens `aim: past the test`; after the audit, the bug's entry reads `aim` `past the test`
+- PROOF-23 (RULE-15): The part for `PROOF-1` opens `aim: around the test` and the part for `PROOF-2` holds no `aim:` line; after the audit, each bug's entry reads `aim` `plain`
+- PROOF-24 (RULE-16): The part for `PROOF-1` holds the line `case:   a stamp of 2026-01-01; the proof says 90; the changed code gives 0  `; after the audit, the bug's entry reads `case` `a stamp of 2026-01-01; the proof says 90; the changed code gives 0`
+- PROOF-25 (RULE-16): The part's `case:` line holds 320 characters; after the audit, the bug's entry holds a `case` of its first 300
+- PROOF-26 (RULE-17): The part for `PROOF-1` names `file: src/age.py`, `before:` `return days` and `after:` `return 0` and holds no `case:` line; the audit prints `age RULE-1   spot-checked` and under it `  The spot tests found nothing. No bug was planted: the model's answer for PROOF-1 could not be used: the answer named no case of the proof.`, and the test of `PROOF-1` runs in no copy of the project
+- PROOF-27 (RULE-17): The part for `PROOF-1` holds the line `case:` with nothing after it; the bug's entry reads `not made` with the reason `the answer named no case of the proof`
+- PROOF-28 (RULE-18): The model's change adds the one line `# off by one` above `return days` in `src/age.py`; the audit prints `  The spot tests found nothing. No bug was planted: the model's answer for PROOF-1 could not be used: the change touches only a comment.`, and the test of `PROOF-1` runs in no copy of the project
+- PROOF-29 (RULE-18): The feature covers `src/age.js`, and the model's change adds the one line `// planted` to it; the bug's entry reads `not made` with the reason `the change touches only a comment`
+- PROOF-30 (RULE-18): The feature covers `src/notes.txt`, and the model's change adds the one line `# 90` to it; the bug is planted, and its entry reads `survived`
+- PROOF-31 (RULE-18): The model's change turns `return days` into the two lines `# planted` and `return 0`; the bug is planted, and its entry reads `caught`
