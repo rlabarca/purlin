@@ -66,7 +66,7 @@ def project():
 class TestEachTestShowsItsOwnSource:
 
     # purlin: ai_audit PROOF-34
-    def test_two_passing_tests_of_one_proof_each_show_their_own_source(
+    def test_two_tests_of_one_proof_each_show_their_file_and_own_source(
             self, project):
         _two_tests(project)
         rule = project.rule('RULE-1')
