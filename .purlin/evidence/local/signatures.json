@@ -116,17 +116,17 @@
         "verdict": "strong"
       },
       "RULE-106": {
-        "at": "2026-10-02T11:05:21Z",
+        "at": "2026-10-02T15:43:48Z",
         "breaks": {
           "PROOF-214": {
             "after": "              'audit_list_opened': list_opened,\n              str(given).strip().lower(): True}",
             "aim": "past the test",
             "before": "              'audit_list_opened': list_opened}",
-            "break_key": "bd33cd9a11cf07bb4267d5f1691278b382f4fc777112fad931e9efe76e3bc6f0",
+            "break_key": "29a9ca3f7e06c5d0ff18183d0934770b7957374df880c12315437628d5e02f16",
             "case": "`login RULE-2` answered `the lockout page read 401`, audit list not opened, then `y`; the proof says the sign-off records no answer word; the changed code records the answer word `y` as a key under `shown`",
             "file": "scripts/review/sign.py",
             "line": 925,
-            "result": "survived",
+            "result": "caught",
             "why": ""
           },
           "PROOF-235": {
@@ -142,26 +142,16 @@
           }
         },
         "code_hash": "7a4ea88825f933977c848ec0d9b77f200636f43c6c39fc4298598dc97fe77561",
-        "commit": "dc74593b108a5df02377e89bfa2f8ddbc4a6cbfa",
+        "commit": "1deb3e57fdba7b5cba9ae641af70aac573625312",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
-        "explanation": [
-          "PROOF-214: the test walks with a typed note and yes, then compares `package_hash` with the fingerprint of the written package, finds `login RULE-2` in `shown.hand_checks`, checks `audit_list_opened` is False and compares `notes` with the exact note, which are the values the proof names.",
-          "PROOF-214: the answer-word check gathers only the values of the file, each compared whole, so an answer word recorded as a key, or inside a longer value, still passes.",
-          "PROOF-214: `login RULE-2` is looked for with `in`, so extra hand checks recorded beside it would pass, and the proof asks no more than \"among\".",
-          "PROOF-235: the test gives an empty line at the hand check, then yes, and compares the whole `notes` list with one entry holding `no note`, which is the proof's case and its value.",
-          "No test shown reads `shown.overview` or `shown.runs`, which the rule names and no proof names.",
-          "The spot tests found nothing, and each test holds failable comparisons with literals from its proof."
-        ],
-        "findings": [
-          "PROOF-214: the test still passes when scripts/review/sign.py:925 reads \"'audit_list_opened': list_opened,\"",
-          "PROOF-214: the AI says this breaks: `login RULE-2` answered `the lockout page read 401`, audit list not opened, then `y`; the proof says the sign-off records no answer word; the changed code records the answer word `y` as a key under `shown`"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "3775159dcf50b87c00f3db600a5984d83b2a8dbe0bd443d811d86a7fe7c84c06",
         "rule_hash": "f415c2a8a31b45494b3118cfd2cc447018c20ec5a7626ca0e226db64791d799e",
-        "test_hash": "f6b29adba9aee07d9052b081a7c45f104febf45249fa4be9692e1bbee1dea6f9",
-        "verdict": "weak"
+        "test_hash": "1b1a9793899ca2c9d4973e4325f4a8e5e0557abe987c333c2ddc29afecb75019",
+        "verdict": "strong"
       },
       "RULE-108": {
         "at": "2026-10-02T10:07:19Z",
@@ -254,17 +244,17 @@
         "verdict": "strong"
       },
       "RULE-110": {
-        "at": "2026-10-02T11:05:21Z",
+        "at": "2026-10-02T15:43:48Z",
         "breaks": {
           "PROOF-220": {
             "after": "        _say(render_stop(stop), out)\n        print(SIGN_ASK % (info['version'], info['email']), file=out)\n    print('', file=out)\n    print(SHOW_NEXT, file=out)",
             "aim": "past the test",
             "before": "        _say(render_stop(stop), out)\n    print('', file=out)\n    print(SHOW_NEXT, file=out)",
-            "break_key": "c20b08816a060762a1cc5c9f5a021c8681da486ba2bfdc84d5bb2facbbac52f8",
+            "break_key": "813f33713b0119b7d3f435a4b4f0fcb84d05f587e214318b5bf7c156c1a69b2b",
             "case": "`--show` with `login RULE-1` weak and `login RULE-2` a hand check; the proof says the stop `login RULE-2   hand check` has no question after it; the changed code prints `Sign the evidence package for 2.1.0 as <signer>? [y/N] ` straight after the stop",
             "file": "scripts/review/sign.py",
             "line": 858,
-            "result": "survived",
+            "result": "caught",
             "why": ""
           },
           "PROOF-228": {
@@ -280,25 +270,16 @@
           }
         },
         "code_hash": "7a4ea88825f933977c848ec0d9b77f200636f43c6c39fc4298598dc97fe77561",
-        "commit": "dc74593b108a5df02377e89bfa2f8ddbc4a6cbfa",
+        "commit": "1deb3e57fdba7b5cba9ae641af70aac573625312",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
-        "explanation": [
-          "PROOF-220: the test compares the `login RULE-1` finding line, the two overview lines under `Signing 2.1.0 at \u2026`, the last two lines after the stop, the exit code 0 and an empty status, which are the values the proof names.",
-          "PROOF-220: the only question the test looks for is one holding `what did you see`, and the stop's length comes from a helper not shown, so a question in other words printed directly under the stop may be counted as part of the stop.",
-          "PROOF-220: the test reads \"no commit and no file\" from an empty status alone, which would stay empty after a new commit; the later lookup of the `Signing` line by the current head would catch a commit only indirectly.",
-          "PROOF-228: the test compares exit code 0, the overview's rules line `2 rules on Linux/Unix: 2 pass their tests, no hand check.` and the absence of the no-key line, which is the proof's case and each result it names.",
-          "Findings: none were reported, and each test holds failable comparisons against literals the proofs name."
-        ],
-        "findings": [
-          "PROOF-220: the test still passes when scripts/review/sign.py:858 reads \"print(SIGN_ASK % (info['version'], info['email']), file=out)\"",
-          "PROOF-220: the AI says this breaks: `--show` with `login RULE-1` weak and `login RULE-2` a hand check; the proof says the stop `login RULE-2   hand check` has no question after it; the changed code prints `Sign the evidence package for 2.1.0 as <signer>? [y/N] ` straight after the stop"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "proof_hash": "fe6d38fb4ebb8047761214830e2b964ab098a6b964bbbe04c657d085fcbbccde",
+        "proof_hash": "6387bcb55d6ca4a9ba11d3dc32be7650f407e3c42355df56295b07d9a6ed254a",
         "rule_hash": "7a33844a4779c029a47eb7be5b5670d59cb7ecaf2dba537dd2043f4dbb0ab7a8",
-        "test_hash": "4a2d62df33418d67973b9d2227941f5475dc93d3a570cac33cc598d2b12ecc48",
-        "verdict": "weak"
+        "test_hash": "25ef197a714236e0a68d4488c5b32f7f5e0e7675353e0a3ce5c42f45674e27a5",
+        "verdict": "strong"
       },
       "RULE-111": {
         "at": "2026-10-02T10:07:19Z",
@@ -399,39 +380,31 @@
         "verdict": "strong"
       },
       "RULE-115": {
-        "at": "2026-10-02T11:05:21Z",
+        "at": "2026-10-02T15:43:48Z",
         "breaks": {
           "PROOF-230": {
             "after": "            list_opened = True\n            _say(audit_list_lines(shown['weak']) * 2, out)",
             "aim": "past the test",
             "before": "            list_opened = True\n            _say(audit_list_lines(shown['weak']), out)",
-            "break_key": "0835d092e79a77966f4cd5983b1f4602caaa7c7711c55646dc19888584a15c0d",
+            "break_key": "3c108ccbca5f56f2d0f7a544198f65a5983155e2daaa3dad672c5f391072da44",
             "case": "login RULE-1 audited weak with one finding, answered `list`; the proof says it prints the line `  login RULE-1   PROOF-1 reads the status alone.` for that rule and asks `go on: `; the changed code prints that line twice before asking `go on: `",
             "file": "scripts/review/sign.py",
             "line": 901,
-            "result": "survived",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "7a4ea88825f933977c848ec0d9b77f200636f43c6c39fc4298598dc97fe77561",
-        "commit": "dc74593b108a5df02377e89bfa2f8ddbc4a6cbfa",
+        "commit": "1deb3e57fdba7b5cba9ae641af70aac573625312",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
-        "explanation": [
-          "PROOF-230: the test runs the walk with login RULE-1 weak, answers `list`, and compares the first two questions exactly with `The audit's findings: 1 weak. list / go on: ` and `go on: `, so a wrong count or a wrong prompt fails it.",
-          "PROOF-230: the test records, at each question, whether the exact line `  login RULE-1   PROOF-1 reads the status alone.` was among the lines printed, so it sees that the line is missing before `list` and present before `go on: `.",
-          "PROOF-230: the test only checks that the finding line is present among the printed lines, so it does not see how many times the line is printed or what else is printed beside it.",
-          "PROOF-230: the spot tests found nothing, and that holds: the test asserts on literal values that the proof names, and none comes from the code under test."
-        ],
-        "findings": [
-          "PROOF-230: the test still passes when scripts/review/sign.py:901 reads \"_say(audit_list_lines(shown['weak']) * 2, out)\"",
-          "PROOF-230: the AI says this breaks: login RULE-1 audited weak with one finding, answered `list`; the proof says it prints the line `  login RULE-1   PROOF-1 reads the status alone.` for that rule and asks `go on: `; the changed code prints that line twice before asking `go on: `"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "57886b43f1d287363e0de85ec5129f0adff8ceb38714c77d48ecf11cf2dc8b46",
         "rule_hash": "00d33f8be633fddc16336561ee0cac6d0ba641aa1d2ca4255e751c33ceba0ad1",
-        "test_hash": "54f5f7bb820127c6a4864f8030316fd599c6ab17db680993c2a747dcf7e7c65c",
-        "verdict": "weak"
+        "test_hash": "e1bb835665f77b69202e76688e2ff8797ff228cd31e0a7b4b40582f07c2f6cec",
+        "verdict": "strong"
       },
       "RULE-118": {
         "at": "2026-10-02T10:07:19Z",
@@ -1066,7 +1039,7 @@
         "verdict": "strong"
       },
       "RULE-132": {
-        "at": "2026-10-02T11:05:21Z",
+        "at": "2026-10-02T15:43:48Z",
         "breaks": {
           "PROOF-256": {
             "after": "    return (_count('1 rule does not pass', '%d rules do not pass', count + 1),",
@@ -1094,38 +1067,25 @@
             "after": "    parts = ['%s RULE-s %s' % (name, ', '.join(sorted(rules, key=_rule_number)))\n             for name, rules in sorted(named.items())]\n    if corrections:",
             "aim": "past the test",
             "before": "    parts = ['%s %s' % (name, ', '.join(sorted(rules, key=_rule_number)))\n             for name, rules in sorted(named.items())]\n    if corrections:",
-            "break_key": "94044a5d156c3961ddd362423536d5e44a3f20f0a97cd696e668d4725b4afdd2",
+            "break_key": "17ce76aa6f678e512ec768efe0e7c63d8c81dc734ec54649d8284ed839e56218",
             "case": "specs/auth/login.md holds two lines numbered RULE-2, results committed at HEAD; the proof says the one line names `login RULE-2`; the changed code prints `login RULE-s RULE-2`, so `login RULE-2` appears nowhere in the line",
             "file": "scripts/review/sign.py",
             "line": 381,
-            "result": "survived",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "7a4ea88825f933977c848ec0d9b77f200636f43c6c39fc4298598dc97fe77561",
-        "commit": "dc74593b108a5df02377e89bfa2f8ddbc4a6cbfa",
+        "commit": "1deb3e57fdba7b5cba9ae641af70aac573625312",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
-        "explanation": [
-          "PROOF-256: the test compares the exit code and the whole printed output with the one exact line naming `login RULE-2` at the head commit, so the count, the name and the single line are all observed.",
-          "PROOF-257: the test compares the exit code and the whole printed output with the same exact line for the `@slow` spec, so what the proof names is observed in full.",
-          "PROOF-258: the test observes one line, the opening `No sign-off:`, exit 1 and an empty git status, which match what the proof names.",
-          "PROOF-258: the test looks for `login RULE-` and a `RULE-2` token separately, so a line where the feature name and the rule number are not joined as `login RULE-2` still passes.",
-          "PROOF-258: an empty git status shows no file written in the working tree, but would not show a file written under `.git` or outside the project.",
-          "Findings: the spot tests found nothing, and each test holds assertions that can fail against literals the proofs name."
-        ],
-        "findings": [
-          "PROOF-258: the test still passes when scripts/review/sign.py:381 reads \"parts = ['%s RULE-s %s' % (name, ', '.join(sorted(rules, key=_rule_number)))\"",
-          "PROOF-258: the AI says this breaks: specs/auth/login.md holds two lines numbered RULE-2, results committed at HEAD; the proof says the one line names `login RULE-2`; the changed code prints `login RULE-s RULE-2`, so `login RULE-2` appears nowhere in the line"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-258 names no count and no rest of the line, unlike PROOF-256 and PROOF-257, so the rule's \"in the same way\" is not held to the same words for this case."
-        ],
-        "proof_hash": "db5002fcf86a6947bd2f3672580d2727192b9fb5310d14cfffa7ba60e540d5fa",
+        "proof_hash": "3e6ae0cf6e1c205644a97b3806c43508e373cd90f42dcb94dcb77107ff1ee1c1",
         "rule_hash": "64e608189c73a1ead0358180f2ea2b56daf1f5f2acd9fd9df8bed1d88fc6b9d4",
-        "test_hash": "1032f5edc29992e64a5ee3a00f595d2ccaaddc64dcd15388bf6787969ea6ceb1",
-        "verdict": "weak"
+        "test_hash": "09732b170b1ae2987fd6ff07b84519a6764a509e00cc7576884d025cdf1b259c",
+        "verdict": "strong"
       },
       "RULE-133": {
         "at": "2026-10-02T10:07:19Z",
@@ -1551,8 +1511,8 @@
   "feature": "signatures",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T15:29:16Z",
-      "commit": "0cf0c983cdc2f5212a25a9b14a622756bedb00e6",
+      "at": "2026-10-02T15:43:27Z",
+      "commit": "1deb3e57fdba7b5cba9ae641af70aac573625312",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
