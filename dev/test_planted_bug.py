@@ -688,3 +688,45 @@ def test_an_empty_line_before_after_is_no_part_of_the_change(tmp_path, own_claud
     assert bug_of(after)['before'] == '    days = minutes(stamp)'
     assert bug_of(after)['result'] == 'caught', bug_of(after)
 
+CRLF_AGE = AGE.replace('\n', '\r\n').encode('utf-8')
+
+
+def crlf_project(tmp_path, body):
+    """A project whose `src/age.py` is committed with every line ending CRLF."""
+    root = project(tmp_path, {'PROOF-1': body})
+    git(root, 'config', 'core.autocrlf', 'false')
+    with open(os.path.join(root, 'src', 'age.py'), 'wb') as handle:
+        handle.write(CRLF_AGE)
+    git(root, '-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-qam', 'crlf')
+    return root
+
+
+TWO_LINES = part('    if stamp == "":\n        return 0', '    if stamp == "":\n        return 1')
+
+
+# purlin: planted_bug PROOF-42
+def test_two_lines_match_a_file_whose_lines_end_crlf(tmp_path, own_claude):
+    root = crlf_project(tmp_path, 'assert age("") == 0')
+    with open(os.path.join(root, 'src', 'age.py'), 'rb') as handle:
+        assert handle.read().count(b'\r\n') == 12
+    fake_claude.install(own_claude, answers=[{'PROOF-1': TWO_LINES}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['line'] == 11, bug_of(after)
+    assert bug_of(after)['result'] == 'caught', bug_of(after)
+
+
+# purlin: planted_bug PROOF-43
+def test_the_changed_file_keeps_its_crlf_line_ends(tmp_path, own_claude):
+    seen = os.path.join(str(tmp_path), 'seen.bin')
+    body = ('open(%r, "wb").write(open("src/age.py", "rb").read())\n'
+            'assert age("") is not None' % seen)
+    root = crlf_project(tmp_path, body)
+    fake_claude.install(own_claude, answers=[{'PROOF-1': TWO_LINES}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['result'] == 'survived', bug_of(after)
+    with open(seen, 'rb') as handle:
+        held = handle.read()
+    assert held == CRLF_AGE.replace(b'return 0', b'return 1')
+    assert held.count(b'\r\n') == held.count(b'\n') == 12

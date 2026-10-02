@@ -282,6 +282,9 @@ def _plant(project_root, feature, proof, tests, scope_files, answer, timeout):
             return _result(proof_id, 'not made', OUTSIDE % path, change)
         if text is None:
             return _result(proof_id, 'not made', NO_FILE % path, change)
+        if old not in text and '\r\n' in text:
+            # The model was shown the file's lines with `\n` ends; the file's are CRLF.
+            old, new = _crlf(old), _crlf(new)
         count = text.count(old)
         if count == 0:
             return _result(proof_id, 'not made', NOT_FOUND % path, change)
@@ -312,6 +315,11 @@ def _plant(project_root, feature, proof, tests, scope_files, answer, timeout):
                        change, line)
     finally:
         shutil.rmtree(copy, ignore_errors=True)
+
+
+def _crlf(text):
+    """`text` with every line end as CRLF."""
+    return text.replace('\r\n', '\n').replace('\n', '\r\n')
 
 
 def _changed_line(changed, at, old, new):
