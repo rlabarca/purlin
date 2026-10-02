@@ -27,7 +27,8 @@ and `package_format.md` the package.
 
 **Refusals**, in this order, each one line with nothing written and exit 1:
 tracked files outside the evidence are changed and not committed; the
-evidence is written and not committed; no version is stated or named;
+evidence is written and not committed; a test still carries a marker from
+Purlin 0.9.5; no version is stated or named;
 `signed/<version>` is on a commit this checkout does not hold, or the code
 changed since it; the committed package does not match its fingerprint; a
 result was not taken on this version of the code, a slow result kept from an
@@ -76,6 +77,7 @@ from purlin import (console as console_module,                 # noqa: E402
                     payload as payload_module,
                     signatures as signatures_module,
                     states as states_module,
+                    status as status_module,
                     summary as summary_module)
 
 SCHEMA = 'purlin-signoff/1'
@@ -89,6 +91,13 @@ NO_SIGNOFF_WORK_MANY = ('No sign-off: %d files are changed and not committed. Co
                         'or set them aside, then run purlin:sign again.')
 NO_SIGNOFF_EVIDENCE = ('No sign-off: the evidence is written and not committed. Run '
                        'purlin:test --commit, then purlin:sign.')
+# Tests that still carry a marker from Purlin 0.9.5, as the status counts them.
+NO_SIGNOFF_OLD_MARKER_ONE = ('No sign-off: 1 test still carries a marker from Purlin '
+                             '0.9.5, which is not read. Run purlin:status to see each, '
+                             'rewrite them, then purlin:sign.')
+NO_SIGNOFF_OLD_MARKER_MANY = ('No sign-off: %d tests still carry a marker from Purlin '
+                              '0.9.5, which is not read. Run purlin:status to see each, '
+                              'rewrite them, then purlin:sign.')
 NO_VERSION = ('No version: nothing in this project states one. Run purlin:sign --version '
               '<version>, or write it to a VERSION file.')
 NO_SIGNOFF_ELSEWHERE = ('No sign-off: %s is at %s, which this checkout does not hold. '
@@ -511,6 +520,11 @@ def refusal(project_root, name=None):
                 EXIT_NOTHING, None)
     if package_module.uncommitted_evidence(project_root):
         return [NO_SIGNOFF_EVIDENCE], EXIT_NOTHING, None
+    # Read once nothing tracked is changed, so the files read are the commit's.
+    old = len(status_module.old_markers(project_root))
+    if old:
+        return ([_count(NO_SIGNOFF_OLD_MARKER_ONE, NO_SIGNOFF_OLD_MARKER_MANY,
+                        old)], EXIT_NOTHING, None)
     version = (str(name or '').strip()
                or package_module.project_version(project_root))
     if not version:

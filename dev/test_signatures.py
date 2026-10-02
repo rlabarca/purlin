@@ -15,6 +15,7 @@ What each group holds:
 *what counts*    a sign-off's commit, signed and verified, and its package
 *signed*         where the status reads `signed`, and a tag passed over
 *the refusals*   what stops a sign-off
+*the 0.9.5 markers*  no sign-off while a test still carries one
 *the walk*       the run lines, the overview, the audit's findings, the stops
 *the sign-off*   the file, its commit, the tag, a second signer, a tag git
                  could not write
@@ -863,6 +864,104 @@ class TestTheRefusals:
             assert status(made.root) == ''
         finally:
             made.close()
+
+
+# ---------------------------------------------------------------------------
+# The markers Purlin 0.9.5 wrote that are still in a test
+# ---------------------------------------------------------------------------
+
+OLD_TS = 'tests/login.test.ts'
+OLD_TAGS = ('[proof:login:PROOF-1b:RULE-1:unit]',
+            '[proof:login:PROOF-2b:RULE-2:unit]',
+            '[proof:login:PROOF-2c:RULE-2:unit]')
+OLD_REST = (' a marker from Purlin 0.9.5, which is not read. Run purlin:status '
+            'to see each, rewrite them, then purlin:sign.')
+
+
+def old_ts(tags):
+    """A vitest file with one test per tag, the tag in the test's title."""
+    return "import { it } from 'vitest';\n" + ''.join(
+        "it('signs in %d %s', () => {});\n" % (number, tag)
+        for number, tag in enumerate(tags, 1))
+
+
+def carrying(tags, version=VERSION, signer=True):
+    """A project whose two rules pass on committed evidence, with a tracked
+    vitest file whose tests' titles carry `tags`, committed before the
+    results were taken."""
+    made = Project()
+    write(os.path.join(made.root, *OLD_TS.split('/')), old_ts(tags))
+    if version:
+        write(os.path.join(made.root, 'VERSION'), version + '\n')
+    commit_all(made, 'test: the vitest tests')
+    passing(made)
+    commit_all(made)
+    if signer:
+        key(made.root)
+    return made
+
+
+class TestMarkersFrom095:
+
+    # purlin: signatures PROOF-276
+    def test_one_test_that_carries_one_is_refused(self, capsys):
+        made = carrying(OLD_TAGS[:1])
+        try:
+            assert run_main(made, capsys) == (1, [
+                'No sign-off: 1 test still carries' + OLD_REST])
+            assert status(made.root) == ''
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-277
+    def test_the_same_project_with_the_tag_taken_out_is_shown(self, capsys):
+        made = carrying(('',))
+        try:
+            code, lines = run_main(made, capsys, ['--show'])
+            assert code == 0, lines
+            assert not [line for line in lines
+                        if line.startswith('No sign-off')], lines
+            assert lines[-1] == ('Answer each stop, then run purlin:sign '
+                                 '--answers <file>.')
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-278
+    def test_three_are_counted_before_a_version_or_a_key_is_asked_for(
+            self, home):
+        made = carrying(OLD_TAGS, version=None, signer=False)
+        try:
+            before = made.head()
+            code, lines, asked = walked(made, ['y'])
+            assert lines == ['No sign-off: 3 tests still carry' + OLD_REST]
+            assert (code, asked) == (1, [])
+            assert (made.head(), status(made.root)) == (before, '')
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-279
+    def test_show_prints_the_same_line_and_exits_1(self, capsys):
+        made = carrying(OLD_TAGS[:2])
+        try:
+            assert run_main(made, capsys, ['--show']) == (1, [
+                'No sign-off: 2 tests still carry' + OLD_REST])
+            assert status(made.root) == ''
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-280
+    def test_check_still_checks_a_package(self, signed, capsys):
+        assert walked(signed, ['y'])[0] == 0
+        write(os.path.join(signed.root, *OLD_TS.split('/')),
+              old_ts(OLD_TAGS[:1]))
+        commit_all(signed, 'test: a vitest test')
+        capsys.readouterr()
+        assert run_main(signed, capsys, ['--show']) == (1, [
+            'No sign-off: 1 test still carries' + OLD_REST])
+        code = sign_module.main(['--check', os.path.join(
+            signed.root, *PACKAGE.split('/'))])
+        assert (code, capsys.readouterr().out.splitlines()) == (
+            0, ['The package matches its fingerprint.'])
 
 
 # ---------------------------------------------------------------------------
