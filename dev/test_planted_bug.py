@@ -549,3 +549,69 @@ def test_a_comment_beside_a_changed_line_is_still_planted(tmp_path, own_claude):
     assert code == 0
     assert bug_of(after)['after'] == '    # planted\n    return 0'
     assert bug_of(after)['result'] == 'caught'
+
+
+# ---------------------------------------------------------------------------
+# A comment at the end of a code line
+# ---------------------------------------------------------------------------
+
+# purlin: planted_bug PROOF-32
+def test_a_comment_added_at_the_end_of_a_code_line_is_not_planted(tmp_path, own_claude):
+    log, body = logs_where_it_runs(tmp_path)
+    root = project(tmp_path, {'PROOF-1': body})
+    fake_claude.install(own_claude, answers=[
+        {'PROOF-1': part('    return days', '    return days  # planted bug')}])
+    code, lines, _before, after = audit(root)
+    assert code == 0
+    at = lines.index('age RULE-1   spot-checked')
+    assert lines[at + 1] == refused('the change touches only a comment'), lines
+    assert bug_of(after)['after'] == '    return days  # planted bug'
+    assert bug_of(after)['result'] == 'not made'
+    assert ran_in_a_copy(log) == []
+
+
+# purlin: planted_bug PROOF-33
+def test_two_slashes_at_the_end_of_a_code_line_are_a_comment(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG}, files={
+        'src/age.js': 'export function age() {\n  return 90;\n}\n'})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': part(
+        '  return 90;', '  return 90; // planted', path='src/age.js')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert (bug_of(after)['result'], bug_of(after)['why']) == (
+        'not made', 'the change touches only a comment')
+
+
+# purlin: planted_bug PROOF-34
+def test_a_hash_inside_a_quoted_string_is_code(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': 'assert age("") == 0'})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': part(
+        '    if stamp == "":', '    if stamp == " #":')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['after'] == '    if stamp == " #":'
+    assert bug_of(after)['result'] == 'caught', bug_of(after)
+
+
+# purlin: planted_bug PROOF-35
+def test_two_slashes_in_a_python_file_are_code(tmp_path, own_claude):
+    halves = AGE.replace('    return days\n', '    return days // 1\n')
+    root = project(tmp_path, {'PROOF-1': STRONG}, age=halves)
+    fake_claude.install(own_claude, answers=[{'PROOF-1': part(
+        '    return days // 1', '    return days // 2')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['after'] == '    return days // 2'
+    assert bug_of(after)['result'] == 'caught', bug_of(after)
+
+
+# purlin: planted_bug PROOF-36
+def test_a_block_comment_is_code_to_the_check(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG}, files={
+        'src/age.js': 'export function age() {\n  return 90;\n}\n'})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': part(
+        '  return 90;', '  return 90; /* planted */', path='src/age.js')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['after'] == '  return 90; /* planted */'
+    assert bug_of(after)['result'] == 'survived', bug_of(after)

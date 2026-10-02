@@ -231,9 +231,14 @@ Two of those reasons are refusals of a change the model did name:
 - `No bug was planted: the model's answer for PROOF-1 could not be used: the answer named no case of the proof.`
   The part holds no `case:` line, or an empty one.
 - `No bug was planted: the model's answer for PROOF-1 could not be used: the change touches only a comment.`
-  The lines after the change differ from the lines before it only in blank lines and comment
-  lines. A comment line starts, after its indent, with `//` in any file, or with `#` in a file
-  ending `.py`, `.sh`, `.bash`, `.rb`, `.yml`, `.yaml` or `.toml`.
+  The lines after the change differ from the lines before it only in blank lines, comment
+  lines and a comment at the end of a code line. A comment line starts, after its indent, with
+  `//` in any file, or with `#` in a file ending `.py`, `.sh`, `.bash`, `.rb`, `.yml`, `.yaml`
+  or `.toml`. A comment at the end of a code line starts, after a space, with `#` in a file
+  with one of those endings and with `//` in any other file; a line that holds a quotation mark
+  before it is read as code. The check is narrow: a `/* */` comment, a docstring, a `--`
+  comment and a comment in any other kind of file are read as code, and such a change is
+  planted.
 
 A proof keeps its last result while its tests and its feature's code are unchanged, and no bug is
 planted for it again; a kept bug that survived adds its two findings again. No bug is planted for

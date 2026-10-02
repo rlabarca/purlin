@@ -29,10 +29,11 @@ change and once with it in place; the copy is removed whatever they do.
     not run    anything else with the bug in place: a skip, a test not collected, a
                timeout. It is neither caught nor survived
     not made   the part is missing or names no change, it names a change and no case
-               of the proof, the change touches only a comment, it cannot be applied
-               exactly once to a file the feature's `> Scope:` reaches, it names a file
-               that holds one of the proof's tests, it would write outside the copy, or
-               the proof's tests do not pass in the copy before the change
+               of the proof, the change touches only a comment (`only_comment`), it
+               cannot be applied exactly once to a file the feature's `> Scope:`
+               reaches, it names a file that holds one of the proof's tests, it would
+               write outside the copy, or the proof's tests do not pass in the copy
+               before the change
 
 `snapshot` takes the project's `git status --porcelain -z` and the hash of
 every file it lists; the audit takes one before it asks the model and compares
@@ -95,8 +96,11 @@ _AIM_RE = re.compile(r'^aim:(.*)$')
 _CASE_RE = re.compile(r'^case:(.*)$')
 
 # A comment line starts, after its indent, with `//` in any file, or with `#`
-# in a file with one of these endings.
+# in a file with one of these endings. A comment at the end of a code line
+# starts, after white space, with `#` in a file with one of these endings and
+# with `//` in any other file.
 HASH_COMMENTS = ('.py', '.sh', '.bash', '.rb', '.yml', '.yaml', '.toml')
+_QUOTES = '\'"`'
 
 
 class ProjectChanged(Exception):
@@ -146,22 +150,45 @@ def parse_answer(text):
             found.group('after').rstrip('\n'), aim, case)
 
 
+def _hashes(path):
+    return str(path or '').lower().endswith(HASH_COMMENTS)
+
+
+def _code_lines(path, text):
+    """`[(index, line)]` for each line of `text` that is neither blank nor a comment
+    line, its trailing white space cut."""
+    hashes = _hashes(path)
+    kept = []
+    for index, line in enumerate(str(text).split('\n')):
+        start = line.strip()
+        if not start or start.startswith('//') or (hashes and start.startswith('#')):
+            continue
+        kept.append((index, line.rstrip()))
+    return kept
+
+
+def _without_end_comment(path, line):
+    """`line` without the comment at its end. The comment starts at the first `#`
+    (a file ending as `HASH_COMMENTS` lists) or `//` (any other file) that follows
+    white space. A line holding a quotation mark before it is left whole: the mark
+    may stand inside a string."""
+    found = re.search(r'\s#' if _hashes(path) else r'\s//', line)
+    if not found or any(mark in line[:found.start()] for mark in _QUOTES):
+        return line
+    return line[:found.start()].rstrip()
+
+
 def only_comment(path, before, after):
-    """True where `after` differs from `before` only in blank lines and comment lines.
-    A comment line starts, after its indent, with `//` in any file, or with `#` in a
-    file ending as `HASH_COMMENTS` lists."""
+    """True where `after` differs from `before` only in blank lines, comment lines
+    and the comment at the end of a code line. A comment line starts, after its
+    indent, with `//` in any file, or with `#` in a file ending as `HASH_COMMENTS`
+    lists; `_without_end_comment` says what the comment at a line's end is. A block
+    comment, a docstring and any other comment are code to this check."""
     if before == after:
         return False
-    hashes = str(path or '').lower().endswith(HASH_COMMENTS)
 
     def code(text):
-        kept = []
-        for line in str(text).split('\n'):
-            start = line.strip()
-            if not start or start.startswith('//') or (hashes and start.startswith('#')):
-                continue
-            kept.append(line.rstrip())
-        return kept
+        return [_without_end_comment(path, line) for _index, line in _code_lines(path, text)]
 
     return code(before) == code(after)
 
