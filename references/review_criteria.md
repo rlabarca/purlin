@@ -216,7 +216,7 @@ after.
   rule reads `weak`, with two findings, the change and then the case the model says it breaks:
   `PROOF-1: the test still passes when src/age.py:12 reads "return minutes + 60"`
   `PROOF-1: the AI says this breaks: a sample collected 90 minutes ago; the proof says 90; the changed code gives 150`
-  A person reads the second line to judge the first.
+  A test run settles the first, as "Settling a finding" says.
 - **Not run.** The test was skipped, could not be collected, ran past its limit or ended in an
   error its tool does not report as a failure, with the change in place. That decides nothing:
   the bug was neither caught nor missed.
