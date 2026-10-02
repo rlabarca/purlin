@@ -917,8 +917,8 @@
         "proofs_without_test": 0,
         "proofs_without_test_ids": [],
         "rules": 1,
-        "spot_checked": 0,
-        "strong": 1,
+        "spot_checked": 1,
+        "strong": 0,
         "untested": 0,
         "weak": 0
       },
@@ -931,11 +931,13 @@
             "explanation": [],
             "findings": [],
             "model": "example-model-1",
-            "no_bug": [],
+            "no_bug": [
+              "No bug was planted: no bug is planted for an anchor's rule."
+            ],
             "notes": [],
             "out_of_date": [],
             "path": ".purlin/evidence/local/checkout_design.json",
-            "verdict": "strong"
+            "verdict": "spot-checked"
           },
           "bucket": "passed",
           "cells": {
@@ -958,8 +960,10 @@
             "strong": {
               "evidence": ".purlin/evidence/local/checkout_design.json",
               "findings": [],
-              "reasons": [],
-              "word": "strong"
+              "reasons": [
+                "The spot tests found nothing. No bug was planted: no bug is planted for an anchor's rule."
+              ],
+              "word": "spot-checked"
             }
           },
           "feature": "checkout_design",
@@ -972,8 +976,8 @@
             "not_audited": false,
             "out_of_date": false,
             "partial": false,
-            "spot_checked": false,
-            "strong": true,
+            "spot_checked": true,
+            "strong": false,
             "weak": false
           },
           "id": "RULE-1",
@@ -1164,8 +1168,8 @@
     "audit": {
       "not_audited": 0,
       "out_of_date": 0,
-      "spot_checked": 0,
-      "strong": 5,
+      "spot_checked": 1,
+      "strong": 4,
       "weak": 1
     },
     "audit_out_of_date": 0,
@@ -1184,13 +1188,13 @@
       "PROOF-1"
     ],
     "rules": 10,
-    "sentence": "10 rules. 6 pass their tests. The audit found 5 of 6 rules strong (83%): 5 strong, 1 weak.",
-    "spot_checked": 0,
+    "sentence": "10 rules. 6 pass their tests. The audit found 4 of 5 rules strong (80%): 4 strong, 1 weak, 1 spot-checked.",
+    "spot_checked": 1,
     "steps": {
       "by_hand": 0,
       "passed": 6
     },
-    "strong": 5,
+    "strong": 4,
     "untested": 2,
     "weak": 1
   },

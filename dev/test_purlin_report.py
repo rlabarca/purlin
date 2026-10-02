@@ -1843,6 +1843,156 @@ def test_one_spot_checked_result_draws_the_strong_column_and_box(
     assert lines[0] == 'Spot-checked.', lines
 
 
+# ---------------------------------------------------------------------------
+# An anchor is never rated strong
+# ---------------------------------------------------------------------------
+
+NO_ANCHOR_BUG = "No bug is planted for an anchor's rule."
+ANCHOR_STRONG = '.tr[data-feature="checkout_design"] [data-label="Strong"]'
+
+
+def anchor_rule(payload):
+    """The one rule of the anchor `checkout_design`, which passes its tests
+    and carries an audit entry in the team and the regulated sample."""
+    rule = rule_of(payload, 'checkout_design', 'RULE-1')
+    assert rule['cells']['passed']['word'] == 'passed'
+    assert rule['audit']
+    return rule
+
+
+def anchor_entry_out_of_date(payload):
+    """The team sample after the project's code changed since the entry of
+    the anchor's rule was written, as the payload carries it."""
+    rule = anchor_rule(payload)
+    rule['audit']['out_of_date'] = ['code']
+    rule['cells']['strong'].update({
+        'word': 'out of date',
+        'reasons': ['The code changed since the audit at a1b2c3d.',
+                    'The last audit found it spot-checked on 2026-09-12.']})
+    rule['flags'].update({'spot_checked': False, 'audit_out_of_date': True})
+    payload['summary']['audit']['spot_checked'] -= 1
+    payload['summary']['audit']['out_of_date'] += 1
+
+
+def anchor_never_audited(payload):
+    """The team sample with the anchor's rule passing its tests and read by
+    no audit."""
+    rule = anchor_rule(payload)
+    rule['audit'] = None
+    rule['cells']['strong'] = {
+        'word': 'not audited', 'findings': [], 'evidence': None,
+        'reasons': ['no audit has read this rule']}
+    rule['flags'].update({'spot_checked': False, 'not_audited': True})
+    payload['summary']['audit']['spot_checked'] -= 1
+    payload['summary']['audit']['not_audited'] += 1
+
+
+def every_feature_rule_strong(payload):
+    """The team sample after login's `RULE-1`, the one rule the audit found
+    weak, is found strong: every rule that passes its tests and is not an
+    anchor's then reads `strong`, and the anchor's reads `spot-checked`."""
+    rule = rule_of(payload, 'login', 'RULE-1')
+    assert rule['cells']['strong']['word'] == 'weak'
+    rule['audit'].update({'verdict': 'strong', 'findings': []})
+    rule['cells']['strong'].update({'word': 'strong', 'findings': [],
+                                    'reasons': []})
+    rule['flags'].update({'weak': False, 'strong': True})
+    rule['left'] = None
+    payload['summary']['audit'].update(strong=5, weak=0)
+    words = {entry['cells']['strong']['word']
+             for feature in payload['features'] if not feature['is_anchor']
+             for entry in feature['rules']
+             if entry['cells']['passed']['word'] == 'passed'}
+    assert words == {'strong'}, words
+    assert anchor_rule(payload)['cells']['strong']['word'] == 'spot-checked'
+
+
+# purlin: purlin_report PROOF-249
+def test_an_anchor_whose_rule_is_spot_checked_reads_the_word_alone(
+        browser, tmp_path):
+    page = open_sample(browser, tmp_path, 'team')
+    cells = count_cells(page)
+    page.close()
+    assert cells['checkout_design']['Strong'] == 'spot-checked', cells
+    assert cells['receipt']['Strong'] == '1 of 1', cells
+
+
+# purlin: purlin_report PROOF-250
+def test_an_anchor_with_a_weak_rule_reads_weak_in_the_warn_tone(
+        browser, tmp_path):
+    payload = payload_named('regulated')
+    assert anchor_rule(payload)['cells']['strong']['word'] == 'weak'
+    page = open_board(browser, tmp_path, payload)
+    word = page.inner_text(ANCHOR_STRONG).strip()
+    colour = page.eval_on_selector(ANCHOR_STRONG + ' b',
+                                   'e => getComputedStyle(e).color')
+    warn = resolved(page, '--state-warn')
+    page.close()
+    assert word == 'weak', word
+    assert colour == warn, (colour, warn)
+
+
+# purlin: purlin_report PROOF-251
+def test_an_anchor_whose_entry_is_out_of_date_reads_out_of_date(
+        browser, tmp_path):
+    page = open_sample(browser, tmp_path, 'team', anchor_entry_out_of_date)
+    word = page.inner_text(ANCHOR_STRONG).strip()
+    page.close()
+    assert word == 'out of date', word
+
+
+# purlin: purlin_report PROOF-252
+def test_an_anchor_no_audit_read_has_an_empty_strong_cell(browser, tmp_path):
+    page = open_sample(browser, tmp_path, 'team', anchor_never_audited)
+    heads = head_labels(page)
+    cells = count_cells(page)
+    page.close()
+    assert heads[-1] == 'Strong', heads
+    assert cells['checkout_design']['Strong'] == '', cells
+    assert cells['security_baseline']['Strong'] == '', cells
+
+
+# purlin: purlin_report PROOF-253
+def test_an_anchors_strong_hover_says_first_that_no_bug_is_planted(
+        browser, tmp_path):
+    page = open_sample(browser, tmp_path, 'team')
+    found = hovers(page)
+    page.close()
+    lines = found['checkout_design']['Strong'].split('\n')
+    assert len(lines) == 2, lines
+    assert lines[0] == NO_ANCHOR_BUG, lines
+    assert lines[1].startswith('audit · local · '), lines
+    assert NO_ANCHOR_BUG not in found['receipt']['Strong'], found['receipt']
+
+
+# purlin: purlin_report PROOF-254
+def test_the_strong_box_is_complete_beside_a_spot_checked_anchor(
+        browser, tmp_path):
+    page = open_sample(browser, tmp_path, 'team', every_feature_rule_strong)
+    found = {box['label']: box for box in page.evaluate(COUNT_BOXES)}
+    passing = resolved(page, '--state-pass')
+    page.close()
+    assert found['Strong']['word'] == '5', found
+    assert found['Strong']['color'] == passing, found
+    assert found['Strong']['hover'].split('\n')[:2] == [
+        '5 strong', '1 spot-checked'], found
+
+
+# purlin: purlin_report PROOF-255
+def test_the_strong_box_waits_on_a_weak_rule_that_is_not_an_anchors(
+        browser, tmp_path):
+    payload = payload_named('team')
+    assert payload['summary']['audit'] == {
+        'strong': 4, 'weak': 1, 'spot_checked': 1, 'out_of_date': 0,
+        'not_audited': 0}
+    page = open_board(browser, tmp_path, payload)
+    found = {box['label']: box for box in page.evaluate(COUNT_BOXES)}
+    warn = resolved(page, '--state-warn')
+    page.close()
+    assert found['Strong']['word'] == '4', found
+    assert found['Strong']['color'] == warn, found
+
+
 def stamp(page):
     """The top bar's line naming the checkout state, and its hover."""
     return [page.inner_text('.topbar .stamp').strip(),

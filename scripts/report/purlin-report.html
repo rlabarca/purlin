@@ -173,7 +173,9 @@ function statStrip() {
                  total + (total === 1 ? ' rule total' : ' rules total')));
   if (audited()) {
     var strong = (summary.audit || {}).strong || 0;
-    boxes.push(box(STRONG, strong, strong === auditTotal() ? 'pass' : 'warn',
+    var found = auditShare();
+    boxes.push(box(STRONG, strong,
+                   found.strong === found.over ? 'pass' : 'warn',
                    auditCountLines(), null));
   }
   return '<div class="strip"><div class="tiles">' + boxes.join('')
@@ -240,16 +242,27 @@ function share(count, total, aside) {
             : count ? 'warn' : 'idle'];
 }
 function strongCell(feature) {
-  var words = AUDIT_WORDS.map(function (pair) { return pair[1]; });
-  var read = (feature.rules || []).filter(function (rule) {
-    return words.indexOf(cellWord(rule, 'strong')) !== -1;
-  });
+  var read = auditRead(feature);
+  if (feature.is_anchor) {
+    var word = anchorWord(read);
+    return word ? '<span' + hover([NO_ANCHOR_BUG].concat(auditLines(feature)))
+      + '>' + counts([[word, '', word === 'weak' ? 'warn' : '']]) + '</span>'
+      : '';
+  }
   if (!read.length) { return ''; }
   var strong = read.filter(function (rule) {
     return cellWord(rule, 'strong') === 'strong';
   }).length;
   return '<span' + hover(auditLines(feature)) + '>'
     + counts([share(strong, read.length)]) + '</span>';
+}
+function anchorWord(read) {
+  var words = read.map(function (rule) { return cellWord(rule, 'strong'); });
+  if (words.indexOf('weak') !== -1) { return 'weak'; }
+  if (words.indexOf('out of date') !== -1) { return 'out of date'; }
+  return words.length && words.every(function (word) {
+    return word === 'spot-checked';
+  }) ? 'spot-checked' : '';
 }
 function featureRow(feature, columns) {
   var rollup = feature.rollup || {};
@@ -533,6 +546,7 @@ var AUDIT_WORDS = [['strong', 'strong'], ['weak', 'weak'],
   ['spot_checked', 'spot-checked'], ['out_of_date', 'out of date'],
   ['not_audited', 'not audited']];
 var LAST_AUDIT = 'Last audit: ';
+var NO_ANCHOR_BUG = 'No bug is planted for an anchor\'s rule.';
 var PASSING = 'Passing';
 var STRONG = 'Strong';
 var NO_PROOF = 'No proof';
@@ -786,11 +800,22 @@ function factBox(label, word, hue, lines) {
     + ')"><span class="fact-l">' + esc(label) + '</span><b>' + esc(word)
     + '</b></span>';
 }
-function auditTotal() {
-  var found = ((DATA && DATA.summary) || {}).audit || {};
-  return AUDIT_WORDS.reduce(function (sum, pair) {
-    return sum + (found[pair[0]] || 0);
-  }, 0);
+function auditRead(feature) {
+  var words = AUDIT_WORDS.map(function (pair) { return pair[1]; });
+  return (feature.rules || []).filter(function (rule) {
+    return words.indexOf(cellWord(rule, 'strong')) !== -1;
+  });
+}
+function auditShare() {
+  var share = {strong: 0, over: 0};
+  ((DATA && DATA.features) || []).forEach(function (feature) {
+    if (feature.is_anchor) { return; }
+    auditRead(feature).forEach(function (rule) {
+      share.over += 1;
+      if (cellWord(rule, 'strong') === 'strong') { share.strong += 1; }
+    });
+  });
+  return share;
 }
 function auditCountLines() {
   var found = ((DATA && DATA.summary) || {}).audit || {};

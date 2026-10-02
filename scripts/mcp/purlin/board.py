@@ -18,7 +18,9 @@ The columns, left to right:
              partial or are failing
     Strong   how many of its rules the audit found strong, of those that
              pass their tests and have a tested proof, wherever a rule of
-             the project has an audit entry
+             the project has an audit entry; for an anchor, whose rules
+             get no planted bug and are never found strong, the one word
+             of what the audit found
 
 Every when, who and platform detail lives in a hover on the dashboard and on
 the rule screen; a cell here carries counts and nothing else.
@@ -134,28 +136,49 @@ def tests_cell(rollup):
     return text
 
 
-def strong_cell(rollup):
+def strong_cell(rollup, anchor=False):
     """`<strong> of <n>`: how many of the spec's rules the audit found
     strong, `<n>` being `audited_rules`.
 
     Empty where `<n>` is 0: no rule of the spec passes its tests with a
-    tested proof.
+    tested proof. An anchor's cell is `anchor_word` and never a share.
     """
+    if anchor:
+        return anchor_word(rollup)
     total = audited_rules(rollup)
     if not total:
         return ''
     return '%d of %d' % (strong_met(rollup), total)
 
 
-def row_cells(name, rollup, proofs=1, audited=False):
+def anchor_word(rollup):
+    """What the audit found for an anchor, in one word, or nothing.
+
+    No bug is planted for an anchor's rule, so none is found strong: the
+    word is `weak` where any rule is, else `out of date` where any rule's
+    entry is, else `spot-checked` where every rule of `audited_rules` is,
+    else empty.
+    """
+    if rollup.get('weak'):
+        return 'weak'
+    if rollup.get('audit_out_of_date'):
+        return 'out of date'
+    spot_checked = rollup.get('spot_checked') or 0
+    if spot_checked and spot_checked == audited_rules(rollup):
+        return 'spot-checked'
+    return ''
+
+
+def row_cells(name, rollup, proofs=1, audited=False, anchor=False):
     """One spec's row, as the tuple the columns describe.
 
-    `proofs` and `audited` are read as `columns_for` reads them.
+    `proofs` and `audited` are read as `columns_for` reads them; `anchor`
+    is the feature entry's `is_anchor`.
     """
     cells = [name, rules_cell(rollup)]
     if shows_proofs(proofs):
         cells.append(proofs_cell(rollup))
     cells.append(tests_cell(rollup))
     if audited:
-        cells.append(strong_cell(rollup))
+        cells.append(strong_cell(rollup, anchor))
     return tuple(cells)

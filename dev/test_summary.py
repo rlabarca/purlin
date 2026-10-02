@@ -34,6 +34,10 @@ TWO_PROOFS_SPEC = (
     '- PROOF-1 (RULE-1): POST /login with valid credentials; verify 200\n'
     '- PROOF-2 (RULE-1): POST /login with valid credentials; verify a '
     'token\n')
+SECURITY_ANCHOR = (
+    '# Anchor: security\n\n'
+    '## Rules\n\n- RULE-1: No eval anywhere\n\n'
+    '## Proof\n\n- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\n')
 LAST_LINE = ('Every rule passes its tests on the committed evidence. To sign '
              'it: purlin:sign')
 PASSING = [_entry('PROOF-1', 'RULE-1'), _entry('PROOF-2', 'RULE-2')]
@@ -53,8 +57,9 @@ def rule(passed='passed', strong=None, proofs=1, manual=False,
                        for index in range(proofs)]}
 
 
-def feature(rules, name='login', broken=()):
-    return {'name': name, 'rules': rules, 'broken': list(broken)}
+def feature(rules, name='login', broken=(), anchor=False):
+    return {'name': name, 'rules': rules, 'broken': list(broken),
+            'is_anchor': anchor}
 
 
 def payload(features, here=HERE, corrections=0, signoff=None):
@@ -62,7 +67,8 @@ def payload(features, here=HERE, corrections=0, signoff=None):
     own = [entry for item in features for entry in item['rules']]
     counted = {'rules': len(own), 'steps': summary.steps(own),
                'audit': summary.audit_counts(own)}
-    counted['sentence'] = summary.sentence(counted)
+    counted['sentence'] = summary.sentence(
+        counted, summary.anchors_audit(features))
     left = summary.left(features, here, corrections)
     return {'summary': counted, 'left': left,
             'last_line': summary.last_line(left, signoff)}
@@ -166,6 +172,40 @@ class TestTheSentence:
         assert ending(rules)[0] == (
             '40 rules. 40 pass their tests. The audit found 34 of 40 rules '
             'strong (85%): 34 strong, 4 weak, 2 spot-checked.')
+
+
+    # purlin: summary PROOF-61
+    def test_an_anchors_rules_are_left_out_of_the_share_and_kept_in_the_counts(
+            self):
+        features = [
+            feature([rule(strong='strong')] * 2 + [rule(strong='weak')]),
+            feature([rule(strong='spot-checked', feature='security')] * 8,
+                    name='security', anchor=True),
+        ]
+        assert payload(features)['summary']['sentence'] == (
+            '11 rules. 11 pass their tests. The audit found 2 of 3 rules '
+            'strong (66%): 2 strong, 1 weak, 8 spot-checked.')
+
+    # purlin: summary PROOF-62
+    def test_a_project_reaches_100_per_cent_beside_a_spot_checked_anchor(self):
+        made = Project(spec=ONE_RULE_SPEC)
+        try:
+            made.spec(SECURITY_ANCHOR, name='security', category='_anchors')
+            _git(made.root, 'add', '-A')
+            _git(made.root, 'commit', '-q', '-m', 'anchor(security): create')
+            _commit_tests(made, 'PROOF-1')
+            made.evidence([_entry('PROOF-1', 'RULE-1')])
+            made.evidence([_entry('PROOF-1', 'RULE-1', feature='security',
+                                  test_file='tests/test_security.py')],
+                          feature='security')
+            made.audit('RULE-1')
+            made.audit('RULE-1', feature='security', word='spot-checked')
+            sentence = made.payload()['summary']['sentence']
+        finally:
+            made.close()
+        assert sentence == (
+            '2 rules. 2 pass their tests. The audit found 1 of 1 rules '
+            'strong (100%): 1 strong, 1 spot-checked.'), sentence
 
 
 def _nine_tested_rules_and_a_hand_check(audited=False):

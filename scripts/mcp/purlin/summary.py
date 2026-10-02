@@ -15,9 +15,12 @@ It ends on one sentence, counting each rule once under the spec that owns
 it, anchors' included, and how many pass their tests; then how many are
 checked at sign-off, the rules checked by hand alone that no sign-off has
 noted on their wording as it is; where a rule that passes has an audit
-entry, it gives the share the audit found strong and then each count:
+entry, it gives the share the audit found strong and then each count. No
+bug is planted for an anchor's rule, which is never found strong, so the
+share counts no rule of an anchor and the counts after it count every rule:
 
     40 rules. 40 pass their tests. The audit found 34 of 40 rules strong (85%): 34 strong, 4 weak, 2 spot-checked.
+    48 rules. 48 pass their tests. The audit found 40 of 40 rules strong (100%): 40 strong, 8 spot-checked.
     10 rules. 9 pass their tests. 1 is checked at sign-off.
 
 `Left to do` follows it: one line per kind of work, in the order the work is
@@ -39,7 +42,8 @@ sign-off: `Every rule passes its tests on the committed evidence. To sign it:
 purlin:sign`.
 
 `payload.build_payload` is the one caller of `rule_kind`, `steps`,
-`audit_counts`, `sentence`, `left` and `last_line`. Everything else reads the
+`sentence`, `left` and `last_line`. `audit_share` is the one home of the
+share: the sentence, the audit's last line and the status table read it. Everything else reads the
 payload they fill, through `opening`, `left_lines` and `ending`.
 """
 
@@ -226,14 +230,45 @@ def audit_words(counts):
                      if key == 'strong' or counts.get(key))
 
 
-def audit_line(counts):
-    """AUDIT_LINE over the five counts: strong, their sum, the whole per cent
-    rounded down, `audit_words(counts)`."""
+def anchors_audit(features):
+    """`audit_counts` over the rules of the anchors among `features`, the
+    payload's feature entries: what `audit_share` leaves out of the share."""
+    return audit_counts([rule for feature in features or ()
+                         if feature.get('is_anchor')
+                         for rule in feature.get('rules') or ()])
+
+
+def audit_share(counts, anchors=None):
+    """`(strong, over)`: the share of strong rules, counting no rule of an
+    anchor.
+
+    `counts` is `audit_counts` over every rule and `anchors` is
+    `anchors_audit`'s answer for the same project, or None where it has no
+    anchor. `over` is the rules the audit can find strong: those that pass
+    their tests, have a tested proof and are not an anchor's.
+    """
     counts = counts or {}
-    strong = counts.get('strong') or 0
-    over = sum(counts.get(key) or 0 for key, _word in AUDIT_WORDS)
+    anchors = anchors or {}
+    strong = (counts.get('strong') or 0) - (anchors.get('strong') or 0)
+    over = sum((counts.get(key) or 0) - (anchors.get(key) or 0)
+               for key, _word in AUDIT_WORDS)
+    return max(strong, 0), max(over, 0)
+
+
+def audit_line(counts, anchors=None):
+    """AUDIT_LINE: `audit_share(counts, anchors)`, the whole per cent rounded
+    down, then `audit_words(counts)`, which counts the anchors' rules too."""
+    strong, over = audit_share(counts, anchors)
     return AUDIT_LINE % (strong, over, strong * 100 // over if over else 0,
                          audit_words(counts))
+
+
+def features_audit_line(features):
+    """`audit_line` over the payload's feature entries given: the counts over
+    every rule each lists, the share over those that are not an anchor's."""
+    own = [rule for feature in features or ()
+           for rule in feature.get('rules') or ()]
+    return audit_line(audit_counts(own), anchors_audit(features))
 
 
 def has_audit(counts):
@@ -244,11 +279,12 @@ def has_audit(counts):
                if key != 'not_audited')
 
 
-def sentence(summary):
+def sentence(summary, anchors=None):
     """`<N> rules. <p> pass their tests.`, then `BY_HAND_ONE` or
     `BY_HAND_MANY` where a passed cell reads `checked at sign-off`, then
     `audit_line` where a rule that passes has an audit entry: one read
-    `strong`, `weak`, `spot-checked` or `out of date`."""
+    `strong`, `weak`, `spot-checked` or `out of date`. `anchors` is
+    `anchors_audit`'s answer, which the share leaves out."""
     total = summary.get('rules') or 0
     count = (summary.get('steps') or {}).get('passed') or 0
     by_hand = (summary.get('steps') or {}).get('by_hand') or 0
@@ -259,7 +295,7 @@ def sentence(summary):
         parts.append(BY_HAND_ONE if by_hand == 1 else BY_HAND_MANY % by_hand)
     audit = summary.get('audit') or {}
     if has_audit(audit):
-        parts.append(audit_line(audit))
+        parts.append(audit_line(audit, anchors))
     return ' '.join(parts)
 
 

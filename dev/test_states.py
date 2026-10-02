@@ -1670,6 +1670,52 @@ class TestAnchors:
                 _cell_under(lines, 'login', 'Tests')) == ('11', '11 of 11')
         assert _cell_under(lines, 'security', 'Tests') == '8 of 8'
 
+    @staticmethod
+    def _anchor_strong_cell(found, **entry):
+        """The `Strong` cell of the anchor `security`, two rules that pass
+        their tests, after the audit entries `found` names by rule id are
+        written; `entry` adds fields to `RULE-1`'s."""
+        made = Project(spec=_spec_of('# Feature: login', 1, 'src/login.py'))
+        try:
+            made.spec(_spec_of('# Anchor: security', 2), name='security',
+                      category='_anchors')
+            _commit(made.root, 'anchor(security): create')
+            _all_passing(made, 'login', 1)
+            _all_passing(made, 'security', 2)
+            made.audit('RULE-1', feature='login')
+            for rule_id, word in sorted(found.items()):
+                made.audit(rule_id, feature='security', word=word,
+                           **(entry if rule_id == 'RULE-1' else {}))
+            lines = _status_lines(made.root)
+        finally:
+            made.close()
+        assert _cell_under(lines, 'login', 'Strong') == '1 of 1', lines
+        return _row_of(lines, 'security')[
+            _header(lines).index('Strong'):].rstrip()
+
+    # purlin: states PROOF-300
+    def test_an_anchor_whose_rules_are_all_spot_checked_reads_spot_checked(
+            self):
+        assert self._anchor_strong_cell(
+            {'RULE-1': 'spot-checked', 'RULE-2': 'spot-checked'}
+        ) == 'spot-checked'
+
+    # purlin: states PROOF-301
+    def test_an_anchor_with_one_weak_rule_reads_weak(self):
+        assert self._anchor_strong_cell(
+            {'RULE-1': 'spot-checked', 'RULE-2': 'weak'}) == 'weak'
+
+    # purlin: states PROOF-302
+    def test_an_anchor_with_an_entry_out_of_date_reads_out_of_date(self):
+        assert self._anchor_strong_cell(
+            {'RULE-1': 'spot-checked', 'RULE-2': 'spot-checked'},
+            code_hash='0' * 64) == 'out of date'
+
+    # purlin: states PROOF-303
+    def test_an_anchor_with_a_rule_no_audit_read_has_an_empty_strong_cell(
+            self):
+        assert self._anchor_strong_cell({'RULE-1': 'spot-checked'}) == ''
+
     # purlin: states PROOF-242
     def test_the_anchors_are_listed_first_under_their_label(self, project):
         project.spec(SECURITY_ANCHOR, name='security', category='_anchors')
