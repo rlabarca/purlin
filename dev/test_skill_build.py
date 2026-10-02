@@ -16,7 +16,9 @@ FILES = ('scripts/purlin_python.sh', 'scripts/mcp/purlin/markers.py',
 
 
 # purlin: skill_build PROOF-51
-def test_the_build_skill_holds_each_command_and_file():
+def test_the_build_skill_holds_each_command_and_file_the_settle_included():
     text = flat(read(SKILL))
+    assert 'purlin:audit <feature> RULE-N --settle' in COMMANDS
+    assert 'references/review_criteria.md' in FILES
     assert [name for name in COMMANDS + FILES if name not in text] == []
     assert must_name('build', commands=COMMANDS, paths=FILES) == []

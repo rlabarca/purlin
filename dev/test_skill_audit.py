@@ -20,8 +20,9 @@ PATHS = ('"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py"',
 
 
 # purlin: skill_audit PROOF-59
-def test_a_reader_finds_each_command_and_path_named():
+def test_a_reader_finds_each_command_and_path_named_the_settle_included():
     text = flat(read(SKILL))
+    assert 'purlin:audit <feature> RULE-N --settle' in COMMANDS
     assert [name for name in COMMANDS + PATHS if name not in text] == []
     assert must_name('audit', commands=COMMANDS, paths=PATHS) == []
 
