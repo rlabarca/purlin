@@ -529,11 +529,11 @@ def spec_mistakes(project_root, features):
     of the spec read `failed` (`broken_reasons`). They come in the order of
     the mistakes, each sorted by feature: two specs with one name, a name
     holding a character a name cannot (with the `git mv` that renames the
-    file), a rule id written twice, a proof id written twice, the lines left from a merge
-    conflict (one line per spec), a line under `## Proof` that is not a
-    proof line (quoted whole, with the reason), a first line naming another feature, a proof tagged both
-    `@slow` and `@manual`, then the fields Purlin
-    does not read: every `> Requires:`, then every `> Global:`, then every
+    file), a rule id written twice, a proof id written twice, the lines
+    left from a merge conflict (one line per spec), a line under `## Proof`
+    that is not a proof line (quoted whole, with the reason), a first line
+    naming another feature, a proof tagged both `@slow` and `@manual`, then
+    the fields Purlin does not read: every `> Requires:`, then every `> Global:`, then every
     anchor's `> Scope:`. A remote anchor carrying any of the three has one
     line naming them all and its source, sorted with the `> Scope:` lines.
     A `> Scope:` entry naming a file git does not have is no mistake: the
