@@ -25,6 +25,7 @@ What each group holds:
 
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -609,7 +610,9 @@ class TestTheRefusals:
             code, lines = run_main(made, capsys)
             assert len(lines) == 1, lines
             assert lines[0].startswith('No sign-off:'), lines
-            assert 'login RULE-' in lines[0] and 'RULE-2' in lines[0], lines
+            # The rule by its whole number: `RULE-20` does not name it.
+            assert 'login RULE-' in lines[0], lines
+            assert 'RULE-2' in re.findall(r'RULE-\d+', lines[0]), lines
             assert (code, status(made.root)) == (1, '')
         finally:
             made.close()
@@ -958,10 +961,18 @@ class TestTheWalk:
     def test_list_prints_each_weak_rule_with_its_finding(self):
         made = ready(weak=('RULE-1',))
         try:
-            code, lines, asked = walked(made, ['list'])
-            assert '  login RULE-1   PROOF-1 reads the status alone.' in lines
-            assert asked[:2] == ["The audit's findings: 1 weak. list / go on: ",
-                                 'go on: ']
+            finding = '  login RULE-1   PROOF-1 reads the status alone.'
+            left, asked, out = ['list'], [], _Out()
+
+            def ask(_kind, _key, prompt):
+                # Each question with whether the finding was printed by then.
+                asked.append((prompt, finding in out.text().splitlines()))
+                return left.pop(0) if left else None
+
+            sign_module.walk(made.root, None, ask=ask, out=out)
+            assert asked[:2] == [
+                ("The audit's findings: 1 weak. list / go on: ", False),
+                ('go on: ', True)], asked
         finally:
             made.close()
 
@@ -1120,9 +1131,18 @@ class TestTheSignOff:
         assert body['shown']['audit_list_opened'] is False
         assert body['notes'] == [{'feature': 'login', 'rule': 'RULE-2',
                                   'note': 'the lockout page read 401'}]
-        text = json.dumps(body)
-        assert not any('"%s"' % word in text
-                       for word in ('go on', 'list', 'y', 'yes', 'stop'))
+        def values(item):
+            if isinstance(item, dict):
+                return [found for value in item.values()
+                        for found in values(value)]
+            if isinstance(item, list):
+                return [found for value in item for found in values(value)]
+            return [item]
+
+        # No value anywhere in the file is an answer word, in either case.
+        assert not [value for value in values(body)
+                    if str(value).strip().lower()
+                    in ('go on', 'list', 'y', 'yes', 'stop')], body
 
     # purlin: signatures PROOF-235
     def test_an_empty_answer_is_recorded_as_no_note(self, hand_checked):
@@ -1235,8 +1255,13 @@ class TestTheSignOff:
         passing(signed)
         commit_all(signed)
         assert walked(signed, ['y'])[0] == 0
+        # The tag itself: a branch of that name would answer to the short
+        # name too.
+        assert git(signed.root, 'tag', '--list').stdout.splitlines() == [
+            'signed/2.1.0']
         assert git(signed.root, 'rev-parse', '--verify', '--quiet',
-                   'signed/2.1.0').returncode == 0
+                   'refs/tags/signed/2.1.0^{commit}').stdout.strip() == \
+            signed.head()
         assert git(host, 'tag', '--list').stdout == ''
         assert git(host, 'rev-parse', 'main').stdout.strip() == hosted
         assert not os.path.exists(os.path.join(signed.root, '.git',
@@ -1490,8 +1515,11 @@ class TestTheAgent:
         assert '  login RULE-1   PROOF-1 reads the status alone.' in lines
         head = lines.index('login RULE-2   hand check')
         assert not any('what did you see' in line for line in lines[head:])
-        assert lines[-1] == ('Answer each stop, then run purlin:sign '
-                             '--answers <file>.')
+        # After the stop comes the last line and nothing else: no question
+        # of any kind.
+        stop = stop_lines(lines, 'login RULE-2   hand check')
+        assert lines[head + len(stop):] == [
+            '', 'Answer each stop, then run purlin:sign --answers <file>.']
         at = lines.index('Signing 2.1.0 at %s.' % hand_checked.head()[:7])
         assert lines[at + 1:at + 3] == [
             '  2 rules on Linux/Unix: 1 passes its tests, 1 has a hand check.',
@@ -1504,7 +1532,9 @@ class TestTheAgent:
         try:
             code, lines = run_main(made, capsys, ['--show'])
             assert code == 0
-            assert 'Signing 2.1.0 at %s.' % made.head()[:7] in lines
+            at = lines.index('Signing 2.1.0 at %s.' % made.head()[:7])
+            assert lines[at + 1] == ('  2 rules on Linux/Unix: 2 pass their '
+                                     'tests, no hand check.'), lines
             assert NO_KEY_LINES[0] not in lines
         finally:
             made.close()
