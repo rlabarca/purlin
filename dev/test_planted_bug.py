@@ -615,3 +615,28 @@ def test_a_block_comment_is_code_to_the_check(tmp_path, own_claude):
     assert code == 0
     assert bug_of(after)['after'] == '  return 90; /* planted */'
     assert bug_of(after)['result'] == 'survived', bug_of(after)
+
+
+# purlin: planted_bug PROOF-37
+def test_a_hash_line_in_a_yaml_file_is_a_comment(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG}, files={
+        'src/limits.yml': 'oldest: 90\n'})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': part(
+        'oldest: 90', '# planted\noldest: 90', path='src/limits.yml')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['file'] == 'src/limits.yml'
+    assert (bug_of(after)['result'], bug_of(after)['why']) == (
+        'not made', 'the change touches only a comment')
+
+
+# purlin: planted_bug PROOF-38
+def test_a_change_that_adds_only_an_empty_line_is_not_planted(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': STRONG})
+    fake_claude.install(own_claude, answers=[
+        {'PROOF-1': part('    return days', '\n    return days')}])
+    code, _lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['after'] == '\n    return days'
+    assert (bug_of(after)['result'], bug_of(after)['why']) == (
+        'not made', 'the change touches only a comment')

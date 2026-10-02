@@ -14,7 +14,7 @@
 > Scope: scripts/review/targeted_break.py
 > Stack: python/stdlib (subprocess, tempfile, hashlib, shutil)
 > Highest-Rule: 19
-> Highest-Proof: 36
+> Highest-Proof: 38
 
 ## Rules
 
@@ -71,3 +71,5 @@
 - PROOF-34 (RULE-19): The model's change turns `if stamp == "":` into `if stamp == " #":`, and the test of `PROOF-1` expects an age of `0` for an empty stamp; the bug is planted, and its entry reads `caught`
 - PROOF-35 (RULE-19): `src/age.py` ends `return days // 1`, and the model's change turns it into `return days // 2`; the bug is planted, and its entry reads `caught`
 - PROOF-36 (RULE-19): The feature covers `src/age.js`, and the model's change turns `return 90;` in it into `return 90; /* planted */`; the bug is planted, and its entry reads `survived`
+- PROOF-37 (RULE-18): The feature covers `src/limits.yml`, and the model's change adds the one line `# planted` above `oldest: 90` in it; the bug's entry reads `not made` with the reason `the change touches only a comment`
+- PROOF-38 (RULE-18): The model's change adds one empty line above `return days` in `src/age.py` and nothing else; the bug's entry reads `not made` with the reason `the change touches only a comment`
