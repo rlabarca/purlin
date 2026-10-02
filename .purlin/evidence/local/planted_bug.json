@@ -1,4 +1,1024 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-1": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-1": {
+            "after": "            _write_in(project_root, normal, changed)",
+            "aim": "plain",
+            "before": "            _write_in(copy, normal, changed)",
+            "break_key": "1af57ff1cd33e7aab9b3c8b5d517e593e32306293ae18cd00470c3b89ee2dc4f",
+            "case": "a bug is planted for PROOF-1 in src/age.py; the proof says every project file holds the same bytes and git status prints the same; the changed code writes the bug into the project's own src/age.py, so its bytes and the status differ",
+            "file": "scripts/review/targeted_break.py",
+            "line": 313,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-19": {
+            "after": "        _write_in(project_root, normal, changed)\n        return _result(proof_id, 'not run', ERRORED if ran == 'error' else '',\n                       change, line)",
+            "aim": "plain",
+            "before": "        return _result(proof_id, 'not run', ERRORED if ran == 'error' else '',\n                       change, line)",
+            "break_key": "e83bfb504557c5c1ceeb5d356ffcc44ba6db888ffccf9285f2f793bb7f15cbd8",
+            "case": "the test of PROOF-1 runs past its limit with the bug in place; the proof says every project file holds the same bytes; the changed code writes the bug into the project's own src/age.py when the result is not run",
+            "file": "scripts/review/targeted_break.py",
+            "line": 326,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-1: the test adds an untracked file, plants a bug, then compares every file's bytes and the `git status --porcelain` output with what they were before, which is the proof's case and both of its results.",
+          "PROOF-1: the test never reads the planted bug's result, so it does not show whether the bug was actually applied and run; a plant that stopped early would pass the same comparisons, apart from the check on `result['file']`.",
+          "PROOF-19: the test plants a slow change with a limit of 2 seconds, checks the result reads `not run` and compares every file's bytes with what they were before, which is the proof's case and its result.",
+          "PROOF-19: the test confirms the slow change was the one planted by reading the start of `result['after']`, so the limit path is the one exercised.",
+          "Neither test observes the first half of the rule, that the copy is made from the files git lists as tracked or untracked and not ignored; no proof names what the copy holds.",
+          "Findings: none, and the spot tests have nothing to flag here, since both tests assert against values taken before the action rather than from the code under test."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "f7cac6b41490d6a79b5563ff490402b82c12082f41c177c37ded142ef55cd769",
+        "rule_hash": "bd099517c7974697a4d521bf57a0b9b5d22cebc7d6c94a7ce073deb8d36914ba",
+        "test_hash": "42f4f0a0506c0c17768aa1deed16d63a1443007f95385f6ec9ee08c0cff5a3af",
+        "verdict": "strong"
+      },
+      "RULE-10": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-12": {
+            "after": "    results = purlin_run.marker_results(scan, suites, runs)\n    entries = results.get((feature, proof_id), [])\n    if tests:\n        named = {(t['file'], t.get('name')) for t in tests}\n        own = [e for e in entries if (e['test_file'], e['test_name']) in named]\n        files = {t['file'] for t in tests}\n        entries = own or [e for e in entries if e['test_file'] in files]\n    failed = [e for found in results.values() for e in found if e['status'] == 'fail']",
+            "aim": "plain",
+            "before": "    entries = purlin_run.marker_results(scan, suites, runs).get((feature, proof_id), [])\n    if tests:\n        named = {(t['file'], t.get('name')) for t in tests}\n        own = [e for e in entries if (e['test_file'], e['test_name']) in named]\n        files = {t['file'] for t in tests}\n        entries = own or [e for e in entries if e['test_file'] in files]\n    failed = [e for e in entries if e['status'] == 'fail']",
+            "break_key": "8a58f9a8b6eab4fbef0407a4e6a69d2c3fa4071262ad79d581c506b0f84c805c",
+            "case": "the bug planted for PROOF-1 fails PROOF-2's test and leaves PROOF-1's test passing; the proof says PROOF-1 reads survived; the changed code counts the other proof's failed test and gives caught",
+            "file": "scripts/review/targeted_break.py",
+            "line": 443,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-12: the test plants one bug in a project where PROOF-1's test is weak and PROOF-2's is strong, and compares PROOF-1's result with `survived`, the value the proof names.",
+          "PROOF-12: the test also compares PROOF-2's result with `caught`, so it shows the same bug does fail the other proof's test, which is the proof's starting situation.",
+          "PROOF-12: the spot tests found nothing, and the test checks the proof's case and its result, so the planted bug is the plain one: another proof's failed test is counted against PROOF-1."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "553bccfe4478153b2353fe78f2561d8d17206d6e54462759900744efbda5ba78",
+        "rule_hash": "a3a3e02466237917199ac36eb25d36f954ee212794a5d05eefb83cc7ce5342c6",
+        "test_hash": "6a718024062528b69e738363d66ab1a82aaf706fccddac6df238b3910f266ae5",
+        "verdict": "strong"
+      },
+      "RULE-12": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-10": {
+            "after": "        return _result(proof_id, 'not made', parsed[0])",
+            "aim": "plain",
+            "before": "        return _result(proof_id, 'not made', parsed[1])",
+            "break_key": "908000dbf7f192fd52af6f13936c2b0c3411ea6d1b3bbb9474f7a6825001125b",
+            "case": "the answer `no break: the proof names no value the code computes`; the proof says `not made` with the reason `the proof names no value the code computes`; the changed code gives the reason `no break`",
+            "file": "scripts/review/targeted_break.py",
+            "line": 271,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-15": {
+            "after": "    if normal not in scope and not text_ok(normal):",
+            "aim": "plain",
+            "before": "    if normal not in scope:",
+            "break_key": "556db7c353387fdd067e836a720b3800af23519e9aeb88bc9cf16b1ae23cfcd0",
+            "case": "`file: README.md`, which the scope does not name; the proof says `not made` and the test of `PROOF-1` not run; the changed code takes README.md as covered, runs the test of `PROOF-1` and plants the change",
+            "file": "scripts/review/targeted_break.py",
+            "line": 286,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-18": {
+            "after": "    if normal not in own:",
+            "aim": "plain",
+            "before": "    if normal in own:",
+            "break_key": "a4cd3f07b0dcd7fbb7a234d203c773cf65c12c6537dc69cc477d86936b09726c",
+            "case": "the scope names `tests/test_age.py` and the answer changes `assert age(s) == 90` in it; the proof says `not made` and the test of `PROOF-1` not run; the changed code accepts the file, runs the test of `PROOF-1` and plants the change",
+            "file": "scripts/review/targeted_break.py",
+            "line": 283,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-5": {
+            "after": "        if count > 2:",
+            "aim": "plain",
+            "before": "        if count > 1:",
+            "break_key": "de08b6d53884e83fda4fa72c601db092f331ac3d954c33073128587951f75e32",
+            "case": "`before:` `return days` is in `src/age.py` twice; the proof says `not made` and the test of `PROOF-1` not run; the changed code runs the test of `PROOF-1` and plants the change at the first match",
+            "file": "scripts/review/targeted_break.py",
+            "line": 303,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-5: the test gives `src/age.py` a second `return days`, then compares the result with `not made`, the reason with the exact sentence naming 2 matches, and checks the marker that the test of `PROOF-1` writes is absent, so it observes all the proof names.",
+          "PROOF-15: the test writes a `README.md` holding `return days` outside the scope, then compares the result with `not made`, the reason with the exact sentence naming `README.md`, and checks the marker is absent, so both things the proof names are observed.",
+          "PROOF-10: the test passes the proof's `no break:` line and compares the result, the reason and the cause with literals, so a wrong reason fails it.",
+          "PROOF-18: the test adds `tests/test_age.py` to the scope, answers with a change to its `assert age(s) == 90` line, and compares the result with `not made`, the reason with the exact sentence, and checks the marker is absent.",
+          "Findings: none, and each test holds the values its proof names in backticks."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-10 does not say that the test of `PROOF-1` is not run, and its test places no marker, so that half of the rule is unobserved for a `no break` answer."
+        ],
+        "proof_hash": "5afbfa7c0ed8e4ccef427ad8a907546852d2a3802610f018bb38213481590b85",
+        "rule_hash": "a77099d7d11b3907981013d03782102d49749970277c6a3e14c512a9c4eab211",
+        "test_hash": "070c2811693f16c5c6a3241e72fce12528838598a65eda852c59c270f5783668",
+        "verdict": "strong"
+      },
+      "RULE-13": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-16": {
+            "after": "        if _run_tests(copy, feature, proof_id, tests, timeout) == 'pass':",
+            "aim": "plain",
+            "before": "        if _run_tests(copy, feature, proof_id, tests, timeout) != 'pass':",
+            "break_key": "ef28ab50a5216a26b477aab1a0630a4e5f5acdcb8f8b391df7f4f6ea7654535d",
+            "case": "the test of PROOF-1 reads data/built.json, which git ignores, and the model answers return days -> return 0 in src/age.py; the proof says `not made` with the reason `the test does not pass in a copy of the project`; the changed code plants the bug and gives `caught` or `not run`",
+            "file": "scripts/review/targeted_break.py",
+            "line": 307,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-16: the test builds a project whose test reads a git-ignored `data/built.json`, plants the named change, and compares the result with `not made`, the reason with `the test does not pass in a copy of the project` and the cause with `test does not pass`, so it observes every value the proof names and leaves no way past it.",
+          "PROOF-16: the spot tests found nothing, which matches the test: its assertions compare against literals and can fail, and the proof's backticked values appear in the test."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "6de282f9e80ccee1628ec89db5230d8d92bd640a71530fdfc5c4725b95dabcf8",
+        "rule_hash": "60da0023fad181fcd1be829290167ccb506673c502b83fe6d125969b3a339a4c",
+        "test_hash": "6ad92220cc052c08940c54c410f6be1d7f0cbb0fa97abac712e661582eec548c",
+        "verdict": "strong"
+      },
+      "RULE-14": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-21": {
+            "after": "            os.utime(_inside(copy, normal), (stamp, stamp))",
+            "aim": "plain",
+            "before": "            os.utime(_inside(copy, normal), (stamp + 2, stamp + 2))",
+            "break_key": "5cf1eb8ca7c3ba3af85c4c01d8a8e0add7d6620f8855ceafd12520e7048178ee",
+            "case": "a change from `return 90` to `return 91` that keeps the file's size, with the test of PROOF-1 expecting 90; the proof says the result reads caught; the changed code leaves the file's time as it was, so the compiled copy from the first run is served and the result reads survived",
+            "file": "scripts/review/targeted_break.py",
+            "line": 316,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-21: the test plants a same-size change from `return 90` to `return 91` through a real run in a copy, and compares the recorded before and after lines and the result with `caught`, which is the case and the result the proof names.",
+          "PROOF-21: the last assertion, that the result is not `survived`, can never fail once the result has been compared with `caught`, so it adds nothing but takes nothing away.",
+          "PROOF-21: the test never reads the changed file's time, so it observes the rule only through the result, and it would not notice the bug if the compiled copy were not written or reused where it runs.",
+          "Findings: the spot tests found none, which fits: the test asserts the literal values `return 90`, `return 91` and `caught`, takes no expected value from the code, and mocks nothing it checks."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "753f86dc5fde833803104f268ad62f0d33939b376358399900a9c247b04ee836",
+        "rule_hash": "2b32a1b26cadb39a5095322945ba83571effb270896ee7d02a41ea182ff2b16d",
+        "test_hash": "709fb19b86de594d9ef0823b7773f10db12e4eb0db8e9f92d4e64884d9ba0a49",
+        "verdict": "strong"
+      },
+      "RULE-15": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-22": {
+            "after": "            aim = (PAST_THE_TEST if said.group(1).strip().lower() == PLAIN",
+            "aim": "plain",
+            "before": "            aim = (PAST_THE_TEST if said.group(1).strip().lower() == PAST_THE_TEST",
+            "break_key": "abdeeb8f5539335989f0213ec2c62183b510d89fd2ab71b46d82e95080256c85",
+            "case": "the part for PROOF-1 opens `aim: past the test`; the proof says the bug's entry reads aim `past the test`; the changed code records `plain`",
+            "file": "scripts/review/targeted_break.py",
+            "line": 149,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-23": {
+            "after": "    aim, case = PAST_THE_TEST, ''",
+            "aim": "plain",
+            "before": "    aim, case = PLAIN, ''",
+            "break_key": "3bacb971a7872939dd62a8ff09cf1b1f9b36b07d61011b8ba832291f04f49312",
+            "case": "the part for PROOF-2 holds no `aim:` line; the proof says its bug's entry reads aim `plain`; the changed code records `past the test`",
+            "file": "scripts/review/targeted_break.py",
+            "line": 144,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-22: the test sends a part opening `aim: past the test`, runs the audit and compares the bug's stored `aim` with `past the test`, the value the proof names, so a wrong recorded aim fails it.",
+          "PROOF-22: the test also checks that the bug was `caught`, so the aim is read from an entry of a bug that was really planted.",
+          "PROOF-23: the test sends one part opening `aim: around the test` and one with no `aim:` line, and compares each bug's stored `aim` with `plain`, the value the proof names for both.",
+          "PROOF-23: the test checks only the one other word the proof names, so a different other word recorded wrongly would pass, which is outside the proof's case.",
+          "Findings: the spot tests found nothing, and both tests compare the proof's literal values taken from the stored entry, not from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-23 holds two cases, an `aim:` line with another word and a part with no `aim:` line."
+        ],
+        "proof_hash": "8b3c8ce28da80cb78b05a59c14dc595cc81d645f2f0c7a4116661ae0578eddcc",
+        "rule_hash": "89e253f47d4109fc4cf5a742690bf46cedd6a769167a145c2c5ce34b28981ddb",
+        "test_hash": "07b917fec65a3e784e53cc4c787e573597e5593aefb4dc5d6be24799e04df326",
+        "verdict": "strong"
+      },
+      "RULE-16": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-24": {
+            "after": "            case = shown(named.group(0))[:CASE_LIMIT]",
+            "aim": "plain",
+            "before": "            case = shown(named.group(1))[:CASE_LIMIT]",
+            "break_key": "40f7c8622e077da659ebb92610c1daddb016a31deb97c2a6c5a7aedbe6f71806",
+            "case": "the part's line `case:   a stamp of 2026-01-01; the proof says 90; the changed code gives 0  `; the proof says the entry reads `a stamp of 2026-01-01; the proof says 90; the changed code gives 0`; the changed code gives `case:   a stamp of 2026-01-01; the proof says 90; the changed code gives 0`",
+            "file": "scripts/review/targeted_break.py",
+            "line": 152,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-25": {
+            "after": "CASE_LIMIT = 250",
+            "aim": "plain",
+            "before": "CASE_LIMIT = 300",
+            "break_key": "f6dc2fa6aff0cf237ca63f48dec774a1dc226f2c3d8e9a0c55236ea43f09cf98",
+            "case": "a `case:` line of 320 characters; the proof says the entry holds its first 300; the changed code gives its first 250",
+            "file": "scripts/review/targeted_break.py",
+            "line": 68,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-24: the test sends the proof's exact line with three spaces before and two after, and compares the entry's `case` with the whole trimmed sentence, so any change to the kept text fails it.",
+          "PROOF-24: the test also checks that the bug was planted and caught, so the case is read from a real entry and not from a refused part.",
+          "PROOF-25: the test builds a case of 320 characters, confirms that length, and compares the entry's `case` with its first 300 characters and with a length of 300, so a longer or shorter cut fails it.",
+          "PROOF-25: the expected value is a slice of the test's own string, not a value taken from the code under test.",
+          "The spot tests found nothing, and that holds: both tests assert on exact values that the code cannot influence."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "dbe641620c25cd6e0258556d4e6391f9f51186cafcd78c990f7c1291599f1fac",
+        "rule_hash": "84c52594b6375b9ee66f75116cf1e1315088df76fa121c05409606cb1d0d6a75",
+        "test_hash": "cd22ac033cd6dbe622bf50dde2db033978609f666c631f53eb5a3a99857cfca0",
+        "verdict": "strong"
+      },
+      "RULE-17": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-26": {
+            "after": "    aim, case = PLAIN, 'none'",
+            "aim": "plain",
+            "before": "    aim, case = PLAIN, ''",
+            "break_key": "351faca6ad6c5c992c313dfe9ed3350b4b659dd10fce3cdbabb787bbba81f62b",
+            "case": "a part for PROOF-1 naming a change with no case: line; the proof says not planted, the refusal printed and no test run in a copy; the changed code plants the bug and runs the test",
+            "file": "scripts/review/targeted_break.py",
+            "line": 144,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-27": {
+            "after": "            case = shown(named.group(1))[:CASE_LIMIT] or 'none'",
+            "aim": "plain",
+            "before": "            case = shown(named.group(1))[:CASE_LIMIT]",
+            "break_key": "69281eb1a0ec08bc5c03602562ab12ce05a03dfce798eb54612c597b7f1add1b",
+            "case": "a part for PROOF-1 with the line case: and nothing after it; the proof says not made with the reason the answer named no case of the proof; the changed code plants the bug and the result is caught or survived",
+            "file": "scripts/review/targeted_break.py",
+            "line": 152,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-26: the test sends a part with no case line, checks the reply's exact text, the `age RULE-1   spot-checked` line, the refusal line under it, the `not made` result and that no test ran in a copy, which is everything the proof names.",
+          "PROOF-27: the test sends a part opening with an empty `case:` line and compares the entry's result and reason with `not made` and `the answer named no case of the proof`, both of the values the proof names.",
+          "No finding was reported by the spot tests, and each test compares its proof's values with literals, so there is nothing for a finding to hold on."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-26 is longer than 60 words."
+        ],
+        "proof_hash": "8fcb09e1da945cb309e555e0e25511a326d9e6b4569672a24a29b9131aa8f1af",
+        "rule_hash": "cd174f197dec82e09eb09ba9ffe7409e51029fe1d66ffc2971f65c111b9069fa",
+        "test_hash": "f8cba129c16d3e31f3a32e1f709dab927f2324fcfe63b899b828219be2b89b16",
+        "verdict": "strong"
+      },
+      "RULE-18": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-28": {
+            "after": "HASH_COMMENTS = ('.sh', '.bash', '.rb', '.yml', '.yaml', '.toml')",
+            "aim": "plain",
+            "before": "HASH_COMMENTS = ('.py', '.sh', '.bash', '.rb', '.yml', '.yaml', '.toml')",
+            "break_key": "3c574c7a8ff222099b06beae530b842a9a2e1a0bed249f9c3ccf0fafc0d5d5da",
+            "case": "a change adding only `# off by one` above `return days` in src/age.py; the proof says no bug is planted, the comment refusal is printed and the test runs in no copy; the changed code plants the change and runs the test in a copy",
+            "file": "scripts/review/targeted_break.py",
+            "line": 108,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-29": {
+            "after": "        if not start or (hashes and start.startswith(('#', '//'))):",
+            "aim": "plain",
+            "before": "        if not start or start.startswith('//') or (hashes and start.startswith('#')):",
+            "break_key": "5976b7356bf4589cb53076a1ac981dd4bb87f1dbe165f58ef0fbdca5764f274e",
+            "case": "a change adding only `// planted` to src/age.js; the proof says not made with the reason the change touches only a comment; the changed code plants the change and the entry reads survived",
+            "file": "scripts/review/targeted_break.py",
+            "line": 179,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-30": {
+            "after": "HASH_COMMENTS = ('.py', '.sh', '.bash', '.rb', '.yml', '.yaml', '.toml', '.txt')",
+            "aim": "plain",
+            "before": "HASH_COMMENTS = ('.py', '.sh', '.bash', '.rb', '.yml', '.yaml', '.toml')",
+            "break_key": "373da818559ed603ba751d33c510744cd1d707069102daea1460644d689b9b39",
+            "case": "a change adding the line `# 90` to src/notes.txt; the proof says the bug is planted and reads survived; the changed code reads the line as a comment and the entry reads not made",
+            "file": "scripts/review/targeted_break.py",
+            "line": 108,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-31": {
+            "after": "    return len(code(before)) == len(code(after))",
+            "aim": "plain",
+            "before": "    return code(before) == code(after)",
+            "break_key": "7926e325794c5feafd2cd42fb1c9366ef7dccf8befc0d34913dc5c005789fc49",
+            "case": "a change turning `return days` into `# planted` and `return 0`; the proof says the bug is planted and reads caught; the changed code refuses it as not made, the change touches only a comment",
+            "file": "scripts/review/targeted_break.py",
+            "line": 208,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-37": {
+            "after": "HASH_COMMENTS = ('.py', '.sh', '.bash', '.rb', '.yaml', '.toml')",
+            "aim": "plain",
+            "before": "HASH_COMMENTS = ('.py', '.sh', '.bash', '.rb', '.yml', '.yaml', '.toml')",
+            "break_key": "73a02fcdd56b8df6458f3f05c1e48a4d880c05d4020b98e6aa56cc0194974b9d",
+            "case": "a change adding only `# planted` above `oldest: 90` in src/limits.yml; the proof says not made with the reason the change touches only a comment; the changed code plants the change and the entry reads survived",
+            "file": "scripts/review/targeted_break.py",
+            "line": 108,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-38": {
+            "after": "        if start.startswith('//') or (hashes and start.startswith('#')):",
+            "aim": "plain",
+            "before": "        if not start or start.startswith('//') or (hashes and start.startswith('#')):",
+            "break_key": "dda52f64edfea83cfdaa86d7328f99b799b3915f7ccd311adf1fbddfc16ace6e",
+            "case": "a change adding one empty line above `return days` in src/age.py; the proof says not made with the reason the change touches only a comment; the changed code plants the change and the entry reads survived",
+            "file": "scripts/review/targeted_break.py",
+            "line": 179,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-28: the test looks for the printed refusal among the audit's lines, reads the entry's result as `not made` and checks that no test ran in a copy, which is what the proof names; it does not read the entry's reason, which the proof does not name either.",
+          "PROOF-29: the test adds a `// planted` line to `src/age.js` and compares the entry's result and reason with `not made` and `the change touches only a comment`, as the proof names.",
+          "PROOF-30: the test adds `# 90` to `src/notes.txt` and reads the entry's file and its result `survived`, so a change wrongly refused as a comment fails it.",
+          "PROOF-31: the test reads the entry's lines after the change and its result `caught`, so a refusal of the comment-plus-code change fails it.",
+          "PROOF-37: the test adds `# planted` to `src/limits.yml` and compares the entry's file, result and reason with what the proof names.",
+          "PROOF-38: the test adds one empty line and compares the entry's lines after the change, its result and its reason with what the proof names.",
+          "The spot tests found nothing, and each test compares the values its proof names, so each bug above is the plainest change that breaks its proof's case.",
+          "No proof of the rule covers a `#` line in a file ending `.sh`, `.bash`, `.rb`, `.yaml` or `.toml`, so a wrong reading of those endings would pass all six tests."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "eb6418872ba47d89a2d479a42922f191fab70a31dfca8764bcc4696c7e6e469d",
+        "rule_hash": "53b55f46e79da6380f593f9cc82df9cdaeeb93a7d6b0ab40327e340c7e509e00",
+        "test_hash": "ef25a46810cf1c91f9acc27807fd59893dbdf6b705159459e581aad742ad9676",
+        "verdict": "strong"
+      },
+      "RULE-19": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-32": {
+            "after": "HASH_COMMENTS = ('.sh', '.bash', '.rb', '.yml', '.yaml', '.toml')",
+            "aim": "plain",
+            "before": "HASH_COMMENTS = ('.py', '.sh', '.bash', '.rb', '.yml', '.yaml', '.toml')",
+            "break_key": "fdebff22c72459777164f6cab4fc96dce891a4176884b00f98fcdbd8aee3887a",
+            "case": "`return days` in src/age.py becomes `return days  # planted bug`; the proof says no bug is planted, with the reason `the change touches only a comment`; the changed code plants the bug and runs the test of PROOF-1 in a copy",
+            "file": "scripts/review/targeted_break.py",
+            "line": 108,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-33": {
+            "after": "    found = re.search(r'\\s#' if _hashes(path) else r'\\s///', line)",
+            "aim": "plain",
+            "before": "    found = re.search(r'\\s#' if _hashes(path) else r'\\s//', line)",
+            "break_key": "b9390c73c72c9be78caeaf7c06482f9afebfbf55e5f7eadc7dc8a8ae9fb8065e",
+            "case": "`return 90;` in src/age.js becomes `return 90; // planted`; the proof says `not made` with the reason `the change touches only a comment`; the changed code plants the bug and the entry reads `survived`",
+            "file": "scripts/review/targeted_break.py",
+            "line": 190,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-34": {
+            "after": "        if ran == 'error':",
+            "aim": "plain",
+            "before": "        if ran == 'fail':",
+            "break_key": "5d7c12ce929590e82a5c83cf960d2656530d3475582820618780668665055007",
+            "case": "`if stamp == \"\":` becomes `if stamp == \" #\":` and the test of PROOF-1 expects 0 for an empty stamp; the proof says the bug is planted and reads `caught`; the changed code records `not run`",
+            "file": "scripts/review/targeted_break.py",
+            "line": 324,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-35": {
+            "after": "    found = re.search(r'\\s(#|//)' if _hashes(path) else r'\\s//', line)",
+            "aim": "plain",
+            "before": "    found = re.search(r'\\s#' if _hashes(path) else r'\\s//', line)",
+            "break_key": "fe881d39b711c2273902066034b5106f7272dd2e87831394eaef2c0a14d87bf6",
+            "case": "`return days // 1` in src/age.py becomes `return days // 2`; the proof says the bug is planted and reads `caught`; the changed code reads `//` as a comment and gives `not made`, `the change touches only a comment`",
+            "file": "scripts/review/targeted_break.py",
+            "line": 190,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-36": {
+            "after": "    found = re.search(r'\\s#' if _hashes(path) else r'\\s/[/*]', line)",
+            "aim": "plain",
+            "before": "    found = re.search(r'\\s#' if _hashes(path) else r'\\s//', line)",
+            "break_key": "5ce8a6232becdac6324461c87e1a748438a522daaaca06297e089e420e622d53",
+            "case": "`return 90;` in src/age.js becomes `return 90; /* planted */`; the proof says the bug is planted and reads `survived`; the changed code reads the block comment as a comment and gives `not made`",
+            "file": "scripts/review/targeted_break.py",
+            "line": 190,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-32: the test reads the printed verdict line, the refusal line under it, the stored `after` and `not made`, and that no test ran in a copy, which is everything the proof names.",
+          "PROOF-33: the test reads the entry's result and reason for `return 90; // planted` in `src/age.js` and compares both with `not made` and `the change touches only a comment`, as the proof names.",
+          "PROOF-34: the test reads the stored `after` and `caught`, as the proof names, but it would pass with the quotation-mark guard removed, because the line cut at ` #` still differs from `if stamp == \"\":`, so it does not show that a quoted line is read as code throughout.",
+          "PROOF-35: the test reads the stored `after` and `caught` for `return days // 2` in a Python file, so reading `//` as a comment there fails it.",
+          "PROOF-36: the test reads the stored `after` and `survived` for `return 90; /* planted */`, so reading a block comment as a comment fails it.",
+          "No spot test fired, and none of the six checks applies: every test asserts literal values the proofs name."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-34 holds a case in which the quotation mark does not decide the result; a change that differs only in a `#` after a quoted string on both lines would.",
+          "No proof of the rule covers a docstring, a `--` comment or a comment in another kind of file, which the rule also says are read as code."
+        ],
+        "proof_hash": "eea622680119370cd4c80a1cc0e058a7b9d0a14fd9253cfcd265fd2421f1f7b1",
+        "rule_hash": "cee1828d3a43682ce88ef620d82753f761409e822d043e0727b3f48b9cf6178f",
+        "test_hash": "8c4dae3a4660604242142da3dfd6ad593445860c8f0252c97c10f2cbda8e12fa",
+        "verdict": "strong"
+      },
+      "RULE-2": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-2": {
+            "after": "        if ran == 'error':",
+            "aim": "plain",
+            "before": "        if ran == 'pass':",
+            "break_key": "3b8b2e336909b0239f9cbb1b951b6e9af5ab07da03f3b599b35170daf7e2eb08",
+            "case": "the model's change makes src/age.py line 12 read `return 0` and PROOF-1's test still passes; the proof says the result reads `survived` with the finding `PROOF-1: the test still passes when src/age.py:12 reads \"return 0\"`; the changed code gives `not run` and no finding",
+            "file": "scripts/review/targeted_break.py",
+            "line": 321,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-2: the test plants the model's change against a weak test of PROOF-1 and compares the line with 12, the result with `survived` and the finding with the proof's exact sentence, so each value the proof names is checked.",
+          "PROOF-2: the spot tests found nothing, and the test's expected values are literals taken from the proof, not from the code under test.",
+          "PROOF-2: the test does not compare the answer's `file`, `before` and `after` as they are returned, only as they appear in the finding's sentence."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "1e75ad23fef970894b9329da4ae57fcbe27e856b2a2bdc56efc24048ec8d206b",
+        "rule_hash": "4d91bf674f42b0b55f7fac38a1459366bc648dc9f7c0117ef7814133d1f75c88",
+        "test_hash": "aa04549f3f9008a242e273ace336d2e8a4cde4b9aec3eff94f49731ae7cf10c9",
+        "verdict": "strong"
+      },
+      "RULE-20": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-39": {
+            "after": "_AIM_RE = re.compile(r'^\\s*aim :(.*)$', re.I)",
+            "aim": "plain",
+            "before": "_AIM_RE = re.compile(r'^\\s*aim:(.*)$', re.I)",
+            "break_key": "a23c5ecf095b93831a359dcfca776fe34d6616b55861909d41bd5ba7dd677bd3",
+            "case": "the part reads `aim: plain` then `no break: the test checks the case and its result`; the proof says the audit prints that the model found no change that would break PROOF-1, with that reason; the changed code does not read the `aim:` line, so the reason becomes `the answer named no change`",
+            "file": "scripts/review/targeted_break.py",
+            "line": 101,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-40": {
+            "after": "    found = _NO_BREAK_RE.match(' '.join(lines)) if lines else None",
+            "aim": "plain",
+            "before": "    found = _NO_BREAK_RE.match(lines[0]) if lines else None",
+            "break_key": "97a7be36e1579d0797d842501ab90140eb45c3e38164cfcb1765829196f9fe21",
+            "case": "the part reads `no break: nothing here.` then `The code is a constant.`; the proof says the reason is `nothing here.` and no printed line holds the second line; the changed code gives the reason `nothing here. The code is a constant.`",
+            "file": "scripts/review/targeted_break.py",
+            "line": 156,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-39: the test gives the part `aim: plain` over the `no break:` line and compares the `spot-checked` line, the whole line printed under it and the stored reason, so it observes what the proof names.",
+          "PROOF-39: the test never reads the entry's result, but the proof names only the printed lines, which the test compares in full.",
+          "PROOF-40: the test gives the two-line part, compares the stored reason with `nothing here.` and checks that no printed line holds `The code is a constant`, so both values the proof names are observed.",
+          "PROOF-40: the test does not compare the entry's result with `not made`, which the proof names; the printed line it compares stands in for it only indirectly.",
+          "No proof of the rule gives a part with a `case:` line above the `no break:` line, which the rule also names.",
+          "Findings: none, and the spot tests have nothing to flag here, since both tests assert literal values the proofs name."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "586a66c7832cf9d2c57247fc639f1df8b3b352c036728b63d12a50a2f77cb6b8",
+        "rule_hash": "f9249cf8d980125aabbe2983b9f77e367dd32b116b8e1190bbe117cad97c3e50",
+        "test_hash": "a26f6a4fe7629c316f3d85747f592b693ff97ae610e5bde2923c2638b2d121e5",
+        "verdict": "strong"
+      },
+      "RULE-21": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-41": {
+            "after": "    before = found.group('before')",
+            "aim": "plain",
+            "before": "    before = re.sub(r'(\\n[ \\t]*)+$', '', found.group('before'))",
+            "break_key": "66f9b2e31586cabc53e0936064a13fa86e1f786447f1f44e7ca8d54abc607d2a",
+            "case": "`days = minutes(stamp)` under `before:`, one empty line, then `after:` and `days = 0`; the proof says the entry reads `caught` and the change ends at the last non-blank line; the changed code keeps the empty line's newline in the replaced lines, so `days = 0` is joined to the next line and the entry",
+            "file": "scripts/review/targeted_break.py",
+            "line": 163,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-41: the test sends the proof's reply with one empty line before `after:`, then compares the recorded `before` with the single line `    days = minutes(stamp)` and the result with `caught`, so it observes both what the rule names and what the proof names.",
+          "PROOF-41: the value `90` the proof names is not compared in this test itself; it sits in the `STRONG` test of `PROOF-1` that the test's project is built from, and is observed only through the `caught` result.",
+          "PROOF-41: the spot tests found nothing, and the test leaves no way past it for the proof's case, since keeping the blank line in the change alters the recorded `before` the test compares exactly.",
+          "PROOF-41: the test's reply uses a wholly empty line, so a blank line holding spaces or tabs, which the rule also covers, is not observed."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "4b61463d5efd1e79b1784570ae870a0d6212936cd59b8bd3a65f46f591e7536d",
+        "rule_hash": "466243c766a303df57c414ca5e2662127c11ff302a1dbe3bc283ae525c7cc90e",
+        "test_hash": "91ced5e10340f75ed8f8b7209dacc27e2672cb14481cc8451645cee882a017b1",
+        "verdict": "strong"
+      },
+      "RULE-22": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-42": {
+            "after": "        if old not in text and '\\r\\n' not in text:",
+            "aim": "plain",
+            "before": "        if old not in text and '\\r\\n' in text:",
+            "break_key": "bdf5db8a12db036578af3a79d162ae0f5dcb589e40324f4b1e761f03bfc9716f",
+            "case": "a two-line change planted in a `src/age.py` whose lines all end CRLF; the proof says the entry reads caught at line 11; the changed code never turns the lines to CRLF, so they are not found and the entry reads not made with no line",
+            "file": "scripts/review/targeted_break.py",
+            "line": 297,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-43": {
+            "after": "            old, new = _crlf(old), new",
+            "aim": "plain",
+            "before": "            old, new = _crlf(old), _crlf(new)",
+            "break_key": "0a77584b334b0567495a03ffae8bf8ffbf063afe6421dd403aa559238abb791c",
+            "case": "the same two-line change planted in a 12-line CRLF `src/age.py`; the proof says the file run against reads return 1 and ends each of its 12 lines CRLF; the changed code writes the line end inside the change as LF, so only 11 lines end CRLF",
+            "file": "scripts/review/targeted_break.py",
+            "line": 299,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-42: the test first confirms the file holds 12 CRLF line ends, runs the audit with the two-line change, and compares the bug's line with 11 and its result with caught, which are the two values the proof names.",
+          "PROOF-42: the test does not read the changed file, so a change planted with a wrong line end inside it would still read caught at line 11; that is PROOF-43's case, not this proof's.",
+          "PROOF-43: the inner test copies the bytes of `src/age.py` as it runs, and the outer test compares the copy written with the bug in place against the CRLF file with `return 0` turned into `return 1`, and counts 12 CRLF line ends with no bare LF, which is what the proof names.",
+          "PROOF-43: the test also requires the result to read survived, which shows the inner test ran with the bug in place and so that the copied bytes are the changed file's.",
+          "Findings: none were reported, and both tests compare the literal values their proofs name."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "d2684343ebbcfbf2e4ea7b95687460aba6caa48284500fdcae429dbaac808bfb",
+        "rule_hash": "e8cf2e6fd76be2ccf7e715ce4620fb7206a5d4ac9d23b7a8c45771ab063a1004",
+        "test_hash": "599af04e840ac144e769124bc29f0a179bf2f99ed953245d622338863537c13d",
+        "verdict": "strong"
+      },
+      "RULE-23": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-44": {
+            "after": "            case = named.group(1).strip()[:CASE_LIMIT]",
+            "aim": "plain",
+            "before": "            case = shown(named.group(1))[:CASE_LIMIT]",
+            "break_key": "2d0b8b3cd7e639e0d3354e176c6ebc4c7af167c0636d9b0b0856d5375d1be50e",
+            "case": "a case line holding the clear-screen and red-text escape sequences and a bell; the proof says the entry's case reads `a stamp of 2026-01-01 gives 0`; the changed code keeps the escape sequences and the bell in the case",
+            "file": "scripts/review/targeted_break.py",
+            "line": 152,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-45": {
+            "after": "        return ('no break', found.group(1).strip())",
+            "aim": "plain",
+            "before": "        return ('no break', shown(found.group(1)))",
+            "break_key": "1ae3b2afade34e9126d883cc06c0aa744d6a98541f886b3e99a3aceda830edd9",
+            "case": "a no break reason with the clear-screen escape sequence before `checks` and a bell at its end; the proof says the audit prints the reason as `the test checks the case`; the changed code keeps the escape sequence and the bell in the reason",
+            "file": "scripts/review/targeted_break.py",
+            "line": 158,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-46": {
+            "after": "    return ('change', found.group('file').strip(), before,",
+            "aim": "plain",
+            "before": "    return ('change', shown(found.group('file')), before,",
+            "break_key": "7fd4300536d6f0124ce5a394b4af03c381119b3ee58b8e82777911d8b7cc62eb",
+            "case": "a file value of `src/age.py` with the red-text escape sequence between `src/` and `age.py`; the proof says the entry's file reads `src/age.py` and the bug reads `caught`; the changed code keeps the escape sequence in the path, so the bug is not made",
+            "file": "scripts/review/targeted_break.py",
+            "line": 164,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-44: the test gives a case with the clear-screen and red-text sequences and a bell, and compares the printed line, the entry's `case` and the stored finding with the clean text the proof names.",
+          "PROOF-45: the test gives a no break reason with the clear-screen sequence and a bell, and compares the stored `why` with the clean reason; it looks for the printed line through a helper whose text is not shown, so the exact sentence the proof names is not visible in the test itself.",
+          "PROOF-46: the test gives a file value with the red-text sequence inside it, and compares the entry's `file` with `src/age.py` and its result with `caught`, as the proof names.",
+          "No spot test fired, and each test compares the cleaned value its proof names with a literal, so none of the six checks applies."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "c1752b8e60c52f357b7b97c6e667744a6a5f780735b02a89df1b76f30c7228fd",
+        "rule_hash": "6fa332f7130ace7b4c3d7f3315dab0a9d7562a2ee20c84b9416552d63b77fa37",
+        "test_hash": "98b5a0e5141b6dd440027b961bebe9ff58b2997866a8064cb2a1ed853deb57dc",
+        "verdict": "strong"
+      },
+      "RULE-24": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-47": {
+            "after": "_AIM_RE = re.compile(r'^\\s*aim:(.*)$')",
+            "aim": "plain",
+            "before": "_AIM_RE = re.compile(r'^\\s*aim:(.*)$', re.I)",
+            "break_key": "30b884302403ccaac3bcee84c1334139ecbaf51daad643fc58dc91c7ce9e131b",
+            "case": "a part opening with `  Aim: past the test` and then `CASE: a stamp of 2026-01-01; the proof says 90; the changed code gives 0`; the proof says the bug is planted and reads caught with aim past the test; the changed code plants no bug and records aim plain and an empty case",
+            "file": "scripts/review/targeted_break.py",
+            "line": 101,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-47: the test sends a part opening with `  Aim: past the test` and then `CASE: ...`, and compares the bug's result with `caught`, its aim with `past the test` and its case with the constant `CASE`, so each result the proof names is compared.",
+          "PROOF-47: the test leaves no way past it for a change that breaks this case, so the planted change is the plainest one: the `aim:` line is no longer read in capitals, the part names no change and no bug is planted.",
+          "PROOF-47: the expected case comes from the constant `CASE`, whose text is not in the source shown, so the test confirms the case is kept as sent but not that it is the text the proof names.",
+          "PROOF-47: the test puts spaces only before `Aim:` and none before `CASE:`, as the proof does, so a `case:` line read only without an indent would still pass.",
+          "Findings: the spot tests found nothing, and the test holds four assertions on values the audit writes, none of them taken from the code under test."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-47 is longer than 60 words."
+        ],
+        "proof_hash": "ff7062fb69f3a7ffed2131db5cd097b863ae498e2e4d42235c704fae55c76543",
+        "rule_hash": "c1a13ea15210143aff2546803e215a4f083ac7b938bf30501bcc290eec0bd58d",
+        "test_hash": "be5a3a33bd14dbee10e570969178785ac751ddd34ed9707868b8c254ca209412",
+        "verdict": "strong"
+      },
+      "RULE-25": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-48": {
+            "after": "        if not start or start.startswith('//'):",
+            "aim": "plain",
+            "before": "        if not start or start.startswith('//') or (hashes and start.startswith('#')):",
+            "break_key": "1a59b39b1d08b3c0f55b6ac39f9daaa5b00bb91a3faefd8bb908ce42b95042f5",
+            "case": "`return days` at line 12 of src/age.py becomes `# planted`, an empty line and `return 0`, and the bug survives; the proof says the finding names src/age.py:14 reading \"return 0\"; the changed code names src/age.py:12 reading \"# planted\"",
+            "file": "scripts/review/targeted_break.py",
+            "line": 179,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-49": {
+            "after": "            step = place",
+            "aim": "plain",
+            "before": "            step = index",
+            "break_key": "591f4e8680455c3f3124e49304ca8030f0474ace56c654f6e55b50aae7bfc2e0",
+            "case": "`# planted` is put above `days = minutes(stamp)`, two lines stay as they were and `return 0` becomes `return 1`, and the bug survives; the proof says the finding names src/age.py:12 reading \"return 1\"; the changed code names src/age.py:11 reading `if stamp == \"\":`",
+            "file": "scripts/review/targeted_break.py",
+            "line": 347,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-48: the test plants the three-line change through a fake model, runs the audit, and compares the stored line with 14 and the printed finding with the proof's exact sentence, so a wrong line number or wrong quoted words fails it.",
+          "PROOF-49: the test plants a change that adds a comment line, leaves two lines as they were and turns `return 0` into `return 1`, and compares the printed finding with the proof's exact sentence naming line 12 and \"return 1\", so a finding that names an unchanged line fails it.",
+          "PROOF-49: the test reads the line number only from the printed sentence and not from the stored entry, so a stored line that differed from the printed one would pass.",
+          "Findings: the spot tests found none, and both tests hold the values their proofs name.",
+          "The rule's second clause, a change that leaves no line of code different, has no proof, so a wrong line for that case would pass both tests."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-48 and PROOF-49 each name a source file path, `src/age.py`, though it is a path the audit prints in its finding."
+        ],
+        "proof_hash": "d99ed56246447d79b80f384951b512c06fd4f381d3d028301163c843641a84c8",
+        "rule_hash": "180eb102c6688d7d796b3b5b155b25dd3e5b90559a8914ef0cc441fd8db5092f",
+        "test_hash": "0fa2d14687f6054a8b0073b16cb0177bd7f060d1bb708883051f22e58ca42ef5",
+        "verdict": "strong"
+      },
+      "RULE-3": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-17": {
+            "after": "        return _result(proof_id, 'caught', ERRORED if ran == 'error' else '',\n                       change, line)",
+            "aim": "plain",
+            "before": "        return _result(proof_id, 'not run', ERRORED if ran == 'error' else '',\n                       change, line)",
+            "break_key": "0b3fd9d5632a5c7eacd8c5c7b1a6c90bc7dbdc4df77b3400f84df2d6f87edc26",
+            "case": "the model answers `def age(` to `def age_(` so tests/test_age.py can no longer be collected; the proof says `not run`, not `caught`; the changed code gives `caught`",
+            "file": "scripts/review/targeted_break.py",
+            "line": 326,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-20": {
+            "after": "        return 'fail'",
+            "aim": "plain",
+            "before": "        return 'error' if all(e.get('errored') for e in failed) else 'fail'",
+            "break_key": "de251a89da5ec9e4ed005b71638d5ee0c7659f4e106c6b61ce161085facaf68a",
+            "case": "a fixture calls minutes and the model answers `return 90` to `raise ValueError(stamp)`, so pytest reports the test under error; the proof says `not run` with the reason `the test ended in an error, not a failure`; the changed code gives `caught` with no reason",
+            "file": "scripts/review/targeted_break.py",
+            "line": 451,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-3": {
+            "after": "            return _result(proof_id, 'not run', '', change, line)",
+            "aim": "plain",
+            "before": "            return _result(proof_id, 'caught', '', change, line)",
+            "break_key": "7080a03995fcf70dc0e3ab91dab8fcf06af2c000825800637c036fe5b1467b18",
+            "case": "the model answers `return days` to `return 0` and the test of PROOF-1 fails; the proof says `caught`; the changed code gives `not run`",
+            "file": "scripts/review/targeted_break.py",
+            "line": 325,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-3: the test plants a change from the shared BREAK constant, which is not shown, and compares the result with `caught` and the finding with None, so a result other than `caught` fails it.",
+          "PROOF-17: the test plants `def age(` to `def age_(`, checks the changed line is 8 and compares the result with `not run`, so a result of `caught` or `survived` fails it; it does not read the reason, which the proof does not name.",
+          "PROOF-20: the test plants the shared RAISES answer in a project with the extra SETUP fixture, checks the planted line reads `raise ValueError(stamp)` and compares the result and its reason together with `not run` and `the test ended in an error, not a failure`, so either value going wrong fails it.",
+          "The spot tests found nothing, and each test compares the result its proof names against a literal, so no finding is missing on that count."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "f56396a9f74a0c087ea739db89bb45e499ed4b9599cceb134ccf9f898a634222",
+        "rule_hash": "d186d3a7b77fd07220877b68febe39ef7b44e9a860037d87088e43c3c444d8ed",
+        "test_hash": "ffa82063343607a4a20f281732daa61c5f99f19ff6dc31fb82da6b4b6639c582",
+        "verdict": "strong"
+      },
+      "RULE-5": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-6": {
+            "after": "    if os.path.isabs(rel) or normal == '..' or normal.startswith('../'):\n        return _result(proof_id, 'not run', OUTSIDE % path, change)",
+            "aim": "plain",
+            "before": "    if os.path.isabs(rel) or normal == '..' or normal.startswith('../'):\n        return _result(proof_id, 'not made', OUTSIDE % path, change)",
+            "break_key": "bf8ba287a50e98d99307321ca3719e694c24d5105f567ddbe465126623a50f1f",
+            "case": "the model answers `file: ../outside.py`; the proof says the result reads `not made`; the changed code gives `not run`",
+            "file": "scripts/review/targeted_break.py",
+            "line": 281,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-6: the test answers with `file: ../outside.py`, adds that path to the scope so only the outside-the-copy refusal can stop it, and compares the result with `not made` and the reason with the exact outside-the-copy sentence, so a different result or reason fails it.",
+          "PROOF-6: the test looks for `outside.py` in two places under its own temporary folder, while the copy is made under the system's temporary folder, so a file written beside the copy there would be seen only if the test's setup points the system's temporary folder at one of those two places, which the shown source does not say.",
+          "PROOF-6: the path is refused twice in the code, once before the copy is made and again when the file is read inside the copy, so no single small change writes a file outside while keeping the result the test compares, and the plain change to the result is the one made.",
+          "Findings: the spot tests report none, and the test does assert the proof's named value `not made` on the case the proof names."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "2034c3963fc0abf2d82bf8fb8adcf062af1938f4b06989a6bb46a9d8c6cffe57",
+        "rule_hash": "00a9ce2dc18e6273a0f6381b4c333779c37fcdd362ecddadeff5a85b39e17969",
+        "test_hash": "0c5da40379b65453d9477b349f1aa9e03cb18a6a550d8216822394891987f00a",
+        "verdict": "strong"
+      },
+      "RULE-6": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-13": {
+            "after": "    if before != after:\n        return None",
+            "aim": "plain",
+            "before": "    if before == after:\n        return None",
+            "break_key": "07647c1e0d8bd3544ba6e02899ff81c5bde190fd381b279382fb7004deb094b1",
+            "case": "bugs are planted for three proofs while nothing else touches the project; the proof says no line starting `The audit stopped:` is printed and the audit exits 0; the changed code reads an unchanged project as changed, so the audit prints `The audit stopped:` and exits 1",
+            "file": "scripts/review/targeted_break.py",
+            "line": 502,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-7": {
+            "after": "    if changed is not None:\n        return",
+            "aim": "plain",
+            "before": "    if changed is not None:\n        raise ProjectChanged(changed)",
+            "break_key": "c9c56ee32927c0513491a90aafb39b31b05f3a12e8d2e0fb172a3f41e7b22b20",
+            "case": "claude writes a line to src/age.py as it answers; the proof says the audit prints `The audit stopped: src/age.py changed while the audit ran. ...`, exits 1 and leaves the evidence bytes as they were; the changed code never stops, so the audit goes on, writes its entry and exits 0",
+            "file": "scripts/review/targeted_break.py",
+            "line": 246,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-7: the test has the fake claude write to src/age.py, then compares the last printed line with the full stop message, the exit code with 1 and the evidence bytes with those from before, so each value the proof names is checked.",
+          "PROOF-7: the test also checks that claude was called once and that the evidence holds no `\"audit\"` key, which goes beyond the proof and leaves no way past the test.",
+          "PROOF-13: the test plants three bugs, checks their results are caught, survived and caught, then checks that no line starts `The audit stopped:` and that the exit code is 0, so both results the proof names are checked.",
+          "Findings: none, and both tests compare literal expected values that do not come from the code under test.",
+          "The rule speaks of a change while the audit asks the model or plants a bug; PROOF-7 covers a change during the model's answer only, and no proof names a change made while a bug is planted."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "8d75228e812fc8aad4a529cf59931e18d19a8621dbaf06524b7d69895a37ceaf",
+        "rule_hash": "281d44199464a98016a924ee4efa4aa0214acfc3824c973624b3f0394128f7e3",
+        "test_hash": "043d998b19618517fd9f6a7cde7b957d131e7ef9cc4f5c85ed84b726036254e0",
+        "verdict": "strong"
+      },
+      "RULE-7": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-14": {
+            "after": "        copy = os.path.join(copy, 'none')\n        return _result(proof_id, 'not run', ERRORED if ran == 'error' else '',\n                       change, line)",
+            "aim": "plain",
+            "before": "        return _result(proof_id, 'not run', ERRORED if ran == 'error' else '',\n                       change, line)",
+            "break_key": "081b8dc69601db73db5b7fc6d0cb0e0ace546d365a30557b76c74085efcf21fa",
+            "case": "the test of PROOF-1 runs past its limit with the bug in place; the proof says the temporary folder holds no folder whose name starts purlin-break-; the changed code leaves the purlin-break- copy there",
+            "file": "scripts/review/targeted_break.py",
+            "line": 326,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-8": {
+            "after": "        if ran == 'fail':\n            copy = os.path.join(copy, 'none')\n            return _result(proof_id, 'caught', '', change, line)",
+            "aim": "plain",
+            "before": "        if ran == 'fail':\n            return _result(proof_id, 'caught', '', change, line)",
+            "break_key": "ed3b3d0fc628989d983f25327c6c416964e3e162e77ab6b5dfb72bdadbd1475e",
+            "case": "the test of PROOF-1 fails with the bug in place; the proof says the temporary folder holds no folder whose name starts purlin-break-; the changed code leaves the purlin-break- copy there",
+            "file": "scripts/review/targeted_break.py",
+            "line": 325,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-8: the test plants a bug that a strong test catches, checks the result is `caught`, checks the test ran in a folder whose name starts `purlin-break-`, and checks that no copies are left, which is the proof's case and its result.",
+          "PROOF-14: the test plants a slow bug with a 2 second limit, checks the result is `not run` and checks that no copies are left, which is the proof's case and its result.",
+          "PROOF-14: the test never confirms that a copy was made under a `purlin-break-` name, so its empty list rests on the `copies` helper, which is not shown, looking in the folder where copies are made.",
+          "Findings: the spot tests found nothing, and both tests hold failable assertions with `purlin-break-` present in the file."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "The rule names three outcomes (passes, fails, runs past its limit), and neither PROOF-8 nor PROOF-14 covers the copy being removed when the test passes."
+        ],
+        "proof_hash": "5193acb47ba8b4248815d701f654e44290981d591080624851607acf863d25c0",
+        "rule_hash": "4d92433792092655099dc2f437a490ec91e6c44b8d04c7ecfd8ec03aad332e13",
+        "test_hash": "02a57788a7c62c830418d1b1f3c122a408f035f612fd445451d37491b10df504",
+        "verdict": "strong"
+      },
+      "RULE-8": {
+        "at": "2026-10-02T09:14:41Z",
+        "breaks": {
+          "PROOF-9": {
+            "after": null,
+            "aim": "plain",
+            "before": null,
+            "break_key": "172c3f0bfdee9eaed7ecaae898d861f9fd9e6d1788c2523e96ba78041f315bcc",
+            "case": "",
+            "file": null,
+            "line": null,
+            "result": "not made",
+            "why": "the file never resolves, calls or changes the path to `claude`; where `claude` resolves is set by the tests' own setup, which is not among the files the feature covers here."
+          }
+        },
+        "code_hash": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "commit": "843fb728990627de242758c4a2f352e12e2b5dd6",
+        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "explanation": [
+          "PROOF-9: the test looks up `claude` on the path and checks that its real location starts with the real path of this test's temporary folder, so it would fail if `claude` were missing or resolved elsewhere for this one test.",
+          "PROOF-9: the proof names every test of the feature, and the test observes only its own path lookup, so another test of the feature that resolved `claude` outside its temporary folder would still pass here.",
+          "PROOF-9: the prefix comparison has no path separator after the folder, so a sibling folder whose name begins with the same characters would also satisfy it.",
+          "PROOF-9: the proof says \"before the first call\", and the test makes no call and reads no order, so that part of the proof is not observed.",
+          "PROOF-9: the spot tests found nothing, which fits: the test asserts, can fail, and the proof's only backticked value, `claude`, appears in the test's file."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [
+          "No bug was planted: the model found no change that would break PROOF-9: the file never resolves, calls or changes the path to `claude`; where `claude` resolves is set by the tests' own setup, which is not among the files the feature covers here."
+        ],
+        "proof_hash": "061978a79af6870fdb61e983440beef80b4837e65a76ea7d19f9a8f3395a2198",
+        "rule_hash": "0268266bf1e0adc76e2ab2d815743e362f6602d6cb1a4aed90542a95ebc08fe7",
+        "test_hash": "12e79b075faa4381e57447c95c0f427640913e9f0eb4ff7710d10d58071d05d6",
+        "verdict": "spot-checked"
+      }
+    }
+  },
   "feature": "planted_bug",
   "platforms": {
     "macos": {
