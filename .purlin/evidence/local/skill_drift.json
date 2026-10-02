@@ -2,8 +2,8 @@
   "feature": "skill_drift",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T04:49:45Z",
-      "commit": "04d03a076e0821c4d739075539430c0fbff5956c",
+      "at": "2026-10-02T05:47:25Z",
+      "commit": "f9984dd30ac10183f0d8e95ed8bd52a3dd7a6b3e",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {

@@ -2,8 +2,8 @@
   "feature": "package",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T04:47:27Z",
-      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
+      "at": "2026-10-02T05:47:24Z",
+      "commit": "f9984dd30ac10183f0d8e95ed8bd52a3dd7a6b3e",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {

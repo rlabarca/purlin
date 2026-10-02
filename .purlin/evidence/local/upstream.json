@@ -2,12 +2,12 @@
   "feature": "upstream",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T04:47:29Z",
-      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
+      "at": "2026-10-02T05:47:26Z",
+      "commit": "f9984dd30ac10183f0d8e95ed8bd52a3dd7a6b3e",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "4cd364316bed31ac602d8f011b78114ec956e4f28ae6245143d2e89dda209ce5",
+        "code": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
         "spec": "a2fb76a1a53b3991a69e89e1d34863ef8b6a8dac85e2515ebb48b26a5a72fbf8",
         "tests": "2de46674b04fc6a85ef751021945dd94012e9e377bc00d476cd873255673ffd3"
       },

@@ -2,14 +2,14 @@
   "feature": "ai_audit",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T04:47:27Z",
-      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
+      "at": "2026-10-02T05:47:24Z",
+      "commit": "f9984dd30ac10183f0d8e95ed8bd52a3dd7a6b3e",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "87fa1df71c46beec300ab62ef772aba6204871185be2b72c5182e46b0442edc5",
-        "spec": "906d17d91519ba53b913c43bbee8334647a9ab852b049c6175e7cf686a696877",
-        "tests": "f6cba80bc011f953c9789cb00030cdd49c662378c78694d3c9bb17a4ec5e1cbe"
+        "code": "d1f7003ebe30f80d56761824e38471ed113aaccf8954fa6a858197384df84682",
+        "spec": "79bdcd4ae92b95ab3385fd15813e81e665925dc6cff36a2af50e3af12af24c3d",
+        "tests": "651fbce0d6930998cf1c13392672dba6183134460e351b606a0b23ffbad26cf8"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -236,6 +236,14 @@
           "result": "pass",
           "rule": "RULE-35",
           "test": "dev/test_ai_audit.py::TestWhenTheModelCannotBeReached::test_two_spot_checked_rules_are_counted_and_none_strong"
+        },
+        {
+          "env": null,
+          "id": "PROOF-137",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_ai_audit.py::TestTheVerdict::test_the_last_line_counts_a_rule_with_a_hand_check_as_the_status_does"
         },
         {
           "env": null,
@@ -524,6 +532,14 @@
           "result": "pass",
           "rule": "RULE-50",
           "test": "dev/test_ai_audit.py::TestTheBugAimedPastTheTest::test_a_bug_the_test_catches_adds_no_finding"
+        },
+        {
+          "env": null,
+          "id": "PROOF-136",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-51",
+          "test": "dev/test_ai_audit.py::TestTheVerdict::test_a_kept_entry_with_no_aim_or_case_is_written_back_with_both"
         }
       ],
       "rules": {
@@ -549,6 +565,7 @@
         "RULE-48": "passed",
         "RULE-49": "passed",
         "RULE-50": "passed",
+        "RULE-51": "passed",
         "RULE-6": "passed"
       },
       "runner": "rich-labarca"

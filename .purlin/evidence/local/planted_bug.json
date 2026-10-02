@@ -2,14 +2,14 @@
   "feature": "planted_bug",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T04:47:27Z",
-      "commit": "1fa86ee160279835c567f25017d23fe125f20847",
+      "at": "2026-10-02T05:47:24Z",
+      "commit": "f9984dd30ac10183f0d8e95ed8bd52a3dd7a6b3e",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "e96ba42316ce2f2e73d95f402e97ddc30596958395ef655d957d0b1a69699548",
-        "spec": "45e27389bb49f0d6d6a5ab499061e5fac20e495e1a17f22f35efc2eba8df9cd5",
-        "tests": "b110e2664986b53fbedebcdbfb9af88f59844fb930c0bb8920991a2ad51c8d55"
+        "code": "d75b75b6d14bc19f622898e7cc2dbf063c9031ef08be432cd3e8298c0a153b79",
+        "spec": "d9497f4772fde20986348f5ec5896f2941cacaa2fc797377affd74df8cd8a09a",
+        "tests": "f3093314762ea885987bc9c133fd02af0110f88d680b8c40e67b4057ee8f1e45"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -244,6 +244,150 @@
           "result": "pass",
           "rule": "RULE-18",
           "test": "dev/test_planted_bug.py::test_a_comment_beside_a_changed_line_is_still_planted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-37",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_planted_bug.py::test_a_hash_line_in_a_yaml_file_is_a_comment"
+        },
+        {
+          "env": null,
+          "id": "PROOF-38",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_planted_bug.py::test_a_change_that_adds_only_an_empty_line_is_not_planted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-32",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_planted_bug.py::test_a_comment_added_at_the_end_of_a_code_line_is_not_planted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-33",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_planted_bug.py::test_two_slashes_at_the_end_of_a_code_line_are_a_comment"
+        },
+        {
+          "env": null,
+          "id": "PROOF-34",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_planted_bug.py::test_a_hash_inside_a_quoted_string_is_code"
+        },
+        {
+          "env": null,
+          "id": "PROOF-35",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_planted_bug.py::test_two_slashes_in_a_python_file_are_code"
+        },
+        {
+          "env": null,
+          "id": "PROOF-36",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_planted_bug.py::test_a_block_comment_is_code_to_the_check"
+        },
+        {
+          "env": null,
+          "id": "PROOF-39",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_planted_bug.py::test_no_break_after_an_aim_line_is_read_as_no_break"
+        },
+        {
+          "env": null,
+          "id": "PROOF-40",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-20",
+          "test": "dev/test_planted_bug.py::test_a_no_break_reason_of_two_lines_is_cut_to_its_first"
+        },
+        {
+          "env": null,
+          "id": "PROOF-41",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-21",
+          "test": "dev/test_planted_bug.py::test_an_empty_line_before_after_is_no_part_of_the_change"
+        },
+        {
+          "env": null,
+          "id": "PROOF-42",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_planted_bug.py::test_two_lines_match_a_file_whose_lines_end_crlf"
+        },
+        {
+          "env": null,
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_planted_bug.py::test_the_changed_file_keeps_its_crlf_line_ends"
+        },
+        {
+          "env": null,
+          "id": "PROOF-44",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-23",
+          "test": "dev/test_planted_bug.py::test_a_case_is_printed_and_kept_without_its_escape_sequences"
+        },
+        {
+          "env": null,
+          "id": "PROOF-45",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-23",
+          "test": "dev/test_planted_bug.py::test_a_no_break_reason_is_printed_without_its_escape_sequences"
+        },
+        {
+          "env": null,
+          "id": "PROOF-46",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-23",
+          "test": "dev/test_planted_bug.py::test_a_file_value_is_read_without_its_escape_sequences"
+        },
+        {
+          "env": null,
+          "id": "PROOF-47",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-24",
+          "test": "dev/test_planted_bug.py::test_aim_and_case_are_read_in_capitals_and_after_spaces"
+        },
+        {
+          "env": null,
+          "id": "PROOF-48",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-25",
+          "test": "dev/test_planted_bug.py::test_the_finding_names_the_first_changed_line_of_code"
+        },
+        {
+          "env": null,
+          "id": "PROOF-49",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-25",
+          "test": "dev/test_planted_bug.py::test_the_finding_passes_over_a_line_the_change_left_as_it_was"
         }
       ],
       "rules": {
@@ -256,7 +400,14 @@
         "RULE-16": "passed",
         "RULE-17": "passed",
         "RULE-18": "passed",
+        "RULE-19": "passed",
         "RULE-2": "passed",
+        "RULE-20": "passed",
+        "RULE-21": "passed",
+        "RULE-22": "passed",
+        "RULE-23": "passed",
+        "RULE-24": "passed",
+        "RULE-25": "passed",
         "RULE-3": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",
