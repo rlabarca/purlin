@@ -30,6 +30,9 @@ RENUMBER = os.path.join(SCRIPTS, 'spec', 'renumber.py')
 WORDING = os.path.join(SCRIPTS, 'mcp', 'purlin', 'wording.py')
 SERVER = os.path.join(SCRIPTS, 'mcp', 'purlin', 'server.py')
 
+sys.path.insert(0, os.path.join(SCRIPTS, 'mcp'))
+from purlin import drift as drift_module  # noqa: E402
+
 VERSION = '0.1.0'
 TAG = 'signed/' + VERSION
 PACKAGE = '.purlin/evidence/package/%s.json' % VERSION
@@ -311,7 +314,7 @@ class Person(object):
 
     def status(self):
         """`purlin:status`: the tool's text, its warnings kept for the end."""
-        given(skill('status'), 'Call `sync_status`')
+        given(skill('status'), 'sync_status`')
         text = self.tool('sync_status')
         data = read(self.path('.purlin/report-data.js'))
         payload = json.loads(data[data.index('{'):].rstrip().rstrip(';'))
@@ -319,7 +322,7 @@ class Person(object):
         return text
 
     def drift(self):
-        given(skill('drift'), 'drift(project_root=')
+        given(skill('drift'), 'purlin:drift', '`project_root`')
         return self.tool('drift')
 
     def test(self, *flags, **kwargs):
@@ -329,15 +332,17 @@ class Person(object):
                            *flags, **kwargs)
 
     def renumber(self, feature, told):
-        """The dry run, then the renumbering, as the spec skill gives them
-        and as `told`, the output before, sent the person there."""
+        """The dry run, then the renumbering on a yes, as the spec skill
+        gives them and as `told`, the output before, sent the person there.
+        The dry run changes nothing; the run stages and commits nothing."""
         given(told, 'purlin:spec')
         given(skill('spec'), 'scripts/spec/renumber.py" <name> --dry-run',
-              'run the same command without `--dry-run`')
+              'Do it? [y/N]')
+        before = self.git('status', '--porcelain')
         dry = self.script('renumber --dry-run', RENUMBER, feature, '--dry-run')
         assert 'Nothing is changed: this is a dry run.' in dry
-        assert self.git('status', '--porcelain') == ''
-        done = self.script('renumber', RENUMBER, feature)
+        assert self.git('status', '--porcelain') == before
+        done = self.script('renumber --yes', RENUMBER, feature, '--yes')
         assert 'Renumbered in %s' % feature in done
         return done
 
@@ -458,24 +463,25 @@ def test_three_people_reach_a_signed_version(tmp_path):
     dana.commit('feat(stability): an unknown storage is refused')
     quinn.merge_to_main('qa/refrigerated')
 
-    #    Dana pulls, keeps both lines, and is sent to the renumbering.
+    #    Dana pulls, and git stops on the rule lines and on the proof lines.
+    #    She edits no line of the conflict: the status and drift send her to
+    #    the renumbering, which keeps both sides and then renumbers hers.
     stopped = dana.git('pull', '--no-edit', 'origin', 'main', check=False)
     assert 'CONFLICT' in stopped, stopped
-    dana.write(STABILITY, spec(
-        'stability', STABILITY_ABOUT,
-        STABILITY_RULES + ['RULE-3: ' + CHILLED_RULE,
-                           'RULE-3: ' + UNKNOWN_RULE],
-        STABILITY_PROOFS + ['PROOF-4 (RULE-3): ' + CHILLED_PROOF,
-                            'PROOF-4 (RULE-3): ' + UNKNOWN_PROOF]))
-    dana.git('add', '-A')
-    dana.git('commit', '-q', '--no-edit')
+    assert len(conflict_lines(read(dana.path(STABILITY)))) == 6
     status = dana.status()
     assert opening(status)[0] == 'Tests: not met'
     assert '1 spec to repair: purlin:spec' in status
     drift = dana.drift()
     assert 'RULE-3' in drift and 'PROOF-4' in drift
+    assert drift_module.MERGE_LINE in json.loads(drift)['view']['lines']
     given(skill('drift'), 'follow `Renumbering` in')
-    dana.renumber('stability', status)
+    done = dana.renumber('stability', status)
+    assert 'stability: the conflict at line ' in done
+    assert 'Resolved 2 conflicts in stability.' in done
+    assert conflict_lines(read(dana.path(STABILITY))) == []
+    assert dana.git('status', '--porcelain').splitlines()[0] == (
+        'UU ' + STABILITY)
     text = read(dana.path(STABILITY))
     assert '- RULE-3: ' + CHILLED_RULE in text
     assert '- RULE-4: ' + UNKNOWN_RULE in text
@@ -483,7 +489,10 @@ def test_three_people_reach_a_signed_version(tmp_path):
     assert '- PROOF-5 (RULE-4): ' + UNKNOWN_PROOF in text
     assert '# purlin: stability PROOF-5\ndef test_an_unknown_storage' in read(
         dana.path('tests/test_stability.py'))
+    #    Her commit finishes the merge, and drift no longer names one.
     dana.commit('spec(stability): renumber the rule and the proof written twice')
+    assert len(dana.git('rev-list', '--parents', '-n', '1', 'HEAD').split()) == 3
+    assert drift_module.MERGE_LINE not in dana.drift()
 
     #    The status now names Quinn's rule, which has no test; Dana builds it.
     status = dana.status()
@@ -553,7 +562,7 @@ def test_three_people_reach_a_signed_version(tmp_path):
                          'under another id')
     given(skill('spec'), 'scripts/spec/renumber.py" <name> --dry-run')
     dana.script('renumber --dry-run', RENUMBER, 'sample_age', '--dry-run')
-    dana.script('renumber', RENUMBER, 'sample_age')
+    dana.script('renumber --yes', RENUMBER, 'sample_age', '--yes')
     assert '# purlin: sample_age PROOF-5\ndef test_across_a_year_end' in read(
         dana.path('tests/test_year_end.py'))
     dana.commit('spec(sample_age): the year-end test names PROOF-5')
@@ -669,8 +678,10 @@ def test_three_people_reach_a_signed_version(tmp_path):
     #     No spec holds a number twice or a conflict line, and each spec's
     #     highest-number lines cover its numbers.
     listed = 0
+    #     Stability's lines stand as the renumbering kept them: Dana's
+    #     side first, then Quinn's.
     for rel, rules, proofs in ((AGE, [1, 2, 3], [1, 2, 3, 4, 5]),
-                               (STABILITY, [1, 2, 3, 4], [1, 2, 3, 4, 5])):
+                               (STABILITY, [1, 2, 4, 3], [1, 2, 3, 5, 4])):
         text = read(check.path(rel))
         assert conflict_lines(text) == []
         assert numbers(text, 'RULE') == rules
