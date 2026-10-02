@@ -231,6 +231,13 @@ markers.
 
 **The lines that need you** come last, under `These need you:`. Each names what to do.
 
+A test the upgrade left with its 0.9.5 marker is not counted until you rewrite it. Every status
+and every run says so until none is left:
+
+```
+9 tests still carry a marker from Purlin 0.9.5, which is not read: tests/test_lock.py:90, tests/test_export.py:12, and 7 more. For each, write the proof with purlin:spec, put the comment above the test, and take the old tag out.
+```
+
 **The test run comes next.** A run that applied every pending migration ends on it:
 
 ```
