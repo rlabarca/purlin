@@ -31,7 +31,11 @@ run on: it builds the lab, audits it once with `REPLY`, so `RULE-2` and
 asks for, and runs `purlin_run.py --audit --feature sample_intake` with
 `--settle` for each rule named, as its own process, with a fake `claude`
 that answers what the test hands it. `MORE_SURVIVE` is a first reply that
-leaves a bug kept as `survived` for `PROOF-7` and `PROOF-11` as well.
+leaves a bug kept as `survived` for `PROOF-7` and `PROOF-11` as well, and
+`BOTH_OF_RULE_4_SURVIVE` one that leaves one for `PROOF-6` too, so `RULE-4`
+holds two. `sound` names the proofs handed to `--sound`: a settle is refused
+for a proof whose test is as it was when its bug got past it, unless the
+proof is named there.
 """
 
 import io
@@ -338,6 +342,21 @@ MORE_SURVIVE = dict(REPLY, **{
         'src/intake.py', "'%s-%d-%05d'", "'%s-%d-%04d'", case=CASE_11,
         aim='past the test'),
 })
+# A bug for `PROOF-6` that its test, reading the record's status alone, does
+# not see: a sample that is not accepted is handed back and never stored. With
+# it `RULE-4` keeps two bugs as `survived`.
+CASE_6_NOT_STORED = ('a sample received 73 hours after collection; the proof '
+                     'names it stored as `expired`; the changed code hands '
+                     'back the record and never stores it')
+STORED = '        self.received[barcode] = record\n        return record'
+STORED_WHEN_ACCEPTED = ("        if status == 'accepted':\n"
+                        '            self.received[barcode] = record\n'
+                        '        return record')
+BOTH_OF_RULE_4_SURVIVE = dict(MORE_SURVIVE, **{
+    'PROOF-6': fake_claude.change(
+        'src/intake.py', STORED, STORED_WHEN_ACCEPTED,
+        case=CASE_6_NOT_STORED, aim='past the test'),
+})
 SPEC_SCOPE = '> Scope: src/intake.py\n'
 
 
@@ -487,6 +506,33 @@ def change_both_tests_of_rule_4(root):
              "    assert record['status']")
 
 
+def hand_in_72_hours(root):
+    """Change the test of `PROOF-7` to hand in a sample exactly 72 hours
+    old, the proof's own case, and leave the test of `PROOF-6` as it is."""
+    _replace(root, 'tests/test_intake.py', "at('2026-03-04T07:00'))",
+             "at('2026-03-04T08:00'))")
+
+
+def without_test_key(root):
+    """Take `test_key` out of every planted bug the evidence holds, so each
+    reads as an audit before that field wrote it."""
+    path = os.path.join(root, *EVIDENCE.split('/'))
+    with open(path, encoding='utf-8') as handle:
+        data = json.load(handle)
+    for entry in ((data.get('audit') or {}).get('rules') or {}).values():
+        for made in (entry.get('breaks') or {}).values():
+            made.pop('test_key', None)
+    with open(path, 'w', encoding='utf-8') as handle:
+        json.dump(data, handle, indent=2, sort_keys=True)
+        handle.write('\n')
+
+
+def strengthen_without_test_key(root):
+    """`without_test_key`, then `strengthen`."""
+    without_test_key(root)
+    strengthen(root)
+
+
 def scope_without_the_code(root):
     """Change the spec's `> Scope:` to name `src/__init__.py` alone, so the
     feature no longer covers `src/intake.py`."""
@@ -516,8 +562,9 @@ def run_script(root, directory, *args):
 
 class Settled(object):
     """The sample lab after its first audit and one more run of the script:
-    `before`, the entries the first audit wrote; `code`, `lines`, `errors`,
-    `entries`, `calls` and `text`, the evidence file, after the run."""
+    `before`, the entries the first audit wrote; `args`, what the run was
+    started with; `code`, `lines`, `errors`, `entries`, `calls` and `text`,
+    the evidence file, after the run."""
 
     def __init__(self, root, directory):
         self.root = root
@@ -534,12 +581,12 @@ class Settled(object):
 
 
 def settled(folder, rules=('RULE-3',), change=None, answers=(None,),
-            exit_code=0, reply=None):
+            exit_code=0, reply=None, sound=()):
     """Build the sample lab under `folder`, audit it once with `reply`,
     `REPLY` by default, make `change(root)`, then run the audit of
     `sample_intake` with `--settle` for each of `rules` (a plain audit for
-    none), a fake `claude` answering `answers`. No call reaches a real
-    model."""
+    none) and `--sound` for each proof of `sound`, a fake `claude` answering
+    `answers`. No call reaches a real model."""
     folder = str(folder)
     root = build(folder)
     directory = fake_claude.install(os.path.join(folder, 'claude'),
@@ -564,6 +611,9 @@ def settled(folder, rules=('RULE-3',), change=None, answers=(None,),
     args = ['--audit', '--feature', FEATURE]
     for rule in rules:
         args += ['--settle', rule]
+    for proof in sound:
+        args += ['--sound', proof]
+    made.args = args
     made.code, made.lines, made.errors = run_script(root, directory, *args)
     made.entries = entries(root)
     made.calls = fake_claude.calls(directory)

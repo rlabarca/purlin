@@ -254,6 +254,7 @@ A planted bug that survived is settled by a test run. `purlin:build` strengthens
 runs `purlin:audit <feature> RULE-N --settle`, which is
 `scripts/run/purlin_run.py --audit --feature <feature> --settle RULE-N`. `--settle` is given once
 per rule, beside `--audit` and exactly one `--feature`, and `--commit` works as on any audit.
+The script takes `--sound PROOF-N` the same way, once per proof.
 
 - Without `--audit`, without `--feature` or with two features, the run is refused before
   anything runs and exits 2.
@@ -263,7 +264,39 @@ per rule, beside `--audit` and exactly one `--feature`, and `--commit` works as 
   settled, and the run names it as failing.
 - Only the rules named are read.
 
-**Settling one rule.** For each proof of the rule whose entry under `breaks` reads `survived`:
+**A test that has not changed.** A finding is cleared by a stronger test or by a recorded
+judgment that the test was sound already, and by nothing else. So a settle plants nothing for
+a proof whose test is as it was when the bug got past it. The audit prints, under the rule,
+`  PROOF-2: its test is as it was when the bug got past it. Strengthen it with purlin:build, then settle.`
+The bug still reads `survived`, its two findings stay, and the rule reads `weak`.
+
+- **What is compared.** The proof's own tests as the audit reads them: each test's own lines,
+  from its declaration to the end of its body, or the whole file for a shell or SQL test. A
+  change elsewhere in the file, to a helper, a fixture or another test, is not a change to
+  the test. A bug recorded as `survived` holds the sha256 of those tests as `test_key`.
+- **A bug recorded with no `test_key`** reads as unchanged only where that is certain: its
+  `break_key` is the one taken now, or the rule's entry is not out of date on its tests. Once
+  the rule's tests change it is settled as any bug is. A test whose source is not found is
+  read as changed.
+- **`--sound PROOF-N`** says the test of that proof was read against the proof and judged to
+  assert what the proof names already. It is given once per proof, beside `--settle`:
+  `purlin:audit <feature> RULE-N --settle --sound PROOF-N`. The settle then goes on for that
+  proof as the steps below say. The entry it writes for the proof holds `test_unchanged`:
+  `true`, and `no_bug` gains
+  `PROOF-2 was settled with its test unchanged: it was judged to assert what the proof names.`
+  The audit prints that sentence under the rule, last, and every later audit that keeps the
+  entry prints it again. A new bug that reads `survived` is a new finding and carries
+  neither.
+- `--sound` without `--settle` is refused before anything runs and exits 2. A proof that is
+  no proof of a rule named with `--settle`, or that keeps no bug as `survived`, is named
+  before anything runs, and the run exits 1:
+  `<feature> PROOF-N is not a proof of a rule named with --settle. Run purlin:status <feature> to see its rules.`
+  `<feature> PROOF-N has no planted bug that survived: nothing to settle.`
+- `--sound` for a proof whose test did change records nothing: the settle goes on as any
+  settle does.
+
+**Settling one rule.** For each proof of the rule whose entry under `breaks` reads `survived`,
+and whose test changed since or which `--sound` names:
 
 1. **The bug is planted again.** The recorded change, its `file`, `before` and `after`, is made
    in a copy of the project, with every refusal of "The planted bug", and the proof's own tests
@@ -298,14 +331,18 @@ and the next audit without `--settle` plants a bug for that proof.
 The spot tests run again over the rule's tests, and "The verdict" sets the rule's word as in
 any audit, from the results the entry holds: `weak` where a spot test fires or a bug survived,
 else `strong` where a bug was caught, else `spot-checked`. A proof whose two bugs both survived
-holds no caught bug, and the rule still reads `strong` where another of its proofs does.
+holds no caught bug, and the rule still reads `strong` where another of its proofs does. A
+rule with two bugs that survived, one proof's test changed and the other's not, has the first
+settled and the second refused, and reads `weak` while the second survives.
 
 A rule named with `--settle` that keeps no bug as `survived` prints
 `<feature> RULE-N has no planted bug that survived: nothing to settle.` and is left as it is.
+A rule whose every surviving bug is refused is read and asks no model.
 
 A dropped bug is kept nowhere: not under `breaks`, not among the `findings`, not in the evidence
 package. The `not made` entry of step 3 holds the state, so no audit plants a bug for that proof
-until its test or code changes. The lines of steps 2 and 3 are printed and not stored. One run
+until its test or code changes. The lines of steps 2 and 3 and the line that refuses a settle
+are printed and not stored. One run
 drops a bug, plants one more and ends: nothing counts the bugs between runs.
 
 Where a settled rule needs no new bug, no model is asked. Its entry keeps the `model` and the
@@ -315,8 +352,9 @@ test as it was.
 Only `--settle` plants a recorded bug again. Any other audit asks for a new bug for a proof
 whose test changed, and a survivor reads `weak`.
 
-The audit does not check that the changed test asserts what its proof names. A rule made
-`strong` by settling caught the bug it once missed, with a test written after that bug was seen.
+The audit checks that the test changed, not that the changed test asserts what its proof
+names; and under `--sound` it records the judgment and does not check it. A rule made `strong`
+by settling caught the bug it once missed, with a test written after that bug was seen.
 
 ## What the model is sent, and what it decides
 
@@ -406,7 +444,8 @@ The audit reports. It recommends nothing.
 
 - **Each rule it read**, its verdict, then each finding: the spot tests' sentences and, for each
   planted bug that survived, the change and then the case the model says it breaks. Then one
-  sentence for each proof no bug was caught for, which is not a finding. Under a `spot-checked`
+  sentence for each proof no bug was caught for and one for each proof settled with its test
+  unchanged, neither of which is a finding. Under a `spot-checked`
   rule those sentences follow `The spot tests found nothing.`
 - **The share of rules found strong**, the last line:
   `The audit found 34 of 40 rules strong (85%): 34 strong, 4 weak, 2 spot-checked.`, with the

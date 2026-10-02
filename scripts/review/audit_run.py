@@ -35,8 +35,16 @@ again, with no model asked, and its proof's tests run as they stand now
 passes drops the bug, and one new bug is asked for that proof in the usual
 request: a second survivor leaves no bug on record, the proof `not made` with
 `TWO_SURVIVED`. A recorded change that can no longer be planted is asked for
-anew, as any audit asks. `references/review_criteria.md`, "Settling a finding",
-is the one home of that contract.
+anew, as any audit asks.
+
+A settle plants nothing for a proof whose tests are as they were when its bug
+got past them (`test_as_it_was`): it prints `REFUSED` under the rule and the
+bug stays `survived`. `--sound PROOF-N` says the test was read and judged to
+assert what the proof names already: the settle then goes on for that proof,
+its entry holds `test_unchanged` and `no_bug` gains `UNCHANGED`. A bug recorded
+as `survived` holds `test_key`, the hash of its proof's tests' source, which
+is what tells a changed test from changed code. `references/review_criteria.md`,
+"Settling a finding", is the one home of that contract.
 
 A project file that changes between the first model call and the last planted
 bug stops the run before anything is written (planted_bug RULE-6).
@@ -99,6 +107,18 @@ NOTHING_TO_SETTLE = ('%s %s has no planted bug that survived: nothing to '
 TWO_SURVIVED = "two planted bugs left the proof's check passing"
 NO_BUG_CAUGHT = 'No bug was caught for %s: %s.'       # PROOF-N, TWO_SURVIVED
 SPOT_CHECKED = ai_audit.SPOT_CHECKED   # the `no_bug` sentences joined by one space
+
+# A settle and a test that has not changed. `REFUSED` is printed under the
+# rule and not stored: PROOF-N. `UNCHANGED` is the sentence `no_bug` holds for
+# a proof settled under `--sound` with its test as it was: PROOF-N. The last
+# two refuse a `--sound` before anything runs: the feature, PROOF-N.
+REFUSED = ('%s: its test is as it was when the bug got past it. Strengthen it '
+           'with purlin:build, then settle.')
+UNCHANGED = ('%s was settled with its test unchanged: it was judged to assert '
+             'what the proof names.')
+NOT_SETTLED = ('%s %s is not a proof of a rule named with --settle. Run '
+               'purlin:status %s to see its rules.')
+NO_SURVIVOR = '%s %s has no planted bug that survived: nothing to settle.'
 
 # The language a test file is read in, for a spot test that cannot read it.
 LANGUAGES = (
@@ -270,7 +290,48 @@ def survived_findings(proof_id, made, last, finding=None):
     return found
 
 
-def bug_plan(reading, last, code_part, here=None, settle=False):
+def test_as_it_was(kept, tests, key, last):
+    """True where the tests of a proof are the ones its kept bug got past.
+
+    `kept` is the bug's entry, `tests` the proof's own tests as the audit
+    reads them now, `key` the `break_key` of the test and code now and `last`
+    the rule's entry. The entry's `test_key` is compared with the hash of the
+    tests' source. An entry that holds none, written before the field was,
+    reads as unchanged only where that is certain: its `break_key` is the one
+    taken now, or the rule's entry is not out of date on its tests. A test
+    whose source is not found cannot be compared and reads as changed, so no
+    settle is refused for a test nobody can show to be the same."""
+    if not tests or any(test.get('source') is None for test in tests):
+        return False
+    stored = kept.get('test_key')
+    if stored:
+        return stored == test_source_hash(tests)
+    return (kept.get('break_key') == key
+            or 'test' not in (last.get('out_of_date') or ()))
+
+
+def _with_test_key(kept, tests):
+    """A `survived` entry with the `test_key` of the tests it got past, which
+    are `tests` wherever this is called: the entry is kept because they are
+    unchanged."""
+    if kept.get('test_key') or any(test.get('source') is None
+                                   for test in tests):
+        return kept
+    return dict(kept, test_key=test_source_hash(tests))
+
+
+def _settled_entry(entry, unchanged):
+    """An entry as a settle writes it: without the `test_key` of the bug that
+    survived, and with `test_unchanged` where the settle went on with the
+    proof's test as it was."""
+    entry = {name: value for name, value in entry.items()
+             if name not in ('test_key', 'test_unchanged')}
+    if unchanged:
+        entry['test_unchanged'] = True
+    return entry
+
+
+def bug_plan(reading, last, code_part, here=None, settle=False, sound=()):
     """`[(proof, what, value)]` for each proof of the rule that has a test and
     is not checked by hand, in the spec's order. `what` is `anchor` for an
     anchor's rule; `system`, with the system the proof is tagged for, where
@@ -279,8 +340,10 @@ def bug_plan(reading, last, code_part, here=None, settle=False):
     carry.
 
     Under `settle` a proof whose last result reads `survived` is `replay`,
-    with that result and the key, whatever its `break_key`. Any other result
-    is `kept` only where its `break_key` is unchanged. A result taken on
+    with that result, the key and whether its tests are as they were when the
+    bug got past them, whatever its `break_key`. Where they are and `sound`
+    does not name the proof it is `refused`, with that result. Any other
+    result is `kept` only where its `break_key` is unchanged. A result taken on
     another test or code is left out, as a proof with no result on record
     is, so the entry holds none for it and the next audit plants a bug for
     that proof (`ai_audit.is_read`)."""
@@ -304,11 +367,18 @@ def bug_plan(reading, last, code_part, here=None, settle=False):
         kept = kept_breaks.get(proof['id'])
         if settle:
             if isinstance(kept, dict) and kept.get('result') == 'survived':
-                plan.append((proof['id'], 'replay', (kept, key)))
+                same = test_as_it_was(kept, tests, key, last)
+                if same and proof['id'] not in sound:
+                    plan.append((proof['id'], 'refused',
+                                 _with_test_key(kept, tests)))
+                else:
+                    plan.append((proof['id'], 'replay', (kept, key, same)))
             elif isinstance(kept, dict) and kept.get('break_key') == key:
                 plan.append((proof['id'], 'kept', kept))
             continue
         if isinstance(kept, dict) and kept.get('break_key') == key:
+            if kept.get('result') == 'survived':
+                kept = _with_test_key(kept, tests)
             plan.append((proof['id'], 'kept', kept))
         else:
             plan.append((proof['id'], 'plant', key))
@@ -348,9 +418,11 @@ def no_bug_sentence(proof_id, made, cause=None, last=None):
 
 
 def replayed(project_root, reading, plan, scope_files):
-    """`(plan, said)` for a rule being settled, once each bug its entry keeps
-    as `survived` has been planted again and its proof's tests run as they
-    stand. No model is asked. In the plan handed back each `replay` reads:
+    """`(plan, said, unchanged)` for a rule being settled, once each bug its
+    entry keeps as `survived` has been planted again and its proof's tests run
+    as they stand. No model is asked. A `refused` proof is planted nothing: it
+    reads `kept`, its bug still `survived`, and `said` holds `REFUSED` for it.
+    In the plan handed back each `replay` reads:
 
     `kept`     the test failed, so the bug's entry reads `caught`, with the
                change as it was recorded and the key of the test and code
@@ -360,34 +432,42 @@ def replayed(project_root, reading, plan, scope_files):
     `plant`    the recorded change can no longer be planted: a new bug is to
                be asked for, as any audit asks
 
-    `said` is `{proof: line}`, what the audit prints under the rule."""
-    settled, said = [], {}
+    `said` is `{proof: line}`, what the audit prints under the rule, and
+    `unchanged` the proofs settled with their tests as they were, which
+    `--sound` named."""
+    settled, said, unchanged = [], {}, set()
     for proof_id, what, value in plan:
+        if what == 'refused':
+            settled.append((proof_id, 'kept', value))
+            said[proof_id] = REFUSED % proof_id
+            continue
         if what != 'replay':
             settled.append((proof_id, what, value))
             continue
-        kept, key = value
+        kept, key, same = value
+        if same:
+            unchanged.add(proof_id)
         result = targeted_break.replay(
             project_root, reading['feature'], proof_id,
             _proof_tests(reading, proof_id), scope_files, kept)
         place = (proof_id, kept.get('file'), kept.get('line') or 0)
         ran = result.get('result')
         if ran in ('caught', 'not run'):
-            settled.append((proof_id, 'kept', dict(
+            settled.append((proof_id, 'kept', _settled_entry(dict(
                 kept, aim=kept.get('aim') or targeted_break.PLAIN,
                 case=kept.get('case') or '', result=ran,
-                why=result.get('why') or '', break_key=key)))
+                why=result.get('why') or '', break_key=key), same)))
             if ran == 'caught':
                 said[proof_id] = NOW_CATCHES % place
         elif ran == 'survived':
             settled.append((proof_id, 'second', (key, DROPPED % place)))
         else:
             settled.append((proof_id, 'plant', key))
-    return settled, said
+    return settled, said, unchanged
 
 
 def planted_bugs(project_root, reading, plan, scope_files, last, answer,
-                 here=None, said=None):
+                 here=None, said=None, unchanged=()):
     """`(breaks, findings, no_bug)` for one rule's proofs.
 
     `plan` is `bug_plan`'s and `answer` the model's one reply for the rule,
@@ -403,6 +483,12 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
     new bug is planted as any is, and one that survives too is not kept, the
     entry reading `not made` with `TWO_SURVIVED`. `said`, a dict, gains the
     line the audit prints for it.
+
+    `unchanged` names the proofs a settle went on for with their tests as
+    they were: the entry written for one holds `test_unchanged`, unless its
+    new bug reads `survived`, which is a finding of its own, and `no_bug`
+    gains `UNCHANGED`. A kept entry that holds the field gives the sentence
+    again. A bug that survives holds the `test_key` of the tests it got past.
     """
     here = here or evidence_reader.host_os()
     breaks, findings, no_bug = {}, [], []
@@ -428,16 +514,21 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
             if value.get('result') == 'survived':
                 findings.extend(survived_findings(proof_id, value, last))
             note(no_bug_sentence(proof_id, value, last=last))
+            if value.get('test_unchanged'):
+                note(UNCHANGED % proof_id)
         elif answer.get('why'):
             if what == 'second':
                 said[proof_id] = value[1]
             note(NO_BUG % (UNREACHED % answer['why']))
+            if proof_id in unchanged:
+                note(UNCHANGED % proof_id)
         else:
             key, dropped = value if what == 'second' else (value, None)
+            tests = _proof_tests(reading, proof_id)
+            same = proof_id in unchanged
             result = targeted_break.break_proof(
-                project_root, reading['feature'], proof_id,
-                _proof_tests(reading, proof_id), scope_files,
-                parts.get(proof_id))
+                project_root, reading['feature'], proof_id, tests,
+                scope_files, parts.get(proof_id))
             entry = {'aim': result.get('aim') or targeted_break.PLAIN,
                      'case': result.get('case') or '',
                      'file': result.get('file'), 'line': result.get('line'),
@@ -450,18 +541,25 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
                     '' if entry['result'] == 'not made' else NEW_BUG_PLANTED)
                 if entry['result'] == 'survived':
                     # Two bugs left the test passing: neither is kept.
-                    breaks[proof_id] = {
+                    breaks[proof_id] = _settled_entry({
                         'aim': targeted_break.PLAIN, 'case': '', 'file': None,
                         'line': None, 'before': None, 'after': None,
                         'result': 'not made', 'why': TWO_SURVIVED,
-                        'break_key': key}
+                        'break_key': key}, same)
                     note(NO_BUG_CAUGHT % (proof_id, TWO_SURVIVED))
+                    if same:
+                        note(UNCHANGED % proof_id)
                     continue
-            breaks[proof_id] = entry
             if entry['result'] == 'survived':
+                entry = _with_test_key(entry, tests)
                 findings.extend(survived_findings(proof_id, entry, {},
                                                   result.get('finding')))
+            elif same:
+                entry['test_unchanged'] = True
+            breaks[proof_id] = entry
             note(no_bug_sentence(proof_id, entry, result.get('cause')))
+            if entry.get('test_unchanged'):
+                note(UNCHANGED % proof_id)
     return breaks, findings, no_bug
 
 
@@ -479,7 +577,39 @@ def verdict_of(spot, survived, breaks):
 # The run
 # ---------------------------------------------------------------------------
 
-def run(project_root, features, selected, again=False, out=None, settle=None):
+def sound_refusals(project_root, features, feature, rules, sound):
+    """The lines that refuse `--sound`, one per proof it names that cannot be
+    settled, in the order given; [] where each can. A proof must be one of a
+    rule `--settle` names (`NOT_SETTLED`), and its bug on record must read
+    `survived` (`NO_SURVIVOR`). Nothing is run and nothing is written."""
+    info = (features or {}).get(feature) or {}
+    payload = payload_module.build_payload(project_root, generated_by='audit')
+    code = _code_part(project_root, features, feature, {})
+    survivors, owned = set(), set()
+    for entry in payload.get('features') or ():
+        if entry.get('name') != feature:
+            continue
+        for rule in entry.get('rules') or ():
+            if rule.get('feature') != feature or rule.get('id') not in rules:
+                continue
+            owned.update(proof.get('id') for proof in rule.get('proofs') or ())
+            breaks = audit_entry(project_root, feature, rule,
+                                 code).get('breaks')
+            for proof, made in (breaks if isinstance(breaks, dict)
+                                else {}).items():
+                if isinstance(made, dict) and made.get('result') == 'survived':
+                    survivors.add(proof)
+    lines = []
+    for proof in sound:
+        if proof not in owned:
+            lines.append(NOT_SETTLED % (feature, proof, feature))
+        elif proof not in survivors:
+            lines.append(NO_SURVIVOR % (feature, proof))
+    return lines
+
+
+def run(project_root, features, selected, again=False, out=None, settle=None,
+        sound=None):
     """For the rules the audit reads (ai_audit RULE-1; `again` reads every passing rule):
     the spot tests, then the model's request for each rule, then each planted bug.
     Writes one audit.rules entry per rule read, through evidence.write_audit; prints
@@ -490,7 +620,10 @@ def run(project_root, features, selected, again=False, out=None, settle=None):
     read, each bug kept as `survived` is planted again before any model is asked
     (`replayed`), and the model is asked only for a rule a new bug is needed for.
     A rule named that keeps no such bug is said to have nothing to settle and is
-    left as it is; one whose tests do not pass is not read."""
+    left as it is; one whose tests do not pass is not read. `sound` names
+    proofs, `PROOF-N`, whose tests were judged to assert what their proofs name
+    already: a settle is refused for any other proof whose tests are as they
+    were when its bug got past them."""
     out = out or sys.stdout
 
     def say(line=''):
@@ -502,6 +635,7 @@ def run(project_root, features, selected, again=False, out=None, settle=None):
     payload = payload_module.build_payload(project_root, generated_by='audit')
     cache = {}
     settle = [str(rule) for rule in settle or ()]
+    sound = [str(proof) for proof in sound or ()]
     if settle:
         to_read = sorted(
             (pair for pair in counted_rules(payload, selected)
@@ -521,8 +655,9 @@ def run(project_root, features, selected, again=False, out=None, settle=None):
         reading = ai_audit.reading_for(project_root, payload, feature,
                                        rule['id'])
         last = audit_entry(project_root, feature, rule, code)
-        plan = bug_plan(reading, last, code, settle=bool(settle))
-        if settle and not any(what == 'replay' for _p, what, _v in plan):
+        plan = bug_plan(reading, last, code, settle=bool(settle), sound=sound)
+        if settle and not any(what in ('replay', 'refused')
+                              for _p, what, _v in plan):
             nothing.append(NOTHING_TO_SETTLE % (feature, rule['id']))
             continue
         spot = spot_tests(project_root, reading, not_read, not_found)
@@ -531,7 +666,8 @@ def run(project_root, features, selected, again=False, out=None, settle=None):
         reading['findings'] = spot
         done.append({'feature': feature, 'rule': rule, 'reading': reading,
                      'spot': spot, 'plan': plan, 'scope_files': scope_files,
-                     'last': last, 'code': code, 'said': {}})
+                     'last': last, 'code': code, 'said': {},
+                     'unchanged': set()})
 
     # 2. The model's request for each rule; 3. each bug planted, one at a time.
     try:
@@ -539,7 +675,7 @@ def run(project_root, features, selected, again=False, out=None, settle=None):
         for item in done:
             if settle:
                 # Each kept bug planted again, before any model is asked.
-                item['plan'], item['said'] = replayed(
+                item['plan'], item['said'], item['unchanged'] = replayed(
                     project_root, item['reading'], item['plan'],
                     item['scope_files'])
                 targeted_break.check_unchanged(project_root, before)
@@ -564,7 +700,8 @@ def run(project_root, features, selected, again=False, out=None, settle=None):
                 'criteria': item['last'].get('criteria')})
             breaks, survived, no_bug = planted_bugs(
                 project_root, item['reading'], item['plan'],
-                item['scope_files'], item['last'], answer, said=item['said'])
+                item['scope_files'], item['last'], answer, said=item['said'],
+                unchanged=item['unchanged'])
             targeted_break.check_unchanged(project_root, before)
             item.update(
                 breaks=breaks, no_bug=no_bug,

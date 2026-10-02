@@ -55,3 +55,16 @@ def test_the_skill_and_the_criteria_hold_the_two_lines_a_settle_prints():
     assert not_named(read(SKILL), SETTLE_LINES) == []
     section = under_heading(read(CRITERIA), 'Settling a finding')
     assert not_named(section, SETTLE_LINES) == []
+
+
+UNCHANGED_LINES = ('its test is as it was when the bug got past it. Strengthen '
+                   'it with purlin:build, then settle.',
+                   'was settled with its test unchanged: it was judged to '
+                   'assert what the proof names.')
+
+
+# purlin: skill_audit PROOF-61
+def test_the_skill_and_the_criteria_hold_the_refusal_and_the_sound_sentence():
+    assert not_named(read(SKILL), UNCHANGED_LINES) == []
+    section = under_heading(read(CRITERIA), 'Settling a finding')
+    assert not_named(section, UNCHANGED_LINES) == []

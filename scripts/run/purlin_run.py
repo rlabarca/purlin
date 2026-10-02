@@ -5,8 +5,8 @@
     purlin_run.py [--feature NAME ... | --all] --audit [--commit]
                   [--write-tests] [--arm-timeout SECONDS] [--project-root DIR]
     purlin_run.py --feature NAME --audit --settle RULE-N [--settle RULE-N ...]
-                  [--commit] [--write-tests] [--arm-timeout SECONDS]
-                  [--project-root DIR]
+                  [--sound PROOF-N ...] [--commit] [--write-tests]
+                  [--arm-timeout SECONDS] [--project-root DIR]
     purlin_run.py --help | -h
 
 **Before anything runs.** With no `.purlin/config.json` the run says so,
@@ -89,6 +89,14 @@ as `survived` planted again and its proof's test run as it stands
 (`references/review_criteria.md`, "Settling a finding"). Without `--audit`,
 without `--feature` or with two features it is refused, exit 2; a rule the
 feature's spec does not have is named, exit 1. Both before anything runs.
+
+`--sound PROOF-N`, given once per proof beside `--settle`, says that proof's
+test was read against the proof and judged to assert what it names already.
+A settle is refused for a proof whose test is as it was when its bug got
+past it; for a proof named here it goes on, and the evidence records that
+the test was not changed. Without `--settle` it is refused, exit 2; a proof
+that is no proof of a rule `--settle` names, or that keeps no bug as
+`survived`, is named, exit 1. Both before anything runs.
 
 `--ci` is what a project's own run on another system runs. It answers only
 for the proofs tagged `@env` for this machine's own system: a feature with
@@ -182,7 +190,7 @@ USAGE = (
     '       purlin_run.py [--feature NAME ... | --all] --audit [--commit] '
     '[--write-tests] [--arm-timeout SECONDS] [--project-root DIR]\n'
     '       purlin_run.py --feature NAME --audit --settle RULE-N '
-    '[--settle RULE-N ...] [--commit] [--write-tests] '
+    '[--settle RULE-N ...] [--sound PROOF-N ...] [--commit] [--write-tests] '
     '[--arm-timeout SECONDS] [--project-root DIR]')
 
 # What the run says about the proofs tagged for an operating system it is
@@ -326,6 +334,7 @@ class Args(object):
         self.action = None          # 'test', 'audit' or 'ci'
         self.commit = False
         self.settle = []            # the rules `--settle` names, in order
+        self.sound = []             # the proofs `--sound` names, in order
         self.write_tests = False
         self.arm_timeout = ARM_TIMEOUT_DEFAULT
         self.project_root = '.'
@@ -361,6 +370,13 @@ def parse_args(argv):
                 return args
             if argv[index] not in args.settle:
                 args.settle.append(argv[index])
+        elif token == '--sound':
+            index += 1
+            if index >= len(argv):
+                args.error = '--sound needs a proof, as PROOF-N'
+                return args
+            if argv[index] not in args.sound:
+                args.sound.append(argv[index])
         elif token == '--write-tests':
             args.write_tests = True
         elif token == '--arm-timeout':
@@ -401,6 +417,9 @@ def parse_args(argv):
         return args
     if args.settle and len(set(args.features)) != 1:
         args.error = '--settle needs exactly one --feature'
+        return args
+    if args.sound and not args.settle:
+        args.error = '--sound goes with --settle'
         return args
     return args
 
@@ -1373,6 +1392,16 @@ def main(argv=None):
             print(ai_audit.not_a_rule(selected[0], rule))
         if strangers:
             return 1
+        # A proof named with `--sound` that no rule being settled has, or
+        # that keeps no bug as `survived`, is named before anything runs.
+        if args.sound:
+            import audit_run
+            refusals = audit_run.sound_refusals(
+                project_root, features, selected[0], args.settle, args.sound)
+            for line in refusals:
+                print(line)
+            if refusals:
+                return 1
     else:
         selected = print_selection(
             fingerprint_module.selection(project_root, features, os_name),
@@ -1800,7 +1829,8 @@ def _audit(project_root, args, features, selected, exit_code):
     import audit_run
     print('')
     stopped = audit_run.run(project_root, features, selected, again=args.all,
-                            out=sys.stdout, settle=args.settle)
+                            out=sys.stdout, settle=args.settle,
+                            sound=args.sound)
     sys.stdout.flush()
     return 1 if stopped == 1 else exit_code
 

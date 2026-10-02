@@ -25,6 +25,7 @@ purlin:audit --all              Run every feature, and read every passing rule a
 purlin:audit --commit           Commit the work and the evidence the run wrote
 purlin:audit --arm-timeout <seconds>  Give each suite, and each planted bug's test run, longer
 purlin:audit <feature> RULE-N --settle  Plant each bug that survived again, and run its proof's test
+purlin:audit <feature> RULE-N --settle --sound PROOF-N  The same, where that proof's test was judged sound and left as it was
 ```
 
 Plain language reaches the same place: "audit this", "how strong are the tests". A team may set
@@ -41,7 +42,8 @@ Add `--arm-timeout <seconds>` when the person gave it. Add `--all` for `purlin:a
 `--feature <name>` for each feature named; with neither, the run covers the features `purlin:test`
 would select. For `purlin:audit <feature> RULE-N --settle`, add the one `--feature <name>` and
 `--settle RULE-N`, once per rule; `purlin:build` runs it on a weak rule once the test is
-stronger. It runs the tests, then reads each rule whose tests pass, that has a proof with a
+stronger. Add `--sound PROOF-N`, once per proof, only where the person or `purlin:build` gave
+it: it says that proof's test was read against the proof and left as it was. It runs the tests, then reads each rule whose tests pass, that has a proof with a
 test, and whose text, proofs, tests or covered code changed since its last audit. It takes three
 steps for each rule:
 
@@ -106,6 +108,18 @@ The audit found 4 of 6 rules strong (66%): 4 strong, 1 weak, 1 spot-checked.
   `strong` through another proof.
 - The same line ending at `did not break what the proof says.` is printed by a settle where no
   new bug can be planted. The rule's block says why.
+- A line `PROOF-N: its test is as it was when the bug got past it. Strengthen it with
+  purlin:build, then settle.` is printed by a settle that planted nothing for that proof: its
+  test has not changed since the bug survived, so the bug still reads `survived` and the rule
+  `weak`. `purlin:build <feature>` strengthens the test. Never add `--sound` to get past this
+  line: it is for a test that was read against its proof and found to assert what the proof
+  names already.
+- A line `PROOF-N was settled with its test unchanged: it was judged to assert what the proof
+  names.` says a settle went on under `--sound PROOF-N`. The evidence records it, and every
+  later audit that keeps the proof's result prints it again.
+- `<feature> PROOF-N is not a proof of a rule named with --settle. ...` and `<feature> PROOF-N
+  has no planted bug that survived: nothing to settle.` refuse a `--sound` before anything
+  runs: name a proof of the rule being settled whose bug survived.
 - A line `A bug was planted for PROOF-N and its test did not run.`, or one ending
   `its test ended in an error, not a failure.`, says the bug reads `not run`. After a settle it
   is the bug that survived, planted again.

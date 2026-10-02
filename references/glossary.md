@@ -102,7 +102,10 @@ other page points here rather than defining it again.
   the rule `weak`. A weak rule is left to do as `to strengthen`, and stops nothing.
 - **settle**: to decide a surviving bug's finding with a test run.
   `purlin:audit <feature> RULE-N --settle` plants each bug that survived again and runs its
-  proof's test as it stands now. `purlin:build` runs it once the test is stronger.
+  proof's test as it stands now. `purlin:build` runs it once the test is stronger. A settle is
+  refused for a proof whose test is as it was when the bug got past it, unless `--sound PROOF-N`
+  says the test was judged to assert what the proof names already; the evidence then records
+  that the test was not changed.
   `references/review_criteria.md`, "Settling a finding", is its one home.
 - **explanation**: the model's reading of the rule's tests. It decides nothing.
 - **strong**: the spot tests found nothing and a planted bug was caught by its proof's test.
