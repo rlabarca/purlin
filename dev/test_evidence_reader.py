@@ -251,14 +251,17 @@ def test_an_audit_entry_for_another_code_hash_is_out_of_date_on_code(root):
 
 # purlin: evidence PROOF-86
 def test_of_two_current_audit_entries_the_later_one_answers(root):
-    _put(root, 'ci', _file('ci', audit=_audit('2026-09-01T00:00:00Z')))
-    _put(root, 'local', _file('local', audit=_audit('2026-09-02T00:00:00Z',
-                                                    verdict='weak')))
-    entry = evidence.audit_entry(evidence.load(root, 'login'), 'RULE-1',
-                                 'r', 'p', 't', 'c')
-    assert entry['verdict'] == 'weak'
-    assert entry['source'] == 'local'
-    assert entry['at'] == '2026-09-02T00:00:00Z'
+    """Whichever file holds the later entry: `local` is read first and `ci`
+    last, so neither the first read nor the last read can answer for both."""
+    earlier, later = '2026-09-01T00:00:00Z', '2026-09-02T00:00:00Z'
+    answers = []
+    for local_at, ci_at in ((earlier, later), (later, earlier)):
+        _put(root, 'local', _file('local', audit=_audit(local_at)))
+        _put(root, 'ci', _file('ci', audit=_audit(ci_at, verdict='weak')))
+        entry = evidence.audit_entry(evidence.load(root, 'login'), 'RULE-1',
+                                     'r', 'p', 't', 'c')
+        answers.append((entry['verdict'], entry['source'], entry['at']))
+    assert answers == [('weak', 'ci', later), ('strong', 'local', later)]
 
 
 # purlin: evidence PROOF-23
