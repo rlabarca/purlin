@@ -226,13 +226,15 @@ The run goes in this order:
 1. It prints every pending migration with the files it touches, then asks before each one, with
    a question ending `[y/N]` on a line of its own. `--yes` answers yes to each migration, and
    `--apply <id>[,<id>...]` applies only the ones named. A declined migration is left pending.
+   A run that applied nothing ends on `→ Run: purlin:init --update` and how to apply.
    Every file it rewrites is copied first to `.purlin/runtime/update-backup/`, at its own path,
    which git ignores.
 2. It rewrites or removes each line 0.9.5 wrote into a spec that 0.10.0 does not read: the
    `> Visual-Reference:` and `> Visual-Hash:` lines, a `> Source:` that names Figma and the
    `> Pinned:` that goes with it; `> Requires:` and `> Global:` from every spec, and `> Scope:`
-   from every anchor; a trailing `@windows` on a proof line becomes `@env(windows)`; and
-   `@unit`, `@integration` and `@e2e` go from proof lines.
+   from every anchor; a `@windows` that ends a proof becomes `@env(windows)`; and
+   `@unit`, `@integration`, `@e2e` and every kind the project's own 0.9.5 markers name, such as
+   `@browser`, go from the end of each proof, on whichever of its lines the tag is.
 3. It removes the files 0.9.5 kept that 0.10.0 does not use: the proof files and the receipts
    beside the specs, `.purlin/cache/` and the plugin copies under `.purlin/plugins/`. It asks
    before it removes a workflow that names a proof file, and `--yes` removes none. It untracks
@@ -263,7 +265,8 @@ The run goes in this order:
     `chore(update): migrate to 0.10.0 (<ids>)`.
 11. It prints one line of totals for each migration, then the files that still hold text 0.9.5
     used, under `Purlin left these for you:`, and last the lines that need you. Each file's own
-    line is in `.purlin/runtime/update-backup/update.log`.
+    line is in `.purlin/runtime/update-backup/update.log`. It ends on
+    `→ Run: purlin:test --all --commit`.
 
 After it, run `purlin:test --all --commit`. Every rule reads `not run` until its tests run. The
 `verify:` commits 0.9.5 made stay in git as the earlier record, and its receipts can be read
