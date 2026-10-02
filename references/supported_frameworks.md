@@ -57,9 +57,17 @@ frameworks is suggested an entry for each, one suite per entry under `tests`.
 ## The entry suggested
 
 Each entry is written under `tests` in `.purlin/config.json`. `{report}` is where Purlin wants
-the report, and `{files}` is replaced by the test files of the features a run covers, or by
-nothing when it runs them all. In the jest entry `{files}` comes before `--reporters`, because
+the report, and `{files}` is replaced by the test files that carry a marker of the features a
+run covers; `--all` covers every feature, so it hands over every marked file. In the jest entry `{files}` comes before `--reporters`, because
 jest reads every word after that option as another reporter.
+
+One limit holds. Windows refuses a command line longer than 32,767 characters, and Linux one
+argument longer than 131,072 bytes. So where a suite's command with its files would pass 30,000
+characters, on any system, the suite is started with no file list and the run prints
+`The <suite> suite has <n> test files, more than one command line holds, so it runs with no file list.`
+The tool then finds its tests itself, from the project root. A project that keeps its test
+settings in a subfolder must name them in the command for that case: for pytest, add
+`-c <folder>/pyproject.toml`, or the folder's `pytest.ini`, to `run`.
 
 ### pytest
 

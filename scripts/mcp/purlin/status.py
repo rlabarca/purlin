@@ -40,7 +40,8 @@ if _MCP_DIR not in sys.path:
 from config_engine import config_problem
 from purlin import (board as board_module, drift as drift_module,
                     fingerprint as fingerprint_module,
-                    payload as payload_module, report_data,
+                    payload as payload_module,
+                    project as project_module, report_data,
                     specs as specs_module, summary as summary_module)
 
 ARROW = '→'
@@ -49,6 +50,15 @@ DOT = board_module.DOT
 # An anchor rule whose proof found nothing to check: the anchor, the rule,
 # the reason after `nothing to check: `.
 NOTHING_LINE = '%s %s passes with nothing to check here: %s.'
+
+# What the status says, after its first line, of a project Purlin 0.9.5 set
+# up while its upgrade is pending.
+PENDING = ('This project was set up by Purlin 0.9.5. Nothing here counts '
+           'until it is brought to %s.')
+
+# What the status says once where the `tests` setting changed since the
+# evidence was taken (`fingerprint.setting_changed`).
+SETTING_CHANGED = 'The tests setting changed, so every result is out of date.'
 
 # A spec ahead of its code: one line for the spec, as information.
 NOT_WRITTEN_ONE = ('%s: 1 file its scope names is not written yet: %s. Run purlin:build %s, '
@@ -118,6 +128,9 @@ def sync_status(project_root):
     # The dashboard reads what the table reads: every command that ends on
     # this table refreshes the page's data file with the same payload.
     report_data.refresh(project_root, data)
+    if (project_module.set_up_by_095(project_root)
+            and _update_pending(project_root)):
+        return '\n'.join(pending_lines(project_root))
     if not data['features']:
         return '\n'.join(no_spec_lines(project_root))
 
@@ -135,6 +148,9 @@ def sync_status(project_root):
     if names:
         lines.append(incomplete_line(names))
     lines.extend(information)
+    if fingerprint_module.setting_changed(project_root):
+        lines.append('')
+        lines.append(SETTING_CHANGED)
 
     pin_lines = _pin_lines(project_root)
     if pin_lines:
@@ -154,6 +170,21 @@ def sync_status(project_root):
     lines.append('')
     lines.extend(ending_lines(data, project_root))
     return '\n'.join(lines)
+
+
+def pending_lines(project_root):
+    """The whole status of a project Purlin 0.9.5 set up, while its
+    upgrade is pending: the first line, then what set the project up, that
+    nothing counts yet, and the command.
+
+    No table, no warning and no `Left to do`: none of them means anything
+    until the project is brought to this version.
+    """
+    version = payload_module.PURLIN_VERSION
+    return [summary_module.OPENING % (
+                project_module.project_name(project_root), version),
+            PENDING % version,
+            '%s Run: purlin:init --update' % ARROW]
 
 
 def _update_pending(project_root):

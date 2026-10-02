@@ -53,6 +53,10 @@ _EXPORT_DIR = os.path.join(os.path.dirname(_RUN_DIR), 'export')
 
 COMMIT_SUBJECT = 'purlin: evidence at %s'
 WORK_SUBJECT = 'purlin: specs, tests and settings for %s'
+# Over `WORK_SUBJECT_NAMES` features the subject counts them and the body
+# lists them, one per line.
+WORK_SUBJECT_COUNT = 'purlin: specs, tests and settings for %d features'
+WORK_SUBJECT_NAMES = 5
 WORK_COMMITTED = 'Committed %s, the work these results describe:'
 WRITTEN_ONE = 'Evidence written to %s.'
 WRITTEN_MANY = 'Evidence written to %s/%s/ for %d features.'
@@ -642,7 +646,9 @@ def commit_work(project_root, paths):
     their markers and `.purlin/config.json`. Those that changed are
     committed under the person's own identity as
     `purlin: specs, tests and settings for <feature>, ...`, the features
-    being the specs named, and the commit and each path it changed are
+    being the specs named, or, over five of them, as `purlin: specs, tests
+    and settings for <n> features` with the features in the body, and the
+    commit and each path it changed are
     printed. Returns the new commit's full sha, HEAD's when none of `paths`
     changed, and `''` outside a git repository.
     """
@@ -659,9 +665,8 @@ def commit_work(project_root, paths):
     features = _unique(_feature_of(path) for path in paths
                        if _feature_of(path))
     if (_git(project_root, ['add', '--all', '--'] + paths) is None
-            or _git(project_root, ['commit', '-m', WORK_SUBJECT
-                                   % ', '.join(features), '--'] + paths)
-            is None):
+            or _git(project_root, ['commit'] + work_message(features)
+                    + ['--'] + paths) is None):
         return head
     sha = (_git(project_root, ['rev-parse', 'HEAD']) or '').strip()
     changed = _git(project_root, ['show', '--no-renames', '--name-only',
@@ -671,6 +676,15 @@ def commit_work(project_root, paths):
         if path.strip():
             print('  %s' % path.strip())
     return sha
+
+
+def work_message(features):
+    """The `-m` arguments of the work commit: its subject, and a body
+    listing the features, one per line, where the subject counts them."""
+    if len(features) <= WORK_SUBJECT_NAMES:
+        return ['-m', WORK_SUBJECT % ', '.join(features)]
+    return ['-m', WORK_SUBJECT_COUNT % len(features),
+            '-m', '\n'.join(features)]
 
 
 def _feature_of(path):

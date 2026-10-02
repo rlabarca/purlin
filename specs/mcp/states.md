@@ -8,8 +8,8 @@
 >   output.
 > Scope: scripts/mcp/purlin/states.py, scripts/mcp/purlin/payload.py, scripts/mcp/purlin/status.py, scripts/mcp/purlin/facts.py, scripts/mcp/purlin/project.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib, json, hashlib, subprocess (list-only)
-> Highest-Rule: 128
-> Highest-Proof: 303
+> Highest-Rule: 130
+> Highest-Proof: 307
 
 ## Rules
 
@@ -60,6 +60,8 @@
 - RULE-124: A proof tagged `@slow` carries `slow` true in the payload and is read as any other proof is, on a feature's spec and an anchor's alike; while no current section holds a result for it, it reads `not run`, and its rule's passed cell reads `not run` with the reason `slow: runs with purlin:test --all`
 - RULE-125: Adding `@slow` to a proof, or taking it off, is no change of the proof's wording: its test comment is not named as one to correct
 - RULE-123: A spec whose `> Scope:` names files git does not have is reported in one line for the spec, as information and not as a warning: the files are named as not written yet, with `purlin:build` to write them first and `purlin:spec` to correct a path second, because writing a spec before its code is the normal order
+- RULE-129: The status of a project Purlin 0.9.5 set up, while its upgrade is pending, is three lines and nothing else, from the status command and from the `sync_status` tool alike: its first line, `This project was set up by Purlin 0.9.5. Nothing here counts until it is brought to <version>.` and `→ Run: purlin:init --update`
+- RULE-130: The status prints `The tests setting changed, so every result is out of date.` once, under the table, where the `tests` setting changed since the evidence was taken and nothing else in a feature's tests did
 
 ## Proof
 
@@ -156,3 +158,7 @@
 - PROOF-285 (RULE-125): The test at `tests/test_age.py:3` is marked for `sample_age PROOF-1`; a later commit adds `@slow` to that proof's line and changes none of its words. The payload's warnings name no test comment, and `left` holds no `to_correct` entry
 - PROOF-279 (RULE-123): A spec `states` whose scope names `facts.py`, `project.py` and `wording.py`, none in git, makes the status print the one line `states: 3 files its scope names are not written yet: facts.py, project.py, wording.py. Run purlin:build states, or correct the path with purlin:spec states.`
 - PROOF-280 (RULE-123): A spec `login` whose scope names `src/login.py`, in git, and `src/gone.py`, not in git, makes the status print `login: 1 file its scope names is not written yet: src/gone.py. Run purlin:build login, or correct the path with purlin:spec login.`, and the dashboard shows that line among the information, not among the warnings
+- PROOF-304 (RULE-129): A project holds one spec and the settings file Purlin 0.9.5 wrote, with no `tests` key; the status command prints exactly `Purlin status: <project>, plugin <version>`, `This project was set up by Purlin 0.9.5. Nothing here counts until it is brought to <version>.` and `→ Run: purlin:init --update`
+- PROOF-305 (RULE-129): For that same project the `sync_status` tool answers those same three lines and nothing else
+- PROOF-306 (RULE-130): In a git checkout of `login` and `export` whose evidence `--all --test --commit` committed, the pytest command in the `tests` setting gains ` -v`; the status holds the line `The tests setting changed, so every result is out of date.` exactly once
+- PROOF-307 (RULE-130): In that checkout with the setting as it was and login's test file edited instead, the status holds no line reading `The tests setting changed, so every result is out of date.`

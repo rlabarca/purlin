@@ -28,7 +28,9 @@ marker is tied to a test depends on the suite's format:
 
 A test declaration is read per language: a Python function whose name starts
 with `test` at module level or in a class; a JavaScript or TypeScript `it` or
-`test` call with a literal title, inside any `describe` calls; a C# method
+`test` call whose title is one plain string, inside any `describe` calls
+(an escaped quote is read as the quote, and string pieces joined with `+`
+as one title, its outer white space cut); a C# method
 carrying `[Fact]`, `[Theory]`, `[Test]`, `[TestCase]` or `[TestMethod]`; a Go
 `func TestX(t *testing.T)`. A Python comment is read with the tokenizer, so a
 marker-shaped line inside a string is not a marker; a shell file's here
@@ -120,14 +122,17 @@ class Test(object):
     in (`it.each`), and matches the titles the runner prints for it. `start`
     and `end` bound the declaration's source, as offsets into the file.
     `rows` is true for a C# test NUnit names row by row, one declared under
-    `[TestCase]` or `[TestCaseSource]`.
+    `[TestCase]` or `[TestCaseSource]`. `plain` is false for a JavaScript
+    test whose title is not one plain string, a template holding `${}` or a
+    variable: no result can be matched to it, and a marker above it is tied
+    to no test.
     """
 
     __slots__ = ('name', 'line', 'scopes', 'markers', 'pattern', 'start',
-                 'end', 'namespace', 'rows')
+                 'end', 'namespace', 'rows', 'plain')
 
     def __init__(self, name, line, scopes=(), pattern=None, start=None,
-                 end=None, namespace='', rows=False):
+                 end=None, namespace='', rows=False, plain=True):
         self.name = name
         self.line = line
         self.scopes = list(scopes)
@@ -137,6 +142,7 @@ class Test(object):
         self.end = end
         self.namespace = namespace
         self.rows = bool(rows)
+        self.plain = bool(plain)
 
     def qualified(self, separator):
         return separator.join(self.scopes + [self.name])
@@ -149,11 +155,14 @@ class FileMarkers(object):
     """What one test file holds: its markers, its tests and how they tie.
 
     `tests` lists every test declared in the file, each with the markers tied
-    to it. `untied` lists the markers no test follows. For a file of an
+    to it. `untied` lists the markers tied to no test: those no test
+    follows, and those above a test whose title is not one plain string,
+    which `unreadable` lists again as `(marker, test)`. For a file of an
     `exit` suite `whole` is True and every marker belongs to the file.
     """
 
-    __slots__ = ('path', 'format', 'markers', 'tests', 'untied', 'whole')
+    __slots__ = ('path', 'format', 'markers', 'tests', 'untied', 'whole',
+                 'unreadable')
 
     def __init__(self, path, fmt):
         self.path = path
@@ -161,6 +170,7 @@ class FileMarkers(object):
         self.markers = []
         self.tests = []
         self.untied = []
+        self.unreadable = []
         self.whole = fmt == 'exit'
 
     def features(self):
@@ -642,6 +652,100 @@ def _each_pattern(title):
     return re.compile('^' + ''.join(parts) + '$')
 
 
+# What a backslash and one character stand for in a JavaScript string.
+_JS_ESCAPES = {'n': '\n', 't': '\t', 'r': '\r', 'b': '\b', 'f': '\f',
+               'v': '\v', '0': '\0'}
+_JS_ESCAPE_RE = re.compile(
+    r'\\(u\{[0-9A-Fa-f]+\}|u[0-9A-Fa-f]{4}|x[0-9A-Fa-f]{2}|\r?\n|.)', re.S)
+# A `${` of a template string that no backslash escapes.
+_JS_FILLED_RE = re.compile(r'(?<!\\)(?:\\\\)*\$\{')
+
+
+def _js_unescape(raw):
+    """A JavaScript string's inner text with each escape as its character."""
+    def character(found):
+        body = found.group(1)
+        if body[0] in 'ux' and len(body) > 1:
+            try:
+                return chr(int(body[1:].strip('{}'), 16))
+            except (ValueError, OverflowError):
+                return body
+        if body.endswith('\n'):
+            return ''
+        return _JS_ESCAPES.get(body, body)
+    return _JS_ESCAPE_RE.sub(character, raw)
+
+
+def _skip_space(text, index):
+    """The offset of the next character that is not white space or a comment."""
+    size = len(text)
+    while index < size:
+        if text[index] in ' \t\r\n':
+            index += 1
+        elif text.startswith('//', index) or text.startswith('/*', index):
+            index = skip_noncode(text, index)
+        else:
+            break
+    return index
+
+
+def _second_argument(text, index):
+    """True when a `,` closes the argument starting at `index`, before the
+    call's `)`: the call has a second argument, as a test declaration has."""
+    size = len(text)
+    depth = 0
+    while index < size:
+        after = skip_noncode(text, index)
+        if after is not None:
+            index = max(after, index + 1)
+            continue
+        char = text[index]
+        if char in '([{':
+            depth += 1
+        elif char in ')]}':
+            if depth == 0:
+                return False
+            depth -= 1
+        elif char == ',' and depth == 0:
+            return True
+        index += 1
+    return False
+
+
+def _js_title(text, index, table=False):
+    """`(title, plain)` for the first argument of a call, or None.
+
+    The title is one string, or string pieces joined with `+`, each escape
+    read as its character and the outer white space cut. `plain` is false
+    where the argument is anything else: a template holding `${}`, unless
+    a table fills it in, a variable, or a piece that is not a string. None
+    where the argument is no string and no second argument follows it: such
+    a call declares no test.
+    """
+    size = len(text)
+    index = _skip_space(text, index)
+    if index >= size or text[index] not in '"\'`':
+        return ('', False) if _second_argument(text, index) else None
+    pieces = []
+    plain = True
+    while True:
+        quote = text[index]
+        raw, index = read_string(text, index)
+        if quote == '`' and not table and _JS_FILLED_RE.search(raw):
+            plain = False
+        pieces.append(_js_unescape(raw))
+        index = _skip_space(text, index)
+        if index < size and text[index] == '+':
+            index = _skip_space(text, index + 1)
+            if index < size and text[index] in '"\'`':
+                continue
+            plain = False
+        elif index < size and text[index] not in ',)':
+            plain = False
+        break
+    return ''.join(pieces).strip(), plain
+
+
 def js_tests(text):
     """Every `it` and `test` a JavaScript or TypeScript file declares, in order."""
     mask = _mask(text, skip_noncode)
@@ -660,24 +764,24 @@ def js_tests(text):
                 continue
             open_paren = after + stripped
             title_at = open_paren + 1
-        while title_at < len(text) and text[title_at] in ' \t\r\n':
-            title_at += 1
-        if title_at >= len(text) or text[title_at] not in '"\'`':
+        read = _js_title(text, title_at, table)
+        if read is None or (kind == 'describe' and not read[1]):
             continue
-        title, _after = read_string(text, title_at)
+        title, plain = read
         end = _balanced(mask, open_paren, '(', ')')
-        calls.append((kind, title, found.start(), end, table))
-    describes = [(title, start, end) for kind, title, start, end, _t in calls
+        calls.append((kind, title, found.start(), end, table, plain))
+    describes = [(title, start, end)
+                 for kind, title, start, end, _t, _p in calls
                  if kind == 'describe']
     tests = []
-    for kind, title, start, end, table in calls:
+    for kind, title, start, end, table, plain in calls:
         if kind == 'describe':
             continue
         scopes = [name for name, d_start, d_end in describes
                   if d_start < start < d_end]
-        pattern = _each_pattern(title) if table else None
+        pattern = _each_pattern(title) if table and plain else None
         tests.append(Test(title, _line_of(text, start), scopes, pattern,
-                          start, end))
+                          start, end, plain=plain))
     tests.sort(key=lambda test: test.line)
     return tests
 
@@ -828,7 +932,11 @@ def test_name(path, test):
 
 
 def tie_markers(result):
-    """Tie each marker to the next test declared after it; the rest are untied."""
+    """Tie each marker to the next test declared after it; the rest are untied.
+
+    A marker above a test whose title is not one plain string is untied
+    too, and listed with that test in `unreadable`.
+    """
     tests = sorted(result.tests, key=lambda test: test.line)
     for marker in result.markers:
         owner = None
@@ -838,6 +946,9 @@ def tie_markers(result):
                 break
         if owner is None:
             result.untied.append(marker)
+        elif not owner.plain:
+            result.untied.append(marker)
+            result.unreadable.append((marker, owner))
         else:
             owner.markers.append(marker)
 

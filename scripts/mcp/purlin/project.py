@@ -154,3 +154,22 @@ def _origin_name(project_root):
     if segment.endswith('.git'):
         segment = segment[:-len('.git')]
     return segment or None
+
+
+def set_up_by_095(project_root):
+    """True when Purlin 0.9.5 set this project up and it was not upgraded.
+
+    0.9.5 wrote no `tests` setting, and every setup and upgrade since
+    writes one, so a settings file without it is a project that release set
+    up. A project with no settings file is not one: that is a missing
+    settings file, named on its own. The version stamp is not read, so a
+    plugin update alone never makes this true.
+    """
+    path = os.path.join(os.path.abspath(project_root), '.purlin',
+                        'config.json')
+    try:
+        with open(path, 'r', encoding='utf-8') as handle:
+            config = json.load(handle)
+    except (IOError, OSError, ValueError):
+        return False
+    return isinstance(config, dict) and 'tests' not in config

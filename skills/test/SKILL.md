@@ -47,7 +47,8 @@ With neither `--all` nor a feature, the run selects a feature in any of these ca
 - its spec names no files.
 
 It runs only the test files carrying those features' markers: each suite of the `tests` setting
-gets them as its `{files}`. It first prints `Selected <n> of <m> features: login (code changed
+gets them as its `{files}`, under `--all` too, and prints `Running <suite>: <the command as
+run>` as it starts. It first prints `Selected <n> of <m> features: login (code changed
 since a1b2c3d), ...`, the skipped ones ending `purlin:test --all runs them too.`, and a line per
 untracked file. With nothing selected it prints `Nothing to run: every feature's spec, code and
 tests match its evidence. purlin:test --all runs them anyway.` and exits 1 only where the
@@ -88,7 +89,9 @@ It prints `Evidence written to .purlin/evidence/local/<feature>.json.`, or the f
 for several features. It commits nothing.
 
 With `--commit` it makes two commits under your own git identity: the work, then the evidence
-that names it. It never pushes. `references/commit_conventions.md`, "The two commits of a run",
+that names it. Where it then prints `<n> files are still not committed:`, show the person the
+files, and once they are committed run `purlin:test --all --commit` again: a sign-off refuses
+results taken with anything uncommitted. It never pushes. `references/commit_conventions.md`, "The two commits of a run",
 says what each commit holds. `references/formats/evidence_format.md` is the contract for the file
 and for the lines the run prints.
 

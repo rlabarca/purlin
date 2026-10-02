@@ -1104,3 +1104,22 @@ def test_git_ignores_the_run_log_and_not_the_evidence_after_init(tmp_path):
          '.purlin/runtime/run.log'],
         cwd=str(root), capture_output=True, encoding='utf-8')
     assert asked.stdout.splitlines() == ['.purlin/runtime/run.log'], asked
+
+
+# purlin: evidence_writer PROOF-99
+def test_over_five_features_the_subject_counts_them(tmp_path):
+    root = _project(tmp_path)
+    names = ['f%d' % index for index in range(1, 7)]
+    for name in names:
+        _spec(root, name=name)
+    _test_file(root, feature='f1')
+    _repo(root)
+    for name in names:
+        _spec(root, name=name, description='A feature, reworded.')
+
+    _code, out = _run(root, '--all', '--test', '--commit')
+
+    assert _git(root, 'log', '-1', '--format=%s', 'HEAD^').strip() == (
+        'purlin: specs, tests and settings for 6 features'), out
+    assert _git(root, 'log', '-1', '--format=%b',
+                'HEAD^').split() == names, out

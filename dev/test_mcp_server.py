@@ -623,3 +623,37 @@ class TestPackageHygiene:
                         continue
                     offenders.append('%s: %s' % (name, line.strip()))
         assert offenders == [], offenders
+
+
+# ---------------------------------------------------------------------------
+# A project Purlin 0.9.5 set up
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def set_up_by_095(project):
+    """A project holding one spec and the settings file 0.9.5 wrote. The
+    three lines its status is."""
+    with open(_config_file(project.root), 'w', encoding='utf-8') as handle:
+        json.dump({'version': '0.9.5', 'test_framework': 'pytest'}, handle)
+    return project, [
+        'Purlin status: %s, plugin %s' % (
+            os.path.basename(project.root), _version()),
+        'This project was set up by Purlin 0.9.5. Nothing here counts until '
+        'it is brought to %s.' % _version(),
+        '→ Run: purlin:init --update']
+
+
+class TestAProjectSetUpBy095:
+
+    # purlin: states PROOF-304
+    def test_the_status_command_prints_three_lines(self, set_up_by_095):
+        project, three = set_up_by_095
+        _code, printed = _script(STATUS_PY, project.root)
+        assert printed.splitlines() == three, printed
+
+    # purlin: states PROOF-305
+    def test_the_tool_answers_the_same_three_lines(self, set_up_by_095):
+        project, three = set_up_by_095
+        responses, _stderr = _rpc(project.root, _call(
+            'sync_status', {'project_root': project.root}))
+        assert _text(responses[0]).splitlines() == three

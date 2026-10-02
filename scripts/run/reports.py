@@ -22,7 +22,8 @@ For each case in a report the file it belongs to is found (from the case's
 file attribute where there is one, otherwise by resolving its class or package
 name against the marked files of that suite), then the test's own name is
 found in that file. A parametrised test's cases (`test_x[a]`, `TestX/a`,
-`Method(x: 1)`) all belong to the one test, and every case must pass. A nested
+`Method(x: 1)`) all belong to the one test, and every case must pass. A JavaScript title is read as the string it
+makes: an escaped quote as the quote, pieces joined with `+` as one. A nested
 title (`outer > inner > title`) is matched by its last part, then narrowed by
 the outer parts when two tests share it. A case that matches more than one
 test is not counted for any of them, and the run says so: Purlin never
@@ -57,6 +58,8 @@ NOT_RUN = 'not run'
 # it could not count. Each line says what to do.
 TIED_TO_NO_TEST = ('%s:%d names %s %s and no test follows it. Put the comment '
                    'directly above a test, or run purlin:build to repair it.')
+UNREADABLE_TITLE = ("%s:%d: the test's title is not one plain string, so its "
+                    'result cannot be matched. Write it as one string.')
 AMBIGUOUS = ("The report's %s matches %d tests in %s, so its result is not "
              'counted. Give the tests different names, then run purlin:test.')
 
@@ -416,8 +419,9 @@ def _split_title(name):
 
 def _pick(tests, title, outer, exact_scope):
     """The tests named `title`, narrowed by the outer scopes when two share it."""
-    named = [test for test in tests if test.name == title
-             or (test.pattern is not None and test.pattern.match(title))]
+    named = [test for test in tests if test.plain and (
+        test.name == title
+        or (test.pattern is not None and test.pattern.match(title)))]
     if len(named) <= 1:
         return named
     if outer:
@@ -469,7 +473,17 @@ def locate(project_root, suite, case, marked, go_cache=None):
             if narrowed:
                 candidates = narrowed
         return candidates
-    # junit
+    path, title, scopes, exact = _junit_place(project_root, case, marked)
+    found = marked.get(path)
+    if found is None:
+        return []
+    return [(path, test) for test in _pick(found.tests, title, scopes, exact)]
+
+
+def _junit_place(project_root, case, marked):
+    """`(path, title, scopes, exact)` for a `junit` case: the file it
+    belongs to, None where none is found, its test's own name and the
+    names around it."""
     title, outer = _split_title(case.name)
     path = None
     scopes = list(outer)
@@ -492,12 +506,40 @@ def locate(project_root, suite, case, marked, go_cache=None):
         path, chain = _python_owner(case.classname, marked)
         scopes = chain + scopes
         exact = True
-    found = marked.get(path)
-    if found is None:
-        return []
-    if path.endswith('.py'):
+    if path and path.endswith('.py'):
         title = _strip_parameters(title)
-    return [(path, test) for test in _pick(found.tests, title, scopes, exact)]
+    return path, title, scopes, exact
+
+
+# What two spellings of one title may differ by: white space, quotes, the
+# backslash that escapes one and the `+` that joins two pieces.
+_LOOSE = re.compile(r'[\s\'"`\\+]')
+
+
+def ran_as(project_root, suite, cases, marked, outcomes):
+    """`{(path, test line): name}` for each marked test no case was tied
+    to, where the report holds a passing or failing case in the test's own
+    file whose name differs from the test's title only by white space,
+    quotes or joined pieces. `name` is the case's. Only a `junit` report
+    names a test by a title; `outcomes` is `tie`'s answer.
+    """
+    found = {}
+    if suite.format != 'junit':
+        return found
+    for case in cases:
+        if case.outcome not in (PASS, FAIL):
+            continue
+        path, title, _scopes, _exact = _junit_place(project_root, case,
+                                                    marked)
+        holder = marked.get(path)
+        if holder is None or locate(project_root, suite, case, marked):
+            continue
+        loose = _LOOSE.sub('', title)
+        for test in holder.tests:
+            if test.markers and (path, test.line) not in outcomes \
+                    and _LOOSE.sub('', test.name) == loose:
+                found.setdefault((path, test.line), title)
+    return found
 
 
 def tie(project_root, suite, cases, marked):
@@ -570,10 +612,21 @@ def test_name(path, test, fmt):
 # ---------------------------------------------------------------------------
 
 def untied_lines(scan):
-    """One line per marker no test follows, in file and line order."""
+    """One line per marker tied to no test, in file and line order.
+
+    A marker no test follows is named with its feature and id. A test whose
+    title is not one plain string is named once, by its own line, however
+    many markers sit above it.
+    """
     lines = []
     for path in sorted(scan):
-        for marker in scan[path].untied:
-            lines.append(TIED_TO_NO_TEST % (path, marker.line,
-                                            marker.feature, marker.id))
+        found = scan[path]
+        titles = {id(marker): test for marker, test in found.unreadable}
+        for marker in found.untied:
+            test = titles.get(id(marker))
+            line = (TIED_TO_NO_TEST % (path, marker.line, marker.feature,
+                                       marker.id) if test is None
+                    else UNREADABLE_TITLE % (path, test.line))
+            if line not in lines:
+                lines.append(line)
     return lines

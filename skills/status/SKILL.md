@@ -73,6 +73,10 @@ that pass their tests and have a tested proof, the ones it found strong. An anch
 one word, `weak`, `out of date` or `spot-checked`, or nothing: no bug is planted for an anchor's
 rule.
 
+For a project Purlin 0.9.5 set up, while its upgrade is pending, the tool answers three lines
+and no table: the first line, `This project was set up by Purlin 0.9.5. Nothing here counts
+until it is brought to <version>.` and `→ Run: purlin:init --update`. Print them and stop.
+
 ## Step 3: print the summary and `Left to do`
 
 The tool ends on one sentence and `Left to do`, the words every command ends on in the terminal:
@@ -91,7 +95,8 @@ the dashboard must show one answer from one computation.
 
 Anything the tool prints between the table and the sentence is its own: a rule of an anchor that
 passes with nothing to check, a spec whose scope names files not written yet, an anchor behind its
-source, each test comment to correct, its warnings and `→ Run: purlin:init --update`. Print them
+source, the line saying the tests setting changed, each test comment to correct, its warnings
+and `→ Run: purlin:init --update`. Print them
 as they are, or nothing when the tool returned nothing. Where a warning says a number is written
 twice, follow `Renumbering` in `skills/spec/SKILL.md`.
 
