@@ -12,7 +12,7 @@
 > Scope: scripts/review/audit_run.py, scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
 > Highest-Rule: 51
-> Highest-Proof: 136
+> Highest-Proof: 137
 
 ## Rules
 
@@ -24,7 +24,7 @@
 - RULE-11: The test source is read out of JavaScript and TypeScript by balancing the brackets of the test's call, with strings, comments and regex literals stepped over, so a nested options object, an apostrophe in a title, a regex literal, a comment or a division never cuts a body short or drops a test
 - RULE-12: Reading a rule, asking the model and printing the result write no file anywhere under `.purlin/`
 - RULE-33: A rule's verdict comes from the spot tests and the planted bugs alone: `weak` when a spot test fires on one of its tests or a planted bug survives; else `strong` when a planted bug was caught; else `spot-checked`; and the entry records under `no_bug` one sentence for each proof no bug was caught for
-- RULE-35: The audit's last line is `The audit found <s> of <n> rules strong (<p>%): ` and the counts as the status words them, counted over the rules that pass their tests, a rule with a hand check counted where it also has a tested proof
+- RULE-35: The audit's last line is `The audit found <s> of <n> rules strong (<p>%): ` and the counts as the status words them, with the numbers the status gives: each rule that passes its tests is counted under the word its strong cell reads, and a rule whose strong cell reads `checked at sign-off` is in no count
 - RULE-36: A proof whose test and whose feature's code are unchanged since its last planted bug keeps that bug's result, and no bug is planted for it again
 - RULE-37: No bug is planted, and the model is asked for none, for a proof of an anchor's rule or a proof tagged `@env` for a system this machine is not, and the entry's `no_bug` says which
 - RULE-38: The model's answer is written into the rule's audit entry as `explanation`, one sentence per line starting `- `, beside the `findings` it explains, and the lines under `notes:` are its notes; the answer sets no verdict
@@ -108,3 +108,4 @@
 - PROOF-134 (RULE-49): The sample lab project is audited again, every rule read again and nothing changed; the request for `sample_intake RULE-3` asks for no bug, and the entry of `RULE-3` holds the same two findings for `PROOF-5`, in the same order
 - PROOF-135 (RULE-50): The test of `PROOF-6` checks the proof's own case, and the model's bug sets the limit to 73 hours with `aim: plain`; the bug is caught, `sample_intake RULE-4` reads `strong`, its `findings` are empty, and no line the audit prints names `PROOF-6`
 - PROOF-136 (RULE-51): A bug kept for `PROOF-2` reads `caught`, and its entry holds neither `aim` nor `case`; `RULE-2`'s text changes, so the audit reads the rule again and plants no bug for `PROOF-2`; afterwards the entry of `PROOF-2` under `breaks` still reads `caught`, and reads `aim` `plain` and `case` empty
+- PROOF-137 (RULE-35): Two rules pass their tests and each has a bug on record that was caught; `RULE-2` also has a proof checked by hand, so its strong cell reads `checked at sign-off`; the audit's last line reads `The audit found 1 of 1 rules strong (100%): 1 strong.`, the line the status gives for the project

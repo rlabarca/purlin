@@ -79,10 +79,6 @@ ERRORED = 'A bug was planted for %s and its test ended in an error, not a failur
 NO_PART = targeted_break.NO_PART
 SPOT_CHECKED = ai_audit.SPOT_CHECKED   # the `no_bug` sentences joined by one space
 
-# The key the summary counts each verdict under.
-VERDICT_KEYS = {'strong': 'strong', 'weak': 'weak',
-                'spot-checked': 'spot_checked'}
-
 # The language a test file is read in, for a spot test that cannot read it.
 LANGUAGES = (
     (('.sh', '.bash', '.bats'), 'shell'), (('.sql',), 'SQL'),
@@ -164,8 +160,8 @@ def rules_to_read(project_root, payload, features, selected, again=False,
 
 
 def counted_rules(payload, selected):
-    """`[(feature, rule entry)]` the share counts: each rule of a selected
-    feature that passes its tests and has a tested proof."""
+    """`[(feature, rule entry)]` for each rule of a selected feature that
+    passes its tests and has a tested proof."""
     return [(feature.get('name'), rule)
             for feature in payload.get('features') or ()
             if feature.get('name') in selected
@@ -476,7 +472,7 @@ def run(project_root, features, selected, again=False, out=None):
                            '' if not alone else ALONE_ONE if alone == 1
                            else ALONE_MANY % alone))
 
-    say(share_line(project_root, payload, features, selected, done, cache))
+    say(share_line(project_root, payload, selected))
     return 0
 
 
@@ -498,26 +494,19 @@ def _changed_path(project_root, stopped):
     return path.replace(os.sep, '/')
 
 
-def share_line(project_root, payload, features, selected, done, cache=None):
+def share_line(project_root, payload, selected):
     """The last line: the share of the rules that pass their tests the audit
-    found strong, and each count as the status words it, over what it read
-    now and the entries the evidence already held."""
-    cache = {} if cache is None else cache
-    now = {(item['feature'], item['rule']['id']): item['verdict']
-           for item in done}
-    counted = counted_rules(payload, selected)
-    if not counted:
+    found strong, and each count as the status words it. The counts are
+    `summary.audit_counts` over the project as it reads once the entries are
+    written, so the line and the status give the same numbers: a rule is
+    counted under the word its strong cell reads, and a rule whose strong
+    cell reads `checked at sign-off` is in no count. `payload` is the one
+    built before the audit, which says whether any rule passes."""
+    if not counted_rules(payload, selected):
         return NO_RULE_PASSES
-    counts = {}
-    for feature, rule in counted:
-        verdict = now.get((feature, rule.get('id')))
-        if verdict is None:
-            entry = audit_entry(project_root, feature, rule, _code_part(
-                project_root, features, feature, cache))
-            verdict = ('out of date' if entry.get('out_of_date')
-                       else entry.get('verdict'))
-        key = 'out_of_date' if verdict == 'out of date' else \
-            VERDICT_KEYS.get(verdict, 'not_audited')
-        counts[key] = counts.get(key, 0) + 1
-    return summary_module.audit_line(counts)
-
+    now = payload_module.build_payload(project_root, generated_by='audit')
+    own = [rule for feature in now.get('features') or ()
+           if feature.get('name') in selected
+           for rule in feature.get('rules') or ()
+           if rule.get('feature') == feature.get('name')]
+    return summary_module.audit_line(summary_module.audit_counts(own))
