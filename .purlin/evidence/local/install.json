@@ -2,8 +2,8 @@
   "feature": "install",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T10:31:53Z",
-      "commit": "d1f90ceda0a1a64d69818be38986e523e822b267",
+      "at": "2026-10-02T11:16:24Z",
+      "commit": "31eaef7566316f2b4e75da4efe0528cf0486e3df",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {

@@ -2,12 +2,12 @@
   "feature": "security_no_dangerous_patterns",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T10:31:54Z",
-      "commit": "d1f90ceda0a1a64d69818be38986e523e822b267",
+      "at": "2026-10-02T11:16:25Z",
+      "commit": "31eaef7566316f2b4e75da4efe0528cf0486e3df",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "eda335f78f4230c76bf876ba8113dce931b66fdfd2a6e8c7ed92394eb8cec7a3",
+        "code": "d3cc2322b60b29b04759946fc37d77f8efe2f67e9140a24621912d98aeb3ea20",
         "spec": "3ee7f78c55c86a9f6ee1ba5569146d40bca108196fe5d7d5128ce9959a6a28f6",
         "tests": "778751afdf9b8fd0839a78359f5bc01f7af3f0e4b5b14d2e8cfe209e0bf1596c"
       },
