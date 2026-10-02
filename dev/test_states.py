@@ -1394,6 +1394,19 @@ class TestStatusTable:
         assert _cell_under(lines, 'login', 'Proofs') == '2 · 1 no test', lines
         assert _cell_under(lines, 'login', 'Tests') == '1 of 2', lines
 
+    # purlin: states PROOF-294
+    def test_an_audit_entry_on_a_rule_that_now_fails_keeps_the_strong_column(
+            self, project):
+        self._one_of_two_passing(project)
+        project.audit('RULE-2')
+        assert _header(_status_lines(project.root)).split()[-1] == 'Strong'
+        project.evidence([_entry('PROOF-2', 'RULE-2', 'fail')])
+        assert project.rule('RULE-2')['audit'] is not None
+        assert project.cell('RULE-2', 'strong')['word'] == 'waiting'
+        lines = _status_lines(project.root)
+        assert _header(lines).split()[-1] == 'Strong', lines
+        assert _cell_under(lines, 'login', 'Strong') == '0 of 2', lines
+
     # purlin: states PROOF-100
     def test_one_passing_and_one_failing_here_read_one_of_two_one_failing(
             self, project):

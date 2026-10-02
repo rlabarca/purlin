@@ -196,7 +196,7 @@ def _proof_lines(data):
 def _table(data):
     proofs = _proof_lines(data)
     audited = board_module.shows_strong(
-        (data.get('summary') or {}).get('audit'))
+        (data.get('summary') or {}).get('audit'), data.get('features'))
     columns = columns_for(proofs, audited)
     # The feature with the most rules left to do reads first: the table
     # opens on the work rather than on the alphabet.

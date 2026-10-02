@@ -37,14 +37,18 @@ def shows_proofs(proofs):
     return bool(proofs)
 
 
-def shows_strong(audit):
-    """Whether the Strong column is shown: a rule has an audit entry.
+def shows_strong(audit, features=()):
+    """Whether the Strong column is shown: an audit has read a rule.
 
     `audit` is the payload's `summary.audit`, read as `summary.has_audit`
-    reads it. A project no audit has read shows no Strong column.
+    reads it, and `features` the payload's: a rule that carries an audit
+    entry answers too, whatever its strong cell reads now. A project no
+    audit has read shows no Strong column.
     """
     from purlin import summary
-    return summary.has_audit(audit)
+    return summary.has_audit(audit) or any(
+        rule.get('audit') for feature in features or ()
+        for rule in feature.get('rules') or ())
 
 
 def columns_for(proofs=1, audited=False):

@@ -9,7 +9,7 @@
 > Scope: scripts/mcp/purlin/states.py, scripts/mcp/purlin/payload.py, scripts/mcp/purlin/status.py, scripts/mcp/purlin/facts.py, scripts/mcp/purlin/project.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib, json, hashlib, subprocess (list-only)
 > Highest-Rule: 126
-> Highest-Proof: 293
+> Highest-Proof: 294
 
 ## Rules
 
@@ -115,6 +115,7 @@
 - PROOF-265 (RULE-110): Of two tests in `tests/test_age.py`, one marked for `sample_age PROOF-1` and one for `PROOF-2` of another rule, editing the second leaves `RULE-1`'s test hash unchanged
 - PROOF-266 (RULE-110): Editing the body of the test marked for `sample_age PROOF-1` changes `RULE-1`'s test hash
 - PROOF-43 (RULE-121): Over a spec of two rules of which one has a passing test and none is audited, the status report's header names `Spec`, `Rules`, `Proofs` and `Tests` and not `Strong`, and the spec's row reads `2 · 1 no test` and `1 of 2`
+- PROOF-294 (RULE-121): Over a spec of two rules, `RULE-2` passes and the audit finds it `strong`, and its test then fails; the status report's header still ends with `Strong`, and the spec's `Strong` cell reads `0 of 2`
 - PROOF-100 (RULE-121): Over a spec of two rules, one passing and one whose test fails on this machine, the row's `Tests` cell reads `1 of 2 · 1 failing`
 - PROOF-242 (RULE-121): A project of the feature `login` and the anchor `security` prints, directly under the table's heading rule, the line `Anchors`, then `security`'s row, then the line `Specs`, then `login`'s row
 - PROOF-58 (RULE-49): Each of the three sample payloads is shown in the status table and on the dashboard; the two carry the same column headings, and every cell after a spec's name reads the same text in both

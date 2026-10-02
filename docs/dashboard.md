@@ -26,7 +26,7 @@ The page has two screens: the board, and one rule.
 
 ## The top bar
 
-The top bar holds the logo, the header line, two boxes and the theme button.
+The top bar holds the logo, the header line, three boxes and the theme button.
 
 **The header line** says which checkout you are reading and when its data was written:
 
@@ -41,18 +41,29 @@ full date and the UTC time: `2026-10-01 06:42 EDT (10:42 UTC)`. The data keeps t
 and the page converts it. On a detached `HEAD` the line reads
 `detached at a1b2c3d, written 06:42 EDT`.
 
-**The two boxes** state the two facts:
+**The first two boxes** state the two facts:
 
 - `Tests` reads `met` where every rule's tests pass on the committed evidence, and `not met`
   otherwise.
 - `Sign-off` reads `signed 0.1.0 at a1b2c3d`, `signed 0.1.0, 4 commits since` or `not signed`.
+
+**The third box**, `Audit`, is information. It is no third fact, and nothing waits on it:
+
+- It reads `not audited` where no audit has read a rule. That is no warning: it is drawn in the
+  same tone as `not signed`.
+- Once an audit has read a rule it reads the share the summary gives, as `34 of 40 strong`. It is
+  green while no rule is weak and amber once one is.
+- Hover over it for the counts, one to a line, as `34 strong`, `4 weak`, `2 spot-checked`, then
+  `Last audit: 2026-09-13`.
+
+Under 600 pixels the three boxes stack.
 
 **The theme button** shows the glyph of the theme it turns to: `◐` in the dark theme, `◑` in the
 light. Its hover names that theme, `Light theme` or `Dark theme`.
 
 ## Board
 
-![The board: the header line naming the branch and commit, the Tests and Sign-off boxes, the count boxes, the Anchors section, and the specs under their categories](images/dashboard-board.png)
+![The board: the header line naming the branch and commit, the Tests, Sign-off and Audit boxes, the count boxes, the Anchors section, and the specs under their categories](images/dashboard-board.png)
 
 **Notices.** Notices sit above the count boxes, one per line. There is one when the working tree
 has uncommitted changes:
