@@ -291,9 +291,13 @@ per rule, beside `--audit` and exactly one `--feature`, and `--commit` works as 
    file exactly once or another refusal of "The planted bug" holds: the proof is read as any
    audit reads it, with a new bug, and one that survives reads `survived`.
 
-A proof of the rule with no `survived` entry keeps what it has. The spot tests run again over
-the rule's tests, and "The verdict" sets the rule's word as in any audit: `weak` where a spot
-test fires or a bug survived, else `strong` where a bug was caught, else `spot-checked`.
+A proof of the rule with no `survived` entry keeps what it has where its test and code are
+unchanged since that result. A result taken on another test or code is left out of the entry,
+and the next audit without `--settle` plants a bug for that proof.
+
+The spot tests run again over the rule's tests, and "The verdict" sets the rule's word as in
+any audit, from the results the entry holds: `weak` where a spot test fires or a bug survived,
+else `strong` where a bug was caught, else `spot-checked`.
 
 A rule named with `--settle` that keeps no bug as `survived` prints
 `<feature> RULE-N has no planted bug that survived: nothing to settle.` and is left as it is.

@@ -928,3 +928,4 @@ def test_a_typescript_directive_line_added_is_planted(tmp_path, own_claude):
     assert code == 0
     assert bug_of(after)['after'] == '  // @ts-ignore\n  return 90;'
     assert bug_of(after)['result'] == 'survived', bug_of(after)
+

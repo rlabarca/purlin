@@ -1693,6 +1693,25 @@ SKIPS_ON_THE_BUG = TEST_FILE.replace(
     '    assert login("ada", "wrong") == 401\n')
 
 
+@pytest.fixture(scope='module')
+def another_test_changed(tmp_path_factory):
+    """`RULE-4` settled after both its tests changed: `PROOF-7`, whose bug
+    survived, now hands in the proof's own case, and `PROOF-6`, whose bug was
+    caught, now checks only that a status is stored. Then `sample_intake` is
+    audited without `--settle`, by a model that answers `REPLY`."""
+    made = sample_lab.settled(
+        tmp_path_factory.mktemp('another-test'), rules=('RULE-4',),
+        reply=sample_lab.MORE_SURVIVE,
+        change=sample_lab.change_both_tests_of_rule_4)
+    fake_claude.install(made.directory, answers=[sample_lab.REPLY])
+    code, lines, _errors = sample_lab.run_script(
+        made.root, made.directory, '--audit', '--feature', 'sample_intake')
+    made.next = {'code': code, 'lines': lines,
+                 'entries': sample_lab.entries(made.root),
+                 'calls': fake_claude.calls(made.directory)}
+    return made
+
+
 class TestSettlingAFinding:
 
     # purlin: ai_audit PROOF-138
@@ -1963,3 +1982,33 @@ class TestSettlingAFinding:
         assert bug_now['result'] == 'caught', bug_now
         assert made.under('RULE-3') == [], made.lines
         assert ROUNDED not in made.text
+
+    # purlin: ai_audit PROOF-161
+    def test_a_result_taken_on_another_test_is_left_out_of_the_entry(
+            self, another_test_changed):
+        made = another_test_changed
+        assert made.code == 0, made.lines
+        before = made.before['RULE-4']['breaks']
+        assert (before['PROOF-6']['result'], before['PROOF-7']['result']) == (
+            'caught', 'survived'), before
+        entry = made.entries['RULE-4']
+        assert sorted(entry['breaks']) == ['PROOF-7'], entry
+        assert entry['breaks']['PROOF-7']['result'] == 'caught', entry
+        assert entry['verdict'] == 'strong', entry
+        assert made.rule_lines('RULE-4') == [
+            'sample_intake RULE-4   strong'], made.lines
+        assert made.calls == []
+
+    # purlin: ai_audit PROOF-162
+    def test_the_next_audit_plants_a_bug_for_the_proof_left_out(
+            self, another_test_changed):
+        after = another_test_changed.next
+        assert after['code'] == 0, after['lines']
+        assert [asked_for(call) for call in after['calls']] == [['PROOF-6']]
+        entry = after['entries']['RULE-4']
+        made = entry['breaks']['PROOF-6']
+        assert made['after'] == 'MAX_AGE_HOURS = 73', made
+        assert made['result'] == 'survived', made
+        assert entry['verdict'] == 'weak', entry
+        assert 'sample_intake RULE-4   weak' in after['lines'], after['lines']
+
