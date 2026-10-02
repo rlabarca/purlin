@@ -39,8 +39,10 @@ person said yes.
   with `gpg.ssh.program=ssh-keygen` set in each clone (finding 12). Every result below is from the
   redo.
 - **Transcripts:** every session's full stream-json transcript, the wrapper script and Haiku's
-  discarded build diff are in `dev/plans/qa-real-skills/transcripts.tar.gz`. Three dashboard
-  screenshots are next to it.
+  discarded build diff are in `dev/plans/qa-real-skills/transcripts.tar.gz`. The archive also
+  holds three dashboard screenshots, `logs/board-after-handoff.png`, `logs/rule-7-manual.png`
+  and `logs/board-after-reword.png`. They are in the archive because this repository ignores
+  `*.png`.
 
 ## 3. The story, step by step
 
