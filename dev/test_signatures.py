@@ -1241,7 +1241,8 @@ class TestTheSignOff:
             made.close()
 
     # purlin: signatures PROOF-238
-    def test_it_fetches_nothing_and_pushes_nothing(self, signed, tmp_path):
+    def test_it_tags_the_sign_off_commit_and_fetches_and_pushes_nothing(
+            self, signed, tmp_path):
         host = str(tmp_path / 'host.git')
         git(signed.root, 'init', '-q', '--bare', host)
         git(signed.root, 'remote', 'add', 'origin', host)
@@ -1527,7 +1528,8 @@ class TestTheAgent:
         assert (code, status(hand_checked.root)) == (0, '')
 
     # purlin: signatures PROOF-228
-    def test_show_needs_no_key(self, home, capsys):
+    def test_show_with_no_key_prints_the_overview_after_the_signing_line(
+            self, home, capsys):
         made = ready(signer=False)
         try:
             code, lines = run_main(made, capsys, ['--show'])
