@@ -10,7 +10,7 @@
 > Scope: scripts/init/update.py
 > Stack: python3 (stdlib only, 3.9 floor)
 > Highest-Rule: 59
-> Highest-Proof: 179
+> Highest-Proof: 181
 
 ## Rules
 
@@ -23,7 +23,7 @@
 - RULE-19: `sync_status` prints the directive to run the update while anything is pending and stops printing it once nothing is
 - RULE-21: The `tests` setting is written from the frameworks the old config named, xunit read as dotnet; a framework nothing in the tree runs is dropped and the drop is printed, and a config that already carries a `tests` setting keeps it
 - RULE-29: Each marker v0.9.5's plugins read becomes the comment `purlin: <feature> PROOF-<n>` above the same test, in the file's own comment syntax, every other line as it was; a marker the upgrade cannot place above one test is named by file and line with what to do, and left as it was
-- RULE-35: The wiring v0.9.5's init wrote into the project's test configuration is removed and the rest of each file kept, a `conftest.py` holding nothing else being deleted; a `.csproj` that compiles the xUnit logger v0.9.5 shipped is named with what to remove by hand and left as it was
+- RULE-35: Every `conftest.py` in the project that loads the pytest plugin 0.9.5 copied loses the entry naming it and the `sys.path` line pointing at `.purlin/plugins`, text inside a comment or a docstring left as it was; a `conftest.py` left with nothing but comments, a docstring and imports nothing uses is deleted, and each file is named; a `.csproj` that compiles the xUnit logger v0.9.5 shipped is named with what to remove by hand and left as it was
 - RULE-50: The config the run leaves holds exactly `version` and `tests`, `version` being the release in the `VERSION` file, and every other key the 0.9.5 config carried is removed and named
 - RULE-51: Each refusal of the update names what is wrong and what fixes it, and changes nothing more: a root with no `.purlin/` exits 2, a `.purlin/config.json` that cannot be read exits 1 before anything is written, and a commit git refuses leaves the changes staged with git's own message
 - RULE-52: Each line 0.9.5 wrote into a spec that this release does not read is rewritten or removed, the rest of the spec untouched: the Windows tag becomes `@env(windows)`, the kind-of-test tag goes, the design reference lines go, and `> Requires:` and `> Global:` go from every spec and `> Scope:` from every anchor
@@ -61,9 +61,9 @@
 - PROOF-168 (RULE-29): A test file carrying the 0.9.5 mark `@pytest.mark.proof("sample-age", "PROOF-1", "RULE-1")` carries after the update with `--yes` `# purlin: sample-age PROOF-1` where the mark was, and the output holds `rewrote 1 marker in tests/test_age.py as comments`
 - PROOF-109 (RULE-29): A shell script that loads the harness, calls it for `login` `PROOF-1` and closes it carries after the update with `--yes` `# purlin: login PROOF-1` under its first line and `:` in place of those three lines, and the output holds `rewrote 1 marker in tests/login.test.sh as comments; the file is one test now, and passes when it exits 0`
 - PROOF-30 (RULE-29): A test file whose line 3 is a module-wide `pytestmark` naming a proof, with one test marked the 0.9.5 way below it: after the update that test has `# purlin: login PROOF-1` directly above it, line 3 is unchanged, and the output holds `left tests/test_module.py:3 as it was: write the marker as a comment above each test by hand`
-- PROOF-83 (RULE-35): A `conftest.py` holding `import os` above the plugin's `pytest_plugins` line holds `import os` alone after the update with `--yes`
+- PROOF-83 (RULE-35): A `conftest.py` holding `import os` and `ROOT = os.getcwd()` above the plugin's `pytest_plugins` line holds those two lines alone after the update with `--yes`
 - PROOF-88 (RULE-35): A `.csproj` compiling the xUnit logger 0.9.5 shipped is byte for byte what it was after the update with `--yes`, and the output says `App.Tests/App.Tests.csproj compiles the xUnit logger v0.9.5 shipped; remove that line by hand, since dotnet test --logger trx needs nothing added`
-- PROOF-120 (RULE-35): On Windows, a `conftest.py` holding `import os` above the plugin's `pytest_plugins` line holds `import os` alone after the update with `--yes`, with its line ending as it was @env(windows)
+- PROOF-120 (RULE-35): On Windows, a `conftest.py` holding `import os` and `ROOT = os.getcwd()` above the plugin's `pytest_plugins` line holds those two lines alone after the update with `--yes`, each with its line ending as it was @env(windows)
 - PROOF-162 (RULE-50): After the update with `--yes` on the sample 0.9.5 project, `.purlin/config.json` holds exactly the keys `tests` and `version`, `version` reading the release in the `VERSION` file
 - PROOF-163 (RULE-50): The sample 0.9.5 project's config carries `digest`, `pre_push`, `report` and `spec_dir`; the update with `--yes` prints a line starting `  removed from .purlin/config.json:` that names all four, and afterwards the config carries none of them
 - PROOF-4 (RULE-51): The update run against an empty folder exits 2 and prints as an error `There is no .purlin/ under <folder>, so there is nothing to update. Run purlin:init first.`, `<folder>` being that folder's full path
@@ -93,3 +93,5 @@
 - PROOF-177 (RULE-58): A test opening `it("[proof:dev_proxy:PROOF-1:RULE-1:unit] every setting is accepted", () => {` opens after the update with `--yes` `it("every setting is accepted", () => {`
 - PROOF-178 (RULE-58): A test inside a `describe` whose title runs over three joined lines, the tag ending the third, has after the update with `--yes` the comment `// purlin: dev_proxy PROOF-2` directly above its `test(` line, at that line's indent, and its three title lines follow `test(` with only the tag and the space before it gone
 - PROOF-179 (RULE-59): A test opening `it(NAME + ' [proof:dev_proxy:PROOF-1:RULE-1:unit]', () => {` on line 2 opens `it(NAME, () => {` after the update with `--yes`, under its comment, and the output holds `packages/web/test/dev_proxy.test.ts:2: the title of the test under this marker cannot be read, so its result cannot be matched. Write it as one plain string.`
+- PROOF-180 (RULE-35): A `conftest.py` at the root and a `pipeline/conftest.py`, each a docstring, two imports, a `sys.path.insert` line pointing at `.purlin/plugins` and `pytest_plugins = ["pytest_purlin"]`, are both listed under `plugins`; after the update with `--yes` neither is on disk or tracked, and the output holds `removed <file>: it held only the plugin's wiring` for each
+- PROOF-181 (RULE-35): A `conftest.py` with a fixture, the entries `"pytest_purlin", "house_plugin"`, a `sys.path.insert(0, ".purlin/plugins")` line, and a docstring and a comment that both quote those lines, holds after the update with `--yes` `pytest_plugins = ["house_plugin"]` and no `sys.path.insert` line outside the comment; the docstring, the comment and the fixture are as they were

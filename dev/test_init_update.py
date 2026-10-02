@@ -588,12 +588,17 @@ CSPROJ = ('<Project><ItemGroup><Compile Include="../.purlin/plugins/'
           'xunit_purlin.cs" /></ItemGroup></Project>\n')
 
 
-def _conftest_with_import_os(tmp_path, eol):
-    """The sample given a conftest of `import os` above the plugin's line,
-    each line ended by `eol`, updated with `--yes`: `(the bytes it now
-    holds, the bytes of the lines kept)`."""
+# A line of the project's own that uses the import above it, so the file is
+# kept once the plugin's line is gone.
+OWN_LINE = 'ROOT = os.getcwd()'
+
+
+def _conftest_with_a_line_of_its_own(tmp_path, eol):
+    """The sample given a conftest of `import os` and `ROOT = os.getcwd()`
+    above the plugin's line, each line ended by `eol`, updated with `--yes`:
+    `(the bytes it now holds, the bytes of the lines kept)`."""
     root = _project(tmp_path, V095)
-    kept = ('import os' + eol).encode('utf-8')
+    kept = ('import os' + eol + OWN_LINE + eol).encode('utf-8')
     _write_bytes(root, 'conftest.py',
                  kept + OLD_CONFTEST.replace('\n', eol).encode('utf-8'))
     _apply(root)
@@ -601,18 +606,90 @@ def _conftest_with_import_os(tmp_path, eol):
 
 
 # purlin: update PROOF-83
-def test_a_conftest_holding_import_os_keeps_it_alone(tmp_path):
-    now, kept = _conftest_with_import_os(tmp_path, '\n')
-    assert now == b'import os\n'
+def test_a_conftest_with_a_line_of_its_own_keeps_it(tmp_path):
+    now, kept = _conftest_with_a_line_of_its_own(tmp_path, '\n')
+    assert now == b'import os\nROOT = os.getcwd()\n'
     assert now == kept
 
 
 # purlin: update PROOF-120
 @ON_WINDOWS
-def test_on_windows_the_conftest_keeps_import_os_and_its_ending(tmp_path):
-    now, kept = _conftest_with_import_os(tmp_path, '\r\n')
-    assert now == b'import os\r\n'
+def test_on_windows_the_conftest_keeps_its_own_line_and_its_ending(tmp_path):
+    now, kept = _conftest_with_a_line_of_its_own(tmp_path, '\r\n')
+    assert now == b'import os\r\nROOT = os.getcwd()\r\n'
     assert now == kept
+
+
+# The two files a real 0.9.5 project loaded the plugin from: each a docstring
+# that quotes the scaffolded line, two imports, the path line and the entry.
+LOADER = (
+    '"""Load the Purlin pytest plugin by path.\n\n'
+    'The scaffolded form of this file was\n'
+    '`pytest_plugins = [".purlin.plugins.pytest_purlin"]`, which cannot '
+    'import.\n"""\n\n'
+    'import sys\n'
+    'from pathlib import Path\n\n'
+    'sys.path.insert(0, str(Path(__file__).resolve().parent%s / ".purlin" '
+    '/ "plugins"))\n\n'
+    'pytest_plugins = ["pytest_purlin"]\n')
+# A conftest the project keeps: a docstring that names the plugin, a comment
+# that does, a fixture, and the plugin beside one of the project's own.
+KEPT_CONFTEST = (
+    '"""Fixtures. `pytest_plugins = ["pytest_purlin"]` loads the proofs."""\n'
+    'import sys\n\n'
+    'import pytest\n\n'
+    '# sys.path.insert(0, ".purlin/plugins") is what finds pytest_purlin\n'
+    'sys.path.insert(0, ".purlin/plugins")\n'
+    'pytest_plugins = ["pytest_purlin", "house_plugin"]\n\n\n'
+    '@pytest.fixture\n'
+    'def engine():\n    return 1\n')
+
+
+KEPT_CONFTEST_AFTER = (
+    '"""Fixtures. `pytest_plugins = ["pytest_purlin"]` loads the proofs."""\n'
+    'import sys\n\n'
+    'import pytest\n\n'
+    '# sys.path.insert(0, ".purlin/plugins") is what finds pytest_purlin\n'
+    'pytest_plugins = ["house_plugin"]\n\n\n'
+    '@pytest.fixture\n'
+    'def engine():\n    return 1\n')
+
+
+def _two_loaders(tmp_path, capsys):
+    root = _project(tmp_path, V095)
+    _write_bytes(root, 'conftest.py', (LOADER % '').encode('utf-8'))
+    _write_bytes(root, 'pipeline/conftest.py',
+                 (LOADER % '.parent').encode('utf-8'))
+    _write_bytes(root, 'pipeline/tests/conftest.py',
+                 KEPT_CONFTEST.encode('utf-8'))
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'the files that load the plugin')
+    listed = [item['files'] for item in update.pending(root)
+              if item['id'] == 'plugins'][0]
+    _apply(root)
+    return root, listed, capsys.readouterr().out.splitlines()
+
+
+# purlin: update PROOF-180
+def test_every_conftest_that_only_loads_the_plugin_is_deleted(tmp_path,
+                                                              capsys):
+    root, listed, printed = _two_loaders(tmp_path, capsys)
+    for rel in ('conftest.py', 'pipeline/conftest.py'):
+        assert rel in listed, listed
+        assert not os.path.exists(os.path.join(root, rel)), rel
+        assert rel not in _tracked(root)
+        assert [line for line in printed if line.strip() == (
+            "removed %s: it held only the plugin's wiring" % rel)], printed
+
+
+# purlin: update PROOF-181
+def test_a_conftest_with_more_loses_the_two_lines_alone(tmp_path, capsys):
+    root, listed, printed = _two_loaders(tmp_path, capsys)
+    rel = 'pipeline/tests/conftest.py'
+    assert rel in listed, listed
+    assert _read(root, rel) == KEPT_CONFTEST_AFTER
+    assert [line for line in printed if line.strip() == (
+        "removed the plugin's wiring from %s" % rel)], printed
 
 
 # purlin: update PROOF-88

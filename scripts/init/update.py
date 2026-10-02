@@ -23,6 +23,7 @@ file cannot be read, 2 no Purlin project at that root.
 """
 
 import argparse
+import ast
 import fnmatch
 import hashlib
 import json
@@ -122,8 +123,9 @@ LEFT_LETTERED = ('left %s:%d as it was: it names %s %s, which is numbered '
                  'with a letter. Run purlin:init --update again and apply '
                  'lettered-proofs')
 PLUGIN_DIR = '.purlin/plugins'
-CONFTEST_PLUGIN_RE = re.compile(
-    r"""["']\.purlin\.plugins\.pytest_purlin["']\s*,?\s*""")
+PYTEST_PLUGIN = 'pytest_purlin'
+CONFTEST_UNREAD = ('left %s as it was: it cannot be read as Python. Remove '
+                   'the lines that load pytest_purlin by hand')
 REPORTER_RE = re.compile(
     r"""\s*,?\s*["'][^"']*(?:jest|vitest)_purlin\.[jt]s["']""")
 XUNIT_LOGGER = 'xunit_purlin'
@@ -1142,24 +1144,125 @@ def _apply_markers(root, files, args, out):
         out.say(line)
 
 
-def _wiring(root):
-    """`[(path, new text or None)]`: the wiring v0.9.5's init wrote, undone.
+def _strings(node):
+    return [part.value for part in ast.walk(node)
+            if isinstance(part, ast.Constant) and isinstance(part.value, str)]
 
-    None means the file held nothing else and goes. A `.csproj` compiling the
-    xUnit logger is not rewritten: it is reported, with what to remove.
+
+def _plugin_path(call):
+    """True for `sys.path.insert(...)` or `.append(...)` naming the folder
+    0.9.5 copied its plugins into."""
+    target = call.func
+    if not (isinstance(target, ast.Attribute)
+            and target.attr in ('insert', 'append')
+            and isinstance(target.value, ast.Attribute)
+            and target.value.attr == 'path'
+            and isinstance(target.value.value, ast.Name)
+            and target.value.value.id == 'sys'):
+        return False
+    strings = _strings(call)
+    return (any(PLUGIN_DIR in text.replace('\\', '/') for text in strings)
+            or ('.purlin' in strings and 'plugins' in strings))
+
+
+def _cut(line, start, end):
+    """`line` without its bytes `start` to `end`, a list entry, and without
+    the comma that set the entry apart."""
+    raw = line.encode('utf-8')
+    head, tail = raw[:start].decode('utf-8'), raw[end:].decode('utf-8')
+    after = re.match(r'\s*,[ \t]*', tail)
+    if after:
+        return head + tail[after.end():]
+    return re.sub(r'[ \t]*,[ \t]*$', '', head) + tail
+
+
+def clean_conftest(text):
+    """`text` without what loaded 0.9.5's pytest plugin, or None where
+    nothing else is left; raises SyntaxError for text Python cannot read.
+
+    The entry naming the plugin goes from `pytest_plugins`, the whole line
+    where it was the only entry, and so does a `sys.path` line pointing at
+    `.purlin/plugins`. The file is read as Python reads it, so text inside a
+    comment or a docstring is never edited. A file left with nothing but
+    comments, a docstring and imports nothing uses is no longer needed.
+    """
+    tree = ast.parse(text)
+    lines = text.splitlines(True)
+    drop, cuts = set(), []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call) \
+                and _plugin_path(node.value):
+            drop.update(range(node.lineno, node.end_lineno + 1))
+        elif isinstance(node, ast.Assign) and any(
+                isinstance(target, ast.Name) and target.id == 'pytest_plugins'
+                for target in node.targets):
+            value = node.value
+            entries = (value.elts if isinstance(value, (ast.List, ast.Tuple))
+                       else [value])
+            named = [entry for entry in entries
+                     if isinstance(entry, ast.Constant)
+                     and isinstance(entry.value, str)
+                     and PYTEST_PLUGIN in entry.value]
+            if named and len(named) == len(entries):
+                drop.update(range(node.lineno, node.end_lineno + 1))
+            else:
+                cuts.extend(entry for entry in named
+                            if entry.lineno == entry.end_lineno)
+    if not drop and not cuts:
+        return text
+    for entry in sorted(cuts, key=lambda e: (e.lineno, e.col_offset),
+                        reverse=True):
+        lines[entry.lineno - 1] = _cut(lines[entry.lineno - 1],
+                                       entry.col_offset, entry.end_col_offset)
+    kept = [line for number, line in enumerate(lines, 1) if number not in drop]
+    if drop and max(drop) == len(lines):
+        while kept and not kept[-1].strip():
+            kept.pop()
+    new = ''.join(kept)
+    body = ast.parse(new).body
+    if all(isinstance(node, (ast.Import, ast.ImportFrom, ast.Pass))
+           or (isinstance(node, ast.Expr)
+               and isinstance(node.value, ast.Constant))
+           for node in body):
+        return None
+    return new
+
+
+def _conftests(root):
+    """Every `conftest.py` under the project that names the pytest plugin."""
+    hits = []
+    for dirpath, dirnames, names in os.walk(root):
+        dirnames[:] = sorted(d for d in dirnames
+                             if not d.startswith('.') and d not in SKIP_DIRS)
+        if 'conftest.py' in names:
+            rel = os.path.relpath(os.path.join(dirpath, 'conftest.py'), root)
+            hits.append(rel.replace(os.sep, '/'))
+    return hits
+
+
+def _wiring(root):
+    """`[(path, new text)]`: what loaded 0.9.5's plugins, undone.
+
+    A text of None means the file held nothing else and goes; False means
+    a `conftest.py` Python cannot read, which is named and left. A `.csproj`
+    compiling the xUnit logger is not rewritten: it is reported, with what
+    to remove.
     """
     edits = []
-    for rel in ('conftest.py',):
-        path = os.path.join(root, rel)
-        if not os.path.isfile(path):
+    for rel in _conftests(root):
+        try:
+            text = _read(os.path.join(root, rel))
+        except (IOError, OSError, UnicodeDecodeError):
             continue
-        text = _read(path)
-        if not CONFTEST_PLUGIN_RE.search(text):
+        if PYTEST_PLUGIN not in text:
             continue
-        new = CONFTEST_PLUGIN_RE.sub('', text)
-        new = re.sub(r'(?m)^[ \t]*pytest_plugins\s*=\s*\[\s*\][ \t]*\r?\n?',
-                     '', new)
-        edits.append((rel, new if new.strip() else None))
+        try:
+            new = clean_conftest(text)
+        except (SyntaxError, ValueError):
+            edits.append((rel, False))
+            continue
+        if new != text:
+            edits.append((rel, new))
     names = [name for name in sorted(os.listdir(root))
              if re.match(r'^(?:jest|vitest)\.config\.[cm]?[jt]s$|^jest\.'
                          r'config\.json$|^package\.json$', name)]
@@ -1193,7 +1296,8 @@ def _logger_projects(root):
 
 
 def _detect_plugins(root):
-    return _plugin_copies(root) + [rel for rel, _new in _wiring(root)]
+    return _plugin_copies(root) + [rel for rel, new in _wiring(root)
+                                   if new is not False]
 
 
 def _apply_plugins(root, files, args, out):
@@ -1219,6 +1323,9 @@ def _apply_plugins(root, files, args, out):
         os.rmdir(folder)
     for rel, new in _wiring(root):
         path = os.path.join(root, rel)
+        if new is False:
+            out.say(CONFTEST_UNREAD % rel)
+            continue
         out.kept(_back_up_copy(path, rel))
         if new is None:
             _untrack(root, rel)
