@@ -231,7 +231,7 @@
         "verdict": "strong"
       },
       "RULE-3": {
-        "at": "2026-10-02T09:32:04Z",
+        "at": "2026-10-02T16:08:21Z",
         "breaks": {
           "PROOF-112": {
             "after": "ENVIRONMENT = {'DISABLE_PROMPT_CACHING': '0'}",
@@ -248,36 +248,27 @@
             "after": "                        encoding='ascii', errors='replace', cwd=cwd,",
             "aim": "past the test",
             "before": "                        encoding='utf-8', errors='replace', cwd=cwd,",
-            "break_key": "7320a169e69075202ffd2d301475b9e94bf16d02ff0cba37b40ea4e4e4a417dd",
+            "break_key": "a004f4dfcc67b14e6dda521cb8ecec1a685fcd22a388ae9b483de4686f09e02a",
             "case": "the audit asks about RULE-2 with a request holding a character outside ASCII; the proof says the request is the whole of standard input; the changed code writes `?` in place of each such character",
             "file": "scripts/review/ai_audit.py",
             "line": 522,
-            "result": "survived",
+            "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d1f7003ebe30f80d56761824e38471ed113aaccf8954fa6a858197384df84682",
-        "commit": "818e27dccadc51ba531fe646286f0455bdd8738c",
+        "code_hash": "730757d67cbd2f41b50a4865243413b83ca494ab5bd6c93378c7dbbaf66785c2",
+        "commit": "b39a7422ff4e5ad7f3685a1ea4e2e201482ed55f",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
-        "explanation": [
-          "PROOF-14: the test stands in for the process runner and compares the whole argument list with a literal, the timeout with 300 and the `input` argument with the request, so the program, the time limit and the request are each observed.",
-          "PROOF-14: the expected request is built by the code's own `model_prompt`, and the encoding the request is written in is never compared, so a request altered on its way to standard input can still pass.",
-          "PROOF-82: the test runs a stand-in `claude` found on the search path and compares the call count with one, the first seven arguments with literals, the prompt it read with the request and the explanation with `read to the end`, which is what the proof names.",
-          "PROOF-112: the test runs the whole audit against a stand-in `claude` and checks that its folder is neither the root nor under it, that its listing is empty, that the variable reads `1` and that the folder no longer exists, so each result the proof names is observed.",
-          "Findings: the spot tests found nothing, and each of the three tests holds failable assertions on the values its proof names."
-        ],
-        "findings": [
-          "PROOF-14: the test still passes when scripts/review/ai_audit.py:522 reads \"encoding='ascii', errors='replace', cwd=cwd,\"",
-          "PROOF-14: the AI says this breaks: the audit asks about RULE-2 with a request holding a character outside ASCII; the proof says the request is the whole of standard input; the changed code writes `?` in place of each such character"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [
           "No bug was planted: PROOF-82 needs Windows, and this machine is macOS."
         ],
         "proof_hash": "e1262d54a18522fe5613a0f3426929db62dae98768b846dbc53076497010f9eb",
         "rule_hash": "4a462d9275688693a1a703668e1e70f38375041873b6547aac4ca6b5eee82c8b",
-        "test_hash": "32f91f8ecd84f3c1328b0f691a1b7dacb3d870186ff05c2d539fb90c51512d66",
-        "verdict": "weak"
+        "test_hash": "5d5781e065e55eeda0f690512dcc91e947efaf44132a4ab078482a8907748b91",
+        "verdict": "strong"
       },
       "RULE-33": {
         "at": "2026-10-02T09:32:04Z",
