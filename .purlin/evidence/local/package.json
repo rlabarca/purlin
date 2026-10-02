@@ -154,39 +154,38 @@
         "verdict": "strong"
       },
       "RULE-17": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-02T10:57:45Z",
         "breaks": {
           "PROOF-15": {
-            "after": "                    'source': source, 'at': group['at'] and group['at'] + '\\n' or None,",
-            "aim": "past the test",
-            "before": "                    'source': source, 'at': group['at'] or None,",
-            "break_key": "88fdb0feb842fa54966a729440d8b38d9825b621238bed5d17945caa1d9fbd33",
-            "case": "the time stored under `at` for a run in a signed project's package; the proof says it reads as a date, `T`, a time to the second and `Z` with nothing after, as `2026-09-13T12:00:00Z` does; the changed code gives that time followed by a line break, so it no longer ends in `Z`",
+            "after": "                    'at': (section.get('at') or '').replace('Z', '+00:00') or None,",
+            "aim": "plain",
+            "before": "                    'at': section.get('at'),",
+            "break_key": "20a432fe163882010824e654d683a8e19667b8bf02859a494e48945da1b76b02",
+            "case": "a signed project's package, each result's time under `at`; the proof says each reads like `2026-09-13T12:00:00Z`, ending in `Z` with no offset; the changed code gives `2026-09-13T12:00:00+00:00`",
             "file": "scripts/export/package.py",
-            "line": 673,
-            "result": "survived",
+            "line": 553,
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
+        "commit": "b284a2d266fc3221fc78cc1d2e6bea69308540c6",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
         "explanation": [
-          "PROOF-15: the test walks the whole signed package, gathers every value under `at` that is not null, and checks that there are at least four and that none fails the `UTC` pattern, which is what the proof names.",
-          "PROOF-15: the `UTC` pattern is defined outside the test shown and is applied with `match`, which anchors only at the start, so whether text after the `Z` (a line break, an offset) is refused depends on how that pattern ends.",
-          "PROOF-15: the count is checked as at least four over all `at` values together, so the test does not tell which parts of the package (results, runs, audit) supplied them.",
-          "Findings: none were raised; the test asserts on values read from the built package against a pattern, so no spot test applies."
+          "PROOF-15: the test walks the whole signed package, collects every value under `at` that is not null, requires at least four and requires each to match the `UTC` pattern in full, which is the proof's case and its result.",
+          "PROOF-15: the `UTC` pattern is defined outside the test source shown, so whether it refuses an offset and a fraction of a second cannot be read from here.",
+          "PROOF-15: the spot tests found nothing, and the test's assertions can fail on the count and on any `at` value the pattern does not match."
         ],
-        "findings": [
-          "PROOF-15: the test still passes when scripts/export/package.py:673 reads \"'source': source, 'at': group['at'] and group['at'] + '\\n' or None,\"",
-          "PROOF-15: the AI says this breaks: the time stored under `at` for a run in a signed project's package; the proof says it reads as a date, `T`, a time to the second and `Z` with nothing after, as `2026-09-13T12:00:00Z` does; the changed code gives that time followed by a line break, so it no longer ends in `Z`"
-        ],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
+        "notes": [
+          "PROOF-15 names only the times stored under `at`, while the rule speaks of every time in the package, so a time stored under another key is not covered by it."
+        ],
         "proof_hash": "b0c06b21d84a0e5c9df0240972728758b10358c8116c65997bef1e6c15ba1ddf",
         "rule_hash": "5c754e2c67636fe74ade190d62194ef1beb62623671b504f5c1541f6d0b9d4da",
-        "test_hash": "e4589d3bda3b92edf4a48c9263d474e139f5b7ef120eaa20e4e86f12b35db462",
-        "verdict": "weak"
+        "test_hash": "7e371ce9e3bfbbd8116aedb3c31bb1ca87f708f2170ace4c6988362245edbeaf",
+        "verdict": "strong"
       },
       "RULE-2": {
         "at": "2026-10-02T09:39:20Z",
@@ -290,39 +289,37 @@
         "verdict": "strong"
       },
       "RULE-23": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-02T10:57:45Z",
         "breaks": {
           "PROOF-52": {
-            "after": "    try:\n        os.makedirs(os.path.dirname(full), exist_ok=True)\n    except OSError:\n        print('The package folder could not be made.')\n        raise",
-            "aim": "past the test",
+            "after": "    folder = os.path.dirname(full)\n    if os.path.isfile(folder):\n        os.remove(folder)\n    os.makedirs(folder, exist_ok=True)",
+            "aim": "plain",
             "before": "    os.makedirs(os.path.dirname(full), exist_ok=True)",
-            "break_key": "289e5f851e5f318d293ab6af417897b7be593725c6fab905c91ac15e3dc96412",
-            "case": "`.purlin/evidence/package` is a file and the walk is answered yes; the proof says it prints one line carrying the operating system's message; the changed code prints a second line beside it",
+            "break_key": "5b3aa2e838c85f78662902c94120aab1b9d6f832d1c5095fc5fd59f05fabe177",
+            "case": "`.purlin/evidence/package` is a file and the walk is answered yes; the proof says exit 1, one line carrying the operating system's message, no commit and no tag; the changed code removes the file, writes the package and goes on to sign",
             "file": "scripts/export/package.py",
             "line": 933,
-            "result": "survived",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
+        "commit": "b284a2d266fc3221fc78cc1d2e6bea69308540c6",
         "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
         "explanation": [
-          "PROOF-52: the test makes `.purlin/evidence/package` a file, signs, and compares the exit code with 1, the head commit with the one before, and the tag list with the empty string, so a commit, a tag or another exit code fails it.",
-          "PROOF-52: the test takes the operating system's message from its own attempt to make the folder, not from the code under test, and compares the one line carrying that message with the full expected sentence, so a different or missing message fails it.",
-          "PROOF-52: the test keeps only the lines that hold the operating system's message, so any other line printed beside that one is not observed, and \"prints one line\" is checked only among lines carrying the message.",
-          "The spot tests found nothing, which fits a test that asserts on literal values and on an error text the code cannot influence; what they miss is the filter that leaves other output unread."
+          "PROOF-52: the test makes `.purlin/evidence/package` a file, answers the walk and compares the exit code with 1, as the proof names.",
+          "PROOF-52: the test takes the operating system's message from its own failed attempt to make the folder, not from the code under test, and requires exactly one printed line to carry it, with the full sentence compared word for word.",
+          "PROOF-52: the test also requires that line to be the last one printed after an empty line, and nothing to reach standard output or standard error beside the walk's lines.",
+          "PROOF-52: the test compares the head commit before and after and requires the tag list to be empty, so a commit or a tag added would fail it.",
+          "PROOF-52: the spot tests found nothing, and the test compares every result the proof names, so no change that breaks the proof's case is likely to get past it."
         ],
-        "findings": [
-          "PROOF-52: the test still passes when scripts/export/package.py:933 reads \"try:\"",
-          "PROOF-52: the AI says this breaks: `.purlin/evidence/package` is a file and the walk is answered yes; the proof says it prints one line carrying the operating system's message; the changed code prints a second line beside it"
-        ],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "8ab4264466d7a05c442b0f71da39dd2f9e3256d56670128a2f5648b32e51383b",
         "rule_hash": "7bac124b243ffdd97a01177444c049102ddab0585f5445fcf26c05ed0e4013cd",
-        "test_hash": "4644c769f0efae856ce247c2cb63dcf20deddee1b930b8e163639de50ac549ec",
-        "verdict": "weak"
+        "test_hash": "c080412b2ebe4c8eb5dd1cb45b80b328fa9c3562c4653beee42f0ea2049cb983",
+        "verdict": "strong"
       },
       "RULE-25": {
         "at": "2026-10-02T09:39:20Z",
@@ -1003,14 +1000,14 @@
   "feature": "package",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T09:34:20Z",
-      "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
+      "at": "2026-10-02T10:57:10Z",
+      "commit": "b284a2d266fc3221fc78cc1d2e6bea69308540c6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
         "spec": "bea6552952e06b467f48d4fd87275278f5b8b78a2bae61fe08c5656e4716b3e0",
-        "tests": "876314eb797f8d808e9c59d4f6e9cf835c038400cf09fbc1ef172e024628410a"
+        "tests": "21d58e240af265c799aacb387ca4105a60ecd9c540b03a571e457ab604af95b4"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
