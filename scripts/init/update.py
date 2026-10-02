@@ -41,6 +41,7 @@ if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 from purlin import (console as console_module,                # noqa: E402
+                    markers as markers_module,
                     specs as specs_module)
 import config_engine                                          # noqa: E402
 # --- what 0.9.5 wrote, which the upgrade finds and rewrites --------------
@@ -812,37 +813,155 @@ def _rewrite_python(lines, ext):
     return out, count, left
 
 
-_CALL_START_RE = re.compile(r'(?<![\w$.])(?:it|test)(?:\s*\.\s*\w+)*\s*\(')
+_CALL_START_RE = re.compile(
+    r'(?<![\w$.])(?:it|test)((?:\s*\.\s*\w+)*)\s*\(')
+# What may stand between a test's opening bracket and a piece of its title:
+# other pieces, blanked here, the `+` joining them, and a name joined in.
+_STRING = '\x00'
+_TITLE_SO_FAR_RE = re.compile(r'^[\s+\w$.\x00]*$')
 
 
-def _rewrite_js(lines, ext):
-    out = list(lines)
-    inserts = []
-    count = 0
-    for index, line in enumerate(lines):
-        tags = list(TITLE_TAG_RE.finditer(line))
+def _js_strings(text):
+    """`(mask, spans)`: `text` with every comment and regex literal blanked
+    and every character of a string literal written `_STRING`, newlines
+    kept, and `(start, end)` of each string literal, read as the test run's
+    reader reads them."""
+    mask, spans = list(text), []
+    index, size = 0, len(text)
+    while index < size:
+        after = markers_module.skip_noncode(text, index)
+        if after is None:
+            index += 1
+            continue
+        after = max(min(after, size), index + 1)
+        string = text[index] in '"\'`'
+        if string:
+            spans.append((index, after))
+        for position in range(index, after):
+            if mask[position] != '\n':
+                mask[position] = _STRING if string else ' '
+        index = after
+    return ''.join(mask), spans
+
+
+def _closing(mask, index):
+    """The offset after the `)` matching the `(` at `index`, else None."""
+    depth = 0
+    for position in range(index, len(mask)):
+        if mask[position] == '(':
+            depth += 1
+        elif mask[position] == ')':
+            depth -= 1
+            if depth == 0:
+                return position + 1
+    return None
+
+
+def _owning_call(mask, calls, position):
+    """The offset at which the test whose title holds `position` opens, or
+    None where the string there is not part of a test's title."""
+    owner = None
+    for call in calls:
+        if call.end() > position:
+            break
+        owner = call
+    if owner is None:
+        return None
+    opened = owner.end() - 1
+    if '.each' in re.sub(r'\s', '', owner.group(1)):
+        # `it.each(table)(title, fn)`: the title is in the second brackets.
+        after = _closing(mask, opened)
+        if after is None or after > position:
+            return None
+        rest = mask[after:position]
+        if not rest.lstrip().startswith('('):
+            return None
+        opened = after + len(rest) - len(rest.lstrip())
+    if not _TITLE_SO_FAR_RE.match(mask[opened + 1:position]):
+        return None
+    return owner.start()
+
+
+def _line_at(text, offset):
+    return text.count('\n', 0, offset) + 1
+
+
+def _rewrite_js(text, eol):
+    """Each title tag becomes one comment above the line that opens its test.
+
+    A tag that was a string piece of its own goes with its `+`, and the space
+    beside a tag goes with it, so `'a title ' + '[proof:...]'` is left as
+    `'a title'`. A tag in a string that is no test's title is left and named.
+    """
+    mask, spans = _js_strings(text)
+    calls = list(_CALL_START_RE.finditer(mask))
+    starts = dict((start, end) for start, end in spans)
+    ends = dict((end, start) for start, end in spans)
+    edits, comments, left, count = [], {}, [], 0
+    for start, end in spans:
+        if '[proof:' not in text[start:end] or text[end - 1] != text[start]:
+            continue
+        inner = text[start + 1:end - 1]
+        line = _line_at(text, start)
+        lettered = [found.group(2, 3)
+                    for found in LETTERED_TAG_RE.finditer(inner)]
+        left.extend((line, pair) for pair in lettered)
+        tags = list(TITLE_TAG_RE.finditer(inner))
         if not tags:
             continue
-        out[index] = TITLE_TAG_RE.sub('', line)
-        # The call the title belongs to starts on this line or just above it.
-        owner = index
-        for back in range(index, max(-1, index - 3), -1):
-            if _CALL_START_RE.search(lines[back]):
-                owner = back
-                break
-        indent = re.match(r'[ \t]*', lines[owner]).group(0)
+        owner = _owning_call(mask, calls, start)
+        if owner is None:
+            left.append((line, None))
+            continue
+        at = text.rfind('\n', 0, owner) + 1
+        indent = re.match(r'[ \t]*', text[at:]).group(0)
         for tag in tags:
-            inserts.append((owner, _comment(ext, indent, tag.group(1),
-                                            tag.group(2))))
+            comments.setdefault(at, []).append(
+                _comment('.js', indent, tag.group(1), tag.group(2)))
             count += 1
-    # From the bottom up, so each index still points at its line, and the
-    # tags of one call in the order the title held them.
-    by_owner = {}
-    for owner, comment in inserts:
-        by_owner.setdefault(owner, []).append(comment)
-    for owner in sorted(by_owner, reverse=True):
-        out[owner:owner] = by_owner[owner]
-    return out, count, []
+        kept = TITLE_TAG_RE.sub('', inner)
+        if TITLE_TAG_RE.match(inner):
+            kept = kept.lstrip(' ')
+        if kept.strip() or lettered:
+            edits.append((start + 1, end - 1, kept))
+            continue
+        # The tag was the whole piece: it goes with the `+` that joined it.
+        before = start - 1
+        while before >= 0 and mask[before] in ' \t\r\n':
+            before -= 1
+        after = end
+        while after < len(mask) and mask[after] in ' \t\r\n':
+            after += 1
+        if before >= 0 and mask[before] == '+':
+            last = before - 1
+            while last >= 0 and mask[last] in ' \t\r\n':
+                last -= 1
+            edits.append((last + 1, end, ''))
+            if last + 1 in ends:
+                piece = text[ends[last + 1] + 1:last]
+                edits.append((last - (len(piece) - len(piece.rstrip(' '))),
+                              last, ''))
+        elif after < len(mask) and mask[after] == '+':
+            first = after + 1
+            while first < len(mask) and mask[first] in ' \t\r\n':
+                first += 1
+            edits.append((start, first, ''))
+            if first in starts:
+                piece = text[first + 1:starts[first] - 1]
+                edits.append((first + 1, first + 1 + len(piece)
+                              - len(piece.lstrip(' ')), ''))
+        else:
+            edits.append((start + 1, end - 1, kept))
+    edits += [(at, at, ''.join(line + eol for line in lines))
+              for at, lines in comments.items()]
+    # From the end of the file back, so each offset still points at its place.
+    out, floor = text, len(text) + 1
+    for begin, stop, new in sorted(edits, reverse=True):
+        if stop > floor:
+            continue
+        out = out[:begin] + new + out[stop:]
+        floor = begin
+    return out, count, left
 
 
 def _rewrite_cs(lines, ext):
@@ -917,17 +1036,48 @@ def rewrite_markers(text, ext):
     `lettered` is None for one such as a module-wide `pytestmark`, and
     `(feature, id)` for one naming a proof numbered with a letter.
     """
-    rewrite = _REWRITERS.get(ext, _rewrite_js)
     # A file whose every line ends `\r\n` keeps that ending, the comments
     # written into it included.
     eol = ('\r\n' if '\r\n' in text
            and text.count('\r\n') == text.count('\n') else '\n')
+    rewrite = _REWRITERS.get(ext)
+    if rewrite is None:
+        return _rewrite_js(text, eol)
     ending = eol if text.endswith(eol) else ''
     lines = text.split(eol)
     if ending:
         lines = lines[:-1]
     out, count, left = rewrite(lines, ext)
     return eol.join(out) + ending, count, left
+
+
+TITLE_UNREAD = ('%s:%d: the title of the test under this marker cannot be '
+                'read, so its result cannot be matched. Write it as one plain '
+                'string.')
+_JS_EXTENSIONS = ('.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx', '.mts', '.cts')
+
+
+def unread_titles(rel, text):
+    """The lines of the markers in `text` whose test the test run's reader
+    cannot read: a marker it ties to no test, and in a JavaScript or
+    TypeScript file one it ties to another test than the one under it."""
+    ext = os.path.splitext(rel)[1].lower()
+    if ext in ('.sh', '.bash', '.sql'):
+        return []
+    read = markers_module.read_text(rel, text, 'junit')
+    tied = dict((marker.line, test.line) for test in read.tests
+                for marker in test.markers)
+    lines = text.splitlines()
+    problems = []
+    for marker in read.markers:
+        under = marker.line
+        while (under < len(lines)
+               and markers_module.parse_comment(lines[under]) is not None):
+            under += 1
+        if marker.line not in tied or (ext in _JS_EXTENSIONS
+                                       and tied[marker.line] != under + 1):
+            problems.append(marker.line)
+    return problems
 
 
 def _marked_old(root):
@@ -959,6 +1109,7 @@ def _detect_markers(root):
 def _apply_markers(root, files, args, out):
     """Each 0.9.5 marker becomes one comment above the same test."""
     found = _marked_old(root)
+    unread = []
     for rel in files:
         new, count, left = found.get(rel, (None, 0, []))
         if not count:
@@ -973,6 +1124,8 @@ def _apply_markers(root, files, args, out):
         if ext in ('.sh', '.bash', '.sql'):
             line += ('; the file is one test now, and passes when it exits 0')
         out.say(line)
+        for number in unread_titles(rel, new):
+            unread.append(TITLE_UNREAD % (rel, number))
     held = set((_spec_name(spec), old)
                for spec, pairs in _lettered_specs(root).items()
                for old, _new in pairs)
@@ -985,6 +1138,8 @@ def _apply_markers(root, files, args, out):
             else:
                 out.say(LEFT_NO_SPEC % ((rel, number) + lettered
                                         + lettered[:1]))
+    for line in unread:
+        out.say(line)
 
 
 def _wiring(root):

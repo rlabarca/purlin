@@ -24,6 +24,8 @@ What each group proves:
 *files*       the files 0.9.5 kept that this release does not use
 *evidence*    `.purlin/evidence/` and its README, and the dashboard page
 *lettered*    a proof 0.9.5 numbered with a letter takes a number of its own
+*titles*      a title tag in the shapes a real project writes it, and the
+              read-back with the test run's own reader
 """
 
 import fnmatch
@@ -1142,3 +1144,87 @@ def test_declined_lettered_proofs_stay_and_their_markers_say_so(
             'PROOF-2b, which is numbered with a letter. Run purlin:init '
             '--update again and apply lettered-proofs') in printed, printed
     assert _ids(root) == ['lettered-proofs']
+
+
+# --- a title tag, in the shapes a real project writes it ------------------------
+
+PROXY_TS = 'packages/web/test/dev_proxy.test.ts'
+UNREAD = ('the title of the test under this marker cannot be read, so its '
+          'result cannot be matched. Write it as one plain string.')
+
+
+def _title(tmp_path, capsys, old):
+    """The sample given one TypeScript test file, updated with `--yes`:
+    `(the file's lines now, the lines printed)`."""
+    root, printed = _rewritten(tmp_path, capsys, PROXY_TS, old)
+    return _read(root, PROXY_TS).splitlines(), printed
+
+
+# purlin: update PROOF-174
+def test_a_tag_joined_on_one_line_leaves_one_plain_title(tmp_path, capsys):
+    now, printed = _title(tmp_path, capsys, (
+        "it('every route is forwarded to it ' + "
+        "'[proof:dev_proxy:PROOF-1:RULE-1:unit]', () => {\n});\n"))
+    assert now == ['// purlin: dev_proxy PROOF-1',
+                   "it('every route is forwarded to it', () => {", '});']
+    assert not [line for line in printed if line.endswith(UNREAD)], printed
+
+
+# purlin: update PROOF-175
+def test_a_tag_on_a_line_of_its_own_goes_with_its_plus(tmp_path, capsys):
+    now, _printed = _title(tmp_path, capsys, (
+        "test(\n"
+        "  'a role still plays '\n"
+        "  + '[proof:dev_proxy:PROOF-1:RULE-1:unit]',\n"
+        "  () => {\n});\n"))
+    assert now == ['// purlin: dev_proxy PROOF-1', 'test(',
+                   "  'a role still plays',", '  () => {', '});']
+
+
+# purlin: update PROOF-176
+def test_a_plus_ending_the_line_above_the_tag_goes_too(tmp_path, capsys):
+    now, _printed = _title(tmp_path, capsys, (
+        "test(\n"
+        "  'a role still plays ' +\n"
+        "  '[proof:dev_proxy:PROOF-1:RULE-1:unit]',\n"
+        "  () => {\n});\n"))
+    assert now == ['// purlin: dev_proxy PROOF-1', 'test(',
+                   "  'a role still plays',", '  () => {', '});']
+
+
+# purlin: update PROOF-177
+def test_a_tag_opening_a_title_leaves_no_leading_space(tmp_path, capsys):
+    now, _printed = _title(tmp_path, capsys, (
+        'it("[proof:dev_proxy:PROOF-1:RULE-1:unit] every setting is '
+        'accepted", () => {\n});\n'))
+    assert now == ['// purlin: dev_proxy PROOF-1',
+                   'it("every setting is accepted", () => {', '});']
+
+
+# purlin: update PROOF-178
+def test_the_comment_goes_above_the_line_that_opens_the_test(tmp_path,
+                                                             capsys):
+    now, _printed = _title(tmp_path, capsys, (
+        "describe('import', () => {\n"
+        "  test(\n"
+        "    'an imported track is a stem of the built score '\n"
+        "    + 'through the standard setters, '\n"
+        "    + 'and its audition [proof:dev_proxy:PROOF-2:RULE-2:unit]',\n"
+        "    async () => {\n    },\n  );\n});\n"))
+    assert now == ["describe('import', () => {",
+                   '  // purlin: dev_proxy PROOF-2',
+                   '  test(',
+                   "    'an imported track is a stem of the built score '",
+                   "    + 'through the standard setters, '",
+                   "    + 'and its audition',",
+                   '    async () => {', '    },', '  );', '});']
+
+
+# purlin: update PROOF-179
+def test_a_title_the_reader_cannot_read_is_named(tmp_path, capsys):
+    now, printed = _title(tmp_path, capsys, (
+        "const NAME = 'forwarded';\n"
+        "it(NAME + ' [proof:dev_proxy:PROOF-1:RULE-1:unit]', () => {\n});\n"))
+    assert now == ["const NAME = 'forwarded';",
+                   '// purlin: dev_proxy PROOF-1', 'it(NAME, () => {', '});']
+    assert ('  %s:2: %s' % (PROXY_TS, UNREAD)) in printed, printed

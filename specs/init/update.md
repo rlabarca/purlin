@@ -9,8 +9,8 @@
 >   tool or person wrote is left alone, and one commit carries the whole run.
 > Scope: scripts/init/update.py
 > Stack: python3 (stdlib only, 3.9 floor)
-> Highest-Rule: 57
-> Highest-Proof: 173
+> Highest-Rule: 59
+> Highest-Proof: 179
 
 ## Rules
 
@@ -32,6 +32,8 @@
 - RULE-55: The update removes no workflow on its own: for each file under `.github/workflows/` that names a proof file it prints the line that does and asks `Remove <path>? [y/N]`, backing up what it removes; `--yes` answers for none, and a workflow not removed is kept, named with what to do, and alone holds no update pending
 - RULE-56: An anchor whose `> Source:` is a git address keeps its `> Source:` and `> Pinned:` lines through the update, byte for byte
 - RULE-57: A proof 0.9.5 numbered with a letter, such as `PROOF-7b`, is given the next free number in its spec, `> Highest-Proof:` moving with it where the spec has that line; the marker of each test that named it is rewritten with the new number, and each change is printed as `<spec> PROOF-7b is now PROOF-<n>`; a marker naming a lettered proof no spec holds is left as it was and named by file and line
+- RULE-58: A tag in a JavaScript or TypeScript test's title becomes one comment directly above the line that opens the test, however many lines the title runs over; a tag that was a string piece of its own goes with the `+` that joined it and the space beside it, so a title of one piece and its tag is left one plain string, and a tag that opened a title leaves no space in front of it
+- RULE-59: After rewriting a test file the update reads it back as a test run reads it, and for each marker whose test's title that reading cannot read it prints `<file>:<line>: the title of the test under this marker cannot be read, so its result cannot be matched. Write it as one plain string.`
 
 ## Proof
 
@@ -85,3 +87,9 @@
 - PROOF-171 (RULE-57): A TypeScript test whose title ends `[proof:piano:PROOF-7b:RULE-1:unit]` and a pytest test marked for `piano` `PROOF-2b` carry, after the update with `--yes`, `// purlin: piano PROOF-11` and `# purlin: piano PROOF-10` above them, and neither file holds `PROOF-7b` or `PROOF-2b`
 - PROOF-172 (RULE-57): A pytest test marked for `piano` `PROOF-9c`, which the spec does not hold, is byte for byte as it was after the update with `--yes`, and the output holds `left tests/test_orphan.py:4 as it was: it names piano PROOF-9c, which no spec has. Write the proof with purlin:spec piano, then write the marker as a comment above the test by hand`
 - PROOF-173 (RULE-57): `lettered-proofs` is pending before `markers`; with its question alone answered `n`, the spec and the test marked for `PROOF-2b` are as they were, the output holds `left tests/test_piano.py:4 as it was: it names piano PROOF-2b, which is numbered with a letter. Run purlin:init --update again and apply lettered-proofs`, and only `lettered-proofs` is pending
+- PROOF-174 (RULE-58): A TypeScript test opening `it('every route is forwarded to it ' + '[proof:dev_proxy:PROOF-1:RULE-1:unit]', () => {` opens, after the update with `--yes`, `it('every route is forwarded to it', () => {` under the line `// purlin: dev_proxy PROOF-1`, and the output holds no line ending `Write it as one plain string.`
+- PROOF-175 (RULE-58): A test whose title is the line `'a role still plays '` and, on the next line, `+ '[proof:dev_proxy:PROOF-1:RULE-1:unit]',` holds after the update with `--yes` the one title line `'a role still plays',`, under `test(` and the comment `// purlin: dev_proxy PROOF-1` above it
+- PROOF-176 (RULE-58): A test whose title is the line `'a role still plays ' +` and, on the next line, `'[proof:dev_proxy:PROOF-1:RULE-1:unit]',` holds after the update with `--yes` the one title line `'a role still plays',`
+- PROOF-177 (RULE-58): A test opening `it("[proof:dev_proxy:PROOF-1:RULE-1:unit] every setting is accepted", () => {` opens after the update with `--yes` `it("every setting is accepted", () => {`
+- PROOF-178 (RULE-58): A test inside a `describe` whose title runs over three joined lines, the tag ending the third, has after the update with `--yes` the comment `// purlin: dev_proxy PROOF-2` directly above its `test(` line, at that line's indent, and its three title lines follow `test(` with only the tag and the space before it gone
+- PROOF-179 (RULE-59): A test opening `it(NAME + ' [proof:dev_proxy:PROOF-1:RULE-1:unit]', () => {` on line 2 opens `it(NAME, () => {` after the update with `--yes`, under its comment, and the output holds `packages/web/test/dev_proxy.test.ts:2: the title of the test under this marker cannot be read, so its result cannot be matched. Write it as one plain string.`
