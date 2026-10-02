@@ -1566,8 +1566,8 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T15:40:56Z",
-      "commit": "5e5d861b0220c5f55f528f4aae2c159fa77b1532",
+      "at": "2026-10-02T16:35:04Z",
+      "commit": "881e125131b93612df6838e690916288886d2bd7",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {

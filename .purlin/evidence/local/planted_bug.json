@@ -1048,14 +1048,14 @@
   "feature": "planted_bug",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T15:32:06Z",
-      "commit": "c01fa69f8ba515e508fe5c4c40c18e099d276c01",
+      "at": "2026-10-02T16:35:04Z",
+      "commit": "881e125131b93612df6838e690916288886d2bd7",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "0ca1dfd0dbae367f99d6314875996d386888d20634ae49a0404d112392484749",
-        "spec": "cbf1246fdeedc85986d35ace9e056608dcafb34923533eace7ea6651b0a3e9e2",
-        "tests": "6df83dad38afcf8a51f9921260b6318f571b7e427cd6ce1eca1aa1520d0f807e"
+        "code": "aa6969bee995fe570556a78122567eb9b235e0245926484b43d87b2942793f67",
+        "spec": "45c14f589b8034dd623863be04d1f39d34ed326bc0b4f146d5541869b3343ba8",
+        "tests": "cf691c5a1e599cbc2ae391d01018d550af9dbab3171c8f19baeb292bdebb61ea"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -1130,6 +1130,14 @@
           "result": "pass",
           "rule": "RULE-6",
           "test": "dev/test_planted_bug.py::test_three_bugs_with_nothing_else_touching_the_project"
+        },
+        {
+          "env": null,
+          "id": "PROOF-61",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_planted_bug.py::test_a_project_that_changes_as_a_bug_is_planted_again_stops_the_settle"
         },
         {
           "env": null,
@@ -1506,6 +1514,22 @@
           "result": "pass",
           "rule": "RULE-30",
           "test": "dev/test_planted_bug.py::test_a_typescript_directive_line_added_is_planted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-59",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_planted_bug.py::test_an_indented_typescript_directive_changed_is_planted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-60",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_planted_bug.py::test_an_indented_go_directive_changed_is_planted"
         }
       ],
       "rules": {

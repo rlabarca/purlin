@@ -1511,8 +1511,8 @@
   "feature": "signatures",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T15:43:27Z",
-      "commit": "1deb3e57fdba7b5cba9ae641af70aac573625312",
+      "at": "2026-10-02T16:35:05Z",
+      "commit": "881e125131b93612df6838e690916288886d2bd7",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {

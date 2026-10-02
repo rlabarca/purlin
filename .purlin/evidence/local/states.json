@@ -2,8 +2,8 @@
   "feature": "states",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T15:29:17Z",
-      "commit": "0cf0c983cdc2f5212a25a9b14a622756bedb00e6",
+      "at": "2026-10-02T16:35:05Z",
+      "commit": "881e125131b93612df6838e690916288886d2bd7",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
