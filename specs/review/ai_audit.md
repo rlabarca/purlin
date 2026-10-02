@@ -8,11 +8,14 @@
 >   `spot-checked` when none does and no bug was planted and caught. A bug that survived is shown
 >   with the case the model says it breaks. The model's reading becomes the explanation; it
 >   decides nothing. Each answer names the model that gave it and a fingerprint of the criteria
->   it was sent. The audit's last line is the share of rules it found strong.
+>   it was sent. The audit's last line is the share of rules it found strong. Run with
+>   `--settle` for a rule, the audit plants again each bug that rule keeps as `survived` and
+>   runs the proof's test as it stands: a test that now fails makes the bug `caught`, and one
+>   that still passes drops the bug and has one new bug planted in its place.
 > Scope: scripts/review/audit_run.py, scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
-> Highest-Rule: 51
-> Highest-Proof: 137
+> Highest-Rule: 64
+> Highest-Proof: 158
 
 ## Rules
 
@@ -40,13 +43,26 @@
 - RULE-49: A planted bug that survived adds two findings to its rule, `<PROOF-N>: the test still passes when <file>:<line> reads "<the changed line>"` and directly after it `<PROOF-N>: the AI says this breaks: <case>`, whether the bug was planted by this audit or kept from an earlier one, and the audit prints both under the rule
 - RULE-50: A planted bug that was caught adds no finding to its rule
 - RULE-51: A planted bug's entry kept from an earlier audit that holds no `aim` or no `case` is written, when the audit next writes its rule's entry, with `aim` `plain` and `case` empty
+- RULE-52: `--settle RULE-N` is taken only beside `--audit` and exactly one `--feature`: any other use is refused before a test starts, with exit 2, and a rule the feature's spec does not have with exit 1 and `<feature> <RULE-N> is not a rule any spec has. Run purlin:status <feature> to see its rules.`
+- RULE-53: An audit run with `--settle` reads the rules it names and no other rule
+- RULE-54: Settling a rule plants again each bug its entry keeps as `survived`, with no model asked, and runs that proof's tests as they stand; where a test fails, the bug's entry reads `caught` with the same `file`, `line`, `before`, `after`, `aim` and `case`, its two findings leave the rule, and the audit prints under the rule `  <PROOF-N>: the test now catches the bug it missed at <file>:<line>.`
+- RULE-55: A bug planted again that its proof's tests still pass with is dropped: the model is asked for one new bug for that proof, in the request any audit sends, the new bug is planted as any is, and the audit prints under the rule `  <PROOF-N>: the bug at <file>:<line> did not break what the proof says. A new bug was planted.`
+- RULE-56: Where the new bug survives as well, no bug is kept for the proof: its entry reads `not made` with the reason `two planted bugs left the proof's check passing`, `no_bug` gains `No bug was caught for <PROOF-N>: two planted bugs left the proof's check passing.`, and no audit plants a bug for the proof again until its test or code changes
+- RULE-57: A dropped bug is kept nowhere in the evidence: not under `breaks` and not among the `findings`
+- RULE-58: Where no new bug is planted after a drop, because the model names none, its part cannot be used or the model cannot be reached, `no_bug` holds the sentence that case has in any audit, and the line the audit prints for the drop ends at `did not break what the proof says.`
+- RULE-59: A bug planted again whose test does not run with it in place, because it is skipped, ends in an error or runs past its limit, reads `not run`
+- RULE-60: A kept bug whose recorded change can no longer be planted is read as any audit reads its proof: one new bug is asked for, and one that survives reads `survived`
+- RULE-61: Settling a rule leaves a proof with no bug kept as `survived` with the entry it has
+- RULE-62: A rule named with `--settle` that keeps no bug as `survived` prints `<feature> <RULE-N> has no planted bug that survived: nothing to settle.`, and its entry is left as it is
+- RULE-63: A rule named with `--settle` whose tests do not pass is not settled: its entry is left as it is, and the run exits 1 and names the rule as failing
+- RULE-64: Only `--settle` plants a recorded bug again: any other audit asks the model for a new bug for a proof whose test changed
 
 ## Proof
 
 - PROOF-4 (RULE-1): `RULE-2` passes and carries an audit entry reading `strong`, recorded for its current text, proof, test and code; the audit does not read it
 - PROOF-103 (RULE-1): `RULE-2` carries an audit entry; a line of `src/login.py`, a file its feature covers, is changed from `return 401` to `return 403 if locked else 401` and its test passes again; the audit reads it
 - PROOF-51 (RULE-1): `RULE-2` passes and carries an audit entry for its current text, proof and test; asked to read again, the audit reads it
-- PROOF-122 (RULE-1): `RULE-2`'s entry reads `spot-checked` because the model could not be reached, and nothing has changed since; the audit run again, with a `claude` that answers, reads `RULE-2` and starts `claude` exactly `1` time
+- PROOF-122 (RULE-1): `RULE-2`'s entry reads `spot-checked` because the model could not be reached, whether `claude` exited with an error, was not on PATH or gave no answer, and nothing has changed since; the audit run again, with a `claude` that answers, reads `RULE-2` and starts `claude` exactly `1` time
 - PROOF-11 (RULE-2): The prompt for `RULE-2` begins with the text of `references/review_criteria.md`, byte for byte; after it come `login RULE-2`, the rule's text, its proof `POST /login with a bad password; verify 401 and the body "denied"`, the test `test_a_bad_password_is_denied` and its line `assert login("ada", "wrong") == 401`
 - PROOF-106 (RULE-2): The spot tests found `tests/test_login.py::test_a_bad_password_is_denied: the test checks nothing.` for `RULE-2`; the prompt for `RULE-2` holds that line after the test's source
 - PROOF-114 (RULE-2): The project holds `.env` with `KEY=s3cret` and the scope of `login` names `src/login.py` alone; the request for `RULE-2` holds the text of `src/login.py` and does not hold `s3cret`
@@ -109,3 +125,24 @@
 - PROOF-135 (RULE-50): The test of `PROOF-6` checks the proof's own case, and the model's bug sets the limit to 73 hours with `aim: plain`; the bug is caught, `sample_intake RULE-4` reads `strong`, its `findings` are empty, and no line the audit prints names `PROOF-6`
 - PROOF-136 (RULE-51): A bug kept for `PROOF-2` reads `caught`, and its entry holds neither `aim` nor `case`; `RULE-2`'s text changes, so the audit reads the rule again and plants no bug for `PROOF-2`; afterwards the entry of `PROOF-2` under `breaks` still reads `caught`, and reads `aim` `plain` and `case` empty
 - PROOF-137 (RULE-35): Two rules pass their tests and each has a bug on record that was caught; `RULE-2` also has a proof checked by hand, so its strong cell reads `checked at sign-off`; the audit's last line reads `The audit found 1 of 1 rules strong (100%): 1 strong.`, the line the status gives for the project
+- PROOF-138 (RULE-52): The run is started on the sample lab project with `--test --feature sample_intake --settle RULE-3`; it exits 2, prints `purlin: --settle goes with --audit.` and starts no test
+- PROOF-139 (RULE-52): The run is started with `--audit --settle RULE-3` and no `--feature`; it exits 2, prints `purlin: --settle needs exactly one --feature.` and starts no test
+- PROOF-140 (RULE-52): The run is started with `--audit --feature sample_intake --feature billing --settle RULE-3`; it exits 2, prints `purlin: --settle needs exactly one --feature.` and starts no test
+- PROOF-141 (RULE-52): The run is started with `--audit --feature sample_intake --settle RULE-99`; it exits 1, prints only `sample_intake RULE-99 is not a rule any spec has. Run purlin:status sample_intake to see its rules.`, starts no `claude` and leaves the evidence file as it was
+- PROOF-142 (RULE-53): `RULE-2` and `RULE-3` of the sample lab project each read `weak`; the audit is run with `--settle RULE-2 --settle RULE-4`; it prints one line opening `sample_intake RULE-2   ` and none opening `sample_intake RULE-3   `, asks `claude` about `RULE-2` alone, and the entry of `RULE-3` is as it was
+- PROOF-143 (RULE-54): The bug kept for `PROOF-5` rounds the helper its test takes the expected age from, and reads `survived`; the test is changed to expect `25` and `RULE-3` is settled; the entry of `PROOF-5` reads `caught` with the same change, `RULE-3` reads `strong` with no finding, and `claude` is started `0` times
+- PROOF-144 (RULE-54): The test of `PROOF-5` is changed to expect `25` and `RULE-3` is settled; under `sample_intake RULE-3   strong` the audit prints exactly `  PROOF-5: the test now catches the bug it missed at src/intake.py:17.`
+- PROOF-145 (RULE-55): The test of `PROOF-5` still takes its expected age from the helper, and `RULE-3` is settled with a model whose new bug adds 1 to the age the record stores; `claude` is started exactly `1` time, asked for `PROOF-5` alone, the new bug reads `caught`, and `RULE-3` reads `strong`
+- PROOF-146 (RULE-55): The kept bug for `PROOF-5` still survives and the model's new bug is caught; under `sample_intake RULE-3   strong` the audit prints exactly `  PROOF-5: the bug at src/intake.py:17 did not break what the proof says. A new bug was planted.`
+- PROOF-147 (RULE-56): The kept bug for `PROOF-5` and the model's new bug both survive; the entry of `PROOF-5` reads `not made` with the reason `two planted bugs left the proof's check passing`, its `no_bug` sentence is `No bug was caught for PROOF-5: two planted bugs left the proof's check passing.`, and `claude` was started exactly `1` time
+- PROOF-148 (RULE-56): Two bugs for `PROOF-5` were dropped; every rule is then read again with nothing changed; the request for `RULE-3` asks for no bug, and `RULE-3` still reads `spot-checked` with `No bug was caught for PROOF-5: two planted bugs left the proof's check passing.`
+- PROOF-149 (RULE-57): Two bugs for `PROOF-5` were dropped; the evidence file of `sample_intake` holds neither `return int(round(seconds / 3600))` nor `return int(seconds // 3600) + 1`, and the entry of `RULE-3` holds no finding
+- PROOF-150 (RULE-58): The bug kept for `PROOF-2` still survives, and the model answers `no break: nothing breaks it`; the audit prints `  PROOF-2: the bug at src/login.py:12 did not break what the proof says.` and then `  The spot tests found nothing. No bug was planted: the model found no change that would break PROOF-2: nothing breaks it.`
+- PROOF-151 (RULE-58): The bug kept for `PROOF-2` still survives, and `claude` exits `1`; no bug is on record for `PROOF-2`, `RULE-2` reads `spot-checked`, and its `no_bug` is exactly `No bug was planted: the model could not be reached: claude exited with an error.`
+- PROOF-152 (RULE-59): The test of `PROOF-2` is changed to skip where the status is not `401`, and `RULE-2` is settled; the entry of `PROOF-2` reads `not run` and still holds `return 200`, `RULE-2` reads `spot-checked` with `A bug was planted for PROOF-2 and its test did not run.`, and `claude` is started `0` times
+- PROOF-153 (RULE-60): The helper's line `return int(seconds // 3600)`, which the bug kept for `PROOF-5` changes, is written as two lines, and `RULE-3` is settled; `claude` is asked for `PROOF-5`, its bug `hours = seconds // 3600 + 1` reads `survived`, and under `sample_intake RULE-3   weak` the audit prints that bug's two findings and nothing else
+- PROOF-154 (RULE-61): `RULE-2` has `PROOF-3`, whose bug reads `survived`, and `PROOF-4`, whose entry reads `not made`; `RULE-2` is settled; `claude` is asked a bug for `PROOF-3` alone, and the entry of `PROOF-4` is as it was
+- PROOF-155 (RULE-62): `RULE-4` reads `strong`, its one bug `caught`; named with `--settle`, the audit prints `sample_intake RULE-4 has no planted bug that survived: nothing to settle.` once and no line opening `sample_intake RULE-4   `, and the entry of `RULE-4` is as it was
+- PROOF-156 (RULE-63): The test of `PROOF-5` is changed to expect `24`, so it fails, and `RULE-3` is named with `--settle`; the run exits 1 and prints `sample_intake RULE-3 fails: tests/test_intake.py::test_age_is_whole_hours. Run purlin:build sample_intake.`, the entry of `RULE-3` is as it was, and `claude` is started `0` times
+- PROOF-157 (RULE-64): The test of `PROOF-5` is changed to expect `25`, and `sample_intake` is audited without `--settle`; `claude` is asked a bug for `PROOF-5`, the entry of `PROOF-5` holds the model's change `return int(seconds // 1800)` and reads `caught`, and the audit prints no line under `sample_intake RULE-3`
+- PROOF-158 (RULE-56): The kept bug for `PROOF-5` and the model's new bug both survive; the audit prints `sample_intake RULE-3   spot-checked`, then `  PROOF-5: the bug at src/intake.py:17 did not break what the proof says. A new bug was planted.`, then `  The spot tests found nothing. No bug was caught for PROOF-5: two planted bugs left the proof's check passing.`

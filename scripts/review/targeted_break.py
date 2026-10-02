@@ -15,9 +15,14 @@ proof's test, exactly
 
 or `no break: <why>`, alone or under its `aim:` and `case:` lines, read as far as
 the end of that line. `aim` is recorded `past the test` or `plain`, and `plain`
-for any other word or none; `case` is the model's one line, kept as written, at
-most `CASE_LIMIT` characters. The audit checks neither: a bug that survived is
-shown with its case (`AI_SAYS`), and a person judges it.
+for any other word or none; `case` is the model's line, kept as written, at
+most `CASE_LIMIT` characters. A case wrapped over a second line is read to the
+end of that line, and a `case:` line between `file:` and `before:` is read. The
+audit checks neither: a bug that survived is shown with its case (`AI_SAYS`).
+
+`replay` plants a change an earlier audit recorded, with the same refusals and
+the same two runs of the proof's tests, and asks no model: it is how
+`purlin:audit --settle` learns whether a test now catches the bug it missed.
 
 The change is made in a copy of the project, built from
 `git ls-files -co --exclude-standard -z` under a folder named `purlin-break-*`
@@ -83,7 +88,9 @@ BASELINE = 'the test does not pass in a copy of the project'
 # Why a test that did not pass with the bug in place is still not a caught bug.
 ERRORED = 'the test ended in an error, not a failure'
 
-# Why no bug was planted, which the audit picks its sentence by.
+# Why no bug was planted, which the audit picks its sentence by. `_plant` sets
+# it by where the reason came from: the model's own `no break` line, a refusal
+# of this module's, or the proof's tests.
 MODEL_FOUND_NONE = 'model found none'
 ANSWER_UNUSABLE = 'answer unusable'
 TEST_DOES_NOT_PASS = 'test does not pass'
@@ -100,12 +107,18 @@ _ESCAPE_RE = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b
 _CONTROL_RE = re.compile(r'[\x00-\x1f\x7f-\x9f]')
 _AIM_RE = re.compile(r'^\s*aim:(.*)$', re.I)
 _CASE_RE = re.compile(r'^\s*case:(.*)$', re.I)
+_BEFORE_RE = re.compile(r'^before:[ \t]*$')
+# What the line after a `case:` line opens with where it is no second line of
+# the case.
+_OPENS_RE = re.compile(r'^\s*(?:aim:|case:|file:|before:|after:|no break:|===)', re.I)
 
 # A comment line starts, after its indent, with `//` in any file, or with `#`
 # in a file with one of these endings. A comment at the end of a code line
 # starts, after white space, with `#` in a file with one of these endings and
-# with `//` in any other file.
+# with `//` in any other file. A line opening with one of `DIRECTIVES` is code:
+# it picks the interpreter, the build or what the compiler checks.
 HASH_COMMENTS = ('.py', '.sh', '.bash', '.rb', '.yml', '.yaml', '.toml')
+DIRECTIVES = ('#!', '//go:', '// @ts-')
 _QUOTES = '\'"`'
 
 
@@ -130,11 +143,15 @@ def shown(text):
 def parse_answer(text):
     """`('change', file, before, after, aim, case)`, `('no break', why)`, or None for
     anything else. `aim` and `case` are read from the lines `aim:` and `case:` that
-    open the part, in any letter case and after any indent: `aim` is `past the test`
-    or `plain`, and `plain` for any other word or no such line; `case` is its line with outer spaces cut, at most `CASE_LIMIT`
-    characters, and `''` where there is no such line. `case`, the file's path and
-    `why` are each as `shown` gives them. Where the next line reads
-    `no break: <why>`, the part names no bug, and `why` is that one line's."""
+    stand before `before:`, above the `file:` line or under it, in any letter case
+    and after any indent: `aim` is `past the test` or `plain`, and `plain` for any
+    other word or no such line; `case` is its line with outer spaces cut, at most
+    `CASE_LIMIT` characters, and `''` where there is no such line. Where the line
+    after `case:` is not blank and opens none of `aim:`, `case:`, `file:`,
+    `before:`, `after:`, `no break:` or `===`, it is the case's second line, read
+    to its end. `case`, the file's path and `why` are each as `shown` gives them.
+    Where the first line that is neither reads `no break: <why>`, the part names
+    no bug, and `why` is that one line's."""
     text = (text or '').strip('\n')
     lines = text.split('\n')
     while lines and lines[0].strip().startswith('```'):
@@ -142,21 +159,28 @@ def parse_answer(text):
     while lines and lines[-1].strip().startswith('```'):
         lines.pop()
     aim, case = PLAIN, ''
-    while lines:
-        head = lines[0]
-        said, named = _AIM_RE.match(head), _CASE_RE.match(head)
+    head, index = [], 0
+    while index < len(lines) and not _BEFORE_RE.match(lines[index]):
+        line = lines[index]
+        said, named = _AIM_RE.match(line), _CASE_RE.match(line)
         if said:
             aim = (PAST_THE_TEST if said.group(1).strip().lower() == PAST_THE_TEST
                    else PLAIN)
         elif named:
-            case = shown(named.group(1))[:CASE_LIMIT]
-        elif head.strip():
-            break
-        lines.pop(0)
-    found = _NO_BREAK_RE.match(lines[0]) if lines else None
-    if found and shown(found.group(1)):
-        return ('no break', shown(found.group(1)))
-    found = _CHANGE_RE.match('\n'.join(lines).strip('\n'))
+            words = named.group(1)
+            second = lines[index + 1] if index + 1 < len(lines) else ''
+            if second.strip() and not _OPENS_RE.match(second):
+                words = '%s %s' % (words.strip(), second.strip())
+                index += 1
+            case = shown(words)[:CASE_LIMIT]
+        elif line.strip() or head:
+            if not head:
+                found = _NO_BREAK_RE.match(line)
+                if found and shown(found.group(1)):
+                    return ('no break', shown(found.group(1)))
+            head.append(line)
+        index += 1
+    found = _CHANGE_RE.match('\n'.join(head + lines[index:]).strip('\n'))
     if not found or not found.group('before').strip():
         return None
     # Blank lines between the lines before and `after:` are no part of the change.
@@ -171,12 +195,16 @@ def _hashes(path):
 
 def _code_lines(path, text):
     """`[(index, line)]` for each line of `text` that is neither blank nor a comment
-    line, its trailing white space cut."""
+    line, its trailing white space cut. A line opening with one of `DIRECTIVES`
+    is no comment line."""
     hashes = _hashes(path)
     kept = []
     for index, line in enumerate(str(text).split('\n')):
         start = line.strip()
-        if not start or start.startswith('//') or (hashes and start.startswith('#')):
+        if not start:
+            continue
+        if not start.startswith(DIRECTIVES) and (
+                start.startswith('//') or (hashes and start.startswith('#'))):
             continue
         kept.append((index, line.rstrip()))
     return kept
@@ -197,7 +225,8 @@ def only_comment(path, before, after):
     """True where `after` differs from `before` only in blank lines, comment lines
     and the comment at the end of a code line. A comment line starts, after its
     indent, with `//` in any file, or with `#` in a file ending as `HASH_COMMENTS`
-    lists; `_without_end_comment` says what the comment at a line's end is. A block
+    lists, and a line opening `#!`, `//go:` or `// @ts-` is code;
+    `_without_end_comment` says what the comment at a line's end is. A block
     comment, a docstring and any other comment are code to this check."""
     if before == after:
         return False
@@ -209,9 +238,11 @@ def only_comment(path, before, after):
 
 
 def cause_of(why):
-    """The cause a `not made` result's `why` names: `'test does not pass'` for
-    `BASELINE`, `'answer unusable'` for this module's own words, and
-    `'model found none'` for any other, which is the model's own reason."""
+    """The cause read back from the words of a `not made` result's `why`, for an
+    entry that records no other trace of where its reason came from:
+    `'test does not pass'` for `BASELINE`, `'answer unusable'` for this module's
+    own words, and `'model found none'` for any other. A result `_plant` gives
+    carries its `cause` outright, set by where the reason came from."""
     why = str(why or '')
     if why == BASELINE:
         return TEST_DOES_NOT_PASS
@@ -239,6 +270,24 @@ def break_proof(project_root, feature, proof, tests, scope_files, answer, timeou
                   timeout)
 
 
+def replay(project_root, feature, proof, tests, scope_files, kept, timeout=None):
+    """The change an earlier audit recorded, planted again: `kept` is its entry under
+    `breaks`, whose `file`, `before`, `after`, `aim` and `case` name it. The change
+    goes through every refusal `break_proof` has, the proof's own tests run once
+    before it and once with it in place, and no model is asked. Returns what
+    `break_proof` returns."""
+    if isinstance(proof, str):
+        proof = {'id': proof}
+    change = (shown(kept.get('file')), str(kept.get('before') or ''),
+              str(kept.get('after') or ''),
+              PAST_THE_TEST if kept.get('aim') == PAST_THE_TEST else PLAIN,
+              shown(kept.get('case'))[:CASE_LIMIT])
+    if not change[0] or not change[1].strip():
+        return _result(proof.get('id'), 'not made', NO_CHANGE, cause=ANSWER_UNUSABLE)
+    return _plant_change(project_root, feature, proof.get('id'), tests or [],
+                         scope_files or [], change, timeout)
+
+
 def check_unchanged(project_root, before):
     """Raise `ProjectChanged` where the project differs from the snapshot `before`."""
     changed = _difference(before, snapshot(project_root))
@@ -250,12 +299,15 @@ def check_unchanged(project_root, before):
 # The bug
 # ---------------------------------------------------------------------------
 
-def _result(proof_id, result, why='', change=None, line=None, finding=None):
+def _result(proof_id, result, why='', change=None, line=None, finding=None, cause=None):
     change = change or (None, None, None, PLAIN, '')
+    if result != 'not made':
+        cause = ''
+    elif cause is None:
+        cause = TEST_DOES_NOT_PASS if why == BASELINE else ANSWER_UNUSABLE
     return {'proof': proof_id, 'aim': change[3], 'case': change[4], 'file': change[0],
             'line': line, 'before': change[1], 'after': change[2], 'result': result,
-            'why': why, 'cause': cause_of(why) if result == 'not made' else '',
-            'finding': finding}
+            'why': why, 'cause': cause, 'finding': finding}
 
 
 def _plant(project_root, feature, proof, tests, scope_files, answer, timeout):
@@ -268,8 +320,16 @@ def _plant(project_root, feature, proof, tests, scope_files, answer, timeout):
     if parsed is None:
         return _result(proof_id, 'not made', NO_CHANGE)
     if parsed[0] == 'no break':
-        return _result(proof_id, 'not made', parsed[1])
-    _kind, path, old, new, aim, case = parsed
+        # The reason is the model's, whatever its words are.
+        return _result(proof_id, 'not made', parsed[1], cause=MODEL_FOUND_NONE)
+    return _plant_change(project_root, feature, proof_id, tests, scope_files,
+                         parsed[1:], timeout)
+
+
+def _plant_change(project_root, feature, proof_id, tests, scope_files, change, timeout):
+    """One change, `(file, before, after, aim, case)`, through every refusal and
+    then planted in a copy, the proof's own tests run before it and with it."""
+    path, old, new, aim, case = change
     change = (path, old, new, aim, case)
     if not case:
         return _result(proof_id, 'not made', NO_CASE, change)
