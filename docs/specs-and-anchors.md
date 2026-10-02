@@ -114,7 +114,8 @@ bracketed text at the end included.
 **Numbers are never reused.** A new rule takes one more than the highest of `> Highest-Rule:`
 and every rule number in the spec, and `> Highest-Rule:` is raised to it. Proofs work the same
 way with `> Highest-Proof:`. `purlin:spec` reads both copies of the spec for both numbers: the
-working copy and `origin/main`'s.
+working copy and `origin/main`'s. In a spec that has neither line, both go after the last `>`
+line of the header, `> Highest-Rule:` first.
 
 A deleted rule leaves its number vacant, and every other rule keeps the number it had. A gap in
 the sequence is legal and nothing reports it. Renumbering would repoint every test marker that

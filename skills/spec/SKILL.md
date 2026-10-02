@@ -163,12 +163,13 @@ A new rule takes one more than the highest of these:
 - every rule number in the working copy of the spec;
 - every rule number in `origin/main`'s copy, read with `git show origin/main:<spec>`.
 
-Write that number into `> Highest-Rule:`, so a deleted number is never used again. Where the line
-is missing, add it after the spec's other `>` lines.
+Write that number into `> Highest-Rule:`, so a deleted number is never used again.
 
 A new proof takes one more than the highest of `> Highest-Proof:` and every proof number in
-either copy. Write that number into `> Highest-Proof:`. Where the line is missing, add it after
-`> Highest-Rule:`.
+either copy. Write that number into `> Highest-Proof:`.
+
+In a spec that has neither line, both go after the last `>` line of the header:
+`> Highest-Rule:` first, then `> Highest-Proof:`. Where one is there, the other goes beside it.
 
 Ids are never reused. A deleted rule leaves its number vacant and every other rule keeps the
 number it had. Renumbering by hand would silently repoint every test comment that already names
