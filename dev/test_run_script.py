@@ -29,6 +29,7 @@ import suites  # noqa: E402
 from purlin import evidence as purlin_evidence  # noqa: E402
 from purlin import frameworks  # noqa: E402
 from purlin import payload as purlin_payload  # noqa: E402
+from purlin import status as purlin_status  # noqa: E402
 from run_project import (RUN_SCRIPT, _project,  # noqa: E402,F401
                          _pytest_project, _run, _spec, claude)
 
@@ -105,6 +106,12 @@ def _proofs(root, feature):
     data = json.loads(path.read_text(encoding='utf-8'))
     section = data['platforms'].get(_load_run_script().host_os())
     return None if section is None else section['proofs']
+
+
+def _started(output):
+    """The suites a run said it started, in order, off its `Running` lines."""
+    return [line[len('Running '):].split(':', 1)[0]
+            for line in output.splitlines() if line.startswith('Running ')]
 
 
 def _ran(root, name='pytest'):
@@ -504,7 +511,7 @@ class TestEveryRunEndsOnTheSummary:
         assert ('login: 1 file its scope names is not written yet: '
                 'src/gone.py. Run purlin:build login, or correct the path '
                 'with purlin:spec login.') in lines, output
-        assert 'Running the pytest suite.' in lines, output
+        assert _started(output) == ['pytest'], output
         assert _proofs(root, 'login') == [{
             'id': 'PROOF-1', 'rule': 'RULE-1', 'result': 'pass', 'env': None,
             'manual': False, 'test': 'tests/test_feat.py::test_login'}], output
@@ -1111,8 +1118,9 @@ class TestARunCoversWhatTheChangeTouched:
         selected = ('Selected 1 of 12 features: f01 (code changed since %s).'
                     % sha[:7])
         assert selected in lines, output
-        assert lines.index(selected) < lines.index(
-            'Running the pytest suite.'), output
+        assert lines.index(selected) < next(
+            index for index, line in enumerate(lines)
+            if line.startswith('Running pytest: ')), output
 
     # purlin: run_script PROOF-95
     def test_nothing_changed_runs_nothing_and_ends_on_the_sign_off(
@@ -1187,8 +1195,7 @@ class TestARunCoversWhatTheChangeTouched:
             _script(root / name / ('%s.test.sh' % name),
                     '# purlin: %s PROOF-1\necho %s >> ran.txt\n' % (name, name))
         _code, output = _run(root, '--feature', 'login', '--test')
-        assert 'Running the logins suite.' in output.splitlines(), output
-        assert 'Running the exports suite.' not in output, output
+        assert _started(output) == ['logins'], output
         assert (root / 'ran.txt').read_text(encoding='utf-8').split() == [
             'login'], output
 
@@ -1201,7 +1208,7 @@ class TestARunCoversWhatTheChangeTouched:
         assert code == 0, output
         assert 'Nothing to run' not in output, output
         assert _selection(output) is None, output
-        assert 'Running the pytest suite.' in output, output
+        assert _started(output) == ['pytest'], output
         assert _ran(root) == ['test_export', 'test_login'], output
 
 # ---------------------------------------------------------------------------
@@ -1925,10 +1932,257 @@ class TestNothingToRunOverAFailure:
         _git_repo(root)
         code, output = _run(root, '--all', '--test')
         assert code == 1, output
-        assert 'Running the pytest suite.' in output.splitlines(), output
+        assert _started(output) == ['pytest'], output
         code, output = _run(root, '--test')
         assert any(line.startswith('Nothing to run')
                    for line in output.splitlines()), output
-        assert not any(line.startswith('Running the ')
-                       for line in output.splitlines()), output
+        assert _started(output) == [], output
         assert code == 1, output
+
+
+# ---------------------------------------------------------------------------
+# A test the report names differently
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope='module')
+def renamed_run(tmp_path_factory):
+    """A marked test titled `adds two numbers` whose report names the
+    passing case `adds  two numbers`. `(exit code, output)`."""
+    root = _project(tmp_path_factory.mktemp('renamed'), tests=[{
+        'name': 'vitest', 'run': 'cp canned.xml {report}',
+        'report': '.purlin/runtime/reports/vitest.xml',
+        'format': 'junit', 'files': ['tests/*.test.ts']}])
+    _spec(root, 'feat')
+    (root / 'tests').mkdir()
+    (root / 'tests' / 'feat.test.ts').write_text(
+        "// purlin: feat PROOF-1\n"
+        "it('adds two numbers', () => {});\n", encoding='utf-8')
+    (root / 'canned.xml').write_text(
+        '<testsuites><testsuite name="x"><testcase '
+        'classname="tests/feat.test.ts" name="adds  two numbers"/>'
+        '</testsuite></testsuites>', encoding='utf-8')
+    return _run(root, '--all', '--test')
+
+
+class TestATestTheReportNamesDifferently:
+
+    # purlin: run_script PROOF-292
+    def test_both_names_are_shown(self, renamed_run):
+        code, output = renamed_run
+        assert code == 1, output
+        assert ('Evidence is missing: feat PROOF-1 at tests/feat.test.ts:1: '
+                'its test ran, and the report names it differently. The '
+                'title reads "adds two numbers" and the report reads "adds  '
+                'two numbers". Write the title as the report reads, then '
+                'run purlin:test.') in output.splitlines(), output
+
+    # purlin: run_script PROOF-293
+    def test_the_skipped_sentence_is_not_printed(self, renamed_run):
+        _code, output = renamed_run
+        assert 'Check that its test ran and was not skipped' not in output
+
+
+# ---------------------------------------------------------------------------
+# The files a run over every feature hands a suite
+# ---------------------------------------------------------------------------
+
+class TestAllHandsTheSuiteItsFiles:
+
+    # purlin: run_script PROOF-294
+    def test_a_project_with_its_pytest_settings_in_a_subfolder_passes(
+            self, tmp_path):
+        root = _project(tmp_path, tests=[suites.pytest_suite(
+            files=('**/test_*.py',))])
+        _spec(root, 'feat', scope='pipeline/')
+        (root / 'pipeline' / 'tests').mkdir(parents=True)
+        (root / 'pipeline' / 'pyproject.toml').write_text(
+            '[tool.pytest.ini_options]\ntestpaths = ["tests"]\n'
+            'pythonpath = ["."]\n', encoding='utf-8')
+        (root / 'pipeline' / 'rgm.py').write_text('VALUE = 1\n',
+                                                  encoding='utf-8')
+        (root / 'pipeline' / 'tests' / 'test_feat.py').write_text(
+            'from rgm import VALUE\n\n'
+            '# purlin: feat PROOF-1\n'
+            'def test_ok():\n    assert VALUE == 1\n', encoding='utf-8')
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        assert [(entry['id'], entry['result'])
+                for entry in _proofs(root, 'feat')] == [
+            ('PROOF-1', 'pass')], output
+
+    # purlin: run_script PROOF-295
+    def test_a_command_past_the_limit_is_started_with_no_file_list(
+            self, tmp_path):
+        root = _project(tmp_path, tests=[suites.pytest_suite(
+            files=('tests/**/test_*.py',))])
+        _spec(root, 'feat')
+        folder = root / 'tests' / ('d' * 90) / ('e' * 90)
+        folder.mkdir(parents=True)
+        for index in range(160):
+            (folder / ('test_n%03d.py' % index)).write_text(
+                '# purlin: feat PROOF-1\n'
+                'def test_n%03d():\n    assert True\n' % index,
+                encoding='utf-8')
+        code, output = _run(root, '--all', '--test')
+        lines = output.splitlines()
+        assert ('The pytest suite has 160 test files, more than one command '
+                'line holds, so it runs with no file list.') in lines, output
+        (started,) = [line for line in lines
+                      if line.startswith('Running pytest: ')]
+        assert 'test_n' not in started, output
+        assert {entry['result'] for entry in _proofs(root, 'feat')} == {
+            'pass'}, output
+        assert len(_proofs(root, 'feat')) == 160 and code == 0, output
+
+
+# ---------------------------------------------------------------------------
+# The line a suite starts on
+# ---------------------------------------------------------------------------
+
+class TestTheLineASuiteStartsOn:
+
+    # purlin: run_script PROOF-296
+    def test_the_line_is_out_before_the_command_ends(self, tmp_path):
+        command = ('while [ ! -f go ]; do sleep 0.1; done; '
+                   'cp canned.xml {report}')
+        root = _project(tmp_path, tests=[{
+            'name': 'slow', 'run': command,
+            'report': '.purlin/runtime/reports/slow.xml',
+            'format': 'junit', 'files': ['tests/test_*.py']}])
+        _spec(root, 'feat')
+        (root / 'tests').mkdir()
+        (root / 'tests' / 'test_feat.py').write_text(
+            '# purlin: feat PROOF-1\ndef test_ok():\n    pass\n',
+            encoding='utf-8')
+        (root / 'canned.xml').write_text(
+            '<testsuite><testcase classname="tests.test_feat" '
+            'name="test_ok"/></testsuite>', encoding='utf-8')
+        running = subprocess.Popen(
+            [sys.executable, RUN_SCRIPT, '--project-root', str(root),
+             '--all', '--test'], stdout=subprocess.PIPE,
+            stdin=subprocess.DEVNULL, encoding='utf-8', cwd=str(root))
+        try:
+            first = running.stdout.readline().rstrip('\n')
+            waiting = running.poll() is None
+            (root / 'go').write_text('', encoding='utf-8')
+            rest, _err = running.communicate(timeout=120)
+        finally:
+            if running.poll() is None:
+                running.kill()
+        assert first == 'Running slow: ' + command.replace(
+            '{report}', '.purlin/runtime/reports/slow.xml'), first + rest
+        assert waiting, first + rest
+        assert running.returncode == 0, first + rest
+
+    # purlin: run_script PROOF-297
+    def test_an_exit_suite_counts_its_files(self, tmp_path):
+        root = _project(tmp_path, tests=[suites.shell_suite()])
+        _spec(root, 'feat')
+        for name in ('a', 'b'):
+            _script(root / ('%s.test.sh' % name),
+                    '# purlin: feat PROOF-1\ntrue\n')
+        _code, output = _run(root, '--all', '--test')
+        assert ('Running shell: bash {files}, once for each of 2 files'
+                in output.splitlines()), output
+
+
+# ---------------------------------------------------------------------------
+# A changed tests setting
+# ---------------------------------------------------------------------------
+
+def _setting_gains_v(root):
+    path = root / '.purlin' / 'config.json'
+    config = json.loads(path.read_text(encoding='utf-8'))
+    config['tests'][0]['run'] = config['tests'][0]['run'].replace(
+        ' -q ', ' -q -v ')
+    path.write_text(json.dumps(config), encoding='utf-8')
+
+
+class TestAChangedTestsSetting:
+
+    SAID = 'The tests setting changed, so every result is out of date.'
+
+    # purlin: states PROOF-306
+    def test_the_status_says_so_once(self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        _setting_gains_v(root)
+        lines = purlin_status.sync_status(str(root)).splitlines()
+        assert lines.count(self.SAID) == 1, lines
+
+    # purlin: states PROOF-307
+    def test_an_edited_test_file_alone_is_not_the_setting(self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        test = root / 'tests' / 'test_login.py'
+        test.write_text(test.read_text(encoding='utf-8') + '# edited\n',
+                        encoding='utf-8')
+        lines = purlin_status.sync_status(str(root)).splitlines()
+        assert self.SAID not in lines, lines
+        assert any('tests changed since' in line or 'to test' in line
+                   for line in lines), lines
+
+    # purlin: run_script PROOF-298
+    def test_the_run_says_so_once_before_it_selects(self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        _setting_gains_v(root)
+        _code, output = _run(root, '--test')
+        lines = output.splitlines()
+        said = 'The tests setting changed, so every result is out of date.'
+        assert lines.count(said) == 1, output
+        assert lines.index(said) < next(
+            index for index, line in enumerate(lines)
+            if line.startswith('Selected 2 of 2 features')), output
+
+
+# ---------------------------------------------------------------------------
+# What `--commit` left uncommitted
+# ---------------------------------------------------------------------------
+
+STILL_DO = ('Commit them, then run purlin:test --all --commit again: a '
+            'sign-off needs results taken with nothing uncommitted.')
+
+
+class TestWhatCommitLeftUncommitted:
+
+    @staticmethod
+    def _checkout(tmp_path, others):
+        """A committed checkout of `feat` and the files `others`; the spec
+        and each of `others` are then edited, and `--all --test --commit`
+        runs. Its output's lines."""
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat')
+        (root / '.gitignore').write_text('.purlin/runtime/\n__pycache__/\n'
+                                         '.pytest_cache/\n', encoding='utf-8')
+        for rel in others:
+            (root / rel).parent.mkdir(parents=True, exist_ok=True)
+            (root / rel).write_text('one\n', encoding='utf-8')
+        _git_repo(root)
+        spec = root / 'specs' / 'a' / 'feat.md'
+        spec.write_text(spec.read_text(encoding='utf-8') + '\n',
+                        encoding='utf-8')
+        for rel in others:
+            (root / rel).write_text('two\n', encoding='utf-8')
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0, output
+        return output.splitlines()
+
+    # purlin: run_script PROOF-299
+    def test_one_file_left_is_named_with_what_to_do(self, tmp_path):
+        lines = self._checkout(tmp_path, ['src/other.py'])
+        at = lines.index('1 file is still not committed:')
+        assert lines[at + 1:at + 3] == ['  src/other.py', STILL_DO], lines
+        assert lines.index('Evidence committed.') < at, lines
+
+    # purlin: run_script PROOF-300
+    def test_twelve_files_left_name_ten_and_count_two(self, tmp_path):
+        names = ['notes/n%02d.txt' % index for index in range(1, 13)]
+        lines = self._checkout(tmp_path, names)
+        at = lines.index('12 files are still not committed:')
+        assert lines[at + 1:at + 12] == ['  %s' % name
+                                         for name in names[:10]] + [
+            '  and 2 more'], lines
+
+    # purlin: run_script PROOF-301
+    def test_nothing_left_prints_no_such_line(self, tmp_path):
+        lines = self._checkout(tmp_path, [])
+        assert not [line for line in lines
+                    if 'still not committed' in line], lines

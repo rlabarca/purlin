@@ -75,8 +75,13 @@ With nothing selected the run prints `Nothing to run: every feature's spec, code
 match its evidence. purlin:test --all runs them anyway.` It runs no test. It exits 1 only where
 the evidence it stands on holds a failing test.
 
-A run over some features hands each suite only the test files that carry their markers. A run
-over every feature runs every suite whole.
+Every run hands each suite only the test files that carry the markers of the features it runs,
+and starts no suite that holds none. `--all` hands over every marked file.
+[supported_frameworks.md](../references/supported_frameworks.md#the-entry-suggested) gives the
+one exception, a file list too long for a command line.
+
+Where the `tests` setting changed since the evidence was taken, the run first prints
+`The tests setting changed, so every result is out of date.` The status prints it too.
 
 `purlin:test` skips every slow test. Only `--all` starts the test of a proof tagged `@slow`.
 Every other run lists it under `Left to do`, as
@@ -95,12 +100,15 @@ The run takes three steps:
 3. It ties each result to the marker comment above its test, `# purlin: cart PROOF-1`.
    [marker_format.md](../references/formats/marker_format.md) is the one home of the marker.
 
+As each suite starts the run prints `Running <suite>: <the command as run>`, so a long run
+shows where it is.
+
 A project with one feature and three marked tests, run with `--all --commit`, reads:
 
 ```
 Selected 1 of 1 feature: cart (no run on macOS yet).
 
-Running the pytest suite.
+Running pytest: python3 -m pytest tests/test_cart.py --junitxml=.purlin/runtime/reports/pytest.xml
 
 Markers: 3 tied to a test, 0 not tied.
 Ran pytest on 1 feature.
@@ -142,11 +150,21 @@ identity:
 
 1. The specs of the features it ran, the test files carrying their markers and
    `.purlin/config.json`, where any of them changed, as
-   `purlin: specs, tests and settings for <feature>`.
+   `purlin: specs, tests and settings for <feature>`. Over 5 features the subject counts
+   them, `purlin: specs, tests and settings for 54 features`, and the body lists them.
 2. The evidence, as `purlin: evidence at <sha7>`, naming the first.
 
 It prints `Evidence committed.` When the run saw the same thing over the same code, it prints
 `Evidence unchanged.`
+
+The two commits hold only those files. Where others are still changed or untracked, the run
+names up to 10 of them and says what to do:
+
+```
+1 file is still not committed:
+  src/cart.py
+Commit them, then run purlin:test --all --commit again: a sign-off needs results taken with nothing uncommitted.
+```
 
 ### How a run ends
 
@@ -259,7 +277,10 @@ makes the run exit 1.
 - **B: a marker of a feature the run covers has no passing or failing result.** Its test was
   skipped, the report does not hold it, or no test follows the marker. The line names the
   first five by file and line, counts the rest, and ends `Check that its test ran and was not
-  skipped, then run purlin:test.` One skip is a result: an anchor's test that found nothing to
+  skipped, then run purlin:test.` Where the test did run and the report names it by another
+  spelling of its title, differing by white space, quotes or joined pieces, the line shows
+  both names and ends `Write the title as the report reads, then run purlin:test.` One skip
+  is a result: an anchor's test that found nothing to
   check, skipped with a reason starting `nothing to check:`
   ([specs-and-anchors.md](specs-and-anchors.md#a-rule-with-nothing-to-check)).
 
@@ -464,7 +485,8 @@ again.** A section is current while its fingerprint equals one taken now, commit
 When the spec, the covered code or the tests change, the passed cell reads `out of date` and
 names what changed: `code changed since <sha7>`, `spec changed since <sha7>` or
 `tests changed since <sha7>`. The next run clears it. A test command in `.purlin/config.json`
-is part of the tests: changing one ends the results, as changing the code does. Changing
+is part of the tests: changing one ends the results, as changing the code does. The run and
+the status then print `The tests setting changed, so every result is out of date.` Changing
 `version` alone does not.
 
 A change to a spec, even to one rule's words, puts every rule of that spec out of date. Its

@@ -819,7 +819,8 @@ class TestThroughARun:
         assert said == ['purlin: the a suite names no run command. '
                         'Fix the tests setting in .purlin/config.json, then '
                         'run purlin:test.'], out
-        assert started == ['Running the pytest suite.'], out
+        assert len(started) == 1 and started[0].startswith(
+            'Running pytest: '), out
         assert code == 0, out
 
     # purlin: reports PROOF-88
@@ -831,7 +832,8 @@ class TestThroughARun:
                         'is not one of junit, trx, gotest, exit. Fix the tests '
                         'setting in .purlin/config.json, then run '
                         'purlin:test.'], out
-        assert started == ['Running the pytest suite.'], out
+        assert len(started) == 1 and started[0].startswith(
+            'Running pytest: '), out
         assert code == 0, out
 
     @staticmethod
@@ -1042,3 +1044,84 @@ def test_go_still_writes_what_the_capture_holds(tmp_path):
         (c.package, c.name, c.outcome) for c in captured)
 
 
+# ---------------------------------------------------------------------------
+# A JavaScript title as the string it makes
+# ---------------------------------------------------------------------------
+
+_BUS_SPEC = _spec('bus', 2)
+
+
+def _canned(tmp_path, source, cases, spec=LOGIN_SPEC, feature='login',
+            path='tests/login.test.ts'):
+    """A project whose one suite copies a canned JUnit report naming
+    `cases`, each `(name, passed)`, for the test file `source`. `(root, exit
+    code, output)` of `--all --test`."""
+    root = _project(tmp_path, [{
+        'name': 'vitest', 'run': 'cp canned.xml {report}',
+        'report': '.purlin/runtime/reports/vitest.xml',
+        'format': 'junit', 'files': ['tests/*.test.ts']}],
+        spec=spec, feature=feature)
+    _write(root, path, source)
+    body = ''.join(
+        '<testcase classname="%s" name="%s">%s</testcase>' % (
+            path, name.replace('&', '&amp;').replace('>', '&gt;')
+            .replace("'", '&apos;'), '' if passed else '<failure/>')
+        for name, passed in cases)
+    _write(root, 'canned.xml', '<testsuites><testsuite name="x">%s'
+           '</testsuite></testsuites>' % body)
+    code, out = _run(root, '--all', '--test')
+    return root, code, out
+
+
+class TestAJavaScriptTitle:
+
+    # purlin: reports PROOF-126
+    def test_an_escaped_apostrophe_is_read_as_the_apostrophe(self, tmp_path):
+        root, _code, out = _canned(tmp_path, (
+            "describe('bus', () => {\n"
+            "  // purlin: bus PROOF-1\n"
+            "  it('a tap after the node\\'s own gain', () => {});\n"
+            "});\n"), [("bus > a tap after the node's own gain", True)],
+            spec=_BUS_SPEC, feature='bus', path='tests/bus.test.ts')
+        assert _by_id(_evidence(root, 'bus'))['PROOF-1'] == 'pass', out
+
+    # purlin: reports PROOF-127
+    def test_pieces_joined_with_a_plus_are_one_title(self, tmp_path):
+        root, _code, out = _canned(tmp_path, (
+            "describe('bus', () => {\n"
+            "  // purlin: bus PROOF-1\n"
+            "  test(\n"
+            "    'every route is ' + 'forwarded to it '\n"
+            "    + '',\n"
+            "    () => {});\n"
+            "});\n"), [('bus > every route is forwarded to it', True)],
+            spec=_BUS_SPEC, feature='bus', path='tests/bus.test.ts')
+        assert _by_id(_evidence(root, 'bus'))['PROOF-1'] == 'pass', out
+
+    # purlin: reports PROOF-128
+    def test_a_filled_template_title_is_named_and_not_tied(self, tmp_path):
+        _root, code, out = _canned(tmp_path, (
+            "const name = 'x';\n"
+            "\n"
+            "// purlin: login PROOF-1\n"
+            "it(`greets ${name}`, () => {});\n"), [('greets x', True)],
+            spec=_spec('login', 1))
+        lines = out.splitlines()
+        assert ("tests/login.test.ts:4: the test's title is not one plain "
+                'string, so its result cannot be matched. Write it as one '
+                'string.') in lines, out
+        assert 'Markers: 0 tied to a test, 1 not tied.' in lines, out
+        assert code == 1, out
+
+    # purlin: reports PROOF-129
+    def test_a_variable_title_takes_no_marker_of_a_later_test(self, tmp_path):
+        root, _code, out = _canned(tmp_path, (
+            "const title = 'first';\n"
+            "// purlin: login PROOF-1\n"
+            "it(title, () => {});\n"
+            "// purlin: login PROOF-2\n"
+            "it('second', () => {});\n"),
+            [('first', True), ('second', True)], spec=_spec('login', 2))
+        assert _results(_evidence(root)) == {
+            ('PROOF-1', ''): 'missing',
+            ('PROOF-2', 'tests/login.test.ts::second'): 'pass'}, out

@@ -321,12 +321,75 @@ def tests_setting_line(project_root):
     file's layout, and every other key of it, `version` included, change
     nothing.
     """
-    config = markers_module.load_config(project_root)
-    if 'tests' not in config:
+    return _setting_line(markers_module.load_config(project_root))
+
+
+def _setting_line(config):
+    if not isinstance(config, dict) or 'tests' not in config:
         return None
     text = json.dumps(config['tests'], sort_keys=True, separators=(',', ':'))
     return 'tests-setting %s' % hashlib.sha256(
         text.encode('utf-8')).hexdigest()
+
+
+def _setting_line_at(project_root, commit):
+    """`tests_setting_line` for the settings file as `commit` holds it, or
+    None where that commit holds none, or none that can be read."""
+    try:
+        shown = subprocess.run(
+            ['git', 'show', '%s:.purlin/config.json' % commit],
+            capture_output=True, cwd=project_root, timeout=60)
+        if shown.returncode != 0:
+            return None
+        return _setting_line(json.loads(shown.stdout.decode('utf-8')))
+    except (subprocess.SubprocessError, OSError, ValueError):
+        return None
+
+
+def setting_changed(project_root, features=None, os_name=None, index=None):
+    """True where the `tests` setting changed since the evidence was taken.
+
+    Shown, never guessed: for some feature, the newest section for this
+    operating system names a commit whose settings file holds another
+    `tests` setting than the one on disk, and the feature's marker files as
+    they are now, hashed with that earlier setting, give the `tests` part
+    the section stored. So the setting is the one thing that moved. A
+    section taken over a setting no commit held shows nothing.
+    """
+    from purlin import evidence as evidence_module
+
+    now = tests_setting_line(project_root)
+    if now is None:
+        return False
+    features = _features(project_root, features)
+    os_name = os_name or evidence_module.host_os()
+    earlier = {}
+    for name in sorted(features):
+        mine = [entry['section'] for entry
+                in evidence_module.sections(
+                    evidence_module.load(project_root, name))
+                if entry['os'] == os_name]
+        if not mine:
+            continue
+        newest = max(mine, key=lambda section: _text(section.get('at')))
+        commit = _text(newest.get('commit'))
+        if not commit:
+            continue
+        if commit not in earlier:
+            earlier[commit] = _setting_line_at(project_root, commit)
+        was = earlier[commit]
+        if was is None or was == now:
+            continue
+        if index is None:
+            index = marker_index(project_root)
+        ids = blob_ids(project_root,
+                       sorted(set(marker_files(project_root, name, index))))
+        lines = ['%s %s' % (path, ids[path]) for path in ids] + [was]
+        stored = newest.get('fingerprint')
+        if isinstance(stored, dict) and stored.get('tests') \
+                == _hash_lines(lines):
+            return True
+    return False
 
 
 def tests_hash(project_root, feature, index=None):

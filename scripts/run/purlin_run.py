@@ -50,9 +50,12 @@ under `tests`, each with its command, where its report lands, the report's
 format and the globs its test files live under. The run runs each suite's
 own command, reads the report it wrote, and ties every result to the marker
 comments above its test (`scripts/run/reports.py`,
-`references/formats/marker_format.md`). A run over every feature runs every
-suite whole; a narrower run gives `{files}` the test files that carry a
-marker of a feature it runs, and starts no suite that has none.
+`references/formats/marker_format.md`). Every run gives `{files}` the test
+files that carry a marker of a feature it runs, and starts no suite that
+has none; a run over every feature hands over every marked file. Where the
+command with its files would be longer than `COMMAND_LIMIT` characters the
+suite is started with no file list, and the run says so. Before each suite
+starts the run prints `Running <suite>: <the command as run>`.
 
 `--test` is what `purlin:test` runs: the suites run, and the run writes this
 operating system's section of `.purlin/evidence/local/<feature>.json` for
@@ -64,7 +67,9 @@ sentence and `Left to do`, which count every rule under `specs/`. It writes
 and does not commit. `--commit` makes two commits under the person's own
 identity: the specs of the features run, the test files carrying their
 markers and the settings file, then the evidence, which names the first;
-nothing here ever pushes. A section's `commit` is the first of those
+nothing here ever pushes. Where files are still not committed after them,
+the run names up to ten and says to commit them and run again
+(`uncommitted_lines`). A section's `commit` is the first of those
 commits where `--commit` made one, else `HEAD` when the run started.
 
 `--audit` is what `purlin:audit` runs: the tests, as `--test` runs them, then
@@ -125,7 +130,9 @@ framework reports on its own:
                   failing result: its test was skipped, no case in the report
                   is its test, or no test follows the marker. An anchor's
                   test skipped with a reason starting `nothing to check:` has
-                  its result.
+                  its result. A test the report holds under a name that
+                  differs from its title only by white space, quotes or
+                  joined pieces is named with both names.
 
 Both are silent in every test framework there is. A marker that names a
 feature, a proof or a rule no spec has, or names a rule that has proofs, is
@@ -156,6 +163,7 @@ from purlin import (console as console_module,                # noqa: E402
                     frameworks as frameworks_module,
                     markers as markers_module,
                     payload as payload_module,
+                    project as project_module,
                     specs as specs_module,
                     status as status_module,
                     wording as wording_module)
@@ -236,6 +244,43 @@ ONE_MARKER_MISSING = ('1 marker has no passing or failing result: %s. Check '
 MARKERS_MISSING = ('%d markers have no passing or failing result: %s. Check '
                    'that their tests ran and were not skipped, then run '
                    'purlin:test.')
+
+# A marker whose test ran and is named differently in the report: the
+# feature, the id, the file, the marker's line, the title and the report's
+# name. At most `RAN_AS_SHOWN` are named and the rest counted.
+RAN_AS = ('%s %s at %s:%d: its test ran, and the report names it '
+          'differently. The title reads "%s" and the report reads "%s". '
+          'Write the title as the report reads, then run purlin:test.')
+RAN_AS_MORE_ONE = ('1 more marker whose test ran is named differently in '
+                   'the report. Correct those above, then run purlin:test.')
+RAN_AS_MORE = ('%d more markers whose tests ran are named differently in '
+               'the report. Correct those above, then run purlin:test.')
+RAN_AS_SHOWN = 5
+
+# What the run prints as each suite starts, flushed before the tool starts:
+# the suite and the command as run. An `exit` suite runs its command once
+# per file, so its line keeps `{files}` and counts the files.
+RUNNING = 'Running %s: %s'
+RUNNING_EACH_ONE = 'Running %s: %s, for 1 file'
+RUNNING_EACH = 'Running %s: %s, once for each of %d files'
+
+# The longest command a suite is started with. Windows refuses a command
+# line of more than 32,767 characters and Linux one argument of more than
+# 131,072 bytes, and the whole command is one argument to bash; 30,000
+# stays under both, and is the same on every system. A longer one is
+# started with no file list.
+COMMAND_LIMIT = 30000
+TOO_MANY_FILES = ('The %s suite has %d test files, more than one command '
+                  'line holds, so it runs with no file list.')
+
+# What a `--commit` run says of the files still not committed after its
+# commits, at most `UNCOMMITTED_SHOWN` named.
+STILL_ONE = '1 file is still not committed:'
+STILL_MANY = '%d files are still not committed:'
+STILL_MORE = '  and %d more'
+STILL_DO = ('Commit them, then run purlin:test --all --commit again: a '
+            'sign-off needs results taken with nothing uncommitted.')
+UNCOMMITTED_SHOWN = 10
 
 # What the run says about each rule of the features it ran that fails or
 # has no test, before the status.
@@ -533,6 +578,7 @@ class SuiteRun(object):
         self.suite = suite
         self.outcomes = {}        # (path, test line) -> [outcome]
         self.reasons = {}         # (path, test line) -> [skip reason]
+        self.ran_as = {}          # (path, test line) -> the report's name
         self.file_results = {}    # path -> pass | fail, for an exit suite
         self.failures = []
         self.failed_tests = False  # it ran, and at least one test failed
@@ -554,8 +600,8 @@ def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
               marked=None, action='test', option='', held=()):
     """Run one suite and read what it saw. A `SuiteRun`.
 
-    `files` is the test files to hand `{files}`, or empty for the whole
-    suite. An `exit` suite runs its command once per file, `{files}` being
+    `files` is the test files to hand `{files}`, or empty for a suite
+    started with no file list. An `exit` suite runs its command once per file, `{files}` being
     that one file, and every file it matches when `files` is empty; each
     file passes when the command exits 0. Any other suite runs once and its
     report is read and tied to the markers in `marked`. `action` is the
@@ -615,7 +661,26 @@ def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
     done.outcomes, done.problems = reports_module.tie(project_root, suite,
                                                       cases, here)
     done.reasons = skip_reasons(project_root, suite, cases, here)
+    done.ran_as = reports_module.ran_as(project_root, suite, cases, here,
+                                        done.outcomes)
     return done
+
+
+def suite_command(suite, files, option=''):
+    """The command `run_suite` starts a report suite with, as text."""
+    return reports_module.command_for(suite, files, suite.report_path(),
+                                      option)
+
+
+def running_line(project_root, suite, files, option='', held=()):
+    """The line a run prints as a suite starts: its name and its command."""
+    if suite.format != 'exit':
+        return RUNNING % (suite.name, suite_command(suite, files, option))
+    count = len([path for path in list(files) or sorted(
+        markers_module.test_files(project_root, [suite]))
+        if path not in held])
+    return (RUNNING_EACH_ONE % (suite.name, suite.run) if count == 1
+            else RUNNING_EACH % (suite.name, suite.run, count))
 
 
 def skip_reasons(project_root, suite, cases, marked):
@@ -650,7 +715,8 @@ def marker_results(scan, suites, runs, held=()):
 
     Each entry is `{status, test_file, test_name, line, reason, held}`,
     `status` being `pass`, `fail` or `not run`, and `reason` the text a test
-    that was skipped gave, or None. A test of a report also carries
+    that was skipped gave, or None. A test with no result that the report
+    holds under another spelling of its title carries that name as `ran_as`. A test of a report also carries
     `errored`, true where it reads `fail` on an error and no failure. A marker no test follows gets no entry:
     the run reports it by file and line instead. `held` is the `(path, test
     line)` pairs of the slow tests the run left out, the line None for a
@@ -696,7 +762,10 @@ def marker_results(scan, suites, runs, held=()):
                                                           suite.format),
                     'line': marker.line, 'reason': reason,
                     'held': left_out,
-                    'errored': reports_module.errored(cases)})
+                    'errored': reports_module.errored(cases),
+                    'ran_as': (done.ran_as.get((path, test.line))
+                               if done is not None and not cases else None),
+                    'title': test.name})
     return index
 
 
@@ -887,6 +956,46 @@ def _git_email(project_root):
 
 def head_commit(project_root):
     return payload_module.head_sha(project_root) or ''
+
+
+def uncommitted_paths(project_root):
+    """What git lists as changed or untracked outside `.purlin/`, sorted.
+
+    The files `working_tree_dirty` answers true for: a section taken while
+    one of them stood is recorded as taken with uncommitted changes, which
+    a sign-off refuses. A folder nothing of which is tracked is listed once,
+    as git lists it.
+    """
+    try:
+        result = subprocess.run(['git', 'status', '--porcelain', '-z',
+                                 '--no-renames'],
+                                capture_output=True, text=True,
+                                cwd=project_root, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return []
+    if result.returncode != 0:
+        return []
+    return sorted({entry[3:] for entry in result.stdout.split('\0')
+                   if len(entry) > 3
+                   and not entry[3:].startswith('.purlin/')})
+
+
+def uncommitted_lines(project_root):
+    """What a `--commit` run says of the files its commits left out.
+
+    The count, up to `UNCOMMITTED_SHOWN` paths, how many more there are,
+    and the step that makes the results count at a sign-off. Nothing where
+    nothing is left.
+    """
+    paths = uncommitted_paths(project_root)
+    if not paths:
+        return []
+    lines = [STILL_ONE if len(paths) == 1 else STILL_MANY % len(paths)]
+    lines.extend('  %s' % path for path in paths[:UNCOMMITTED_SHOWN])
+    if len(paths) > UNCOMMITTED_SHOWN:
+        lines.append(STILL_MORE % (len(paths) - UNCOMMITTED_SHOWN))
+    lines.append(STILL_DO)
+    return lines
 
 
 def working_tree_dirty(project_root):
@@ -1215,6 +1324,9 @@ def main(argv=None):
             return 1
 
     os_name = host_os()
+    if args.action != 'ci' and fingerprint_module.setting_changed(
+            project_root, features, os_name):
+        print(status_module.SETTING_CHANGED)
     if args.all or (not args.features and args.action == 'ci'):
         selected = sorted(features)
     elif args.features:
@@ -1250,11 +1362,10 @@ def main(argv=None):
                     if any(feature == name for feature, _p in remote_proofs)]
     foreign = foreign_env_proofs(features, selected, os_name)
     foreign_ids = {(feature, proof_id) for feature, proof_id, _env in foreign}
-    # A run over every feature runs every suite whole. A narrower run gives
-    # each suite the files that carry a marker of a feature it runs, and a
-    # suite with none of those is not started. A `--ci` run gives each
-    # suite the files that carry a marker of a proof it answers for.
-    narrow = remote_proofs is not None or len(selected) < len(features)
+    # Every run gives each suite the files that carry a marker of a feature
+    # it runs, and a suite with none of those is not started. A `--ci` run
+    # gives each suite the files that carry a marker of a proof it answers
+    # for.
     scan = markers_module.scan(project_root, suites)
     # `--all` and `--ci` start every test; any other run leaves
     # out the tests of the proofs tagged `@slow`.
@@ -1267,17 +1378,21 @@ def main(argv=None):
     failures = []
     runs = []
     given = {}
+    crowded = []
     for suite in suites:
-        files = []
-        if narrow:
-            # A file every test of which is left out is not handed over.
-            files = [path for path in marked_files(scan, suite, selected,
-                                                   remote_proofs)
-                     if not plan.all_held(path, scan[path])]
-            if not files:
-                continue
+        # A file every test of which is left out is not handed over.
+        files = [path for path in marked_files(scan, suite, selected,
+                                               remote_proofs)
+                 if not plan.all_held(path, scan[path])]
+        if not files:
+            continue
+        if suite.format != 'exit' and len(suite_command(
+                suite, files, plan.options.get(suite.name, ''))) \
+                > COMMAND_LIMIT:
+            crowded.append(TOO_MANY_FILES % (suite.name, len(files)))
+            files = []
         given[suite.name] = files
-    said = slow_lines(plan, selected, given)
+    said = crowded + slow_lines(plan, selected, given)
     for line in said:
         print(line)
     if said:
@@ -1289,7 +1404,9 @@ def main(argv=None):
         files = given[suite.name]
         # One line per suite before it starts, so a job log says where a run
         # is while it is still running.
-        print('Running the %s suite.' % suite.name)
+        print(running_line(project_root, suite, files,
+                           plan.options.get(suite.name, ''), held_files),
+              flush=True)
         done = run_suite(project_root, suite, files, log, args.arm_timeout,
                          scan, 'audit' if args.action == 'audit' else 'test',
                          plan.options.get(suite.name, ''), held_files)
@@ -1303,6 +1420,7 @@ def main(argv=None):
     index = marker_results(scan, suites, runs, plan.held)
     ran_suites = {done.suite.name for done in runs}
     missing = []
+    renamed = []
     for (feature, marker_id), entries in sorted(index.items()):
         if feature not in selected or (feature, marker_id) in foreign_ids:
             continue
@@ -1318,6 +1436,12 @@ def main(argv=None):
                 # runs it, and the status says so.
                 continue
             if anchor and nothing_to_check(entry):
+                continue
+            if entry.get('ran_as'):
+                # The test ran: the report holds it under another spelling.
+                renamed.append(RAN_AS % (
+                    feature, marker_id, entry['test_file'], entry['line'],
+                    entry.get('title') or '', entry['ran_as']))
                 continue
             missing.append('%s %s at %s:%d' % (feature, marker_id,
                                                entry['test_file'],
@@ -1358,6 +1482,10 @@ def main(argv=None):
         failures.append(ONE_MARKER_MISSING % (shown + more)
                         if len(missing) == 1
                         else MARKERS_MISSING % (len(missing), shown + more))
+    failures.extend(renamed[:RAN_AS_SHOWN])
+    if len(renamed) > RAN_AS_SHOWN:
+        more = len(renamed) - RAN_AS_SHOWN
+        failures.append(RAN_AS_MORE_ONE if more == 1 else RAN_AS_MORE % more)
     ran = [done.suite.name for done in runs]
 
     print('Ran %s on %s.'
@@ -1428,6 +1556,11 @@ def main(argv=None):
                            exit_code)
     if args.commit:
         commit_the_evidence(project_root, work, removed)
+        left = uncommitted_lines(project_root)
+        if left:
+            print('')
+            for line in left:
+                print(line)
 
     print('')
     print(status_module.sync_status(project_root))
@@ -1460,22 +1593,9 @@ def settings_stop(project_root):
 
 
 def set_up_by_095(project_root):
-    """True when Purlin 0.9.5 set this project up and it was not upgraded.
-
-    This is the one piece of 0.9.5 the run keeps: 0.9.5 wrote no `tests`
-    setting, and every setup and upgrade since writes one, so a settings
-    file without it is a project that release set up. A project with no
-    settings file is not one: that is a missing settings file, named on its
-    own. The version stamp is not read, so a plugin update alone never
-    makes this true.
-    """
-    path = os.path.join(os.path.abspath(project_root), SETTINGS_PATH)
-    try:
-        with open(path, 'r', encoding='utf-8') as handle:
-            config = json.load(handle)
-    except (IOError, OSError, ValueError):
-        return False
-    return isinstance(config, dict) and 'tests' not in config
+    """True when Purlin 0.9.5 set this project up and it was not upgraded
+    (`project.set_up_by_095`): the one piece of 0.9.5 the run keeps."""
+    return project_module.set_up_by_095(project_root)
 
 
 def asked_yes(question):

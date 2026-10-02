@@ -10,7 +10,7 @@ Every commit Purlin makes, or asks you to make, uses one of these. There is no o
 | `feat(<name>):` | Implementing a feature, with the changeset in the body | `purlin:build` |
 | `fix(<name>):` | Fixing a bug | `purlin:build` |
 | `test(<name>):` | Writing or changing tests without changing behaviour | `purlin:build` |
-| `purlin: specs, tests and settings for <feature>[, <feature>...]` | The specs of the features a run covered, the test files carrying their markers, and `.purlin/config.json`: the work the run's results describe | `purlin:test --commit`, `purlin:audit --commit` |
+| `purlin: specs, tests and settings for <feature>[, <feature>...]`, or `for <n> features` over 5 | The specs of the features a run covered, the test files carrying their markers, and `.purlin/config.json`: the work the run's results describe | `purlin:test --commit`, `purlin:audit --commit` |
 | `purlin: evidence at <commit7>` | The evidence a run wrote, under `.purlin/evidence/` | `purlin:test --commit`, `purlin:audit --commit`, and a project's own run on another system |
 | `sign(<version>): <signer email>` | One sign-off over a version's evidence package, signed; the first of a version carries the package too | `purlin:sign` |
 | `anchor(<name>): create` | A new local anchor | `purlin:anchor create` |
@@ -43,6 +43,12 @@ make two commits in one step, the work and then the results that describe it:
 ```
 purlin: specs, tests and settings for <feature>, <feature>
 purlin: evidence at <commit7>
+```
+
+Over 5 features the first commit's subject counts them and its body lists them, one per line:
+
+```
+purlin: specs, tests and settings for 54 features
 ```
 
 Both commits are yours, made under your own git identity. Neither is pushed for you.

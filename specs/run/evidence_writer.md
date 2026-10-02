@@ -13,7 +13,7 @@
 > Scope: scripts/run/evidence.py, references/formats/evidence_format.md, templates/gitignore.purlin
 > Stack: python/stdlib (json, subprocess, datetime, platform), git
 > Highest-Rule: 33
-> Highest-Proof: 98
+> Highest-Proof: 99
 
 ## Rules
 
@@ -33,7 +33,7 @@
 - RULE-23: A test run over a feature whose evidence file was resolved to either side of a merge rewrites that system's section
 - RULE-26: A test run over a feature whose evidence file a merge left conflicted writes the file afresh and keeps, from both sides, each audit entry whose rule, proof and test are the rule's current ones
 - RULE-9: `--test` and `--audit` write the evidence and commit nothing without `--commit`, and print `Evidence written to .purlin/evidence/local/<feature>.json.`, or `to .purlin/evidence/local/ for <n> features.` where several ran
-- RULE-19: With `--commit`, before the results, the run commits the specs of the features it ran, the test files carrying their markers and `.purlin/config.json`, where any of them changed, under the person's own git identity with the subject `purlin: specs, tests and settings for <feature>[, <feature>…]`, and prints `Committed <sha7>, the work these results describe:` then each file that commit changed on a line of its own, indented two spaces; where none changed it makes no commit and prints no such line
+- RULE-19: With `--commit`, before the results, the run commits the specs of the features it ran, the test files carrying their markers and `.purlin/config.json`, where any of them changed, under the person's own git identity with the subject `purlin: specs, tests and settings for <feature>[, <feature>…]`, or, over 5 features, `purlin: specs, tests and settings for <n> features` with the features in the body, one per line, and prints `Committed <sha7>, the work these results describe:` then each file that commit changed on a line of its own, indented two spaces; where none changed it makes no commit and prints no such line
 - RULE-32: With `--commit` the run's second commit carries the files under `.purlin/evidence/local/` and any evidence file the run removed, under the person's own git identity, with the subject `purlin: evidence at <sha7>`, where `<sha7>` names the run's first commit, or HEAD when that made none, and prints `Evidence committed.`; where nothing is new it prints `Evidence unchanged.` and makes no commit; it never pushes or prints a push command
 - RULE-13: The evidence is not gitignored: in a project `purlin:init` set up, git ignores no file under `.purlin/evidence`
 - RULE-12: `--audit` writes one `audit.rules` entry for each rule the audit read, carrying the rule, proof, test and code hashes it read, its `verdict`, `strong`, `weak` or `spot-checked`, its `findings`, its `no_bug`, its `breaks`, its `explanation`, the `model` that answered, the sha256 of the `criteria` it was sent, `at` and `commit`, and leaves every other rule's entry as it was
@@ -75,6 +75,7 @@
 - PROOF-50 (RULE-19): In a git checkout where the spec `feat` was edited and not committed, a `--all --test --commit` run makes two commits, `purlin: specs, tests and settings for feat` and then `purlin: evidence at <sha7>` naming the first, and prints `Committed <sha7>, the work these results describe:` then `  specs/a/feat.md`
 - PROOF-49 (RULE-19): In a git checkout where the specs, tests and settings of a run over `feat` are all committed, committing the run's work makes no commit and prints nothing, and the results' commit that follows names HEAD
 - PROOF-98 (RULE-19): In a git checkout where the spec `feat` and `src/other.py` are both edited and not committed, `--all --test --commit` commits `specs/a/feat.md` and not `src/other.py`, which `git status` still lists as changed, and the section's `dirty` is true
+- PROOF-99 (RULE-19): In a git checkout where the specs `f1` to `f6` were edited and not committed, a `--all --test --commit` run makes a commit whose subject is `purlin: specs, tests and settings for 6 features` and whose body is the six lines `f1` to `f6`
 - PROOF-10 (RULE-32): In a git checkout whose git name is `Dev` and email `dev@example.com`, with its spec and test committed, a `--all --test --commit` run prints `Evidence committed.` and no line holding `git push`; the newest commit, authored by `Dev` at `dev@example.com`, reads `purlin: evidence at <sha7>`, naming HEAD before the run, and changes exactly `.purlin/evidence/local/feat.json`
 - PROOF-39 (RULE-32): In a git checkout whose `main` has been pushed to a remote, holding committed evidence for a feature `gone` that no spec defines under both `local` and `ci`, a `--all --test --commit` run prints `Evidence committed.`, its last commit deletes `.purlin/evidence/local/gone.json` and `.purlin/evidence/ci/gone.json`, and the remote's `main` is still the commit pushed before
 - PROOF-38 (RULE-32): In a git checkout whose evidence a `--all --test --commit` run has just committed, the same run made again prints `Evidence unchanged.` and adds no commit

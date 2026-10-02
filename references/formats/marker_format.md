@@ -60,7 +60,7 @@ A test is declared by:
 | Language | Declaration |
 |----------|-------------|
 | Python | a function whose name starts with `test`, at module level or in a class |
-| JavaScript, TypeScript | an `it` or `test` call with a literal title, inside any number of `describe` calls; `it.each(table)(title, ...)` too |
+| JavaScript, TypeScript | an `it` or `test` call whose title is one plain string, inside any number of `describe` calls; `it.each(table)(title, ...)` too |
 | C# | a method carrying `[Fact]`, `[Theory]`, `[Test]`, `[TestCase]`, `[TestCaseSource]`, `[TestMethod]`, `[DataTestMethod]`, `[SkippableFact]` or `[SkippableTheory]` |
 | Go | `func TestX(t *testing.T)` |
 
@@ -81,7 +81,7 @@ list with one entry per suite:
 
 | Field | Type | What it holds |
 |-------|------|---------------|
-| `name` | string | the suite's name, printed as `Running the <name> suite.` |
+| `name` | string | the suite's name, printed as `Running <name>: <the command as run>` |
 | `run` | string | the project's own command. It runs through bash from the project root |
 | `report` | string or null | where the report lands, relative to the project root; a folder is read file by file; `-` is the command's standard output; null for an `exit` suite |
 | `format` | string | `junit`, `trx`, `gotest` or `exit` |
@@ -92,12 +92,13 @@ list with one entry per suite:
 - `{report}` becomes the `report` path.
 - `{files}` becomes the test files, each quoted, that carry the markers of
   the proofs the run selected.
-  - A run over some features gets their test files, and starts no suite
-    that holds none of them.
-  - A run over every feature on your own machine gets nothing, and the suite
-    runs whole.
+  - Every run gets the test files of the features it runs, and starts no
+    suite that holds none of them. A run over every feature gets every
+    marked file.
+  - Where the command with its files would pass 30,000 characters, the
+    suite is started with no file list, and the run says so.
   - A `--ci` run selects the proofs tagged `@env` for its own system.
-  - A suite with no `{files}` runs whole every time it runs.
+  - A suite with no `{files}` runs every test it holds each time it runs.
 
 `files` decides which suite a marked file belongs to, and only a file one
 suite's globs match is read for markers. `*` and `?` match within one path
@@ -173,10 +174,18 @@ For each case in the report:
 2. **The test.** The case's own name is found among the tests that file
    declares. A parametrised test's cases (`test_x[a]`, `TestX/a`,
    `Method(x: 1)`, the rows of an `it.each` table) all belong to the one test.
+   A JavaScript or TypeScript title is read as the string it makes: `\'`
+   and `\"` are the quote, pieces joined with `+` are one title, and white
+   space at either end is cut.
    A nested title is matched by its last part, then narrowed by the outer
    parts when two tests share it; a Python class and a C# class narrow the
    same way.
 3. **The markers.** The markers tied to that test take the case's outcome.
+
+A test whose title is not one plain string, a template holding `${}` or a
+variable, can be matched to no case. A marker above it is not tied, and the
+run prints `<file>:<line>: the test's title is not one plain string, so its
+result cannot be matched. Write it as one string.`
 
 A case that matches more than one test is counted for none of them, and the
 run says so. A case whose test carries no marker is ignored: a test with no
