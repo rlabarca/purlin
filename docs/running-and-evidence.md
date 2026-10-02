@@ -55,6 +55,9 @@ With no feature named, the run selects a feature in any of these cases:
 
 - it has no run on this operating system;
 - its spec, its code or its tests changed since its newest run here;
+- its newest run here matches them and the status still counts one of its rules under
+  `rules to test`, as after a run whose test tool could not start. The reason reads
+  `1 rule to test`;
 - an untracked file sits under its `> Scope:` or beside its tests;
 - its spec names no files.
 

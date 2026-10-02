@@ -15,7 +15,7 @@
 > Scope: scripts/review/audit_run.py, scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
 > Highest-Rule: 64
-> Highest-Proof: 159
+> Highest-Proof: 160
 
 ## Rules
 
@@ -63,6 +63,7 @@
 - PROOF-103 (RULE-1): `RULE-2` carries an audit entry; a line of `src/login.py`, a file its feature covers, is changed from `return 401` to `return 403 if locked else 401` and its test passes again; the audit reads it
 - PROOF-51 (RULE-1): `RULE-2` passes and carries an audit entry for its current text, proof and test; asked to read again, the audit reads it
 - PROOF-122 (RULE-1): `RULE-2`'s entry reads `spot-checked` because the model could not be reached, whether `claude` exited with an error, was not on PATH or gave no answer, and nothing has changed since; the audit run again, with a `claude` that answers, reads `RULE-2` and starts `claude` exactly `1` time
+- PROOF-160 (RULE-1): With the limit lowered to 1 second and a `claude` that takes 3 seconds to answer, `RULE-2`'s entry reads `spot-checked` with the reason `No bug was planted: the model could not be reached: claude timed out after 1 s.`, and nothing has changed since; the audit run again, with a `claude` that answers at once, reads `RULE-2` and starts `claude` exactly `1` time
 - PROOF-11 (RULE-2): The prompt for `RULE-2` begins with the text of `references/review_criteria.md`, byte for byte; after it come `login RULE-2`, the rule's text, its proof `POST /login with a bad password; verify 401 and the body "denied"`, the test `test_a_bad_password_is_denied` and its line `assert login("ada", "wrong") == 401`
 - PROOF-106 (RULE-2): The spot tests found `tests/test_login.py::test_a_bad_password_is_denied: the test checks nothing.` for `RULE-2`; the prompt for `RULE-2` holds that line after the test's source
 - PROOF-114 (RULE-2): The project holds `.env` with `KEY=s3cret` and the scope of `login` names `src/login.py` alone; the request for `RULE-2` holds the text of `src/login.py` and does not hold `s3cret`
@@ -97,7 +98,7 @@
 - PROOF-24 (RULE-39): `claude` exits with the code 1 when asked about `RULE-2`; the audit's answer is only the reason `claude exited with an error`, with no explanation
 - PROOF-25 (RULE-39): With the limit lowered to 1 second and a `claude` that takes 3 seconds to answer, the audit's answer about `RULE-2` is only the reason `claude timed out after 1 s`
 - PROOF-117 (RULE-39): `claude` exits `0` and prints nothing at every call, and no spot test fires on the test of `RULE-2`; its entry reads `spot-checked`, and the audit prints `The model could not be reached: claude gave no answer. 1 rule is spot-checked alone. Run purlin:audit again.`
-- PROOF-34 (RULE-40): The tests `test_valid_credentials_return_200` and `test_a_token_comes_back` in one file are both marked for `PROOF-1` and both passed; what the audit reads for `RULE-1` lists exactly those two, the first shown with its own source, `== 200`, and the second with its own, `token`, neither holding the other's
+- PROOF-34 (RULE-40): The tests `test_valid_credentials_return_200` and `test_a_token_comes_back` in `tests/test_login.py` are both marked for `PROOF-1` and both passed; what the audit reads for `RULE-1` lists exactly those two, each named with `tests/test_login.py`, the first shown with its own source, `== 200`, and the second with its own, `token`, neither holding the other's
 - PROOF-35 (RULE-40): The evidence names a third test for `PROOF-1`, `test_renamed_away`, which the test file no longer holds; what the audit reads for `RULE-1` shows no source under `test_renamed_away`, and still shows `def test_valid_credentials_return_200` under that test and `def test_a_token_comes_back` under that one
 - PROOF-65 (RULE-40): A C# test file holds two tests marked for one proof, `Allowed` and `Denied`; the source read for the name a runner records as `Acme.LoginTests.Denied(user: "x")` is `Denied`'s own, not `Allowed`'s
 - PROOF-74 (RULE-41): The command run with `--nope` exits 2 and prints `ai_audit.py: unexpected argument --nope`

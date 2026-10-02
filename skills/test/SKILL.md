@@ -41,6 +41,8 @@ With neither `--all` nor a feature, the run selects a feature in any of these ca
 
 - it has no run on this operating system;
 - its spec, code or tests changed since its evidence;
+- its evidence matches them and the status still counts one of its rules under `rules to test`,
+  as after a run whose test tool could not start. The reason reads `1 rule to test`;
 - an untracked file sits under its `> Scope:` or beside its tests;
 - its spec names no files.
 

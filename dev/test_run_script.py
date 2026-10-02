@@ -1049,18 +1049,58 @@ class TestARunCoversWhatTheChangeTouched:
         return root, sha
 
     # purlin: run_script PROOF-93
-    def test_an_untracked_file_runs_its_feature_alone_and_is_named(
+    def test_an_untracked_file_selects_its_feature_alone_and_is_named(
             self, tmp_path):
         root, _sha = self._untracked_under_login(tmp_path)
         code, output = _run(root, '--test')
         assert code == 0, output
         assert _selection(output) == {'login': 'a file is not tracked'}, output
-        # Selected alone is run alone: login's one test and no other.
-        assert _ran(root) == ['test_login'], output
-        assert 'Ran pytest on 1 feature.' in output.splitlines(), output
         assert ("src/auth/token.py is under login's scope and is not "
                 'tracked, so its content is not part of the evidence until '
                 'you git add it.') in output.splitlines(), output
+
+    # purlin: run_script PROOF-290
+    def test_an_untracked_file_runs_its_feature_alone(self, tmp_path):
+        root, _sha = self._untracked_under_login(tmp_path)
+        _code, output = _run(root, '--test')
+        assert 'Ran pytest on 1 feature.' in output.splitlines(), output
+        # Run alone: the report holds login's one test and no other.
+        assert _ran(root) == ['test_login'], output
+
+    # purlin: run_script PROOF-291
+    def test_a_result_left_to_test_selects_its_feature(
+            self, tmp_path, monkeypatch):
+        root, _sha = _touched_project(tmp_path)
+        # The suite's command names its Python through the environment, so
+        # one committed command can meet a Python that starts no test.
+        suite = suites.pytest_suite()
+        suite['run'] = suite['run'].replace(suites.PYTHON, '"$TEST_PYTHON"')
+        _config(root, tests=[suite])
+        monkeypatch.setenv('TEST_PYTHON', sys.executable)
+        _code, output = _run(root, '--test', '--commit')
+        assert 'Evidence committed.' in output, output
+        assert 'Nothing to run' in _run(root, '--test')[1]
+        # `src/login.py` changes and the test tool does not start: login's
+        # one result is recorded as not run, and committed.
+        (root / 'src' / 'login.py').write_text('VALUE = 2\n', encoding='utf-8')
+        monkeypatch.setenv('TEST_PYTHON', 'false')
+        code, output = _run(root, '--test', '--commit')
+        assert code == 1, output
+        assert 'Evidence committed.' in output, output
+        assert _passed_word(root, 'login', 'RULE-1') == 'not run'
+        assert '  1 rule to test: purlin:test' in output.splitlines(), output
+        # The test tool starts again, and nothing else has changed.
+        monkeypatch.setenv('TEST_PYTHON', sys.executable)
+        code, output = _run(root, '--test')
+        lines = output.splitlines()
+        assert 'Selected 1 of 2 features: login (1 rule to test).' in lines, \
+            output
+        assert not any(line.startswith('Nothing to run') for line in lines), \
+            output
+        assert 'Ran pytest on 1 feature.' in lines, output
+        assert _ran(root) == ['test_login'], output
+        assert code == 0, output
+        assert _passed_word(root, 'login', 'RULE-1') == 'passed'
 
     # purlin: run_script PROOF-94
     def test_the_selected_line_comes_before_the_suite_runs(
@@ -1277,7 +1317,13 @@ class TestNoTestCommand:
         root = _no_command(tmp_path, 'pytest')
         before = _purlin_tree(root)
         code, output = _run(root, '--all', '--test')
-        entry = frameworks.entry_for('pytest')
+        # pytest's entry written out here, field by field: one read from the
+        # code under test would agree with whatever that code holds.
+        entry = {'name': 'pytest',
+                 'run': 'python3 -m pytest {files} --junitxml={report}',
+                 'report': '.purlin/runtime/reports/pytest.xml',
+                 'format': 'junit',
+                 'files': ['**/test_*.py', '**/*_test.py']}
         assert output.splitlines()[-4:-1] == [
             'No test command is set in .purlin/config.json, so nothing ran.',
             'Suggested for pytest: python3 -m pytest {files} '
@@ -1372,8 +1418,18 @@ class TestNoTestCommand:
                              suggestions[name]['run']), name
 
     # purlin: run_script PROOF-133
-    def test_the_page_shows_the_same_entries(self, suggestions):
+    def test_the_page_shows_the_same_entries(self, suggestions, tmp_path):
         shown = _page_entries()
+        # The order is the run's own: one project holding what all seven
+        # tools leave, and the array the run suggests for it, read in order.
+        root = _no_command(tmp_path, *reversed(ORDER))
+        # vitest and jest are both read from the one `package.json`.
+        (root / 'package.json').write_text(
+            '{"devDependencies": {"jest": "^29.0.0", "vitest": "^1.0.0"}}',
+            encoding='utf-8')
+        _code, output = _run(root, '--all', '--test')
+        assert [entry for _block, entry in shown] == _suggested(output), \
+            output
         assert [entry for _block, entry in shown] == [
             suggestions[name] for name in ORDER]
         # Word for word: each block is the entry and nothing more, so a key
@@ -1462,19 +1518,31 @@ class TestTheSettingsFile:
 
     # purlin: run_script PROOF-138
     def test_a_project_an_older_purlin_set_up_stops_the_run(self, tmp_path):
-        root = _pytest_project(tmp_path)
-        _spec(root, 'feat')
-        (root / '.purlin' / 'config.json').write_text(
-            json.dumps({'version': '0.9.5', 'test_framework': 'pytest'}),
-            encoding='utf-8')
-        before = _purlin_tree(root)
-        code, output = _run(root, '--all', '--test')
-        assert output.strip().splitlines() == [
-            'This project was set up by an older Purlin and not upgraded, so '
-            'nothing ran. Run purlin:init --update.'], output
-        assert list(before) == [os.path.join('.purlin', 'config.json')]
-        assert _purlin_tree(root) == before, output
-        assert code == 1, output
+        # The settings file as Purlin 0.9.5 wrote it: the one this
+        # repository keeps of such a project, whose stamp is the release
+        # that first set the project up, and one stamped `0.9.5`.
+        with open(os.path.join(REPO, 'dev', 'fixtures', 'upgrade-0.9.5',
+                               '.purlin', 'config.json'),
+                  encoding='utf-8') as handle:
+            kept = handle.read()
+        assert 'tests' not in json.loads(kept)
+        assert json.loads(kept)['version'] != '0.9.5'
+        for name, text in (('kept', kept), ('stamped', json.dumps(
+                {'version': '0.9.5', 'test_framework': 'pytest'}))):
+            folder = tmp_path / name
+            folder.mkdir()
+            root = _pytest_project(folder)
+            _spec(root, 'feat')
+            (root / '.purlin' / 'config.json').write_text(
+                text, encoding='utf-8')
+            before = _purlin_tree(root)
+            code, output = _run(root, '--all', '--test')
+            assert output.strip().splitlines() == [
+                'This project was set up by an older Purlin and not '
+                'upgraded, so nothing ran. Run purlin:init --update.'], output
+            assert list(before) == [os.path.join('.purlin', 'config.json')]
+            assert _purlin_tree(root) == before, output
+            assert code == 1, output
 
 class TestEachRuleThatFailsOrHasNoTest:
 

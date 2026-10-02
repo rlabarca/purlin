@@ -66,7 +66,7 @@ def project():
 class TestEachTestShowsItsOwnSource:
 
     # purlin: ai_audit PROOF-34
-    def test_two_passing_tests_of_one_proof_each_show_their_own_source(
+    def test_two_tests_of_one_proof_each_show_their_file_and_own_source(
             self, project):
         _two_tests(project)
         rule = project.rule('RULE-1')
@@ -77,6 +77,16 @@ class TestEachTestShowsItsOwnSource:
         # Exactly those two: each listed once and no third entry.
         assert sorted(test['name'] for test in reading['tests']) == sorted(
             NAMES), reading['tests']
+        # Each is listed as a test of PROOF-1 in the one file both are in,
+        # not as a check made by hand and not as a test of no file.
+        assert [(test['proof'], test['file'], test['manual'])
+                for test in reading['tests']] == [
+            ('PROOF-1', 'tests/test_login.py', False)] * 2, reading['tests']
+        request = audit_module.model_prompt(project.root, reading, 'criteria')
+        for name in NAMES:
+            assert request.count(
+                'Test for PROOF-1: tests/test_login.py::%s\n' % name) == 1, \
+                request
         tests = _tests_by_name(project)
         first = tests['test_valid_credentials_return_200']['body']
         second = tests['test_a_token_comes_back']['body']

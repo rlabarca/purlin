@@ -604,15 +604,17 @@ class TestTheRefusals:
             made.close()
 
     # purlin: signatures PROOF-258
-    def test_a_spec_that_holds_a_number_twice_is_refused(self, capsys):
+    def test_a_spec_that_holds_a_number_twice_is_refused_in_one_whole_line(
+            self, capsys):
         made = ready(spec=TWICE_SPEC)
         try:
             code, lines = run_main(made, capsys)
-            assert len(lines) == 1, lines
-            assert lines[0].startswith('No sign-off:'), lines
-            # The rule by its whole number: `RULE-20` does not name it.
-            assert 'login RULE-' in lines[0], lines
-            assert 'RULE-2' in re.findall(r'RULE-\d+', lines[0]), lines
+            # The whole line: every rule of the spec, the feature's name once
+            # and its rule numbers after it, each number written once.
+            assert lines == [
+                'No sign-off: 2 rules do not pass at %s: login RULE-1, '
+                'RULE-2. Run purlin:status to see what is left, then '
+                'purlin:sign.' % made.head()[:7]], lines
             assert (code, status(made.root)) == (1, '')
         finally:
             made.close()
@@ -964,15 +966,22 @@ class TestTheWalk:
             finding = '  login RULE-1   PROOF-1 reads the status alone.'
             left, asked, out = ['list'], [], _Out()
 
+            printed = []
+
             def ask(_kind, _key, prompt):
                 # Each question with whether the finding was printed by then.
                 asked.append((prompt, finding in out.text().splitlines()))
+                printed.append(len(out.text().splitlines()))
                 return left.pop(0) if left else None
 
             sign_module.walk(made.root, None, ask=ask, out=out)
             assert asked[:2] == [
                 ("The audit's findings: 1 weak. list / go on: ", False),
                 ('go on: ', True)], asked
+            # Between the two questions `list` prints that line, once, and
+            # nothing else.
+            assert out.text().splitlines()[printed[0]:printed[1]] == [
+                finding], out.text()
         finally:
             made.close()
 
@@ -1139,9 +1148,18 @@ class TestTheSignOff:
                 return [found for value in item for found in values(value)]
             return [item]
 
-        # No value anywhere in the file is an answer word, in either case.
-        assert not [value for value in values(body)
-                    if str(value).strip().lower()
+        def keys(item):
+            if isinstance(item, dict):
+                return list(item) + [found for value in item.values()
+                                     for found in keys(value)]
+            if isinstance(item, list):
+                return [found for value in item for found in keys(value)]
+            return []
+
+        # No value anywhere in the file is an answer word, in either case,
+        # and no key is one either.
+        assert not [word for word in values(body) + keys(body)
+                    if str(word).strip().lower()
                     in ('go on', 'list', 'y', 'yes', 'stop')], body
 
     # purlin: signatures PROOF-235
@@ -1516,6 +1534,10 @@ class TestTheAgent:
         assert '  login RULE-1   PROOF-1 reads the status alone.' in lines
         head = lines.index('login RULE-2   hand check')
         assert not any('what did you see' in line for line in lines[head:])
+        # A question of any kind ends where its answer is typed, on `: ` or
+        # `] `: no line from the stop on does.
+        assert not [line for line in lines[head:]
+                    if line.endswith((': ', '] '))], lines
         # After the stop comes the last line and nothing else: no question
         # of any kind.
         stop = stop_lines(lines, 'login RULE-2   hand check')

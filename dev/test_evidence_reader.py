@@ -201,6 +201,13 @@ def test_a_test_command_changed_to_one_as_long_is_out_of_date_on_tests(root):
     _settings(root, run='python2 -m pytest {files}')
     assert len('python2 -m pytest {files}') == len('python3 -m pytest {files}')
     assert _state(root) == (False, ['tests'])
+    # So is one that differs from the stored command in nothing but the case
+    # of one letter: `-x` stops at the first failure, `-X` is another option.
+    _settings(root, run='python3 -m pytest -x {files}')
+    _stored_now(root)
+    assert _state(root) == (True, [])
+    _settings(root, run='python3 -m pytest -X {files}')
+    assert _state(root) == (False, ['tests'])
 
 
 # purlin: evidence PROOF-89
