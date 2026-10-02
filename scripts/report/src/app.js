@@ -38,8 +38,11 @@ var NO_ANCHOR_BUG = 'No bug is planted for an anchor\'s rule.';
    tests pass now, the payload's `summary.steps.passed`, and is complete once
    every other rule is checked at sign-off, `summary.steps.by_hand`; `Strong`
    counts the rules the audit found strong, the payload's
-   `summary.audit.strong`, drawn only where a rule has an audit entry. */
+   `summary.audit.strong`, drawn only where a rule has an audit entry;
+   `Failing` counts the rules whose passed cell reads `failed`, and is drawn
+   only where there is one. */
 var PASSING = 'Passing';
+var FAILING = 'Failing';
 var STRONG = 'Strong';
 var NO_PROOF = 'No proof';
 
@@ -377,6 +380,14 @@ function testFailed(rule) {
   });
 }
 
+/* Whether a spec holds a rule whose passed cell reads `failed`: the rules
+   the `Failing` box counts, and the specs the board lists first. */
+function hasFailing(feature) {
+  return (feature.rules || []).some(function (rule) {
+    return cellWord(rule, 'passed') === 'failed';
+  });
+}
+
 /* The badges a rule's row carries: one per step it has reached, and
    `FAILED` where a test fails. A step not reached draws nothing; why it was
    not reached is read on the rule's own screen. */
@@ -539,7 +550,9 @@ var NOTICE_KINDS = [
   [/^\.purlin\/evidence\/[^\/ ]+\/(\S+)\.json (?:is not valid JSON|is not a JSON object|carries the schema |names the source )/,
     'have', 'has', 'an evidence file Purlin ignores'],
   [/^(\S+): \d+ files? its scope names (?:is|are) not written yet/,
-    'name', 'names', 'a file in the scope that is not written yet']
+    'name', 'names', 'a file in the scope that is not written yet'],
+  [/^(\S+) RULE-\d+ passes with nothing to check here: /,
+    'have', 'has', 'a rule that passes with nothing to check here']
 ];
 
 /* The lines as the board draws them, each `{line, names}`: three or more
@@ -590,9 +603,11 @@ function groupLine(kind, group) {
 }
 
 /* The notices above the boxes: the uncommitted working tree, then the
-   warnings the data carries, in the warn tone; then the lines of information,
-   one per spec whose scope names a file not written yet, in the neutral
-   tone. Three or more of one kind are drawn as one notice. */
+   warnings the data carries, in the warn tone; then the lines of
+   information, in the neutral tone. Between them the two lists hold every
+   line the status prints between its table and its summary sentence, which
+   `report_data.with_status_lines` sees to. Three or more of one kind are
+   drawn as one notice. */
 function notices() {
   var lines = DATA.dirty
     ? [{line: 'The working tree has uncommitted changes, so what is on this '

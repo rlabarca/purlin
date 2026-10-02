@@ -12,6 +12,24 @@ Each refresh also writes the page itself, `purlin-report.html` at the project
 root, where the project's copy differs from the one this plugin ships, so the
 page and its data always come from the same version of Purlin.
 
+The data file holds the payload and, in its two lists of lines, every line
+the status prints between its table and its summary sentence, so the board's
+notices say what the terminal says. `with_status_lines` adds the ones the
+payload's own lists leave to the status:
+
+    information   each anchor rule that passes with nothing to check here,
+                  then the line naming the specs with no `> Scope:` line,
+                  then the payload's own lines
+    warnings      the line that the tests setting changed, each anchor whose
+                  pin is not current, the uncommitted spec files on one
+                  line, then the payload's own warnings
+
+The one line of the status the data leaves out is `→ Run: purlin:init
+--update`, which the status prints above its sentence while an upgrade is
+pending.
+
+`scripts/mcp/purlin/status.py` is the one home of each line's words.
+
 Both files are gitignored: they are what this checkout last reported, not
 evidence.
 """
@@ -25,7 +43,8 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from purlin import payload as payload_module
+from purlin import (fingerprint as fingerprint_module,
+                    payload as payload_module)
 
 CONFIG_PATH = os.path.join('.purlin', 'config.json')
 PAGE_NAME = 'purlin-report.html'
@@ -51,11 +70,48 @@ def refresh(project_root, data=None, generated_by='sync_status'):
                                                 generated_by=generated_by)
         if not data.get('features'):
             return None
-        path = payload_module.write_report_data(project_root, data)
+        path = payload_module.write_report_data(
+            project_root, with_status_lines(project_root, data))
     except (IOError, OSError):
         return None
     write_page(project_root)
     return path
+
+
+# The uncommitted spec files, which the status prints as a heading and one
+# line per file, on the one line a notice holds.
+UNCOMMITTED_SPECS = 'Uncommitted spec changes: %s'
+
+
+def with_status_lines(project_root, data):
+    """The payload as the data file holds it: a copy whose `information` and
+    `warnings` also carry the lines the status prints outside those lists.
+
+    `data` itself is left as it is, since the status goes on to print from
+    it. Each line is the status's own, word for word, but two the status
+    prints under a heading: an anchor's pin line stands without the
+    `Anchors:` line above it, since it names its anchor, and the
+    uncommitted spec files follow their heading on one line, each as git
+    names it, `M specs/auth/login.md`.
+    """
+    # Imported here: the status imports this module.
+    from purlin import status as status_module
+    information = list(status_module.nothing_lines(data))
+    names = status_module.incomplete_names(data)
+    if names:
+        information.append(status_module.incomplete_line(names))
+    information.extend(data.get('information') or ())
+
+    warnings = []
+    if fingerprint_module.setting_changed(project_root):
+        warnings.append(status_module.SETTING_CHANGED)
+    warnings.extend(status_module._pin_lines(project_root)[1:])
+    uncommitted = status_module._uncommitted_specs(project_root)
+    if uncommitted:
+        warnings.append(UNCOMMITTED_SPECS % ', '.join(
+            line.strip() for line in uncommitted))
+    warnings.extend(data.get('warnings') or ())
+    return dict(data, information=information, warnings=warnings)
 
 
 def write_page(project_root):

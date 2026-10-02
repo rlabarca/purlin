@@ -14,6 +14,7 @@ files back.
 
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -29,6 +30,8 @@ from purlin import report_data  # noqa: E402
 from purlin import status as purlin_status  # noqa: E402
 from mcp_project import SPEC, Project  # noqa: E402
 from sign_project import signing_project  # noqa: E402
+from test_run_script import (_setting_gains_v,  # noqa: E402
+                             _touched_project)
 from test_purlin_report import browser, build_page  # noqa: E402,F401
 
 DATA = os.path.join('.purlin', 'report-data.js')
@@ -194,5 +197,161 @@ def test_status_leaves_a_page_that_is_the_plugins_own():
         assert _data(made.root) is not None
         assert _stamp(made.root, PAGE) == before
         assert before[1] == long_ago * 10 ** 9
+    finally:
+        made.close()
+
+
+# ---------------------------------------------------------------------------
+# The lines the status prints between its table and its sentence
+# ---------------------------------------------------------------------------
+
+def _between(text):
+    """The lines a status report prints after its table's closing rule and
+    before its summary sentence, the empty ones left out."""
+    lines = text.splitlines()
+    closing = [index for index, line in enumerate(lines)
+               if line.startswith('─')][1]
+    sentence = next(index for index, line in enumerate(lines)
+                    if index > closing and re.match(r'\d+ rules?\. ', line))
+    return [line for line in lines[closing + 1:sentence] if line]
+
+
+NO_SCOPE_SPEC = SPEC.replace('> Scope: src/login.py\n', '')
+NO_FILES = ('1 spec names no files, so its tests run every time: login. Run '
+            'purlin:spec login to add its > Scope: line.')
+
+
+# purlin: purlin_report PROOF-270
+def test_the_data_file_carries_the_line_for_a_spec_that_names_no_files():
+    assert '> Scope:' not in NO_SCOPE_SPEC
+    made = Project(spec=NO_SCOPE_SPEC)
+    try:
+        text = purlin_status.sync_status(made.root)
+        assert _between(text)[0] == NO_FILES, text
+        assert text.count(NO_FILES) == 1, text
+        data = _data(made.root)
+        assert data['information'] == [NO_FILES], data['information']
+    finally:
+        made.close()
+
+
+# purlin: purlin_report PROOF-271
+def test_the_data_file_carries_an_anchor_rule_with_nothing_to_check():
+    made = Project()
+    try:
+        made.spec('# Anchor: screens\n\n## Rules\n\n- RULE-1: Every screen in '
+                  'the project names its page\n\n## Proof\n\n- PROOF-1 '
+                  '(RULE-1): Open each screen and read its title\n',
+                  name='screens', category='_anchors')
+        _git(made.root, 'add', '-A')
+        _git(made.root, 'commit', '-q', '-m', 'anchor(screens): create')
+        rel = made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                              'status': 'pass'}], feature='screens',
+                            commit_it=False)
+        path = os.path.join(made.root, *rel.split('/'))
+        with open(path, encoding='utf-8') as handle:
+            file = json.load(handle)
+        for section in file['platforms'].values():
+            section['proofs'][0].update(result='nothing to check',
+                                        reason='this project has no screens')
+        with open(path, 'w', encoding='utf-8') as handle:
+            json.dump(file, handle)
+        line = ('screens RULE-1 passes with nothing to check here: this '
+                'project has no screens.')
+        text = purlin_status.sync_status(made.root)
+        assert _between(text)[0] == line, text
+        assert _data(made.root)['information'] == [line]
+    finally:
+        made.close()
+
+
+# purlin: purlin_report PROOF-272
+def test_the_data_file_carries_a_changed_tests_setting_first(tmp_path):
+    root, _sha = _touched_project(tmp_path)
+    _setting_gains_v(root)
+    said = 'The tests setting changed, so every result is out of date.'
+    text = purlin_status.sync_status(str(root))
+    assert said in _between(text), text
+    assert _data(root)['warnings'][0] == said, _data(root)['warnings']
+
+
+def _anchor_source(folder):
+    """A git repository holding an anchor, with two commits: `(old, new)`."""
+    os.makedirs(folder)
+    shas = []
+    for body in ('v1', 'v2'):
+        with open(os.path.join(folder, 'policy.md'), 'w',
+                  encoding='utf-8') as handle:
+            handle.write('# Anchor: policy\n\n%s\n' % body)
+        if not shas:
+            _git(folder, 'init', '-q')
+            _git(folder, 'config', 'user.email', 'dev@example.com')
+            _git(folder, 'config', 'user.name', 'Dev')
+        _git(folder, 'add', '-A')
+        _git(folder, 'commit', '-q', '-m', body)
+        shas.append(_git(folder, 'rev-parse', 'HEAD'))
+    return shas
+
+
+# purlin: purlin_report PROOF-273
+def test_the_data_file_carries_an_anchor_whose_pin_is_behind(tmp_path):
+    source = str(tmp_path / 'policy-source')
+    old, new = _anchor_source(source)
+    made = Project()
+    try:
+        made.spec('# Anchor: policy\n\n> Source: %s\n> Pinned: %s\n\n'
+                  '## Rules\n\n- RULE-1: Every answer is JSON\n\n## Proof\n\n'
+                  '- PROOF-1 (RULE-1): An answer parses as JSON\n'
+                  % (source, old), name='policy', category='_anchors')
+        _git(made.root, 'add', '-A')
+        _git(made.root, 'commit', '-q', '-m', 'anchor(policy): create')
+        line = ('policy: the pin %s is behind its source, now %s. Run '
+                'purlin:anchor sync policy.' % (old[:7], new[:7]))
+        text = purlin_status.sync_status(made.root)
+        assert line in _between(text), text
+        warnings = _data(made.root)['warnings']
+        assert line in warnings, warnings
+        assert 'Anchors:' not in warnings, warnings
+    finally:
+        made.close()
+
+
+# purlin: purlin_report PROOF-274
+def test_the_data_file_carries_the_uncommitted_spec_files_on_one_line():
+    made = Project()
+    try:
+        with open(os.path.join(made.root, 'specs', 'auth', 'login.md'), 'a',
+                  encoding='utf-8') as handle:
+            handle.write('\n')
+        made.spec(SPEC.replace('login', 'logout'), name='logout')
+        text = purlin_status.sync_status(made.root)
+        between = _between(text)
+        assert between[between.index('Uncommitted spec changes:') + 1:][:2] == [
+            '   M specs/auth/login.md', '  ?? specs/auth/logout.md'], text
+        warnings = _data(made.root)['warnings']
+        assert ('Uncommitted spec changes: M specs/auth/login.md, '
+                '?? specs/auth/logout.md') in warnings, warnings
+    finally:
+        made.close()
+
+
+# purlin: purlin_report PROOF-277
+def test_the_data_file_names_no_update_once_the_page_is_replaced():
+    made = Project()
+    try:
+        with open(os.path.join(made.root, '.gitignore'), 'a',
+                  encoding='utf-8') as handle:
+            handle.write('.purlin/report-data.js\npurlin-report.html\n')
+        os.makedirs(os.path.join(made.root, '.purlin', 'evidence'))
+        with open(os.path.join(made.root, '.purlin', 'evidence', 'README.md'),
+                  'w', encoding='utf-8') as handle:
+            handle.write('What a run leaves behind.\n')
+        _git(made.root, 'add', '-A')
+        _git(made.root, 'commit', '-q', '-m', 'chore: set up')
+        _write_page(made.root, 'an older page\n')
+        text = purlin_status.sync_status(made.root)
+        assert _between(text) == [], text
+        data = _data(made.root)
+        assert data['warnings'] == [] and data['information'] == [], data
     finally:
         made.close()

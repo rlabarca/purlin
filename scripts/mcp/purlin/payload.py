@@ -149,7 +149,9 @@ correct as `wording.stale_comments` words it.
 
 `write_report_data` writes the payload to `.purlin/report-data.js` as
 `const PURLIN_DATA = {...};`, which is gitignored and is what the local
-dashboard page loads.
+dashboard page loads. The payload `report_data.refresh` hands it also holds,
+in `information` and `warnings`, the lines the status prints outside those
+two lists (`report_data.with_status_lines`).
 """
 
 import datetime
