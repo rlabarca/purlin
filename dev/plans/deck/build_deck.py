@@ -68,11 +68,11 @@ slide('why', 'What Purlin is for', 'Why use Purlin?', [
  'correct, and it makes no claim of compliance.',
  lead='Purlin shows, rule by rule, that your software does what you said it must.', width=700, numbers=False)
 slide('example', 'One requirement', 'One requirement, from words to evidence', [
-    ('The requirement', 'URS-042: lock the account after five failed sign-ins.'),
-    ('The rule', mw('RULE-3: Lock the account for 15 minutes after 5 consecutive failures (URS-042)')),
+    ('The requirement', 'Lock the account after five failed sign-ins.'),
+    ('The rule', mw('RULE-3: Lock the account for 15 minutes after 5 consecutive failures')),
     ('The proof', 'A wrong password is entered five times. The sixth attempt is refused with the message %s.' % m('Account locked')),
     ('The test', '%s above your own test. %s runs it and records pass or fail, where and when.' % (m('# purlin: login PROOF-4'), m('purlin:test'))),
-    ('The evidence', 'The package lists the rule in its own words with its proof, its test and the result, so URS-042 traces to all of them.'),
+    ('The evidence', 'The package lists the rule in its own words with its proof, its test and the result, so the requirement traces to all of them.'),
 ], '<b>Purlin does not learn your system.</b> People say what it must do, and your own tests show it.',
  'This is the chain a validation reader looks for: requirement, test case with its expected result, '
  'execution, evidence. People write the requirement as a rule; a requirement number written into '
