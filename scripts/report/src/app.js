@@ -495,26 +495,114 @@ function topBar(readable) {
     + themeButton() + '</header>';
 }
 
-/* One notice: a dot in its tone, then the line whole. */
-function notice(line, hue) {
-  return '<div class="notice"><span class="dot" '
+/* One notice: a dot in its tone, then the line whole. A notice that counts
+   several specs names every one of them in its hover, one to a line. */
+function notice(line, hue, names) {
+  return '<div class="notice"' + (names ? hover(names) : '')
+    + '><span class="dot" '
     + 'style="color:var(--state-' + hue + ')"></span><span class="notice-text">'
     + line.split(' ').map(noticeWord).join(' ') + '</span></div>';
 }
 
-/* The notices above the boxes: the uncommitted working tree, then each
-   warning the data carries, in the warn tone; then each line of information,
+/* The kinds of line the status writes about one spec, each as the pattern
+   its line matches, the spec's name the pattern's one group, and what the
+   one notice drawn for three or more of the kind says of those specs: the
+   verb for several specs, the verb for one, then the rest. A line that
+   matches none is about no one spec and always keeps its own notice. */
+var NOTICE_KINDS = [
+  [/^(\S+): \d+ lines? under ## Rules (?:is|are) not numbered/,
+    'hold', 'holds', 'a line under ## Rules with no number'],
+  [/^(\S+): RULE-\d+ is written twice/,
+    'write', 'writes', 'a rule\'s number twice'],
+  [/^(\S+): PROOF-\d+ is written twice/,
+    'write', 'writes', 'a proof\'s number twice'],
+  [/^(\S+): \d+ lines? (?:is|are) left from a merge conflict/,
+    'hold', 'holds', 'a line left from a merge conflict'],
+  [/^(.+?): the name holds a character other than letters/,
+    'have', 'has', 'a name no test comment can name'],
+  [/^(\S+): a line under ## Proof cannot be read/,
+    'hold', 'holds', 'a proof line Purlin cannot read'],
+  [/^(\S+): the first line names /,
+    'name', 'names', 'another spec on the first line'],
+  [/^(\S+): PROOF-\d+ is tagged @slow and @manual/,
+    'tag', 'tags', 'a proof @slow and @manual'],
+  [/^(\S+): > Requires: is not read/,
+    'carry', 'carries', '> Requires:, which Purlin does not read'],
+  [/^(\S+): > Global: is not read/,
+    'carry', 'carries', '> Global:, which Purlin does not read'],
+  [/^(\S+): > Scope: is not read on an anchor/,
+    'carry', 'carries', '> Scope:, which Purlin does not read on an anchor'],
+  [/^(\S+): its source, .* which Purlin does not read on an anchor/,
+    'come', 'comes', 'from a source with a line Purlin does not read'],
+  [/^.+:\d+ names (\S+) (?:PROOF|RULE)-\d+, whose wording changed after/,
+    'have', 'has', 'a proof reworded after its test was last changed'],
+  [/^\.purlin\/evidence\/[^\/ ]+\/(\S+)\.json (?:is not valid JSON|is not a JSON object|carries the schema |names the source )/,
+    'have', 'has', 'an evidence file Purlin ignores'],
+  [/^(\S+): \d+ files? its scope names (?:is|are) not written yet/,
+    'name', 'names', 'a file in the scope that is not written yet']
+];
+
+/* The lines as the board draws them, each `{line, names}`: three or more
+   lines of one kind become one line, where the first of them stood, counting
+   the specs they name and naming the first two; `names` is every spec it
+   counts, for its hover. Any other line stands as it came, whole. */
+function groupedLines(lines) {
+  var found = lines.map(function (line) {
+    for (var kind = 0; kind < NOTICE_KINDS.length; kind++) {
+      var match = NOTICE_KINDS[kind][0].exec(line);
+      if (match) { return {kind: kind, name: match[1]}; }
+    }
+    return null;
+  });
+  var groups = {};
+  found.forEach(function (hit) {
+    if (!hit) { return; }
+    var group = groups[hit.kind] = groups[hit.kind] || {lines: 0, names: []};
+    group.lines += 1;
+    if (group.names.indexOf(hit.name) < 0) { group.names.push(hit.name); }
+  });
+  var out = [];
+  lines.forEach(function (line, index) {
+    var hit = found[index];
+    var group = hit && groups[hit.kind];
+    if (!group || group.lines < 3) { out.push({line: line}); return; }
+    if (group.drawn) { return; }
+    group.drawn = true;
+    out.push({line: groupLine(NOTICE_KINDS[hit.kind], group),
+              names: group.names});
+  });
+  return out;
+}
+
+/* The one line for a kind: `<n> specs <what>: <first two names>, and <n-2>
+   more. Run purlin:status for each.` Two specs are both named, and one spec
+   is named with how many places its lines name. */
+function groupLine(kind, group) {
+  var names = group.names;
+  if (names.length === 1) {
+    return names[0] + ' ' + kind[2] + ' ' + kind[3] + ', in ' + group.lines
+      + ' places. Run purlin:status ' + names[0] + '.';
+  }
+  return names.length + ' specs ' + kind[1] + ' ' + kind[3] + ': '
+    + (names.length === 2 ? names[0] + ' and ' + names[1]
+      : names[0] + ', ' + names[1] + ', and ' + (names.length - 2) + ' more')
+    + '. Run purlin:status for each.';
+}
+
+/* The notices above the boxes: the uncommitted working tree, then the
+   warnings the data carries, in the warn tone; then the lines of information,
    one per spec whose scope names a file not written yet, in the neutral
-   tone. */
+   tone. Three or more of one kind are drawn as one notice. */
 function notices() {
   var lines = DATA.dirty
-    ? ['The working tree has uncommitted changes, so what is on this board is '
-       + 'not what a commit would carry.'] : [];
-  (DATA.warnings || []).forEach(function (warning) { lines.push(warning); });
-  return lines.map(function (line) { return notice(line, 'warn'); }).join('')
-    + (DATA.information || []).map(function (line) {
-      return notice(line, 'neutral');
-    }).join('');
+    ? [{line: 'The working tree has uncommitted changes, so what is on this '
+       + 'board is not what a commit would carry.'}] : [];
+  lines = lines.concat(groupedLines(DATA.warnings || []));
+  return lines.map(function (item) {
+    return notice(item.line, 'warn', item.names);
+  }).join('') + groupedLines(DATA.information || []).map(function (item) {
+    return notice(item.line, 'neutral', item.names);
+  }).join('');
 }
 
 /* A path, which a narrow screen may break after a `/` or a `_` and nowhere
