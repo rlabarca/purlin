@@ -13,8 +13,8 @@
 >   and after the last bug stops the audit if the project changed.
 > Scope: scripts/review/targeted_break.py
 > Stack: python/stdlib (subprocess, tempfile, hashlib, shutil)
-> Highest-Rule: 24
-> Highest-Proof: 47
+> Highest-Rule: 25
+> Highest-Proof: 49
 
 ## Rules
 
@@ -39,6 +39,7 @@
 - RULE-22: The lines under `before:` match a file whose lines end CRLF as they match one whose lines end LF, and the changed file keeps CRLF at the end of every line
 - RULE-23: Terminal escape sequences and control characters are removed from a part's `case:` line, from its `file:` value and from a `no break` reason before any of them is recorded or printed
 - RULE-24: The words `aim:` and `case:` that open their lines are read in any letter case and after any spaces
+- RULE-25: The line the finding of a bug that survived names is the first line the change made different that is neither blank nor a comment line; where the change left no such line, it is the first line the change made different
 
 ## Proof
 
@@ -87,3 +88,5 @@
 - PROOF-45 (RULE-23): The part reads `no break: the test checks the case`, with the escape sequence that clears a terminal's screen before `checks` and a bell character at its end; the audit prints `  The spot tests found nothing. No bug was planted: the model found no change that would break PROOF-1: the test checks the case.`
 - PROOF-46 (RULE-23): The part's `file:` value reads `src/age.py` with the escape sequence that turns a terminal's text red between `src/` and `age.py`; the bug's entry reads `file` `src/age.py`, and the bug is planted and reads `caught`
 - PROOF-47 (RULE-24): The part for `PROOF-1` opens with the line `  Aim: past the test`, two spaces before it, and then `CASE: a stamp of 2026-01-01; the proof says 90; the changed code gives 0`; the bug is planted and reads `caught`, and its entry reads `aim` `past the test` and `case` `a stamp of 2026-01-01; the proof says 90; the changed code gives 0`
+- PROOF-48 (RULE-25): The model's change turns `return days`, line 12 of `src/age.py`, into three lines, `# planted`, an empty line and `return 0`, and the test of `PROOF-1` still passes; the audit prints `  PROOF-1: the test still passes when src/age.py:14 reads "return 0"`
+- PROOF-49 (RULE-25): The model's change puts the line `# planted` above `days = minutes(stamp)`, leaves that line and the next as they were and turns `return 0` into `return 1`, and the test of `PROOF-1` still passes; the audit prints `  PROOF-1: the test still passes when src/age.py:12 reads "return 1"`

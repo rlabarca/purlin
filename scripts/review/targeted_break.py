@@ -316,7 +316,7 @@ def _plant(project_root, feature, proof, tests, scope_files, answer, timeout):
             os.utime(_inside(copy, normal), (stamp + 2, stamp + 2))
         except (_Refused, OSError):
             return _result(proof_id, 'not made', OUTSIDE % path, change)
-        line, words = _changed_line(changed, at, old, new)
+        line, words = _changed_line(normal, changed, at, old, new)
         ran = _run_tests(copy, feature, proof_id, tests, timeout)
         if ran == 'pass':
             return _result(proof_id, 'survived', '', change, line,
@@ -334,15 +334,25 @@ def _crlf(text):
     return text.replace('\r\n', '\n').replace('\n', '\r\n')
 
 
-def _changed_line(changed, at, old, new):
-    """`(line number, the line's words)` of the first line the change made different."""
+def _changed_line(path, changed, at, old, new):
+    """`(line number, the line's words)` of the first line the change made different
+    that is neither blank nor a comment line; where it left no such line, of the
+    first line it made different."""
     first = changed.count('\n', 0, at) + 1
     old_lines, new_lines = old.split('\n'), new.split('\n')
-    step = 0
-    while step < min(len(old_lines), len(new_lines)) and old_lines[step] == new_lines[step]:
-        step += 1
-    if step >= len(new_lines):
-        step = max(len(new_lines) - 1, 0)
+    was = [line for _index, line in _code_lines(path, old)]
+    step = None
+    for place, (index, line) in enumerate(_code_lines(path, new)):
+        if place >= len(was) or was[place] != line:
+            step = index
+            break
+    if step is None:
+        step = 0
+        while (step < min(len(old_lines), len(new_lines))
+               and old_lines[step] == new_lines[step]):
+            step += 1
+        if step >= len(new_lines):
+            step = max(len(new_lines) - 1, 0)
     lines = changed.split('\n')
     number = first + step
     words = lines[number - 1].strip() if number - 1 < len(lines) else ''

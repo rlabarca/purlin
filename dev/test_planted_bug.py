@@ -784,3 +784,25 @@ def test_aim_and_case_are_read_in_capitals_and_after_spaces(tmp_path, own_claude
     assert bug_of(after)['aim'] == 'past the test'
     assert bug_of(after)['case'] == CASE
 
+# purlin: planted_bug PROOF-48
+def test_the_finding_names_the_first_changed_line_of_code(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': WEAK})
+    fake_claude.install(own_claude, answers=[
+        {'PROOF-1': part('    return days', '    # planted\n\n    return 0')}])
+    code, lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['result'] == 'survived', bug_of(after)
+    assert bug_of(after)['line'] == 14
+    assert '  PROOF-1: the test still passes when src/age.py:14 reads "return 0"' in lines, lines
+
+
+# purlin: planted_bug PROOF-49
+def test_the_finding_passes_over_a_line_the_change_left_as_it_was(tmp_path, own_claude):
+    root = project(tmp_path, {'PROOF-1': WEAK})
+    fake_claude.install(own_claude, answers=[{'PROOF-1': part(
+        '    days = minutes(stamp)\n    if stamp == "":\n        return 0',
+        '    # planted\n    days = minutes(stamp)\n    if stamp == "":\n        return 1')}])
+    code, lines, _before, after = audit(root)
+    assert code == 0
+    assert bug_of(after)['result'] == 'survived', bug_of(after)
+    assert '  PROOF-1: the test still passes when src/age.py:12 reads "return 1"' in lines, lines
