@@ -1747,6 +1747,22 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       hands the test tool its files and prints a line as each suite starts; a run says when
       the tests setting changed, and names what `--commit` left uncommitted; the commit's
       subject stays short; the README points at the upgrade page.
+127. **The open items after the third upgrade test** (added 2026-10-02), the owner's answers
+    to eight questions. The build plan is `dev/plans/d127-plan.md`.
+    - **A full run runs marked test files only, and says so**: `12 test files carry no marker
+      and were not run.`
+    - **A failing rule is on the dashboard's first screen**: a `Failing` count box, shown only
+      where a rule fails, and specs with a failing rule first.
+    - **The warning for tests that still carry a 0.9.5 marker names every one, with its rule**,
+      up to 20.
+    - **No sign-off while such a test remains.** `purlin:sign` refuses and names the count; the
+      evidence package's format does not change.
+    - **A settle is refused where the test has not changed since the finding.** Where the
+      build judged the test already sound it says so with an explicit option, and the evidence
+      records that the test was not changed.
+    - **Every other item the third test left is fixed** (`d126-reports/upgrade-tests.md`).
+    - **Purlin's own re-audit waits until just before signing**, when the code has stopped
+      changing; a real AI session given a goal on a sample project is tried with it.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
