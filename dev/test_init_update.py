@@ -844,9 +844,9 @@ OWN_WORKFLOW_TEXT = (
     b'      - run: pytest\n')
 
 
-# purlin: update PROOF-164
-def test_only_the_workflow_that_committed_proof_files_is_removed(tmp_path,
-                                                                 capsys):
+def _two_workflows(tmp_path):
+    """The sample with `purlin-proofs.yml` in place of its own workflow, and
+    the project's `ci.yml`, both committed."""
     root = _project(tmp_path, V095)
     os.rename(os.path.join(root, '.github/workflows/windows-proofs.yml'),
               os.path.join(root, PROOF_WORKFLOW))
@@ -854,17 +854,66 @@ def test_only_the_workflow_that_committed_proof_files_is_removed(tmp_path,
     _write_bytes(root, OWN_WORKFLOW, OWN_WORKFLOW_TEXT)
     _git(root, 'add', '-A')
     _git(root, 'commit', '-qm', 'ci: the two workflows')
-    assert _apply(root) == 0
+    return root
+
+
+def _workflows(root):
+    return [rel for rel in _walk(root, ('*',), skip_backups=False)
+            if rel.startswith('.github/workflows/')]
+
+
+WORKFLOW_LINE = (".github/workflows/purlin-proofs.yml:9 names a proof file: "
+                 "- run: git add '*.proofs-*.json'")
+WORKFLOW_QUESTION = 'Remove .github/workflows/purlin-proofs.yml? [y/N] '
+WORKFLOW_KEPT = ('  .github/workflows/purlin-proofs.yml: kept. It names a '
+                 'proof file and may be the old Purlin workflow; remove it '
+                 'by hand if it is.')
+WORKFLOW_REMOVED = '  removed 1 workflow that committed proof files'
+
+
+# purlin: update PROOF-164
+def test_a_workflow_is_removed_only_on_a_yes_for_that_file(tmp_path, capsys,
+                                                          monkeypatch):
+    root = _two_workflows(tmp_path)
+    asked = _answers(monkeypatch)
+    assert _apply(root, argv=()) == 0
     printed = capsys.readouterr().out.splitlines()
-    held = _walk(root, ('*',), skip_backups=False)
-    workflows = [rel for rel in held if rel.startswith('.github/workflows/')]
+    assert WORKFLOW_LINE in printed, printed
+    assert WORKFLOW_QUESTION in asked, asked
     backup = '%s.local-%s.bak' % (
         PROOF_WORKFLOW, hashlib.sha256(PROOF_WORKFLOW_TEXT).hexdigest()[:8])
-    assert workflows == [OWN_WORKFLOW, backup]
+    assert _workflows(root) == [OWN_WORKFLOW, backup]
     assert _read_bytes(root, backup) == PROOF_WORKFLOW_TEXT
     assert _read_bytes(root, OWN_WORKFLOW) == OWN_WORKFLOW_TEXT
-    assert '  removed 1 workflow that committed proof files' in printed
+    assert WORKFLOW_REMOVED in printed
     assert PROOF_WORKFLOW not in _tracked(root)
+
+
+# purlin: update PROOF-166
+def test_yes_removes_no_workflow_and_names_the_one_it_kept(tmp_path, capsys,
+                                                           monkeypatch):
+    root = _two_workflows(tmp_path)
+    asked = _answers(monkeypatch)
+    assert _apply(root) == 0
+    printed = capsys.readouterr().out.splitlines()
+    assert asked == []
+    assert _workflows(root) == [OWN_WORKFLOW, PROOF_WORKFLOW]
+    assert _read_bytes(root, PROOF_WORKFLOW) == PROOF_WORKFLOW_TEXT
+    assert PROOF_WORKFLOW in _tracked(root)
+    assert WORKFLOW_KEPT in printed, printed
+    assert update.pending(root) == []
+
+
+# purlin: update PROOF-167
+def test_a_workflow_answered_no_is_kept_and_named(tmp_path, capsys,
+                                                  monkeypatch):
+    root = _two_workflows(tmp_path)
+    _answers(monkeypatch, [('Remove %s?' % PROOF_WORKFLOW, 'n')])
+    assert _apply(root, argv=()) == 0
+    printed = capsys.readouterr().out.splitlines()
+    assert _read_bytes(root, PROOF_WORKFLOW) == PROOF_WORKFLOW_TEXT
+    assert WORKFLOW_KEPT in printed, printed
+    assert not [line for line in printed if 'removed 1 workflow' in line]
 
 
 # purlin: update PROOF-81

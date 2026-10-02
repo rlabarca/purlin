@@ -45,7 +45,7 @@ The migrations run in this order:
 | `config` | writes `.purlin/config.json` holding `version` and `tests` alone, and names every other key it removes |
 | `evidence` | creates `.purlin/evidence/` with its README; a README the project wrote itself is kept |
 | `dashboard` | replaces a `purlin-report.html` at the project root that is a link or is not the page the plugin ships; a project with no page there is left without one |
-| `workflows` | removes the workflow 0.9.5 wrote to commit proof files |
+| `workflows` | asks about each workflow under `.github/workflows/` that names a proof file, and removes the ones you say yes to |
 | `markers` | rewrites each 0.9.5 marker in the project's tests as one comment above the same test |
 | `plugins` | removes the test plugins 0.9.5 copied into the project and the wiring that loaded them |
 
@@ -77,6 +77,24 @@ upgrade leaves such a marker as it was, and names it by file and line with what 
   left tests/test_module.py:3 as it was: write the marker as a comment above each test by hand
 ```
 
+**The workflows.** 0.9.5 wrote a workflow that committed proof files. A pipeline of your own may
+name a proof file too, so the update removes none on its own. For each workflow that names one
+it prints the line and asks:
+
+```
+.github/workflows/purlin-proofs.yml:9 names a proof file: - run: git add '*.proofs-*.json'
+Remove .github/workflows/purlin-proofs.yml? [y/N]
+```
+
+A yes backs the file up and removes it. Any other answer keeps it:
+
+```
+  .github/workflows/purlin-proofs.yml: kept. It names a proof file and may be the old Purlin workflow; remove it by hand if it is.
+```
+
+A workflow you kept holds no update pending. It is asked about again only while another
+migration is pending.
+
 **Backups.** Before a migration rewrites a file, it copies the file beside it as
 `<name>.local-<sha8>.bak`. The eight characters are the start of the SHA-256 of the file's
 bytes. The backups are the only files the run leaves uncommitted.
@@ -85,7 +103,8 @@ bytes. The backups are the only files the run leaves uncommitted.
 `chore(update): migrate to <VERSION> (<ids>)`, naming every migration applied. A run that
 applies nothing makes no commit.
 
-`--yes` asks nothing and applies every pending migration.
+`--yes` asks nothing and applies every pending migration. It removes no workflow: each one that
+names a proof file is kept and named, for you to remove by hand.
 
 ## When it refuses
 

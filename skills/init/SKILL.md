@@ -84,6 +84,8 @@ declined one is left pending. Between them the migrations:
 
 - rewrite or remove each line 0.9.5 wrote into a spec that this version does not read;
 - remove the files 0.9.5 kept that this version does not use, and its two git hooks;
+- ask about each workflow that names a proof file, with `Remove <path>? [y/N]`, and remove the
+  ones answered yes. `--yes` removes none: each is kept and named, to remove by hand;
 - rewrite `.purlin/config.json` to `version` and `tests`, writing `tests` from the frameworks
   the old settings named and naming every key they drop;
 - write `.purlin/evidence/` with its README;

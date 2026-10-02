@@ -14,7 +14,8 @@ see and the work this script does cannot disagree. The detectors read the
 layout v0.9.5 left, and a project lands straight on this release's layout.
 Every migration asks before it writes, and every file it rewrites is copied
 beside itself first as `<name>.local-<sha8>.bak`. `--yes` answers yes to every
-question. A file this release deletes rather than rewrites is left in git
+migration's question. A workflow that names a proof file is removed only on a
+yes typed for that file, so under `--yes` each is kept and named. A file this release deletes rather than rewrites is left in git
 history instead of copied.
 
 Exit codes: 0 nothing pending or the run applied what was, 1 the settings
@@ -51,6 +52,7 @@ WINDOWS_TAG_RE = re.compile(r'(?m)[ \t]*@windows[ \t]*(?=\r?$)')
 KIND_TAG_RE = re.compile(r'(?m)^(- PROOF-.*?)[ \t]+@(?:unit|integration|e2e)'
                          r'(?=(?:[ \t]+@env\([a-z]+\))?[ \t]*\r?$)')
 WORKFLOW_MARKER = '.proofs-'
+WORKFLOWS = 'workflows'
 PRE_PUSH_HOOK = '.git/hooks/pre-push'
 PRE_PUSH_KEY = 'pre_push'
 DESIGN_FIELD_RE = re.compile(r'^>\s*(Visual-Reference|Visual-Hash):')
@@ -496,12 +498,13 @@ def _apply_kind_tags(root, files, args, out):
             'purlin:test runs every marked test' % (len(files), _s(files)))
 
 def _detect_workflows(root):
-    """The workflow files that committed proof files beside the specs.
+    """The workflow files whose text names a proof file.
 
     A v0.9.5 project ran its Windows proofs in a workflow that committed the
-    proof file back beside the spec. This release writes no proof file, so
-    that workflow is removed. Every other workflow or pipeline file is left
-    as it is.
+    proof file back beside the spec. This release writes no proof file. A
+    project's own pipeline may name one too, so no workflow is removed
+    without a yes for that file. Every other workflow or pipeline file is
+    left as it is.
     """
     hits = []
     for rel in _files_under(root, WORKFLOW_DIR, ('*.yml', '*.yaml')):
@@ -513,15 +516,35 @@ def _detect_workflows(root):
             hits.append(rel)
     return hits
 
+# What the run prints for each such workflow, the question it asks, and the
+# line for one it did not remove.
+WORKFLOW_NAMES = '%s:%d names a proof file: %s'
+WORKFLOW_QUESTION = 'Remove %s?'
+WORKFLOW_KEPT = ('%s: kept. It names a proof file and may be the old Purlin '
+                 'workflow; remove it by hand if it is.')
+
 def _apply_workflows(root, files, args, out):
-    """The workflows go: backed up, untracked and removed."""
+    """Each workflow is shown with the line that names a proof file and
+    asked about on its own; one answered yes is backed up, untracked and
+    removed. `--yes` is a yes to no one file, so under it each is kept and
+    named."""
+    removed = []
     for rel in files:
+        lines = _read(os.path.join(root, rel)).splitlines()
+        number = next(index for index, line in enumerate(lines, 1)
+                      if WORKFLOW_MARKER in line)
+        print(WORKFLOW_NAMES % (rel, number, lines[number - 1].strip()))
+        if args.yes or not _confirm(WORKFLOW_QUESTION % rel, False):
+            out.say(WORKFLOW_KEPT % rel)
+            continue
         out.kept(_back_up_copy(os.path.join(root, rel), rel))
         _untrack(root, rel)
         os.remove(os.path.join(root, rel))
         out.done(rel)
-    out.say('removed %d workflow%s that committed proof files'
-            % (len(files), _s(files)))
+        removed.append(rel)
+    if removed:
+        out.say('removed %d workflow%s that committed proof files'
+                % (len(removed), _s(removed)))
 
 
 def _detect_evidence(root):
@@ -918,8 +941,8 @@ MIGRATIONS = (
      'it holds', _detect_evidence, _apply_evidence),
     ('dashboard', 'replace purlin-report.html with the page this release '
      'ships', _detect_dashboard, _apply_dashboard),
-    ('workflows', 'remove the workflows that committed proof files',
-     _detect_workflows, _apply_workflows),
+    (WORKFLOWS, 'remove each workflow that names a proof file, asking for '
+     'each', _detect_workflows, _apply_workflows),
     ('markers', 'rewrite each 0.9.5 marker as a comment above its test',
      _detect_markers, _apply_markers),
     ('plugins', 'remove the proof plugin copies and the wiring that loaded '
@@ -927,7 +950,17 @@ MIGRATIONS = (
 )
 
 def pending(project_root):
-    """The migrations a project still needs, in the order they are applied."""
+    """The migrations a project still needs, in the order they are applied.
+
+    A workflow that names a proof file holds no update pending alone: one a
+    person kept is theirs, and is asked about again only while another
+    migration is pending.
+    """
+    found = _found(project_root)
+    return [] if [item['id'] for item in found] == [WORKFLOWS] else found
+
+def _found(project_root):
+    """Every migration whose detector finds something, `workflows` included."""
     root = os.path.abspath(project_root)
     if not os.path.isdir(os.path.join(root, '.purlin')):
         return []
@@ -1037,7 +1070,7 @@ def main(argv=None):
         # Read again: a migration can leave work for a later one, as the
         # Windows tag rewritten to `@env(windows)` leaves a kind-of-test tag
         # at the end of its line.
-        queue = [found for found in pending(root) if found['id'] not in asked]
+        queue = [found for found in _found(root) if found['id'] not in asked]
     print('')
     for line in report.lines:
         print('  %s' % line)

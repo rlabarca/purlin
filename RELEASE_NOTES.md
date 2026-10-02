@@ -220,8 +220,9 @@ The run goes in this order:
    from every anchor; a trailing `@windows` on a proof line becomes `@env(windows)`; and
    `@unit`, `@integration` and `@e2e` go from proof lines.
 3. It removes the files 0.9.5 kept that 0.10.0 does not use: the proof files and the receipts
-   beside the specs, `.purlin/cache/`, the plugin copies under `.purlin/plugins/` and a workflow
-   that committed proof files. It untracks `.purlin/report-data.js` and adds it to `.gitignore`.
+   beside the specs, `.purlin/cache/` and the plugin copies under `.purlin/plugins/`. It asks
+   before it removes a workflow that names a proof file, and `--yes` removes none. It untracks
+   `.purlin/report-data.js` and adds it to `.gitignore`.
 4. It removes the `pre-commit` and `pre-push` hooks under `.git/hooks/` that 0.9.5 installed,
    and leaves a hook another tool wrote.
 5. It rewrites `.purlin/config.json` to `version` and `tests`, and names every key it drops. It
