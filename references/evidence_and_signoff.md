@@ -232,7 +232,9 @@ may type what they saw; an empty answer is recorded as `no note`. What the audit
 blocks the sign-off, whatever its word. The first sign-off of a version is one signed commit carrying
 the package and the sign-off; a later one adds its own file alone.
 
-**A hand check** reads `checked at sign-off` everywhere else. Once a sign-off holds a note for
+**A hand check** reads `checked at sign-off` everywhere else. Where its rule also has a tested
+proof and the audit found it `weak` or `spot-checked`, or its audit is out of date, the rule
+reads that word, as any other rule does. Once a sign-off holds a note for
 it, the rule also shows its last note, there and in its stop of the next walk, with the version
 it was signed at and how many commits have come since, as in
 `noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red`;

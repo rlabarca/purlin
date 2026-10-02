@@ -9,7 +9,7 @@
 > Scope: scripts/mcp/purlin/states.py, scripts/mcp/purlin/payload.py, scripts/mcp/purlin/status.py, scripts/mcp/purlin/facts.py, scripts/mcp/purlin/project.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib, json, hashlib, subprocess (list-only)
 > Highest-Rule: 126
-> Highest-Proof: 290
+> Highest-Proof: 293
 
 ## Rules
 
@@ -27,7 +27,7 @@
 - RULE-14: The strong cell reads the rule's audit entry, a current one before one out of date: `strong`; `weak`, with each finding among its reasons; or `spot-checked`, with the one reason `The spot tests found nothing. ` followed by the entry's `no_bug` sentences; a verdict the format does not name decides nothing, and the cell names the evidence file under `evidence`
 - RULE-118: A strong cell with no audit entry reads `waiting`, with the reason `waiting for its tests to pass`, while the passed cell is not met, an entry or none; `no proof`, with the reason `the rule has a test and no proof`, for a passing rule no proof line names; and otherwise `not audited`, with the reason `no audit has read this rule`; none of these is `weak`
 - RULE-126: An audit entry whose rule, proof, test or covered code changed since it was written makes the strong cell read `out of date`, with one reason per part that differs, `<part> changed since <sha7>`, the entry's commit, then `the last audit found it <verdict> on <date>`; the entry stays in the evidence, and the rule is left nothing to strengthen
-- RULE-16: A rule with a `@manual` proof reads `checked at sign-off` in its strong cell, unless its audit reads `weak`, and raises the `manual` flag
+- RULE-16: A rule with a `@manual` proof reads `checked at sign-off` in its strong cell, unless its audit reads `weak` or `spot-checked` or is out of date, where the cell reads as any other rule's does, and raises the `manual` flag
 - RULE-109: A rule whose every proof is `@manual` reads `passed` in its passed cell, with no test, and `checked at sign-off` in its strong cell
 - RULE-116: A rule with a `@manual` proof carries in its strong cell one reason per note of the newest sign-off holding one, whatever code it was taken on: `noted at the sign-off of <version> by <signer>, <at this commit | 1 commit since | <n> commits since>: <note>`; before any sign-off it carries none
 - RULE-107: A weak audit leaves the passed cell as its tests make it: the rule is still counted as passing its tests and in the bucket `passed`, and its `left` is `to_strengthen`
@@ -90,6 +90,9 @@
 - PROOF-287 (RULE-126): With `RULE-2`'s test passing, its audit entry reads `weak` with one finding and was written for another rule text; the strong cell reads `out of date` with the first reason `rule changed since <sha7>`, its `findings` hold that finding, and the rule's `left` is null
 - PROOF-19 (RULE-16): Before any sign-off, a rule whose only proof is `@manual` has a strong cell reading `checked at sign-off` with no reason, and raises the `manual` flag
 - PROOF-288 (RULE-16): A rule has `PROOF-1` marked `@manual` and `PROOF-2` whose test passes, and its current audit entry reads `weak` with the finding `PROOF-2 reads the status alone.`; the strong cell reads `weak`, its reasons hold that finding, and its `left` is `to_strengthen`
+- PROOF-291 (RULE-16): A rule has `PROOF-1` marked `@manual` and `PROOF-2` whose test passes, and its current audit entry reads `spot-checked` with the `no_bug` sentence `No bug was planted: PROOF-2 needs Windows, and this machine is macOS.`; the strong cell reads `spot-checked` with the one reason `The spot tests found nothing. ` followed by that sentence, and the rule raises the `manual` flag
+- PROOF-292 (RULE-16): A rule has `PROOF-1` marked `@manual` and `PROOF-2` whose test passes, and its audit entry reads `strong` and was written for another rule text; the strong cell reads `out of date` with the first reason `rule changed since <sha7>`
+- PROOF-293 (RULE-16): A rule has `PROOF-1` marked `@manual` and `PROOF-2` whose test passes, and its current audit entry reads `strong`; the strong cell reads `checked at sign-off`
 - PROOF-264 (RULE-109): A rule whose one proof is `@manual`, with no test marked and nothing run, reads `passed` in its passed cell and `checked at sign-off` in its strong cell
 - PROOF-276 (RULE-116): After `quinn.qa@labconnect.example` signs `0.1.0` at HEAD with the note `the tube is red` on a hand check, its strong cell reads `checked at sign-off` with the reason `noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, at this commit: the tube is red`
 - PROOF-277 (RULE-116): Four commits after that sign-off, the same hand check carries the reason `noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red`

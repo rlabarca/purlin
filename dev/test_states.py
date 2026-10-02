@@ -595,6 +595,43 @@ class TestAHandCheckTheAuditFoundWeak:
         assert rule['left'] == 'to_strengthen', rule['left']
 
 
+class TestAHandCheckReadsTheAuditsWord:
+
+    @staticmethod
+    def _rule(**audit):
+        made = Project(spec=HAND_AND_TEST_SPEC)
+        try:
+            made.evidence([_entry('PROOF-2', 'RULE-1')])
+            made.audit('RULE-1', **audit)
+            return made.rule('RULE-1'), made.head()
+        finally:
+            made.close()
+
+    # purlin: states PROOF-291
+    def test_a_hand_check_the_audit_spot_checked_reads_spot_checked(self):
+        sentence = ('No bug was planted: PROOF-2 needs Windows, and this '
+                    'machine is macOS.')
+        rule, _head = self._rule(word='spot-checked', no_bug=[sentence])
+        cell = rule['cells']['strong']
+        assert cell['word'] == 'spot-checked', cell
+        assert cell['reasons'] == [
+            'The spot tests found nothing. ' + sentence], cell
+        assert rule['flags']['manual'] is True, rule['flags']
+
+    # purlin: states PROOF-292
+    def test_a_hand_check_whose_audit_is_out_of_date_reads_out_of_date(self):
+        rule, head = self._rule(rule_hash='0' * 64)
+        cell = rule['cells']['strong']
+        assert cell['word'] == 'out of date', cell
+        assert cell['reasons'][0] == 'rule changed since %s' % head[:7], cell
+
+    # purlin: states PROOF-293
+    def test_a_hand_check_the_audit_found_strong_is_checked_at_sign_off(self):
+        rule, _head = self._rule()
+        cell = rule['cells']['strong']
+        assert cell['word'] == 'checked at sign-off', cell
+
+
 # A hand check: `RULE-2` of `login` is proven by hand alone.
 MANUAL_SPEC = SPEC.replace('body "denied"\n', 'body "denied" @manual\n')
 QUINN = 'quinn.qa@labconnect.example'

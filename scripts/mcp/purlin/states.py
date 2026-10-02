@@ -666,8 +666,8 @@ def _strong_cell(inp, passed):
     was written the cell reads `out of date`, with one reason per part that
     differs and last what the audit found and when; the entry's findings
     stay under `findings`. A rule with a `@manual` proof reads `checked at
-    sign-off` unless a current entry reads `weak`, with one reason per note
-    of the newest sign-off holding one. A rule with no entry reads `not
+    sign-off` unless its entry reads `weak` or `spot-checked` or is out of
+    date, with one reason per note of the newest sign-off holding one. A rule with no entry reads `not
     audited`.
     """
     cell = {'word': NOT_AUDITED, 'findings': [], 'evidence': None,
@@ -704,18 +704,7 @@ def _strong_cell(inp, passed):
         cell['reasons'] = list(cell['findings'])
         return cell
 
-    if any(proof.get('manual') for proof in inp.get('proofs') or ()):
-        # A `@manual` proof has no test for the audit to read: a person
-        # checks it at the sign-off, and the newest note says what they saw.
-        cell['word'] = CHECKED_AT_SIGNOFF
-        cell['reasons'] = list(inp.get('hand_notes') or ())
-        return cell
-
-    if not audit:
-        cell['reasons'] = [NOT_AUDITED_REASON]
-        return cell
-
-    if changed:
+    if audit and changed:
         # The entry stays in the evidence and on the page: the cell says
         # what changed since it was written and what it found then.
         commit = str(audit.get('commit') or '')[:7]
@@ -725,10 +714,23 @@ def _strong_cell(inp, passed):
             verdict, str(audit.get('at') or '')[:10]))
         return cell
 
-    if verdict == SPOT_CHECKED:
+    if audit and verdict == SPOT_CHECKED:
         cell['word'] = SPOT_CHECKED
         cell['reasons'] = [SPOT_TESTS_FOUND_NOTHING % ' '.join(
             str(line) for line in audit.get('no_bug') or ())]
+        return cell
+
+    if any(proof.get('manual') for proof in inp.get('proofs') or ()):
+        # A `@manual` proof has no test for the audit to read: a person
+        # checks it at the sign-off, and the newest note says what they saw.
+        # What the audit said of the rule's tested proofs comes first: only
+        # a current `strong`, or no entry, leaves the cell to the hand check.
+        cell['word'] = CHECKED_AT_SIGNOFF
+        cell['reasons'] = list(inp.get('hand_notes') or ())
+        return cell
+
+    if not audit:
+        cell['reasons'] = [NOT_AUDITED_REASON]
         return cell
 
     cell['word'] = 'strong'
