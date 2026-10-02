@@ -80,8 +80,11 @@ def _put(root, source, data):
 
 # purlin: evidence PROOF-17
 def test_only_a_ci_file_reads_the_ci_file_no_local_file_and_no_warning(root):
-    _put(root, 'ci', _file('ci', {'linux': _section()}))
+    written = _file('ci', {'linux': _section()})
+    _put(root, 'ci', written)
     loaded = evidence.load(root, 'login')
+    # The file as written, its linux section included.
+    assert loaded['files']['ci'] == written
     assert loaded['files']['ci']['source'] == 'ci'
     assert loaded['files']['local'] is None
     assert loaded['paths'] == {'local': '.purlin/evidence/local/login.json',
@@ -193,6 +196,10 @@ def test_a_changed_test_command_puts_the_section_out_of_date_on_tests(root):
     _stored_now(root)
     assert _state(root) == (True, [])
     _settings(root, run='python3 -m pytest -x {files}')
+    assert _state(root) == (False, ['tests'])
+    # A command of the same length as the one stored is a change too.
+    _settings(root, run='python2 -m pytest {files}')
+    assert len('python2 -m pytest {files}') == len('python3 -m pytest {files}')
     assert _state(root) == (False, ['tests'])
 
 
