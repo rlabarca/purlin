@@ -1,17 +1,18 @@
 # Feature: ai_audit
 
 > Description: The audit `purlin:audit` runs on each rule it reads, when a person asks, and
->   nothing waits on it. For each rule it runs the heuristic spot tests, then asks the model once
->   for the rule's planted bugs and its reading, then plants each bug and runs its proof's test:
->   a rule is `weak` when a spot test fires on one of its tests or a planted bug survives,
->   `strong` when none does and a planted bug was caught, and `spot-checked` when none does and
->   no bug was planted and caught. The model's reading becomes the explanation; it decides
->   nothing. Each answer names the model that gave it and a fingerprint of the criteria it was
->   sent. The audit's last line is the share of rules it found strong.
+>   nothing waits on it. For each rule it runs the heuristic spot tests, then asks the model for
+>   a small bug for each proof, aimed past that proof's test, and for its reading, then plants
+>   each bug and runs its proof's test: a rule is `weak` when a spot test fires on one of its
+>   tests or a planted bug survives, `strong` when none does and a planted bug was caught, and
+>   `spot-checked` when none does and no bug was planted and caught. A bug that survived is shown
+>   with the case the model says it breaks. The model's reading becomes the explanation; it
+>   decides nothing. Each answer names the model that gave it and a fingerprint of the criteria
+>   it was sent. The audit's last line is the share of rules it found strong.
 > Scope: scripts/review/audit_run.py, scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
-> Highest-Rule: 45
-> Highest-Proof: 124
+> Highest-Rule: 50
+> Highest-Proof: 135
 
 ## Rules
 
@@ -33,7 +34,11 @@
 - RULE-42: `ai_audit.py --feature <name>` prints, for the rule named with `--rule` or for every rule of the feature, its proofs, each test or `No test yet. Run purlin:build <feature>.`, and what the last audit found with the model and the time that read it, and starts no `claude`
 - RULE-43: When the model cannot be reached for a rule, the spot tests and the bugs kept from earlier audits set its verdict; a rule left `spot-checked` records `No bug was planted: the model could not be reached: <why>.`, and the audit prints `The model could not be reached: <why>. <n> rules are spot-checked alone. Run purlin:audit again.`, the middle sentence left out for none
 - RULE-44: The reply holds one part per proof asked for, under `=== PROOF-N ===`, and the reading under `=== reading ===`; a proof whose part is missing or names no usable change has no bug planted, with the reason recorded, and the other proofs' bugs are planted
-- RULE-45: Before its first call the audit prints `The audit reads <n> rules: <n> model calls.`, and after its last, where `claude` reported a cost, `The model was asked <n> times for <n> rules: $<total> in all, $<per rule> a rule.`, the sum of what each call reported
+- RULE-46: Where a bug is to be planted the request says each proof's test is shown, asks for the smallest change after which the case the proof names gives a different result from the one it names, says to choose the change the proof's test, as it is written, is most likely to miss, or the plainest such change where the test checks the proof's case and its result, and rules out a change that leaves the proof's case as it was
+- RULE-47: The shape the request gives for a proof's part holds, before `file:`, a line `aim:` taking `past the test` or `plain` and a line `case:` taking the proof's case, the result the proof names and the result the changed code gives
+- RULE-48: A planted bug's entry under `breaks` carries `aim`, either `past the test` or `plain`, and `case`, the model's line for it
+- RULE-49: A planted bug that survived adds two findings to its rule, `<PROOF-N>: the test still passes when <file>:<line> reads "<the changed line>"` and directly after it `<PROOF-N>: the AI says this breaks: <case>`, whether the bug was planted by this audit or kept from an earlier one, and the audit prints both under the rule
+- RULE-50: A planted bug that was caught adds no finding to its rule
 
 ## Proof
 
@@ -90,4 +95,14 @@
 - PROOF-110 (RULE-43): `claude` exits with the code 1 at every call and the audit reads two rules that pass, with no spot test firing on either; both entries read `spot-checked`, and the audit prints `The model could not be reached: claude exited with an error. 2 rules are spot-checked alone. Run purlin:audit again.` once
 - PROOF-119 (RULE-43): A bug kept for `PROOF-2` reads `survived`, and `claude` exits `1` at every call; the audit entry of `RULE-2` reads `weak` with the finding `PROOF-2: the test still passes when src/login.py:12 reads "return 200"`
 - PROOF-120 (RULE-44): `RULE-1` has `PROOF-1` and `PROOF-2`; the reply holds a part for `PROOF-1`, whose bug is caught, and none for `PROOF-2`; the entry reads `strong`, `PROOF-1` reads `caught`, and `no_bug` is exactly `No bug was planted: the model's answer for PROOF-2 could not be used: it holds none.`
-- PROOF-121 (RULE-45): The audit reads 2 rules and each call reports `total_cost_usd` `0.05`; it prints `The audit reads 2 rules: 2 model calls.` before the first call and, after the last, `The model was asked 2 times for 2 rules: $0.10 in all, $0.05 a rule.`
+- PROOF-125 (RULE-46): The audit reads `sample_intake RULE-3` of the sample lab project; its request holds, after the source of the test, `Plant one bug for each of: PROOF-5.`, `Each proof's test is shown above.` and `the case the proof names gives a different result from the one it names`
+- PROOF-126 (RULE-46): The request for `sample_intake RULE-3` holds the sentence `Choose the change the proof's test, as it is written, is most likely to miss: a value it never compares, a case other than the proof's, an expected value taken from the code.`
+- PROOF-127 (RULE-46): The request for `sample_intake RULE-3` holds the sentences `Where the test checks the proof's case and its result, make the plainest such change.` and `Never a change that leaves the proof's case as it was, and no comment about the bug.`
+- PROOF-128 (RULE-47): The request for `sample_intake RULE-3` shows a part as the lines `=== PROOF-5 ===`, `aim: <past the test, or plain>`, `case: <the proof's case; the result the proof names; the result the changed code gives>` and `file: <the path, as given above>`, one after the other
+- PROOF-129 (RULE-48): The model's part for `PROOF-5` reads `aim: past the test` and `case: a sample collected at 2026-03-01T08:00 and received at 2026-03-02T09:30; the proof names an age of 25 hours; the changed code gives 26 hours`; after the audit, the entry of `PROOF-5` under `breaks` holds that `aim` and that `case`
+- PROOF-130 (RULE-48): The model's part for `PROOF-6` reads `aim: plain`; after the audit, the entry of `PROOF-6` under `breaks` reads `aim` `plain`
+- PROOF-131 (RULE-49): The test of `PROOF-5` takes its expected age from the code's own helper, and the model's bug rounds that helper to the nearest hour; `sample_intake RULE-3` reads `weak`, with the finding `PROOF-5: the test still passes when src/intake.py:17 reads "return int(round(seconds / 3600))"`
+- PROOF-132 (RULE-49): Under `sample_intake RULE-3` the audit prints, on the line after that finding, `  PROOF-5: the AI says this breaks: a sample collected at 2026-03-01T08:00 and received at 2026-03-02T09:30; the proof names an age of 25 hours; the changed code gives 26 hours`
+- PROOF-133 (RULE-49): The model's bug for `PROOF-3` hands back the record of `LC-12345678` and stores nothing, and the test still passes; the second finding of `sample_intake RULE-2` reads `PROOF-3: the AI says this breaks: ` and then the model's case word for word, ending ``never stores it, so the bench's `received` stays empty``
+- PROOF-134 (RULE-49): The sample lab project is audited again, every rule read again and nothing changed; the request for `sample_intake RULE-3` asks for no bug, and the entry of `RULE-3` holds the same two findings for `PROOF-5`, in the same order
+- PROOF-135 (RULE-50): The test of `PROOF-6` checks the proof's own case, and the model's bug sets the limit to 73 hours with `aim: plain`; the bug is caught, `sample_intake RULE-4` reads `strong`, its `findings` are empty, and no line the audit prints names `PROOF-6`

@@ -1,12 +1,12 @@
 ---
 name: audit
-description: Run the tests, the heuristic spot tests, one model call per rule and one planted bug per proof, then write what it found into the evidence
+description: Check how much the tests are worth: heuristic spot tests and one planted bug per proof, written into the evidence
 ---
 
 Show how much the tests are worth. The audit runs the marked tests, then for each rule that
-passes: the heuristic spot tests, which read each test as text; one model call, which writes a
-small bug for each proof and explains the tests; and each bug planted in a copy of the project, to
-see whether the proof's own test catches it.
+passes: the heuristic spot tests, which read each test as text; a small bug the model writes for
+each proof, aimed past that proof's test, with its reading of the tests; and each bug planted in
+a copy of the project, to see whether the proof's own test catches it.
 It writes what it found into the evidence and reports the share of rules it found strong. A person
 runs it by hand, when they choose; nothing waits on it, and a weak rule stops no sign-off.
 
@@ -43,7 +43,8 @@ test, and whose text, proofs, tests or covered code changed since its last audit
 steps for each rule:
 
 1. The heuristic spot tests, with no model.
-2. One model call for the rule: a bug for each proof, and the model's reading.
+2. The model is asked for a small bug for each proof, aimed past that proof's test, and for its
+   reading.
 3. Each bug planted in a copy of the project, and that proof's own test run.
 
 A rule reads:
@@ -58,8 +59,6 @@ error with the bug in place is not a caught bug. An anchor's rule reads `spot-ch
 bug is planted on this machine for a proof tagged for another system.
 
 The model is started with no tools, no plugins and none of your settings, in an empty folder.
-Before the first call the audit prints how many model calls it will make, one for each rule
-it reads. After the last it prints what the run cost.
 
 `references/review_criteria.md` is the one home of each step: its checks, the research behind
 them and what the model is sent.
@@ -74,23 +73,24 @@ the code: a weak rule is listed, not failed.
 
 ## Step 2: read what came back
 
-The audit prints its calls, then one block per rule it read, then its cost, then the share, and
-the run ends on the status, as every run does:
+The audit prints one block per rule it read, then the share, and the run ends on the status, as
+every run does:
 
 ```
-The audit reads 12 rules: 12 model calls.
 login RULE-2   weak
   tests/test_login.py::test_wrong_password: the test checks nothing.
   PROOF-2: the test still passes when src/auth.py:12 reads "return 200"
+  PROOF-2: the AI says this breaks: a wrong password; the proof says 401; the changed code gives 200
 login RULE-3   spot-checked
   The spot tests found nothing. No bug was planted: PROOF-3 needs Windows, and this machine is macOS.
-The model was asked <n> times for <n> rules: $<total> in all, $<per rule> a rule.
 The audit found 4 of 6 rules strong (66%): 4 strong, 1 weak, 1 spot-checked.
 ```
 
 - A line `<file>::<test>: ...` is a spot test's finding: fix the test.
 - A line `PROOF-N: the test still passes when <file>:<line> reads "<line>"` is a planted bug the
   test did not catch: add the case that tells the right behaviour from that change.
+- A line `PROOF-N: the AI says this breaks: ...` is the model's claim about which case the bug
+  breaks; read it to judge the finding.
 - A line `No bug was planted: <why>.` is not a finding and does not make the rule weak. A rule
   with no finding and no caught bug reads `spot-checked`.
 - `<check> is not read in <language> tests.` says a spot test does not read that language.
@@ -104,8 +104,7 @@ The audit found 4 of 6 rules strong (66%): 4 strong, 1 weak, 1 spot-checked.
   evidence names a test the file no longer holds: run `purlin:test`, then `purlin:audit`.
 
 A finding is build work. `purlin:build <feature>` fixes the test, and the rule is read again by
-the next `purlin:audit`. Never narrow a rule or a proof to make a finding disappear. What the
-model cost is also written to `.purlin/runtime/audit_run.json`, which git ignores.
+the next `purlin:audit`. Never narrow a rule or a proof to make a finding disappear.
 
 ## Step 3: name the next step
 
