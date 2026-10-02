@@ -1067,6 +1067,41 @@ class TestARunCoversWhatTheChangeTouched:
         # Run alone: the report holds login's one test and no other.
         assert _ran(root) == ['test_login'], output
 
+    # purlin: run_script PROOF-291
+    def test_a_result_left_to_test_selects_its_feature(
+            self, tmp_path, monkeypatch):
+        root, _sha = _touched_project(tmp_path)
+        # The suite's command names its Python through the environment, so
+        # one committed command can meet a Python that starts no test.
+        suite = suites.pytest_suite()
+        suite['run'] = suite['run'].replace(suites.PYTHON, '"$TEST_PYTHON"')
+        _config(root, tests=[suite])
+        monkeypatch.setenv('TEST_PYTHON', sys.executable)
+        _code, output = _run(root, '--test', '--commit')
+        assert 'Evidence committed.' in output, output
+        assert 'Nothing to run' in _run(root, '--test')[1]
+        # `src/login.py` changes and the test tool does not start: login's
+        # one result is recorded as not run, and committed.
+        (root / 'src' / 'login.py').write_text('VALUE = 2\n', encoding='utf-8')
+        monkeypatch.setenv('TEST_PYTHON', 'false')
+        code, output = _run(root, '--test', '--commit')
+        assert code == 1, output
+        assert 'Evidence committed.' in output, output
+        assert _passed_word(root, 'login', 'RULE-1') == 'not run'
+        assert '  1 rule to test: purlin:test' in output.splitlines(), output
+        # The test tool starts again, and nothing else has changed.
+        monkeypatch.setenv('TEST_PYTHON', sys.executable)
+        code, output = _run(root, '--test')
+        lines = output.splitlines()
+        assert 'Selected 1 of 2 features: login (1 rule to test).' in lines, \
+            output
+        assert not any(line.startswith('Nothing to run') for line in lines), \
+            output
+        assert 'Ran pytest on 1 feature.' in lines, output
+        assert _ran(root) == ['test_login'], output
+        assert code == 0, output
+        assert _passed_word(root, 'login', 'RULE-1') == 'passed'
+
     # purlin: run_script PROOF-94
     def test_the_selected_line_comes_before_the_suite_runs(
             self, twelve_features):

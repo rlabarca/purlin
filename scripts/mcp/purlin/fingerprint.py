@@ -440,6 +440,9 @@ def selection(project_root, features=None, os_name=None, index=None):
       evidence: `no run on <System> yet`, the system as a person reads it;
     - the newest such section's fingerprint differs from the one taken now:
       `<part> changed since <sha7>` for each part that differs;
+    - that fingerprint is the one taken now and the status counts one of
+      its rules under `rules to test` (`_left_to_test`): `<n> rules to
+      test`, or `1 rule to test`, the status's own words;
     - an untracked, non-ignored file sits under its scope or beside one of
       its marker files: `a file is not tracked`, with the files under
       `untracked` as `{scope, tests}`;
@@ -459,6 +462,7 @@ def selection(project_root, features=None, os_name=None, index=None):
         index = marker_index(project_root)
     look_for_untracked = any_untracked(project_root)
     cache = {}
+    to_test = None
     out = []
     for name in sorted(features):
         reasons = []
@@ -478,6 +482,13 @@ def selection(project_root, features=None, os_name=None, index=None):
             for part in differing_parts(newest['section'].get('fingerprint'),
                                         now):
                 reasons.append(CHANGED_SINCE % (part, commit or 'unknown'))
+            if not reasons:
+                # The evidence is current and may still hold a result the
+                # status sends the person to `purlin:test` for.
+                if to_test is None:
+                    to_test = _left_to_test(project_root)
+                if to_test.get(name):
+                    reasons.append(to_test[name])
         loose = {'scope': [], 'tests': []}
         if look_for_untracked:
             loose = untracked_parts(project_root, name, features, index)
@@ -488,6 +499,29 @@ def selection(project_root, features=None, os_name=None, index=None):
         out.append({'feature': name, 'selected': bool(reasons),
                     'reasons': reasons, 'untracked': loose})
     return out
+
+
+def _left_to_test(project_root):
+    """`{feature: reason}` for each feature the status counts a rule of
+    under `rules to test`.
+
+    The status decides it, in `summary.rule_kind`, and the payload carries
+    its answer as each rule's `left`; the reason is the status's own words
+    for the count, so the line `Left to do` prints and what a run selects
+    cannot disagree.
+    """
+    from purlin import payload as payload_module
+    from purlin import summary as summary_module
+    one, many = next((kind[1], kind[2]) for kind in summary_module.KINDS
+                     if kind[0] == 'to_test')
+    found = {}
+    for feature in payload_module.build_payload(project_root)['features']:
+        count = sum(1 for rule in feature.get('rules') or ()
+                    if rule.get('left') == 'to_test')
+        if count:
+            found[feature.get('name')] = '%d %s' % (
+                count, one if count == 1 else many)
+    return found
 
 
 # The reasons `selection` gives, in the words a run prints them in.

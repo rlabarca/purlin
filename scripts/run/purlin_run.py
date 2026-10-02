@@ -26,7 +26,8 @@ and proposes a command, writes nothing and exits 1.
 With neither, `--test` and `--audit` run the features the change touched:
 `fingerprint.selection` selects a feature with no section for this
 operating system, one whose newest such section was taken over another
-spec, code or tests, one with an untracked file under its scope or beside
+spec, code or tests, one whose current section leaves a rule the status
+counts under `rules to test`, one with an untracked file under its scope or beside
 its tests, and one whose spec names no files. Before anything runs the run
 prints what it selected and why, what it skipped, and each untracked file
 that selected a feature; with nothing selected it says so and runs no test.
