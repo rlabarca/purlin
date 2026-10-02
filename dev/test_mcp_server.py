@@ -657,3 +657,135 @@ class TestAProjectSetUpBy095:
         responses, _stderr = _rpc(project.root, _call(
             'sync_status', {'project_root': project.root}))
         assert _text(responses[0]).splitlines() == three
+
+
+# ---------------------------------------------------------------------------
+# The markers Purlin 0.9.5 wrote that are still in a test
+# ---------------------------------------------------------------------------
+
+OLD_REST = (' a marker from Purlin 0.9.5, which is not read: %s. For each, '
+            'write the proof with purlin:spec, put the comment above the '
+            'test, and take the old tag out.')
+OLD_TS = ("import { it } from 'vitest';\n"
+          "it('signs in ' + '[proof:login:PROOF-1b:RULE-1:unit]', () => {});\n")
+OLD_MARK = ('@pytest.mark.proof("login", "%s", "RULE-2")\n'
+            'def test_%s():\n'
+            '    assert True\n')
+OLD_PY = ('import pytest\n\n\n' + OLD_MARK % ('PROOF-2b', 'denied')
+          + '\n\n' + OLD_MARK % ('PROOF-2c', 'denied_twice'))
+
+
+def _tracked(project, files):
+    """Write `files` into the project and commit them."""
+    for rel, text in files.items():
+        _write(os.path.join(project.root, rel), text)
+    _git(project.root, 'add', '-A')
+    _git(project.root, 'commit', '-q', '-m', 'test: the tests')
+
+
+@pytest.fixture
+def three_old_markers(project):
+    _tracked(project, {'tests/login.test.ts': OLD_TS,
+                       'tests/test_login.py': OLD_PY})
+    return project, '3 tests still carry' + OLD_REST % (
+        'tests/login.test.ts:2, tests/test_login.py:4, and 1 more')
+
+
+def _report_data(root):
+    with open(os.path.join(root, '.purlin', 'report-data.js'),
+              encoding='utf-8') as handle:
+        text = handle.read()
+    return json.loads(text[text.index('{'):text.rindex('}') + 1])
+
+
+class TestMarkersFrom095StillInATest:
+
+    # purlin: states PROOF-308
+    def test_the_status_command_names_two_and_counts_the_rest(
+            self, three_old_markers):
+        project, line = three_old_markers
+        _code, printed = _script(STATUS_PY, project.root)
+        assert printed.splitlines().count(line) == 1, printed
+
+    # purlin: states PROOF-309
+    def test_the_tool_answers_what_the_command_prints(self, three_old_markers):
+        project, line = three_old_markers
+        _code, printed = _script(STATUS_PY, project.root)
+        responses, _stderr = _rpc(project.root, _call(
+            'sync_status', {'project_root': project.root}))
+        assert _text(responses[0]).splitlines() == printed.splitlines()
+        assert line in _text(responses[0]).splitlines()
+
+    # purlin: states PROOF-310
+    def test_two_are_both_named(self, project):
+        _tracked(project, {
+            'tests/login.test.ts': OLD_TS,
+            'tests/test_login.py': OLD_PY.split('\n\n\n')[0] + '\n\n\n'
+            + OLD_MARK % ('PROOF-2b', 'denied')})
+        lines = purlin_status.sync_status(project.root).splitlines()
+        assert '2 tests still carry' + OLD_REST % (
+            'tests/login.test.ts:2, tests/test_login.py:4') in lines, lines
+
+    # purlin: states PROOF-311
+    def test_one_reads_still_carries(self, project):
+        _tracked(project, {
+            'tests/test_login.py': 'import pytest\n\n\n'
+            + OLD_MARK % ('PROOF-2b', 'denied')})
+        lines = purlin_status.sync_status(project.root).splitlines()
+        assert '1 test still carries' + OLD_REST % (
+            'tests/test_login.py:4') in lines, lines
+
+    # purlin: states PROOF-312
+    def test_it_is_the_last_of_the_warnings(self, three_old_markers):
+        project, line = three_old_markers
+        project.spec(SPEC.replace('\n## Proof', '- A line with no number\n\n'
+                                  '## Proof'))
+        lines = purlin_status.sync_status(project.root).splitlines()
+        at = lines.index(line)
+        assert 'not numbered' in lines[at - 1], lines
+        assert lines[at + 1] == '', lines
+        assert all(later.strip() for later in lines[at + 2:]), lines
+        assert '2 rules. 0 pass their tests.' in lines[at + 2:], lines
+
+    # purlin: states PROOF-313
+    def test_the_dashboard_data_carries_it_last(self, three_old_markers):
+        project, line = three_old_markers
+        purlin_status.sync_status(project.root)
+        assert _report_data(project.root)['warnings'][-1] == line
+
+    # purlin: states PROOF-314
+    def test_a_comment_a_docstring_and_an_untracked_file_are_not_one(
+            self, project):
+        _tracked(project, {
+            'tests/test_login.py':
+                'def test_denied():\n'
+                '    """Was marked:\n'
+                '@pytest.mark.proof("login", "PROOF-2b", "RULE-2")\n'
+                '    [proof:login:PROOF-1b:RULE-1:unit]\n'
+                '    """\n'
+                '    # pytestmark = pytest.mark.proof("login", "PROOF-2b")\n'
+                '    assert True\n',
+            'tests/login.test.ts':
+                "import { expect, it } from 'vitest';\n"
+                "// it('x [proof:login:PROOF-1b:RULE-1:unit]')\n"
+                "it('reads a tag', () => {\n"
+                "  expect(tag()).toBe('[proof:login:PROOF-1b:RULE-1:unit]');\n"
+                "});\n"})
+        _write(os.path.join(project.root, 'tests', 'test_new.py'),
+               'import pytest\n\n\n' + OLD_MARK % ('PROOF-2b', 'denied'))
+        printed = purlin_status.sync_status(project.root)
+        assert 'a marker from Purlin 0.9.5' not in printed, printed
+        assert '2 rules. 0 pass their tests.' in printed.splitlines()
+
+    # purlin: states PROOF-315
+    def test_a_pending_095_project_prints_its_three_lines_alone(
+            self, set_up_by_095):
+        project, three = set_up_by_095
+        _tracked(project, {
+            'tests/test_login.py': 'import pytest\n\n\n'
+            + OLD_MARK % ('PROOF-2b', 'denied')})
+        _code, printed = _script(STATUS_PY, project.root)
+        assert printed.splitlines() == three, printed
+        with open(os.path.join(project.root, '.purlin', 'report-data.js'),
+                  encoding='utf-8') as handle:
+            assert 'a marker from Purlin 0.9.5' not in handle.read()

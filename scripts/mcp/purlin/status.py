@@ -20,7 +20,9 @@ shown a proof count only where it writes a proof line.
 
 Below the table come each anchor rule that passes with nothing to check here,
 the specs that name no files, one line per spec whose `> Scope:` names files
-not written yet, and the anchors whose pin is not current. The report ends on
+not written yet, and the anchors whose pin is not current, then the warnings,
+the last of them the one for the markers Purlin 0.9.5 wrote that are still in
+a test. The report ends on
 the summary sentence, `Left to do` and the last line, with `→ Run:
 purlin:init --update` above them while an upgrade is pending.
 
@@ -29,9 +31,11 @@ do, third person for what Purlin does, exact numbers, and the only glyphs are
 `->`, `>` and `v` in their unicode forms. No emoji, anywhere.
 """
 
+import io
 import os
 import subprocess
 import sys
+import tokenize
 
 _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
@@ -40,6 +44,7 @@ if _MCP_DIR not in sys.path:
 from config_engine import config_problem
 from purlin import (board as board_module, drift as drift_module,
                     fingerprint as fingerprint_module,
+                    markers as markers_module,
                     payload as payload_module,
                     project as project_module, report_data,
                     specs as specs_module, summary as summary_module)
@@ -59,6 +64,14 @@ PENDING = ('This project was set up by Purlin 0.9.5. Nothing here counts '
 # What the status says once where the `tests` setting changed since the
 # evidence was taken (`fingerprint.setting_changed`).
 SETTING_CHANGED = 'The tests setting changed, so every result is out of date.'
+
+# What the status says while a tracked test file still holds a marker Purlin
+# 0.9.5 wrote, where that release read it: the count, the places, the rest.
+OLD_MARKER_ONE = '1 test still carries'
+OLD_MARKER_MANY = '%d tests still carry'
+OLD_MARKERS = ('%s a marker from Purlin 0.9.5, which is not read: %s. For '
+               'each, write the proof with purlin:spec, put the comment '
+               'above the test, and take the old tag out.')
 
 # A spec ahead of its code: one line for the spec, as information.
 NOT_WRITTEN_ONE = ('%s: 1 file its scope names is not written yet: %s. Run purlin:build %s, '
@@ -125,11 +138,18 @@ def sync_status(project_root):
     if problem:
         return problem
     data = payload_module.build_payload(project_root, generated_by='sync_status')
+    pending = (project_module.set_up_by_095(project_root)
+               and _update_pending(project_root))
+    if not pending:
+        # The last of the warnings, so it reads nearest `Left to do`; the
+        # dashboard shows it as a notice, from the same list.
+        old = old_marker_line(project_root)
+        if old:
+            data['warnings'].append(old)
     # The dashboard reads what the table reads: every command that ends on
     # this table refreshes the page's data file with the same payload.
     report_data.refresh(project_root, data)
-    if (project_module.set_up_by_095(project_root)
-            and _update_pending(project_root)):
+    if pending:
         return '\n'.join(pending_lines(project_root))
     if not data['features']:
         return '\n'.join(no_spec_lines(project_root))
@@ -187,21 +207,132 @@ def pending_lines(project_root):
             '%s Run: purlin:init --update' % ARROW]
 
 
-def _update_pending(project_root):
-    """True while `purlin:init --update` still has migrations to apply.
+def _update_module():
+    """`scripts/init/update.py`, the one home of what Purlin 0.9.5 wrote.
 
-    Imported here rather than at the top, so a project that is already on
-    this release pays nothing for the question. Whatever goes wrong while
-    asking it, the table is still printed.
+    Imported when asked for rather than at the top: the update imports this
+    package.
     """
     import importlib
     init_dir = os.path.join(os.path.dirname(_MCP_DIR), 'init')
     if init_dir not in sys.path:
         sys.path.insert(0, init_dir)
+    return importlib.import_module('update')
+
+
+def _update_pending(project_root):
+    """True while `purlin:init --update` still has migrations to apply.
+
+    Whatever goes wrong while asking it, the table is still printed.
+    """
     try:
-        return bool(importlib.import_module('update').pending(project_root))
+        return bool(_update_module().pending(project_root))
     except Exception:                       # noqa: BLE001 - never block status
         return False
+
+
+# ---------------------------------------------------------------------------
+# The markers Purlin 0.9.5 wrote that are still in a test
+# ---------------------------------------------------------------------------
+
+_OLD_TOKENS = ('[proof:', 'pytest.mark.proof')
+
+
+def _tracked(project_root):
+    """Every path git tracks under the root, or [] where git cannot say."""
+    try:
+        listed = subprocess.run(['git', 'ls-files', '-z'], cwd=project_root,
+                                capture_output=True, check=False, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return []
+    if listed.returncode != 0:
+        return []
+    return [raw.decode('utf-8', 'replace')
+            for raw in listed.stdout.split(b'\0') if raw]
+
+
+def _proof_mark_lines(text):
+    """The lines of a Python file on which `pytest.mark.proof` is code, not
+    words in a comment or a docstring; None where the file cannot be read
+    as Python."""
+    names, lines = [], set()
+    try:
+        for token in tokenize.generate_tokens(io.StringIO(text).readline):
+            if token.type in (tokenize.NAME, tokenize.OP):
+                names.append(token.string)
+                if names[-5:] == ['pytest', '.', 'mark', '.', 'proof']:
+                    lines.add(token.start[0])
+            elif token.type not in (tokenize.NL, tokenize.COMMENT):
+                names.append('')
+    except (tokenize.TokenError, SyntaxError, IndentationError):
+        return None
+    return lines
+
+
+def old_markers(project_root):
+    """`(file, line)` for each 0.9.5 marker a tracked test file still holds
+    where that release read it, sorted: a tag in a test's title, or a
+    `pytest.mark.proof` mark.
+
+    These are the places `purlin:init --update` names as left: its own
+    reader finds them (`update.rewrite_markers`), so the status and the
+    upgrade name the same lines. A tag in a comment, in a docstring or in a
+    string that is no test's title is not one.
+    """
+    update = _update_module()
+    found = set()
+    for rel in _tracked(project_root):
+        ext = os.path.splitext(rel)[1].lower()
+        if ext == '.py':
+            wanted = _OLD_TOKENS[1:]
+        elif ext in update.TEST_EXTENSIONS and ext not in (
+                '.sh', '.bash', '.sql', '.cs'):
+            wanted = _OLD_TOKENS[:1]
+        else:
+            continue
+        try:
+            path = os.path.join(project_root, rel)
+            with open(path, encoding='utf-8', newline='') as handle:
+                text = handle.read()
+        except (IOError, OSError, UnicodeDecodeError):
+            continue
+        if not any(token in text for token in wanted):
+            continue
+        left = update.rewrite_markers(text, ext)[2]
+        if ext != '.py':
+            # A tag counts where the test run's own reader finds it in a
+            # test's title. The update also names a tag it leaves in any
+            # other string, which no release read.
+            titles = [test.name for test in markers_module.js_tests(text)]
+            left = [entry for entry in left if entry[1] is not None
+                    and any('[proof:%s:%s:' % entry[1] in title
+                            for title in titles)]
+        elif left:
+            code = _proof_mark_lines(text)
+            if code is not None:
+                left = [entry for entry in left if entry[0] in code]
+        found.update((rel, entry[0]) for entry in left)
+    return sorted(found)
+
+
+def old_marker_line(project_root):
+    """The one warning for the 0.9.5 markers still in the tests, or None.
+
+    The first two places are named and the rest counted. Whatever goes
+    wrong while looking, the status is still printed.
+    """
+    try:
+        found = old_markers(project_root)
+    except Exception:                       # noqa: BLE001 - never block status
+        return None
+    if not found:
+        return None
+    places = ['%s:%d' % place for place in found[:2]]
+    if len(found) > 2:
+        places.append('and %d more' % (len(found) - 2))
+    opening = (OLD_MARKER_ONE if len(found) == 1
+               else OLD_MARKER_MANY % len(found))
+    return OLD_MARKERS % (opening, ', '.join(places))
 
 
 # ---------------------------------------------------------------------------

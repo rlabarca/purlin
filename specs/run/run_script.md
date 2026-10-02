@@ -15,8 +15,8 @@
 >   tool it knows.
 > Scope: scripts/run/purlin_run.py, scripts/mcp/purlin/frameworks.py, references/supported_frameworks.md
 > Stack: python/stdlib (subprocess, re, hashlib), bash, pytest, sqlite3
-> Highest-Rule: 111
-> Highest-Proof: 301
+> Highest-Rule: 112
+> Highest-Proof: 302
 
 ## Rules
 
@@ -51,6 +51,7 @@
 - RULE-109: As each suite starts the run prints `Running <suite>: <the command as run>`, on its output before the suite's command starts; for an `exit` suite, whose command runs once per file, the line reads `Running <suite>: <its command>, once for each of <n> files`, or `, for 1 file`
 - RULE-110: A `--test` or `--audit` run that finds the `tests` setting changed since the evidence was taken prints `The tests setting changed, so every result is out of date.` once, before it says what it selected
 - RULE-111: After the commits of `--commit`, where git still lists a changed or untracked file outside `.purlin/`, the run prints `1 file is still not committed:` or `<n> files are still not committed:`, then up to 10 of them, each on its own line indented two spaces, then `  and <n> more` for the rest, then `Commit them, then run purlin:test --all --commit again: a sign-off needs results taken with nothing uncommitted.`; with none left it prints no such line
+- RULE-112: A run that ends on the status prints the status's warning for the markers Purlin 0.9.5 wrote that are still in the tests once, in that status, and nowhere above it
 - RULE-104: `--test` and `--audit` without `--all` never start a test whose every comment names a proof tagged `@slow`, whichever features they run, and `--all` and `--ci` start it like any other. The run prints `Left out 1 slow proof: <feature PROOF-N>. purlin:test --all runs it too.` or `Left out <n> slow proofs: <each>. purlin:test --all runs them too.`, lists each as `not run` in the evidence with its test named, and never names it under `Evidence is missing`
 - RULE-105: A test is left out through its own tool's option, with the test and the project's suite unchanged: pytest's `--deselect`, vitest's and jest's `--testNamePattern`, dotnet's `--filter`, go's `-skip`, and a file of an `exit` suite is not run. Where a suite's command is none of these tools', already carries that option, the option would also leave out a test that is not slow, or the test is one NUnit names row by row, under `[TestCase]` or `[TestCaseSource]`, the slow test is started, its result counts, and the run prints `Started 1 slow test in the <suite> suite: its command gives Purlin no way to leave one test out.`, or `<n> slow tests` for any other count
 - RULE-106: A run that leaves a slow proof's test out keeps the result the section it replaces holds for that proof where that section was taken over the same spec, code and tests, and marks it `kept` with the `commit`, `at`, `machine` and `email` of the run that took it, so the status keeps counting it and the sign-off does not; where it was taken over others, the proof reads `not run`
@@ -131,6 +132,7 @@
 - PROOF-299 (RULE-111): In a git checkout where the spec `feat` and `src/other.py` are both edited, `--all --test --commit` prints `1 file is still not committed:`, then `  src/other.py`, then `Commit them, then run purlin:test --all --commit again: a sign-off needs results taken with nothing uncommitted.`, after `Evidence committed.`
 - PROOF-300 (RULE-111): In a git checkout where 12 tracked files, `notes/n01.txt` to `notes/n12.txt`, are edited, `--all --test --commit` prints `12 files are still not committed:`, then `  notes/n01.txt` to `  notes/n10.txt`, then `  and 2 more`
 - PROOF-301 (RULE-111): In a git checkout where only the spec `feat` is edited, `--all --test --commit` prints no line holding `still not committed`
+- PROOF-302 (RULE-112): A project tracks `tests/test_feat.py`, whose passing test is marked for `feat PROOF-1` and whose second test, on line 7, sits under a `@pytest.mark.proof("feat", "PROOF-1b", "RULE-1")` mark on line 6; `--all --test` exits 0 and prints the line `1 test still carries a marker from Purlin 0.9.5, which is not read: tests/test_feat.py:6. For each, write the proof with purlin:spec, put the comment above the test, and take the old tag out.` exactly once, below the line that opens `Purlin status:`
 - PROOF-275 (RULE-104): `feat`'s PROOF-2 is tagged `@slow` and its pytest test writes the file `started`; `--feature feat --test` exits 0, prints `Left out 1 slow proof: feat PROOF-2. purlin:test --all runs it too.` and no `Evidence is missing`, writes no `started` file, and the evidence lists PROOF-2 as `not run` under `tests/test_feat.py::test_slow`
 - PROOF-276 (RULE-104): In that project `--all --test` exits 0, writes the file `started`, prints no `Left out` line, and the evidence lists PROOF-2 as `pass`
 - PROOF-277 (RULE-105): With one slow test in each, the commands a plain run starts carry pytest's `--deselect tests/test_cart.py::TestCart::test_checkout`, vitest's and jest's `--testNamePattern '^(?!(?:.* )?(?:cart checks out)$)'`, dotnet's `--filter 'FullyQualifiedName!=Shop.Tests.CartTests.ChecksOut'` and go's `-skip '^(?:TestCheckout)$'`, and a shell suite's slow file is not among the files it runs

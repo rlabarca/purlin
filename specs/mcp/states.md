@@ -8,8 +8,8 @@
 >   output.
 > Scope: scripts/mcp/purlin/states.py, scripts/mcp/purlin/payload.py, scripts/mcp/purlin/status.py, scripts/mcp/purlin/facts.py, scripts/mcp/purlin/project.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib, json, hashlib, subprocess (list-only)
-> Highest-Rule: 130
-> Highest-Proof: 307
+> Highest-Rule: 132
+> Highest-Proof: 315
 
 ## Rules
 
@@ -62,6 +62,8 @@
 - RULE-123: A spec whose `> Scope:` names files git does not have is reported in one line for the spec, as information and not as a warning: the files are named as not written yet, with `purlin:build` to write them first and `purlin:spec` to correct a path second, because writing a spec before its code is the normal order
 - RULE-129: The status of a project Purlin 0.9.5 set up, while its upgrade is pending, is three lines and nothing else, from the status command and from the `sync_status` tool alike: its first line, `This project was set up by Purlin 0.9.5. Nothing here counts until it is brought to <version>.` and `→ Run: purlin:init --update`
 - RULE-130: The status prints `The tests setting changed, so every result is out of date.` once, under the table, where the `tests` setting changed since the evidence was taken and nothing else in a feature's tests did
+- RULE-131: While a test file git tracks still holds a marker Purlin 0.9.5 wrote that `purlin:init --update` leaves as it was, a `[proof:...]` tag in a test's title or a `pytest.mark.proof` mark, the status carries one warning, the last of its warnings, from the status command and from the `sync_status` tool alike, and the dashboard data the status writes carries it as the last of its warnings: `<n> tests still carry a marker from Purlin 0.9.5, which is not read: <file>:<line>, <file>:<line>, and <n-2> more. For each, write the proof with purlin:spec, put the comment above the test, and take the old tag out.`, the places in order of file and line; one or two are named with no `and <n> more`, and one opens `1 test still carries`
+- RULE-132: A `[proof:...]` tag or a `pytest.mark.proof` in a comment, in a docstring, in a string that is no test's title or in a file git does not track is no such marker, and a project Purlin 0.9.5 set up carries no such warning while its upgrade is pending, in its status or in its dashboard data
 
 ## Proof
 
@@ -162,3 +164,11 @@
 - PROOF-305 (RULE-129): For that same project the `sync_status` tool answers those same three lines and nothing else
 - PROOF-306 (RULE-130): In a git checkout of `login` and `export` whose evidence `--all --test --commit` committed, the pytest command in the `tests` setting gains ` -v`; the status holds the line `The tests setting changed, so every result is out of date.` exactly once
 - PROOF-307 (RULE-130): In that checkout with the setting as it was and login's test file edited instead, the status holds no line reading `The tests setting changed, so every result is out of date.`
+- PROOF-308 (RULE-131): A project already on this version tracks `tests/login.test.ts`, whose line 2 holds the title tag `[proof:login:PROOF-1b:RULE-1:unit]`, and `tests/test_login.py`, whose lines 4 and 9 each hold a `@pytest.mark.proof` mark naming `PROOF-2b` and `PROOF-2c`; the status command prints the line `3 tests still carry a marker from Purlin 0.9.5, which is not read: tests/login.test.ts:2, tests/test_login.py:4, and 1 more. For each, write the proof with purlin:spec, put the comment above the test, and take the old tag out.` exactly once
+- PROOF-309 (RULE-131): For that same project the `sync_status` tool answers exactly the text the status command prints, that line included
+- PROOF-310 (RULE-131): With the mark on line 9 of `tests/test_login.py` taken out, the status holds the line `2 tests still carry a marker from Purlin 0.9.5, which is not read: tests/login.test.ts:2, tests/test_login.py:4. For each, write the proof with purlin:spec, put the comment above the test, and take the old tag out.`
+- PROOF-311 (RULE-131): With `tests/login.test.ts` deleted as well, the status holds the line `1 test still carries a marker from Purlin 0.9.5, which is not read: tests/test_login.py:4. For each, write the proof with purlin:spec, put the comment above the test, and take the old tag out.`
+- PROOF-312 (RULE-131): The spec `login` of the three-marker project also holds a line under `## Rules` with no number, which the status warns of; the line that opens `3 tests still carry` is the line after that warning, and the one blank line after it is the last above `2 rules. 0 pass their tests.`
+- PROOF-313 (RULE-131): After the status of the three-marker project, the last entry of `warnings` in `.purlin/report-data.js` is the line that opens `3 tests still carry`
+- PROOF-314 (RULE-132): A project already on this version tracks `tests/test_login.py`, whose docstring holds `@pytest.mark.proof("login", "PROOF-2b", "RULE-2")` at the start of a line and whose comment holds `pytest.mark.proof(`, and `tests/login.test.ts`, which holds `[proof:login:PROOF-1b:RULE-1:unit]` in a `//` comment and in a string passed to `expect`; `tests/test_new.py`, which git does not track, holds a real `@pytest.mark.proof("login", "PROOF-2b", "RULE-2")` above a test. The status holds no line with `a marker from Purlin 0.9.5`
+- PROOF-315 (RULE-132): A project holds the settings file Purlin 0.9.5 wrote, with no `tests` key, and tracks `tests/test_login.py` with a `@pytest.mark.proof("login", "PROOF-2b", "RULE-2")` mark above a test; the status command prints its three lines and nothing else, and `.purlin/report-data.js` holds no `a marker from Purlin 0.9.5`
