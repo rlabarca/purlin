@@ -2,14 +2,14 @@
   "feature": "summary",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T23:46:14Z",
-      "commit": "afa143e1429bc564a184f39b4220f6557764478a",
+      "at": "2026-10-03T00:21:31Z",
+      "commit": "2ff057abecef1b2b174a471444b35e19dfb0c3bf",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "b0cab7902d01d540b8d3ff4e097391485caf377b355779ce4db4e3dec20d73d7",
-        "spec": "f28b20d627b0a8e4c19d321317c8ba37262dd29100b202eb71495363d6fea856",
-        "tests": "cc6a6b84f7cee11145e294bf5562e0dad7ebe80fd46e14556560b63723434f51"
+        "code": "be42c254cd69b63a6afe6906488b8e43bcfe4c41bc690dc899bfec7866afa09c",
+        "spec": "270c1bdddb922d13d94dba0cc9ba39d99dd2065ecd98dcfcf6e5553be861dd35",
+        "tests": "91e681ee750e69a8ecfba98232c80f1f616a4e6027317574f7b743cd445e2acd"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -260,6 +260,14 @@
           "result": "pass",
           "rule": "RULE-25",
           "test": "dev/test_summary.py::TestAHandCheckInTheSentence::test_an_unchecked_hand_check_leaves_the_tests_met"
+        },
+        {
+          "env": null,
+          "id": "PROOF-70",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-30",
+          "test": "dev/test_summary.py::TestTheLastLineAgreesWithTheSignOff::test_a_test_with_a_095_marker_names_the_rewrite_before_a_sign_off"
         }
       ],
       "rules": {
@@ -275,6 +283,7 @@
         "RULE-27": "passed",
         "RULE-28": "passed",
         "RULE-29": "passed",
+        "RULE-30": "passed",
         "RULE-8": "passed"
       },
       "runner": "rich-labarca"

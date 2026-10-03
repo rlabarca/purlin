@@ -2,12 +2,12 @@
   "feature": "collaboration",
   "platforms": {
     "macos": {
-      "at": "2026-10-02T23:46:12Z",
-      "commit": "afa143e1429bc564a184f39b4220f6557764478a",
+      "at": "2026-10-03T00:21:31Z",
+      "commit": "2ff057abecef1b2b174a471444b35e19dfb0c3bf",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "afdd21b2b9ef408a8c1880d4b9e6f6f76b199e061bcfa456e0daccc25f8a2f4f",
+        "code": "dd37817f66a1ef564610be9c56906ddf714d24fffa9e10349bc9be07db77f439",
         "spec": "288338e527e74393978cafd86960a75157c22cc5cf5d84eb92b504f76083ce74",
         "tests": "cbe87ecc31864458235cd239970e44fef36905c53e4c256d0bcb886ad553f2e0"
       },
@@ -17,13 +17,13 @@
           "env": null,
           "id": "PROOF-1",
           "manual": false,
-          "result": "pass",
+          "result": "not run",
           "rule": "RULE-1",
           "test": "dev/test_collaboration.py::test_three_people_reach_a_signed_version"
         }
       ],
       "rules": {
-        "RULE-1": "passed"
+        "RULE-1": "not run"
       },
       "runner": "rich-labarca"
     }
