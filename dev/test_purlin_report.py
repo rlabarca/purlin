@@ -791,6 +791,48 @@ def test_every_count_carries_the_word_it_counts(browser, tmp_path):
     page.close()
 
 
+def given_rules(payload, feature, words):
+    """The payload with one rule more on `feature` for each passed-cell word
+    in `words`, each a copy of its first rule numbered after its last."""
+    owner = next(f for f in payload['features'] if f['name'] == feature)
+    for word in words:
+        made = json.loads(json.dumps(owner['rules'][0]))
+        made['id'] = 'RULE-%d' % (len(owner['rules']) + 1)
+        made['cells']['passed'].update(word=word, reasons=[])
+        owner['rules'].append(made)
+
+
+# purlin: purlin_report PROOF-280
+def test_an_anchor_out_of_date_says_so_in_its_tests_cell(browser, tmp_path):
+    payload = payload_named('regulated')
+    rule_of(payload, 'checkout_design', 'RULE-1')['cells']['passed'].update(
+        word='out of date', reasons=['code changed since a1b2c3d'])
+    assert rule_of(payload, 'export', 'RULE-1')['cells']['passed'][
+        'word'] == 'out of date'
+    page = open_board(browser, tmp_path, payload)
+    cells = count_cells(page)
+    tone = page.eval_on_selector(
+        '[data-table="anchors"] .tr[data-feature="checkout_design"]'
+        ' [data-label="Tests"] .trio b:last-child', 'e => getComputedStyle(e).color')
+    warn = page.evaluate(RESOLVE_TOKEN, '--state-warn')
+    page.close()
+    assert cells['checkout_design']['Tests'] == '0 of 1 · 1 out of date', cells
+    assert tone == warn, (tone, warn)
+    assert cells['export']['Tests'] == '1 of 2', cells
+
+
+# purlin: purlin_report PROOF-281
+def test_an_anchors_out_of_date_part_comes_last(browser, tmp_path):
+    payload = payload_named('regulated')
+    given_rules(payload, 'checkout_design', ['checked at sign-off', 'partial',
+                                             'failed', 'out of date'])
+    page = open_board(browser, tmp_path, payload)
+    cells = count_cells(page)
+    page.close()
+    assert cells['checkout_design']['Tests'] == (
+        '1 of 5 · 1 by hand · 1 partial · 1 failing · 1 out of date'), cells
+
+
 # purlin: purlin_report PROOF-245
 def test_a_hand_check_is_counted_by_hand_and_out_of_the_strong_share(
         browser, tmp_path):

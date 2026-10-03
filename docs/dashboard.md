@@ -117,7 +117,7 @@ an audit entry. A column the project does not reach is absent, not empty.
 | `Spec` | the feature's name, or an anchor's | the spec's path |
 | `Rules` | how many rules the spec has, as `16` | |
 | `Proofs` | `5 · 1 no test`: how many proof lines the spec holds, then how many no test runs. A `@manual` proof is not counted as one | which proofs have no test |
-| `Tests` | `3 of 4 · 1 partial`: how many rules passed everywhere they ran, then `by hand`, `partial` and `failing`. `2 of 3 · 1 by hand` holds one rule checked at sign-off. | one line per operating system a current run covered, with its newest run's source, age and results |
+| `Tests` | `3 of 4 · 1 partial`: how many rules passed everywhere they ran, then `by hand`, `partial` and `failing`. `2 of 3 · 1 by hand` holds one rule checked at sign-off. An anchor's cell ends with how many of its rules are out of date, as `0 of 11 · 11 out of date` | one line per operating system a current run covered, with its newest run's source, age and results |
 | `Strong` | `2 of 4`, as `<strong> of <n>`: how many rules the audit found strong, of the rules that pass their tests and have a tested proof. An anchor reads one word, `weak`, `out of date` or `spot-checked`, or nothing | where the newest audit came from and how old it is; an anchor's opens on `No bug is planted for an anchor's rule.` |
 
 Every count names what it counts. The first part is always drawn. A later part is drawn only

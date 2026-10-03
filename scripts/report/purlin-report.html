@@ -248,7 +248,9 @@ function testsCell(feature) {
     + counts([share(found.passed || 0, rules.length, byHand),
       [byHand, WORDS.by_hand, 'neutral'],
       [found.partial || 0, WORDS.partial, 'warn'],
-      [found.failed || 0, WORDS.failing, 'fail']]) + '</span>';
+      [found.failed || 0, WORDS.failing, 'fail'],
+      [feature.is_anchor ? found['out of date'] || 0 : 0, WORDS.out_of_date,
+       'warn']]) + '</span>';
 }
 function share(count, total, aside) {
   return [count + ' ' + WORDS.of + ' ' + total, '',
@@ -584,7 +586,7 @@ var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong'];
 var DOT = ' \u00b7 ';
 var WORDS = {of: 'of', no_test: 'no test', by_hand: 'by hand',
              partial: 'partial', failing: 'failing', passed: 'passed',
-             failed: 'failed', not_run: 'not run'};
+             failed: 'failed', not_run: 'not run', out_of_date: 'out of date'};
 var CELL_TONES = {'passed': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
   'out of date': 'warn', 'strong': 'pass', 'weak': 'warn',

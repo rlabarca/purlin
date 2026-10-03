@@ -60,7 +60,7 @@ var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong'];
 var DOT = ' \u00b7 ';
 var WORDS = {of: 'of', no_test: 'no test', by_hand: 'by hand',
              partial: 'partial', failing: 'failing', passed: 'passed',
-             failed: 'failed', not_run: 'not run'};
+             failed: 'failed', not_run: 'not run', out_of_date: 'out of date'};
 
 /* Every word a cell can read, and the tone it reads in. A word carries the
    same hue wherever it is drawn, so a pill on the board, a row on the rule
