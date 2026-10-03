@@ -43,10 +43,10 @@ a test is any test in your own suite with one comment above it.
   renumbers. It asks first.
 - **The status and drift have a script each**, for a session that does not load the tools.
 - **The sign-off records the key that signed**, and reads a sign-off whose tag was not fetched.
-- **Three questions are asked by the scripts themselves**: before renumbering, before the
-  `tests` setting is written, and before signing.
+- **Four questions are asked by the scripts themselves**: before setup commits its files, before
+  renumbering, before the `tests` setting is written, and before signing.
 - **Cut:** drift's role views, setup's questions but one, and most settings.
-- **The formats** stand at spec 24, anchor 12, evidence 13, signature 16, package 13 and marker 5,
+- **The formats** stand at spec 24, anchor 12, evidence 14, signature 16, package 14 and marker 5,
   the drift criteria at 14, and the dashboard's data at schema 16.
 
 In more words:

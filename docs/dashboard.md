@@ -204,7 +204,8 @@ Four cases to know:
    `PROOF-2: its tests missed a bug planted at src/billing/invoice.py:12.` The lines before the
    bug are under `Before`, and the lines after it under `After`. A bug the tests caught is not
    shown.
-4. `Read by`, the model and the time, in your timezone like the header line.
+4. `Read by`, the model and the time, in your timezone like the header line. Under it is the
+   path of the evidence file that holds the entry, as `.purlin/evidence/ci/login.json`.
 
 A rule no audit has read says `No audit has read this rule yet.` In a
 project no audit has read, the page says nothing of the audit at all.

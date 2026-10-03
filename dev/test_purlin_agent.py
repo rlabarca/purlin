@@ -71,10 +71,10 @@ def test_every_path_a_skill_or_the_agent_definition_names_exists():
 # purlin: purlin_agent PROOF-52
 def test_every_flag_a_skill_passes_is_one_its_script_takes():
     assert _found(skill_files(), unknown_flags) == {}
-    copy, changed = re.subn(r'(scripts/run/purlin_run\.py"?)', r'\1 --remote',
+    copy, changed = re.subn(r'(scripts/run/purlin_run\.py"?)', r'\1 --nonesuch',
                             read(skill_path('test')), count=1)
     assert changed == 1
-    assert unknown_flags(copy) == [('scripts/run/purlin_run.py', '--remote')]
+    assert unknown_flags(copy) == [('scripts/run/purlin_run.py', '--nonesuch')]
 
 
 ANSWERS = '.purlin/runtime/signoff-answers.json'
