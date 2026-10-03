@@ -1016,11 +1016,64 @@ def test_each_warning_is_a_notice_after_the_working_tree_one(browser,
     assert texts(page, '.notice-text') == [
         'The working tree has uncommitted changes, so what is on this board '
         'is not what a commit would carry.', warning]
-    lowest_notice = max(box['y'] + box['height'] for box in (
-        notice.bounding_box() for notice in page.query_selector_all('.notice')))
-    first_box = page.query_selector('.tile').bounding_box()
+    found = page.evaluate(STACK)
     page.close()
-    assert lowest_notice <= first_box['y']
+    assert found['tiles'] <= found['notices'][0], found
+    assert found['notices'][1] <= found['anchors'], found
+
+
+# Where the board's parts stand, from the top of the page: the bottom of the
+# top bar, the top and the bottom of the boxes, the top and the bottom of the
+# notices, the top of the anchors' section and of the spec table, and the
+# bottom of the `Failing` box where there is one.
+STACK = """() => {
+  const rect = s => document.querySelector(s).getBoundingClientRect();
+  const all = s => Array.from(document.querySelectorAll(s)).map(
+    e => e.getBoundingClientRect());
+  const tiles = all('.tile');
+  const notes = all('.notice');
+  const failing = Array.from(document.querySelectorAll('.tile')).filter(
+    e => e.querySelector('.tile-l').textContent.trim() === 'Failing');
+  const table = s => document.querySelector(s) ? rect(s).top : null;
+  return {
+    bar: rect('.topbar').bottom,
+    tilesTop: Math.min(...tiles.map(r => r.top)),
+    tiles: Math.max(...tiles.map(r => r.bottom)),
+    notices: [Math.min(...notes.map(r => r.top)),
+              Math.max(...notes.map(r => r.bottom))],
+    anchors: table('[data-table="anchors"]'),
+    specs: table('[data-table="specs"]'),
+    failing: failing.length ? failing[0].getBoundingClientRect().bottom : null,
+  };
+}"""
+
+
+# purlin: purlin_report PROOF-282
+def test_the_boxes_stand_above_the_notices_at_every_width(browser, tmp_path):
+    payload = payload_named('regulated')
+    forty_passing_specs_then_one_failing(payload)
+    payload['warnings'] = FOUR_LINES[:2]
+    payload['information'] = FOUR_LINES[2:]
+    seen = {}
+    for theme in ('dark', 'light'):
+        for width in (1500, 1280, 1024, 768, 390):
+            page = open_board(browser, tmp_path / (theme + str(width)),
+                              payload,
+                              viewport={'width': width, 'height': 900})
+            if theme == 'light':
+                page.click('.topbar [data-act="theme"]')
+                assert page.get_attribute('html', 'data-theme') == 'light'
+            seen[theme, width] = (page.evaluate(STACK),
+                                  len(page.query_selector_all('.notice')))
+            page.close()
+    for (theme, width), (found, count) in seen.items():
+        where = (theme, width, found)
+        assert count == 5, where
+        assert found['bar'] <= found['tilesTop'], where
+        assert found['tiles'] <= found['notices'][0], where
+        tables = sorted(t for t in (found['specs'], found['anchors']))
+        assert found['notices'][1] <= tables[0], where
+        assert found['tiles'] <= 900 and found['failing'] <= 900, where
 
 
 # ---------------------------------------------------------------------------

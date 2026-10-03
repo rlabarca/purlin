@@ -289,9 +289,11 @@ function firstThose(list, first) {
   }));
 }
 
-/* The board opens on the step boxes, then the two tables beneath them: the
-   anchors, where the project has one, and then the specs, grouped by
-   category. The anchors' section says what they are, so they carry no band
+/* The board opens on the step boxes, then the notices, then the two tables
+   beneath them: the anchors, where the project has one, and then the specs,
+   grouped by category. The boxes stand above the notices, so the counts and
+   the `Failing` box are on the first screen at every width however many
+   notices the data carries. The anchors' section says what they are, so they carry no band
    and no mark of their own.
 
    The order is the data's, but a spec with a failing rule comes before one
@@ -328,6 +330,6 @@ function renderBoard() {
   var specsFirst = !anchors.some(hasFailing) && order.some(function (name) {
     return groups[name].some(hasFailing);
   });
-  return '<section>' + statStrip() + '</section>'
+  return '<section>' + statStrip() + '</section>' + notices()
     + (specsFirst ? specsTable + anchorTable : anchorTable + specsTable);
 }

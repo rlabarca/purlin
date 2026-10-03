@@ -602,9 +602,9 @@ function groupLine(kind, group) {
     + '. Run purlin:status for each.';
 }
 
-/* The notices above the boxes: the uncommitted working tree, then the
-   warnings the data carries, in the warn tone; then the lines of
-   information, in the neutral tone. Between them the two lists hold every
+/* The notices, which stand below the boxes and above the two tables: the
+   uncommitted working tree, then the warnings the data carries, in the warn
+   tone; then the lines of information, in the neutral tone. Between them the two lists hold every
    line the status prints between its table and its summary sentence, which
    `report_data.with_status_lines` sees to. Three or more of one kind are
    drawn as one notice. */
@@ -613,11 +613,12 @@ function notices() {
     ? [{line: 'The working tree has uncommitted changes, so what is on this '
        + 'board is not what a commit would carry.'}] : [];
   lines = lines.concat(groupedLines(DATA.warnings || []));
-  return lines.map(function (item) {
+  var drawn = lines.map(function (item) {
     return notice(item.line, 'warn', item.names);
   }).join('') + groupedLines(DATA.information || []).map(function (item) {
     return notice(item.line, 'neutral', item.names);
   }).join('');
+  return drawn ? '<section class="notices">' + drawn + '</section>' : '';
 }
 
 /* A path, which a narrow screen may break after a `/` or a `_` and nowhere
@@ -659,8 +660,7 @@ function render() {
   if (VIEW.screen !== 'rule') { VIEW.screen = 'board'; }
   /* The notices are about the tree the whole payload came from, so the board
      carries them once rather than every screen repeating them. */
-  var body = VIEW.screen === 'rule' ? renderRule()
-    : notices() + renderBoard();
+  var body = VIEW.screen === 'rule' ? renderRule() : renderBoard();
   app.innerHTML = topBar(true) + '<div class="wrap">' + body + '</div>';
 }
 
