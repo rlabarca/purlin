@@ -1775,6 +1775,21 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **Kept as they are:** tests with a 0.9.5 marker are a warning and a closing line, not a
       `Left to do` line, and the tests stay `met`; `Left to do` shows the next step; unstable
       tests get one sentence on the upgrade page, no retry.
+129. **The run before a sign-off reruns only what changed** (added 2026-10-03). A sign-off
+    counts only results recorded on the commit it signs, so a commit that touched only notes
+    forced a full rerun of everything, about 35 minutes for Purlin with Windows.
+    - **`purlin:test --all --commit` is smart.** It reruns the rules whose covered files changed
+      since their last result, and every anchor, and records every other rule's result again on
+      this commit as carried forward from the commit it ran on, without running it.
+    - **`--clean` reruns everything.** In the owner's words: "the option should be --clean".
+    - **The sign-off stays strict**: every result recorded on the commit it signs. A half-tested
+      project is still refused, so a tag always covers the whole project.
+    - **Every result carries forward by the same rule**, a result from another system and a slow
+      proof's included, from whichever machine ran it. The evidence and the package say, per
+      result, whether it ran now or was carried, from which commit and which machine.
+    - This amends decision 107's "only the sign-off requires every result to be taken on this
+      exact version of the code" and decision 121's line on slow results: a carried result is
+      recorded on this version, and says where it was taken.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5

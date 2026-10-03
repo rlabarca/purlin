@@ -6,15 +6,17 @@ Paste everything below the line into a new session opened in `/Users/richlabarca
 
 You are continuing Purlin 0.10.0, a Claude Code plugin for spec-driven development that uses
 itself. Local `main` is green and not pushed: 39 specs, 556 rules, every one passing on
-committed evidence, the Windows rules included. Decisions 100 to 128 are built. Nothing is
-signed or tagged. You have two jobs, run at the same time: **A**, a goal-seek test by a real AI
-session on a sample project; **B**, a sweep of this repository for stale files, references and
-docs. Then you bring the repository to a state a sign-off would accept, and stop.
+committed evidence, the Windows rules included. Decisions 100 to 128 are built; decision 129 is decided
+and not built. Nothing is signed or tagged. You have three jobs: **A**, a goal-seek test by a
+real AI session on a sample project; **B**, a sweep of this repository for stale files,
+references and docs; **C**, building decision 129. B and C run in worktrees while A runs, and
+merge after A ends. Then you bring the repository to a state a sign-off would accept, and
+stop.
 
 ## Read first, in this order
 
 1. `dev/plans/handoff.md`, in full.
-2. `dev/plans/three-levels.md`: decisions 100 to 128 (search `100. **`); later wins. Decision
+2. `dev/plans/three-levels.md`: decisions 100 to 129 (search `100. **`); later wins. Decision
    44 is the clean release: nothing that represents earlier functionality stays;
    `RELEASE_NOTES.md` is the one place history is kept.
 3. `CLAUDE.md`, `references/writing_style.md` (its section "Short and plain"),
@@ -35,6 +37,9 @@ docs. Then you bring the repository to a state a sign-off would accept, and stop
   `d124-reports/`, `d126-plan.md`, `d126-reports/`, `d127-plan.md`, `d127-reports/`,
   `d128-plan.md`, `d128-reports/`. It keeps `dev/plans/audit-research.md` (the audit page's
   source), `three-levels.md`, `handoff.md` and `dev/plans/deck/`. This file goes at the end.
+- **Decision 129, for job C**: the run before a sign-off reruns only what changed and carries
+  the rest forward; `--clean` reruns everything; the sign-off stays strict; Windows and slow
+  results carry forward by the same rule. Read it in `three-levels.md`.
 - The owner starts Claude with `--plugin-dir` pointing at this checkout; nothing is installed.
 
 ## How the owner works
@@ -129,11 +134,46 @@ lane/stale main`, and merge it with `--no-ff` only after job A has ended.
    'cost_usd|total_cost|how many (model|AI) calls|one model call' -- . ':!dev/plans'
    ':!.purlin'` empty.
 
+## Job C: build decision 129
+
+Work in a worktree, `git worktree add /Users/richlabarca/LocalCode/purlin-wt/smart-run -b
+lane/smart-run main`, by the lane brief of section 3 of `dev/plans/d126-plan.md` (read it before
+job B deletes that file, or from `git show main:dev/plans/d126-plan.md`), with `smart-run` as
+the lane and `dev/plans/smart-run-report.md` as the report. Job B and job C own different files:
+C owns `scripts/run/`, `scripts/mcp/purlin/`, `scripts/review/sign.py`,
+`scripts/export/package.py`, `specs/run/`, `specs/mcp/`, `specs/review/signatures.md`,
+`specs/export/`, their tests, `references/formats/evidence_format.md` and `package_format.md`,
+`references/evidence_and_signoff.md`, `docs/running-and-evidence.md`, `docs/sign-off.md`,
+`skills/test/SKILL.md`, `skills/sign/SKILL.md`; B touches none of those but to delete what is
+stale in them, which it asks C's report about first.
+
+1. Read how a run decides what to rerun today (`scripts/mcp/purlin/fingerprint.py`'s
+   `selection`), how a result is recorded (`scripts/run/evidence.py`), and what the sign-off
+   refuses (`scripts/review/sign.py`'s `refusal`, `scripts/mcp/purlin/facts.py`'s
+   `results_to_retake`).
+2. Build the decision: under `--all`, a feature whose fingerprint matches its newest section
+   for that system is not run; its results are recorded again in a section on this commit,
+   marked as carried forward with the commit, the machine and the time they were taken. A
+   section from another system is carried forward the same way, into that system's section.
+   Anchors always rerun. A slow proof's result carries like any other. `--clean` reruns every
+   test, as `--all` does today. The sign-off's refusal is unchanged, and a carried section on
+   this commit counts. The run prints one line naming how many features it ran and how many it
+   carried forward; choose its words and report them.
+3. The evidence and package formats gain the carried-forward fields: bump each
+   `> Format-Version:` in the same commit as the code. The status, the dashboard's rule page and
+   the sign-off's overview say, where a result was carried, from which commit; choose the words.
+4. Each fix starts from a test that fails first, on sample projects. Then show it on this
+   repository in the worktree: commit a change to a note under `dev/plans/`, run
+   `--test --all --commit`, and report how long it took, what it ran, what it carried, and that
+   `sign.py --show` then does not refuse on the results.
+5. Acceptance: `bash dev/run_tests.sh` with 0 failed. Report as the brief says.
+
 ## Then, on `main`
 
-1. Merge job B. `bash dev/run_tests.sh` to 0 failed.
-2. `python3 scripts/run/purlin_run.py --test --all --commit --project-root .` to every marker
-   tied and no test comment to correct; `python3 dev/windows_run.py`.
+1. Merge job C, then job B. `bash dev/run_tests.sh` to 0 failed.
+2. `python3 scripts/run/purlin_run.py --test --all --commit --clean --project-root .` to every
+   marker tied and no test comment to correct; `python3 dev/windows_run.py`. Then commit one
+   note and run `--test --all --commit` without `--clean`, to see the smart run carry the rest.
 3. **Check that nothing blocks a sign-off**:
    `python3 scripts/review/sign.py --show --project-root .` must not refuse. It signs nothing.
    On 2026-10-03 it refused only because results were taken before the last commits; the
@@ -149,6 +189,8 @@ lane/stale main`, and merge it with `--no-ff` only after job A has ended.
   place it left the intended path; what you recommend changing, as questions for the owner.
 - Job B: every file deleted and every line changed, grouped; what you asked and the answers;
   what you left and why.
+- Job C: what was built, the lines chosen, the format versions, and the smart run on this
+  repository: what it ran, what it carried, how long.
 - The numbers: the sweep, the full run, Windows, and what `sign.py --show` printed.
 - What is left for the owner: reading the docs and the reworded proofs, the pre-signing
   re-audit of the out-of-date specs, then `purlin:sign`, the tag and the pushes.
