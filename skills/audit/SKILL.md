@@ -70,7 +70,7 @@ them and what the model is sent. Its section "Settling a finding" is the one hom
 `--settle` does.
 
 The run writes each feature's section and its `audit` into `.purlin/evidence/local/<feature>.json`
-and prints `Evidence written to .purlin/evidence/local/<feature>.json.` It commits nothing unless
+and prints `Evidence written to .purlin/evidence/local/<feature>.json.` It commits no result unless
 you add `--commit`, which commits under your own identity, and it never pushes.
 
 The exit codes are in `references/purlin_commands.md`, "Exit codes": those of a test run, and
