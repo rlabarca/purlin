@@ -188,7 +188,7 @@ step:
 | `Left to do:` and its lines | `→ Run: <the command on its first line>` |
 | A line `<feature> RULE-<n> fails: ...` above the status | `→ Run: purlin:build <feature>` (fix the code or the test) |
 | `<n> features whose results are not committed: purlin:test --commit` | `→ Run: purlin:test --commit` |
-| `Every rule passes its tests on the committed evidence. To sign it: purlin:sign` | `→ Run: purlin:sign`, when a person chooses to sign |
+| `Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign` | Nothing is left to do, so print no `→ Run:` line. A sign-off is optional: run `purlin:sign` only when a person asks for one |
 | `Every rule passes its tests on the committed evidence. Before a sign-off, run <command>: ...` | `→ Run: <command>`, as Step 1 passes it. `purlin:sign` refuses these results as they stand |
 
 Diagnose a failure first: `references/spec_quality_guide.md` says which part is at fault.

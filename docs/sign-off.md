@@ -74,8 +74,8 @@ was taken at. [The run before a sign-off](running-and-evidence.md#the-run-before
 says which features run.
 
 That commit is ready for sign-off. The status reads `Tests: met` and ends on
-`Every rule passes its tests on the committed evidence. To sign it: purlin:sign`. The developer
-pushes the branch, and the signer pulls it.
+`Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign`.
+The developer pushes the branch, and the signer pulls it.
 
 ## purlin:sign
 

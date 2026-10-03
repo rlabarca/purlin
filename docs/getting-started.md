@@ -152,7 +152,7 @@ cart  3      3       3 of 3
 ───────────────────────────
 
 3 rules. 3 pass their tests.
-Every rule passes its tests on the committed evidence. To sign it: purlin:sign
+Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign
 ```
 
 Where the first run recognises no test tool, it prints:
@@ -169,8 +169,8 @@ name is read from `pyproject.toml`, `package.json` or a `.csproj` file, then fro
 name, then from the folder's.
 
 - `Tests: met` means every rule's tests pass on the committed evidence.
-- `Sign-off: not signed` means nobody has signed this code. The last line names the command
-  that does.
+- `Sign-off: not signed` means nobody has signed this code. Signing is optional. The last
+  line names the command that does it.
 - `3 rules. 3 pass their tests.` says how many rules there are and how many passed their
   tests.
 

@@ -80,7 +80,7 @@ Coming from 0.9.5? See [docs/upgrading.md](docs/upgrading.md).
    ───────────────────────────
 
    3 rules. 3 pass their tests.
-   Every rule passes its tests on the committed evidence. To sign it: purlin:sign
+   Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign
    ```
 
 4. **Read it.** When a test fails, the run names the rule and the test. Here it is the test of

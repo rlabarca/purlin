@@ -39,8 +39,8 @@ SECURITY_ANCHOR = (
     '# Anchor: security\n\n'
     '## Rules\n\n- RULE-1: No eval anywhere\n\n'
     '## Proof\n\n- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\n')
-LAST_LINE = ('Every rule passes its tests on the committed evidence. To sign '
-             'it: purlin:sign')
+SIGN_OPTIONAL = ('Every rule passes its tests on the committed evidence. Optional: '
+             'sign this version with purlin:sign')
 # The last line where `purlin:sign` would refuse the results as they stand:
 # the run to make first, and why.
 OPENS = 'Every rule passes its tests on the committed evidence. '
@@ -280,7 +280,7 @@ class TestAHandCheckInTheSentence:
             made.close()
         assert lines[1] == 'Tests: met', lines
         assert 'Left to do:' not in lines, lines
-        assert lines[-1] == LAST_LINE, lines
+        assert lines[-1] == SIGN_OPTIONAL, lines
 
 # ---------------------------------------------------------------------------
 # Left to do
@@ -467,7 +467,7 @@ class TestWhatLetsTheTestsBeMet:
             lines = _status(made)
         finally:
             made.close()
-        assert lines[-1] == LAST_LINE, lines
+        assert lines[-1] == SIGN_OPTIONAL, lines
         assert lines[-2] == '2 rules. 2 pass their tests.', lines
 
 
@@ -525,7 +525,7 @@ class TestTheLastLineAgreesWithTheSignOff:
             refused = _refusal(made)
         finally:
             made.close()
-        assert lines[-1] == LAST_LINE, lines
+        assert lines[-1] == SIGN_OPTIONAL, lines
         assert not refused.startswith((NOT_THIS_CODE, TAKEN_DIRTY)), refused
 
     # purlin: summary PROOF-66
@@ -544,7 +544,7 @@ class TestTheLastLineAgreesWithTheSignOff:
         finally:
             made.close()
         assert lines[1] == 'Tests: met', lines
-        assert lines[-1] == LAST_LINE, lines
+        assert lines[-1] == SIGN_OPTIONAL, lines
         assert not refused.startswith(NOT_THIS_CODE), refused
 
     # purlin: summary PROOF-67

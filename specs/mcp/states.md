@@ -117,7 +117,7 @@
 - PROOF-238 (RULE-119): The feature `login` of 11 passing rules sits beside the anchor `security` of 8 passing rules; `login`'s row reads `11` under `Rules` and `11 of 11` under `Tests`
 - PROOF-84 (RULE-48): With nothing run, a test file holds a test marked for `PROOF-1` and none marked for `PROOF-2`; the feature's rollup and the project summary each read `proofs_without_test` 1 and `proofs_without_test_ids` exactly `PROOF-2`, `RULE-1`'s passed cell reads `not run` and `RULE-2`'s reads `no test`
 - PROOF-31 (RULE-27): The payload reads `schema_version` 16 and carries exactly the seventeen top-level keys the rule names beside it, with `generated_at` ending in `Z`
-- PROOF-98 (RULE-81): Over two rules whose tests pass on committed evidence, with no `signed/*` tag, `left` is empty, `met` is true and `last_line` reads `Every rule passes its tests on the committed evidence. To sign it: purlin:sign`
+- PROOF-98 (RULE-81): Over two rules whose tests pass on committed evidence, with no `signed/*` tag, `left` is empty, `met` is true and `last_line` reads `Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign`
 - PROOF-213 (RULE-81): Of 2 rules one passes its test and one has no test. `sync_status` ends on `2 rules. 1 passes its tests.`, `Left to do:`, `1 rule to write a test for: purlin:build`; the dashboard data counts 2 rules, 1 passing, and that one line
 - PROOF-128 (RULE-28): With an uncommitted local section from `linux`, `login` reads `current` true, and `evidence.local` names `.purlin/evidence/local/login.json`, `committed` false, and the one platform `linux` with its commit, its time and `current` true
 - PROOF-129 (RULE-28): Once that local section is committed, `evidence.local` reads `committed` true

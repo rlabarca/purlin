@@ -43,8 +43,8 @@ SECURITY_ANCHOR = (
 PASSING = [{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'},
            {'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}]
 
-LAST_LINE = ('Every rule passes its tests on the committed evidence. To sign '
-             'it: purlin:sign')
+SIGN_OPTIONAL = ('Every rule passes its tests on the committed evidence. Optional: '
+             'sign this version with purlin:sign')
 
 
 def _dashboard_data(root):
@@ -926,7 +926,7 @@ class TestPayload:
         assert data['left'] == [], data['left']
         assert data['met'] is True, data
         assert data['signoff']['word'] == 'not signed', data['signoff']
-        assert data['last_line'] == LAST_LINE, data['last_line']
+        assert data['last_line'] == SIGN_OPTIONAL, data['last_line']
 
     # purlin: states PROOF-213
     def test_the_status_text_and_the_dashboard_data_carry_one_answer(

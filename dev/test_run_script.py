@@ -1128,8 +1128,8 @@ class TestARunCoversWhatTheChangeTouched:
         assert {name: _file(root, '.purlin/evidence/local/%s.json' % name)
                 for name in ('login', 'export')} == before
         assert [line for line in output.splitlines() if line.strip()][-1] == (
-            'Every rule passes its tests on the committed evidence. To sign '
-            'it: purlin:sign'), output
+            'Every rule passes its tests on the committed evidence. Optional: '
+            'sign this version with purlin:sign'), output
 
     # purlin: run_script PROOF-96
     def test_commit_with_nothing_to_run_commits_the_last_run(self, tmp_path):
@@ -1425,7 +1425,7 @@ class TestNoTestCommand:
         code, output = _run(root, '--test', '--commit')
         assert output.splitlines()[-1] == (
             'Every rule passes its tests on the committed evidence. '
-            'To sign it: purlin:sign'), output
+            'Optional: sign this version with purlin:sign'), output
         assert code == 0, output
 
     # purlin: run_script PROOF-325

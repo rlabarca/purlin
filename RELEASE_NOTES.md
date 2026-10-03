@@ -63,7 +63,7 @@ In more words:
   `Left to do`, one line per kind of remaining work with its count and the command that does it,
   such as `3 rules to fix: purlin:build`. The first line is the next step. A project whose tests
   are met and whose code is not signed ends on
-  `Every rule passes its tests on the committed evidence. To sign it: purlin:sign`.
+  `Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign`.
 - **Evidence in the repository.** Every run writes `.purlin/evidence/local/<feature>.json`, one
   file per feature with one section per operating system. Nothing is committed unless you pass
   `--commit`, which makes two commits: the specs, the marked tests and the settings the results

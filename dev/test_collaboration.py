@@ -38,8 +38,8 @@ TAG = 'signed/' + VERSION
 PACKAGE = '.purlin/evidence/package/%s.json' % VERSION
 SIGNOFFS = '.purlin/evidence/package/%s.signoffs' % VERSION
 SUGGESTED = 'Suggested tests setting: '
-LAST_LINE = ('Every rule passes its tests on the committed evidence. To sign '
-             'it: purlin:sign')
+LAST_LINE = ('Every rule passes its tests on the committed evidence. Optional: '
+             'sign this version with purlin:sign')
 NO_KEY = 'No key to sign with. These commands set one up:'
 HAND_CHECK = 'sample_age RULE-3'
 
@@ -590,7 +590,7 @@ def test_three_people_reach_a_signed_version(tmp_path):
     # 8. Quinn signs: the walk shown, a key set up as printed, the hand check
     #    answered with nothing, and the push the sign-off names.
     quinn.git('pull', '-q', '--no-edit', 'origin', 'main')
-    given(status, 'To sign it: purlin:sign')
+    given(status, 'Optional: sign this version with purlin:sign')
     given(skill('sign'), 'scripts/review/sign.py" --show',
           'scripts/review/sign.py" --answers .purlin/runtime/'
           'signoff-answers.json')

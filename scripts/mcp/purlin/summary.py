@@ -38,9 +38,10 @@ tests read `met` beside them.
       2 rules to strengthen: purlin:build
 
 Where the tests are met and this code is not signed, the last line names the
-sign-off: `Every rule passes its tests on the committed evidence. To sign it:
-purlin:sign`. Where `purlin:sign` would refuse those results as they stand,
-the line names the run to make first and why (`closing_line`):
+sign-off as a choice: `Every rule passes its tests on the committed evidence.
+Optional: sign this version with purlin:sign`. Where `purlin:sign` would
+refuse those results as they stand, the line names the run to make first and
+why (`closing_line`):
 
     Every rule passes its tests on the committed evidence. Before a sign-off, run purlin:test --all --commit: a sign-off counts only results recorded on this version of the code.
 
@@ -109,7 +110,7 @@ AUDIT_FOUND = 'The audit found %s.'
 # The sentence's third part, where a passed cell reads `checked at sign-off`.
 BY_HAND_ONE = '1 is checked at sign-off.'
 BY_HAND_MANY = '%d are checked at sign-off.'
-LAST_LINE = 'Every rule passes its tests on the committed evidence. To sign it: purlin:sign'
+LAST_LINE = 'Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign'
 # The last line where the sign-off would refuse the results as they stand:
 # the run to make first, then why. `%s` is `run_again`'s commands.
 LAST_LINE_RUN_FIRST = ('Every rule passes its tests on the committed evidence. Before a '
