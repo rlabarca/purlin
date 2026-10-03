@@ -357,32 +357,32 @@ The branch was then deleted. Nothing from it is on the lane.
 
 Each is a line that still says the old thing.
 
-- `references/purlin_commands.md:21`: `- \`purlin:test --all\` starts every test, slow ones
-  included.` should read `- \`purlin:test --all\` covers every feature: it starts every test,
+- `references/purlin_commands.md:21`: `- `purlin:test --all` starts every test, slow ones
+  included.` should read `- `purlin:test --all` covers every feature: it starts every test,
   slow ones included, of each feature that changed or does not pass and of every anchor, and
   carries every other feature's results forward.`
 - `references/purlin_commands.md:134`: `purlin:test --all  The same, for every feature, slow
   proofs included` should read `The same, for every feature: what changed runs, the rest is
   carried forward`, with a line `purlin:test --clean  Run every test of every feature` after
   it. The `purlin:test` row of "What each command writes" should add `and, under --all, each
-  section it carries forward, under \`ci/\` too`.
+  section it carries forward, under `ci/` too`.
 - `README.md:135`: the syntax should read `[--all | --clean]`.
 - `references/glossary.md:114`: the entry `kept` should become `carried`: `a result an earlier
   run took and a later run recorded again on its own commit; it counts like any other and
   names the commit it was taken at`.
 - `references/commit_conventions.md:163`: `taken on this version of the code` should read
   `recorded on this version of the code`.
-- `agents/purlin.md:63`: `\`purlin:test --all --commit\` runs every test` should read `runs
+- `agents/purlin.md:63`: ``purlin:test --all --commit` runs every test` should read `runs
   what changed and carries the rest forward`. Line 67: `refuses results not taken on` should
   read `refuses results not recorded on`.
 - `docs/getting-started.md:198`: the line should end `purlin:test --clean runs them anyway.`
-  Line 225: `\`purlin:test --all\` runs every feature, slow tests included` should read
+  Line 225: ``purlin:test --all` runs every feature, slow tests included` should read
   `covers every feature: it runs what changed and carries the rest forward`.
 - `docs/specs-and-anchors.md:206`: `It runs everything, slow tests included.` should read `It
   runs what changed, slow tests included, and carries the rest forward.` Line 222: the line
-  should end `purlin:test --all runs it when it is due.` Lines 238 to 240: `marked \`kept\``
-  should read `marked \`carried\``, and `The status counts it. The sign-off does not: it asks
-  for \`purlin:test --all --commit\`.` should read `It counts like any other result.`
+  should end `purlin:test --all runs it when it is due.` Lines 238 to 240: `marked `kept``
+  should read `marked `carried``, and `The status counts it. The sign-off does not: it asks
+  for `purlin:test --all --commit`.` should read `It counts like any other result.`
 - `skills/audit/SKILL.md:24`: `Run every feature` should read `Cover every feature as
   purlin:test --all does`.
 - `RELEASE_NOTES.md` lines 21, 32, 33, 79 and 107 describe `--all`, `kept` and the slow
