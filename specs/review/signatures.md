@@ -9,8 +9,8 @@
 >   package with it and writes the tag `signed/<version>`; later ones are added beside it.
 > Scope: scripts/mcp/purlin/signatures.py, scripts/review/sign.py, scripts/mcp/purlin/facts.py
 > Stack: python/stdlib (json, subprocess), git signed commits, SSH keys
-> Highest-Rule: 138
-> Highest-Proof: 280
+> Highest-Rule: 140
+> Highest-Proof: 289
 
 ## Rules
 
@@ -27,7 +27,7 @@
 - RULE-110: `--show` prints the run lines, the overview, the audit's findings and every stop, then `Answer each stop, then run purlin:sign --answers <file>.`, asks nothing, writes nothing and needs no key to sign with
 - RULE-111: `--answers FILE` walks with the answers the file gives, printing each after its question, refuses with nothing written when a stop has no answer, and signs only where the file's `sign` holds the signer's email address, as the last question names it
 - RULE-114: The walk stops only at hand checks, one stop each, by feature then rule number; a weak rule or one never audited adds no stop
-- RULE-115: Where the audit found any rule weak, the walk asks `The audit's findings: <n> weak. list / go on: `; `list` prints each weak rule with its findings, then asks `go on: `
+- RULE-115: Where the audit found any rule weak or a proof was settled with its test unchanged, the walk asks `The audit's findings: <counts>. list / go on: `, the counts `<n> weak`, then `1 proof settled with its test unchanged` or `<n> proofs settled with their tests unchanged`, each left out at zero and joined by `, `; `list` prints the list, then asks `go on: `
 - RULE-118: The first sign-off ends on `Push the branch and the tag: git push origin <branch> signed/<version>`, and a later one on `signed/<version> stays at <sha7>; this sign-off is added after it. Push it: git push origin <branch>`; on a detached `HEAD` the branch is left out
 - RULE-120: The first sign-off of a version is one signed commit, `sign(<version>): <email>`, carrying the package and its sign-off file, and `signed/<version>` is written on that commit; a later sign-off adds its own file alone and leaves the tag where it was
 - RULE-121: The sign-off fetches nothing and pushes nothing, and goes ahead when the checkout holds commits the host lacks
@@ -47,6 +47,8 @@
 - RULE-136: After the sign-off's commit is made the command reads the key that signed it, and where that is not the key `user.signingkey` names it takes the commit back, writes no tag, exits 1 and prints one line naming both keys and the usual cause
 - RULE-137: The command refuses while a tracked test still carries a marker from Purlin 0.9.5, as the status counts them: it prints the one line `No sign-off: <n> tests still carry a marker from Purlin 0.9.5, which is not read. Run purlin:status to see each, rewrite them, then purlin:sign.`, and for one `No sign-off: 1 test still carries a marker from Purlin 0.9.5, which is not read. Run purlin:status to see it, rewrite it, then purlin:sign.`, writes nothing and exits 1
 - RULE-138: That refusal comes before a version is read and before a key is looked for, and asks nothing; `--show` prints the same line and exits 1; `--check <file>` is not refused by it
+- RULE-139: Each proof the audit settled with its test unchanged is listed among the audit's findings, whatever its rule's verdict, as one line `<feature> <RULE-N>: <PROOF-N> was settled with its test unchanged: it was judged to assert what the proof names.`, after every weak rule's findings, in `--show` as in the walk; it adds no stop and refuses nothing
+- RULE-140: The sign-off records whether the list holding those lines was opened as `audit_list_opened`, and the package holds each such sentence under its rule's audit `no_bug`
 
 ## Proof
 
@@ -131,3 +133,12 @@
 - PROOF-278 (RULE-138): In a project that states no version, in a home and a checkout with no signing key, `tests/login.test.ts` holds three tests whose titles each carry a 0.9.5 tag; the walk prints only `No sign-off: 3 tests still carry a marker from Purlin 0.9.5, which is not read. Run purlin:status to see each, rewrite them, then purlin:sign.`, asks no question, adds no commit and exits 1
 - PROOF-279 (RULE-138): With committed evidence that passes and two tests whose titles each carry a 0.9.5 tag, `--show` prints only `No sign-off: 2 tests still carry a marker from Purlin 0.9.5, which is not read. Run purlin:status to see each, rewrite them, then purlin:sign.`, writes nothing and exits 1
 - PROOF-280 (RULE-138): After the first sign-off of `2.1.0`, a commit adds `tests/login.test.ts` with one test whose title carries a 0.9.5 tag, so `--show` prints that refusal; `--check .purlin/evidence/package/2.1.0.json` exits 0 and prints exactly `The package matches its fingerprint.`
+- PROOF-281 (RULE-115): `login RULE-1` reads `strong`, its one proof settled with its test unchanged, and no rule is weak; the walk asks `The audit's findings: 1 proof settled with its test unchanged. list / go on: `, then `Sign the evidence package for 2.1.0 as jane@acme.com? [y/N] ` and nothing else
+- PROOF-282 (RULE-115): Both rules of `login` read `strong`, each with its one proof settled with its test unchanged; the walk's first question is `The audit's findings: 2 proofs settled with their tests unchanged. list / go on: `
+- PROOF-283 (RULE-115): `login RULE-1` is audited weak and `login RULE-2` reads `strong` with `PROOF-2` settled with its test unchanged; the walk's first question is `The audit's findings: 1 weak, 1 proof settled with its test unchanged. list / go on: `
+- PROOF-284 (RULE-139): `login RULE-1` reads `strong` and its audit's `no_bug` holds `PROOF-1 was settled with its test unchanged: it was judged to assert what the proof names.`; answered `list`, the walk prints only `  login RULE-1: PROOF-1 was settled with its test unchanged: it was judged to assert what the proof names.`, then asks `go on: `
+- PROOF-285 (RULE-139): `login RULE-1` reads weak with the finding `PROOF-1 reads the status alone.`; `PROOF-2` of `login RULE-2` was settled with its test unchanged; answered `list`, the walk prints only `  login RULE-1   PROOF-1 reads the status alone.`, then `  login RULE-2: PROOF-2 was settled with its test unchanged: it was judged to assert what the proof names.`
+- PROOF-286 (RULE-139): With `login RULE-1` settled with its test unchanged and no hand check, the walk answered `list`, `go on` and `y` asks those three questions alone, exits 0 and makes the signed commit `sign(2.1.0): jane@acme.com` with `signed/2.1.0` on it
+- PROOF-287 (RULE-139): `login RULE-1` reads `spot-checked`, its `no_bug` holding `No bug was planted: the model could not be reached: claude exited with an error.`, and no rule is weak; the walk asks only `Sign the evidence package for 2.1.0 as jane@acme.com? [y/N] ` and prints no line holding `was settled`
+- PROOF-288 (RULE-139): With `login RULE-1` settled with its test unchanged, `--show` prints `The audit's findings: 1 proof settled with its test unchanged.`, on the next line `  login RULE-1: PROOF-1 was settled with its test unchanged: it was judged to assert what the proof names.`, and exits 0
+- PROOF-289 (RULE-140): With `login RULE-1` settled with its test unchanged, the walk answered `list`, `go on` and `y` signs; the sign-off records `audit_list_opened` true, and in the committed package `login RULE-1` reads `strong` and its `no_bug` is exactly `PROOF-1 was settled with its test unchanged: it was judged to assert what the proof names.`

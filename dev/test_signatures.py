@@ -17,6 +17,7 @@ What each group holds:
 *the refusals*   what stops a sign-off
 *the 0.9.5 markers*  no sign-off while a test still carries one
 *the walk*       the run lines, the overview, the audit's findings, the stops
+*settled by judgment*  a proof settled with its test unchanged, in the list
 *the sign-off*   the file, its commit, the tag, a second signer, a tag git
                  could not write
 *the key that signed*  a commit signed with another key than the one named
@@ -1215,6 +1216,166 @@ class TestTheWalk:
         assert lines[-1] == 'Nothing was signed.'
         assert (code, hand_checked.head(), status(hand_checked.root)) == (
             0, before, '')
+
+
+# ---------------------------------------------------------------------------
+# A proof settled with its test unchanged
+# ---------------------------------------------------------------------------
+
+# The sentence the audit stores under `no_bug` for a proof settled under
+# `--sound`, its test left as it was.
+JUDGED = ('%s was settled with its test unchanged: it was judged to assert '
+          'what the proof names.')
+JUDGED_ASK = "The audit's findings: %s. list / go on: "
+SIGN_QUESTION = 'Sign the evidence package for 2.1.0 as jane@acme.com? [y/N] '
+
+
+def judged(settled=('RULE-1',), weak=(), strong=()):
+    """`login` passing, each rule `settled` names reading `strong` with its
+    one proof settled with its test unchanged; `weak` and `strong` as `ready`
+    has them. Jane is ready to sign."""
+    made = Project(spec=SPEC)
+    write(os.path.join(made.root, 'VERSION'), VERSION + '\n')
+    commit_all(made, 'chore: version')
+    passing(made)
+    for rule in strong:
+        made.audit(rule)
+    for rule in weak:
+        made.audit(rule, findings=[FINDING.replace('PROOF-1', 'PROOF-%s'
+                                                   % rule[-1])])
+    for rule in settled:
+        made.audit(rule, no_bug=[JUDGED % ('PROOF-%s' % rule[-1])])
+    commit_all(made)
+    key(made.root)
+    return made
+
+
+def between_questions(made, answers):
+    """Walk with `answers`; `(exit, questions, lines printed between the
+    first two questions, every line)`."""
+    left, asked, marks, out = list(answers), [], [], _Out()
+
+    def ask(_kind, _key, prompt):
+        asked.append(prompt)
+        marks.append(len(out.text().splitlines()))
+        return left.pop(0) if left else None
+
+    code = sign_module.walk(made.root, None, ask=ask, out=out)
+    lines = out.text().splitlines()
+    shown = lines[marks[0]:marks[1]] if len(marks) > 1 else []
+    return code, asked, shown, lines
+
+
+class TestSettledByJudgment:
+
+    # purlin: signatures PROOF-281
+    def test_one_settled_proof_and_no_weak_rule_asks_the_question(self):
+        made = judged()
+        try:
+            asked = walked(made, ['go on', ''])[2]
+            assert asked == [
+                JUDGED_ASK % '1 proof settled with its test unchanged',
+                SIGN_QUESTION]
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-282
+    def test_two_settled_proofs_are_counted_together(self):
+        made = judged(settled=('RULE-1', 'RULE-2'))
+        try:
+            asked = walked(made, ['go on', ''])[2]
+            assert asked[0] == JUDGED_ASK % (
+                '2 proofs settled with their tests unchanged')
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-283
+    def test_a_weak_rule_and_a_settled_proof_are_counted_in_that_order(self):
+        made = judged(settled=('RULE-2',), weak=('RULE-1',))
+        try:
+            asked = walked(made, ['go on', ''])[2]
+            assert asked[0] == JUDGED_ASK % (
+                '1 weak, 1 proof settled with its test unchanged')
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-284
+    def test_list_prints_the_settled_proof_on_its_own_line(self):
+        made = judged()
+        try:
+            code, asked, shown, _lines = between_questions(made, ['list'])
+            assert asked[1] == 'go on: '
+            assert shown == ['  login RULE-1: %s' % (JUDGED % 'PROOF-1')]
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-285
+    def test_the_settled_line_follows_every_weak_finding(self):
+        made = judged(settled=('RULE-2',), weak=('RULE-1',))
+        try:
+            shown = between_questions(made, ['list'])[2]
+            assert shown == ['  login RULE-1   PROOF-1 reads the status alone.',
+                             '  login RULE-2: %s' % (JUDGED % 'PROOF-2')]
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-286
+    def test_a_settled_proof_adds_no_stop_and_refuses_nothing(self):
+        made = judged()
+        try:
+            before = made.head()
+            code, asked, _shown, lines = between_questions(
+                made, ['list', 'go on', 'y'])
+            assert asked == [JUDGED_ASK % '1 proof settled with its test unchanged',
+                             'go on: ', SIGN_QUESTION]
+            assert code == 0
+            assert lines[-2] == 'Tagged signed/2.1.0 at %s.' % made.head()[:7]
+            assert git(made.root, 'log', '-1', '--format=%s').stdout.strip() \
+                == 'sign(2.1.0): jane@acme.com'
+            assert made.head() != before
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-287
+    def test_another_no_bug_sentence_is_not_listed(self):
+        made = judged(settled=())
+        try:
+            made.audit('RULE-1', word='spot-checked', no_bug=[
+                'No bug was planted: the model could not be reached: claude '
+                'exited with an error.'])
+            commit_all(made)
+            code, lines, asked = walked(made, [''])
+            assert asked == [SIGN_QUESTION]
+            assert not [line for line in lines if 'was settled' in line]
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-288
+    def test_show_prints_the_settled_line_under_the_findings(self, capsys):
+        made = judged()
+        try:
+            code, lines = run_main(made, capsys, ['--show'])
+            at = lines.index("The audit's findings: 1 proof settled with its "
+                             "test unchanged.")
+            assert lines[at + 1] == '  login RULE-1: %s' % (JUDGED % 'PROOF-1')
+            assert code == 0
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-289
+    def test_the_sign_off_records_the_list_opened_and_the_package_the_line(
+            self):
+        made = judged()
+        try:
+            assert walked(made, ['list', 'go on', 'y'])[0] == 0
+            assert signed_off(made)['shown']['audit_list_opened'] is True
+            package = read_json(made.root, PACKAGE)
+            login = next(f for f in package['features'] if f['name'] == 'login')
+            rule = next(r for r in login['rules'] if r['id'] == 'RULE-1')
+            assert rule['statuses']['strong']['word'] == 'strong'
+            assert rule['audit']['no_bug'] == [JUDGED % 'PROOF-1']
+        finally:
+            made.close()
 
 
 # ---------------------------------------------------------------------------
