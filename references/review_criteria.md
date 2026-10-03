@@ -366,10 +366,10 @@ Where a settled rule needs no new bug, no model is asked. Its entry keeps the `m
 `criteria` of the entry it replaces and holds no `explanation`, since that reading was of the
 test as it was.
 
-Only `--settle` drops a recorded bug. An audit without it plants a recorded bug again where the
-code changed and the test is as it was, as "The planted bug" says, and the bug stays while the
-test still passes with it. For a proof whose test changed, that audit asks for a new bug, and a
-survivor reads `weak`.
+An audit without `--settle` plants a recorded bug again only where the code changed and the
+test is as it was, as "The planted bug" says, and the bug stays while the test still passes
+with it. For a proof whose test changed, that audit asks for a new bug, and a survivor reads
+`weak`.
 
 The audit checks that the test changed, not that the changed test asserts what its proof
 names; and under `--sound` it records the judgment and does not check it. A rule made `strong`
