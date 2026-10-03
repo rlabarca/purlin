@@ -13,7 +13,8 @@ audit reads (`ai_audit.is_read`, ai_audit RULE-1) it runs, in this order:
    (`targeted_break.break_proof`), one at a time. No bug is asked for an
    anchor's rule, a `@manual` proof or a proof tagged for a system this
    machine is not; a proof whose `break_key` is unchanged keeps its last
-   result (ai_audit RULE-36).
+   result (ai_audit RULE-36), and a bug that survived is planted again
+   before a new one is asked for, where its proof's tests are as they were.
 
 A rule reads `weak` when a spot test fires on one of its tests or a planted
 bug survived, which adds the change and the model's case to its findings
@@ -45,6 +46,14 @@ its entry holds `test_unchanged` and `no_bug` gains `UNCHANGED`. A bug recorded
 as `survived` holds `test_key`, the hash of its proof's tests' source, which
 is what tells a changed test from changed code. `references/review_criteria.md`,
 "Settling a finding", is the one home of that contract.
+
+An audit without `--settle` plants a bug that survived again as well, where
+the feature's code changed and the proof's tests are as they were when the bug
+got past them (`bug_plan`, `replayed`). The tests still pass: the bug stays
+`survived` and the audit prints `STILL_PASSES`. They fail or do not run: the
+entry reads `caught` or `not run`, as in a settle. The change can no longer be
+planted: a new bug is asked for. A bug whose proof's tests changed is not
+planted again: a new bug is asked for.
 
 A project file that changes between the first model call and the last planted
 bug stops the run before anything is written (planted_bug RULE-6).
@@ -119,6 +128,11 @@ UNCHANGED = ('%s was settled with its test unchanged: it was judged to assert '
 NOT_SETTLED = ('%s %s is not a proof of a rule named with --settle. Run '
                'purlin:status %s to see its rules.')
 NO_SURVIVOR = '%s %s has no planted bug that survived: nothing to settle.'
+
+# An audit without `--settle` and a bug that survived, planted again with its
+# proof's tests as they were: printed under the rule and not stored. PROOF-N.
+STILL_PASSES = ('%s: its test is as it was and still passes with the bug it '
+                'missed. Strengthen it with purlin:build.')
 
 # The language a test file is read in, for a spot test that cannot read it.
 LANGUAGES = (
@@ -346,7 +360,13 @@ def bug_plan(reading, last, code_part, here=None, settle=False, sound=()):
     result is `kept` only where its `break_key` is unchanged. A result taken on
     another test or code is left out, as a proof with no result on record
     is, so the entry holds none for it and the next audit plants a bug for
-    that proof (`ai_audit.is_read`)."""
+    that proof (`ai_audit.is_read`).
+
+    Without `settle` a proof whose last result reads `survived`, whose
+    `break_key` changed and whose tests are as they were when the bug got past
+    them is `again`, with that result and the key: the feature's code changed
+    and the test did not, so the recorded bug is planted again before any new
+    one is asked for."""
     here = here or evidence_reader.host_os()
     kept_breaks = last.get('breaks') if isinstance(last.get('breaks'),
                                                    dict) else {}
@@ -380,6 +400,9 @@ def bug_plan(reading, last, code_part, here=None, settle=False, sound=()):
             if kept.get('result') == 'survived':
                 kept = _with_test_key(kept, tests)
             plan.append((proof['id'], 'kept', kept))
+        elif (isinstance(kept, dict) and kept.get('result') == 'survived'
+              and test_as_it_was(kept, tests, key, last)):
+            plan.append((proof['id'], 'again', (kept, key)))
         else:
             plan.append((proof['id'], 'plant', key))
     return plan
@@ -418,11 +441,12 @@ def no_bug_sentence(proof_id, made, cause=None, last=None):
 
 
 def replayed(project_root, reading, plan, scope_files):
-    """`(plan, said, unchanged)` for a rule being settled, once each bug its
-    entry keeps as `survived` has been planted again and its proof's tests run
-    as they stand. No model is asked. A `refused` proof is planted nothing: it
-    reads `kept`, its bug still `survived`, and `said` holds `REFUSED` for it.
-    In the plan handed back each `replay` reads:
+    """`(plan, said, unchanged)` for one rule, once each bug of the plan that
+    is to be planted again, a settle's `replay` or any other audit's `again`,
+    has been planted and its proof's tests run as they stand. No model is
+    asked. A `refused` proof is planted nothing: it reads `kept`, its bug
+    still `survived`, and `said` holds `REFUSED` for it. In the plan handed
+    back each `replay` reads:
 
     `kept`     the test failed, so the bug's entry reads `caught`, with the
                change as it was recorded and the key of the test and code
@@ -431,6 +455,12 @@ def replayed(project_root, reading, plan, scope_files):
                to be asked for, with the key and the line that says so
     `plant`    the recorded change can no longer be planted: a new bug is to
                be asked for, as any audit asks
+
+    An `again` reads the same but where the test still passes: its tests are
+    as they were, so the bug is not dropped. It reads `held`, with the entry,
+    still `survived`, at the line the change now stands at and with the key
+    of the test and code now, and that run's finding; `said` holds
+    `STILL_PASSES` for it.
 
     `said` is `{proof: line}`, what the audit prints under the rule, and
     `unchanged` the proofs settled with their tests as they were, which
@@ -441,10 +471,11 @@ def replayed(project_root, reading, plan, scope_files):
             settled.append((proof_id, 'kept', value))
             said[proof_id] = REFUSED % proof_id
             continue
-        if what != 'replay':
+        if what not in ('replay', 'again'):
             settled.append((proof_id, what, value))
             continue
-        kept, key, same = value
+        kept, key = value[0], value[1]
+        same = what == 'replay' and value[2]
         if same:
             unchanged.add(proof_id)
         result = targeted_break.replay(
@@ -459,6 +490,11 @@ def replayed(project_root, reading, plan, scope_files):
                 why=result.get('why') or '', break_key=key), same)))
             if ran == 'caught':
                 said[proof_id] = NOW_CATCHES % place
+        elif ran == 'survived' and what == 'again':
+            settled.append((proof_id, 'held', (
+                dict(kept, line=result.get('line'), break_key=key),
+                result.get('finding'))))
+            said[proof_id] = STILL_PASSES % proof_id
         elif ran == 'survived':
             settled.append((proof_id, 'second', (key, DROPPED % place)))
         else:
@@ -478,6 +514,9 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
     `no_bug` one sentence for each proof no bug was caught for. A proof the
     model could not be reached for, or that is tagged for another system, has
     no entry under `breaks`, so the first is asked for again.
+
+    A `held` proof of the plan is one whose kept bug was planted again and
+    still survives: its entry and its two findings are kept.
 
     A `second` proof of the plan is one whose kept bug a settle dropped: its
     new bug is planted as any is, and one that survives too is not kept, the
@@ -516,6 +555,10 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
             note(no_bug_sentence(proof_id, value, last=last))
             if value.get('test_unchanged'):
                 note(UNCHANGED % proof_id)
+        elif what == 'held':
+            breaks[proof_id] = value[0]
+            findings.extend(survived_findings(proof_id, value[0], last,
+                                              value[1]))
         elif answer.get('why'):
             if what == 'second':
                 said[proof_id] = value[1]
@@ -673,12 +716,11 @@ def run(project_root, features, selected, again=False, out=None, settle=None,
     try:
         before = targeted_break.snapshot(project_root) if done else None
         for item in done:
-            if settle:
-                # Each kept bug planted again, before any model is asked.
-                item['plan'], item['said'], item['unchanged'] = replayed(
-                    project_root, item['reading'], item['plan'],
-                    item['scope_files'])
-                targeted_break.check_unchanged(project_root, before)
+            # Each kept bug planted again, before any model is asked.
+            item['plan'], item['said'], item['unchanged'] = replayed(
+                project_root, item['reading'], item['plan'],
+                item['scope_files'])
+            targeted_break.check_unchanged(project_root, before)
             reading = item['reading']
             reading['plant'] = [proof for proof, what, _value in item['plan']
                                 if what in ('plant', 'second')]

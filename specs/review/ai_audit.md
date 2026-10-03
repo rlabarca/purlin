@@ -13,11 +13,14 @@
 >   runs the proof's test as it stands: a test that now fails makes the bug `caught`, and one
 >   that still passes drops the bug and has one new bug planted in its place. A settle is
 >   refused for a proof whose test is as it was when its bug got past it, unless `--sound` names
->   the proof, and the evidence then records that the test was not changed.
+>   the proof, and the evidence then records that the test was not changed. An audit without
+>   `--settle` plants a bug that survived again before it asks for a new one, where the code
+>   changed and the proof's test did not: while that test still passes with it, the bug stays
+>   and the rule reads `weak`.
 > Scope: scripts/review/audit_run.py, scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
-> Highest-Rule: 72
-> Highest-Proof: 179
+> Highest-Rule: 76
+> Highest-Proof: 186
 
 ## Rules
 
@@ -57,7 +60,7 @@
 - RULE-61: Settling a rule leaves a proof whose result is not `survived`, and whose test and code are unchanged since that result, with the entry it has
 - RULE-62: A rule named with `--settle` that keeps no bug as `survived` prints `<feature> <RULE-N> has no planted bug that survived: nothing to settle.`, and its entry is left as it is
 - RULE-63: A rule named with `--settle` whose tests do not pass is not settled: its entry is left as it is, and the run exits 1 and names the rule as failing
-- RULE-64: Only `--settle` plants a recorded bug again: any other audit asks the model for a new bug for a proof whose test changed
+- RULE-64: An audit without `--settle` plants no recorded bug again for a proof whose test changed since the bug got past it: the model is asked for a new bug for that proof
 - RULE-65: Settling a rule keeps no result other than `survived` that was taken on another test or code: the proof is left out of the rule's entry, the rule's verdict comes from the results the entry holds, and the next audit without `--settle` plants a bug for that proof
 - RULE-66: Settling a rule runs the spot tests again over the rule's tests, and a finding of theirs makes the rule `weak` as in any audit
 - RULE-67: A settled rule that needs no new bug is written with no model asked: its entry holds no `explanation` and keeps the `model` and the `criteria` of the entry it replaces
@@ -66,6 +69,10 @@
 - RULE-70: `--sound` is refused before a test starts: without `--settle` with exit 2; with exit 1 for a proof of no rule `--settle` names, with `<feature> <PROOF-N> is not a proof of a rule named with --settle. Run purlin:status <feature> to see its rules.`, and for a proof that keeps no bug as `survived`, with `<feature> <PROOF-N> has no planted bug that survived: nothing to settle.`
 - RULE-71: A bug recorded as `survived` holds `test_key`, the sha256 of its proof's own tests as the audit reads them, and no other result holds one; a `survived` bug recorded without it reads as unchanged only while its `break_key` is the current one or the rule's entry is not out of date on its tests
 - RULE-72: `--sound` naming a proof whose tests did change records nothing: the settle goes on as any settle does
+- RULE-73: An audit without `--settle` plants again each bug a rule it reads keeps as `survived` whose proof's own tests are as they were when the bug got past them and whose feature's code changed since, runs those tests as they stand, and asks the model for no bug for that proof
+- RULE-74: Where the proof's tests still pass with the bug planted again, the bug still reads `survived`, at the line its change now stands at, its two findings stay, the rule reads `weak`, the audit prints under the rule `  <PROOF-N>: its test is as it was and still passes with the bug it missed. Strengthen it with purlin:build.`, and a later audit with nothing changed does not plant it again
+- RULE-75: Where the proof's tests fail with the bug planted again, the bug's entry reads `caught` with the same `file`, `before`, `after`, `aim` and `case`, its two findings leave the rule, and the audit prints under the rule `  <PROOF-N>: the test now catches the bug it missed at <file>:<line>.`; where they do not run with it, the entry reads `not run`
+- RULE-76: Where the bug's recorded change can no longer be planted, the model is asked for one new bug for that proof in the rule's request, as for any proof whose code changed
 
 ## Proof
 
@@ -177,3 +184,10 @@
 - PROOF-177 (RULE-71): The sample lab project is audited; the entry of `PROOF-5`, whose bug reads `survived`, holds a `test_key` of 64 hexadecimal characters, and the entry of `PROOF-6`, whose bug reads `caught`, holds none
 - PROOF-178 (RULE-71): The entry of `PROOF-5` reads `survived` and holds no `test_key`, as an earlier audit wrote it, and nothing has changed since; `RULE-3` is named with `--settle`; the first line under the rule is `  PROOF-5: its test is as it was when the bug got past it. Strengthen it with purlin:build, then settle.`, and `claude` is started `0` times
 - PROOF-179 (RULE-71): The entry of `PROOF-5` reads `survived` and holds no `test_key`; the test of `PROOF-5` is changed to expect `25` and `RULE-3` is settled; the audit prints `  PROOF-5: the test now catches the bug it missed at src/intake.py:17.`, and `RULE-3` reads `strong`
+- PROOF-180 (RULE-73): The bug kept for `PROOF-5` reads `survived`; `src/intake.py` is changed to refuse a site that is not three capital letters, every test left as it was, and `sample_intake` is audited without `--settle`; the request for `RULE-3` asks for no bug, and the entry of `PROOF-5` still holds `return int(round(seconds / 3600))` and reads `survived`
+- PROOF-181 (RULE-74): The code of `sample_intake` changed and the test of `PROOF-5`, whose bug survived, did not; audited without `--settle`, the audit prints `sample_intake RULE-3   weak` and, first under it, `  PROOF-5: its test is as it was and still passes with the bug it missed. Strengthen it with purlin:build.`
+- PROOF-182 (RULE-74): The change to `src/intake.py` adds one line above the helper, whose bug for `PROOF-5` stood at line 17; after the audit without `--settle`, the two findings of `RULE-3` are `PROOF-5: the test still passes when src/intake.py:18 reads "return int(round(seconds / 3600))"` and the line opening `PROOF-5: the AI says this breaks: `
+- PROOF-183 (RULE-75): `intake` is changed to work out the age without the helper, so the test of `PROOF-5`, left as it was, fails with the bug kept for it; audited without `--settle`, the entry of `PROOF-5` reads `caught`, `RULE-3` reads `strong`, and the one line under it is `  PROOF-5: the test now catches the bug it missed at src/intake.py:17.`
+- PROOF-184 (RULE-75): `src/intake.py` is changed to check its helper as it loads, so the test of `PROOF-5`, left as it was, cannot be collected with the bug kept for it; audited without `--settle`, the entry of `PROOF-5` reads `not run`, and `no_bug` is exactly `A bug was planted for PROOF-5 and its test did not run.`
+- PROOF-185 (RULE-76): The helper's line `return int(seconds // 3600)`, which the bug kept for `PROOF-5` changes, is written as two lines, the test left as it was, and `sample_intake` is audited without `--settle`; `claude` is asked a bug for `PROOF-5`, and its bug `hours = seconds // 3600 + 1` reads `survived`
+- PROOF-186 (RULE-74): The bug kept for `PROOF-5` was planted again by an audit without `--settle` and still survived; every rule is then read again with nothing changed; the lines under `sample_intake RULE-3   weak` are the bug's two findings and no other, and the entry of `PROOF-5` is as it was

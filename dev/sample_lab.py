@@ -35,7 +35,10 @@ leaves a bug kept as `survived` for `PROOF-7` and `PROOF-11` as well, and
 `BOTH_OF_RULE_4_SURVIVE` one that leaves one for `PROOF-6` too, so `RULE-4`
 holds two. `sound` names the proofs handed to `--sound`: a settle is refused
 for a proof whose test is as it was when its bug got past it, unless the
-proof is named there.
+proof is named there. With no rule named the run is a plain audit:
+`refuse_a_bad_site`, `work_out_the_age_inline` and `check_the_helper_on_load`
+each change the code and leave every test as it was, which is where that
+audit plants a bug that survived again.
 """
 
 import io
@@ -531,6 +534,48 @@ def strengthen_without_test_key(root):
     """`without_test_key`, then `strengthen`."""
     without_test_key(root)
     strengthen(root)
+
+
+# A defect fixed elsewhere in the code file: a site that is not three capital
+# letters is refused. The helper moves one line down, and the lines the bugs
+# on record change stand as they were.
+SITE_PATTERN = "SITE = re.compile(r'^[A-Z]{3}$')\n"
+SITE_CHECK = ("        if not SITE.match(site):\n"
+              "            raise IntakeError('site %s is not three capital "
+              "letters' % site)\n")
+THE_AGE = '        age = age_hours(collected, received)\n'
+THE_AGE_INLINE = ('        age = int((received - collected).total_seconds() '
+                  '// 3600)\n')
+# The module checks its own helper as it loads, so a bug in the helper stops
+# the test file from being collected.
+CHECKED_ON_LOAD = (
+    "\n\nif age_hours(at('2026-03-01T08:00'), at('2026-03-02T09:30')) != 25:\n"
+    "    raise RuntimeError('the age helper is wrong')\n")
+
+
+def refuse_a_bad_site(root):
+    """Change `src/intake.py` to refuse a site that is not three capital
+    letters, and leave every test as it is."""
+    _replace(root, 'src/intake.py', 'MAX_AGE_HOURS = 72\n',
+             SITE_PATTERN + 'MAX_AGE_HOURS = 72\n')
+    _replace(root, 'src/intake.py', '        if received < collected:\n',
+             SITE_CHECK + '        if received < collected:\n')
+
+
+def work_out_the_age_inline(root):
+    """Change `intake` to work out the age itself, without the helper, and
+    leave every test as it is: the test of `PROOF-5` still takes its expected
+    age from the helper, so a bug in the helper now fails it."""
+    _replace(root, 'src/intake.py', THE_AGE, THE_AGE_INLINE)
+
+
+def check_the_helper_on_load(root):
+    """Change `src/intake.py` to check its helper as it loads, and leave
+    every test as it is: with a bug in the helper the module cannot be
+    loaded, so the test of `PROOF-5` does not run."""
+    path = os.path.join(root, 'src', 'intake.py')
+    with open(path, 'a', encoding='utf-8') as handle:
+        handle.write(CHECKED_ON_LOAD)
 
 
 def scope_without_the_code(root):
