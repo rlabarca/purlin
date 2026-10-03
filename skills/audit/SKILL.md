@@ -21,7 +21,7 @@ follow `references/purlin_commands.md#pending-migrations` before doing this skil
 ```
 purlin:audit                    Run what the change touched, audit, write the evidence
 purlin:audit <feature> [...]    One feature, or several
-purlin:audit --all              Run every feature, and read every passing rule again
+purlin:audit --all              Cover every feature as purlin:test --all does, and read every passing rule again
 purlin:audit --commit           Commit the work and the evidence the run wrote
 purlin:audit --arm-timeout <seconds>  Give each suite, and each planted bug's test run, longer
 purlin:audit <feature> RULE-N --settle  Plant each bug that survived again, and run its proof's test

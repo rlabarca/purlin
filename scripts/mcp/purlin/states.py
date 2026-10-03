@@ -157,16 +157,6 @@ NO_PROOF_REASON = 'the rule has a test and no proof'
 BUCKETS = ('untested', 'failing', 'partial', 'by_hand', 'passed')
 
 
-def cells_for():
-    """The cells every rule carries, `passed` first."""
-    return CELLS
-
-
-def bucket_keys():
-    """The bucket names a rollup counts."""
-    return list(BUCKETS)
-
-
 def rule_cells(inp):
     """The cells, the bucket and the flags of one rule.
 

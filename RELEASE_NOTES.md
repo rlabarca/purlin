@@ -16,9 +16,9 @@ a test is any test in your own suite with one comment above it.
 
 - **Two facts, no gate.** The status and the dashboard say whether the tests are met on the committed evidence, and whether this code is signed.
 - **The hand-off is run and commit**: purlin:test --all --commit, and your project's own run for any other system.
-- **purlin:sign builds the evidence package and signs it**, at any time, in any project; it stops only at hand checks, whose note is optional, and refuses results not taken on this code.
+- **purlin:sign builds the evidence package and signs it**, at any time, in any project; it stops only at hand checks, whose note is optional, and refuses results not recorded on this code.
 - **An anchor rule with nothing to check passes, and says so.**
-- **Slow proofs.** Tag a proof `@slow` and `purlin:test` never starts its test; `purlin:test --all` runs everything. Until it has passed, the status lists it: `1 slow proof to run: purlin:test --all`.
+- **Slow proofs.** Tag a proof `@slow` and `purlin:test` never starts its test; `purlin:test --all` runs it when it is due. Until it has passed, the status lists it: `1 slow proof to run: purlin:test --all`.
 - **A test comment whose proof was reworded is caught** until the test changes.
 - **The audit runs heuristic spot tests, then plants one bug per changed proof** in a copy of the project and sees whether the proof's own test catches it; it reports the share of rules it found strong. Run it by hand; nothing blocks on it. The audit aims each planted bug past its proof's test, and shows the case the AI says a surviving bug breaks.
 - **The audit says how far it got.** `strong`: the spot tests found nothing and a planted bug
@@ -29,8 +29,10 @@ a test is any test in your own suite with one comment above it.
   tools, no plugins and none of your settings.
 - **The status reads `signed` only where a sign-off counts.** A tag written by hand, an edited
   package and a sign-off changed after its commit each read `not signed`.
-- **A slow result must be taken on the version being signed.** A plain run marks an earlier
-  slow pass `kept`; `purlin:sign` asks for `purlin:test --all --commit`.
+- **The run before a sign-off reruns only what changed.** `purlin:test --all --commit` runs each
+  feature that changed and every anchor, and records every other result again on its commit,
+  marked `carried` with the commit and machine it was taken on. `purlin:test --clean` runs every
+  test. The sign-off counts only results recorded on the commit it signs.
 - **A changed test command ends the results**, as a changed file does.
 - **The evidence package records who wrote and last changed each rule, proof and test**, from git.
 - **The dashboard names the branch and commit its data describes**, and its page is written with its data.
@@ -46,7 +48,7 @@ a test is any test in your own suite with one comment above it.
 - **Four questions are asked by the scripts themselves**: before setup commits its files, before
   renumbering, before the `tests` setting is written, and before signing.
 - **Cut:** drift's role views, setup's questions but one, and most settings.
-- **The formats** stand at spec 24, anchor 12, evidence 14, signature 16, package 14 and marker 5,
+- **The formats** stand at spec 24, anchor 12, evidence 15, signature 16, package 15 and marker 5,
   the drift criteria at 14, and the dashboard's data at schema 16.
 
 In more words:
@@ -76,7 +78,7 @@ In more words:
 - **A run covers what the change touched.** `purlin:test` with no feature named runs only the
   features that are out of date or have no run on this operating system, and prints what it
   selected and why, `Selected 2 of 34 features: login (code changed since a1b2c3d), invoice (no
-  run on macOS yet).` `purlin:test --all` runs everything.
+  run on macOS yet).` `purlin:test --all` covers every feature, and `purlin:test --clean` runs every test.
 - **The audit.** `purlin:audit` runs the tests, then for each rule that passes: six heuristic
   spot tests that read each test as text, with no model; the model asked for a small bug for
   each proof whose test or covered code changed and for its reading; and each bug
@@ -103,8 +105,8 @@ In more words:
   carries on. `purlin:sign --show` and `--answers <file>` let the agent walk it with you,
   `--version <version>` names the version, and `--check <file>` checks a package against its
   fingerprint.
-- **The sign-off refuses results not taken on this code.** Uncommitted work, evidence not
-  committed, a result taken before the code last changed, a slow result kept from an earlier run, a package
+- **The sign-off refuses results not recorded on this code.** Uncommitted work, evidence not
+  committed, a result recorded before the code last changed, a package
   changed after it was signed, a rule that does not pass, a broken
   spec, or the branch's copy on the host holding commits the checkout lacks: each prints one line
   naming the command, and nothing is written. What the audit found and a rule with no proof are

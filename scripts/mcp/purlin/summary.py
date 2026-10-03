@@ -88,8 +88,6 @@ KINDS = (
      'purlin:build'),
 )
 
-KIND_NAMES = tuple(kind[0] for kind in KINDS)
-
 # The kinds that stop the tests being met. A rule with no proof line, or one
 # the audit found weak, still lets them read `met`.
 BLOCKING = ('to_repair', 'to_correct', 'to_fix', 'no_test', 'to_test',

@@ -195,7 +195,7 @@ commit the last run saw: `Selected 1 of 1 feature: cart (code changed since <sha
 once more with nothing changed and it runs nothing. The status follows, as after every run:
 
 ```text
-Nothing to run: every feature's spec, code and tests match its evidence. purlin:test --all runs them anyway.
+Nothing to run: every feature's spec, code and tests match its evidence. purlin:test --clean runs them anyway.
 
 Purlin status: shop, plugin 0.10.0
 Tests: not met
@@ -222,7 +222,8 @@ That is the whole loop: a rule, a test, and whether the test passed over the cod
 - `purlin:build <name>` writes the code and the tests, or marks a test you already have.
 - `purlin:test` runs what changed: the features whose spec, code or tests changed since their
   last run, and those with no run on this operating system. `purlin:test <feature>` runs one
-  feature. `purlin:test --all` runs every feature, slow tests included.
+  feature. `purlin:test --all` covers every feature: it runs what changed, slow tests
+  included, and carries the rest forward.
 - `purlin:audit` asks whether the tests would catch a bug, when you want to know.
 
 A run writes `.purlin/evidence/local/<feature>.json`: what the run saw for each rule on this

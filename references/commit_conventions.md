@@ -160,7 +160,7 @@ Review:
 | The spec is agreed | The spec file | It is the contract the build reads |
 | The build is stable | Code, tests, and the changeset in the body | Half a feature is not a milestone |
 | A run you want to keep, with `--commit` | The work the results describe, then the evidence, alone | The evidence names the commit the tests ran against |
-| The work is ready for a sign-off | The same two commits, by `purlin:test --all --commit` | A sign-off counts only results taken on this version of the code |
+| The work is ready for a sign-off | The same two commits, by `purlin:test --all --commit` | A sign-off counts only results recorded on this version of the code |
 | A sign-off walk ended with yes | The sign-off, signed, in one commit, with the package where it is the version's first | One person's signature over one package |
 | A pin advanced | The anchor spec | Staleness is read from the committed pin |
 

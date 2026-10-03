@@ -209,11 +209,6 @@ class Suite(object):
     def matches(self, path):
         return any(glob_match(path, pattern) for pattern in self.files)
 
-    def as_dict(self):
-        return {'name': self.name, 'run': self.run, 'report': self.report,
-                'format': self.format, 'files': list(self.files)}
-
-
 # What a file read with no suite set belongs to: no command runs it, and its
 # markers tie to the next test declared after them.
 NO_SUITE = Suite('', '', None, 'junit', [])

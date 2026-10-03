@@ -18,7 +18,9 @@ the `git push origin` command, and pushing is your act.
 - `purlin:test`, with or without a feature named, never starts the test of a slow proof, one
   tagged `@slow`. It prints `Left out <n> slow proofs`, naming each, and keeps the result a slow
   proof already has while that result still counts.
-- `purlin:test --all` starts every test, slow ones included.
+- `purlin:test --all` covers every feature: it starts every test, slow ones included, of each
+  feature that changed or does not pass and of every anchor, and carries every other feature's
+  results forward.
 - `purlin:test --clean` starts every test of every feature, slow ones included, and carries no
   result forward.
 - A test that also carries the comment of a proof that is not slow is started all the same. So
@@ -131,7 +133,8 @@ Purlin
   purlin:build [name]             Write a spec's code and its marked tests
   purlin:test                     Run the features the change touched, write the evidence
   purlin:test <feature> [...]     The same, for the features named
-  purlin:test --all               The same, for every feature, slow proofs included
+  purlin:test --all               The same, for every feature: what changed runs, the rest is carried forward
+  purlin:test --clean             Run every test of every feature
   purlin:test --commit            The same, then commit the work and the evidence
   purlin:test --all --commit      The hand-off: every feature, and the results committed
 
@@ -190,7 +193,7 @@ Purlin
 |---------|---|---|---|
 | `scripts/run/purlin_run.py --test`, `--audit` | everything asked happened | a tied test failed or did not run; evidence is missing; a marker names nothing a spec has; a spec under `specs/` writes a number twice or holds a line left from a merge conflict, after every test ran; no settings file; the settings file cannot be read; a project set up by 0.9.5 and not upgraded; no test command; for `--audit`, a file of the project changed while the audit ran. A weak or unaudited rule never exits 1, and neither does a test comment to correct | a bad command line |
 | `scripts/run/purlin_run.py --ci` | the tests tied to the proofs tagged for this machine's system passed | one of those failed or could not run, and nothing else | a bad command line |
-| `scripts/review/sign.py` | signed, shown, checked and matching, stopped, or answered no | a refusal: tracked files changed and not committed, evidence not committed, a test still carrying a marker from Purlin 0.9.5, no version, a tag of the version's name that `purlin:sign` did not write, the version's tag on a commit this checkout does not hold or on other code, results not taken on this version of the code, results taken while files were changed and not committed, a rule with no test, a rule that does not pass, the branch's copy on the host holding commits HEAD lacks, the signer has already signed, the committed package not matching its fingerprint, a stop with no answer in the answers file, or a commit signed with another key than the one the checkout names; no key; the package was not written; the commit was not made; git could not write the tag; `--check` did not match | a bad command line |
+| `scripts/review/sign.py` | signed, shown, checked and matching, stopped, or answered no | a refusal: tracked files changed and not committed, evidence not committed, a test still carrying a marker from Purlin 0.9.5, no version, a tag of the version's name that `purlin:sign` did not write, the version's tag on a commit this checkout does not hold or on other code, results not recorded on this version of the code, results taken while files were changed and not committed, a rule with no test, a rule that does not pass, the branch's copy on the host holding commits HEAD lacks, the signer has already signed, the committed package not matching its fingerprint, a stop with no answer in the answers file, or a commit signed with another key than the one the checkout names; no key; the package was not written; the commit was not made; git could not write the tag; `--check` did not match | a bad command line |
 | `scripts/review/ai_audit.py` | a rule was printed | the rule is not in the project; the settings file cannot be read | a bad command line |
 | `scripts/init/scaffold.py` | set up | the settings file cannot be read | a bad command line, not a git repository, or no such project root |
 | `scripts/init/update.py` | nothing pending, or applied | the settings file cannot be read | no project, a name after `--apply` that is no migration, or a `--test-command` not written `<tool>=<command>` |

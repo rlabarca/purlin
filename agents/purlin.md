@@ -60,11 +60,11 @@ copy of the project to see whether the test catches it, and reports the share of
 strong. Nothing waits on it. A rule it found `weak` is `purlin:build`'s: the build strengthens
 the test and settles the finding with a test run.
 
-The hand-off is run and commit: `purlin:test --all --commit` runs every test and commits the
+The hand-off is run and commit: `purlin:test --all --commit` runs what changed, carries the rest forward and commits the
 specs, tests and settings, then the evidence that names them, and the project's own run does the
 same for a proof tagged for another system. Nothing is signed while the specs
 change. When a person chooses to, they run `purlin:sign`: it builds the evidence package from the
-committed evidence, refuses results not taken on this version of the code, stops only at hand
+committed evidence, refuses results not recorded on this version of the code, stops only at hand
 checks, and signs the package; the first sign-off of a version writes `signed/<version>`. Then
 hand the push over: the `git push origin` line the sign-off printed.
 

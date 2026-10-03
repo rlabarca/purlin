@@ -111,8 +111,8 @@ other page points here rather than defining it again.
 - **strong**: the spot tests found nothing and a planted bug was caught by its proof's test.
 - **spot-checked**: the spot tests found nothing and no bug was planted and caught; the audit
   entry says why.
-- **kept**: a slow proof's result a plain run carried over from an earlier run; the status
-  counts it and the sign-off does not.
+- **carried**: a result an earlier run took and a later run recorded again on its own commit; it
+  counts like any other and names the commit it was taken at.
 - **waiting**: the word the strong cell
   reads while the passed cell is not met, `waiting for its tests to pass`. It is not `weak`.
 - **hand check**: a proof marked `@manual`, which no test runs. A rule checked by hand alone

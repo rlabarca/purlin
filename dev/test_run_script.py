@@ -301,20 +301,6 @@ class TestAProjectWithNoMarker:
 class TestLoudFailureB:
     """A marker sits in a test source and this run produced no entry for it."""
 
-    @staticmethod
-    def _beside_a_passing_test(tmp_path, second, extra=''):
-        """A passing test marked PROOF-1, then `second` from line 7 on."""
-        root = _pytest_project(tmp_path, body=(
-            'import pytest\n\n'
-            '# purlin: feat PROOF-1\n'
-            'def test_ok():\n'
-            '    assert True\n\n' + second))
-        if extra:
-            _config(root, tests=[suites.pytest_suite(extra=extra)])
-        _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ''),
-                                    ('PROOF-2', 'RULE-1', '')))
-        return _run(root, '--all', '--test')
-
     # purlin: run_script PROOF-244
     def test_one_marker_with_no_result_names_the_check_to_make(
             self, tmp_path):

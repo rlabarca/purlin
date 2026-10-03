@@ -185,13 +185,6 @@ def check_pin(project_root, source_url, pinned, cache=None):
 _ABSOLUTE_WINDOWS_PATH = re.compile(r'^(?:[A-Za-z]:[\\/]|\\\\[^\\/])')
 
 
-def _looks_like_git(url):
-    return (url.startswith('git@') or url.endswith('.git')
-            or 'github.com' in url or 'gitlab.com' in url
-            or url.startswith('/') or url.startswith('.')
-            or bool(_ABSOLUTE_WINDOWS_PATH.match(url)))
-
-
 def _ls_remote(project_root, url):
     try:
         result = subprocess.run(

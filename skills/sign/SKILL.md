@@ -5,7 +5,7 @@ description: "Sign off a version: build the evidence package from the committed 
 
 Sign this version of the code. `purlin:sign` reads the committed evidence, builds the evidence
 package `.purlin/evidence/package/<version>.json`, walks it with the person, stopping only at
-hand checks, and on their yes adds their sign-off over the package in one signed commit. Any
+hand checks, and when they confirm adds their sign-off over the package in one signed commit. Any
 project may run it, at any time. The first sign-off of a version writes the signed tag
 `signed/<version>`, as `references/evidence_and_signoff.md` defines it. Several people may sign
 the same package.

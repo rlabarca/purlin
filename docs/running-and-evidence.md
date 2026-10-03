@@ -136,8 +136,6 @@ the ones the `files` patterns of the `tests` setting match, after the `Markers:`
 A project with one feature and three marked tests, run with `--all --commit`, reads:
 
 ```
-Selected 1 of 1 feature: cart (no run on macOS yet).
-
 Running pytest: python3 -m pytest tests/test_cart.py --junitxml=.purlin/runtime/reports/pytest.xml
 
 Markers: 3 tied to a test, 0 not tied.

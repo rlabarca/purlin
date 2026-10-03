@@ -203,7 +203,7 @@ project.
 |---|---|
 | Mark it once | Add `@slow` to the end of a proof whose tests take a long time, like integration tests and acceptance tests. |
 | `purlin:test` | While you build. It runs what changed and skips every slow test, with a feature named or not. |
-| `purlin:test --all` | When you want to check the whole project. It runs everything, slow tests included. |
+| `purlin:test --all` | When you want to check the whole project. It runs what changed, slow tests included, and carries the rest forward. |
 | Purlin remembers it | When a slow test is due, every status says so: `1 slow proof to run: purlin:test --all` |
 
 ```
@@ -219,7 +219,7 @@ every build run, and `purlin:test --all --commit`, the hand-off before a sign-of
 A `purlin:test` that skipped the checkout test says so before it runs anything:
 
 ```
-Left out 1 slow proof: checkout PROOF-4. purlin:test --all runs it too.
+Left out 1 slow proof: checkout PROOF-4. purlin:test --all runs it when it is due.
 ```
 
 Until the slow test has passed, its proof reads `not run`, with the reason
@@ -235,9 +235,8 @@ committed evidence. So `purlin:test --all --commit` is the run a developer makes
 a version over.
 
 Once a slow test has passed, a plain `purlin:test` leaves its result alone, and it keeps
-counting. A slow result a plain run kept is marked `kept` in the evidence, with the commit, the
-time, the machine and the person of the run that took it. The status counts it. The sign-off
-does not: it asks for `purlin:test --all --commit`. When a file the spec covers changes, the result goes out of date as any other does.
+counting. A slow result a plain run carried is marked `carried` in the evidence, with the commit, the
+time, the machine and the person of the run that took it. It counts like any other result. When a file the spec covers changes, the result goes out of date as any other does.
 The proof reads `not run` again and the status lists it. A person who never knew the test
 existed is told when it is due and which command runs it.
 

@@ -1102,11 +1102,6 @@ def working_tree_dirty(project_root):
 # The evidence
 # ---------------------------------------------------------------------------
 
-def machine_name():
-    """What a section names the machine it ran on, under every action: the
-    host's name, `unknown` where it has none."""
-    return platform.node() or 'unknown'
-
 
 def build_sections(project_root, args, features, selected, index, os_name,
                    commit, proofs=None):
@@ -1121,7 +1116,7 @@ def build_sections(project_root, args, features, selected, index, os_name,
     dirty = working_tree_dirty(project_root)
     runner = runner_name(project_root)
     markers = fingerprint_module.marker_index(project_root)
-    machine = machine_name()
+    machine = evidence_writer.local_machine()
     sections = {}
     for name in selected:
         info = features.get(name) or {}

@@ -94,25 +94,6 @@ def evidence_path(source, feature):
     return '%s/%s/%s.json' % (EVIDENCE_DIR, source, feature)
 
 
-def feature_names(project_root):
-    """Every feature a file under `.purlin/evidence/` names, sorted.
-
-    A name is read off the file name in either source folder; whether the
-    file parses is `load`'s question.
-    """
-    names = set()
-    for source in SOURCES:
-        folder = os.path.join(project_root, *EVIDENCE_DIR.split('/'))
-        folder = os.path.join(folder, source)
-        try:
-            listed = os.listdir(folder)
-        except OSError:
-            continue
-        names.update(name[:-len('.json')] for name in listed
-                     if name.endswith('.json'))
-    return sorted(names)
-
-
 # The step that writes an ignored file again, by the folder it sits in.
 REWRITE_LOCAL = 'Run purlin:test %s to write it again.'
 REWRITE_CI = 'Start the run that wrote it again.'
