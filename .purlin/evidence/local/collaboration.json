@@ -2,8 +2,8 @@
   "feature": "collaboration",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T00:21:31Z",
-      "commit": "2ff057abecef1b2b174a471444b35e19dfb0c3bf",
+      "at": "2026-10-03T00:50:58Z",
+      "commit": "2261eb45317118cc0a5be95173a4eb4a065229c9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -17,13 +17,13 @@
           "env": null,
           "id": "PROOF-1",
           "manual": false,
-          "result": "not run",
+          "result": "pass",
           "rule": "RULE-1",
           "test": "dev/test_collaboration.py::test_three_people_reach_a_signed_version"
         }
       ],
       "rules": {
-        "RULE-1": "not run"
+        "RULE-1": "passed"
       },
       "runner": "rich-labarca"
     }
