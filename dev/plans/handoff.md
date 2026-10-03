@@ -58,7 +58,14 @@ and the two `qa/` branches.
 | | Result |
 |---|---|
 | `bash dev/run_tests.sh` | 1287 passed, 0 failed, 9 skipped; 4 suites passed, 0 failed |
+| `purlin_run.py --test --all --commit --clean` | 1291 markers tied, 0 not tied; 39 specs, 577 rules, every test run, about 17 minutes |
+| `python3 dev/windows_run.py` | ends `577 rules. 577 pass their tests.`, about 29 minutes |
 | The plan's grep for cost and counts of model calls | empty |
+
+The audit's results: `The audit found 15 of 569 rules strong (2%): 15 strong, 198 out of date,
+364 not audited.` This round changed the audit's code, the run's and the status's, so nearly
+every earlier result reads `out of date`; `specs` alone keeps its 6 strong. A plain audit of
+the specs brings them current.
 
 Formats: spec 24, anchor 12, marker 5, evidence 15, package 15, signature 16.
 The dashboard's data is schema 16.
