@@ -118,7 +118,8 @@ slide('start', 'Getting started', 'Start in under ten minutes', [
  'You need git, Python 3.9 or later and Claude Code. In the project: claude plugin marketplace add '
  'https://github.com/rlabarca/purlin.git --scope project, then claude plugin install purlin@purlin '
  '--scope project, then Claude Code is started there. The first test run '
- 'suggests the test command for the framework it finds, and you confirm it once.', pad=16)
+ 'suggests the test command for the framework it finds, and you confirm it once; your yes also '
+ 'commits the settings file.', pad=16)
 slide('fromcode', 'An existing codebase', 'Starting from code you already have', [
     ('Reads the code', 'It surveys the project and proposes a list of features. You merge, split and rename until the list is right.'),
     ('Writes the rules', 'One file per feature. Each rule says what the code does today, with a plain sentence saying how that is shown.'),
@@ -143,13 +144,14 @@ slide('together', 'Working together', 'Product, QA and developers improve the sp
 slide('slow', 'Slow tests', 'Slow tests stay out of your way', [
     ('Mark it once', 'Add %s to the end of a proof whose tests take a long time, like integration and acceptance tests.' % m('@slow')),
     ('`purlin:test`', 'While you build. It runs what changed and skips every slow test.'),
-    ('`purlin:test --all`', 'When you want to check the whole project. It runs everything, slow tests included.'),
+    ('`purlin:test --all`', 'When you want to check the whole project. It runs what changed, slow tests included, and carries the rest forward.'),
     ('Purlin remembers it', 'When a slow test is due, every status says so: %s' % m('1 slow proof to run: purlin:test --all')),
 ], '<b>Nothing to remember.</b> The tests are fully %s only after every slow test has passed.' % m('met'),
  'A slow proof is a proof like any other: one sentence saying how a rule is shown, and one test '
  'with a comment above it. The tag changes only when its test runs. A plain purlin:test, or one '
  'that names a feature, never starts it. purlin:test --all does, and that is the run a developer '
- 'makes and commits before handing a version over. Once a file the spec covers changes, the slow '
+ 'makes and commits before handing a version over. It reruns the features that changed and '
+ 'records every other result again as carried forward; purlin:test --clean runs every test. Once a file the spec covers changes, the slow '
  'proof reads not run and the status lists it, so a person who never knew the test existed is '
  'told when it is due and which command runs it. An anchor can use it too: a check across the '
  'whole project that takes minutes is tagged slow and stays out of every build run.',
@@ -169,7 +171,8 @@ slide('audit', 'Are the tests any good?', 'The audit: would your tests catch a b
  'and some rest on a strict reading of the proof. To settle one, run purlin:build: it writes the '
  'check the proof names and runs it against that bug. The check fails and the rule reads strong; '
  'the check passes and the audit plants one more, and if that one is wrong too the rule reads '
- 'spot-checked and nothing more is asked. Only proofs whose test or code changed since '
+ 'spot-checked and nothing more is asked. Auditing again does not clear a finding: while the test '
+ 'is as it was, the same bug is planted again first. Only proofs whose test or code changed since '
  'the last audit are tried again, so it stays fast, and nothing waits on it. The AI has no tools: '
  'it can read and change nothing. In one study a bug aimed past the tests found a real gap 87.7 '
  'percent of the time, against 12.2 percent for a bug written without seeing them (Kiele et al., '
@@ -177,14 +180,14 @@ slide('audit', 'Are the tests any good?', 'The audit: would your tests catch a b
  'page of the docs.',
  lead='A passing test is not proof that it checks anything. The audit tries to make each test fail.', width=560, pad=16)
 slide('signoff', 'The sign-off', 'When everyone is done, a person signs the evidence once', [
-    ('Run and commit', 'A developer runs every test on the version to sign, the run on Windows included, and commits the results.'),
+    ('Run and commit', 'A developer runs %s on the version to sign. It reruns what changed and carries the rest forward.' % m('purlin:test --all --commit')),
     ('`purlin:sign`', 'Opens with who ran the tests, where and when. Stops at each hand check, shows what the audit found, and asks for one signature.', [
         ('The package', 'One file: every rule, its proofs, its tests, the results, the audit, who wrote what. Each sign-off is a file beside it.'),
         ('The tag', 'The first sign-off tags the version %s. Later sign-offs are added beside it.' % m('signed/1.4.0'))]),
     ('`git push`', 'You publish the branch and the tag.'),
 ], '<b>Signing is optional.</b> A project that never signs keeps its evidence all the same.',
  'Any role may sign, and several people may; Purlin creates evidence and enforces no policy about '
- 'who. The sign-off refuses when a result was taken on other code than the version being signed, '
+ 'who. The sign-off refuses when a result is not recorded on the version being signed, '
  'while files are changed and not committed, or while a rule has no test, and names what to run. '
  'One signature covers the whole package, over its fingerprint, in a '
  'signed commit. The tag itself is signed.', pad=16)
@@ -199,8 +202,8 @@ slide('remote', 'Other platforms', 'What if you have to test other platforms?', 
  'for example a small script that pushes a branch, waits for the run and pulls the results. How a '
  'run starts is each project\'s choice. On another machine with another git host, you ask again '
  'and pick. The run on the other platform uses purlin:test, so each rule gets its own result '
- 'there, with the machine and the operating system recorded, and the sign-off counts it only when '
- 'it was taken on the version being signed.',
+ 'there, with the machine and the operating system recorded. A full run on your machine carries that result '
+ 'forward while nothing its feature covers changed.',
  lead='Purlin runs your tests where you are. Reaching another platform is your project\'s own setup, and Purlin keeps the evidence.')
 slide('regulated', 'Regulated work', 'Purlin supplies evidence. It does not claim compliance.', [
     ('Purlin produces', 'Evidence for each rule: its tests and their results, what the audit found, who wrote what, who ran the tests and who signed.'),
