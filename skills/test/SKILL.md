@@ -21,10 +21,11 @@ only on their answer. Never answer it yourself.
 
 ```
 purlin:test                     Run the features your change touched
-purlin:test --all               Run every feature, slow proofs included
+purlin:test --all               Cover every feature: run what changed, carry the rest forward
+purlin:test --clean             Run every test of every feature
 purlin:test <feature> [...]     Run one feature, or several
 purlin:test --commit            Commit the work and the evidence the run wrote
-purlin:test --all --commit      The hand-off: run every feature and commit the results
+purlin:test --all --commit      The hand-off: cover every feature and commit the results
 purlin:test --arm-timeout <seconds>  Give each suite longer than an hour
 ```
 
@@ -35,7 +36,8 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scrip
 ```
 
 Each option of `purlin:test` goes on that command line, before `--project-root`: `--all` for
-`purlin:test --all`, `--feature <name>` for each feature named, `--commit` for
+`purlin:test --all`, `--clean` for `purlin:test --clean`, `--feature <name>` for each feature
+named, `--commit` for
 `purlin:test --commit`, and `--arm-timeout <seconds>` when the person gave it. The hand-off,
 `purlin:test --all --commit`, is:
 
@@ -43,7 +45,17 @@ Each option of `purlin:test` goes on that command line, before `--project-root`:
 sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --test --all --commit --project-root .
 ```
 
-With neither `--all` nor a feature, the run selects a feature in any of these cases:
+With `--all` the run covers every feature. It runs each feature whose spec, code or tests
+changed since its results were taken, each whose results here are not all passes, and every
+anchor. It carries every other feature forward: no test of it runs, and its results are
+recorded again on this commit, each marked `carried` with the commit, the time, the machine and
+the person of the run that took it. A result from another system is carried the same way. The
+run then prints `Ran <suite> on <n> features and carried <k> forward. purlin:test --clean runs
+every test.`, and `Carried the <System> results of <n> features forward.` for each other
+system. `--clean` runs every test of every feature and carries nothing.
+`references/evidence_and_signoff.md` says when a carried result counts.
+
+With none of `--all`, `--clean` and a feature, the run selects a feature in any of these cases:
 
 - it has no run on this operating system;
 - its spec, code or tests changed since its evidence;
@@ -53,22 +65,21 @@ With neither `--all` nor a feature, the run selects a feature in any of these ca
 - its spec names no files.
 
 It runs only the test files carrying those features' markers: each suite of the `tests` setting
-gets them as its `{files}`, under `--all` too, and prints `Running <suite>: <the command as
-run>` as it starts. It first prints `Selected <n> of <m> features: login (code changed
-since a1b2c3d), ...`, the skipped ones ending `purlin:test --all runs them too.`, and a line per
+gets them as its `{files}`, under `--all` and `--clean` too, and prints `Running <suite>: <the
+command as run>` as it starts. It first prints `Selected <n> of <m> features: login (code changed
+since a1b2c3d), ...`, the skipped ones ending `purlin:test --clean runs them too.`, and a line per
 untracked file. With nothing selected it prints `Nothing to run: every feature's spec, code and
-tests match its evidence. purlin:test --all runs them anyway.` and exits 1 only where the
+tests match its evidence. purlin:test --clean runs them anyway.` and exits 1 only where the
 evidence holds a failing test. The status follows it, as after every run.
 
 A test file that carries no marker is never run, under `--all` too. A run with `--all` says how
 many the `files` patterns of the `tests` setting match: `12 test files carry no marker and were
 not run.`
 
-Without `--all` the run never starts a slow proof's test and prints `Left out <n> slow proofs`,
-naming each; `references/purlin_commands.md` says what each run starts, and the status then
-lists `<n> slow proofs to run: purlin:test --all`. A plain run keeps an earlier slow result
-while nothing its spec covers changed. The status counts it. The sign-off does not: run
-`purlin:test --all --commit` before `purlin:sign`.
+Without `--all` or `--clean` the run never starts a slow proof's test and prints `Left out <n>
+slow proofs`, naming each; `references/purlin_commands.md` says what each run starts, and the
+status then lists `<n> slow proofs to run: purlin:test --all`. A plain run keeps an earlier slow
+result while nothing its spec covers changed, marked `carried`, and it counts like any other.
 
 The exit codes are in `references/purlin_commands.md`, "Exit codes". A test comment to correct
 changes no exit code; it makes the tests read `not met`.
@@ -105,8 +116,8 @@ results taken with anything uncommitted. It never pushes. `references/commit_con
 says what each commit holds. `references/formats/evidence_format.md` is the contract for the file
 and for the lines the run prints.
 
-The tests read `met` only on committed evidence. A sign-off counts only results taken on this
-version of the code. So before a person signs, run `purlin:test --all --commit`. It runs every
+The tests read `met` only on committed evidence. A sign-off counts only results recorded on this
+version of the code. So before a person signs, run `purlin:test --all --commit`. It covers every
 feature on the code as committed, then commits the results.
 
 ## Step 4: read what the run found
@@ -116,7 +127,8 @@ The run prints, in this order:
 1. `Markers: <n> tied to a test, <k> not tied.`, and under `--all` the line
    `<n> test files carry no marker and were not run.` where there are any.
 2. Each test comment to correct.
-3. `Ran <suite> on <n> features.`
+3. `Ran <suite> on <n> features.`, ending ` and carried <k> forward. purlin:test --clean runs
+   every test.` where `--all` carried features forward.
 4. One line per rule that fails or has no test. It is one of:
    - `<feature> RULE-<n> fails: <file>::<test>. Run purlin:build <feature>.`
    - `<feature> RULE-<n> has no test. Run purlin:build <feature>.`

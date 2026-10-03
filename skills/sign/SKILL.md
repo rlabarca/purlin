@@ -53,13 +53,15 @@ Signing 0.1.0 at 1cf829e.
 The audit's findings: 1 weak.
 ```
 
-There is one `Tests run by` line per run the results come from, this machine's first. The audit's
+There is one `Tests run by` line per run the results come from, this machine's first. Results
+`purlin:test --all` carried forward have a line of their own, `Carried forward from earlier runs
+by <who> on <machine>, the newest at <time> on <sha7>: <n> rules on <System>.` The audit's
 line shows only where the audit read a rule.
 
 ## Step 2: the refusals
 
-Each is one line, nothing written, exit 1. The person signs results taken on this exact version
-of the code, so most name the run that takes them again:
+Each is one line, nothing written, exit 1. The person signs results recorded on this exact
+version of the code, so most name the run that records them:
 
 ```
 No sign-off: 2 files are changed and not committed. Commit them or set them aside, then run purlin:sign again.
@@ -68,7 +70,7 @@ No sign-off: 9 tests still carry a marker from Purlin 0.9.5, which is not read. 
 No sign-off: signed/2.1.0 names a commit that holds no evidence package for 2.1.0, so purlin:sign did not write it. Delete it: git tag -d signed/2.1.0, and git push origin --delete signed/2.1.0 if it was pushed. Then run purlin:sign again.
 No sign-off: signed/2.1.0 is at 3c9d2e1, which this checkout does not hold. Pull, then run purlin:sign.
 No sign-off: signed/2.1.0 is at 3c9d2e1, and the code has changed since. To sign this code, name a new version: purlin:sign --version <version>.
-No sign-off: these results were not taken on this version of the code, 8de0b6e: sample_age, stability on Linux/Unix; visit_window on Windows. Run purlin:test --all --commit and purlin:test on Windows, then purlin:sign.
+No sign-off: these results are not recorded on this version of the code, 8de0b6e: sample_age, stability on Linux/Unix; visit_window on Windows. Run purlin:test --all --commit and purlin:test on Windows, then purlin:sign.
 No sign-off: these results were taken while files were changed and not committed: sample_age on Linux/Unix. Run purlin:test --all --commit, then purlin:sign.
 No sign-off: 1 rule has no test at 8de0b6e: sample_age RULE-3. Run purlin:build sample_age, then purlin:sign.
 No sign-off: 1 rule does not pass at 8de0b6e: sample_age RULE-2. Run purlin:status to see what is left, then purlin:sign.
@@ -95,9 +97,9 @@ run the walk again.
   that command, and run it only on a yes.
 - The wrong-key line comes after the commit: the script reads the key that signed it, and takes
   the commit back where it is not the key this checkout names.
-- `purlin:test --all --commit` takes this machine's results again.
-- A slow result kept from an earlier run reads `not taken on this version of the code`. A slow
-  result must be taken on the version being signed, and `purlin:test --all --commit` takes it.
+- `purlin:test --all --commit` records this machine's results on this version: it runs what
+  changed and carries the rest forward. A carried result counts, a slow proof's included, and
+  the walk names the commit it was taken at.
 - A package that does not match its fingerprint was changed after it was signed.
 - `purlin:build <feature>` writes the test for a rule with no test.
 - `purlin:test on <System>` is an instruction, not a command line. For another system's results,

@@ -23,7 +23,8 @@ your machine.
 
 ```
 purlin:test                     Run the features your change touched
-purlin:test --all               Run every feature, slow tests included
+purlin:test --all               Cover every feature: run what changed, carry the rest forward
+purlin:test --clean             Run every test of every feature
 purlin:test <feature> [...]     Run one feature, or several
 purlin:test --commit            Commit the work and the evidence the run wrote
 purlin:test --arm-timeout <seconds>  Give each suite longer than an hour
@@ -68,27 +69,52 @@ Selected 1 of 1 feature: cart (no run on macOS yet).
 ```
 
 It names what it skipped on a line of its own, `Skipped <n> features whose spec, code and
-tests match their evidence: <names>. purlin:test --all runs them too.`, with ten names and a
+tests match their evidence: <names>. purlin:test --clean runs them too.`, with ten names and a
 count of the rest.
 
 With nothing selected the run prints `Nothing to run: every feature's spec, code and tests
-match its evidence. purlin:test --all runs them anyway.` It runs no test. It exits 1 only where
+match its evidence. purlin:test --clean runs them anyway.` It runs no test. It exits 1 only where
 the evidence it stands on holds a failing test.
 
 Every run hands each suite only the test files that carry the markers of the features it runs,
-and starts no suite that holds none. `--all` hands over every marked file.
+and starts no suite that holds none. `--clean` hands over every marked file.
 [supported_frameworks.md](../references/supported_frameworks.md#the-entry-suggested) gives the
 one exception, a file list too long for a command line.
 
 Where the `tests` setting changed since the evidence was taken, the run first prints
 `The tests setting changed, so every result is out of date.` The status prints it too.
 
-`purlin:test` skips every slow test. Only `--all` starts the test of a proof tagged `@slow`.
-Every other run lists it under `Left to do`, as
+`purlin:test` skips every slow test. Only `--all` and `--clean` start the test of a proof
+tagged `@slow`. Every other run lists it under `Left to do`, as
 [Slow proofs](specs-and-anchors.md#slow-proofs) says.
 
-A plain run keeps an earlier slow result while nothing its spec covers changed. The status
-counts it. The sign-off does not: run `purlin:test --all --commit` before `purlin:sign`.
+A plain run keeps an earlier slow result while nothing its spec covers changed, marked
+`carried` with the commit it was taken at. It counts like any other result.
+
+### The run before a sign-off
+
+`purlin:test --all --commit` covers every feature. It runs:
+
+- each feature whose spec, code or tests changed since its results were taken;
+- each feature whose results here are not all passes;
+- every anchor.
+
+It carries every other feature forward. None of its tests run. Its results are recorded again
+on this commit, each marked `carried` with the commit, the time, the machine and the person of
+the run that took it. A result from another system, such as Windows, is carried the same way,
+from whichever machine took it. So is a slow proof's result.
+
+The run says how many it ran and how many it carried:
+
+```
+Ran pytest on 3 features and carried 62 forward. purlin:test --clean runs every test.
+Carried the Windows results of 9 features forward.
+```
+
+A result from another system is carried only while nothing its feature covers changed. After a
+change, run the tests on that system again.
+
+`purlin:test --clean` runs every test of every feature and carries nothing.
 
 ### What a run prints
 
@@ -207,17 +233,17 @@ met. While a rule fails, has no test or waits for a run, the list names that wor
 Where the tests are met and this code is not signed, the run's last line reads
 `Every rule passes its tests on the committed evidence. To sign it: purlin:sign`.
 
-A sign-off counts only results taken on this version of the code, with nothing uncommitted.
+A sign-off counts only results recorded on this version of the code, with nothing uncommitted.
 Where every rule passes and some result is not one of those, the last line names the run to
 make first:
 
 ```
-Every rule passes its tests on the committed evidence. Before a sign-off, run purlin:test --all --commit: a sign-off counts only results taken on this version of the code.
+Every rule passes its tests on the committed evidence. Before a sign-off, run purlin:test --all --commit: a sign-off counts only results recorded on this version of the code.
 ```
 
 That happens after a commit that changes a file outside `.purlin/`, such as a `--commit` run
-of one feature, and for a slow result a plain run kept. Results from a project's own run on
-another system read `run purlin:test on Windows` in place of the command.
+of one feature. Results from a project's own run on another system read
+`run purlin:test on Windows` in place of the command.
 
 A test run exits on the tests alone:
 
@@ -330,7 +356,7 @@ Left to do:
 ```
 purlin:audit                    Run what the change touched, audit, write the evidence
 purlin:audit <feature> [...]    One feature, or several
-purlin:audit --all              Run every feature, and read every rule again
+purlin:audit --all              Cover every feature as purlin:test --all does, and read every rule again
 purlin:audit --commit           Commit the work and the evidence the run wrote
 purlin:audit --arm-timeout <seconds>  Give each suite, and each planted bug's run, longer
 purlin:audit <feature> RULE-N --settle  Plant each bug that survived again, and run its proof's test
@@ -536,8 +562,11 @@ result counts only when all three hold:
 
 - its section is current;
 - it was taken with no file changed and not committed;
-- it was taken on this version of the code: every commit from the one its tests ran at to
+- it is recorded on this version of the code: every commit from the one its section names to
   `HEAD` changes only files under `.purlin/` and leaves the `tests` setting as it was.
+
+A result `purlin:test --all` carried forward is recorded on this version, and says which
+commit it was taken at. A project tested in part is refused.
 
 So the developer's hand-off is run and commit:
 
@@ -545,9 +574,9 @@ So the developer's hand-off is run and commit:
 purlin:test --all --commit
 ```
 
-and your project's run on any other system a proof is tagged for. That commit is ready for
+and your project's run on any other system whose results changed. That commit is ready for
 `purlin:sign`. The sign-off reads the committed evidence and builds the evidence package,
-`.purlin/evidence/package/<version>.json`. Where a result was not taken on this code, it
+`.purlin/evidence/package/<version>.json`. Where a result is not recorded on this code, it
 refuses and names what to run again.
 
 [sign-off.md](sign-off.md) is the sign-off in full, and
@@ -642,7 +671,7 @@ It never pushes; the workflow's last step does. It exits 1 only when one of thos
 or could not run, and a failed run's results come back too. No audit runs there.
 
 The commit that comes back changes only files under `.purlin/` and leaves the `tests` setting
-as it was, so its results were taken on the same version of the code as yours, and both count
+as it was, so its results are recorded on the same version of the code as yours, and both count
 for a sign-off.
 
 ### Azure DevOps, or any other git host

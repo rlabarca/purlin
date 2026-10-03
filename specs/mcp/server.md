@@ -7,8 +7,8 @@
 >   that does not have the tools.
 > Scope: scripts/mcp/purlin/server.py, scripts/mcp/purlin/project.py, scripts/run/purlin_status.py, scripts/run/purlin_drift.py, .claude-plugin/plugin.json, scripts/purlin_python.sh
 > Stack: python/stdlib, json
-> Highest-Rule: 44
-> Highest-Proof: 185
+> Highest-Rule: 45
+> Highest-Proof: 188
 
 ## Rules
 
@@ -31,6 +31,7 @@
 - RULE-42: The spec's view opens on `<spec path>: <n> rules`, `1 rule` for one, then gives one line per rule in the order the spec writes them, `  <RULE-N>  <passed cell's word>  <strong cell's word>`, for an anchor as for a feature
 - RULE-43: Under a rule's line, each reason of a cell whose word is neither `passed`, `strong`, `not audited` nor `waiting` reads `    <the cell's word>: <reason>`, the passed cell's reasons first; a cell reading one of those four shows no reason, since none names work to do
 - RULE-44: After the reasons, each proof of the rule reads `    <PROOF-N>  <the proof's result>  <file>::<test name>`, each further test of the proof on a line of its own, set under the first; a proof with no test reads `    <PROOF-N>  <the proof's result>`; a rule no proof line names lists each test marked with its own id as `    <RULE-N>  <file>::<test name>`
+- RULE-45: Under the lines of a proof whose results a run carried forward, one line per operating system reads `      carried forward from <sha7> on <System>`, the first 7 characters of the commit the results were taken at and the system as `Linux/Unix`, `macOS` or `Windows`; a rule no proof line names gets the line under its own tests, and a proof whose own run took its results gets none
 
 ## Proof
 
@@ -75,3 +76,6 @@
 - PROOF-183 (RULE-44): In that `login`, `RULE-1`'s last line is `    PROOF-1  passed  tests/test_login.py::test_proof_1` and `RULE-2`'s is `    PROOF-2  no test`, the last line printed
 - PROOF-184 (RULE-44): `PROOF-1` is carried by `test_proof_1` and `test_proof_1_again`, both passing in a current section; the two lines under `  RULE-1  passed  not audited` are `    PROOF-1  passed  tests/test_login.py::test_proof_1` and `                     tests/test_login.py::test_proof_1_again`
 - PROOF-185 (RULE-44): `login` of 1 rule and no proof line, its test `test_rule_1` marked with `RULE-1` and passing in a current section; the last line printed is `    RULE-1  tests/test_login.py::test_rule_1`
+- PROOF-186 (RULE-45): `PROOF-1`'s one result, in this machine's current section, is marked carried from the commit `a1b2c3d4...`; the lines under `  RULE-1  passed  not audited` are `    PROOF-1  passed  tests/test_login.py::test_proof_1` and `      carried forward from a1b2c3d on <System>`, the system as `Linux/Unix`, `macOS` or `Windows`
+- PROOF-187 (RULE-45): `PROOF-1`'s test passed in a current section this machine's own run took; the spec's view holds no line with `carried forward`
+- PROOF-188 (RULE-45): `RULE-1` has no proof, and the one test marked with its id holds a result carried from the commit `a1b2c3d4...`; the view's last two lines are `    RULE-1  tests/test_login.py::test_rule_1` and `      carried forward from a1b2c3d on <System>`

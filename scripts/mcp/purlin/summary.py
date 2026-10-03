@@ -42,7 +42,7 @@ sign-off: `Every rule passes its tests on the committed evidence. To sign it:
 purlin:sign`. Where `purlin:sign` would refuse those results as they stand,
 the line names the run to make first and why (`closing_line`):
 
-    Every rule passes its tests on the committed evidence. Before a sign-off, run purlin:test --all --commit: a sign-off counts only results taken on this version of the code.
+    Every rule passes its tests on the committed evidence. Before a sign-off, run purlin:test --all --commit: a sign-off counts only results recorded on this version of the code.
 
 `payload.build_payload` is the one caller of `rule_kind`, `steps`,
 `sentence`, `left` and `last_line`; `status.sync_status` is the one caller of
@@ -115,8 +115,8 @@ LAST_LINE = 'Every rule passes its tests on the committed evidence. To sign it: 
 # The last line where the sign-off would refuse the results as they stand:
 # the run to make first, then why. `%s` is `run_again`'s commands.
 LAST_LINE_RUN_FIRST = ('Every rule passes its tests on the committed evidence. Before a '
-                       'sign-off, run %s: a sign-off counts only results taken on this '
-                       'version of the code.')
+                       'sign-off, run %s: a sign-off counts only results recorded on '
+                       'this version of the code.')
 LAST_LINE_RUN_CLEAN = ('Every rule passes its tests on the committed evidence. Before a '
                        'sign-off, run %s: a sign-off counts only results taken with '
                        'nothing uncommitted.')
@@ -427,7 +427,7 @@ def closing_line(last, retake):
     `facts.results_to_retake`'s. Any other line than `LAST_LINE` stays as it
     is, and so does `LAST_LINE` where nothing would be refused. Otherwise
     the line names the run to make before a sign-off: `LAST_LINE_RUN_FIRST`
-    for results taken on another version of the code, `LAST_LINE_RUN_CLEAN`
+    for results recorded on another version of the code, `LAST_LINE_RUN_CLEAN`
     for results taken while files were changed and not committed.
     """
     if last != LAST_LINE or not retake:

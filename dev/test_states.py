@@ -956,6 +956,24 @@ class TestPayload:
         for rule_id in ('RULE-1', 'RULE-2'):
             assert project.rule(rule_id)['machines'] == {'linux': 'build-7'}
 
+    # purlin: states PROOF-326
+    def test_a_proof_names_the_commit_its_results_were_carried_from(
+            self, project):
+        rel = project.evidence(PASSING, os_name='linux')
+        path = os.path.join(project.root, *rel.split('/'))
+        with open(path, encoding='utf-8') as handle:
+            data = json.load(handle)
+        taken_at = 'a1b2c3d4' * 5
+        first = data['platforms']['linux']['proofs'][0]
+        assert first['id'] == 'PROOF-1', first
+        first['carried'] = {'commit': taken_at, 'at': '2026-09-12T08:00:00Z',
+                            'machine': 'build-7',
+                            'email': 'runner@example.com'}
+        _write(path, json.dumps(data))
+        assert project.rule('RULE-1')['proofs'][0]['carried'] == {
+            'linux': taken_at}
+        assert project.rule('RULE-2')['proofs'][0]['carried'] == {}
+
     # purlin: states PROOF-271
     def test_a_project_in_work_named_by_pyproject_reads_labconnect(self):
         made = Project()

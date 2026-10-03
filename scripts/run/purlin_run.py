@@ -2,6 +2,8 @@
 
     purlin_run.py [--feature NAME ... | --all] (--test | --ci) [--commit]
                   [--write-tests] [--arm-timeout SECONDS] [--project-root DIR]
+    purlin_run.py --clean --test [--commit] [--write-tests]
+                  [--arm-timeout SECONDS] [--project-root DIR]
     purlin_run.py [--feature NAME ... | --all] --audit [--commit]
                   [--write-tests] [--arm-timeout SECONDS] [--project-root DIR]
     purlin_run.py --feature NAME --audit --settle RULE-N [--settle RULE-N ...]
@@ -22,8 +24,19 @@ the end of input writes nothing and exits 1, so a run nobody answers changes
 no setting. Where it detects no tool it says that the agent reads the project
 and proposes a command, writes nothing and exits 1.
 
-**Which features run.** `--feature` names them and `--all` runs every one.
-With neither, `--test` and `--audit` run the features the change touched:
+**Which features run.** `--feature` names them. `--all`, under `--test` and
+`--audit`, covers every feature: it runs each one `fingerprint.carry_plan`
+answers `run` for, a feature whose spec, code or tests changed since its
+last results here, one whose results here are not all passes, and every
+anchor, and it carries every other feature forward (`carry_forward`): the
+feature's section is recorded again on this run's commit, each result
+marked `carried` with the commit, time, machine and person of the run that
+took it. It carries a section another system or another source wrote the
+same way, into that section, where it was taken over the spec, code and
+tests as they are now. The run then prints how many features it ran and how
+many it carried forward. `--clean`, with `--test`, runs every test of every
+feature and carries nothing. With none of these, `--test` and `--audit` run
+the features the change touched:
 `fingerprint.selection` selects a feature with no section for this
 operating system, one whose newest such section was taken over another
 spec, code or tests, one whose current section leaves a rule the status
@@ -31,6 +44,7 @@ counts under `rules to test`, one with an untracked file under its scope or besi
 its tests, and one whose spec names no files. Before anything runs the run
 prints what it selected and why, what it skipped, and each untracked file
 that selected a feature; with nothing selected it says so and runs no test.
+What it skipped is left as it was, and `purlin:test --clean` runs it too.
 `--ci` with no feature named runs every feature that has a proof tagged
 `@env` for this machine's system.
 
@@ -39,11 +53,10 @@ whose every marker names a proof tagged `@slow` (`slow_plan`): the test is
 left out through its own tool's option (`frameworks.leave_out`), the run
 says which proofs it left out, lists each as `not run`, and keeps the
 result the section it replaces holds for it where that section was taken
-over the same spec, code and tests, marked `kept` with the commit, time,
-machine and person of the run that took it (`keep_slow_results`). The
-status counts a kept result; the sign-off does not. `--all` and `--ci`
-start every test. A slow test a suite's command cannot leave out is started,
-and the run says so.
+over the same spec, code and tests, marked `carried` with the commit, time,
+machine and person of the run that took it (`keep_slow_results`). `--all`,
+`--clean` and `--ci` start every test of each feature they run. A slow test
+a suite's command cannot leave out is started, and the run says so.
 
 **How the tests run.** The settings file names the project's own suites
 under `tests`, each with its command, where its report lands, the report's
@@ -187,6 +200,8 @@ LOG_PATH = os.path.join('.purlin', 'runtime', 'run.log')
 USAGE = (
     'Usage: purlin_run.py [--feature NAME ... | --all] (--test | --ci) '
     '[--commit] [--write-tests] [--arm-timeout SECONDS] [--project-root DIR]\n'
+    '       purlin_run.py --clean --test [--commit] [--write-tests] '
+    '[--arm-timeout SECONDS] [--project-root DIR]\n'
     '       purlin_run.py [--feature NAME ... | --all] --audit [--commit] '
     '[--write-tests] [--arm-timeout SECONDS] [--project-root DIR]\n'
     '       purlin_run.py --feature NAME --audit --settle RULE-N '
@@ -302,11 +317,20 @@ RULE_HAS_NO_TEST_FOR = '%s %s has no test for %s. Run purlin:build %s.'
 
 # What a run that left slow proofs' tests out says before it starts, and
 # what it says of each suite whose command could not leave them out.
-LEFT_OUT_ONE = 'Left out 1 slow proof: %s. purlin:test --all runs it too.'
+LEFT_OUT_ONE = ('Left out 1 slow proof: %s. purlin:test --all runs it when '
+                'it is due.')
 LEFT_OUT_MANY = ('Left out %d slow proofs: %s. purlin:test --all runs them '
-                 'too.')
+                 'when they are due.')
 STARTED_SLOW = ('Started %s in the %s suite: its command gives Purlin no way '
                 'to leave one test out.')
+
+# What a run over every feature says where it carried features forward:
+# `RAN` without its full stop, then how many it carried and the run that
+# carries none. Then one line per other system whose results it carried, the
+# system in the words a person reads.
+RAN = 'Ran %s on %s.'
+AND_CARRIED = ' and carried %d forward. purlin:test --clean runs every test.'
+CARRIED_SYSTEM = 'Carried the %s results of %s forward.'
 
 # The start of the reason an anchor's test skips with where the project has
 # nothing it checks (`reports RULE-32`).
@@ -331,6 +355,7 @@ class Args(object):
     def __init__(self):
         self.features = []
         self.all = False
+        self.clean = False          # run every test and carry nothing
         self.action = None          # 'test', 'audit' or 'ci'
         self.commit = False
         self.settle = []            # the rules `--settle` names, in order
@@ -359,6 +384,8 @@ def parse_args(argv):
             args.features.append(argv[index])
         elif token == '--all':
             args.all = True
+        elif token == '--clean':
+            args.clean = True
         elif token in ('--test', '--audit', '--ci'):
             actions.append(token[2:])
         elif token == '--commit':
@@ -412,6 +439,14 @@ def parse_args(argv):
     if args.all and args.features:
         args.error = 'name features or --all, not both'
         return args
+    if args.clean and args.action != 'test':
+        args.error = '--clean goes with --test'
+        return args
+    if args.clean and args.features:
+        args.error = 'name features or --clean, not both'
+        return args
+    # `--clean` covers every feature, as `--all` does.
+    args.all = args.all or args.clean
     if args.settle and args.action != 'audit':
         args.error = '--settle goes with --audit'
         return args
@@ -901,10 +936,9 @@ def keep_slow_results(project_root, name, os_name, fingerprint, entries):
 
     A slow proof's result counts until the feature's spec, code or tests
     change, and a run that left its test out is no reason to drop it. Each
-    such entry carries `kept`, the `commit`, `at`, `machine` and `email` of
-    the run that took the result: the ones the result was already kept
-    under, else that section's own. The status counts a kept result and the
-    sign-off does not.
+    such entry holds `carried`, the `commit`, `at`, `machine` and `email` of
+    the run that took the result: the ones the result was already carried
+    under, else that section's own.
     """
     if not any(entry.get('held') for found in entries.values()
                for entry in found):
@@ -914,7 +948,7 @@ def keep_slow_results(project_root, name, os_name, fingerprint, entries):
     if not isinstance(kept, dict) \
             or kept.get('fingerprint') != dict(fingerprint):
         return entries
-    taken = {key: kept.get(key) or '' for key in evidence_writer.KEPT_KEYS}
+    taken = evidence_writer.taken_by(kept)
     known = {}
     for listed in kept.get('proofs') or ():
         if isinstance(listed, dict) and listed.get('result') in (
@@ -930,15 +964,15 @@ def keep_slow_results(project_root, name, os_name, fingerprint, entries):
             if not entry.get('held') or listed is None:
                 out[marker_id].append(entry)
                 continue
-            earlier = listed.get('kept')
+            earlier = listed.get('carried')
             where = dict(earlier) if isinstance(earlier, dict) else dict(taken)
             if listed['result'] == evidence_reader.NOTHING_TO_CHECK:
                 out[marker_id].append(dict(
-                    entry, held=False, kept=where, reason='%s %s' % (
+                    entry, held=False, carried=where, reason='%s %s' % (
                         evidence_reader.NOTHING_TO_CHECK_PREFIX,
                         listed.get('reason') or '')))
             else:
-                out[marker_id].append(dict(entry, held=False, kept=where,
+                out[marker_id].append(dict(entry, held=False, carried=where,
                                            status=listed['result']))
     return out
 
@@ -1155,6 +1189,57 @@ def write_sections(project_root, features, sections, os_name, source):
     return paths
 
 
+def carry_forward(project_root, features, plan, commit):
+    """Record again, on `commit`, each section `plan` carries. What was
+    written: `(paths, {os: [feature]})`.
+
+    `plan` is `fingerprint.carry_plan`'s answer. A section that already
+    counts on `commit` is left as it was and named in neither answer
+    (`evidence.write_carried`). `paths` holds each file written, once;
+    the second answer names, per operating system, the features one of
+    whose sections was written.
+    """
+    paths, by_os = [], {}
+    for row in plan:
+        name = row['feature']
+        for source, os_name in row['carry']:
+            path = evidence_writer.write_carried(
+                project_root, source, name, features.get(name) or {},
+                os_name, commit)
+            if path is None:
+                continue
+            if path not in paths:
+                paths.append(path)
+            names = by_os.setdefault(os_name, [])
+            if name not in names:
+                names.append(name)
+    return paths, by_os
+
+
+def ran_line(ran, count, carried=None):
+    """The line naming the suites a run started and how many features it
+    ran; `carried`, on a run over every feature that carried some forward,
+    is how many, and the line then names `purlin:test --clean`."""
+    line = RAN % (', '.join(ran) or 'nothing',
+                  '1 feature' if count == 1 else '%d features' % count)
+    if not carried:
+        return line
+    return line[:-1] + AND_CARRIED % carried
+
+
+def carried_system_lines(by_os, os_name):
+    """One line per system other than this machine's whose results a run
+    carried forward, in the order a person reads the systems."""
+    lines = []
+    for name in evidence_reader.PLATFORMS:
+        count = len(by_os.get(name) or ()) if name != os_name else 0
+        if count:
+            lines.append(CARRIED_SYSTEM % (
+                evidence_reader.os_word(name),
+                '1 feature' if count == 1 else '%d features' % count))
+    return lines
+
+
 def rule_problems(features, sections, index):
     """One line per rule of the features run that fails or has no test.
 
@@ -1272,10 +1357,11 @@ def changed_paths(project_root, paths):
                    if len(entry) > 3})
 
 
-def commit_the_evidence(project_root, work, removed=()):
-    """The second commit, naming the first, or HEAD where nothing was."""
+def commit_the_evidence(project_root, work, removed=(), carried=()):
+    """The second commit, naming the first, or HEAD where nothing was.
+    `carried` is the files a section was carried forward in."""
     evidence_writer.commit_local(
-        project_root, work or head_commit(project_root), removed)
+        project_root, work or head_commit(project_root), removed, carried)
 
 
 def _prune(project_root, features):
@@ -1374,7 +1460,12 @@ def main(argv=None):
     if args.action != 'ci' and fingerprint_module.setting_changed(
             project_root, features, os_name):
         print(status_module.SETTING_CHANGED)
-    if args.all or (not args.features and args.action == 'ci'):
+    # What a run over every feature carries forward, as `carry_plan` rows.
+    carry = []
+    if args.all and args.action != 'ci' and not args.clean:
+        carry = fingerprint_module.carry_plan(project_root, features, os_name)
+        selected = [row['feature'] for row in carry if row['run']]
+    elif args.all or (not args.features and args.action == 'ci'):
         selected = sorted(features)
     elif args.features:
         selected = [name for name in args.features if name in features]
@@ -1404,8 +1495,7 @@ def main(argv=None):
                 return 1
     else:
         selected = print_selection(
-            fingerprint_module.selection(project_root, features, os_name),
-            'purlin:%s' % args.action)
+            fingerprint_module.selection(project_root, features, os_name))
         if not selected:
             return _nothing_to_run(project_root, args, features, suites)
 
@@ -1424,8 +1514,8 @@ def main(argv=None):
     # gives each suite the files that carry a marker of a proof it answers
     # for.
     scan = markers_module.scan(project_root, suites)
-    # `--all` and `--ci` start every test; any other run leaves
-    # out the tests of the proofs tagged `@slow`.
+    # `--all`, `--clean` and `--ci` start every test of the features they
+    # run; any other run leaves out the tests of the proofs tagged `@slow`.
     plan = (SlowPlan() if args.all or args.action == 'ci'
             else slow_plan(features, scan, suites))
     # The code the sections describe where `--commit` makes no commit.
@@ -1553,10 +1643,8 @@ def main(argv=None):
         failures.append(RAN_AS_MORE_ONE if more == 1 else RAN_AS_MORE % more)
     ran = [done.suite.name for done in runs]
 
-    print('Ran %s on %s.'
-          % (', '.join(ran) or 'nothing',
-             '1 feature' if len(selected) == 1
-             else '%d features' % len(selected)))
+    print(ran_line(ran, len(selected),
+                   sum(1 for row in carry if not row['run'])))
     needs = [] if remote_proofs is not None else needs_lines(foreign, index,
                                                              os_name)
     if needs:
@@ -1589,8 +1677,10 @@ def main(argv=None):
     work = None
     if args.commit and args.action != 'ci':
         print('')
-        work = commit_the_work(project_root,
-                               work_paths(scan, features, selected))
+        # A run over every feature commits every spec and marked test,
+        # those of the features it carries forward too.
+        work = commit_the_work(project_root, work_paths(
+            scan, features, sorted(features) if args.all else selected))
     sections = build_sections(project_root, args, features, selected, index,
                               os_name, work or started, remote_proofs)
     problems = rule_problems(features, sections, index)
@@ -1610,8 +1700,19 @@ def main(argv=None):
 
     print('')
     paths = write_sections(project_root, features, sections, os_name, 'local')
+    carried, carried_by_os = carry_forward(project_root, features, carry,
+                                           work or started)
     removed = _prune(project_root, features)
-    print(evidence_writer.written_line(paths))
+    for line in carried_system_lines(carried_by_os, os_name):
+        print(line)
+    written = paths + [
+        path for path in carried
+        if path.startswith('%s/local/' % evidence_writer.EVIDENCE_DIR)
+        and path not in paths]
+    if written:
+        # A run that carried every feature and found each section already
+        # recorded on this commit wrote no file.
+        print(evidence_writer.written_line(written))
     if args.action == 'audit':
         # The tests ran on the selection; the audit reads every feature's
         # rules unless features were named.
@@ -1620,7 +1721,7 @@ def main(argv=None):
                            selected if args.features else sorted(features),
                            exit_code)
     if args.commit:
-        commit_the_evidence(project_root, work, removed)
+        commit_the_evidence(project_root, work, removed, carried)
         left = uncommitted_lines(project_root)
         if left:
             print('')
@@ -1706,9 +1807,9 @@ def no_test_command_lines(project_root):
 
 SELECTED = 'Selected %d of %d %s: %s.'
 SKIPPED_FEATURES = ('Skipped %d %s whose spec, code and tests match %s '
-                    'evidence: %s. %s --all runs them too.')
+                    'evidence: %s. purlin:test --clean runs them too.')
 NOTHING_TO_RUN = ("Nothing to run: every feature's spec, code and tests match "
-                  'its evidence. %s --all runs them anyway.')
+                  'its evidence. purlin:test --clean runs them anyway.')
 NOT_TRACKED_LINE = ('%s is %s and is not tracked, so its content is not part '
                     'of the evidence until you git add it.')
 
@@ -1716,12 +1817,11 @@ NOT_TRACKED_LINE = ('%s is %s and is not tracked, so its content is not part '
 SKIPPED_SHOWN = 10
 
 
-def print_selection(rows, command):
+def print_selection(rows):
     """Print what a run with no feature named selected and why. The names.
 
-    `rows` is `fingerprint.selection`'s answer and `command` the command
-    the person ran, which the lines name as the way to run everything.
-    Nothing is printed when nothing was selected: `_nothing_to_run` says so.
+    `rows` is `fingerprint.selection`'s answer. Nothing is printed when
+    nothing was selected: `_nothing_to_run` says so.
     """
     chosen = [row for row in rows if row['selected']]
     skipped = [row['feature'] for row in rows if not row['selected']]
@@ -1739,7 +1839,7 @@ def print_selection(rows, command):
         print(SKIPPED_FEATURES % (len(skipped),
                                   _plural(len(skipped), 'feature', 'features'),
                                   _plural(len(skipped), 'its', 'their'),
-                                  shown, command))
+                                  shown))
     for line in untracked_lines(chosen):
         print(line)
     print('')
@@ -1779,7 +1879,7 @@ def _nothing_to_run(project_root, args, features, suites):
     audit of every feature's rules. The tests this run answers with are the
     ones the evidence already holds: a rule whose tests fail there exits 1.
     """
-    print(NOTHING_TO_RUN % ('purlin:%s' % args.action))
+    print(NOTHING_TO_RUN)
     exit_code = 1 if (failed_rules(project_root)
                       or broken_specs(features)) else 0
     work = None

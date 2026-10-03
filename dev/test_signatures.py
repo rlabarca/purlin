@@ -71,12 +71,13 @@ MANUAL_TEST_FILE = TEST_FILE.split('\n\n\n# purlin: login PROOF-2')[0] + '\n'
 
 def section(made, proofs, rules, source='local', os_name='linux',
             email=DANA, machine=MACHINE, at=AT, commit=None,
-            feature='login'):
+            feature='login', carried=None):
     """One evidence section, as the run writes it, over the project as it stands.
 
     `proofs` is `[(id, rule, result, test name or None, reason or None)]`;
     `rules` is `{RULE-N: word}`. A section has the same fields under either
-    source.
+    source. `carried`, where the run carried every result forward, is what
+    each entry holds of the run that took it.
     """
     entries = []
     for proof_id, rule, result, name, reason in proofs:
@@ -86,6 +87,8 @@ def section(made, proofs, rules, source='local', os_name='linux',
                  else ''}
         if reason is not None:
             entry['reason'] = reason
+        if carried is not None:
+            entry['carried'] = dict(carried)
         entries.append(entry)
     found = {'commit': commit or made.head(), 'dirty': False, 'at': at,
              'runner': email.split('@')[0], 'email': email,
@@ -743,8 +746,8 @@ class TestTheRefusals:
                     {'RULE-1': 'not run'}, feature='audit')
             commit_all(made)
             assert run_main(made, capsys) == (1, [
-                'No sign-off: these results were not taken on this version of '
-                'the code, %s: audit on Windows. Run purlin:test on Windows, '
+                'No sign-off: these results are not recorded on this version '
+                'of the code, %s: audit on Windows. Run purlin:test on Windows, '
                 'then purlin:sign.' % made.head()[:7]])
         finally:
             made.close()
@@ -1161,6 +1164,55 @@ class TestTheWalk:
             assert stop[results + 1:results + 3] == [
                 '  Linux/Unix: passed on dana-laptop',
                 '  Windows: passed on build-7']
+        finally:
+            made.close()
+
+    @staticmethod
+    def _carried(made):
+        """`made`, a hand check with a test, its results taken by Pat on
+        `pat-laptop` at one commit and carried into sections Dana's run
+        recorded on the next. The commit they were taken at."""
+        ran_at = made.head()
+        write(os.path.join(made.root, 'README.md'), '# Login\n')
+        commit_all(made, 'docs: a readme')
+        taken = {'commit': ran_at, 'at': '2026-09-30T08:05:00Z',
+                 'machine': 'pat-laptop',
+                 'email': 'pat.product@labconnect.example'}
+        section(made, [('PROOF-1', 'RULE-1', 'pass', TEST_NAMES['PROOF-1'],
+                        None),
+                       ('PROOF-3', 'RULE-2', 'pass', 'test_lockout_page',
+                        None)],
+                {'RULE-1': 'passed', 'RULE-2': 'passed'}, carried=taken)
+        commit_all(made)
+        key(made.root)
+        return ran_at
+
+    # purlin: signatures PROOF-290
+    def test_carried_results_open_on_the_runs_that_took_them(self):
+        made = hand_check_with_a_test()
+        try:
+            ran_at = self._carried(made)
+            code, lines, _asked = walked(made, [])
+            assert lines[0] == (
+                'Carried forward from earlier runs by '
+                'pat.product@labconnect.example on pat-laptop, the newest at '
+                '2026-09-30 08:05 UTC on %s: 2 rules on Linux/Unix.'
+                % ran_at[:7]), lines
+            assert lines[1] == 'Signing %s at %s.' % (
+                VERSION, git(made.root, 'rev-parse',
+                             'HEAD').stdout.strip()[:7]), lines
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-291
+    def test_a_stop_names_the_commit_a_result_was_carried_from(self):
+        made = hand_check_with_a_test()
+        try:
+            ran_at = self._carried(made)
+            stop = stop_lines(walked(made, [])[1], 'login RULE-2   hand check')
+            assert stop[stop.index('Results') + 1] == (
+                '  Linux/Unix: passed on dana-laptop; PROOF-3 carried forward '
+                'from %s' % ran_at[:7]), stop
         finally:
             made.close()
 

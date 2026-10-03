@@ -7,6 +7,9 @@ home of the merge rules this module follows:
 
 - A test run reads the file from disk and replaces `platforms[<this os>]`
   whole. Every other section and `audit` stay as they are.
+- A run over every feature carries forward each section taken over the
+  spec, code and tests as they are now: `carry_section` writes it again
+  with the run's own `commit` and marks each result `carried`.
 - An audit run makes the same test-run write, then replaces
   `audit.rules[<rule>]` for each rule it read.
 - Every write drops the `rules` and `audit.rules` entries of rules the spec
@@ -173,8 +176,8 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
     marker of this feature, where `id` is a `PROOF-N`, or a `RULE-N` for a
     rule with no proof whose test is marked by the rule's own id. Each entry
     is `{status, test_file, test_name, line, reason}`, `reason` the text a
-    skipped test's tool gave or None, and `kept` where the result is one an
-    earlier run took and this run carried over: the `commit`, `at`,
+    skipped test's tool gave or None, and `carried` where the result is one
+    an earlier run took and this run carried forward: the `commit`, `at`,
     `machine` and `email` of that run, written on the entry as it is given.
     One `proofs` entry is written per
     (id, test) pair, and one with an empty `test` for a proof nothing
@@ -238,7 +241,7 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
                 test = '%s::%s' % (entry.get('test_file', ''),
                                    entry.get('test_name', ''))
                 if nothing is not None:
-                    listed.append(_with_kept(dict(
+                    listed.append(_with_carried(dict(
                         base, result=reader.NOTHING_TO_CHECK,
                         reason=nothing[index], test=test), entry))
                     continue
@@ -249,7 +252,7 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
                     status if took
                     else 'not run' if entry.get('held') else unseen),
                     test=test)
-                listed.append(_with_kept(made, entry) if took else made)
+                listed.append(_with_carried(made, entry) if took else made)
             if not seen:
                 listed.append(dict(base, result=unseen, test=''))
     return {
@@ -264,16 +267,70 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
     }
 
 
-# What a kept result's `kept` names of the run that took it.
-KEPT_KEYS = ('commit', 'at', 'machine', 'email')
+# What a carried result's `carried` names of the run that took it.
+CARRIED_KEYS = ('commit', 'at', 'machine', 'email')
 
 
-def _with_kept(listed, entry):
-    """`listed` carrying `kept` where the run handed the entry one."""
-    kept = entry.get('kept')
-    if isinstance(kept, dict):
-        listed['kept'] = {key: kept.get(key) or '' for key in KEPT_KEYS}
+def _with_carried(listed, entry):
+    """`listed` holding `carried` where the run handed the entry one."""
+    carried = entry.get('carried')
+    if isinstance(carried, dict):
+        listed['carried'] = {key: carried.get(key) or ''
+                             for key in CARRIED_KEYS}
     return listed
+
+
+def taken_by(section):
+    """What `carried` names of the run that took a section's results."""
+    return {key: (section or {}).get(key) or '' for key in CARRIED_KEYS}
+
+
+def carry_section(section, commit):
+    """`section` as a run that did not take it records it again on `commit`.
+
+    The `commit` is the run's. Each proof entry holds `carried`, the
+    `commit`, `at`, `machine` and `email` of the run that took its result:
+    the ones it already held, else the section's own. Everything else is as
+    it was, `at`, `machine` and `email` included, so the section still says
+    who took it and when. Returns a new dict.
+    """
+    carried = json.loads(json.dumps(section))
+    taken = taken_by(section)
+    for entry in carried.get('proofs') or ():
+        if isinstance(entry, dict) and not isinstance(entry.get('carried'),
+                                                      dict):
+            entry['carried'] = dict(taken)
+    carried['commit'] = commit or ''
+    return carried
+
+
+def can_carry(section, now):
+    """True for a section a run may carry forward: taken over the
+    fingerprint `now`, with nothing uncommitted."""
+    return (isinstance(section, dict)
+            and section.get('fingerprint') == dict(now)
+            and section.get('dirty') is not True)
+
+
+def write_carried(project_root, source, feature, info, os_name, commit):
+    """Record one section again on `commit`. The file's path, or None.
+
+    None where the file holds no such section, and where the section names
+    `commit` or a commit from which every commit up to it changes only
+    Purlin's own records: that section already counts on `commit`, and its
+    file stays byte for byte as it was.
+    """
+    data = read_file(project_root, source, feature)
+    platforms = (data or {}).get('platforms')
+    section = platforms.get(os_name) if isinstance(platforms, dict) else None
+    if not isinstance(section, dict):
+        return None
+    if _same_code(section.get('commit') or '', commit or '',
+                  same_code_in(project_root)):
+        return None
+    platforms[os_name] = carry_section(section, commit)
+    return write_file(project_root, source, feature, drop_removed_rules(
+        data, info.get('rule_order') or ()))
 
 
 def _rule_marked_word(status, seen):
@@ -294,10 +351,10 @@ def _same_observation(one, other):
 
     `commit` and `at` say when a run happened, not what it saw, and `email`
     is kept and never compared. A run on another `machine`, or over a tree
-    whose `dirty` differs, replaces the section. A proof entry's `kept` is
-    left out, since a result this run carried over is the result the other
-    run took; but a result the new run took itself replaces one the section
-    on disk holds as kept.
+    whose `dirty` differs, replaces the section. A proof entry's `carried`
+    is left out, since a result this run carried forward is the result the
+    other run took; but a result the new run took itself replaces one the
+    section on disk holds as carried.
     """
     def seen(section):
         found = {key: value for key, value in (section or {}).items()
@@ -305,16 +362,17 @@ def _same_observation(one, other):
         found['dirty'] = bool(found.get('dirty'))
         if isinstance(found.get('proofs'), list):
             found['proofs'] = [
-                {key: value for key, value in entry.items() if key != 'kept'}
+                {key: value for key, value in entry.items()
+                 if key != 'carried'}
                 if isinstance(entry, dict) else entry
                 for entry in found['proofs']]
         return found
 
-    def kept(section):
+    def carried(section):
         return {(entry.get('id'), entry.get('test'))
                 for entry in (section or {}).get('proofs') or ()
-                if isinstance(entry, dict) and 'kept' in entry}
-    if kept(one) - kept(other):
+                if isinstance(entry, dict) and 'carried' in entry}
+    if carried(one) - carried(other):
         return False
     return json.loads(json.dumps(seen(one))) == json.loads(json.dumps(
         seen(other)))
@@ -703,8 +761,9 @@ def _unique(items):
     return out
 
 
-def commit_local(project_root, work_sha, removed=()):
-    """Commit the `local/` files and what the run removed.
+def commit_local(project_root, work_sha, removed=(), carried=()):
+    """Commit the `local/` files, what the run removed and the `ci/` files
+    it carried a section forward in, `carried`.
 
     The second of a run's two commits. Its subject names `work_sha`, the
     commit `commit_work` made, or HEAD when it made none. The commit is the
@@ -716,7 +775,8 @@ def commit_local(project_root, work_sha, removed=()):
     """
     print(commit_paths(
         project_root,
-        ['%s/local' % EVIDENCE_DIR] + list(removed or ()),
+        ['%s/local' % EVIDENCE_DIR] + list(removed or ())
+        + [path for path in carried or () if path not in (removed or ())],
         COMMIT_SUBJECT % (str(work_sha or '')[:7] or 'an unknown commit')))
 
 

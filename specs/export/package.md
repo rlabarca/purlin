@@ -10,8 +10,8 @@
 >   system of record; Purlin makes no claim of compliance.
 > Scope: scripts/export/package.py
 > Stack: python/stdlib (json, hashlib, subprocess), git worktree
-> Highest-Rule: 37
-> Highest-Proof: 83
+> Highest-Rule: 38
+> Highest-Proof: 85
 
 ## Rules
 
@@ -32,8 +32,9 @@
 - RULE-25: The evidence package states whether every rule's tests pass, as `met`, and no field of it says that the software complies with a regulation
 - RULE-26: Each feature entry holds exactly `name`, `spec`, `scope`, `anchor` and `rules`, and an anchor's `scope` is `[]`
 - RULE-29: The package carries `audit`, the five counts `strong`, `weak`, `spot_checked`, `out_of_date` and `not_audited` as `purlin:status` gives them, over the rules that pass their tests and have a tested proof, and `hand_checks`, one entry per rule with a `@manual` proof naming its feature, rule and proofs
-- RULE-32: The package carries `runs`, one entry per group of counted results sharing a source, a system, who ran them and a machine, local first and then by system, each naming `by`, the email its sections record, `machine`, `os`, `source`, `at`, `commit` and the count of `rules`
-- RULE-33: Each result carries `same_code`, true when every commit from the one its tests ran at to the package's `commit` changes only files under `.purlin/` and leaves the `tests` setting as it was, and no proof of the rule holds a result kept from an earlier run
+- RULE-32: The package carries `runs`, one entry per group of counted results sharing a source, a system, who took them, a machine and whether they were carried forward, local first and then by system, each naming `by`, the email of the run that took them, `machine`, `os`, `source`, `at`, `commit`, the count of `rules` and `carried`; a group of carried results names the person, machine, time and commit of the newest run they were taken in
+- RULE-33: Each result carries `same_code`, true when every commit from the one its section names to the package's `commit` changes only files under `.purlin/` and leaves the `tests` setting as it was; a result a run carried forward into such a section reads true
+- RULE-38: Each result carries `carried`, one entry per proof of the rule whose result the section's own run did not take, by proof number, naming the `proof` and the `commit`, `at`, `machine` and `email` of the run that took it; `[]` where the section's own run took every result
 - RULE-34: `project` is the name the project's own files give it, read when the package is built
 - RULE-35: The version is read from the `VERSION` file, `package.json`, `pyproject.toml` or the first `*.csproj` at the project's root, in that order
 - RULE-36: Each result carries `nothing_to_check`, one entry per proof whose every tied test skipped with a reason beginning `nothing to check:`, naming the proof and the reason
@@ -69,10 +70,11 @@
 - PROOF-57 (RULE-26): Beside `login`, an anchor `secure` whose file carries `> Scope: src/login.py` is signed with it; its entry reads `anchor` `true` and `scope` `[]`
 - PROOF-61 (RULE-29): Both rules pass, `RULE-1` is audited `strong` and `RULE-2` `weak`, and the project is signed; the package's `audit` reads `{"strong": 1, "weak": 1, "spot_checked": 0, "out_of_date": 0, "not_audited": 0}`
 - PROOF-62 (RULE-29): `PROOF-2` is marked `@manual` and the project signed; `hand_checks` holds exactly `{"feature": "login", "rule": "RULE-2", "proofs": ["PROOF-2"], "checked": "in the sign-offs"}`
-- PROOF-65 (RULE-32): `dana.dev@labconnect.example` runs every test on `dana-laptop`, a Linux machine, and commits them; the package's `runs` holds one entry reading `by` `dana.dev@labconnect.example`, `machine` `dana-laptop`, `os` `linux`, `source` `local`, the run's time and commit, and `rules` `2`
+- PROOF-65 (RULE-32): `dana.dev@labconnect.example` runs every test on `dana-laptop`, a Linux machine, and commits them; the package's `runs` holds one entry reading `by` `dana.dev@labconnect.example`, `machine` `dana-laptop`, `os` `linux`, `source` `local`, the run's time and commit, `rules` `2` and `carried` `false`
 - PROOF-66 (RULE-32): Beside Dana's local run, `PROOF-3` tagged `@env(windows)` ran under the source `ci` on the machine `build-7` as `runner@example.com`; `runs` holds two entries, the local one first, then one reading `by` `runner@example.com`, `machine` `build-7`, `source` `ci`, `os` `windows` and `rules` `1`
+- PROOF-85 (RULE-32): Dana's run records three rules' results, of which `feat RULE-2`'s was taken by `pat.product@labconnect.example` on `pat-laptop` at the commit `<c>` and carried forward; `runs` holds Dana's entry with `rules` `3` and `carried` `false`, then one reading `by` Pat's address, `machine` `pat-laptop`, `commit` `<c>`, `rules` `1` and `carried` `true`
 - PROOF-67 (RULE-33): The tests run and are committed at `<c>`, then a commit changes only `.purlin/evidence/ci/login.json`, the results a run on another system committed; the project is signed and every result in its package reads `same_code` `true`
-- PROOF-68 (RULE-33): The tests run and are committed at `<c>`, then a commit changes `README.md`, which no spec covers; `purlin:sign` prints only `No sign-off: these results were not taken on this version of the code, <sha7>: login on Linux/Unix. Run purlin:test --all --commit, then purlin:sign.`
+- PROOF-68 (RULE-33): The tests run and are committed at `<c>`, then a commit changes `README.md`, which no spec covers; `purlin:sign` prints only `No sign-off: these results are not recorded on this version of the code, <sha7>: login on Linux/Unix. Run purlin:test --all --commit, then purlin:sign.`
 - PROOF-69 (RULE-34): A project kept in a folder named `work`, whose `pyproject.toml` reads `name = "labconnect"` under `[project]`, is signed; its package reads `project` `labconnect`
 - PROOF-70 (RULE-35): The `VERSION` file reads `2.1.0` and `package.json` reads `9.9.9`; the sign-off writes `.purlin/evidence/package/2.1.0.json`, reading `version` `2.1.0`
 - PROOF-71 (RULE-35): With no `VERSION` file and no `package.json`, `pyproject.toml` reads `version = "3.0.0"` under `[project]`; the sign-off writes `.purlin/evidence/package/3.0.0.json`, reading `version` `3.0.0`
@@ -80,9 +82,10 @@
 - PROOF-74 (RULE-37): `quinn.qa@labconnect.example` commits `PROOF-1` of `login`, then `pat.product@labconnect.example` rewords it; in the signed package that proof reads `written_by` Quinn's address with Quinn's commit and `changed_by` Pat's address with Pat's commit
 - PROOF-75 (RULE-37): `dana.dev@labconnect.example` last changed `test_valid_credentials_return_200` in `tests/test_login.py`; in the signed package that test's entry reads `changed_by` `dana.dev@labconnect.example` and the full sha of Dana's commit
 - PROOF-76 (RULE-37): `pat.product@labconnect.example` commits `RULE-4` of `login`, then a renumbering commit by `dana.dev@labconnect.example` moves it to `RULE-6`; in the signed package `RULE-6`'s `authors.rule` reads `written_by` `pat.product@labconnect.example` and the full sha of Pat's commit
-- PROOF-77 (RULE-33): The tests run and are committed at `<c>`, then a commit changes the `run` command of the `tests` setting in `.purlin/config.json`; `purlin:sign` prints only one line beginning `No sign-off: these results were not taken on this version of the code` and exits 1
-- PROOF-78 (RULE-33): `login`'s committed results name a commit on another branch, which `HEAD` does not descend from, the two trees holding the same files; `purlin:sign` prints only one line beginning `No sign-off: these results were not taken on this version of the code` and exits 1
-- PROOF-79 (RULE-33): `feat`'s committed section lists its slow `PROOF-2` as `pass` with `kept` naming the commit `<c>`, and every other result was taken at `HEAD`; `purlin:sign --show` prints only `No sign-off: these results were not taken on this version of the code, <sha7>: feat on Linux/Unix. Run purlin:test --all --commit, then purlin:sign.` and exits 1
+- PROOF-77 (RULE-33): The tests run and are committed at `<c>`, then a commit changes the `run` command of the `tests` setting in `.purlin/config.json`; `purlin:sign` prints only one line beginning `No sign-off: these results are not recorded on this version of the code` and exits 1
+- PROOF-78 (RULE-33): `login`'s committed results name a commit on another branch, which `HEAD` does not descend from, the two trees holding the same files; `purlin:sign` prints only one line beginning `No sign-off: these results are not recorded on this version of the code` and exits 1
+- PROOF-79 (RULE-33): `feat`'s section, recorded on `HEAD`'s code, lists its slow `PROOF-2` as `pass` with `carried` naming the earlier commit `<c>`, and every other result was taken on `HEAD`'s code; `purlin:sign --show` exits 0 and prints no line beginning `No sign-off`
+- PROOF-84 (RULE-38): `feat`'s section, recorded on `HEAD`'s code, lists `PROOF-2` as carried from the commit `<c>`, taken at `2026-09-13T11:00:00Z` on `pat-laptop` by `pat.product@labconnect.example`; in the signed package `RULE-2`'s one result reads `carried` as that one entry for `PROOF-2`, `same_code` `true` and a `commit` other than `<c>`, and `RULE-1`'s reads `carried` `[]`
 - PROOF-80 (RULE-22): A signed package is rewritten with every `\n` as `\r\n` and checked with `purlin:sign --check`; it exits 1 and prints only `The package does not match its fingerprint: the fingerprint matches the content, but the bytes are not in the canonical form.`
 - PROOF-82 (RULE-29): 3 rules pass their tests, 2 found `strong` by the audit and 1 never read, and a fourth rule's one proof is `@manual`; the package's `audit` reads `{"strong": 2, "weak": 0, "spot_checked": 0, "out_of_date": 0, "not_audited": 1}`
 - PROOF-83 (RULE-11): `login RULE-2`'s one proof is `@manual`, and its feature's committed section reads `RULE-2` `passed`; in the package each result of `RULE-2` reads `checked at sign-off`
