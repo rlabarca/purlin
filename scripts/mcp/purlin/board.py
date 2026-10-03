@@ -15,7 +15,8 @@ The columns, left to right:
     Proofs   how many proof lines it writes, and how many have no test;
              only where the project writes a proof line at all
     Tests    how many rules pass, and how many are checked by hand, are
-             partial or are failing
+             partial or are failing; for an anchor, how many have results
+             out of date
     Strong   how many of its rules the audit found strong, of those that
              pass their tests and have a tested proof, wherever a rule of
              the project has an audit entry; for an anchor, whose rules
@@ -123,9 +124,14 @@ def proofs_cell(rollup):
     return '%d%s%d no test' % (total, DOT, without)
 
 
-def tests_cell(rollup):
-    """`<passed> of <rules>`, then `· <k> by hand`, `· <k> partial` and
-    `· <k> failing`."""
+def tests_cell(rollup, out_of_date=0):
+    """`<passed> of <rules>`, then `· <k> by hand`, `· <k> partial`,
+    `· <k> failing` and `· <k> out of date`.
+
+    `out_of_date` is `out_of_date_rules`' count, which a surface passes for
+    an anchor alone: an anchor covers the whole project, so any commit can
+    leave every one of its results behind, and the cell says how many.
+    """
     text = '%d of %d' % (passing(rollup), rollup.get('rules') or 0)
     if rollup.get('by_hand'):
         text += '%s%d by hand' % (DOT, rollup['by_hand'])
@@ -133,7 +139,18 @@ def tests_cell(rollup):
         text += '%s%d partial' % (DOT, rollup['partial'])
     if rollup.get('failing'):
         text += '%s%d failing' % (DOT, rollup['failing'])
+    if out_of_date:
+        text += '%s%d out of date' % (DOT, out_of_date)
     return text
+
+
+def out_of_date_rules(rules):
+    """How many of a spec's rule entries have a passed cell reading
+    `out of date`."""
+    from purlin import states
+    return sum(1 for rule in rules or ()
+               if ((rule.get('cells') or {}).get('passed') or {}).get('word')
+               == states.OUT_OF_DATE)
 
 
 def strong_cell(rollup, anchor=False):
@@ -169,16 +186,19 @@ def anchor_word(rollup):
     return ''
 
 
-def row_cells(name, rollup, proofs=1, audited=False, anchor=False):
+def row_cells(name, rollup, proofs=1, audited=False, anchor=False,
+              rules=()):
     """One spec's row, as the tuple the columns describe.
 
     `proofs` and `audited` are read as `columns_for` reads them; `anchor`
-    is the feature entry's `is_anchor`.
+    is the feature entry's `is_anchor` and `rules` its rule entries, which
+    an anchor's `Tests` cell counts out of date.
     """
     cells = [name, rules_cell(rollup)]
     if shows_proofs(proofs):
         cells.append(proofs_cell(rollup))
-    cells.append(tests_cell(rollup))
+    cells.append(tests_cell(rollup,
+                            out_of_date_rules(rules) if anchor else 0))
     if audited:
         cells.append(strong_cell(rollup, anchor))
     return tuple(cells)

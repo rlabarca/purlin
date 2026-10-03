@@ -1716,6 +1716,45 @@ class TestAnchors:
             self):
         assert self._anchor_strong_cell({'RULE-1': 'spot-checked'}) == ''
 
+    @staticmethod
+    def _tests_cells_after_a_code_change(security, tested):
+        """The `Tests` cells of `security` and of `login`, 2 rules, after
+        `login`'s proofs and `security`'s first `tested` passed in a section
+        taken before a commit that changes `src/login.py`."""
+        made = Project(spec=_spec_of('# Feature: login', 2, 'src/login.py'))
+        try:
+            made.spec(security, name='security', category='_anchors')
+            _commit(made.root, 'anchor(security): create')
+            _all_passing(made, 'login', 2)
+            _all_passing(made, 'security', tested)
+            _write(os.path.join(made.root, 'src', 'login.py'),
+                   'def login():\n    return 201\n')
+            _commit(made.root, 'feat(login): 201')
+            lines = _status_lines(made.root)
+        finally:
+            made.close()
+        return (_cell_under(lines, 'security', 'Tests'),
+                _cell_under(lines, 'login', 'Tests'))
+
+    # purlin: states PROOF-323
+    def test_an_anchor_of_eleven_rules_out_of_date_says_so(self):
+        cells = self._tests_cells_after_a_code_change(
+            _spec_of('# Anchor: security', 11), 11)
+        assert cells[0] == '0 of 11 · 11 out of date', cells
+
+    # purlin: states PROOF-324
+    def test_the_out_of_date_part_follows_by_hand(self):
+        security = _spec_of('# Anchor: security', 3).replace(
+            'Case 3 reads 3', 'Case 3 reads 3 @manual')
+        cells = self._tests_cells_after_a_code_change(security, 2)
+        assert cells[0] == '0 of 3 · 1 by hand · 2 out of date', cells
+
+    # purlin: states PROOF-325
+    def test_a_features_row_out_of_date_reads_as_before(self):
+        cells = self._tests_cells_after_a_code_change(
+            _spec_of('# Anchor: security', 1), 1)
+        assert cells[1] == '0 of 2', cells
+
     # purlin: states PROOF-242
     def test_the_anchors_are_listed_first_under_their_label(self, project):
         project.spec(SECURITY_ANCHOR, name='security', category='_anchors')

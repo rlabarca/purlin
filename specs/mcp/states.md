@@ -8,8 +8,8 @@
 >   output.
 > Scope: scripts/mcp/purlin/states.py, scripts/mcp/purlin/payload.py, scripts/mcp/purlin/status.py, scripts/mcp/purlin/facts.py, scripts/mcp/purlin/project.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib, json, hashlib, subprocess (list-only)
-> Highest-Rule: 136
-> Highest-Proof: 322
+> Highest-Rule: 137
+> Highest-Proof: 325
 
 ## Rules
 
@@ -45,6 +45,7 @@
 - RULE-110: A rule's test hash covers, for each test tied to its proofs, that test's file, name and own source as its marker bounds it, line ends read as `\n`, so editing another test of the same file leaves it unchanged; a test of an `exit` suite, or one not found by its name, is covered by its whole file, and `test_hash_kind` reads `test`, `file`, `manual` or `none`
 - RULE-121: The status table shows one row per spec under `Spec`, `Rules`, `Proofs` and `Tests`, with `Strong` added where any rule has an audit entry and `Proofs` left out where no spec writes a proof line; `Tests` reads `<passed> of <rules>` and appends `· <k> by hand`, `· <k> partial` and `· <k> failing`; a feature's `Strong` reads `<strong> of <n>`, `<n>` the spec's rules that pass their tests and have a tested proof, and is empty where it has none; where the project has an anchor, the anchors' rows stand under the line `Anchors` and every other spec's under `Specs`
 - RULE-128: An anchor's `Strong` cell in the status table reads one word and never `<strong> of <n>`, counting the anchor's rules that pass their tests and have a tested proof: `weak` where the audit found any of them weak, else `out of date` where the audit entry of any is out of date, else `spot-checked` where the audit found every one of them spot-checked, else nothing
+- RULE-137: An anchor's `Tests` cell in the status table appends `· <n> out of date` after its other parts, `<n>` counting the anchor's rules whose passed cell reads `out of date`; a feature's `Tests` cell never carries it
 - RULE-49: The status table and the dashboard show one spec's row under the same column headings, and every cell after the spec's name reads the same characters in both
 - RULE-122: Each problem the status reports beside its table names what is wrong and the command or edit that fixes it: no specs found, a settings file that cannot be read (then nothing runs and nothing is saved), settings keys this version does not read, a spec with no `> Scope:` line or whose scope finds no file in git, a spec changed and not committed, and an anchor whose pin is behind its source or whose source cannot be read or is rejected
 - RULE-59: `signoff` carries `word`, `version`, `commit` and `since` for the newest version whose sign-off counts, found by its `signed/*` tag on HEAD or an ancestor of it, or by its sign-off files where this checkout holds no such tag, numbered versions compared as numbers, `word` reading as the status's `Sign-off:` line does, and `word` reads `not signed` where there is none
@@ -137,6 +138,9 @@
 - PROOF-301 (RULE-128): With `security`'s `RULE-1` found spot-checked and its `RULE-2` found weak, its `Strong` cell in the status table reads `weak`
 - PROOF-302 (RULE-128): With both of `security`'s rules found spot-checked and the project's code changed since `RULE-1`'s entry was written, its `Strong` cell in the status table reads `out of date`
 - PROOF-303 (RULE-128): With `security`'s `RULE-1` found spot-checked and its `RULE-2` never read by the audit, its `Strong` cell in the status table is empty
+- PROOF-323 (RULE-137): The anchor `security` of 11 rules, each passing in a section taken before a commit that changes `src/login.py`, reads `0 of 11 · 11 out of date` in its `Tests` cell
+- PROOF-324 (RULE-137): The anchor `security` of 3 rules, `RULE-3`'s one proof `@manual` and the other two passing in a section taken before a commit that changes `src/login.py`, reads `0 of 3 · 1 by hand · 2 out of date` in its `Tests` cell
+- PROOF-325 (RULE-137): The feature `login` of 2 rules, both passing in a section taken before a commit that changes `src/login.py`, reads `0 of 2` in its `Tests` cell
 - PROOF-58 (RULE-49): Each of the three sample payloads is shown in the status table and on the dashboard; the two carry the same column headings, and every cell after a spec's name reads the same text in both
 - PROOF-212 (RULE-122): A settings file holding `{"version": "0.10.0",` makes the status report exactly `.purlin/config.json cannot be read: Expecting property name enclosed in double quotes at line 1. Fix the file by hand; nothing ran and nothing was saved.`
 - PROOF-231 (RULE-122): An anchor `policy` pinned to `<old7>` of a source repository whose newest commit is `<new7>` makes the status report print `policy: the pin <old7> is behind its source, now <new7>. Run purlin:anchor sync policy.`

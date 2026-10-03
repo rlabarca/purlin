@@ -69,6 +69,9 @@ under `Specs`. `Rules` counts the spec's rules. `Proofs` counts every proof line
 `· <k> no test` where no test carries a proof's marker. `Tests` is `<passed> of <rules>`, then
 `· <k> by hand`, `· <k> partial` and `· <k> failing` where not zero; `by hand` counts the rules
 checked at sign-off, and `partial` means the tests pass on one operating system and not another.
+An anchor's cell then adds `· <k> out of date`, as in `0 of 11 · 11 out of date`: an anchor
+covers the whole project, so a change to any tracked file puts its results out of date until
+the next run.
 A `Strong` column shows only where the audit read a rule, as `<strong> of <n>`: of the rules
 that pass their tests and have a tested proof, the ones it found strong. An anchor's cell reads
 one word, `weak`, `out of date` or `spot-checked`, or nothing: no bug is planted for an anchor's
