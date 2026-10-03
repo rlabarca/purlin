@@ -2,14 +2,14 @@
   "feature": "scaffold",
   "platforms": {
     "windows": {
-      "at": "2026-10-03T03:08:53Z",
-      "commit": "6832a1262e337dcc4c5151980bca04341fab3b08",
+      "at": "2026-10-03T17:27:08Z",
+      "commit": "cc65454eb127da103e1a9ab7eb4eb51e2626b5a2",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "856929af38a94929595213aa85580f5c3bc4b58d7bc46239e26430505ad8bea1",
-        "spec": "95d5f54e416d5f7f40b9a302497710e8b55d90e877e6f60bbf877443c549febf",
-        "tests": "f59c351d9df704fccb4e1cdb8c2f21a38094bd464a9180ed994879cc6ed2c19c"
+        "code": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
+        "spec": "af442f2b5e679cac087b9330564cd09a386d2e506f0c8ba1fc1fb4eff2dbebbe",
+        "tests": "9222b69fb3eda4fce1a35d16069c9c639d2f2487a8f52ff81adb487b575c5325"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
