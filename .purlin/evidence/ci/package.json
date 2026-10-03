@@ -2,8 +2,8 @@
   "feature": "package",
   "platforms": {
     "windows": {
-      "at": "2026-10-02T21:25:01Z",
-      "commit": "b50b287958625b24cc33b3cc59b4ea755b92ddcc",
+      "at": "2026-10-03T00:13:13Z",
+      "commit": "548897f130f2e1b8a4bc4cad5004996b4bc50c70",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {

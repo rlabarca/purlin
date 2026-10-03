@@ -2,14 +2,14 @@
   "feature": "ai_audit",
   "platforms": {
     "windows": {
-      "at": "2026-10-02T21:25:01Z",
-      "commit": "b50b287958625b24cc33b3cc59b4ea755b92ddcc",
+      "at": "2026-10-03T00:13:13Z",
+      "commit": "548897f130f2e1b8a4bc4cad5004996b4bc50c70",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "a20f1caba291fd3546a0079b2b8616dbdbad0636550714da626111fe6a3c13bd",
-        "spec": "a3a6d181e9b4b501b18345000e0e638b31801eacad3b94a731bd293e3e86c5d3",
-        "tests": "eab37acf5fac877305e69e44eea2423b4f95244e2396454269a46acdc059bf2d"
+        "code": "eef0e84dc4e3b477fb61c5c59cc3a941a8b321930695e3069f0ffb993455791b",
+        "spec": "3694592f800d41e43619440078b182f4c0d73b290a045dbc47a32dd0763f6023",
+        "tests": "f287de2b0cf1b5b558ffdb3503e1c2e76fd5a88ebb6ab912b342e9a7382e7238"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
