@@ -103,12 +103,14 @@ Suggested for pytest: python3 -m pytest {files} --junitxml={report}
 
 Your project may run its tests another way, with another interpreter or other options. The
 agent shows you the difference, then asks
-`Write this tests setting to .purlin/config.json? [y/N]`. On your yes the run writes the setting
-and runs the tests. It prints:
+`Write this tests setting to .purlin/config.json? [y/N]`. On your yes the run writes the setting,
+commits the settings file alone, and runs the tests. The results then name a commit that holds
+the command they were taken with. It prints:
 
 ```text
 Wrote the tests setting to .purlin/config.json.
-
+Committed a1b2c3d, the work these results describe:
+  .purlin/config.json
 Running pytest: python3 -m pytest tests/test_cart.py --junitxml=.purlin/runtime/reports/pytest.xml
 
 Markers: 3 tied to a test, 0 not tied.
@@ -150,7 +152,7 @@ cart  3      3       3 of 3
 ───────────────────────────
 
 3 rules. 3 pass their tests.
-Every rule passes its tests on the committed evidence. To sign it: purlin:sign
+Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign
 ```
 
 Where the first run recognises no test tool, it prints:
@@ -167,8 +169,8 @@ name is read from `pyproject.toml`, `package.json` or a `.csproj` file, then fro
 name, then from the folder's.
 
 - `Tests: met` means every rule's tests pass on the committed evidence.
-- `Sign-off: not signed` means nobody has signed this code. The last line names the command
-  that does.
+- `Sign-off: not signed` means nobody has signed this code. Signing is optional. The last
+  line names the command that does it.
 - `3 rules. 3 pass their tests.` says how many rules there are and how many passed their
   tests.
 

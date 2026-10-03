@@ -179,7 +179,7 @@ check "the anchors stand above the specs" \
 check "the status says the tests are met" "Tests: met" \
   "$(printf '%s\n' "$STATUS" | grep -x 'Tests: met' || true)"
 check "the table ends on the line that names the sign-off" \
-  'Every rule passes its tests on the committed evidence. To sign it: purlin:sign' \
+  'Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign' \
   "$(printf '%s' "$STATUS" | tail -1)"
 
 echo ""

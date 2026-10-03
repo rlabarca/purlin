@@ -738,8 +738,8 @@ class TestTheMarketplacePath:
 RUN_SCRIPT = os.path.join(ROOT, 'scripts', 'run', 'purlin_run.py')
 SIGN_SCRIPT = os.path.join(ROOT, 'scripts', 'review', 'sign.py')
 SUGGESTED = 'Suggested tests setting: '
-LAST_LINE = ('Every rule passes its tests on the committed evidence. To sign '
-             'it: purlin:sign')
+SIGN_OPTIONAL = ('Every rule passes its tests on the committed evidence. Optional: '
+             'sign this version with purlin:sign')
 
 GREETING_SPEC = """# Feature: greeting
 
@@ -1078,7 +1078,7 @@ class TestRunCommitAndSignOff:
                 == 'purlin: evidence at %s' % walk.facts['work sha7'])
         assert '.purlin/evidence/local/greeting.json' in walk.facts[
             'evidence paths'], walk.facts
-        assert walk.last_lines('commit', 1) == [LAST_LINE], walk.out['commit']
+        assert walk.last_lines('commit', 1) == [SIGN_OPTIONAL], walk.out['commit']
 
     # purlin: scaffold PROOF-119
     def test_the_sign_off_makes_a_signed_commit_naming_the_signer(

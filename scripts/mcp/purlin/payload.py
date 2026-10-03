@@ -74,7 +74,7 @@ be coupled to a layout; this is the shape they all read instead.
       "met": true,
       "signoff": {"word": "signed <version>, 4 commits since", "version": "<version>",
                   "commit": "<40 hex>", "since": 4},
-      "last_line": "Every rule passes its tests on the committed evidence. To sign it: purlin:sign",
+      "last_line": "Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign",
       "os_words": {"windows": {"word": "Windows", "short": "Win"},
                    "macos": {"word": "macOS", "short": "Mac"},
                    "linux": {"word": "Linux/Unix", "short": "Lin"}},

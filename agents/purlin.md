@@ -80,7 +80,8 @@ Every run ends on the summary,
 and `Left to do`,
 one line per kind of work with its count and its command. The first line of `Left to do` is the
 next step: say which, and say why. A project whose tests are met ends on
-`Every rule passes its tests on the committed evidence. To sign it: purlin:sign`.
+`Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign`.
+A sign-off is optional: run `purlin:sign` only when a person asks for one.
 
 ## Worktrees
 

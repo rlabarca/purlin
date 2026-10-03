@@ -23,7 +23,8 @@ Write this tests setting to .purlin/config.json? [y/N]
 ```
 
 On a yes it writes the suggested setting under `tests`, prints
-`Wrote the tests setting to .purlin/config.json.` and runs. Any other answer, or no answer,
+`Wrote the tests setting to .purlin/config.json.`, commits `.purlin/config.json` alone where the
+project is a git checkout, and runs. Any other answer, or no answer,
 writes nothing. `--write-tests` writes it without the question, which is how `purlin:test` goes
 on once you have said yes. Where the run detects none, it prints:
 

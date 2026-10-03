@@ -169,5 +169,5 @@ The next step is the first line of `Left to do`. Add no line of your own; a
 | `<n> slow proofs to run` | `→ Run: purlin:test --all` |
 | `<n> rules to test on <systems>` | `→ Run purlin:test on <systems>`. It is an instruction, not a command line: do as `skills/test/SKILL.md`, Step 5 says |
 | `<n> features whose results are not committed` | `→ Run: purlin:test --commit` |
-| `Every rule passes its tests on the committed evidence. To sign it: purlin:sign` | `→ Run: purlin:sign`, when a person chooses to sign |
+| `Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign` | Nothing is left to do, so print no `→ Run:` line. A sign-off is optional: run `purlin:sign` only when a person asks for one |
 | `Every rule passes its tests on the committed evidence. Before a sign-off, run <command>: ...` | `→ Run: <command>`. `purlin:sign` refuses these results as they stand: some were recorded on an earlier version of the code, or while files were changed and not committed |

@@ -25,8 +25,9 @@ happens in a regulated system, Purlin's evidence package is an input to it.
 - One comment above a test: `# purlin: cart PROOF-1`. The test itself does not change.
 - Your own test command, in your own framework. The first test run suggests it, with the flag
   that makes it write a report, and you confirm it.
-- A commit when you agree to one. Setup asks before it commits the files it wrote. A test run
-  commits its results only with `--commit`.
+- A commit when you agree to one. Setup asks before it commits the files it wrote. The first
+  test run commits the settings file once you confirm the test command. A test run commits its
+  results only with `--commit`.
 - Nothing running unless you ran it: no git hook, no background job and no pipeline, and no
   Purlin process left running after a command ends.
 - Nothing added to your test suite.
@@ -65,8 +66,8 @@ Coming from 0.9.5? See [docs/upgrading.md](docs/upgrading.md).
    Suggested for pytest: python3 -m pytest {files} --junitxml={report}
    ```
 
-   Say yes. The command is written into `.purlin/config.json` and the tests run. Then
-   `purlin:test --commit` commits the work and its evidence. The run ends:
+   Say yes. The command is written into `.purlin/config.json`, that file is committed, and the
+   tests run. Then `purlin:test --commit` commits the work and its evidence. The run ends:
 
    ```text
    Purlin status: shop, plugin 0.10.0
@@ -79,7 +80,7 @@ Coming from 0.9.5? See [docs/upgrading.md](docs/upgrading.md).
    ───────────────────────────
 
    3 rules. 3 pass their tests.
-   Every rule passes its tests on the committed evidence. To sign it: purlin:sign
+   Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign
    ```
 
 4. **Read it.** When a test fails, the run names the rule and the test. Here it is the test of

@@ -40,7 +40,8 @@ whose claim they are reading.
 
 **Every output says what to do next.** An agent seeking a goal can read any output, know which
 rule is affected and what to do, and improve the project by doing it. A command's ending names
-the command to run next; a project whose tests are met ends on `purlin:sign`.
+the command to run next. A project whose tests are met ends on a line that names `purlin:sign`
+as optional.
 
 **Systems by their names.** Wherever a person reads an operating system it is `Windows`,
 `macOS` or `Linux/Unix`, and in the dashboard's small boxes `Win`, `Mac` or `Lin`. The stored

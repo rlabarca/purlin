@@ -69,7 +69,7 @@ you asked it to, and stops. No command pushes.
 `.purlin/evidence/<source>/<feature>.json`, with one section per operating system. Your runs
 write into `.purlin/evidence/local/`.
 
-- `purlin:test` writes the file and commits nothing.
+- `purlin:test` writes the file and does not commit it.
 - `purlin:test --commit` commits the specs, the marked tests and the settings the results
   describe. Then it commits the evidence, as `purlin: evidence at <sha7>`.
 - A section goes `out of date` when the spec, the tests or the code the spec covers
@@ -111,7 +111,7 @@ plugin <version>`, `Tests:` and `Sign-off:`. Then come the table, the sentence, 
 `3 rules. 2 pass their tests.`, and `Left to do`. `Left to do` has one line per kind of work
 left, with its count and its command. Its first line is the next step. Where the tests are met
 and this code is not signed, the last line reads
-`Every rule passes its tests on the committed evidence. To sign it: purlin:sign`.
+`Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign`.
 [getting-started.md](getting-started.md) shows both endings from a real run.
 
 **Do my tests run on my machine, or somewhere else?** On your machine. `purlin:test` runs the

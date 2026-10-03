@@ -96,7 +96,9 @@ It is met by `purlin:test` on a machine of that system, or by the project's own 
 ("A run on another system", below).
 
 **When the tests are met and this code is not signed**, the status ends on one line:
-`Every rule passes its tests on the committed evidence. To sign it: purlin:sign`.
+`Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign`.
+A sign-off is optional. Nothing waits on it, and a project that never signs still reads
+`Tests: met`.
 
 **Where `purlin:sign` would refuse those results as they stand**, that line names the run to
 make first. For a result not recorded on this version of the code, one whose section names a
