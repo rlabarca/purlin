@@ -16,8 +16,7 @@
 #
 # The job fails only when one of those tests failed or could not run.
 #
-# No breaks and no AI audit run here. purlin:audit does both on a person's
-# machine.
+# No audit runs here. purlin:audit runs on a person's machine.
 #
 # The job is capped at 90 minutes. GitHub cancels a job at 6 hours and
 # keeps nothing, so a run that stops for something cannot be read; 90 minutes

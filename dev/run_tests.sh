@@ -67,8 +67,8 @@ fi
 
 # ── All pytest tests in a single session ─────────────────────────────
 # One session for speed. Correctness does not depend on it.
-# Every dev/test_*.py, found rather than listed: a hand-kept list left new test
-# files out of the sweep. The browser suites (test_purlin_report*.py) join below;
+# Every dev/test_*.py, found rather than listed, so a new test file joins the
+# sweep. The browser suites (test_purlin_report*.py) join below;
 # test_install.py runs under `--install` alone.
 PYTEST_FILES=()
 for test_file in "$SCRIPT_DIR"/test_*.py; do
