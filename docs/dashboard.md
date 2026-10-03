@@ -57,9 +57,28 @@ Where the two boxes do not fit beside the header line, both move to the line bel
 
 ## Board
 
-![The board: the header line naming the branch and commit, the Tests and Sign-off boxes, the count boxes, the Anchors section, and the specs under their categories](images/dashboard-board.png)
+![The board: the header line naming the branch and commit, the Tests and Sign-off boxes, the count boxes, the notices, the Anchors section, and the specs under their categories](images/dashboard-board.png)
 
-**Notices.** Notices sit above the count boxes, one per line. There is one when the working tree
+**Count boxes.** Up to four boxes count the project's rules:
+
+- `No proof` counts the rules no proof line names. It comes first, and it is there wherever the
+  project writes at least one proof line.
+- `Passing` counts the rules that pass their tests. The project's total is beneath it, as
+  `11 RULES TOTAL`. A rule checked at sign-off is not counted.
+- `Failing` counts the rules whose tests failed, in red. It is there only while a rule's status
+  is `failed`. Hover over it for each spec that holds one, as `invoice · 1`. A rule that failed
+  on one operating system and passed on another reads `partial` and is not counted here.
+- `Strong` counts the rules the audit found strong, of the rules that pass their tests and have
+  a tested proof. It is there once any rule has an audit entry and at least one rule that is not
+  an anchor's passes its tests with a tested proof. Hover over it for the audit's counts, one to
+  a line, as `34 strong`, `4 weak`, `2 spot-checked`, then `Last audit: 2026-09-13`.
+
+A box is green once its count is complete, and amber until then. `No proof` is complete at zero.
+`Passing` is complete once every rule passes or is checked at sign-off. `Strong` is complete once
+every rule the audit could read that is not an anchor's is strong.
+
+**Notices.** Notices sit below the count boxes and above the anchors, one per line, so the
+counts stay on the first screen however many notices there are. There is one when the working tree
 has uncommitted changes:
 
 ```
@@ -89,24 +108,6 @@ first two, and its hover names every one:
 One or two of a kind keep a notice each, and so does a warning that is about no one spec. The
 lines of information group the same way.
 
-**Count boxes.** Up to four boxes count the project's rules:
-
-- `No proof` counts the rules no proof line names. It comes first, and it is there wherever the
-  project writes at least one proof line.
-- `Passing` counts the rules that pass their tests. The project's total is beneath it, as
-  `11 RULES TOTAL`. A rule checked at sign-off is not counted.
-- `Failing` counts the rules whose tests failed, in red. It is there only while a rule's status
-  is `failed`. Hover over it for each spec that holds one, as `invoice · 1`. A rule that failed
-  on one operating system and passed on another reads `partial` and is not counted here.
-- `Strong` counts the rules the audit found strong, of the rules that pass their tests and have
-  a tested proof. It is there once any rule has an audit entry and at least one rule that is not
-  an anchor's passes its tests with a tested proof. Hover over it for the audit's counts, one to
-  a line, as `34 strong`, `4 weak`, `2 spot-checked`, then `Last audit: 2026-09-13`.
-
-A box is green once its count is complete, and amber until then. `No proof` is complete at zero.
-`Passing` is complete once every rule passes or is checked at sign-off. `Strong` is complete once
-every rule the audit could read that is not an anchor's is strong.
-
 **Columns.** `Spec`, `Rules` and `Tests` are always there. `Proofs` sits between `Rules` and
 `Tests` wherever the project writes at least one proof line. `Strong` comes last once any rule has
 an audit entry. A column the project does not reach is absent, not empty.
@@ -116,7 +117,7 @@ an audit entry. A column the project does not reach is absent, not empty.
 | `Spec` | the feature's name, or an anchor's | the spec's path |
 | `Rules` | how many rules the spec has, as `16` | |
 | `Proofs` | `5 · 1 no test`: how many proof lines the spec holds, then how many no test runs. A `@manual` proof is not counted as one | which proofs have no test |
-| `Tests` | `3 of 4 · 1 partial`: how many rules passed everywhere they ran, then `by hand`, `partial` and `failing`. `2 of 3 · 1 by hand` holds one rule checked at sign-off | one line per operating system a current run covered, with its newest run's source, age and results |
+| `Tests` | `3 of 4 · 1 partial`: how many rules passed everywhere they ran, then `by hand`, `partial` and `failing`. `2 of 3 · 1 by hand` holds one rule checked at sign-off. An anchor's cell ends with how many of its rules are out of date, as `0 of 11 · 11 out of date` | one line per operating system a current run covered, with its newest run's source, age and results |
 | `Strong` | `2 of 4`, as `<strong> of <n>`: how many rules the audit found strong, of the rules that pass their tests and have a tested proof. An anchor reads one word, `weak`, `out of date` or `spot-checked`, or nothing | where the newest audit came from and how old it is; an anchor's opens on `No bug is planted for an anchor's rule.` |
 
 Every count names what it counts. The first part is always drawn. A later part is drawn only
@@ -126,8 +127,8 @@ the same characters as the status table in the terminal.
 Every hover is a plain `title` attribute, so it works on a page opened from disk. When, who and
 which platform are all in hovers.
 
-**Anchors.** The anchors have a section of their own, headed `ANCHORS`, between the count boxes
-and the spec table. It has the same columns and rows, and no band. A project with no anchor shows
+**Anchors.** The anchors have a section of their own, headed `ANCHORS`, between the notices and
+the spec table. It has the same columns and rows, and no band. A project with no anchor shows
 no such section.
 
 **Failing specs first.** A spec with a failing rule is listed before a spec with none, among the

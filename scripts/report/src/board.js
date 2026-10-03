@@ -134,8 +134,10 @@ function rulesCell(feature) {
 /* What the marked tests found, as the passed cells read it and as
    `board.tests_cell` words it: how many of the spec's rules passed
    everywhere they ran, then how many are checked by hand, which no test
-   runs for, then the two words that say a test did not pass. The share is
-   complete once every rule passes or is checked by hand. The hover says
+   runs for, then the two words that say a test did not pass, and, on an
+   anchor's row, how many rules read `out of date`, the results its own
+   changes left behind. A feature's row never carries that part. The share
+   is complete once every rule passes or is checked by hand. The hover says
    which platforms ran and what each found. */
 function testsCell(feature) {
   var found = {};
@@ -149,7 +151,9 @@ function testsCell(feature) {
     + counts([share(found.passed || 0, rules.length, byHand),
       [byHand, WORDS.by_hand, 'neutral'],
       [found.partial || 0, WORDS.partial, 'warn'],
-      [found.failed || 0, WORDS.failing, 'fail']]) + '</span>';
+      [found.failed || 0, WORDS.failing, 'fail'],
+      [feature.is_anchor ? found['out of date'] || 0 : 0, WORDS.out_of_date,
+       'warn']]) + '</span>';
 }
 
 /* `n of m` as the first part of a count cell: the share reads pass when every
@@ -289,9 +293,11 @@ function firstThose(list, first) {
   }));
 }
 
-/* The board opens on the step boxes, then the two tables beneath them: the
-   anchors, where the project has one, and then the specs, grouped by
-   category. The anchors' section says what they are, so they carry no band
+/* The board opens on the step boxes, then the notices, then the two tables
+   beneath them: the anchors, where the project has one, and then the specs,
+   grouped by category. The boxes stand above the notices, so the counts and
+   the `Failing` box are on the first screen at every width however many
+   notices the data carries. The anchors' section says what they are, so they carry no band
    and no mark of their own.
 
    The order is the data's, but a spec with a failing rule comes before one
@@ -328,6 +334,6 @@ function renderBoard() {
   var specsFirst = !anchors.some(hasFailing) && order.some(function (name) {
     return groups[name].some(hasFailing);
   });
-  return '<section>' + statStrip() + '</section>'
+  return '<section>' + statStrip() + '</section>' + notices()
     + (specsFirst ? specsTable + anchorTable : anchorTable + specsTable);
 }
