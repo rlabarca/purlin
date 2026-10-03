@@ -294,10 +294,7 @@ The bug still reads `survived`, its two findings stay, and the rule reads `weak`
   from its declaration to the end of its body, or the whole file for a shell or SQL test. A
   change elsewhere in the file, to a helper, a fixture or another test, is not a change to
   the test. A bug recorded as `survived` holds the sha256 of those tests as `test_key`.
-- **A bug recorded with no `test_key`** reads as unchanged only where that is certain: its
-  `break_key` is the one taken now, or the rule's entry is not out of date on its tests. Once
-  the rule's tests change it is settled as any bug is. A test whose source is not found is
-  read as changed.
+- **A test whose source is not found** is read as changed.
 - **`--sound PROOF-N`** says the test of that proof was read against the proof and judged to
   assert what the proof names already. It is given once per proof, beside `--settle`:
   `purlin:audit <feature> RULE-N --settle --sound PROOF-N`. The settle then goes on for that

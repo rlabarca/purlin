@@ -516,26 +516,6 @@ def hand_in_72_hours(root):
              "at('2026-03-04T08:00'))")
 
 
-def without_test_key(root):
-    """Take `test_key` out of every planted bug the evidence holds, so each
-    reads as an audit before that field wrote it."""
-    path = os.path.join(root, *EVIDENCE.split('/'))
-    with open(path, encoding='utf-8') as handle:
-        data = json.load(handle)
-    for entry in ((data.get('audit') or {}).get('rules') or {}).values():
-        for made in (entry.get('breaks') or {}).values():
-            made.pop('test_key', None)
-    with open(path, 'w', encoding='utf-8') as handle:
-        json.dump(data, handle, indent=2, sort_keys=True)
-        handle.write('\n')
-
-
-def strengthen_without_test_key(root):
-    """`without_test_key`, then `strengthen`."""
-    without_test_key(root)
-    strengthen(root)
-
-
 # A defect fixed elsewhere in the code file: a site that is not three capital
 # letters is refused. The helper moves one line down, and the lines the bugs
 # on record change stand as they were.

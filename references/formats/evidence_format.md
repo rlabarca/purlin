@@ -245,10 +245,8 @@ test's source>`, one per test tied to that proof, the source as the audit
 reads it: the test's own lines, not its file. `break_key` covers the
 feature's code as well, so it cannot tell a changed test from changed code.
 A settle plants nothing for a proof whose `test_key` is the one taken now,
-and the bug stays `survived`. A `survived` bug with no `test_key` reads as
-unchanged only while its `break_key` is the one taken now or the entry is
-not out of date on `test`; once the rule's tests change it is settled as
-any bug is. A test whose source is not found is read as changed.
+and the bug stays `survived`. A test whose source is not found is read as
+changed.
 
 `purlin:audit <feature> RULE-N --settle --sound PROOF-N` lets the settle go
 on for such a proof. The entry the settle then writes for the proof holds

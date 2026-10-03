@@ -304,34 +304,25 @@ def survived_findings(proof_id, made, last, finding=None):
     return found
 
 
-def test_as_it_was(kept, tests, key, last):
+def test_as_it_was(kept, tests):
     """True where the tests of a proof are the ones its kept bug got past.
 
-    `kept` is the bug's entry, `tests` the proof's own tests as the audit
-    reads them now, `key` the `break_key` of the test and code now and `last`
-    the rule's entry. The entry's `test_key` is compared with the hash of the
-    tests' source. An entry that holds none, written before the field was,
-    reads as unchanged only where that is certain: its `break_key` is the one
-    taken now, or the rule's entry is not out of date on its tests. A test
-    whose source is not found cannot be compared and reads as changed, so no
-    settle is refused for a test nobody can show to be the same."""
+    `kept` is the bug's entry and `tests` the proof's own tests as the audit
+    reads them now. The entry's `test_key` is compared with the hash of the
+    tests' source. A test whose source is not found cannot be compared and
+    reads as changed, so no settle is refused for a test nobody can show to
+    be the same."""
     if not tests or any(test.get('source') is None for test in tests):
         return False
-    stored = kept.get('test_key')
-    if stored:
-        return stored == test_source_hash(tests)
-    return (kept.get('break_key') == key
-            or 'test' not in (last.get('out_of_date') or ()))
+    return kept.get('test_key') == test_source_hash(tests)
 
 
-def _with_test_key(kept, tests):
-    """A `survived` entry with the `test_key` of the tests it got past, which
-    are `tests` wherever this is called: the entry is kept because they are
-    unchanged."""
-    if kept.get('test_key') or any(test.get('source') is None
-                                   for test in tests):
-        return kept
-    return dict(kept, test_key=test_source_hash(tests))
+def _with_test_key(entry, tests):
+    """A `survived` entry with the `test_key` of `tests`, the tests it got
+    past; as it is where the source of one of them is not found."""
+    if any(test.get('source') is None for test in tests):
+        return entry
+    return dict(entry, test_key=test_source_hash(tests))
 
 
 def _settled_entry(entry, unchanged):
@@ -387,21 +378,18 @@ def bug_plan(reading, last, code_part, here=None, settle=False, sound=()):
         kept = kept_breaks.get(proof['id'])
         if settle:
             if isinstance(kept, dict) and kept.get('result') == 'survived':
-                same = test_as_it_was(kept, tests, key, last)
+                same = test_as_it_was(kept, tests)
                 if same and proof['id'] not in sound:
-                    plan.append((proof['id'], 'refused',
-                                 _with_test_key(kept, tests)))
+                    plan.append((proof['id'], 'refused', kept))
                 else:
                     plan.append((proof['id'], 'replay', (kept, key, same)))
             elif isinstance(kept, dict) and kept.get('break_key') == key:
                 plan.append((proof['id'], 'kept', kept))
             continue
         if isinstance(kept, dict) and kept.get('break_key') == key:
-            if kept.get('result') == 'survived':
-                kept = _with_test_key(kept, tests)
             plan.append((proof['id'], 'kept', kept))
         elif (isinstance(kept, dict) and kept.get('result') == 'survived'
-              and test_as_it_was(kept, tests, key, last)):
+              and test_as_it_was(kept, tests)):
             plan.append((proof['id'], 'again', (kept, key)))
         else:
             plan.append((proof['id'], 'plant', key))
@@ -485,9 +473,8 @@ def replayed(project_root, reading, plan, scope_files):
         ran = result.get('result')
         if ran in ('caught', 'not run'):
             settled.append((proof_id, 'kept', _settled_entry(dict(
-                kept, aim=kept.get('aim') or targeted_break.PLAIN,
-                case=kept.get('case') or '', result=ran,
-                why=result.get('why') or '', break_key=key), same)))
+                kept, result=ran, why=result.get('why') or '',
+                break_key=key), same)))
             if ran == 'caught':
                 said[proof_id] = NOW_CATCHES % place
         elif ran == 'survived' and what == 'again':
@@ -546,9 +533,6 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
                 proof_id, evidence_reader.os_word(value),
                 evidence_reader.os_word(here))))
         elif what == 'kept':
-            # An entry written before the aim and the case were kept gains both.
-            value = dict(value, aim=value.get('aim') or targeted_break.PLAIN,
-                         case=value.get('case') or '')
             breaks[proof_id] = value
             if value.get('result') == 'survived':
                 findings.extend(survived_findings(proof_id, value, last))

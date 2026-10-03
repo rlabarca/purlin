@@ -228,14 +228,17 @@ def asked_for(call):
     return [name.strip() for name in found[-1].split(',')] if found else []
 
 
+def key_of_tests(project, rule, proof):
+    """The hash of the tests of `proof` as the audit reads them now."""
+    return audit_run.test_source_hash(
+        [{'file': test['file'], 'name': test['name'], 'source': test['body']}
+         for test in read(project, rule)['tests'] if test['proof'] == proof])
+
+
 def break_key_of(project, rule, proof):
     """The key a planted bug for `proof` carries for its test and code now."""
-    tests = [{'file': test['file'], 'name': test['name'],
-              'source': test['body']}
-             for test in read(project, rule)['tests']
-             if test['proof'] == proof]
     return audit_module.break_key(
-        audit_run.test_source_hash(tests),
+        key_of_tests(project, rule, proof),
         purlin_fingerprint.code_part(project.root, {'scope': ['src/login.py']}))
 
 
@@ -247,10 +250,13 @@ def settle(project, rule, result='caught', findings=()):
     with open(path, encoding='utf-8') as handle:
         data = json.load(handle)
     data['audit']['rules'][rule]['breaks'] = {
-        proof['id']: {'file': 'src/login.py', 'line': 12,
-                      'before': '    return 401', 'after': '    return 200',
-                      'result': result, 'why': '',
-                      'break_key': break_key_of(project, rule, proof['id'])}
+        proof['id']: dict(
+            {'aim': 'plain', 'case': CASE, 'file': 'src/login.py', 'line': 12,
+             'before': '    return 401', 'after': '    return 200',
+             'result': result, 'why': '',
+             'break_key': break_key_of(project, rule, proof['id'])},
+            **({'test_key': key_of_tests(project, rule, proof['id'])}
+               if result == 'survived' else {}))
         for proof in project.rule(rule)['proofs']}
     write(path, json.dumps(data, indent=2, sort_keys=True))
     return rel
@@ -1024,26 +1030,6 @@ class TestTheVerdict:
         assert entry['breaks']['PROOF-2']['result'] == 'caught', entry
         assert entry['breaks']['PROOF-2']['after'] == '    return 200', entry
 
-    # purlin: ai_audit PROOF-136
-    def test_a_kept_entry_with_no_aim_or_case_is_written_back_with_both(
-            self, claude):
-        with passing_project(source=LOGIN_SOURCE) as made:
-            settle(made, 'RULE-2')
-            settle(made, 'RULE-1')
-            kept = entry_of(made)['breaks']['PROOF-2']
-            assert 'aim' not in kept and 'case' not in kept, kept
-            # Only RULE-2's text changes, so the audit reads it again.
-            made.spec(SPEC.replace('return 401 and the body',
-                                   'return 401 with the body'))
-            made.evidence()
-            code, printed = audit(made)
-            entry = entry_of(made)
-        assert code == 0, printed
-        made_now = entry['breaks']['PROOF-2']
-        assert made_now['result'] == 'caught', entry
-        assert made_now.get('aim') == 'plain', made_now
-        assert made_now.get('case') == '', made_now
-
     # purlin: ai_audit PROOF-115
     def test_a_changed_test_has_its_bug_asked_for_again(self, claude):
         _install, directory = claude
@@ -1309,7 +1295,8 @@ class TestWhenTheModelCannotBeReached:
         assert entry['verdict'] == 'weak', entry
         assert entry['findings'] == [
             'PROOF-2: the test still passes when src/login.py:12 reads '
-            '"return 200"'], entry
+            '"return 200"',
+            'PROOF-2: the AI says this breaks: ' + CASE], entry
 
 
 # ---------------------------------------------------------------------------
@@ -2311,28 +2298,6 @@ class TestASettleOnAnUnchangedTest:
         caught = refused.before['RULE-4']['breaks']['PROOF-6']
         assert caught['result'] == 'caught', caught
         assert 'test_key' not in caught, caught
-
-    # purlin: ai_audit PROOF-178
-    def test_a_bug_recorded_without_the_key_is_refused_while_nothing_changed(
-            self, tmp_path):
-        made = sample_lab.settled(tmp_path,
-                                  change=sample_lab.without_test_key)
-        assert made.code == 0, (made.lines, made.errors)
-        assert made.under('RULE-3')[0] == REFUSED % 'PROOF-5', made.lines
-        assert made.entries['RULE-3']['breaks']['PROOF-5'][
-            'result'] == 'survived'
-        assert made.calls == []
-
-    # purlin: ai_audit PROOF-179
-    def test_a_bug_recorded_without_the_key_is_settled_once_its_test_changes(
-            self, tmp_path):
-        made = sample_lab.settled(
-            tmp_path, change=sample_lab.strengthen_without_test_key)
-        assert made.code == 0, (made.lines, made.errors)
-        assert made.under('RULE-3') == [NOW_CATCHES_5], made.lines
-        entry = made.entries['RULE-3']
-        assert entry['breaks']['PROOF-5']['result'] == 'caught', entry
-        assert entry['verdict'] == 'strong', entry
 
 
 # ---------------------------------------------------------------------------
