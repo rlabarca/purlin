@@ -16,6 +16,9 @@ A project set up with this release has nothing to upgrade, and the command says 
 Nothing is pending: this project is at <VERSION>.
 ```
 
+Where such a project lacks a file setup writes, the same command restores it.
+[A project this release set up](#a-project-this-release-set-up) shows that run.
+
 Until a 0.9.5 project is upgraded, `purlin:status` prints only this after its first line:
 
 ```
@@ -337,6 +340,57 @@ pass every time is the project's work.
 **Done, for an upgrade,** is `purlin:status` printing no `→ Run: purlin:init --update` line
 and, after `purlin:test --all --commit`, a count of passing rules. A rule that still reads
 `no test` or `not run` has a line under `Left to do` naming the command for it.
+
+## A project this release set up
+
+Purlin 0.9.5 set a project up where its settings carry no `tests` setting, or where the update
+finds something 0.9.5 wrote. Every other project has nothing to upgrade. Where it lacks a file
+setup writes, `purlin:status` ends with `→ Run: purlin:init --update` above its count, and the
+command restores the file. It restores four:
+
+| File | What is restored |
+|------|------------------|
+| `.gitignore` | the lines for `.purlin/runtime/` and `.purlin/report-data.js`, where one is missing |
+| `.purlin/config.json` | `version`, where it is not this release; `tests` stays as it is |
+| `.purlin/evidence/README.md` | the README, where there is none |
+| `purlin-report.html` | the page the plugin ships, where the page at the project root is another |
+
+The run lists each file with what the file is for, and asks about each:
+
+```
+2 files to restore in /work/shop:
+  .gitignore: keeps .purlin/runtime/ and .purlin/report-data.js out of git: each run writes them again
+  .purlin/evidence/README.md: says what the evidence folder holds
+
+Restore .gitignore? [y/N]
+Restore .purlin/evidence/README.md? [y/N]
+```
+
+A run that restored nothing ends by saying how to restore:
+
+```
+→ Run: purlin:init --update
+Nothing was restored. Add --yes to restore each file.
+```
+
+With `--yes` it asks nothing. It prints one line for each file restored and the commit that
+carries them, then ends as `purlin:status` ends:
+
+```
+Restoring 2 files: .gitignore, .purlin/evidence/README.md.
+  restored .gitignore: keeps .purlin/runtime/ and .purlin/report-data.js out of git: each run writes them again
+  restored .purlin/evidence/README.md: says what the evidence folder holds
+  committed 4f0c2ab as chore(update): restore .gitignore, .purlin/evidence/README.md
+
+8 rules. 8 pass their tests.
+Left to do:
+  1 feature whose results are not committed: purlin:test --commit
+```
+
+The run changes no spec, no test and no evidence, so every rule reads as it did. Its commit is
+a change to the project like any other, and the ending names what that leaves to do. It keeps no
+copy of a file: the commit shows each change. A file you declined is printed as
+`skipped <file>`, and the ending then starts with `→ Run: purlin:init --update`.
 
 ## When it refuses
 

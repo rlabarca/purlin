@@ -38,6 +38,8 @@ What each group proves:
 *scripts*     the proposal cites the script of the project's it matches
 *applying*    a run told to apply prints one line in place of the pending list
 *agent files* the lines naming 0.9.5 go from the files that instruct an agent
+*restoring*   a project 0.9.5 did not set up has its missing files restored,
+              each named, and the run ends as the status ends
 """
 
 import fnmatch
@@ -53,9 +55,11 @@ import pytest
 DEV = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(DEV)
 UPDATE = os.path.join(ROOT, 'scripts', 'init', 'update.py')
+sys.path.insert(0, DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'init'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 
+import sample_lab  # noqa: E402
 import update  # noqa: E402
 from purlin import frameworks  # noqa: E402
 from purlin import status as status_module  # noqa: E402
@@ -2246,3 +2250,191 @@ def test_claude_md_is_left_where_markers_is_declined(tmp_path, capsys,
     printed = capsys.readouterr().out.splitlines()
     assert not [line for line in printed if 'that named 0.9.5' in line]
     assert '  CLAUDE.md: 6 lines' + CHANGE_FIRST in printed, printed
+
+
+# --- a project 0.9.5 did not set up -------------------------------------------
+
+IGNORE = '.gitignore'
+EVIDENCE_README = '.purlin/evidence/README.md'
+SETTINGS = '.purlin/config.json'
+PAGE = 'purlin-report.html'
+FOR = {
+    IGNORE: 'keeps .purlin/runtime/ and .purlin/report-data.js out of git: '
+            'each run writes them again',
+    EVIDENCE_README: 'says what the evidence folder holds',
+    SETTINGS: 'holds the settings, with version reading %s' % VERSION,
+    PAGE: 'the dashboard page, as this version ships it',
+}
+NOTHING_RESTORED = 'Nothing was restored. Add --yes to restore each file.'
+# What only a project 0.9.5 set up is told.
+OF_095 = ('0.9.5', 'migrat', 'not run', 'verify:', 'update-backup',
+          'Run it before anything else', 'beside the specs', 'untracked',
+          'Applying', 'Purlin left these for you:', 'These need you:')
+
+
+def _fresh(tmp_path):
+    """A project this release set up, built by `sample_lab`: its `.gitignore`
+    lacks `.purlin/report-data.js` and it has no evidence README. Its tests
+    have run once, so the status counts its rules."""
+    root = sample_lab.build(tmp_path)
+    _git(root, 'config', 'user.name', 'Test Person')
+    _git(root, 'config', 'user.email', 'test@example.com')
+    _git(root, 'config', 'commit.gpgsign', 'false')
+    return root
+
+
+def _status_ending(root):
+    """The lines the status ends on, as it prints them now."""
+    return status_module.sync_status(root).rsplit('\n\n', 1)[-1].splitlines()
+
+
+def _head(root):
+    return _git(root, 'rev-parse', 'HEAD').stdout.strip()
+
+
+# purlin: update PROOF-221
+def test_a_project_of_this_release_has_its_missing_files_restored_and_named(
+        tmp_path, capsys):
+    root = _fresh(tmp_path)
+    assert _ids(root) == ['untracked-files', 'evidence']
+    was = _read(root, IGNORE)
+    assert _apply(root) == 0
+    printed = capsys.readouterr().out.splitlines()
+    sha = _git(root, 'rev-parse', '--short', 'HEAD').stdout.strip()
+    subject = 'chore(update): restore %s, %s' % (IGNORE, EVIDENCE_README)
+    assert printed[:5] == [
+        'Restoring 2 files: %s, %s.' % (IGNORE, EVIDENCE_README),
+        '  restored %s: %s' % (IGNORE, FOR[IGNORE]),
+        '  restored %s: %s' % (EVIDENCE_README, FOR[EVIDENCE_README]),
+        '  committed %s as %s' % (sha, subject),
+        ''], printed
+    assert _git(root, 'log', '-1', '--format=%s').stdout.strip() == subject
+    assert _git(root, 'show', '--name-only', '--format=',
+                'HEAD').stdout.split() == [IGNORE, EVIDENCE_README]
+    assert _read_bytes(root, EVIDENCE_README) == _read_bytes(
+        ROOT, 'templates/evidence-readme.md')
+    assert _read(root, IGNORE) == was + (
+        '\n# Regenerated locally, never committed\n.purlin/report-data.js\n')
+    assert _ids(root) == []
+
+
+# purlin: update PROOF-222
+def test_a_restoring_run_ends_as_the_status_ends(tmp_path, capsys):
+    root = _fresh(tmp_path)
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    ending = _status_ending(root)
+    assert [line for line in ending if 'pass' in line], ending
+    assert 'Left to do:' in ending, ending
+    assert printed[-len(ending) - 1:] == [''] + ending, printed
+    assert len(printed) == 4 + 1 + len(ending), printed
+
+
+# purlin: update PROOF-223
+def test_a_restoring_run_says_nothing_of_0_9_5_and_keeps_no_copy(tmp_path,
+                                                               capsys):
+    root = _fresh(tmp_path)
+    _apply(root)
+    printed = capsys.readouterr().out
+    assert [word for word in OF_095 if word in printed] == [], printed
+    assert not os.path.exists(os.path.join(root, BACKUPS))
+
+
+# purlin: update PROOF-224
+def test_a_restoring_run_lists_each_file_and_asks_about_it(tmp_path, capsys):
+    root = _fresh(tmp_path)
+    head, status = _head(root), _git(root, 'status', '--porcelain').stdout
+    done = subprocess.run(
+        [sys.executable, UPDATE, '--project-root', root],
+        capture_output=True, encoding='utf-8', stdin=subprocess.DEVNULL)
+    assert done.returncode == 0, done.stderr
+    assert done.stdout.splitlines() == [
+        '2 files to restore in %s:' % os.path.abspath(root),
+        '  %s: %s' % (IGNORE, FOR[IGNORE]),
+        '  %s: %s' % (EVIDENCE_README, FOR[EVIDENCE_README]),
+        '',
+        'Restore %s? [y/N] n' % IGNORE,
+        'Restore %s? [y/N] n' % EVIDENCE_README,
+        '',
+        '  skipped %s' % IGNORE,
+        '  skipped %s' % EVIDENCE_README,
+        '',
+        UPDATE_LINE,
+        NOTHING_RESTORED], done.stdout
+    assert _head(root) == head
+    assert _git(root, 'status', '--porcelain').stdout == status
+
+
+# purlin: update PROOF-225
+def test_one_file_restored_leaves_the_other_and_the_status_names_the_update(
+        tmp_path, capsys, monkeypatch):
+    root = _fresh(tmp_path)
+    _answers(monkeypatch, rules=(('Restore %s?' % IGNORE, 'n'),))
+    _apply(root, argv=())
+    printed = capsys.readouterr().out.splitlines()
+    assert '  skipped %s' % IGNORE in printed, printed
+    assert '  restored %s: %s' % (EVIDENCE_README,
+                                  FOR[EVIDENCE_README]) in printed
+    assert _git(root, 'log', '-1', '--format=%s').stdout.strip() == (
+        'chore(update): restore %s' % EVIDENCE_README)
+    assert _ids(root) == ['untracked-files']
+    ending = _status_ending(root)
+    assert ending[0] == UPDATE_LINE, ending
+    assert printed[-len(ending):] == ending, printed
+
+
+# purlin: update PROOF-226
+def test_a_stale_version_and_a_page_not_shipped_are_restored_too(tmp_path,
+                                                                 capsys):
+    root = _fresh(tmp_path)
+    tests = _config(root)['tests']
+    _set_config(root, version='0.0.1')
+    _write(root, PAGE, 'an older page\n')
+    _git(root, 'add', SETTINGS, PAGE)
+    _git(root, 'commit', '-qm', 'an older stamp and page')
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    files = [IGNORE, SETTINGS, EVIDENCE_README, PAGE]
+    assert printed[:5] == (
+        ['Restoring 4 files: %s.' % ', '.join(files)]
+        + ['  restored %s: %s' % (rel, FOR[rel]) for rel in files]), printed
+    assert _config(root) == {'version': VERSION, 'tests': tests}
+    assert _read_bytes(root, PAGE) == _read_bytes(
+        ROOT, 'scripts/report/purlin-report.html')
+    assert [word for word in OF_095 if word in '\n'.join(printed)] == []
+    assert _ids(root) == []
+
+
+# purlin: update PROOF-227
+def test_settings_with_no_tests_setting_make_it_a_project_0_9_5_set_up(
+        tmp_path, capsys):
+    root = _fresh(tmp_path)
+    _write(root, SETTINGS, json.dumps({'version': '0.9.5',
+                                       'test_framework': 'pytest'}))
+    _git(root, 'commit', '-qam', 'the settings 0.9.5 wrote')
+    before = _git(root, 'rev-parse', '--short', 'HEAD').stdout.strip()
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    assert printed[0] == ('Applying 3 migrations: untracked-files, config, '
+                          'evidence.'), printed
+    assert NOT_RUN in printed
+    assert OLD_RECORD % before in printed
+    assert BACKUPS_LINE % before in printed
+    assert printed[-3:] == RUN_TESTS, printed
+    assert _git(root, 'log', '-1', '--format=%s').stdout.strip() == (
+        'chore(update): migrate to %s (untracked-files, config, evidence)'
+        % VERSION)
+    assert not [line for line in printed if 'restored' in line.split(':')[0]]
+
+
+# purlin: update PROOF-228
+def test_a_line_0_9_5_wrote_in_gitignore_makes_it_a_project_0_9_5_set_up(
+        tmp_path, capsys):
+    root = _fresh(tmp_path)
+    _write(root, IGNORE, _read(root, IGNORE) + '.purlin/cache/\n')
+    _git(root, 'commit', '-qam', 'the line 0.9.5 wrote for its cache')
+    _apply(root)
+    printed = capsys.readouterr().out.splitlines()
+    assert printed[0] == 'Applying 2 migrations: untracked-files, evidence.'
+    assert NOT_RUN in printed
+    assert printed[-3:] == RUN_TESTS, printed

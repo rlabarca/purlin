@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Bring a project an older Purlin set up onto this release.
+"""Bring a project Purlin 0.9.5 set up onto this release, and restore the
+files setup writes to a project that lacks one.
 
     python3 scripts/init/update.py [--yes | --apply ID[,ID...]]
         [--test-command TOOL=COMMAND ...] [--project-root DIR]
@@ -28,6 +29,13 @@ file is removed only on a yes typed for that file, so under `--yes` and
 `--apply` each is kept and named. A file this release deletes rather than
 rewrites is left in git history instead of copied.
 
+A project 0.9.5 did not set up has no migration to apply. Where it lacks a
+file setup writes, the same run restores it: it lists each file with what the
+file is for, asks `Restore <file>? [y/N]`, prints one line for each file
+restored, commits them as `chore(update): restore <files>`, and ends on the
+lines `purlin:status` ends on. It keeps no copy and writes no log there, and
+`set_up_by_095` is what tells the two kinds of project apart.
+
 Exit codes: 0 nothing pending or the run applied what was, 1 the settings
 file cannot be read, 2 no Purlin project at that root or a flag's value
 cannot be used.
@@ -54,6 +62,7 @@ if _MCP_DIR not in sys.path:
 
 from purlin import (console as console_module,                # noqa: E402
                     markers as markers_module,
+                    project as project_module,
                     specs as specs_module)
 import config_engine                                          # noqa: E402
 # --- what 0.9.5 wrote, which the upgrade finds and rewrites --------------
@@ -256,6 +265,23 @@ BAD_TEST_COMMAND = ('--test-command takes <tool>=<command>, as in '
                     '--test-command "pytest=uv run pytest {files} '
                     '--junitxml={report}"; it was given %s.')
 
+# What the update prints on a project 0.9.5 did not set up: the files setup
+# writes, by the step that writes each again, with what each file is for.
+RESTORED = {
+    'untracked-files': ('.gitignore', 'keeps %s out of git: each run writes '
+                        'them again' % ' and '.join(IGNORE_LINES)),
+    'config': ('.purlin/config.json', 'holds the settings, with version '
+               'reading %s'),
+    'evidence': (EVIDENCE_README, 'says what the evidence folder holds'),
+    'dashboard': (DASHBOARD_PAGE, 'the dashboard page, as this version ships '
+                  'it'),
+}
+TO_RESTORE = '%d file%s to restore in %s:'
+RESTORING = 'Restoring %d file%s: %s.'
+RESTORE_QUESTION = 'Restore %s?'
+_RESTORE_COMMIT = 'chore(update): restore %s'
+NOTHING_RESTORED = 'Nothing was restored. Add --yes to restore each file.'
+
 # --- helpers ---------------------------------------------------------------
 # Both open with `newline=''`: a file the project owns keeps each line's own
 # ending, byte for byte, through a rewrite.
@@ -410,7 +436,7 @@ def _apply_design_refs(root, files, args, out):
     """No design file is tied to a spec in this release: the lines go."""
     for rel in files:
         path = os.path.join(root, rel)
-        out.kept(_back_up_copy(root, rel))
+        out.keep(root, rel)
         text, removed = _design_lines(_read(path))
         _write(path, text)
         out.done(rel)
@@ -490,7 +516,7 @@ def _apply_anchor_lines(root, files, args, out):
     named = _named_anchors(root)
     for rel in files:
         path = os.path.join(root, rel)
-        out.kept(_back_up_copy(root, rel))
+        out.keep(root, rel)
         text, removed = _anchor_lines(rel, _read(path))
         _write(path, text)
         out.done(rel)
@@ -514,11 +540,15 @@ def _detect_untracked(root):
         hits.append(CACHE_DIR + '/')
     path = os.path.join(root, '.gitignore')
     lines = _read(path).splitlines() if os.path.isfile(path) else []
-    if (any(line not in lines for line in IGNORE_LINES)
-            or any(line in STALE_IGNORE or line in REWORDED_IGNORE
-                   for line in lines)):
+    if any(line not in lines for line in IGNORE_LINES) or _old_ignore(lines):
         hits.append('.gitignore')
     return sorted(set(hits))
+
+
+def _old_ignore(lines):
+    """True where a line of a `.gitignore` is one 0.9.5 wrote."""
+    return any(line in STALE_IGNORE or line in REWORDED_IGNORE
+               for line in lines)
 
 
 def _fresh_ignore(text):
@@ -553,8 +583,9 @@ def _apply_untracked(root, files, args, out):
     if '.gitignore' in files:
         path = os.path.join(root, '.gitignore')
         text = _read(path) if os.path.isfile(path) else ''
-        out.kept(_back_up_copy(root, '.gitignore'))
-        text = _fresh_ignore(text)
+        out.keep(root, '.gitignore')
+        if _old_ignore(text.splitlines()):
+            text = _fresh_ignore(text)
         missing = [l for l in IGNORE_LINES if l not in text.splitlines()]
         if missing:
             if text and not text.endswith('\n'):
@@ -586,7 +617,7 @@ def _apply_hooks(root, files, args, out):
     """
     for rel in files:
         path = os.path.join(root, rel)
-        out.kept(_back_up_copy(root, rel))
+        out.keep(root, rel)
         _untrack(root, rel)
         try:
             os.remove(path)
@@ -820,7 +851,7 @@ def _apply_config(root, files, args, out):
     """
     old = _config(root)
     path = os.path.join(root, '.purlin', 'config.json')
-    out.kept(_back_up_copy(root, '.purlin/config.json'))
+    out.keep(root, '.purlin/config.json')
     tests, sources, unwired = proposed_tests(root, old)
     given = dict(getattr(args, 'commands', None) or {})
     for entry in ([] if isinstance(old.get('tests'), list) else tests):
@@ -914,7 +945,7 @@ def _apply_os_tags(root, files, args, out):
     """A proof names an operating system now, or names none and runs anywhere."""
     for rel in files:
         path = os.path.join(root, rel)
-        out.kept(_back_up_copy(root, rel))
+        out.keep(root, rel)
         _write(path, retag(_read(path), _to_env)[0])
         out.done(rel)
     out.say('rewrote the operating-system tags in %d spec%s'
@@ -968,7 +999,7 @@ def _apply_kind_tags(root, files, args, out):
         new, count = retag(
             texts[rel], lambda name, argument: None if name in kinds
             and not argument else False)
-        out.kept(_back_up_copy(root, rel))
+        out.keep(root, rel)
         _write(os.path.join(root, rel), new)
         out.done(rel)
         out.note('dropped %d tag%s from %s' % (count, '' if count == 1
@@ -1017,7 +1048,7 @@ def _apply_workflows(root, files, args, out):
         if not args.ask or not _confirm(WORKFLOW_QUESTION % rel, False):
             out.owner(WORKFLOW_KEPT % rel)
             continue
-        out.kept(_back_up_copy(root, rel))
+        out.keep(root, rel)
         _untrack(root, rel)
         os.remove(os.path.join(root, rel))
         out.done(rel)
@@ -1166,7 +1197,7 @@ def _apply_lettered(root, files, args, out):
         new, pairs = _renumbered(_read(path))
         if not pairs:
             continue
-        out.kept(_back_up_copy(root, rel))
+        out.keep(root, rel)
         _write(path, new)
         out.done(rel)
         for old, number in pairs:
@@ -1185,7 +1216,7 @@ def _apply_lettered(root, files, args, out):
                                      moved)
         if not count:
             continue
-        out.kept(_back_up_copy(root, rel))
+        out.keep(root, rel)
         _write(path, new)
         out.done(rel)
         marks += count
@@ -2001,7 +2032,7 @@ def _clean_agent_files(root, files, out):
         new, count, log = clean(text)
         if new == text or not count:
             continue
-        out.kept(_back_up_copy(root, rel))
+        out.keep(root, rel)
         with open(path, 'w', encoding='utf-8', newline='') as handle:
             handle.write(new)
         out.done(rel)
@@ -2022,7 +2053,7 @@ def _apply_markers(root, files, args, out):
         if os.path.splitext(rel)[1].lower() == '.py':
             new, gone = without_tag_lines(*_rewritten(
                 _read(os.path.join(root, rel)), '.py')[::3])
-        out.kept(_back_up_copy(root, rel))
+        out.keep(root, rel)
         _write(os.path.join(root, rel), new)
         out.done(rel)
         line = 'rewrote %d marker%s in %s as comments' % (count, _s(range(
@@ -2253,7 +2284,7 @@ def _apply_plugins(root, files, args, out):
         if new is False:
             out.owner(CONFTEST_UNREAD % rel)
             continue
-        out.kept(_back_up_copy(root, rel))
+        out.keep(root, rel)
         if new is None:
             _untrack(root, rel)
             os.remove(path)
@@ -2302,6 +2333,43 @@ MIGRATIONS = (
     ('plugins', 'remove the proof plugin copies and the wiring that loaded '
      'them', _detect_plugins, _apply_plugins),
 )
+
+def _restores(root, item):
+    """True where `item` only writes again a file setup writes: nothing it
+    found is something 0.9.5 left."""
+    name = item['id']
+    if name == 'evidence':
+        return True
+    if name == 'untracked-files':
+        if item['files'] != ['.gitignore']:
+            return False
+        path = os.path.join(root, '.gitignore')
+        lines = _read(path).splitlines() if os.path.isfile(path) else []
+        return not _old_ignore(lines)
+    if name == 'config':
+        config = _config(root)
+        return (sorted(config) == sorted(SETTINGS)
+                and isinstance(config.get('tests'), list))
+    if name == 'dashboard':
+        return not os.path.islink(os.path.join(root, DASHBOARD_PAGE))
+    return False
+
+def set_up_by_095(project_root, items):
+    """True where Purlin 0.9.5 set the project up, `items` being what is
+    pending: its settings carry no `tests` setting, which is how the status
+    and a test run know it (`project.set_up_by_095`), or a migration found
+    something 0.9.5 wrote. A workflow that names a proof file says nothing
+    either way: it may be the project's own. A project that is not one only
+    lacks a file setup writes."""
+    root = os.path.abspath(project_root)
+    return (project_module.set_up_by_095(root)
+            or any(not _restores(root, item) for item in items
+                   if item['id'] != WORKFLOWS))
+
+def _restored(name):
+    """`(the file, what it is for)` for the step `name` restores."""
+    rel, what = RESTORED[name]
+    return rel, what % _version() if '%s' in what else what
 
 def pending(project_root):
     """The migrations a project still needs, in the order they are applied.
@@ -2355,9 +2423,10 @@ class _Report(object):
     `owner` is a line the owner has to act on, printed last under its own
     heading. The log holds all three, in the order they were made.
     """
-    def __init__(self):
+    def __init__(self, backups=True):
         self.lines, self.owners, self.log, self.paths = [], [], [], []
         self.current, self.started = None, False
+        self.backups = backups
     def start(self, migration):
         self.current, self.started = migration, False
     def say(self, line):
@@ -2381,6 +2450,16 @@ class _Report(object):
     def kept(self, rel):
         if rel:
             self.note('kept the previous bytes at %s' % rel)
+    def keep(self, root, rel):
+        """Copy `rel` as it is now to the backup folder, where the run keeps
+        copies: a run that only restores what setup writes keeps none."""
+        if self.backups:
+            self.kept(_back_up_copy(root, rel))
+
+def _print_restores(items, root):
+    print(TO_RESTORE % (len(items), _s(items), root))
+    for item in items:
+        print('  %s: %s' % _restored(item['id']))
 
 def _print_pending(items, root):
     print('%d migration%s pending in %s:' % (len(items), _s(items), root))
@@ -2400,14 +2479,13 @@ def _print_pending(items, root):
             for line in _proposal_lines(entries, sources):
                 print('      ' + line)
 
-def _commit(root, applied, paths):
-    """One commit for the whole update, naming the migrations it carries."""
+def _commit(root, subject, paths):
+    """One commit for the whole update, under `subject`."""
     for rel in paths:  # one at a time: a path git now ignores must not stop it
         _git(root, 'add', '-A', '--', rel)
     if _git(root, 'diff', '--cached', '--quiet')[0]:
         return None
-    ok, out = _git(root, 'commit', '-q', '-m',
-                   _COMMIT % (_version(), ', '.join(applied)))
+    ok, out = _git(root, 'commit', '-q', '-m', subject)
     if ok:
         return _git(root, 'rev-parse', '--short', 'HEAD')[1].strip()
     print('The changes are staged and not committed: %s' % out)
@@ -2526,15 +2604,23 @@ def main(argv=None):
             print(advice)
         _print_ending(root)
         return EXIT_OK
+    # A project 0.9.5 did not set up only lacks files setup writes: the run
+    # restores them, names each by its file and says nothing of 0.9.5.
+    restoring = not set_up_by_095(root, items)
+    if restoring:
+        items = [item for item in items if item['id'] in RESTORED]
     # A run told what to apply names it in one line; a run that asks, or
     # one that will apply nothing, prints the list the answers are about.
     listed = [item['id'] for item in items
               if chosen is None or item['id'] in chosen]
     told = not args.ask and bool(listed)
-    if told:
+    if told and restoring:
+        print(RESTORING % (len(listed), _s(listed), ', '.join(
+            _restored(name)[0] for name in listed)))
+    elif told:
         print(APPLYING % (len(listed), _s(listed), ', '.join(listed)))
     else:
-        _print_pending(items, root)
+        (_print_restores if restoring else _print_pending)(items, root)
         print('')
     before = _git(root, 'rev-parse', '--short', 'HEAD')
     appliers = dict((m[0], m[3]) for m in MIGRATIONS)
@@ -2544,36 +2630,62 @@ def main(argv=None):
         item = queue[0]
         asked.add(item['id'])
         report.start(None)
+        named = _restored(item['id'])[0] if restoring else item['id']
         if chosen is not None:
             wanted = item['id'] in chosen
+        elif restoring:
+            wanted = _confirm(RESTORE_QUESTION % named, args.yes)
         else:
             wanted = _confirm('Apply %s, which will %s?'
                               % (item['id'], item['description']), args.yes)
         if not wanted:
-            report.say('skipped %s' % item['id'])
+            report.say('skipped %s' % named)
             queue = queue[1:]
             continue
-        report.start(item['id'])
-        appliers[item['id']](root, item['files'], args, report)
+        if restoring:
+            # The step's own lines are a migration's; the file's line is
+            # what a project 0.9.5 did not set up is told.
+            step = _Report(backups=False)
+            appliers[item['id']](root, item['files'], args, step)
+            report.paths += [rel for rel in step.paths
+                             if rel not in report.paths]
+            report.say('restored %s: %s' % _restored(item['id']))
+        else:
+            report.start(item['id'])
+            appliers[item['id']](root, item['files'], args, report)
         applied.append(item['id'])
         # Read again: a migration can leave work for a later one, as the
         # Windows tag rewritten to `@env(windows)` leaves a kind-of-test tag
         # at the end of its line.
-        queue = [found for found in _found(root) if found['id'] not in asked]
+        queue = [found for found in _found(root) if found['id'] not in asked
+                 and (not restoring or found['id'] in RESTORED)]
     report.start(None)
     if not told:
         print('')
     for line in report.lines:
         print(line)
-    sha = _commit(root, applied, report.paths)
+    if restoring:
+        subject = _RESTORE_COMMIT % ', '.join(
+            rel for rel in (_restored(name)[0] for name in applied)
+            if rel in report.paths)
+    else:
+        subject = _COMMIT % (_version(), ', '.join(applied))
+    sha = _commit(root, subject, report.paths)
     if sha:
-        print('  committed %s as %s'
-              % (sha, _COMMIT % (_version(), ', '.join(applied))))
+        print('  committed %s as %s' % (sha, subject))
     if not applied:
         # Nothing changed, so the run says how to change it and no more.
         print('')
         print(RUN_UPDATE)
-        print(HOW_TO_APPLY)
+        print(NOTHING_RESTORED if restoring else HOW_TO_APPLY)
+        return EXIT_OK
+    if restoring:
+        # It ends as the status ends, which names the update while a file
+        # is still to restore.
+        if advice:
+            print('')
+            print(advice)
+        _print_ending(root)
         return EXIT_OK
     if advice:
         report.owner(advice)

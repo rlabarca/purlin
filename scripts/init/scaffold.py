@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """purlin:init: one question, then every file a project needs.
 
-    scaffold.py [--project-root DIR] [--plugin-root DIR] [--yes]
+    scaffold.py [--project-root DIR] [--yes]
     scaffold.py --update [--yes | --apply ID[,ID...]]
         [--test-command TOOL=COMMAND ...] [--project-root DIR]
 
@@ -197,15 +197,15 @@ class Plan(object):
 
 # --- The steps -------------------------------------------------------------
 
-def write_config(plan, plugin_root, existing):
+def write_config(plan, existing):
     """`.purlin/config.json`, holding exactly `version` and `tests`.
 
     `version` is the plugin's `VERSION` file. `tests` is the setting the
     project already carries, kept as it is, or the template's empty list.
     """
-    template = json.loads(_read(plugin_root, 'templates', 'config.json'))
+    template = json.loads(_read(PLUGIN_ROOT, 'templates', 'config.json'))
     written = (existing or {}).get('tests')
-    config = {'version': _read(plugin_root, 'VERSION').strip(),
+    config = {'version': _read(PLUGIN_ROOT, 'VERSION').strip(),
               'tests': written if isinstance(written, list)
               else template['tests']}
     plan.write('.purlin/config.json', json.dumps(config, indent=2) + '\n',
@@ -213,14 +213,14 @@ def write_config(plan, plugin_root, existing):
     return config
 
 
-def write_gitignore(plan, plugin_root):
+def write_gitignore(plan):
     """templates/gitignore.purlin, appended once and guarded by its first entry."""
     plan.append('.gitignore',
-                _read(plugin_root, 'templates', 'gitignore.purlin'),
+                _read(PLUGIN_ROOT, 'templates', 'gitignore.purlin'),
                 '.purlin/runtime/')
 
 
-def write_evidence(plan, plugin_root):
+def write_evidence(plan):
     """`.purlin/evidence/` and the README that says what the folder holds.
 
     The README is handed over as bytes, so it is the file the plugin ships
@@ -228,7 +228,7 @@ def write_evidence(plan, plugin_root):
     """
     plan.directory(EVIDENCE_DIR)
     plan.write(EVIDENCE_DIR + '/README.md',
-               _read_bytes(plugin_root, EVIDENCE_README), exact=True)
+               _read_bytes(PLUGIN_ROOT, EVIDENCE_README), exact=True)
 
 
 def git_message(done):
@@ -313,7 +313,6 @@ def parse_args(argv):
     parser = argparse.ArgumentParser(
         prog='scaffold.py', description='Set a project up for Purlin')
     parser.add_argument('--project-root', default='.')
-    parser.add_argument('--plugin-root', default=None)
     for flag in ('--update', '--yes'):
         parser.add_argument(flag, action='store_true')
     # The two flags `--update` alone takes; scripts/init/update.py reads them.
@@ -358,13 +357,8 @@ def main(argv=None):
         return delegate_update(args)
 
     root = os.path.abspath(args.project_root)
-    plugin_root = os.path.abspath(args.plugin_root or PLUGIN_ROOT)
     if not os.path.isdir(root):
         print('no such project root: %s' % root, file=sys.stderr)
-        return EXIT_BAD_INVOCATION
-    if not os.path.isfile(os.path.join(plugin_root, 'templates',
-                                       'config.json')):
-        print('not a Purlin plugin root: %s' % plugin_root, file=sys.stderr)
         return EXIT_BAD_INVOCATION
 
     if not is_repository(root):
@@ -381,10 +375,10 @@ def main(argv=None):
     plan = Plan(root)
     for name in ('.purlin', 'specs'):
         plan.directory(name)
-    write_config(plan, plugin_root, _existing_config(root))
-    write_gitignore(plan, plugin_root)
-    write_evidence(plan, plugin_root)
-    plan.copy(os.path.join(plugin_root, 'scripts', 'report',
+    write_config(plan, _existing_config(root))
+    write_gitignore(plan)
+    write_evidence(plan)
+    plan.copy(os.path.join(PLUGIN_ROOT, 'scripts', 'report',
                            'purlin-report.html'), 'purlin-report.html')
     for line in plan.lines:
         print(line)
