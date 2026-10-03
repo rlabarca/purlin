@@ -1763,6 +1763,18 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **Every other item the third test left is fixed** (`d126-reports/upgrade-tests.md`).
     - **Purlin's own re-audit waits until just before signing**, when the code has stopped
       changing; a real AI session given a goal on a sample project is tried with it.
+128. **The answers after the fourth upgrade test** (added 2026-10-02). Plan: `d128-plan.md`.
+    - **The signer sees a finding cleared by judgment**: the sign-off's list of findings names
+      each proof settled with its test unchanged.
+    - **The upgrade removes the 0.9.5 instructions from the project's `CLAUDE.md`, `AGENTS.md`
+      and `.claude/` files itself**, inside the step that rewrites markers, with no question of
+      its own. In the owner's words: "just do it in the upgrade".
+    - **`purlin:status <name>` shows one spec's rules** with their cells and reasons.
+    - **An anchor whose results are out of date says so**: `0 of 11 · 11 out of date`.
+    - **The dashboard's count boxes stand above its warnings at every width.**
+    - **Kept as they are:** tests with a 0.9.5 marker are a warning and a closing line, not a
+      `Left to do` line, and the tests stay `met`; `Left to do` shows the next step; unstable
+      tests get one sentence on the upgrade page, no retry.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
