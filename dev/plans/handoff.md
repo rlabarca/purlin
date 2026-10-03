@@ -1,6 +1,6 @@
-# Handoff, 2026-10-02: decisions 124, 125 and 126 are built
+# Handoff, 2026-10-02: decisions 124 to 127 are built
 
-Local `main` is green and not pushed: 39 specs, 519 rules, 1142 proofs, every rule passing on
+Local `main` is green and not pushed: 39 specs, 546 rules, 1212 proofs, every rule passing on
 committed evidence, the Windows rules included. Nothing is signed or tagged. GitHub holds `main`
 (far behind local) and the two `qa/` branches; the Windows runs' branches were deleted when
 they finished.
@@ -64,18 +64,39 @@ they finished.
     Over 30,000 characters the list is left out, and the run says so.
   - The dashboard draws three or more warnings of one kind as one notice with a count.
 
+- **Decision 127, the open items after the third upgrade test** (`d127-plan.md`,
+  `d127-reports/`):
+  - `purlin:test --all` prints `<n> test files carry no marker and were not run.` On this
+    repository that is 3, Purlin's own end-to-end shell suites among them; the sweep still
+    runs them.
+  - The dashboard shows a red `Failing` box where a rule fails, specs with a failing rule
+    first, and every line the terminal prints between the table and the sentence.
+  - The warning for tests that still carry a 0.9.5 marker lists each, `<file>:<line>
+    <feature> <rule>`, up to 20; the upgrade names the same line after its rewrite.
+  - `purlin:sign` refuses while such a test remains. The status's last line names that
+    rewrite, and names `purlin:test --all --commit` where a sign-off would refuse results
+    taken on another version or with files uncommitted, so the last line never sends a
+    person to a sign-off that refuses.
+  - A settle is refused for a proof whose test is as it was when the bug got past it;
+    `--settle --sound PROOF-N` records that the test was judged sound and left as it was.
+    The evidence and package formats are at version 14.
+  - The upgrade's polish: `CLAUDE.md` first among its leftovers, docstring tags removed, the
+    proposed command citing the script it matches, the backups sentence, no repeated list.
+  - A fourth upgrade test on a fresh copy, at the end, reached a state `purlin:sign --show`
+    accepts, by the output alone; the one fault it found (the last line above) is fixed.
+
 ## The numbers
 
 | | Result |
 |---|---|
-| `bash dev/run_tests.sh` | 1139 passed, 0 failed, 9 skipped; 4 suites passed, 0 failed |
-| `purlin_run.py --test --all --commit` | 1142 markers tied, 0 not tied; 39 specs, 519 rules, 1142 proofs |
-| `python3 dev/windows_run.py`, run four times | the last ends `519 rules. 519 pass their tests.` |
+| `bash dev/run_tests.sh` | 1209 passed, 0 failed, 9 skipped; 4 suites passed, 0 failed |
+| `purlin_run.py --test --all --commit` | 1212 markers tied, 0 not tied; 39 specs, 546 rules, 1212 proofs |
+| `python3 dev/windows_run.py`, run six times | the last ends `546 rules. 546 pass their tests.` |
 | `purlin:init --update` on this repository | `Nothing is pending: this project is at 0.10.0.` |
 | The plan's grep for cost and counts of model calls | empty |
 | The deck's two checks | every slide ends at 920 of 920, no overlap |
 
-Formats are unchanged: spec 24, anchor 12, marker 5, evidence 13, package 13, signature 16.
+Formats: spec 24, anchor 12, marker 5, evidence 14, package 14, signature 16.
 The dashboard's data is schema 16. The drift criteria are version 14.
 
 ## The loop on Purlin's own weak rules
@@ -92,10 +113,10 @@ as too loose. Then each rule was settled with the real model.
 | Two bugs left one proof's check passing (1) | `evidence_writer` RULE-16, PROOF-41; the rule read `strong` through its other proof |
 
 The status lists no rule to strengthen. After decision 124 it ended `The audit found 93 of 485
-rules strong (19%)`; after decision 126, which changed more of the audited code, it ends `The
-audit found 67 of 511 rules strong (13%): 67 strong, 147 out of date, 305 not audited.`
+rules strong (19%)`; after decisions 126 and 127, which changed more of the audited code, it ends
+`The audit found 37 of 538 rules strong (6%): 37 strong, 177 out of date, 332 not audited.`
 
-**Why 67 and not 197.** This round changed the audit's own code and criteria, so results taken
+**Why 37 and not 197.** This round changed the audit's own code and criteria, so results taken
 before it read `out of date`, each still showing what the last audit found and when. After the
 settle runs 99 rules read `strong`; the review's fixes then changed the audit's code again, and
 the six settled rules of `ai_audit`, `planted_bug` and `evidence_writer` went out of date with
@@ -159,12 +180,15 @@ Chosen at integration:
 10. **A session's status tool keeps the code it loaded when the session started.** The owner
     starts Claude with `--plugin-dir` at this checkout, so the skills are current; the status
     tool's process is not until a new session. Run `scripts/run/purlin_status.py` meanwhile.
-11. **What the third upgrade test left open**: 15 items, none a blocker, in
-    `d126-reports/upgrade-tests.md`. The first three are the ones to weigh before release: a
-    line the terminal prints and the dashboard does not; a failing rule that is hard to find on
-    the dashboard; the leftover-marker warning naming two of nine.
-12. **Whether a full run should still run test files that carry no marker.** It no longer
-    does.
+11. **What the fourth upgrade test left open**, none a blocker: whether a test that carries a
+    0.9.5 marker is a `Left to do` line and keeps the tests `not met`; a reminder to change the
+    project's `CLAUDE.md` after the first run; `Left to do` showing one kind of work at a time;
+    an anchor reading `0 of N` with no reason after any change; the dashboard's notice order,
+    and the `Failing` box below the notices on a phone; `purlin:status <name>` documented as a
+    rule view while the script's `--spec` checks the spec for mistakes; a test that passes
+    alone only some of the time; the backup folder kept with no reminder.
+12. **The sign-off's list of findings does not show a proof settled with its test unchanged**;
+    the dashboard, the status and the package do.
 
 ## What is left
 
@@ -172,8 +196,11 @@ Chosen at integration:
 2. An audit of the specs whose results are out of date, and of the 29 never read, if a higher
    share is wanted.
 3. `purlin:sign` on Purlin, the tag pushed, `main` pushed.
-4. `dev/plans/d124-plan.md`, `d124-reports/`, `d126-plan.md` and `d126-reports/` go once the
-   owner has read them. The three upgraded copies under `../purlin-wt/` can be deleted.
+4. `dev/plans/d124-plan.md`, `d124-reports/`, `d126-plan.md`, `d126-reports/`, `d127-plan.md`
+   and `d127-reports/` go once the owner has read them. The four upgraded copies under
+   `../purlin-wt/` can be deleted.
+5. Before signing, by the owner's answers: the audit of the out-of-date specs, settled, and a
+   real AI session given a goal on a sample project with weak rules.
    `dev/plans/diagrams/` and `drafts/` are not tracked by git and were left on disk.
 
 ## How to work, as the owner settled it
