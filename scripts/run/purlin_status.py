@@ -11,10 +11,25 @@ refusal and exits 1 (`project.refusal`): a folder with no
 folder named from a working directory outside it. `--project-root` defaults
 to the working directory.
 
-`--spec NAME` checks one saved spec with the code that checks every spec: it
-prints each of the status's warnings that opens `NAME: ` or names the spec's
-file and exits 1, or one line counting the spec's rules and proofs and exits
-0. A name no spec of the checkout has is said so, and exits 1.
+`--spec NAME` shows one spec. It prints first each of the status's warnings
+that opens `NAME: ` or names the spec's file, the code that checks every spec
+checking this one, then an empty line; then the spec's view, which opens on
+its path and how many rules it has and gives one line per rule:
+
+    specs/auth/login.md: 2 rules
+      RULE-1  passed  not audited
+        not audited: no audit has read this rule
+        PROOF-1  passed  tests/test_login.py::test_proof_1
+      RULE-2  no test  waiting
+        no test: no test for PROOF-2
+        waiting: waiting for its tests to pass
+        PROOF-2  no test
+
+A rule's line holds its two cells' words; under it come the reasons of each
+cell whose word is neither `passed` nor `strong`, then one line per proof
+with its result and its tests, each further test set under the first. It
+exits 1 where it printed a warning and 0 where not. A name no spec of the
+checkout has is said so, and exits 1. The view writes nothing.
 
 A wrong command line prints one `purlin:` line and the usage to stderr and
 exits 2.
@@ -36,7 +51,6 @@ from purlin import status as status_module                     # noqa: E402
 
 USAGE = 'Usage: purlin_status.py [--project-root DIR] [--spec NAME]'
 
-SPEC_CLEAN = '%s: %s and %s read. No mistake found.'   # login, '2 rules', '3 proofs'
 NOT_A_SPEC = '%s: no spec of this checkout has that name. Run purlin:status to see its specs.'
 
 
@@ -81,13 +95,64 @@ def spec_lines(project_root, name):
     if info is None:
         return [NOT_A_SPEC % name], 1
     path = info.get('spec_path') or ''
-    warnings = payload_module.build_payload(project_root)['warnings']
-    lines = [line for line in warnings
-             if line.startswith(name + ': ') or (path and path in line)]
-    if lines:
-        return lines, 1
-    return [SPEC_CLEAN % (name, _count(len(info.get('rules') or ()), 'rule'),
-                          _count(len(info.get('proofs') or ()), 'proof'))], 0
+    data = payload_module.build_payload(project_root)
+    warnings = [line for line in data['warnings']
+                if line.startswith(name + ': ') or (path and path in line)]
+    feature = next((entry for entry in data['features']
+                    if entry['name'] == name), None)
+    lines = warnings + [''] if warnings else []
+    lines.extend(view_lines(feature or {'spec_path': path, 'rules': []}))
+    return lines, 1 if warnings else 0
+
+
+# The view of one spec: its path and rule count, then per rule its line, the
+# reasons of a cell that is neither `passed` nor `strong`, and its proofs.
+VIEW_OPENING = '%s: %s'                     # specs/auth/login.md, '2 rules'
+RULE_LINE = '  %s  %s  %s'                  # RULE-1, passed, not audited
+REASON_LINE = '    %s: %s'                  # not audited, no audit has ...
+PROOF_LINE = '    %s  %s'                   # PROOF-1, passed
+MET = {'passed': 'passed', 'strong': 'strong'}
+
+
+def view_lines(feature):
+    """One spec's view, from its entry in the payload."""
+    rules = feature.get('rules') or []
+    lines = [VIEW_OPENING % (feature.get('spec_path') or feature.get('name'),
+                             _count(len(rules), 'rule'))]
+    for rule in rules:
+        cells = rule.get('cells') or {}
+        words = [(cells.get(name) or {}).get('word') or '' for name in MET]
+        lines.append(RULE_LINE % (rule['id'], words[0], words[1]))
+        for name, word in zip(MET, words):
+            if word == MET[name]:
+                continue
+            lines.extend(REASON_LINE % (word, reason)
+                         for reason in (cells.get(name) or {}).get('reasons')
+                         or ())
+        for proof in rule.get('proofs') or ():
+            lines.extend(_proof_lines(proof['id'], proof.get('result') or '',
+                                      proof.get('tests')))
+        for test in rule.get('tests') or ():
+            lines.append(PROOF_LINE % (rule['id'], _test_name(test)))
+    return lines
+
+
+def _test_name(test):
+    """`<file>::<name>`, or the file alone where the test has no name."""
+    name = test.get('name')
+    return '%s::%s' % (test.get('file'), name) if name else test.get('file')
+
+
+def _proof_lines(proof_id, result, tests):
+    """A proof's line, its first test after its result, and one line per
+    further test set under the first."""
+    first = PROOF_LINE % (proof_id, result)
+    if not tests:
+        return [first]
+    lines = ['%s  %s' % (first, _test_name(tests[0]))]
+    indent = ' ' * (len(first) + 2)
+    lines.extend(indent + _test_name(test) for test in tests[1:])
+    return lines
 
 
 def main(argv=None):

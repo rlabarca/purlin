@@ -13,8 +13,8 @@ import sys
 
 import pytest
 
-from mcp_project import (PROJECT_ROOT, SERVER_PY, SPEC, Project, _git, _rpc,
-                         _write, project)
+from mcp_project import (NO_PROOF_SPEC, PROJECT_ROOT, SERVER_PY, SPEC, Project,
+                         _commit_tests, _entry, _git, _rpc, _write, project)
 # `mcp_project` puts `scripts/mcp` on the path.
 from purlin import server as purlin_srv
 from purlin import status as purlin_status
@@ -345,22 +345,135 @@ class TestTheStatusScript:
         assert code == 1, printed
 
     # purlin: server PROOF-175
-    def test_a_spec_with_a_mistake_prints_only_its_warning(self, project):
+    def test_a_spec_with_a_mistake_prints_its_warning_first(self, project):
         project.spec(SPEC.replace('> Scope:', '> Requires: api\n> Scope:'))
         code, printed = _script(STATUS_PY, project.root, '--spec', 'login')
-        assert printed == (
+        assert printed.splitlines()[:3] == [
             'login: > Requires: is not read, because every anchor covers the '
-            'whole project. Run purlin:spec login.\n'), printed
+            'whole project. Run purlin:spec login.',
+            '',
+            'specs/auth/login.md: 2 rules'], printed
         assert code == 1, printed
 
     # purlin: server PROOF-176
-    def test_a_spec_with_no_mistake_is_counted_in_one_line(self, project):
+    def test_a_spec_with_no_mistake_opens_on_its_view(self, project):
         project.spec(SPEC + '- PROOF-3 (RULE-2): POST /login with no '
                      'password; verify 401\n')
         code, printed = _script(STATUS_PY, project.root, '--spec', 'login')
-        assert printed == ('login: 2 rules and 3 proofs read. No mistake '
-                           'found.\n'), printed
+        assert printed.splitlines()[0] == 'specs/auth/login.md: 2 rules', printed
+        assert 'mistake' not in printed, printed
         assert code == 0, printed
+
+    # purlin: server PROOF-178
+    def test_a_name_no_spec_has_is_said_so(self, project):
+        code, printed = _script(STATUS_PY, project.root, '--spec', 'signup')
+        assert printed == ('signup: no spec of this checkout has that name. '
+                           'Run purlin:status to see its specs.\n'), printed
+        assert code == 1, printed
+
+
+def _one_of_two_tested(project):
+    """`login`: `RULE-1`'s test passed in a current section, `RULE-2` with
+    no test."""
+    _commit_tests(project, 'PROOF-1')
+    project.evidence([_entry('PROOF-1', 'RULE-1')])
+
+
+def _view(project, name='login'):
+    code, printed = _script(STATUS_PY, project.root, '--spec', name)
+    assert code == 0, printed
+    return printed.splitlines()
+
+
+def _under(lines, line):
+    """The lines after `line`, up to the next rule's line."""
+    out = []
+    for text in lines[lines.index(line) + 1:]:
+        if text.startswith('  RULE-'):
+            break
+        out.append(text)
+    return out
+
+
+class TestOneSpecsView:
+
+    # purlin: server PROOF-179
+    def test_it_opens_on_the_path_then_one_line_per_rule(self, project):
+        _one_of_two_tested(project)
+        lines = _view(project)
+        assert lines[0] == 'specs/auth/login.md: 2 rules', lines
+        assert [line for line in lines if line.startswith('  RULE-')] == [
+            '  RULE-1  passed  not audited', '  RULE-2  no test  waiting'], lines
+
+    # purlin: server PROOF-180
+    def test_an_anchor_is_shown_as_a_feature_is(self, project):
+        project.spec('# Anchor: security\n\n## Rules\n\n- RULE-1: No eval '
+                     'anywhere\n\n## Proof\n\n- PROOF-1 (RULE-1): Grep for '
+                     'eval(; verify 0 matches\n', name='security',
+                     category='_anchors')
+        _git(project.root, 'add', '-A')
+        _git(project.root, 'commit', '-q', '-m', 'anchor(security): create')
+        lines = _view(project, 'security')
+        assert lines[:2] == ['specs/_anchors/security.md: 1 rule',
+                             '  RULE-1  no test  waiting'], lines
+
+    # purlin: server PROOF-181
+    def test_a_cell_not_passed_or_strong_gives_its_reasons(self, project):
+        _one_of_two_tested(project)
+        lines = _view(project)
+        assert _under(lines, '  RULE-2  no test  waiting')[:2] == [
+            '    no test: no test for PROOF-2',
+            '    waiting: waiting for its tests to pass'], lines
+        assert _under(lines, '  RULE-1  passed  not audited')[0] == (
+            '    not audited: no audit has read this rule'), lines
+
+    # purlin: server PROOF-182
+    def test_a_strong_rule_shows_no_reason(self, project):
+        _one_of_two_tested(project)
+        project.audit('RULE-1')
+        lines = _view(project)
+        assert _under(lines, '  RULE-1  passed  strong')[0] == (
+            '    PROOF-1  passed  tests/test_login.py::test_proof_1'), lines
+
+    # purlin: server PROOF-183
+    def test_each_rule_ends_on_its_proof_lines(self, project):
+        _one_of_two_tested(project)
+        lines = _view(project)
+        assert _under(lines, '  RULE-1  passed  not audited')[-1] == (
+            '    PROOF-1  passed  tests/test_login.py::test_proof_1'), lines
+        assert lines[-1] == '    PROOF-2  no test', lines
+
+    # purlin: server PROOF-184
+    def test_a_proof_of_two_tests_sets_the_second_under_the_first(
+            self, project):
+        _write(os.path.join(project.root, 'tests', 'test_login.py'),
+               '# purlin: login PROOF-1\ndef test_proof_1():\n    pass\n\n'
+               '# purlin: login PROOF-1\ndef test_proof_1_again():\n'
+               '    pass\n')
+        _git(project.root, 'add', '-A')
+        _git(project.root, 'commit', '-q', '-m', 'test(login): two tests')
+        again = dict(_entry('PROOF-1', 'RULE-1'),
+                     test_name='test_proof_1_again')
+        project.evidence([_entry('PROOF-1', 'RULE-1'), again])
+        lines = _view(project)
+        assert _under(lines, '  RULE-1  passed  not audited')[1:] == [
+            '    PROOF-1  passed  tests/test_login.py::test_proof_1',
+            '                     tests/test_login.py::test_proof_1_again'], \
+            lines
+
+    # purlin: server PROOF-185
+    def test_a_rule_with_no_proof_lists_the_tests_marked_with_its_id(self):
+        made = Project(spec=NO_PROOF_SPEC)
+        try:
+            _write(os.path.join(made.root, 'tests', 'test_login.py'),
+                   '# purlin: login RULE-1\ndef test_rule_1():\n    pass\n')
+            _git(made.root, 'add', '-A')
+            _git(made.root, 'commit', '-q', '-m', 'test(login): RULE-1')
+            made.evidence([_entry('RULE-1', 'RULE-1')])
+            lines = _view(made)
+        finally:
+            made.close()
+        assert lines[-1] == '    RULE-1  tests/test_login.py::test_rule_1', lines
 
 
 class TestTheDriftScript:

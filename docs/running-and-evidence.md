@@ -508,7 +508,8 @@ the status then print `The tests setting changed, so every result is out of date
 
 A change to a spec, even to one rule's words, puts every rule of that spec out of date. Its
 results are held under one fingerprint of the whole spec. `purlin:test` runs that spec's tests
-again.
+again. An anchor covers the whole project, so a change to any tracked file puts its rules out of
+date, and its `Tests` cell counts them: `0 of 11 · 11 out of date`.
 
 Outside tools read these files and the evidence package, whose formats are versioned for them.
 People inside the project read the status and the dashboard.
