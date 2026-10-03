@@ -135,8 +135,9 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scrip
 ```
 
 Print what it prints. It opens on the spec's path and how many rules it has, then gives one line
-per rule with its two cells. Under a cell that reads neither `passed` nor `strong` come its
-reasons, each after the cell's word; then one line per proof with its result and its tests:
+per rule with its two cells. Under a cell that names work to do come its reasons, each after
+the cell's word (`passed`, `strong`, `not audited` and `waiting` name none, so they give none);
+then one line per proof with its result and its tests:
 
 ```
 specs/auth/login.md: 3 rules
@@ -144,7 +145,6 @@ specs/auth/login.md: 3 rules
     PROOF-1  passed  tests/test_login.py::test_proof_1
   RULE-2  no test  waiting
     no test: no test for PROOF-2
-    waiting: waiting for its tests to pass
     PROOF-2  no test
   RULE-3  checked at sign-off  checked at sign-off
     checked at sign-off: no sign-off has checked it yet

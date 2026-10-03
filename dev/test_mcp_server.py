@@ -418,14 +418,15 @@ class TestOneSpecsView:
                              '  RULE-1  no test  waiting'], lines
 
     # purlin: server PROOF-181
-    def test_a_cell_not_passed_or_strong_gives_its_reasons(self, project):
+    def test_a_cell_that_needs_work_gives_its_reasons_and_no_other_does(
+            self, project):
         _one_of_two_tested(project)
         lines = _view(project)
         assert _under(lines, '  RULE-2  no test  waiting')[:2] == [
             '    no test: no test for PROOF-2',
-            '    waiting: waiting for its tests to pass'], lines
+            '    PROOF-2  no test'], lines
         assert _under(lines, '  RULE-1  passed  not audited')[0] == (
-            '    not audited: no audit has read this rule'), lines
+            '    PROOF-1  passed  tests/test_login.py::test_proof_1'), lines
 
     # purlin: server PROOF-182
     def test_a_strong_rule_shows_no_reason(self, project):
@@ -456,7 +457,7 @@ class TestOneSpecsView:
                      test_name='test_proof_1_again')
         project.evidence([_entry('PROOF-1', 'RULE-1'), again])
         lines = _view(project)
-        assert _under(lines, '  RULE-1  passed  not audited')[1:] == [
+        assert _under(lines, '  RULE-1  passed  not audited') == [
             '    PROOF-1  passed  tests/test_login.py::test_proof_1',
             '                     tests/test_login.py::test_proof_1_again'], \
             lines

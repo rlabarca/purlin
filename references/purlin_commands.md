@@ -65,11 +65,12 @@ No Purlin project root at /work/empty: .purlin/config.json is not there. Run pur
 ```
 
 `purlin_status.py` prints the status and exits 0, or the refusal and exits 1; a wrong command
-line exits 2. With `--spec <name>` it prints each mistake Purlin sees in that spec and exits 1,
-or one of these, exiting 0 on the first and 1 on the second:
+line exits 2. With `--spec <name>` it prints each mistake Purlin sees in that spec, then an empty
+line, and exits 1, or exits 0 where it sees none; either way it then prints that spec's view: its
+path and rule count, one line per rule with its two cells, the reasons of a cell that names work
+to do, and its proof lines. A name no spec has prints only:
 
 ```
-login: 2 rules and 3 proofs read. No mistake found.
 login: no spec of this checkout has that name. Run purlin:status to see its specs.
 ```
 

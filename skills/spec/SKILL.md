@@ -47,8 +47,8 @@ read `references/spec_quality_guide.md`. Neither is restated here.
    sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_status.py" --project-root . --spec <name>
    ```
 
-   It prints each mistake Purlin sees in the spec, or `<name>: <n> rules and <m> proofs read. No
-   mistake found.` Fix every mistake and run it again. Only then commit the spec on its own and
+   It prints each mistake Purlin sees in the spec first and exits 1, or, with none, opens on the
+   spec's path and its rule count and exits 0. Fix every mistake and run it again. Only then commit the spec on its own and
    name `purlin:build` as the next step. This skill never starts building.
 
 ## Intake

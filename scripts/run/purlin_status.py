@@ -106,12 +106,14 @@ def spec_lines(project_root, name):
 
 
 # The view of one spec: its path and rule count, then per rule its line, the
-# reasons of a cell that is neither `passed` nor `strong`, and its proofs.
+# reasons of a cell that names work to do, and its proofs.
 VIEW_OPENING = '%s: %s'                     # specs/auth/login.md, '2 rules'
 RULE_LINE = '  %s  %s  %s'                  # RULE-1, passed, not audited
 REASON_LINE = '    %s: %s'                  # not audited, no audit has ...
 PROOF_LINE = '    %s  %s'                   # PROOF-1, passed
 MET = {'passed': 'passed', 'strong': 'strong'}
+# Cell words that name no work to do, so the view gives no reason under them.
+QUIET = ('passed', 'strong', 'not audited', 'waiting')
 
 
 def view_lines(feature):
@@ -124,7 +126,7 @@ def view_lines(feature):
         words = [(cells.get(name) or {}).get('word') or '' for name in MET]
         lines.append(RULE_LINE % (rule['id'], words[0], words[1]))
         for name, word in zip(MET, words):
-            if word == MET[name]:
+            if word in QUIET:
                 continue
             lines.extend(REASON_LINE % (word, reason)
                          for reason in (cells.get(name) or {}).get('reasons')
