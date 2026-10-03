@@ -128,8 +128,24 @@ The audit's findings: 1 weak. list / go on:
 ```
 
 The audit's line is there only where the audit read a rule. The question is there only where
-it found a rule weak. `list` prints each weak rule with its findings, then asks `go on: `.
-`go on`, or an empty line, moves on. The findings are a list you can read. They add no stop.
+it found a rule weak, or a proof was settled with its test unchanged. `list` prints each weak
+rule with its findings, then asks `go on: `. `go on`, or an empty line, moves on. The findings
+are a list you can read. They add no stop.
+
+A proof settled with its test unchanged is listed after the weak rules' findings, whatever its
+rule reads, and the question counts it:
+
+```text
+The audit's findings: 1 weak, 1 proof settled with its test unchanged. list / go on: list
+  login RULE-1   PROOF-1 reads the status alone.
+  login RULE-2: PROOF-2 was settled with its test unchanged: it was judged to assert what the proof names.
+go on: 
+```
+
+A planted bug once got past that proof's test. `purlin:build` read the test against the proof,
+judged that it already asserts what the proof names and left it as it was, so the finding was
+cleared by that judgment and not by a stronger test. Purlin records the judgment and does not
+check it, so you see it here.
 
 The walk stops only at hand checks, one stop each, by feature and then rule number. A stop
 shows:

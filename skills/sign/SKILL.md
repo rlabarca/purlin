@@ -126,6 +126,14 @@ findings: 1 weak. list / go on:`; ask the person which. `list` shows each weak r
 findings, one line each, and records that they opened it; `go on` leaves it closed. What the
 audit found never blocks the sign-off and is no stop.
 
+The list also names each proof settled with its test unchanged, whatever its rule reads, after
+the weak rules' findings:
+`sample_age RULE-2: PROOF-6 was settled with its test unchanged: it was judged to assert what the proof names.`
+The question then counts them, as `The audit's findings: 1 weak, 1 proof settled with its test
+unchanged. list / go on:`, and is asked where no rule is weak too. A planted bug once got past
+that proof's test, and `purlin:build` judged the test sound and left it as it was: the finding
+was cleared by that judgment, not by a stronger test. Show the line as printed.
+
 The walk stops only at hand checks, one at a time, in the order printed. Each stop opens on its
 head, such as `accession_screen RULE-1   hand check`, then `Rule`, `Proof`, `Results` and, where
 the audit found the rule weak, `What the audit found`. Where an earlier sign-off noted the rule,

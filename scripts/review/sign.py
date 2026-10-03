@@ -10,7 +10,8 @@ Any project may run it whenever it chooses. It reads the evidence committed
 at HEAD, builds the evidence package for the version and walks it with a
 person: who ran the tests, where and when; an overview counting per system
 the rules that pass their tests and the hand checks, and what the audit found; the
-audit's findings as a list the signer may open; then one stop per hand check,
+audit's findings as a list the signer may open, each proof settled with its
+test unchanged listed after them; then one stop per hand check,
 which shows the rule's last note where a sign-off holds one, and where the
 person types what they saw or presses Enter for no note. On yes to
 the last question it writes one file in one signed commit:
@@ -58,6 +59,7 @@ was wrong.
 
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -69,6 +71,7 @@ for _path in (os.path.join(_SCRIPTS, 'mcp'), os.path.join(_SCRIPTS, 'export'),
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
+import audit_run                                               # noqa: E402
 import config_engine                                           # noqa: E402
 import package as package_module                               # noqa: E402
 from purlin import report_data                                 # noqa: E402
@@ -152,6 +155,11 @@ OVERVIEW_AUDIT = '  The audit: %s.'             # summary.audit_words
 AUDIT_ASK = "The audit's findings: %s. list / go on: "
 AUDIT_SHOWN = "The audit's findings: %s."
 AUDIT_LIST = '  %s %s   %s'
+# A proof settled with its test unchanged: the feature, RULE-N, and the
+# sentence its rule's `no_bug` holds, `audit_run.UNCHANGED`.
+AUDIT_JUDGED = '  %s %s: %s'
+JUDGED_ONE = '1 proof settled with its test unchanged'
+JUDGED_MANY = '%d proofs settled with their tests unchanged'
 AUDIT_AGAIN = 'go on: '
 STOP_HEAD = '%s %s   hand check'
 HAND_ASK = '%s %s   what did you see, in one line, or Enter for no note, or stop: '
@@ -666,6 +674,18 @@ def _weak(rule):
     return strong.get('word') == 'weak'
 
 
+# The sentence `no_bug` holds for a proof settled with its test unchanged.
+_JUDGED = re.compile('^%s$' % re.escape(audit_run.UNCHANGED).replace(
+    re.escape('%s'), r'PROOF-\d+'))
+
+
+def _judged(rule):
+    """Each sentence of the rule's `no_bug` saying a proof was settled with
+    its test unchanged, whatever the rule's verdict."""
+    return [str(line) for line in (rule.get('audit') or {}).get('no_bug') or ()
+            if _JUDGED.match(str(line))]
+
+
 def _chosen_results(rule):
     """`{os: result}`: per system, a current result before one that is not,
     then one under the source `ci` before one under `local`."""
@@ -694,14 +714,15 @@ def last_notes(project_root):
 
 
 def plan(package, notes=None):
-    """What the walk shows: the overview's numbers, the weak rules and the stops.
+    """What the walk shows: the overview's numbers, the weak rules, the
+    proofs settled with their test unchanged and the stops.
 
     `notes` is what `last_notes` gives; each stop carries its rule's lines
     as `last_notes` and what was reworded since them as `changed`."""
     notes = notes or {}
     rules = package_rules(package)
     per_system = {}
-    weak, stops = [], []
+    weak, judged, stops = [], [], []
     for feature, rule in rules:
         for system, result in _chosen_results(rule).items():
             counts = per_system.setdefault(system, {'rules': 0, 'passing': 0,
@@ -714,6 +735,8 @@ def plan(package, notes=None):
         if _weak(rule):
             weak.append({'feature': feature, 'rule': rule.get('id'),
                          'entry': rule})
+        judged.extend({'feature': feature, 'rule': rule.get('id'),
+                       'sentence': sentence} for sentence in _judged(rule))
         if _hand_check(rule):
             noted = notes.get((feature, rule.get('id'))) or {}
             stops.append({'feature': feature, 'rule': rule.get('id'),
@@ -728,7 +751,8 @@ def plan(package, notes=None):
                     for name in _systems(per_system)],
         'audit': ({key: audit.get(key) or 0 for key in keys}
                   if audited else None)}
-    return {'overview': overview, 'weak': weak, 'stops': stops}
+    return {'overview': overview, 'weak': weak, 'judged': judged,
+            'stops': stops}
 
 
 def overview_lines(info, shown):
@@ -752,14 +776,17 @@ def overview_lines(info, shown):
     return lines
 
 
-def audit_list_lines(weak):
-    """One line per finding of each weak rule, the rule named on each."""
+def audit_list_lines(weak, judged=()):
+    """One line per finding of each weak rule, the rule named on each; then
+    one per proof settled with its test unchanged, of a rule of any verdict."""
     lines = []
     for item in weak:
         findings = (item['entry'].get('audit') or {}).get('findings') or ()
         for finding in findings or ('',):
             lines.append((AUDIT_LIST % (item['feature'], item['rule'],
                                         finding)).rstrip())
+    lines.extend(AUDIT_JUDGED % (item['feature'], item['rule'],
+                                 item['sentence']) for item in judged)
     return lines
 
 
@@ -863,9 +890,9 @@ def show(project_root, name=None, out=None):
         return EXIT_OK
     shown = plan(info['package'], last_notes(project_root))
     _say(overview_lines(info, shown), out)
-    if shown['weak']:
-        print(AUDIT_SHOWN % _weak_words(shown['weak']), file=out)
-        _say(audit_list_lines(shown['weak']), out)
+    if shown['weak'] or shown['judged']:
+        print(AUDIT_SHOWN % _findings_words(shown), file=out)
+        _say(audit_list_lines(shown['weak'], shown['judged']), out)
     for stop in shown['stops']:
         print('', file=out)
         _say(render_stop(stop), out)
@@ -874,8 +901,15 @@ def show(project_root, name=None, out=None):
     return EXIT_OK
 
 
-def _weak_words(weak):
-    return '%d weak' % len(weak)
+def _findings_words(shown):
+    """`1 weak`, `1 proof settled with its test unchanged`, or both joined
+    by `, `; a count of zero left out."""
+    words = []
+    if shown['weak']:
+        words.append('%d weak' % len(shown['weak']))
+    if shown['judged']:
+        words.append(_count(JUDGED_ONE, JUDGED_MANY, len(shown['judged'])))
+    return ', '.join(words)
 
 
 def walk(project_root, name=None, ask=None, out=None):
@@ -907,12 +941,12 @@ def _walk(project_root, info, ask, out, answers_path=None):
     shown = plan(info['package'], last_notes(project_root))
     _say(overview_lines(info, shown), out)
     list_opened = False
-    if shown['weak']:
-        given = _choose(ask, 'audit', AUDIT_ASK % _weak_words(shown['weak']),
+    if shown['weak'] or shown['judged']:
+        given = _choose(ask, 'audit', AUDIT_ASK % _findings_words(shown),
                         ('list', 'go on'))
         if given == 'list':
             list_opened = True
-            _say(audit_list_lines(shown['weak']), out)
+            _say(audit_list_lines(shown['weak'], shown['judged']), out)
             _choose(ask, 'audit_again', AUDIT_AGAIN, ('go on',))
     notes, walked = [], []
     try:
