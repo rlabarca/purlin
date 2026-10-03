@@ -3,7 +3,7 @@
   "platforms": {
     "windows": {
       "at": "2026-10-03T17:27:08Z",
-      "commit": "cc65454eb127da103e1a9ab7eb4eb51e2626b5a2",
+      "commit": "77d50fb5d1eaa1fc1b9c3e83cfc7a6291f07dd27",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -14,6 +14,12 @@
       "machine": "runnervmfi6oq",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-03T17:27:08Z",
+            "commit": "cc65454eb127da103e1a9ab7eb4eb51e2626b5a2",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "machine": "runnervmfi6oq"
+          },
           "env": "windows",
           "id": "PROOF-46",
           "manual": false,
@@ -22,6 +28,12 @@
           "test": "dev/test_upstream.py::test_an_added_anchor_keeps_the_author_text_under_source_and_pin"
         },
         {
+          "carried": {
+            "at": "2026-10-03T17:27:08Z",
+            "commit": "cc65454eb127da103e1a9ab7eb4eb51e2626b5a2",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "machine": "runnervmfi6oq"
+          },
           "env": "windows",
           "id": "PROOF-48",
           "manual": false,
@@ -30,6 +42,12 @@
           "test": "dev/test_upstream.py::test_check_when_behind_reports_and_changes_no_file"
         },
         {
+          "carried": {
+            "at": "2026-10-03T17:27:08Z",
+            "commit": "cc65454eb127da103e1a9ab7eb4eb51e2626b5a2",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "machine": "runnervmfi6oq"
+          },
           "env": "windows",
           "id": "PROOF-50",
           "manual": false,

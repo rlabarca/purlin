@@ -3,7 +3,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-03T16:58:50Z",
-      "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+      "commit": "77d50fb5d1eaa1fc1b9c3e83cfc7a6291f07dd27",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -14,6 +14,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-59",
           "manual": false,
@@ -22,6 +28,12 @@
           "test": "dev/test_skill_audit.py::test_a_reader_finds_each_command_and_path_named_the_settle_included"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-56",
           "manual": false,
@@ -30,6 +42,12 @@
           "test": "dev/test_skill_audit.py::test_a_copy_without_the_criteria_is_reported"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-60",
           "manual": false,
@@ -38,6 +56,12 @@
           "test": "dev/test_skill_audit.py::test_the_skill_and_the_criteria_hold_the_two_lines_a_settle_prints"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-61",
           "manual": false,
@@ -46,6 +70,12 @@
           "test": "dev/test_skill_audit.py::test_the_skill_and_the_criteria_hold_the_refusal_and_the_sound_sentence"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-62",
           "manual": false,

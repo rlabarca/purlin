@@ -1512,7 +1512,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-03T16:58:50Z",
-      "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+      "commit": "77d50fb5d1eaa1fc1b9c3e83cfc7a6291f07dd27",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -1523,6 +1523,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-21",
           "manual": false,
@@ -1531,6 +1537,12 @@
           "test": "dev/test_signatures.py::TestTheKey::test_with_no_key_the_four_lines_are_printed"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-95",
           "manual": false,
@@ -1539,6 +1551,12 @@
           "test": "dev/test_signatures.py::TestTheKey::test_an_existing_key_file_leaves_the_ssh_keygen_line_out"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-96",
           "manual": false,
@@ -1547,6 +1565,12 @@
           "test": "dev/test_signatures.py::TestWhatCounts::test_a_file_committed_with_signing_off_does_not_count"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-97",
           "manual": false,
@@ -1555,6 +1579,12 @@
           "test": "dev/test_signatures.py::TestWhatCounts::test_a_key_made_on_the_spot_for_mallory_counts"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-75",
           "manual": false,
@@ -1563,6 +1593,12 @@
           "test": "dev/test_signatures.py::TestTheSignOff::test_it_records_the_signer_as_git_holds_them_and_the_key"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-115",
           "manual": false,
@@ -1571,6 +1607,12 @@
           "test": "dev/test_signatures.py::TestTheKey::test_a_public_key_path_reads_as_ssh_keygen_prints_it"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-116",
           "manual": false,
@@ -1579,6 +1621,12 @@
           "test": "dev/test_signatures.py::TestTheKey::test_a_private_key_path_reads_the_public_key_beside_it"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-118",
           "manual": false,
@@ -1587,6 +1635,12 @@
           "test": "dev/test_signatures.py::TestTheKey::test_a_gpg_key_id_is_no_key"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-178",
           "manual": false,
@@ -1595,6 +1649,12 @@
           "test": "dev/test_signatures.py::TestTheSignOff::test_the_tag_carries_the_signers_ssh_signature"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-192",
           "manual": false,
@@ -1603,6 +1663,12 @@
           "test": "dev/test_signatures.py::TestWhatCounts::test_a_signature_block_changed_does_not_verify"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-193",
           "manual": false,
@@ -1611,6 +1677,12 @@
           "test": "dev/test_signatures.py::TestWhatCounts::test_a_key_deleted_since_still_counts"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-206",
           "manual": false,
@@ -1619,6 +1691,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_a_rule_that_fails_is_named"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-223",
           "manual": false,
@@ -1627,6 +1705,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_results_written_and_not_committed_are_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-226",
           "manual": false,
@@ -1635,6 +1719,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_results_taken_before_a_code_change_are_named"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-292",
           "manual": false,
@@ -1643,6 +1733,12 @@
           "test": "dev/test_run_script.py::TestASignOffAfterARunOverEveryFeature::test_results_carried_onto_this_commit_count"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-293",
           "manual": false,
@@ -1651,6 +1747,12 @@
           "test": "dev/test_run_script.py::TestASignOffAfterARunOverEveryFeature::test_a_project_run_in_part_is_still_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-244",
           "manual": false,
@@ -1659,6 +1761,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_one_tracked_file_changed_and_not_committed_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-245",
           "manual": false,
@@ -1667,6 +1775,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_two_tracked_files_changed_and_not_committed_are_counted"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-246",
           "manual": false,
@@ -1675,6 +1789,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_results_taken_over_files_not_committed_are_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-248",
           "manual": false,
@@ -1683,6 +1803,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_a_file_git_does_not_track_stops_nothing"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-261",
           "manual": false,
@@ -1691,6 +1817,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_the_settings_file_changed_and_not_committed_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-214",
           "manual": false,
@@ -1699,6 +1831,12 @@
           "test": "dev/test_signatures.py::TestTheSignOff::test_it_records_what_was_shown_and_the_note"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-235",
           "manual": false,
@@ -1707,6 +1845,12 @@
           "test": "dev/test_signatures.py::TestTheSignOff::test_an_empty_answer_is_recorded_as_no_note"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-217",
           "manual": false,
@@ -1715,6 +1859,12 @@
           "test": "dev/test_signatures.py::TestWhatCounts::test_it_counts_only_over_the_committed_package"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-254",
           "manual": false,
@@ -1723,6 +1873,12 @@
           "test": "dev/test_signatures.py::TestWhatCounts::test_a_package_edited_after_signing_ends_the_sign_off"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-218",
           "manual": false,
@@ -1731,6 +1887,12 @@
           "test": "dev/test_signatures.py::TestTheWalk::test_stop_at_a_hand_check_writes_nothing"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-219",
           "manual": false,
@@ -1739,6 +1901,12 @@
           "test": "dev/test_signatures.py::TestTheWalk::test_an_empty_line_at_every_question_signs_nothing"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-220",
           "manual": false,
@@ -1747,6 +1915,12 @@
           "test": "dev/test_signatures.py::TestTheAgent::test_show_prints_every_stop_and_asks_nothing"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-228",
           "manual": false,
@@ -1755,6 +1929,12 @@
           "test": "dev/test_signatures.py::TestTheAgent::test_show_with_no_key_prints_the_overview_after_the_signing_line"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-221",
           "manual": false,
@@ -1763,6 +1943,12 @@
           "test": "dev/test_signatures.py::TestTheAgent::test_answers_holding_the_signers_address_walk_with_the_files_note"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-222",
           "manual": false,
@@ -1771,6 +1957,12 @@
           "test": "dev/test_signatures.py::TestTheAgent::test_a_stop_with_no_answer_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-264",
           "manual": false,
@@ -1779,6 +1971,12 @@
           "test": "dev/test_signatures.py::TestTheAgent::test_answers_whose_sign_is_true_sign_nothing"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-271",
           "manual": false,
@@ -1787,6 +1985,12 @@
           "test": "dev/test_signatures.py::TestTheAgent::test_answers_holding_another_address_sign_nothing"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-229",
           "manual": false,
@@ -1795,6 +1999,12 @@
           "test": "dev/test_signatures.py::TestTheWalk::test_a_weak_rule_and_one_never_audited_add_no_stop"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-230",
           "manual": false,
@@ -1803,6 +2013,12 @@
           "test": "dev/test_signatures.py::TestTheWalk::test_list_prints_each_weak_rule_with_its_finding"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-281",
           "manual": false,
@@ -1811,6 +2027,12 @@
           "test": "dev/test_signatures.py::TestSettledByJudgment::test_one_settled_proof_and_no_weak_rule_asks_the_question"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-282",
           "manual": false,
@@ -1819,6 +2041,12 @@
           "test": "dev/test_signatures.py::TestSettledByJudgment::test_two_settled_proofs_are_counted_together"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-283",
           "manual": false,
@@ -1827,6 +2055,12 @@
           "test": "dev/test_signatures.py::TestSettledByJudgment::test_a_weak_rule_and_a_settled_proof_are_counted_in_that_order"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-233",
           "manual": false,
@@ -1835,6 +2069,12 @@
           "test": "dev/test_signatures.py::TestTheSignOff::test_the_first_sign_off_ends_on_pushing_the_branch_and_the_tag"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-234",
           "manual": false,
@@ -1843,6 +2083,12 @@
           "test": "dev/test_signatures.py::TestTheSignOff::test_a_second_signer_ends_on_the_tag_staying"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-236",
           "manual": false,
@@ -1851,6 +2097,12 @@
           "test": "dev/test_signatures.py::TestTheSignOff::test_the_first_sign_off_is_one_commit_with_the_package_and_the_tag"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-237",
           "manual": false,
@@ -1859,6 +2111,12 @@
           "test": "dev/test_signatures.py::TestTheSignOff::test_a_later_sign_off_adds_its_own_file_alone"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-238",
           "manual": false,
@@ -1867,6 +2125,12 @@
           "test": "dev/test_signatures.py::TestTheSignOff::test_it_tags_the_sign_off_commit_and_fetches_and_pushes_nothing"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-240",
           "manual": false,
@@ -1875,6 +2139,12 @@
           "test": "dev/test_signatures.py::TestTheAgent::test_check_passes_the_committed_package"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-241",
           "manual": false,
@@ -1883,6 +2153,12 @@
           "test": "dev/test_signatures.py::TestTheAgent::test_check_names_a_package_changed_after"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-207",
           "manual": false,
@@ -1891,6 +2167,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_a_host_copy_ahead_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-224",
           "manual": false,
@@ -1899,6 +2181,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_a_tag_on_another_branch_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-225",
           "manual": false,
@@ -1907,6 +2195,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_a_code_change_since_the_tag_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-162",
           "manual": false,
@@ -1915,6 +2209,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_a_commit_git_refuses_names_gits_own_message"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-208",
           "manual": false,
@@ -1923,6 +2223,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_the_same_signer_again_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-243",
           "manual": false,
@@ -1931,6 +2237,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_no_version_stated_or_named_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-265",
           "manual": false,
@@ -1939,6 +2251,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_a_settings_file_that_cannot_be_read_stops_the_command"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-200",
           "manual": false,
@@ -1947,6 +2265,12 @@
           "test": "dev/test_signatures.py::TestTheWalk::test_a_stop_names_the_test_under_its_proof"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-211",
           "manual": false,
@@ -1955,6 +2279,12 @@
           "test": "dev/test_signatures.py::TestTheWalk::test_a_hand_check_stops_under_its_head_and_asks"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-242",
           "manual": false,
@@ -1963,6 +2293,12 @@
           "test": "dev/test_signatures.py::TestTheWalk::test_a_proof_with_nothing_to_check_shows_its_reason"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-262",
           "manual": false,
@@ -1971,6 +2307,12 @@
           "test": "dev/test_signatures.py::TestTheWalk::test_a_weak_hand_check_shows_the_audits_finding_at_its_stop"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-263",
           "manual": false,
@@ -1979,6 +2321,12 @@
           "test": "dev/test_signatures.py::TestTheWalk::test_a_stop_names_each_system_and_the_machine_it_ran_on"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-209",
           "manual": false,
@@ -1987,6 +2335,12 @@
           "test": "dev/test_signatures.py::TestTheWalk::test_signing_follows_the_last_run_line"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-227",
           "manual": false,
@@ -1995,6 +2349,12 @@
           "test": "dev/test_signatures.py::TestTheWalk::test_it_opens_on_who_ran_the_tests_where_and_when"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-232",
           "manual": false,
@@ -2003,6 +2363,12 @@
           "test": "dev/test_signatures.py::TestTheWalk::test_the_overview_counts_per_system_and_the_audit"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-247",
           "manual": false,
@@ -2011,6 +2377,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_a_rule_with_no_proof_and_no_test_is_named_with_purlin_build"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-249",
           "manual": false,
@@ -2019,6 +2391,12 @@
           "test": "dev/test_signatures.py::TestTheLastNote::test_a_second_signer_sees_the_note_at_this_commit"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-250",
           "manual": false,
@@ -2027,6 +2405,12 @@
           "test": "dev/test_signatures.py::TestTheLastNote::test_four_commits_later_the_note_says_so"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-251",
           "manual": false,
@@ -2035,6 +2419,12 @@
           "test": "dev/test_signatures.py::TestTheLastNote::test_before_any_sign_off_the_stop_ends_on_its_results"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-272",
           "manual": false,
@@ -2043,6 +2433,12 @@
           "test": "dev/test_signatures.py::TestTheLastNote::test_a_rule_reworded_since_the_note_says_so_above_it"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-273",
           "manual": false,
@@ -2051,6 +2447,12 @@
           "test": "dev/test_signatures.py::TestTheLastNote::test_a_proof_reworded_since_the_note_says_so_above_it"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-252",
           "manual": false,
@@ -2059,6 +2461,12 @@
           "test": "dev/test_signatures.py::TestWhereItReadsSigned::test_a_tag_typed_by_hand_is_no_sign_off"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-253",
           "manual": false,
@@ -2067,6 +2475,12 @@
           "test": "dev/test_signatures.py::TestWhereItReadsSigned::test_a_sign_off_changed_in_an_unsigned_commit_is_no_sign_off"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-274",
           "manual": false,
@@ -2075,6 +2489,12 @@
           "test": "dev/test_signatures.py::TestWhereItReadsSigned::test_a_tag_this_checkout_lacks_is_read_from_the_sign_off_files"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-275",
           "manual": false,
@@ -2083,6 +2503,12 @@
           "test": "dev/test_signatures.py::TestWhereItReadsSigned::test_with_no_tag_a_sign_off_that_does_not_count_is_not_signed"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-255",
           "manual": false,
@@ -2091,6 +2517,12 @@
           "test": "dev/test_signatures.py::TestTheSignOff::test_a_tag_git_could_not_write_is_written_by_the_next_run"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-266",
           "manual": false,
@@ -2099,6 +2531,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_a_tag_typed_by_hand_for_this_version_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-267",
           "manual": false,
@@ -2107,6 +2545,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_the_refusal_names_the_remote_where_there_is_one"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-268",
           "manual": false,
@@ -2115,6 +2559,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_a_tag_that_is_the_sign_off_lets_a_second_signer_sign"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-256",
           "manual": false,
@@ -2123,6 +2573,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_a_rule_with_no_result_on_its_system_is_named"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-257",
           "manual": false,
@@ -2131,6 +2587,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_a_slow_proof_not_run_is_named"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-258",
           "manual": false,
@@ -2139,6 +2601,12 @@
           "test": "dev/test_signatures.py::TestTheRefusals::test_a_spec_that_holds_a_number_twice_is_refused_in_one_whole_line"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-259",
           "manual": false,
@@ -2147,6 +2615,12 @@
           "test": "dev/test_signatures.py::TestTheLastNote::test_a_note_edited_and_not_committed_is_not_shown"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-260",
           "manual": false,
@@ -2155,6 +2629,12 @@
           "test": "dev/test_signatures.py::TestTheSignOff::test_two_signers_who_share_a_name_each_keep_a_sign_off"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-269",
           "manual": false,
@@ -2163,6 +2643,12 @@
           "test": "dev/test_signatures.py::TestTheKeyThatSigned::test_a_commit_signed_with_another_key_is_taken_back"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-270",
           "manual": false,
@@ -2171,6 +2657,12 @@
           "test": "dev/test_signatures.py::TestTheKeyThatSigned::test_the_refusal_leaves_no_file_and_nothing_staged"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-276",
           "manual": false,
@@ -2179,6 +2671,12 @@
           "test": "dev/test_signatures.py::TestMarkersFrom095::test_one_test_that_carries_one_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-277",
           "manual": false,
@@ -2187,6 +2685,12 @@
           "test": "dev/test_signatures.py::TestMarkersFrom095::test_the_same_project_with_the_tag_taken_out_is_shown"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-278",
           "manual": false,
@@ -2195,6 +2699,12 @@
           "test": "dev/test_signatures.py::TestMarkersFrom095::test_three_are_counted_before_a_version_or_a_key_is_asked_for"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-279",
           "manual": false,
@@ -2203,6 +2713,12 @@
           "test": "dev/test_signatures.py::TestMarkersFrom095::test_show_prints_the_same_line_and_exits_1"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-280",
           "manual": false,
@@ -2211,6 +2727,12 @@
           "test": "dev/test_signatures.py::TestMarkersFrom095::test_check_still_checks_a_package"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-284",
           "manual": false,
@@ -2219,6 +2741,12 @@
           "test": "dev/test_signatures.py::TestSettledByJudgment::test_list_prints_the_settled_proof_on_its_own_line"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-285",
           "manual": false,
@@ -2227,6 +2755,12 @@
           "test": "dev/test_signatures.py::TestSettledByJudgment::test_the_settled_line_follows_every_weak_finding"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-286",
           "manual": false,
@@ -2235,6 +2769,12 @@
           "test": "dev/test_signatures.py::TestSettledByJudgment::test_a_settled_proof_adds_no_stop_and_refuses_nothing"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-287",
           "manual": false,
@@ -2243,6 +2783,12 @@
           "test": "dev/test_signatures.py::TestSettledByJudgment::test_another_no_bug_sentence_is_not_listed"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-288",
           "manual": false,
@@ -2251,6 +2797,12 @@
           "test": "dev/test_signatures.py::TestSettledByJudgment::test_show_prints_the_settled_line_under_the_findings"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-289",
           "manual": false,
@@ -2259,6 +2811,12 @@
           "test": "dev/test_signatures.py::TestSettledByJudgment::test_the_sign_off_records_the_list_opened_and_the_package_the_line"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-290",
           "manual": false,
@@ -2267,6 +2825,12 @@
           "test": "dev/test_signatures.py::TestTheWalk::test_carried_results_open_on_the_runs_that_took_them"
         },
         {
+          "carried": {
+            "at": "2026-10-03T16:58:50Z",
+            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-291",
           "manual": false,
