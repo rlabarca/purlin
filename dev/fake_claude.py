@@ -8,8 +8,8 @@ directory first on PATH and every call the audit makes lands here instead of
 on the model. Each call appends one JSON line to `calls.jsonl` beside the
 fake: the arguments it was given, the prompt it read on stdin, the folder it
 was started in (`cwd`) and what that folder held (`listing`), the value of
-`DISABLE_PROMPT_CACHING` (`env`), and when it started and finished, so a test
-can read how many calls were made, what they carried and how many ran at once.
+`DISABLE_PROMPT_CACHING` (`env`), so a test can read how many calls were made
+and what they carried.
 
 The audit asks once per rule, and the reply holds one part per proof it asks
 a bug for and then the reading (`reply`). A part names no bug,
@@ -62,7 +62,6 @@ DEFAULT_MODEL = 'claude-fake-1'
 _SCRIPT = r'''#!%(python)s
 import json, os, sys, time
 here = os.path.dirname(os.path.abspath(__file__))
-started = time.time()
 prompt = sys.stdin.read()
 with open(os.path.join(here, 'fake_claude.json'), encoding='utf-8') as handle:
     setup = json.load(handle)
@@ -101,8 +100,7 @@ if setup.get('writes'):
 cwd = os.getcwd()
 line = json.dumps({'argv': sys.argv[1:], 'prompt': prompt, 'cwd': cwd,
                    'listing': sorted(os.listdir(cwd)),
-                   'env': os.environ.get('DISABLE_PROMPT_CACHING'),
-                   'start': started, 'end': time.time()})
+                   'env': os.environ.get('DISABLE_PROMPT_CACHING')})
 with open(os.path.join(here, 'calls.jsonl'), 'a', encoding='utf-8') as log:
     log.write(line + '\n')
 if setup.get('raw') is not None:
@@ -173,19 +171,6 @@ def calls(directory):
         return []
     with open(path, encoding='utf-8') as handle:
         return [json.loads(line) for line in handle if line.strip()]
-
-
-def most_at_once(found):
-    """The largest number of calls that were running at the same moment."""
-    edges = []
-    for call in found:
-        edges.append((call['start'], 1))
-        edges.append((call['end'], -1))
-    running = best = 0
-    for _moment, step in sorted(edges, key=lambda edge: (edge[0], edge[1])):
-        running += step
-        best = max(best, running)
-    return best
 
 
 if __name__ == '__main__':

@@ -210,22 +210,6 @@ class Project(object):
         _write(path, json.dumps(data, indent=2, sort_keys=True))
         return rel
 
-    def sign_commits(self, email='jane@acme.com'):
-        """Configure a throwaway ssh signing key, so every commit here is signed.
-
-        `dev/test_signatures.py` proves the reader that judges a signature;
-        this only has to make signed commits exist so the payload can read
-        a signature that counts.
-        """
-        key = os.path.join(self.root, '.git', 'signing-key')
-        subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-C',
-                        email, '-f', key], check=True)
-        for name, value in (('user.email', email), ('user.name', 'Jane'),
-                            ('gpg.format', 'ssh'),
-                            ('user.signingkey', key + '.pub'),
-                            ('commit.gpgsign', 'true')):
-            _git(self.root, 'config', name, value)
-
     def payload(self):
         return purlin_payload.build_payload(self.root)
 
@@ -236,13 +220,6 @@ class Project(object):
 
     def cell(self, rule_id, name, feature='login'):
         return self.rule(rule_id, feature)['cells'][name]
-
-    def config_value(self, key, value):
-        path = os.path.join(self.root, '.purlin', 'config.json')
-        with open(path, encoding='utf-8') as handle:
-            settings = json.load(handle)
-        settings[key] = value
-        _write(path, json.dumps(settings))
 
 
 @pytest.fixture

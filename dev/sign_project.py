@@ -30,9 +30,6 @@ from purlin import payload as purlin_payload  # noqa: E402
 from purlin import fingerprint as purlin_fingerprint  # noqa: E402
 
 
-SIGN_PY = os.path.join(ROOT, 'scripts', 'review', 'sign.py')
-
-
 SPEC = (
     '# Feature: login\n\n'
     '> Description: Signing in with an email and a password.\n'
