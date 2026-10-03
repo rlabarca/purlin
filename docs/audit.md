@@ -57,8 +57,9 @@ The audit found 42 of 50 rules strong (84%): 42 strong, 8 weak.
 - **The proof is too loose to write a check from**: `purlin:build` stops and proposes a
   sharper proof.
 - Never change a sound test or narrow a rule to clear a finding.
-- Auditing again does not clear a finding. If the code changes and the test does not,
-  `purlin:audit` plants the same bug again first. The test still passes: the rule stays `weak`.
+
+Auditing again does not clear a finding. If the code changes and the test does not,
+`purlin:audit` plants the same bug again first. The test still passes: the rule stays `weak`.
 
 A rule with several proofs reads what they give together: `weak` while a spot test fires or a
 bug still survives, else `strong` where any of its proofs has a caught bug, else
