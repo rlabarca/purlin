@@ -2,8 +2,8 @@
 """Drive `purlin:spec` once, by hand, against a throwaway project.
 
 A person runs this. It is not in `dev/run_tests.sh` and never will be: it calls
-the real `claude` CLI, so it costs money and its answer is a model's, not a
-fixture's. One prompt per run, one hard timeout, one transcript on disk.
+the real `claude` CLI, so its answer is a model's, not a fixture's. One prompt
+per run, one hard timeout, one transcript on disk.
 
 The project is a fresh git repository set up through
 `scripts/init/scaffold.py --yes`, which is what `purlin:init` runs and which

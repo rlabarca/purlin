@@ -2,8 +2,8 @@
 """Drive `purlin:build` once, by hand, against a throwaway project.
 
 A person runs this. It is not in `dev/run_tests.sh` and never will be: it calls
-the real `claude` CLI, so it costs money and its answer is a model's, not a
-fixture's. One prompt per run, one hard timeout, one transcript on disk.
+the real `claude` CLI, so its answer is a model's, not a fixture's. One prompt
+per run, one hard timeout, one transcript on disk.
 
 Run it after `check_spec.py --keep`, whose project it picks up by default, so it
 builds the spec that was just written. `--spec <file>` builds a committed
@@ -38,7 +38,7 @@ from check_spec import (TMP_BASE, call_claude, new_project,  # noqa: E402
 # lines that open the body, so it is read off those.
 SECTIONS = ('Decisions', 'Review')
 CHANGESET = re.compile(r'^RULE-\d+\s*\u2192\s*\S+', re.MULTILINE)
-MARKER = re.compile(r'proof\s*\(\s*["\']', re.IGNORECASE)
+MARKER = re.compile(r'purlin:\s*\S+\s+(?:PROOF|RULE)-\d+')
 TEST_FILE = re.compile(r'(^|/)(test_[^/]+\.py|[^/]+_test\.py)$')
 
 
@@ -145,7 +145,7 @@ def main(argv=None):
          '%d file(s)' % len(created)),
         ('a marked test was written', bool(tests),
          ', '.join(tests) or 'no test file'),
-        ('every test carries a proof marker', bool(tests) and len(marked) == len(tests),
+        ('every test file carries a marker', bool(tests) and len(marked) == len(tests),
          '%d of %d marked' % (len(marked), len(tests))),
         ('the test run passed', 'FAIL' not in output.upper(),
          (output.strip().splitlines() or ['no output'])[-1][:70]),
