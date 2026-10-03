@@ -1511,14 +1511,14 @@
   "feature": "signatures",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T00:50:59Z",
-      "commit": "2261eb45317118cc0a5be95173a4eb4a065229c9",
+      "at": "2026-10-03T02:47:42Z",
+      "commit": "df3c6f81857297b64a8bf7c58a23b09b8c34d3f8",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "da7bcfcebb1eb56c75c7923c53a93524544b683a357e51784c236ade02027bff",
-        "spec": "6db540d3083f933d74b8854b300e337f3c7af26f9a894a37f80ef75623b2cf5e",
-        "tests": "b5667c60444d42289b7f96cdd614e648399dc303350efe3e045210161ba771a6"
+        "code": "d86be42302b537370014b87352e49b818fa04bf963d789919c4e8d1697c27f23",
+        "spec": "511723ebd02c99a370cb6cf60ca18fc6a45d55cd9e82db3c37a7b4bca19669f9",
+        "tests": "bbb72b98f62cdb593fd04e435f6420ceafc1d1c6c0ee89172c86dbcf590085f7"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -1785,6 +1785,30 @@
           "result": "pass",
           "rule": "RULE-115",
           "test": "dev/test_signatures.py::TestTheWalk::test_list_prints_each_weak_rule_with_its_finding"
+        },
+        {
+          "env": null,
+          "id": "PROOF-281",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-115",
+          "test": "dev/test_signatures.py::TestSettledByJudgment::test_one_settled_proof_and_no_weak_rule_asks_the_question"
+        },
+        {
+          "env": null,
+          "id": "PROOF-282",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-115",
+          "test": "dev/test_signatures.py::TestSettledByJudgment::test_two_settled_proofs_are_counted_together"
+        },
+        {
+          "env": null,
+          "id": "PROOF-283",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-115",
+          "test": "dev/test_signatures.py::TestSettledByJudgment::test_a_weak_rule_and_a_settled_proof_are_counted_in_that_order"
         },
         {
           "env": null,
@@ -2169,6 +2193,54 @@
           "result": "pass",
           "rule": "RULE-138",
           "test": "dev/test_signatures.py::TestMarkersFrom095::test_check_still_checks_a_package"
+        },
+        {
+          "env": null,
+          "id": "PROOF-284",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-139",
+          "test": "dev/test_signatures.py::TestSettledByJudgment::test_list_prints_the_settled_proof_on_its_own_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-285",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-139",
+          "test": "dev/test_signatures.py::TestSettledByJudgment::test_the_settled_line_follows_every_weak_finding"
+        },
+        {
+          "env": null,
+          "id": "PROOF-286",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-139",
+          "test": "dev/test_signatures.py::TestSettledByJudgment::test_a_settled_proof_adds_no_stop_and_refuses_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-287",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-139",
+          "test": "dev/test_signatures.py::TestSettledByJudgment::test_another_no_bug_sentence_is_not_listed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-288",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-139",
+          "test": "dev/test_signatures.py::TestSettledByJudgment::test_show_prints_the_settled_line_under_the_findings"
+        },
+        {
+          "env": null,
+          "id": "PROOF-289",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-140",
+          "test": "dev/test_signatures.py::TestSettledByJudgment::test_the_sign_off_records_the_list_opened_and_the_package_the_line"
         }
       ],
       "rules": {
@@ -2199,6 +2271,8 @@
         "RULE-136": "passed",
         "RULE-137": "passed",
         "RULE-138": "passed",
+        "RULE-139": "passed",
+        "RULE-140": "passed",
         "RULE-17": "passed",
         "RULE-20": "passed",
         "RULE-50": "passed",

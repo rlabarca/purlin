@@ -2,14 +2,14 @@
   "feature": "skill_status",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T00:50:59Z",
-      "commit": "2261eb45317118cc0a5be95173a4eb4a065229c9",
+      "at": "2026-10-03T02:47:42Z",
+      "commit": "df3c6f81857297b64a8bf7c58a23b09b8c34d3f8",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "605762d614a9f5e506861efe52552a096ea77af8eed78142973bc2d8d4342c9d",
-        "spec": "58f4b3d727fa27adda209d4413003ed2919396624401096d291b522afae16686",
-        "tests": "a23d2a17db056fb13fb0ba4257a0f621c2c23e13c556b1155ff09705148d1d20"
+        "code": "a30b11c17cb893f5dcdd485c2b1fa62c14c8944af3c37fa4bf201c0c45eca09f",
+        "spec": "5964e5b25a05b2a7a35b742e6bd3512889437fa127eeb8d0e52b7f3566161c73",
+        "tests": "5b28b87f903003042f590159219c325acf319797b0fa25f705f10fb7397dfccb"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -52,11 +52,45 @@
           "result": "pass",
           "rule": "RULE-17",
           "test": "dev/test_skill_status.py::test_a_copy_without_those_words_holds_no_such_sentence"
+        },
+        {
+          "env": null,
+          "id": "PROOF-43",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_skill_status.py::test_the_part_with_a_name_gives_the_command_with_spec"
+        },
+        {
+          "env": null,
+          "id": "PROOF-44",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-18",
+          "test": "dev/test_skill_status.py::test_a_copy_without_spec_name_holds_no_such_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-45",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_skill_status.py::test_the_example_is_what_the_script_prints"
+        },
+        {
+          "env": null,
+          "id": "PROOF-46",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-19",
+          "test": "dev/test_skill_status.py::test_a_copy_with_one_word_changed_differs"
         }
       ],
       "rules": {
         "RULE-16": "passed",
-        "RULE-17": "passed"
+        "RULE-17": "passed",
+        "RULE-18": "passed",
+        "RULE-19": "passed"
       },
       "runner": "rich-labarca"
     }

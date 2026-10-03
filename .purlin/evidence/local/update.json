@@ -2,14 +2,14 @@
   "feature": "update",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T00:51:00Z",
-      "commit": "2261eb45317118cc0a5be95173a4eb4a065229c9",
+      "at": "2026-10-03T02:47:43Z",
+      "commit": "df3c6f81857297b64a8bf7c58a23b09b8c34d3f8",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "361045cd6a2020bea5468b594fdffe3a3ef5f800b118ecd516378eeb0fa197c5",
-        "spec": "7fe34781f7e6277704440c65396c022f94d7cf0bb2f6f6750a3593501660ca64",
-        "tests": "169fa64e4d72770cbfd654155217e8bed24f33b8a8fdae805a46206939dc2d14"
+        "code": "77135cc61377d403fec71acd3dfadfaa5da8b76907c9b882b895558555513843",
+        "spec": "70d7a924142872b1f542252709aeb3ec63e684f2177184d54b9447abfb5d6569",
+        "tests": "b23218fff316c33d2d66f8ac04f116695db82da72dd21541c77a02cf3ff9773e"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -756,6 +756,38 @@
           "result": "pass",
           "rule": "RULE-71",
           "test": "dev/test_init_update.py::test_a_run_with_apply_names_the_migrations_it_applies"
+        },
+        {
+          "env": null,
+          "id": "PROOF-217",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-72",
+          "test": "dev/test_init_update.py::test_each_line_naming_0_9_5_goes_from_claude_md"
+        },
+        {
+          "env": null,
+          "id": "PROOF-218",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-72",
+          "test": "dev/test_init_update.py::test_agents_md_and_the_claude_folder_lose_the_lines_too"
+        },
+        {
+          "env": null,
+          "id": "PROOF-219",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-73",
+          "test": "dev/test_init_update.py::test_the_totals_the_log_and_the_backup_name_each_line_removed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-220",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-73",
+          "test": "dev/test_init_update.py::test_claude_md_is_left_where_markers_is_declined"
         }
       ],
       "rules": {
@@ -790,6 +822,8 @@
         "RULE-7": "not run",
         "RULE-70": "passed",
         "RULE-71": "passed",
+        "RULE-72": "passed",
+        "RULE-73": "passed",
         "RULE-9": "passed"
       },
       "runner": "rich-labarca"

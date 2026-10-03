@@ -2,14 +2,14 @@
   "feature": "server",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T00:50:59Z",
-      "commit": "2261eb45317118cc0a5be95173a4eb4a065229c9",
+      "at": "2026-10-03T02:47:42Z",
+      "commit": "df3c6f81857297b64a8bf7c58a23b09b8c34d3f8",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "b9ecb10c82aedda55339dbe023e04bfcfcc82b2d3d7c37868b3c7473aba73e7e",
-        "spec": "85c87fd31ae4bb29e811851c43013eb428c040ab3d491cf65985836d4c1a102e",
-        "tests": "f2db868095bd03a3bb19c2813ba5abe5f55e9d6e77a9f58889550a93505ec234"
+        "code": "8fa30478174b4f0b1bd42577a0614753335d5c0dfd19982b1c3710a712ceeb0b",
+        "spec": "1049544573cda2004d9ab39143c650dceb7f43aa770514f0a364e85c20a9987e",
+        "tests": "3e62db6c9751f7bb566f24c6d40cfac20f1bc350d94f39e7e3256beded5c10e3"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -267,7 +267,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-41",
-          "test": "dev/test_mcp_server.py::TestTheStatusScript::test_a_spec_with_a_mistake_prints_only_its_warning"
+          "test": "dev/test_mcp_server.py::TestTheStatusScript::test_a_spec_with_a_mistake_prints_its_warning_first"
         },
         {
           "env": null,
@@ -275,7 +275,71 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-41",
-          "test": "dev/test_mcp_server.py::TestTheStatusScript::test_a_spec_with_no_mistake_is_counted_in_one_line"
+          "test": "dev/test_mcp_server.py::TestTheStatusScript::test_a_spec_with_no_mistake_opens_on_its_view"
+        },
+        {
+          "env": null,
+          "id": "PROOF-178",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-41",
+          "test": "dev/test_mcp_server.py::TestTheStatusScript::test_a_name_no_spec_has_is_said_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-179",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_mcp_server.py::TestOneSpecsView::test_it_opens_on_the_path_then_one_line_per_rule"
+        },
+        {
+          "env": null,
+          "id": "PROOF-180",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-42",
+          "test": "dev/test_mcp_server.py::TestOneSpecsView::test_an_anchor_is_shown_as_a_feature_is"
+        },
+        {
+          "env": null,
+          "id": "PROOF-181",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_mcp_server.py::TestOneSpecsView::test_a_cell_that_needs_work_gives_its_reasons_and_no_other_does"
+        },
+        {
+          "env": null,
+          "id": "PROOF-182",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-43",
+          "test": "dev/test_mcp_server.py::TestOneSpecsView::test_a_strong_rule_shows_no_reason"
+        },
+        {
+          "env": null,
+          "id": "PROOF-183",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-44",
+          "test": "dev/test_mcp_server.py::TestOneSpecsView::test_each_rule_ends_on_its_proof_lines"
+        },
+        {
+          "env": null,
+          "id": "PROOF-184",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-44",
+          "test": "dev/test_mcp_server.py::TestOneSpecsView::test_a_proof_of_two_tests_sets_the_second_under_the_first"
+        },
+        {
+          "env": null,
+          "id": "PROOF-185",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-44",
+          "test": "dev/test_mcp_server.py::TestOneSpecsView::test_a_rule_with_no_proof_lists_the_tests_marked_with_its_id"
         }
       ],
       "rules": {
@@ -290,6 +354,9 @@
         "RULE-39": "passed",
         "RULE-40": "passed",
         "RULE-41": "passed",
+        "RULE-42": "passed",
+        "RULE-43": "passed",
+        "RULE-44": "passed",
         "RULE-5": "not run",
         "RULE-6": "not run",
         "RULE-7": "passed",

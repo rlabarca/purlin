@@ -2,14 +2,14 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T00:50:59Z",
-      "commit": "2261eb45317118cc0a5be95173a4eb4a065229c9",
+      "at": "2026-10-03T02:47:41Z",
+      "commit": "df3c6f81857297b64a8bf7c58a23b09b8c34d3f8",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "b71d6cd6516ac6504ba341cd67a5a40e4f72f089f3db4a6befd0ee8946461a88",
-        "spec": "93cf191ae179233b14c3025888f98ac6692b1a55dc25411a588f298d48385bf0",
-        "tests": "a9fa66f07ca1f6d4a16dbdde74ae81eadc8eac719da4bbf64ee3d1c9471be9b0"
+        "code": "db040f6832c1b0ec7f403e3a05f9006b967cbdf758269705391d7171337b6dd4",
+        "spec": "edd30ac0e167f440e27427a026773b8db360bee990d6c287d447422eeacd4e13",
+        "tests": "c1f919b2f433ae6a91870bcb2c4f807e067c98ad9038ebb0b9843b786ed6dd9c"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -183,6 +183,22 @@
         },
         {
           "env": null,
+          "id": "PROOF-280",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_purlin_report.py::test_an_anchor_out_of_date_says_so_in_its_tests_cell"
+        },
+        {
+          "env": null,
+          "id": "PROOF-281",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-9",
+          "test": "dev/test_purlin_report.py::test_an_anchors_out_of_date_part_comes_last"
+        },
+        {
+          "env": null,
           "id": "PROOF-10",
           "manual": false,
           "result": "pass",
@@ -332,6 +348,14 @@
           "result": "pass",
           "rule": "RULE-22",
           "test": "dev/test_purlin_report.py::test_a_rule_screen_draws_no_notice"
+        },
+        {
+          "env": null,
+          "id": "PROOF-282",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-22",
+          "test": "dev/test_purlin_report.py::test_the_boxes_stand_above_the_notices_at_every_width"
         },
         {
           "env": null,
