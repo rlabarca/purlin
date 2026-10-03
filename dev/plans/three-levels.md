@@ -1727,7 +1727,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     upgrade page alone. The upgrade ran cleanly and the first full test run then counted 57 of
     476 rules, where 0.9.5 read every feature verified; reaching 474 took hand repairs no page
     describes. In the owner's words: "we need to fix up to 20", the first twenty of its list
-    of improvements. The build plan is `dev/plans/d126-plan.md`.
+    of improvements.
     - **A lettered proof is renumbered.** 0.9.5 allowed `PROOF-3b`. The upgrade gives each one
       the next free number in its spec, rewrites its test's marker, and lists each change, as
       `piano_roll PROOF-7b is now PROOF-23`. It asks first, as every migration does.
@@ -1748,7 +1748,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       the tests setting changed, and names what `--commit` left uncommitted; the commit's
       subject stays short; the README points at the upgrade page.
 127. **The open items after the third upgrade test** (added 2026-10-02), the owner's answers
-    to eight questions. The build plan is `dev/plans/d127-plan.md`.
+    to eight questions.
     - **A full run runs marked test files only, and says so**: `12 test files carry no marker
       and were not run.`
     - **A failing rule is on the dashboard's first screen**: a `Failing` count box, shown only
@@ -1760,10 +1760,10 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **A settle is refused where the test has not changed since the finding.** Where the
       build judged the test already sound it says so with an explicit option, and the evidence
       records that the test was not changed.
-    - **Every other item the third test left is fixed** (`d126-reports/upgrade-tests.md`).
+    - **Every other item the third test left is fixed.**
     - **Purlin's own re-audit waits until just before signing**, when the code has stopped
       changing; a real AI session given a goal on a sample project is tried with it.
-128. **The answers after the fourth upgrade test** (added 2026-10-02). Plan: `d128-plan.md`.
+128. **The answers after the fourth upgrade test** (added 2026-10-02).
     - **The signer sees a finding cleared by judgment**: the sign-off's list of findings names
       each proof settled with its test unchanged.
     - **The upgrade removes the 0.9.5 instructions from the project's `CLAUDE.md`, `AGENTS.md`

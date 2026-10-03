@@ -81,7 +81,6 @@ KEPT_TAGS = ('manual', 'slow', 'env')
 WORKFLOW_MARKER = '.proofs-'
 WORKFLOWS = 'workflows'
 PRE_PUSH_HOOK = '.git/hooks/pre-push'
-PRE_PUSH_KEY = 'pre_push'
 DESIGN_FIELD_RE = re.compile(r'^>\s*(Visual-Reference|Visual-Hash):')
 # A Figma source is an address at figma.com. A git address that only holds
 # the word, such as acme/figma-tokens.git, is a remote anchor's and stays.

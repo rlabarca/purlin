@@ -6,8 +6,8 @@
 # publishes a copy of it to `dev/external-refs/security-policy.git`, a local
 # bare repository, so `dev/test_e2e_external_refs.sh` can add it to a fresh
 # project the way a consumer pulls an anchor from another repository. The copy
-# is a 0.10.0 anchor: any tracking fields and retired visual fields are
-# stripped, so the bare repository holds what an anchor repo would hold.
+# carries no tracking field, so the bare repository holds what an anchor repo
+# would hold.
 #
 # Safe to re-run: it does nothing when the repository already exists, and it
 # never writes to specs/.
@@ -40,14 +40,14 @@ git -c init.defaultBranch=main init --bare -q "$BARE_REPO"
 WORK="${BARE_REPO}_work"
 git clone -q "$BARE_REPO" "$WORK" 2>/dev/null
 
-# Publish the author's file: the tracking fields a consumer adds, and the
-# fields 0.10.0 retired, are not part of what an anchor repo holds.
+# Publish the author's file: the tracking fields a consumer adds are not part
+# of what an anchor repo holds.
 python3 - "$ANCHOR_FILE" "$WORK/$PUBLISHED_NAME" <<'PY'
 import sys
 
 source, target = sys.argv[1], sys.argv[2]
-# The consumer tracking fields, and the `> Visual-` fields 0.10.0 retired.
-drop = ('> Source:', '> Pinned:', '> Path:', '> Note:', '> Visual-')
+# The consumer tracking fields.
+drop = ('> Source:', '> Pinned:', '> Path:', '> Note:')
 with open(source, encoding='utf-8') as handle:
     lines = handle.readlines()
 with open(target, 'w', encoding='utf-8') as handle:
