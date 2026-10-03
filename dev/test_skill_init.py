@@ -1,10 +1,12 @@
 """What the init skill, `skills/init/SKILL.md`, must name.
 
-One test per proof of `specs/skills/skill_init.md`. Three read the skill's
+One test per proof of `specs/skills/skill_init.md`. Four read the skill's
 text. One asks the setup script itself, `scripts/init/scaffold.py`, for its
-usage and holds every flag the skill hands a reader to it, and one runs the
+usage and holds every flag the skill hands a reader to it, one runs the
 script on a project 0.9.5 set up with the flags the skill's upgrade part
-hands. The readers are in `dev/skill_checks.py`.
+hands, and one runs it on a sample project this release set up and holds
+each line the skill's restoring part quotes to what it prints. The readers
+are in `dev/skill_checks.py`.
 """
 
 import os
@@ -70,12 +72,16 @@ def test_a_reader_finds_the_files_setup_writes_and_the_two_references():
 UPGRADE_HEADING = '## Bringing a 0.9.5 project forward'
 
 
-def upgrade_part():
-    """The skill's lines from its upgrade heading to the next heading."""
+def part(heading):
+    """The skill's lines from `heading` to the next heading."""
     text = read(SKILL)
-    start = text.index(UPGRADE_HEADING)
+    start = text.index(heading)
     end = text.index('\n## ', start + 1)
     return text[start:end].splitlines()
+
+
+def upgrade_part():
+    return part(UPGRADE_HEADING)
 
 
 def _line_with(lines, names):
@@ -130,3 +136,62 @@ def test_the_flags_the_upgrade_part_hands_apply_one_migration_unasked(
     assert '[y/N]' not in done.stdout
     assert [item['id'] for item in update.pending(root)] == [
         name for name in before if name != 'evidence']
+
+
+# --- restoring a file setup writes --------------------------------------------
+
+RESTORE_HEADING = '## Restoring a file setup writes'
+RESTORED = ('.gitignore', '.purlin/evidence/README.md', '.purlin/config.json',
+            'the dashboard page')
+NOTHING_RESTORED = 'Nothing was restored. Add --yes to restore each file.'
+
+
+# purlin: skill_init PROOF-101
+def test_the_restoring_part_names_the_files_then_lists_asks_and_restores():
+    lines = part(RESTORE_HEADING)
+    text = flat('\n'.join(lines))
+    assert [name for name in RESTORED if name not in text] == []
+    listed = _line_with(lines, ['**List.**'])
+    asked = _line_with(lines, ['**Stop and ask**', 'restore'])
+    restored = _line_with(lines, ['--update', '--yes'])
+    assert listed < asked < restored
+
+
+# purlin: skill_init PROOF-102
+def test_the_lines_the_restoring_part_quotes_are_the_ones_the_script_prints(
+        tmp_path):
+    sys.path.insert(0, str(ROOT / 'dev'))
+    import sample_lab
+    text = flat('\n'.join(part(RESTORE_HEADING)))
+    quoted = ['`<n> files to restore in <folder>:`', '`' + NOTHING_RESTORED
+              + '`', '`Restoring <n> files: <files>.`',
+              '`restored <file>: <what the file is for>`',
+              '`chore(update): restore <files>`']
+    assert [line for line in quoted if line not in text] == []
+    root = sample_lab.build(tmp_path)
+    for args in (['config', 'user.name', 'Test Person'],
+                 ['config', 'user.email', 'test@example.com'],
+                 ['config', 'commit.gpgsign', 'false']):
+        subprocess.run(['git'] + args, cwd=root, check=True,
+                       capture_output=True)
+    env = dict(os.environ)
+    env.pop('CLAUDE_PLUGIN_ROOT', None)
+
+    def run(*flags):
+        done = subprocess.run(
+            [sys.executable, str(SCAFFOLD), '--update', '--project-root',
+             root] + list(flags), capture_output=True, encoding='utf-8',
+            timeout=300, env=env, stdin=subprocess.DEVNULL)
+        assert done.returncode == 0, done.stdout + done.stderr
+        return done.stdout.splitlines()
+
+    listing = run()
+    assert listing[0] == '2 files to restore in %s:' % os.path.abspath(root)
+    assert listing[-1] == NOTHING_RESTORED
+    printed = run('--yes')
+    assert printed[0] == ('Restoring 2 files: .gitignore, '
+                          '.purlin/evidence/README.md.')
+    assert printed[2] == ('  restored .purlin/evidence/README.md: says what '
+                          'the evidence folder holds')
+    assert printed[3].endswith('as chore(update): restore .gitignore, '
+                               '.purlin/evidence/README.md')

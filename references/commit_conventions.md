@@ -16,6 +16,7 @@ Every commit Purlin makes, or asks you to make, uses one of these. There is no o
 | `anchor(<name>): create` | A new local anchor | `purlin:anchor create` |
 | `anchor(<name>): sync (<sha>)` | Advancing a pin to that commit | `purlin:anchor sync` |
 | `chore(update): migrate to <VERSION> (<ids>)` | Migrating a project to the installed plugin | `purlin:init --update` |
+| `chore(update): restore <file>[, <file>...]` | The files setup writes, restored to a project that lacked them | `purlin:init --update` |
 | `chore(init): set up Purlin` | The files setup wrote, once a person agrees or `--yes` is passed | `purlin:init` |
 | `chore:` | Project setup, config changes, renames, cleanup | Anyone |
 | `docs:` | Documentation | Anyone |
@@ -32,6 +33,7 @@ purlin: evidence at a1b2c3d
 sign(1.2.0): quinn.qa@labconnect.example
 anchor(security_baseline): sync (abc1234)
 chore(update): migrate to 0.10.0 (markers, plugins)
+chore(update): restore .gitignore, .purlin/evidence/README.md
 chore: rename login to authentication
 ```
 

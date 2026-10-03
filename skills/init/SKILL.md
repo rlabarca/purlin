@@ -1,6 +1,6 @@
 ---
 name: init
-description: Set a project up for Purlin, or bring a project Purlin 0.9.5 set up to this version
+description: Set a project up for Purlin, bring a project Purlin 0.9.5 set up to this version, or restore a file setup writes
 ---
 
 # purlin:init
@@ -33,7 +33,7 @@ the script with its input empty, `< /dev/null`, so the question takes its defaul
 |------|--------------|
 | `--project-root <dir>` | The top folder of the git checkout to set up |
 | `--yes` | Commits setup's files that are not committed yet, without asking |
-| `--update` | Brings a project Purlin 0.9.5 set up to the installed version. See below |
+| `--update` | Brings a project Purlin 0.9.5 set up to the installed version, and restores a file setup writes to any other project that lacks one. See below |
 
 A second run writes no file: what is there is kept. With `--yes` it commits what the first run
 wrote.
@@ -146,6 +146,23 @@ as they are. A `CLAUDE.md`, an `AGENTS.md` or a file under `.claude/` stands fir
 left, and is the one to change first: it tells the agent to write what this version does not
 read. While a migration is pending the
 status prints `→ Run: purlin:init --update`, and a test run stops and names it.
+
+## Restoring a file setup writes
+
+On a project 0.9.5 did not set up, the status prints `→ Run: purlin:init --update` where a file
+setup writes is to restore: Purlin's lines in `.gitignore`, `.purlin/evidence/README.md`, the
+`version` in `.purlin/config.json`, or the dashboard page at the project root. The same script
+restores it, and none of the part above applies. Two steps:
+
+1. **List.** Run the line of step 1 above. It prints `<n> files to restore in <folder>:` and one
+   line per file, `<file>: <what the file is for>`, and ends on `→ Run: purlin:init --update`
+   and `Nothing was restored. Add --yes to restore each file.`
+2. **Stop and ask** the person whether to restore them, naming each file. On a yes, run it with
+   `--update --project-root . --yes`.
+
+It prints `Restoring <n> files: <files>.`, one line `restored <file>: <what the file is for>` for
+each, and the commit, `chore(update): restore <files>`. It ends on the lines `purlin:status` ends
+on, and the next step is the one they name.
 
 ## When you are done
 
