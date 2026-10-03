@@ -547,6 +547,26 @@ class TestTheCommit:
 
 
 # ---------------------------------------------------------------------------
+# The flags
+# ---------------------------------------------------------------------------
+
+class TestTheFlags:
+
+    # purlin: scaffold PROOF-178
+    def test_the_usage_lists_setup_s_flags_and_no_other(self, project):
+        code, out, _err = project.child('--help')
+        assert code == 0
+        assert sorted(set(re.findall(r'(?<![\w-])--[a-z][a-z-]*', out))) == [
+            '--apply', '--help', '--project-root', '--test-command',
+            '--update', '--yes'], out
+        before = tree(project.root)
+        code, _out, err = project.child('--colour')
+        assert code == 2
+        assert 'unrecognized arguments: --colour' in err, err
+        assert tree(project.root) == before
+
+
+# ---------------------------------------------------------------------------
 # The refusals, and the hand-off to the upgrade
 # ---------------------------------------------------------------------------
 

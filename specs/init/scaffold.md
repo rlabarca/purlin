@@ -9,8 +9,8 @@
 >   runs its tests, commits the evidence and signs it off.
 > Scope: scripts/init/scaffold.py, templates/config.json, templates/gitignore.purlin, templates/evidence-readme.md
 > Stack: python3 (stdlib only, 3.9 floor)
-> Highest-Rule: 83
-> Highest-Proof: 177
+> Highest-Rule: 84
+> Highest-Proof: 178
 
 ## Rules
 
@@ -28,6 +28,7 @@
 - RULE-70: The commit carries only setup's own files that git does not ignore and does not hold as they stand, whether this run wrote them or an earlier one did: a file the project had already staged stays staged and out of it
 - RULE-82: Each refusal of setup names what is wrong and what fixes it, and writes nothing more: a folder that is not a git repository exits 2, a `.purlin/config.json` that cannot be read exits 1, and a commit git refuses leaves the files staged with git's own message
 - RULE-83: Setup asks one question, `Commit the files setup wrote? [y/N] `, and nothing about how the tests run, and writes a settings file holding exactly `version`, the plugin's `VERSION` file, and `tests`, an empty list where the project carried none
+- RULE-84: Setup takes `--project-root` and `--yes`, and `--update` with its `--apply` and `--test-command`, and no other flag: one it does not take is refused with exit 2 and nothing is written
 
 ## Proof
 
@@ -67,3 +68,4 @@
 - PROOF-171 (RULE-83): A new pytest project, one of whose proofs is tagged `@env` for a system this machine is not, is set up with no flag and nothing to answer from; its output holds `[y/N]` exactly once, on the line `Commit the files setup wrote? [y/N] `
 - PROOF-172 (RULE-83): A new pytest project is set up with nothing to answer from; its `.purlin/config.json` holds exactly the keys `tests` and `version`, `tests` an empty list and `version` the text of the plugin's `VERSION` file
 - PROOF-88 (RULE-83): An empty git project is set up with nothing to answer from; it exits 0, the one question it asks is `Commit the files setup wrote?`, and its settings read `tests` as an empty list
+- PROOF-178 (RULE-84): Setup's usage, asked for with `--help`, lists exactly the flags `--apply`, `--help`, `--project-root`, `--test-command`, `--update` and `--yes`; run on a project with `--colour` it exits 2, its error output holds `unrecognized arguments: --colour`, and every file of the project reads as before
