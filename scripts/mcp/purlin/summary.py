@@ -120,6 +120,14 @@ LAST_LINE_RUN_FIRST = ('Every rule passes its tests on the committed evidence. B
 LAST_LINE_RUN_CLEAN = ('Every rule passes its tests on the committed evidence. Before a '
                        'sign-off, run %s: a sign-off counts only results taken with '
                        'nothing uncommitted.')
+# The last line while a test still carries a marker Purlin 0.9.5 wrote, which
+# `purlin:sign` refuses: the one for a single test, then the one for more.
+LAST_LINE_OLD_ONE = ('Every rule passes its tests on the committed evidence. Before a '
+                     'sign-off, rewrite the 1 test that still carries a marker from '
+                     'Purlin 0.9.5: purlin:status names it.')
+LAST_LINE_OLD_MANY = ('Every rule passes its tests on the committed evidence. Before a '
+                      'sign-off, rewrite the %d tests that still carry a marker from '
+                      'Purlin 0.9.5: purlin:status names each.')
 # The run that takes a source's results again; `%s` is the systems.
 RUN_AGAIN = {'local': 'purlin:test --all --commit', 'ci': 'purlin:test on %s'}
 

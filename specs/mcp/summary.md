@@ -10,8 +10,8 @@
 >   package read these words from the payload and write none of their own.
 > Scope: scripts/mcp/purlin/summary.py, scripts/mcp/purlin/facts.py, scripts/mcp/purlin/status.py
 > Stack: python/stdlib
-> Highest-Rule: 29
-> Highest-Proof: 69
+> Highest-Rule: 30
+> Highest-Proof: 70
 
 ## Rules
 
@@ -28,6 +28,7 @@
 - RULE-28: Where every result was taken on this version of the code and one was taken while files were changed and not committed, the last line reads `Every rule passes its tests on the committed evidence. Before a sign-off, run purlin:test --all --commit: a sign-off counts only results taken with nothing uncommitted.`; `purlin:sign` refuses that project with `No sign-off: these results were taken while files were changed and not committed`
 - RULE-29: The dashboard data the status writes carries, under `last_line`, the last line the status prints
 - RULE-25: A rule whose passed cell reads `checked at sign-off` is counted under no kind of work and not among the rules that pass, so the tests read `met` where every rule that has a test passes it on the committed evidence, whether or not anyone has checked that rule
+- RULE-30: Where the last line would name `purlin:sign` and a tracked test still carries a marker Purlin 0.9.5 wrote, which the sign-off refuses, the last line reads `Every rule passes its tests on the committed evidence. Before a sign-off, rewrite the <n> tests that still carry a marker from Purlin 0.9.5: purlin:status names each.`, and for one `... rewrite the 1 test that still carries ...: purlin:status names it.`
 
 ## Proof
 
@@ -62,3 +63,4 @@
 - PROOF-67 (RULE-27): Two rules hold passing results from a project's own run on Windows, then a commit adds `notes.txt`, then this machine's passing results are committed; the status reads `Tests: met` and ends on `Every rule passes its tests on the committed evidence. Before a sign-off, run purlin:test on Windows: a sign-off counts only results taken on this version of the code.`, and `purlin:sign`'s refusal ends `Run purlin:test on Windows, then purlin:sign.`; on a Windows machine the other system is Linux/Unix
 - PROOF-68 (RULE-28): Two rules pass on evidence taken at HEAD whose section reads `dirty` true; the status reads `Tests: met` and ends on `Every rule passes its tests on the committed evidence. Before a sign-off, run purlin:test --all --commit: a sign-off counts only results taken with nothing uncommitted.`, and `purlin:sign`'s refusal opens `No sign-off: these results were taken while files were changed and not committed`
 - PROOF-69 (RULE-29): After the status of PROOF-64's project, `last_line` in `.purlin/report-data.js` is the status's last line, the one that names `purlin:test --all --commit`
+- PROOF-70 (RULE-30): Two rules pass their tests on committed evidence taken after a commit adds `tests/test_old.py`, whose test carries `@pytest.mark.proof("login", "PROOF-2b", "RULE-2")`; the status reads `Tests: met` and ends on `Every rule passes its tests on the committed evidence. Before a sign-off, rewrite the 1 test that still carries a marker from Purlin 0.9.5: purlin:status names it.`, and `purlin:sign` refuses with a line opening `No sign-off: 1 test still carries`

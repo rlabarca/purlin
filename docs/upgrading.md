@@ -108,7 +108,7 @@ in brackets goes and the note stays. `@manual`, `@slow` and `@env(...)` always s
 totals counts the tags:
 
 ```
-  kind-tags: dropped 438 kind-of-test tags from 54 specs: purlin:test runs every marked test
+  kind-tags: dropped 438 kind-of-test tags from 49 specs: purlin:test runs every marked test
 ```
 
 **The lettered proofs.** 0.9.5 allowed a proof numbered `PROOF-7b`. This release numbers a proof

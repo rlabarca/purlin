@@ -297,6 +297,14 @@ def build_payload(project_root, generated_by='sync_status', config=None,
         payload['last_line'] = summary_module.closing_line(
             payload['last_line'],
             facts_module.results_to_retake(project_root, feature_entries))
+    if payload['last_line'] == summary_module.LAST_LINE:
+        # The sign-off refuses while a test carries a 0.9.5 marker, and it
+        # refuses that before the results, so this line is the last checked.
+        old = len(status_module._old_markers_found(project_root))
+        if old:
+            payload['last_line'] = (
+                summary_module.LAST_LINE_OLD_ONE if old == 1
+                else summary_module.LAST_LINE_OLD_MANY % old)
     return payload
 
 

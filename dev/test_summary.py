@@ -50,6 +50,8 @@ RUN_CLEAN = (OPENS + 'Before a sign-off, run purlin:test --all --commit: a '
              'sign-off counts only results taken with nothing uncommitted.')
 NOT_THIS_CODE = ('No sign-off: these results were not taken on this version '
                  'of the code')
+OLD_FIRST = (OPENS + 'Before a sign-off, rewrite the 1 test that still '
+             'carries a marker from Purlin 0.9.5: purlin:status names it.')
 TAKEN_DIRTY = ('No sign-off: these results were taken while files were '
                'changed and not committed')
 PASSING = [_entry('PROOF-1', 'RULE-1'), _entry('PROOF-2', 'RULE-2')]
@@ -579,6 +581,27 @@ class TestTheLastLineAgreesWithTheSignOff:
         assert lines[1] == 'Tests: met', lines
         assert lines[-1] == RUN_CLEAN, lines
         assert refused.startswith(TAKEN_DIRTY), refused
+
+    # purlin: summary PROOF-70
+    def test_a_test_with_a_095_marker_names_the_rewrite_before_a_sign_off(
+            self):
+        made = Project(spec=SPEC)
+        try:
+            made.evidence(PASSING)
+            _write(os.path.join(made.root, 'tests', 'test_old.py'),
+                   'import pytest\n\n\n'
+                   '@pytest.mark.proof("login", "PROOF-2b", "RULE-2")\n'
+                   'def test_denied():\n    pass\n')
+            _commit_all(made, 'test: an old test')
+            made.evidence(PASSING)
+            lines = _status(made)
+            refused = _refusal(made)
+        finally:
+            made.close()
+        assert lines[1] == 'Tests: met', lines
+        assert lines[-1] == OLD_FIRST, lines
+        assert refused.startswith('No sign-off: 1 test still carries'), \
+            refused
 
     # purlin: summary PROOF-69
     def test_the_dashboard_data_carries_the_same_last_line(self):
