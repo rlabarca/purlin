@@ -248,6 +248,25 @@ planted for it again; a kept bug that survived adds its two findings again. No b
 an anchor's proof, a `@manual` proof or a proof tagged for a system this machine is not. When a
 file of the project changes while the audit runs, the audit stops and writes nothing.
 
+**A bug that survived is planted again first.** Where the feature's code changed and the proof's
+test is as it was when the bug got past it, the audit makes the recorded change again in a copy,
+with every refusal above, and runs the proof's own tests. The model is asked for no bug for that
+proof.
+
+- **The test still passes.** The bug still reads `survived`, its two findings stay, at the line
+  the change now stands at, and the rule reads `weak`. The audit prints, under the rule,
+  `  PROOF-1: its test is as it was and still passes with the bug it missed. Strengthen it with purlin:build.`
+- **The test fails.** The code changed and the test did not, and the test now catches the bug.
+  The entry reads `caught`, its two findings leave the rule, and the audit prints
+  `  PROOF-1: the test now catches the bug it missed at src/age.py:12.`
+- **The test does not run** with the bug in place: the entry reads `not run`.
+- **The recorded change can no longer be planted**, because its `before` lines are not in the
+  file exactly once or another refusal above holds: a new bug is asked for.
+
+The two printed lines are not stored. A bug that survived whose proof's test changed is not
+planted again by this audit: a new bug is asked for. "Settling a finding" says what is compared,
+and how a finding that still holds is cleared.
+
 ## Settling a finding
 
 A planted bug that survived is settled by a test run. `purlin:build` strengthens the test, then
@@ -264,9 +283,10 @@ The script takes `--sound PROOF-N` the same way, once per proof.
   settled, and the run names it as failing.
 - Only the rules named are read.
 
-**A test that has not changed.** A finding is cleared by a stronger test or by a recorded
-judgment that the test was sound already, and by nothing else. So a settle plants nothing for
-a proof whose test is as it was when the bug got past it. The audit prints, under the rule,
+**A test that has not changed.** While the recorded bug still gets past the test, a finding is
+cleared by a stronger test or by a recorded judgment that the test was sound already, and by
+nothing else. So a settle plants nothing for a proof whose test is as it was when the bug got
+past it. The audit prints, under the rule,
 `  PROOF-2: its test is as it was when the bug got past it. Strengthen it with purlin:build, then settle.`
 The bug still reads `survived`, its two findings stay, and the rule reads `weak`.
 
@@ -274,10 +294,7 @@ The bug still reads `survived`, its two findings stay, and the rule reads `weak`
   from its declaration to the end of its body, or the whole file for a shell or SQL test. A
   change elsewhere in the file, to a helper, a fixture or another test, is not a change to
   the test. A bug recorded as `survived` holds the sha256 of those tests as `test_key`.
-- **A bug recorded with no `test_key`** reads as unchanged only where that is certain: its
-  `break_key` is the one taken now, or the rule's entry is not out of date on its tests. Once
-  the rule's tests change it is settled as any bug is. A test whose source is not found is
-  read as changed.
+- **A test whose source is not found** is read as changed.
 - **`--sound PROOF-N`** says the test of that proof was read against the proof and judged to
   assert what the proof names already. It is given once per proof, beside `--settle`:
   `purlin:audit <feature> RULE-N --settle --sound PROOF-N`. The settle then goes on for that
@@ -349,8 +366,10 @@ Where a settled rule needs no new bug, no model is asked. Its entry keeps the `m
 `criteria` of the entry it replaces and holds no `explanation`, since that reading was of the
 test as it was.
 
-Only `--settle` plants a recorded bug again. Any other audit asks for a new bug for a proof
-whose test changed, and a survivor reads `weak`.
+An audit without `--settle` plants a recorded bug again only where the code changed and the
+test is as it was, as "The planted bug" says, and the bug stays while the test still passes
+with it. For a proof whose test changed, that audit asks for a new bug, and a survivor reads
+`weak`.
 
 The audit checks that the test changed, not that the changed test asserts what its proof
 names; and under `--sound` it records the judgment and does not check it. A rule made `strong`

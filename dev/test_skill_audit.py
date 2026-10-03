@@ -68,3 +68,14 @@ def test_the_skill_and_the_criteria_hold_the_refusal_and_the_sound_sentence():
     assert not_named(read(SKILL), UNCHANGED_LINES) == []
     section = under_heading(read(CRITERIA), 'Settling a finding')
     assert not_named(section, UNCHANGED_LINES) == []
+
+
+STILL_PASSES = ('its test is as it was and still passes with the bug it '
+                'missed. Strengthen it with purlin:build.')
+
+
+# purlin: skill_audit PROOF-62
+def test_the_skill_and_the_criteria_hold_the_line_for_a_bug_planted_again():
+    assert not_named(read(SKILL), (STILL_PASSES,)) == []
+    section = under_heading(read(CRITERIA), 'The planted bug')
+    assert not_named(section, (STILL_PASSES,)) == []

@@ -97,9 +97,15 @@ The audit found 4 of 6 rules strong (66%): 4 strong, 1 weak, 1 spot-checked.
   test did not catch: `purlin:build <feature>` settles it.
 - A line `PROOF-N: the AI says this breaks: ...` is the model's claim about which case the bug
   breaks. A test run settles whether it holds.
-- A line `PROOF-N: the test now catches the bug it missed at <file>:<line>.` is printed by a
-  settle: the bug that survived was planted again and the test fails on it. The finding was
-  right, and it is gone.
+- A line `PROOF-N: its test is as it was and still passes with the bug it missed. Strengthen it
+  with purlin:build.` is printed by an audit without `--settle`: the code changed, the test did
+  not, and the bug that survived was planted again before any new one. The test still passes,
+  so the bug still reads `survived` and the rule `weak`. `purlin:build <feature>` strengthens
+  the test.
+- A line `PROOF-N: the test now catches the bug it missed at <file>:<line>.` says the bug that
+  survived was planted again and the test fails on it. After a settle the finding was right,
+  and it is gone. After an audit without `--settle` the code changed and the test did not, and
+  the finding is gone.
 - A line `PROOF-N: the bug at <file>:<line> did not break what the proof says. A new bug was
   planted.` is printed by a settle: the test still passes with that bug in place, so the bug was
   dropped and one new bug was planted for the proof. Where the new bug survives too, the rule's
@@ -121,8 +127,8 @@ The audit found 4 of 6 rules strong (66%): 4 strong, 1 weak, 1 spot-checked.
   has no planted bug that survived: nothing to settle.` refuse a `--sound` before anything
   runs: name a proof of the rule being settled whose bug survived.
 - A line `A bug was planted for PROOF-N and its test did not run.`, or one ending
-  `its test ended in an error, not a failure.`, says the bug reads `not run`. After a settle it
-  is the bug that survived, planted again.
+  `its test ended in an error, not a failure.`, says the bug reads `not run`. Where the bug
+  that survived was planted again, it is that bug.
 - After a settle the rule reads what the verdict gives, as after any audit: `weak` where a spot
   test fires or a bug still survives, else `strong` where any of its proofs has a caught bug,
   else `spot-checked`.

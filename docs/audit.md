@@ -58,6 +58,9 @@ The audit found 42 of 50 rules strong (84%): 42 strong, 8 weak.
   sharper proof.
 - Never change a sound test or narrow a rule to clear a finding.
 
+Auditing again does not clear a finding. If the code changes and the test does not,
+`purlin:audit` plants the same bug again first. The test still passes: the rule stays `weak`.
+
 A rule with several proofs reads what they give together: `weak` while a spot test fires or a
 bug still survives, else `strong` where any of its proofs has a caught bug, else
 `spot-checked`. A proof left with no bug gets a new one once its test or code changes.
@@ -79,6 +82,9 @@ bug still survives, else `strong` where any of its proofs has a caught bug, else
 - **The AI is given no tools.** It is started with no tools, no plugins and none of your
   settings, in an empty folder. It can read and change nothing.
 - **It stays fast.** Only proofs whose test or code changed since the last audit get a new bug.
+- **A finding stays until it is settled.** A bug that survived is planted again before a new
+  one is written, as long as its test is as it was. Where the old bug can no longer be planted,
+  because its line of code is gone, a new one is written.
 - **Nothing to install.** Any test Purlin can run, it can audit. No extra tool per language.
 - **What it found is kept.** Each finding and each planted bug goes into the evidence. The
   signer can read the findings at sign-off.
@@ -90,6 +96,8 @@ bug still survives, else `strong` where any of its proofs has a caught bug, else
   claim to a test run.
 - It does not give the same bug every time. Two audits of the same code may plant different
   bugs, so a result is kept until the rule, its proof, its test or its code changes.
+- It does not say why a test now catches a bug it missed. If the code changed and the test did
+  not, and the test now fails with the bug, the bug reads `caught`.
 - It reads only rules whose tests pass. A failing test is fixed first.
 - It plants no bug for an anchor's rule, so an anchor's rule reads `spot-checked`, never
   `strong`.
@@ -225,9 +233,10 @@ blocks nothing. `purlin:build` writes the check the proof names, and the bug is 
 The check fails: the finding held. The check passes: the bug did not break what the proof says.
 A finding cannot be cleared without either a stronger test or a recorded judgment that the
 test was already sound: a settle is refused for a test that is as it was when the bug got
-past it. Where `purlin:build` read the test against the proof and left it alone, it says so
-with `--sound`, and the evidence records that the test was not changed. Purlin records that
-judgment and does not check it.
+past it, and an audit after a code change plants the same bug again before any new one. Where
+`purlin:build` read the test against the proof and left it alone, it says so with `--sound`,
+and the evidence records that the test was not changed. Purlin records that judgment and does
+not check it.
 
 **The guards that are code.** A change that leaves the file as it was, touches only a comment,
 changes a test file, or cannot be applied exactly once is not planted. At Meta, 61% of the
@@ -248,7 +257,8 @@ and keeps its result.
 59% of bugs came back in all five runs of the same request at the most repeatable setting
 ([LLMorpheus](https://arxiv.org/pdf/2404.09952), section 4.7; see also
 [Atil et al., 2025](https://arxiv.org/pdf/2408.04667)). Purlin keeps a proof's result until its
-test or code changes.
+test or code changes. A bug that survived is planted again after a code change, so a finding
+is not replaced by a different bug the test happens to catch.
 
 ### A trial on Purlin's own case
 

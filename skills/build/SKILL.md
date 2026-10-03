@@ -154,7 +154,8 @@ finding as a reason of the rule's `strong` cell.
 A line `<file>::<test>: ...` is a spot test's finding: fix the test as the finding says.
 
 A line `PROOF-N: the test still passes when <file>:<line> reads "<line>"` is a planted bug that
-survived. For each:
+survived. Auditing again does not clear it: while its test is as it was, `purlin:audit` plants
+the same bug again (`references/review_criteria.md`, "The planted bug"). For each:
 
 1. Read the proof, its test, the finding and the case line under it,
    `PROOF-N: the AI says this breaks: <case>`.
