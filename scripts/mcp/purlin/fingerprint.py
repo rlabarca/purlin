@@ -564,6 +564,72 @@ def selection(project_root, features=None, os_name=None, index=None):
     return out
 
 
+def carry_plan(project_root, features=None, os_name=None, index=None):
+    """`[{feature, run, carry}]` for every spec, sorted: what a run over
+    every feature runs here, and which sections it carries forward.
+
+    `run` is true for a feature this machine runs: an anchor, always; a
+    feature whose own evidence, the `local` file, holds no section for this
+    operating system; one whose section there was taken over another spec,
+    code or tests, or while files were changed and not committed; one whose
+    section holds, for a proof this system can run, a result that is not a
+    pass; one with an untracked, non-ignored file under its scope or beside
+    one of its marker files; and one whose spec names no files.
+
+    `carry` lists `(source, os)` for each section of the feature's evidence
+    that was taken over the fingerprint taken now, with nothing uncommitted,
+    in the order `evidence.sections` reads them. The `local` section for
+    this operating system is left out where the feature runs, since the run
+    replaces it.
+    """
+    from purlin import evidence as evidence_module
+
+    features = _features(project_root, features)
+    os_name = os_name or evidence_module.host_os()
+    if index is None:
+        index = marker_index(project_root)
+    look_for_untracked = any_untracked(project_root)
+    cache = {}
+    out = []
+    for name in sorted(features):
+        info = features[name]
+        now = fingerprint(project_root, name, features, index, cache)
+        found = evidence_module.sections(
+            evidence_module.load(project_root, name))
+        current = [entry for entry in found
+                   if entry['section'].get('fingerprint') == now
+                   and entry['section'].get('dirty') is not True]
+        here = next((entry['section'] for entry in current
+                     if entry['source'] == 'local'
+                     and entry['os'] == os_name), None)
+        run = bool(info.get('is_anchor')) or here is None \
+            or not _all_pass(here, os_name) \
+            or bool(incomplete_reason(project_root, name, features))
+        if not run and look_for_untracked:
+            loose = untracked_parts(project_root, name, features, index)
+            run = bool(loose['scope'] or loose['tests'])
+        out.append({'feature': name, 'run': run,
+                    'carry': [(entry['source'], entry['os'])
+                              for entry in current
+                              if not (run and entry['source'] == 'local'
+                                      and entry['os'] == os_name)]})
+    return out
+
+
+def _all_pass(section, os_name):
+    """True where every result the section holds for a proof this system
+    can run, one that is not `@manual` and not tagged for another system,
+    is a pass."""
+    for entry in section.get('proofs') or ():
+        if not isinstance(entry, dict) or entry.get('manual'):
+            continue
+        if entry.get('env') and entry.get('env') != os_name:
+            continue
+        if entry.get('result') != 'pass':
+            return False
+    return True
+
+
 def _left_to_test(project_root):
     """`{feature: reason}` for each feature the status counts a rule of
     under `rules to test`.

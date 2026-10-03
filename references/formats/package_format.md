@@ -1,4 +1,4 @@
-> Format-Version: 14
+> Format-Version: 15
 
 # Package format
 
@@ -88,8 +88,8 @@ built at the tag again reads the same commit.
   "runs": [
     {"at": "2026-10-01T12:17:13Z", "by": "dana.dev@labconnect.example",
      "commit": "1cf829e4b2d9c8e7f6a5b4c3d2e1f0a9b8c7d6e5",
-     "machine": "dana-laptop", "os": "linux", "rules": 42,
-     "source": "local"}
+     "carried": false, "machine": "dana-laptop", "os": "linux",
+     "rules": 42, "source": "local"}
   ],
   "features": [],
   "hand_checks": [
@@ -116,7 +116,7 @@ Whether the tests are met is the first thing a reader sees after the schema.
 | `project` | string | the name the project's own files give it, read when the package is built: `name` under `[project]` or `[tool.poetry]` in `pyproject.toml`, `name` in `package.json`, the first root `*.csproj` file's name, the last segment of the `origin` remote, else the folder's name |
 | `version`, `tag` | string, string | the version the file is named for, and `signed/<version>` |
 | `commit` | string | the full sha the evidence was taken at. See "What it reads" |
-| `runs` | array | one entry per group of results sharing a source, a system, who ran them and a machine. See "Runs" |
+| `runs` | array | one entry per group of results sharing a source, a system, who took them, a machine and whether they were carried forward. See "Runs" |
 | `features` | array | one entry per spec, ordered by name |
 | `hand_checks` | array | one entry per rule with a `@manual` proof, by feature then rule number. See "Hand checks" |
 | `warnings` | array of strings | each warning reading the specs and the evidence raised. A warning about a `signed/*` tag is not among them: a tag is a checkout's own, and one commit gives the same bytes in every clone |
@@ -125,17 +125,22 @@ Whether the tests are met is the first thing a reader sees after the schema.
 ### Runs
 
 Each `runs` entry, local first, then by system in the order `linux`, `macos`,
-`windows`:
+`windows`, the results a run took before the ones it carried forward:
 
 | Field | Type | What it holds |
 |---|---|---|
-| `by` | string | the email the evidence section records, or `unknown` where it records none |
-| `machine` | string or null | the host's name, as the section records it |
+| `by` | string | the email of the run that took the results, or `unknown` where the evidence records none |
+| `machine` | string or null | the host's name of the run that took the results |
 | `os` | string | `windows`, `macos` or `linux` |
 | `source` | string | `local` or `ci` |
-| `at` | string | when the newest of the group's sections finished |
-| `commit` | string | the full sha that section's tests ran at |
+| `at` | string | when the newest of the runs that took the group's results finished |
+| `commit` | string | the full sha that run's tests ran at |
 | `rules` | int | how many rules the group holds a result for |
+| `carried` | bool | true for results an earlier run took and a later run carried forward: `by`, `machine`, `at` and `commit` then name the newest of the runs that took them. False for results the run that recorded them took |
+
+A rule is in a carried group where every result its section holds for it was
+carried forward, and otherwise in the group of the run that recorded the
+section.
 
 ### A feature
 
@@ -170,13 +175,14 @@ Each `results` entry:
 | `os` | string | `windows`, `macos` or `linux` |
 | `source` | string | `local` or `ci` |
 | `result` | string | `passed`, `failed`, `no test` or `not run`, what that run saw for the rule; `checked at sign-off` for a rule whose every proof is `@manual`, whatever word the run wrote, since no test runs for it |
-| `at` | string | when the run finished |
-| `commit` | string | the full sha the run's tests ran at |
+| `at` | string | when the run that wrote the section finished, as the section records it |
+| `commit` | string | the full sha of the code the section is recorded on: the commit the run's tests ran at, or, for a section carried forward, the commit of the run that carried it |
 | `runner` | string | who ran it: the slug of the email the section records |
 | `machine` | string or null | the machine the tests ran on, as the evidence section records it: the host's name |
 | `current` | bool | whether the section's fingerprint matches the spec, code and tests at the package's own `commit` |
 | `out_of_date` | array of strings | the parts that differ, of `code`, `spec` and `tests`; empty when current |
-| `same_code` | bool | true when every commit from the run's `commit` to the package's `commit` changes only files under `.purlin/` and leaves the `tests` setting of `.purlin/config.json` as it was, and no proof of the rule holds a result `kept` from an earlier run, as `evidence_format.md` gives it. A result counts for a sign-off only where it is true |
+| `same_code` | bool | true when every commit from the result's `commit` to the package's `commit` changes only files under `.purlin/` and leaves the `tests` setting of `.purlin/config.json` as it was. A result counts for a sign-off only where it is true |
+| `carried` | array | `{proof, commit, at, machine, email}` per proof of the rule whose result the section's own run did not take, by proof number: the proof, and the full sha, the time, the machine and the email of the run that took it, as `evidence_format.md` gives `carried`. `[]` where the section's own run took every result |
 | `nothing_to_check` | array | `{proof, reason}` per proof whose every tied test skipped with a reason beginning `nothing to check:`, the reason the text after it |
 
 `audit`:

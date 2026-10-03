@@ -673,7 +673,7 @@ def test_a_run_after_a_commit_outside_the_records_writes_the_new_head(
     # could not show a new one.
     time.sleep(1.1)
 
-    code, out = _run(root, '--all', '--test')
+    code, out = _run(root, '--clean', '--test')
 
     assert code == 0, out
     section = _evidence(root)['platforms'][HERE]
@@ -860,7 +860,7 @@ def test_a_run_rewrites_a_section_resolved_to_either_side_of_a_merge(
     _git(root, 'commit', '-q', '--no-edit')
     assert _evidence(root)['platforms'][HERE]['machine'] == 'build-9'
 
-    code, out = _run(root, '--all', '--test')
+    code, out = _run(root, '--feature', 'feat', '--test')
 
     assert code == 0, out
     assert _evidence(root)['platforms'][HERE]['machine'] == (

@@ -45,11 +45,11 @@ LAST_LINE = ('Every rule passes its tests on the committed evidence. To sign '
 # the run to make first, and why.
 OPENS = 'Every rule passes its tests on the committed evidence. '
 RUN_FIRST = (OPENS + 'Before a sign-off, run %s: a sign-off counts only '
-             'results taken on this version of the code.')
+             'results recorded on this version of the code.')
 RUN_CLEAN = (OPENS + 'Before a sign-off, run purlin:test --all --commit: a '
              'sign-off counts only results taken with nothing uncommitted.')
-NOT_THIS_CODE = ('No sign-off: these results were not taken on this version '
-                 'of the code')
+NOT_THIS_CODE = ('No sign-off: these results are not recorded on this '
+                 'version of the code')
 OLD_FIRST = (OPENS + 'Before a sign-off, rewrite the 1 test that still '
              'carries a marker from Purlin 0.9.5: purlin:status names it.')
 TAKEN_DIRTY = ('No sign-off: these results were taken while files were '
@@ -498,7 +498,7 @@ def _refusal(made):
 class TestTheLastLineAgreesWithTheSignOff:
 
     # purlin: summary PROOF-64
-    def test_results_taken_before_a_later_commit_name_the_run_first(self):
+    def test_results_recorded_before_a_later_commit_name_the_run_first(self):
         made = Project(spec=SPEC)
         try:
             made.evidence(PASSING)
@@ -510,6 +510,8 @@ class TestTheLastLineAgreesWithTheSignOff:
             made.close()
         assert lines[1] == 'Tests: met', lines
         assert lines[-1] == RUN_FIRST % 'purlin:test --all --commit', lines
+        assert lines[-1].endswith('a sign-off counts only results recorded on '
+                                  'this version of the code.'), lines
         assert refused.startswith(NOT_THIS_CODE), refused
         assert refused.endswith('Run purlin:test --all --commit, then '
                                 'purlin:sign.'), refused
@@ -527,12 +529,12 @@ class TestTheLastLineAgreesWithTheSignOff:
         assert not refused.startswith((NOT_THIS_CODE, TAKEN_DIRTY)), refused
 
     # purlin: summary PROOF-66
-    def test_a_kept_slow_result_names_the_run_first(self):
+    def test_a_result_carried_forward_ends_on_the_sign_off(self):
         made = Project(spec=SPEC)
         try:
             made.evidence(PASSING, commit_it=False)
             path, data, section = _local_section(made)
-            section['proofs'][1]['kept'] = {
+            section['proofs'][1]['carried'] = {
                 'commit': made.head(), 'at': '2026-09-12T12:00:00Z',
                 'machine': 'dev-machine', 'email': 'dev@example.com'}
             _write(path, json.dumps(data, indent=2, sort_keys=True))
@@ -542,8 +544,8 @@ class TestTheLastLineAgreesWithTheSignOff:
         finally:
             made.close()
         assert lines[1] == 'Tests: met', lines
-        assert lines[-1] == RUN_FIRST % 'purlin:test --all --commit', lines
-        assert refused.startswith(NOT_THIS_CODE), refused
+        assert lines[-1] == LAST_LINE, lines
+        assert not refused.startswith(NOT_THIS_CODE), refused
 
     # purlin: summary PROOF-67
     def test_results_from_another_system_name_the_run_there(self):
@@ -561,6 +563,8 @@ class TestTheLastLineAgreesWithTheSignOff:
             made.close()
         assert lines[1] == 'Tests: met', lines
         assert lines[-1] == RUN_FIRST % ('purlin:test on %s' % word), lines
+        assert lines[-1].endswith('a sign-off counts only results recorded on '
+                                  'this version of the code.'), lines
         assert refused.startswith(NOT_THIS_CODE), refused
         assert refused.endswith('Run purlin:test on %s, then purlin:sign.'
                                 % word), refused

@@ -8,7 +8,8 @@
 
 Any project may run it whenever it chooses. It reads the evidence committed
 at HEAD, builds the evidence package for the version and walks it with a
-person: who ran the tests, where and when; an overview counting per system
+person: who ran the tests, where and when, and which results an earlier run
+took and a later one carried forward; an overview counting per system
 the rules that pass their tests and the hand checks, and what the audit found; the
 audit's findings as a list the signer may open, each proof settled with its
 test unchanged listed after them; then one stop per hand check,
@@ -32,8 +33,8 @@ evidence is written and not committed; a test still carries a marker from
 Purlin 0.9.5; no version is stated or named;
 `signed/<version>` is on a commit this checkout does not hold, or the code
 changed since it; the committed package does not match its fingerprint; a
-result was not taken on this version of the code, a slow result kept from an
-earlier run among them; a result was taken while files were changed and not
+result is not recorded on this version of the code; a result was taken while
+files were changed and not
 committed; a rule has no test; a rule does not pass; the branch's copy on the
 host, as this checkout last fetched it, holds commits HEAD lacks; the signer
 already signed this package. Then, for the walk and `--answers`, no key to
@@ -115,8 +116,8 @@ NO_SIGNOFF_HAND_TAG = ('No sign-off: %s names a commit that holds no evidence pa
 HAND_TAG_PUSHED = ', and git push %s --delete %s if it was pushed'   # the remote, the tag
 NO_SIGNOFF_PACKAGE = ('No sign-off: %s does not match its fingerprint: %s. Restore it as it '
                       'was signed, or name a new version: purlin:sign --version <version>.')
-NO_SIGNOFF_NOT_THIS_CODE = ('No sign-off: these results were not taken on this version of '
-                            'the code, %s: %s. Run %s, then purlin:sign.')
+NO_SIGNOFF_NOT_THIS_CODE = ('No sign-off: these results are not recorded on this version '
+                            'of the code, %s: %s. Run %s, then purlin:sign.')
 NO_SIGNOFF_DIRTY = ('No sign-off: these results were taken while files were changed and '
                     'not committed: %s. Run %s, then purlin:sign.')
 NO_SIGNOFF_NO_TEST = 'No sign-off: %s at %s: %s. Run purlin:build %s, then purlin:sign.'
@@ -191,6 +192,9 @@ NO_MATCH = 'The package does not match its fingerprint: %s.'
 # A stop.
 RESULT = '  %s: %s on %s'
 NOTHING = '; nothing to check for %s: %s'
+# The proofs whose result a run carried forward, and the sha7 of the commit
+# the result was taken at.
+CARRIED = '; %s carried forward from %s'
 TIED_TO = '    tied to %s'
 TIED_TO_NONE = '    tied to no test'
 AUDIT_WEAK = 'What the audit found'
@@ -430,7 +434,7 @@ def no_test_fill(package):
 
 
 def off_code_fill(package, project_root):
-    """`(what, commands)` for the results not taken on this code, or None."""
+    """`(what, commands)` for the results not recorded on this code, or None."""
     return _results_fill(package_module.off_code(package, project_root))
 
 
@@ -813,8 +817,10 @@ def tied_lines(entry, proof_id, manual=False):
 
 def result_lines(entry):
     """One line per system: its words, the word its results read, the machine,
-    and each proof that found nothing to check, with its reason. A rule whose
-    every proof is `@manual` has one line, saying no test runs for it."""
+    each proof that found nothing to check, with its reason, and the proofs
+    whose result was carried forward, with the commit it was taken at. A
+    rule whose every proof is `@manual` has one line, saying no test runs
+    for it."""
     if _by_hand_alone(entry):
         return [NO_TEST_RUNS]
     chosen = _chosen_results(entry)
@@ -827,8 +833,24 @@ def result_lines(entry):
                          or 'an unnamed machine')
         for item in result.get('nothing_to_check') or ():
             line += NOTHING % (item.get('proof'), item.get('reason'))
+        for commit, proofs in _carried_from(result):
+            line += CARRIED % (', '.join(proofs), commit[:7])
         lines.append(line)
     return lines
+
+
+def _carried_from(result):
+    """`[(commit, [proof])]` for a result's carried proofs, in the order the
+    package lists them, the proofs of one commit together."""
+    found = []
+    for item in result.get('carried') or ():
+        commit = str(item.get('commit') or '')
+        known = next((pair for pair in found if pair[0] == commit), None)
+        if known is None:
+            found.append((commit, [item.get('proof')]))
+        else:
+            known[1].append(item.get('proof'))
+    return found
 
 
 def render_stop(stop):

@@ -2583,3 +2583,79 @@ def test_a_browser_set_to_utc_reads_the_time_in_utc(browser, tmp_path):
     page.close()
     assert line == 'main at a1b2c3d, written 10:42 UTC', line
 
+
+
+# Each proof panel's rows on the rule screen, by label, and for the row
+# `Carried from` how many lines each of its values is drawn on.
+PROOF_ROWS = r"""() => Array.from(document.querySelectorAll('.proof .kv'))
+  .map(list => {
+    const out = {};
+    let key = null;
+    Array.from(list.children).forEach(node => {
+      if (node.tagName === 'DT') { key = node.textContent.trim(); }
+      else { out[key] = node.innerText.trim().replace(/\s+/g, ' '); }
+    });
+    out.lines = Array.from(list.querySelectorAll('.carried'))
+      .map(value => value.getClientRects().length);
+    return out;
+  })"""
+
+
+def carried_from(payload, carried):
+    rule_of(payload, 'login', 'RULE-1')['proofs'][0]['carried'] = carried
+
+
+# purlin: purlin_report PROOF-283
+def test_a_carried_proof_names_the_system_and_the_commit(browser, tmp_path):
+    seen = {}
+    for width in (1500, 1280, 1024, 768, 390):
+        page = open_sample(
+            browser, tmp_path / str(width), 'regulated',
+            change=lambda payload: carried_from(payload, {
+                'windows': '9b2e7c4d' * 5, 'linux': 'a1b2c3d4' * 5}),
+            viewport={'width': width, 'height': 900})
+        open_rule(page, 'login', 'RULE-1')
+        seen[width] = page.evaluate(PROOF_ROWS)[0]
+        page.close()
+    for width, rows in seen.items():
+        assert rows['Carried from'] == 'Lin a1b2c3d Win 9b2e7c4', (width, rows)
+        assert rows['lines'] == [1, 1], (width, rows)
+        assert list(rows).index('Carried from') == list(rows).index(
+            'Result') + 1, (width, rows)
+
+
+# purlin: purlin_report PROOF-285
+def test_the_carried_row_measures_7_to_1_in_both_themes(browser, tmp_path):
+    payload = payload_named('regulated')
+    carried_from(payload, {'windows': '9b2e7c4d' * 5, 'linux': 'a1b2c3d4' * 5})
+    for theme in ('dark', 'light'):
+        page = open_in_theme(browser, tmp_path / theme, payload, theme)
+        open_rule(page, 'login', 'RULE-1')
+        found = {item[0]: item[3] for item in every_text(page)
+                 if item[0] in ('Carried from', 'Lin', 'a1b2c3d', 'Win',
+                                '9b2e7c4')}
+        assert len(found) == 5 and min(found.values()) >= 7, (theme, found)
+        page.close()
+
+
+# purlin: purlin_report PROOF-284
+def test_a_proof_whose_run_took_its_results_has_no_such_row(browser,
+                                                             tmp_path):
+    page = open_sample(browser, tmp_path, 'regulated',
+                       change=lambda payload: carried_from(payload, {}))
+    open_rule(page, 'login', 'RULE-1')
+    assert 'Carried from' not in page.evaluate(PROOF_ROWS)[0]
+    page.close()
+
+
+# purlin: purlin_report PROOF-286
+def test_a_rule_with_no_proof_names_where_its_tests_were_carried_from(
+        browser, tmp_path):
+    payload = without_proof_lines(payload_named('solo'))
+    rule_of(payload, 'login', 'RULE-1')['carried'] = {'macos': 'a1b2c3d4' * 5}
+    page = open_board(browser, tmp_path, payload)
+    open_rule(page, 'login', 'RULE-1')
+    rows = page.evaluate(KV_ROWS)
+    assert rows['Carried from'] == 'Mac a1b2c3d', rows
+    assert list(rows)[-2:] == ['Last run', 'Carried from'], rows
+    page.close()

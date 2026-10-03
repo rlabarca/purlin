@@ -99,9 +99,9 @@ It is met by `purlin:test` on a machine of that system, or by the project's own 
 `Every rule passes its tests on the committed evidence. To sign it: purlin:sign`.
 
 **Where `purlin:sign` would refuse those results as they stand**, that line names the run to
-make first. For a result not taken on this version of the code, one taken before a commit that
-changes a file outside `.purlin/` or a slow result a plain run kept, it reads
-`Every rule passes its tests on the committed evidence. Before a sign-off, run purlin:test --all --commit: a sign-off counts only results taken on this version of the code.`
+make first. For a result not recorded on this version of the code, one whose section names a
+commit after which a commit changes a file outside `.purlin/`, it reads
+`Every rule passes its tests on the committed evidence. Before a sign-off, run purlin:test --all --commit: a sign-off counts only results recorded on this version of the code.`
 For a result from a project's own run on another system the command reads
 `purlin:test on <systems>`. For a result taken while files were changed and not committed the
 line ends `a sign-off counts only results taken with nothing uncommitted.`
@@ -133,16 +133,29 @@ every file of the project but Purlin's own records under `.purlin/evidence/`, so
 to the project makes its results out of date. Changing a test command in `.purlin/config.json`
 ends the results, as changing the code does. Changing `version` alone does not.
 
-**For a sign-off**, a result counts only when it was taken on this exact version of the code: its
-section is current, the run saw no uncommitted change, and every commit from the section's commit
-to `HEAD` changes only paths under `.purlin/` and leaves the test commands as they were. A plain
-run keeps an earlier slow result while nothing its spec covers changed. The status counts it.
-The sign-off does not: run `purlin:test --all --commit` before `purlin:sign`. A result from a run
-on another system counts on the same terms. Where one does not, `purlin:sign` refuses and names the run that takes it again:
-`purlin:test --all --commit` for this machine's results, and `purlin:test on <System>` for
-another system's, the same instruction as in `Left to do`. The developer's hand-off is therefore
-run and commit: every test, here and through the project's own run for any other system, then
-the commit of the results that come back.
+**For a sign-off**, a result counts only when it is recorded on this exact version of the code:
+its section is current, the run saw no uncommitted change, and every commit from the section's
+commit to `HEAD` changes only paths under `.purlin/` and leaves the test commands as they were.
+A result from a run on another system counts on the same terms. Where one does not,
+`purlin:sign` refuses and names the run that records it: `purlin:test --all --commit` for this
+machine's results, and `purlin:test on <System>` for another system's, the same instruction as
+in `Left to do`. A project tested in part is refused, so a tag always covers the whole project.
+
+**`purlin:test --all --commit` runs what changed and carries the rest forward.** It runs each
+feature whose spec, code or tests changed since its results were taken, each feature whose
+results are not all passes, and every anchor. Every other feature it carries forward: its
+results are recorded again on this commit, each marked `carried` with the commit, the time, the
+machine and the person of the run that took it, and none of its tests run. A result from
+another system is carried the same way, from whichever machine took it, and so is a slow
+proof's. A carried result counts for a sign-off like one taken now, and the evidence, the
+package, the status, the dashboard and the sign-off walk say which commit it was taken at.
+`purlin:test --clean` runs every test and carries nothing. A plain `purlin:test` that leaves a
+slow proof's test out carries its result the same way while nothing its spec covers changed.
+`references/formats/evidence_format.md`, "Carried forward", gives the test a section must meet.
+
+The developer's hand-off is therefore run and commit: `purlin:test --all --commit` here, the
+project's own run for any other system whose results changed, then the commit of the results
+that come back.
 
 **An anchor's rule with nothing to check passes, and says so.** Where every test tied to a proof
 of an anchor skipped with a reason starting `nothing to check:`, the rule reads `passed`, and the
@@ -243,8 +256,8 @@ sign-off from its files and names `git fetch --tags`.
 - tracked files are changed and not committed;
 - the evidence is written and not committed;
 - a test still carries a marker from Purlin 0.9.5;
-- a result was not taken on this version of the code, a slow result kept from an earlier run
-  among them, or was taken while files were changed and not committed;
+- a result is not recorded on this version of the code, or was taken while files were changed
+  and not committed;
 - the committed package was changed after it was signed;
 - a rule has no test, or a rule does not pass;
 - the version's tag is on other code;
@@ -322,5 +335,5 @@ cell read `not run`, with the reason `<System>: no run yet`, for example `Window
 `.purlin/config.json` is a file in the repository, and an agent can edit it. Every NEVER in
 `agents/purlin.md`, the rule that an agent does not push among them, is an instruction to the
 agent and not a mechanism that stops it. What stands behind a sign-off runs outside the agent's
-turn: `purlin:sign` builds the package only from committed results taken on this version of the
-code, and a sign-off counts only in a signed commit over the committed package's fingerprint.
+turn: `purlin:sign` builds the package only from committed results recorded on this version of
+the code, and a sign-off counts only in a signed commit over the committed package's fingerprint.

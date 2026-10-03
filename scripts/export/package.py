@@ -6,7 +6,8 @@ version. `sign.py --check FILE` calls `check_file`. This module has no
 command line of its own.
 
 The package holds, for every rule, its words, its proofs, its tests, each
-result on each operating system with who ran it and on which machine, what
+result on each operating system with who ran it and on which machine, and
+for a result carried forward the run that took it, what
 the audit found, its two statuses, the one kind of work it waits for and
 who wrote and last changed its words, its proofs and its tests. A rule whose
 every proof is `@manual` has no test, so each of its results reads
@@ -37,11 +38,12 @@ system. The `fingerprint` field is the sha256 of the file's own bytes with
 that field set to the empty string.
 
 **The same version of the code.** A result counts for a sign-off only where
-every commit from the one its tests ran at to the package's `commit` changes
-nothing but files under `.purlin/` and leaves the `tests` setting of
-`.purlin/config.json` as it was, read by `only_records_between`, and where no
-proof of the rule holds a slow result a plain run kept from an earlier run:
-`same_code`.
+every commit from the one its section names to the package's `commit`
+changes nothing but files under `.purlin/` and leaves the `tests` setting of
+`.purlin/config.json` as it was, read by `only_records_between`:
+`same_code`. A result a run carried forward is recorded in a section that
+names the run's own commit, so it counts there, and its `carried` names the
+run that took it.
 
 `references/formats/package_format.md` holds every field.
 """
@@ -400,8 +402,9 @@ def _features(tree, payload, features, commit, seen):
 
     A feature entry holds `name`, `spec`, `scope`, `anchor` and `rules`, and
     nothing else; an anchor's `scope` is `[]`, since its rules cover the
-    whole project. `seen` gains `(section entry, feature, rule id)` for each
-    result, which `runs_of` groups.
+    whole project. `seen` gains `(section entry, feature, rule id, taken)`
+    for each result, `taken` being `_taken`'s answer, which `runs_of`
+    groups.
     """
     index = fingerprint_module.marker_index(tree)
     authors = _Authors(tree)
@@ -425,7 +428,8 @@ def _features(tree, payload, features, commit, seen):
         own = [rule for rule in feature.get('rules') or ()
                if rule.get('feature') == name]
         own.sort(key=lambda rule: _rule_number(rule.get('id')))
-        seen.extend((entry, name, rule.get('id'))
+        seen.extend((entry, name, rule.get('id'),
+                     _taken(entry['section'], _ids(rule)))
                     for rule in own for entry in sections
                     if _speaks(entry['section'], rule.get('id'),
                                _ids(rule)))
@@ -525,12 +529,50 @@ def _nothing_to_check(section, ids):
     return out
 
 
-def _kept(section, ids):
-    """True where a proof entry of the rule carries `kept`: a slow result a
-    plain run carried over, whose test did not run in this section's run."""
-    return any(entry.get('kept')
-               for entries in _entries(section, ids).values()
-               for entry in entries)
+# What a carried result names of the run that took it.
+_CARRIED_KEYS = ('commit', 'at', 'machine', 'email')
+
+
+def _carried(section, ids):
+    """`[{proof, commit, at, machine, email}]`, by proof number, for each
+    proof of the rule one of whose entries holds `carried`: a result the
+    section's own run did not take, and the run that took it, the newest
+    where the proof's tests were taken in several."""
+    out = []
+    for proof_id, entries in sorted(_entries(section, ids).items(),
+                                    key=lambda item: _rule_number(item[0])):
+        found = [entry['carried'] for entry in entries
+                 if isinstance(entry.get('carried'), dict)]
+        if not found:
+            continue
+        newest = max(found, key=lambda one: str(one.get('at') or ''))
+        out.append(dict({key: newest.get(key) or None
+                         for key in _CARRIED_KEYS}, proof=proof_id))
+    return out
+
+
+def _taken(section, ids):
+    """`{by, machine, at, commit, carried}`: the run a rule's results in one
+    section were taken in.
+
+    Where every entry the section holds for the rule was carried forward,
+    that is the newest of the runs that took them, and `carried` is true.
+    Otherwise it is the section's own run.
+    """
+    entries = [entry for found in _entries(section, ids).values()
+               for entry in found]
+    carried = [entry['carried'] for entry in entries
+               if isinstance(entry.get('carried'), dict)]
+    if entries and len(carried) == len(entries):
+        newest = max(carried, key=lambda one: str(one.get('at') or ''))
+        return {'by': str(newest.get('email') or 'unknown'),
+                'machine': newest.get('machine') or None,
+                'at': str(newest.get('at') or ''),
+                'commit': newest.get('commit') or None, 'carried': True}
+    return {'by': str((section or {}).get('email') or 'unknown'),
+            'machine': (section or {}).get('machine') or None,
+            'at': str((section or {}).get('at') or ''),
+            'commit': (section or {}).get('commit'), 'carried': False}
 
 
 def _results(rule_id, proofs, sections, same):
@@ -538,8 +580,8 @@ def _results(rule_id, proofs, sections, same):
 
     A rule whose every proof is `@manual` reads `checked at sign-off`,
     whatever word the section holds: no test ran for it. `same_code` is false
-    for a section taken on other code, and for one that holds a kept result
-    for the rule, whatever commit that result names."""
+    for a section that names other code. `carried` names each proof whose
+    result the section's own run did not take, and the run that took it."""
     ids = {proof.get('id') for proof in proofs} or {rule_id}
     by_hand = bool(proofs) and all(proof.get('manual') for proof in proofs)
     out = []
@@ -556,16 +598,11 @@ def _results(rule_id, proofs, sections, same):
                     'machine': section.get('machine'),
                     'current': bool(entry['current']),
                     'out_of_date': sorted(entry['out_of_date']),
-                    'same_code': (bool(same.get(section.get('commit') or ''))
-                                  and not _kept(section, ids)),
+                    'same_code': bool(same.get(section.get('commit') or '')),
+                    'carried': _carried(section, ids),
                     'nothing_to_check': _nothing_to_check(section, ids)})
     out.sort(key=lambda item: (item['os'], item['source']))
     return out
-
-
-def _by(entry):
-    """Who ran a section: the email it records, under either source."""
-    return str(entry['section'].get('email') or 'unknown')
 
 
 def _audit(rule, loaded, code=''):
@@ -642,36 +679,39 @@ def _status(rule, name):
 # ---------------------------------------------------------------------------
 
 def runs_of(seen):
-    """`runs[]`: one per group of results sharing a source, a system, who ran
-    them and a machine, local first, then by system.
+    """`runs[]`: one per group of results sharing a source, a system, who
+    took them, a machine and whether they were carried forward, local first,
+    then by system, a group of carried results after the run that carried
+    them.
 
-    `seen` is `(section entry, feature, rule id)` per result. Each run names
-    `by`, `machine`, `os`, `source`, `at` and `commit`, the newest of its
-    sections, and `rules`, how many rules it holds a result for.
+    `seen` is `(section entry, feature, rule id, taken)` per result, `taken`
+    being `_taken`'s answer. Each run names `by`, `machine`, `os`, `source`,
+    `at` and `commit`, those of the newest run its results were taken in,
+    `rules`, how many rules it holds a result for, and `carried`.
     """
     groups = {}
-    for entry, feature, rule_id in seen:
-        section = entry['section']
-        machine = section.get('machine') or None
-        key = (entry['source'], entry['os'], _by(entry), machine or '')
+    for entry, feature, rule_id, taken in seen:
+        key = (entry['source'], entry['os'], taken['by'],
+               taken['machine'] or '', taken['carried'])
         group = groups.setdefault(key, {'rules': set(), 'at': '',
-                                        'commit': None, 'machine': machine})
+                                        'commit': None,
+                                        'machine': taken['machine']})
         group['rules'].add((feature, rule_id))
-        at = str(section.get('at') or '')
-        if group['commit'] is None or at > group['at']:
-            group['at'], group['commit'] = at, section.get('commit')
+        if group['commit'] is None or taken['at'] > group['at']:
+            group['at'], group['commit'] = taken['at'], taken['commit']
     order = {name: index for index, name in
              enumerate(states_module.SYSTEM_ORDER)}
     out = []
     for key in sorted(groups, key=lambda key: (
             evidence_module.SOURCES.index(key[0])
             if key[0] in evidence_module.SOURCES else 9,
-            order.get(key[1], 9), key[1], key[2], key[3])):
-        source, os_name, by, _machine = key
+            order.get(key[1], 9), key[1], key[4], key[2], key[3])):
+        source, os_name, by, _machine, carried = key
         group = groups[key]
         out.append({'by': by, 'machine': group['machine'], 'os': os_name,
                     'source': source, 'at': group['at'] or None,
-                    'commit': group['commit'], 'rules': len(group['rules'])})
+                    'commit': group['commit'], 'rules': len(group['rules']),
+                    'carried': carried})
     return out
 
 
@@ -681,6 +721,10 @@ def time_words(at):
 
 
 RUN_LINE = 'Tests run by %s on %s at %s on %s: %s on %s.'
+# The same for results a run carried forward: who took them, on which
+# machine, and the time and commit of the newest run among them.
+CARRIED_LINE = ('Carried forward from earlier runs by %s on %s, the newest at '
+                '%s on %s: %s on %s.')
 
 
 def _rules_words(count):
@@ -694,14 +738,15 @@ def run_lines(package):
         at = time_words(str(run.get('at') or ''))
         commit = str(run.get('commit') or '')[:7]
         system = evidence_module.os_word(run.get('os'))
-        lines.append(RUN_LINE % (run.get('by'), run.get('machine'), at, commit,
-                                 _rules_words(run.get('rules') or 0), system))
+        words = CARRIED_LINE if run.get('carried') else RUN_LINE
+        lines.append(words % (run.get('by'), run.get('machine'), at, commit,
+                              _rules_words(run.get('rules') or 0), system))
     return lines
 
 
 def off_code(package, project_root):
-    """[(system words, source, [features])]: the results not taken on the
-    package's commit, by system in the order a person reads them."""
+    """[(system words, source, [features])]: the results not recorded on
+    the package's commit, by system in the order a person reads them."""
     found = {}
     for feature in package.get('features') or ():
         for rule in feature.get('rules') or ():

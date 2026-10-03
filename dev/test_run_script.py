@@ -1040,7 +1040,7 @@ class TestARunCoversWhatTheChangeTouched:
         assert _ran(root) == ['test_invoice'], output
         assert 'Ran pytest on 1 feature.' in output.splitlines(), output
         assert ('Skipped 2 features whose spec, code and tests match their '
-                'evidence: export, login. purlin:test --all runs them too.'
+                'evidence: export, login. purlin:test --clean runs them too.'
                 in output.splitlines()), output
 
     @staticmethod
@@ -1135,7 +1135,7 @@ class TestARunCoversWhatTheChangeTouched:
         code, output = _run(root, '--test')
         assert code == 0, output
         assert ("Nothing to run: every feature's spec, code and tests match "
-                'its evidence. purlin:test --all runs them anyway.'
+                'its evidence. purlin:test --clean runs them anyway.'
                 in output.splitlines()), output
         assert 'Running the' not in output, output
         assert _selection(output) is None, output
@@ -1204,11 +1204,11 @@ class TestARunCoversWhatTheChangeTouched:
             'login'], output
 
     # purlin: run_script PROOF-98
-    def test_all_runs_every_feature_when_nothing_changed(self, tmp_path):
+    def test_clean_runs_every_feature_when_nothing_changed(self, tmp_path):
         """In a checkout of `login` and `export` with committed evidence and
         nothing changed, the report holds `test_export` and `test_login`."""
         root, _sha = _touched_project(tmp_path)
-        code, output = _run(root, '--all', '--test')
+        code, output = _run(root, '--clean', '--test')
         assert code == 0, output
         assert 'Nothing to run' not in output, output
         assert _selection(output) is None, output
@@ -1720,7 +1720,7 @@ class TestSlowProofs:
         code, output = _run(root, '--feature', 'feat', '--test')
         assert code == 0, output
         assert ('Left out 1 slow proof: feat PROOF-2. purlin:test --all runs '
-                'it too.') in output.splitlines(), output
+                'it when it is due.') in output.splitlines(), output
         assert 'Evidence is missing' not in output, output
         assert not (root / 'started').exists()
         assert _proof(root, 'PROOF-2') == (
@@ -1827,7 +1827,7 @@ class TestSlowProofs:
             '  1 slow proof to run: purlin:test --all'), output
 
     @staticmethod
-    def _kept_after_another_commit(tmp_path):
+    def _carried_after_another_commit(tmp_path):
         """A git checkout where `--all --test --commit` passed the slow
         PROOF-2, `README.md` was then changed and committed, and a plain run
         of `feat` was committed. `(root, the first run's section)`."""
@@ -1849,8 +1849,9 @@ class TestSlowProofs:
         return root, taken
 
     # purlin: run_script PROOF-281
-    def test_a_kept_slow_result_names_the_run_that_took_it(self, tmp_path):
-        root, taken = self._kept_after_another_commit(tmp_path)
+    def test_a_carried_slow_result_names_the_run_that_took_it(
+            self, tmp_path):
+        root, taken = self._carried_after_another_commit(tmp_path)
         later = _git(root, 'rev-parse', 'HEAD~1').strip()
         assert _git(root, 'log', '-1', '--format=%s', later).strip() == (
             'docs: the readme')
@@ -1860,26 +1861,27 @@ class TestSlowProofs:
         assert slow['result'] == 'pass', slow
         assert later != taken['commit']
         assert section['commit'] == later, section
-        assert slow.get('kept') == {
+        assert slow.get('carried') == {
             'commit': taken['commit'], 'at': taken['at'],
             'machine': taken['machine'], 'email': taken['email']}, slow
-        assert all('kept' not in entry for entry in section['proofs']
+        assert all('carried' not in entry for entry in section['proofs']
                    if entry['id'] != 'PROOF-2'), section
 
     # purlin: run_script PROOF-286
-    def test_a_full_run_takes_a_kept_result_again(self, tmp_path):
-        """A result `--all` takes itself replaces the kept one, on the same
-        code, so the sign-off's own fix clears its refusal."""
-        root, _taken = self._kept_after_another_commit(tmp_path)
-        kept = [entry['id'] for entry in
-                _evidence(root)['platforms'][HERE_OS]['proofs']
-                if 'kept' in entry]
-        assert kept == ['PROOF-2'], kept
-        code, output = _run(root, '--all', '--test', '--commit')
+    def test_a_clean_run_takes_a_carried_result_again(self, tmp_path):
+        """A result `--clean` takes itself replaces the carried one, on the
+        same code."""
+        root, _taken = self._carried_after_another_commit(tmp_path)
+        carried = [entry['id'] for entry in
+                   _evidence(root)['platforms'][HERE_OS]['proofs']
+                   if 'carried' in entry]
+        assert carried == ['PROOF-2'], carried
+        code, output = _run(root, '--clean', '--test', '--commit')
         assert code == 0, output
         assert (root / 'started').exists()
         section = _evidence(root)['platforms'][HERE_OS]
-        assert all('kept' not in entry for entry in section['proofs']), section
+        assert all('carried' not in entry
+                   for entry in section['proofs']), section
         assert _proof(root, 'PROOF-2')[0] == 'pass'
 
     # purlin: run_script PROOF-285
@@ -2297,3 +2299,283 @@ class TestTheTestFilesAFullRunLeavesOut:
         assert code == 0, output
         assert _ran(root) == ['test_ok', 'test_plain'], output
         assert 'no marker' not in output, output
+
+
+# ---------------------------------------------------------------------------
+# A run over every feature carries forward what did not change
+# ---------------------------------------------------------------------------
+
+def _readme_commit(root, text='two\n'):
+    """Change and commit `README.md`, which no feature's scope names. The
+    new commit."""
+    (root / 'README.md').write_text(text, encoding='utf-8')
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-q', '-m', 'docs: the readme')
+    return _head(root)
+
+
+def _section(root, feature, source='local', os_name=None):
+    return _evidence(root, feature, source)['platforms'][os_name or HERE_OS]
+
+
+OTHER_OS = 'windows' if HERE_OS != 'windows' else 'linux'
+
+
+def _other_system_section(root, feature='export', machine='other-box',
+                          fingerprint=None):
+    """Write and commit `ci/<feature>.json` holding one section for another
+    system, a copy of this system's as another machine took it. The
+    section."""
+    local = _evidence(root, feature)
+    section = dict(local['platforms'][HERE_OS], machine=machine,
+                   email='ci@example.com', runner='ci',
+                   at='2026-01-02T03:04:05Z')
+    if fingerprint is not None:
+        section['fingerprint'] = fingerprint
+    path = root / '.purlin' / 'evidence' / 'ci' / ('%s.json' % feature)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(dict(local, source='ci',
+                                    platforms={OTHER_OS: section}),
+                               indent=2, sort_keys=True) + '\n',
+                    encoding='utf-8')
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-q', '-m', 'purlin: evidence from the other box')
+    return section
+
+
+class TestARunOverEveryFeatureCarriesForward:
+    """`--all` runs what changed and records the rest again on this commit."""
+
+    # purlin: run_script PROOF-308
+    def test_all_runs_the_changed_feature_alone(self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        (root / 'src' / 'login.py').write_text('VALUE = 2\n',
+                                               encoding='utf-8')
+        _git(root, 'commit', '-q', '-am', 'login returns 2')
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0, output
+        assert _started(output) == ['pytest'], output
+        assert _ran(root) == ['test_login'], output
+
+    # purlin: run_script PROOF-309
+    def test_a_failing_feature_runs_again_with_nothing_changed(
+            self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        test = root / 'tests' / 'test_export.py'
+        test.write_text(test.read_text(encoding='utf-8').replace(
+            'assert True', 'assert False'), encoding='utf-8')
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 1 and _ran(root) == ['test_export'], output
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 1, output
+        assert _ran(root) == ['test_export'], output
+        assert _started(output) == ['pytest'], output
+
+    # purlin: run_script PROOF-310
+    def test_an_anchor_runs_with_nothing_changed(self, tmp_path):
+        root, _sha = _touched_project(tmp_path, names=('export',))
+        anchors = root / 'specs' / '_anchors'
+        anchors.mkdir()
+        (anchors / 'shared.md').write_text(
+            '# Anchor: shared\n\n## Rules\n\n- RULE-1: every answer is JSON\n'
+            '\n## Proof\n\n- PROOF-1 (RULE-1): an answer parses as JSON\n',
+            encoding='utf-8')
+        (root / 'tests' / 'test_shared.py').write_text(
+            'import pytest\n\n'
+            '# purlin: shared PROOF-1\n'
+            'def test_shared():\n'
+            '    assert True\n', encoding='utf-8')
+        _git(root, 'add', '-A')
+        _git(root, 'commit', '-q', '-m', 'the anchor shared')
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0, output
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0, output
+        assert _ran(root) == ['test_shared'], output
+
+    # purlin: run_script PROOF-311
+    def test_a_section_taken_with_uncommitted_changes_runs_again(
+            self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        (root / 'notes.txt').write_text('a note\n', encoding='utf-8')
+        code, output = _run(root, '--feature', 'export', '--test')
+        assert code == 0 and _section(root, 'export')['dirty'] is True, output
+        _git(root, 'add', '-A')
+        _git(root, 'commit', '-q', '-m', 'a note and the evidence')
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0, output
+        assert _ran(root) == ['test_export'], output
+        assert _section(root, 'export')['dirty'] is False
+
+    # purlin: run_script PROOF-312
+    def test_a_carried_section_names_this_commit_and_the_run_that_took_it(
+            self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        taken = _section(root, 'export')
+        later = _readme_commit(root)
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0, output
+        assert _started(output) == [], output
+        section = _section(root, 'export')
+        assert taken['commit'] != later and section['commit'] == later
+        assert [entry.get('carried') for entry in section['proofs']] == [{
+            'commit': taken['commit'], 'at': taken['at'],
+            'machine': taken['machine'], 'email': taken['email']}], section
+        for key in ('at', 'machine', 'email', 'runner', 'dirty',
+                    'fingerprint', 'rules'):
+            assert section[key] == taken[key], key
+        assert _git(root, 'status', '--porcelain', '--',
+                    '.purlin/evidence').strip() == '', output
+
+    # purlin: run_script PROOF-313
+    def test_a_second_carry_keeps_the_first_run_named(self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        taken = _section(root, 'export')
+        _readme_commit(root)
+        _run(root, '--all', '--test', '--commit')
+        latest = _readme_commit(root, 'three\n')
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0, output
+        section = _section(root, 'export')
+        assert section['commit'] == latest, section
+        assert section['proofs'][0]['carried']['commit'] == taken['commit']
+
+    # purlin: run_script PROOF-314
+    def test_a_run_with_nothing_committed_since_leaves_the_files_alone(
+            self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        before = {name: _file(root, '.purlin/evidence/local/%s.json' % name)
+                  for name in ('login', 'export')}
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0, output
+        assert 'Evidence unchanged.' in output.splitlines(), output
+        assert not any(line.startswith('Evidence written')
+                       for line in output.splitlines()), output
+        assert before == {
+            name: _file(root, '.purlin/evidence/local/%s.json' % name)
+            for name in ('login', 'export')}
+
+    # purlin: run_script PROOF-315
+    # purlin: run_script PROOF-322
+    def test_another_systems_section_is_carried_and_committed(self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        taken = _other_system_section(root)
+        later = _readme_commit(root)
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0, output
+        section = _section(root, 'export', 'ci', OTHER_OS)
+        assert section['commit'] == later, section
+        assert section['machine'] == 'other-box', section
+        assert [entry.get('carried') for entry in section['proofs']] == [{
+            'commit': taken['commit'], 'at': '2026-01-02T03:04:05Z',
+            'machine': 'other-box', 'email': 'ci@example.com'}], section
+        assert _git(root, 'status', '--porcelain', '--',
+                    '.purlin/evidence').strip() == '', output
+        assert ('Carried the %s results of 1 feature forward.'
+                % purlin_evidence.os_word(OTHER_OS)) in output.splitlines()
+
+    # purlin: run_script PROOF-316
+    def test_another_systems_section_over_other_code_is_left_as_it_was(
+            self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        _other_system_section(root, fingerprint={
+            'spec': 'a', 'code': 'b', 'tests': 'c'})
+        before = _file(root, '.purlin/evidence/ci/export.json')
+        _readme_commit(root)
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0, output
+        assert _file(root, '.purlin/evidence/ci/export.json') == before
+        assert not any(line.startswith('Carried the ')
+                       for line in output.splitlines()), output
+
+    # purlin: run_script PROOF-317
+    def test_the_run_says_how_many_it_ran_and_how_many_it_carried(
+            self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        (root / 'src' / 'login.py').write_text('VALUE = 2\n',
+                                               encoding='utf-8')
+        _git(root, 'commit', '-q', '-am', 'login returns 2')
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0, output
+        assert ('Ran pytest on 1 feature and carried 1 forward. purlin:test '
+                '--clean runs every test.') in output.splitlines(), output
+
+    # purlin: run_script PROOF-318
+    def test_a_run_that_carries_every_feature_says_so(self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        _readme_commit(root)
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0, output
+        assert ('Ran nothing on 0 features and carried 2 forward. '
+                'purlin:test --clean runs every test.'
+                ) in output.splitlines(), output
+
+    # purlin: run_script PROOF-319
+    def test_clean_takes_every_result_again(self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        _readme_commit(root)
+        _run(root, '--all', '--test', '--commit')
+        assert 'carried' in _section(root, 'export')['proofs'][0]
+        code, output = _run(root, '--clean', '--test', '--commit')
+        assert code == 0, output
+        assert _ran(root) == ['test_export', 'test_login'], output
+        assert 'Ran pytest on 2 features.' in output.splitlines(), output
+        for name in ('login', 'export'):
+            assert all('carried' not in entry
+                       for entry in _section(root, name)['proofs']), name
+
+    # purlin: run_script PROOF-320
+    def test_clean_with_a_feature_named_is_refused(self, tmp_path):
+        output = _refused(tmp_path, '--clean', '--feature', 'feat', '--test')
+        assert 'purlin: name features or --clean, not both.' in output
+
+    # purlin: run_script PROOF-321
+    def test_clean_beside_ci_is_refused(self, tmp_path):
+        output = _refused(tmp_path, '--clean', '--ci')
+        assert 'purlin: --clean goes with --test.' in output
+
+
+SIGN_SCRIPT = os.path.join(REPO, 'scripts', 'review', 'sign.py')
+
+
+def _shown(root):
+    """`purlin:sign --show` for the version 1.0.0. `(exit, lines)`."""
+    result = subprocess.run(
+        [sys.executable, SIGN_SCRIPT, '--show', '--version', '1.0.0',
+         '--project-root', str(root)], capture_output=True, encoding='utf-8')
+    return result.returncode, (result.stdout + result.stderr).splitlines()
+
+
+def _signable_project(tmp_path):
+    """`_touched_project`, ignoring the dashboard's files as setup has git
+    do, then `README.md` changed and committed. `(root, that commit)`."""
+    root, _sha = _touched_project(tmp_path)
+    with open(str(root / '.gitignore'), 'a', encoding='utf-8') as handle:
+        handle.write('.purlin/report-data.js\npurlin-report.html\n')
+    return root, _readme_commit(root)
+
+
+class TestASignOffAfterARunOverEveryFeature:
+
+    # purlin: signatures PROOF-292
+    def test_results_carried_onto_this_commit_count(self, tmp_path):
+        root, _later = _signable_project(tmp_path)
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0 and _started(output) == [], output
+        code, lines = _shown(root)
+        assert code == 0, lines
+        assert not any(line.startswith('No sign-off') for line in lines), lines
+        assert lines[0].startswith('Carried forward from earlier runs by '
+                                   'dev@example.com on '), lines
+
+    # purlin: signatures PROOF-293
+    def test_a_project_run_in_part_is_still_refused(self, tmp_path):
+        root, later = _signable_project(tmp_path)
+        code, output = _run(root, '--feature', 'login', '--test', '--commit')
+        assert code == 0, output
+        assert _shown(root) == (1, [
+            'No sign-off: these results are not recorded on this version of '
+            'the code, %s: export on %s. Run purlin:test --all --commit, then '
+            'purlin:sign.' % (_head(root)[:7],
+                              purlin_evidence.os_word(HERE_OS))])
+        assert later != _head(root)

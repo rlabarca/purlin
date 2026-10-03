@@ -8,7 +8,7 @@ When everyone is done, a person signs the evidence once.
 
 | | |
 |---|---|
-| Run and commit | A developer runs every test on the version to sign, the run on Windows included, and commits the results. |
+| Run and commit | A developer runs `purlin:test --all --commit` on the version to sign. It runs what changed, carries the rest forward, results from Windows included, and commits them. |
 | `purlin:sign` | Opens with who ran the tests, where and when. Stops at each hand check, shows what the audit found, and asks for one signature. |
 | The package | One file: every rule, its proofs, its tests, the results, the audit, who wrote what. Each sign-off is a file beside it. |
 | The tag | The first sign-off tags the version `signed/1.4.0`. Later sign-offs are added beside it. |
@@ -61,12 +61,17 @@ risk goes into its proofs: a critical computation or data flow carries more proo
 
 ## The hand-off
 
-QA runs no tests. The developer runs every test, on their machine and through the project's
+QA runs no tests. The developer runs the tests, on their machine and through the project's
 own run for any other operating system, and commits the results that come back:
 
 ```
 purlin:test --all --commit
 ```
+
+That run covers every feature. It runs what changed since the last results, and every anchor.
+It carries the rest forward: each result is recorded again on this commit, with the commit it
+was taken at. [The run before a sign-off](running-and-evidence.md#the-run-before-a-sign-off)
+says which features run.
 
 That commit is ready for sign-off. The status reads `Tests: met` and ends on
 `Every rule passes its tests on the committed evidence. To sign it: purlin:sign`. The developer
@@ -98,8 +103,8 @@ one line naming the cause and the command to run. It writes nothing and exits 1.
 | `No sign-off: signed/2.1.0 names a commit that holds no evidence package for 2.1.0, so purlin:sign did not write it. Delete it: git tag -d signed/2.1.0, and git push origin --delete signed/2.1.0 if it was pushed. Then run purlin:sign again.` | a tag of that name was written by hand; nothing is signed while it stands. The push half is printed only where the checkout has a remote |
 | `No sign-off: signed/2.1.0 is at 8de0b6e, which this checkout does not hold. Pull, then run purlin:sign.` | the version is already signed on a commit you have not pulled |
 | `No sign-off: signed/2.1.0 is at 8de0b6e, and the code has changed since. To sign this code, name a new version: purlin:sign --version <version>.` | the version is already signed, over other code; a tag that exists is never moved |
-| `No sign-off: these results were not taken on this version of the code, 1cf829e: login on Windows. Run purlin:test on Windows, then purlin:sign.` | a result was taken before the code last changed; the line names the features and the system, and the run that takes them again |
-| `No sign-off: these results were not taken on this version of the code, 1cf829e: login on macOS. Run purlin:test --all --commit, then purlin:sign.` | a slow result kept from an earlier run: a plain run carried it over, and `purlin:test --all --commit` takes it on this version |
+| `No sign-off: these results are not recorded on this version of the code, 1cf829e: login on Windows. Run purlin:test on Windows, then purlin:sign.` | a result was recorded before the code last changed; the line names the features and the system, and the run that records them on this version |
+| `No sign-off: these results are not recorded on this version of the code, 1cf829e: login on macOS. Run purlin:test --all --commit, then purlin:sign.` | a commit changed a file after this machine's results were recorded, as a `--commit` run of one feature does; `purlin:test --all --commit` runs what changed and carries the rest onto this version |
 | `No sign-off: these results were taken while files were changed and not committed: login on Linux/Unix. Run purlin:test --all --commit, then purlin:sign.` | a committed result was taken over files that were changed and not committed |
 | `No sign-off: 1 rule has no test at 1cf829e: login RULE-3. Run purlin:build login, then purlin:sign.` | a rule has no test, with or without a proof line |
 | `No sign-off: 1 rule does not pass at 1cf829e: login RULE-2. Run purlin:status to see what is left, then purlin:sign.` | a rule fails or has not run |
@@ -127,6 +132,13 @@ Signing 0.1.0 at 1cf829e.
 The audit's findings: 1 weak. list / go on: 
 ```
 
+Results an earlier run took and `purlin:test --all` carried forward have a line of their own.
+It names who took them, on which machine, and the newest of the runs they came from:
+
+```text
+Carried forward from earlier runs by dana.dev@labconnect.example on dana-laptop, the newest at 2026-09-30 08:05 UTC on 9b2e7c4: 12 rules on Linux/Unix.
+```
+
 The audit's line is there only where the audit read a rule. The question is there only where
 it found a rule weak, or a proof was settled with its test unchanged. `list` prints each weak
 rule with its findings, then asks `go on: `. `go on`, or an empty line, moves on. The findings
@@ -152,7 +164,9 @@ shows:
 
 - the rule;
 - each proof, with the tests tied to it;
-- the result on each system, with the machine it ran on;
+- the result on each system, with the machine it ran on, and for a result carried forward
+  the commit it was taken at, as in
+  `Linux/Unix: passed on dana-laptop; PROOF-3 carried forward from 9b2e7c4`;
 - what the audit found, where it found the rule weak;
 - the rule's last note, where an earlier sign-off holds one.
 
@@ -278,11 +292,13 @@ describes every rule at the signed commit. It holds:
   the audit found, and each line of `Left to do` with its kind, count, words and command;
 - the version of Purlin that wrote it, the project, the version, the tag and the commit the
   evidence was taken at;
-- the runs: who ran the tests, on which machine and system, when and on which commit;
+- the runs: who ran the tests, on which machine and system, when and on which commit, and
+  whether a later run carried the results forward;
 - for every rule of every feature: its words exactly as the spec has them, its proofs, the
   tests behind each proof, each result with its operating system, source, time, commit, runner
-  and machine, whether it was taken on this code, each proof that found nothing to check with
-  its reason, and what the audit found with the model;
+  and machine, whether it is recorded on this code, each proof whose result was carried
+  forward with the run that took it, each proof that found nothing to check with its reason,
+  and what the audit found with the model;
 - for every rule, its authors, read from git: who first wrote the rule and each proof, who last
   changed each proof and each test, with the commits. Nobody does anything extra for it;
 - every rule with a hand check;

@@ -64,8 +64,9 @@ be coupled to a layout; this is the shape they all read instead.
                         "text": "...", "result": "passed",
                         "tests": [{"file": "tests/test_login.py",
                                    "name": "test_sign_in",
-                                   "result": "pass"}]}],
-            "tests": []}
+                                   "result": "pass"}],
+                        "carried": {"macos": "<40 hex>"}}],
+            "tests": [], "carried": {}}
          ]}
       ],
       "left": [{"kind": "to_strengthen", "count": 1,
@@ -99,6 +100,13 @@ Each proof carries its own `result`, `passed`, `failed`, `not run`, `no test`
 or `hand check`, as `states.proof_result` reads it, and each of its tests the
 `result` a current run gave it, `pass` or `fail`, or `not run` where no
 current run lists it.
+
+Each proof carries `carried`, `{os: commit}`: for each operating system
+whose current section holds the proof's results as carried forward, every
+one of them, the full sha of the commit the newest was taken at
+(`_carried_from`). A system whose own run took a result is not in the map,
+so `{}` says every result was taken by the run that recorded it. A rule
+carries `carried` the same way for the tests marked with its own id.
 
 A spec's `rules` holds its own rules and no other, anchors' included. Each
 carries `feature`, the name of the spec that owns it, so a rule is always
@@ -529,6 +537,7 @@ def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
             'tests': [{'file': f, 'name': n,
                        'result': ran.get((f, n), 'not run')}
                       for f, n in _backing_tests(sections, proof_id)],
+            'carried': _carried_from(sections, proof_id, proof['env']),
         }
         entry['result'] = states.proof_result(entry, sections, marked, anchor)
         proof_dicts.append(entry)
@@ -579,6 +588,8 @@ def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
         'flags': result['flags'],
         'proofs': proof_dicts,
         'tests': _rule_tests(sections, rule_id),
+        'carried': ({} if proof_dicts
+                    else _carried_from(sections, rule_id)),
     }
     entry['left'] = summary_module.rule_kind(entry, here_os, broken)
     return entry
@@ -631,6 +642,40 @@ def _machines(sections, proofs, rule_id):
         if known is None or at > known[0]:
             found[entry['os']] = (at, machine)
     return {name: found[name][1] for name in sorted(found)}
+
+
+def _carried_from(sections, marker_id, env=None):
+    """`{os: commit}` for the results one proof, or a rule's own id, has
+    that were carried forward.
+
+    A system is in the map where its current section lists a test against
+    `marker_id` and every such entry holds `carried`; its commit is the one
+    the newest of them was taken at. Where both sources hold a current
+    section for a system the newer answers, and a proof that names an
+    operating system is read from that system alone.
+    """
+    found = {}
+    for entry in sections or ():
+        if not entry.get('current') or (env and entry.get('os') != env):
+            continue
+        section = entry['section']
+        listed = [item for item in section.get('proofs') or ()
+                  if isinstance(item, dict) and item.get('id') == marker_id
+                  and item.get('test')]
+        if not listed:
+            continue
+        carried = [item['carried'] for item in listed
+                   if isinstance(item.get('carried'), dict)]
+        commit = None
+        if len(carried) == len(listed):
+            commit = max(carried, key=lambda one: str(
+                one.get('at') or '')).get('commit') or None
+        at = str(section.get('at') or '')
+        known = found.get(entry['os'])
+        if known is None or at > known[0]:
+            found[entry['os']] = (at, commit)
+    return {name: found[name][1] for name in sorted(found)
+            if found[name][1]}
 
 
 def audit_summary(audit):

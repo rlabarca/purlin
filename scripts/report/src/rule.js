@@ -207,9 +207,26 @@ function testLines(tests) {
   }).join('');
 }
 
+/* Where a run carried results forward, the row `Carried from`: for each
+   operating system whose results were taken by an earlier run and recorded
+   again by a later one, the system's short word and the first seven
+   characters of the commit they were taken at, the pair on one line.
+   `carried` is the payload's `{os: commit}`; with none the row is not
+   drawn. */
+function carriedRow(carried) {
+  var systems = Object.keys(carried || {}).sort();
+  if (!systems.length) { return ''; }
+  return '<dt>Carried from</dt><dd>' + systems.map(function (os) {
+    return '<span class="carried nowrap"><span class="os none">'
+      + esc(systemWords(os).short) + '</span> <span class="mono">'
+      + esc(String(carried[os]).slice(0, 7)) + '</span></span>';
+  }).join(' ') + '</dd>';
+}
+
 /* One proof: its id and words, its own result, its `@manual`, `@slow` and
    `@env` tags, the last naming the operating system it asks for, and its
-   tests with what each found. A `@manual` proof no test carries is checked at the
+   tests with what each found, and under its result where its results were
+   carried from. A `@manual` proof no test carries is checked at the
    sign-off, and says so.
    `rule.feature` is the spec that owns the rule, whose build writes a
    missing test. */
@@ -226,6 +243,7 @@ function proofDetail(proof, rule) {
   return '<dl class="kv">'
     + '<dt>' + esc(proof.id) + '</dt><dd>' + esc(proof.text) + '</dd>'
     + '<dt>Result</dt><dd>' + pill(proofWord(proof)) + '</dd>'
+    + carriedRow(proof.carried)
     + (tags.length ? '<dt>Tags</dt><dd>' + tag(tags.join(' '), true) + '</dd>'
       : '')
     + '<dt>Tests</dt><dd class="ptests">' + tests + '</dd></dl>';
@@ -264,6 +282,7 @@ function renderRule() {
   rows.push('<dt>Spec</dt><dd><span class="mono">'
     + pathText(feature.spec_path) + '</span></dd>');
   rows.push('<dt>Last run</dt><dd>' + runLine(feature) + '</dd>');
+  rows.push(carriedRow(rule.carried));
   return backLink()
     + '<section class="rule-head"><hgroup><p class="eyebrow">'
     + esc(feature.name) + '</p><h1>' + esc(rule.id) + '</h1></hgroup>'

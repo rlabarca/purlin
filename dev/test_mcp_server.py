@@ -16,6 +16,7 @@ import pytest
 from mcp_project import (NO_PROOF_SPEC, PROJECT_ROOT, SERVER_PY, SPEC, Project,
                          _commit_tests, _entry, _git, _rpc, _write, project)
 # `mcp_project` puts `scripts/mcp` on the path.
+from purlin import evidence as purlin_evidence
 from purlin import server as purlin_srv
 from purlin import status as purlin_status
 
@@ -475,6 +476,60 @@ class TestOneSpecsView:
         finally:
             made.close()
         assert lines[-1] == '    RULE-1  tests/test_login.py::test_rule_1', lines
+
+
+def _carry(project, taken_at, ids=None, feature='login'):
+    """Mark the results of `feature`'s local section as carried forward
+    from the commit `taken_at`, those of `ids` or all, and commit it."""
+    rel = os.path.join('.purlin', 'evidence', 'local', '%s.json' % feature)
+    path = os.path.join(project.root, rel)
+    with open(path, encoding='utf-8') as handle:
+        data = json.load(handle)
+    for section in data['platforms'].values():
+        for entry in section['proofs']:
+            if ids is None or entry['id'] in ids:
+                entry['carried'] = {
+                    'commit': taken_at, 'at': '2026-09-12T08:00:00Z',
+                    'machine': 'dana-laptop', 'email': 'dana@example.com'}
+    _write(path, json.dumps(data, indent=2, sort_keys=True) + '\n')
+    _git(project.root, 'add', '-A')
+    _git(project.root, 'commit', '-q', '-m', 'purlin: evidence carried')
+
+
+class TestACarriedResultInTheView:
+
+    # purlin: server PROOF-186
+    def test_a_carried_proof_names_the_commit_and_the_system(self, project):
+        _one_of_two_tested(project)
+        _carry(project, 'a1b2c3d4' * 5)
+        lines = _view(project)
+        assert _under(lines, '  RULE-1  passed  not audited') == [
+            '    PROOF-1  passed  tests/test_login.py::test_proof_1',
+            '      carried forward from a1b2c3d on %s'
+            % purlin_evidence.os_word(purlin_evidence.host_os())], lines
+
+    # purlin: server PROOF-187
+    def test_a_result_the_run_took_has_no_such_line(self, project):
+        _one_of_two_tested(project)
+        assert not any('carried forward' in line for line in _view(project))
+
+    # purlin: server PROOF-188
+    def test_a_carried_test_of_a_rule_with_no_proof_is_named_too(self):
+        made = Project(spec=NO_PROOF_SPEC)
+        try:
+            _write(os.path.join(made.root, 'tests', 'test_login.py'),
+                   '# purlin: login RULE-1\ndef test_rule_1():\n    pass\n')
+            _git(made.root, 'add', '-A')
+            _git(made.root, 'commit', '-q', '-m', 'test(login): RULE-1')
+            made.evidence([_entry('RULE-1', 'RULE-1')])
+            _carry(made, 'a1b2c3d4' * 5)
+            lines = _view(made)
+        finally:
+            made.close()
+        assert lines[-2:] == [
+            '    RULE-1  tests/test_login.py::test_rule_1',
+            '      carried forward from a1b2c3d on %s'
+            % purlin_evidence.os_word(purlin_evidence.host_os())], lines
 
 
 class TestTheDriftScript:

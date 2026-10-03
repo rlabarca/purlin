@@ -8,8 +8,8 @@
 >   output.
 > Scope: scripts/mcp/purlin/states.py, scripts/mcp/purlin/payload.py, scripts/mcp/purlin/status.py, scripts/mcp/purlin/facts.py, scripts/mcp/purlin/project.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib, json, hashlib, subprocess (list-only)
-> Highest-Rule: 137
-> Highest-Proof: 325
+> Highest-Rule: 138
+> Highest-Proof: 326
 
 ## Rules
 
@@ -53,6 +53,7 @@
 - RULE-65: A rule no proof line names whose test is marked with the rule's own id reads its passed cell from that test, as a proof's test is read: `passed` where it passed in a current section and `failed` where it failed
 - RULE-71: Every proof in a rule's entry carries its own `result`: `hand check` for a `@manual` proof; otherwise, over the current sections from the operating system its `@env` names, or from every system where it names none, `failed` where one failed it and `passed` where one passed it; with no current answer, `not run` where a marker in the test files ties it to a test and `no test` where none does. Each test listed under a proof carries the `result` a current section gave it, `pass` or `fail`, and `not run` where no current section lists it
 - RULE-85: Every rule entry carries `machines`, `{system: machine}` over the current sections that speak for it, empty where none names a machine
+- RULE-138: Each proof of a rule entry carries `carried`, `{system: commit}`: for each operating system whose current section holds every result of the proof as carried forward, the full commit the newest of them was taken at; a system whose own run took a result is left out, and a rule with no proof carries the same for the tests marked with its own id
 - RULE-96: The status reads the specs of a project that has no `.purlin/config.json`
 - RULE-102: Every rule of a spec that writes a rule or proof number twice, or holds a line left from a merge conflict, reads `failed`, with the reasons naming each: `<id> is written twice in the spec`, `the spec holds a line left from a merge conflict`; its strong cell waits, its `left` is `to_repair`, and its tests still run
 - RULE-112: Each test comment naming a proof whose wording changed after the test was last changed is named in the payload's warnings, one line each, and counted under `to_correct`; it clears once the test itself changes
@@ -154,6 +155,7 @@
 - PROOF-176 (RULE-71): A current section passes `PROOF-1`'s test and fails `PROOF-2`'s; `PROOF-1` reads `passed` and lists exactly one test, `test_proof_1` in `tests/test_login.py`, reading `pass`, and `PROOF-2` reads `failed` with its one test reading `fail`
 - PROOF-85 (RULE-71): In the two-rule `login` spec, a test marked for `PROOF-1` is committed and nothing has run; `PROOF-1` reads `not run` with no test listed, and `PROOF-2`, which no marker names, reads `no test`
 - PROOF-112 (RULE-85): A current `linux` section whose `machine` reads `build-7` and that passes both rules gives each rule `machines` reading `{"linux": "build-7"}`
+- PROOF-326 (RULE-138): A current `linux` section passes both rules, and its result for `PROOF-1` is marked carried from the commit `<c>`; `RULE-1`'s proof reads `carried` `{"linux": "<c>"}` and `RULE-2`'s proof reads `carried` `{}`
 - PROOF-236 (RULE-96): In a git checkout with no `.purlin/config.json` and one spec, `login`, of two rules, the status report lists `login` in its table and its summary reads `2 rules. 0 pass their tests.`
 - PROOF-248 (RULE-102): `login`, whose tests pass, writes `PROOF-2` twice; each of its two rules reads `failed` in its passed cell with the one reason `PROOF-2 is written twice in the spec`
 - PROOF-250 (RULE-102): Beside `login` writing `PROOF-2` twice, `export`, whose spec is sound and whose tests pass, reads `passed` in each rule's passed cell

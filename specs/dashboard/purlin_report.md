@@ -10,8 +10,8 @@
 >   the page resolves to one block and both themes ship in the same file.
 > Scope: scripts/report/src/page.html, scripts/report/src/styles.css, scripts/report/src/theme.js, scripts/report/src/board.js, scripts/report/src/rule.js, scripts/report/src/app.js, scripts/report/purlin-report.html, scripts/mcp/purlin/report_data.py, dev/build_report.py
 > Stack: html/css/javascript, no framework and no build-time dependency, design tokens inlined by a python assembler
-> Highest-Rule: 85
-> Highest-Proof: 282
+> Highest-Rule: 86
+> Highest-Proof: 286
 
 ## Rules
 
@@ -51,6 +51,7 @@
 - RULE-84: A spec with a rule whose passed cell reads `failed` is listed before a spec with none, among the anchors and within each category; a category holding such a spec stands before one holding none; and where a spec that is no anchor holds such a rule and no anchor does, the spec table stands above the anchors' section. Otherwise the specs, the categories and the two tables keep the order they have with no such rule
 - RULE-85: The data file's `information` and `warnings` together hold every line the status prints between its table and its summary sentence but `→ Run: purlin:init --update`, in the status's words: `information` opens with each anchor rule that passes with nothing to check and then the line naming the specs with no `> Scope:` line; `warnings` opens with the line that the tests setting changed, then each anchor whose pin is not current, with no `Anchors:` heading, then the uncommitted spec files on one line, as `Uncommitted spec changes: <status> <file>, <status> <file>`
 - RULE-80: An anchor's `Strong` cell reads one word and never `<s> of <n>`, counting the anchor's rules that pass their tests and have a tested proof: `weak`, in the warn tone, where the audit found any of them weak, else `out of date` where the audit entry of any is out of date, else `spot-checked` where the audit found every one of them spot-checked, else nothing. Its hover reads `No bug is planted for an anchor's rule.` on its first line, then the newest audit's source and age
+- RULE-86: On a rule's screen a proof whose results a run carried forward shows, straight after its result, the row `Carried from`, holding for each operating system the system's short word, `Win`, `Mac` or `Lin`, and the first 7 characters of the commit the results were taken at, each pair on one line at every width from 390 to 1500 pixels and at 7 to 1 contrast in both themes; a proof whose own run took its results shows no such row, and a rule with no proof shows the row after `Last run`
 ## Proof
 
 - PROOF-122 (RULE-2): After a build, the page at the project root reads the same text, character for character, as the page written under `scripts/report/`
@@ -166,3 +167,7 @@
 - PROOF-274 (RULE-85): In a project with `specs/auth/login.md` edited and `specs/auth/logout.md` new, neither committed, run `purlin:status`; it prints `Uncommitted spec changes:` and under it ` M specs/auth/login.md` and `?? specs/auth/logout.md`, and the data file's `warnings` holds `Uncommitted spec changes: M specs/auth/login.md, ?? specs/auth/logout.md`
 - PROOF-277 (RULE-85): In a project the update has nothing for but an older `purlin-report.html`, run `purlin:status`; it prints no line between its table and its sentence, and the data file's `warnings` and `information` are both empty
 - PROOF-275 (RULE-82): Open the board with the regulated sample given no warning and 4 lines of information, checkout_design's `RULE-1`, `RULE-2` and `RULE-3` each passing with nothing to check, then the line naming export as a spec with no `> Scope:` line; the 2 notices read `checkout_design has a rule that passes with nothing to check here, in 3 places. Run purlin:status checkout_design.` and that line whole, each with a dot in the neutral tone
+- PROOF-283 (RULE-86): Open the regulated sample's `login RULE-1` with its proof's results carried from `a1b2c3d` on Linux/Unix and `9b2e7c4` on Windows, at 1500, 1280, 1024, 768 and 390 pixels wide; at each width the proof's row after `Result` is `Carried from`, reading `Lin a1b2c3d Win 9b2e7c4`, each pair on 1 line
+- PROOF-284 (RULE-86): Open the regulated sample's `login RULE-1` with no result of its proof carried; the proof shows no row labelled `Carried from`
+- PROOF-285 (RULE-86): Open that rule with its proof's results carried from `a1b2c3d` on Linux/Unix and `9b2e7c4` on Windows, in the dark theme and in the light; `Carried from`, `Lin`, `a1b2c3d`, `Win` and `9b2e7c4` each measure at least 7 to 1 against the ground under them
+- PROOF-286 (RULE-86): Open the solo sample with no proof lines, where the tests marked for `login RULE-1` were carried from `a1b2c3d` on macOS; the rule's last two rows are `Last run` and `Carried from`, the second reading `Mac a1b2c3d`

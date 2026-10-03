@@ -1,4 +1,4 @@
-> Format-Version: 14
+> Format-Version: 15
 
 # Evidence format
 
@@ -22,10 +22,12 @@ read them.
 
 **The folder is the source.** A file under `local/` is written by
 `purlin:test` and `purlin:audit` on a person's machine and committed under
-that person's own git identity. A file under `ci/` is written only by
-`scripts/run/purlin_run.py --ci`, which a project's own run on another
+that person's own git identity. A file under `ci/` holds the sections
+`scripts/run/purlin_run.py --ci` writes, which a project's own run on another
 system runs. With `--commit` that run commits the file under the git
-identity its checkout sets, and the results come back with `git pull`.
+identity its checkout sets, and the results come back with `git pull`. A
+`purlin:test --all` run takes no result into `ci/`; it records a section
+there again only to carry it forward. See "Carried forward".
 
 The file's `source` field repeats the folder. A file whose `source` disagrees
 with its folder is ignored, and the reader prints one warning naming it.
@@ -62,9 +64,9 @@ operating system that ran the feature, one section each.
          "test": "tests/test_login.py::test_every_screen_has_a_title"},
         {"id": "PROOF-3", "rule": "RULE-1", "result": "pass", "env": null,
          "manual": false, "test": "tests/test_login.py::test_a_thousand_logins",
-         "kept": {"commit": "9b2e7c4d1a6f3e8b5c0d2a7f4e1b6c3d8a5f2e9b",
-                  "at": "2026-09-26T09:30:00Z", "machine": "jane-mbp",
-                  "email": "jane@example.com"}}
+         "carried": {"commit": "9b2e7c4d1a6f3e8b5c0d2a7f4e1b6c3d8a5f2e9b",
+                     "at": "2026-09-26T09:30:00Z", "machine": "jane-mbp",
+                     "email": "jane@example.com"}}
       ]
     }
   },
@@ -107,7 +109,7 @@ present only once an audit has run.
 
 | Field | Type | What it holds |
 |---|---|---|
-| `commit` | string | the full sha of the code the section describes: `HEAD` after the run's own commit of the specs, tests and settings where `--commit` made one, else `HEAD` when the run started |
+| `commit` | string | the full sha of the code the section describes: `HEAD` after the run's own commit of the specs, tests and settings where `--commit` made one, else `HEAD` when the run started. A run that carries the section forward writes its own here |
 | `dirty` | bool | whether the working tree had changes that were not committed, outside `.purlin/`. It decides no cell: the fingerprint does. A run over a tree whose `dirty` differs replaces the section |
 | `at` | string | ISO 8601 UTC with `Z`, when the run finished |
 | `runner` | string | the slug of `email`, made from its part before the `@`; `unknown` where there is none |
@@ -148,7 +150,7 @@ Each `proofs` entry:
 | `manual` | bool | whether the proof is tagged `@manual` |
 | `test` | string | `<file>::<name>` for the test that observed the proof, `""` when nothing did. The name is the test's own, as the marker format spells it |
 | `reason` | string | present only where `result` is `nothing to check`: the text after `nothing to check: ` in the reason the test's tool gave for its skip |
-| `kept` | object | optional: present only on an entry whose result this run did not take, a slow proof's test it left out. It names the run that took the result: `commit`, the full sha, `at`, `machine` and `email`, as that run's section held them |
+| `carried` | object | optional: present only on an entry whose result the run that wrote the section's `commit` did not take. It names the run that took the result: `commit`, the full sha, `at`, `machine` and `email`, as that run's section held them. An entry with no `carried` was taken by the run the section names. See "Carried forward" |
 
 A test is tied to its proof by the marker comment above it, as
 `references/formats/marker_format.md` says. Besides `pass` and `fail`, an
@@ -167,15 +169,14 @@ entry reads:
 - **`not run`**, with the test named, where the proof is tagged `@slow` and
   the run left its test out. One case differs: the section the run replaces
   was taken over the same fingerprint and holds a result for that test. The
-  entry then keeps that result and carries `kept`: the `commit`, `at`,
+  entry then keeps that result and holds `carried`: the `commit`, `at`,
   `machine` and `email` of the section the result was taken in, or the
-  `kept` that entry already carried. The section's own `commit`, `at`,
+  `carried` that entry already held. The section's own `commit`, `at`,
   `machine` and `email` are this run's.
 
-A reader counts a kept `pass` as a `pass`, so the status keeps counting it.
-The sign-off counts no kept result, whatever commit it names: it asks for
-`purlin:test --all --commit`, which takes the result again and writes the
-entry with no `kept`.
+A reader counts a carried result as the result it is: a carried `pass` is a
+`pass` in every cell, and at a sign-off, where it counts like any other
+result of a section recorded on the commit being signed.
 
 A proof no test is tied to has one entry with an empty `test`. It reads
 `missing`, or `not run` where the proof is tagged `@env` for another
@@ -282,6 +283,43 @@ shown and not compared, so an entry taken at an earlier commit is still
 current. Where both sources hold an entry, a current one is read before one
 out of date, and then the later `at`.
 
+## Carried forward
+
+`purlin:test --all` runs a feature whose spec, code or tests changed since
+its results here were taken, a feature whose results here are not all
+passes, and every anchor. Every other feature it carries forward: it records
+the feature's results again on the run's own commit and runs none of its
+tests. `purlin:test --clean` runs every test and carries nothing.
+
+A section is carried forward where its stored fingerprint equals the one
+taken now and its `dirty` is false. The run writes the section again:
+
+- `commit` is the run's own, as it would write for a section it took.
+- Every `proofs` entry holds `carried`, the `commit`, `at`, `machine` and
+  `email` of the run that took the result: the `carried` the entry already
+  held, else the section's own four values as they stood. So a result
+  carried a second time still names the run that took it.
+- `at`, `runner`, `email`, `machine`, `dirty`, `fingerprint` and `rules`
+  stay as they were: the section still says who took it, where and when.
+
+A section that already names the run's commit, or a commit from which every
+commit up to it changes only paths under `.purlin/` and leaves the `tests`
+setting as it was, is left byte for byte as it was.
+
+The same holds for every section of the feature's two files: the section
+another operating system wrote, and one under `ci/`, are carried forward by
+the same test, from whichever machine took them, whether or not the feature
+itself runs on this machine. A section taken over another fingerprint, or
+with `dirty` true, is left as it was, and a run on its own system takes it
+again.
+
+This system's `local` section is carried only where the feature does not
+run. A feature runs, and its section is replaced, where that section is
+missing, was taken over another fingerprint or with `dirty` true, or holds a
+result other than `pass` for a proof this system can run; where an untracked
+file sits under its scope or beside its tests; where its spec names no
+files; and where it is an anchor.
+
 ## The fingerprint
 
 A fingerprint says what a section was taken over. Each part is a sha256 hex
@@ -317,7 +355,10 @@ each part that differs: `code changed since 4f1c2ab`, `spec changed since
   Every other section and `audit` stay as they are. One result is carried
   from the section replaced into the new one: that of a slow proof's test
   the run left out, where both sections have the same fingerprint. Its
-  entry is marked `kept`.
+  entry is marked `carried`.
+- A `purlin:test --all` run writes again each section it carries forward,
+  in either folder, as "Carried forward" says, and leaves every other
+  section it did not take as it was.
 - An audit run first makes the same test-run write. It then replaces
   `audit.rules[<rule>]` for each rule it read and leaves every other entry as
   it is.
@@ -346,15 +387,17 @@ every commit from the one the section names to the run's own changes only
 paths under `.purlin/`, so a second run finds nothing new to commit. Any
 other section replaces it, with its own `at`, `commit`, `dirty` and `email`.
 
-`kept` is left out of that comparison in one direction: a result the run
-carried over is the result the section on disk already holds, so the file
-stays as it was, with no `kept` in it. A result the run took itself
-replaces an entry the section on disk holds as `kept`.
+`carried` is left out of that comparison in one direction: a result the run
+carried forward is the result the section on disk already holds, so the file
+stays as it was, with no `carried` in it. A result the run took itself
+replaces an entry the section on disk holds as `carried`.
 
 ## The two commits
 
 `purlin:test` and `purlin:audit` write the files and do not commit them. With
-`--commit` a run makes two commits, the work and then the evidence.
+`--commit` a run makes two commits, the work and then the evidence, which
+holds the files under `local/` and each file under `ci/` in which the run
+carried a section forward.
 `references/commit_conventions.md`, "The two commits of a run", says what each
 commit holds and how its subject reads. This section gives what the run
 prints:

@@ -27,7 +27,14 @@ its path and how many rules it has and gives one line per rule:
 
 A rule's line holds its two cells' words; under it come the reasons of each
 cell whose word is neither `passed` nor `strong`, then one line per proof
-with its result and its tests, each further test set under the first. It
+with its result and its tests, each further test set under the first. Under
+a proof whose results a run carried forward, one line per system names the
+commit they were taken at:
+
+        PROOF-1  passed  tests/test_login.py::test_proof_1
+          carried forward from 4f1c2ab on macOS
+
+It
 exits 1 where it printed a warning and 0 where not. A name no spec of the
 checkout has is said so, and exits 1. The view writes nothing.
 
@@ -44,9 +51,11 @@ if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 from purlin import console as console_module                   # noqa: E402
+from purlin import evidence as evidence_module                 # noqa: E402
 from purlin import payload as payload_module                   # noqa: E402
 from purlin import project as project_module                   # noqa: E402
 from purlin import specs as specs_module                       # noqa: E402
+from purlin import states as states_module                     # noqa: E402
 from purlin import status as status_module                     # noqa: E402
 
 USAGE = 'Usage: purlin_status.py [--project-root DIR] [--spec NAME]'
@@ -111,6 +120,7 @@ VIEW_OPENING = '%s: %s'                     # specs/auth/login.md, '2 rules'
 RULE_LINE = '  %s  %s  %s'                  # RULE-1, passed, not audited
 REASON_LINE = '    %s: %s'                  # not audited, no audit has ...
 PROOF_LINE = '    %s  %s'                   # PROOF-1, passed
+CARRIED_LINE = '      carried forward from %s on %s'      # 4f1c2ab, macOS
 MET = {'passed': 'passed', 'strong': 'strong'}
 # Cell words that name no work to do, so the view gives no reason under them.
 QUIET = ('passed', 'strong', 'not audited', 'waiting')
@@ -134,9 +144,21 @@ def view_lines(feature):
         for proof in rule.get('proofs') or ():
             lines.extend(_proof_lines(proof['id'], proof.get('result') or '',
                                       proof.get('tests')))
+            lines.extend(_carried_lines(proof.get('carried')))
         for test in rule.get('tests') or ():
             lines.append(PROOF_LINE % (rule['id'], _test_name(test)))
+        lines.extend(_carried_lines(rule.get('carried')))
     return lines
+
+
+def _carried_lines(carried):
+    """One line per system whose results were carried forward, `carried`
+    being the payload's `{os: commit}`, in the order a person reads the
+    systems."""
+    carried = carried or {}
+    return [CARRIED_LINE % (str(carried[name])[:7],
+                            evidence_module.os_word(name))
+            for name in states_module.SYSTEM_ORDER if carried.get(name)]
 
 
 def _test_name(test):

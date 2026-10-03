@@ -506,6 +506,15 @@ function testLines(tests) {
       + esc(t.name).split('::').join('::<wbr>') + '</span></p>';
   }).join('');
 }
+function carriedRow(carried) {
+  var systems = Object.keys(carried || {}).sort();
+  if (!systems.length) { return ''; }
+  return '<dt>Carried from</dt><dd>' + systems.map(function (os) {
+    return '<span class="carried nowrap"><span class="os none">'
+      + esc(systemWords(os).short) + '</span> <span class="mono">'
+      + esc(String(carried[os]).slice(0, 7)) + '</span></span>';
+  }).join(' ') + '</dd>';
+}
 function proofDetail(proof, rule) {
   var owner = rule.feature;
   var tags = (proof.manual ? ['@manual'] : [])
@@ -519,6 +528,7 @@ function proofDetail(proof, rule) {
   return '<dl class="kv">'
     + '<dt>' + esc(proof.id) + '</dt><dd>' + esc(proof.text) + '</dd>'
     + '<dt>Result</dt><dd>' + pill(proofWord(proof)) + '</dd>'
+    + carriedRow(proof.carried)
     + (tags.length ? '<dt>Tags</dt><dd>' + tag(tags.join(' '), true) + '</dd>'
       : '')
     + '<dt>Tests</dt><dd class="ptests">' + tests + '</dd></dl>';
@@ -548,6 +558,7 @@ function renderRule() {
   rows.push('<dt>Spec</dt><dd><span class="mono">'
     + pathText(feature.spec_path) + '</span></dd>');
   rows.push('<dt>Last run</dt><dd>' + runLine(feature) + '</dd>');
+  rows.push(carriedRow(rule.carried));
   return backLink()
     + '<section class="rule-head"><hgroup><p class="eyebrow">'
     + esc(feature.name) + '</p><h1>' + esc(rule.id) + '</h1></hgroup>'

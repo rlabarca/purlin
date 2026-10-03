@@ -90,13 +90,14 @@ MANUAL_TEST_FILE = TEST_FILE.split('\n\n\n# purlin: login PROOF-2')[0] + '\n'
 # ---------------------------------------------------------------------------
 
 def section(made, proofs, rules, source='local', os_name='linux', email=DANA,
-            machine=MACHINE, at=AT, commit=None, feature='login', kept=None):
+            machine=MACHINE, at=AT, commit=None, feature='login',
+            carried=None):
     """One evidence section, as the run writes it, over the project as it stands.
 
     `proofs` is `[(id, rule, result, test name or None, reason or None)]`;
     `rules` is `{RULE-N: word}`. A section has the same fields under either
-    source. `kept` is `{PROOF-N: where its test really ran}`, for a slow
-    result a plain run kept.
+    source. `carried` is `{PROOF-N: where its test really ran}`, for a
+    result the section's own run carried forward.
     """
     entries = []
     for proof_id, rule, result, name, reason in proofs:
@@ -106,8 +107,8 @@ def section(made, proofs, rules, source='local', os_name='linux', email=DANA,
                  else ''}
         if reason is not None:
             entry['reason'] = reason
-        if proof_id in (kept or {}):
-            entry['kept'] = dict(kept[proof_id])
+        if proof_id in (carried or {}):
+            entry['carried'] = dict(carried[proof_id])
         entries.append(entry)
     found = {'commit': commit or made.head(), 'dirty': False, 'at': at,
              'runner': email.split('@')[0], 'email': email,
@@ -758,7 +759,7 @@ class TestTheRuns:
         assert runs == [{'by': 'dana.dev@labconnect.example',
                          'machine': 'dana-laptop', 'os': 'linux',
                          'source': 'local', 'at': AT, 'commit': ran_at,
-                         'rules': 2}]
+                         'rules': 2, 'carried': False}]
 
     # purlin: package PROOF-66
     def test_a_run_under_ci_follows_the_local_one(self):
@@ -812,8 +813,8 @@ class TestTheRuns:
         before = project.head()
         code, lines = sign(project)
         assert (code, lines) == (1, [
-            'No sign-off: these results were not taken on this version of the '
-            'code, %s: login on Linux/Unix. Run purlin:test --all --commit, '
+            'No sign-off: these results are not recorded on this version of '
+            'the code, %s: login on Linux/Unix. Run purlin:test --all --commit, '
             'then purlin:sign.' % before[:7]])
         assert project.head() == before
 
@@ -827,8 +828,8 @@ class TestTheRuns:
         before = project.head()
         code, lines = sign(project)
         assert len(lines) == 1, lines
-        assert lines[0].startswith('No sign-off: these results were not '
-                                   'taken on this version of the code'), lines
+        assert lines[0].startswith('No sign-off: these results are not '
+                                   'recorded on this version of the code'), lines
         assert (code, project.head()) == (1, before)
 
     # purlin: package PROOF-78
@@ -848,13 +849,14 @@ class TestTheRuns:
         before = project.head()
         code, lines = sign(project)
         assert len(lines) == 1, lines
-        assert lines[0].startswith('No sign-off: these results were not '
-                                   'taken on this version of the code'), lines
+        assert lines[0].startswith('No sign-off: these results are not '
+                                   'recorded on this version of the code'), lines
         assert (code, project.head()) == (1, before)
 
-    # purlin: package PROOF-79
-    def test_a_slow_result_kept_from_an_earlier_run_is_refused(
-            self, project, capsys):
+    def _feat_carried(self, project):
+        """`feat`, its slow `PROOF-2` taken by Pat at `<c>` and carried into
+        a section Dana's run recorded on the commit after it. `(<c>, that
+        commit)`."""
         write(os.path.join(project.root, 'specs', 'auth', 'feat.md'),
               FEAT_SPEC)
         write(os.path.join(project.root, 'src', 'feat.py'),
@@ -864,23 +866,52 @@ class TestTheRuns:
         ran_at = project.head()
         write(os.path.join(project.root, 'README.md'), '# Login\n')
         commit_all(project, 'docs: a readme')
+        recorded = project.head()
         passing(project)
         section(project, [('PROOF-1', 'RULE-1', 'pass', 'test_feat', None),
                           ('PROOF-2', 'RULE-2', 'pass', 'test_slow', None)],
                 {'RULE-1': 'passed', 'RULE-2': 'passed'}, feature='feat',
-                kept={'PROOF-2': {'commit': ran_at,
-                                  'at': '2026-09-13T11:00:00Z',
-                                  'machine': MACHINE, 'email': DANA}})
+                carried={'PROOF-2': {'commit': ran_at,
+                                     'at': '2026-09-13T11:00:00Z',
+                                     'machine': 'pat-laptop', 'email': PAT}})
         commit_all(project)
+        return ran_at, recorded
+
+    # purlin: package PROOF-79
+    def test_a_result_carried_from_an_earlier_run_counts(
+            self, project, capsys):
+        self._feat_carried(project)
         feat = next(entry for entry in project.payload()['features']
                     if entry['name'] == 'feat')
         assert [rule['cells']['passed']['word'] for rule in feat['rules']] \
             == ['passed', 'passed']
         code = sign_module.main(['--show', '--project-root', project.root])
-        assert (code, capsys.readouterr().out.splitlines()) == (1, [
-            'No sign-off: these results were not taken on this version of the '
-            'code, %s: feat on Linux/Unix. Run purlin:test --all --commit, '
-            'then purlin:sign.' % project.head()[:7]])
+        lines = capsys.readouterr().out.splitlines()
+        assert code == 0, lines
+        assert not any(line.startswith('No sign-off') for line in lines)
+
+    # purlin: package PROOF-84
+    def test_a_result_names_each_proof_carried_and_the_run_that_took_it(
+            self, project):
+        ran_at, _recorded = self._feat_carried(project)
+        package = signed_package(project)
+        (slow,) = rule_of(package, 'RULE-2', 'feat')['results']
+        assert slow['carried'] == [{
+            'proof': 'PROOF-2', 'commit': ran_at,
+            'at': '2026-09-13T11:00:00Z', 'machine': 'pat-laptop',
+            'email': PAT}], slow
+        assert slow['commit'] != ran_at and slow['same_code'] is True, slow
+        (plain,) = rule_of(package, 'RULE-1', 'feat')['results']
+        assert plain['carried'] == [], plain
+
+    # purlin: package PROOF-85
+    def test_carried_results_are_a_run_of_their_own(self, project):
+        ran_at, recorded = self._feat_carried(project)
+        runs = signed_package(project)['runs']
+        assert [(run['by'], run['machine'], run['commit'], run['at'],
+                 run['rules'], run['carried']) for run in runs] == [
+            (DANA, MACHINE, recorded, AT, 3, False),
+            (PAT, 'pat-laptop', ran_at, '2026-09-13T11:00:00Z', 1, True)]
 
     # purlin: package PROOF-69
     def test_the_project_is_named_by_its_own_files(self, tmp_path):
