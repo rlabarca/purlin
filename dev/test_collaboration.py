@@ -435,9 +435,13 @@ def test_three_people_reach_a_signed_version(tmp_path):
     out = dana.test(expect=1)
     (line,) = [line for line in out.splitlines() if line.startswith(SUGGESTED)]
     given(skill('test'), 'write that array as the `tests` setting with the '
-                         '`purlin_config` tool, then run Step 1 again')
+                         '`purlin_config` tool, commit `.purlin/config.json` '
+                         'alone as `purlin: specs, tests and settings`, then '
+                         'run Step 1 again')
     dana.tool('purlin_config', action='write', key='tests',
               value=json.loads(line[len(SUGGESTED):]))
+    dana.git('commit', '-q', '-m', 'purlin: specs, tests and settings', '--',
+             '.purlin/config.json')
     given(skill('test'), 'purlin:test --commit')
     out = dana.test('--commit')
     assert 'Markers: 5 tied to a test, 0 not tied.' in out

@@ -15,8 +15,8 @@
 >   tool it knows.
 > Scope: scripts/run/purlin_run.py, scripts/mcp/purlin/frameworks.py, references/supported_frameworks.md
 > Stack: python/stdlib (subprocess, re, hashlib), bash, pytest, sqlite3
-> Highest-Rule: 118
-> Highest-Proof: 322
+> Highest-Rule: 119
+> Highest-Proof: 325
 
 ## Rules
 
@@ -24,6 +24,7 @@
 - RULE-103: Before any test the run stops, writes nothing and exits 1, printing one line naming the cause and its fix, when the project has no `.purlin/config.json`, when that file cannot be read, and when an older Purlin set the project up and it was not upgraded
 - RULE-102: With the `tests` setting empty the run prints `No test command is set`; for each test tool Purlin knows that it finds in the project it prints `Suggested for <name>: <run>`, then what that tool needs added where it needs something, then `Suggested tests setting: ` and the entries as one JSON array; where it finds none it says so and that the agent proposes a command for the person to confirm; and unless the question of RULE-107 is answered yes it writes nothing and exits 1
 - RULE-107: After a suggested `tests` setting the run asks `Write this tests setting to .purlin/config.json? [y/N] `: `y`, `yes` or `--write-tests` writes the suggested entries as the `tests` setting, prints `Wrote the tests setting to .purlin/config.json.` and runs the tests; any other answer, an empty one or the end of input writes nothing
+- RULE-119: Where a `--test` or `--audit` run writes the suggested `tests` setting inside a git checkout, it commits `.purlin/config.json` alone, under the subject `purlin: specs, tests and settings`, before any test starts, and prints `Committed <sha7>, the work these results describe:` and `  .purlin/config.json`; the results it then writes name that commit, so committing them with `purlin:test --commit` leaves them recorded on this version of the code. Outside a git checkout it commits nothing and the run goes on
 - RULE-63: The entries suggested are those of every tool found, in the order pytest, vitest, jest, dotnet, go, sql and shell: each the tool's own command with the flag that writes the report Purlin reads, the report's path under `.purlin/runtime/reports/`, its format and the globs its test files live under; on Windows the pytest command starts `py -3 -m pytest` in place of `python3 -m pytest`; the supported-frameworks page shows the same seven entries
 - RULE-88: A project whose `tests/` folder at the root holds, at any depth, a file named `test_*.py` is suggested pytest
 - RULE-83: The jest entry the run suggests names the test files a run hands it before its `--reporters` options, so jest reads each as a test file and none as a reporter
@@ -82,6 +83,9 @@
 - PROOF-287 (RULE-107): In a project whose `tests` setting is empty and that holds a `conftest.py` and one marked passing test, `--all --test` with nothing to answer from prints `Write this tests setting to .purlin/config.json? [y/N] ` last, leaves `.purlin/config.json` byte for byte as it was, and exits 1
 - PROOF-288 (RULE-107): That project run as `--all --test --write-tests` prints no question, prints `Wrote the tests setting to .purlin/config.json.` and then `Markers: 1 tied to a test, 0 not tied.`; `tests` holds one entry alone: name `pytest`, command `python3 -m pytest {files} --junitxml={report}`, opening `py -3` on Windows, report `.purlin/runtime/reports/pytest.xml`, format `junit`, files `**/test_*.py` and `**/*_test.py`; it exits 0
 - PROOF-289 (RULE-107): That project run as `--all --test` and answered `y` on its input runs the test; `tests` holds one entry alone: name `pytest`, command `python3 -m pytest {files} --junitxml={report}`, opening `py -3` on Windows, report `.purlin/runtime/reports/pytest.xml`, format `junit`, files `**/test_*.py` and `**/*_test.py`; it exits 0
+- PROOF-323 (RULE-119): In a git checkout with everything committed, whose `tests` setting is empty and that holds a `conftest.py` and one marked passing test, `--feature feat --test --write-tests` prints `Wrote the tests setting to .purlin/config.json.`, then `Committed <sha7>, the work these results describe:`, then `  .purlin/config.json`, then a line beginning `Running pytest: `; `HEAD` is a new commit with the subject `purlin: specs, tests and settings` that changes `.purlin/config.json` alone, `<sha7>` is its first 7 characters, and the section the run writes names it as its `commit`; it exits 0
+- PROOF-324 (RULE-119): In that checkout, where the spec covers the committed `src/feat.py`, `--feature feat --test --write-tests` and then `--test --commit` end on `Every rule passes its tests on the committed evidence. To sign it: purlin:sign`, and the second run exits 0
+- PROOF-325 (RULE-119): The same project in a folder that is no git checkout, run as `--all --test --write-tests`, prints `Wrote the tests setting to .purlin/config.json.` and no line beginning `Committed`, and exits 0
 - PROOF-130 (RULE-63): Over the seven entries the run suggests, one per tool, each command carries the flag that writes the report Purlin reads: pytest's `--junitxml={report}`, vitest's `--outputFile.junit={report}`, jest's `--reporters=jest-junit`, dotnet's `--logger trx --results-directory {report}`, go's `go test -json`, sql's `sqlite3 -bail` and shell's `bash {files}`
 - PROOF-221 (RULE-63): In a project with an empty `tests` setting holding only a `conftest.py`, on a machine whose system is Windows, the one entry suggested runs `py -3 -m pytest {files} --junitxml={report}`
 - PROOF-133 (RULE-63): The supported-frameworks page shows the same seven entries as the run suggests them, in that order, word for word

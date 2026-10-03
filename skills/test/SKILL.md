@@ -93,8 +93,8 @@ It writes nothing and names what is missing:
 | `No .purlin/config.json here, so nothing ran.` | Run `purlin:init`, then this skill again |
 | `This project was set up by an older Purlin and not upgraded` | Run `purlin:init --update`, then this skill again |
 | `.purlin/config.json cannot be read:` | `→ Fix the settings file by hand, then run: purlin:test` |
-| `Suggested tests setting: <the entries as one JSON array on one line>` | Show the person each suggested command, with the line after it that says what the tool needs added first, such as jest's `jest-junit`. Compare each suggested command with how the project runs its tests itself, in its CI files, its manifest's scripts, `tox.ini` or `Makefile`: the interpreter and its options; show the person each difference and offer the entry with the project's own. Run the line that says what a tool needs, as printed, once the person agrees. **Stop and ask** once. On yes, run Step 1 again with `--write-tests`: it writes the suggested entries and runs. Where the person chose a command of their own, write that array as the `tests` setting with the `purlin_config` tool, then run Step 1 again |
-| `no test tool Purlin knows was found` | Read the project, its manifest, its test folder and its CI files, and propose one entry in the shape `references/formats/marker_format.md` gives. **Stop and ask**. On yes, write it as the `tests` setting with the `purlin_config` tool, and run Step 1 again |
+| `Suggested tests setting: <the entries as one JSON array on one line>` | Show the person each suggested command, with the line after it that says what the tool needs added first, such as jest's `jest-junit`. Compare each suggested command with how the project runs its tests itself, in its CI files, its manifest's scripts, `tox.ini` or `Makefile`: the interpreter and its options; show the person each difference and offer the entry with the project's own. Run the line that says what a tool needs, as printed, once the person agrees. **Stop and ask** once, saying that a yes also commits `.purlin/config.json`. On yes, run Step 1 again with `--write-tests`: it writes the suggested entries, commits `.purlin/config.json` alone and runs. Where the person chose a command of their own, write that array as the `tests` setting with the `purlin_config` tool, commit `.purlin/config.json` alone as `purlin: specs, tests and settings`, then run Step 1 again |
+| `no test tool Purlin knows was found` | Read the project, its manifest, its test folder and its CI files, and propose one entry in the shape `references/formats/marker_format.md` gives. **Stop and ask**, saying that a yes also commits `.purlin/config.json`. On yes, write it as the `tests` setting with the `purlin_config` tool, commit `.purlin/config.json` alone as `purlin: specs, tests and settings`, and run Step 1 again |
 
 ## Step 3: the evidence, written and committed when asked
 
@@ -107,7 +107,7 @@ section holds:
 - each rule's word, and each proof's result and test.
 
 It prints `Evidence written to .purlin/evidence/local/<feature>.json.`, or the folder and a count
-for several features. It commits nothing.
+for several features. It does not commit the evidence.
 
 With `--commit` it makes two commits under your own git identity: the work, then the evidence
 that names it. Where it then prints `<n> files are still not committed:`, show the person the

@@ -69,7 +69,7 @@ you asked it to, and stops. No command pushes.
 `.purlin/evidence/<source>/<feature>.json`, with one section per operating system. Your runs
 write into `.purlin/evidence/local/`.
 
-- `purlin:test` writes the file and commits nothing.
+- `purlin:test` writes the file and does not commit it.
 - `purlin:test --commit` commits the specs, the marked tests and the settings the results
   describe. Then it commits the evidence, as `purlin: evidence at <sha7>`.
 - A section goes `out of date` when the spec, the tests or the code the spec covers

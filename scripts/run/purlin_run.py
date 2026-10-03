@@ -19,7 +19,9 @@ project Purlin 0.9.5 set up and nobody upgraded (`set_up_by_095`) it names
 it detects test tools it knows, it prints each tool's command and the whole
 `tests` setting to add (`frameworks.suggest`), then asks on its input whether
 to write that setting. `y` or `yes`, or `--write-tests` in place of the
-question, writes it and the run goes on. Any other answer, an empty one or
+question, writes it, commits the settings file alone where the project is a
+git checkout (`commit_the_setting`), so the results name a commit that holds
+the setting, and the run goes on. Any other answer, an empty one or
 the end of input writes nothing and exits 1, so a run nobody answers changes
 no setting. Where it detects no tool it says that the agent reads the project
 and proposes a command, writes nothing and exits 1.
@@ -1334,6 +1336,28 @@ def commit_all_work(project_root, features, suites):
     return sha
 
 
+def commit_the_setting(project_root):
+    """Commit the settings file a first run has just written the `tests`
+    setting into, before any test starts. The new commit's sha, or None.
+
+    The results the run then writes name a commit that holds the setting
+    they were taken with, so the commit of the work that follows does not
+    end them. The commit holds `.purlin/config.json` alone, under the
+    subject of a work commit that names no feature. Outside a git checkout,
+    and in one with no commit yet, nothing is committed.
+    """
+    if not head_commit(project_root):
+        return None
+    if evidence_writer.commit_paths(project_root, ['.purlin/config.json'],
+                                    WORK_SUBJECT_NO_FEATURE) \
+            != evidence_writer.COMMITTED:
+        return None
+    sha = head_commit(project_root)
+    print(evidence_writer.WORK_COMMITTED % sha[:7])
+    print('  .purlin/config.json')
+    return sha
+
+
 def changed_paths(project_root, paths):
     """Those of `paths` git sees a change in, sorted; none outside git."""
     if not paths:
@@ -1442,6 +1466,8 @@ def main(argv=None):
             return 1
         update_config(project_root, 'tests', entries)
         print(WROTE_TESTS)
+        if args.action != 'ci':
+            commit_the_setting(project_root)
         config = resolve_config(project_root)
         suites, suite_problems = markers_module.read_suites(project_root,
                                                             config)

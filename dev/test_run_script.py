@@ -1266,6 +1266,21 @@ def _one_passing_test(tmp_path):
     return root
 
 
+def _first_run_checkout(tmp_path):
+    """`_one_passing_test` as a git checkout with everything committed and
+    what a test run leaves behind ignored: a project before its first run.
+    Its spec covers `src/feat.py`, so a second run finds nothing changed."""
+    root = _one_passing_test(tmp_path)
+    _spec(root, 'feat', scope='src/feat.py')
+    (root / 'src').mkdir()
+    (root / 'src' / 'feat.py').write_text('VALUE = 2\n', encoding='utf-8')
+    (root / '.gitignore').write_text(
+        '.purlin/runtime/\n.purlin/report-data.js\n__pycache__/\n'
+        '.pytest_cache/\n', encoding='utf-8')
+    _git_repo(root)
+    return root
+
+
 def _pytest_entry_in_words():
     """pytest's entry field by field, as the proofs of the written setting
     give it; on Windows its command opens `py -3`."""
@@ -1377,6 +1392,52 @@ class TestNoTestCommand:
         section = list(_evidence(root)['platforms'].values())[0]
         assert [(entry['id'], entry['result'])
                 for entry in section['proofs']] == [('PROOF-1', 'pass')]
+        assert code == 0, output
+
+    # purlin: run_script PROOF-323
+    def test_the_written_setting_is_committed_before_the_tests_run(
+            self, tmp_path):
+        root = _first_run_checkout(tmp_path)
+        before = _head(root)
+        code, output = _run(root, '--feature', 'feat', '--test',
+                            '--write-tests')
+        head = _head(root)
+        lines = output.splitlines()
+        wrote = lines.index('Wrote the tests setting to .purlin/config.json.')
+        assert lines[wrote + 1:wrote + 3] == [
+            'Committed %s, the work these results describe:' % head[:7],
+            '  .purlin/config.json'], output
+        assert lines[wrote + 3].startswith('Running pytest: '), output
+        assert head != before
+        assert _git(root, 'log', '-1', '--format=%s').strip() == (
+            'purlin: specs, tests and settings')
+        assert _git(root, 'show', '--name-only', '--format=',
+                    'HEAD').split() == ['.purlin/config.json']
+        section = list(_evidence(root)['platforms'].values())[0]
+        assert section['commit'] == head
+        assert code == 0, output
+
+    # purlin: run_script PROOF-324
+    def test_the_first_run_then_commit_ends_on_the_simple_last_line(
+            self, tmp_path):
+        root = _first_run_checkout(tmp_path)
+        _run(root, '--feature', 'feat', '--test', '--write-tests')
+        code, output = _run(root, '--test', '--commit')
+        assert output.splitlines()[-1] == (
+            'Every rule passes its tests on the committed evidence. '
+            'To sign it: purlin:sign'), output
+        assert code == 0, output
+
+    # purlin: run_script PROOF-325
+    def test_outside_a_git_checkout_the_written_setting_is_not_committed(
+            self, tmp_path):
+        root = _one_passing_test(tmp_path)
+        code, output = _run(root, '--all', '--test', '--write-tests')
+        assert 'Wrote the tests setting to .purlin/config.json.' \
+            in output.splitlines(), output
+        assert not [line for line in output.splitlines()
+                    if line.startswith('Committed')], output
+        assert not (root / '.git').exists()
         assert code == 0, output
 
     # purlin: run_script PROOF-262

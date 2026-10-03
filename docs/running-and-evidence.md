@@ -43,7 +43,8 @@ Suggested tests setting: [{"name": "pytest", "run": "python3 -m pytest {files} -
 
 `purlin:test` compares each suggested command with how the project runs its tests itself, and
 shows you each difference. The run asks `Write this tests setting to .purlin/config.json? [y/N]`.
-On your yes it prints `Wrote the tests setting to .purlin/config.json.` and runs.
+On your yes it prints `Wrote the tests setting to .purlin/config.json.`, commits
+`.purlin/config.json` alone, and runs. The results then name a commit that holds the setting.
 
 Where the run finds no test tool it knows, it prints `No test command is set and no test tool
 Purlin knows was found, so nothing ran. The agent reads the project and proposes a command for
@@ -173,7 +174,7 @@ Each rule's passed cell reads `passed`, `failed`, `partial`, `no test`, `not run
 
 A run of one feature replaces that feature's section and leaves the rest as it was.
 
-Without `--commit` the run commits nothing. `--commit` makes two commits under your own git
+Without `--commit` the run commits no result. `--commit` makes two commits under your own git
 identity:
 
 1. The specs of the features it ran, the test files carrying their markers and

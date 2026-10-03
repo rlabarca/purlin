@@ -103,12 +103,14 @@ Suggested for pytest: python3 -m pytest {files} --junitxml={report}
 
 Your project may run its tests another way, with another interpreter or other options. The
 agent shows you the difference, then asks
-`Write this tests setting to .purlin/config.json? [y/N]`. On your yes the run writes the setting
-and runs the tests. It prints:
+`Write this tests setting to .purlin/config.json? [y/N]`. On your yes the run writes the setting,
+commits the settings file alone, and runs the tests. The results then name a commit that holds
+the command they were taken with. It prints:
 
 ```text
 Wrote the tests setting to .purlin/config.json.
-
+Committed a1b2c3d, the work these results describe:
+  .purlin/config.json
 Running pytest: python3 -m pytest tests/test_cart.py --junitxml=.purlin/runtime/reports/pytest.xml
 
 Markers: 3 tied to a test, 0 not tied.
