@@ -134,12 +134,10 @@ slide('together', 'Working together', 'Product, QA and developers improve the sp
     ('`purlin:spec`', 'Anyone writes or sharpens rules and proofs, with help from AI or by hand.'),
     ('`purlin:build`', 'Writes the code and the tests, with one comment above each test naming its proof.'),
     ('`purlin:test`', 'Runs what changed and states the first fact, %s, or what fails.' % m('Tests: met')),
-    ('`purlin:drift`', 'After a pull: which rules and proofs changed, and any number two branches both took. %s resolves the conflict and renumbers. It asks first.' % m('purlin:spec')),
+    ('`purlin:drift`', 'After a pull, it says which rules and proofs changed.'),
 ], '<b>Nothing is signed while the work goes on.</b> Purlin has no roles: whoever knows the answer edits the spec.',
  'Purlin keeps two facts: whether every rule\'s tests pass on the committed evidence, and whether that '
- 'evidence is signed. Nothing waits on a person while the specs change. When two branches take the '
- 'same rule or proof number, the number already on the default branch keeps it, and the helper '
- 'shows its renumbering plan before changing anything. A test comment whose proof was reworded '
+ 'evidence is signed. Nothing waits on a person while the specs change. A test comment whose proof was reworded '
  'since the test last changed is named on every run.', width=560, pad=16)
 slide('slow', 'Slow tests', 'Slow tests stay out of your way', [
     ('Mark it once', 'Add %s to the end of a proof whose tests take a long time, like integration and acceptance tests.' % m('@slow')),

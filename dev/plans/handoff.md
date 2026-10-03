@@ -123,7 +123,7 @@ The dashboard's data is schema 16.
 10. **`.github/workflows/windows.yml`'s setup step** still holds `if [ -f package.json ]; then
     npm ci; fi`, which this repository has no use for. Not changed, since it runs only on a
     push.
-11. **The deck is published at version 135**: the `slow`, `signoff`, `remote`, `audit` and
+11. **The deck is published at version 136**: the `slow`, `signoff`, `remote`, `audit` and
     `start` slides say what decision 129, the audit and the first run now do. The live deck
     is changed whenever its source is; nothing waits for a later publish.
 
