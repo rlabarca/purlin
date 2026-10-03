@@ -262,7 +262,9 @@ The run goes in this order:
    read. A shell or SQL test file becomes one test that passes when it exits 0. A marker it
    cannot place, such as a module-wide `pytestmark`, is named by file and line and left for you.
    In a Python test whose marker it rewrote, a docstring line that holds nothing but a
-   `[proof:...]` tag is removed; a tag inside a sentence stays.
+   `[proof:...]` tag is removed; a tag inside a sentence stays. In the same step it removes
+   each line naming what 0.9.5 used from `CLAUDE.md`, `AGENTS.md` and the files under
+   `.claude/`, keeping a copy of each file first.
 9. It removes what loaded the pytest plugin from every `conftest.py` in the project (the file
    too, when it held nothing else) and the reporter entry in the Jest or Vitest configuration or
    `package.json`, and names a `.csproj` that compiles the xUnit logger for you to edit by hand.

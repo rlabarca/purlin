@@ -37,6 +37,7 @@ What each group proves:
 *docstrings*  a docstring line that is only a 0.9.5 tag goes
 *scripts*     the proposal cites the script of the project's it matches
 *applying*    a run told to apply prints one line in place of the pending list
+*agent files* the lines naming 0.9.5 go from the files that instruct an agent
 """
 
 import fnmatch
@@ -2095,3 +2096,153 @@ def test_a_left_marker_is_named_at_its_line_after_the_rewrite(tmp_path,
     assert any(line.startswith('  left %s:%d as it was: it names piano '
                                'PROOF-9c' % (MIXED_TS, at))
                for line in printed), printed
+
+
+# --- the lines 0.9.5 wrote into the files that instruct an agent ----------------
+
+AGENT_MD_OLD = (
+    '# Notes for the agent\n'
+    '\n'
+    'Keep each change small. Run the whole suite before a push.\n'
+    '\n'
+    '## Testing\n'
+    '\n'
+    '- Write the spec first.\n'
+    '- Name each test with its marker,\n'
+    '  `[proof:<feature>:PROOF-n:RULE-n:unit]`, so the plugin records it.\n'
+    '  - The tier is the last field.\n'
+    '- Run `npm test` for the rest.\n'
+    '\n'
+    '| Command | What it does |\n'
+    '|---|---|\n'
+    '| `npm test` | runs every test |\n'
+    '| `purlin:verify` | writes the receipts |\n'
+    '\n'
+    '## The proof plugin\n'
+    '\n'
+    'The plugin under `.purlin/plugins/` records each result.\n'
+    '\n'
+    '## Commands\n'
+    '\n'
+    '```\n'
+    'npm test\n'
+    'npm run verify   # purlin:verify\n'
+    '```\n'
+    '\n'
+    'The collector writes `specs/<group>/*.proofs-unit.json` from the\n'
+    'working directory; set it up once. Mixed features keep their\n'
+    'proofs together. The suite takes a minute.\n'
+    '\n'
+    'Rules are numbered. The old collector read `PROOF-4b` from\n'
+    '`.purlin/plugins/vitest_purlin.ts`.\n')
+AGENT_MD_NEW = (
+    '# Notes for the agent\n'
+    '\n'
+    'Keep each change small. Run the whole suite before a push.\n'
+    '\n'
+    '## Testing\n'
+    '\n'
+    '- Write the spec first.\n'
+    '- Run `npm test` for the rest.\n'
+    '\n'
+    '| Command | What it does |\n'
+    '|---|---|\n'
+    '| `npm test` | runs every test |\n'
+    '\n'
+    '## Commands\n'
+    '\n'
+    '```\n'
+    'npm test\n'
+    '```\n'
+    '\n'
+    'Mixed features keep their\n'
+    'proofs together. The suite takes a minute.\n'
+    '\n'
+    'Rules are numbered.\n')
+
+
+def _agent_files(tmp_path, files, argv=('--yes',)):
+    """The sample 0.9.5 project with one test file 0.9.5 marked, so that
+    `markers` is pending, and `files`, updated with `argv`."""
+    root = _project(tmp_path, V095)
+    _write(root, 'tests/test_login.py', OLD_PYTEST)
+    for rel, text in files:
+        _write_bytes(root, rel, text.encode('utf-8'))
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'what 0.9.5 told the agent')
+    _apply(root, argv)
+    return root
+
+
+# purlin: update PROOF-217
+def test_each_line_naming_0_9_5_goes_from_claude_md(tmp_path, capsys):
+    root = _agent_files(tmp_path, (('CLAUDE.md', AGENT_MD_OLD),))
+    assert _read(root, 'CLAUDE.md') == AGENT_MD_NEW
+    assert 'markers' not in _ids(root)
+
+
+SETTINGS_OLD = ('{\n'
+                '  "permissions": {\n'
+                '    "allow": [\n'
+                '      "Bash(npm test)",\n'
+                '      "Skill(purlin:verify)"\n'
+                '    ]\n'
+                '  }\n'
+                '}\n')
+CHECK_SH = ('#!/bin/sh\n'
+            'echo "run purlin:verify before a push"\n')
+
+
+# purlin: update PROOF-218
+def test_agents_md_and_the_claude_folder_lose_the_lines_too(tmp_path, capsys):
+    root = _agent_files(tmp_path, (
+        ('pipeline/AGENTS.md', '# Pipeline\n\n- Run `purlin:verify`.\n'
+                               '- Run `uv run pytest`.\n'),
+        ('.claude/commands/ship.md', 'Ship it.\n\n- Run `purlin:verify`.\n'),
+        ('.claude/commands/check.md', '---\ndescription: Run purlin:verify.\n'
+                                      '---\n\nCheck the build.\n'),
+        ('.claude/settings.json', SETTINGS_OLD),
+        ('.claude/hooks/check.sh', CHECK_SH)))
+    assert _read(root, 'pipeline/AGENTS.md') == (
+        '# Pipeline\n\n- Run `uv run pytest`.\n')
+    assert _read(root, '.claude/commands/ship.md') == 'Ship it.\n'
+    assert _read(root, '.claude/commands/check.md') == (
+        '---\n---\n\nCheck the build.\n')
+    assert json.loads(_read(root, '.claude/settings.json')) == {
+        'permissions': {'allow': ['Bash(npm test)']}}
+    assert _read(root, '.claude/hooks/check.sh') == CHECK_SH
+    printed = capsys.readouterr().out.splitlines()
+    assert '  .claude/hooks/check.sh: 1 line' + CHANGE_FIRST in printed
+
+
+# purlin: update PROOF-219
+def test_the_totals_the_log_and_the_backup_name_each_line_removed(tmp_path,
+                                                                  capsys):
+    root = _agent_files(tmp_path, (('CLAUDE.md', AGENT_MD_OLD),))
+    printed = capsys.readouterr().out.splitlines()
+    totals = printed.index('  markers: rewrote 2 markers in 1 file')
+    assert printed[totals + 1] == (
+        '    removed 6 lines that named 0.9.5 from CLAUDE.md'), printed
+    log = _log(root)
+    assert ('removed CLAUDE.md:9: `[proof:<feature>:PROOF-n:RULE-n:unit]`, '
+            'so the plugin records it.') in log, log
+    assert 'removed CLAUDE.md:16: | `purlin:verify` | writes the receipts |' \
+        in log, log
+    assert 'removed CLAUDE.md:18: ## The proof plugin' in log, log
+    assert 'removed CLAUDE.md:26: npm run verify   # purlin:verify' in log, log
+    assert ('CLAUDE.md:30 now reads: Mixed features keep their') in log, log
+    assert _read_bytes(root, BACKUPS + '/CLAUDE.md') == \
+        AGENT_MD_OLD.encode('utf-8')
+    assert not [line for line in printed if line.startswith('  CLAUDE.md:')]
+    assert _git(root, 'status', '--porcelain').stdout == ''
+
+
+# purlin: update PROOF-220
+def test_claude_md_is_left_where_markers_is_declined(tmp_path, capsys,
+                                                     monkeypatch):
+    _answers(monkeypatch, rules=(('Apply markers', 'n'),))
+    root = _agent_files(tmp_path, (('CLAUDE.md', AGENT_MD_OLD),), argv=())
+    assert _read(root, 'CLAUDE.md') == AGENT_MD_OLD
+    printed = capsys.readouterr().out.splitlines()
+    assert not [line for line in printed if 'that named 0.9.5' in line]
+    assert '  CLAUDE.md: 6 lines' + CHANGE_FIRST in printed, printed

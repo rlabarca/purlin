@@ -1674,8 +1674,341 @@ def _marked_old(root):
 
 
 def _detect_markers(root):
-    return [rel for rel, (_new, count, _left) in _marked_old(root).items()
-            if count]
+    """The test files with a marker to rewrite and, where there is one, the
+    files that instruct an agent with a line naming what 0.9.5 used: those
+    lines go in the same migration, so they alone hold nothing pending."""
+    tests = [rel for rel, (_new, count, _left) in _marked_old(root).items()
+             if count]
+    return (_agent_files(root) + tests) if tests else []
+
+
+# --- the lines 0.9.5 wrote into the files that instruct an agent ------------
+AGENT_LINES_WENT = 'removed %d line%s that named 0.9.5 from %s'
+AGENT_TEXT = ('.md', '.markdown', '.mdc', '.txt')
+AGENT_JSON = ('.json',)
+_FENCE_RE = re.compile(r'^[ \t]{0,3}(`{3,}|~{3,})')
+_ITEM_RE = re.compile(r'^([ \t]*)(?:[-*+]|\d{1,9}[.)])(?:[ \t]+|$)')
+_HEADING_RE = re.compile(r'^[ \t]{0,3}(#{1,6})(?:[ \t]|$)')
+_BREAK_RE = re.compile(r'^[ \t]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|'
+                       r'(?:_[ \t]*){3,})$')
+_ROW_RE = re.compile(r'^[ \t]*\|')
+_QUOTE_RE = re.compile(r'^[ \t]*>')
+_SEPARATOR_RE = re.compile(r'^[ \t]*\|?[ \t]*:?-{1,}')
+# A sentence ends at `.`, `!` or `?`, with any closing mark after it, where
+# white space and then anything but a lowercase letter follow.
+_SENTENCE_END_RE = re.compile(r'[.!?][)\]"\'*_`]*(\s+)(?=[^\sa-z])')
+
+
+def _names_old(text):
+    return any(needle in text for needle in LEFT_NEEDLES)
+
+
+def _agent_files(root):
+    """Each tracked file that instructs an agent and holds a line naming
+    what 0.9.5 used, in the order the list of what is left gives them."""
+    return [rel for rel, _count in left_for_owner(root)
+            if _agent_rank(rel) is not None
+            and os.path.splitext(rel)[1].lower() in AGENT_TEXT + AGENT_JSON]
+
+
+def _line_kinds(lines):
+    """One kind per line: `front` for the lines that open and close the
+    settings at the top of the file and `meta` between them, `code` inside a
+    fenced block, `fence`, `blank`, `heading`, `break`, `row`, `quote`,
+    `item` for a list item's first line, and `text` for any other."""
+    kinds, fence = [], None
+    if lines and lines[0].strip() == '---':
+        close = next((index for index in range(1, len(lines))
+                      if lines[index].strip() == '---'), None)
+        if close is not None:
+            kinds = ['front'] + ['meta'] * (close - 1) + ['front']
+    for line in lines[len(kinds):]:
+        opened = _FENCE_RE.match(line)
+        if fence is not None:
+            if opened and opened.group(1)[0] == fence[0] \
+                    and len(opened.group(1)) >= len(fence) \
+                    and not line[opened.end():].strip():
+                kinds.append('fence')
+                fence = None
+            else:
+                kinds.append('code')
+            continue
+        if opened:
+            kinds.append('fence')
+            fence = opened.group(1)
+        elif not line.strip():
+            kinds.append('blank')
+        elif _HEADING_RE.match(line):
+            kinds.append('heading')
+        elif _BREAK_RE.match(line):
+            kinds.append('break')
+        elif _ROW_RE.match(line):
+            kinds.append('row')
+        elif _QUOTE_RE.match(line):
+            kinds.append('quote')
+        elif _ITEM_RE.match(line):
+            kinds.append('item')
+        else:
+            kinds.append('text')
+    return kinds
+
+
+def _kind_runs(kinds, kind):
+    """`[(first, last)]`: each run of consecutive lines of `kind`."""
+    runs, start = [], None
+    for index, found in enumerate(kinds + [None]):
+        if found == kind and start is None:
+            start = index
+        elif found != kind and start is not None:
+            runs.append((start, index - 1))
+            start = None
+    return runs
+
+
+def _sentence_cuts(joined):
+    """`[(start, end)]`: the stretches of `joined`, a paragraph, that go: each
+    sentence naming what 0.9.5 used, with the white space on the side of it
+    that keeps the paragraph's line breaks where it can."""
+    sentences, start = [], 0
+    for found in _SENTENCE_END_RE.finditer(joined):
+        sentences.append((start, found.start(1), found.end(1)))
+        start = found.end(1)
+    sentences.append((start, len(joined), len(joined)))
+    cuts = []
+    for index, (begin, end, gap_end) in enumerate(sentences):
+        if not _names_old(joined[begin:end]):
+            continue
+        before = sentences[index - 1][1] if index else begin
+        last = index == len(sentences) - 1
+        if index and (last or '\n' not in joined[before:begin]):
+            cuts.append((before, end))
+        else:
+            cuts.append((begin, gap_end))
+    return cuts
+
+
+def _paragraph(lines, first, last, gone, now):
+    """The sentences naming what 0.9.5 used go from the paragraph on lines
+    `first` to `last`; a line left empty goes, and a line left in part is
+    given its new text in `now`."""
+    texts = [line.rstrip('\r\n') for line in lines[first:last + 1]]
+    joined = '\n'.join(texts)
+    if not _names_old(joined):
+        return
+    keep = [True] * len(joined)
+    for begin, end in _sentence_cuts(joined):
+        for position in range(begin, end):
+            keep[position] = False
+    starts, at = [], 0
+    for text in texts:
+        starts.append(at)
+        at += len(text) + 1
+    # The paragraph as it now reads: a row for each line break kept, each
+    # row placed on the line its first character comes from.
+    rows, row = [], []
+    for position, char in enumerate(joined):
+        if keep[position] and char == '\n':
+            rows.append(row)
+            row = []
+        elif keep[position]:
+            row.append(position)
+    rows.append(row)
+    placed = {}
+    for row in rows:
+        text = ''.join(joined[position] for position in row)
+        if not text.strip():
+            continue
+        offset = max(number for number, start in enumerate(starts)
+                     if start <= row[0])
+        if row[0] != starts[offset]:
+            text = text.lstrip()
+        placed[offset] = text.rstrip()
+    for offset, text in enumerate(texts):
+        index = first + offset
+        if offset not in placed:
+            gone[index] = True
+        elif placed[offset] != text:
+            now[index] = placed[offset] + (lines[index][len(text):] or '\n')
+
+
+def _section_holds(lines, kinds, gone, index):
+    """True where the heading on line `index` has a line under it, before the
+    next heading of its level or above, that is not blank, not a break and
+    not gone."""
+    level = len(_HEADING_RE.match(lines[index]).group(1))
+    for later in range(index + 1, len(lines)):
+        if gone[later]:
+            continue
+        if kinds[later] == 'heading' and len(
+                _HEADING_RE.match(lines[later]).group(1)) <= level:
+            return False
+        if kinds[later] not in ('blank', 'break'):
+            return True
+    return False
+
+
+def without_old_markdown(text):
+    """`(new text, lines that named 0.9.5, log lines)` for a Markdown file
+    that instructs an agent.
+
+    Each line naming what 0.9.5 used goes with the part of the file it
+    belongs to: a list item whole, with the lines that continue it and the
+    items under it; a table row alone, and the table where no row is left;
+    a line of a fenced code block alone, and the block where nothing is left
+    in it; the sentence holding it in a paragraph. A heading left with
+    nothing under it goes too, and the blank lines a removal leaves side by
+    side become one. Every other line is as it was.
+    """
+    lines = text.splitlines(True)
+    kinds = _line_kinds(lines)
+    named = [_names_old(line) for line in lines]
+    gone, now = [False] * len(lines), {}
+    for index, kind in enumerate(kinds):
+        if kind in ('heading', 'quote', 'meta') and named[index]:
+            gone[index] = True
+    # A list item: its own lines run to the next item, a blank line or
+    # another kind; its whole runs on over the items set deeper under it.
+    for index, kind in enumerate(kinds):
+        if kind != 'item':
+            continue
+        indent = len(_ITEM_RE.match(lines[index]).group(1).expandtabs(4))
+        own, end = True, index
+        for later in range(index + 1, len(lines)):
+            if kinds[later] == 'item':
+                deeper = len(_ITEM_RE.match(lines[later]).group(1)
+                             .expandtabs(4)) > indent
+                if not deeper:
+                    break
+                own = False
+            elif kinds[later] not in ('text', 'quote'):
+                break
+            end = later
+            if own and named[later]:
+                named[index] = True
+        if named[index]:
+            for later in range(index, end + 1):
+                gone[later] = True
+    for first, last in _kind_runs(kinds, 'row'):
+        head = range(first, min(first + 2, last + 1))
+        if any(named[index] for index in head):
+            for index in range(first, last + 1):
+                gone[index] = True
+            continue
+        body = range(first + 2, last + 1) if (
+            last > first and _SEPARATOR_RE.match(lines[first + 1])) \
+            else range(first + 1, last + 1)
+        for index in body:
+            if named[index]:
+                gone[index] = True
+        if body and all(gone[index] for index in body) \
+                and any(named[index] for index in body):
+            for index in range(first, last + 1):
+                gone[index] = True
+    opened = None
+    for index, kind in enumerate(kinds):
+        if kind == 'fence' and opened is None:
+            opened = index
+        elif kind == 'fence':
+            inside = range(opened + 1, index)
+            for at in inside:
+                if named[at]:
+                    gone[at] = True
+            if inside and all(gone[at] for at in inside) \
+                    and any(named[at] for at in inside):
+                gone[opened] = gone[index] = True
+            opened = None
+    for first, last in _kind_runs(kinds, 'text'):
+        if not all(gone[index] for index in range(first, last + 1)):
+            _paragraph(lines, first, last, gone, now)
+    # A heading left with nothing under it goes, the deepest first, so a
+    # heading whose only content was such a heading goes with it.
+    for index in reversed(range(len(lines))):
+        if kinds[index] == 'heading' and not gone[index] \
+                and _section_holds(lines, kinds, [False] * len(lines), index) \
+                and not _section_holds(lines, kinds, gone, index):
+            gone[index] = True
+    if not any(gone) and not now:
+        return text, 0, []
+    # The blank lines a removal leaves side by side become one, and so do
+    # two breaks; none is left at the start or the end of the file.
+    kept, removed = [], False
+    for index, kind in enumerate(kinds):
+        if gone[index]:
+            removed = True
+            continue
+        if removed and kind == 'blank' and (
+                not kept or kinds[kept[-1]] == 'blank'):
+            continue
+        if removed and kind == 'break':
+            above = [at for at in kept if kinds[at] != 'blank']
+            if not above or kinds[above[-1]] == 'break':
+                continue
+        kept.append(index)
+        if kind != 'blank':
+            removed = False
+    if removed:
+        while kept and kinds[kept[-1]] == 'blank':
+            kept.pop()
+    new = ''.join(now.get(index, lines[index]) for index in kept)
+    log = []
+    for index, line in enumerate(lines):
+        if gone[index] and line.strip():
+            log.append('removed %%s:%d: %s' % (index + 1, line.strip()))
+        elif index in now:
+            log.append('%%s:%d now reads: %s' % (index + 1, now[index].strip()))
+    return new, sum(1 for line in lines if _names_old(line)), log
+
+
+def without_old_json(text):
+    """`(new text, lines that named 0.9.5, log lines)` for a JSON file that
+    instructs an agent, each such line gone; the text as it was where what
+    is left does not read as JSON."""
+    lines = text.splitlines(True)
+    named = [index for index, line in enumerate(lines) if _names_old(line)]
+    if not named:
+        return text, 0, []
+    kept = [index for index in range(len(lines)) if index not in named]
+    rows = dict((index, lines[index]) for index in kept)
+    # An entry that was the last of its list leaves a comma behind it.
+    for position, index in enumerate(kept[:-1]):
+        after = kept[position + 1]
+        if index + 1 != after and rows[index].rstrip().endswith(',') \
+                and lines[after].lstrip()[:1] in (']', '}'):
+            body = rows[index].rstrip('\r\n')
+            rows[index] = body.rstrip()[:-1] + rows[index][len(body):]
+    new = ''.join(rows[index] for index in kept)
+    try:
+        json.loads(new)
+    except ValueError:
+        return text, 0, []
+    return new, len(named), ['removed %%s:%d: %s' % (index + 1,
+                                                     lines[index].strip())
+                             for index in named]
+
+
+def _clean_agent_files(root, files, out):
+    """The lines naming what 0.9.5 used go from each file that instructs an
+    agent, each file kept as it was first, and each line counted."""
+    for rel in files:
+        ext = os.path.splitext(rel)[1].lower()
+        path = os.path.join(root, *rel.split('/'))
+        try:
+            with open(path, 'r', encoding='utf-8', newline='') as handle:
+                text = handle.read()
+        except (IOError, OSError, UnicodeDecodeError):
+            continue
+        clean = without_old_json if ext in AGENT_JSON \
+            else without_old_markdown
+        new, count, log = clean(text)
+        if new == text or not count:
+            continue
+        out.kept(_back_up_copy(root, rel))
+        with open(path, 'w', encoding='utf-8', newline='') as handle:
+            handle.write(new)
+        out.done(rel)
+        for line in log:
+            out.note(line % rel)
+        out.say(AGENT_LINES_WENT % (count, '' if count == 1 else 's', rel))
 
 
 def _apply_markers(root, files, args, out):
@@ -1714,7 +2047,9 @@ def _apply_markers(root, files, args, out):
                'exits 0' if whole else ''))
     if tag_lines:
         out.say(TAG_LINES_WENT % (tag_lines, '' if tag_lines == 1 else 's'))
-    held = set((_spec_name(spec), old)
+    _clean_agent_files(root, [rel for rel in files if rel not in found],
+                       out)
+    held =set((_spec_name(spec), old)
                for spec, pairs in _lettered_specs(root).items()
                for old, _new in pairs)
     for rel, (_new, count, left) in sorted(found.items()):
@@ -1962,8 +2297,9 @@ MIGRATIONS = (
     ('lettered-proofs', 'give each proof numbered with a letter, such as '
      'PROOF-3b, the next free number in its spec', _detect_lettered,
      _apply_lettered),
-    ('markers', 'rewrite each 0.9.5 marker as a comment above its test',
-     _detect_markers, _apply_markers),
+    ('markers', 'rewrite each 0.9.5 marker as a comment above its test, and '
+     'remove each line naming what 0.9.5 used from CLAUDE.md, AGENTS.md and '
+     'the files under .claude/', _detect_markers, _apply_markers),
     ('plugins', 'remove the proof plugin copies and the wiring that loaded '
      'them', _detect_plugins, _apply_plugins),
 )
