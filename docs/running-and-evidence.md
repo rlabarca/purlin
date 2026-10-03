@@ -42,7 +42,7 @@ Suggested tests setting: [{"name": "pytest", "run": "python3 -m pytest {files} -
 ```
 
 `purlin:test` compares each suggested command with how the project runs its tests itself, and
-shows you each difference. The run asks `Write this tests setting to .purlin/config.json? [y/N]`.
+shows you each difference. The run asks `Write this tests setting to .purlin/config.json and commit that file? [y/N]`.
 On your yes it prints `Wrote the tests setting to .purlin/config.json.`, commits
 `.purlin/config.json` alone, and runs. The results then name a commit that holds the setting.
 

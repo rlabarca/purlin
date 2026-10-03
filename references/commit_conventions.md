@@ -10,7 +10,7 @@ Every commit Purlin makes, or asks you to make, uses one of these. There is no o
 | `feat(<name>):` | Implementing a feature, with the changeset in the body | `purlin:build` |
 | `fix(<name>):` | Fixing a bug | `purlin:build` |
 | `test(<name>):` | Writing or changing tests without changing behaviour | `purlin:build` |
-| `purlin: specs, tests and settings for <feature>[, <feature>...]`, or `for <n> features` over 5 | The specs of the features a run covered, the test files carrying their markers, and `.purlin/config.json`: the work the run's results describe | `purlin:test --commit`, `purlin:audit --commit` |
+| `purlin: specs, tests and settings for <feature>[, <feature>...]`, or `for <n> features` over 5 | The specs of the features a run covered, the test files carrying their markers, and `.purlin/config.json`: the work the run's results describe. With no feature named, the settings file alone, which a first run commits once the test command is confirmed | `purlin:test --commit`, `purlin:audit --commit`, and the first test run |
 | `purlin: evidence at <commit7>` | The evidence a run wrote, under `.purlin/evidence/` | `purlin:test --commit`, `purlin:audit --commit`, and a project's own run on another system |
 | `sign(<version>): <signer email>` | One sign-off over a version's evidence package, signed; the first of a version carries the package too | `purlin:sign` |
 | `anchor(<name>): create` | A new local anchor | `purlin:anchor create` |
@@ -39,7 +39,8 @@ chore: rename login to authentication
 
 ## The two commits of a run
 
-`purlin:test` and `purlin:audit` write the evidence and commit nothing. With `--commit` they
+`purlin:test` and `purlin:audit` write the evidence and commit none of it. A first run commits
+the settings file alone, once the test command is confirmed. With `--commit` they
 make two commits in one step, the work and then the results that describe it:
 
 ```

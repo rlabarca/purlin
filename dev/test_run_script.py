@@ -1364,7 +1364,7 @@ class TestNoTestCommand:
         before = (root / '.purlin' / 'config.json').read_bytes()
         code, output = _run(root, '--all', '--test')
         assert output.endswith(
-            '\nWrite this tests setting to .purlin/config.json? [y/N] '), \
+            '\nWrite this tests setting to .purlin/config.json and commit that file? [y/N] '), \
             output
         assert (root / '.purlin' / 'config.json').read_bytes() == before
         assert code == 1, output

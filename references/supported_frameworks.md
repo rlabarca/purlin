@@ -19,7 +19,7 @@ A framework that needs something added before it can write that report gets one 
 right after its own, saying what. The run then asks:
 
 ```
-Write this tests setting to .purlin/config.json? [y/N]
+Write this tests setting to .purlin/config.json and commit that file? [y/N]
 ```
 
 On a yes it writes the suggested setting under `tests`, prints

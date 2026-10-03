@@ -243,7 +243,7 @@ NO_TEST_COMMAND = ('No test command is set in .purlin/config.json, so nothing '
 SUGGESTED_FOR = 'Suggested for %s: %s'
 SUGGESTED_SETTING = 'Suggested tests setting: %s'
 # Asked after a suggested `tests` setting, as '%s [y/N] ', and what a yes prints.
-WRITE_QUESTION = 'Write this tests setting to .purlin/config.json?'
+WRITE_QUESTION = 'Write this tests setting to .purlin/config.json and commit that file?'
 WROTE_TESTS = 'Wrote the tests setting to .purlin/config.json.'
 NO_TEST_TOOL = ('No test command is set and no test tool Purlin knows was '
                 'found, so nothing ran. The agent reads the project and '

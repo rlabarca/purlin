@@ -94,7 +94,7 @@ on its input, takes the end of input as no, and goes on only with a typed answer
 |--------------|------------|--------------|
 | `Commit the files setup wrote? [y/N]` | `scripts/init/scaffold.py` | `--yes` |
 | `Do it? [y/N]`, before renumbering | `scripts/spec/renumber.py` | `--yes` |
-| `Write this tests setting to .purlin/config.json? [y/N]` | `scripts/run/purlin_run.py` | `--write-tests` |
+| `Write this tests setting to .purlin/config.json and commit that file? [y/N]` | `scripts/run/purlin_run.py` | `--write-tests` |
 | `Sign the evidence package for <version> as <email>? Type that address to sign:` | `scripts/review/sign.py --answers <file>` | the signer's address, typed by the person, as `sign` in the answers file |
 
 ## Core
@@ -165,7 +165,7 @@ Purlin
   Project
   ──────
   purlin:init                     Set the project up
-  purlin:init --update            Bring a 0.9.5 project up to the installed plugin
+  purlin:init --update            Bring a 0.9.5 project up to the installed plugin, or restore a file setup writes
   purlin:anchor create <name>     A local anchor
   purlin:anchor add <url> --path <file> [--name <name>]   Pin an anchor from another repository
   purlin:anchor sync [name|--all] [--check]   Advance a pin
@@ -179,7 +179,7 @@ Purlin
 |---------|--------|
 | `purlin:spec`, `purlin:spec-from-code` | `specs/<category>/<name>.md` |
 | `purlin:build` | Code, test files with a marker comment above each test, the repairs to marker comments it asked about, and the commit carrying the changeset |
-| `purlin:test` | Each suite's report under `.purlin/runtime/reports/`, which is not committed, and this system's section of `.purlin/evidence/local/<feature>.json`. `--commit` makes two commits: the specs of the features run, the test files carrying their markers and `.purlin/config.json` as `purlin: specs, tests and settings for <feature>, ...`, then the evidence as `purlin: evidence at <sha7>`; it never pushes. On the first run it writes the `tests` entry once you answer yes, or with `--write-tests`. |
+| `purlin:test` | Each suite's report under `.purlin/runtime/reports/`, which is not committed, and this system's section of `.purlin/evidence/local/<feature>.json`. `--commit` makes two commits: the specs of the features run, the test files carrying their markers and `.purlin/config.json` as `purlin: specs, tests and settings for <feature>, ...`, then the evidence as `purlin: evidence at <sha7>`; it never pushes. On the first run it writes the `tests` entry once you answer yes, or with `--write-tests`, and commits `.purlin/config.json` alone. |
 | `purlin:audit` | The same section, plus what the audit found under `audit`, in `.purlin/evidence/local/<feature>.json`, which `--commit` commits in the same two commits; it never pushes. A planted bug is made in a copy of the project and nowhere else |
 | `purlin:sign` | Once the signer answers yes, or types their address where the agent asks, one signed commit `sign(<version>): <signer email>`. The first sign-off of a version carries `.purlin/evidence/package/<version>.json` and `.purlin/evidence/package/<version>.signoffs/<signer-slug>.json`, and writes the signed tag `signed/<version>` on that commit, which a person pushes; a later sign-off adds its own file alone. `--show` and `--check` write nothing. The skill writes the answers it collects to `.purlin/runtime/signoff-answers.json`, which is not committed. On any refusal it writes nothing |
 | `purlin:init` | `.purlin/`, `specs/`, `.purlin/config.json` holding `version` and an empty `tests` setting, a block in `.gitignore`, `.purlin/evidence/` with its README, and `purlin-report.html` at the project root. It commits the files it wrote in one commit, `chore(init): set up Purlin`, once you agree or with `--yes`. `--update` commits what it applied as `chore(update): migrate to <VERSION> (<ids>)` |
@@ -208,8 +208,9 @@ A run that stops before running anything writes nothing and names the command th
   tool, then for each tool it recognises `Suggested for <name>: <run>` followed by what that
   tool needs added where it needs something, then
   `Suggested tests setting: <the entries as one JSON array on one line>` and the question
-  `Write this tests setting to .purlin/config.json? [y/N]`. On a yes, or with `--write-tests`,
-  it prints `Wrote the tests setting to .purlin/config.json.` and runs.
+  `Write this tests setting to .purlin/config.json and commit that file? [y/N]`. On a yes, or with `--write-tests`,
+  it prints `Wrote the tests setting to .purlin/config.json.`, commits `.purlin/config.json` alone
+  where the project is a git checkout, and runs.
 - `No test command is set and no test tool Purlin knows was found, so nothing ran. The agent reads the project and proposes a command for you to confirm.`
 
 A run names each rule where it reports the problem:
@@ -259,5 +260,7 @@ When the status carries the line `→ Run: purlin:init --update`, stop before do
 work, say so, and ask whether to run `purlin:init --update` now. A spec written against a
 layout the installed plugin does not read is written against an answer it drops.
 
-`purlin:init --update` names one migration per line with its id, what it does and the files it
-counted, ends with `→ Run: purlin:init --update`, and asks before applying each one.
+On a project 0.9.5 set up, `purlin:init --update` names one migration per line with its id, what
+it does and the files it counted, ends with `→ Run: purlin:init --update`, and asks before
+applying each one. On any other project it names each file setup writes that is missing and
+asks before restoring each one.
