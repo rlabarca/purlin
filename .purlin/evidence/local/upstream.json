@@ -2,8 +2,8 @@
   "feature": "upstream",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T02:47:43Z",
-      "commit": "df3c6f81857297b64a8bf7c58a23b09b8c34d3f8",
+      "at": "2026-10-03T16:58:50Z",
+      "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {

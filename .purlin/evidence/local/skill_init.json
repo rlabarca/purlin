@@ -2,14 +2,14 @@
   "feature": "skill_init",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T02:47:42Z",
-      "commit": "df3c6f81857297b64a8bf7c58a23b09b8c34d3f8",
+      "at": "2026-10-03T16:58:50Z",
+      "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "23ee851673177571a52be762996435623ea8c6af5e8f5a80b316efc3f986b0e7",
-        "spec": "09bbeeaaac75062a3b5e595b60cb18e984a9e9b843ff03d6407be99fff5c8de0",
-        "tests": "a54794c609b6aedd5c62a872688138b9e4f6baaed6f280fcb9a9664799b75be7"
+        "code": "e7255d0a68d4b6be66eed8d337e0a14c187c89c476ce34b5885581c505aa210f",
+        "spec": "ceeadfb31e0bb0da750e9c76cae8237ae21a14213f1f7f0b0b4dd69602adbd22",
+        "tests": "d3d83e052f03cb618fe7dda63720d2232297dbd7ec017a06f64b8cb7d4929e08"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -52,11 +52,28 @@
           "result": "pass",
           "rule": "RULE-88",
           "test": "dev/test_skill_init.py::test_the_flags_the_upgrade_part_hands_apply_one_migration_unasked"
+        },
+        {
+          "env": null,
+          "id": "PROOF-101",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-89",
+          "test": "dev/test_skill_init.py::test_the_restoring_part_names_the_files_then_lists_asks_and_restores"
+        },
+        {
+          "env": null,
+          "id": "PROOF-102",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-89",
+          "test": "dev/test_skill_init.py::test_the_lines_the_restoring_part_quotes_are_the_ones_the_script_prints"
         }
       ],
       "rules": {
         "RULE-87": "passed",
-        "RULE-88": "passed"
+        "RULE-88": "passed",
+        "RULE-89": "passed"
       },
       "runner": "rich-labarca"
     }

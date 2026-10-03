@@ -2,14 +2,14 @@
   "feature": "states",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T02:47:43Z",
-      "commit": "df3c6f81857297b64a8bf7c58a23b09b8c34d3f8",
+      "at": "2026-10-03T16:58:50Z",
+      "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "e56d459be383690faa94e3f8a9d9655b1fb685b8cc1647b7fc1c0ce2a5f82701",
-        "spec": "2f471799af6f3d34d6313a7b962e9862b730d8d51235253e7f4fa73a28e83e99",
-        "tests": "0fc4fad1a2c54058f9634a2b10f033f4867654b63ebcdcf515b0074471ffb301"
+        "code": "c3bf79e91f1de03232b7a5edec089e0053bbdffe287fa59cea51af0d2a700a1c",
+        "spec": "5068e90e37d47504d0f94bb3748c70db1862af5c8d9f0240c2937ac9a9571fd9",
+        "tests": "d7a07cb2c3fa2b886e53a4d30ca39ceac8905def006916a91d9ac7426cb720b6"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -671,6 +671,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-326",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-138",
+          "test": "dev/test_states.py::TestPayload::test_a_proof_names_the_commit_its_results_were_carried_from"
+        },
+        {
+          "env": null,
           "id": "PROOF-236",
           "manual": false,
           "result": "pass",
@@ -965,6 +973,7 @@
         "RULE-135": "passed",
         "RULE-136": "passed",
         "RULE-137": "passed",
+        "RULE-138": "passed",
         "RULE-14": "passed",
         "RULE-16": "passed",
         "RULE-23": "passed",

@@ -2,12 +2,12 @@
   "feature": "windows_run",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T02:47:43Z",
-      "commit": "df3c6f81857297b64a8bf7c58a23b09b8c34d3f8",
+      "at": "2026-10-03T16:58:50Z",
+      "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "7e050e4961635bc00d7fc3b1568fdbf091a068923a21471e28beab91fddd23fa",
+        "code": "da36fb0d0d26d529da3e30202f57577fc41af55ad9d10dd92607ddc3904b85f8",
         "spec": "86773a0ca775404b0236263c93e13badc074f866881e5bd933495eab48847985",
         "tests": "a93bea2cf3c58d3b13a1b93150afb0110bc26481b4cdf6ae3fbe9eb664de82dd"
       },

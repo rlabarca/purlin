@@ -2,14 +2,14 @@
   "feature": "summary",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T02:47:43Z",
-      "commit": "df3c6f81857297b64a8bf7c58a23b09b8c34d3f8",
+      "at": "2026-10-03T16:58:50Z",
+      "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "8ad9943aa13018f68e15c83d10bf7de71c5e94eb3913165448e78b4901e43da4",
-        "spec": "270c1bdddb922d13d94dba0cc9ba39d99dd2065ecd98dcfcf6e5553be861dd35",
-        "tests": "91e681ee750e69a8ecfba98232c80f1f616a4e6027317574f7b743cd445e2acd"
+        "code": "cba89e542bbd2e888caa6e349e293835484a03dd56bddbfe338febd4cde686dd",
+        "spec": "7a99aac2b05c7f7c911cf9c11b4b2269059d7c4cb099f6ae663cae964d3dc2db",
+        "tests": "b33f5af93517eba366987e736fa980f41780fe75527d9294fa2ed3e94910af59"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -219,7 +219,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-27",
-          "test": "dev/test_summary.py::TestTheLastLineAgreesWithTheSignOff::test_results_taken_before_a_later_commit_name_the_run_first"
+          "test": "dev/test_summary.py::TestTheLastLineAgreesWithTheSignOff::test_results_recorded_before_a_later_commit_name_the_run_first"
         },
         {
           "env": null,
@@ -227,7 +227,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-27",
-          "test": "dev/test_summary.py::TestTheLastLineAgreesWithTheSignOff::test_a_kept_slow_result_names_the_run_first"
+          "test": "dev/test_summary.py::TestTheLastLineAgreesWithTheSignOff::test_a_result_carried_forward_ends_on_the_sign_off"
         },
         {
           "env": null,

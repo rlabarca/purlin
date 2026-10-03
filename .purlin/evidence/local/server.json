@@ -2,14 +2,14 @@
   "feature": "server",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T02:47:42Z",
-      "commit": "df3c6f81857297b64a8bf7c58a23b09b8c34d3f8",
+      "at": "2026-10-03T16:58:50Z",
+      "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "8fa30478174b4f0b1bd42577a0614753335d5c0dfd19982b1c3710a712ceeb0b",
-        "spec": "1049544573cda2004d9ab39143c650dceb7f43aa770514f0a364e85c20a9987e",
-        "tests": "3e62db6c9751f7bb566f24c6d40cfac20f1bc350d94f39e7e3256beded5c10e3"
+        "code": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "spec": "97c665b761aa2eafb7efe9ae9cd4b46b3b575e0cd56c1ed53bd5dd7b7dc778b9",
+        "tests": "086882838a9a52cac3c194fb88e8211d44f6aec7d4eeefbc1756b50cb571a39c"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -340,6 +340,30 @@
           "result": "pass",
           "rule": "RULE-44",
           "test": "dev/test_mcp_server.py::TestOneSpecsView::test_a_rule_with_no_proof_lists_the_tests_marked_with_its_id"
+        },
+        {
+          "env": null,
+          "id": "PROOF-186",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-45",
+          "test": "dev/test_mcp_server.py::TestACarriedResultInTheView::test_a_carried_proof_names_the_commit_and_the_system"
+        },
+        {
+          "env": null,
+          "id": "PROOF-187",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-45",
+          "test": "dev/test_mcp_server.py::TestACarriedResultInTheView::test_a_result_the_run_took_has_no_such_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-188",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-45",
+          "test": "dev/test_mcp_server.py::TestACarriedResultInTheView::test_a_carried_test_of_a_rule_with_no_proof_is_named_too"
         }
       ],
       "rules": {
@@ -357,6 +381,7 @@
         "RULE-42": "passed",
         "RULE-43": "passed",
         "RULE-44": "passed",
+        "RULE-45": "passed",
         "RULE-5": "not run",
         "RULE-6": "not run",
         "RULE-7": "passed",

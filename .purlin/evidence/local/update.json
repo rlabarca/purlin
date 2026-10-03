@@ -2,14 +2,14 @@
   "feature": "update",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T02:47:43Z",
-      "commit": "df3c6f81857297b64a8bf7c58a23b09b8c34d3f8",
+      "at": "2026-10-03T16:58:50Z",
+      "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "77135cc61377d403fec71acd3dfadfaa5da8b76907c9b882b895558555513843",
-        "spec": "70d7a924142872b1f542252709aeb3ec63e684f2177184d54b9447abfb5d6569",
-        "tests": "b23218fff316c33d2d66f8ac04f116695db82da72dd21541c77a02cf3ff9773e"
+        "code": "8d4a108855f4c4d9ad80b171eea46e02a054622844a3d1f2538968a1242c165a",
+        "spec": "19eac679801822452c4495fb2ea7f3d28a1eac599d2ce472a4105a93b04eaba5",
+        "tests": "b2ea44bdc19db0a5f1eb51e99ed4dee0336edbeefd5437909aa1df17be6a1ca1"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -788,6 +788,70 @@
           "result": "pass",
           "rule": "RULE-73",
           "test": "dev/test_init_update.py::test_claude_md_is_left_where_markers_is_declined"
+        },
+        {
+          "env": null,
+          "id": "PROOF-221",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-74",
+          "test": "dev/test_init_update.py::test_a_project_of_this_release_has_its_missing_files_restored_and_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-224",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-74",
+          "test": "dev/test_init_update.py::test_a_restoring_run_lists_each_file_and_asks_about_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-222",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-75",
+          "test": "dev/test_init_update.py::test_a_restoring_run_ends_as_the_status_ends"
+        },
+        {
+          "env": null,
+          "id": "PROOF-223",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-75",
+          "test": "dev/test_init_update.py::test_a_restoring_run_says_nothing_of_0_9_5_and_keeps_no_copy"
+        },
+        {
+          "env": null,
+          "id": "PROOF-225",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-75",
+          "test": "dev/test_init_update.py::test_one_file_restored_leaves_the_other_and_the_status_names_the_update"
+        },
+        {
+          "env": null,
+          "id": "PROOF-226",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-76",
+          "test": "dev/test_init_update.py::test_a_stale_version_and_a_page_not_shipped_are_restored_too"
+        },
+        {
+          "env": null,
+          "id": "PROOF-227",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-76",
+          "test": "dev/test_init_update.py::test_settings_with_no_tests_setting_make_it_a_project_0_9_5_set_up"
+        },
+        {
+          "env": null,
+          "id": "PROOF-228",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-76",
+          "test": "dev/test_init_update.py::test_a_line_0_9_5_wrote_in_gitignore_makes_it_a_project_0_9_5_set_up"
         }
       ],
       "rules": {
@@ -824,6 +888,9 @@
         "RULE-71": "passed",
         "RULE-72": "passed",
         "RULE-73": "passed",
+        "RULE-74": "passed",
+        "RULE-75": "passed",
+        "RULE-76": "passed",
         "RULE-9": "passed"
       },
       "runner": "rich-labarca"

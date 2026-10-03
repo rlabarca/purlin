@@ -1000,14 +1000,14 @@
   "feature": "package",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T02:47:41Z",
-      "commit": "df3c6f81857297b64a8bf7c58a23b09b8c34d3f8",
+      "at": "2026-10-03T16:58:49Z",
+      "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "spec": "d88c90152bbce4728cfe87b638e598ed14d1f40886159ba486177994e6b7968b",
-        "tests": "41d8fa8f9411d8fd3d0e948780dc0f064596919c488ec0a144265ae5fa8ac43d"
+        "code": "9d658ba7ecc4188aaf7c6586ef70d852573fe58ff5ee96d6163ddca640d06966",
+        "spec": "5efa8cce73ed6ef96d4c3e8205cc97203b34c06668ba1623abfafc6df4140db5",
+        "tests": "b047cfbeadf1b1ab1c055524350a603a3869dda647efc276deb33b4c5d515562"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -1277,6 +1277,14 @@
         },
         {
           "env": null,
+          "id": "PROOF-85",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-32",
+          "test": "dev/test_export.py::TestTheRuns::test_carried_results_are_a_run_of_their_own"
+        },
+        {
+          "env": null,
           "id": "PROOF-67",
           "manual": false,
           "result": "pass",
@@ -1313,7 +1321,15 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-33",
-          "test": "dev/test_export.py::TestTheRuns::test_a_slow_result_kept_from_an_earlier_run_is_refused"
+          "test": "dev/test_export.py::TestTheRuns::test_a_result_carried_from_an_earlier_run_counts"
+        },
+        {
+          "env": null,
+          "id": "PROOF-84",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-38",
+          "test": "dev/test_export.py::TestTheRuns::test_a_result_names_each_proof_carried_and_the_run_that_took_it"
         },
         {
           "env": null,
@@ -1391,6 +1407,7 @@
         "RULE-35": "passed",
         "RULE-36": "passed",
         "RULE-37": "passed",
+        "RULE-38": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",

@@ -2,14 +2,14 @@
   "feature": "scaffold",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T02:47:42Z",
-      "commit": "df3c6f81857297b64a8bf7c58a23b09b8c34d3f8",
+      "at": "2026-10-03T16:58:50Z",
+      "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "856929af38a94929595213aa85580f5c3bc4b58d7bc46239e26430505ad8bea1",
-        "spec": "95d5f54e416d5f7f40b9a302497710e8b55d90e877e6f60bbf877443c549febf",
-        "tests": "f59c351d9df704fccb4e1cdb8c2f21a38094bd464a9180ed994879cc6ed2c19c"
+        "code": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
+        "spec": "af442f2b5e679cac087b9330564cd09a386d2e506f0c8ba1fc1fb4eff2dbebbe",
+        "tests": "9222b69fb3eda4fce1a35d16069c9c639d2f2487a8f52ff81adb487b575c5325"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -300,6 +300,14 @@
           "result": "pass",
           "rule": "RULE-83",
           "test": "dev/test_init_scaffold.py::TestTheQuestion::test_an_empty_project_is_asked_only_whether_to_commit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-178",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-84",
+          "test": "dev/test_init_scaffold.py::TestTheFlags::test_the_usage_lists_setup_s_flags_and_no_other"
         }
       ],
       "rules": {
@@ -316,7 +324,8 @@
         "RULE-70": "passed",
         "RULE-8": "passed",
         "RULE-82": "passed",
-        "RULE-83": "passed"
+        "RULE-83": "passed",
+        "RULE-84": "passed"
       },
       "runner": "rich-labarca"
     }

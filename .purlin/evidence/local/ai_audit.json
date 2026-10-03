@@ -1165,38 +1165,6 @@
         "test_hash": "9d76c7ff4bb71e9722d19619cd83a1bdcf5db00f3cb40010aadf368bfd968166",
         "verdict": "strong"
       },
-      "RULE-51": {
-        "at": "2026-10-02T09:32:04Z",
-        "breaks": {
-          "PROOF-136": {
-            "after": "            value = dict(value)",
-            "aim": "plain",
-            "before": "            value = dict(value, aim=value.get('aim') or targeted_break.PLAIN,\n                         case=value.get('case') or '')",
-            "break_key": "6713d86707302b53e45f5f10ec22fc6a9231f06c7530f264c4b94f25255422e4",
-            "case": "a kept `caught` entry for PROOF-2 with neither aim nor case, read again after RULE-2's text changes; the proof says aim `plain` and case empty; the changed code writes the entry back with neither aim nor case",
-            "file": "scripts/review/audit_run.py",
-            "line": 333,
-            "result": "caught",
-            "why": ""
-          }
-        },
-        "code_hash": "d1f7003ebe30f80d56761824e38471ed113aaccf8954fa6a858197384df84682",
-        "commit": "818e27dccadc51ba531fe646286f0455bdd8738c",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
-        "explanation": [
-          "PROOF-136: the test settles both rules, confirms the kept entry of PROOF-2 holds neither `aim` nor `case`, changes only RULE-2's text, runs the audit and reads the entry back from the evidence.",
-          "PROOF-136: the test compares the entry's result with `caught`, its `aim` with `plain` and its `case` with the empty string, which are the three values the proof names, so a kept entry written back without either is seen.",
-          "PROOF-136: the test does not check directly that no bug was planted for PROOF-2 in the second audit, so a fresh plant that was caught with aim `plain` and an empty case would read the same.",
-          "The spot tests found nothing, and the test's expected values are literals that the code under test does not supply."
-        ],
-        "findings": [],
-        "model": "claude-opus-5-5",
-        "no_bug": [],
-        "proof_hash": "71d4aaf9643c62fbc4f4bee0d4af1a076946c993f37bc6935d43b61e5624a5ca",
-        "rule_hash": "fcdc81524d646e2cf929fdcf998d88da598a888be07bff65b70ce4531f1a1358",
-        "test_hash": "6d6f83cdcc2f1b3aaee2d362c881f16fa32ad8ac6eb4c81b1af709575b657eeb",
-        "verdict": "strong"
-      },
       "RULE-6": {
         "at": "2026-10-02T09:32:04Z",
         "breaks": {
@@ -1258,14 +1226,14 @@
   "feature": "ai_audit",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T02:47:41Z",
-      "commit": "df3c6f81857297b64a8bf7c58a23b09b8c34d3f8",
+      "at": "2026-10-03T16:58:49Z",
+      "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "eef0e84dc4e3b477fb61c5c59cc3a941a8b321930695e3069f0ffb993455791b",
-        "spec": "3694592f800d41e43619440078b182f4c0d73b290a045dbc47a32dd0763f6023",
-        "tests": "f287de2b0cf1b5b558ffdb3503e1c2e76fd5a88ebb6ab912b342e9a7382e7238"
+        "code": "c61d2603b98e601e63014752cbc86f1cb00968dc6077e2893f6175a4edf4c2dd",
+        "spec": "2f0be765075ba257afc0e3b22b7b2a91f0a50ed4214758aa55bd7bdd3782be3e",
+        "tests": "51f8a68cb3b554b0dfc33d792083a93372f26bd1723eab64127a698a727d8b47"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -1807,14 +1775,6 @@
         },
         {
           "env": null,
-          "id": "PROOF-136",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-51",
-          "test": "dev/test_ai_audit.py::TestTheVerdict::test_a_kept_entry_with_no_aim_or_case_is_written_back_with_both"
-        },
-        {
-          "env": null,
           "id": "PROOF-138",
           "manual": false,
           "result": "pass",
@@ -2111,27 +2071,67 @@
         },
         {
           "env": null,
-          "id": "PROOF-178",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-71",
-          "test": "dev/test_ai_audit.py::TestASettleOnAnUnchangedTest::test_a_bug_recorded_without_the_key_is_refused_while_nothing_changed"
-        },
-        {
-          "env": null,
-          "id": "PROOF-179",
-          "manual": false,
-          "result": "pass",
-          "rule": "RULE-71",
-          "test": "dev/test_ai_audit.py::TestASettleOnAnUnchangedTest::test_a_bug_recorded_without_the_key_is_settled_once_its_test_changes"
-        },
-        {
-          "env": null,
           "id": "PROOF-173",
           "manual": false,
           "result": "pass",
           "rule": "RULE-72",
           "test": "dev/test_ai_audit.py::TestASettleOnAnUnchangedTest::test_sound_for_a_test_that_did_change_records_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-180",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-73",
+          "test": "dev/test_ai_audit.py::TestAnAuditPlantsASurvivingBugAgain::test_a_bug_the_unchanged_test_still_misses_stays_and_the_rule_is_weak"
+        },
+        {
+          "env": null,
+          "id": "PROOF-181",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-74",
+          "test": "dev/test_ai_audit.py::TestAnAuditPlantsASurvivingBugAgain::test_the_audit_says_the_test_still_passes_and_names_the_build"
+        },
+        {
+          "env": null,
+          "id": "PROOF-182",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-74",
+          "test": "dev/test_ai_audit.py::TestAnAuditPlantsASurvivingBugAgain::test_the_two_findings_stay_at_the_line_the_change_now_stands_at"
+        },
+        {
+          "env": null,
+          "id": "PROOF-186",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-74",
+          "test": "dev/test_ai_audit.py::TestAnAuditPlantsASurvivingBugAgain::test_a_later_audit_with_nothing_changed_does_not_plant_it_again"
+        },
+        {
+          "env": null,
+          "id": "PROOF-183",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-75",
+          "test": "dev/test_ai_audit.py::TestAnAuditPlantsASurvivingBugAgain::test_a_bug_the_unchanged_test_now_fails_on_reads_caught"
+        },
+        {
+          "env": null,
+          "id": "PROOF-184",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-75",
+          "test": "dev/test_ai_audit.py::TestAnAuditPlantsASurvivingBugAgain::test_a_bug_the_unchanged_test_does_not_run_with_reads_not_run"
+        },
+        {
+          "env": null,
+          "id": "PROOF-185",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-76",
+          "test": "dev/test_ai_audit.py::TestAnAuditPlantsASurvivingBugAgain::test_a_bug_that_can_no_longer_be_planted_is_asked_for_anew"
         }
       ],
       "rules": {
@@ -2157,7 +2157,6 @@
         "RULE-48": "passed",
         "RULE-49": "passed",
         "RULE-50": "passed",
-        "RULE-51": "passed",
         "RULE-52": "passed",
         "RULE-53": "passed",
         "RULE-54": "passed",
@@ -2179,7 +2178,11 @@
         "RULE-69": "passed",
         "RULE-70": "passed",
         "RULE-71": "passed",
-        "RULE-72": "passed"
+        "RULE-72": "passed",
+        "RULE-73": "passed",
+        "RULE-74": "passed",
+        "RULE-75": "passed",
+        "RULE-76": "passed"
       },
       "runner": "rich-labarca"
     }

@@ -2,14 +2,14 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T02:47:41Z",
-      "commit": "df3c6f81857297b64a8bf7c58a23b09b8c34d3f8",
+      "at": "2026-10-03T16:58:49Z",
+      "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "db040f6832c1b0ec7f403e3a05f9006b967cbdf758269705391d7171337b6dd4",
-        "spec": "edd30ac0e167f440e27427a026773b8db360bee990d6c287d447422eeacd4e13",
-        "tests": "c1f919b2f433ae6a91870bcb2c4f807e067c98ad9038ebb0b9843b786ed6dd9c"
+        "code": "a9bee172dd9500f0a7336ff2b6e7682dac54238131a117a0850fe14857797943",
+        "spec": "feb5e597653b2c45923b427d57f8309fdb29aa3db92fc9100ab9f5098d44820b",
+        "tests": "99f4fd2cc61dc10787bb17ff7ab1cc817627033b5762e9fd0aea793be890b378"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -916,6 +916,38 @@
           "result": "pass",
           "rule": "RULE-80",
           "test": "dev/test_purlin_report.py::test_an_anchors_strong_hover_says_first_that_no_bug_is_planted"
+        },
+        {
+          "env": null,
+          "id": "PROOF-283",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-86",
+          "test": "dev/test_purlin_report.py::test_a_carried_proof_names_the_system_and_the_commit"
+        },
+        {
+          "env": null,
+          "id": "PROOF-284",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-86",
+          "test": "dev/test_purlin_report.py::test_a_proof_whose_run_took_its_results_has_no_such_row"
+        },
+        {
+          "env": null,
+          "id": "PROOF-285",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-86",
+          "test": "dev/test_purlin_report.py::test_the_carried_row_measures_7_to_1_in_both_themes"
+        },
+        {
+          "env": null,
+          "id": "PROOF-286",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-86",
+          "test": "dev/test_purlin_report.py::test_a_rule_with_no_proof_names_where_its_tests_were_carried_from"
         }
       ],
       "rules": {
@@ -953,6 +985,7 @@
         "RULE-83": "passed",
         "RULE-84": "passed",
         "RULE-85": "passed",
+        "RULE-86": "passed",
         "RULE-9": "passed"
       },
       "runner": "rich-labarca"

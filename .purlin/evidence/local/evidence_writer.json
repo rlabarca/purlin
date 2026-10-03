@@ -983,14 +983,14 @@
   "feature": "evidence_writer",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T02:47:41Z",
-      "commit": "df3c6f81857297b64a8bf7c58a23b09b8c34d3f8",
+      "at": "2026-10-03T16:58:49Z",
+      "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "420346be567742fe826d57de105c7119f5b229f7258b6580bbe18e065d1d3ebe",
-        "spec": "bdaf0daa664231ddd943150f53464b8c398f7ab43c0634788a9976cabd1fc5f2",
-        "tests": "e08a9fa789e2c19ba9a3862d54ea2a7d34f028f675700fb5a82cd7ae32fdea3a"
+        "code": "a3e6778115592630bbf8a2e966f9688a56d1130a10bde5a6e006820f11b8befd",
+        "spec": "0079a16ade3a7f83345984811d0ec7155854f59b29f5fb557c0ce8e80934a0f1",
+        "tests": "3ab42c9a15234cd8daa0fcadb0ba6e0be8daeead58341c48dae50b197f21f2ec"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [

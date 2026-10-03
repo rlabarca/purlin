@@ -1566,14 +1566,14 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T02:47:42Z",
-      "commit": "df3c6f81857297b64a8bf7c58a23b09b8c34d3f8",
+      "at": "2026-10-03T16:58:50Z",
+      "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "470ce0dcd87b24c720c306cac415a5040793dd7cf2a7e9e5e79610990018bd67",
-        "spec": "2fdd3d3da395663d747d855626898d9b985254cf4e5efeea33eba46d98ff4ffc",
-        "tests": "99924d2e008569988444ed4712e53e7633e3d0a6fcdb6fc8f074365dc1bb0678"
+        "code": "d9d157140fa076e224606149574766fd541d15bfddb5a9a7b7b834383bd7b207",
+        "spec": "c77fb340950aa1b9f8664f199085c09912c9681af1aaac63d6bef873ffe2ea68",
+        "tests": "6f893933295a5def2e11412ed80f8fac766b430a35294944299aaa0578bef76e"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -1680,6 +1680,30 @@
           "result": "pass",
           "rule": "RULE-107",
           "test": "dev/test_run_script.py::TestNoTestCommand::test_answered_y_pytests_one_entry_is_written_and_the_test_runs"
+        },
+        {
+          "env": null,
+          "id": "PROOF-323",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-119",
+          "test": "dev/test_run_script.py::TestNoTestCommand::test_the_written_setting_is_committed_before_the_tests_run"
+        },
+        {
+          "env": null,
+          "id": "PROOF-324",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-119",
+          "test": "dev/test_run_script.py::TestNoTestCommand::test_the_first_run_then_commit_ends_on_the_simple_last_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-325",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-119",
+          "test": "dev/test_run_script.py::TestNoTestCommand::test_outside_a_git_checkout_the_written_setting_is_not_committed"
         },
         {
           "env": null,
@@ -2239,7 +2263,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-106",
-          "test": "dev/test_run_script.py::TestSlowProofs::test_a_kept_slow_result_names_the_run_that_took_it"
+          "test": "dev/test_run_script.py::TestSlowProofs::test_a_carried_slow_result_names_the_run_that_took_it"
         },
         {
           "env": null,
@@ -2247,7 +2271,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-106",
-          "test": "dev/test_run_script.py::TestSlowProofs::test_a_full_run_takes_a_kept_result_again"
+          "test": "dev/test_run_script.py::TestSlowProofs::test_a_clean_run_takes_a_carried_result_again"
         },
         {
           "env": null,
@@ -2255,7 +2279,127 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-59",
-          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_all_runs_every_feature_when_nothing_changed"
+          "test": "dev/test_run_script.py::TestARunCoversWhatTheChangeTouched::test_clean_runs_every_feature_when_nothing_changed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-308",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-114",
+          "test": "dev/test_run_script.py::TestARunOverEveryFeatureCarriesForward::test_all_runs_the_changed_feature_alone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-309",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-114",
+          "test": "dev/test_run_script.py::TestARunOverEveryFeatureCarriesForward::test_a_failing_feature_runs_again_with_nothing_changed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-310",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-114",
+          "test": "dev/test_run_script.py::TestARunOverEveryFeatureCarriesForward::test_an_anchor_runs_with_nothing_changed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-311",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-114",
+          "test": "dev/test_run_script.py::TestARunOverEveryFeatureCarriesForward::test_a_section_taken_with_uncommitted_changes_runs_again"
+        },
+        {
+          "env": null,
+          "id": "PROOF-312",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-115",
+          "test": "dev/test_run_script.py::TestARunOverEveryFeatureCarriesForward::test_a_carried_section_names_this_commit_and_the_run_that_took_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-313",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-115",
+          "test": "dev/test_run_script.py::TestARunOverEveryFeatureCarriesForward::test_a_second_carry_keeps_the_first_run_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-314",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-115",
+          "test": "dev/test_run_script.py::TestARunOverEveryFeatureCarriesForward::test_a_run_with_nothing_committed_since_leaves_the_files_alone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-315",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-116",
+          "test": "dev/test_run_script.py::TestARunOverEveryFeatureCarriesForward::test_another_systems_section_is_carried_and_committed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-316",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-116",
+          "test": "dev/test_run_script.py::TestARunOverEveryFeatureCarriesForward::test_another_systems_section_over_other_code_is_left_as_it_was"
+        },
+        {
+          "env": null,
+          "id": "PROOF-317",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-117",
+          "test": "dev/test_run_script.py::TestARunOverEveryFeatureCarriesForward::test_the_run_says_how_many_it_ran_and_how_many_it_carried"
+        },
+        {
+          "env": null,
+          "id": "PROOF-318",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-117",
+          "test": "dev/test_run_script.py::TestARunOverEveryFeatureCarriesForward::test_a_run_that_carries_every_feature_says_so"
+        },
+        {
+          "env": null,
+          "id": "PROOF-322",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-117",
+          "test": "dev/test_run_script.py::TestARunOverEveryFeatureCarriesForward::test_another_systems_section_is_carried_and_committed"
+        },
+        {
+          "env": null,
+          "id": "PROOF-319",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-118",
+          "test": "dev/test_run_script.py::TestARunOverEveryFeatureCarriesForward::test_clean_takes_every_result_again"
+        },
+        {
+          "env": null,
+          "id": "PROOF-320",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-118",
+          "test": "dev/test_run_script.py::TestARunOverEveryFeatureCarriesForward::test_clean_with_a_feature_named_is_refused"
+        },
+        {
+          "env": null,
+          "id": "PROOF-321",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-118",
+          "test": "dev/test_run_script.py::TestARunOverEveryFeatureCarriesForward::test_clean_beside_ci_is_refused"
         },
         {
           "env": null,
@@ -2331,6 +2475,12 @@
         "RULE-111": "passed",
         "RULE-112": "passed",
         "RULE-113": "passed",
+        "RULE-114": "passed",
+        "RULE-115": "passed",
+        "RULE-116": "passed",
+        "RULE-117": "passed",
+        "RULE-118": "passed",
+        "RULE-119": "passed",
         "RULE-12": "passed",
         "RULE-17": "passed",
         "RULE-20": "passed",
