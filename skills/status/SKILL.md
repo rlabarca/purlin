@@ -127,17 +127,33 @@ listed and the rest counted. `purlin:sign` refuses while one remains.
 
 Naming a spec shows its rules and their standing. Match `specs/**/<name>.md`, then the name
 as part of a spec file name; when several match, list them and ask which one, and when none
-does, print the whole table. Read the spec, get the status as Step 1 says, and print its path, its
-header, and one line per rule with its two cells and the proof lines behind it:
+does, print the whole table. The tool shows every spec at once, so for one spec run the script
+with the spec's name, the file name without `.md`:
 
-```
-specs/auth/login.md: 8 rules
-  RULE-1  passed  strong                PROOF-1  tests/test_login.py::test_rejects_bad_password
-  RULE-3  no test                       PROOF-3  no test carries this marker
-  RULE-5  checked at sign-off  checked at sign-off   PROOF-6  a hand check
+```bash
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_status.py" --project-root . --spec <name>
 ```
 
-The next step is the Step 4 row for the first kind of work this spec's rules wait for.
+Print what it prints. It opens on the spec's path and how many rules it has, then gives one line
+per rule with its two cells. Under a cell that reads neither `passed` nor `strong` come its
+reasons, each after the cell's word; then one line per proof with its result and its tests:
+
+```
+specs/auth/login.md: 3 rules
+  RULE-1  passed  strong
+    PROOF-1  passed  tests/test_login.py::test_proof_1
+  RULE-2  no test  waiting
+    no test: no test for PROOF-2
+    waiting: waiting for its tests to pass
+    PROOF-2  no test
+  RULE-3  checked at sign-off  checked at sign-off
+    checked at sign-off: no sign-off has checked it yet
+    PROOF-3  hand check
+```
+
+Where the spec has a mistake, the script prints each mistake first, as the status's warnings
+word it. The view writes nothing. The next step is the Step 4 row for the first kind of work
+this spec's rules wait for.
 
 ## Step 4: name the next step
 

@@ -3,8 +3,18 @@
 One test per proof of `specs/skills/skill_status.md`. The check is
 `must_name` in `dev/skill_checks.py`; a copy of the skill with one name taken
 out is read through `copy_without`, and the file on disk is never touched.
+The example of one spec's view is held to what the status script prints for a
+sample project in the state it shows.
 """
 
+import os
+import re
+import subprocess
+import sys
+
+import skill_checks
+from mcp_project import (PROJECT_ROOT, Project, _commit_tests, _entry,
+                         spec_with_a_hand_check)
 from skill_checks import (copy_without, flat, must_name, read,
                           sentences_with, skill_path)
 
@@ -48,3 +58,76 @@ def test_one_sentence_says_when_the_uncommitted_results_line_shows():
 def test_a_copy_without_those_words_holds_no_such_sentence():
     with copy_without(SKILL, NOT_COMMITTED[1]):
         assert sentences_with(SKILL, NOT_COMMITTED) == []
+
+
+# ---------------------------------------------------------------------------
+# With a name: one spec's view
+# ---------------------------------------------------------------------------
+
+STATUS_PY = os.path.join(PROJECT_ROOT, 'scripts', 'run', 'purlin_status.py')
+
+
+def _with_a_name(text):
+    """The skill's part `With a name`, from its heading to the next."""
+    start = text.index('\n## With a name\n')
+    end = text.find('\n## ', start + 1)
+    return text[start:end if end >= 0 else len(text)]
+
+
+def _example(text):
+    """The lines of the part `With a name`'s code block that names no
+    language: the example of what the script prints."""
+    blocks = re.findall(r'^```(\w*)\n(.*?)^```', _with_a_name(text),
+                        re.MULTILINE | re.DOTALL)
+    return next(body for language, body in blocks
+                if not language).rstrip('\n').splitlines()
+
+
+def _printed_for_the_example():
+    """What `purlin_status.py --spec login` prints for `login` of 3 rules:
+    `RULE-1` tested, passing and found strong, `RULE-2` with no test, and
+    `RULE-3` whose one proof is `@manual`."""
+    made = Project(spec=spec_with_a_hand_check(3))
+    try:
+        _commit_tests(made, 'PROOF-1')
+        made.evidence([_entry('PROOF-1', 'RULE-1')])
+        made.audit('RULE-1')
+        result = subprocess.run(
+            [sys.executable, STATUS_PY, '--project-root', made.root,
+             '--spec', 'login'], capture_output=True, text=True,
+            encoding='utf-8', cwd=made.root, stdin=subprocess.DEVNULL,
+            timeout=180)
+    finally:
+        made.close()
+    assert result.returncode == 0, result.stdout + result.stderr
+    return result.stdout.rstrip('\n').splitlines()
+
+
+# purlin: skill_status PROOF-43
+def test_the_part_with_a_name_gives_the_command_with_spec():
+    part = _with_a_name(skill_checks.read(SKILL))
+    assert [line for line in part.splitlines()
+            if 'scripts/run/purlin_status.py' in line
+            and '--spec <name>' in line], part
+
+
+# purlin: skill_status PROOF-44
+def test_a_copy_without_spec_name_holds_no_such_line():
+    with copy_without(SKILL, '--spec <name>'):
+        part = _with_a_name(skill_checks.read(SKILL))
+    assert [line for line in part.splitlines()
+            if 'scripts/run/purlin_status.py' in line
+            and '--spec <name>' in line] == []
+
+
+# purlin: skill_status PROOF-45
+def test_the_example_is_what_the_script_prints():
+    assert _example(skill_checks.read(SKILL)) == _printed_for_the_example()
+
+
+# purlin: skill_status PROOF-46
+def test_a_copy_with_one_word_changed_differs():
+    text = skill_checks.read(SKILL)
+    assert 'PROOF-1  passed' in _with_a_name(text)
+    changed = text.replace('PROOF-1  passed', 'PROOF-1  passing')
+    assert _example(changed) != _printed_for_the_example()
