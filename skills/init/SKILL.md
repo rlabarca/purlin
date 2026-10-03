@@ -131,7 +131,9 @@ Between them the migrations:
 - replace the dashboard page at the project root;
 - give each proof numbered with a letter, such as `PROOF-7b`, the next free number in its spec;
 - rewrite each 0.9.5 marker as one comment above the same test, and remove a docstring line of
-  that test that holds nothing but a 0.9.5 tag;
+  that test that holds nothing but a 0.9.5 tag; in the same migration, remove each line naming
+  what 0.9.5 used from `CLAUDE.md`, `AGENTS.md` and the files under `.claude/`, a list item
+  whole and a sentence of a paragraph alone;
 - remove what loaded 0.9.5's test plugins from the project's test configuration.
 
 Every file it rewrites is first copied to `.purlin/runtime/update-backup/`, which git ignores;

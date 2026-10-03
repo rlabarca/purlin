@@ -62,7 +62,7 @@ The migrations run in this order:
 | `dashboard` | replaces a `purlin-report.html` at the project root that is a link or is not the page the plugin ships; a project with no page there is left without one |
 | `workflows` | asks about each workflow under `.github/workflows/` that names a proof file, and removes the ones you say yes to |
 | `lettered-proofs` | gives each proof numbered with a letter, such as `PROOF-7b`, the next free number in its spec, and rewrites the marker of each test that named it |
-| `markers` | rewrites each 0.9.5 marker in the project's tests as one comment above the same test |
+| `markers` | rewrites each 0.9.5 marker in the project's tests as one comment above the same test, and removes each line naming what 0.9.5 used from `CLAUDE.md`, `AGENTS.md` and the files under `.claude/` |
 | `plugins` | removes the test plugins 0.9.5 copied into the project and what loaded them |
 
 Only the migrations the project needs are listed. A project with no hook from 0.9.5 has no
@@ -160,6 +160,23 @@ A marker naming a lettered proof that no spec holds is left too:
 The comment is shown in the file's own comment style, and `<n>` is the number `purlin:spec`
 gives the proof.
 
+**The agent's instructions.** In the same migration, with no question of its own, the update
+removes each line that names `[proof:`, `pytest.mark.proof`, `.purlin/plugins`, `purlin:verify`
+or `proofs-` from each tracked `CLAUDE.md` and `AGENTS.md`, in any folder, and each Markdown or
+JSON file under `.claude/`. A list item goes whole, with the lines that continue it and the
+items under it. A table row goes alone, and so does a line of a fenced code block or of the
+settings between `---` lines at the top of a file; a table or a code block left empty goes. In a paragraph, the sentence that names it goes. A heading left with
+nothing under it goes too. Each file is kept first under `.purlin/runtime/update-backup/`, each
+line removed is in `update.log`, and one line under the totals counts them:
+
+```
+  markers: rewrote 533 markers in 95 files
+    removed 4 lines that named 0.9.5 from CLAUDE.md
+```
+
+A JSON file that would no longer read as JSON, and a file of another kind under `.claude/`, is
+left as it was and listed under `Purlin left these for you:`.
+
 **The plugin's loading lines.** Every `conftest.py` in the project that loads the pytest plugin
 0.9.5 copied loses the entry naming it in `pytest_plugins` and the `sys.path` line pointing at
 `.purlin/plugins`. Text inside a comment or a docstring is left as it is. A `conftest.py` left
@@ -250,13 +267,14 @@ none of them:
 
 ```
 Purlin left these for you:
-  CLAUDE.md: 4 lines. Change it first: it tells the agent to write what this release does not read.
+  .claude/hooks/check.sh: 1 line. Change it first: it tells the agent to write what this release does not read.
   packages/web/test/parameter_lfo.test.ts: 2 lines
   Each line counted names something 0.9.5 used: [proof:, pytest.mark.proof, .purlin/plugins, purlin:verify, proofs-. This release reads none of them.
 ```
 
-At most 20 files are listed, then `and <n> more files`. In a `CLAUDE.md` that tells the agent
-to write `[proof:...]` markers, say `purlin:build` writes the markers.
+At most 20 files are listed, then `and <n> more files`. A `CLAUDE.md` is listed only where
+`markers` did not run. Where the lines removed told the agent to write `[proof:...]` markers,
+say instead that `purlin:build` writes the markers.
 
 **The lines that need you** come last, under `These need you:`. Each names what to do.
 
@@ -313,7 +331,8 @@ whose proof was reworded after the test was written, which the project held befo
 
 A test that fails in the full run and passes when its feature is run alone, with
 `purlin:test <feature>`, is a test of the project's own that does not pass every time. The
-upgrade did not change it.
+upgrade did not change it. Such a test may need more than one run alone to pass, and making it
+pass every time is the project's work.
 
 **Done, for an upgrade,** is `purlin:status` printing no `→ Run: purlin:init --update` line
 and, after `purlin:test --all --commit`, a count of passing rules. A rule that still reads
