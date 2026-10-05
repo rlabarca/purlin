@@ -6,8 +6,7 @@ One ladder of seven states becomes a spec status plus three evidence levels, thr
 carry the three levels, and the gate level is the only thing that decides how much of the chain
 anyone sees. Written 2026-09-16 from a full scan of the code, the dashboard, the skills, the
 references, the docs, this repository's own specs, tests, signatures and records, then settled
-with the user question by question. This file is the design and the plan. Lane briefs go in
-`dev/plans/lanes/tl-*.md`, written by the orchestrator from Part C. Nothing in this plan is
+with the user question by question. This file is the log of the decisions. Nothing in it is
 left to a lane's judgment except wording.
 
 0.10.0 was never released. This work ships as 0.10.0: `VERSION` stays, no bump, and the
@@ -416,15 +415,14 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     and `docs/_mermaid.md` go. The docs carry three screenshots taken from the rebuilt
     dashboard: the board, the queue, one rule.
     - *Superseded by 89:* the docs carry two screenshots, the board and one rule.
-46. **What the design round settled** (added 2026-09-27). `dev/plans/design-35-43.md` is the
-    technical design for decisions 35 to 43, and its section 10 holds the owner's answers,
-    which win over its text. The ones that amend a decision: `> Scope:` is optional below
+46. **What the design round settled** (added 2026-09-27). The design round wrote the
+    technical design for decisions 35 to 43, and the owner's answers to it win over its
+    text. The ones that amend a decision: `> Scope:` is optional below
     `signed` and required at `signed` (39); a rule whose level is `passed` is never audited
     under a higher gate (35); the level is logged in a signature and not locked (31, 36);
     the status word is `out of date` and `code changed` is retired as a word; the audit runs
     `audit_parallel` calls at once, default four (35); drift measures from the last git
-    action that brought changes in (42). `dev/plans/stale-inventory.md` is the list the
-    final sweep works from.
+    action that brought changes in (42). The final sweep works from a list of what is stale.
     - *Amended by 73, 98 and 103:* rules carry no level, no signature is made over one rule, and a spec without files is warned of, not refused.
 47. **Two machines** (added 2026-09-27). This machine takes 0.10.0 as far as it can: every
     piece of decisions 35 to 46, the Azure DevOps work up to what can be tested without an
@@ -607,7 +605,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     by a remote runner, with the proofs that must hold there still to be named by the owner.
     The evidence of this repository's own run is committed. Text on a solid coloured badge
     is left as it is. The next sanity check, a new user following the docs, is run by a
-    fresh agent from `dev/plans/next-agent-prompt.md`.
+    fresh agent.
 60. **The count of rules that meet the gate is shown nowhere** (added 2026-09-28). The
     dashboard's box `<n> of <m> rules meet the gate` and its hover go, and the sentence goes
     from the terminal, the docs and the README. The tiles carry the number for each level.
@@ -810,8 +808,8 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
 82. **Windows** (added 2026-09-28). The rules that must hold on Windows are those about
     reading and writing files, paths, and starting other programs. An agent sorts the rules
     and shows the owner the list before any is marked.
-83. **The seven calls the plan left open** (added 2026-09-28), the answers to section 5 of
-    `phase1-plan.md`. A result from a system that was not there at signing is added beside
+83. **The seven calls the plan left open** (added 2026-09-28), the answers to the open
+    calls of the phase 1 plan. A result from a system that was not there at signing is added beside
     the others and ends no signature; a signature ends when a machine it was made with
     changes. A remote runner runs only the systems the rules name, and no Linux job of its
     own. The separate check at the end of the runner's job goes, with its spec and its
@@ -891,8 +889,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     a missing tool is reworded, since the cell no longer reads `n/a`. The stand-in inside a
     signature stays as it is: no person reads it, and changing it would end every signature.
     - *Amended by 103:* no signature is made over one rule, so there is no stand-in inside one.
-94. **The answers to the second fan-out's questions** (added 2026-09-29), which are grouped in
-    `phase2-questions.md`.
+94. **The answers to the second fan-out's questions** (added 2026-09-29).
     - **A rule about a command's instructions says what the instructions tell the agent**, and
       its test reads the instructions. That the agent follows them is shown by the sanity
       checks before each release, which run the commands for real.
@@ -911,7 +908,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       tool not installed, or out of time, makes the rule weak with a reason naming the command
       that fixes it. A tool that cannot run on this operating system counts as no tool, and
       the audit alone decides.
-    - **The 55 readings** of `phase2-questions.md`, "One sensible reading", are applied. The
+    - **The 55 readings** the questions gave under "One sensible reading" are applied. The
       owner reads the list afterwards and says which to reverse.
     - *Amended by 103:* a rule found weak, measured or not, blocks nothing.
 95. **Windows, settled** (added 2026-09-29). Tests run on Windows only where what they check
@@ -940,7 +937,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     hand or to sign.` stay as written. The other wordings listed in `handoff.md` stand, and
     sanity check 3 reads every message against the rules and the writing style.
 97. **The answers before the third fan-out** (added 2026-09-29), to the questions of
-    `phase3-plan.md` section 8.
+    the phase 3 plan.
     - **A settings file that cannot be read stops every command.** It prints
       `.purlin/config.json cannot be read: <cause>. Fix the file by hand; nothing ran and nothing was saved.`
       The cause is the file reader's own words and line, such as
@@ -1043,7 +1040,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       proofs are tagged `@env(macos)`, and this repository's runner file, written on a Mac,
       has no Mac machine. A remote machine runs only the tests tied to proofs tagged for its
       system, as decision 95 says.
-    - **The Windows list stands as `phase3-windows-list.md` holds it**, less the row for the
+    - **The Windows list of the phase 3 plan stands**, less the row for the
       anchor made from a text file, and meets decision 82. Wave W marks from it, with rule,
       proof and test names brought up to date after the lanes merge, and reports what it
       marked; nothing waits for the owner to read the list again.
@@ -1051,8 +1048,8 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       writes this repository's runner file and `purlin:test --remote` runs once. It pushes one
       temporary run branch and nothing else: no tag is pushed, and `main` stays on this machine.
     - *Amended by 103:* `min_strength` and the gate `strong` are retired, so the settings list and the setup example lose them.
-98. **The answers to sanity check 3** (added 2026-09-30), to the 15 questions of
-    `sanity-3.md` section 11, given on 2026-09-29 and 2026-09-30.
+98. **The answers to sanity check 3** (added 2026-09-30), to its 15 questions,
+    given on 2026-09-29 and 2026-09-30.
     - **The README says nothing about leaving.** The line `If you leave, the markers are
       comments.` is removed.
     - **The ten-minute path shows what you type and the summary each step ends on.** The
@@ -1156,8 +1153,8 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       changes, and what becomes of this repository's anchor about the spec format, which one
       feature required and whose rules are about one piece of code.
     - *Amended by 103:* no anchor rule is signed one by one; a pinned anchor's rule that no test can show is checked by hand in the sign-off walk.
-101. **The answers to the plan for decision 100** (added 2026-09-30), to the three questions of
-    `d100-plan.md`, with one further request. The plan carries them in its contracts C12 to C15.
+101. **The answers to the plan for decision 100** (added 2026-09-30), to its three questions,
+    with one further request.
     - **A pulled anchor whose source carries `> Requires:`, `> Global:` or `> Scope:` is copied as
       it is, and warned of.** Every status and test run prints one line, the anchor's name first
       and the fix last, until the other team changes its file:
@@ -1179,7 +1176,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - The six calls the plan made stand.
     - *Reversed by 103:* with no per-rule signature, `--does-not-apply` goes; how a pinned anchor's rule that does not apply is handled is still to be asked.
 102. **The answers to the QA and product check** (added 2026-09-30), to the findings of
-    `sanity-qa-product.md`, a cloud run in which one agent played product, QA and dev in three
+    a cloud run in which one agent played product, QA and dev in three
     clones of one repository on a sample-intake project at the gate `signed`.
     - **A number written twice in one spec is caught, and so is a leftover merge-conflict line.**
       A proof id written twice is warned of as a rule id is, in the shape of decision 97. The
@@ -1285,7 +1282,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       94 placed it; it is not a proof.
     - Planned after the second QA and product check reports, so its findings shape the scenario.
 105. **The answers to the second QA and product check** (added 2026-10-01), to
-    `sanity-qa-product-2.md`, a cloud run in which product, QA and dev reached a signed release.
+    a cloud run in which product, QA and dev reached a signed release.
     - **The signer signs the run they are shown.** The developer runs `purlin:test --release` on
       the release branch. That run writes fresh results for every rule at the release commit and
       keeps nothing from earlier runs; the package records the run: who ran it (their git
@@ -1367,7 +1364,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       `signed/<version>` are as decision 106 has them.
     - **A hand check reads `checked at sign-off`** until someone signs; the sign-off records it.
     - **Mutation testing is a setting of its own**, no longer tied to a gate.
-109. **The scope review's answers** (added 2026-10-01), to `scope-review.md`, judged against
+109. **The scope review's answers** (added 2026-10-01), judged against
     decision 106: Purlin keeps the evidence and the sign-off; the rest is informative.
     - **Cut with no question:** the gate (108), the release step (106), `.purlin/tests.md`, the
       runner's run on a pushed `signed/*` tag, the release wording left in drift, the release
@@ -1498,7 +1495,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       the check is fixed or marked experimental before release.
     - **The build may spend up to $80 of cloud credits**, of the $121 of $250 left on 2026-10-01;
       $41 is kept for the real-skills check. Lanes past the budget run locally.
-    - **Answered on the build plan (`d115-plan.md`):** the line under `Left to do` that reminds a
+    - **Answered on the build plan:** the line under `Left to do` that reminds a
       person to commit their test results shows only once no other work stops the tests being
       met; a spec naming a file not yet written is no longer listed among the spec mistakes
       warned of (decision 113 holds); the dashboard's data gains the branch and the information
@@ -1559,8 +1556,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       reading for conflicting instructions is the last step of the round.
     - The deck's slide reads `What if you have to test other platforms?`; the anchors slide holds
       two rows, the second with `Kept in step` and `Read-only` under it.
-    - **The owner's answers before the build** (2026-10-01); the build plan is
-      `dev/plans/d119-plan.md`.
+    - **The owner's answers before the build** (2026-10-01).
     - **Purlin's own Windows check is GitHub only.**
     - **The word is "remote anchor" everywhere.** The docs and the glossary say once that the
       copy is pinned to one version of its source.
@@ -1599,7 +1595,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       the git host, and the plan files of finished rounds but `three-levels.md`, `handoff.md` and
       the deck.
 121. **What the review and the measurement found, and what the audit's result means** (added
-    2026-10-01). A read-only review (`dev/plans/d120-reports/coverage-review.md`) found the weight
+    2026-10-01). A read-only review found the weight
     pass removed few protections, and that the sign-off and the audit had gaps that were never
     rules. A measurement of the planted-bug audit on 46 rules found $0.74 a rule against decision
     116's $0.10, and 1 of 93 bugs irrelevant against 1 in 5.
@@ -1626,11 +1622,11 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       alone does not.
 122. **What the real-skills check found, and no cost in what ships** (added 2026-10-02). Three
     real headless Claude Code sessions with the plugin played product, QA and a developer on a
-    fresh project (`dev/plans/qa-real-skills.md`). They reached `signed/0.1.0` and got stuck three
+    fresh project. They reached `signed/0.1.0` and got stuck three
     times: a spec named with a hyphen could not be tied to a test; the renumbering after a
     collision needed a hand edit of git's conflict lines; `purlin:init` committed nothing after
     a yes.
-    - **Findings 1 to 13 and 17 are fixed in one round**, planned in `dev/plans/d122-plan.md` and
+    - **Findings 1 to 13 and 17 are fixed in one round**, planned and
       not started. Among them: `-` is allowed in a spec's name everywhere; a hand check nobody
       has done reads `checked at sign-off` and counts as neither passing nor failing; the
       confirmations a model skipped move into the scripts, the sign-off's asking the signer to
@@ -1794,513 +1790,3 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
     needs is the one exception in code. This decision is applied last, as a sweep.
-
-
----
-
-# Part A: the design
-
-*Superseded in full by decisions 23 to 106; read references/glossary.md and references/hard_gates.md for what holds.*
-
-Every doc, skill, reference, message and test uses these words and no others.
-
-## A1. Vocabulary
-
-- **spec status**: what the spec says about a rule. **Drafted**: no proof line names it.
-  **Ready**: at least one proof names it and no blocking free check fires on the proof text.
-- **evidence level**: one of three questions about a rule, each answered by its own cell.
-  **passed**: every tagged test for the rule passed. **strong**: the tests are worth trusting.
-  **signed**: a person signed the rule, proof and test hashes.
-- **cell**: the answer to one level for one rule. A cell reads one word, carries its reasons,
-  and exists only at or below the project's gate. Above the gate a cell is absent, not empty.
-- **gate**: the one project setting, `passed`, `strong` or `signed`. A rule **meets the gate**
-  when every cell up to the gate's level is met.
-- **run**: one execution of the tagged tests. **record**: the machine's evidence of one run:
-  results, strength and scope tree, written by `purlin:audit`, committed by CI. Nobody signs a
-  record. **source**: where a pass came from: `ci` (a record CI wrote), `developer` (a record a
-  person committed), `local` (the last run in this checkout). Under `passed` every source
-  counts. Under `strong` and `signed` only `ci` counts.
-- **current**: a record describes the checkout when its commit is HEAD or its scope tree still
-  hashes the same. A CI pass that is not current reads **code changed**, and CI clears it on the
-  next run.
-- **audit**: the level 2 run: the tests, then the breaks, the free checks and the model review
-  where risk asks, ending in a record and, on CI, the briefs. An audit proves a rule strong or
-  weak. **the breaks**: deliberate changes to the code; **test strength**: the share the tests
-  caught, as a percentage. Measured only at `strong` and above.
-- **brief**: the machine's report on one rule: the strength beside the minimum, the free-check
-  findings on the proof text and the test body, the model review's observations, and whether it
-  settled. It recommends nothing.
-- **signature**: a named person's attestation that a rule, proof and test belong together, a
-  committed file. **signer list**: `signers` in `.purlin/config.json`. **hold**: a person's
-  committed statement that the test does not prove the proof, with the missing case.
-  **note**: the one line a signer writes for a `@manual` proof or a review the model could not settle.
-- **signature stale**: the signed cell's word when a signature exists and its hashes no longer
-  match.
-- **review list**: the rules whose next step is a person. Exists only at `strong` and above.
-- **risk**: unchanged tag, default `low`. Read only at `strong` and above; never asked, shown
-  or required under `passed`.
-- **rollup**: rules meeting the gate out of rules total, plus one count per bucket.
-
-## A2. The chain
-
-For one rule, top to bottom. Each row is a cell; the gate decides how many rows exist.
-
-| Level | Met when | Words the cell can read | Reasons it carries |
-|-------|----------|-------------------------|--------------------|
-| spec | proof text clears the blocking free checks | `drafted`, `ready` | the blocking finding names |
-| passed | every proof has a passing test from a counting source, and a CI pass is current | `passed`, `failed`, `no test`, `not run`, `code changed` | `failing: <where>`, `<os>: no record yet`, `code changed since <commit7>`, `developer record does not count under <gate>`, `local run does not count under <gate>` |
-| strong | passed from `ci`; strength at or above `min_strength`, or `n/a` with no engine and no blocking proof-text finding; no test-body finding; when risk is at or above `ai_review_at`, a brief for the current triple that observed nothing and settled; no hold | `strong`, `weak`, `needs a person` | `strength 64% under 80%`, `no engine: free checks only`, the finding names, the observation sentences, `manual proof`, `review not settled`, `held by <who>: <case>` |
-| signed | a counting signature for the current hashes, when risk is at or above `sign_at`; `not required` below it | `signed`, `unsigned`, `stale`, `held`, `not required` | `by <email>`, `the signing commit is not signed`, `the signer is not on the list`, `the signer last touched the test`, `the signing commit is not on <branch>`, `hashes changed after the signature` |
-
-A signature file for the current hashes clears `needs a person`: from anyone under `strong`,
-from a counting signer under `signed`. A hold blocks both the strong and the signed cell while
-it is current, and a signature by a person outranks it.
-
-A rule's **bucket** is the one tile it is counted in: `untested` (drafted, or ready with no
-test or no run), `failing`, `passed` (level 1 met, and either the gate is `passed` or level 2
-is not met), `strong`, `signed`. Two flags are counted beside the buckets, never instead of
-them: `stale` and `held`.
-
-## A3. The gate
-
-| Gate | Cells that exist | What CI requires before merge | Derived defaults |
-|------|------------------|-------------------------------|------------------|
-| `passed` | spec, passed | every rule's passed cell is met; any source | `min_strength` unused, `ai_review_at` never, `sign_at` n/a, tags optional, breaks off |
-| `strong` | + strong | every rule's strong cell is met; only `ci` counts | `min_strength` 70, `ai_review_at` high, `sign_at` n/a, tags optional |
-| `signed` | + signed | every rule's signed cell is met; signer list present | `min_strength` 80, `ai_review_at` medium, `sign_at` medium, risk and origin required |
-
-Branch rules `purlin:init` prints: (1) require a pull request and the `purlin` check, Actions app
-the only bypass; (2) restrict `.purlin/records/**` and `.purlin/briefs/**` to the Actions app;
-(3) no force push, no deletion. Under `passed` only (3). Azure: the build service alone holds
-Contribute on those two paths.
-
-A signature counts when: the commit that added the file is signed and verifies; the author's
-email is on `signers` as of that commit; that author did not author the last commit to the test
-file; the bound hashes match; and under `signed` the commit is on the protected branch.
-
-## A4. Commands
-
-| Command | Purpose (the one sentence) | Writes |
-|---------|----------------------------|--------|
-| `purlin:test [feature]` | Run the tagged tests and print each rule's passed cell | `.purlin/runtime/proofs/` |
-| `purlin:audit [feature] [--commit] [--ci] [--tag <name>] [--remote]` | Run the tests and the breaks, then write the record | `.purlin/records/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json`; under `--ci` also `.purlin/briefs/<feature>/<RULE-N>.<hash8>.brief.json`; `--tag` writes `record/<name>` |
-| `purlin:sign` | Walk the review list one brief at a time, signing, holding or skipping | signatures and holds, in signed commits |
-| `purlin:sign <feature> [RULE-N ...]` | Sign a rule, a feature or a batch as a signed commit | `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json` |
-| `purlin:sign --batch` | Sign everything currently signable | same |
-| `purlin:sign <feature> RULE-N --hold "<case>"` | Hold a rule: the test does not prove the proof | `<RULE-N>.<hash8>.<holder-slug>.hold.json` |
-| `purlin:sign <feature> RULE-N --note "<text>"` | Sign a `@manual` proof's evidence, or settle what the model could not | the signature file with `note` set |
-| `purlin:status` | Show every rule's cells and what blocks the gate | nothing |
-| `purlin:init --gate passed\|strong\|signed` | unchanged syntax, new values | config, workflow, readmes |
-
-`purlin:build`, `purlin:spec`, `purlin:spec-from-code`, `purlin:find`, `purlin:drift`,
-`purlin:anchor`, `purlin:rename` keep their syntax. The walk's answers are human actions: sign,
-add a case (a proof line the reviewer writes), hold, skip.
-
-Commit prefixes: `sign(<feature>): RULE-N ...`, `sign(batch): <feature> RULE-N, ...`,
-`hold(<feature>): RULE-N ...`, `purlin: record for <commit7>` (records and briefs only).
-
-## A5. Skills scale with the gate
-
-Under `passed`: `purlin:status`, `purlin:find`, `purlin:test`, `purlin:audit`, the pull
-request comment and the board print no strength, no risk, no review list, no signature.
-`purlin:audit` runs no breaks. `purlin:spec` does not ask for a risk tag. `purlin:sign` says
-the gate is `passed` and what `purlin:init --gate strong` would add, then stops. `purlin:drift
-qa` says the same.
-
-Under `strong`: strength, the strong cell, the review list and risk appear. A local
-`purlin:audit` prints its strength as a preview and says only CI's record counts.
-`purlin:sign` works for the walk, `--note` and `--hold`; a bare signature says signatures are
-required only under `signed`, then writes it anyway if asked.
-
-Under `signed`: the signed cell, the signer list, the sign panel.
-
-## A6. Surfaces
-
-**Board** (build and test). Headline: `<met> of <rules> rules meet the gate <gate> · <failing>
-failing`. Tiles per decision 14. Spec table columns: `Spec`, `Rules`, `Spec status`
-(`ready · drafted`), `Tests` (`passed · failing · no test`, each count in its tone), `Last run`
-(source, os, age); at `strong` add `Strength`, `Strong` (`n of m` with a bar); at `signed` add
-`Signed` (`n of m`, stale count in the fail tone). No risk column, no coverage column, no state
-column, no risk-by-state grid. Expanded rule rows: id, text, one pill per existing cell.
-Filters: `Untested`, `Failing`; at `strong` add `Weak`; at `signed` add `Unsigned`, `Stale or
-held`.
-
-**Rule screen**: spec status, then one row per existing cell with its word and reasons, then
-Proofs. At `strong` and above, the Brief panel: strength beside the minimum, the findings, the
-observations, each in one sentence naming the proofs it concerns. At `signed`, the Sign panel:
-`purlin:sign <feature> <RULE-N>` or `Signed by <email>`.
-
-**Review list** (tab exists at `strong` and above). Header: `<n> rules need a person`, then the
-risk summary: one line per risk with counts of unsigned, stale, held and needs-a-person. Rows
-grouped by risk high first, stale and held first within a group; each row carries feature, rule
-id, text, risk tag, the blocking cell's word, and its reasons.
-
-**Status table** (`purlin:status`, the pull request comment, `scan.py`): `Feature | Rules |
-Spec | Tests | Run` then `| Strength | Strong` at `strong` then `| Signed` at `signed`. Summary
-line: `<met> of <rules> meet the gate <gate>`. Then one `→ Next:` line.
-
-**Gate check** (`scripts/ci/gate_check.py --check`): sections `Not passed (n)`, `Weak (n)`,
-`Not signed (n)`, each rule with its blocking reason. Log prefix `gate:`. JSON: `{gate,
-min_strength, commit, rules, met, not_passed, weak, not_signed, result, exit, signer_list?}`.
-
----
-
-# Part B: technical design
-
-*Superseded in full by decisions 23 to 106; read references/glossary.md and references/hard_gates.md for what holds.*
-
-## B1. Payload, schema 5
-
-`scripts/mcp/purlin/payload.py`: `SCHEMA_VERSION = 5`; `scripts/report/src/app.js`
-`SCHEMA = 5`.
-
-```
-gate:     {gate, ai_review_at, sign_at, min_strength, mutation_engine, sql_engine, ci,
-           signers, test_framework, pre_push}
-summary:  {rules, features, met, failing, untested, passed, strong, signed,
-           stale, held, needs_person}            # strong/signed absent below their gate
-features[]: {name, category, spec_path, ..., rollup: {same keys as summary minus features,
-           plus test_strength, latest_record}, rules: [...], signatures: [paths]}
-rules[]:  {id, feature, label, text, risk, origin, criterion, rule_hash, proof_hash,
-           test_hash, test_hash_kind, design_hash, proofs,
-           spec: 'drafted'|'ready',
-           cells: {passed: {...}, strong: {...}|absent, signed: {...}|absent},
-           bucket, meets_gate, blocked_by: 'spec'|'passed'|'strong'|'signed'|null,
-           flags: {failing, stale, held, needs_person, code_changed}}
-review_list[]: {feature, owner, rule, risk, cell, why: [tokens]}    # [] under passed
-records, warnings, commit, dirty, generated_at, generated_by, project, version
-```
-
-Cell shapes:
-
-```
-passed:   {word, source: 'ci'|'developer'|'local'|null, current: bool, counts: bool,
-           missing_env: [], reasons: []}
-strong:   {word, strength: int|null, findings: [], observations: [], brief: path|null,
-           settled: bool|null, reasons: []}
-signed:   {word, required: bool, signer: email|null, path: str|null, reasons: []}
-```
-
-Gone: `states`, `project_rollup`, `counts`, `lowest_state`, `proved`, `by_risk`,
-`re_verify_pending`, `needs_review`, `flags.auto_approvable`, `flags.needs_ai_review`,
-`flags.on_review_list`, `review_list[].reason`, `reasons`. `why` tokens are the closed set
-`unsigned`, `stale`, `held`, `needs a person`, `manual`.
-
-## B2. Core package `scripts/mcp/purlin/`
-
-- `gate.py`: `GATES = ('passed', 'strong', 'signed')`; `_DERIVED` gains `sign_at` (`None`,
-  `None`, `'medium'`) and `breaks` (`False`, `True`, `True`); `GateConfig` slot `signers`
-  replaces `approvers`, `tags_required` is dropped; `RETIRED_KEYS` gains `approvers`; an
-  unrecognised `gate` falls back to `passed` with the existing warning shape.
-- `states.py`: rewrite. `rule_cells(inp, cfg)` returns `{spec, cells, bucket, meets_gate,
-  blocked_by, flags}`; `feature_rollup` and `project_rollup` count buckets and `met`. No
-  `STATE_ORDER`, no `_rank`, no `lowest`, no brief-as-state. Inputs are today's plus `sign_at`,
-  the brief's `settled` and `observations`. Keep `_record_verdict` (renamed `_record_passes`),
-  `_failing_where`, `_local_passes`.
-- `signatures.py` (from `approvals.py`, `git mv`): `signatures_dir()` returns
-  `<spec>.signatures`; `SIGNATURE_NAME_RE`, `HOLD_NAME_RE` unchanged in shape; `signer_slug`;
-  `load_signatures` reads `signer`; no legacy body, no `is_ci`; `is_current`, `counts`,
-  `commit_is_signed`, `commit_author`, `is_ancestor` as today with the new words.
-  `ids._approval_paths` uses `signatures_dir()`.
-- `payload.py`: schema 5 as B1; `_counting` keyed on the new gate names; review entries only
-  when `cfg.gate != 'passed'`; briefs read from `.purlin/briefs/`.
-- `records.py` (mcp): `counts_under(gate, label)` keyed on the new values only.
-- `checks.py`: `blocks_proof_ready` becomes `blocks_ready`.
-- `status.py`: columns and summary per A6; `_directives` from the blocking cell: drafted →
-  `purlin:spec`; no test or failing → `purlin:build`; code changed or a non-CI source at
-  `strong`+ → push, CI records; weak → `purlin:build` naming the reason; needs a person,
-  unsigned, stale, held → `purlin:sign`; everything met → "nothing is outstanding at gate
-  <gate>".
-- `drift.py`: `qa.signatures_stale`, `qa.review_list_size`, `qa.needs_person`;
-  `eng.code_changed`; `design.design_rules_stale` reads the signed cell; `unproved` is
-  `spec == 'drafted'`.
-- `server.py`: tool descriptions say "the spec status and the cells of every rule".
-
-## B3. Review and gate `scripts/review/`, `scripts/ci/`
-
-- `sign.py` (from `approve.py`, `git mv`): `SCHEMA = 'purlin-signature/1'`, `HOLD_SCHEMA`
-  unchanged; body field `signer`; `gate` at signing; `note` field, null unless `--note`;
-  `--note` allowed on a rule whose strong cell reads `needs a person`; the walk (from
-  `skills/review`'s steps: read the review list, render each brief, take the answer) lives
-  here as the no-argument path; `auto_approve` deleted; `signable()` lists rules whose signed
-  cell is `unsigned` or `stale`, or whose strong cell is `needs a person`; messages `sign:
-  signer list missing: run purlin:init --gate signed`, `<email> is not on the signer list`;
-  under `passed` prints what the gate lacks and exits 2; commit subjects per A4.
-- `brief.py`: path `.purlin/briefs/<feature>/<RULE-N>.<hash8>.brief.json`; `SCHEMA =
-  'purlin-brief/2'`; `state`, `verdict`, `reasons` dropped; `observations` and `settled`
-  added; `verdict_for` deleted; `model_prompt` asks the model to state what the test observes
-  against what the proof names and to say when it cannot tell, never to recommend;
-  `write_briefs` iterates the rules whose risk is at or above `ai_review_at` and whose passed
-  cell counts; `render_brief` prints strength beside the minimum, the findings, the
-  observations.
-- `gate_check.py` (from `verify_gate.py`, `git mv`): `_REQUIRED_STATE` and `_rank` deleted;
-  the check is `rule['meets_gate']` with `blocked_by` choosing the section; JSON per A6;
-  `_SIGNER_LIST_MISSING = '→ signer list missing: run purlin:init --gate signed'`; `PREFIX =
-  'gate:'`.
-- `scripts/run/purlin_run.py`: `--record` skips the breaks when `cfg.breaks` is false;
-  `_ci_review` writes briefs only; the record commit carries records and briefs;
-  `build_record` writes the new gate value; `RECORD_SCHEMA = 'purlin-record/2'`,
-  `schema_version` 2; `_VALIDATED_PREFIX` → `refs/tags/record/`. `scripts/run/records.py`
-  docstrings follow. `scan.py` prints the bucket lines and the review list per A6.
-
-## B4. Init and update `scripts/init/`
-
-- `scaffold.py`: `GATE_CHOICES` three new answers; `SIGNER_QUESTION`; `write_config` writes
-  `signers` under `signed` and never `approvers`; `_BRANCH_RULES` per A3; readmes;
-  `print_signed`; `--gate` choices from `gate_module.GATES`; the workflow it writes runs
-  `purlin_run.py --all --record --ci` as today.
-- `update.py`: the existing 0.9.5 → 0.10.0 migrations now land on this layout: gate values
-  `passed`/`strong`/`signed`, `signers`, no approvals directory. `GATE_QUESTION` in the new
-  words; the retired-spelling table (`# retired` rows) gains the retired names from decision
-  15. No migration from the intermediate layout. `dev/fixtures/upgrade-0.10-dev/` is deleted
-  with its tests; `upgrade-0.9.5/` stays.
-- `templates/config.json`: `gate: passed`. `templates/gitignore.purlin`:
-  `.purlin/briefs/**/*.brief.txt`.
-
-## B5. Dashboard `scripts/report/src/`
-
-- `app.js`: `SCHEMA = 5`; `STATES`/`TONES` replaced by `BUCKETS` and `CELL_TONES` (`passed`,
-  `strong`, `signed` pass; `failed`, `stale` fail; `no test`, `not run`, `code changed`,
-  `unsigned`, `weak`, `needs a person`, `held` warn; `drafted`, `not required` idle);
-  `pill(word)` solid only for `signed`; `hasRisks`, `hasRecords`, `hasApprovals` replaced by
-  `level(name)` reading `DATA.gate.gate`.
-- `board.js`: `statStrip` from `DATA.summary` and `level()`; `riskGrid` deleted;
-  `boardColumns`, `featureRow`, headline per A6.
-- `filters.js`: the five filters per A6, each gated by `level()`.
-- `rule.js`: cell rows; `briefPanel` at `strong`+; `signPanel` at `signed`; `signerOf` reads
-  the file's third dot part.
-- `review.js`: risk summary block, six columns, `why` tokens rendered as sentences.
-- `styles.css`: `.tiles` uses `repeat(auto-fit, minmax(0,1fr))`; `.strip` two columns only
-  when the flag card exists; `.grid` rules deleted; `.rev` six columns.
-- `dev/capture_doc_screenshots.py` descriptions in the new words; the five shots keep their
-  names. Fixtures `dev/fixtures/report/{solo,team,regulated}.json` rewritten by hand to
-  schema 5 first. `regulated` keeps one stale rule, one held rule, one `needs a person` rule,
-  one `code changed` rule, one `weak` rule and one `windows: no record yet` rule.
-
-## B6. Formats `references/formats/`
-
-| File | Now | Change |
-|------|-----|--------|
-| `spec_format.md` | 11 | wording: the risk tag's meaning, `@manual`, the `@env` sentence. No bump. |
-| `proofs_format.md` | 8 | wording: `@manual`. No bump. |
-| `anchor_format.md` | 7 | wording: "stales the signatures". No bump. |
-| `record_format.md` | 1 | **bump to 2**: `gate` enum, `purlin-record/2`, `test_strength` null under `passed`, source, Freshness says code changed |
-| `approval_format.md` | 2 | **`git mv` to `signature_format.md`, bump to 3**: directory, filename grammar, `purlin-signature/1`, `signer`, `note`, `gate` enum, no CI variant, holds unchanged |
-
-`references/drift_criteria.md` `> Criteria-Version:` 3 → 4. `CLAUDE.md` format table row
-renamed.
-
-## B7. Vocabulary enforcement
-
-`dev/test_vocabulary.py`: `WORDS` gains every retired word from decision 15, matched whole-word
-and case-insensitive (so `Untested` and `test_` never match `tested`); `LITERALS` gains the
-retired phrases and the names `purlin:verify`, `purlin:review`, `purlin:approve`,
-`verify_gate`, `verify-gate:`, `validated/`; `EXCLUDED` drops `"specs/"` and keeps `dev/plans/`,
-`design/tokens/`, `RELEASE_NOTES.md` (rewritten anyway), the glossary, `dev/fixtures/upgrade-0.9.5/`
-and `.purlin/`; `design/components/` and `design/readme.md` join the checked set once 6B lands.
-`PENDING_REWRITE` stages files a phase has not reached; it is empty at closeout.
-
----
-
-# Part C: execution
-
-*Superseded in full by decisions 23 to 106; read references/glossary.md and references/hard_gates.md for what holds.*
-
-## C1. Rules for every lane
-
-- Branch `three-levels` off `evidence-workflow`. Each lane in its own worktree
-  `/Users/richlabarca/LocalCode/purlin-wt/<lane>` on `lane/<lane>`, merged back by the
-  orchestrator in phase order. Push branches for CI freely. No tags. `VERSION` stays 0.10.0
-  and `dev/bump_version.sh` is not run.
-- Read this file in full, then `design/readme.md` where the brief says so, then your brief.
-- Prose rules from `design/readme.md` "Content fundamentals". No emoji anywhere. Python 3.9,
-  stdlib only under `scripts/`, `encoding='utf-8'` on every `open()`.
-- Nothing under `scripts/`, `skills/`, `agents/`, `references/` or `templates/` cites `dev/`
-  or this repository's `specs/`.
-- Tests are tagged for the rewritten spec: keep the `@pytest.mark.proof("<feature>", "PROOF-N",
-  "RULE-N")` and `purlin_proof` first argument equal to the spec's feature name, and renumber
-  markers when the spec renumbers.
-- `dev/run_tests.sh` green in the worktree before the lane reports. Report spec maxima (the
-  highest RULE and PROOF ids per touched spec) and test count deltas.
-- A lane writes no signature files and runs no `purlin:sign`.
-- Feature renames (`approvals` → `signatures`, `skill_approve` → `skill_sign`, `skill_verify` →
-  `skill_audit`) go through `scripts/mcp/purlin/ids.py`'s rename path so specs, markers and
-  record directories move together. `skill_review` is deleted: its spec, its tests, its record
-  directory.
-
-## C2. Phases
-
-Dependencies: 0 → 1 → {2, 3, 4} → 5 → 6 → 7. Phase 4 needs only the fixtures from 0 and can
-start with 2 and 3. Phases 5 and 6 need only Part A and can be drafted in parallel with 1 to
-4, but their tests (`test_skills.py`, screenshot tests) land after 4.
-
-### Phase 0: contract (orchestrator)
-
-1. Create the branch. Commit this file. Copy Part A into `dev/plans/lanes/tl-_rules.md` with C1.
-2. Rewrite `dev/fixtures/report/solo.json`, `team.json`, `regulated.json` to schema 5 (B1,
-   B5). These are the contract for phases 1 and 4.
-3. `dev/fixtures/consumer-ci/.purlin/config.json`: `gate: strong`. Delete
-   `dev/fixtures/upgrade-0.10-dev/`.
-4. Arm `dev/test_vocabulary.py` per B7 with every not-yet-rewritten file in
-   `PENDING_REWRITE`, so the guard fails only on what a later phase leaves behind. Drop `audit`
-   from its word list.
-5. Write the lane briefs from this plan.
-
-### Phase 1: core package (2 lanes, Opus)
-
-**1A states and payload.** `gate.py`, `states.py`, `payload.py`, `records.py` (mcp),
-`checks.py`, `status.py`, `drift.py`, `server.py`, `ids.py`. Tests: `dev/test_mcp_server.py`
-(the 41 state functions, the status-table test at L1075, the gate-defaults test at L580, the
-counts-under test at L652), `dev/test_review_list.py`, `dev/test_backing_tests.py`,
-`dev/test_failing.py`, `dev/test_drift.py` (L638, L847), `dev/test_scan.py` (L148, L173).
-Specs: rewrite `specs/mcp/states.md`; section-rewrite `specs/mcp/drift.md` RULE-7, RULE-14;
-`specs/mcp/server.md` PROOF-9; `specs/_anchors/schema_proof_format.md` RULE-1, RULE-3;
-`specs/_anchors/schema_spec_format.md` RULE-4.
-
-**1B signatures.** `signatures.py` (from `approvals.py`). Tests: `dev/test_signatures.py`
-(from `test_approvals.py`: `TestTheTriple`, `TestStale`, `TestTheFile`, `TestTheSignedCommit`,
-`TestTheAncestorCheck`; `TestAutoApproval` deleted), `dev/test_holds.py`. Spec:
-`specs/review/approvals.md` → `specs/review/signatures.md` through the rename path,
-rewritten: RULE-1..10 hashing and file, RULE-11..16, RULE-39, RULE-41 deleted, RULE-17..23
-signing, RULE-24..38 moved to `specs/ci/gate_check.md` in phase 2, RULE-40 holds.
-
-### Phase 2: sign, brief, gate, run (2 lanes, Opus)
-
-**2A sign, brief, gate.** `scripts/review/sign.py` (from `approve.py`, with the walk from
-`skills/review`), `brief.py`, `scripts/ci/gate_check.py` (from `verify_gate.py`). Tests:
-`dev/test_gate_check.py` (from `test_verify_gate.py`, all 29), `dev/test_brief.py` (L271–296
-the model layer, L391, L403, L412, L448), `dev/test_brief_files.py`,
-`dev/test_brief_tests_named.py` (L98). Specs: new `specs/ci/gate_check.md` carrying the old
-approvals RULE-24..38 rewritten as the three sections and the JSON; `specs/review/brief.md`
-RULE-12, RULE-13 (verdicts → observations and settled), RULE-19, RULE-20 (deleted), PROOF-27,
-PROOF-28, PROOF-34, PROOF-42.
-
-**2B run and scan.** `scripts/run/purlin_run.py` (`--record` without breaks under `passed`,
-`_ci_review`, `build_record`, record schema 2, `record/` tags), `scripts/run/records.py`,
-`scripts/run/ci.py`, `scripts/report/scan.py`, `dev/manual/check_qa_tool.py`,
-`dev/manual/check_spec.py`, `dev/manual/README.md`. Tests: `dev/test_run_script.py` (L312,
-L668, L693, L719, L805, L826, L853), `dev/test_records.py` (L454, L515 and the gate-value
-sites), `dev/test_scan_review_list.py`, `dev/test_scan.py` remainder, `dev/test_consumer_ci.py`
-(L277, L318). Specs: `specs/run/records.md` RULE-5, RULE-14, RULE-21, RULE-25, PROOF-14,
-PROOF-20, PROOF-28, PROOF-29; `specs/run/run_script.md` RULE-17, RULE-20, RULE-42, PROOF-11,
-PROOF-17, PROOF-20, PROOF-61, plus the no-breaks-under-passed rule. Format:
-`references/formats/record_format.md` to version 2 in the same commit as the record change.
-
-### Phase 3: init and update (1 lane, Opus)
-
-`scripts/init/scaffold.py`, `scripts/init/update.py` (B4), `templates/config.json`,
-`templates/gitignore.purlin`. Tests: `dev/test_init_scaffold.py` (the gate and signer
-functions at L196–L492, L587, L695; the fixture `--gate` arguments), `dev/test_init_update.py`
-(L333–L420; the 0.9.5 fixture lands on the new layout; the 0.10-dev tests deleted),
-`dev/test_init_e2e.sh` (the three-gate walk in the new words, `set_signers`, `gate_check.py`),
-`dev/test_e2e_required_rules.sh` (L165–L193), the three e2e shell fixtures that write
-`{"gate": "tested"}` (now `passed`). Specs: `specs/init/scaffold.md` RULE-2, RULE-3, RULE-4,
-RULE-10, RULE-11, RULE-12, RULE-17, RULE-36, PROOF-35, PROOF-41; `specs/init/update.md`
-RULE-10, RULE-12, PROOF-10, PROOF-12.
-
-### Phase 4: dashboard (1 lane, Opus)
-
-`scripts/report/src/*.js`, `styles.css`, `dev/capture_doc_screenshots.py`, rebuild through
-`dev/build_report.py`, regenerate the five `docs/images/dashboard-*.png`. Tests:
-`dev/test_purlin_report.py` (L227, L242, L360, L375, L387, L423, L436, L493, L524, L614,
-L689 and `FILTER_CASES`), `dev/test_purlin_report_board_layout.py` (L41, L56). Spec:
-`specs/dashboard/purlin_report.md` rewrite of RULE-7, RULE-8, RULE-9, RULE-13, RULE-15,
-RULE-16, RULE-18, RULE-26, RULE-30, RULE-32 and their proofs; the 1200-line limit (RULE-2)
-holds. Read `design/readme.md` first. Both themes ship, tokens only, no colour literal.
-
-### Phase 5: skills, agent, references, tools (3 lanes)
-
-**5A skills and agent (Opus).** `git mv skills/approve skills/sign`, `git mv skills/verify
-skills/audit`, `git rm -r skills/review`; rewrite `skills/sign/SKILL.md` (the walk, the
-answers, the write forms), `skills/audit/SKILL.md`, `skills/status/SKILL.md`,
-`skills/init/SKILL.md`; section-rewrite `skills/find`, `skills/test`, `skills/spec`,
-`skills/drift`; `agents/purlin.md` (the words block, the `sync_status` paragraph, NEVER 2, 3,
-4, 5, the routing rows). Every skill's gate-scaling per A5, with `skills/test/SKILL.md` as the
-pattern. Tests: `dev/test_skills.py` (L34–38 name list, L223, L238, L247, L257, L499, L538,
-L553, L571–596 as `skill_sign`, L656, L716, L723, L770, L818, L822, L862). Specs:
-`skill_approve.md` → `skill_sign.md` and `skill_verify.md` → `skill_audit.md` via the
-rename path, rewritten; `skill_review.md` deleted; `skill_init.md` RULE-5; `skill_find.md`
-PROOF-2; `specs/instructions/purlin_agent.md` RULE-3, RULE-5.
-
-**5B references, formats, tools, root (Opus).** `references/glossary.md` (the words, the
-chain, the retired rows from decision 15, the `audit` row removed from the retired table), `hard_gates.md` (rewrite: the level table, source,
-the signer list, holds; "Auto-approval" section deleted), `review_criteria.md` (the free checks
-stay; "The three risk levels" rewritten; "Verdicts" replaced by "What the brief reports"),
-`purlin_commands.md` (twelve skills: anchor, audit, build, drift, find, init, rename, sign,
-spec, spec-from-code, status, test; three tables and the syntax block per A4),
-`commit_conventions.md` (prefix rows, the signature commit section, the record commit
-paragraphs), `drift_criteria.md` (role table, config table with `signers` and `sign_at`,
-version 4), `spec_quality_guide.md` (rule tags, `@manual`, "When a rule is stuck" rewritten as
-one row per cell word), `references/formats/` per B6, `CLAUDE.md` (format table, one-home
-table, the `purlin:build`/`purlin:test` delegation sentence), `README.md` (vocabulary
-paragraph, gate table, command table), `tools/QA/purlin-qa-report.md` (Steps 2, 3, 5),
-`tools/PM/purlin-anchor-userstories.md` (L39, L43, L69, L134–144), then `bash
-dev/pack_tools.sh`. Specs: `specs/tools/qa_report.md` RULE-3, RULE-4, RULE-5, PROOF-3;
-`specs/tools/pm_anchor_userstories.md` RULE-4, PROOF-4; `specs/mcp/specs.md` PROOF-4;
-`specs/anchor/upstream.md` RULE-7 wording.
-
-**5C skill word swaps (Sonnet).** `skills/build`, `skills/spec-from-code`, `skills/anchor`,
-`skills/rename` per decision 15 and A4; `specs/skills/skill_rename.md` and `skill_drift.md`
-descriptions; `hooks/hooks.json` checked, unchanged.
-
-### Phase 6: docs and design (2 lanes)
-
-**6A rewrites (Opus).** Full rewrite: `docs/dashboard.md` (against the phase 4 screenshots),
-`docs/regulated-workflow.md` (the mermaid `stateDiagram-v2` redrawn as spec status → passed →
-strong → signed with the stale and code-changed edges, init block from `docs/_mermaid.md`),
-`git mv docs/review-and-approval.md docs/review-and-signing.md` and rewrite. Section
-rewrite: `docs/running-and-records.md` (L15, L103, L117, L180, L192, L246–264),
-`docs/team-workflow.md` (L1–8, L21–24, L62, L64, L99, L115), `docs/getting-started.md`
-(L50–65, L161–175), `docs/raising-the-gate-and-upgrading.md` (L12–16, L32–50, L73, L111–124,
-L129–134), `docs/working-together.md` (L68–72, L136–137, the drift samples).
-`RELEASE_NOTES.md`: the 0.10.0 entry overwritten to describe this model, the three commands,
-and every retired word.
-
-**6B word swaps and design (Sonnet).** `docs/solo-workflow.md`, `docs/specs-and-anchors.md`
-(and L135–139), `docs/design-in-specs.md`, `docs/spec-from-code.md`, `docs/index.md` (links
-to the renamed page and format); `design/readme.md` L31 and L121–124; `design/components/core/
-StatusPill.jsx`, `.d.ts`, `.prompt.md`, `core.card.html`, `data/StatTile.prompt.md`,
-`data/data.card.html`, `data/GroupHeader.prompt.md`, `data/DataTable.prompt.md`,
-`core/Button.prompt.md`, `core/Tag.prompt.md`, `editorial/CommandChip.prompt.md`,
-`editorial/editorial.card.html`, `guidelines/type-scale-ui.card.html`,
-`guidelines/type-mono.card.html` to the cell words and gate values; `git rm -r
-dev/screenshots/`.
-
-### Phase 7: this repository (orchestrator, after 1–6 are merged)
-
-1. `git rm -r` the 37 `specs/**/*.approvals/` directories and `.purlin/records/*`. Edit
-   `.purlin/config.json`: `gate: signed`, `signers: ["rich.labarca@gmail.com"]`, no
-   `approvers`. Commit as `chore: drop the 0.10-dev evidence`.
-2. `python3 dev/build_report.py`, `python3 dev/capture_doc_screenshots.py`, `bash
-   dev/pack_tools.sh`, then a full `dev/run_tests.sh` and `python3 scripts/ci/gate_check.py
-   --check`. `PENDING_REWRITE` is empty; the vocabulary test is green.
-3. `dev/plans/README.md` names this file. `dev/plans/TODO-0.10.0.md` and
-   `dev/plans/held-rules-0.10.0.md` restated in the new words: item 1 becomes "sign the review
-   list", with the count from step 2.
-4. Push `three-levels`. CI's record commit is the first with briefs under `.purlin/briefs/`.
-   Confirm the pull request comment prints the new table and the board artifact opens.
-5. Report: the sweep result, the gate check summarised as rules `Not signed`, the vocabulary
-   test result, the spec maxima, and anything left undone with why.
-
-### After the report (user)
-
-Sign the review list with `purlin:sign`; apply the three branch rulesets init prints; pull
-request `three-levels` → `main`; tag `v0.10.0`.
-
-## C3. Counts to expect
-
-| What | Now | After |
-|------|-----|-------|
-| rule states / cells | 7 states + 1 flag | 2 spec words, 3 cells, 4 flags |
-| gate values | `tested recorded approved` | `passed strong signed` |
-| commands for the levels | test, verify, review + approve | test, audit, sign |
-| skills | 13 | 12 |
-| brief output | 4 verdicts | strength, findings, observations, settled |
-| payload schema | 4 | 5 |
-| record format | 1 | 2 |
-| approval format 2 | `approval_format.md` | `signature_format.md` 3 |
-| evidence files in `specs/` | 471 person + 137 ci + 922 brief | 0 until the user signs |
-| dashboard tiles at `passed` / `strong` / `signed` | 7 + 1 | 3 / 4 / 5 + 1 |
-| board columns at `passed` / `strong` / `signed` | 4 / 7 / 8 | 5 / 7 / 8 |
-| specs rewritten / section / swap / deleted / untouched | | 6 / 15 / 6 / 1 / 10 |
-| docs rewritten / section / swap | | 3 / 5 / 5 |
