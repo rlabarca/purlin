@@ -309,7 +309,9 @@ class TestWhichRulesAreRead:
         assert rules_asked(directory) == ['RULE-1']
 
     # purlin: ai_audit PROOF-103
-    def test_a_rule_whose_feature_code_changed_since_its_entry_is_read(self):
+    def test_a_rule_whose_feature_code_changed_since_its_entry_is_read(
+            self, claude):
+        _install, directory = claude
         source = LOGIN_SOURCE
         with passing_project(source=source) as made:
             settle(made, 'RULE-2')
@@ -323,6 +325,15 @@ class TestWhichRulesAreRead:
                                           code_of(made))
             assert entry['out_of_date'] == ['code'], entry
             assert ('login', 'RULE-2') in to_read(made)
+            # The audit itself, run as any audit is, reads RULE-2: it prints
+            # the rule's line, asks the model about it and says of no rule
+            # that it has nothing to settle.
+            code, printed = audit(made)
+        assert code == 0, printed
+        assert rules_printed(printed) == ['RULE-1', 'RULE-2'], printed
+        # The two rules are asked about side by side, in either order.
+        assert sorted(rules_asked(directory)) == ['RULE-1', 'RULE-2']
+        assert 'nothing to settle' not in printed, printed
 
     # purlin: ai_audit PROOF-51
     def test_a_rule_with_a_current_entry_is_read_when_asked_again(
@@ -493,7 +504,7 @@ class TestTheCall:
 
     # purlin: ai_audit PROOF-14
     def test_the_call_is_bare_given_300_seconds_and_the_request_on_stdin(
-            self, project, tmp_path):
+            self, project, tmp_path, monkeypatch):
         seen = []
         # The request holds characters outside ASCII, as a rule or a
         # criteria file may.
@@ -519,7 +530,7 @@ class TestTheCall:
             found
         assert len(seen) == 1, seen
         command, kwargs = seen[0]
-        assert command == [
+        started = [
             '/bin/claude', '-p', '--output-format', 'json', '--max-turns',
             '1', '--tools', '', '--strict-mcp-config', '--safe-mode',
             '--setting-sources', '', '--disable-slash-commands',
@@ -527,6 +538,7 @@ class TestTheCall:
             "You review software tests for Purlin's audit. You have no "
             "tools. Answer in exactly the shape the request gives, and with "
             "nothing else."]
+        assert command == started
         assert kwargs['timeout'] == 300
         # `input=` writes the prompt and closes stdin behind it.
         request = audit_module.model_prompt(
@@ -538,6 +550,17 @@ class TestTheCall:
         with open(stdin, 'rb') as handle:
             arrived = handle.read().decode('utf-8')
         assert arrived.replace('\r\n', '\n') == request
+        # The audit itself, with `claude` found at `/bin/claude`, starts
+        # that path and not the bare name, once, with the same arguments.
+        monkeypatch.setattr(audit_module.shutil, 'which',
+                            lambda name, *_rest, **_named: '/bin/claude')
+        del seen[:]
+        answers = audit_module.audit_all(
+            project.root, [read(project, 'RULE-2')], runner=runner)
+        assert [answer.get('explanation') for answer in answers] == [
+            ['The test reads the status.']], answers
+        assert [started_now for started_now, _kwargs in seen] == [started]
+        assert seen[0][1]['timeout'] == 300
 
     # purlin: ai_audit PROOF-112
     def test_claude_is_started_in_an_empty_folder_outside_the_project(
@@ -1010,8 +1033,18 @@ class TestTheVerdict:
         assert printed.splitlines()[-1] == status
 
     # purlin: ai_audit PROOF-100
-    def test_a_caught_bug_is_kept_while_its_test_and_code_stand(self, claude):
+    def test_a_caught_bug_is_kept_while_its_test_and_code_stand(
+            self, claude, monkeypatch):
         _install, directory = claude
+        # Every bug the audit plants, a new one or a recorded one again, goes
+        # through one of these two; each is counted and then done as it is.
+        planted = []
+        for name in ('plant_bug', 'replay'):
+            def counted(*args, _name=name,
+                        _real=getattr(audit_run.planted_bug, name), **named):
+                planted.append((_name, args[2]))
+                return _real(*args, **named)
+            monkeypatch.setattr(audit_run.planted_bug, name, counted)
         with passing_project(source=LOGIN_SOURCE) as made:
             # The bug planted for PROOF-2 was caught, for this test and code.
             settle(made, 'RULE-2')
@@ -1027,8 +1060,14 @@ class TestTheVerdict:
         calls = fake_claude.calls(directory)
         assert len(calls) == 1, calls
         assert asked_for(calls[0]) == [], calls[0]['prompt'][-600:]
+        # None is planted for PROOF-2, and for no other proof of the run.
+        assert planted == [], planted
         assert entry['bugs']['PROOF-2']['result'] == 'caught', entry
         assert entry['bugs']['PROOF-2']['after'] == '    return 200', entry
+        # The rule's line and nothing under it: no line of a bug planted
+        # again.
+        lines = printed.splitlines()
+        assert lines[:-1] == ['login RULE-2   strong'], printed
 
     # purlin: ai_audit PROOF-115
     def test_a_changed_test_has_its_bug_asked_for_again(self, claude):
@@ -1264,10 +1303,19 @@ class TestWhenTheModelCannotBeReached:
         assert code == 0, printed
         assert {rule: entry['verdict'] for rule, entry in entries.items()} == {
             'RULE-1': 'spot-checked', 'RULE-2': 'spot-checked'}, entries
+        # The line is printed once: no second copy, indented or not. The
+        # lines under the two rules hold the words in lower case.
         assert [line for line in printed.splitlines()
-                if 'could not be reached' in line
-                and not line.startswith(' ')] == [
+                if 'The model could not be reached' in line] == [
             self.UNREACHED % ' 2 rules are spot-checked alone.'], printed
+        under = ('  The spot tests found nothing. No bug was planted: the '
+                 'model could not be reached: claude exited with an error.')
+        assert printed.splitlines() == [
+            'login RULE-1   spot-checked', under,
+            'login RULE-2   spot-checked', under,
+            self.UNREACHED % ' 2 rules are spot-checked alone.',
+            'The audit found 0 of 2 rules strong (0%): 0 strong, '
+            '2 spot-checked.'], printed
 
     # purlin: ai_audit PROOF-123
     def test_two_spot_checked_rules_are_counted_and_none_strong(self, claude):
@@ -1345,11 +1393,15 @@ class TestTheCommandLine:
 
     # purlin: ai_audit PROOF-76
     def test_an_unknown_rule_exits_one(self, project, capsys):
-        code, printed = command(project, capsys, '--feature', 'login',
-                                '--rule', 'RULE-99')
+        code = audit_module.main(['--feature', 'login', '--rule', 'RULE-99',
+                                  '--project-root', project.root])
+        printed = capsys.readouterr()
         assert code == 1
-        assert printed == ('login RULE-99 is not a rule any spec has. Run '
-                           'purlin:status login to see its rules.\n'), printed
+        assert printed.out == (
+            'login RULE-99 is not a rule any spec has. Run '
+            'purlin:status login to see its rules.\n'), printed
+        # Only that line: nothing on standard error either.
+        assert printed.err == '', printed
 
     # purlin: ai_audit PROOF-81
     def test_a_settings_file_that_cannot_be_read_stops_it(self, project,
@@ -1879,6 +1931,12 @@ class TestSettlingAFinding:
         assert entry['no_bug'] == [NO_BUG_CAUGHT_5,
                                    UNCHANGED % 'PROOF-5'], entry
         assert 'sample_intake RULE-3   spot-checked' in again['lines']
+        # What the audit prints under RULE-3: the one line, whole.
+        assert sample_lab.Audited.under(again, 'RULE-3') == [
+            "  The spot tests found nothing. No bug was caught for PROOF-5: "
+            "two planted bugs left the proof's check passing. PROOF-5 was "
+            "settled with its test unchanged: it was judged to assert what "
+            "the proof names."], again['lines']
 
     # purlin: ai_audit PROOF-149
     def test_a_dropped_bug_is_nowhere_in_the_evidence(self, second_survived):
@@ -1888,6 +1946,9 @@ class TestSettlingAFinding:
         assert 'return int(seconds // 3600) + 1' not in second_survived.text
         assert 'the AI says this breaks' not in json.dumps(
             second_survived.entries['RULE-3'])
+        # The entry of RULE-3 holds no finding at all.
+        assert second_survived.entries['RULE-3']['findings'] == [], \
+            second_survived.entries['RULE-3']
 
     # purlin: ai_audit PROOF-150
     def test_no_new_bug_named_is_said_as_in_any_audit(self, claude):
@@ -1942,6 +2003,12 @@ class TestSettlingAFinding:
             'A bug was planted for PROOF-2 and its test did not run.'], entry
         assert entry['verdict'] == 'spot-checked', entry
         assert fake_claude.calls(directory) == []
+        # What the settle prints: RULE-2 reads spot-checked, with the
+        # sentence under it, and no other rule is printed.
+        assert lines[:-1] == [
+            'login RULE-2   spot-checked',
+            '  The spot tests found nothing. A bug was planted for PROOF-2 '
+            'and its test did not run.'], lines
 
     # purlin: ai_audit PROOF-153
     def test_a_kept_bug_that_can_no_longer_be_planted_is_asked_for_anew(
@@ -2435,8 +2502,18 @@ class TestAnAuditPlantsASurvivingBugAgain:
             answers=[dict(sample_lab.REPLY,
                           **sample_lab.AFTER_THE_REWRITE)])
         assert made.code == 0, (made.lines, made.errors)
-        assert asked_for({'prompt': request_for(made, 'RULE-3')}) == [
-            'PROOF-5']
+        request = request_for(made, 'RULE-3')
+        assert asked_for({'prompt': request}) == ['PROOF-5']
+        # Asked as for any proof whose code changed: the request holds the
+        # feature's one file as it now stands, the helper in two lines.
+        with open(os.path.join(made.root, 'src', 'intake.py'),
+                  encoding='utf-8') as handle:
+            source = handle.read()
+        assert ('    hours = seconds // 3600\n'
+                '    return int(hours)\n') in source, source
+        assert request.count('\nFile: ') == 1, request[-3000:]
+        assert '\nFile: src/intake.py\n' + source in request, \
+            request[-3000:]
         entry = made.entries['RULE-3']
         bug_now = entry['bugs']['PROOF-5']
         assert bug_now['after'] == '    hours = seconds // 3600 + 1', bug_now
