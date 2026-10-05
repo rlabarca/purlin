@@ -65,18 +65,17 @@
         "verdict": "strong"
       },
       "RULE-22": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-05T18:48:58Z",
         "bugs": {
           "PROOF-137": {
             "after": "        PURLIN_PY=\"python3 \"",
             "aim": "past the test",
             "before": "        PURLIN_PY=\"python3\"",
-            "bug_key": "fac74970aa6027dc1f600dc864e8435343649b8d1488190db8496d9d84ff1700",
+            "bug_key": "3dfb0e4476a94d8f41a0480db00dc6b55f2588d6dd9cc82afab6b7315f317e89",
             "case": "the manifest's command run in a workspace with python3 on the search path and no PURLIN_PYTHON set, sent initialize; the proof says exactly 1 line carrying the server name purlin; the changed code execs a program that does not exist and gives 0 lines",
             "file": "scripts/purlin_python.sh",
             "line": 40,
-            "result": "survived",
-            "test_key": "eb8ca31e76c5bd9ebdccab8dd9fffc7e673071de878ef05c05679d5586157409",
+            "result": "caught",
             "why": ""
           },
           "PROOF-158": {
@@ -92,25 +91,16 @@
           }
         },
         "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "3a1ca0ead6846d43b08edf30323d7f516cc6201f",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-137: the test runs the manifest's command with the plugin's folder substituted, sends initialize and compares the line count with 1 and the server name with purlin, which is the proof's case and result.",
-          "PROOF-137: the test sets PURLIN_PYTHON to its own interpreter, so only the resolver's first branch runs and a fault in the python3, python or py -3 branches still passes.",
-          "PROOF-158: the test compares the entry's whole environment with PURLIN_PYTHON_SOFT set to 1 and its command with sh, which is what the proof names.",
-          "PROOF-158: the test checks only that the arguments are not empty, so the rule's resolver and its last argument naming scripts/mcp/purlin/server.py are compared by neither test and are held only by PROOF-137's server starting.",
-          "The spot tests found nothing, and both tests hold assertions that can fail against the values their proofs name."
-        ],
-        "findings": [
-          "PROOF-137: the test still passes when scripts/purlin_python.sh:40 reads \"PURLIN_PY=\"python3 \"\"",
-          "PROOF-137: the AI says this breaks: the manifest's command run in a workspace with python3 on the search path and no PURLIN_PYTHON set, sent initialize; the proof says exactly 1 line carrying the server name purlin; the changed code execs a program that does not exist and gives 0 lines"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "24f0a29c51e9847aafbd7b8a548341d5d2b0d844adccf8666dee5301801e907e",
         "rule_hash": "d710779f4fda8cf6bd29e104cb7c5987c193bb0d9591856bd1ab5be9330d8f39",
-        "test_hash": "29564743006350b64c189c7e9e6793fdcf149ec5d4e0eed8ea07736efb930abc",
-        "verdict": "weak"
+        "test_hash": "815b51b8a4bdf613171e109277dbbd6dcbb4c3f3675dd1dc4b59e685475a96d1",
+        "verdict": "strong"
       },
       "RULE-31": {
         "at": "2026-10-05T18:42:48Z",
@@ -368,18 +358,17 @@
         "verdict": "strong"
       },
       "RULE-39": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-05T18:48:58Z",
         "bugs": {
           "PROOF-173": {
             "after": "                text = status_module.sync_status(call_root).lower()",
             "aim": "past the test",
             "before": "                text = status_module.sync_status(call_root)",
-            "bug_key": "14304a6170dc04e1700caad2b99a7de64a55ba642d79db6fb08f3c861ac969f6",
+            "bug_key": "33264530be2d23b0168ce861ce0625ac62746f315dea49ec747f726eca7a6ff5",
             "case": "a project with the spec `login`; the proof says the script prints exactly the text the `sync_status` tool answers for that folder; the changed tool answers that text in lower case, so the script's `Purlin status:` output no longer matches it",
             "file": "scripts/mcp/purlin/server.py",
             "line": 235,
-            "result": "survived",
-            "test_key": "aba8917a1f7b48b987dbec2a9b2fd742124660f37ae49f8aaac8609ce1f46636",
+            "result": "caught",
             "why": ""
           },
           "PROOF-174": {
@@ -395,65 +384,46 @@
           }
         },
         "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "3a1ca0ead6846d43b08edf30323d7f516cc6201f",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-173: the test runs the script on a project with `login` and compares its whole output with the status function called directly in the test process, then reads the exit code as 0.",
-          "PROOF-173: the expected text comes from the code the script itself calls and never from the tool's answer through the server, so a tool that answers something else still passes.",
-          "PROOF-173: beyond that comparison the test reads only the opening `Purlin status:` and the word `login`, so a wrong status shared by the script and the function would pass.",
-          "PROOF-173: the proof names no literal text of the status, only that it equals what the tool answers.",
-          "PROOF-174: the test runs the script on an empty folder, compares its whole output with the refusal sentence written as a literal with the folder's path, and reads the exit code as 1, which is what the proof names.",
-          "Findings: the spot tests found nothing, and the check of an expected value taken from the code misses PROOF-173 because the expected value comes from a different function than the script the test runs."
-        ],
-        "findings": [
-          "PROOF-173: the test still passes when scripts/mcp/purlin/server.py:235 reads \"text = status_module.sync_status(call_root).lower()\"",
-          "PROOF-173: the AI says this breaks: a project with the spec `login`; the proof says the script prints exactly the text the `sync_status` tool answers for that folder; the changed tool answers that text in lower case, so the script's `Purlin status:` output no longer matches it"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "3410743ec1cfde6847d3e6b3db1895ce308a63146189289c05bd42b6e0aa177b",
         "rule_hash": "45112d6fcc61905205248606180d0c5d323eef034561bd4ec1319b634f44704b",
-        "test_hash": "280bfb76d4576adab9f00744031745e58264f0fe992f1c55f5e0cd306195c7b4",
-        "verdict": "weak"
+        "test_hash": "861834fff778362dbaada30675302ea468803c1dc0225a04ac0fdcda6f71aa10",
+        "verdict": "strong"
       },
       "RULE-40": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-05T18:48:58Z",
         "bugs": {
           "PROOF-177": {
             "after": "        lines = report['view']['lines']\n        print('\\n'.join([lines[0].split(',')[0] + ', '] + list(lines[1:])))",
             "aim": "past the test",
             "before": "        print('\\n'.join(report['view']['lines']))",
-            "bug_key": "ac8aa8acfba4d696917fa712f204ca03e095f5e90da36ed85df3158eac5e23a2",
+            "bug_key": "591f58a43372bd1ee5f8ab9d75ad8d8dfb0ca63acc5a9bd205df66774e6e44d5",
             "case": "after a pull that adds RULE-3 to login; the proof says the first line printed names the range; the changed code prints only \"Since your last pull, \" as the first line, with the range cut off",
             "file": "scripts/run/purlin_drift.py",
             "line": 63,
-            "result": "survived",
-            "test_key": "f21e7b2bdfa1d885b0b7106564ba59e220cb32e08df2867adf95eaddb8f5cdfc",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "3a1ca0ead6846d43b08edf30323d7f516cc6201f",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-177: the test clones a project, commits RULE-3 to login, pulls, runs the script, and compares the second line onward with exactly `1 rule added: login RULE-3.` and the exit code with 0, so a wrong added-rule line, an extra line or a wrong exit code fails it.",
-          "PROOF-177: the test reads the first line only for the opening `Since your last pull, `, so a first line that loses or misstates the range after those words still passes.",
-          "PROOF-177: the proof names no value for the line naming the range, so the test has no exact text from the proof to compare the first line with.",
-          "PROOF-177: the spot tests found nothing, and that holds: the test asserts on the output and exit code of the real script, with literals for its expected values, and mocks nothing."
-        ],
-        "findings": [
-          "PROOF-177: the test still passes when scripts/run/purlin_drift.py:63 reads \"lines = report['view']['lines']\"",
-          "PROOF-177: the AI says this breaks: after a pull that adds RULE-3 to login; the proof says the first line printed names the range; the changed code prints only \"Since your last pull, \" as the first line, with the range cut off"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "84674fcd92c98ab75da4992684994d7e25e95d5312e6ab5275c76607070ab9e4",
         "rule_hash": "16b0f703d293d738fb8c659b7fd79278472807648f53d39031391b98456e01bb",
-        "test_hash": "3e3011f45153713190a755c859da186db3ce6eec475425e409c406a1249d2da1",
-        "verdict": "weak"
+        "test_hash": "04595d4d97a90ff562016d0757d2033d81a0a9445aec3b6e8da3383e97cca60e",
+        "verdict": "strong"
       },
       "RULE-41": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-05T18:48:58Z",
         "bugs": {
           "PROOF-175": {
             "after": "    return lines, 0",
@@ -470,12 +440,11 @@
             "after": "    return lines + [NOT_A_SPEC % name], 1 if warnings else 0",
             "aim": "past the test",
             "before": "    return lines, 1 if warnings else 0",
-            "bug_key": "c6a79b5df44d698a5dc53b7c9099eb7adafed1ce8d8fcd81f6663cc7275422f9",
+            "bug_key": "f10bf514b7ba712bcb2aef2ed098685b155464aefede4700e659a47471572cf4",
             "case": "login has 2 rules, 3 proofs and no mistake; the proof says no line names a mistake; the changed code ends with `login: no spec of this checkout has that name. Run purlin:status to see its specs.`",
             "file": "scripts/run/purlin_status.py",
             "line": 114,
-            "result": "survived",
-            "test_key": "c10967fa90a4657dfb663993277b9ddca6302010641ad5da6dabc0bc5a4bff39",
+            "result": "caught",
             "why": ""
           },
           "PROOF-178": {
@@ -491,25 +460,16 @@
           }
         },
         "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "3a1ca0ead6846d43b08edf30323d7f516cc6201f",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-175: the test runs the script on a spec carrying `> Requires: api` and compares the first three printed lines with the warning, the empty line and `specs/auth/login.md: 2 rules`, then the exit code with 1, which is everything the proof names.",
-          "PROOF-176: the test compares the first printed line with `specs/auth/login.md: 2 rules` and the exit code with 0, as the proof names.",
-          "PROOF-176: the test reads \"no line naming a mistake\" only as the word `mistake` being absent from the output, so a warning line printed after the first line that does not hold that word still passes.",
-          "PROOF-178: the test compares the whole output with the one sentence for `signup` and the exit code with 1, so both \"prints only\" and the exit code the proof names are checked.",
-          "The spot tests found nothing, and each test holds failable comparisons against literals its proof names."
-        ],
-        "findings": [
-          "PROOF-176: the test still passes when scripts/run/purlin_status.py:114 reads \"return lines + [NOT_A_SPEC % name], 1 if warnings else 0\"",
-          "PROOF-176: the AI says this breaks: login has 2 rules, 3 proofs and no mistake; the proof says no line names a mistake; the changed code ends with `login: no spec of this checkout has that name. Run purlin:status to see its specs.`"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "ff76c34b7b157a4a80c0f4b4bb6b118afe16e80ed0ce3e61eb4a37b873e56353",
         "rule_hash": "d69486ca98c6b1e2f546ddf42d1a9f023a45993941436abeff5f6bd9044fe3d4",
-        "test_hash": "5dcfb57e6b114ba2cbe633054f27d1d9ce5d6ce6680065237f8867a99d841051",
-        "verdict": "weak"
+        "test_hash": "a00d27707caa86e515caa79a342810ee4a80ba94953aa68b2bd8b0cd967fc915",
+        "verdict": "strong"
       },
       "RULE-42": {
         "at": "2026-10-05T18:42:48Z",
@@ -555,55 +515,42 @@
         "verdict": "strong"
       },
       "RULE-43": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-05T18:48:58Z",
         "bugs": {
           "PROOF-181": {
             "after": "    if not tests:\n        return [first, first]",
             "aim": "past the test",
             "before": "    if not tests:\n        return [first]",
-            "bug_key": "0b9aea5dc9c3951c401186fb8ef385e7f3ffd8c9dac6444268ec9b76dd37afb3",
+            "bug_key": "f54732fde2c69e187b296cf274c15c962f12e514bd4c97a15860b88b84d222c2",
             "case": "`login` with RULE-2 untested; the proof says the two lines under `  RULE-2  no test  waiting` are `    no test: no test for PROOF-2` and `    PROOF-2  no test`; the changed code gives three lines, with `    PROOF-2  no test` printed twice",
             "file": "scripts/run/purlin_status.py",
             "line": 175,
-            "result": "survived",
-            "test_key": "efda693f709ddc01e3c82154f0e0a9c1e3a3714d08d3a199975f7695752c8cf6",
+            "result": "caught",
             "why": ""
           },
           "PROOF-182": {
             "after": "    lines.extend(indent + _test_name(test) for test in tests[0:])",
             "aim": "past the test",
             "before": "    lines.extend(indent + _test_name(test) for test in tests[1:])",
-            "bug_key": "6d9e10814bb05cd9db9f24b585080b9566b27bafd93208b5d39c912538c3a1f7",
+            "bug_key": "6dd7e60681571d49755affa2845618d1e0809a85da1869391c915836059ee132",
             "case": "RULE-1 found strong; the proof says the line under `  RULE-1  passed  strong` is `    PROOF-1  passed  tests/test_login.py::test_proof_1`; the changed code gives that line and a second line under it repeating `tests/test_login.py::test_proof_1`",
             "file": "scripts/run/purlin_status.py",
             "line": 178,
-            "result": "survived",
-            "test_key": "6f2841c219ebab1056533e8ef56bcb9e7f726cc19d79f1f9197bdaaebd0b7492",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "3a1ca0ead6846d43b08edf30323d7f516cc6201f",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-181: the test compares the first two lines under `  RULE-2  no test  waiting` with the two the proof names, so a `waiting` reason printed before the proof line would fail it, but a third line after them would not.",
-          "PROOF-181: the test compares only the first line under `  RULE-1  passed  not audited` with the proof's line, so a `not audited` reason printed before the proof line would fail it, and any line after it is not read.",
-          "PROOF-182: the test audits RULE-1 and compares only the first line under `  RULE-1  passed  strong` with the proof's line, so a reason printed above the proof line would fail it, and any line after it is not read.",
-          "No proof of the rule shows a rule with reasons in both cells, so the order \"the passed cell's reasons first\" is not observed by either test.",
-          "The spot tests found nothing, and both tests do compare the literal lines their proofs name."
-        ],
-        "findings": [
-          "PROOF-181: the test still passes when scripts/run/purlin_status.py:175 reads \"return [first, first]\"",
-          "PROOF-181: the AI says this breaks: `login` with RULE-2 untested; the proof says the two lines under `  RULE-2  no test  waiting` are `    no test: no test for PROOF-2` and `    PROOF-2  no test`; the changed code gives three lines, with `    PROOF-2  no test` printed twice",
-          "PROOF-182: the test still passes when scripts/run/purlin_status.py:178 reads \"lines.extend(indent + _test_name(test) for test in tests[0:])\"",
-          "PROOF-182: the AI says this breaks: RULE-1 found strong; the proof says the line under `  RULE-1  passed  strong` is `    PROOF-1  passed  tests/test_login.py::test_proof_1`; the changed code gives that line and a second line under it repeating `tests/test_login.py::test_proof_1`"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "21207b8b43b4c3c559fda5bb9ee5f7c9955e6e2ebc52058799496ef42650de1d",
         "rule_hash": "150bf231b58d379b1a832cd20ac993fcea594f031edd1be2882daf22fda5dd54",
-        "test_hash": "daa5ef9fe19b8b270b9a5684338852fc722b6a83742820a6859116e9aef8040e",
-        "verdict": "weak"
+        "test_hash": "697bda404dfc77a7e4321a644d091bd569d5d44736837037c5e53ee4b20878da",
+        "verdict": "strong"
       },
       "RULE-44": {
         "at": "2026-10-05T18:42:48Z",
@@ -845,41 +792,31 @@
         "verdict": "strong"
       },
       "RULE-8": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-05T18:48:58Z",
         "bugs": {
           "PROOF-133": {
             "after": "                text = status_module.sync_status(call_root) * 2",
             "aim": "past the test",
             "before": "                text = status_module.sync_status(call_root)",
-            "bug_key": "62a85fccf5bbc7f9eb546677c576208edea47c5116713859c9df5a47a2db5a1c",
+            "bug_key": "204c5c2a733cb3b5ef0ded3711b1bc639c57b02492a8e50ea7f0e1272ae75cfe",
             "case": "two sync_status calls in one session, the first failing with boom; the proof says the second answer is the status table naming login; the changed code gives the status table written twice over in the second answer",
             "file": "scripts/mcp/purlin/server.py",
             "line": 235,
-            "result": "survived",
-            "test_key": "34449a0262ed9b674089767fb86f93d5617742d5fbe60d2a54ebc94ddbeaf32a",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "3a1ca0ead6846d43b08edf30323d7f516cc6201f",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-133: the test sends two sync_status calls through one session with the table-building made to fail once with boom, and compares the ids of the answers with [1, 2], so a missing, extra or misnumbered answer fails it.",
-          "PROOF-133: the first answer's text is compared whole with `Error running sync_status: boom`, so any change to the error wording or to the message fails it.",
-          "PROOF-133: the second answer is read only for its opening `Purlin status: ` and for holding `login` somewhere, so text that is more or less than the status table still passes where it keeps that opening and that word.",
-          "PROOF-133: the mock replaces the status table's builder, which the server depends on, not the server's handling of the failure, which is what the test checks.",
-          "The spot tests found nothing, and that fits: the test asserts on the ids and both texts, swallows no error, and takes its expected values from literals the proof names."
-        ],
-        "findings": [
-          "PROOF-133: the test still passes when scripts/mcp/purlin/server.py:235 reads \"text = status_module.sync_status(call_root) * 2\"",
-          "PROOF-133: the AI says this breaks: two sync_status calls in one session, the first failing with boom; the proof says the second answer is the status table naming login; the changed code gives the status table written twice over in the second answer"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "92f63b93e32ba52b92293199ecccc5a7fce71ffc00a79660864453b38d5e8ce1",
         "rule_hash": "c37dbf0c66092f9ecd9a773cee2dcc7d2313bfd451761e3df3b37cbca3cbd270",
-        "test_hash": "ea197ebf80641a48b84efe2d057247e6c7843a70efd2591b6751ed9005511ca7",
-        "verdict": "weak"
+        "test_hash": "2008e6103c7d5fc879c8331e901e4ecd87b7e0b6fc0be8eb4ae78d5eb68fdb37",
+        "verdict": "strong"
       },
       "RULE-9": {
         "at": "2026-10-05T18:42:48Z",
@@ -941,14 +878,14 @@
   "feature": "server",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T18:16:20Z",
-      "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+      "at": "2026-10-05T18:48:34Z",
+      "commit": "3a1ca0ead6846d43b08edf30323d7f516cc6201f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
         "spec": "97c665b761aa2eafb7efe9ae9cd4b46b3b575e0cd56c1ed53bd5dd7b7dc778b9",
-        "tests": "086882838a9a52cac3c194fb88e8211d44f6aec7d4eeefbc1756b50cb571a39c"
+        "tests": "1431158b1c670e821c0cef0762096da14bb55e774c4755502a2c7003721d8bec"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [

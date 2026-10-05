@@ -95,43 +95,31 @@
         "verdict": "strong"
       },
       "RULE-3": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-05T18:49:48Z",
         "bugs": {
           "PROOF-6": {
             "after": "    \"\"\"`git status` lines for spec files that are not committed.\"\"\"\n    subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(300)'],\n                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,\n                     stderr=subprocess.DEVNULL, start_new_session=True)\n    try:",
             "aim": "past the test",
             "before": "    \"\"\"`git status` lines for spec files that are not committed.\"\"\"\n    try:",
-            "bug_key": "85164032aabb5761cee3d2e251fd8f4575c32b2238764d9eeebaf7cc85d67e8f",
+            "bug_key": "8c4e4b9e196b2fc514440fbecd169e94ad62af1de22b9365d2e474c28541dbd8",
             "case": "setup, a test run with --commit and the status in a scratch project; the proof says no process any of them started is still running; the changed code leaves a detached Python process running after the test run and the status exit 0",
             "file": "scripts/mcp/purlin/status.py",
             "line": 597,
-            "result": "survived",
-            "test_key": "e4fa0e1bf0d961d8cc764896e54569a55ba6de2011e7032253c0047f13ff078e",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "1d072420a25c78e5fb6f577e16ebfcf63113b4298ea695cea958df8800e1f05e",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "d4ce8c36eb83de1182380970fb618c7fe7ad855d",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-6: the test runs setup, a test run with `--commit` and the status in a scratch project, each in a process group of its own, and asserts each exits 0, which is what the proof names for the exit codes.",
-          "PROOF-6: the test asserts the list from the helper `left_running(root, pids)` is empty; that helper's source is not shown, so what it counts as a leftover process is read from the test's comment alone.",
-          "PROOF-6: the comment says a leftover is found by its command's process group or by a command line naming the project, so a process that starts a session of its own and whose command line names nothing of the project may not be found by either.",
-          "PROOF-6: the proof says \"no process any of them started\", which is wider than the group and command-line search the comment describes."
-        ],
-        "findings": [
-          "PROOF-6: the test still passes when scripts/mcp/purlin/status.py:597 reads \"subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(300)'],\"",
-          "PROOF-6: the AI says this breaks: setup, a test run with --commit and the status in a scratch project; the proof says no process any of them started is still running; the changed code leaves a detached Python process running after the test run and the status exit 0"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-6 holds three actions (setup, a test run, the status) and two observations (the exit codes and the leftover processes) in one proof."
-        ],
         "proof_hash": "8b4a1e30c44dfe443f1533df6f8cf3c5ea0554a9c85de3f63a1b58c368b02cbc",
         "rule_hash": "7e040db3b040d335fd4d6bc9775c37a18b6041724ccadbda6fa8da3e4ce18769",
-        "test_hash": "97f8c16a4e0fbc2e598caedd695c86dfca8c71cccf5985ce892afa66a4602113",
-        "verdict": "weak"
+        "test_hash": "f60b16b9397cb7d286f0954fc0906e75a0bc22dd6f720e8c6ac565a55b476086",
+        "verdict": "strong"
       },
       "RULE-4": {
         "at": "2026-10-05T18:42:48Z",
@@ -170,14 +158,14 @@
   "feature": "purlin_output",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T18:16:21Z",
-      "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+      "at": "2026-10-05T18:49:34Z",
+      "commit": "d4ce8c36eb83de1182380970fb618c7fe7ad855d",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "1d072420a25c78e5fb6f577e16ebfcf63113b4298ea695cea958df8800e1f05e",
         "spec": "81d2ce7cf5d701440e21046551b2439f62c3000813c6de45a1a6ebb8d14777a1",
-        "tests": "3620f71dd22749fc385b8a7b44fe5f403e506099c4f6e35e215c334e2852feb0"
+        "tests": "683ec12b863088522701615ac66dab1888274e8cae90485b34ffe2edd55ea693"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
