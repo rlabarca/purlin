@@ -680,18 +680,17 @@
         "verdict": "strong"
       },
       "RULE-5": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-05T14:35:56Z",
         "bugs": {
           "PROOF-41": {
             "after": "        if incomplete_reason(project_root, name, features) or expand_scope(\n                project_root, features[name].get('scope') or ())[1]:\n            reasons.append(NAMES_NO_FILES)",
             "aim": "past the test",
             "before": "        if incomplete_reason(project_root, name, features):\n            reasons.append(NAMES_NO_FILES)",
-            "bug_key": "708544dc4840b72c270560b4b7517b711aa7e0bf5086c3253d97836355cf7d25",
+            "bug_key": "2fb8a7f2a3259365223de48efbb73482a47f663dd9e011f74df042987b4a37c0",
             "case": "`login` whose scope names `src/login.py`, `src/gone.py` and `lib/*.rs`; the proof says `login` is not reported incomplete; the changed code makes a run's selection give `login` the reason `names no files, so every run includes it`",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 560,
-            "result": "survived",
-            "test_key": "670f2c327b8bb4d87c5d72b39a287e9aec3cfa7409a84df82060a690b6a54fc7",
+            "result": "caught",
             "why": ""
           },
           "PROOF-9": {
@@ -707,24 +706,16 @@
           }
         },
         "code_hash": "371d9f31d2964228b9d68a40e533b16273cf3f1862bab8acbda0547ec8625258",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "commit": "b025a94fc420516ca2b5116fa19f996b91a18b08",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-9: the test passes the proof's three entries and compares the whole answer with the literal pair `['src/login.py']` and `['src/gone.py', 'lib/*.rs']`, so both the files reached and the order of the unmatched entries are checked.",
-          "PROOF-41: the test takes the fingerprint before and after the unmatched entries are added and compares the two `code` parts, so the expected value comes from the code under the scope the fixture sets, which the test does not show to be `src/login.py` alone.",
-          "PROOF-41: the test reads the incomplete reason directly and expects none, and it never reads what a run's selection or carry plan reports for `login`, so a report of `names no files` made there still passes.",
-          "PROOF-41: the test shows the fingerprint is taken with no error only by the call returning, which does fail the test if the call raises."
-        ],
-        "findings": [
-          "PROOF-41: the test still passes when scripts/mcp/purlin/fingerprint.py:560 reads \"if incomplete_reason(project_root, name, features) or expand_scope(\"",
-          "PROOF-41: the AI says this breaks: `login` whose scope names `src/login.py`, `src/gone.py` and `lib/*.rs`; the proof says `login` is not reported incomplete; the changed code makes a run's selection give `login` the reason `names no files, so every run includes it`"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "221b83ef375c686a3f4ea9caf57d9c9e4c0af74499320efa342210475232e80e",
         "rule_hash": "39f7b7020e5c1b8d7ef91e6f864c945a5aecdc452cfeb0cb9bb15d2246bbcb63",
-        "test_hash": "0d6a1d0786e74fec21a5318e56d56464ca5c76c490299bbc0458ff157e94dda7",
-        "verdict": "weak"
+        "test_hash": "87456ff6c6e790ed38085722b8758e4e53904209bff49365f4143a91e389d38b",
+        "verdict": "strong"
       },
       "RULE-6": {
         "at": "2026-10-05T14:32:26Z",
@@ -885,14 +876,14 @@
   "feature": "evidence",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T14:08:28Z",
-      "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+      "at": "2026-10-05T14:35:48Z",
+      "commit": "b025a94fc420516ca2b5116fa19f996b91a18b08",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "371d9f31d2964228b9d68a40e533b16273cf3f1862bab8acbda0547ec8625258",
         "spec": "35fd3d9d78c5b7589e2142c0b6176c70e2c53318b54ec76c5d75d76414ec6711",
-        "tests": "5c9bc85f718cbc92067c481ef79e14ab14352e0975979292ee4464ef6a5248ae"
+        "tests": "f340ffd01e920f7ce94f3d717e24981d504b30c61ac3b5fe429de236294aa0a7"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
