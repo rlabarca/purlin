@@ -141,9 +141,15 @@ class TestTheCommandLine:
 
     # purlin: run_script PROOF-1
     def test_no_action_is_refused(self, tmp_path):
-        output = _refused(tmp_path)
-        assert ('purlin: name exactly one of --test, --audit and --ci.'
-                in output.splitlines()), output
+        code, output = _run(_project(tmp_path))
+        lines = output.splitlines()
+        assert code == 2, output
+        # The `purlin:` line first, then the usage line, and one of each.
+        assert lines[0] == (
+            'purlin: name exactly one of --test, --audit and --ci.'), output
+        assert lines[1].startswith('Usage: purlin_run.py'), output
+        assert [index for index, line in enumerate(lines)
+                if line.startswith(('purlin:', 'Usage:'))] == [0, 1], output
 
     @staticmethod
     def _asked_for_help(tmp_path, flag):
@@ -675,17 +681,20 @@ class TestTheAuditExitCode:
     # purlin: run_script PROOF-109
     def test_a_failing_test_is_left_to_fix(self, tmp_path, evidence_run,
                                            claude, capsys):
-        root = _pytest_project(tmp_path, body=(
-            'import pytest\n\n'
-            '# purlin: feat PROOF-1\n'
-            'def test_bad():\n'
-            '    assert 1 == 2\n'))
-        _spec(root, 'feat')
-        code = evidence_run(root, '--all', '--audit')
-        output = capsys.readouterr().out
-        assert output.strip().splitlines()[-1] == (
-            '  1 rule to fix: purlin:build'), output
-        assert code == 1, output
+        # `--audit` as the proof gives it, with no feature named and no
+        # `--all`, and then over every feature: each ends the same way.
+        for flags in (('--audit',), ('--all', '--audit')):
+            root = _pytest_project(tmp_path / flags[0].strip('-'), body=(
+                'import pytest\n\n'
+                '# purlin: feat PROOF-1\n'
+                'def test_bad():\n'
+                '    assert 1 == 2\n'))
+            _spec(root, 'feat')
+            code = evidence_run(root, *flags)
+            output = capsys.readouterr().out
+            assert output.strip().splitlines()[-1] == (
+                '  1 rule to fix: purlin:build'), (flags, output)
+            assert code == 1, (flags, output)
 
     # purlin: run_script PROOF-87
     def test_a_test_with_no_assertion_is_left_to_strengthen(
@@ -966,6 +975,7 @@ class TestARunCoversWhatTheChangeTouched:
     # purlin: run_script PROOF-89
     def test_a_spec_edit_selects_its_feature(self, tmp_path):
         root, sha = _touched_project(tmp_path)
+        login = _file(root, '.purlin/evidence/local/login.json')
         spec = root / 'specs' / 'a' / 'export.md'
         spec.write_text(spec.read_text(encoding='utf-8').replace(
             'does thing 1', 'does thing one'), encoding='utf-8')
@@ -973,6 +983,11 @@ class TestARunCoversWhatTheChangeTouched:
         assert code == 0, output
         assert _selection(output) == {
             'export': 'spec changed since %s' % sha[:7]}, output
+        # Selected alone is run alone: export's one test and no other, and
+        # login's evidence is left byte for byte.
+        assert _ran(root) == ['test_export'], output
+        assert 'Ran pytest on 1 feature.' in output.splitlines(), output
+        assert _file(root, '.purlin/evidence/local/login.json') == login
 
     # purlin: run_script PROOF-90
     def test_an_edit_anywhere_in_the_project_selects_the_anchor(
@@ -997,11 +1012,16 @@ class TestARunCoversWhatTheChangeTouched:
         _git(root, 'commit', '-q', '-m', 'the anchor shared')
         _run(root, '--test', '--commit')
         assert _selection(_run(root, '--test')[1]) is None
+        export = _file(root, '.purlin/evidence/local/export.json')
         (root / 'src' / 'solo.py').write_text('VALUE = 2\n', encoding='utf-8')
         _code, output = _run(root, '--test')
         chosen = _selection(output)
         assert sorted(chosen or ()) == ['shared', 'solo'], output
         assert chosen['shared'].startswith('code changed since '), output
+        # Not `export`: its test is not run and its evidence is left byte
+        # for byte. The two selected are the two that run.
+        assert _ran(root) == ['test_shared', 'test_solo'], output
+        assert _file(root, '.purlin/evidence/local/export.json') == export
 
     # purlin: run_script PROOF-91
     def test_a_feature_with_no_evidence_is_selected_and_run_alone(
@@ -1018,10 +1038,11 @@ class TestARunCoversWhatTheChangeTouched:
         _git(root, 'commit', '-q', '-m', 'invoice')
         code, output = _run(root, '--test')
         assert code == 0, output
-        purlin_run = _load_run_script()
+        # This machine's system as a person reads it, off the machine.
+        system = {'Darwin': 'macOS', 'Windows': 'Windows'}.get(
+            platform.system(), 'Linux/Unix')
         assert _selection(output) == {
-            'invoice': 'no run on %s yet' % purlin_evidence.os_word(
-                purlin_run.host_os())}, output
+            'invoice': 'no run on %s yet' % system}, output
         # Selected alone is run alone: invoice's one test and no other.
         assert _ran(root) == ['test_invoice'], output
         assert 'Ran pytest on 1 feature.' in output.splitlines(), output
@@ -1123,8 +1144,8 @@ class TestARunCoversWhatTheChangeTouched:
         assert ("Nothing to run: every feature's spec, code and tests match "
                 'its evidence. purlin:test --clean runs them anyway.'
                 in output.splitlines()), output
-        assert 'Running the' not in output, output
-        assert _selection(output) is None, output
+        assert [line for line in output.splitlines()
+                if line.startswith(('Selected', 'Running '))] == [], output
         assert {name: _file(root, '.purlin/evidence/local/%s.json' % name)
                 for name in ('login', 'export')} == before
         assert [line for line in output.splitlines() if line.strip()][-1] == (
@@ -1348,13 +1369,16 @@ class TestNoTestCommand:
     # purlin: run_script PROOF-127
     def test_no_known_tool_asks_for_a_proposal(self, tmp_path):
         root = _no_command(tmp_path)
+        before = _purlin_tree(root)
         code, output = _run(root, '--all', '--test')
         assert output.strip().splitlines()[-1] == (
             'No test command is set and no test tool Purlin knows was found, '
             'so nothing ran. The agent reads the project and proposes a '
             'command for you to confirm.'), output
-        assert _purlin_files(root) == [
-            os.path.join('.purlin', 'config.json')], output
+        # Nothing written under `.purlin/`: no file added, and the one file
+        # there, the settings, left byte for byte.
+        assert list(before) == [os.path.join('.purlin', 'config.json')]
+        assert _purlin_tree(root) == before, output
         assert code == 1, output
 
     # purlin: run_script PROOF-287
@@ -1377,6 +1401,12 @@ class TestNoTestCommand:
         lines = output.splitlines()
         assert '[y/N]' not in output, output
         wrote = lines.index('Wrote the tests setting to .purlin/config.json.')
+        # No question: the `Wrote` line follows the suggested setting with
+        # nothing between, and no line is the question or ends as one.
+        assert lines[wrote - 1].startswith(SUGGESTED_SETTING), output
+        assert [line for line in lines
+                if line.startswith('Write this tests setting')
+                or line.rstrip().endswith('?')] == [], output
         assert 'Markers: 1 tied to a test, 0 not tied.' in lines[wrote:], \
             output
         assert _tests_setting(root) == [_pytest_entry_in_words()]
@@ -2066,26 +2096,54 @@ class TestAllHandsTheSuiteItsFiles:
     # purlin: run_script PROOF-295
     def test_a_command_past_the_limit_is_started_with_no_file_list(
             self, tmp_path):
-        root = _project(tmp_path, tests=[suites.pytest_suite(
-            files=('tests/**/test_*.py',))])
-        _spec(root, 'feat')
-        folder = root / 'tests' / ('d' * 90) / ('e' * 90)
-        folder.mkdir(parents=True)
-        for index in range(160):
-            (folder / ('test_n%03d.py' % index)).write_text(
-                '# purlin: feat PROOF-1\n'
-                'def test_n%03d():\n    assert True\n' % index,
-                encoding='utf-8')
-        code, output = _run(root, '--all', '--test')
-        lines = output.splitlines()
-        assert ('The pytest suite has 160 test files, more than one command '
-                'line holds, so it runs with no file list.') in lines, output
-        (started,) = [line for line in lines
-                      if line.startswith('Running pytest: ')]
-        assert 'test_n' not in started, output
+        command = ('%s -m pytest -q -p no:cacheprovider %%s '
+                   '--junitxml=.purlin/runtime/reports/pytest.xml'
+                   % suites.PYTHON)
+        crowded = ('The pytest suite has 160 test files, more than one '
+                   'command line holds, so it runs with no file list.')
+
+        def run(name, length):
+            """A project of 160 marked test files whose names are padded
+            until the command naming them all is `length` characters, run
+            with `--all --test`. `(root, the paths, exit code, lines)`."""
+            root = _project(tmp_path / name, tests=[suites.pytest_suite(
+                files=('tests/**/test_*.py',))])
+            _spec(root, 'feat')
+            (root / 'tests').mkdir()
+            spare = length - len(command % ' '.join(
+                'tests/test_n%03d.py' % index for index in range(160)))
+            pad, more = divmod(spare, 160)
+            paths = []
+            for index in range(160):
+                paths.append('tests/test_n%03d%s.py' % (
+                    index, 'x' * (pad + (1 if index < more else 0))))
+                (root / paths[-1]).write_text(
+                    '# purlin: feat PROOF-1\n'
+                    'def test_n%03d():\n    assert True\n' % index,
+                    encoding='utf-8')
+            assert len(command % ' '.join(paths)) == length
+            code, output = _run(root, '--all', '--test')
+            return root, paths, code, output.splitlines()
+
+        # At 30,000 characters the command names all 160 files: the command
+        # the suite starts is the one measured here, character for character.
+        _root, paths, _code, lines = run('at', 30000)
+        assert crowded not in lines, lines
+        assert [line for line in lines if line.startswith('Running ')] == [
+            'Running pytest: ' + command % ' '.join(paths)], lines
+        # One character more passes 30,000: the line is printed and the
+        # command, the whole of it, names no test file.
+        root, _paths, code, lines = run('past', 30001)
+        assert lines.count(crowded) == 1, lines
+        started = [line for line in lines if line.startswith('Running ')]
+        assert started == [
+            'Running pytest: %s -m pytest -q -p no:cacheprovider '
+            '--junitxml=.purlin/runtime/reports/pytest.xml'
+            % suites.PYTHON], lines
+        assert lines.index(crowded) < lines.index(started[0]), lines
         assert {entry['result'] for entry in _proofs(root, 'feat')} == {
-            'pass'}, output
-        assert len(_proofs(root, 'feat')) == 160 and code == 0, output
+            'pass'}, lines
+        assert len(_proofs(root, 'feat')) == 160 and code == 0, lines
 
 
 # ---------------------------------------------------------------------------
@@ -2573,13 +2631,27 @@ class TestARunOverEveryFeatureCarriesForward:
 
     # purlin: run_script PROOF-320
     def test_clean_with_a_feature_named_is_refused(self, tmp_path):
-        output = _refused(tmp_path, '--clean', '--feature', 'feat', '--test')
-        assert 'purlin: name features or --clean, not both.' in output
+        code, output = _run(_project(tmp_path),
+                            '--clean', '--feature', 'feat', '--test')
+        lines = output.splitlines()
+        assert code == 2, output
+        # The refusal first, then the usage line, and one of each.
+        assert lines[0] == 'purlin: name features or --clean, not both.', \
+            output
+        assert lines[1].startswith('Usage: purlin_run.py'), output
+        assert [index for index, line in enumerate(lines)
+                if line.startswith(('purlin:', 'Usage:'))] == [0, 1], output
 
     # purlin: run_script PROOF-321
     def test_clean_beside_ci_is_refused(self, tmp_path):
-        output = _refused(tmp_path, '--clean', '--ci')
-        assert 'purlin: --clean goes with --test.' in output
+        code, output = _run(_project(tmp_path), '--clean', '--ci')
+        lines = output.splitlines()
+        assert code == 2, output
+        # The refusal as one whole line, first, then the usage line.
+        assert lines[0] == 'purlin: --clean goes with --test.', output
+        assert lines[1].startswith('Usage: purlin_run.py'), output
+        assert [index for index, line in enumerate(lines)
+                if line.startswith(('purlin:', 'Usage:'))] == [0, 1], output
 
 
 SIGN_SCRIPT = os.path.join(REPO, 'scripts', 'review', 'sign.py')
