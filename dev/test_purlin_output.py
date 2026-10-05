@@ -21,6 +21,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import uuid
 
 import pytest
 
@@ -384,6 +385,41 @@ def left_running(root, groups):
     return left
 
 
+def processes_carrying(mark):
+    """`(pid, None, command line)` for every process whose environment
+    holds the text `mark`, the one that lists them left out. Not Windows."""
+    if os.path.isdir('/proc/self'):
+        rows = []
+        for name in os.listdir('/proc'):
+            if not name.isdigit():
+                continue
+            try:
+                with open('/proc/%s/environ' % name, 'rb') as handle:
+                    held = handle.read()
+                with open('/proc/%s/cmdline' % name, 'rb') as handle:
+                    command = handle.read().replace(b'\0', b' ')
+            except (IOError, OSError):
+                continue
+            if mark.encode('utf-8') in held:
+                rows.append((int(name), None,
+                             command.decode('utf-8', 'replace')))
+        return rows
+    # macOS and the BSDs: `-E` sets each process's environment after its
+    # command line, for the processes this user may read.
+    listing = subprocess.Popen(
+        ['ps', '-A', '-E', '-ww', '-o', 'pid=,command='],
+        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+        errors='replace')
+    listed, _ = listing.communicate(timeout=60)
+    assert listing.returncode == 0, listed
+    rows = []
+    for line in listed.splitlines():
+        pid, _, command = line.strip().partition(' ')
+        if pid.isdigit() and int(pid) != listing.pid and mark in command:
+            rows.append((int(pid), None, command.split(' ' + mark)[0]))
+    return rows
+
+
 def stop(rows):
     for pid, _, _ in rows:
         try:
@@ -395,9 +431,14 @@ def stop(rows):
 class TestNoProcessLeft:
 
     # purlin: purlin_output PROOF-6
-    def test_no_command_leaves_a_process_running(self, tmp_path):
+    def test_no_command_leaves_a_process_running(self, tmp_path, monkeypatch):
         python = [sys.executable]
         root = new_repository(tmp_path)
+        # Every process a command starts inherits this variable, so one that
+        # left its command's process group, and names nothing of the project
+        # on its command line, is still found: by its environment.
+        mark = 'PURLIN_TEST_STARTED_BY=%s' % uuid.uuid4().hex
+        monkeypatch.setenv(*mark.split('='))
         # Each command starts a process group of its own, so a process it
         # leaves behind is found by its group even when its command line
         # names nothing of the project.
@@ -412,3 +453,18 @@ class TestNoProcessLeft:
             assert leftover == []
         finally:
             stop(leftover)
+        # No process any of the three started is still running, whatever
+        # group it is in and whatever its command line reads. Windows shows
+        # no other process's environment, so there the groups above stand.
+        if os.name != 'nt':
+            started = []
+            for _ in range(3):
+                started = [row for row in processes_carrying(mark)
+                           if row[0] != os.getpid()]
+                if not started:
+                    break
+                time.sleep(0.5)
+            try:
+                assert started == []
+            finally:
+                stop(started)
