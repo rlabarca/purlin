@@ -2,8 +2,8 @@
   "feature": "scaffold",
   "platforms": {
     "windows": {
-      "at": "2026-10-05T15:10:47Z",
-      "commit": "912b37740b6f0c999611204b06de3f2abb23d4a5",
+      "at": "2026-10-05T17:25:02Z",
+      "commit": "0fe3708d5da0064845e46d8e745cea14430d0d93",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -14,12 +14,6 @@
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-05T15:10:47Z",
-            "commit": "c8e25e46ddc0e41cf030a03bfb8a801faaef9a4c",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-130",
           "manual": false,
@@ -28,12 +22,6 @@
           "test": "dev/test_init_scaffold.py::TestTheIgnoreFile::test_on_windows_a_crlf_gitignore_is_the_same_after_a_second_run"
         },
         {
-          "carried": {
-            "at": "2026-10-05T15:10:47Z",
-            "commit": "c8e25e46ddc0e41cf030a03bfb8a801faaef9a4c",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-132",
           "manual": false,
@@ -42,12 +30,6 @@
           "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_on_windows_no_file_names_the_copy"
         },
         {
-          "carried": {
-            "at": "2026-10-05T15:10:47Z",
-            "commit": "c8e25e46ddc0e41cf030a03bfb8a801faaef9a4c",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-136",
           "manual": false,

@@ -2,14 +2,14 @@
   "feature": "states",
   "platforms": {
     "windows": {
-      "at": "2026-10-05T15:10:47Z",
-      "commit": "c8e25e46ddc0e41cf030a03bfb8a801faaef9a4c",
+      "at": "2026-10-05T17:25:02Z",
+      "commit": "0fe3708d5da0064845e46d8e745cea14430d0d93",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
         "code": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
         "spec": "89ad5e388dfcc4053a4897d9a62db9d5973b1054e02eab81faf469485bc202bc",
-        "tests": "c42b0aadec30fcd78674cdbdda8bbcca22989005614f7888f7205bd73e1080df"
+        "tests": "df0cdf7c0c0d55784aa2754d7872ca561feb1550195c4c38404551ab4a4f5896"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
