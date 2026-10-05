@@ -408,6 +408,7 @@ def _features(tree, payload, features, commit, seen):
     """
     index = fingerprint_module.marker_index(tree)
     authors = _Authors(tree)
+    authors.prefetch(payload.get('features') or ())
     same = {}
     out = []
     for feature in sorted(payload.get('features') or (),
@@ -810,6 +811,50 @@ class _Authors(object):
         self.tree = tree
         self._text = {}
         self._tests = None
+        self._logs = {}
+        self._reader = None
+
+    def prefetch(self, features):
+        """Ask git every question `of` will ask for these features, several
+        at once: one `git log` per rule and per proof, one blame per test
+        file. `of` then answers from what came back."""
+        from concurrent.futures import ThreadPoolExecutor
+        asked, files = [], set()
+        for feature in features:
+            spec = feature.get('spec_path')
+            for rule in feature.get('rules') or ():
+                if rule.get('feature') != feature.get('name'):
+                    continue
+                asked.append(self._rule_args(spec, rule.get('text') or ''))
+                asked.extend(self._proof_args(spec, proof.get('id'))
+                             for proof in rule.get('proofs') or ())
+                files.update(test['file'] for test in _tests(rule))
+        asked = sorted({args for args in asked if args})
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            for args, listed in zip(asked, pool.map(
+                    lambda args: _git_out(self.tree, *args), asked)):
+                self._logs[args] = listed
+        self._reader = wording_module.reader(self.tree, files)
+
+    def _log(self, args):
+        if args not in self._logs:
+            self._logs[args] = _git_out(self.tree, *args)
+        return self._logs[args]
+
+    def _rule_args(self, spec, text):
+        """The `git log` that finds who first wrote a rule's words, or None."""
+        if not (text and spec):
+            return None
+        return ('log', '--reverse', '--format=%H %ae', '-S', text, '--', spec)
+
+    def _proof_args(self, spec, proof_id):
+        """The `git log` over a proof's own line, or None where it has none."""
+        pattern = re.compile(_PROOF_LINE % re.escape(str(proof_id)))
+        for index, line in enumerate(self._lines(spec), 1):
+            if pattern.match(line):
+                return ('log', '-s', '--format=%H %ae',
+                        '-L%d,%d:%s' % (index, index, spec))
+        return None
 
     def of(self, feature, spec, rule):
         """`{rule, proofs, tests}` for one payload rule entry."""
@@ -827,25 +872,19 @@ class _Authors(object):
     def _rule(self, spec, text):
         """Who first wrote the rule's words, whatever id they stood under."""
         found = None
-        if text and spec:
-            listed = _git_out(self.tree, 'log', '--reverse',
-                              '--format=%H %ae', '-S', text, '--', spec)
+        args = self._rule_args(spec, text)
+        if args:
+            listed = self._log(args)
             found = _pair(listed.splitlines()[0]) if listed else None
         return {'written_by': found[1] if found else None,
                 'commit': found[0] if found else None}
 
     def _proof(self, spec, proof_id):
         """Who first wrote the proof's line and who last changed it."""
-        number = None
-        pattern = re.compile(_PROOF_LINE % re.escape(str(proof_id)))
-        for index, line in enumerate(self._lines(spec), 1):
-            if pattern.match(line):
-                number = index
-                break
         history = []
-        if number is not None:
-            listed = _git_out(self.tree, 'log', '-s', '--format=%H %ae',
-                              '-L%d,%d:%s' % (number, number, spec))
+        args = self._proof_args(spec, proof_id)
+        if args:
+            listed = self._log(args)
             history = [_pair(line) for line in listed.splitlines()
                        if re.match(r'^[0-9a-f]{40,64} ', line)]
         written = history[-1] if history else None
@@ -859,8 +898,11 @@ class _Authors(object):
     def _test(self, feature, test):
         """Who last changed one tied test, as `wording.test_last_change` reads it."""
         span = self._span(feature, test)
+        if self._reader is None:
+            self._reader = wording_module.reader(self.tree)
         found = (wording_module.test_last_change(self.tree, test['file'],
-                                                 span[0], span[1])
+                                                 span[0], span[1],
+                                                 reader=self._reader)
                  if span else None)
         return {'file': test['file'], 'name': test['name'],
                 'changed_by': found[1] if found else None,

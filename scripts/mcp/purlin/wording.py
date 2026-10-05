@@ -96,9 +96,19 @@ def stale_comments(project_root, features, scanned=None):
     return found
 
 
-def test_last_change(project_root, path, marker_line, end_line):
-    """`(sha, author email)` of that commit, or None."""
-    return _Reader(project_root).last_change(path, marker_line + 1, end_line)
+def test_last_change(project_root, path, marker_line, end_line, reader=None):
+    """`(sha, author email)` of that commit, or None. `reader`, from
+    `reader()`, is handed in by a caller that asks about many tests, so each
+    file is blamed once."""
+    reader = reader or _Reader(project_root)
+    return reader.last_change(path, marker_line + 1, end_line)
+
+
+def reader(project_root, paths=()):
+    """What `test_last_change` reads git through, with `paths` blamed already."""
+    made = _Reader(project_root)
+    made.prefetch(sorted(set(paths)))
+    return made
 
 
 def proof_words(text):
