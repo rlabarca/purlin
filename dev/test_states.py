@@ -450,6 +450,24 @@ class TestThePlatformsInThePassedCell:
         })['cells']['passed']
         assert cell['word'] == 'partial', cell
         assert sorted(cell['platforms']) == ['linux', 'macos'], cell
+        # The same two sections as a project's evidence files hold them,
+        # read through the payload.
+        made = Project()
+        try:
+            made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                            'status': 'pass'}], source='ci', os_name='linux',
+                          at='2026-09-25T12:00:00Z')
+            made.evidence([{'id': 'PROOF-1', 'rule': 'RULE-1',
+                            'status': 'fail'}], source='local',
+                          os_name='macos', at='2026-09-26T12:00:00Z')
+            read = made.cell('RULE-1', 'passed')
+        finally:
+            made.close()
+        assert read['word'] == 'partial', read
+        assert sorted(read['platforms']) == ['linux', 'macos'], read
+        assert {name: (entry['word'], entry['source'])
+                for name, entry in read['platforms'].items()} == {
+            'linux': ('passed', 'ci'), 'macos': ('failed', 'local')}, read
 
 
 # ---------------------------------------------------------------------------
@@ -533,6 +551,16 @@ class TestTheStrongCell:
         assert rule['cells']['strong']['word'] == 'weak', rule
         assert rule['bucket'] == 'passed', rule['bucket']
         assert rule['left'] == 'to_strengthen', rule['left']
+        # Counted there: `RULE-1` under `passed`, and `RULE-2`, which has
+        # no test, alone under `untested`, in the feature's rollup and in
+        # the project's summary.
+        data = project.payload()
+        for counts in (_feature(data)['rollup'], data['summary']):
+            assert {key: counts[key] for key in (
+                'rules', 'passed', 'untested', 'failing', 'partial',
+                'by_hand', 'weak')} == {
+                'rules': 2, 'passed': 1, 'untested': 1, 'failing': 0,
+                'partial': 0, 'by_hand': 0, 'weak': 1}, counts
 
 
 # `RULE-1` of `login` proven by hand and by a test.
@@ -689,6 +717,23 @@ class TestAHandCheck:
         assert cell['word'] == 'checked at sign-off', cell
         assert cell['reasons'] == [
             "the rule's wording changed since its last note", note], cell
+        # The same in a project: `RULE-2`, checked by hand alone, is noted
+        # at the sign-off of `0.1.0` and reworded in the 1 commit after it.
+        made = Project(spec=MANUAL_SPEC)
+        try:
+            _signed_with_a_note(made)
+            _write(os.path.join(made.root, 'specs', 'auth', 'login.md'),
+                   MANUAL_SPEC.replace('Invalid credentials return 401',
+                                       'Wrong credentials return 401'))
+            _commit(made.root, 'spec(login): reword RULE-2')
+            read = made.cell('RULE-2', 'passed')
+        finally:
+            made.close()
+        assert read['word'] == 'checked at sign-off', read
+        assert read['reasons'] == [
+            "the rule's wording changed since its last note",
+            'noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, '
+            '1 commit since: the tube is red'], read
 
     # purlin: states PROOF-297
     def test_a_proof_reworded_since_its_note_says_so_in_the_strong_cell(self):
@@ -706,6 +751,29 @@ class TestAHandCheck:
         assert cells['strong']['word'] == 'checked at sign-off', cells
         assert cells['strong']['reasons'] == [
             "the proof's wording changed since its last note", note], cells
+        # The same in a project: `RULE-1` of `PROOF-1` marked `@manual` and
+        # `PROOF-2` passing is noted at the sign-off of `0.1.0`, then
+        # `PROOF-1` is reworded, in 1 commit that holds `PROOF-2`'s result
+        # on the reworded spec.
+        made = Project(spec=HAND_AND_TEST_SPEC)
+        try:
+            _commit_tests(made, 'PROOF-2')
+            made.evidence([_entry('PROOF-2', 'RULE-1')])
+            signing_key(made.root, QUINN)
+            _walk_signs(made, '0.1.0', answers=('the name shows', 'y'))
+            _write(os.path.join(made.root, 'specs', 'auth', 'login.md'),
+                   HAND_AND_TEST_SPEC.replace('verify the name is shown',
+                                              'verify the full name is shown'))
+            made.evidence([_entry('PROOF-2', 'RULE-1')])
+            read = made.rule('RULE-1')['cells']
+        finally:
+            made.close()
+        assert read['passed']['word'] == 'passed', read
+        assert read['strong']['word'] == 'checked at sign-off', read
+        assert read['strong']['reasons'] == [
+            "the proof's wording changed since its last note",
+            'noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, '
+            '1 commit since: the name shows'], read
 
     # purlin: states PROOF-277
     def test_four_commits_after_the_sign_off_the_note_reads_four_since(self):
@@ -767,6 +835,20 @@ class TestTheAuditOnTheRule:
         audit = project.rule('RULE-2')['audit']
         assert audit['explanation'] == explanation, audit
         assert audit['bugs'] == bugs, audit
+        # Value for value: each of the entry's own, of its own type, the
+        # line the whole number 12 and no other number equal to it.
+        assert audit['explanation'] == [
+            'The test calls login and reads no status.'], audit
+        assert list(audit['bugs']) == ['PROOF-2'], audit
+        carried = audit['bugs']['PROOF-2']
+        assert sorted(carried) == ['after', 'before', 'bug_key', 'file',
+                                   'line', 'result', 'why'], carried
+        assert (carried['file'], carried['before'], carried['after'],
+                carried['result']) == ('src/login.py', 'return 401',
+                                       'return 200', 'survived'), carried
+        assert carried['line'] == 12 and type(carried['line']) is int, carried
+        assert json.dumps(audit['bugs'], sort_keys=True) == json.dumps(
+            bugs, sort_keys=True), audit
 
 
 # ---------------------------------------------------------------------------
@@ -940,7 +1022,10 @@ class TestPayload:
             sentence, 'Left to do:',
             '  1 rule to write a test for: purlin:build'], text
         assert data['summary']['rules'] == 2
+        assert data['summary']['passed'] == 1, data['summary']
+        assert data['summary']['untested'] == 1, data['summary']
         assert data['summary']['steps'] == {'passed': 1, 'by_hand': 0}
+        assert data['summary']['sentence'] == sentence, data['summary']
         assert [(item['text'], item['command'], item['count'])
                 for item in data['left']] == [
             ('1 rule to write a test for', 'purlin:build', 1)]
@@ -1082,10 +1167,21 @@ class TestTheTestHash:
             _edit_age_test(made, 'age(151) == "rejected"',
                            'age(152) == "rejected"')
             after = made.rule('RULE-1', 'sample_age')
+            # An edit that makes the second test, and so the file, longer.
+            _edit_age_test(
+                made, '    assert age(152) == "rejected"\n',
+                '    aged = age(1520)\n\n    assert aged == "rejected"\n')
+            longer = made.rule('RULE-1', 'sample_age')
+            second = made.rule('RULE-2', 'sample_age')
         finally:
             made.close()
         assert first['test_hash_kind'] == 'test', first['test_hash_kind']
         assert after['test_hash'] == first['test_hash']
+        assert len(first['test_hash']) == 64, first['test_hash']
+        assert longer['test_hash_kind'] == 'test', longer['test_hash_kind']
+        assert longer['test_hash'] == first['test_hash']
+        # The edits were read: the hash of the rule they belong to moved.
+        assert second['test_hash'] != first['test_hash']
 
     # purlin: states PROOF-266
     def test_editing_the_body_of_the_proof_1_test_changes_rule_1s_hash(self):
@@ -1094,9 +1190,19 @@ class TestTheTestHash:
             first = made.rule('RULE-1', 'sample_age')['test_hash']
             _edit_age_test(made, 'age(90) == 90', 'age(91) == 91')
             after = made.rule('RULE-1', 'sample_age')['test_hash']
+            # Edits to the body that change its spacing and nothing else:
+            # a deeper indent, then one line broken in two.
+            _edit_age_test(made, '    assert age(91) == 91\n',
+                           '        assert age(91) == 91\n')
+            indented = made.rule('RULE-1', 'sample_age')['test_hash']
+            _edit_age_test(made, '        assert age(91) == 91\n',
+                           '        assert age(91) == \\\n            91\n')
+            broken = made.rule('RULE-1', 'sample_age')['test_hash']
         finally:
             made.close()
         assert after != first
+        assert len({first, after, indented, broken}) == 4, (
+            first, after, indented, broken)
 
 
 # ---------------------------------------------------------------------------

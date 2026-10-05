@@ -2235,8 +2235,13 @@ class TestAChangedTestsSetting:
         test = root / 'tests' / 'test_login.py'
         test.write_text(test.read_text(encoding='utf-8') + '# edited\n',
                         encoding='utf-8')
-        lines = purlin_status.sync_status(str(root)).splitlines()
+        text = purlin_status.sync_status(str(root))
+        lines = text.splitlines()
         assert self.SAID not in lines, lines
+        # No line holds the sentence, with or without anything around it.
+        assert self.SAID not in text, lines
+        assert [line for line in lines
+                if 'tests setting changed' in line] == [], lines
         assert any('tests changed since' in line or 'to test' in line
                    for line in lines), lines
 
