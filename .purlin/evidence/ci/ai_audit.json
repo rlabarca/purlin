@@ -2,24 +2,18 @@
   "feature": "ai_audit",
   "platforms": {
     "windows": {
-      "at": "2026-10-03T17:27:07Z",
-      "commit": "918e47cf7396a64f172a2644029b671c36233a2e",
+      "at": "2026-10-05T13:47:47Z",
+      "commit": "82a3eb3254460c7781dc3b7fecaa7337be173404",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "c61d2603b98e601e63014752cbc86f1cb00968dc6077e2893f6175a4edf4c2dd",
-        "spec": "2f0be765075ba257afc0e3b22b7b2a91f0a50ed4214758aa55bd7bdd3782be3e",
-        "tests": "51f8a68cb3b554b0dfc33d792083a93372f26bd1723eab64127a698a727d8b47"
+        "code": "1e59cd62345438bad502f5bfac96d062550203a265e09ab5e5c1482878ff6026",
+        "spec": "108cad2bd4ed1382aca2ebefbec46a1329bacdfed5bc95cf4b65a21e581cad69",
+        "tests": "4f2a8358f755ed249a1bcf4241210e3e6736b16e135df0078b632653737be1fe"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-03T17:27:07Z",
-            "commit": "cc65454eb127da103e1a9ab7eb4eb51e2626b5a2",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-82",
           "manual": false,

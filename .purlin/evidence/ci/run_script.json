@@ -2,8 +2,8 @@
   "feature": "run_script",
   "platforms": {
     "windows": {
-      "at": "2026-10-03T17:27:08Z",
-      "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
+      "at": "2026-10-05T13:47:48Z",
+      "commit": "82a3eb3254460c7781dc3b7fecaa7337be173404",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -14,12 +14,6 @@
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-03T17:27:08Z",
-            "commit": "cc65454eb127da103e1a9ab7eb4eb51e2626b5a2",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-229",
           "manual": false,
