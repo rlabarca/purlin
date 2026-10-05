@@ -235,9 +235,9 @@ def key_of_tests(project, rule, proof):
          for test in read(project, rule)['tests'] if test['proof'] == proof])
 
 
-def break_key_of(project, rule, proof):
+def bug_key_of(project, rule, proof):
     """The key a planted bug for `proof` carries for its test and code now."""
-    return audit_module.break_key(
+    return audit_module.bug_key(
         key_of_tests(project, rule, proof),
         purlin_fingerprint.code_part(project.root, {'scope': ['src/login.py']}))
 
@@ -249,12 +249,12 @@ def settle(project, rule, result='caught', findings=()):
     path = os.path.join(project.root, *rel.split('/'))
     with open(path, encoding='utf-8') as handle:
         data = json.load(handle)
-    data['audit']['rules'][rule]['breaks'] = {
+    data['audit']['rules'][rule]['bugs'] = {
         proof['id']: dict(
             {'aim': 'plain', 'case': CASE, 'file': 'src/login.py', 'line': 12,
              'before': '    return 401', 'after': '    return 200',
              'result': result, 'why': '',
-             'break_key': break_key_of(project, rule, proof['id'])},
+             'bug_key': bug_key_of(project, rule, proof['id'])},
             **({'test_key': key_of_tests(project, rule, proof['id'])}
                if result == 'survived' else {}))
         for proof in project.rule(rule)['proofs']}
@@ -871,7 +871,7 @@ class TestTheVerdict:
             code, printed = audit(made)
             entry = entry_of(made)
         assert code == 0, printed
-        assert entry['breaks']['PROOF-2']['result'] == 'caught', entry
+        assert entry['bugs']['PROOF-2']['result'] == 'caught', entry
         assert entry['verdict'] == 'weak', entry
         assert CHECKS_NOTHING in entry['findings'], entry
         assert len(fake_claude.calls(directory)) == 1
@@ -888,7 +888,7 @@ class TestTheVerdict:
             code, printed = audit(made)
             entry = entry_of(made)
         assert code == 0, printed
-        assert entry['breaks']['PROOF-2']['result'] == 'survived', entry
+        assert entry['bugs']['PROOF-2']['result'] == 'survived', entry
         assert entry['verdict'] == 'weak', entry
         assert entry['findings'] == [
             'PROOF-2: the test still passes when src/login.py:12 reads '
@@ -908,7 +908,7 @@ class TestTheVerdict:
             entry = entry_of(made)
         assert code == 0, printed
         assert len(fake_claude.calls(directory)) == 1
-        assert entry['breaks']['PROOF-2']['result'] == 'caught', entry
+        assert entry['bugs']['PROOF-2']['result'] == 'caught', entry
         assert entry['findings'] == [], entry
         assert entry['no_bug'] == [], entry
         assert entry['explanation'] == ['This rule is weak.'], entry
@@ -917,7 +917,7 @@ class TestTheVerdict:
     # purlin: ai_audit PROOF-118
     def test_no_spot_finding_and_no_bug_to_plant_is_spot_checked(self, claude):
         install, _directory = claude
-        install(answers=[{'PROOF-2': 'no break: the proof names no value the '
+        install(answers=[{'PROOF-2': 'no bug: the proof names no value the '
                                      'code computes'}])
         with passing_project(source=LOGIN_SOURCE) as made:
             settle(made, 'RULE-1')
@@ -942,7 +942,7 @@ class TestTheVerdict:
             code, printed = audit(made)
             entry = entry_of(made)
         assert code == 0, printed
-        assert entry['breaks']['PROOF-2']['result'] == 'not run', entry
+        assert entry['bugs']['PROOF-2']['result'] == 'not run', entry
         assert entry['verdict'] == 'spot-checked', entry
         assert entry['no_bug'] == [
             'A bug was planted for PROOF-2 and its test ended in an error, '
@@ -1027,8 +1027,8 @@ class TestTheVerdict:
         calls = fake_claude.calls(directory)
         assert len(calls) == 1, calls
         assert asked_for(calls[0]) == [], calls[0]['prompt'][-600:]
-        assert entry['breaks']['PROOF-2']['result'] == 'caught', entry
-        assert entry['breaks']['PROOF-2']['after'] == '    return 200', entry
+        assert entry['bugs']['PROOF-2']['result'] == 'caught', entry
+        assert entry['bugs']['PROOF-2']['after'] == '    return 200', entry
 
     # purlin: ai_audit PROOF-115
     def test_a_changed_test_has_its_bug_asked_for_again(self, claude):
@@ -1036,7 +1036,7 @@ class TestTheVerdict:
         with passing_project(source=LOGIN_SOURCE) as made:
             settle(made, 'RULE-2')
             settle(made, 'RULE-1')
-            before = entry_of(made)['breaks']['PROOF-2']['break_key']
+            before = entry_of(made)['bugs']['PROOF-2']['bug_key']
             assert to_read(made) == []
             made.edit_test(TEST_FILE.replace('== 401', '== 403'))
             made.evidence()
@@ -1047,7 +1047,7 @@ class TestTheVerdict:
         assert len(calls) == 1, calls
         assert 'login RULE-2' in calls[0]['prompt']
         assert asked_for(calls[0]) == ['PROOF-2']
-        after = entry['breaks']['PROOF-2']['break_key']
+        after = entry['bugs']['PROOF-2']['bug_key']
         assert after and after != before, entry
 
     # purlin: ai_audit PROOF-102
@@ -1070,7 +1070,7 @@ class TestTheVerdict:
         assert entry['no_bug'] == [
             "No bug was planted: no bug is planted for an anchor's rule."], \
             entry
-        assert entry['breaks'] == {}, entry
+        assert entry['bugs'] == {}, entry
 
     # purlin: ai_audit PROOF-159
     def test_an_audit_of_an_anchor_alone_ends_on_what_it_found(self, claude):
@@ -1124,7 +1124,7 @@ class TestTheVerdict:
         assert len(calls) == 1, calls
         assert asked_for(calls[0]) == [], calls[0]['prompt'][-600:]
         assert entry['verdict'] == 'spot-checked', entry
-        assert entry['breaks'] == {}, entry
+        assert entry['bugs'] == {}, entry
         assert entry['no_bug'] == [
             'No bug was planted: PROOF-38 needs Windows, and this machine is '
             '%s.' % here], entry
@@ -1143,7 +1143,7 @@ class TestTheVerdict:
         calls = fake_claude.calls(directory)
         assert asked_for(calls[0]) == ['PROOF-1', 'PROOF-2']
         assert entry['verdict'] == 'strong', entry
-        assert entry['breaks']['PROOF-1']['result'] == 'caught', entry
+        assert entry['bugs']['PROOF-1']['result'] == 'caught', entry
         assert entry['no_bug'] == [
             "No bug was planted: the model's answer for PROOF-2 could not be "
             "used: it holds none."], entry
@@ -1207,7 +1207,7 @@ class TestWhenTheModelCannotBeReached:
         assert fake_claude.calls(directory), 'the fake claude was not asked'
         assert sorted(entries) == ['RULE-1', 'RULE-2'], entries
         assert entries['RULE-2']['verdict'] == 'spot-checked', entries
-        assert entries['RULE-2']['breaks'] == {}, entries
+        assert entries['RULE-2']['bugs'] == {}, entries
         lines = printed.splitlines()
         assert 'login RULE-2   spot-checked' in lines, printed
         # Once: no second copy of the line, indented or not. The line under
@@ -1244,7 +1244,7 @@ class TestWhenTheModelCannotBeReached:
         assert code == 0, printed
         assert entry['verdict'] == 'weak', entry
         assert entry['findings'] == [CHECKS_NOTHING], entry
-        assert entry['breaks'] == {}, entry
+        assert entry['bugs'] == {}, entry
         assert entry['model'] == 'unknown', entry
         lines = printed.splitlines()
         assert 'login RULE-2   weak' in lines, printed
@@ -1511,14 +1511,14 @@ class TestTheBugAimedPastTheTest:
     def test_the_entry_of_a_bug_holds_its_aim_and_its_case(self, lab):
         assert sample_lab.REPLY['PROOF-5'].startswith(
             'aim: past the test\ncase: %s\n' % CASE_5)
-        made = lab.first['entries']['RULE-3']['breaks']['PROOF-5']
+        made = lab.first['entries']['RULE-3']['bugs']['PROOF-5']
         assert made['aim'] == 'past the test', made
         assert made['case'] == CASE_5, made
 
     # purlin: ai_audit PROOF-130
     def test_the_entry_of_a_plain_bug_reads_plain(self, lab):
         assert sample_lab.REPLY['PROOF-6'].startswith('aim: plain\n')
-        made = lab.first['entries']['RULE-4']['breaks']['PROOF-6']
+        made = lab.first['entries']['RULE-4']['bugs']['PROOF-6']
         assert made['aim'] == 'plain', made
 
     # purlin: ai_audit PROOF-131
@@ -1527,9 +1527,9 @@ class TestTheBugAimedPastTheTest:
         assert ("assert record['age_hours'] == age_hours(collected, received)"
                 ) in lab.request(lab.first, 'RULE-3')
         entry = lab.first['entries']['RULE-3']
-        assert entry['breaks']['PROOF-5']['after'] == (
+        assert entry['bugs']['PROOF-5']['after'] == (
             '    return int(round(seconds / 3600))'), entry
-        assert entry['breaks']['PROOF-5']['result'] == 'survived', entry
+        assert entry['bugs']['PROOF-5']['result'] == 'survived', entry
         assert entry['verdict'] == 'weak', entry
         assert 'sample_intake RULE-3   weak' in lab.first['lines']
         assert entry['findings'][0] == SURVIVED_5, entry
@@ -1545,7 +1545,7 @@ class TestTheBugAimedPastTheTest:
     def test_the_second_finding_carries_the_models_case_word_for_word(
             self, lab):
         entry = lab.first['entries']['RULE-2']
-        made = entry['breaks']['PROOF-3']
+        made = entry['bugs']['PROOF-3']
         assert made['before'] == ('        self.received[barcode] = record\n'
                                   '        return record'), made
         assert made['after'] == '        return record', made
@@ -1564,7 +1564,7 @@ class TestTheBugAimedPastTheTest:
         assert len(lab.again['calls']) == 8, len(lab.again['calls'])
         assert 'Plant one bug' not in lab.request(lab.again, 'RULE-3')
         entry = lab.again['entries']['RULE-3']
-        assert entry['breaks']['PROOF-5']['result'] == 'survived', entry
+        assert entry['bugs']['PROOF-5']['result'] == 'survived', entry
         assert entry['findings'] == [SURVIVED_5, AI_SAYS_5], entry
         assert lab.first['entries']['RULE-3']['findings'] == [
             SURVIVED_5, AI_SAYS_5]
@@ -1578,8 +1578,8 @@ class TestTheBugAimedPastTheTest:
         assert "at('2026-03-04T09:00'))" in request
         assert sample_lab.REPLY['PROOF-6'].startswith('aim: plain\n')
         entry = lab.first['entries']['RULE-4']
-        assert entry['breaks']['PROOF-6']['after'] == 'MAX_AGE_HOURS = 73'
-        assert entry['breaks']['PROOF-6']['result'] == 'caught', entry
+        assert entry['bugs']['PROOF-6']['after'] == 'MAX_AGE_HOURS = 73'
+        assert entry['bugs']['PROOF-6']['result'] == 'caught', entry
         assert entry['verdict'] == 'strong', entry
         assert 'sample_intake RULE-4   strong' in lab.first['lines']
         assert entry['findings'] == [], entry
@@ -1669,7 +1669,7 @@ def weak_login(claude):
                          test_file=NOT_NONE_TEST) as made:
         settle(made, 'RULE-1')
         audit(made)
-        assert entry_of(made)['breaks']['PROOF-2']['result'] == 'survived'
+        assert entry_of(made)['bugs']['PROOF-2']['result'] == 'survived'
         install()
         yield made
 
@@ -1792,17 +1792,17 @@ class TestSettlingAFinding:
     def test_a_test_that_now_catches_its_kept_bug_makes_the_rule_strong(
             self, strengthened):
         assert strengthened.code == 0, strengthened.lines
-        kept = strengthened.before['RULE-3']['breaks']['PROOF-5']
+        kept = strengthened.before['RULE-3']['bugs']['PROOF-5']
         assert kept['result'] == 'survived', kept
         entry = strengthened.entries['RULE-3']
-        made = entry['breaks']['PROOF-5']
+        made = entry['bugs']['PROOF-5']
         assert made['result'] == 'caught', made
         assert made['after'] == '    ' + ROUNDED, made
         assert {key: made[key] for key in
                 ('file', 'line', 'before', 'after', 'aim', 'case')} == {
             key: kept[key] for key in
             ('file', 'line', 'before', 'after', 'aim', 'case')}
-        assert made['break_key'] != kept['break_key'], made
+        assert made['bug_key'] != kept['bug_key'], made
         assert entry['findings'] == [], entry
         assert entry['verdict'] == 'strong', entry
         assert strengthened.rule_lines('RULE-3') == [
@@ -1822,7 +1822,7 @@ class TestSettlingAFinding:
         assert len(second_caught.calls) == 1, len(second_caught.calls)
         assert asked_for(second_caught.calls[0]) == ['PROOF-5']
         entry = second_caught.entries['RULE-3']
-        made = entry['breaks']['PROOF-5']
+        made = entry['bugs']['PROOF-5']
         assert made['after'] == (
             '        age = age_hours(collected, received) + 1'), made
         assert made['result'] == 'caught', made
@@ -1843,10 +1843,10 @@ class TestSettlingAFinding:
         assert second_survived.code == 0, second_survived.lines
         assert len(second_survived.calls) == 1, len(second_survived.calls)
         entry = second_survived.entries['RULE-3']
-        made = entry['breaks']['PROOF-5']
+        made = entry['bugs']['PROOF-5']
         assert (made['result'], made['why']) == ('not made', TWO_SURVIVED)
-        assert made['break_key'] == second_survived.before['RULE-3'][
-            'breaks']['PROOF-5']['break_key'], made
+        assert made['bug_key'] == second_survived.before['RULE-3'][
+            'bugs']['PROOF-5']['bug_key'], made
         assert second_survived.args[-2:] == ['--sound', 'PROOF-5']
         assert entry['no_bug'][0] == NO_BUG_CAUGHT_5, entry
         assert made['test_unchanged'] is True, made
@@ -1893,7 +1893,7 @@ class TestSettlingAFinding:
     def test_no_new_bug_named_is_said_as_in_any_audit(self, claude):
         install, _directory = claude
         with weak_login(claude) as made:
-            install(answers=[{'PROOF-2': 'no break: nothing breaks it'}])
+            install(answers=[{'PROOF-2': 'no bug: nothing breaks it'}])
             code, lines = settle_run(made, 'RULE-2', sound=['PROOF-2'])
             entry = entry_of(made)
         assert code == 0, lines
@@ -1905,7 +1905,7 @@ class TestSettlingAFinding:
             '  The spot tests found nothing. No bug was planted: the model '
             'found no change that would break PROOF-2: nothing breaks it.'
             ), lines
-        assert entry['breaks']['PROOF-2']['result'] == 'not made', entry
+        assert entry['bugs']['PROOF-2']['result'] == 'not made', entry
         assert entry['verdict'] == 'spot-checked', entry
 
     # purlin: ai_audit PROOF-151
@@ -1917,7 +1917,7 @@ class TestSettlingAFinding:
             code, lines = settle_run(made, 'RULE-2', sound=['PROOF-2'])
             entry = entry_of(made)
         assert code == 0, lines
-        assert entry['breaks'] == {}, entry
+        assert entry['bugs'] == {}, entry
         assert entry['no_bug'][0] == (
             'No bug was planted: the model could not be reached: claude '
             'exited with an error.'), entry
@@ -1935,7 +1935,7 @@ class TestSettlingAFinding:
             code, lines = settle_run(made, 'RULE-2')
             entry = entry_of(made)
         assert code == 0, lines
-        made_now = entry['breaks']['PROOF-2']
+        made_now = entry['bugs']['PROOF-2']
         assert made_now['after'] == '    return 200', made_now
         assert made_now['result'] == 'not run', made_now
         assert entry['no_bug'] == [
@@ -1953,7 +1953,7 @@ class TestSettlingAFinding:
         assert len(made.calls) == 1, len(made.calls)
         assert asked_for(made.calls[0]) == ['PROOF-5']
         entry = made.entries['RULE-3']
-        bug_now = entry['breaks']['PROOF-5']
+        bug_now = entry['bugs']['PROOF-5']
         assert bug_now['after'] == '    hours = seconds // 3600 + 1', bug_now
         assert bug_now['result'] == 'survived', bug_now
         assert 'test_unchanged' not in bug_now, bug_now
@@ -1964,12 +1964,12 @@ class TestSettlingAFinding:
 
     # purlin: ai_audit PROOF-154
     def test_a_proof_with_no_surviving_bug_keeps_its_entry(self, two_rules):
-        before = two_rules.before['RULE-2']['breaks']
+        before = two_rules.before['RULE-2']['bugs']
         assert before['PROOF-3']['result'] == 'survived', before
         assert before['PROOF-4']['result'] == 'not made', before
         assert two_rules.args[-2:] == ['--sound', 'PROOF-3']
         assert asked_for(two_rules.calls[0]) == ['PROOF-3']
-        assert two_rules.entries['RULE-2']['breaks']['PROOF-4'] == \
+        assert two_rules.entries['RULE-2']['bugs']['PROOF-4'] == \
             before['PROOF-4']
 
     # purlin: ai_audit PROOF-155
@@ -2003,7 +2003,7 @@ class TestSettlingAFinding:
         assert made.code == 0, made.lines
         assert len(made.calls) == 1, len(made.calls)
         assert asked_for(made.calls[0]) == ['PROOF-5']
-        bug_now = made.entries['RULE-3']['breaks']['PROOF-5']
+        bug_now = made.entries['RULE-3']['bugs']['PROOF-5']
         assert bug_now['after'] == '    return int(seconds // 1800)', bug_now
         assert bug_now['result'] == 'caught', bug_now
         assert made.under('RULE-3') == [], made.lines
@@ -2014,12 +2014,12 @@ class TestSettlingAFinding:
             self, another_test_changed):
         made = another_test_changed
         assert made.code == 0, made.lines
-        before = made.before['RULE-4']['breaks']
+        before = made.before['RULE-4']['bugs']
         assert (before['PROOF-6']['result'], before['PROOF-7']['result']) == (
             'caught', 'survived'), before
         entry = made.entries['RULE-4']
-        assert sorted(entry['breaks']) == ['PROOF-7'], entry
-        assert entry['breaks']['PROOF-7']['result'] == 'caught', entry
+        assert sorted(entry['bugs']) == ['PROOF-7'], entry
+        assert entry['bugs']['PROOF-7']['result'] == 'caught', entry
         assert entry['verdict'] == 'strong', entry
         assert made.rule_lines('RULE-4') == [
             'sample_intake RULE-4   strong'], made.lines
@@ -2032,7 +2032,7 @@ class TestSettlingAFinding:
         assert after['code'] == 0, after['lines']
         assert [asked_for(call) for call in after['calls']] == [['PROOF-6']]
         entry = after['entries']['RULE-4']
-        made = entry['breaks']['PROOF-6']
+        made = entry['bugs']['PROOF-6']
         assert made['after'] == 'MAX_AGE_HOURS = 73', made
         assert made['result'] == 'survived', made
         assert entry['verdict'] == 'weak', entry
@@ -2044,7 +2044,7 @@ class TestSettlingAFinding:
                                   reply=sample_lab.MORE_SURVIVE,
                                   sound=('PROOF-11',))
         assert made.code == 0, made.lines
-        kept = made.before['RULE-7']['breaks']['PROOF-11']
+        kept = made.before['RULE-7']['bugs']['PROOF-11']
         assert kept['result'] == 'survived', kept
         entry = made.entries['RULE-7']
         assert entry['findings'] == [CHECKS_NOTHING_11], entry
@@ -2063,7 +2063,7 @@ class TestSettlingAFinding:
             code, lines = settle_run(made, 'RULE-2')
             entry = entry_of(made)
         assert code == 0, lines
-        made_now = entry['breaks']['PROOF-2']
+        made_now = entry['bugs']['PROOF-2']
         assert (made_now['result'], made_now['why']) == (
             'not run', 'the test ended in an error, not a failure'), made_now
         assert entry['no_bug'] == [
@@ -2092,14 +2092,14 @@ class TestSettlingAFinding:
             tmp_path, change=sample_lab.scope_without_the_code,
             sound=('PROOF-5',))
         assert made.code == 0, (made.lines, made.errors)
-        kept = made.before['RULE-3']['breaks']['PROOF-5']
+        kept = made.before['RULE-3']['bugs']['PROOF-5']
         assert (kept['file'], kept['result']) == (
             'src/intake.py', 'survived'), kept
         assert [asked_for(call) for call in made.calls] == [['PROOF-5']]
         assert [line for line in made.lines
                 if 'did not break what the proof says' in line] == [], \
             made.lines
-        bug_now = made.entries['RULE-3']['breaks']['PROOF-5']
+        bug_now = made.entries['RULE-3']['bugs']['PROOF-5']
         assert (bug_now['result'], bug_now['after']) == ('not made', None), \
             bug_now
         assert made.under('RULE-3') == [
@@ -2172,7 +2172,7 @@ class TestASettleOnAnUnchangedTest:
             self, one_of_two):
         made = one_of_two
         assert made.code == 0, (made.lines, made.errors)
-        before = made.before['RULE-4']['breaks']
+        before = made.before['RULE-4']['bugs']
         assert (before['PROOF-6']['result'], before['PROOF-7']['result']) == (
             'survived', 'survived'), before
         assert made.rule_lines('RULE-4') == [
@@ -2182,8 +2182,8 @@ class TestASettleOnAnUnchangedTest:
             '  PROOF-7: the test now catches the bug it missed at '
             'src/intake.py:40.'], made.lines
         entry = made.entries['RULE-4']
-        assert entry['breaks']['PROOF-7']['result'] == 'caught', entry
-        assert entry['breaks']['PROOF-6'] == before['PROOF-6'], entry
+        assert entry['bugs']['PROOF-7']['result'] == 'caught', entry
+        assert entry['bugs']['PROOF-6'] == before['PROOF-6'], entry
         assert entry['verdict'] == 'weak', entry
         assert made.calls == []
 
@@ -2204,11 +2204,11 @@ class TestASettleOnAnUnchangedTest:
         assert made.code == 0, (made.lines, made.errors)
         assert [asked_for(call) for call in made.calls] == [['PROOF-6']]
         entry = made.entries['RULE-4']
-        bug_now = entry['breaks']['PROOF-6']
+        bug_now = entry['bugs']['PROOF-6']
         assert bug_now['after'] == 'MAX_AGE_HOURS = 73', bug_now
         assert bug_now['result'] == 'caught', bug_now
         assert bug_now['test_unchanged'] is True, bug_now
-        assert 'test_unchanged' not in entry['breaks']['PROOF-7'], entry
+        assert 'test_unchanged' not in entry['bugs']['PROOF-7'], entry
         assert entry['no_bug'] == [UNCHANGED % 'PROOF-6'], entry
         assert entry['verdict'] == 'strong', entry
 
@@ -2230,7 +2230,7 @@ class TestASettleOnAnUnchangedTest:
         again = judged_sound.again
         assert again['code'] == 0, again['lines']
         entry = again['entries']['RULE-4']
-        assert entry['breaks']['PROOF-6']['test_unchanged'] is True, entry
+        assert entry['bugs']['PROOF-6']['test_unchanged'] is True, entry
         assert entry['no_bug'] == [UNCHANGED % 'PROOF-6'], entry
         at = again['lines'].index('sample_intake RULE-4   strong')
         assert again['lines'][at + 1] == '  ' + UNCHANGED % 'PROOF-6', \
@@ -2242,8 +2242,8 @@ class TestASettleOnAnUnchangedTest:
                                   sound=('PROOF-5',))
         assert made.code == 0, (made.lines, made.errors)
         entry = made.entries['RULE-3']
-        assert entry['breaks']['PROOF-5']['result'] == 'caught', entry
-        assert 'test_unchanged' not in entry['breaks']['PROOF-5'], entry
+        assert entry['bugs']['PROOF-5']['result'] == 'caught', entry
+        assert 'test_unchanged' not in entry['bugs']['PROOF-5'], entry
         assert entry['no_bug'] == [], entry
         assert made.under('RULE-3') == [NOW_CATCHES_5], made.lines
 
@@ -2277,7 +2277,7 @@ class TestASettleOnAnUnchangedTest:
     def test_sound_naming_a_proof_with_no_surviving_bug_exits_one(
             self, refused):
         before = sample_lab.evidence_text(refused.root)
-        assert refused.entries['RULE-4']['breaks']['PROOF-6'][
+        assert refused.entries['RULE-4']['bugs']['PROOF-6'][
             'result'] == 'caught'
         fake_claude.install(refused.directory)
         code, lines, errors = sample_lab.run_script(
@@ -2291,11 +2291,11 @@ class TestASettleOnAnUnchangedTest:
     # purlin: ai_audit PROOF-177
     def test_a_bug_that_survived_records_the_key_of_its_proofs_tests(
             self, refused):
-        breaks = refused.before['RULE-3']['breaks']
-        assert re.fullmatch('[0-9a-f]{64}', breaks['PROOF-5']['test_key']), \
-            breaks
-        assert breaks['PROOF-5']['result'] == 'survived', breaks
-        caught = refused.before['RULE-4']['breaks']['PROOF-6']
+        bugs = refused.before['RULE-3']['bugs']
+        assert re.fullmatch('[0-9a-f]{64}', bugs['PROOF-5']['test_key']), \
+            bugs
+        assert bugs['PROOF-5']['result'] == 'survived', bugs
+        caught = refused.before['RULE-4']['bugs']['PROOF-6']
         assert caught['result'] == 'caught', caught
         assert 'test_key' not in caught, caught
 
@@ -2345,11 +2345,11 @@ class TestAnAuditPlantsASurvivingBugAgain:
         made = code_changed
         assert made.code == 0, (made.lines, made.errors)
         assert '--settle' not in made.args, made.args
-        kept = made.before['RULE-3']['breaks']['PROOF-5']
+        kept = made.before['RULE-3']['bugs']['PROOF-5']
         assert kept['result'] == 'survived', kept
         assert 'Plant one bug' not in request_for(made, 'RULE-3')
         entry = made.entries['RULE-3']
-        bug_now = entry['breaks']['PROOF-5']
+        bug_now = entry['bugs']['PROOF-5']
         assert bug_now['result'] == 'survived', bug_now
         assert bug_now['after'] == '    ' + ROUNDED, bug_now
         assert entry['verdict'] == 'weak', entry
@@ -2367,7 +2367,7 @@ class TestAnAuditPlantsASurvivingBugAgain:
     # purlin: ai_audit PROOF-182
     def test_the_two_findings_stay_at_the_line_the_change_now_stands_at(
             self, code_changed):
-        kept = code_changed.before['RULE-3']['breaks']['PROOF-5']
+        kept = code_changed.before['RULE-3']['bugs']['PROOF-5']
         assert kept['line'] == 17, kept
         findings = [
             'PROOF-5: the test still passes when src/intake.py:18 reads '
@@ -2376,7 +2376,7 @@ class TestAnAuditPlantsASurvivingBugAgain:
             '  ' + line for line in findings], code_changed.lines
         entry = code_changed.entries['RULE-3']
         assert entry['findings'] == findings, entry
-        bug_now = entry['breaks']['PROOF-5']
+        bug_now = entry['bugs']['PROOF-5']
         assert bug_now['line'] == 18, bug_now
         assert bug_now['test_key'] == kept['test_key'], bug_now
 
@@ -2388,8 +2388,8 @@ class TestAnAuditPlantsASurvivingBugAgain:
         assert sample_lab.Audited.under(again, 'RULE-3') == [
             '  PROOF-5: the test still passes when src/intake.py:18 reads '
             '"%s"' % ROUNDED, '  ' + AI_SAYS_5], again['lines']
-        assert again['entries']['RULE-3']['breaks']['PROOF-5'] == \
-            code_changed.entries['RULE-3']['breaks']['PROOF-5']
+        assert again['entries']['RULE-3']['bugs']['PROOF-5'] == \
+            code_changed.entries['RULE-3']['bugs']['PROOF-5']
 
     # purlin: ai_audit PROOF-183
     def test_a_bug_the_unchanged_test_now_fails_on_reads_caught(
@@ -2400,7 +2400,7 @@ class TestAnAuditPlantsASurvivingBugAgain:
         assert made.code == 0, (made.lines, made.errors)
         assert 'Plant one bug' not in request_for(made, 'RULE-3')
         entry = made.entries['RULE-3']
-        bug_now = entry['breaks']['PROOF-5']
+        bug_now = entry['bugs']['PROOF-5']
         assert bug_now['result'] == 'caught', bug_now
         assert bug_now['after'] == '    ' + ROUNDED, bug_now
         assert 'test_key' not in bug_now, bug_now
@@ -2420,7 +2420,7 @@ class TestAnAuditPlantsASurvivingBugAgain:
         assert made.code == 0, (made.lines, made.errors)
         assert 'Plant one bug' not in request_for(made, 'RULE-3')
         entry = made.entries['RULE-3']
-        bug_now = entry['breaks']['PROOF-5']
+        bug_now = entry['bugs']['PROOF-5']
         assert bug_now['result'] == 'not run', bug_now
         assert bug_now['after'] == '    ' + ROUNDED, bug_now
         assert entry['no_bug'] == [
@@ -2438,7 +2438,7 @@ class TestAnAuditPlantsASurvivingBugAgain:
         assert asked_for({'prompt': request_for(made, 'RULE-3')}) == [
             'PROOF-5']
         entry = made.entries['RULE-3']
-        bug_now = entry['breaks']['PROOF-5']
+        bug_now = entry['bugs']['PROOF-5']
         assert bug_now['after'] == '    hours = seconds // 3600 + 1', bug_now
         assert bug_now['result'] == 'survived', bug_now
         assert entry['verdict'] == 'weak', entry

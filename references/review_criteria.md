@@ -197,7 +197,7 @@ after:
 <the lines>
 ```
 
-or, under the same line, `no break: <why>` when no change to those files can break what the
+or, under the same line, `no bug: <why>` when no change to those files can break what the
 proof says. The reason is that one line; an `aim:` line may stand above it.
 
 - `aim:` reads `past the test`, or `plain` where the test leaves no way past it. Any other
@@ -312,7 +312,7 @@ The bug still reads `survived`, its two findings stay, and the rule reads `weak`
 - `--sound` for a proof whose test did change records nothing: the settle goes on as any
   settle does.
 
-**Settling one rule.** For each proof of the rule whose entry under `breaks` reads `survived`,
+**Settling one rule.** For each proof of the rule whose entry under `bugs` reads `survived`,
 and whose test changed since or which `--sound` names:
 
 1. **The bug is planted again.** The recorded change, its `file`, `before` and `after`, is made
@@ -320,7 +320,7 @@ and whose test changed since or which `--sound` names:
    run, once before the change and once with it in place. No model is asked.
 2. **The test fails.** The finding was right, and the test now catches the bug. The entry reads
    `caught`, with the same `file`, `line`, `before`, `after`, `aim` and `case`, and the
-   `break_key` of the test and code as they stand. Its two findings leave the rule. The audit
+   `bug_key` of the test and code as they stand. Its two findings leave the rule. The audit
    prints, under the rule,
    `  PROOF-2: the test now catches the bug it missed at src/auth.py:12.`
 3. **The test still passes.** The bug did not break what the proof says, so it is dropped. The
@@ -329,10 +329,10 @@ and whose test changed since or which `--sound` names:
    `  PROOF-2: the bug at src/auth.py:12 did not break what the proof says. A new bug was planted.`
    - The new bug is caught: the entry reads `caught`, as any caught bug.
    - The new bug survives too: no bug is kept. The entry reads `not made`, with the `why`
-     `two planted bugs left the proof's check passing` and the `break_key` of the test and code
+     `two planted bugs left the proof's check passing` and the `bug_key` of the test and code
      as they stand, and `no_bug` gains
      `No bug was caught for PROOF-2: two planted bugs left the proof's check passing.`
-   - No new bug is planted, because the model answers `no break`, its part cannot be used or
+   - No new bug is planted, because the model answers `no bug`, its part cannot be used or
      the model cannot be reached: `no_bug` holds the sentence that case has in any audit, and
      the printed line ends at `did not break what the proof says.`
 4. **The test does not run** with the recorded bug in place, because it is skipped, ends in an
@@ -356,7 +356,7 @@ A rule named with `--settle` that keeps no bug as `survived` prints
 `<feature> RULE-N has no planted bug that survived: nothing to settle.` and is left as it is.
 A rule whose every surviving bug is refused is read and asks no model.
 
-A dropped bug is kept nowhere: not under `breaks`, not among the `findings`, not in the evidence
+A dropped bug is kept nowhere: not under `bugs`, not among the `findings`, not in the evidence
 package. The `not made` entry of step 3 holds the state, so no audit plants a bug for that proof
 until its test or code changes. The lines of steps 2 and 3 and the line that refuses a settle
 are printed and not stored. One run
@@ -474,7 +474,7 @@ The audit reports. It recommends nothing.
 
 Each rule read gets one entry in its feature's evidence, under `audit.rules`: the hashes of its
 rule, proofs, tests and code, the `verdict`, the `findings`, under `no_bug` one sentence for each
-proof no bug was caught for, each planted bug under `breaks` with its `aim`, its `case`, its
+proof no bug was caught for, each planted bug under `bugs` with its `aim`, its `case`, its
 file, line, the lines before and after, and its result, the model's `explanation` and `notes`, the `model`, the sha256
 of these `criteria`, the time and the commit. A person reads it beside the rule, each proof and
 the source of each test, which is what the audit read.

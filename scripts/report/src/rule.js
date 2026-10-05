@@ -90,7 +90,7 @@ function auditPanel(rule) {
     lines.push(line(text));
   });
   if (audit) {
-    lines.push(missedBugs(audit.breaks));
+    lines.push(missedBugs(audit.bugs));
     lines.push('<p class="sec">Read by <span class="mono">'
       + esc(audit.model || 'unknown') + '</span> on '
       + unbroken(moment(audit.at)) + '</p>');
@@ -105,15 +105,15 @@ function auditPanel(rule) {
    line of the code in a copy of the project, and the proof's own tests still
    passed. One sentence names the proof, the file and the line; beneath it
    the line as it was and as the bug left it. A bug the tests caught, and one
-   that could not be planted, draw nothing. `breaks` is the audit entry's
+   that could not be planted, draw nothing. `bugs` is the audit entry's
    own map, `{proof: {file, line, before, after, result}}`. */
-function missedBugs(breaks) {
-  return Object.keys(breaks || {}).sort(function (one, two) {
+function missedBugs(bugs) {
+  return Object.keys(bugs || {}).sort(function (one, two) {
     return parseInt(one.split('-')[1], 10) - parseInt(two.split('-')[1], 10);
   }).filter(function (proof) {
-    return breaks[proof] && breaks[proof].result === 'survived';
+    return bugs[proof] && bugs[proof].result === 'survived';
   }).map(function (proof) {
-    var bug = breaks[proof];
+    var bug = bugs[proof];
     return '<div class="bug"><p class="sec">' + esc(proof)
       + ': its tests missed a bug planted at ' + unbroken(bug.file + ':'
         + bug.line) + '.</p><dl class="kv"><dt>Before</dt><dd><pre class="code">'

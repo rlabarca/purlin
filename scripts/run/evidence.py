@@ -560,9 +560,9 @@ def audit_entry(rule, found, commit, at=None):
     `rule` is the payload's rule entry, whose three hashes key the entry
     with `found`'s `code_hash`, the `code` part of the feature's fingerprint
     when the audit read the rule. `found` holds code_hash, verdict, findings,
-    no_bug, breaks, explanation, model, criteria, notes: the `verdict`
+    no_bug, bugs, explanation, model, criteria, notes: the `verdict`
     (`strong`, `weak` or `spot-checked`), the `findings`, under `no_bug` one
-    sentence for each proof no bug was caught for, the `breaks`, one per
+    sentence for each proof no bug was caught for, the `bugs`, one per
     proof a bug was planted for, the model's reading as `explanation`, the
     `model` that answered, the sha256 of the `criteria` it was sent, and any
     `notes`, which enter no comparison and are written only when there are
@@ -575,8 +575,8 @@ def audit_entry(rule, found, commit, at=None):
              'verdict': found.get('verdict'),
              'findings': [str(line) for line in found.get('findings') or ()],
              'no_bug': [str(line) for line in found.get('no_bug') or ()],
-             'breaks': {str(proof): dict(made) for proof, made
-                        in (found.get('breaks') or {}).items()},
+             'bugs': {str(proof): dict(made) for proof, made
+                      in (found.get('bugs') or {}).items()},
              'explanation': [str(line)
                              for line in found.get('explanation') or ()],
              'model': found.get('model') or 'unknown',

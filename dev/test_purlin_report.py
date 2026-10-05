@@ -6,7 +6,7 @@ gradient, no request to anything outside the file. The second opens
 it in a headless browser over `file://` with a fixture payload beside it, one
 fixture per process, and reads what a person would see.
 
-The samples under `dev/fixtures/report/` are payloads at schema 16, written on
+The samples under `dev/fixtures/report/` are payloads at schema 17, written on
 the branch `main` at the commit `a1b2c3d` and stamped `2026-10-01T10:42:13Z`:
 solo, which no audit has read and no one has signed, with one rule failing
 its tests; team, with an audit, one spec to repair, which writes a proof
@@ -1028,7 +1028,7 @@ def test_data_of_another_schema_shows_one_notice_and_nothing_else(browser,
         payload['schema_version'] = 3
     page = open_sample(browser, tmp_path, 'team', marked_as_schema_3)
     assert texts(page, '.notice') == [
-        'This data was written for schema 3 and this page reads schema 16. '
+        'This data was written for schema 3 and this page reads schema 17. '
         'Run purlin:status to write it again.']
     assert page.query_selector_all('.tile') == []
     assert page.query_selector_all('.fact') == []
@@ -1393,7 +1393,7 @@ def test_a_weak_audit_reads_weak_its_finding_then_its_explanation(browser,
                                                                  tmp_path):
     payload = payload_named('regulated')
     given_audit(payload, 'invoice', 'RULE-2', findings=[FINDING],
-                explanation=[EXPLANATION], breaks={})
+                explanation=[EXPLANATION], bugs={})
     lines = audit_lines(browser, tmp_path, payload, 'invoice', 'RULE-2')
     assert lines[:3] == ['Weak.', FINDING, EXPLANATION], lines
 
@@ -1411,10 +1411,10 @@ def test_a_strong_audit_reads_its_explanation_under_its_answer(browser,
 def missed_bug(payload):
     """Give the regulated sample's invoice `RULE-2` one planted bug its tests
     missed, as the audit records it."""
-    given_audit(payload, 'invoice', 'RULE-2', breaks={'PROOF-2': {
+    given_audit(payload, 'invoice', 'RULE-2', bugs={'PROOF-2': {
         'file': 'src/billing/invoice.py', 'line': 12,
         'before': '    return total\n', 'after': '    return 0\n',
-        'result': 'survived', 'why': '', 'break_key': 'b' * 64}})
+        'result': 'survived', 'why': '', 'bug_key': 'b' * 64}})
 
 
 # Each planted bug the open rule's audit panel draws: its sentence, then the
@@ -1442,7 +1442,7 @@ def test_a_planted_bug_the_tests_missed_is_shown_with_its_lines(browser,
 def test_a_planted_bug_the_tests_caught_is_not_shown(browser, tmp_path):
     def caught(payload):
         missed_bug(payload)
-        rule_of(payload, 'invoice', 'RULE-2')['audit']['breaks']['PROOF-2'][
+        rule_of(payload, 'invoice', 'RULE-2')['audit']['bugs']['PROOF-2'][
             'result'] = 'caught'
     page = open_sample(browser, tmp_path, 'regulated', caught)
     open_rule(page, 'invoice', 'RULE-2')
@@ -1477,7 +1477,7 @@ def spot_checked(payload):
     rule['audit'] = {
         'verdict': 'spot-checked', 'findings': [],
         'no_bug': [ANCHOR_SENTENCE], 'notes': [], 'explanation': [],
-        'breaks': {}, 'model': 'claude-opus-5-5',
+        'bugs': {}, 'model': 'claude-opus-5-5',
         'at': '2026-09-13T12:05:00Z', 'commit': 'a1b2c3d' + '0' * 33,
         'path': '.purlin/evidence/ci/export.json', 'out_of_date': []}
     rule['flags']['spot_checked'] = True
@@ -2356,7 +2356,7 @@ def only_spot_checked(payload):
         'reasons': ['The spot tests found nothing. ' + sentence]}
     rule['audit'] = {
         'verdict': 'spot-checked', 'findings': [], 'no_bug': [sentence],
-        'notes': [], 'explanation': [], 'breaks': {}, 'model': 'unknown',
+        'notes': [], 'explanation': [], 'bugs': {}, 'model': 'unknown',
         'at': '2026-09-12T09:14:02Z', 'commit': 'a1b2c3d' + '0' * 33,
         'path': '.purlin/evidence/local/login.json', 'out_of_date': []}
     rule['flags'].update({'not_audited': False, 'spot_checked': True})

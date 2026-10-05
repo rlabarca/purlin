@@ -114,11 +114,11 @@
         {
           "audit": {
             "at": "2026-09-12T09:15:40Z",
-            "breaks": {
+            "bugs": {
               "PROOF-1": {
                 "after": "    if check_password(user, password):",
                 "before": "    if not check_password(user, password):",
-                "break_key": "91bb1f1332c41c8f9e26ce4d2db97de1ba1e53e1ee88d4654849ce40852db957",
+                "bug_key": "91bb1f1332c41c8f9e26ce4d2db97de1ba1e53e1ee88d4654849ce40852db957",
                 "file": "src/auth/session.py",
                 "line": 41,
                 "result": "caught",
@@ -213,11 +213,11 @@
         {
           "audit": {
             "at": "2026-09-12T09:15:40Z",
-            "breaks": {
+            "bugs": {
               "PROOF-2": {
                 "after": "    return attempts >= 6",
                 "before": "    return attempts >= 5",
-                "break_key": "642aaae6db996f6ed2ecfd3a2baeb21e6a21565184957b98ef10b23c23c3f55c",
+                "bug_key": "642aaae6db996f6ed2ecfd3a2baeb21e6a21565184957b98ef10b23c23c3f55c",
                 "file": "src/auth/lockout.py",
                 "line": 18,
                 "result": "caught",
@@ -312,11 +312,11 @@
         {
           "audit": {
             "at": "2026-09-12T09:15:40Z",
-            "breaks": {
+            "bugs": {
               "PROOF-3": {
                 "after": "    return opened + timedelta(minutes=50)",
                 "before": "    return opened + timedelta(minutes=15)",
-                "break_key": "96b307c30ba390cb1b2373673dfa08c7ee14d2b39373d2e7a9cd34049b94176d",
+                "bug_key": "96b307c30ba390cb1b2373673dfa08c7ee14d2b39373d2e7a9cd34049b94176d",
                 "file": "src/auth/lockout.py",
                 "line": 27,
                 "result": "survived",
@@ -571,11 +571,11 @@
         {
           "audit": {
             "at": "2026-09-12T09:14:02Z",
-            "breaks": {
+            "bugs": {
               "PROOF-1": {
                 "after": "    return sum(line.amount for line in lines[1:])",
                 "before": "    return sum(line.amount for line in lines)",
-                "break_key": "7349e30bbbbc45ff1b4325dff1e1dba16a85f3b98694d267749e728f1e2e1b9c",
+                "bug_key": "7349e30bbbbc45ff1b4325dff1e1dba16a85f3b98694d267749e728f1e2e1b9c",
                 "file": "src/billing/invoice.py",
                 "line": 12,
                 "result": "caught",
@@ -670,11 +670,11 @@
         {
           "audit": {
             "at": "2026-09-12T09:14:02Z",
-            "breaks": {
+            "bugs": {
               "PROOF-2": {
                 "after": "    if lines is None:",
                 "before": "    if not lines:",
-                "break_key": "0c923e86f72d6b0413768c46dd7390f7aba7bea102c2c989dbbdba5d4e8a2b39",
+                "bug_key": "0c923e86f72d6b0413768c46dd7390f7aba7bea102c2c989dbbdba5d4e8a2b39",
                 "file": "src/billing/invoice.py",
                 "line": null,
                 "result": "not made",
@@ -884,7 +884,7 @@
         {
           "audit": {
             "at": "2026-09-12T09:14:02Z",
-            "breaks": {},
+            "bugs": {},
             "commit": "a1b2c3d",
             "explanation": [
               "The test finds both elements on the page and compares neither position."
@@ -1310,7 +1310,7 @@
     }
   },
   "project": "ledger",
-  "schema_version": 16,
+  "schema_version": 17,
   "signoff": {
     "commit": "9f8e7d6c5b4a39281706f5e4d3c2b1a098765432",
     "since": 4,

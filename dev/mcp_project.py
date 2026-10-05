@@ -175,12 +175,12 @@ class Project(object):
         return rel
 
     def audit(self, rule_id, feature='login', observations=(),
-              source='local', word=None, no_bug=(), breaks=None, **extra):
+              source='local', word=None, no_bug=(), bugs=None, **extra):
         """Write the audit entry for a rule's current rule, proof and test
         hashes, and the feature's `code` part taken now.
 
         With an observation the verdict is `weak`, with none `strong`;
-        `word` names another outright, `spot-checked` among them. `breaks`
+        `word` names another outright, `spot-checked` among them. `bugs`
         is the planted bugs on record, one per proof, and `no_bug` the
         sentence for each proof no bug was caught for. `extra` adds any
         other field of the entry, such as `model` or `explanation`.
@@ -203,7 +203,7 @@ class Project(object):
                      self.root, feature)['code'],
                  'verdict': word or ('weak' if observations else 'strong'),
                  'findings': list(observations), 'no_bug': list(no_bug),
-                 'breaks': dict(breaks or {}),
+                 'bugs': dict(bugs or {}),
                  'at': '2026-09-13T12:05:00Z', 'commit': self.head()}
         entry.update(extra)
         audit['rules'][rule_id] = entry

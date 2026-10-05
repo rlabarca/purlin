@@ -10,9 +10,9 @@ audit reads (`ai_audit.is_read`, ai_audit RULE-1) it runs, in this order:
    test, with the case the model says it breaks, and the model's reading,
    which becomes the explanation and sets no verdict;
 3. each bug planted in a copy of the project and its proof's own test run
-   (`targeted_break.break_proof`), one at a time. No bug is asked for an
+   (`planted_bug.plant_bug`), one at a time. No bug is asked for an
    anchor's rule, a `@manual` proof or a proof tagged for a system this
-   machine is not; a proof whose `break_key` is unchanged keeps its last
+   machine is not; a proof whose `bug_key` is unchanged keeps its last
    result (ai_audit RULE-36), and a bug that survived is planted again
    before a new one is asked for, where its proof's tests are as they were.
 
@@ -74,7 +74,7 @@ for _path in (os.path.join(_SCRIPTS, 'mcp'), os.path.join(_SCRIPTS, 'run'),
 import ai_audit                                               # noqa: E402
 import evidence as evidence_writer                            # noqa: E402
 import plain_checks                                           # noqa: E402
-import targeted_break                                         # noqa: E402
+import planted_bug                                            # noqa: E402
 from purlin import evidence as evidence_reader                 # noqa: E402
 from purlin import fingerprint as fingerprint_module           # noqa: E402
 from purlin import payload as payload_module                   # noqa: E402
@@ -103,7 +103,7 @@ ANCHOR = "no bug is planted for an anchor's rule"
 OTHER_SYSTEM = '%s needs %s, and this machine is %s'                     # PROOF-N, Windows, macOS
 NOT_RUN = 'A bug was planted for %s and its test did not run.'           # a whole sentence
 ERRORED = 'A bug was planted for %s and its test ended in an error, not a failure.'
-NO_PART = targeted_break.NO_PART
+NO_PART = planted_bug.NO_PART
 
 # Settling a rule. The first three are printed under the rule and not stored:
 # PROOF-N, the kept bug's file and line. The reason and its sentence are what a
@@ -289,8 +289,8 @@ def _survived_finding(proof_id, kept, last):
         if str(line).startswith(start):
             return line
     changed = (str(kept.get('after') or '').strip().splitlines() or [''])[0]
-    return targeted_break.SURVIVED % (proof_id, kept.get('file'),
-                                      kept.get('line') or 0, changed.strip())
+    return planted_bug.SURVIVED % (proof_id, kept.get('file'),
+                                   kept.get('line') or 0, changed.strip())
 
 
 def survived_findings(proof_id, made, last, finding=None):
@@ -300,7 +300,7 @@ def survived_findings(proof_id, made, last, finding=None):
     found = [finding or _survived_finding(proof_id, made, last)]
     case = str(made.get('case') or '').strip()
     if case:
-        found.append(targeted_break.AI_SAYS % (proof_id, case))
+        found.append(planted_bug.AI_SAYS % (proof_id, case))
     return found
 
 
@@ -341,26 +341,26 @@ def bug_plan(reading, last, code_part, here=None, settle=False, sound=()):
     is not checked by hand, in the spec's order. `what` is `anchor` for an
     anchor's rule; `system`, with the system the proof is tagged for, where
     this machine is another; `kept`, with the last result, where the proof's
-    `break_key` is unchanged; else `plant`, with the key its result will
+    `bug_key` is unchanged; else `plant`, with the key its result will
     carry.
 
     Under `settle` a proof whose last result reads `survived` is `replay`,
     with that result, the key and whether its tests are as they were when the
-    bug got past them, whatever its `break_key`. Where they are and `sound`
+    bug got past them, whatever its `bug_key`. Where they are and `sound`
     does not name the proof it is `refused`, with that result. Any other
-    result is `kept` only where its `break_key` is unchanged. A result taken on
+    result is `kept` only where its `bug_key` is unchanged. A result taken on
     another test or code is left out, as a proof with no result on record
     is, so the entry holds none for it and the next audit plants a bug for
     that proof (`ai_audit.is_read`).
 
     Without `settle` a proof whose last result reads `survived`, whose
-    `break_key` changed and whose tests are as they were when the bug got past
+    `bug_key` changed and whose tests are as they were when the bug got past
     them is `again`, with that result and the key: the feature's code changed
     and the test did not, so the recorded bug is planted again before any new
     one is asked for."""
     here = here or evidence_reader.host_os()
-    kept_breaks = last.get('breaks') if isinstance(last.get('breaks'),
-                                                   dict) else {}
+    kept_bugs = last.get('bugs') if isinstance(last.get('bugs'),
+                                               dict) else {}
     plan = []
     for proof in reading.get('proofs') or ():
         if proof.get('manual'):
@@ -374,8 +374,8 @@ def bug_plan(reading, last, code_part, here=None, settle=False, sound=()):
         if proof.get('env') and proof['env'] != here:
             plan.append((proof['id'], 'system', proof['env']))
             continue
-        key = ai_audit.break_key(test_source_hash(tests), code_part)
-        kept = kept_breaks.get(proof['id'])
+        key = ai_audit.bug_key(test_source_hash(tests), code_part)
+        kept = kept_bugs.get(proof['id'])
         if settle:
             if isinstance(kept, dict) and kept.get('result') == 'survived':
                 same = test_as_it_was(kept, tests)
@@ -383,10 +383,10 @@ def bug_plan(reading, last, code_part, here=None, settle=False, sound=()):
                     plan.append((proof['id'], 'refused', kept))
                 else:
                     plan.append((proof['id'], 'replay', (kept, key, same)))
-            elif isinstance(kept, dict) and kept.get('break_key') == key:
+            elif isinstance(kept, dict) and kept.get('bug_key') == key:
                 plan.append((proof['id'], 'kept', kept))
             continue
-        if isinstance(kept, dict) and kept.get('break_key') == key:
+        if isinstance(kept, dict) and kept.get('bug_key') == key:
             plan.append((proof['id'], 'kept', kept))
         elif (isinstance(kept, dict) and kept.get('result') == 'survived'
               and test_as_it_was(kept, tests)):
@@ -399,22 +399,22 @@ def bug_plan(reading, last, code_part, here=None, settle=False, sound=()):
 def no_bug_sentence(proof_id, made, cause=None, last=None):
     """The sentence of `no_bug` for one planted bug's result, or None where
     the bug was caught or survived. A `not made` result is worded by where
-    its reason came from: `cause` is `targeted_break`'s for a bug this audit
+    its reason came from: `cause` is `planted_bug`'s for a bug this audit
     asked for; for a result kept from an earlier audit it is the sentence
     that audit wrote, found under `no_bug` of `last`, its entry. Only an
     entry that holds no such sentence is read by the words of its reason."""
     result = made.get('result')
     if result == 'not run':
-        if made.get('why') == targeted_break.ERRORED:
+        if made.get('why') == planted_bug.ERRORED:
             return ERRORED % proof_id
         return NOT_RUN % proof_id
     if result != 'not made':
         return None
     why = str(made.get('why') or '').rstrip('.')
     worded = {
-        targeted_break.TEST_DOES_NOT_PASS: NO_BUG % (BASELINE % proof_id),
-        targeted_break.ANSWER_UNUSABLE: NO_BUG % (ANSWER_UNUSABLE % (proof_id, why)),
-        targeted_break.MODEL_FOUND_NONE: NO_BUG % (MODEL_FOUND_NONE % (proof_id, why)),
+        planted_bug.TEST_DOES_NOT_PASS: NO_BUG % (BASELINE % proof_id),
+        planted_bug.ANSWER_UNUSABLE: NO_BUG % (ANSWER_UNUSABLE % (proof_id, why)),
+        planted_bug.MODEL_FOUND_NONE: NO_BUG % (MODEL_FOUND_NONE % (proof_id, why)),
     }
     if cause not in worded:
         written = [str(line) for line in (last or {}).get('no_bug') or ()]
@@ -424,7 +424,7 @@ def no_bug_sentence(proof_id, made, cause=None, last=None):
                 return sentence
         if two:
             return two[0]
-        cause = targeted_break.cause_of(why)
+        cause = planted_bug.cause_of(why)
     return worded[cause]
 
 
@@ -466,7 +466,7 @@ def replayed(project_root, reading, plan, scope_files):
         same = what == 'replay' and value[2]
         if same:
             unchanged.add(proof_id)
-        result = targeted_break.replay(
+        result = planted_bug.replay(
             project_root, reading['feature'], proof_id,
             _proof_tests(reading, proof_id), scope_files, kept)
         place = (proof_id, kept.get('file'), kept.get('line') or 0)
@@ -474,12 +474,12 @@ def replayed(project_root, reading, plan, scope_files):
         if ran in ('caught', 'not run'):
             settled.append((proof_id, 'kept', _settled_entry(dict(
                 kept, result=ran, why=result.get('why') or '',
-                break_key=key), same)))
+                bug_key=key), same)))
             if ran == 'caught':
                 said[proof_id] = NOW_CATCHES % place
         elif ran == 'survived' and what == 'again':
             settled.append((proof_id, 'held', (
-                dict(kept, line=result.get('line'), break_key=key),
+                dict(kept, line=result.get('line'), bug_key=key),
                 result.get('finding'))))
             said[proof_id] = STILL_PASSES % proof_id
         elif ran == 'survived':
@@ -491,16 +491,16 @@ def replayed(project_root, reading, plan, scope_files):
 
 def planted_bugs(project_root, reading, plan, scope_files, last, answer,
                  here=None, said=None, unchanged=()):
-    """`(breaks, findings, no_bug)` for one rule's proofs.
+    """`(bugs, findings, no_bug)` for one rule's proofs.
 
     `plan` is `bug_plan`'s and `answer` the model's one reply for the rule,
-    as `ai_audit.audit_one` gives it. `breaks` is `{proof: entry}` as the
+    as `ai_audit.audit_one` gives it. `bugs` is `{proof: entry}` as the
     evidence holds it, each with its `aim` and `case`; `findings` the two
     sentences of each bug that survived, the change and the case the model
     says it breaks;
     `no_bug` one sentence for each proof no bug was caught for. A proof the
     model could not be reached for, or that is tagged for another system, has
-    no entry under `breaks`, so the first is asked for again.
+    no entry under `bugs`, so the first is asked for again.
 
     A `held` proof of the plan is one whose kept bug was planted again and
     still survives: its entry and its two findings are kept.
@@ -517,7 +517,7 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
     again. A bug that survives holds the `test_key` of the tests it got past.
     """
     here = here or evidence_reader.host_os()
-    breaks, findings, no_bug = {}, [], []
+    bugs, findings, no_bug = {}, [], []
     said = {} if said is None else said
 
     def note(sentence):
@@ -533,14 +533,14 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
                 proof_id, evidence_reader.os_word(value),
                 evidence_reader.os_word(here))))
         elif what == 'kept':
-            breaks[proof_id] = value
+            bugs[proof_id] = value
             if value.get('result') == 'survived':
                 findings.extend(survived_findings(proof_id, value, last))
             note(no_bug_sentence(proof_id, value, last=last))
             if value.get('test_unchanged'):
                 note(UNCHANGED % proof_id)
         elif what == 'held':
-            breaks[proof_id] = value[0]
+            bugs[proof_id] = value[0]
             findings.extend(survived_findings(proof_id, value[0], last,
                                               value[1]))
         elif answer.get('why'):
@@ -553,26 +553,26 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
             key, dropped = value if what == 'second' else (value, None)
             tests = _proof_tests(reading, proof_id)
             same = proof_id in unchanged
-            result = targeted_break.break_proof(
+            result = planted_bug.plant_bug(
                 project_root, reading['feature'], proof_id, tests,
                 scope_files, parts.get(proof_id))
-            entry = {'aim': result.get('aim') or targeted_break.PLAIN,
+            entry = {'aim': result.get('aim') or planted_bug.PLAIN,
                      'case': result.get('case') or '',
                      'file': result.get('file'), 'line': result.get('line'),
                      'before': result.get('before'),
                      'after': result.get('after'),
                      'result': result.get('result') or 'not made',
-                     'why': result.get('why') or '', 'break_key': key}
+                     'why': result.get('why') or '', 'bug_key': key}
             if dropped:
                 said[proof_id] = dropped + (
                     '' if entry['result'] == 'not made' else NEW_BUG_PLANTED)
                 if entry['result'] == 'survived':
                     # Two bugs left the test passing: neither is kept.
-                    breaks[proof_id] = _settled_entry({
-                        'aim': targeted_break.PLAIN, 'case': '', 'file': None,
+                    bugs[proof_id] = _settled_entry({
+                        'aim': planted_bug.PLAIN, 'case': '', 'file': None,
                         'line': None, 'before': None, 'after': None,
                         'result': 'not made', 'why': TWO_SURVIVED,
-                        'break_key': key}, same)
+                        'bug_key': key}, same)
                     note(NO_BUG_CAUGHT % (proof_id, TWO_SURVIVED))
                     if same:
                         note(UNCHANGED % proof_id)
@@ -583,19 +583,19 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
                                                   result.get('finding')))
             elif same:
                 entry['test_unchanged'] = True
-            breaks[proof_id] = entry
+            bugs[proof_id] = entry
             note(no_bug_sentence(proof_id, entry, result.get('cause')))
             if entry.get('test_unchanged'):
                 note(UNCHANGED % proof_id)
-    return breaks, findings, no_bug
+    return bugs, findings, no_bug
 
 
-def verdict_of(spot, survived, breaks):
+def verdict_of(spot, survived, bugs):
     """`weak` when a spot test fired or a planted bug survived, else `strong`
     when a planted bug was caught, else `spot-checked` (ai_audit RULE-33)."""
     if spot or survived:
         return 'weak'
-    if any(made.get('result') == 'caught' for made in breaks.values()):
+    if any(made.get('result') == 'caught' for made in bugs.values()):
         return 'strong'
     return 'spot-checked'
 
@@ -620,9 +620,9 @@ def sound_refusals(project_root, features, feature, rules, sound):
             if rule.get('feature') != feature or rule.get('id') not in rules:
                 continue
             owned.update(proof.get('id') for proof in rule.get('proofs') or ())
-            breaks = audit_entry(project_root, feature, rule,
-                                 code).get('breaks')
-            for proof, made in (breaks if isinstance(breaks, dict)
+            bugs = audit_entry(project_root, feature, rule,
+                               code).get('bugs')
+            for proof, made in (bugs if isinstance(bugs, dict)
                                 else {}).items():
                 if isinstance(made, dict) and made.get('result') == 'survived':
                     survivors.add(proof)
@@ -698,13 +698,13 @@ def run(project_root, features, selected, again=False, out=None, settle=None,
 
     # 2. The model's request for each rule; 3. each bug planted, one at a time.
     try:
-        before = targeted_break.snapshot(project_root) if done else None
+        before = planted_bug.snapshot(project_root) if done else None
         for item in done:
             # Each kept bug planted again, before any model is asked.
             item['plan'], item['said'], item['unchanged'] = replayed(
                 project_root, item['reading'], item['plan'],
                 item['scope_files'])
-            targeted_break.check_unchanged(project_root, before)
+            planted_bug.check_unchanged(project_root, before)
             reading = item['reading']
             reading['plant'] = [proof for proof, what, _value in item['plan']
                                 if what in ('plant', 'second')]
@@ -724,18 +724,18 @@ def run(project_root, features, selected, again=False, out=None, settle=None,
                 'parts': {}, 'explanation': [], 'notes': [],
                 'model': item['last'].get('model'),
                 'criteria': item['last'].get('criteria')})
-            breaks, survived, no_bug = planted_bugs(
+            bugs, survived, no_bug = planted_bugs(
                 project_root, item['reading'], item['plan'],
                 item['scope_files'], item['last'], answer, said=item['said'],
                 unchanged=item['unchanged'])
-            targeted_break.check_unchanged(project_root, before)
+            planted_bug.check_unchanged(project_root, before)
             item.update(
-                breaks=breaks, no_bug=no_bug,
+                bugs=bugs, no_bug=no_bug,
                 findings=item['spot'] + [line for line in survived
                                          if line not in item['spot']],
-                verdict=verdict_of(item['spot'], survived, breaks))
-    except targeted_break.ProjectChanged as stopped:
-        say(targeted_break.STOPPED % _changed_path(project_root, stopped))
+                verdict=verdict_of(item['spot'], survived, bugs))
+    except planted_bug.ProjectChanged as stopped:
+        say(planted_bug.STOPPED % _changed_path(project_root, stopped))
         return 1
 
     criteria = ai_audit.criteria_hash(ai_audit.criteria_text(project_root))
@@ -751,7 +751,7 @@ def run(project_root, features, selected, again=False, out=None, settle=None,
             alone += item['verdict'] == 'spot-checked'
         found = {'code_hash': item['code'], 'verdict': item['verdict'],
                  'findings': item['findings'], 'no_bug': item['no_bug'],
-                 'breaks': item['breaks'],
+                 'bugs': item['bugs'],
                  'explanation': answer.get('explanation') or [],
                  'notes': answer.get('notes') or [],
                  'model': answer.get('model') if reached else 'unknown',

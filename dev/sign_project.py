@@ -194,14 +194,14 @@ class Project(object):
                     'platforms': {}}
 
     def audit(self, rule, findings=(), source='local', feature='login',
-              no_bug=(), word=None, breaks=None):
+              no_bug=(), word=None, bugs=None):
         """Write the audit entry for a rule's current rule, proof and test
         hashes, and the feature's `code` part taken now.
 
         An entry is current only while the rule, the proof, the test and the
         code all stand as they were when the audit read them. With a finding
         the verdict is `weak`, with none `strong`; `word` names
-        `spot-checked` outright. `breaks` is the planted bugs on record, one
+        `spot-checked` outright. `bugs` is the planted bugs on record, one
         per proof, and `no_bug` the sentence for each proof no bug was caught
         for.
         """
@@ -217,7 +217,7 @@ class Project(object):
                 self.root, feature)['code'],
             'verdict': word or ('weak' if findings else 'strong'),
             'findings': list(findings), 'no_bug': list(no_bug),
-            'breaks': dict(breaks or {}),
+            'bugs': dict(bugs or {}),
             'at': '2026-09-13T12:05:00Z',
             'commit': self.head()}
         write(os.path.join(self.root, *rel.split('/')),

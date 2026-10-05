@@ -1,4 +1,4 @@
-> Format-Version: 15
+> Format-Version: 16
 
 # Evidence format
 
@@ -75,13 +75,13 @@ operating system that ran the feature, one section each.
       "RULE-1": {"rule_hash": "<sha256>", "proof_hash": "<sha256>",
                  "test_hash": "<sha256>", "code_hash": "<sha256>",
                  "verdict": "strong", "findings": [], "no_bug": [],
-                 "breaks": {"PROOF-1": {"aim": "past the test",
+                 "bugs": {"PROOF-1": {"aim": "past the test",
                                         "case": "a wrong password; the proof says refused; the changed code signs in",
                                         "file": "src/login.py", "line": 12,
                                         "before": "return check(password)",
                                         "after": "return True",
                                         "result": "caught", "why": "",
-                                        "break_key": "<sha256>"}},
+                                        "bug_key": "<sha256>"}},
                  "explanation": ["The test types a wrong password and reads the refusal."],
                  "model": "example-model-1",
                  "criteria": "<sha256>",
@@ -205,7 +205,7 @@ Each `audit.rules` entry:
 | `verdict` | string | `strong`, `weak` or `spot-checked` |
 | `findings` | array of strings | one sentence per finding; empty when the audit found nothing |
 | `no_bug` | array of strings | one sentence for each proof no bug was caught for, saying why, and one for each proof settled with its test unchanged; empty where a bug was caught for every proof and none was settled so |
-| `breaks` | object | `PROOF-N` to the bug the audit planted for that proof: `aim` (`past the test` or `plain`), `case` (the model's one line saying which case of the proof the bug breaks, at most 300 characters, empty where it gave none), `file`, `line`, `before`, `after`, `result` (`caught`, `survived`, `not made` or `not run`), `why` (empty where there is no reason) and `break_key`, the sha256 that says whether the proof needs a new bug. Two fields are optional: `test_key`, on a `survived` bug alone, the sha256 of the proof's own tests when the bug got past them, and `test_unchanged`, present and `true` only where a settle went on with the proof's test as it was. A proof the model could not be reached for, or one tagged for another system, has no entry. `{}` for an anchor's rule |
+| `bugs` | object | `PROOF-N` to the bug the audit planted for that proof: `aim` (`past the test` or `plain`), `case` (the model's one line saying which case of the proof the bug breaks, at most 300 characters, empty where it gave none), `file`, `line`, `before`, `after`, `result` (`caught`, `survived`, `not made` or `not run`), `why` (empty where there is no reason) and `bug_key`, the sha256 that says whether the proof needs a new bug. Two fields are optional: `test_key`, on a `survived` bug alone, the sha256 of the proof's own tests when the bug got past them, and `test_unchanged`, present and `true` only where a settle went on with the proof's test as it was. A proof the model could not be reached for, or one tagged for another system, has no entry. `{}` for an anchor's rule |
 | `explanation` | array of strings | the model's reading of the rule's tests, one sentence per line. It sets no verdict |
 | `model` | string | the model that answered, its name and version as the `claude` command's JSON reports them, or `unknown` where it reports none |
 | `criteria` | string | sha256 of `references/review_criteria.md` as it was sent to the model |
@@ -219,7 +219,7 @@ when none did and a planted bug was caught by its proof's test. It is
 `spot-checked` when none did and no bug was planted and caught, and `no_bug`
 then says why.
 
-A break's `result` is `caught` when the proof's test ran and failed with the
+A planted bug's `result` is `caught` when the proof's test ran and failed with the
 bug in place, `survived` when it still passed, `not made` when the change
 could not be made, and `not run` when the test did not run with the bug in
 place, or ended in an error its tool does not report as a failure, which is
@@ -234,7 +234,7 @@ passes and one new bug survives too, no bug is kept: `result` reads
 `file`, `line`, `before` and `after` are null, and `no_bug` holds
 `No bug was caught for PROOF-N: two planted bugs left the proof's check passing.`
 A dropped bug is in no field. A proof whose last result was not `survived`
-and was taken on another test or code has no entry under `breaks` after a
+and was taken on another test or code has no entry under `bugs` after a
 settle, so the next audit plants a bug for it. An entry settled without a
 model being asked keeps the `model` and `criteria` of the entry it replaces,
 and its `explanation` is empty.
@@ -242,7 +242,7 @@ and its `explanation` is empty.
 `test_key` says whether a proof's test changed since its bug got past it.
 It is the sha256 of the sorted lines `<file> <test name> <sha256 of the
 test's source>`, one per test tied to that proof, the source as the audit
-reads it: the test's own lines, not its file. `break_key` covers the
+reads it: the test's own lines, not its file. `bug_key` covers the
 feature's code as well, so it cannot tell a changed test from changed code.
 A settle plants nothing for a proof whose `test_key` is the one taken now,
 and the bug stays `survived`. A test whose source is not found is read as
@@ -264,7 +264,7 @@ audit reads it again.
 
 `model` and `criteria` name the model that gave the explanation and the
 instructions it was given. The evidence package carries each rule's
-`verdict`, `findings`, `breaks` and `explanation` as they stand at the commit
+`verdict`, `findings`, `bugs` and `explanation` as they stand at the commit
 it describes.
 
 Two entries are the same when their four hashes, `verdict`, `findings`,
