@@ -3,12 +3,12 @@
     "rules": {
       "RULE-10": {
         "at": "2026-10-02T11:01:49Z",
-        "breaks": {
+        "bugs": {
           "PROOF-10": {
             "after": "        if feature not in selected:",
             "aim": "plain",
             "before": "        if feature not in selected or (feature, marker_id) in foreign_ids:",
-            "break_key": "ba3491a312602b129d471c70ad4cb057193d82e450181d110f3645d45b387fd8",
+            "bug_key": "ba3491a312602b129d471c70ad4cb057193d82e450181d110f3645d45b387fd8",
             "case": "PROOF-2 tagged `@env` for another system with its test skipped here; the proof says no `Evidence is missing` is printed; the changed code prints `Evidence is missing: 1 marker has no passing or failing result` for PROOF-2",
             "file": "scripts/run/purlin_run.py",
             "line": 1269,
@@ -19,7 +19,7 @@
             "after": "            if env:",
             "aim": "plain",
             "before": "            if env and env != os_name:",
-            "break_key": "f03705392667f6868280317d4280e6b3c7667b626c2ef1c6bb78c6e75e7eafe5",
+            "bug_key": "f03705392667f6868280317d4280e6b3c7667b626c2ef1c6bb78c6e75e7eafe5",
             "case": "PROOF-1 tagged `@env` for this machine's own system, run with `--all --test`; the proof says no `needs` line is printed for it; the changed code prints `1 proof needs <this system>; this machine is <this system>. Run purlin:test on <this system>.`",
             "file": "scripts/run/purlin_run.py",
             "line": 346,
@@ -49,12 +49,12 @@
       },
       "RULE-100": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-257": {
             "after": "    paths.discard('.purlin/config.json')",
             "aim": "plain",
             "before": "    paths.add('.purlin/config.json')",
-            "break_key": "1c35418f032d0b6eb9bd0ecc319bb4671933ce0b8f53774a6686fb739188d831",
+            "bug_key": "1c35418f032d0b6eb9bd0ecc319bb4671933ce0b8f53774a6686fb739188d831",
             "case": "`--test --commit` with the spec, marked test file and settings edited and already run; the proof says exactly those three files are committed; the changed code commits only the spec and the test file and leaves `.purlin/config.json` out",
             "file": "scripts/run/purlin_run.py",
             "line": 1026,
@@ -65,7 +65,7 @@
             "after": "    exit_code = 1 if broken_specs(features) else 0",
             "aim": "plain",
             "before": "    exit_code = 1 if (failed_rules(project_root)\n                      or broken_specs(features)) else 0",
-            "break_key": "fe70eb2989f045dd82d9ba87b76f2d4e86dcc88d52dfdc98b845126e7313fb71",
+            "bug_key": "fe70eb2989f045dd82d9ba87b76f2d4e86dcc88d52dfdc98b845126e7313fb71",
             "case": "`--test` with nothing changed after a run whose one marked test failed; the proof says it exits 1; the changed code exits 0",
             "file": "scripts/run/purlin_run.py",
             "line": 1560,
@@ -76,7 +76,7 @@
             "after": "NOTHING_TO_RUN = (\"Nothing ran: every feature's spec, code and tests match \"",
             "aim": "plain",
             "before": "NOTHING_TO_RUN = (\"Nothing to run: every feature's spec, code and tests match \"",
-            "break_key": "cdab98b071b1d0f208b2e62a27dda3e60b0702a36d4ba0e47ec158605695cefd",
+            "bug_key": "cdab98b071b1d0f208b2e62a27dda3e60b0702a36d4ba0e47ec158605695cefd",
             "case": "`--test` with nothing changed in a checkout of `login` and `export`; the proof says it prints `Nothing to run`; the changed code prints `Nothing ran: every feature's spec, ...` instead",
             "file": "scripts/run/purlin_run.py",
             "line": 1487,
@@ -87,7 +87,7 @@
             "after": "    if args.commit and work:\n        commit_the_evidence(project_root, work)\n    print('')",
             "aim": "plain",
             "before": "    if args.commit:\n        commit_the_evidence(project_root, work)\n    print('')",
-            "break_key": "014dc3da156b0b6ba8c94f8ea278e09f38e87bf122be77b32a1b4b2ea8a1ec9a",
+            "bug_key": "014dc3da156b0b6ba8c94f8ea278e09f38e87bf122be77b32a1b4b2ea8a1ec9a",
             "case": "`--test --commit` with nothing changed after an uncommitted `--test` run; the proof says it prints `Evidence committed.` and the newest commit reads `purlin: evidence at <sha7>`; the changed code makes no evidence commit and leaves the evidence uncommitted",
             "file": "scripts/run/purlin_run.py",
             "line": 1569,
@@ -119,12 +119,12 @@
       },
       "RULE-101": {
         "at": "2026-10-02T11:01:49Z",
-        "breaks": {
+        "bugs": {
           "PROOF-91": {
             "after": "                                  _plural(len(skipped), 'their', 'its'),",
             "aim": "plain",
             "before": "                                  _plural(len(skipped), 'its', 'their'),",
-            "break_key": "731245cb25aa9ff48955176659c93d5acd862ccfc99e4edaf36c70a096f4ee59",
+            "bug_key": "731245cb25aa9ff48955176659c93d5acd862ccfc99e4edaf36c70a096f4ee59",
             "case": "`invoice` committed and never run beside current `login` and `export`; the proof says `Skipped 2 features whose spec, code and tests match their evidence: export, login. purlin:test --all runs them too.`; the changed code prints `match its evidence` for the two skipped features",
             "file": "scripts/run/purlin_run.py",
             "line": 1518,
@@ -135,7 +135,7 @@
             "after": "            where = (\"in %s's scope\" % names[0] if kind == 'scope'",
             "aim": "plain",
             "before": "            where = (\"under %s's scope\" % names[0] if kind == 'scope'",
-            "break_key": "27295bec2ce1996e371db2a0b05c36796f8175b62059580dc1fe75fc5671afad",
+            "bug_key": "27295bec2ce1996e371db2a0b05c36796f8175b62059580dc1fe75fc5671afad",
             "case": "`src/auth/token.py` written under `login`'s scope and not added to git; the proof says `src/auth/token.py is under login's scope and is not tracked, so its content is not part of the evidence until you git add it.`; the changed code prints `src/auth/token.py is in login's scope and is not tracked, .",
             "file": "scripts/run/purlin_run.py",
             "line": 1540,
@@ -146,7 +146,7 @@
             "after": "SELECTED = 'Selected %d from %d %s: %s.'",
             "aim": "plain",
             "before": "SELECTED = 'Selected %d of %d %s: %s.'",
-            "break_key": "4046746c4841675e37cf2a3f7b0c0cf9c78ad851ba7a82fb8613700adc3579a4",
+            "bug_key": "4046746c4841675e37cf2a3f7b0c0cf9c78ad851ba7a82fb8613700adc3579a4",
             "case": "twelve features with f01's source changed, then `--test` with no feature named; the proof says `Selected 1 of 12 features: f01 (code changed since <sha7>).` is printed before `Running the pytest suite.`; the changed code prints `Selected 1 from 12 features: f01 (code changed since <sha7>).`",
             "file": "scripts/run/purlin_run.py",
             "line": 1484,
@@ -176,12 +176,12 @@
       },
       "RULE-102": {
         "at": "2026-10-02T15:41:07Z",
-        "breaks": {
+        "bugs": {
           "PROOF-126": {
             "after": "        'report': REPORTS + '/pytest.xml', 'format': 'trx',",
             "aim": "past the test",
             "before": "        'report': REPORTS + '/pytest.xml', 'format': 'junit',",
-            "break_key": "a82cca047676ecfb6ccd22bbdce36b34424334750ba0232b1b90a0739e003d3d",
+            "bug_key": "a82cca047676ecfb6ccd22bbdce36b34424334750ba0232b1b90a0739e003d3d",
             "case": "an empty `tests` setting and a `conftest.py`, run with `--all --test`; the proof says the JSON array holds pytest's entry alone, whose format is `junit`; the changed code prints an array whose one entry has the format `trx`",
             "file": "scripts/mcp/purlin/frameworks.py",
             "line": 37,
@@ -192,7 +192,7 @@
             "after": "                'proposes a command for you to approve.')",
             "aim": "plain",
             "before": "                'proposes a command for you to confirm.')",
-            "break_key": "ca55bc5f3898a136912c1b39a15ec6952c0a41811dcc5adb288149786abf6694",
+            "bug_key": "ca55bc5f3898a136912c1b39a15ec6952c0a41811dcc5adb288149786abf6694",
             "case": "empty `tests` setting and no known test tool, `--all --test`; the proof says the line ends `proposes a command for you to confirm.`; the changed code prints `proposes a command for you to approve.`",
             "file": "scripts/run/purlin_run.py",
             "line": 199,
@@ -203,7 +203,7 @@
             "after": "    'npm': 'npm install jest-junit',",
             "aim": "plain",
             "before": "    'npm': 'npm install --save-dev jest-junit',",
-            "break_key": "e8508c54ee107aa82651f44032f237ec90a356f88876e32ba0f7221dce1f19c3",
+            "bug_key": "e8508c54ee107aa82651f44032f237ec90a356f88876e32ba0f7221dce1f19c3",
             "case": "empty `tests` setting, `package.json` naming `jest`, no lock file; the proof says the line ends `run npm install --save-dev jest-junit`; the changed code prints `run npm install jest-junit`",
             "file": "scripts/mcp/purlin/frameworks.py",
             "line": 84,
@@ -225,12 +225,12 @@
       },
       "RULE-103": {
         "at": "2026-10-02T15:41:07Z",
-        "breaks": {
+        "bugs": {
           "PROOF-137": {
             "after": "NO_SETTINGS = ('No .purlin/config.json here, so nothing ran. Run purlin:init '\n               'to create it.')",
             "aim": "plain",
             "before": "NO_SETTINGS = ('No .purlin/config.json here, so nothing ran. Run purlin:init '\n               'to write it.')",
-            "break_key": "295572cd107c50c170f0868c316b70ec4b82b6bf019d0e58abc92be027340f2c",
+            "bug_key": "295572cd107c50c170f0868c316b70ec4b82b6bf019d0e58abc92be027340f2c",
             "case": "a folder holding a spec and no `.purlin/config.json`, run with `--all --test`; the proof says it prints `No .purlin/config.json here, so nothing ran. Run purlin:init to write it.`; the changed code prints `No .purlin/config.json here, so nothing ran. Run purlin:init to create it.`",
             "file": "scripts/run/purlin_run.py",
             "line": 186,
@@ -241,7 +241,7 @@
             "after": "    return (isinstance(config, dict) and 'tests' not in config\n            and config.get('version') == '0.9.5')",
             "aim": "past the test",
             "before": "    return isinstance(config, dict) and 'tests' not in config",
-            "break_key": "812fc60d10d4fe7f71b17b0e3a29820459d1748808e887a00d899cdca17076eb",
+            "bug_key": "812fc60d10d4fe7f71b17b0e3a29820459d1748808e887a00d899cdca17076eb",
             "case": "a `.purlin/config.json` with no `tests` key whose version stamp is not `0.9.5`; the proof says the run prints the older-Purlin line and exits 1; the changed code goes on and prints the no-test-command lines instead",
             "file": "scripts/run/purlin_run.py",
             "line": 1440,
@@ -252,7 +252,7 @@
             "after": "    if problem:\n        return SET_UP_BY_AN_OLDER_PURLIN",
             "aim": "plain",
             "before": "    if problem:\n        return problem",
-            "break_key": "7da0064e263eae46782046d9bc656ed503454fc068124548802e925672be9437",
+            "bug_key": "7da0064e263eae46782046d9bc656ed503454fc068124548802e925672be9437",
             "case": "a `.purlin/config.json` with a trailing comma after its last setting; the proof says the run prints `.purlin/config.json cannot be read: ...`; the changed code prints `This project was set up by an older Purlin and not upgraded, so nothing ran. Run purlin:init --update.`",
             "file": "scripts/run/purlin_run.py",
             "line": 1418,
@@ -274,12 +274,12 @@
       },
       "RULE-104": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-275": {
             "after": "LEFT_OUT_ONE = 'Left out 1 slow proof: %s. purlin:test --all runs it.'",
             "aim": "plain",
             "before": "LEFT_OUT_ONE = 'Left out 1 slow proof: %s. purlin:test --all runs it too.'",
-            "break_key": "720ec30199c70d9965e23372e40d4aea52e9169101b0c1be4b37d15ead345614",
+            "bug_key": "720ec30199c70d9965e23372e40d4aea52e9169101b0c1be4b37d15ead345614",
             "case": "`--feature feat --test` with PROOF-2 tagged `@slow`; the proof says the run prints `Left out 1 slow proof: feat PROOF-2. purlin:test --all runs it too.`; the changed code prints `Left out 1 slow proof: feat PROOF-2. purlin:test --all runs it.`",
             "file": "scripts/run/purlin_run.py",
             "line": 233,
@@ -290,7 +290,7 @@
             "after": "    plan = (SlowPlan() if args.action == 'ci'",
             "aim": "plain",
             "before": "    plan = (SlowPlan() if args.all or args.action == 'ci'",
-            "break_key": "d4450b6465e1dc579e22f26e5828b8c6dfe76f2fca72acc55c569630b6f73f7c",
+            "bug_key": "d4450b6465e1dc579e22f26e5828b8c6dfe76f2fca72acc55c569630b6f73f7c",
             "case": "`--all --test` in the project whose PROOF-2 is tagged `@slow`; the proof says the file `started` is written, no `Left out` line is printed and PROOF-2 reads `pass`; the changed code leaves the slow test out, writes no `started`, prints the `Left out` line and lists PROOF-2 as `not run`",
             "file": "scripts/run/purlin_run.py",
             "line": 1223,
@@ -317,12 +317,12 @@
       },
       "RULE-105": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-277": {
             "after": "               reports_module.command_for(suite, files, report)]",
             "aim": "past the test",
             "before": "               reports_module.command_for(suite, files, report, option)]",
-            "break_key": "dd8372976bf959a92f87be672b5af658b4a1d561b54f7cd59ebbf2c54e09aea3",
+            "bug_key": "dd8372976bf959a92f87be672b5af658b4a1d561b54f7cd59ebbf2c54e09aea3",
             "case": "a plain run over a pytest suite with one slow test; the proof says the command the run starts carries `--deselect tests/test_cart.py::TestCart::test_checkout`; the changed code starts the suite's command without the option, so the slow test is started",
             "file": "scripts/run/purlin_run.py",
             "line": null,
@@ -333,7 +333,7 @@
             "after": "                '1 slow test' if count == 0 else '%d slow tests' % count,",
             "aim": "plain",
             "before": "                '1 slow test' if count == 1 else '%d slow tests' % count,",
-            "break_key": "41f56b954fa73179ff9200b49cf5ac2bb9893dd6be795ac4fcb71709870ad12c",
+            "bug_key": "41f56b954fa73179ff9200b49cf5ac2bb9893dd6be795ac4fcb71709870ad12c",
             "case": "the runner suite with one slow test its command cannot leave out; the proof says the run prints `Started 1 slow test in the runner suite: ...`; the changed code prints `Started 1 slow tests in the runner suite: ...`",
             "file": "scripts/run/purlin_run.py",
             "line": 767,
@@ -344,7 +344,7 @@
             "after": "        held = [(path, test) for path, test in slow]\n        started = []",
             "aim": "plain",
             "before": "        held = [(path, test) for path, test in slow if not test.rows]\n        started = [(path, test) for path, test in slow if test.rows]",
-            "break_key": "033d50dd47664d99d8d30fdc55c0167c7153746f2d000cefa91928d70222db6c",
+            "bug_key": "033d50dd47664d99d8d30fdc55c0167c7153746f2d000cefa91928d70222db6c",
             "case": "a slow test under `[TestCase(1)]` in a dotnet suite; the proof says the command carries no `--filter` and the run prints the `Started 1 slow test in the dotnet suite` line and no `Left out` line; the changed code adds `--filter 'FullyQualifiedName!=Shop.Tests.CartTests.ChecksOut'`, prints `Left out ",
             "file": "scripts/mcp/purlin/frameworks.py",
             "line": 404,
@@ -380,12 +380,12 @@
       },
       "RULE-106": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-279": {
             "after": "            if entry.get('held') or listed is None:",
             "aim": "plain",
             "before": "            if not entry.get('held') or listed is None:",
-            "break_key": "9ace7cfbb628c4bcf09c6c1ff68b1ca744f5dc9f84cc0581d9c045b1c0678b5a",
+            "bug_key": "9ace7cfbb628c4bcf09c6c1ff68b1ca744f5dc9f84cc0581d9c045b1c0678b5a",
             "case": "`--feature feat --test` with nothing changed after `--all --test` passed slow PROOF-2; the proof says PROOF-2 is listed `pass` and RULE-2 reads `passed`; the changed code lists PROOF-2 as `not run`",
             "file": "scripts/run/purlin_run.py",
             "line": 805,
@@ -396,7 +396,7 @@
             "after": "            or not kept.get('fingerprint'):",
             "aim": "plain",
             "before": "            or kept.get('fingerprint') != dict(fingerprint):",
-            "break_key": "fe9102a799b3e2cf8d481831f8c520a17af1a99fb57cdf489aa8b9d1c3a44cbd",
+            "bug_key": "fe9102a799b3e2cf8d481831f8c520a17af1a99fb57cdf489aa8b9d1c3a44cbd",
             "case": "`--test` after `src/feat.py` is changed; the proof says PROOF-2 is listed `not run` and the run ends on the slow-proof line; the changed code keeps the old result and lists PROOF-2 as `pass`",
             "file": "scripts/run/purlin_run.py",
             "line": 790,
@@ -407,7 +407,7 @@
             "after": "    taken = {key: data.get(key) or '' for key in evidence_writer.KEPT_KEYS}",
             "aim": "plain",
             "before": "    taken = {key: kept.get(key) or '' for key in evidence_writer.KEPT_KEYS}",
-            "break_key": "c42984351d9186e4e289a699b12449d565ed3decfc15d6c822fa61ce7b67250d",
+            "bug_key": "c42984351d9186e4e289a699b12449d565ed3decfc15d6c822fa61ce7b67250d",
             "case": "`--feature feat --test --commit` after README.md is committed; the proof says `kept` names the commit `<c>` of the run that took the result; the changed code writes `kept` with an empty commit",
             "file": "scripts/run/purlin_run.py",
             "line": 792,
@@ -418,7 +418,7 @@
             "after": "    plan = (SlowPlan() if args.action == 'ci'",
             "aim": "plain",
             "before": "    plan = (SlowPlan() if args.all or args.action == 'ci'",
-            "break_key": "1d8f25a25876269ccb1f0a78a22c29b70b2628b502af95570efda8b1781d1f78",
+            "bug_key": "1d8f25a25876269ccb1f0a78a22c29b70b2628b502af95570efda8b1781d1f78",
             "case": "`--all --test --commit` over evidence holding a kept PROOF-2; the proof says the slow test is started and no `kept` remains; the changed code leaves the slow test out and PROOF-2 stays `kept`",
             "file": "scripts/run/purlin_run.py",
             "line": 1223,
@@ -448,12 +448,12 @@
       },
       "RULE-107": {
         "at": "2026-10-02T11:01:49Z",
-        "breaks": {
+        "bugs": {
           "PROOF-287": {
             "after": "    return answer.strip().lower() in ('y', 'yes', '')",
             "aim": "plain",
             "before": "    return answer.strip().lower() in ('y', 'yes')",
-            "break_key": "0f1877610a6bee115929318a7d3dd506392a77b24797accf0278670a9ca19935",
+            "bug_key": "0f1877610a6bee115929318a7d3dd506392a77b24797accf0278670a9ca19935",
             "case": "`--all --test` with nothing to answer from; the proof says the question is printed last, `.purlin/config.json` is left byte for byte as it was and the run exits 1; the changed code reads the end of input as a yes, writes the `tests` setting and goes on to run the test",
             "file": "scripts/run/purlin_run.py",
             "line": 1455,
@@ -464,7 +464,7 @@
             "after": "        'files': ['**/test_*.py'],",
             "aim": "past the test",
             "before": "        'files': ['**/test_*.py', '**/*_test.py'],",
-            "break_key": "d8e91cd52b4c8c2bf251b7c8ab31ef70d107a9cf8064a7bd5238d7f2cbf9d540",
+            "bug_key": "d8e91cd52b4c8c2bf251b7c8ab31ef70d107a9cf8064a7bd5238d7f2cbf9d540",
             "case": "the project run as `--all --test --write-tests`; the proof says `tests` holds pytest's entry alone; the changed code writes an entry whose `files` lacks `**/*_test.py`, which is not pytest's entry",
             "file": "scripts/mcp/purlin/frameworks.py",
             "line": 38,
@@ -475,7 +475,7 @@
             "after": "    return answer.strip().lower() in ('yes',)",
             "aim": "plain",
             "before": "    return answer.strip().lower() in ('y', 'yes')",
-            "break_key": "470796d58791556c77f807f5fd65026aaca43b76b256a9c7e888d77e791bc8b8",
+            "bug_key": "470796d58791556c77f807f5fd65026aaca43b76b256a9c7e888d77e791bc8b8",
             "case": "the project run as `--all --test` and answered `y`; the proof says pytest's entry is written, the test runs and it exits 0; the changed code reads `y` as a no, writes nothing and exits 1",
             "file": "scripts/run/purlin_run.py",
             "line": 1455,
@@ -505,12 +505,12 @@
       },
       "RULE-11": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-103": {
             "after": "    exit_code = 1 if (tests_failed or wrong or broken_specs(features)\n                      or narrow) else 0",
             "aim": "plain",
             "before": "    exit_code = 1 if (tests_failed or wrong or broken_specs(features)) else 0",
-            "break_key": "3203a30522a04f27488479eaa9a898c600410a926e83a3d08f1755bc64ec1f6a",
+            "bug_key": "3203a30522a04f27488479eaa9a898c600410a926e83a3d08f1755bc64ec1f6a",
             "case": "`--feature feat --test` on two specs of one rule each, feat's test passing and the other's rule with none; the proof says it exits 0; the changed code exits 1",
             "file": "scripts/run/purlin_run.py",
             "line": 1350,
@@ -521,7 +521,7 @@
             "after": "        tests_failed = bool(failures)",
             "aim": "plain",
             "before": "        tests_failed = bool(failures\n                            or any(done.failed_tests for done in runs))",
-            "break_key": "7a1674dcb1d49cc43091a2271bb5cf1981f980bcc2236e2430856bedf51085bb",
+            "bug_key": "7a1674dcb1d49cc43091a2271bb5cf1981f980bcc2236e2430856bedf51085bb",
             "case": "a `--test` run over one rule whose marked test fails; the proof says it exits 1; the changed code exits 0",
             "file": "scripts/run/purlin_run.py",
             "line": 1342,
@@ -549,12 +549,12 @@
       },
       "RULE-12": {
         "at": "2026-10-02T11:01:49Z",
-        "breaks": {
+        "bugs": {
           "PROOF-117": {
             "after": "    paths = write_sections(project_root, features, sections, os_name, 'local')",
             "aim": "plain",
             "before": "    paths = write_sections(project_root, features, sections, os_name, 'ci')",
-            "break_key": "df99680cf12bb52f67ce3938e74b5be5205fb72cc8ddd5e588dab62bfe435e76",
+            "bug_key": "df99680cf12bb52f67ce3938e74b5be5205fb72cc8ddd5e588dab62bfe435e76",
             "case": "`.purlin/evidence/ci/feat.json` holds only another system's section and `--all --ci` runs; the proof says this machine's section is added beside it; the changed code leaves the file with the other system's section alone",
             "file": "scripts/run/purlin_run.py",
             "line": 1630,
@@ -565,7 +565,7 @@
             "after": "    return 'unknown'",
             "aim": "plain",
             "before": "    return platform.node() or 'unknown'",
-            "break_key": "cff5682b9aa4a1a463115ba437cf4d87f7ba5536b7d0205bc561a155b052961a",
+            "bug_key": "cff5682b9aa4a1a463115ba437cf4d87f7ba5536b7d0205bc561a155b052961a",
             "case": "`--all --ci` over one proof tagged for this machine's system; the proof says the section's `machine` is this machine's host name; the changed code writes `unknown`",
             "file": "scripts/run/purlin_run.py",
             "line": 889,
@@ -576,7 +576,7 @@
             "after": "            for key in index for entry in index.get(key) or ()))",
             "aim": "plain",
             "before": "            for key in remote_proofs for entry in index.get(key) or ()))",
-            "break_key": "19ca5f0e7f694a88f85509af2e6defa78105501dbc52fd29d3d8f8f3e0ac720c",
+            "bug_key": "19ca5f0e7f694a88f85509af2e6defa78105501dbc52fd29d3d8f8f3e0ac720c",
             "case": "untagged PROOF-1's test fails and tagged PROOF-2's test passes in one file; the proof says `--all --ci` exits 0; the changed code exits 1",
             "file": "scripts/run/purlin_run.py",
             "line": 1347,
@@ -587,7 +587,7 @@
             "after": "        return 0",
             "aim": "plain",
             "before": "        return 1 if tests_failed else 0",
-            "break_key": "42beb8fb585dc1edd8fa8b0e7bbe6c87586fc21d22b81b5de7c0403db27d004c",
+            "bug_key": "42beb8fb585dc1edd8fa8b0e7bbe6c87586fc21d22b81b5de7c0403db27d004c",
             "case": "PROOF-2 is tagged for this machine's system and its test fails; the proof says `--all --ci` exits 1; the changed code exits 0",
             "file": "scripts/run/purlin_run.py",
             "line": 1378,
@@ -617,12 +617,12 @@
       },
       "RULE-17": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-17": {
             "after": "    paths = write_sections(project_root, features, sections, os_name, 'ci')",
             "aim": "plain",
             "before": "    paths = write_sections(project_root, features, sections, os_name, 'local')",
-            "break_key": "897b58dbb6a2533b914506347fff5d55c3c8b5067cf549d0c0b821aa855564ec",
+            "bug_key": "897b58dbb6a2533b914506347fff5d55c3c8b5067cf549d0c0b821aa855564ec",
             "case": "`--all --test --commit` in a git checkout; the proof says nothing is written under `.purlin/evidence/ci/`; the changed code writes the feature's evidence file to `.purlin/evidence/ci/feat.json`",
             "file": "scripts/run/purlin_run.py",
             "line": 1381,
@@ -649,12 +649,12 @@
       },
       "RULE-20": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-163": {
             "after": "                              os_name, (work or started)[:6], remote_proofs)",
             "aim": "plain",
             "before": "                              os_name, work or started, remote_proofs)",
-            "break_key": "152f34e46ef3fd17c05e1b3414d52a9ed05dabc9c5a237a36f0874d6c8f1e65f",
+            "bug_key": "152f34e46ef3fd17c05e1b3414d52a9ed05dabc9c5a237a36f0874d6c8f1e65f",
             "case": "after `--all --test --commit`, `src/feat.py` is changed and not committed; the proof says the one reason is `code changed since <sha7>` with the 7-character commit the evidence names; the changed code records a 6-character commit, so the reason names a different sha",
             "file": "scripts/run/purlin_run.py",
             "line": 1364,
@@ -665,7 +665,7 @@
             "after": "    sections = {}\n    for name in ([] if dirty else selected):",
             "aim": "plain",
             "before": "    sections = {}\n    for name in selected:",
-            "break_key": "9c65b40f0928e4bdb0a50b807a16968fdf9e53ba2c02759945b03273b9ede27d",
+            "bug_key": "9c65b40f0928e4bdb0a50b807a16968fdf9e53ba2c02759945b03273b9ede27d",
             "case": "after `--all --test --commit` and an uncommitted change to `src/feat.py`, a further `--all --test`; the proof says the passed cell reads `passed` again; the changed code writes no section while the tree holds an uncommitted change, so the cell still reads `out of date`",
             "file": "scripts/run/purlin_run.py",
             "line": 907,
@@ -676,7 +676,7 @@
             "after": "    started = head_commit(project_root)[:6]",
             "aim": "plain",
             "before": "    started = head_commit(project_root)",
-            "break_key": "0927ff73ec5e0a5a454c2ab4d0071dd9d7127571a5028a04882c2a7f2a93c0c1",
+            "bug_key": "0927ff73ec5e0a5a454c2ab4d0071dd9d7127571a5028a04882c2a7f2a93c0c1",
             "case": "after an `--all --test` with evidence left uncommitted, RULE-1's text is edited; the proof says the one reason is `spec changed since <sha7>`, the commit the run started on; the changed code records a 6-character commit, so the reason names a different sha",
             "file": "scripts/run/purlin_run.py",
             "line": 1226,
@@ -706,12 +706,12 @@
       },
       "RULE-3": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-113": {
             "after": "    print(evidence_writer.written_line(paths))\n    with open(os.path.join(project_root, 'specs', 'run.log'), 'w') as handle:\n        handle.write('\\n'.join(log))",
             "aim": "plain",
             "before": "    print(evidence_writer.written_line(paths))",
-            "break_key": "4b63ff78c00d9b05eb7f237a2899d2e1144d945b531ec8bebea55ba24003ed84",
+            "bug_key": "4b63ff78c00d9b05eb7f237a2899d2e1144d945b531ec8bebea55ba24003ed84",
             "case": "the same project after `--all --test`; the proof says every file under `specs/` is unchanged and none is added; the changed code adds the file `specs/run.log`",
             "file": "scripts/run/purlin_run.py",
             "line": 1384,
@@ -722,7 +722,7 @@
             "after": "    paths = write_sections(project_root, features, sections, os_name, 'ci')",
             "aim": "plain",
             "before": "    paths = write_sections(project_root, features, sections, os_name, 'local')",
-            "break_key": "a218296c594334affbbf78a7b076402ce97ed3ab014928f28df13b0f364a4bf6",
+            "bug_key": "a218296c594334affbbf78a7b076402ce97ed3ab014928f28df13b0f364a4bf6",
             "case": "one spec `feat` with one passing marked test, `--all --test`; the proof says `.purlin/evidence/local/feat.json` lists the one result `PROOF-1` of `RULE-1`, `pass`; the changed code writes the section under `.purlin/evidence/ci/` and leaves no local file",
             "file": "scripts/run/purlin_run.py",
             "line": 1381,
@@ -749,12 +749,12 @@
       },
       "RULE-39": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-57": {
             "after": "    args = parse_args(list(sys.argv[1:] if argv is None else argv))",
             "aim": "plain",
             "before": "    console_module.force_utf8_stdio(line_buffering=True)\n    args = parse_args(list(sys.argv[1:] if argv is None else argv))",
-            "break_key": "effbb77e0dec0aa073504a2131ef0339d03a88f946ab14806e4fec1be8ac7de5",
+            "bug_key": "effbb77e0dec0aa073504a2131ef0339d03a88f946ab14806e4fec1be8ac7de5",
             "case": "`--all --test` over one spec and one passing marked test with PYTHONIOENCODING=cp1252; the proof says no traceback, no UnicodeEncodeError, the rule line `\u2500` printed and exit 0; the changed code ends with a UnicodeEncodeError traceback when the status table is printed and exits 1",
             "file": "scripts/run/purlin_run.py",
             "line": 1138,
@@ -784,12 +784,12 @@
       },
       "RULE-4": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-155": {
             "after": "            done.file_results[path] = (reports_module.PASS if code in (0, 1)\n                                       else reports_module.FAIL)",
             "aim": "plain",
             "before": "            done.file_results[path] = (reports_module.PASS if code == 0\n                                       else reports_module.FAIL)",
-            "break_key": "990efde20ccfaceb753d73c205232f135245702d775a258fee799668eba747f7",
+            "bug_key": "990efde20ccfaceb753d73c205232f135245702d775a258fee799668eba747f7",
             "case": "a marked SQL script inserts the same email twice and `--all --test` is run; the proof says its proof reads `fail` in the evidence and the run exits 1; the changed code records `pass` for the script in the evidence",
             "file": "scripts/run/purlin_run.py",
             "line": 555,
@@ -815,12 +815,12 @@
       },
       "RULE-48": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-109": {
             "after": "    return 1 if stopped == 1 else 0",
             "aim": "plain",
             "before": "    return 1 if stopped == 1 else exit_code",
-            "break_key": "b0089171031ea0406d283976ca09849419ccd4f2ba66714e55a24926525f562a",
+            "bug_key": "b0089171031ea0406d283976ca09849419ccd4f2ba66714e55a24926525f562a",
             "case": "`--audit` over one rule whose test fails; the proof says exit 1; the changed code exits 0",
             "file": "scripts/run/purlin_run.py",
             "line": 1610,
@@ -831,7 +831,7 @@
             "after": "    return 1",
             "aim": "plain",
             "before": "    return 1 if stopped == 1 else exit_code",
-            "break_key": "c03ea393c698e2236c002142fc1b0bf98596fa2b470a7539c985668cdd0b1313",
+            "bug_key": "c03ea393c698e2236c002142fc1b0bf98596fa2b470a7539c985668cdd0b1313",
             "case": "`--all --audit` over one rule whose passing test holds no assertion; the proof says exit 0; the changed code exits 1",
             "file": "scripts/run/purlin_run.py",
             "line": 1610,
@@ -858,12 +858,12 @@
       },
       "RULE-5": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-5": {
             "after": "    exit_code = 1 if (wrong or broken_specs(features)) else 0",
             "aim": "plain",
             "before": "    exit_code = 1 if (tests_failed or wrong or broken_specs(features)) else 0",
-            "break_key": "84ac74caedabed176c37496f124e3e0e4ae9750478626d89c9af3a38c2120a65",
+            "bug_key": "84ac74caedabed176c37496f124e3e0e4ae9750478626d89c9af3a38c2120a65",
             "case": "a project's one marked test fails and `--all --test` is run; the proof says the run exits 1; the changed code exits 0",
             "file": "scripts/run/purlin_run.py",
             "line": 1350,
@@ -890,12 +890,12 @@
       },
       "RULE-55": {
         "at": "2026-10-02T11:01:49Z",
-        "breaks": {
+        "bugs": {
           "PROOF-88": {
             "after": "    return [row['feature'] for row in rows]",
             "aim": "plain",
             "before": "    return [row['feature'] for row in chosen]",
-            "break_key": "83edf3099eca4f5c0a6f18a2aa8799657e0dfbc63980d0c183dec331934dfd03",
+            "bug_key": "83edf3099eca4f5c0a6f18a2aa8799657e0dfbc63980d0c183dec331934dfd03",
             "case": "login and export with committed evidence, then src/login.py changes and --test runs with no feature named; the proof says login alone is run and export's evidence is left byte for byte unchanged; the changed code runs export too and rewrites its evidence section",
             "file": "scripts/run/purlin_run.py",
             "line": 1523,
@@ -906,7 +906,7 @@
             "after": "    chosen = list(rows)",
             "aim": "plain",
             "before": "    chosen = [row for row in rows if row['selected']]",
-            "break_key": "2a8aee1892079930e796e126e6b1587949b9c5d4f010649de43b5f09e667e391",
+            "bug_key": "2a8aee1892079930e796e126e6b1587949b9c5d4f010649de43b5f09e667e391",
             "case": "export's rule text changed from does thing 1 to does thing one, then --test with no feature named; the proof says export alone is selected; the changed code selects login as well as export",
             "file": "scripts/run/purlin_run.py",
             "line": 1503,
@@ -917,7 +917,7 @@
             "after": "                                for row in chosen[:1])))",
             "aim": "plain",
             "before": "                                for row in chosen)))",
-            "break_key": "cb8240292d390c2465f53a91453e139b00d7a53b630df1b587785f0e7f71de9e",
+            "bug_key": "cb8240292d390c2465f53a91453e139b00d7a53b630df1b587785f0e7f71de9e",
             "case": "export, solo and the anchor shared with committed evidence, then src/solo.py is edited and --test runs with no feature named; the proof says exactly shared and solo are selected; the changed code names shared alone as selected",
             "file": "scripts/run/purlin_run.py",
             "line": 1511,
@@ -946,12 +946,12 @@
       },
       "RULE-58": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-191": {
             "after": "            return bool(found.features())",
             "aim": "plain",
             "before": "            return bool(found.features() & wanted)",
-            "break_key": "47d9a0ca468c6f206894e204f0c739afb8cb622585b4368acad19b350bb40d95",
+            "bug_key": "47d9a0ca468c6f206894e204f0c739afb8cb622585b4368acad19b350bb40d95",
             "case": "one suite with a login script and an export script, run with `--feature login --test`; the proof says the shared file reads only `login`; the changed code hands the suite both scripts, so the file reads `login` and `export`",
             "file": "scripts/run/purlin_run.py",
             "line": 833,
@@ -962,7 +962,7 @@
             "after": "            if files is None:\n                continue",
             "aim": "plain",
             "before": "            if not files:\n                continue",
-            "break_key": "b5b3ec3ba71d4adee990ede53325b73383ad2069a08d429a9d00992530681564",
+            "bug_key": "b5b3ec3ba71d4adee990ede53325b73383ad2069a08d429a9d00992530681564",
             "case": "two suites, `logins` and `exports`, run with `--feature login --test`; the proof says no `Running the exports suite.` line is printed and the shared file reads only `login`; the changed code starts the exports suite whole, prints that line, and the file reads `login` and `export`",
             "file": "scripts/run/purlin_run.py",
             "line": 1239,
@@ -991,12 +991,12 @@
       },
       "RULE-59": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-98": {
             "after": "    if not args.features and args.action == 'ci':",
             "aim": "plain",
             "before": "    if args.all or (not args.features and args.action == 'ci'):",
-            "break_key": "4499378304df79e178787748782254af949e9f1fc5e2736daee58935e4809e59",
+            "bug_key": "4499378304df79e178787748782254af949e9f1fc5e2736daee58935e4809e59",
             "case": "`--all --test` in a checkout of `login` and `export` with committed evidence and nothing changed; the proof says no `Nothing to run` line, `Running the pytest suite.` printed and both tests in the report; the changed code prints `Nothing to run` and starts no suite",
             "file": "scripts/run/purlin_run.py",
             "line": 1189,
@@ -1022,12 +1022,12 @@
       },
       "RULE-63": {
         "at": "2026-10-02T15:41:07Z",
-        "breaks": {
+        "bugs": {
           "PROOF-130": {
             "after": "        'run': 'python3 -m pytest {files} --junit-xml={report}',",
             "aim": "plain",
             "before": "        'run': 'python3 -m pytest {files} --junitxml={report}',",
-            "break_key": "daa028b7931fab68e37aa5461c610edf90b35511201b64985daf2eb5608e9849",
+            "bug_key": "daa028b7931fab68e37aa5461c610edf90b35511201b64985daf2eb5608e9849",
             "case": "the seven entries the run suggests; the proof says pytest's command carries `--junitxml={report}`; the changed code gives `python3 -m pytest {files} --junit-xml={report}`",
             "file": "scripts/mcp/purlin/frameworks.py",
             "line": 36,
@@ -1038,7 +1038,7 @@
             "after": "    ('shell', lambda root: _any_file(root, lambda n: n.endswith('.test.sh'))),\n    ('sql', lambda root: _any_file(root, _SQL_TEST_NAME.match)),",
             "aim": "past the test",
             "before": "    ('sql', lambda root: _any_file(root, _SQL_TEST_NAME.match)),\n    ('shell', lambda root: _any_file(root, lambda n: n.endswith('.test.sh'))),",
-            "break_key": "5a0c301915d7ccdec58a388a4c7ca44fc40e95bd7fe5bf493a9f97d6d72bbc90",
+            "bug_key": "5a0c301915d7ccdec58a388a4c7ca44fc40e95bd7fe5bf493a9f97d6d72bbc90",
             "case": "a project holding all seven tools; the proof says the page shows the entries in the order the run suggests them, sql before shell; the changed code suggests shell before sql while the page still shows sql first",
             "file": "scripts/mcp/purlin/frameworks.py",
             "line": 207,
@@ -1049,7 +1049,7 @@
             "after": "WINDOWS_PYTHON_COMMAND = 'py -m pytest'",
             "aim": "plain",
             "before": "WINDOWS_PYTHON_COMMAND = 'py -3 -m pytest'",
-            "break_key": "abb3d46a5ac8afe0ed13e623f8e066ed2494624fb222d38ff9693cb661ffac44",
+            "bug_key": "abb3d46a5ac8afe0ed13e623f8e066ed2494624fb222d38ff9693cb661ffac44",
             "case": "an empty `tests` setting with only a `conftest.py`, on Windows; the proof says `py -3 -m pytest {files} --junitxml={report}`; the changed code gives `py -m pytest {files} --junitxml={report}`",
             "file": "scripts/mcp/purlin/frameworks.py",
             "line": 266,
@@ -1071,12 +1071,12 @@
       },
       "RULE-67": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-139": {
             "after": "RULE_FAILS = '%s %s failed: %s. Run purlin:build %s.'",
             "aim": "plain",
             "before": "RULE_FAILS = '%s %s fails: %s. Run purlin:build %s.'",
-            "break_key": "e186c919ff60aacf8c2703ff334753e3f5b1779f73d6e6b398d2c4b557431dc8",
+            "bug_key": "e186c919ff60aacf8c2703ff334753e3f5b1779f73d6e6b398d2c4b557431dc8",
             "case": "feat RULE-1's one marked test tests/test_feat.py::test_no fails under --all --test; the proof says the line `feat RULE-1 fails: tests/test_feat.py::test_no. Run purlin:build feat.`; the changed code gives `feat RULE-1 failed: tests/test_feat.py::test_no. Run purlin:build feat.`",
             "file": "scripts/run/purlin_run.py",
             "line": 227,
@@ -1087,7 +1087,7 @@
             "after": "RULE_HAS_NO_TEST_FOR = '%s %s has no test for %s. Run purlin:test %s.'",
             "aim": "plain",
             "before": "RULE_HAS_NO_TEST_FOR = '%s %s has no test for %s. Run purlin:build %s.'",
-            "break_key": "27f96ad257b47fb9f7a2c98a779c1d043a2c4a9391eaf035e153d792a3c6cf1a",
+            "bug_key": "27f96ad257b47fb9f7a2c98a779c1d043a2c4a9391eaf035e153d792a3c6cf1a",
             "case": "feat RULE-1 has PROOF-1 with a passing test and PROOF-2 with no test under --all --test; the proof says the line `feat RULE-1 has no test for PROOF-2. Run purlin:build feat.`; the changed code gives `feat RULE-1 has no test for PROOF-2. Run purlin:test feat.`",
             "file": "scripts/run/purlin_run.py",
             "line": 229,
@@ -1115,12 +1115,12 @@
       },
       "RULE-69": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-222": {
             "after": "    exit_code = 0 if (tests_failed or wrong or broken_specs(features)) else 1",
             "aim": "plain",
             "before": "    exit_code = 1 if (tests_failed or wrong or broken_specs(features)) else 0",
-            "break_key": "9662f97d8e66e83c5abd782edee9f0594173679025ea06e78f50618fcdebc174",
+            "bug_key": "9662f97d8e66e83c5abd782edee9f0594173679025ea06e78f50618fcdebc174",
             "case": "spec `login` scopes `src/login.py, src/gone.py` with `src/gone.py` not in git, run with `--all --test`; the proof says the run exits 0; the changed code exits 1",
             "file": "scripts/run/purlin_run.py",
             "line": 1350,
@@ -1148,12 +1148,12 @@
       },
       "RULE-7": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-7": {
             "after": "    if missing or not index:",
             "aim": "plain",
             "before": "    if missing:",
-            "break_key": "ed4d365d222f0aa7fdbb59d212267c9bc0e136a96a8b1a9808fdaf458ae390b1",
+            "bug_key": "ed4d365d222f0aa7fdbb59d212267c9bc0e136a96a8b1a9808fdaf458ae390b1",
             "case": "a project whose one test carries no marker, run with --all --test; the proof says no line reads `Evidence is missing` and the run exits 0; the changed code prints `Evidence is missing: 0 markers have no passing or failing result` and exits 1",
             "file": "scripts/run/purlin_run.py",
             "line": 1313,
@@ -1178,12 +1178,12 @@
       },
       "RULE-75": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-102": {
             "after": "        _ci(project_root, args, features, sections, log, os_name, started)\n        _audit(project_root, args, features, selected, 0)\n        print('')\n        print(status_module.sync_status(project_root))\n        return 1 if tests_failed else 0",
             "aim": "plain",
             "before": "        _ci(project_root, args, features, sections, log, os_name, started)\n        print('')\n        print(status_module.sync_status(project_root))\n        return 1 if tests_failed else 0",
-            "break_key": "92291b621f8170fe4faa5fa070282eea863c505edddee2ea112042dfeb833928",
+            "bug_key": "92291b621f8170fe4faa5fa070282eea863c505edddee2ea112042dfeb833928",
             "case": "`--all --ci` over one rule whose proof is tagged for this machine's system and whose test passes; the proof says no model is called and the ci file carries no `audit`; the changed code runs the audit after the ci sections are written, so the model is called",
             "file": "scripts/run/purlin_run.py",
             "line": 1376,
@@ -1209,12 +1209,12 @@
       },
       "RULE-79": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-242": {
             "after": "TIMED_OUT_AFTER = ('the %s suite timed out after %d seconds. Run purlin:%s '",
             "aim": "plain",
             "before": "TIMED_OUT_AFTER = ('the %s suite timed out after %d s. Run purlin:%s '",
-            "break_key": "792c026988b7eb366da2fa019f432f22a44d09749fc9704cdf6b0eda0d792f80",
+            "bug_key": "792c026988b7eb366da2fa019f432f22a44d09749fc9704cdf6b0eda0d792f80",
             "case": "a pytest test sleeps past a 1 second suite limit under `--all --test`; the proof says the line reads `timed out after 1 s. Run purlin:test --arm-timeout <seconds> to give it longer.`; the changed code prints `timed out after 1 seconds. Run purlin:test ...`",
             "file": "scripts/run/purlin_run.py",
             "line": 214,
@@ -1240,12 +1240,12 @@
       },
       "RULE-8": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-244": {
             "after": "            if entry['status'] in (reports_module.PASS, reports_module.FAIL,\n                                   reports_module.NOT_RUN):",
             "aim": "plain",
             "before": "            if entry['status'] in (reports_module.PASS, reports_module.FAIL):",
-            "break_key": "fa86d33d3cf3ebbaeca87d545ec64592cab73f5333ff9f498f65e37ba3923fa1",
+            "bug_key": "fa86d33d3cf3ebbaeca87d545ec64592cab73f5333ff9f498f65e37ba3923fa1",
             "case": "one marked test that is skipped, run with `--all --test`; the proof says exit 1 and the `Evidence is missing: 1 marker has no passing or failing result: feat PROOF-1 at tests/test_feat.py:3...` line; the changed code prints no such line and exits 0",
             "file": "scripts/run/purlin_run.py",
             "line": 1276,
@@ -1256,7 +1256,7 @@
             "after": "            if not anchor and nothing_to_check(entry):",
             "aim": "plain",
             "before": "            if anchor and nothing_to_check(entry):",
-            "break_key": "b872974f3a5ec28fe387fbf46768e0099bda208c8d0f9ba4a6e521cbe1d9ddcc",
+            "bug_key": "b872974f3a5ec28fe387fbf46768e0099bda208c8d0f9ba4a6e521cbe1d9ddcc",
             "case": "the anchor `shared`'s one marked test skips with `nothing to check: this project has no screens`, run with `--all --test`; the proof says no `Evidence is missing` line and exit 0; the changed code prints `Evidence is missing: 1 marker has no passing or failing result` and exits 1",
             "file": "scripts/run/purlin_run.py",
             "line": 1282,
@@ -1267,7 +1267,7 @@
             "after": "        if (feature, marker_id) in foreign_ids:",
             "aim": "plain",
             "before": "        if feature not in selected or (feature, marker_id) in foreign_ids:",
-            "break_key": "6a65ae67e5f8c4b439d35e0cb703e008710aa406612d1c04a9b1a55773ef399a",
+            "bug_key": "6a65ae67e5f8c4b439d35e0cb703e008710aa406612d1c04a9b1a55773ef399a",
             "case": "a passing marked test for `feat` and a skipped marked test for `other`, run with `--feature feat --test`; the proof says `other PROOF-1` is never printed, no `Evidence is missing` line and exit 0; the changed code prints `Evidence is missing` naming `other PROOF-1` and exits 1",
             "file": "scripts/run/purlin_run.py",
             "line": 1269,
@@ -1295,12 +1295,12 @@
       },
       "RULE-83": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-252": {
             "after": "                \"npx jest --ci --reporters=default \"\n                \"--reporters=jest-junit {files}\"),",
             "aim": "plain",
             "before": "                \"npx jest --ci {files} --reporters=default \"\n                \"--reporters=jest-junit\"),",
-            "break_key": "b051fe593cd90740fc2ec5feda94881f01e2867f8b23b16c2e33030e02e3ab20",
+            "bug_key": "b051fe593cd90740fc2ec5feda94881f01e2867f8b23b16c2e33030e02e3ab20",
             "case": "specs `feat` and `other`, each with one marked jest test file, run with `--feature feat --test` under the suggested jest entry; the proof says jest starts with `--ci test/feat.test.js --reporters=default --reporters=jest-junit`; the changed code gives `--ci --reporters=default --reporters=jest-junit",
             "file": "scripts/mcp/purlin/frameworks.py",
             "line": 52,
@@ -1327,12 +1327,12 @@
       },
       "RULE-87": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-261": {
             "after": "    exit_code = 1 if (tests_failed or wrong) else 0",
             "aim": "plain",
             "before": "    exit_code = 1 if (tests_failed or wrong or broken_specs(features)) else 0",
-            "break_key": "3857be55e593f0885ecb292d95977e60a18ee730377f721fa8a35616810ad90d",
+            "bug_key": "3857be55e593f0885ecb292d95977e60a18ee730377f721fa8a35616810ad90d",
             "case": "`--test --all` over `login`, whose marked tests pass and whose spec writes `PROOF-2` twice; the proof says the results are written and the run exits 1; the changed code writes the results and exits 0",
             "file": "scripts/run/purlin_run.py",
             "line": 1350,
@@ -1357,12 +1357,12 @@
       },
       "RULE-88": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-262": {
             "after": "    return _any_file(tests, lambda n: n.startswith('tests_') and n.endswith('.py'))",
             "aim": "plain",
             "before": "    return _any_file(tests, lambda n: n.startswith('test_') and n.endswith('.py'))",
-            "break_key": "ed80d998233d1dd3e7b5a6706da92a42205b6390d7a399cd0e7a2489cbcd3834",
+            "bug_key": "ed80d998233d1dd3e7b5a6706da92a42205b6390d7a399cd0e7a2489cbcd3834",
             "case": "a project with an empty `tests` setting holding only tests/test_cart.py; the proof says it prints `Suggested for pytest: python3 -m pytest {files} --junitxml={report}`; the changed code detects no pytest and prints the line saying no test tool Purlin knows was found",
             "file": "scripts/mcp/purlin/frameworks.py",
             "line": 194,
@@ -1388,12 +1388,12 @@
       },
       "RULE-95": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-270": {
             "after": "                              os_name, started, remote_proofs)",
             "aim": "plain",
             "before": "                              os_name, work or started, remote_proofs)",
-            "break_key": "a4a6b2b7ffe1e691bb14ce312c00db4531f0a86c1645d95d9ba67f93611ce54a",
+            "bug_key": "a4a6b2b7ffe1e691bb14ce312c00db4531f0a86c1645d95d9ba67f93611ce54a",
             "case": "spec `feat` edited and not committed, then `--all --test --commit`; the proof says the section's `commit` is the full sha of the commit `purlin: specs, tests and settings for feat`; the changed code gives the sha of HEAD when the run started, the commit before it",
             "file": "scripts/run/purlin_run.py",
             "line": 1364,
@@ -1420,12 +1420,12 @@
       },
       "RULE-96": {
         "at": "2026-10-02T11:01:49Z",
-        "breaks": {
+        "bugs": {
           "PROOF-271": {
             "after": "            for entry in ():",
             "aim": "plain",
             "before": "            for entry in wording_module.stale_comments(project_root, features,\n                                                       scanned=scan):",
-            "break_key": "33246a6b5a16994c855ab874753099a5fd5a2931854f1d5233bc354b4a64ef48",
+            "bug_key": "33246a6b5a16994c855ab874753099a5fd5a2931854f1d5233bc354b4a64ef48",
             "case": "feat's PROOF-1 reworded and committed after its test at tests/test_feat.py:3 last changed, then `--all --test`; the proof says a line beginning `tests/test_feat.py:3 names feat PROOF-1, whose wording changed after the test was last changed in` is printed after the `Markers:` line; the changed code p",
             "file": "scripts/run/purlin_run.py",
             "line": 1310,
@@ -1452,12 +1452,12 @@
       },
       "RULE-98": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-1": {
             "after": "              else 'purlin: %s.' % args.error, file=sys.stderr)\n        return 2",
             "aim": "past the test",
             "before": "              else 'purlin: %s.' % args.error, file=sys.stderr)\n        print(USAGE, file=sys.stderr)\n        return 2",
-            "break_key": "a88cd15ecb3e2fc83d94726ea426be65a33e32d17095d12001f2afc343f61707",
+            "bug_key": "a88cd15ecb3e2fc83d94726ea426be65a33e32d17095d12001f2afc343f61707",
             "case": "started with none of --test, --audit and --ci; the proof says exit 2, the purlin: line, then the usage line beginning `Usage: purlin_run.py`; the changed code prints the purlin: line and no usage line",
             "file": "scripts/run/purlin_run.py",
             "line": 1148,
@@ -1468,7 +1468,7 @@
             "after": "        if unknown:\n            return 1",
             "aim": "plain",
             "before": "        if unknown:\n            return 2",
-            "break_key": "6c37e806019998abe0fabb01af0d3903bc6aa61e732ffa783c73a603b0551c1d",
+            "bug_key": "6c37e806019998abe0fabb01af0d3903bc6aa61e732ffa783c73a603b0551c1d",
             "case": "`--feature nosuch --test` in a project whose one spec is feat; the proof says exit 2 with the no-spec line; the changed code prints the line and exits 1",
             "file": "scripts/run/purlin_run.py",
             "line": 1197,
@@ -1479,7 +1479,7 @@
             "after": "    if args.help:\n        print(USAGE, file=sys.stderr)",
             "aim": "past the test",
             "before": "    if args.help:\n        print(USAGE)",
-            "break_key": "9478e6c90df62bdc485b3061877ce9a19bba298416c5b46def9a058392b826a8",
+            "bug_key": "9478e6c90df62bdc485b3061877ce9a19bba298416c5b46def9a058392b826a8",
             "case": "started as `--help`; the proof says the usage line is printed to standard output with exit 0; the changed code prints the usage line to standard error and nothing to standard output",
             "file": "scripts/run/purlin_run.py",
             "line": 1141,
@@ -1490,7 +1490,7 @@
             "after": "                args.error = '--project-root needs a directory, not an empty '\\\n                             'path'",
             "aim": "plain",
             "before": "                args.error = '--project-root needs a directory, not an empty '\\\n                             'value'",
-            "break_key": "65bacb738db3a1f45b9b4bf556bf9432d5f0060e557df207f52e492de8569ccf",
+            "bug_key": "65bacb738db3a1f45b9b4bf556bf9432d5f0060e557df207f52e492de8569ccf",
             "case": "`--all --test --project-root ''` in a Purlin project; the proof says `purlin: --project-root needs a directory, not an empty value.`; the changed code prints `purlin: --project-root needs a directory, not an empty path.`",
             "file": "scripts/run/purlin_run.py",
             "line": 308,
@@ -1518,12 +1518,12 @@
       },
       "RULE-99": {
         "at": "2026-10-02T09:57:40Z",
-        "breaks": {
+        "bugs": {
           "PROOF-171": {
             "after": "            log.append('\\n'.join(stream.splitlines()[-ARM_TAIL_LINES:]))",
             "aim": "plain",
             "before": "            log.append(stream.rstrip('\\n'))",
-            "break_key": "4edeea9817696f18eb86daa598043303043b0503014e2dc95cd95c708100a07a",
+            "bug_key": "4edeea9817696f18eb86daa598043303043b0503014e2dc95cd95c708100a07a",
             "case": "a shell test prints `line 1` to `line 100` and exits 1 under `--all --ci`; the proof says all 100 lines are in run.log in order; the changed code keeps only `line 41` to `line 100`",
             "file": "scripts/run/purlin_run.py",
             "line": 474,
@@ -1534,7 +1534,7 @@
             "after": "    print('--- end of %s output ---' % name)\n    if lines:\n        for line in lines[-ARM_TAIL_LINES:]:\n            print(line)\n    else:\n        print('The %s suite printed nothing.' % name)\n    sys.stdout.flush()",
             "aim": "past the test",
             "before": "    if lines:\n        for line in lines[-ARM_TAIL_LINES:]:\n            print(line)\n    else:\n        print('The %s suite printed nothing.' % name)\n    print('--- end of %s output ---' % name)\n    sys.stdout.flush()",
-            "break_key": "89f3f788e0e4a08b0666a12f891947d5fb0adc3269b17561b0ae14052a3d68ee",
+            "bug_key": "89f3f788e0e4a08b0666a12f891947d5fb0adc3269b17561b0ae14052a3d68ee",
             "case": "one marked test fails under `--all --test`; the proof says the heading, then pytest's `1 failed` line, then `--- end of pytest output ---`; the changed code prints the end line straight after the heading and the `1 failed` line after it",
             "file": "scripts/run/purlin_run.py",
             "line": 491,

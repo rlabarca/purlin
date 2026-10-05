@@ -3,12 +3,12 @@
     "rules": {
       "RULE-1": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-1": {
             "after": "        shutil.rmtree(self.parent, ignore_errors=True)",
             "aim": "plain",
             "before": "        _git(self.project_root, 'worktree', 'remove', '--force', self.root)\n        shutil.rmtree(self.parent, ignore_errors=True)\n        _git(self.project_root, 'worktree', 'prune')",
-            "break_key": "fa5dfdf2e86342fd6db5ff818c70aebfa876bf3537557f055b15c9c23abf3dc0",
+            "bug_key": "fa5dfdf2e86342fd6db5ff818c70aebfa876bf3537557f055b15c9c23abf3dc0",
             "case": "first sign-off of 2.1.0 in a project whose two rules pass; the proof says `git worktree list` shows one worktree; the changed code leaves the package checkout registered, so it shows two",
             "file": "scripts/export/package.py",
             "line": 250,
@@ -36,12 +36,12 @@
       },
       "RULE-11": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-25": {
             "after": "                    'machine': section.get('runner'),",
             "aim": "plain",
             "before": "                    'machine': section.get('machine'),",
-            "break_key": "e73d8d0c3946af4e658cc0f9e7fc1012dea7152ed62f9f463532fa9fdbb325d2",
+            "bug_key": "e73d8d0c3946af4e658cc0f9e7fc1012dea7152ed62f9f463532fa9fdbb325d2",
             "case": "a result under the source `ci` written on the machine `build-7` by `runner@example.com`; the proof says RULE-2's result reads the machine `build-7`; the changed code gives the machine `runner`",
             "file": "scripts/export/package.py",
             "line": 556,
@@ -52,7 +52,7 @@
             "after": "    by_hand = not proofs",
             "aim": "plain",
             "before": "    by_hand = bool(proofs) and all(proof.get('manual') for proof in proofs)",
-            "break_key": "6699b2853928f82104bca5baa14455962bd38e56c2686165b092af2c3d0ee24c",
+            "bug_key": "6699b2853928f82104bca5baa14455962bd38e56c2686165b092af2c3d0ee24c",
             "case": "`login RULE-2` with its one proof `@manual` and a committed section reading `RULE-2` `passed`; the proof says each result of RULE-2 reads `checked at sign-off`; the changed code gives `passed`",
             "file": "scripts/export/package.py",
             "line": 544,
@@ -80,12 +80,12 @@
       },
       "RULE-12": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-26": {
             "after": "            'at': summary.get('commit'),",
             "aim": "plain",
             "before": "            'at': summary.get('at'),",
-            "break_key": "dfe46e49f1c41afbbf98827d14853ec58249c78b581ec2aa705515bc8341d0fb",
+            "bug_key": "dfe46e49f1c41afbbf98827d14853ec58249c78b581ec2aa705515bc8341d0fb",
             "case": "RULE-2's audit in a signed project's package; the proof says the time reads 2026-09-13T12:05:00Z; the changed code gives the audit's commit in its place",
             "file": "scripts/export/package.py",
             "line": 593,
@@ -112,12 +112,12 @@
       },
       "RULE-14": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-20": {
             "after": "CELLS = ('passed',)",
             "aim": "plain",
             "before": "CELLS = ('passed', 'strong')",
-            "break_key": "5c2bce709975e8b2c0e930419ed95b5f3a8c9ca98495605b40fb293147c19b34",
+            "bug_key": "5c2bce709975e8b2c0e930419ed95b5f3a8c9ca98495605b40fb293147c19b34",
             "case": "both rules passing and audited strong, the project signed; the proof says RULE-1's statuses holds exactly passed and strong, reading passed and strong; the changed code gives statuses holding only passed",
             "file": "scripts/export/package.py",
             "line": 88,
@@ -128,7 +128,7 @@
             "after": "    return {'word': name,",
             "aim": "plain",
             "before": "    return {'word': cell.get('word'),",
-            "break_key": "511b222f8b06a5d6fd39c0bff9e68ab7104fa30c9128aef6881ff2e87e08dd4c",
+            "bug_key": "511b222f8b06a5d6fd39c0bff9e68ab7104fa30c9128aef6881ff2e87e08dd4c",
             "case": "two passing rules no audit has read, the project signed; the proof says RULE-2's statuses read passed and not audited; the changed code gives passed and strong",
             "file": "scripts/export/package.py",
             "line": 636,
@@ -155,12 +155,12 @@
       },
       "RULE-17": {
         "at": "2026-10-02T10:57:45Z",
-        "breaks": {
+        "bugs": {
           "PROOF-15": {
             "after": "                    'at': (section.get('at') or '').replace('Z', '+00:00') or None,",
             "aim": "plain",
             "before": "                    'at': section.get('at'),",
-            "break_key": "20a432fe163882010824e654d683a8e19667b8bf02859a494e48945da1b76b02",
+            "bug_key": "20a432fe163882010824e654d683a8e19667b8bf02859a494e48945da1b76b02",
             "case": "a signed project's package, each result's time under `at`; the proof says each reads like `2026-09-13T12:00:00Z`, ending in `Z` with no offset; the changed code gives `2026-09-13T12:00:00+00:00`",
             "file": "scripts/export/package.py",
             "line": 553,
@@ -189,12 +189,12 @@
       },
       "RULE-2": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-2": {
             "after": "        'version': project_version(project_root) or version,",
             "aim": "plain",
             "before": "        'version': version,",
-            "break_key": "d5c49018419f32c6df0ea7e68315c79c2b2b2c10b18e24582700f1ff1d1a2156",
+            "bug_key": "d5c49018419f32c6df0ea7e68315c79c2b2b2c10b18e24582700f1ff1d1a2156",
             "case": "`purlin:sign --version beta` in a project whose `VERSION` reads `2.1.0`; the proof says beta.json reads `version` `beta`; the changed code gives `version` `2.1.0`",
             "file": "scripts/export/package.py",
             "line": 379,
@@ -205,7 +205,7 @@
             "after": "    return 'signed-%s' % version",
             "aim": "plain",
             "before": "    return 'signed/%s' % version",
-            "break_key": "06b4da2037e9d9279e98603de4ea10c8272f104e82177001b268c6778dd2b2b0",
+            "bug_key": "06b4da2037e9d9279e98603de4ea10c8272f104e82177001b268c6778dd2b2b0",
             "case": "`purlin:sign --version beta` in a project stating no version; the proof says beta.json reads `tag` `signed/beta`; the changed code gives `tag` `signed-beta`",
             "file": "scripts/export/package.py",
             "line": 333,
@@ -233,12 +233,12 @@
       },
       "RULE-22": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-45": {
             "after": "        return 'the file is not JSON'",
             "aim": "plain",
             "before": "        return 'the file is not UTF-8 JSON'",
-            "break_key": "b0544e10a201bc7fc75b7e958bcbb2c285e1908408da6620291a559f8e166276",
+            "bug_key": "b0544e10a201bc7fc75b7e958bcbb2c285e1908408da6620291a559f8e166276",
             "case": "a file whose bytes are not UTF-8, and a file of UTF-8 text that is not JSON, each checked with purlin:sign --check; the proof says the reason reads `the file is not UTF-8 JSON`; the changed code gives `the file is not JSON`",
             "file": "scripts/export/package.py",
             "line": 894,
@@ -249,7 +249,7 @@
             "after": "        return 'the file does not carry schema %s' % SCHEMA",
             "aim": "plain",
             "before": "        return 'the file does not carry the schema %s' % SCHEMA",
-            "break_key": "3d5250dea255ecd715a2be1fd3d21b6bfc742fc1bc91fed64adfe764c69673aa",
+            "bug_key": "3d5250dea255ecd715a2be1fd3d21b6bfc742fc1bc91fed64adfe764c69673aa",
             "case": "a signed package with its schema changed to purlin-package/3 is checked; the proof says the reason reads `the file does not carry the schema purlin-package/4`; the changed code gives `the file does not carry schema purlin-package/4`",
             "file": "scripts/export/package.py",
             "line": 896,
@@ -260,7 +260,7 @@
             "after": "    if canonical != data.replace(b'\\r\\n', b'\\n'):",
             "aim": "plain",
             "before": "    if canonical != data:",
-            "break_key": "42598a77092c63bdb3db6c997c8f40231e00ca6a279814aa919c1315185a563c",
+            "bug_key": "42598a77092c63bdb3db6c997c8f40231e00ca6a279814aa919c1315185a563c",
             "case": "a signed package rewritten with every \\n as \\r\\n is checked; the proof says exit 1 and the line about bytes not in the canonical form; the changed code finds no mismatch, so the check passes and that line is not printed",
             "file": "scripts/export/package.py",
             "line": 909,
@@ -290,12 +290,12 @@
       },
       "RULE-23": {
         "at": "2026-10-02T10:57:45Z",
-        "breaks": {
+        "bugs": {
           "PROOF-52": {
             "after": "    folder = os.path.dirname(full)\n    if os.path.isfile(folder):\n        os.remove(folder)\n    os.makedirs(folder, exist_ok=True)",
             "aim": "plain",
             "before": "    os.makedirs(os.path.dirname(full), exist_ok=True)",
-            "break_key": "5b3aa2e838c85f78662902c94120aab1b9d6f832d1c5095fc5fd59f05fabe177",
+            "bug_key": "5b3aa2e838c85f78662902c94120aab1b9d6f832d1c5095fc5fd59f05fabe177",
             "case": "`.purlin/evidence/package` is a file and the walk is answered yes; the proof says exit 1, one line carrying the operating system's message, no commit and no tag; the changed code removes the file, writes the package and goes on to sign",
             "file": "scripts/export/package.py",
             "line": 933,
@@ -323,12 +323,12 @@
       },
       "RULE-25": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-55": {
             "after": "TOP_LEVEL = ('schema', 'met', 'rules', 'steps', 'audit', 'left',\n             'project', 'version', 'tag', 'commit', 'runs',",
             "aim": "past the test",
             "before": "TOP_LEVEL = ('schema', 'met', 'rules', 'steps', 'audit', 'left',\n             'purlin_version', 'project', 'version', 'tag', 'commit', 'runs',",
-            "break_key": "9e28b73a0ee30a853cf1edd545856b1b0c93b5a10dae7a3d4c53086755a6549d",
+            "bug_key": "9e28b73a0ee30a853cf1edd545856b1b0c93b5a10dae7a3d4c53086755a6549d",
             "case": "both rules passing, first sign-off's package; the proof says exactly the top-level keys the format lists; the changed code gives a package with no `purlin_version` key, 15 keys instead of 16",
             "file": "scripts/export/package.py",
             "line": 85,
@@ -355,12 +355,12 @@
       },
       "RULE-26": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-56": {
             "after": "            'spec': name,",
             "aim": "plain",
             "before": "            'spec': spec,",
-            "break_key": "3c90b3d09dd26f0193d4deeddb355613ff751875705009dc7e778cafccc50857",
+            "bug_key": "3c90b3d09dd26f0193d4deeddb355613ff751875705009dc7e778cafccc50857",
             "case": "the `login` entry of a signed project's package; the proof says `spec` reads `specs/auth/login.md`; the changed code gives `login`",
             "file": "scripts/export/package.py",
             "line": 436,
@@ -371,7 +371,7 @@
             "after": "            'anchor': False,",
             "aim": "plain",
             "before": "            'anchor': anchor,",
-            "break_key": "0aa2e4b77b2318aadb68d16efc34ed04591b30d88233e69072de919af3173e17",
+            "bug_key": "0aa2e4b77b2318aadb68d16efc34ed04591b30d88233e69072de919af3173e17",
             "case": "the anchor `secure` with `> Scope: src/login.py` signed beside `login`; the proof says `anchor` reads `true` and `scope` `[]`; the changed code gives `anchor` `false`",
             "file": "scripts/export/package.py",
             "line": 438,
@@ -399,12 +399,12 @@
       },
       "RULE-29": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-61": {
             "after": "                counts[_AUDIT_KEYS[word]] += 2",
             "aim": "plain",
             "before": "                counts[_AUDIT_KEYS[word]] += 1",
-            "break_key": "74501210dfcc8e2f607bf808dbbe26d289fb76e1e8ebee99b6b42c72f68cf792",
+            "bug_key": "74501210dfcc8e2f607bf808dbbe26d289fb76e1e8ebee99b6b42c72f68cf792",
             "case": "RULE-1 audited strong and RULE-2 weak, both passing, project signed; the proof says audit reads strong 1, weak 1 and the rest 0; the changed code gives strong 2, weak 2",
             "file": "scripts/export/package.py",
             "line": 617,
@@ -415,7 +415,7 @@
             "after": "CHECKED = 'at the sign-offs'",
             "aim": "plain",
             "before": "CHECKED = 'in the sign-offs'",
-            "break_key": "bfc31e1569ac8b9ca7fe01316e9971bb33e66e2de92e364feb5e5f7bf235e3a2",
+            "bug_key": "bfc31e1569ac8b9ca7fe01316e9971bb33e66e2de92e364feb5e5f7bf235e3a2",
             "case": "PROOF-2 marked @manual and the project signed; the proof says the hand check's checked reads \"in the sign-offs\"; the changed code gives \"at the sign-offs\"",
             "file": "scripts/export/package.py",
             "line": 92,
@@ -426,7 +426,7 @@
             "after": "            if word in _AUDIT_KEYS and _AUDIT_KEYS[word] != 'not_audited':",
             "aim": "plain",
             "before": "            if word in _AUDIT_KEYS:",
-            "break_key": "4a40fc693ec0907e03bbcf020d58cd260e5824ef833fa4fdc078f7e3ff471dec",
+            "bug_key": "4a40fc693ec0907e03bbcf020d58cd260e5824ef833fa4fdc078f7e3ff471dec",
             "case": "3 rules pass, 2 audited strong and 1 never read, a fourth rule by hand; the proof says not_audited reads 1; the changed code gives not_audited 0",
             "file": "scripts/export/package.py",
             "line": 616,
@@ -454,12 +454,12 @@
       },
       "RULE-3": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-3": {
             "after": "             'features', 'warnings', 'hand_checks', 'fingerprint')",
             "aim": "past the test",
             "before": "             'features', 'hand_checks', 'warnings', 'fingerprint')",
-            "break_key": "6a42f039c86c5f31606ba2846ab65e8eedb6f8c6bb92852cf95111378b2dc9d4",
+            "bug_key": "6a42f039c86c5f31606ba2846ab65e8eedb6f8c6bb92852cf95111378b2dc9d4",
             "case": "a project whose two rules pass is signed for 2.1.0; the proof says the sixteen top-level keys come in the rule's order, with `hand_checks` before `warnings`; the changed code writes `warnings` before `hand_checks`",
             "file": "scripts/export/package.py",
             "line": 86,
@@ -470,7 +470,7 @@
             "after": "        return sha",
             "aim": "plain",
             "before": "        sha = parent",
-            "break_key": "cdad74030c656c24af8c93f8b4997c405978511653c5542d38d5710347e538fe",
+            "bug_key": "cdad74030c656c24af8c93f8b4997c405978511653c5542d38d5710347e538fe",
             "case": "2.1.0 signed in commit <s> over the code at <c>, then 2.2.0 signed with nothing else changed; the proof says `commit` reads the full sha of <c>; the changed code gives the sha of <s>",
             "file": "scripts/export/package.py",
             "line": 157,
@@ -498,12 +498,12 @@
       },
       "RULE-32": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-65": {
             "after": "                    'commit': group['commit'], 'rules': len(group['rules']) + 1})",
             "aim": "plain",
             "before": "                    'commit': group['commit'], 'rules': len(group['rules'])})",
-            "break_key": "f58b8bd6c8b203ab44ec47ce039afc8fea18216b336237a71ebfa22568abac18",
+            "bug_key": "f58b8bd6c8b203ab44ec47ce039afc8fea18216b336237a71ebfa22568abac18",
             "case": "Dana's one local run on dana-laptop holding results for two rules; the proof says `rules` `2`; the changed code gives `rules` 3",
             "file": "scripts/export/package.py",
             "line": 674,
@@ -514,7 +514,7 @@
             "after": "            -evidence_module.SOURCES.index(key[0])",
             "aim": "plain",
             "before": "            evidence_module.SOURCES.index(key[0])",
-            "break_key": "014de59e437b7fe913978c1ad573b362b425d28beecefd1614d9adf32cd484e4",
+            "bug_key": "014de59e437b7fe913978c1ad573b362b425d28beecefd1614d9adf32cd484e4",
             "case": "Dana's local run beside a ci run of PROOF-3 on build-7; the proof says two entries with the local one first; the changed code puts the ci entry first and the local one second",
             "file": "scripts/export/package.py",
             "line": 667,
@@ -542,12 +542,12 @@
       },
       "RULE-33": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-67": {
             "after": "    if not all(path.startswith(PACKAGE_DIR + '/') for path in paths):",
             "aim": "plain",
             "before": "    if not all(path.startswith(RECORDS_DIR) for path in paths):",
-            "break_key": "1af57c28253a0d560a4267c07200b797c56538a668472498862f7d0533e968f2",
+            "bug_key": "1af57c28253a0d560a4267c07200b797c56538a668472498862f7d0533e968f2",
             "case": "tests committed at `<c>`, then a commit changing only `.purlin/evidence/ci/login.json`; the proof says every result reads `same_code` `true`; the changed code gives `same_code` false for results taken before that commit",
             "file": "scripts/export/package.py",
             "line": 196,
@@ -558,7 +558,7 @@
             "after": "    paths = {line.strip() for line in listed.stdout.splitlines()\n             if line.strip().startswith(RECORDS_DIR)}",
             "aim": "plain",
             "before": "    paths = {line.strip() for line in listed.stdout.splitlines()\n             if line.strip()}",
-            "break_key": "2872d489bfb3e96f4d7dfd78037b1ef7409bded5987dc9c5ec044065425d5438",
+            "bug_key": "2872d489bfb3e96f4d7dfd78037b1ef7409bded5987dc9c5ec044065425d5438",
             "case": "tests committed at `<c>`, then a commit changing `README.md`; the proof says `purlin:sign` prints only the `No sign-off: these results were not taken on this version of the code` line; the changed code reads the results as `same_code` true and prints no such refusal",
             "file": "scripts/export/package.py",
             "line": 195,
@@ -569,7 +569,7 @@
             "after": "    return settings.get('test') if isinstance(settings, dict) else None",
             "aim": "plain",
             "before": "    return settings.get('tests') if isinstance(settings, dict) else None",
-            "break_key": "574013aab4be6ea2aa2f943818f5b24c990a8932aabcbf31f68d90a03ab0e5dd",
+            "bug_key": "574013aab4be6ea2aa2f943818f5b24c990a8932aabcbf31f68d90a03ab0e5dd",
             "case": "tests committed at `<c>`, then a commit changing the `run` command of the `tests` setting; the proof says one line beginning `No sign-off: these results were not taken on this version of the code` and exit 1; the changed code reads the setting as unchanged and prints no such refusal",
             "file": "scripts/export/package.py",
             "line": 174,
@@ -580,7 +580,7 @@
             "after": "    if _git(project_root, 'merge-base', '--is-ancestor', older,\n            newer).returncode > 1:",
             "aim": "plain",
             "before": "    if _git(project_root, 'merge-base', '--is-ancestor', older,\n            newer).returncode != 0:",
-            "break_key": "b76fc71060a99f1f70388f8f59afa666cf0fa34615b2fa4cd521f62d2c6de569",
+            "bug_key": "b76fc71060a99f1f70388f8f59afa666cf0fa34615b2fa4cd521f62d2c6de569",
             "case": "`login`'s results name a commit on another branch that `HEAD` does not descend from, with the same files; the proof says one line beginning `No sign-off: these results were not taken on this version of the code` and exit 1; the changed code reads the results as `same_code` true and prints no such re",
             "file": "scripts/export/package.py",
             "line": 188,
@@ -591,7 +591,7 @@
             "after": "                    'same_code': bool(same.get(section.get('commit') or '')),",
             "aim": "plain",
             "before": "                    'same_code': (bool(same.get(section.get('commit') or ''))\n                                  and not _kept(section, ids)),",
-            "break_key": "ad74138d6a02d1348861f97f8531ab874b7943446c8cf24c92d9f66f0117aa2a",
+            "bug_key": "ad74138d6a02d1348861f97f8531ab874b7943446c8cf24c92d9f66f0117aa2a",
             "case": "`feat`'s section lists slow `PROOF-2` as `pass` with `kept` naming `<c>`, every other result taken at `HEAD`; the proof says `purlin:sign --show` prints only the `No sign-off` line naming feat on Linux/Unix and exits 1; the changed code reads the kept result as `same_code` true and prints no such re",
             "file": "scripts/export/package.py",
             "line": 559,
@@ -623,12 +623,12 @@
       },
       "RULE-34": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-69": {
             "after": "        project = os.path.basename(tree)",
             "aim": "plain",
             "before": "        project = project_module.project_name(tree)",
-            "break_key": "8e14f2b917c38206558e65b4c5d79abbd88346f10de3d676f104d96e59f85c82",
+            "bug_key": "8e14f2b917c38206558e65b4c5d79abbd88346f10de3d676f104d96e59f85c82",
             "case": "a project in a folder named `work` whose pyproject.toml reads name = \"labconnect\" under [project] is signed; the proof says project labconnect; the changed code gives work",
             "file": "scripts/export/package.py",
             "line": 358,
@@ -654,12 +654,12 @@
       },
       "RULE-35": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-70": {
             "after": "    for reader in (_package_json, _version_file, _pyproject, _csproj):",
             "aim": "plain",
             "before": "    for reader in (_version_file, _package_json, _pyproject, _csproj):",
-            "break_key": "68f0ae24a960793311edb6ff83c238c97df2e5f673645938a09c8c39a9d8541e",
+            "bug_key": "68f0ae24a960793311edb6ff83c238c97df2e5f673645938a09c8c39a9d8541e",
             "case": "VERSION reads 2.1.0 and package.json reads 9.9.9; the proof says the sign-off writes 2.1.0.json reading version 2.1.0; the changed code reads package.json first and gives 9.9.9.json reading version 9.9.9",
             "file": "scripts/export/package.py",
             "line": 262,
@@ -670,7 +670,7 @@
             "after": "_PYPROJECT_TABLES = ('tool.poetry',)",
             "aim": "plain",
             "before": "_PYPROJECT_TABLES = ('project', 'tool.poetry')",
-            "break_key": "39fdedc795db273dcbb5648d5049e8f5049ab6b32b04573977b493b5117e053a",
+            "bug_key": "39fdedc795db273dcbb5648d5049e8f5049ab6b32b04573977b493b5117e053a",
             "case": "no VERSION file and no package.json, pyproject.toml reads version = \"3.0.0\" under [project]; the proof says the sign-off writes 3.0.0.json reading version 3.0.0; the changed code reads no version under [project] and gives no version, so no 3.0.0.json",
             "file": "scripts/export/package.py",
             "line": 271,
@@ -698,12 +698,12 @@
       },
       "RULE-36": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-72": {
             "after": "                        'reason': str(entries[0].get('result') or '')})",
             "aim": "plain",
             "before": "                        'reason': str(entries[0].get('reason') or '')})",
-            "break_key": "0d11de5662714e6d0b20f687abc50ea2d96a66fab3fa0424e8af3670db7fa164",
+            "bug_key": "0d11de5662714e6d0b20f687abc50ea2d96a66fab3fa0424e8af3670db7fa164",
             "case": "anchor `screens` PROOF-3, whose one test skipped with `nothing to check: this project has no screens`; the proof says `nothing_to_check` reads `[{\"proof\": \"PROOF-3\", \"reason\": \"this project has no screens\"}]`; the changed code gives `[{\"proof\": \"PROOF-3\", \"reason\": \"nothing to check\"}]`",
             "file": "scripts/export/package.py",
             "line": 524,
@@ -730,12 +730,12 @@
       },
       "RULE-37": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-74": {
             "after": "        written = history[0] if history else None",
             "aim": "plain",
             "before": "        written = history[-1] if history else None",
-            "break_key": "229ac8bf2e405783adb46540d2f563eb8e790f9a67009d88b6e9adce16345a33",
+            "bug_key": "229ac8bf2e405783adb46540d2f563eb8e790f9a67009d88b6e9adce16345a33",
             "case": "Quinn commits PROOF-1 of login, then Pat rewords it; the proof says written_by is Quinn's address with Quinn's commit; the changed code gives written_by Pat's address with Pat's commit",
             "file": "scripts/export/package.py",
             "line": 806,
@@ -746,7 +746,7 @@
             "after": "                'changed_commit': found[0][:7] if found else None}",
             "aim": "plain",
             "before": "                'changed_commit': found[0] if found else None}",
-            "break_key": "9305412e90d5ccf3b07d63a5c9b0535397493d6eaa0ec01b02f22dff6ada71bb",
+            "bug_key": "9305412e90d5ccf3b07d63a5c9b0535397493d6eaa0ec01b02f22dff6ada71bb",
             "case": "Dana last changed test_valid_credentials_return_200 in tests/test_login.py; the proof says changed_by Dana with the full sha of Dana's commit; the changed code gives the first 7 characters of that sha",
             "file": "scripts/export/package.py",
             "line": 822,
@@ -757,7 +757,7 @@
             "after": "                'commit': found[0][:7] if found else None}",
             "aim": "plain",
             "before": "                'commit': found[0] if found else None}",
-            "break_key": "c43072358a74273dc638b4514a9d9ca92be31029d10ef91f3c658007fd6adcb5",
+            "bug_key": "c43072358a74273dc638b4514a9d9ca92be31029d10ef91f3c658007fd6adcb5",
             "case": "Pat commits RULE-4 of login, then Dana's commit renumbers it to RULE-6; the proof says authors.rule reads written_by Pat and the full sha of Pat's commit; the changed code gives the first 7 characters of that sha",
             "file": "scripts/export/package.py",
             "line": 790,
@@ -785,12 +785,12 @@
       },
       "RULE-4": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-5": {
             "after": "        'left': rule.get('left') if proofs else None,",
             "aim": "plain",
             "before": "        'left': rule.get('left'),",
-            "break_key": "de3b358cd0c19e491442023bd8bddd01eedb98a37a729d46a79a57535a69bb34",
+            "bug_key": "de3b358cd0c19e491442023bd8bddd01eedb98a37a729d46a79a57535a69bb34",
             "case": "a signed project whose third rule has no proof and one passing test marked with the rule's own id; the proof says the rule's `left` reads `no_proof`; the changed code gives no `left` (null) for that rule",
             "file": "scripts/export/package.py",
             "line": 452,
@@ -816,12 +816,12 @@
       },
       "RULE-5": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-63": {
             "after": "        'met': not left,",
             "aim": "plain",
             "before": "        'met': not any(item.get('kind') in summary_module.BLOCKING\n                       for item in left),",
-            "break_key": "a0d9baec82d919914e503c613b1a69d12e29d5c7cd89c102cfc356a9d2c983ea",
+            "bug_key": "a0d9baec82d919914e503c613b1a69d12e29d5c7cd89c102cfc356a9d2c983ea",
             "case": "both rules pass and RULE-2 is audited weak with one finding; the proof says `met` reads `true` with `left` exactly `1 rule to strengthen`; the changed code gives `met` false",
             "file": "scripts/export/package.py",
             "line": 371,
@@ -832,7 +832,7 @@
             "after": "        'steps': {'passed': steps.get('pass') or 0},",
             "aim": "plain",
             "before": "        'steps': {'passed': steps.get('passed') or 0},",
-            "break_key": "55aaa7a8ea020848fde2fba1aceb4edd5c362e0953d162b73cc2fdb3b3f16adb",
+            "bug_key": "55aaa7a8ea020848fde2fba1aceb4edd5c362e0953d162b73cc2fdb3b3f16adb",
             "case": "a project whose two rules pass is signed; the proof says `steps` reads `{\"passed\": 2}`; the changed code gives `{\"passed\": 0}`",
             "file": "scripts/export/package.py",
             "line": 374,
@@ -862,12 +862,12 @@
       },
       "RULE-6": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-18": {
             "after": "            + [{'proof': None, 'file': test.get('file'),",
             "aim": "plain",
             "before": "            + [{'proof': rule_id, 'file': test.get('file'),",
-            "break_key": "8cc8efc463b8a022431e7eedffd1ee7d821a1c11078c797a25966cc9c13b11d8",
+            "bug_key": "8cc8efc463b8a022431e7eedffd1ee7d821a1c11078c797a25966cc9c13b11d8",
             "case": "RULE-3 with no proof and one passing test marked with its own id; the proof says the test is listed under RULE-3; the changed code lists it under null",
             "file": "scripts/export/package.py",
             "line": 473,
@@ -878,7 +878,7 @@
             "after": "        'left': rule.get('left') or '',",
             "aim": "plain",
             "before": "        'left': rule.get('left'),",
-            "break_key": "1e239e0d0dff1656d785b42f6a75e030548c5c90f6e3fa808266922e6b76ed8b",
+            "bug_key": "1e239e0d0dff1656d785b42f6a75e030548c5c90f6e3fa808266922e6b76ed8b",
             "case": "RULE-2 in a signed project's package, with no work left; the proof says `left` is null; the changed code gives an empty string",
             "file": "scripts/export/package.py",
             "line": 452,
@@ -906,12 +906,12 @@
       },
       "RULE-8": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-13": {
             "after": "    return text.encode('utf-8')",
             "aim": "plain",
             "before": "    return (text + '\\n').encode('utf-8')",
-            "break_key": "dab88cf9dd64794069beddf3497a81544ca1fab46754d3cc5e2386ac15914b23",
+            "bug_key": "dab88cf9dd64794069beddf3497a81544ca1fab46754d3cc5e2386ac15914b23",
             "case": "two clones at one commit each sign 2.1.0; the proof says each committed package ends in `}` and a newline; the changed code writes packages that end in `}` with no newline",
             "file": "scripts/export/package.py",
             "line": 879,
@@ -922,7 +922,7 @@
             "after": "        payload = payload_module.build_payload(tree, generated_by='sign',\n                                               tag_warnings=True)",
             "aim": "plain",
             "before": "        payload = payload_module.build_payload(tree, generated_by='sign',\n                                               tag_warnings=False)",
-            "break_key": "b53effcce55684e0241e9f85dd4d56f9d32a0d7c3b7f037005825e1fb270ea6b",
+            "bug_key": "b53effcce55684e0241e9f85dd4d56f9d32a0d7c3b7f037005825e1fb270ea6b",
             "case": "two clones at one commit each sign 2.1.0, the second also holding the hand-written tag signed/9.9.9; the proof says the packages are the same bytes and neither's warnings names signed/9.9.9; the changed code lets the second clone's package carry a tag warning, so the bytes differ and its warnings na",
             "file": "scripts/export/package.py",
             "line": 354,
@@ -953,12 +953,12 @@
       },
       "RULE-9": {
         "at": "2026-10-02T09:39:20Z",
-        "breaks": {
+        "bugs": {
           "PROOF-17": {
             "after": "                'gives %s' % (computed, stored))",
             "aim": "plain",
             "before": "                'gives %s' % (stored, computed))",
-            "break_key": "8d013db2411f6281110662ddfff42e56f30c174acb4ba5ce800720875977ebc2",
+            "bug_key": "8d013db2411f6281110662ddfff42e56f30c174acb4ba5ce800720875977ebc2",
             "case": "a signed package with the first \"passed\" changed to \"failed\", checked with purlin:sign --check; the proof says the first line records the fingerprint as written and then the sha256 of the edited bytes; the changed code prints the two values in the opposite order",
             "file": "scripts/export/package.py",
             "line": 908,
@@ -969,7 +969,7 @@
             "after": "    return hashlib.sha256(canonical_bytes(blank).rstrip()).hexdigest()",
             "aim": "plain",
             "before": "    return hashlib.sha256(canonical_bytes(blank)).hexdigest()",
-            "break_key": "0fd36471deb7b8b0e6978fcce46d536782b691f05f1bf46a8f2b3fdb2733873b",
+            "bug_key": "0fd36471deb7b8b0e6978fcce46d536782b691f05f1bf46a8f2b3fdb2733873b",
             "case": "a signed package's `fingerprint`; the proof says it equals the sha256 of the file's bytes with that field emptied to `\"\"`; the changed code records the sha256 of those bytes without their trailing newline, a different 64-character value",
             "file": "scripts/export/package.py",
             "line": 886,

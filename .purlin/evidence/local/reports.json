@@ -3,12 +3,12 @@
     "rules": {
       "RULE-1": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-1": {
             "after": "    r\"\"\"^\\s*(?:\\#|//|--|;|'|/\\*|<!--)\\s*purlin:\\s+(?P<rest>.*?)\\s*\"\"\"",
             "aim": "plain",
             "before": "    r\"\"\"^\\s*(?:\\#|//|--|;|%|'|/\\*|<!--)\\s*purlin:\\s+(?P<rest>.*?)\\s*\"\"\"",
-            "break_key": "d57a7db1ead25ee51cdca1ca38f7b0519989b8814e735d526ed24f44bb395ef4",
+            "bug_key": "d57a7db1ead25ee51cdca1ca38f7b0519989b8814e735d526ed24f44bb395ef4",
             "case": "a file of eight `login` markers, one per comment syntax; the proof says all eight read as markers on lines 1 to 8; the changed code reads seven, missing the `%` marker on line 5",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 79,
@@ -19,7 +19,7 @@
             "after": "_BODY_RE = re.compile(r'^(?P<feature>%s)\\s+(?P<id>(?:PROOF|RULE)-\\d+)$'\n                      % r'\\w+')",
             "aim": "plain",
             "before": "_BODY_RE = re.compile(r'^(?P<feature>%s)\\s+(?P<id>(?:PROOF|RULE)-\\d+)$'\n                      % specs_module.NAME)",
-            "break_key": "eff17bc410fd6aa6a2362e25b54b95889e8ce31ef5f137271f0c79a1c9398f8a",
+            "bug_key": "eff17bc410fd6aa6a2362e25b54b95889e8ce31ef5f137271f0c79a1c9398f8a",
             "case": "`# purlin: sample-age PROOF-1` above the passing `test_age`; the proof says `Markers: 1 tied to a test, 0 not tied.` and `PROOF-1` as `pass`; the changed code reads no marker, so 0 are tied and `PROOF-1` has no pass",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 83,
@@ -30,7 +30,7 @@
             "after": "    r\"\"\"^.*?(?:\\#|//|--|;|%|'|/\\*|<!--)\\s*purlin:\\s+(?P<rest>.*?)\\s*\"\"\"",
             "aim": "plain",
             "before": "    r\"\"\"^\\s*(?:\\#|//|--|;|%|'|/\\*|<!--)\\s*purlin:\\s+(?P<rest>.*?)\\s*\"\"\"",
-            "break_key": "498ee649cdaa0cec9f3beacabc35d7f9715f89a98b448277a2abd595fe4d8156",
+            "bug_key": "498ee649cdaa0cec9f3beacabc35d7f9715f89a98b448277a2abd595fe4d8156",
             "case": "the line `x = 1  # purlin: login PROOF-1` in a plain text file; the proof says it is not read as a marker; the changed code reads it as a marker of login PROOF-1 on line 1",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 79,
@@ -57,12 +57,12 @@
       },
       "RULE-10": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-10": {
             "after": "            modules.setdefault(path[:-3].replace('/', '_'), []).append(path)",
             "aim": "plain",
             "before": "            modules.setdefault(path[:-3].replace('/', '.'), []).append(path)",
-            "break_key": "3ff55e94dfdf97dd5141cc71fc2550f0bfcfee7f67c07786c8bd026626290108",
+            "bug_key": "3ff55e94dfdf97dd5141cc71fc2550f0bfcfee7f67c07786c8bd026626290108",
             "case": "a passing Python case whose class reads tests.test_login.TestGroup; the proof says pass goes to test_same in tests/test_login.py; the changed code finds no file for the class and gives that test no result",
             "file": "scripts/run/reports.py",
             "line": 372,
@@ -73,7 +73,7 @@
             "after": "    if case.file and case.file.endswith('.py'):\n        path = _normalise_file(project_root, case.file)",
             "aim": "plain",
             "before": "    if case.file:\n        path = _normalise_file(project_root, case.file)",
-            "break_key": "ae39bc0f09c253c9881f5777c3e192a64e9d97b2aae711271c1932c09de2b456",
+            "bug_key": "ae39bc0f09c253c9881f5777c3e192a64e9d97b2aae711271c1932c09de2b456",
             "case": "a Jest case `accepts` whose file reads tests/login.test.js and whose class names no file; the proof says pass for login PROOF-1; the changed code ignores the file attribute of a non-Python file and gives the marker no result",
             "file": "scripts/run/reports.py",
             "line": 477,
@@ -84,7 +84,7 @@
             "after": "        if len(candidates) > 2:",
             "aim": "plain",
             "before": "        if len(candidates) > 1:",
-            "break_key": "13a1b1605216768a6521987c1ba24f122c3fc0e95ea1a337b529416b53cc52ac",
+            "bug_key": "13a1b1605216768a6521987c1ba24f122c3fc0e95ea1a337b529416b53cc52ac",
             "case": "two TRX cases of class GreetingTests in the namespaces App.Tests and Other.Tests; the proof says pass and fail to the two files with no problem; the changed code does not narrow by namespace, so each case matches 2 tests, neither file gets a result and a problem is reported",
             "file": "scripts/run/reports.py",
             "line": 465,
@@ -117,12 +117,12 @@
       },
       "RULE-11": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-68": {
             "after": "    return re.sub(r'(?:\\[\\w*\\]|\\(.*\\))$', '', name).strip()",
             "aim": "plain",
             "before": "    return re.sub(r'(?:\\[.*\\]|\\(.*\\))$', '', name).strip()",
-            "break_key": "a65c2fe553a71ed0aac1ef974fa9689e03e581220db1c3b10e79bdc686889832",
+            "bug_key": "a65c2fe553a71ed0aac1ef974fa9689e03e581220db1c3b10e79bdc686889832",
             "case": "a marked Python test run over the values 1 and -2, where -2 fails; the proof says fail; the changed code no longer ties the case `test_x[-2]` to its test, so only the passing case counts and it reads pass",
             "file": "scripts/run/reports.py",
             "line": 409,
@@ -133,7 +133,7 @@
             "after": "        if action not in (PASS, SKIP):",
             "aim": "plain",
             "before": "        if action not in (PASS, FAIL, SKIP):",
-            "break_key": "660157aac81f3a4e83b4718a99398172f99213c25ae39045b90fa99f3dac91cd",
+            "bug_key": "660157aac81f3a4e83b4718a99398172f99213c25ae39045b90fa99f3dac91cd",
             "case": "a marked Go test whose subtest TestParse/empty failed beside a passing TestParse/one; the proof says fail; the changed code drops every fail event of the Go report, so only the passing subtest counts and it reads pass",
             "file": "scripts/run/reports.py",
             "line": 243,
@@ -164,12 +164,12 @@
       },
       "RULE-12": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-12": {
             "after": "    if len(named) <= 2:",
             "aim": "plain",
             "before": "    if len(named) <= 1:",
-            "break_key": "91e57656b5d4d9c06900b19b83745bcea6d0aed4fb78e7839bac4174b44c3d73",
+            "bug_key": "91e57656b5d4d9c06900b19b83745bcea6d0aed4fb78e7839bac4174b44c3d73",
             "case": "`same name` inside `outer` then `inner`, marked and passing, beside an unmarked failing `same name` directly inside `outer`; the proof says the marker reads `pass` and no case matches two tests; the changed code reports each case as matching 2 tests and the marker reads `not run`",
             "file": "scripts/run/reports.py",
             "line": 421,
@@ -180,7 +180,7 @@
             "after": "        path, chain = _python_owner(case.classname, marked)\n        scopes = scopes",
             "aim": "plain",
             "before": "        path, chain = _python_owner(case.classname, marked)\n        scopes = chain + scopes",
-            "break_key": "e510e9cb812dee9d44113b0cf2730391762fd34f141c4e701e5f2c2ad5c430d1",
+            "bug_key": "e510e9cb812dee9d44113b0cf2730391762fd34f141c4e701e5f2c2ad5c430d1",
             "case": "`TestGroup` and `TestOther` each declare `test_same`, the marked one in `TestGroup` passing; the proof says the marker reads `pass` and no case matches two tests; the changed code drops the class from the narrowing, so each case matches 2 tests and the marker reads `not run`",
             "file": "scripts/run/reports.py",
             "line": 493,
@@ -209,12 +209,12 @@
       },
       "RULE-14": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-77": {
             "after": "                if 'failure' in kinds:",
             "aim": "plain",
             "before": "                if set(kinds) & {'failure', 'error'}:",
-            "break_key": "603e1cde59f1d94b78c6a17fa4097f47c051b7df557aa59a3e2342c2d2a5d4d2",
+            "bug_key": "603e1cde59f1d94b78c6a17fa4097f47c051b7df557aa59a3e2342c2d2a5d4d2",
             "case": "five marked Python tests run together, one whose setup raises an error; the proof says `fail`; the changed code reads the errored case as passed and gives `pass`",
             "file": "scripts/run/reports.py",
             "line": 137,
@@ -225,7 +225,7 @@
             "after": "    if any(outcome == PASS for outcome in outcomes):",
             "aim": "plain",
             "before": "    if all(outcome == PASS for outcome in outcomes):",
-            "break_key": "b24ca10464b4f01613a5b6a40a60f16345ca7d98a3b2d18affd1b0cb8fea5560",
+            "bug_key": "b24ca10464b4f01613a5b6a40a60f16345ca7d98a3b2d18affd1b0cb8fea5560",
             "case": "five marked Python tests run together, one run over two values, one passing and one skipped; the proof says `missing`; the changed code gives `pass`",
             "file": "scripts/run/reports.py",
             "line": 537,
@@ -236,7 +236,7 @@
             "after": "    if not outcomes:\n        return PASS",
             "aim": "plain",
             "before": "    if not outcomes:\n        return NOT_RUN",
-            "break_key": "43339fc7924f96bc4e6ecc7f9d9337f0a82414148ad2f8f138b9cc5272b5290d",
+            "bug_key": "43339fc7924f96bc4e6ecc7f9d9337f0a82414148ad2f8f138b9cc5272b5290d",
             "case": "a report holding a passing case for `test_a` and none for `test_b`, both marked; the proof says `test_b`'s proof is `missing`; the changed code gives `pass` for a test with no case",
             "file": "scripts/run/reports.py",
             "line": 534,
@@ -263,12 +263,12 @@
       },
       "RULE-15": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-15": {
             "after": "    if test is None:\n        return path",
             "aim": "plain",
             "before": "    if test is None:\n        return path.rsplit('/', 1)[-1]",
-            "break_key": "bc46c938477eceb9cc5cda0883c4cb9f0196f414542b04d9af84f60d28a45dc9",
+            "bug_key": "bc46c938477eceb9cc5cda0883c4cb9f0196f414542b04d9af84f60d28a45dc9",
             "case": "an `exit` suite over `tests/good.sh` (two markers, exits 0) and `tests/bad.sh` (one marker, exits 3); the proof says the results sit under `tests/good.sh::good.sh` and `tests/bad.sh::bad.sh`; the changed code gives `tests/good.sh::tests/good.sh` and `tests/bad.sh::tests/bad.sh`",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 820,
@@ -279,7 +279,7 @@
             "after": "    joined = ' '.join(shlex.quote(os.path.basename(path)) for path in files or ())",
             "aim": "plain",
             "before": "    joined = ' '.join(shlex.quote(path) for path in files or ())",
-            "break_key": "06ed7e12976cb93df26c265af05589fcb42a70afcf5e00da888fb9998f8ce761",
+            "bug_key": "06ed7e12976cb93df26c265af05589fcb42a70afcf5e00da888fb9998f8ce761",
             "case": "the same two scripts in an `exit` suite whose command writes down the files it is given; the proof says it ran once given `tests/bad.sh` alone and once given `tests/good.sh` alone; the changed code gives it `bad.sh` and `good.sh`",
             "file": "scripts/run/reports.py",
             "line": 318,
@@ -307,12 +307,12 @@
       },
       "RULE-16": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-82": {
             "after": "    joined = ' '.join(path for path in files or ())",
             "aim": "plain",
             "before": "    joined = ' '.join(shlex.quote(path) for path in files or ())",
-            "break_key": "2e21ccf40aa2a4ebbb873d7e9b568c6934baa1ef438f39f3f7ef8f46a41ef9ba",
+            "bug_key": "2e21ccf40aa2a4ebbb873d7e9b568c6934baa1ef438f39f3f7ef8f46a41ef9ba",
             "case": "a run over `signup` alone, whose marked test file is `tests/test_sign up.py`; the proof says the command gets that path as one argument, then `.purlin/runtime/reports/pytest.xml`; the changed code gives two arguments, `tests/test_sign` and `up.py`, then the report path",
             "file": "scripts/run/reports.py",
             "line": 318,
@@ -338,12 +338,12 @@
       },
       "RULE-17": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-17": {
             "after": "    elif os.path.islink(full):",
             "aim": "plain",
             "before": "    elif os.path.lexists(full):",
-            "break_key": "6a93a64de4dc73422e31e9bf3713ccbdbb393a75ae2d4c3339f99cd094aa9c61",
+            "bug_key": "6a93a64de4dc73422e31e9bf3713ccbdbb393a75ae2d4c3339f99cd094aa9c61",
             "case": "an old report file with one passing case sits at the suite's report path and the command writes nothing; the proof says exit 1 with `wrote no report` and the old report gone; the changed code leaves the old file in place, so it is read and no `wrote no report` is said",
             "file": "scripts/run/reports.py",
             "line": 337,
@@ -369,12 +369,12 @@
       },
       "RULE-3": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-3": {
             "after": "        out += _segment_regex(part) + ('' if last else '/(?:.*/)?')",
             "aim": "plain",
             "before": "        out += _segment_regex(part) + ('' if last else '/')",
-            "break_key": "e0c986c0cd39ded65cc9f24a4102132df58808880b55f7c561ccd0b97de08410",
+            "bug_key": "e0c986c0cd39ded65cc9f24a4102132df58808880b55f7c561ccd0b97de08410",
             "case": "the glob `dev/test_*.py` over `dev/test_a.py`, `dev/sub/test_b.py` and `a/b/c.test.ts`; the proof says it matches `dev/test_a.py` alone; the changed code also matches `dev/sub/test_b.py`",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 313,
@@ -385,7 +385,7 @@
             "after": "        pattern = '*/' + pattern",
             "aim": "plain",
             "before": "        pattern = '**/' + pattern",
-            "break_key": "201795c579459c469959436f8647ca8c0124b3e27950821135caa6e7bd0b0c7c",
+            "bug_key": "201795c579459c469959436f8647ca8c0124b3e27950821135caa6e7bd0b0c7c",
             "case": "the glob `test_*.py` over `dev/test_a.py`, `dev/sub/test_b.py` and `a/b/c.test.ts`; the proof says it matches the first two; the changed code matches `dev/test_a.py` alone",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 297,
@@ -396,7 +396,7 @@
             "after": "    for suite in reversed(suites or ()):",
             "aim": "plain",
             "before": "    for suite in suites or ():",
-            "break_key": "ac1f5f462a890df3e38212924821a0c000786adcf0e54344a53603a51e082b1f",
+            "bug_key": "ac1f5f462a890df3e38212924821a0c000786adcf0e54344a53603a51e082b1f",
             "case": "suites `first` on `tests/*.py` then `second` on `**/*.py`; the proof says `tests/test_a.py` belongs to `first`; the changed code gives `second`",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 272,
@@ -428,12 +428,12 @@
       },
       "RULE-32": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-115": {
             "after": "                    reason = _text_of(skipped.text)",
             "aim": "plain",
             "before": "                    reason = (_text_of(skipped.get('message'))\n                              or _text_of(skipped.text))",
-            "break_key": "a4585eff47a6b2fa8c9270dac76716f43f074c6bdc88c5ec2cc2209597891372",
+            "bug_key": "a4585eff47a6b2fa8c9270dac76716f43f074c6bdc88c5ec2cc2209597891372",
             "case": "a JUnit case `test_screens` with `<skipped message=\"nothing to check: this project has no screens\"/>`; the proof says skip with the reason `nothing to check: this project has no screens`; the changed code gives skip with no reason",
             "file": "scripts/run/reports.py",
             "line": 142,
@@ -444,7 +444,7 @@
             "after": "            reason = _text_of(said[key])",
             "aim": "plain",
             "before": "            reason = _text_of(_GO_WHERE.sub('', said[key], count=1))",
-            "break_key": "b64d6a5f04ab1b44d8b3f0c28cbc1590115b3d93c382f083675a826efc629cb2",
+            "bug_key": "b64d6a5f04ab1b44d8b3f0c28cbc1590115b3d93c382f083675a826efc629cb2",
             "case": "`TestScreens` prints `screens_test.go:12: nothing to check: this project has no screens` then skips; the proof says the reason `nothing to check: this project has no screens`; the changed code gives `screens_test.go:12: nothing to check: this project has no screens`",
             "file": "scripts/run/reports.py",
             "line": 247,
@@ -471,12 +471,12 @@
       },
       "RULE-33": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-120": {
             "after": "RULE_HAS_PROOFS = ('%s:%d names %s %s, which has a proof; a comment names one '",
             "aim": "plain",
             "before": "RULE_HAS_PROOFS = ('%s:%d names %s %s, which has proofs; a comment names one '",
-            "break_key": "fe8f0de68556a93d4bb9d35c6ace94b07aa7d0c426f70ec853d78a040748756d",
+            "bug_key": "fe8f0de68556a93d4bb9d35c6ace94b07aa7d0c426f70ec853d78a040748756d",
             "case": "a passing test on line 3 marked `purlin: login RULE-1` where RULE-1 has PROOF-1; the proof says the run prints `tests/test_login.py:3 names login RULE-1, which has proofs; a comment names one of its proofs. ...`; the changed code prints `..., which has a proof; a comment names one of its proofs. ...",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 960,
@@ -487,7 +487,7 @@
             "after": "        elif len(found) > 2:",
             "aim": "plain",
             "before": "        elif len(found) > 1:",
-            "break_key": "9d14bef21fc2efac7064c25d2261442216556cfb915b9063072d4adbbc75ada4",
+            "bug_key": "9d14bef21fc2efac7064c25d2261442216556cfb915b9063072d4adbbc75ada4",
             "case": "`test_x` declared twice and its one case passing; the proof says the run prints `The report's test_x matches 2 tests in tests/test_login.py, so its result is not counted. ...`; the changed code prints no such line for a case that matches two tests",
             "file": "scripts/run/reports.py",
             "line": 519,
@@ -498,7 +498,7 @@
             "after": "NAMES_NOTHING = ('%s:%d names %s %s, which no spec holds. Correct the comment, '",
             "aim": "plain",
             "before": "NAMES_NOTHING = ('%s:%d names %s %s, which no spec has. Correct the comment, '",
-            "break_key": "e99cf20022f89b6a24280d6a9031125ba1f39b491ff56d8a708e27f484d0197a",
+            "bug_key": "e99cf20022f89b6a24280d6a9031125ba1f39b491ff56d8a708e27f484d0197a",
             "case": "a passing test on line 13 marked `purlin: nosuch PROOF-1`; the proof says the run prints `tests/test_login.py:13 names nosuch PROOF-1, which no spec has. Correct the comment, ...`; the changed code prints `..., which no spec holds. Correct the comment, ...`",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 958,
@@ -509,7 +509,7 @@
             "after": "TIED_TO_NO_TEST = ('%s:%d names %s %s and no test comes after it. Put the comment '",
             "aim": "plain",
             "before": "TIED_TO_NO_TEST = ('%s:%d names %s %s and no test follows it. Put the comment '",
-            "break_key": "8b994818c4c51df03ca53d9e09801a5363b875d81bcb636ccf4ddcfaa491d6a4",
+            "bug_key": "8b994818c4c51df03ca53d9e09801a5363b875d81bcb636ccf4ddcfaa491d6a4",
             "case": "a marker `login PROOF-3` on line 9 with no test after it; the proof says the run prints `...and no test follows it. Put the comment directly above a test, or run purlin:build to repair it.`; the changed code prints `...and no test comes after it. Put the comment ...`",
             "file": "scripts/run/reports.py",
             "line": 58,
@@ -537,12 +537,12 @@
       },
       "RULE-34": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-114": {
             "after": "            return [], 'wrote a report at %s that is not %s' % (\n                report, fmt)",
             "aim": "plain",
             "before": "            return [], 'wrote a report at %s that is not %s: %s' % (\n                report, fmt, error)",
-            "break_key": "4270e828c85f689f904abfae1c66417a73bc3ed3e0caa6f435fa0d6cedc7b953",
+            "bug_key": "4270e828c85f689f904abfae1c66417a73bc3ed3e0caa6f435fa0d6cedc7b953",
             "case": "a pytest suite whose command writes `not xml` as its report; the proof says the line names `wrote a report at .purlin/runtime/reports/pytest.xml that is not junit: syntax error: line 1, column 0`; the changed code's reason ends at `that is not junit` and drops the syntax error",
             "file": "scripts/run/reports.py",
             "line": 293,
@@ -553,7 +553,7 @@
             "after": "            return [], 'left no report at %s' % report",
             "aim": "plain",
             "before": "            return [], 'wrote no report at %s' % report",
-            "break_key": "3aa1a8fce68b21729f8d13f31bdc17a38530dc2d88bfebc9f5d0053f024bcb83",
+            "bug_key": "3aa1a8fce68b21729f8d13f31bdc17a38530dc2d88bfebc9f5d0053f024bcb83",
             "case": "a pytest suite whose command exits 0 and writes no report; the proof says `Evidence is missing: the pytest suite wrote no report at .purlin/runtime/reports/pytest.xml.` and exit code 1; the changed code prints `left no report at .purlin/runtime/reports/pytest.xml` in that line",
             "file": "scripts/run/reports.py",
             "line": 285,
@@ -580,12 +580,12 @@
       },
       "RULE-35": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-108": {
             "after": "    if not raw:",
             "aim": "plain",
             "before": "    if raw is None:",
-            "break_key": "cc69815d45ae19312cc9d227adb1bc8fe5591cfd96ea913d5be16c9bace74177",
+            "bug_key": "cc69815d45ae19312cc9d227adb1bc8fe5591cfd96ea913d5be16c9bace74177",
             "case": "a settings file whose `tests` holds `{}`; the proof says no suite and the one problem `\"tests\" in .purlin/config.json is not a list`; the changed code gives no suite and no problem",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 232,
@@ -596,7 +596,7 @@
             "after": "            problems.append('%s names no run' % label)",
             "aim": "plain",
             "before": "            problems.append('%s names no run command' % label)",
-            "break_key": "8130a90fb87b23f0b059c725f3b5a6d305d7eb248138e8f677eba037a06703a2",
+            "bug_key": "8130a90fb87b23f0b059c725f3b5a6d305d7eb248138e8f677eba037a06703a2",
             "case": "beside one complete suite, entry `a` names no `run`; the proof says the line reads `purlin: the a suite names no run command. Fix the tests setting ...`; the changed code prints `purlin: the a suite names no run. Fix the tests setting ...`",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 248,
@@ -607,7 +607,7 @@
             "after": "            problems.append('%s names the format \"%s\", which is none of %s'",
             "aim": "plain",
             "before": "            problems.append('%s names the format \"%s\", which is not one of %s'",
-            "break_key": "197e1197dddf8f45e09f394267b3d9f80875016345f6698126f66f042b2b3e02",
+            "bug_key": "197e1197dddf8f45e09f394267b3d9f80875016345f6698126f66f042b2b3e02",
             "case": "beside one complete suite, entry `b` names the format `tap`; the proof says the line reads `... names the format \"tap\", which is not one of junit, trx, gotest, exit. ...`; the changed code prints `... names the format \"tap\", which is none of junit, trx, gotest, exit. ...`",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 251,
@@ -636,12 +636,12 @@
       },
       "RULE-36": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-125": {
             "after": "                   \"letters, digits and `_`\")",
             "aim": "plain",
             "before": "                   \"letters, digits, `_` and `-`\")",
-            "break_key": "1c97a9660136523f7952b9103cd62f083f1e3393a906302224ce43a2ab6b5201",
+            "bug_key": "1c97a9660136523f7952b9103cd62f083f1e3393a906302224ce43a2ab6b5201",
             "case": "`# purlin: sample.age PROOF-1`; the proof says the why ends \"a name holds letters, digits, `_` and `-`.\"; the changed code gives \"a name holds letters, digits and `_`.\"",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 1010,
@@ -652,7 +652,7 @@
             "after": "            out.append({'file': path, 'line': number + 1, 'text': line.strip(),",
             "aim": "plain",
             "before": "            out.append({'file': path, 'line': number, 'text': line.strip(),",
-            "break_key": "2e740acd41280acdddaac8f477dd1b04471316b7a0d27960ce172c1e64b19f54",
+            "bug_key": "2e740acd41280acdddaac8f477dd1b04471316b7a0d27960ce172c1e64b19f54",
             "case": "`# purln: login PROOF-1` on line 1 of tests/test_login.py; the proof says the entry's line is 1; the changed code gives line 2",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 1140,
@@ -663,7 +663,7 @@
             "after": "            why.append('`%s` is one edit from the feature `%s`'",
             "aim": "plain",
             "before": "            why.append('`%s` is one character from the feature `%s`'",
-            "break_key": "5d2508cd3f703c1b39d4dda63af45508556360b2987d8c92807bddfb3e9b1461",
+            "bug_key": "5d2508cd3f703c1b39d4dda63af45508556360b2987d8c92807bddfb3e9b1461",
             "case": "`# purlin: logn PROOF-1` where the spec `login` exists; the proof says the why reads \"`logn` is one character from the feature `login`.\"; the changed code gives \"`logn` is one edit from the feature `login`.\"",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 1077,
@@ -674,7 +674,7 @@
             "after": "    return candidates[0] if candidates else None",
             "aim": "plain",
             "before": "    return candidates[0] if len(candidates) == 1 else None",
-            "break_key": "629aae58002d3a4e07d99c353059edb30b39e6554341e9f930f992bb1eb5cd4b",
+            "bug_key": "629aae58002d3a4e07d99c353059edb30b39e6554341e9f930f992bb1eb5cd4b",
             "case": "`# purlin: login PROOF-4` where login has PROOF-1, PROOF-2 and PROOF-3; the proof says the array is empty; the changed code lists the comment with the fix `# purlin: login PROOF-1`",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 1031,
@@ -702,12 +702,12 @@
       },
       "RULE-37": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-84": {
             "after": "    text = 'cd .. && ' + suite.run.replace('{files}', joined)",
             "aim": "plain",
             "before": "    text = suite.run.replace('{files}', joined)",
-            "break_key": "5946ddf51d326aaac519717841cff10e71d0408736af700aa13b2822c6da3e75",
+            "bug_key": "5946ddf51d326aaac519717841cff10e71d0408736af700aa13b2822c6da3e75",
             "case": "a run started from a folder outside the project, its command asking the folder it runs in; the proof says the project root; the changed code gives the folder above the project root",
             "file": "scripts/run/reports.py",
             "line": 321,
@@ -718,7 +718,7 @@
             "after": "            for name in sorted(os.listdir(full))[:1]:",
             "aim": "plain",
             "before": "            for name in sorted(os.listdir(full)):",
-            "break_key": "56f7cd64021df3a42fb54899768f78417d7199b750c6732053c1449800853f30",
+            "bug_key": "56f7cd64021df3a42fb54899768f78417d7199b750c6732053c1449800853f30",
             "case": "a report folder holding two TRX reports, one passing `A` and one failing `B`; the proof says `A` `pass` and `B` `fail`; the changed code reads only the first file and gives `B` `missing`",
             "file": "scripts/run/reports.py",
             "line": 277,
@@ -729,7 +729,7 @@
             "after": "    if report == '-':\n        texts = ['']",
             "aim": "plain",
             "before": "    if report == '-':\n        texts = [stdout or '']",
-            "break_key": "9930006e428db97830e020de85d13e64dd8807bce81383960afdb91cbe978214",
+            "bug_key": "9930006e428db97830e020de85d13e64dd8807bce81383960afdb91cbe978214",
             "case": "a suite whose report path is `-` and whose command prints a Go run's stream; the proof says `TestTotal` `pass`, `TestLookupPanics` `fail` and `TestDiscount` `missing`; the changed code reads nothing from the output and gives `TestTotal` `missing` and `TestLookupPanics` `missing`",
             "file": "scripts/run/reports.py",
             "line": 272,
@@ -756,12 +756,12 @@
       },
       "RULE-38": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-119": {
             "after": "        lines = None",
             "aim": "plain",
             "before": "        lines = _python_comment_lines(text)",
-            "break_key": "09e513b7be592cceb5e70c2884f8229a962082d36b4ba48a97ad583414a78f0d",
+            "bug_key": "09e513b7be592cceb5e70c2884f8229a962082d36b4ba48a97ad583414a78f0d",
             "case": "a Python test file with `# purlin: login PROOF-1` on line 2 inside a triple-quoted string and `# purlin: login PROOF-2` on line 5 above the passing test_ok; the proof says one marker is read, PROOF-2 at line 5, and no pass for PROOF-1; the changed code reads two markers and gives PROOF-1 a pass",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 402,
@@ -772,7 +772,7 @@
             "after": "        return list(enumerate(text.splitlines(), 1))",
             "aim": "plain",
             "before": "        return _shell_lines(text)",
-            "break_key": "718cdeca40389fc9ec60e196a1c1d0f376b6328ebbc6d5eee4c3407f394cc14a",
+            "bug_key": "718cdeca40389fc9ec60e196a1c1d0f376b6328ebbc6d5eee4c3407f394cc14a",
             "case": "a shell test file exiting 0 with `# purlin: login PROOF-1` on line 3 inside a here document and `# purlin: login PROOF-2` on line 5; the proof says one marker is read, PROOF-2 at line 5, and no pass for PROOF-1; the changed code reads two markers and gives PROOF-1 a pass",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 406,
@@ -799,12 +799,12 @@
       },
       "RULE-39": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-121": {
             "after": "                                  error=('error' in kinds\n                                         and 'failure' in kinds)))",
             "aim": "plain",
             "before": "                                  error=('error' in kinds\n                                         and 'failure' not in kinds)))",
-            "break_key": "233f2b9c2a99ed1161255bc9754ba160aad6d82d1ca1f64913503301455890c7",
+            "bug_key": "233f2b9c2a99ed1161255bc9754ba160aad6d82d1ca1f64913503301455890c7",
             "case": "a JUnit report from running `test_fails` and `test_errors`, whose fixture raises; the proof says `test_errors` is marked an error; the changed code leaves `test_errors` not marked an error",
             "file": "scripts/run/reports.py",
             "line": 151,
@@ -815,7 +815,7 @@
             "after": "_TRX_ERROR = ('error', 'aborted')",
             "aim": "plain",
             "before": "_TRX_ERROR = ('error', 'timeout', 'aborted')",
-            "break_key": "6668c5f13047f94003175fbf293c4224fa60ee162dad5d0c60e4ce923c079ece",
+            "bug_key": "6668c5f13047f94003175fbf293c4224fa60ee162dad5d0c60e4ce923c079ece",
             "case": "a trx document with results `E` Error, `T` Timeout, `B` Aborted and `F` Failed; the proof says `T` is marked an error; the changed code reads `T` as fail but not marked an error",
             "file": "scripts/run/reports.py",
             "line": 67,
@@ -841,12 +841,12 @@
       },
       "RULE-4": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-49": {
             "after": "            owner.markers = [marker]",
             "aim": "plain",
             "before": "            owner.markers.append(marker)",
-            "break_key": "4923ac93d38957818a71f33e253c126bc53268b7f4fa7b236c95a79c1b220c3d",
+            "bug_key": "4923ac93d38957818a71f33e253c126bc53268b7f4fa7b236c95a79c1b220c3d",
             "case": "markers `login PROOF-1` and `login PROOF-2` one above the other over passing `test_two`; the proof says two results, each `pass` under `tests/test_login.py::test_two`; the changed code keeps only the last marker, so `PROOF-1` has no `pass`",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 842,
@@ -857,7 +857,7 @@
             "after": "            if test.line == marker.line + 1:",
             "aim": "plain",
             "before": "            if test.line > marker.line:",
-            "break_key": "694fdfbbcbe8f4ad56780eca83afe070b13a18aaa60c37c01183cefe3ddb4ed9",
+            "bug_key": "694fdfbbcbe8f4ad56780eca83afe070b13a18aaa60c37c01183cefe3ddb4ed9",
             "case": "marker `login PROOF-1`, then a blank line, a comment and a decorator above passing `test_decorated`; the proof says exactly one result, `PROOF-1` `pass` under `tests/test_login.py::test_decorated`; the changed code ties the marker to no test, so no `pass` is recorded for it",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 836,
@@ -883,12 +883,12 @@
       },
       "RULE-6": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-53": {
             "after": "                  if d_start < start]",
             "aim": "plain",
             "before": "                  if d_start < start < d_end]",
-            "break_key": "06d1e3df8466016c788d357bc8a8d286190e394c55c69c926fcb1b61fb0de276",
+            "bug_key": "06d1e3df8466016c788d357bc8a8d286190e394c55c69c926fcb1b61fb0de276",
             "case": "the TypeScript file's five `it` and `test` calls; the proof says the second `same name`, `skipped` and `param %i` sit inside `outer` only; the changed code places them inside `outer` and then `inner`",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 677,
@@ -899,7 +899,7 @@
             "after": "    r'\\[\\s*(?:[\\w.]+\\.)?(?:Fact|Test|TestCase|TestCaseSource|'",
             "aim": "plain",
             "before": "    r'\\[\\s*(?:[\\w.]+\\.)?(?:Fact|Theory|Test|TestCase|TestCaseSource|'",
-            "break_key": "273833d7229a04ab2037d05b5028f19bcac07a79d3c2a7ae08e0ded9fcd7fa00",
+            "bug_key": "273833d7229a04ab2037d05b5028f19bcac07a79d3c2a7ae08e0ded9fcd7fa00",
             "case": "the C# file with `GreetsByName`, `Param`, `Skipped` and `Inner`; the proof says all four are declared, `Param` under `[Theory]`; the changed code declares three and leaves `Param` out",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 689,
@@ -910,7 +910,7 @@
             "after": "                visit(node.body, scopes)",
             "aim": "plain",
             "before": "                visit(node.body, scopes + [node.name])",
-            "break_key": "51b658b0a9fc0c1decfc08c984ec5246cbfe85c57c07a71d918fcfae1a5617e7",
+            "bug_key": "51b658b0a9fc0c1decfc08c984ec5246cbfe85c57c07a71d918fcfae1a5617e7",
             "case": "a Python file with `helper`, `test_a` and class `TestB` holding `test_c` and `helper`; the proof says two tests, `test_a` and `test_c` in `TestB`; the changed code gives `test_c` with no enclosing class",
             "file": "scripts/mcp/purlin/markers.py",
             "line": 577,
@@ -938,12 +938,12 @@
       },
       "RULE-7": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-7": {
             "after": "                if set(kinds) & {'failure'}:",
             "aim": "plain",
             "before": "                if set(kinds) & {'failure', 'error'}:",
-            "break_key": "7f71b5d5f411f90320bfde74068021f406578d157d870e3e112381c222bad736",
+            "bug_key": "7f71b5d5f411f90320bfde74068021f406578d157d870e3e112381c222bad736",
             "case": "four Python tests run, one whose setup raises an error; the proof says `test_errors` reads `fail`; the changed code gives `pass` for `test_errors`",
             "file": "scripts/run/reports.py",
             "line": 137,
@@ -970,12 +970,12 @@
       },
       "RULE-8": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-59": {
             "after": "_TRX_FAIL = ('failed', 'error', 'aborted')",
             "aim": "plain",
             "before": "_TRX_FAIL = ('failed', 'error', 'timeout', 'aborted')",
-            "break_key": "0a800b815e5c8981f78f0ff56b8aee2078fd72c62600ba33ca4008728e85a0dd",
+            "bug_key": "0a800b815e5c8981f78f0ff56b8aee2078fd72c62600ba33ca4008728e85a0dd",
             "case": "a TRX report of four results with outcomes Error, Timeout, Aborted and Inconclusive; the proof says `fail`, `fail`, `fail`, `skip`; the changed code gives `fail`, `skip`, `fail`, `skip`",
             "file": "scripts/run/reports.py",
             "line": 65,
@@ -986,7 +986,7 @@
             "after": "_TRX_PASS = ('passedbutrunaborted', 'warning', 'completed')",
             "aim": "plain",
             "before": "_TRX_PASS = ('passed', 'passedbutrunaborted', 'warning', 'completed')",
-            "break_key": "099f062ef7e7c639beab094c82d0c24c595b428986e83a0aa9445259b44bbd2d",
+            "bug_key": "099f062ef7e7c639beab094c82d0c24c595b428986e83a0aa9445259b44bbd2d",
             "case": "the TRX report dotnet wrote, whose first result is `GreetsByName` with outcome `Passed`; the proof says `pass`; the changed code gives `skip`",
             "file": "scripts/run/reports.py",
             "line": 68,
@@ -1014,12 +1014,12 @@
       },
       "RULE-9": {
         "at": "2026-10-02T09:50:47Z",
-        "breaks": {
+        "bugs": {
           "PROOF-9": {
             "after": "        if action not in (PASS, FAIL):",
             "aim": "plain",
             "before": "        if action not in (PASS, FAIL, SKIP):",
-            "break_key": "31e94fc6d02ec39230513dfe4398b33192eb6f713d4c760f50763d03d3c42b76",
+            "bug_key": "31e94fc6d02ec39230513dfe4398b33192eb6f713d4c760f50763d03d3c42b76",
             "case": "the two-package stream with `TestDiscount` skipped in `example.com/shop/cart`; the proof says eight cases including `TestDiscount` `skip`; the changed code gives seven cases with no `TestDiscount`",
             "file": "scripts/run/reports.py",
             "line": 243,

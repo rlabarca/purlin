@@ -3,12 +3,12 @@
     "rules": {
       "RULE-1": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-1": {
             "after": "            _write_in(project_root, normal, changed)",
             "aim": "plain",
             "before": "            _write_in(copy, normal, changed)",
-            "break_key": "e1bc9fb8257941f2d5cfb0323ee82456679dc9f6ad0b7f13dcb9b910d6828a52",
+            "bug_key": "e1bc9fb8257941f2d5cfb0323ee82456679dc9f6ad0b7f13dcb9b910d6828a52",
             "case": "a bug planted for PROOF-1 in src/age.py; the proof says every project file holds the same bytes and git status prints the same; the changed code writes the bug into the project's own src/age.py, so its bytes differ and git status lists it as modified",
             "file": "scripts/review/targeted_break.py",
             "line": 313,
@@ -19,7 +19,7 @@
             "after": "        _write_in(project_root, normal, changed)\n        return _result(proof_id, 'not run', ERRORED if ran == 'error' else '',",
             "aim": "plain",
             "before": "        return _result(proof_id, 'not run', ERRORED if ran == 'error' else '',",
-            "break_key": "a43f4ffa7195cfbc0ad926082b9ab4999a89d2f399a4cf8599bcf067baf0f085",
+            "bug_key": "a43f4ffa7195cfbc0ad926082b9ab4999a89d2f399a4cf8599bcf067baf0f085",
             "case": "the test of PROOF-1 runs past its limit with the bug in place; the proof says every project file holds the same bytes afterwards; the changed code writes the changed lines into the project's own src/age.py when the result is not run",
             "file": "scripts/review/targeted_break.py",
             "line": 326,
@@ -47,12 +47,12 @@
       },
       "RULE-10": {
         "at": "2026-10-02T15:35:59Z",
-        "breaks": {
+        "bugs": {
           "PROOF-12": {
             "after": "            option=''))\n    entries = [e for key, found in purlin_run.marker_results(scan, suites, runs).items()\n               if key[0] == feature for e in found]\n    if tests and not entries:",
             "aim": "plain",
             "before": "            option=_others_left_out(suite, files, scan, feature, proof_id)))\n    entries = purlin_run.marker_results(scan, suites, runs).get((feature, proof_id), [])\n    if tests:",
-            "break_key": "6cd6d915405b48cac2b8079c824d376cbb7634a916aefa901f37475a8a188a1d",
+            "bug_key": "6cd6d915405b48cac2b8079c824d376cbb7634a916aefa901f37475a8a188a1d",
             "case": "the bug planted for PROOF-1 fails only the test of PROOF-2; the proof says the result for PROOF-1 reads survived; the changed code runs and reads every test of the feature, so it reads caught",
             "file": "scripts/review/targeted_break.py",
             "line": 503,
@@ -79,12 +79,12 @@
       },
       "RULE-12": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-10": {
             "after": "        return _result(proof_id, 'not made', NO_CHANGE)",
             "aim": "plain",
             "before": "        return _result(proof_id, 'not made', parsed[1])",
-            "break_key": "b4981e4f5ad8120b28bcc7d31e959f4e7a01d3835fd72cfdb644786c75d72587",
+            "bug_key": "b4981e4f5ad8120b28bcc7d31e959f4e7a01d3835fd72cfdb644786c75d72587",
             "case": "the model answers `no break: the proof names no value the code computes`; the proof says `not made` with that reason; the changed code gives `not made` with the reason `the answer named no change`",
             "file": "scripts/review/targeted_break.py",
             "line": 271,
@@ -95,7 +95,7 @@
             "after": "    if False and normal not in scope:",
             "aim": "plain",
             "before": "    if normal not in scope:",
-            "break_key": "df95a1c624fc428495cf3b72a0ff71b0cd49e51253df4c887648578f3c8f45fb",
+            "bug_key": "df95a1c624fc428495cf3b72a0ff71b0cd49e51253df4c887648578f3c8f45fb",
             "case": "the model answers `file: README.md`, which the scope does not name; the proof says `not made` and the test of PROOF-1 not run; the changed code plants the change in README.md and runs the test",
             "file": "scripts/review/targeted_break.py",
             "line": 286,
@@ -106,7 +106,7 @@
             "after": "    if False and normal in own:",
             "aim": "plain",
             "before": "    if normal in own:",
-            "break_key": "69529e9f39749a6d7ee350d6651a3c3723ab122a5ece8c87c84ccdc8681e3951",
+            "bug_key": "69529e9f39749a6d7ee350d6651a3c3723ab122a5ece8c87c84ccdc8681e3951",
             "case": "the scope names tests/test_age.py and the model answers a change to that file; the proof says `not made` and the test of PROOF-1 not run; the changed code plants the change in the test file and runs the test",
             "file": "scripts/review/targeted_break.py",
             "line": 283,
@@ -117,7 +117,7 @@
             "after": "        if count > 2:",
             "aim": "plain",
             "before": "        if count > 1:",
-            "break_key": "4fe5e0677855561dd84c467ff0ba32605d6f68a768f33a8848edc0e9d38b6262",
+            "bug_key": "4fe5e0677855561dd84c467ff0ba32605d6f68a768f33a8848edc0e9d38b6262",
             "case": "the model answers `before:` `return days`, which src/age.py holds twice; the proof says `not made` and the test of PROOF-1 not run; the changed code plants the change at the first match and runs the test",
             "file": "scripts/review/targeted_break.py",
             "line": 303,
@@ -148,12 +148,12 @@
       },
       "RULE-13": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-16": {
             "after": "        if _run_tests(copy, feature, proof_id, tests, timeout) == 'not run':",
             "aim": "plain",
             "before": "        if _run_tests(copy, feature, proof_id, tests, timeout) != 'pass':",
-            "break_key": "98c38c89e2ca919adebd541981777c7f792c9f75b21db4f678dccb0cc7bce3f9",
+            "bug_key": "98c38c89e2ca919adebd541981777c7f792c9f75b21db4f678dccb0cc7bce3f9",
             "case": "the test of PROOF-1 reads the git-ignored data/built.json and fails in the copy before any change; the proof says `not made` with `the test does not pass in a copy of the project`; the changed code plants the bug and gives `caught`",
             "file": "scripts/review/targeted_break.py",
             "line": 307,
@@ -179,12 +179,12 @@
       },
       "RULE-14": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-21": {
             "after": "            os.utime(_inside(copy, normal), (stamp, stamp))",
             "aim": "plain",
             "before": "            os.utime(_inside(copy, normal), (stamp + 2, stamp + 2))",
-            "break_key": "07ffa23d4143c8c532565e27e8598dfd1453136746c24e7535711c7dd5d329e4",
+            "bug_key": "07ffa23d4143c8c532565e27e8598dfd1453136746c24e7535711c7dd5d329e4",
             "case": "a same-size change of `return 90` to `return 91` after the test already ran once in the copy; the proof says the result reads caught; the changed code keeps the file's old time, so the compiled copy from the first run is served and the result reads survived",
             "file": "scripts/review/targeted_break.py",
             "line": 316,
@@ -211,12 +211,12 @@
       },
       "RULE-15": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-22": {
             "after": "            aim = PLAIN",
             "aim": "plain",
             "before": "            aim = (PAST_THE_TEST if said.group(1).strip().lower() == PAST_THE_TEST\n                   else PLAIN)",
-            "break_key": "133f30d8471b0b21562538d4178ad00cf6f4a1f0b446f5d1b314f98730457c19",
+            "bug_key": "133f30d8471b0b21562538d4178ad00cf6f4a1f0b446f5d1b314f98730457c19",
             "case": "the part for PROOF-1 opens `aim: past the test`; the proof says the entry reads aim `past the test`; the changed code records `plain`",
             "file": "scripts/review/targeted_break.py",
             "line": 149,
@@ -227,7 +227,7 @@
             "after": "    aim, case = PAST_THE_TEST, ''",
             "aim": "plain",
             "before": "    aim, case = PLAIN, ''",
-            "break_key": "a703eb1dbadb48373b62306e86d8e1fbc8c0a3f4726365a86023fbf4b80bb994",
+            "bug_key": "a703eb1dbadb48373b62306e86d8e1fbc8c0a3f4726365a86023fbf4b80bb994",
             "case": "the part for PROOF-2 holds no `aim:` line; the proof says its entry reads aim `plain`; the changed code records `past the test`",
             "file": "scripts/review/targeted_break.py",
             "line": 144,
@@ -258,12 +258,12 @@
       },
       "RULE-16": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-24": {
             "after": "            case = named.group(1).rstrip()[:CASE_LIMIT]",
             "aim": "plain",
             "before": "            case = shown(named.group(1))[:CASE_LIMIT]",
-            "break_key": "35a276426fea12d0473c5c650715ba389ee66449710528155c0a6c8e102dbe3b",
+            "bug_key": "35a276426fea12d0473c5c650715ba389ee66449710528155c0a6c8e102dbe3b",
             "case": "a case line of `   a stamp of 2026-01-01; the proof says 90; the changed code gives 0  `; the proof says the entry reads it with outer spaces cut; the changed code keeps the three leading spaces",
             "file": "scripts/review/targeted_break.py",
             "line": 152,
@@ -274,7 +274,7 @@
             "after": "CASE_LIMIT = 320",
             "aim": "plain",
             "before": "CASE_LIMIT = 300",
-            "break_key": "319d51aa09bec9176a548408efa7b00e2f3bfee7d362cadb6a974d23879d9b60",
+            "bug_key": "319d51aa09bec9176a548408efa7b00e2f3bfee7d362cadb6a974d23879d9b60",
             "case": "a case line of 320 characters; the proof says the entry holds its first 300; the changed code keeps all 320",
             "file": "scripts/review/targeted_break.py",
             "line": 68,
@@ -301,12 +301,12 @@
       },
       "RULE-17": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-26": {
             "after": "    if case is None:",
             "aim": "plain",
             "before": "    if not case:",
-            "break_key": "2cb6ee9438b9666d772b3dedc0b3e29d4682872315137fbab54fbb189ebe54bc",
+            "bug_key": "2cb6ee9438b9666d772b3dedc0b3e29d4682872315137fbab54fbb189ebe54bc",
             "case": "a part naming src/age.py, `return days` to `return 0`, with no case: line; the proof says not planted, the refusal printed and no test run in a copy; the changed code plants the bug and runs the test of PROOF-1 in a copy",
             "file": "scripts/review/targeted_break.py",
             "line": 274,
@@ -317,7 +317,7 @@
             "after": "            case = shown(named.group(1))[:CASE_LIMIT] or head.strip()",
             "aim": "plain",
             "before": "            case = shown(named.group(1))[:CASE_LIMIT]",
-            "break_key": "8e24d25ef3cc01244974e4f7ce17b5de4e76a02c82e65cd4c929cb78c83442bc",
+            "bug_key": "8e24d25ef3cc01244974e4f7ce17b5de4e76a02c82e65cd4c929cb78c83442bc",
             "case": "a part whose `case:` line has nothing after it; the proof says not made with the reason the answer named no case of the proof; the changed code keeps `case:` as the case and plants the bug, so the result is caught",
             "file": "scripts/review/targeted_break.py",
             "line": 152,
@@ -348,12 +348,12 @@
       },
       "RULE-18": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-28": {
             "after": "HASH_COMMENTS = ('.sh', '.bash', '.rb', '.yml', '.yaml', '.toml')",
             "aim": "plain",
             "before": "HASH_COMMENTS = ('.py', '.sh', '.bash', '.rb', '.yml', '.yaml', '.toml')",
-            "break_key": "14d24465b4255b910a895af77da7811b921c49ceef2bd4161c71a9b1dc35b6ac",
+            "bug_key": "14d24465b4255b910a895af77da7811b921c49ceef2bd4161c71a9b1dc35b6ac",
             "case": "a change adding only `# off by one` above `return days` in `src/age.py`; the proof says no bug is planted, with the comment reason printed and the test run in no copy; the changed code plants it, runs the test in a copy and reads `survived`",
             "file": "scripts/review/targeted_break.py",
             "line": 108,
@@ -364,7 +364,7 @@
             "after": "        if not start or (hashes and start.startswith('//')) or (hashes and start.startswith('#')):",
             "aim": "plain",
             "before": "        if not start or start.startswith('//') or (hashes and start.startswith('#')):",
-            "break_key": "fab8027beb4a1f71e2a284b4a4d1b3aaedb990c10a55522855bf3c40e10194b9",
+            "bug_key": "fab8027beb4a1f71e2a284b4a4d1b3aaedb990c10a55522855bf3c40e10194b9",
             "case": "a change adding only `// planted` to `src/age.js`; the proof says `not made` with the reason `the change touches only a comment`; the changed code plants it and the entry reads `survived` with no reason",
             "file": "scripts/review/targeted_break.py",
             "line": 179,
@@ -375,7 +375,7 @@
             "after": "HASH_COMMENTS = ('.py', '.sh', '.bash', '.rb', '.yml', '.yaml', '.toml', '.txt')",
             "aim": "plain",
             "before": "HASH_COMMENTS = ('.py', '.sh', '.bash', '.rb', '.yml', '.yaml', '.toml')",
-            "break_key": "1f6f3721fbc6e95859496d4e48573cc76f92cb9a4d4fccd3312ab499d217d62b",
+            "bug_key": "1f6f3721fbc6e95859496d4e48573cc76f92cb9a4d4fccd3312ab499d217d62b",
             "case": "a change adding the line `# 90` to `src/notes.txt`; the proof says the bug is planted and reads `survived`; the changed code reads it as a comment and the entry reads `not made`",
             "file": "scripts/review/targeted_break.py",
             "line": 108,
@@ -386,7 +386,7 @@
             "after": "    return len(code(before)) == len(code(after))",
             "aim": "plain",
             "before": "    return code(before) == code(after)",
-            "break_key": "9aba3e556949b9c9eee79a3eb0ff7ecb12a97fbfac2e3fc75b41c19fe7684248",
+            "bug_key": "9aba3e556949b9c9eee79a3eb0ff7ecb12a97fbfac2e3fc75b41c19fe7684248",
             "case": "a change turning `return days` into `# planted` and `return 0`; the proof says the bug is planted and reads `caught`; the changed code reads it as only a comment and the entry reads `not made`",
             "file": "scripts/review/targeted_break.py",
             "line": 208,
@@ -397,7 +397,7 @@
             "after": "HASH_COMMENTS = ('.py', '.sh', '.bash', '.rb', '.yaml', '.toml')",
             "aim": "plain",
             "before": "HASH_COMMENTS = ('.py', '.sh', '.bash', '.rb', '.yml', '.yaml', '.toml')",
-            "break_key": "5a8eb118bf9b94c6cf0166cf64d2e671f6634b10624cbc043154d0599cb9fd27",
+            "bug_key": "5a8eb118bf9b94c6cf0166cf64d2e671f6634b10624cbc043154d0599cb9fd27",
             "case": "a change adding only `# planted` above `oldest: 90` in `src/limits.yml`; the proof says `not made` with the reason `the change touches only a comment`; the changed code plants it and the entry reads `survived` with no reason",
             "file": "scripts/review/targeted_break.py",
             "line": 108,
@@ -408,7 +408,7 @@
             "after": "        if start.startswith('//') or (hashes and start.startswith('#')):",
             "aim": "plain",
             "before": "        if not start or start.startswith('//') or (hashes and start.startswith('#')):",
-            "break_key": "d10033833332af1ca16bc00a3be555ff58df38fe708e8af5df6af895ccab2630",
+            "bug_key": "d10033833332af1ca16bc00a3be555ff58df38fe708e8af5df6af895ccab2630",
             "case": "a change adding one empty line above `return days` in `src/age.py`; the proof says `not made` with the reason `the change touches only a comment`; the changed code counts the empty line as code, plants it and the entry reads `survived`",
             "file": "scripts/review/targeted_break.py",
             "line": 179,
@@ -438,12 +438,12 @@
       },
       "RULE-19": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-32": {
             "after": "    found = re.search(r'\\t#' if _hashes(path) else r'\\s//', line)",
             "aim": "plain",
             "before": "    found = re.search(r'\\s#' if _hashes(path) else r'\\s//', line)",
-            "break_key": "8f2d14561ff430f55daeef7b57b69c0c80e8fb5519725e280a137c99fae6bff6",
+            "bug_key": "8f2d14561ff430f55daeef7b57b69c0c80e8fb5519725e280a137c99fae6bff6",
             "case": "`return days` in src/age.py becomes `return days  # planted bug`; the proof says not planted, with `the change touches only a comment`; the changed code plants the bug and runs the test of PROOF-1 in a copy",
             "file": "scripts/review/targeted_break.py",
             "line": 190,
@@ -454,7 +454,7 @@
             "after": "HASH_COMMENTS = ('.py', '.sh', '.bash', '.rb', '.yml', '.yaml', '.toml', '.js')",
             "aim": "plain",
             "before": "HASH_COMMENTS = ('.py', '.sh', '.bash', '.rb', '.yml', '.yaml', '.toml')",
-            "break_key": "f4b87d9e3e7de2cc07f842af7dd2bce775dd9a88df470ca744235a0be8bbd93b",
+            "bug_key": "f4b87d9e3e7de2cc07f842af7dd2bce775dd9a88df470ca744235a0be8bbd93b",
             "case": "`return 90;` in src/age.js becomes `return 90; // planted`; the proof says `not made` with `the change touches only a comment`; the changed code plants the bug and the entry reads `survived`",
             "file": "scripts/review/targeted_break.py",
             "line": 108,
@@ -465,7 +465,7 @@
             "after": "        if ran == 'error':",
             "aim": "plain",
             "before": "        if ran == 'fail':",
-            "break_key": "dbbe23b760c43bef8e5ea5657674292519378131947756b74e453a3f84e8f08f",
+            "bug_key": "dbbe23b760c43bef8e5ea5657674292519378131947756b74e453a3f84e8f08f",
             "case": "`if stamp == \"\":` becomes `if stamp == \" #\":` and the test of PROOF-1 fails on it; the proof says the entry reads `caught`; the changed code gives `not run`",
             "file": "scripts/review/targeted_break.py",
             "line": 324,
@@ -476,7 +476,7 @@
             "after": "    found = re.search(r'\\s#|\\s//' if _hashes(path) else r'\\s//', line)",
             "aim": "plain",
             "before": "    found = re.search(r'\\s#' if _hashes(path) else r'\\s//', line)",
-            "break_key": "da3bcf586da6c841f151e8130e3a5d2e5106d1a45e301edea8555b78975dcfd9",
+            "bug_key": "da3bcf586da6c841f151e8130e3a5d2e5106d1a45e301edea8555b78975dcfd9",
             "case": "`return days // 1` in src/age.py becomes `return days // 2`; the proof says the bug is planted and reads `caught`; the changed code gives `not made` with `the change touches only a comment`",
             "file": "scripts/review/targeted_break.py",
             "line": 190,
@@ -487,7 +487,7 @@
             "after": "    found = re.search(r'\\s#' if _hashes(path) else r'\\s/[/*]', line)",
             "aim": "plain",
             "before": "    found = re.search(r'\\s#' if _hashes(path) else r'\\s//', line)",
-            "break_key": "3e3ccd84ebda89192cb3470f8fe8f12ad768ab006f49af5cc41d213e00624d6c",
+            "bug_key": "3e3ccd84ebda89192cb3470f8fe8f12ad768ab006f49af5cc41d213e00624d6c",
             "case": "`return 90;` in src/age.js becomes `return 90; /* planted */`; the proof says the bug is planted and reads `survived`; the changed code gives `not made` with `the change touches only a comment`",
             "file": "scripts/review/targeted_break.py",
             "line": 190,
@@ -516,12 +516,12 @@
       },
       "RULE-2": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-2": {
             "after": "            return _result(proof_id, 'not run', '', change, line,",
             "aim": "plain",
             "before": "            return _result(proof_id, 'survived', '', change, line,",
-            "break_key": "09518bb9ef6d2a258bc60c1842c80d82d123afa3bbaf1682edf3f087bcfb1347",
+            "bug_key": "09518bb9ef6d2a258bc60c1842c80d82d123afa3bbaf1682edf3f087bcfb1347",
             "case": "the model's change of `return days` to `return 0` at src/age.py line 12 leaves the test of PROOF-1 passing; the proof says the result reads `survived`; the changed code gives `not run`",
             "file": "scripts/review/targeted_break.py",
             "line": 322,
@@ -547,12 +547,12 @@
       },
       "RULE-20": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-39": {
             "after": "_AIM_RE = re.compile(r'^\\s*aims:(.*)$', re.I)",
             "aim": "plain",
             "before": "_AIM_RE = re.compile(r'^\\s*aim:(.*)$', re.I)",
-            "break_key": "5bf5364542e1fbcdc312cad2c233517b7bd192c5097a1e6302e08d14159d9bb4",
+            "bug_key": "5bf5364542e1fbcdc312cad2c233517b7bd192c5097a1e6302e08d14159d9bb4",
             "case": "the part reads `aim: plain` then `no break: the test checks the case and its result`; the proof says the audit prints that the model found no change, with that reason; the changed code does not read the `aim:` line, so the part is refused as naming no change",
             "file": "scripts/review/targeted_break.py",
             "line": 101,
@@ -563,7 +563,7 @@
             "after": "    found = _NO_BREAK_RE.match(' '.join(lines)) if lines else None",
             "aim": "plain",
             "before": "    found = _NO_BREAK_RE.match(lines[0]) if lines else None",
-            "break_key": "7d51f15d6c95d9fa018992d2fae39a57978ed6fb9e44609a6e2505f6606eaddd",
+            "bug_key": "7d51f15d6c95d9fa018992d2fae39a57978ed6fb9e44609a6e2505f6606eaddd",
             "case": "the part reads `no break: nothing here.` and a second line `The code is a constant.`; the proof says the reason is `nothing here.` and the second line is printed nowhere; the changed code gives the reason `nothing here. The code is a constant.`",
             "file": "scripts/review/targeted_break.py",
             "line": 156,
@@ -591,12 +591,12 @@
       },
       "RULE-21": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-41": {
             "after": "    before = found.group('before')",
             "aim": "plain",
             "before": "    before = re.sub(r'(\\n[ \\t]*)+$', '', found.group('before'))",
-            "break_key": "f97ce24961a1fe4af9e70fce4d0b13f6791086c5fbe5925fd06962dbffe15377",
+            "bug_key": "f97ce24961a1fe4af9e70fce4d0b13f6791086c5fbe5925fd06962dbffe15377",
             "case": "`days = minutes(stamp)` under before:, one empty line, then after: and `days = 0`; the proof says the replaced lines end at the last non-blank line and the entry reads caught; the changed code keeps the line end of the blank line in the replaced lines, so `days = 0` is joined to the line that follow",
             "file": "scripts/review/targeted_break.py",
             "line": 163,
@@ -626,12 +626,12 @@
       },
       "RULE-22": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-42": {
             "after": "        if old not in text and '\\r\\n' not in text:",
             "aim": "plain",
             "before": "        if old not in text and '\\r\\n' in text:",
-            "break_key": "d449a619c6e34e264456a9086c5ae2fe24f8b0802ed979e31f2fe7259f9a281a",
+            "bug_key": "d449a619c6e34e264456a9086c5ae2fe24f8b0802ed979e31f2fe7259f9a281a",
             "case": "every line of src/age.py ends CRLF and the two-line change turns `return 0` into `return 1`; the proof says the entry reads caught at line 11; the changed code never matches the lines, so the entry reads not made with no line",
             "file": "scripts/review/targeted_break.py",
             "line": 297,
@@ -642,7 +642,7 @@
             "after": "            old, new = _crlf(old), new",
             "aim": "plain",
             "before": "            old, new = _crlf(old), _crlf(new)",
-            "break_key": "033e997ad6ab20dcceb858e0162197d8957d7d77f040069c6943c602fbafd156",
+            "bug_key": "033e997ad6ab20dcceb858e0162197d8957d7d77f040069c6943c602fbafd156",
             "case": "all 12 lines of src/age.py end CRLF and the two-line change is planted; the proof says the file run against reads return 1 and keeps CRLF on each of its 12 lines; the changed code ends the `if stamp == \"\":` line with a bare LF, so only 11 lines end CRLF",
             "file": "scripts/review/targeted_break.py",
             "line": 299,
@@ -671,12 +671,12 @@
       },
       "RULE-23": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-44": {
             "after": "            case = named.group(1).strip()[:CASE_LIMIT]",
             "aim": "plain",
             "before": "            case = shown(named.group(1))[:CASE_LIMIT]",
-            "break_key": "eaa6dada32604b7ec6d97c6914cd4c93047b369a9818d1ce649ede7764086ea1",
+            "bug_key": "eaa6dada32604b7ec6d97c6914cd4c93047b369a9818d1ce649ede7764086ea1",
             "case": "a case line of `a stamp of 2026-01-01 `, the clear-screen and red escape sequences, `gives 0` and a bell; the proof says the case reads `a stamp of 2026-01-01 gives 0`; the changed code keeps the escape sequences and the bell in the case",
             "file": "scripts/review/targeted_break.py",
             "line": 152,
@@ -687,7 +687,7 @@
             "after": "        return ('no break', found.group(1).strip())",
             "aim": "plain",
             "before": "        return ('no break', shown(found.group(1)))",
-            "break_key": "19aa43d278dd2340bbc68854bbbf63f28e6efb7ea7759c33aa9a98749893a9b6",
+            "bug_key": "19aa43d278dd2340bbc68854bbbf63f28e6efb7ea7759c33aa9a98749893a9b6",
             "case": "a part reading `no break: the test checks the case` with a clear-screen sequence before `checks` and a bell at its end; the proof says the printed reason is `the test checks the case`; the changed code keeps the escape sequence and the bell in the reason",
             "file": "scripts/review/targeted_break.py",
             "line": 158,
@@ -698,7 +698,7 @@
             "after": "    return ('change', found.group('file'), before,",
             "aim": "plain",
             "before": "    return ('change', shown(found.group('file')), before,",
-            "break_key": "05cb9fbf5038f11b39d6d503faa3511c47973c442023c43563d28a05ef61a70c",
+            "bug_key": "05cb9fbf5038f11b39d6d503faa3511c47973c442023c43563d28a05ef61a70c",
             "case": "a `file:` value of `src/age.py` with the red escape sequence between `src/` and `age.py`; the proof says `file` reads `src/age.py` and the bug reads `caught`; the changed code keeps the sequence in the path, so the bug is not made",
             "file": "scripts/review/targeted_break.py",
             "line": 164,
@@ -725,12 +725,12 @@
       },
       "RULE-24": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-47": {
             "after": "_AIM_RE = re.compile(r'^\\s*aim:(.*)$')",
             "aim": "plain",
             "before": "_AIM_RE = re.compile(r'^\\s*aim:(.*)$', re.I)",
-            "break_key": "19916ff956c3ad811990ad91e28809b26ac90d02b3f345596908b93d37155a39",
+            "bug_key": "19916ff956c3ad811990ad91e28809b26ac90d02b3f345596908b93d37155a39",
             "case": "a part opening with `  Aim: past the test` and then `CASE: a stamp of 2026-01-01; the proof says 90; the changed code gives 0`; the proof says the bug is planted, reads caught and its entry reads aim past the test; the changed code plants no bug and records aim plain",
             "file": "scripts/review/targeted_break.py",
             "line": 101,
@@ -758,12 +758,12 @@
       },
       "RULE-25": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-48": {
             "after": "        if not start or start.startswith('//'):",
             "aim": "plain",
             "before": "        if not start or start.startswith('//') or (hashes and start.startswith('#')):",
-            "break_key": "86512463548b577f10f2dd2b1c6c01661ac392c341827e5e418f62e8475f1c4c",
+            "bug_key": "86512463548b577f10f2dd2b1c6c01661ac392c341827e5e418f62e8475f1c4c",
             "case": "`return days` at line 12 of src/age.py becomes `# planted`, an empty line and `return 0`, and the test of PROOF-1 still passes; the proof says the finding names src/age.py:14 reading \"return 0\"; the changed code names src/age.py:12 reading \"# planted\"",
             "file": "scripts/review/targeted_break.py",
             "line": 179,
@@ -774,7 +774,7 @@
             "after": "            step = place",
             "aim": "plain",
             "before": "            step = index",
-            "break_key": "f1ccce17561b8ae1997827b441d65ea8fd47058de4223e417f13954167be2706",
+            "bug_key": "f1ccce17561b8ae1997827b441d65ea8fd47058de4223e417f13954167be2706",
             "case": "`# planted` is put above `days = minutes(stamp)`, two lines stay as they were and `return 0` becomes `return 1`, and the test of PROOF-1 still passes; the proof says the finding names src/age.py:12 reading \"return 1\"; the changed code names src/age.py:11 reading `if stamp == \"\":`",
             "file": "scripts/review/targeted_break.py",
             "line": 347,
@@ -802,12 +802,12 @@
       },
       "RULE-26": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-50": {
             "after": "    if own or not others:\n        return ''",
             "aim": "plain",
             "before": "    if not own or not others:\n        return ''",
-            "break_key": "0aba4d153c8d0b8dc74a9a6a58550b2c6ace958a8458797ea89e117d14e1f475",
+            "bug_key": "0aba4d153c8d0b8dc74a9a6a58550b2c6ace958a8458797ea89e117d14e1f475",
             "case": "a bug planted for PROOF-1 in a file that also holds PROOF-2's logging test; the proof says the log was never written; the changed code runs the whole file, so PROOF-2's test runs and the log is written",
             "file": "scripts/review/targeted_break.py",
             "line": 473,
@@ -834,12 +834,12 @@
       },
       "RULE-3": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-17": {
             "after": "        return _result(proof_id, 'caught', ERRORED if ran == 'error' else '',",
             "aim": "plain",
             "before": "        return _result(proof_id, 'not run', ERRORED if ran == 'error' else '',",
-            "break_key": "835e4a40c4d6ff9d83166c603f9f3c34e37e98d0b536b314beffa5ad7c894caf",
+            "bug_key": "835e4a40c4d6ff9d83166c603f9f3c34e37e98d0b536b314beffa5ad7c894caf",
             "case": "the model's change `def age(` to `def age_(` leaves tests/test_age.py uncollectable; the proof says the result reads `not run`, not `caught`; the changed code gives `caught`",
             "file": "scripts/review/targeted_break.py",
             "line": 326,
@@ -850,7 +850,7 @@
             "after": "        return 'fail'",
             "aim": "plain",
             "before": "        return 'error' if all(e.get('errored') for e in failed) else 'fail'",
-            "break_key": "9939f85a78de636612a53a0b76660bbcb7a258bb5a6a7e464c06b5189b305026",
+            "bug_key": "9939f85a78de636612a53a0b76660bbcb7a258bb5a6a7e464c06b5189b305026",
             "case": "a fixture raises ValueError so pytest reports the test of PROOF-1 under `<error>`; the proof says `not run` with the reason `the test ended in an error, not a failure`; the changed code gives `caught` with no reason",
             "file": "scripts/review/targeted_break.py",
             "line": 452,
@@ -861,7 +861,7 @@
             "after": "            return _result(proof_id, 'not run', '', change, line)",
             "aim": "plain",
             "before": "            return _result(proof_id, 'caught', '', change, line)",
-            "break_key": "3e1c936268a0a829c9007021073992f0a239e1bbae515b6163be4d32b3c463cd",
+            "bug_key": "3e1c936268a0a829c9007021073992f0a239e1bbae515b6163be4d32b3c463cd",
             "case": "the model's change `return days` to `return 0` makes the test of PROOF-1 fail; the proof says the result reads `caught`; the changed code gives `not run`",
             "file": "scripts/review/targeted_break.py",
             "line": 325,
@@ -889,12 +889,12 @@
       },
       "RULE-5": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-6": {
             "after": "    if os.path.isabs(rel) or normal == '..' or normal.startswith('../'):\n        return _result(proof_id, 'not run', OUTSIDE % path, change)",
             "aim": "plain",
             "before": "    if os.path.isabs(rel) or normal == '..' or normal.startswith('../'):\n        return _result(proof_id, 'not made', OUTSIDE % path, change)",
-            "break_key": "6e77ae5663fab74c1f86128a0a5d5cdd0d8ccc74bf95c37012a20053a0539663",
+            "bug_key": "6e77ae5663fab74c1f86128a0a5d5cdd0d8ccc74bf95c37012a20053a0539663",
             "case": "the model answers `file: ../outside.py`; the proof says the result reads `not made`; the changed code gives `not run`",
             "file": "scripts/review/targeted_break.py",
             "line": 281,
@@ -922,12 +922,12 @@
       },
       "RULE-6": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-13": {
             "after": "    if before is after:\n        return None",
             "aim": "plain",
             "before": "    if before == after:\n        return None",
-            "break_key": "62fd0524bf8d76337a34ca727ac7260b2ab1f0beb741ca81e83989e62ac96817",
+            "bug_key": "62fd0524bf8d76337a34ca727ac7260b2ab1f0beb741ca81e83989e62ac96817",
             "case": "three bugs planted while nothing else touches the project; the proof says no line starting `The audit stopped:` is printed and the audit exits 0; the changed code reads two equal snapshots as different, so the audit prints the stopped line and exits 1",
             "file": "scripts/review/targeted_break.py",
             "line": 522,
@@ -938,7 +938,7 @@
             "after": "    if changed is not None and not os.path.exists(os.path.join(project_root, changed)):\n        raise ProjectChanged(changed)",
             "aim": "plain",
             "before": "    if changed is not None:\n        raise ProjectChanged(changed)",
-            "break_key": "06c757d45cea03a816ea2d419935de754957717688e95c2b213c6952c1e8d575",
+            "bug_key": "06c757d45cea03a816ea2d419935de754957717688e95c2b213c6952c1e8d575",
             "case": "claude writes a line to src/age.py as it answers; the proof says the audit prints the stopped line for src/age.py, exits 1 and leaves the evidence bytes as they were; the changed code raises no stop for a changed file that still exists, so the audit goes on, writes its entry and exits 0",
             "file": "scripts/review/targeted_break.py",
             "line": 245,
@@ -966,12 +966,12 @@
       },
       "RULE-7": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-14": {
             "after": "        copy = os.path.join(copy, 'gone')\n        return _result(proof_id, 'not run', ERRORED if ran == 'error' else '',\n                       change, line)",
             "aim": "plain",
             "before": "        return _result(proof_id, 'not run', ERRORED if ran == 'error' else '',\n                       change, line)",
-            "break_key": "1e22b1af77ab8ea4bda8513e5ff6cd253812f9e8b5f03bfeff52104f628cf65e",
+            "bug_key": "1e22b1af77ab8ea4bda8513e5ff6cd253812f9e8b5f03bfeff52104f628cf65e",
             "case": "the test of PROOF-1 runs past its limit with the bug in place; the proof says the temporary folder holds no folder starting purlin-break-; the changed code leaves the purlin-break- copy there",
             "file": "scripts/review/targeted_break.py",
             "line": 326,
@@ -982,7 +982,7 @@
             "after": "        if ran == 'fail':\n            copy = os.path.join(copy, 'gone')\n            return _result(proof_id, 'caught', '', change, line)",
             "aim": "plain",
             "before": "        if ran == 'fail':\n            return _result(proof_id, 'caught', '', change, line)",
-            "break_key": "218432858d660154d9c560a8f99111c36d793b57ce9ad2783b38c195fe9db68e",
+            "bug_key": "218432858d660154d9c560a8f99111c36d793b57ce9ad2783b38c195fe9db68e",
             "case": "the test of PROOF-1 fails with the bug in place; the proof says the temporary folder holds no folder starting purlin-break-; the changed code leaves the purlin-break- copy there",
             "file": "scripts/review/targeted_break.py",
             "line": 325,
@@ -1010,12 +1010,12 @@
       },
       "RULE-8": {
         "at": "2026-10-02T09:23:03Z",
-        "breaks": {
+        "bugs": {
           "PROOF-9": {
             "after": null,
             "aim": "plain",
             "before": null,
-            "break_key": "58b93550b1a9228aa62986e510c380a28194387b684c3505c9b74d6564026280",
+            "bug_key": "58b93550b1a9228aa62986e510c380a28194387b684c3505c9b74d6564026280",
             "case": "",
             "file": null,
             "line": null,

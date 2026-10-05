@@ -3,12 +3,12 @@
     "rules": {
       "RULE-1": {
         "at": "2026-10-02T15:39:26Z",
-        "breaks": {
+        "bugs": {
           "PROOF-103": {
             "after": "    if again or not audit or audit.get('out_of_date') == ['proofs']:",
             "aim": "plain",
             "before": "    if again or not audit or audit.get('out_of_date'):",
-            "break_key": "bafccdea79fc051e90448f4d04f7a8fffe040ae2bc79080d1a440651986772e3",
+            "bug_key": "bafccdea79fc051e90448f4d04f7a8fffe040ae2bc79080d1a440651986772e3",
             "case": "RULE-2 has an entry and src/login.py changes from `return 401` to `return 403 if locked else 401`; the proof says the audit reads it; the changed code ignores an entry out of date by its code and does not read it",
             "file": "scripts/review/ai_audit.py",
             "line": 173,
@@ -19,7 +19,7 @@
             "after": "    return any(proof in breaks for proof in plant or ())",
             "aim": "plain",
             "before": "    return any(proof not in breaks for proof in plant or ())",
-            "break_key": "04922517e17a107f236d6c1ab350e27abaa3c4b2080c3cde8cf564b6b62efb62",
+            "bug_key": "04922517e17a107f236d6c1ab350e27abaa3c4b2080c3cde8cf564b6b62efb62",
             "case": "RULE-2's entry reads spot-checked because claude could not be reached and nothing has changed since; the proof says the audit run again reads RULE-2 and starts claude 1 time; the changed code does not read RULE-2 and starts claude 0 times",
             "file": "scripts/review/ai_audit.py",
             "line": 177,
@@ -30,7 +30,7 @@
             "after": "    if again or audit or audit.get('out_of_date'):",
             "aim": "plain",
             "before": "    if again or not audit or audit.get('out_of_date'):",
-            "break_key": "64f7cb110b342e719b7b1f6748307d650e387cbe75b32977d22b9c76a49798b6",
+            "bug_key": "64f7cb110b342e719b7b1f6748307d650e387cbe75b32977d22b9c76a49798b6",
             "case": "RULE-2 passes and carries a current entry reading strong; the proof says the audit does not read it; the changed code reads it",
             "file": "scripts/review/ai_audit.py",
             "line": 173,
@@ -41,7 +41,7 @@
             "after": "    to_read = rules_to_read(project_root, payload, features, selected, False,\n                            cache)",
             "aim": "plain",
             "before": "    to_read = rules_to_read(project_root, payload, features, selected, again,\n                            cache)",
-            "break_key": "ffaf23f90129a1cffa8858074a0928f61547fe9e738a0caba3ef850d09f71d1a",
+            "bug_key": "ffaf23f90129a1cffa8858074a0928f61547fe9e738a0caba3ef850d09f71d1a",
             "case": "RULE-2 passes with a current entry and the audit is asked to read again; the proof says the audit reads it; the changed run leaves RULE-2 unread and asks the model nothing about it",
             "file": "scripts/review/audit_run.py",
             "line": 391,
@@ -74,12 +74,12 @@
       },
       "RULE-11": {
         "at": "2026-10-02T09:32:04Z",
-        "breaks": {
+        "bugs": {
           "PROOF-10": {
             "after": "    return 'junit' if markers_module.declared_tests('', ext) is None \\\n        else 'exit'",
             "aim": "past the test",
             "before": "    return 'junit' if markers_module.declared_tests('', ext) is not None \\\n        else 'exit'",
-            "break_key": "097424014ee08ec52b5a76dc945a19620e4b2012efe772dd339900e57cedc27d",
+            "bug_key": "097424014ee08ec52b5a76dc945a19620e4b2012efe772dd339900e57cedc27d",
             "case": "a TypeScript test dividing by 2 on the line after `\"a\" +`, then a second test; the proof says the first's source holds its `expect(` and stops before the second; the changed code reads the file as one test and gives the whole file, second test included",
             "file": "scripts/review/marked_tests.py",
             "line": 42,
@@ -90,7 +90,7 @@
             "after": "    if test.start is not None:",
             "aim": "plain",
             "before": "    if test.start is None:",
-            "break_key": "479cc220ce5a027297c04472cf9a09605b241e9584b0a6055abbdb563e2f53ee",
+            "bug_key": "479cc220ce5a027297c04472cf9a09605b241e9584b0a6055abbdb563e2f53ee",
             "case": "a TypeScript test titled `cd's into a sibling` then a second test; the proof says the first's source holds `expect(1).toBe(1)`; the changed code gives no source for the first test at all",
             "file": "scripts/review/marked_tests.py",
             "line": 74,
@@ -101,7 +101,7 @@
             "after": "    return text[test.start:]",
             "aim": "plain",
             "before": "    return text[test.start:test.end] if test.end else text[test.start:]",
-            "break_key": "24a7f6e72f6c5b1e8661a99e7dca0fba92a7256d9042bf0f7ce05e3998620a60",
+            "bug_key": "24a7f6e72f6c5b1e8661a99e7dca0fba92a7256d9042bf0f7ce05e3998620a60",
             "case": "a TypeScript test passing `{ cwd: \".\", encoding: \"utf8\" }` then a second test; the proof says the first's source holds `expect(out).toMatch` and stops before the second; the changed code gives a source that runs on to the end of the file, through the second test",
             "file": "scripts/review/marked_tests.py",
             "line": 76,
@@ -129,12 +129,12 @@
       },
       "RULE-12": {
         "at": "2026-10-02T09:32:04Z",
-        "breaks": {
+        "bugs": {
           "PROOF-72": {
             "after": "    os.makedirs(os.path.join(project_root, '.purlin', 'runtime'),\n                exist_ok=True)\n    with open(os.path.join(project_root, '.purlin', 'runtime',\n                           'request.txt'), 'w', encoding='utf-8') as handle:\n        handle.write(prompt)\n    called = ask_model(prompt, command, runner, cwd)",
             "aim": "plain",
             "before": "    called = ask_model(prompt, command, runner, cwd)",
-            "break_key": "d931fe49862e4f02938b8a48d50fdf6594d163c2038929e87cfba93b94a61219",
+            "bug_key": "d931fe49862e4f02938b8a48d50fdf6594d163c2038929e87cfba93b94a61219",
             "case": "claude is asked about RULE-2 and answers `- The test reads the status.`; the proof says every file under `.purlin/` holds the same bytes and no file is added; the changed code adds `.purlin/runtime/request.txt` holding the request",
             "file": "scripts/review/ai_audit.py",
             "line": 563,
@@ -145,7 +145,7 @@
             "after": "        print(render(reading))\n        os.makedirs(os.path.join(args.project_root, '.purlin', 'runtime'),\n                    exist_ok=True)\n        with open(os.path.join(args.project_root, '.purlin', 'runtime',\n                               'printed.txt'), 'w',\n                  encoding='utf-8') as handle:\n            handle.write('%s %s\\n' % (args.feature, rule))",
             "aim": "plain",
             "before": "        print(render(reading))",
-            "break_key": "bf937fdf5dd7c67e267f7919fd7793cab9916f66eb0d361b84ae1ac60ccbcb05",
+            "bug_key": "bf937fdf5dd7c67e267f7919fd7793cab9916f66eb0d361b84ae1ac60ccbcb05",
             "case": "the command run for the feature `login` exits 0 and prints both rules; the proof says every file under `.purlin/` holds the same bytes and no file is added; the changed code adds `.purlin/runtime/printed.txt` naming the last rule printed",
             "file": "scripts/review/ai_audit.py",
             "line": 736,
@@ -173,12 +173,12 @@
       },
       "RULE-2": {
         "at": "2026-10-02T09:32:04Z",
-        "breaks": {
+        "bugs": {
           "PROOF-106": {
             "after": "    parts.extend('- %s' % line for line in ())",
             "aim": "plain",
             "before": "    parts.extend('- %s' % line for line in findings)",
-            "break_key": "90ec59a5052d51ae2ba96bcb629b839ad50547c858ce4b2f3c98e987d5721379",
+            "bug_key": "90ec59a5052d51ae2ba96bcb629b839ad50547c858ce4b2f3c98e987d5721379",
             "case": "the spot tests found \"tests/test_login.py::test_a_bad_password_is_denied: the test checks nothing.\" for RULE-2; the proof says the prompt holds that line after the test's source; the changed code leaves an empty Findings: section with no such line",
             "file": "scripts/review/ai_audit.py",
             "line": 363,
@@ -189,7 +189,7 @@
             "after": "        with open(path, 'r', encoding='utf-8') as handle:\n            return handle.read().lower()",
             "aim": "past the test",
             "before": "        with open(path, 'r', encoding='utf-8') as handle:\n            return handle.read()",
-            "break_key": "4a3e86989806977c2d72f32a586ed46a447c7378d093f6a5653b95fc42094ee4",
+            "bug_key": "4a3e86989806977c2d72f32a586ed46a447c7378d093f6a5653b95fc42094ee4",
             "case": "the prompt for RULE-2 against references/review_criteria.md; the proof says the prompt begins with that file's text byte for byte; the changed code begins the prompt with the text lower-cased, so its first line reads \"# review criteria\"",
             "file": "scripts/review/ai_audit.py",
             "line": 331,
@@ -200,7 +200,7 @@
             "after": "            parts.extend(['', 'File: %s' % path])",
             "aim": "plain",
             "before": "            parts.extend(['', 'File: %s' % path, held.rstrip('\\n')])",
-            "break_key": "7f58908c47bc09f32afda1d0362b546a144ed9605f0a9f97ab5dc4d12d421e5f",
+            "bug_key": "7f58908c47bc09f32afda1d0362b546a144ed9605f0a9f97ab5dc4d12d421e5f",
             "case": "the scope of login names src/login.py alone; the proof says the request holds the text of src/login.py; the changed code gives the line \"File: src/login.py\" with none of the file's text under it",
             "file": "scripts/review/ai_audit.py",
             "line": 373,
@@ -232,12 +232,12 @@
       },
       "RULE-3": {
         "at": "2026-10-02T16:08:21Z",
-        "breaks": {
+        "bugs": {
           "PROOF-112": {
             "after": "ENVIRONMENT = {'DISABLE_PROMPT_CACHING': '0'}",
             "aim": "plain",
             "before": "ENVIRONMENT = {'DISABLE_PROMPT_CACHING': '1'}",
-            "break_key": "edf07f4f6d99af9bfac2ffad7b411c0fe4265a678030cca5ab45eb1f380b7558",
+            "bug_key": "edf07f4f6d99af9bfac2ffad7b411c0fe4265a678030cca5ab45eb1f380b7558",
             "case": "the audit asks about RULE-2 of the project at <root>; the proof says DISABLE_PROMPT_CACHING reads 1; the changed code starts claude with it reading 0",
             "file": "scripts/review/ai_audit.py",
             "line": 97,
@@ -248,7 +248,7 @@
             "after": "                        encoding='ascii', errors='replace', cwd=cwd,",
             "aim": "past the test",
             "before": "                        encoding='utf-8', errors='replace', cwd=cwd,",
-            "break_key": "a004f4dfcc67b14e6dda521cb8ecec1a685fcd22a388ae9b483de4686f09e02a",
+            "bug_key": "a004f4dfcc67b14e6dda521cb8ecec1a685fcd22a388ae9b483de4686f09e02a",
             "case": "the audit asks about RULE-2 with a request holding a character outside ASCII; the proof says the request is the whole of standard input; the changed code writes `?` in place of each such character",
             "file": "scripts/review/ai_audit.py",
             "line": 522,
@@ -272,12 +272,12 @@
       },
       "RULE-33": {
         "at": "2026-10-02T09:32:04Z",
-        "breaks": {
+        "bugs": {
           "PROOF-118": {
             "after": "MODEL_FOUND_NONE = 'the model found no change that could break %s: %s'   # PROOF-N, its reason",
             "aim": "plain",
             "before": "MODEL_FOUND_NONE = 'the model found no change that would break %s: %s'   # PROOF-N, its reason",
-            "break_key": "eeef72b673bd307b0f1c3e4c606d70afcb6309e7d3d40b3be470f1abbfd723f4",
+            "bug_key": "eeef72b673bd307b0f1c3e4c606d70afcb6309e7d3d40b3be470f1abbfd723f4",
             "case": "the model answers no break for PROOF-2; the proof says no_bug reads exactly \"No bug was planted: the model found no change that would break PROOF-2: ...\"; the changed code gives \"... no change that could break PROOF-2: ...\"",
             "file": "scripts/review/audit_run.py",
             "line": 71,
@@ -288,7 +288,7 @@
             "after": "        if made.get('why') != targeted_break.ERRORED:",
             "aim": "plain",
             "before": "        if made.get('why') == targeted_break.ERRORED:",
-            "break_key": "ff432dd0c6a49eb2a20e6eb787a5256d0fa0f09400320536114b19bd32ef5d4e",
+            "bug_key": "ff432dd0c6a49eb2a20e6eb787a5256d0fa0f09400320536114b19bd32ef5d4e",
             "case": "the planted bug makes the test end in an error; the proof says no_bug reads exactly \"A bug was planted for PROOF-2 and its test ended in an error, not a failure.\"; the changed code gives \"A bug was planted for PROOF-2 and its test did not run.\"",
             "file": "scripts/review/audit_run.py",
             "line": 289,
@@ -299,7 +299,7 @@
             "after": "    if survived:",
             "aim": "plain",
             "before": "    if spot or survived:",
-            "break_key": "cba60ad8182e4d25304922d4997987b6635860bb986947dc0d0789fc5b6e0840",
+            "bug_key": "cba60ad8182e4d25304922d4997987b6635860bb986947dc0d0789fc5b6e0840",
             "case": "a spot test finds the test checks nothing and the bug planted for PROOF-2 is caught; the proof says the entry reads weak; the changed code gives strong",
             "file": "scripts/review/audit_run.py",
             "line": 364,
@@ -310,7 +310,7 @@
             "after": "            if entry['result'] == 'caught':",
             "aim": "plain",
             "before": "            if entry['result'] == 'survived':",
-            "break_key": "317a5c91438dc8c40c3e70c504fe4674ed98e77f5a7d1ba09f2cd436209287f5",
+            "bug_key": "317a5c91438dc8c40c3e70c504fe4674ed98e77f5a7d1ba09f2cd436209287f5",
             "case": "no spot test fires and the bug planted for PROOF-2 survives; the proof says weak with the finding that the test still passes when src/login.py:12 reads \"return 200\"; the changed code gives spot-checked with no finding",
             "file": "scripts/review/audit_run.py",
             "line": 354,
@@ -321,7 +321,7 @@
             "after": "    if any(made.get('result') == 'survived' for made in breaks.values()):",
             "aim": "plain",
             "before": "    if any(made.get('result') == 'caught' for made in breaks.values()):",
-            "break_key": "2be35789bd736a550b2530ac95f79cd13d821ff90b5a2ab407b511efcfad6ab1",
+            "bug_key": "2be35789bd736a550b2530ac95f79cd13d821ff90b5a2ab407b511efcfad6ab1",
             "case": "no spot test fires, each planted bug is caught and claude answers that the rule is weak; the proof says the entry reads strong; the changed code gives spot-checked",
             "file": "scripts/review/audit_run.py",
             "line": 366,
@@ -350,12 +350,12 @@
       },
       "RULE-35": {
         "at": "2026-10-02T09:32:04Z",
-        "breaks": {
+        "bugs": {
           "PROOF-104": {
             "after": "           if rule.get('feature') == feature.get('name')\n           and not ai_audit.passes(rule)]",
             "aim": "plain",
             "before": "           if rule.get('feature') == feature.get('name')]",
-            "break_key": "b05751b54195cead6f29a4b6771e001e4dfa5d902eef213935b22ff6bfb9fdd0",
+            "bug_key": "b05751b54195cead6f29a4b6771e001e4dfa5d902eef213935b22ff6bfb9fdd0",
             "case": "four rules pass, three strong and one weak, and a fifth fails; the proof says the last line reads `The audit found 3 of 4 rules strong (75%): 3 strong, 1 weak.`; the changed code counts only the failing rule, so the line no longer names 3 of 4",
             "file": "scripts/review/audit_run.py",
             "line": 511,
@@ -366,7 +366,7 @@
             "after": "    return 'strong'",
             "aim": "plain",
             "before": "    return 'spot-checked'",
-            "break_key": "173745b59a1f80044bbc62888ece815154006239510c7147bbfd8cc19fbe9604",
+            "bug_key": "173745b59a1f80044bbc62888ece815154006239510c7147bbfd8cc19fbe9604",
             "case": "claude exits 1 and two passing rules are read with no spot test firing; the proof says `The audit found 0 of 2 rules strong (0%): 0 strong, 2 spot-checked.`; the changed code writes both rules strong, so the line reads 2 of 2 rules strong",
             "file": "scripts/review/audit_run.py",
             "line": 368,
@@ -377,7 +377,7 @@
             "after": "    return summary_module.audit_line(summary_module.audit_counts(own[1:]))",
             "aim": "plain",
             "before": "    return summary_module.audit_line(summary_module.audit_counts(own))",
-            "break_key": "37c61467433b6a8705930feb873a0b8c5acfed8c965db0bf24cc7fe53148dfdd",
+            "bug_key": "37c61467433b6a8705930feb873a0b8c5acfed8c965db0bf24cc7fe53148dfdd",
             "case": "two passing rules with a caught bug each, RULE-2 also checked by hand; the proof says `The audit found 1 of 1 rules strong (100%): 1 strong.`; the changed code leaves RULE-1 out of the count, so the line no longer names 1 of 1 strong",
             "file": "scripts/review/audit_run.py",
             "line": 512,
@@ -388,7 +388,7 @@
             "after": "    if counted_rules(payload, selected):",
             "aim": "plain",
             "before": "    if not counted_rules(payload, selected):",
-            "break_key": "c25d7dd7e9a631b2b71738c7268c4664316efde26c091eb29beb2b18a43d6ca4",
+            "bug_key": "c25d7dd7e9a631b2b71738c7268c4664316efde26c091eb29beb2b18a43d6ca4",
             "case": "five rules pass, four found strong and one weak; the proof says the last line reads `The audit found 4 of 5 rules strong (80%): 4 strong, 1 weak.`; the changed code prints `The audit found no rule that passes its tests.`",
             "file": "scripts/review/audit_run.py",
             "line": 505,
@@ -416,12 +416,12 @@
       },
       "RULE-36": {
         "at": "2026-10-02T09:32:04Z",
-        "breaks": {
+        "bugs": {
           "PROOF-100": {
             "after": "        if isinstance(kept, dict) and kept.get('break_key') != key:",
             "aim": "plain",
             "before": "        if isinstance(kept, dict) and kept.get('break_key') == key:",
-            "break_key": "06a2d20718ac4d31551e876a07ffe6ff9e535eda5746520b0ba2baafb2ed9bc1",
+            "bug_key": "06a2d20718ac4d31551e876a07ffe6ff9e535eda5746520b0ba2baafb2ed9bc1",
             "case": "a caught bug for PROOF-2, then only RULE-2's text changes; the proof says the request asks for no bug and the result stays caught; the changed code asks for a bug for PROOF-2 and plants it again",
             "file": "scripts/review/audit_run.py",
             "line": 277,
@@ -432,7 +432,7 @@
             "after": "                      _sha256(test.get('name') or ''))",
             "aim": "plain",
             "before": "                      _sha256(test.get('source') or ''))",
-            "break_key": "9e4bc5ad61d5aa17dcfd9fbc2ec8b16b5024dd2fa96405aa4941aa82f6f64581",
+            "bug_key": "9e4bc5ad61d5aa17dcfd9fbc2ec8b16b5024dd2fa96405aa4941aa82f6f64581",
             "case": "a caught bug for PROOF-2, then its test's body changes from == 401 to == 403; the proof says the next request asks for a bug for PROOF-2 and the break_key differs; the changed code keeps the old result, asks for no bug and leaves the break_key the same",
             "file": "scripts/review/audit_run.py",
             "line": 190,
@@ -461,12 +461,12 @@
       },
       "RULE-37": {
         "at": "2026-10-02T09:32:04Z",
-        "breaks": {
+        "bugs": {
           "PROOF-102": {
             "after": "ANCHOR = \"no bug is planted for an anchor rule\"",
             "aim": "plain",
             "before": "ANCHOR = \"no bug is planted for an anchor's rule\"",
-            "break_key": "a591e5e2d3ecd7bca7f0bffd9f8d6f2344c66a0d7f54dbb1d757da1ac1203333",
+            "bug_key": "a591e5e2d3ecd7bca7f0bffd9f8d6f2344c66a0d7f54dbb1d757da1ac1203333",
             "case": "the anchor `login` whose RULE-2 passes is audited; the proof says the one no_bug sentence is `No bug was planted: no bug is planted for an anchor's rule.`; the changed code gives `No bug was planted: no bug is planted for an anchor rule.`",
             "file": "scripts/review/audit_run.py",
             "line": 75,
@@ -477,7 +477,7 @@
             "after": "        if proof.get('env') and proof['env'] == here:",
             "aim": "plain",
             "before": "        if proof.get('env') and proof['env'] != here:",
-            "break_key": "a15e7f230fac8ec81a8743959a312f1cccedca4ad6d34d5e049acf48f5363ea0",
+            "bug_key": "a15e7f230fac8ec81a8743959a312f1cccedca4ad6d34d5e049acf48f5363ea0",
             "case": "on a machine that is not Windows, RULE-8's one proof PROOF-38 is tagged @env(windows); the proof says the request asks for no bug and no_bug reads `PROOF-38 needs Windows, and this machine is <its system>`; the changed code asks the model for a bug for PROOF-38 and writes no such sentence",
             "file": "scripts/review/audit_run.py",
             "line": 272,
@@ -508,12 +508,12 @@
       },
       "RULE-38": {
         "at": "2026-10-02T10:55:01Z",
-        "breaks": {
+        "bugs": {
           "PROOF-38": {
             "after": "            explanation.append(found.group(1))",
             "aim": "plain",
             "before": "            lines.append(found.group(1))",
-            "break_key": "5b023faa27b52076bafe297a84cd9c0714229f998ba3a3cf4547e68d5af4a1bf",
+            "bug_key": "5b023faa27b52076bafe297a84cd9c0714229f998ba3a3cf4547e68d5af4a1bf",
             "case": "claude answers `- The test reads the status.`, then `notes:` and `- PROOF-2 holds two cases.`; the proof says the explanation is the first sentence and the one note the second; the changed code gives an explanation of both sentences and no note",
             "file": "scripts/review/ai_audit.py",
             "line": 454,
@@ -524,7 +524,7 @@
             "after": "                 'findings': item['findings'] + list(answer.get('explanation') or []), 'no_bug': item['no_bug'],",
             "aim": "plain",
             "before": "                 'findings': item['findings'], 'no_bug': item['no_bug'],",
-            "break_key": "d6a785d12f036381bc297708c4577e63efd39ffddea00b3007efecc7a22d1f83",
+            "bug_key": "d6a785d12f036381bc297708c4577e63efd39ffddea00b3007efecc7a22d1f83",
             "case": "the spot tests find the checks-nothing sentence and claude answers `- The test calls login and reads no status.`; the proof says `findings` hold only the first sentence; the changed code puts the model's sentence in `findings` as well",
             "file": "scripts/review/audit_run.py",
             "line": 448,
@@ -551,12 +551,12 @@
       },
       "RULE-39": {
         "at": "2026-10-02T09:32:04Z",
-        "breaks": {
+        "bugs": {
           "PROOF-117": {
             "after": "    if not isinstance(body, dict):\n        found['why'] = EXITED",
             "aim": "plain",
             "before": "    if not isinstance(body, dict):\n        found['why'] = NO_ANSWER",
-            "break_key": "84d66b7bbc2d2b01879e8e13585e77b51c1a55676f8ca8e094bead848fbe9385",
+            "bug_key": "84d66b7bbc2d2b01879e8e13585e77b51c1a55676f8ca8e094bead848fbe9385",
             "case": "`claude` exits 0 and prints nothing; the proof says the audit prints `The model could not be reached: claude gave no answer. 1 rule is spot-checked alone. Run purlin:audit again.`; the changed code prints `claude exited with an error` as the reason",
             "file": "scripts/review/ai_audit.py",
             "line": 541,
@@ -567,7 +567,7 @@
             "after": "        return [{'why': EXITED} for _ in readings]",
             "aim": "plain",
             "before": "        return [{'why': NOT_ON_PATH} for _ in readings]",
-            "break_key": "cad8c12b80ff41ebf5c00e095a77e9aa108d5439446aba5a11fec729b49227ce",
+            "bug_key": "cad8c12b80ff41ebf5c00e095a77e9aa108d5439446aba5a11fec729b49227ce",
             "case": "no `claude` on the path and two rules handed over; the proof says each answer is only `claude is not on PATH`; the changed code gives `claude exited with an error` for each",
             "file": "scripts/review/ai_audit.py",
             "line": 583,
@@ -578,7 +578,7 @@
             "after": "    if result.returncode != 0:\n        found['why'] = NO_ANSWER",
             "aim": "plain",
             "before": "    if result.returncode != 0:\n        found['why'] = EXITED",
-            "break_key": "e8a904ca1a0e70733a5d3c16c5de13bdbc8be90ecdfeff355c280aaa2a44a1ca",
+            "bug_key": "e8a904ca1a0e70733a5d3c16c5de13bdbc8be90ecdfeff355c280aaa2a44a1ca",
             "case": "`claude` exits with the code 1 when asked about RULE-2; the proof says the answer is only `claude exited with an error`; the changed code gives `claude gave no answer`",
             "file": "scripts/review/ai_audit.py",
             "line": 534,
@@ -589,7 +589,7 @@
             "after": "        found['why'] = EXITED",
             "aim": "plain",
             "before": "        found['why'] = TIMED_OUT % MODEL_TIMEOUT",
-            "break_key": "a652b604fdf6943da091c64e52a237d452ce9f00e1a62c927d58856fc7e5bdc2",
+            "bug_key": "a652b604fdf6943da091c64e52a237d452ce9f00e1a62c927d58856fc7e5bdc2",
             "case": "the limit lowered to 1 second and a `claude` that takes 3 seconds; the proof says `claude timed out after 1 s`; the changed code gives `claude exited with an error`",
             "file": "scripts/review/ai_audit.py",
             "line": 527,
@@ -618,12 +618,12 @@
       },
       "RULE-4": {
         "at": "2026-10-02T15:39:26Z",
-        "breaks": {
+        "bugs": {
           "PROOF-113": {
             "after": "        parts.extend(line % ', '.join(plant[1:]) if '%s' in line else line",
             "aim": "plain",
             "before": "        parts.extend(line % ', '.join(plant) if '%s' in line else line",
-            "break_key": "ef26b801f3ff26e24fb38246ed7d4b24c98ab72b33b67cfe7757a570ec487f8d",
+            "bug_key": "ef26b801f3ff26e24fb38246ed7d4b24c98ab72b33b67cfe7757a570ec487f8d",
             "case": "RULE-1 has three proofs with tests and no planted bug on record; the proof says claude is started 1 time with a request naming PROOF-1, PROOF-2 and PROOF-3; the changed code's request names only PROOF-2 and PROOF-3",
             "file": "scripts/review/ai_audit.py",
             "line": 369,
@@ -634,7 +634,7 @@
             "after": "    if runner is None:\n        _call(prompt, command, subprocess.run, cwd)\n    return _call(prompt, command, runner or subprocess.run, cwd)",
             "aim": "past the test",
             "before": "    return _call(prompt, command, runner or subprocess.run, cwd)",
-            "break_key": "1195db66b50fa746d4a0685dbeff2f767cf76dfc06f52ef79215739298e85629",
+            "bug_key": "1195db66b50fa746d4a0685dbeff2f767cf76dfc06f52ef79215739298e85629",
             "case": "the audit is handed RULE-1 to RULE-6 and asks claude itself, with no stand-in runner; the proof says each rule is asked about exactly once; the changed code starts claude twice for each rule",
             "file": "scripts/review/ai_audit.py",
             "line": 514,
@@ -656,12 +656,12 @@
       },
       "RULE-40": {
         "at": "2026-10-02T15:39:26Z",
-        "breaks": {
+        "bugs": {
           "PROOF-34": {
             "after": "    return {'proof': proof_id, 'file': None,",
             "aim": "past the test",
             "before": "    return {'proof': proof_id, 'file': path or None,",
-            "break_key": "a57a26a0888f5492b91bdb250b814b030b0e1e8f470921e935c46e96344713f6",
+            "bug_key": "a57a26a0888f5492b91bdb250b814b030b0e1e8f470921e935c46e96344713f6",
             "case": "two passing tests of PROOF-1 in one file read for RULE-1; the proof says the reading lists exactly those two, each shown with its own source; the changed code lists both with no file, so each is shown as a hand check rather than as a test of that file",
             "file": "scripts/review/ai_audit.py",
             "line": 254,
@@ -672,7 +672,7 @@
             "after": "    return candidates[0][1]",
             "aim": "plain",
             "before": "    return candidates[0][1] if len(candidates) == 1 else None",
-            "break_key": "9dbbeb8a7f8c732a3ae1871eb1381c948c14f48859655da1b84919a72612e50a",
+            "bug_key": "9dbbeb8a7f8c732a3ae1871eb1381c948c14f48859655da1b84919a72612e50a",
             "case": "the evidence names test_renamed_away, which the file no longer holds; the proof says no source is shown under it; the changed code shows the source of test_valid_credentials_return_200 under it",
             "file": "scripts/review/marked_tests.py",
             "line": 122,
@@ -683,7 +683,7 @@
             "after": "            if name and any(wanted.endswith(sep + name)",
             "aim": "plain",
             "before": "            if name and any(bare.endswith(sep + name)",
-            "break_key": "f296ce1da1a6e7460663760d03cfaa170dc9b2b13b08c0fa2dc48b539831f934",
+            "bug_key": "f296ce1da1a6e7460663760d03cfaa170dc9b2b13b08c0fa2dc48b539831f934",
             "case": "the recorded name Acme.LoginTests.Denied(user: \"x\") with Allowed and Denied marked for one proof; the proof says the source read is Denied's own; the changed code finds no source at all",
             "file": "scripts/review/marked_tests.py",
             "line": 103,
@@ -705,12 +705,12 @@
       },
       "RULE-41": {
         "at": "2026-10-02T10:55:01Z",
-        "breaks": {
+        "bugs": {
           "PROOF-74": {
             "after": "            args.error = 'unknown argument %s' % item",
             "aim": "plain",
             "before": "            args.error = 'unexpected argument %s' % item",
-            "break_key": "819fbd01ecca65afc676835c3b84159b83aec2b5eed20b9c88510ae88e81fd02",
+            "bug_key": "819fbd01ecca65afc676835c3b84159b83aec2b5eed20b9c88510ae88e81fd02",
             "case": "the command run with `--nope`; the proof says it exits 2 and prints `ai_audit.py: unexpected argument --nope`; the changed code exits 2 and prints `ai_audit.py: unknown argument --nope`",
             "file": "scripts/review/ai_audit.py",
             "line": 695,
@@ -721,7 +721,7 @@
             "after": "NOT_A_RULE = ('%s %s is not a rule any spec has. Run purlin:status %s to see '\n              'the rules.')",
             "aim": "plain",
             "before": "NOT_A_RULE = ('%s %s is not a rule any spec has. Run purlin:status %s to see '\n              'its rules.')",
-            "break_key": "c2cbc0e24f228b3e8dcbfae196338c9860d8ab354abf68d532b6c643976e2cba",
+            "bug_key": "c2cbc0e24f228b3e8dcbfae196338c9860d8ab354abf68d532b6c643976e2cba",
             "case": "`--feature login --rule RULE-99`, a rule login does not declare; the proof says it prints `login RULE-99 is not a rule any spec has. Run purlin:status login to see its rules.`; the changed code prints `... Run purlin:status login to see the rules.`",
             "file": "scripts/review/ai_audit.py",
             "line": 70,
@@ -732,7 +732,7 @@
             "after": "    if problem:\n        print(problem)\n        return EXIT_BAD_INVOCATION",
             "aim": "plain",
             "before": "    if problem:\n        print(problem)\n        return EXIT_NOTHING",
-            "break_key": "6ab307088a0fff9c1b7f5f22462ac988baa5d94ae0fc693b1b98601649efbb34",
+            "bug_key": "6ab307088a0fff9c1b7f5f22462ac988baa5d94ae0fc693b1b98601649efbb34",
             "case": "`.purlin/config.json` with a comma after its last setting, run for `--feature login`; the proof says exit 1; the changed code exits 2",
             "file": "scripts/review/ai_audit.py",
             "line": 719,
@@ -762,12 +762,12 @@
       },
       "RULE-42": {
         "at": "2026-10-02T09:32:04Z",
-        "breaks": {
+        "bugs": {
           "PROOF-111": {
             "after": "        lines.extend('  %s' % line\n                     for line in audit.get('explanation') or ())",
             "aim": "plain",
             "before": "        lines.extend('    %s' % line\n                     for line in audit.get('explanation') or ())",
-            "break_key": "dd06c39a7e45cd11a3be81b6f6483b98e8fe69e3b951d705550777ac8514b288",
+            "bug_key": "dd06c39a7e45cd11a3be81b6f6483b98e8fe69e3b951d705550777ac8514b288",
             "case": "RULE-2's entry holds the explanation `The test calls login and reads no status.`; the proof says it prints indented four spaces, as `    The test calls login and reads no status.`, after the finding; the changed code prints it indented two spaces",
             "file": "scripts/review/ai_audit.py",
             "line": 634,
@@ -778,7 +778,7 @@
             "after": "        for note in audit.get('notes') or ('none',):",
             "aim": "plain",
             "before": "        for note in audit.get('notes') or ():",
-            "break_key": "6333b0cbe464251b817e299c77f847533bbf55a830c757e3bc1633eb8761b084",
+            "bug_key": "6333b0cbe464251b817e299c77f847533bbf55a830c757e3bc1633eb8761b084",
             "case": "RULE-2's audit entry holds one finding and no note; the proof says no `Note:` line is printed; the changed code prints `  Note: none` after the Read by line",
             "file": "scripts/review/ai_audit.py",
             "line": 639,
@@ -789,7 +789,7 @@
             "after": "    if claude_path():\n        subprocess.run([claude_path(), '--version'], capture_output=True)\n    payload = load_payload(args.project_root)",
             "aim": "past the test",
             "before": "    payload = load_payload(args.project_root)",
-            "break_key": "a966d039beba02a79ae9d85575c31cbb06b2a40b4523650b2e35d9c807c1f09e",
+            "bug_key": "a966d039beba02a79ae9d85575c31cbb06b2a40b4523650b2e35d9c807c1f09e",
             "case": "the command run as its own process for --feature login --rule RULE-1; the proof says no `claude` is started; the changed code starts the `claude` found on PATH with --version before printing",
             "file": "scripts/review/ai_audit.py",
             "line": 721,
@@ -800,7 +800,7 @@
             "after": "NO_TEST_YET = '  No test yet. Run purlin:status %s.'",
             "aim": "plain",
             "before": "NO_TEST_YET = '  No test yet. Run purlin:build %s.'",
-            "break_key": "76d9575af93a963a8bca65789cdebd8a0f5b95ea87176cdcea5cd7cdbaef1165",
+            "bug_key": "76d9575af93a963a8bca65789cdebd8a0f5b95ea87176cdcea5cd7cdbaef1165",
             "case": "RULE-3's one proof has no test marked; the proof says `  No test yet. Run purlin:build login.` under `Test`; the changed code prints `  No test yet. Run purlin:status login.`",
             "file": "scripts/review/ai_audit.py",
             "line": 114,
@@ -830,12 +830,12 @@
       },
       "RULE-43": {
         "at": "2026-10-02T10:55:01Z",
-        "breaks": {
+        "bugs": {
           "PROOF-108": {
             "after": "EXITED = 'claude exited with a failure'",
             "aim": "past the test",
             "before": "EXITED = 'claude exited with an error'",
-            "break_key": "97f33f7c5d69834f581327bfd3452851a28314cc11cb1d2f6f2899a1ef96ba2a",
+            "bug_key": "97f33f7c5d69834f581327bfd3452851a28314cc11cb1d2f6f2899a1ef96ba2a",
             "case": "claude exits 1 at every call with RULE-2 the one rule read; the proof says the audit prints `The model could not be reached: claude exited with an error. 1 rule is spot-checked alone. Run purlin:audit again.`; the changed code prints `The model could not be reached: claude exited with a failure. 1 r",
             "file": "scripts/review/ai_audit.py",
             "line": 104,
@@ -846,7 +846,7 @@
             "after": "                 'model': answer.get('model') if reached else 'none',",
             "aim": "plain",
             "before": "                 'model': answer.get('model') if reached else 'unknown',",
-            "break_key": "da69f71a90d08194ef9a1fbb2639fd77a58ed0a95f0c826b2bf44d7972001db3",
+            "bug_key": "da69f71a90d08194ef9a1fbb2639fd77a58ed0a95f0c826b2bf44d7972001db3",
             "case": "claude exits 1 and the spot tests find that the test checks nothing; the proof says the entry's model reads unknown; the changed code records none",
             "file": "scripts/review/audit_run.py",
             "line": 452,
@@ -857,7 +857,7 @@
             "after": "ALONE_MANY = ' %d rules were spot-checked alone.'",
             "aim": "plain",
             "before": "ALONE_MANY = ' %d rules are spot-checked alone.'",
-            "break_key": "4079b1eb1578e468711c64e213476b8e27bd8f69369b51933a4e52d4f10dc650",
+            "bug_key": "4079b1eb1578e468711c64e213476b8e27bd8f69369b51933a4e52d4f10dc650",
             "case": "claude exits 1 with two passing rules read; the proof says the audit prints 2 rules are spot-checked alone; the changed code prints 2 rules were spot-checked alone",
             "file": "scripts/review/audit_run.py",
             "line": 62,
@@ -868,7 +868,7 @@
             "after": "            if value.get('result') == 'caught':",
             "aim": "plain",
             "before": "            if value.get('result') == 'survived':",
-            "break_key": "429b93eaaef712589d3d0a156d3ada627d468d39b7142eb401463c98ba319f21",
+            "bug_key": "429b93eaaef712589d3d0a156d3ada627d468d39b7142eb401463c98ba319f21",
             "case": "a kept bug for PROOF-2 reads survived and claude exits 1; the proof says RULE-2 reads weak with the still-passes finding; the changed code gives spot-checked with no finding",
             "file": "scripts/review/audit_run.py",
             "line": 336,
@@ -897,12 +897,12 @@
       },
       "RULE-44": {
         "at": "2026-10-02T09:32:04Z",
-        "breaks": {
+        "bugs": {
           "PROOF-120": {
             "after": "NO_BUG = 'No bug planted: %s.'",
             "aim": "plain",
             "before": "NO_BUG = 'No bug was planted: %s.'",
-            "break_key": "ba71eae6be3c172a2a2b5efcd1b90133c1bb4a029e83dd35581d0333b70907b8",
+            "bug_key": "ba71eae6be3c172a2a2b5efcd1b90133c1bb4a029e83dd35581d0333b70907b8",
             "case": "RULE-1 has PROOF-1 and PROOF-2 and the reply holds a part only for PROOF-1; the proof says no_bug is exactly `No bug was planted: the model's answer for PROOF-2 could not be used: it holds none.`; the changed code gives `No bug planted: the model's answer for PROOF-2 could not be used: it holds none",
             "file": "scripts/review/audit_run.py",
             "line": 70,
@@ -928,12 +928,12 @@
       },
       "RULE-46": {
         "at": "2026-10-02T09:32:04Z",
-        "breaks": {
+        "bugs": {
           "PROOF-125": {
             "after": "    \"Each proof's test is shown below. For each proof, make the smallest \"",
             "aim": "plain",
             "before": "    \"Each proof's test is shown above. For each proof, make the smallest \"",
-            "break_key": "e309453abd81145f3e95c3f41b2b10ff5f9cf8323c6b870262e4a0fa8dcd2e7a",
+            "bug_key": "e309453abd81145f3e95c3f41b2b10ff5f9cf8323c6b870262e4a0fa8dcd2e7a",
             "case": "the request for sample_intake RULE-3; the proof says it holds `Each proof's test is shown above.`; the changed code gives `Each proof's test is shown below.`",
             "file": "scripts/review/ai_audit.py",
             "line": 268,
@@ -944,7 +944,7 @@
             "after": "    'is likely to miss: a value it never compares, a case other than '",
             "aim": "plain",
             "before": "    'is most likely to miss: a value it never compares, a case other than '",
-            "break_key": "7e95eebc1f9aee97afa80eef8565673a14dcea68b832a6cafe5beee0e812a106",
+            "bug_key": "7e95eebc1f9aee97afa80eef8565673a14dcea68b832a6cafe5beee0e812a106",
             "case": "the request for sample_intake RULE-3; the proof says it holds `Choose the change the proof's test, as it is written, is most likely to miss: ...`; the changed code gives `... as it is written, is likely to miss: ...`",
             "file": "scripts/review/ai_audit.py",
             "line": 274,
@@ -955,7 +955,7 @@
             "after": "    \"simplest such change. Never a change that leaves the proof's case as it \"",
             "aim": "plain",
             "before": "    \"plainest such change. Never a change that leaves the proof's case as it \"",
-            "break_key": "fa86574f411a37de62635581dfe176a6abfe797cea0a02a04848b94966dc43d0",
+            "bug_key": "fa86574f411a37de62635581dfe176a6abfe797cea0a02a04848b94966dc43d0",
             "case": "the request for sample_intake RULE-3; the proof says it holds `Where the test checks the proof's case and its result, make the plainest such change.`; the changed code gives `... make the simplest such change.`",
             "file": "scripts/review/ai_audit.py",
             "line": 278,
@@ -983,12 +983,12 @@
       },
       "RULE-47": {
         "at": "2026-10-02T09:32:04Z",
-        "breaks": {
+        "bugs": {
           "PROOF-128": {
             "after": "    'aim: <past the test or plain>',",
             "aim": "plain",
             "before": "    'aim: <past the test, or plain>',",
-            "break_key": "411d84b3a4c26acd5c1de50b6b07b0b77f5c5f225da07fcc1a615bc43c038c1e",
+            "bug_key": "411d84b3a4c26acd5c1de50b6b07b0b77f5c5f225da07fcc1a615bc43c038c1e",
             "case": "the request for sample_intake RULE-3; the proof says the part shows `aim: <past the test, or plain>` after `=== PROOF-5 ===`; the changed code gives `aim: <past the test or plain>`",
             "file": "scripts/review/ai_audit.py",
             "line": 295,
@@ -1013,12 +1013,12 @@
       },
       "RULE-48": {
         "at": "2026-10-02T09:32:04Z",
-        "breaks": {
+        "bugs": {
           "PROOF-129": {
             "after": "                     'case': '',",
             "aim": "plain",
             "before": "                     'case': result.get('case') or '',",
-            "break_key": "e2926c2986c8a43d86ad34258ac32c199859f9865ef80269e93581713e5a84ed",
+            "bug_key": "e2926c2986c8a43d86ad34258ac32c199859f9865ef80269e93581713e5a84ed",
             "case": "the part for PROOF-5 reads aim: past the test and the 25-hour case line; the proof says the entry under breaks holds that case; the changed code gives an empty case",
             "file": "scripts/review/audit_run.py",
             "line": 347,
@@ -1029,7 +1029,7 @@
             "after": "            entry = {'aim': 'past the test',",
             "aim": "plain",
             "before": "            entry = {'aim': result.get('aim') or targeted_break.PLAIN,",
-            "break_key": "5655d128684a763758a628158bd410dff128c6d6b26d566b3922fe86b0386897",
+            "bug_key": "5655d128684a763758a628158bd410dff128c6d6b26d566b3922fe86b0386897",
             "case": "the part for PROOF-6 reads aim: plain; the proof says the entry of PROOF-6 under breaks reads aim plain; the changed code gives past the test",
             "file": "scripts/review/audit_run.py",
             "line": 346,
@@ -1060,12 +1060,12 @@
       },
       "RULE-49": {
         "at": "2026-10-02T09:32:04Z",
-        "breaks": {
+        "bugs": {
           "PROOF-131": {
             "after": "    if spot:",
             "aim": "plain",
             "before": "    if spot or survived:",
-            "break_key": "d75bfe5ddd2119a2c7bec8395cc57389a0fe03cacf73d0a9122b899914bcef12",
+            "bug_key": "d75bfe5ddd2119a2c7bec8395cc57389a0fe03cacf73d0a9122b899914bcef12",
             "case": "the bug that rounds the age helper to the nearest hour survives the test of PROOF-5; the proof says sample_intake RULE-3 reads weak; the changed code gives spot-checked",
             "file": "scripts/review/audit_run.py",
             "line": 364,
@@ -1076,7 +1076,7 @@
             "after": "        found.insert(0, targeted_break.AI_SAYS % (proof_id, case))",
             "aim": "plain",
             "before": "        found.append(targeted_break.AI_SAYS % (proof_id, case))",
-            "break_key": "829dd9b309db6616e3cc43c4e20d12d74af8f734d0e5fc628a905e5266cfb963",
+            "bug_key": "829dd9b309db6616e3cc43c4e20d12d74af8f734d0e5fc628a905e5266cfb963",
             "case": "the survived bug of PROOF-5 printed under sample_intake RULE-3; the proof says the AI's case is on the line after the finding; the changed code prints the AI's case on the line before the finding",
             "file": "scripts/review/audit_run.py",
             "line": 248,
@@ -1087,7 +1087,7 @@
             "after": "    case = str(made.get('case') or '').replace('`', '').strip()",
             "aim": "plain",
             "before": "    case = str(made.get('case') or '').strip()",
-            "break_key": "23b5fb8f100a367a2cdceb3c47f7be4081b3894dcaa9afe11b058bcbf731a760",
+            "bug_key": "23b5fb8f100a367a2cdceb3c47f7be4081b3894dcaa9afe11b058bcbf731a760",
             "case": "the survived bug of PROOF-3 that stores nothing; the proof says the second finding carries the model's case word for word, ending with `received` in backticks; the changed code drops the backticks from the case",
             "file": "scripts/review/audit_run.py",
             "line": 246,
@@ -1098,7 +1098,7 @@
             "after": "            if value.get('result') == 'caught':",
             "aim": "plain",
             "before": "            if value.get('result') == 'survived':",
-            "break_key": "42d5ea1f50df474355e33a9662942c652c1ae3b297640888f4231233e87d3165",
+            "bug_key": "42d5ea1f50df474355e33a9662942c652c1ae3b297640888f4231233e87d3165",
             "case": "the lab project audited again with nothing changed; the proof says the entry of RULE-3 holds the same two findings for PROOF-5; the changed code gives the kept survived bug no findings",
             "file": "scripts/review/audit_run.py",
             "line": 336,
@@ -1133,12 +1133,12 @@
       },
       "RULE-50": {
         "at": "2026-10-02T09:32:04Z",
-        "breaks": {
+        "bugs": {
           "PROOF-135": {
             "after": "            if entry['result'] in ('survived', 'caught'):",
             "aim": "plain",
             "before": "            if entry['result'] == 'survived':",
-            "break_key": "a3c3746d1996e808ab86de771a7aa7cae69171778db60b6ca7c2de5d344cc849",
+            "bug_key": "a3c3746d1996e808ab86de771a7aa7cae69171778db60b6ca7c2de5d344cc849",
             "case": "the bug for PROOF-6 sets the limit to 73 hours and its test catches it; the proof says RULE-4 reads strong with empty findings and no printed line naming PROOF-6; the changed code gives weak with a \"PROOF-6: the test still passes when\" finding that is printed",
             "file": "scripts/review/audit_run.py",
             "line": 354,
@@ -1167,12 +1167,12 @@
       },
       "RULE-6": {
         "at": "2026-10-02T09:32:04Z",
-        "breaks": {
+        "bugs": {
           "PROOF-20": {
             "after": "            'model': called['model'], 'criteria': criteria_hash(prompt)}",
             "aim": "plain",
             "before": "            'model': called['model'], 'criteria': criteria_hash(criteria)}",
-            "break_key": "556c93d3bec954386466c6e8a9ee0ad4790490c415b130ba302651138d9ba253",
+            "bug_key": "556c93d3bec954386466c6e8a9ee0ad4790490c415b130ba302651138d9ba253",
             "case": "claude answers about RULE-2 naming claude-opus-4-1-20250805; the proof says the answer carries the sha256 of the criteria text it was sent; the changed code carries the sha256 of the whole request",
             "file": "scripts/review/ai_audit.py",
             "line": 569,
@@ -1183,7 +1183,7 @@
             "after": "            return ((tokens if isinstance(tokens, (int, float)) else 0), name)",
             "aim": "plain",
             "before": "            return (-(tokens if isinstance(tokens, (int, float)) else 0), name)",
-            "break_key": "341d0064214acef09ec84c5be8ba8bf34242134c1818b54db17bd374867183ba",
+            "bug_key": "341d0064214acef09ec84c5be8ba8bf34242134c1818b54db17bd374867183ba",
             "case": "JSON naming claude-haiku-3-5 with 12 output tokens and claude-opus-4-1 with 900; the proof says claude-opus-4-1; the changed code gives claude-haiku-3-5",
             "file": "scripts/review/ai_audit.py",
             "line": 473,
@@ -1194,7 +1194,7 @@
             "after": "        return sorted(usage, key=weight)[0]\n    return ''",
             "aim": "plain",
             "before": "        return sorted(usage, key=weight)[0]\n    return 'unknown'",
-            "break_key": "a07028bbb79f384293b8786536cc0d3d56fdd0be6749fbbd06d1af909b42fed3",
+            "bug_key": "a07028bbb79f384293b8786536cc0d3d56fdd0be6749fbbd06d1af909b42fed3",
             "case": "claude answers about RULE-2 with JSON that names no model; the proof says the answer names unknown; the changed code names an empty string",
             "file": "scripts/review/ai_audit.py",
             "line": 475,

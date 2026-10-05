@@ -3,12 +3,12 @@
     "rules": {
       "RULE-1": {
         "at": "2026-10-02T09:24:26Z",
-        "breaks": {
+        "bugs": {
           "PROOF-1": {
             "after": "CHECKS_NOTHING = '%s::%s: the test checks nothing'",
             "aim": "plain",
             "before": "CHECKS_NOTHING = '%s::%s: the test checks nothing.'",
-            "break_key": "bedc7a0b135021dfb028f520c923b2b0d6cc986a890182a89b3a7f9f3f13ebd9",
+            "bug_key": "bedc7a0b135021dfb028f520c923b2b0d6cc986a890182a89b3a7f9f3f13ebd9",
             "case": "test_age calls age(\"2026-01-01\") and asserts nothing; the proof says the finding is `tests/test_age.py::test_age: the test checks nothing.`; the changed code gives `tests/test_age.py::test_age: the test checks nothing` with no full stop",
             "file": "scripts/review/plain_checks.py",
             "line": 47,
@@ -19,7 +19,7 @@
             "after": "        if not text or asserts.search(text):",
             "aim": "plain",
             "before": "        if not text or not asserts.search(text):",
-            "break_key": "bbe07abe67ad522241af60ca62bcbc014b9960b4c69732ecfe1ebe4d443842d6",
+            "bug_key": "bbe07abe67ad522241af60ca62bcbc014b9960b4c69732ecfe1ebe4d443842d6",
             "case": "test_age asserts nothing and calls check_age() imported from tests/helpers.py, which asserts; the proof says nothing is found; the changed code gives `tests/test_age.py::test_age: the test checks nothing.`",
             "file": "scripts/review/plain_checks.py",
             "line": 272,
@@ -30,7 +30,7 @@
             "after": "        return (name.startswith('assert') or name in ('warns', 'fail')",
             "aim": "plain",
             "before": "        return (name.startswith('assert') or name in ('raises', 'warns', 'fail')",
-            "break_key": "352528ee41fbb6b693c53dd6733fc4828f81c51f470d4e12a1853dac2d261738",
+            "bug_key": "352528ee41fbb6b693c53dd6733fc4828f81c51f470d4e12a1853dac2d261738",
             "case": "test_bad_zone holds only a pytest.raises(ValueError) block around age(\"2026-01-01\", zone=\"Mars\"); the proof says nothing is found; the changed code gives `tests/test_age.py::test_bad_zone: the test checks nothing.`",
             "file": "scripts/review/plain_checks.py",
             "line": 452,
@@ -59,12 +59,12 @@
       },
       "RULE-10": {
         "at": "2026-10-02T09:24:26Z",
-        "breaks": {
+        "bugs": {
           "PROOF-31": {
             "after": "NOT_FOUND = '%s::%s: its source was not found, so the spot tests did not read it'",
             "aim": "plain",
             "before": "NOT_FOUND = '%s::%s: its source was not found, so the spot tests did not read it.'",
-            "break_key": "4903883af5114b6cb34fb6179e697b1bc655b54c076ebbd7a78523378d5c9aa4",
+            "bug_key": "4903883af5114b6cb34fb6179e697b1bc655b54c076ebbd7a78523378d5c9aa4",
             "case": "the evidence names test_renamed_away, which tests/test_login.py no longer holds; the proof says the line `tests/test_login.py::test_renamed_away: its source was not found, so the spot tests did not read it.` is printed exactly once; the changed code prints `tests/test_login.py::test_renamed_away: it",
             "file": "scripts/review/plain_checks.py",
             "line": 43,
@@ -90,12 +90,12 @@
       },
       "RULE-2": {
         "at": "2026-10-02T09:24:26Z",
-        "breaks": {
+        "bugs": {
           "PROOF-10": {
             "after": "        left, right = values[0], values[1]\n        if isinstance(kind, ast.IsNot):\n            return True",
             "aim": "plain",
             "before": "        left, right = values[0], values[1]",
-            "break_key": "0c1025197541bf986ccbb3b58ad068011a244b3a10279b20ea684c771c758526",
+            "bug_key": "0c1025197541bf986ccbb3b58ad068011a244b3a10279b20ea684c771c758526",
             "case": "test_age holds only `assert result is not None`; the proof says nothing is found; the changed code gives `tests/test_age.py::test_age: the check cannot fail: assert result is not None.`",
             "file": "scripts/review/plain_checks.py",
             "line": 529,
@@ -106,7 +106,7 @@
             "after": "_EQUALS = frozenset(('toEqual', 'toStrictEqual', 'equal', 'strictEqual', 'deepEqual',",
             "aim": "plain",
             "before": "_EQUALS = frozenset(('toBe', 'toEqual', 'toStrictEqual', 'equal', 'strictEqual', 'deepEqual',",
-            "break_key": "99eeae8769981e876041a30b0ebbd488b4dc29bf97449bb6038138c141e7c9c3",
+            "bug_key": "99eeae8769981e876041a30b0ebbd488b4dc29bf97449bb6038138c141e7c9c3",
             "case": "tests/age.test.ts holds the test `age` with `expect(true).toBe(true)`; the proof says the finding `tests/age.test.ts::age: the check cannot fail: expect(true).toBe(true).`; the changed code gives no finding",
             "file": "scripts/review/plain_checks.py",
             "line": 716,
@@ -117,7 +117,7 @@
             "after": "        if same and (isinstance(kind, (ast.Is, ast.LtE, ast.GtE)) or kind in (",
             "aim": "plain",
             "before": "        if same and (isinstance(kind, (ast.Eq, ast.Is, ast.LtE, ast.GtE)) or kind in (",
-            "break_key": "8dc0b8c1cfd7e312fd8d19980d119f7060cc57b8f28583dd50b05e66db886264",
+            "bug_key": "8dc0b8c1cfd7e312fd8d19980d119f7060cc57b8f28583dd50b05e66db886264",
             "case": "test_age holds `assert days == days`; the proof says the finding `tests/test_age.py::test_age: the check cannot fail: assert days == days.`; the changed code gives no finding",
             "file": "scripts/review/plain_checks.py",
             "line": 530,
@@ -145,12 +145,12 @@
       },
       "RULE-3": {
         "at": "2026-10-02T09:24:26Z",
-        "breaks": {
+        "bugs": {
           "PROOF-13": {
             "after": "                if all(isinstance(stmt, ast.Break) or",
             "aim": "plain",
             "before": "                if all(isinstance(stmt, ast.Pass) or",
-            "break_key": "5a19bf706eebf9dd0b5e791ec3baa6f87b02d1378429fba208d285c848fc7a47",
+            "bug_key": "5a19bf706eebf9dd0b5e791ec3baa6f87b02d1378429fba208d285c848fc7a47",
             "case": "test_bad_zone calls age inside a try whose except ValueError: holds only pass; the proof says the finding is tests/test_age.py::test_bad_zone: the test swallows the error the code raises.; the changed code gives no such finding",
             "file": "scripts/review/plain_checks.py",
             "line": 551,
@@ -161,7 +161,7 @@
             "after": "                if all(isinstance(stmt, (ast.Pass, ast.Assert)) or",
             "aim": "plain",
             "before": "                if all(isinstance(stmt, ast.Pass) or",
-            "break_key": "128ba66a604f0e37637ccdd31f890e48098f5433c43c65f82f3f22b53ebf2fb1",
+            "bug_key": "128ba66a604f0e37637ccdd31f890e48098f5433c43c65f82f3f22b53ebf2fb1",
             "case": "test_bad_zone calls age inside a try whose except ValueError as e: holds assert \"zone\" in str(e); the proof says nothing is found; the changed code gives tests/test_age.py::test_bad_zone: the test swallows the error the code raises.",
             "file": "scripts/review/plain_checks.py",
             "line": 551,
@@ -172,7 +172,7 @@
             "after": "                if mask[start + 1:end - 1].strip():",
             "aim": "plain",
             "before": "                if not mask[start + 1:end - 1].strip():",
-            "break_key": "072eb272808c398a065496fb04928f0bbe35f2560b3e229ec9206ed5038a07f3",
+            "bug_key": "072eb272808c398a065496fb04928f0bbe35f2560b3e229ec9206ed5038a07f3",
             "case": "Tests/AgeTests.cs holds BadZone calling Age inside a try whose catch { } is empty; the proof says the finding is Tests/AgeTests.cs::BadZone: the test swallows the error the code raises.; the changed code gives no finding",
             "file": "scripts/review/plain_checks.py",
             "line": 878,
@@ -200,12 +200,12 @@
       },
       "RULE-4": {
         "at": "2026-10-02T09:24:26Z",
-        "breaks": {
+        "bugs": {
           "PROOF-18": {
             "after": "            return None",
             "aim": "plain",
             "before": "            return bound.get(node.id)",
-            "break_key": "43be6b3c2c8725427cb6de26b84875ce503be24ef05ddccd169cec64df983957",
+            "bug_key": "43be6b3c2c8725427cb6de26b84875ce503be24ef05ddccd169cec64df983957",
             "case": "test_age holds `expected = age(s)` then `assert age(s) == expected`; the proof says the finding `tests/test_age.py::test_age: the expected value comes from age(), the code under test.`; the changed code gives no finding",
             "file": "scripts/review/plain_checks.py",
             "line": 580,
@@ -216,7 +216,7 @@
             "after": "            if _callee(first) and _callee(second) and not any(",
             "aim": "plain",
             "before": "            if _callee(first) and ast.dump(first) == ast.dump(second) and not any(",
-            "break_key": "10d896dd6a2a90b3d9c9eaa05faa4b2f7626e4495cb94b3d700c98b9497ed2e7",
+            "bug_key": "10d896dd6a2a90b3d9c9eaa05faa4b2f7626e4495cb94b3d700c98b9497ed2e7",
             "case": "test_age holds `assert age(s) == days_between(s, today)`; the proof says nothing is found; the changed code gives the finding `tests/test_age.py::test_age: the expected value comes from age(), the code under test.`",
             "file": "scripts/review/plain_checks.py",
             "line": 596,
@@ -227,7 +227,7 @@
             "after": "            if first and second and first[1] != second[1] and not (",
             "aim": "plain",
             "before": "            if first and second and first[1] == second[1] and not (",
-            "break_key": "8bf114df4177e46310e61a4c3de413f48b96b6fa952d2881b62a431bb239673d",
+            "bug_key": "8bf114df4177e46310e61a4c3de413f48b96b6fa952d2881b62a431bb239673d",
             "case": "tests/age.test.ts holds the test `age` with `const expected = age(s)` then `expect(age(s)).toBe(expected)`; the proof says the finding `tests/age.test.ts::age: the expected value comes from age(), the code under test.`; the changed code gives no finding",
             "file": "scripts/review/plain_checks.py",
             "line": null,
@@ -257,12 +257,12 @@
       },
       "RULE-5": {
         "at": "2026-10-02T09:24:26Z",
-        "breaks": {
+        "bugs": {
           "PROOF-22": {
             "after": "            if parts[-1] == 'patched' and child.args:",
             "aim": "plain",
             "before": "            if parts[-1] == 'patch' and child.args:",
-            "break_key": "24b3cda2a231bff4f67699a6ddfddd835126c61cd5affaa3a9f3d74ca76aa97a",
+            "bug_key": "24b3cda2a231bff4f67699a6ddfddd835126c61cd5affaa3a9f3d74ca76aa97a",
             "case": "test_age patches app.age to return 90 and asserts age(s) == 90; the proof says the finding is `tests/test_age.py::test_age: the test mocks age(), the function it checks.`; the changed code finds nothing",
             "file": "scripts/review/plain_checks.py",
             "line": 623,
@@ -273,7 +273,7 @@
             "after": "            if target:\n                return MOCKS_IT, (target,)\n        return None\n\n\n# ---------------------------------------------------------------------------\n# JavaScript, TypeScript, C#, Go and shell, by their tokens",
             "aim": "plain",
             "before": "            if target in checked:\n                return MOCKS_IT, (target,)\n        return None\n\n\n# ---------------------------------------------------------------------------\n# JavaScript, TypeScript, C#, Go and shell, by their tokens",
-            "break_key": "99e1a3430e64480eaeea21f32843cb97e53e4b03496e9106698dd73426744adb",
+            "bug_key": "99e1a3430e64480eaeea21f32843cb97e53e4b03496e9106698dd73426744adb",
             "case": "test_age patches app.clock.now to a fixed date and asserts age(s) == 90; the proof says nothing is found; the changed code gives `tests/test_age.py::test_age: the test mocks now(), the function it checks.`",
             "file": "scripts/review/plain_checks.py",
             "line": 642,
@@ -284,7 +284,7 @@
             "after": "                if len(call.args) > 2:",
             "aim": "plain",
             "before": "                if len(call.args) > 1:",
-            "break_key": "424588b57ea4464ce139e6d4aca76b8bb6d2d2424f8ed4372383186755cbec32",
+            "bug_key": "424588b57ea4464ce139e6d4aca76b8bb6d2d2424f8ed4372383186755cbec32",
             "case": "tests/age.test.ts test `age` spies on lib.age with mockReturnValue(90) and expects lib.age(s) to be 90; the proof says the finding is `tests/age.test.ts::age: the test mocks age(), the function it checks.`; the changed code finds nothing",
             "file": "scripts/review/plain_checks.py",
             "line": 950,
@@ -312,12 +312,12 @@
       },
       "RULE-6": {
         "at": "2026-10-02T09:24:26Z",
-        "breaks": {
+        "bugs": {
           "PROOF-25": {
             "after": "    return None",
             "aim": "plain",
             "before": "    return values[0]",
-            "break_key": "eb418329923846473e561557d8108be939f40adda23bcafc38afc166b6f32b5b",
+            "bug_key": "eb418329923846473e561557d8108be939f40adda23bcafc38afc166b6f32b5b",
             "case": "the proof reads \"has an age of `90` minutes\" and tests/test_age.py holds no 90; the proof says the finding is \"tests/test_age.py::test_age: the proof expects 90 and the test never checks it.\"; the changed code finds nothing",
             "file": "scripts/review/plain_checks.py",
             "line": 302,
@@ -328,7 +328,7 @@
             "after": "        return any(n == value for n in _NUMBERS_RE.findall(body))",
             "aim": "plain",
             "before": "        return any(float(n) == wanted for n in _NUMBERS_RE.findall(body))",
-            "break_key": "2200c3d928ff0da688239989183cbcfcf577e19cd83d9edad7588bc000d0b9db",
+            "bug_key": "2200c3d928ff0da688239989183cbcfcf577e19cd83d9edad7588bc000d0b9db",
             "case": "the proof reads \"has an age of `90` minutes\" and tests/test_age.py holds assert minutes == 90.0; the proof says nothing is found; the changed code gives the finding that the proof expects 90 and the test never checks it",
             "file": "scripts/review/plain_checks.py",
             "line": 320,
@@ -339,7 +339,7 @@
             "after": "_DATA_FILE_RE = re.compile(r'[\"\\'`]([^\"\\'`\\s]+\\.(?:ya?ml|csv|tsv|txt|xml|toml|ini))[\"\\'`]')",
             "aim": "plain",
             "before": "_DATA_FILE_RE = re.compile(r'[\"\\'`]([^\"\\'`\\s]+\\.(?:json|ya?ml|csv|tsv|txt|xml|toml|ini))[\"\\'`]')",
-            "break_key": "99d524dfb151bd03f1a49812a0615321a006d07739935d94328f297abe384ff7",
+            "bug_key": "99d524dfb151bd03f1a49812a0615321a006d07739935d94328f297abe384ff7",
             "case": "tests/test_age.py holds no 90 but names tests/data/ages.json, which holds 90; the proof says nothing is found; the changed code no longer reads a .json file and gives the finding that the proof expects 90 and the test never checks it",
             "file": "scripts/review/plain_checks.py",
             "line": 90,
@@ -350,7 +350,7 @@
             "after": "_BACKTICK_RE = re.compile(r'`([^`]+)`')",
             "aim": "plain",
             "before": "_BACKTICK_RE = re.compile(r'`([^`]*)`')",
-            "break_key": "bbe1e0ff9f4b06a5cba5cdad042ded81b15422244b95459f7efe013ede195e40",
+            "bug_key": "bbe1e0ff9f4b06a5cba5cdad042ded81b15422244b95459f7efe013ede195e40",
             "case": "the proof holds an empty pair of backticks and `barcode is required`, and tests/test_intake.py holds barcode is required; the proof says nothing is found; the changed code pairs the backticks wrongly and gives the finding that the proof expects \"is handed in; it is refused with\"",
             "file": "scripts/review/plain_checks.py",
             "line": 95,
@@ -379,12 +379,12 @@
       },
       "RULE-7": {
         "at": "2026-10-02T09:24:26Z",
-        "breaks": {
+        "bugs": {
           "PROOF-28": {
             "after": "                        if key not in said:\n                            print(NOT_READ % key, file=out)",
             "aim": "plain",
             "before": "                        if key not in said:\n                            said.add(key)\n                            print(NOT_READ % key, file=out)",
-            "break_key": "c961cdb5c8e058c095bfdcaa1dcca7bddac61bf7941fa2d179c658841eb25df2",
+            "bug_key": "c961cdb5c8e058c095bfdcaa1dcca7bddac61bf7941fa2d179c658841eb25df2",
             "case": "a project whose marked tests are two shell tests; the proof says the line `The test replaces what it is testing is not read in shell tests.` is printed exactly once; the changed code prints it twice, once for each shell test",
             "file": "scripts/review/plain_checks.py",
             "line": 188,
@@ -411,12 +411,12 @@
       },
       "RULE-9": {
         "at": "2026-10-02T09:24:26Z",
-        "breaks": {
+        "bugs": {
           "PROOF-30": {
             "after": "    subprocess.run(['claude', '--version'], capture_output=True)\n    specs = specs_module.scan_specs(project_root)",
             "aim": "plain",
             "before": "    specs = specs_module.scan_specs(project_root)",
-            "break_key": "38aecc7f6d29982441333fd3c8f62510438d66a7aa2f717084fab0494ce2b861",
+            "bug_key": "38aecc7f6d29982441333fd3c8f62510438d66a7aa2f717084fab0494ce2b861",
             "case": "the spot tests read every marked test of a three-feature project with a recording `claude` on the path; the proof says `claude` is started 0 times; the changed code starts it 1 time",
             "file": "scripts/review/plain_checks.py",
             "line": 160,

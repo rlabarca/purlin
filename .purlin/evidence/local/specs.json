@@ -3,12 +3,12 @@
     "rules": {
       "RULE-10": {
         "at": "2026-10-02T09:32:59Z",
-        "breaks": {
+        "bugs": {
           "PROOF-11": {
             "after": "    if path_match and source_path:",
             "aim": "plain",
             "before": "    if path_match and not source_path:",
-            "break_key": "90dcd4e987670ea4d9843fe8ccaaeac0a3b1249df3d18e2075537cb43c489d6c",
+            "bug_key": "90dcd4e987670ea4d9843fe8ccaaeac0a3b1249df3d18e2075537cb43c489d6c",
             "case": "an anchor with `> Source: https://github.com/acme/p.git` alone and `> Path: specs/no_eval.md`; the proof says the path is specs/no_eval.md; the changed code gives no path (None)",
             "file": "scripts/mcp/purlin/specs.py",
             "line": 402,
@@ -33,12 +33,12 @@
       },
       "RULE-11": {
         "at": "2026-10-02T09:32:59Z",
-        "breaks": {
+        "bugs": {
           "PROOF-12": {
             "after": "        return parts[0], None",
             "aim": "plain",
             "before": "        return parts[0], parts[1].strip()",
-            "break_key": "c03370cb1a9d48a183f976aab72d524defcb1e0717217d4ca63cd6c67e639235",
+            "bug_key": "c03370cb1a9d48a183f976aab72d524defcb1e0717217d4ca63cd6c67e639235",
             "case": "the spec `specs/_anchors/policy.md` with `> Source: https://github.com/acme/p.git specs/no_eval.md`; the proof says the path `specs/no_eval.md`; the changed code gives no path (None)",
             "file": "scripts/mcp/purlin/specs.py",
             "line": 253,
@@ -49,7 +49,7 @@
             "after": "    is_anchor = ('/_anchor/' in rel_path",
             "aim": "plain",
             "before": "    is_anchor = ('/_anchors/' in rel_path",
-            "break_key": "c0e3c9045f06ecefd02a69edac78b847dd7cc900fb9a12440a900a00e08fafe6",
+            "bug_key": "c0e3c9045f06ecefd02a69edac78b847dd7cc900fb9a12440a900a00e08fafe6",
             "case": "the spec `specs/_anchors/ruleset.md` opening `# Feature: ruleset`; the proof says it is read as an anchor; the changed code reads it as not an anchor",
             "file": "scripts/mcp/purlin/specs.py",
             "line": 327,
@@ -60,7 +60,7 @@
             "after": "                 or content.lstrip().startswith('# Anchors:'))",
             "aim": "plain",
             "before": "                 or content.lstrip().startswith('# Anchor:'))",
-            "break_key": "e5a577aa78fc0920494f8f104e864fd428344559dc37844eed5545530b01d249",
+            "bug_key": "e5a577aa78fc0920494f8f104e864fd428344559dc37844eed5545530b01d249",
             "case": "the spec `specs/schema/shared.md` opening `# Anchor: shared`; the proof says it is read as an anchor; the changed code reads it as not an anchor",
             "file": "scripts/mcp/purlin/specs.py",
             "line": 328,
@@ -88,12 +88,12 @@
       },
       "RULE-17": {
         "at": "2026-10-02T15:32:28Z",
-        "breaks": {
+        "bugs": {
           "PROOF-17": {
             "after": "    reflowing a long rule line does not end the signatures that bind it.\n    \"\"\"\n    return hashlib.sha256(_normalise(text)[:13].encode('utf-8')).hexdigest()",
             "aim": "plain",
             "before": "    reflowing a long rule line does not end the signatures that bind it.\n    \"\"\"\n    return hashlib.sha256(_normalise(text).encode('utf-8')).hexdigest()",
-            "break_key": "045a1afe20670d70c797e7dd3b16d07c41d0bb4134587011968ed9395cb065b4",
+            "bug_key": "045a1afe20670d70c797e7dd3b16d07c41d0bb4134587011968ed9395cb065b4",
             "case": "the rule `Tokens expire after 12 hours` against `Tokens expire after 24 hours`; the proof says a different rule text hash; the changed code gives the same hash for both",
             "file": "scripts/mcp/purlin/specs.py",
             "line": 172,
@@ -104,7 +104,7 @@
             "after": "    return ' '.join(re.split(r'(?:[ \\t]|\\r?\\n)+', (text or '').strip()))",
             "aim": "past the test",
             "before": "    return ' '.join((text or '').split())",
-            "break_key": "d816f25c33552127e23aa8d4f0073b39d77513ee6bd779abdccdb7ac3ec4274e",
+            "bug_key": "d816f25c33552127e23aa8d4f0073b39d77513ee6bd779abdccdb7ac3ec4274e",
             "case": "the rule `Tokens expire after 24 hours` broken after `expire` by a bare carriage return, the line break old Mac files use; the proof says the same rule text hash; the changed code gives a different hash",
             "file": "scripts/mcp/purlin/specs.py",
             "line": 163,
@@ -126,12 +126,12 @@
       },
       "RULE-20": {
         "at": "2026-10-02T09:32:59Z",
-        "breaks": {
+        "bugs": {
           "PROOF-39": {
             "after": "            with open(spec_path, 'r', encoding='utf-8', errors='replace') as handle:",
             "aim": "plain",
             "before": "            with open(spec_path, 'r', encoding='utf-8') as handle:",
-            "break_key": "4647bc137ec96d3e3c560a265831b33cd2913431434e9609559d666e32baff27",
+            "bug_key": "4647bc137ec96d3e3c560a265831b33cd2913431434e9609559d666e32baff27",
             "case": "a project holding specs/auth/login.md and specs/auth/broken.md whose bytes are not valid UTF-8; the proof says it reads as the one spec login, with no broken; the changed code reads two specs, broken and login",
             "file": "scripts/mcp/purlin/specs.py",
             "line": 318,
@@ -158,12 +158,12 @@
       },
       "RULE-22": {
         "at": "2026-10-02T09:32:59Z",
-        "breaks": {
+        "bugs": {
           "PROOF-24": {
             "after": "            manual = manual",
             "aim": "plain",
             "before": "            manual = manual or name == 'manual'",
-            "break_key": "0a3f7759f33d1fb0579d07ef0b792cca415dd29ecd469a6d8f46745947c677f0",
+            "bug_key": "0a3f7759f33d1fb0579d07ef0b792cca415dd29ecd469a6d8f46745947c677f0",
             "case": "a proof line reading `Look at it @manual(a@b.c, 2026-03-31, abc1234)`; the proof says the proof is manual; the changed code reads it as not manual",
             "file": "scripts/mcp/purlin/specs.py",
             "line": 147,
@@ -174,7 +174,7 @@
             "after": "                unknown_tags.append('> %s' % field)",
             "aim": "plain",
             "before": "                unknown_tags.append('> %s:' % field)",
-            "break_key": "a5bb81f08619ab9454626d69918794f101a83421efe967fbe147f7da447d2642",
+            "bug_key": "a5bb81f08619ab9454626d69918794f101a83421efe967fbe147f7da447d2642",
             "case": "a spec carrying `> Visual-Reference: ./mock.png` and the rule `It renders`; the proof says its unknown tags are exactly `> Visual-Reference:`; the changed code gives `> Visual-Reference`",
             "file": "scripts/mcp/purlin/specs.py",
             "line": 396,
@@ -185,7 +185,7 @@
             "after": "             else '%d spec files hold' % len(carriers))",
             "aim": "plain",
             "before": "             else '%d spec files carry' % len(carriers))",
-            "break_key": "8b0ac1d8fc8ea89fd3c9e811a6fe895623d323fbf6013865d0a33959a025218d",
+            "bug_key": "8b0ac1d8fc8ea89fd3c9e811a6fe895623d323fbf6013865d0a33959a025218d",
             "case": "two specs, one with a bare `@windows` and one with a stamped `@manual(...)`; the proof says the warning opens `2 spec files carry tags`; the changed code gives `2 spec files hold tags`",
             "file": "scripts/mcp/purlin/specs.py",
             "line": 478,
@@ -214,12 +214,12 @@
       },
       "RULE-9": {
         "at": "2026-10-02T09:32:59Z",
-        "breaks": {
+        "bugs": {
           "PROOF-10": {
             "after": "        return parts[0], None",
             "aim": "plain",
             "before": "        return parts[0], parts[1].strip()",
-            "break_key": "fc647662909c54ff54ff4c40770dd5ea5815cc1e576e06b04bec2722cdbfdb79",
+            "bug_key": "fc647662909c54ff54ff4c40770dd5ea5815cc1e576e06b04bec2722cdbfdb79",
             "case": "an anchor carrying `> Source: https://github.com/acme/p.git specs/no_eval.md`; the proof says source `https://github.com/acme/p.git` and path `specs/no_eval.md`; the changed code gives the source `https://github.com/acme/p.git` and no path",
             "file": "scripts/mcp/purlin/specs.py",
             "line": 253,
@@ -230,7 +230,7 @@
             "after": "    if len(parts) > 1:",
             "aim": "plain",
             "before": "    if len(parts) > 1 and _looks_like_git_url(parts[0]):",
-            "break_key": "8a9ba8770e76553557092600179c5284bf6a9d7f56e63cc83e4ae57b77b0afe4",
+            "bug_key": "8a9ba8770e76553557092600179c5284bf6a9d7f56e63cc83e4ae57b77b0afe4",
             "case": "an anchor carrying `> Source: --upload-pack=touch x specs/a.md`; the proof says the source `--upload-pack=touch x specs/a.md` whole and no path; the changed code gives the source `--upload-pack=touch` and the path `x specs/a.md`",
             "file": "scripts/mcp/purlin/specs.py",
             "line": 252,
