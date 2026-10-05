@@ -365,14 +365,14 @@
   "feature": "config_engine",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T18:16:21Z",
-      "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+      "at": "2026-10-05T18:46:50Z",
+      "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "68e99bf4d0000ed85fd9561ce0236ba846eda50faf449a99fcfcfc1433cd8aa8",
         "spec": "f81e711d5ae324d4346f0ed82891e596f4185aa14c29dd689bf2695410fc5b00",
-        "tests": "b4c3b96dd73bd50a5b72462b38a16c573eb7a13a2ccba00c54381e7ec4838296"
+        "tests": "d41f4d3e54836d86a1dec606547a142bd737ed8bf3890957bc880f3ae48d0edb"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
