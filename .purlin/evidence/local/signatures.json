@@ -1848,14 +1848,14 @@
   "feature": "signatures",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T16:58:29Z",
-      "commit": "912b37740b6f0c999611204b06de3f2abb23d4a5",
+      "at": "2026-10-05T17:43:45Z",
+      "commit": "572679b298d96e95848047a5fa1a8bf9fcb76958",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "6c8a85dfc7b14b801096f49feef3cebfdbb50f8d0407a8a10a228bd77b0bab40",
         "spec": "b92abb0cc44bf1dc10f6ef9ed583029508c1d61803c4bdc7d9161b25a7125f2b",
-        "tests": "ec61b7a57000059114236e7c27260b8a65a257a3920def819af5ac270687c1bc"
+        "tests": "698497da8c4f1c5241ab97512715cb1a87cda9e11fcd80a511c072b7fbf463f3"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [

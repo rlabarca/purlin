@@ -2,14 +2,14 @@
   "feature": "states",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T16:58:29Z",
-      "commit": "912b37740b6f0c999611204b06de3f2abb23d4a5",
+      "at": "2026-10-05T17:43:45Z",
+      "commit": "572679b298d96e95848047a5fa1a8bf9fcb76958",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
         "spec": "89ad5e388dfcc4053a4897d9a62db9d5973b1054e02eab81faf469485bc202bc",
-        "tests": "df0cdf7c0c0d55784aa2754d7872ca561feb1550195c4c38404551ab4a4f5896"
+        "tests": "4c312250f1ab58c786124c7e0c45af2a6a48d6f2a6b3563af8f097abaff8d690"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
