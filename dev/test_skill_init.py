@@ -45,6 +45,20 @@ def handed_flags():
 # purlin: skill_init PROOF-2
 def test_one_line_runs_the_script_through_the_lookup_with_the_root():
     assert same_line(SKILL, [LOOKUP + ' ' + RUN_PATH, '--project-root']) == []
+    # The line that runs setup, the one line that runs the script without
+    # `--update`, is the script through the lookup with `--project-root` and
+    # its folder, and nothing else; every line that runs the script passes
+    # `--project-root`.
+    runs = [line.strip() for line in read(SKILL).splitlines()
+            if RUN_PATH in line]
+    assert len(runs) == 3, runs
+    assert [line for line in runs
+            if not line.startswith(LOOKUP + ' ' + RUN_PATH + ' ')
+            or not re.search(r'(?<![\w-])--project-root \S', line)] == []
+    setup = [line for line in runs if '--update' not in line]
+    assert len(setup) == 1, setup
+    assert re.fullmatch(re.escape(LOOKUP + ' ' + RUN_PATH)
+                        + r' --project-root \S+', setup[0]), setup
 
 
 # purlin: skill_init PROOF-24
@@ -58,6 +72,17 @@ def test_every_flag_handed_is_one_the_usage_lists():
     handed = set(handed_flags())
     assert '--project-root' in handed and len(handed) > 1
     assert sorted(handed - set(FLAG.findall(done.stdout))) == []
+    # A line that tells the reader to run the script with flags it quotes,
+    # as `--update --project-root . --yes`, hands them too: every flag in a
+    # quoted span that opens with a flag is one the usage lists, each a
+    # whole flag of the usage and not the start of one.
+    listed = set(FLAG.findall(done.stdout))
+    quoted = [flag for span in re.findall(r'`(--[^`]*)`', read(SKILL))
+              for flag in FLAG.findall(span)]
+    assert '--yes' in quoted and '--update' in quoted, quoted
+    assert sorted(set(quoted) - listed) == []
+    assert sorted(set(handed) | set(quoted)) == [
+        '--apply', '--project-root', '--test-command', '--update', '--yes']
 
 
 # purlin: skill_init PROOF-42
@@ -65,6 +90,12 @@ def test_a_reader_finds_the_files_setup_writes_and_the_two_references():
     text = flat(read(SKILL))
     assert [name for name in PATHS if name not in text] == []
     assert must_name('init', paths=PATHS) == []
+    # Each is named whole, as its own quoted name: `marker_format.mdx` is
+    # another file and does not name `marker_format.md`.
+    assert [name for name in ('.purlin/config.json', '.purlin/evidence/',
+                              'specs/', 'references/supported_frameworks.md',
+                              'references/formats/marker_format.md')
+            if '`%s`' % name not in text] == []
 
 
 # --- bringing a 0.9.5 project forward ----------------------------------------
@@ -97,6 +128,11 @@ def test_the_upgrade_part_lists_then_asks_then_passes_each_answer():
     listed = _line_with(lines, [RUN_PATH, '--update', '< /dev/null'])
     asked = _line_with(lines, ['**Stop and ask**', 'each migration',
                                'test command'])
+    # The step names each migration and each proposed test command, not one
+    # of them: both stand in the step's own sentence.
+    step = flat(' '.join(lines[asked:asked + 3]))
+    assert re.search(r'\*\*Stop and ask\*\* [^.:]*\beach migration\b[^.:]*'
+                     r'\beach proposed test command\b', step), step
     applied = _line_with(lines, [RUN_PATH, '--update', '--apply',
                                  '--test-command'])
     assert listed < asked < applied
@@ -108,10 +144,20 @@ def test_the_flags_the_upgrade_part_hands_apply_one_migration_unasked(
     import shutil
     sys.path.insert(0, str(ROOT / 'scripts' / 'init'))
     import update
+    import shlex
     lines = upgrade_part()
     handed = FLAG.findall(lines[_line_with(lines, [RUN_PATH, '--apply'])])
     assert sorted(handed) == ['--apply', '--project-root', '--test-command',
                               '--update']
+    # The words the skill's own line gives after the script, split as a
+    # shell splits them: the flags and their values, in the line's order.
+    words = shlex.split(lines[_line_with(lines, [RUN_PATH, '--apply'])])
+    assert words[:3] == [
+        'sh', '${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh',
+        '${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py'], words
+    given = words[3:]
+    assert given == ['--update', '--project-root', '.', '--apply',
+                     '<id>,<id>', '--test-command', 'pytest=<command>'], given
     root = str(tmp_path / 'project')
     shutil.copytree(str(ROOT / 'dev' / 'fixtures' / 'upgrade-0.9.5'), root)
     os.rename(os.path.join(root, '_gitignore'),
@@ -134,6 +180,11 @@ def test_the_flags_the_upgrade_part_hands_apply_one_migration_unasked(
         stdin=subprocess.DEVNULL)
     assert done.returncode == 0, done.stdout + done.stderr
     assert '[y/N]' not in done.stdout
+    # What ran is the line's own words, each placeholder filled in: the
+    # folder for `.`, one migration for the ids, a command for `<command>`.
+    filled = {'.': root, '<id>,<id>': 'evidence',
+              'pytest=<command>': 'pytest=pytest {files}'}
+    assert [filled.get(word, word) for word in given] == done.args[2:]
     assert [item['id'] for item in update.pending(root)] == [
         name for name in before if name != 'evidence']
 
@@ -152,9 +203,17 @@ def test_the_restoring_part_names_the_files_then_lists_asks_and_restores():
     text = flat('\n'.join(lines))
     assert [name for name in RESTORED if name not in text] == []
     listed = _line_with(lines, ['**List.**'])
+    # The four are named before the `List` step.
+    opening = flat('\n'.join(lines[:listed]))
+    at = [opening.find(name) for name in (
+        '`.gitignore`', '`.purlin/evidence/README.md`',
+        '`.purlin/config.json`', 'the dashboard page')]
+    assert -1 not in at, (at, opening)
     asked = _line_with(lines, ['**Stop and ask**', 'restore'])
     restored = _line_with(lines, ['--update', '--yes'])
     assert listed < asked < restored
+    assert re.search(r'(?<![\w-])--update(?![\w-])', lines[restored])
+    assert re.search(r'(?<![\w-])--yes(?![\w-])', lines[restored])
 
 
 # purlin: skill_init PROOF-102
