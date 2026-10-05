@@ -2,60 +2,44 @@
   "audit": {
     "rules": {
       "RULE-10": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-05T19:28:48Z",
         "bugs": {
           "PROOF-26": {
             "after": "        if os.path.exists(tmp_path):\n            os.remove(tmp_path)\n        with open(path, 'a', encoding='utf-8') as f:\n            f.write('\\n')\n        raise",
             "aim": "past the test",
             "before": "        if os.path.exists(tmp_path):\n            os.remove(tmp_path)\n        raise",
-            "bug_key": "b5ed67a834bf10da4da227631533f942248799d572a80ac9e3287852f058714e",
+            "bug_key": "ca00b072bfca7b8d516a3ef019a5e856abcb294e8ff75123bfdd112eb4e6fd22",
             "case": "the settings file holds `{\"key\": \"val\"}` and the move onto it fails; the proof says the file reads exactly `{\"key\": \"val\"}`; the changed code leaves `{\"key\": \"val\"}` followed by an added newline",
             "file": "scripts/mcp/config_engine.py",
             "line": 184,
-            "result": "survived",
-            "test_key": "ce72ac731fe965a4cb4130fbcf2f716e9e3af13f8354b6061a017f0d4c497c4e",
+            "result": "caught",
             "why": ""
           },
           "PROOF-27": {
             "after": "        if os.path.exists(tmp_path):\n            os.remove(tmp_path)\n        with open(path, 'a', encoding='utf-8') as f:\n            f.write('\\n')\n        raise",
             "aim": "past the test",
             "before": "        if os.path.exists(tmp_path):\n            os.remove(tmp_path)\n        raise",
-            "bug_key": "d76cdc4e503ac3f068b124e863cf6a86467abb08354bfcfa40ee4d03c67d3e5c",
+            "bug_key": "de98d3e3a8e468950b38c15e1fdc255143be56604c9e94261082ddfe060def75",
             "case": "the settings file holds `{\"key\": \"val\"}` and the write fails partway with the disk full; the proof says the file reads exactly `{\"key\": \"val\"}`; the changed code leaves `{\"key\": \"val\"}` followed by an added newline",
             "file": "scripts/mcp/config_engine.py",
             "line": 184,
-            "result": "survived",
-            "test_key": "b1bb0a1fec737e5aff6e1839211467b79f6eb37d84cd66b28bac14a301aa4cb8",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "68e99bf4d0000ed85fd9561ce0236ba846eda50faf449a99fcfcfc1433cd8aa8",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "75c3667c1d86906703085deba6bd0a5b349946d0",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-26: the test makes the move fail, then checks the error's exact message `the move failed`, the settings as parsed JSON and that `.purlin/` lists only `config.json`.",
-          "PROOF-26: the settings are compared after parsing, so a change to the file's bytes that parses to the same object still passes, where the proof says the file reads exactly `{\"key\": \"val\"}`.",
-          "PROOF-26: the proof names the error only as \"that failure's error\", and the test supplies its own message and checks that it comes through unchanged.",
-          "PROOF-27: the test makes the write fail after part of the new contents is written, then checks the error text `No space left on device`, the settings as parsed JSON and that `.purlin/` lists only `config.json`.",
-          "PROOF-27: the settings are compared after parsing here too, so the file's exact bytes are not observed.",
-          "PROOF-39: the test holds the file open, expects any system error, and checks that `.purlin/` lists only `config.json` and that the file's raw bytes are exactly `{\"key\": \"val\"}`.",
-          "PROOF-39: the proof names no particular error, and the test runs only on Windows.",
-          "The spot tests found nothing: each test asserts on the error, the file and the folder, and mocks only the move or the JSON writer, not the write it checks."
-        ],
-        "findings": [
-          "PROOF-26: the test still passes when scripts/mcp/config_engine.py:184 reads \"with open(path, 'a', encoding='utf-8') as f:\"",
-          "PROOF-26: the AI says this breaks: the settings file holds `{\"key\": \"val\"}` and the move onto it fails; the proof says the file reads exactly `{\"key\": \"val\"}`; the changed code leaves `{\"key\": \"val\"}` followed by an added newline",
-          "PROOF-27: the test still passes when scripts/mcp/config_engine.py:184 reads \"with open(path, 'a', encoding='utf-8') as f:\"",
-          "PROOF-27: the AI says this breaks: the settings file holds `{\"key\": \"val\"}` and the write fails partway with the disk full; the proof says the file reads exactly `{\"key\": \"val\"}`; the changed code leaves `{\"key\": \"val\"}` followed by an added newline"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [
           "No bug was planted: PROOF-39 needs Windows, and this machine is macOS."
         ],
         "proof_hash": "5b9fc6d29efbb2e6e74812aabb80789917a1df07307a4946b9d5c3df639965dc",
         "rule_hash": "81f36b2c0114d21f5fb8970231db4dad9100e3a5da17ab4edeca21386a9b7d21",
-        "test_hash": "4498243389a2166a56fb0582adee7f1d35d3aa10aa7be0928e29c3bbdac26536",
-        "verdict": "weak"
+        "test_hash": "ad1bf6c8fb4f43c995579590302b497a00ab5aeffbbdf8c24a6b96ccab0f9442",
+        "verdict": "strong"
       },
       "RULE-14": {
         "at": "2026-10-05T18:42:48Z",
@@ -311,18 +295,17 @@
         "verdict": "strong"
       },
       "RULE-8": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-05T19:28:48Z",
         "bugs": {
           "PROOF-24": {
             "after": "    config[key] = int(value) if isinstance(value, bool) else value",
             "aim": "past the test",
             "before": "    config[key] = value",
-            "bug_key": "6fdfa8ddac3ac6c57e7ba5ea47bd38191a0a8bb09b9d25df4cb106ea76bd79de",
+            "bug_key": "856ea1b41f1bc44d3c082a70e80faa3061333f521dcf099e454aacbd61e4a552",
             "case": ".purlin/ holds no settings file and new is set to true; the proof says config.json holds exactly {\"new\": true}; the changed code writes {\"new\": 1}",
             "file": "scripts/mcp/config_engine.py",
             "line": 170,
-            "result": "survived",
-            "test_key": "94cabaf23e7f2323bbe25f245d2f36d6088cfac5e087c5cd07254e169def9918",
+            "result": "caught",
             "why": ""
           },
           "PROOF-8": {
@@ -338,35 +321,26 @@
           }
         },
         "code_hash": "68e99bf4d0000ed85fd9561ce0236ba846eda50faf449a99fcfcfc1433cd8aa8",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "75c3667c1d86906703085deba6bd0a5b349946d0",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-8: the test starts from `{\"team\": \"v1\"}`, sets `user_pref` to `dark`, and compares the whole parsed file with `{\"team\": \"v1\", \"user_pref\": \"dark\"}` and the folder's listing with `['config.json']`, so a lost key, a wrong value or a leftover file fails it.",
-          "PROOF-24: the test confirms `.purlin/` is empty, sets `new` to true and compares the parsed file with `{\"new\": True}`, which Python also holds equal to `{\"new\": 1}`, so a file holding the number `1` where the proof names `true` still passes.",
-          "PROOF-24: the test reads the file through a helper not shown and never lists `.purlin/` after the write, so the name `config.json` is observed only as far as that helper reads that path.",
-          "PROOF-38: the test compares the file's bytes with the exact text, checks that no carriage return is present and checks the folder's listing, so it observes the content, the line endings and the absence of another file that the proof names.",
-          "Findings: the spot tests found nothing, and each test holds failable assertions with literal expected values; the gap between `true` and `1` in PROOF-24 is outside what they look for."
-        ],
-        "findings": [
-          "PROOF-24: the test still passes when scripts/mcp/config_engine.py:170 reads \"config[key] = int(value) if isinstance(value, bool) else value\"",
-          "PROOF-24: the AI says this breaks: .purlin/ holds no settings file and new is set to true; the proof says config.json holds exactly {\"new\": true}; the changed code writes {\"new\": 1}"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [
           "No bug was planted: PROOF-38 needs Windows, and this machine is macOS."
         ],
         "proof_hash": "21ac3e99c46c56e1f966b5b41f182b9916b43d36df2c3fdd0099d00774e0b831",
         "rule_hash": "f8d9ebe9932a211200aa72b82f8fab8e9744d29a9195915998e550c741332e04",
-        "test_hash": "ce29d8b47f9d3a888b89d3040b5441a3ec9d449496fa654f45c6625d8e71c7a7",
-        "verdict": "weak"
+        "test_hash": "bbe23eb49bedc75288a492d8572ffab191234ec4b3d55c25e52ba93de16bb1e1",
+        "verdict": "strong"
       }
     }
   },
   "feature": "config_engine",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T18:46:50Z",
-      "commit": "8c67b7b740011bf59c991f705f8b7cdbd736ab9f",
+      "at": "2026-10-05T19:28:38Z",
+      "commit": "75c3667c1d86906703085deba6bd0a5b349946d0",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -377,12 +351,6 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-05T18:46:50Z",
-            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-4",
           "manual": false,
@@ -391,12 +359,6 @@
           "test": "dev/test_config_engine.py::TestReading::test_the_settings_file_is_read_whole"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:50Z",
-            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-7",
           "manual": false,
@@ -405,12 +367,6 @@
           "test": "dev/test_config_engine.py::TestReading::test_no_settings_file_reads_as_empty"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:50Z",
-            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-8",
           "manual": false,
@@ -419,12 +375,6 @@
           "test": "dev/test_config_engine.py::TestWriting::test_a_write_adds_its_key_to_the_settings_file"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:50Z",
-            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-24",
           "manual": false,
@@ -433,12 +383,6 @@
           "test": "dev/test_config_engine.py::TestWriting::test_a_write_creates_the_settings_file_when_absent"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:50Z",
-            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "windows",
           "id": "PROOF-38",
           "manual": false,
@@ -447,12 +391,6 @@
           "test": "dev/test_config_engine.py::TestWriting::test_on_windows_a_write_ends_its_lines_with_no_carriage_return"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:50Z",
-            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-26",
           "manual": false,
@@ -461,12 +399,6 @@
           "test": "dev/test_config_engine.py::TestAtomicWrite::test_a_failed_move_leaves_the_previous_file_and_no_temporary"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:50Z",
-            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-27",
           "manual": false,
@@ -475,12 +407,6 @@
           "test": "dev/test_config_engine.py::TestAtomicWrite::test_a_disk_full_partway_leaves_the_previous_file_and_no_temporary"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:50Z",
-            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "windows",
           "id": "PROOF-39",
           "manual": false,
@@ -489,12 +415,6 @@
           "test": "dev/test_config_engine.py::TestAtomicWrite::test_on_windows_a_move_onto_a_file_held_open_leaves_it_whole"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:50Z",
-            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-32",
           "manual": false,
@@ -503,12 +423,6 @@
           "test": "dev/test_config_engine.py::TestASettingsFileThatCannotBeRead::test_a_trailing_comma_is_named_with_the_readers_message_and_line"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:50Z",
-            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-33",
           "manual": false,
@@ -517,12 +431,6 @@
           "test": "dev/test_config_engine.py::TestASettingsFileThatCannotBeRead::test_bytes_that_are_not_utf8_are_named"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:50Z",
-            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-35",
           "manual": false,
@@ -531,12 +439,6 @@
           "test": "dev/test_config_engine.py::TestASettingsFileThatCannotBeRead::test_a_write_is_refused_and_the_file_left_as_it_was"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:50Z",
-            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-45",
           "manual": false,
@@ -545,12 +447,6 @@
           "test": "dev/test_config_engine.py::TestTheProjectsName::test_the_name_under_project_in_pyproject_wins"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:50Z",
-            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-48",
           "manual": false,
@@ -559,12 +455,6 @@
           "test": "dev/test_config_engine.py::TestTheProjectsName::test_with_no_project_file_the_origin_remote_names_it"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:50Z",
-            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-49",
           "manual": false,
@@ -573,12 +463,6 @@
           "test": "dev/test_config_engine.py::TestTheProjectsName::test_with_no_project_file_and_no_remote_the_folder_names_it"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:50Z",
-            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-50",
           "manual": false,
@@ -587,12 +471,6 @@
           "test": "dev/test_config_engine.py::TestKeysThisVersionDoesNotRead::test_keys_the_upgrade_removes_name_the_upgrade"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:50Z",
-            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-51",
           "manual": false,
@@ -601,12 +479,6 @@
           "test": "dev/test_config_engine.py::TestKeysThisVersionDoesNotRead::test_a_key_the_upgrade_has_no_step_for_is_to_be_removed"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:50Z",
-            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-28",
           "manual": false,
@@ -615,12 +487,6 @@
           "test": "dev/test_config_engine.py::TestProjectRoot::test_the_variable_is_found_by_env"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:50Z",
-            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-18",
           "manual": false,
@@ -629,12 +495,6 @@
           "test": "dev/test_config_engine.py::TestProjectRoot::test_the_climb_stops_at_the_nearest_marker"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:50Z",
-            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-30",
           "manual": false,
