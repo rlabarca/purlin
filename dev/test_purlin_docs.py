@@ -92,6 +92,25 @@ def test_every_relative_link_on_the_docs_pages_names_a_file_and_a_heading():
     assert [line for page in found
             for line in broken_links(page, read(os.path.join(ROOT, page)))
             ] == []
+    # A file the repository holds is named letter for letter: each folder
+    # and the file of a link are an entry of their folder's own listing, so
+    # `Audit.md` does not name `audit.md` where the disk ignores case.
+    miscased = []
+    for page in found:
+        for target in targets(read(os.path.join(ROOT, page))):
+            path = target.partition('#')[0]
+            if re.match(r'[a-z]+:', target) or not path:
+                continue
+            at = os.path.dirname(os.path.join(ROOT, page))
+            for name in path.rstrip('/').split('/'):
+                if name == '..':
+                    at = os.path.dirname(at)
+                elif name != '.':
+                    if name not in os.listdir(at):
+                        miscased.append('%s: %s' % (page, target))
+                        break
+                    at = os.path.join(at, name)
+    assert miscased == []
     # Each link is followed from the page's own folder: one to a file the
     # repository does not hold, and one to a heading its file does not have,
     # are found, and one that climbs out of `docs/` to a real file is not.
@@ -190,6 +209,10 @@ def test_the_audit_page_says_what_to_do_with_a_finding_after_how_it_works():
     assert found[found.index('How it works') + 1] == 'What to do with a finding'
     part = under(text, 'What to do with a finding')
     assert len(bullets(part)) == 6, bullets(part)
+    # Exactly 6 whatever their marker: `-`, `*`, `+` or a number.
+    marked = [line for line in part.splitlines()
+              if re.match(r'\s*(?:[-*+]|\d+[.)])\s', line)]
+    assert len(marked) == 6, marked
     assert [name for name in ('`purlin:build`', '`strong`', '`spot-checked`')
             if name not in part] == []
 
@@ -213,8 +236,17 @@ def test_one_paragraph_of_working_together_names_a_worktree():
     assert 'Each checkout' in paragraph
     assert 'its own results' in paragraph
     assert 'its own dashboard' in paragraph
-    assert 'merge' in paragraph
-    assert '`purlin:status`' in paragraph
+    # It says each checkout has them, in one sentence: the words between
+    # `Each checkout` and `has its own results` hold no word that turns the
+    # sentence round, and `its own dashboard` ends the same sentence.
+    said = re.findall(r'\bEach checkout\b([^.]*?) has its own results\b'
+                      r'[^.]*\bits own dashboard\.', paragraph)
+    assert len(said) == 1, paragraph
+    assert not re.search(
+        r"\b(?:not|never|no|none|nor|seldom|rarely|hardly|only|n't)\b|n't",
+        said[0], re.I), said
+    assert re.search(r'\bmerged?\b', paragraph)
+    assert re.search(r'(?<![\w:-])`purlin:status`(?![\w:-])', paragraph)
 
 
 # --- The example that fetches Purlin ----------------------------------------
@@ -226,3 +258,14 @@ def test_the_example_clones_purlin_at_the_signed_tag_of_this_version():
     text = read(os.path.join(DOCS, 'running-and-evidence.md'))
     tags = re.findall(r'git clone [^\n]*--branch (\S+) [^\n]*/purlin\b', text)
     assert tags == ['signed/' + version], tags
+    # Every clone is read on its own, two on one line included, and a branch
+    # is named by `--branch`, `--branch=` or `-b`: exactly 1 clone of the
+    # purlin repository names one, and it names the signed tag.
+    clones = [clone for clone in re.split(r'\bgit clone\b', text)[1:]]
+    named = []
+    for clone in clones:
+        command = re.split(r'\n|\|\||&&|;', clone)[0]
+        branch = re.search(r'(?<!\S)(?:--branch[= ]|-b[= ]?)\s*(\S+)', command)
+        if branch and re.search(r'/purlin(?:\.git)?\b', command):
+            named.append(branch.group(1))
+    assert named == ['signed/' + version], named

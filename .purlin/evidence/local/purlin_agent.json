@@ -34,41 +34,31 @@
         "verdict": "strong"
       },
       "RULE-19": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-05T18:47:07Z",
         "bugs": {
           "PROOF-50": {
             "after": "worktree, run `purlin:statusline` in the main checkout, so its status and dashboard describe the",
             "aim": "past the test",
             "before": "worktree, run `purlin:status` in the main checkout, so its status and dashboard describe the",
-            "bug_key": "9c5871147487d88819fd9650ea6ec5a04238d46cb27cb4666bb02825861cbcbb",
+            "bug_key": "d3e0fb1b8a1eab2839fbcb17fdbf1c58a3305974c440c2c7943821643fe4c1fd",
             "case": "the text of agents/purlin.md is read for a sentence naming a worktree, merging, `purlin:status` and the main checkout; the proof says one such sentence; the changed text holds none, since its sentence names `purlin:statusline` instead",
             "file": "agents/purlin.md",
             "line": 90,
-            "result": "survived",
-            "test_key": "cb24c6a7aa8e234a22e22f25113b15fc9719795dc0d48a5fde0e61d11d368901",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "557a839c33becdd3bc1bdd2cc841c8e9692377fdbcfce10588a45e03c8b768f7",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "a31f9a826c80c728f90b7c9efa51700c030569c3",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-50: the test counts the sentences of the agent definition that hold the four strings `worktree`, `merge`, `purlin:status` and `main checkout`, and asserts the count is exactly 1, which is the count the proof names.",
-          "PROOF-50: the helper that finds the sentences is not shown, so if it matches each string as a fragment of a longer word, a sentence naming another command that begins `purlin:status` still counts as naming `purlin:status`.",
-          "PROOF-50: the test looks for `merge` where the proof says merging, so any word holding those letters satisfies it.",
-          "PROOF-50: the test reads only that the four names share a sentence, not what the sentence tells the agent to do, which is all the proof asks of it.",
-          "The spot tests found nothing, and the test's one assertion can fail when the sentence is removed or a second such sentence is added."
-        ],
-        "findings": [
-          "PROOF-50: the test still passes when agents/purlin.md:90 reads \"worktree, run `purlin:statusline` in the main checkout, so its status and dashboard describe the\"",
-          "PROOF-50: the AI says this breaks: the text of agents/purlin.md is read for a sentence naming a worktree, merging, `purlin:status` and the main checkout; the proof says one such sentence; the changed text holds none, since its sentence names `purlin:statusline` instead"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "1a82b9ff1468047dcd14423cdbadf89b6257cde8524d6a1ae01a701fca68b8be",
         "rule_hash": "509a26e09d1741e49f69c78c94492a7b3cc391d4436e08ccb03cb20acb8b766c",
-        "test_hash": "c38258dcf59bfa76779590a3e12e5d36869333e4c12371123c6e8d5ecc2defaf",
-        "verdict": "weak"
+        "test_hash": "dc048af1899cdfb7ff4504fb1c10ac9750f7fe0663f08e14b1d284b7009ee88e",
+        "verdict": "strong"
       },
       "RULE-20": {
         "at": "2026-10-05T18:42:48Z",
@@ -281,14 +271,14 @@
   "feature": "purlin_agent",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T18:16:21Z",
-      "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+      "at": "2026-10-05T18:46:59Z",
+      "commit": "a31f9a826c80c728f90b7c9efa51700c030569c3",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "557a839c33becdd3bc1bdd2cc841c8e9692377fdbcfce10588a45e03c8b768f7",
         "spec": "0b8fba4f8586fb33fc871ef7bf2126eb5851f9f0d6d32ada3d9ce66610d38b3b",
-        "tests": "985e8c92ce1708da1aef71d3f870606ece5c040876fec4e847cef3595886a2df"
+        "tests": "83a8527165d178e959786b7a9c5db8fb38deb6926a1f050f8ce39f82e770666c"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
