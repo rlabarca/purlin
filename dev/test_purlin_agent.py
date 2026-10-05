@@ -43,9 +43,13 @@ def test_the_agent_definition_holds_each_command_and_file():
 
 # purlin: purlin_agent PROOF-50
 def test_one_sentence_names_a_worktree_merging_the_status_and_the_main_checkout():
-    found = sentences_with(
-        AGENT, ('worktree', 'merge', 'purlin:status', 'main checkout'))
+    # The command is held whole: `purlin:statusline` is not `purlin:status`.
+    status = re.compile(r'(?<![\w:-])purlin:status(?![\w:-])')
+    found = [sentence for sentence in sentences_with(
+                 AGENT, ('worktree', 'merge', 'main checkout'))
+             if status.search(sentence)]
     assert len(found) == 1, found
+    assert '`purlin:status`' in found[0], found
 
 
 # --- what the skills tell an agent to run -------------------------------------
