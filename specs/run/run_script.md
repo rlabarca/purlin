@@ -16,7 +16,7 @@
 > Scope: scripts/run/purlin_run.py, scripts/mcp/purlin/frameworks.py, references/supported_frameworks.md
 > Stack: python/stdlib (subprocess, re, hashlib), bash, pytest, sqlite3
 > Highest-Rule: 119
-> Highest-Proof: 325
+> Highest-Proof: 326
 
 ## Rules
 
@@ -88,6 +88,7 @@
 - PROOF-325 (RULE-119): The same project in a folder that is no git checkout, run as `--all --test --write-tests`, prints `Wrote the tests setting to .purlin/config.json.` and no line beginning `Committed`, and exits 0
 - PROOF-130 (RULE-63): Over the seven entries the run suggests, one per tool, each command carries the flag that writes the report Purlin reads: pytest's `--junitxml={report}`, vitest's `--outputFile.junit={report}`, jest's `--reporters=jest-junit`, dotnet's `--logger trx --results-directory {report}`, go's `go test -json`, sql's `sqlite3 -bail` and shell's `bash {files}`
 - PROOF-221 (RULE-63): In a project with an empty `tests` setting holding only a `conftest.py`, on a machine whose system is Windows, the one entry suggested runs `py -3 -m pytest {files} --junitxml={report}`
+- PROOF-326 (RULE-63): On a Windows machine, in a project with an empty `tests` setting holding only a `conftest.py` and one marked passing test, `--all --test` with nothing to answer from prints the line `Suggested for pytest: py -3 -m pytest {files} --junitxml={report}` @env(windows)
 - PROOF-133 (RULE-63): The supported-frameworks page shows the same seven entries as the run suggests them, in that order, word for word
 - PROOF-262 (RULE-88): A project with an empty `tests` setting holding only `tests/test_cart.py` prints `Suggested for pytest: python3 -m pytest {files} --junitxml={report}`
 - PROOF-252 (RULE-83): Of the specs `feat` and `other`, each with one marked jest test file, `--feature feat --test` under the jest entry the run suggests starts jest with `--ci test/feat.test.js --reporters=default --reporters=jest-junit`, the marked file before the reporters

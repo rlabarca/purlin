@@ -565,7 +565,9 @@ class TestTheContent:
             made.close()
 
     # purlin: package PROOF-15
-    def test_every_time_is_utc(self, signed):
+    def test_every_time_is_utc(self, project):
+        TestTheRuns()._feat_carried(project)
+        package = signed_package(project)
         times = []
 
         def walk(value):
@@ -577,8 +579,9 @@ class TestTheContent:
             elif isinstance(value, list):
                 for item in value:
                     walk(item)
-        walk(signed.package)
-        assert len(times) >= 4
+        walk(package)
+        assert len(times) >= 5
+        assert '2026-09-13T11:00:00Z' in times, times
         # The whole of each, with nothing after the `Z`.
         assert [t for t in times if not UTC.fullmatch(t)] == []
 

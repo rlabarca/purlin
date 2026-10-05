@@ -1488,6 +1488,15 @@ class TestNoTestCommand:
         assert entry['run'] == ('py -3 -m pytest {files} '
                                 '--junitxml={report}')
 
+    # purlin: run_script PROOF-326
+    @pytest.mark.skipif(platform.system() != 'Windows',
+                        reason='the machine itself must be Windows')
+    def test_a_windows_machine_is_suggested_the_launcher(self, tmp_path):
+        root = _one_passing_test(tmp_path)
+        _code, output = _run(root, '--all', '--test')
+        assert ('Suggested for pytest: py -3 -m pytest {files} '
+                '--junitxml={report}') in output.splitlines(), output
+
     # purlin: run_script PROOF-130
     def test_each_command_carries_the_flag_that_writes_its_report(
             self, suggestions):

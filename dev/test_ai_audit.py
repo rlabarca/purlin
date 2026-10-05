@@ -2511,8 +2511,9 @@ class TestAnAuditPlantsASurvivingBugAgain:
             source = handle.read()
         assert ('    hours = seconds // 3600\n'
                 '    return int(hours)\n') in source, source
+        # One file, and it is the code as it now stands.
         assert request.count('\nFile: ') == 1, request[-3000:]
-        assert '\nFile: src/intake.py\n' + source in request, \
+        assert request.count('\nFile: src/intake.py\n' + source) == 1, \
             request[-3000:]
         entry = made.entries['RULE-3']
         bug_now = entry['bugs']['PROOF-5']
