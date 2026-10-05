@@ -98,6 +98,23 @@ class TestEachTestShowsItsOwnSource:
         assert 'def test_valid_credentials_return_200' not in second, second
         assert '== 200' not in second, second
         assert 'tok-' not in first, first
+        # What the audit reads, as it is sent: under each test's name its
+        # own source, whole, and nothing of the other's.
+        assert (
+            '\n'
+            'Test for PROOF-1: tests/test_login.py::'
+            'test_valid_credentials_return_200\n'
+            'def test_valid_credentials_return_200():\n'
+            '    assert login("ada", "secret") == 200\n'
+            '\n'
+            'Test for PROOF-1: tests/test_login.py::test_a_token_comes_back\n'
+            'def test_a_token_comes_back():\n'
+            '    token = session_for("ada", "secret")\n'
+            '    assert token.startswith("tok-")\n'
+            '\n'
+            'Findings:\n') in request, request
+        assert request.count('== 200') == 1, request
+        assert request.count('token.startswith("tok-")') == 1, request
 
     # purlin: ai_audit PROOF-35
     def test_a_name_the_evidence_holds_and_the_file_does_not_shows_no_source(
@@ -110,6 +127,30 @@ class TestEachTestShowsItsOwnSource:
             tests['test_valid_credentials_return_200']['body']
         assert 'def test_a_token_comes_back' in \
             tests['test_a_token_comes_back']['body']
+        # What the audit reads, as it is sent: the name the file no longer
+        # holds has no line of source under it, and each of the other two
+        # is shown once, under its own name.
+        reading = audit_module.reading_for(project.root, None, 'login',
+                                           'RULE-1')
+        request = audit_module.model_prompt(project.root, reading, 'criteria')
+        assert (
+            '\n'
+            'Test for PROOF-1: tests/test_login.py::'
+            'test_valid_credentials_return_200\n'
+            'def test_valid_credentials_return_200():\n'
+            '    assert login("ada", "secret") == 200\n'
+            '\n'
+            'Test for PROOF-1: tests/test_login.py::test_a_token_comes_back\n'
+            'def test_a_token_comes_back():\n'
+            '    token = session_for("ada", "secret")\n'
+            '    assert token.startswith("tok-")\n'
+            '\n'
+            'Test for PROOF-1: tests/test_login.py::test_renamed_away\n'
+            '\n'
+            'Findings:\n') in request, request
+        assert request.count('def test_valid_credentials_return_200') == 1, \
+            request
+        assert request.count('def test_a_token_comes_back') == 1, request
 
     # purlin: plain_checks PROOF-31
     def test_a_test_whose_source_is_not_found_is_named_once(self, project):
