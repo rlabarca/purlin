@@ -2,24 +2,18 @@
   "feature": "collaboration",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T16:58:49Z",
-      "commit": "918e47cf7396a64f172a2644029b671c36233a2e",
+      "at": "2026-10-05T13:24:28Z",
+      "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "bdcc1f92e6c9af0fddce429c898afa24a4491cc1aee49760b8f0d5872af1ee4e",
+        "code": "66606c1b6cba42a4cea5e178f1bd089fe2d3c5a79b431df613bc640f96b08b13",
         "spec": "288338e527e74393978cafd86960a75157c22cc5cf5d84eb92b504f76083ce74",
         "tests": "8ea2cc45dd82fd6d06c47d5733f02336f9099b4641338224a7dcaa8e17b19b44"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
