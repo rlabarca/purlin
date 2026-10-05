@@ -309,7 +309,7 @@ left to a lane's judgment except wording.
       one. A rule that needs no signature (bar `passed` under `sign_at: strong`) meets the
       gate on its tests and does not hold the tag back. `trust: remote` binds signing alone,
       as decision 31 wrote it: it is read when a rule is signed and by no cell and not by the
-      tag. The definition lives in `references/glossary.md` and `references/hard_gates.md`;
+      tag. The definition lives in `references/glossary.md`;
       every other page points there.
     - `signature_format.md` bumps.
     - *Amended by 67, 102 and 103:* no bar and no `sign_at`; one signature covers the package, made in a commit signed with any key and verified.

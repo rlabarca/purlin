@@ -119,8 +119,7 @@ The dashboard's data is schema 17.
    `unknown`" has no proof; `ai_audit` RULE-56's "until its test or code changes" has no
    proof; a session's status tool keeps the code it loaded when the session started.
 9. **`dev/plans/three-levels.md` is the decisions and nothing else**: its three replaced parts
-   and 19 pointers to deleted files are gone. Decision 31 still names
-   `references/hard_gates.md` in its own words.
+   and 19 pointers to deleted files are gone.
 10. **The Windows workflow installs pytest alone.** A browser test tagged for Windows would
     skip there until the browser install is put back.
 11. **The sign-off's preview takes about 15 seconds here**, where it took two minutes: the
