@@ -2,8 +2,8 @@
   "feature": "update",
   "platforms": {
     "windows": {
-      "at": "2026-10-05T18:05:31Z",
-      "commit": "8c67b7b740011bf59c991f705f8b7cdbd736ab9f",
+      "at": "2026-10-05T19:27:57Z",
+      "commit": "d2cfbc0422fdf6eb6bbb8462784aa4a78ba80f52",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -14,12 +14,6 @@
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-05T18:05:31Z",
-            "commit": "ace18da3b7297c71a8f52d8f00cf662f1f66b649",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-117",
           "manual": false,
@@ -28,12 +22,6 @@
           "test": "dev/test_init_update.py::test_on_windows_a_second_run_finds_nothing_and_changes_nothing"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:05:31Z",
-            "commit": "ace18da3b7297c71a8f52d8f00cf662f1f66b649",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-118",
           "manual": false,
@@ -42,12 +30,6 @@
           "test": "dev/test_init_update.py::test_on_windows_every_backup_keeps_the_bytes_from_before"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:05:31Z",
-            "commit": "ace18da3b7297c71a8f52d8f00cf662f1f66b649",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-120",
           "manual": false,

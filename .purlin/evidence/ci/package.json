@@ -2,8 +2,8 @@
   "feature": "package",
   "platforms": {
     "windows": {
-      "at": "2026-10-05T18:05:31Z",
-      "commit": "8c67b7b740011bf59c991f705f8b7cdbd736ab9f",
+      "at": "2026-10-05T19:27:56Z",
+      "commit": "d2cfbc0422fdf6eb6bbb8462784aa4a78ba80f52",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -14,12 +14,6 @@
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-05T18:05:31Z",
-            "commit": "ace18da3b7297c71a8f52d8f00cf662f1f66b649",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-39",
           "manual": false,
