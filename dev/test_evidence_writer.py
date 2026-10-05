@@ -536,10 +536,11 @@ def test_a_run_deletes_both_files_of_gone_writes_feat_and_names_each(tmp_path):
     assert not (root / '.purlin' / 'evidence' / 'local' / 'gone.json').exists()
     assert not (root / '.purlin' / 'evidence' / 'ci' / 'gone.json').exists()
     assert (root / '.purlin' / 'evidence' / 'local' / 'feat.json').exists()
+    printed = out.splitlines()
     assert ('Removed .purlin/evidence/local/gone.json: no spec defines gone.'
-            in out)
+            in printed), out
     assert ('Removed .purlin/evidence/ci/gone.json: no spec defines gone.'
-            in out)
+            in printed), out
 
 
 def _written_over(root, section):
@@ -803,7 +804,8 @@ def test_committed_work_makes_no_commit_and_the_results_name_head(
     work = writer.commit_work(str(root), WORK)
 
     assert work == head
-    assert capsys.readouterr().out == ''
+    printed = capsys.readouterr()
+    assert (printed.out, printed.err) == ('', '')
     assert _head(root) == head
     writer.commit_local(str(root), work)
     assert _subjects(root)[0] == 'purlin: evidence at %s' % head[:7]
@@ -863,8 +865,9 @@ def test_a_run_rewrites_a_section_resolved_to_either_side_of_a_merge(
     code, out = _run(root, '--feature', 'feat', '--test')
 
     assert code == 0, out
-    assert _evidence(root)['platforms'][HERE]['machine'] == (
-        writer.local_machine()), out
+    this_machine = platform.node()
+    assert this_machine, 'this machine has no name to check against'
+    assert _evidence(root)['platforms'][HERE]['machine'] == this_machine, out
 
 
 def _current_hashes(root, rule_id='RULE-1'):
@@ -1122,4 +1125,4 @@ def test_over_five_features_the_subject_counts_them(tmp_path):
     assert _git(root, 'log', '-1', '--format=%s', 'HEAD^').strip() == (
         'purlin: specs, tests and settings for 6 features'), out
     assert _git(root, 'log', '-1', '--format=%b',
-                'HEAD^').split() == names, out
+                'HEAD^').strip().splitlines() == names, out

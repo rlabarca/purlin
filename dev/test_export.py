@@ -514,8 +514,9 @@ class TestTheContent:
                 'proof': 'RULE-3', 'file': 'tests/test_login.py',
                 'name': 'test_a_locked_account_returns_423'}]
             assert [r['result'] for r in third['results']] == ['passed']
-            assert [t['proof'] for t in rule_of(package, 'RULE-2')['tests']] \
-                == ['PROOF-2']
+            assert rule_of(package, 'RULE-2')['tests'] == [{
+                'proof': 'PROOF-2', 'file': 'tests/test_login.py',
+                'name': 'test_a_bad_password_is_denied'}]
         finally:
             made.close()
 

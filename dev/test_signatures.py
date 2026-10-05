@@ -1385,6 +1385,8 @@ class TestSettledByJudgment:
             assert git(made.root, 'log', '-1', '--format=%s').stdout.strip() \
                 == 'sign(2.1.0): jane@acme.com'
             assert made.head() != before
+            assert git(made.root, 'rev-parse',
+                       'signed/2.1.0^{commit}').stdout.strip() == made.head()
         finally:
             made.close()
 
@@ -1453,6 +1455,9 @@ class TestTheSignOff:
         assert body['shown']['audit_list_opened'] is False
         assert body['notes'] == [{'feature': 'login', 'rule': 'RULE-2',
                                   'note': 'the lockout page read 401'}]
+        # What was shown is these four and nothing beside them.
+        assert sorted(body['shown']) == ['audit_list_opened', 'hand_checks',
+                                         'overview', 'runs'], body['shown']
         def values(item):
             if isinstance(item, dict):
                 return [found for value in item.values()
@@ -1515,10 +1520,14 @@ class TestTheSignOff:
             self):
         made = ready(version='0.1.0', signer=False)
         try:
+            before = made.head()
             code, lines, _asked = sign_as(made, 'quinn.qa@labconnect.example',
                                           'Quinn')
             head = made.head()
             assert code == 0
+            # One commit, and no other, since the walk began.
+            assert git(made.root, 'rev-list', '--count',
+                       '%s..HEAD' % before).stdout.strip() == '1'
             assert git(made.root, 'log', '-1', '--format=%s').stdout.strip() \
                 == 'sign(0.1.0): quinn.qa@labconnect.example'
             assert '-----BEGIN SSH SIGNATURE-----' in git(

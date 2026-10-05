@@ -219,6 +219,10 @@ def test_the_fingerprint_is_taken_over_what_the_other_entries_reach(project):
     with_unmatched = project.fp('login')
     assert with_unmatched['code'] == alone['code']
     assert fingerprint.incomplete_reason(project.root, 'login') is None
+    [selected] = [entry for entry in fingerprint.selection(project.root)
+                  if entry['feature'] == 'login']
+    assert not [reason for reason in selected['reasons']
+                if 'names no files' in reason], selected
 
 
 # --- RULE-6 -----------------------------------------------------------------
