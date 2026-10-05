@@ -1,9 +1,59 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-18": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-16": {
+            "after": "pin is behind and 2 when a source could not be read. `purlin:diff` and `purlin:status` run the",
+            "aim": "plain",
+            "before": "pin is behind and 2 when a source could not be read. `purlin:drift` and `purlin:status` run the",
+            "bug_key": "5558016e9bc5e6a5d134150b91f145f101ea08ce8b36ca2877d6306d525f7ba4",
+            "case": "the text of skills/anchor/SKILL.md is searched for `purlin:drift`; the proof says it is held and nothing is reported; the changed text holds `purlin:diff` instead, so the command is missing",
+            "file": "skills/anchor/SKILL.md",
+            "line": 94,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-2": {
+            "after": "`references/commit_convention.md` holds the prefix.",
+            "aim": "plain",
+            "before": "`references/commit_conventions.md` holds the prefix.",
+            "bug_key": "d1d7df018a720b7ebcaa59b88099a286d059869228d1a5b1bd419ec764351dd1",
+            "case": "the text of skills/anchor/SKILL.md is searched for `references/commit_conventions.md`; the proof says it is held and nothing is reported; the changed text holds only `references/commit_convention.md`, so the name is missing",
+            "file": "skills/anchor/SKILL.md",
+            "line": 56,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "fd3ea27d71b3631fe5438fd7a62258310f5d56408aa21fb348c22c156078ada1",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-2: the test reads the skill's text and asserts that the list of names from FILES missing from it is empty, which is the proof's \"nothing is reported\" for every name FILES holds.",
+          "PROOF-2: FILES is defined outside the test's own lines, so the test source shown does not say whether it holds the six paths the proof names; a path left out of FILES would go unchecked.",
+          "PROOF-2: the second assertion goes through the helper must_name, whose body is not shown, so what it adds to the first assertion cannot be read here.",
+          "PROOF-16: the test reads the skill's text and asserts that the list of names from COMMANDS missing from it is empty, which is the proof's \"nothing is reported\" for every name COMMANDS holds.",
+          "PROOF-16: COMMANDS is defined outside the test's own lines, so the test source shown does not say whether it holds the five commands the proof names.",
+          "PROOF-16: the check is a substring search, so `purlin:spec` and `purlin:status` are found wherever those letters stand in the text, and `purlin:anchor create` and `purlin:anchor sync` each stand in several places; removing one mention of those leaves the proof's case as it was.",
+          "No spot test fired, and both tests compare against an empty list, a result that fails when a name is missing."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "aa4ece5241f183e5fdd8499a970755acad0fc32029b33e55d80df780ed9f6709",
+        "rule_hash": "58fda3adc7c5cb8a28c214e259863e0e5826e8714fdd6d342a15ce4030b0cb86",
+        "test_hash": "c423508161e9e523b95b0f2ec3ccc0ad141b2eb58180292c6234a8c5a0598c82",
+        "verdict": "strong"
+      }
+    }
+  },
   "feature": "skill_anchor",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T16:58:50Z",
-      "commit": "572679b298d96e95848047a5fa1a8bf9fcb76958",
+      "at": "2026-10-05T18:16:21Z",
+      "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -14,12 +64,6 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -28,12 +72,6 @@
           "test": "dev/test_skill_anchor.py::test_the_anchor_skill_holds_each_of_its_six_files"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-16",
           "manual": false,

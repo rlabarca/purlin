@@ -1,9 +1,154 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-29": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-56": {
+            "after": "The run writes each feature's section and its `audit` into `.purlin/evidence/<feature>.json`\nand prints `Evidence written to .purlin/evidence/<feature>.json.` It commits no result unless",
+            "aim": "plain",
+            "before": "The run writes each feature's section and its `audit` into `.purlin/evidence/local/<feature>.json`\nand prints `Evidence written to .purlin/evidence/local/<feature>.json.` It commits no result unless",
+            "bug_key": "9bb4ed9bfd8a3c29a2cbdbc3fe0c703b20506cc70993b5c3aa949f23c686ac77",
+            "case": "a copy of the audit skill with every `references/review_criteria.md` taken out; the proof says the report is `audit does not name references/review_criteria.md`; the changed skill's copy is also reported as not naming `.purlin/evidence/local/<feature>.json`",
+            "file": "skills/audit/SKILL.md",
+            "line": 72,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-59": {
+            "after": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" ${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py --audit --project-root .",
+            "aim": "past the test",
+            "before": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py\" --audit --project-root .",
+            "bug_key": "6558b511ab910a49b6e6cb69c3f03bd2486fed65811bb09cd14797243a80dbce",
+            "case": "a reader looks for `\"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py\"` in the audit skill; the proof says it is named there, quotes included; the changed skill holds the path only without its quotes",
+            "file": "skills/audit/SKILL.md",
+            "line": 38,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2d2eb932a3017f7111105cd858f83ffbe853709b870a2d33be0a89cd1da76d77",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-59: the test looks in the skill's text for every name in its `COMMANDS` and `PATHS` lists, which are defined outside the test shown, so a name the proof gives that is missing from those lists, or written there another way, is not looked for.",
+          "PROOF-59: the only name the test ties to the proof by its literal is `purlin:audit <feature> RULE-N --settle`, and it checks that against the list, not against the skill's text directly.",
+          "PROOF-56: the test takes `references/review_criteria.md` out of a copy of the skill and compares the whole report with the one sentence the proof names, so a missing, different or extra sentence fails it.",
+          "Findings: none were reported, and nothing in either test is a check that cannot fail."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "536bfb4010ac1d141dd35c4b86c75a9a54581cdd4ac3e4a8300da9c45c5290d8",
+        "rule_hash": "3c8b32a5378d95bea139a8ef2ab7b78bde70c9b60c186f1352b85c05b0a053be",
+        "test_hash": "a81ecdb6d367ee2d9146d67578e88df67741894708003cd9184a81aed6ad766a",
+        "verdict": "strong"
+      },
+      "RULE-30": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-60": {
+            "after": "- A line `PROOF-N: the bug at <file>:<line> did not break what the proof says. A new bug is",
+            "aim": "past the test",
+            "before": "- A line `PROOF-N: the bug at <file>:<line> did not break what the proof says. A new bug was",
+            "bug_key": "97c051aa818ca6b256430bf16ba67d2dffb15942fd922c71cee3e9331a8c1500",
+            "case": "the audit skill is searched for `did not break what the proof says. A new bug was planted.`; the proof says the skill holds it; the changed skill reads \"A new bug is planted.\" and no longer holds it",
+            "file": "skills/audit/SKILL.md",
+            "line": 109,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2d2eb932a3017f7111105cd858f83ffbe853709b870a2d33be0a89cd1da76d77",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-60: the test reads the skill and the criteria's section under `Settling a finding`, and asserts that a helper finds none of `SETTLE_LINES` missing from either, which is the proof's two documents and its one observation.",
+          "PROOF-60: the two phrases the proof names are not in the test's own lines; they come from the constant `SETTLE_LINES`, whose value is not shown, so the test catches a changed phrase only if that constant holds both phrases in full.",
+          "PROOF-60: the helper `not_named` is not shown either, so how it matches a phrase that wraps across two lines in the skill, as the second one does, cannot be seen from the test.",
+          "PROOF-60: the planted change alters the tail of the second phrase and leaves `did not break what the proof says.` in place, so a constant holding only that shorter form would let it through.",
+          "The spot tests found nothing, which fits: the test asserts twice, against an empty list, and takes no expected value from the files it reads."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "6abf3cdae5da420f9ddf0392b49473536b87d22b156323465dafd712a3904055",
+        "rule_hash": "bdc654fadcb367d56bad3618bb1c0c3b8d438fb2edd1b613498764a383d58ad0",
+        "test_hash": "f6d9a36f8abec502dd8e368b4f394611aa3c9d89a8d028178e23bbaf5861e063",
+        "verdict": "strong"
+      },
+      "RULE-31": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-61": {
+            "after": "  names` says a settle went on under `--sound PROOF-N`. The evidence records it, and every",
+            "aim": "past the test",
+            "before": "  names.` says a settle went on under `--sound PROOF-N`. The evidence records it, and every",
+            "bug_key": "6f6da39643de5d7ae4f1bf463c98b6b09b61e0d7116b82b123c9f388ed8b8dbc",
+            "case": "the audit skill read for the sentence a settle under `--sound` leaves; the proof says it holds `was settled with its test unchanged: it was judged to assert what the proof names.`; the changed skill holds it without its closing full stop",
+            "file": "skills/audit/SKILL.md",
+            "line": 124,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2d2eb932a3017f7111105cd858f83ffbe853709b870a2d33be0a89cd1da76d77",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-61: the test reads the audit skill and the part of the criteria under `Settling a finding`, and checks that neither lacks any entry of `UNCHANGED_LINES`, which matches the two places the proof names.",
+          "PROOF-61: the values of `UNCHANGED_LINES` and the matching done by `not_named` are not shown, so the test's own lines do not show whether both sentences are compared in full, closing full stop included.",
+          "PROOF-61: the skill wraps both sentences across two lines, so the test only finds them if `not_named` ignores line breaks, which is not shown.",
+          "PROOF-61: the proof reads fixed text in two files and nothing is done before the observation, so it shows the words are present and not that the audit prints them.",
+          "Findings: the spot tests found nothing; the test has two assertions that can fail, and the proof's two values may be held in a constant defined elsewhere in the test's file."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "fde0b80e978a4aaea847fd0886033a047ac96d28c5a1423bbdf26a7ac0e48840",
+        "rule_hash": "778967dbd633e9e4a711c61b8aebcd5f56acf43f40de7d4c6e488096f25ef1f2",
+        "test_hash": "c5ecf1396744ec512484c231199c11e73aab584701c0fe4703aefa9c2f7a645c",
+        "verdict": "strong"
+      },
+      "RULE-32": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-62": {
+            "after": "  with purlin:test.` is printed by an audit without `--settle`: the code changed, the test did",
+            "aim": "past the test",
+            "before": "  with purlin:build.` is printed by an audit without `--settle`: the code changed, the test did",
+            "bug_key": "2dfb9dc0ab2fc4545cfc89419e2159fb61cfd3d47c7fb3797f4393b56be8f3e8",
+            "case": "the audit skill is read for the line an audit without --settle prints; the proof says it holds `its test is as it was and still passes with the bug it missed. Strengthen it with purlin:build.`; the changed skill ends the line `Strengthen it with purlin:test.`",
+            "file": "skills/audit/SKILL.md",
+            "line": 101,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2d2eb932a3017f7111105cd858f83ffbe853709b870a2d33be0a89cd1da76d77",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-62: the test reads the skill and the part of the criteria under `The planted bug`, and asserts that neither lacks the constant STILL_PASSES, so both places the proof names are observed.",
+          "PROOF-62: the value of STILL_PASSES and the helpers not_named, read and under_heading are not in the test's own lines, so the test as shown does not say whether the whole line the proof names is compared, its closing `Strengthen it with purlin:build.` included, or only its opening words.",
+          "PROOF-62: the line is wrapped across two lines in the skill, so the test catches a change to its tail only if not_named joins wrapped lines and the constant holds the full sentence.",
+          "PROOF-62: the spot tests found nothing, and they miss whether the constant matches the proof's text, since the expected value is a name and not the literal the proof gives."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "63be06992051276aea1806762d9ff40ddb1c5f5010781213f5fceeb3e2f1265f",
+        "rule_hash": "87c7c58175ed2c870acadec0ebecc0a1c675ea6120862555b19e052cb905d377",
+        "test_hash": "89d1f8dc92ec60349369863184d88589192b317a35ad4cd46485983119d44b9b",
+        "verdict": "strong"
+      }
+    }
+  },
   "feature": "skill_audit",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T16:58:50Z",
-      "commit": "572679b298d96e95848047a5fa1a8bf9fcb76958",
+      "at": "2026-10-05T18:16:21Z",
+      "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -14,12 +159,6 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-59",
           "manual": false,
@@ -28,12 +167,6 @@
           "test": "dev/test_skill_audit.py::test_a_reader_finds_each_command_and_path_named_the_settle_included"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-56",
           "manual": false,
@@ -42,12 +175,6 @@
           "test": "dev/test_skill_audit.py::test_a_copy_without_the_criteria_is_reported"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-60",
           "manual": false,
@@ -56,12 +183,6 @@
           "test": "dev/test_skill_audit.py::test_the_skill_and_the_criteria_hold_the_two_lines_a_settle_prints"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-61",
           "manual": false,
@@ -70,12 +191,6 @@
           "test": "dev/test_skill_audit.py::test_the_skill_and_the_criteria_hold_the_refusal_and_the_sound_sentence"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-62",
           "manual": false,

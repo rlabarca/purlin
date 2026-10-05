@@ -1,9 +1,185 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-87": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-2": {
+            "after": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py\"",
+            "aim": "past the test",
+            "before": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py\" --project-root .",
+            "bug_key": "bf7bac73f8be8fee35af9ec9cd52e295862857bf61402009644f43ef073a32e5",
+            "case": "a reader looks for the line that runs setup through the lookup with `--project-root`; the proof says that line passes `--project-root`; the changed skill's setup line runs the script with no `--project-root`, and only the `--update` lines still carry it",
+            "file": "skills/init/SKILL.md",
+            "line": 26,
+            "result": "survived",
+            "test_key": "1431c7883fc8d1486d5e7829f446b7311b9a3a3be480c2539cc8c1df17a25008",
+            "why": ""
+          },
+          "PROOF-24": {
+            "after": "   `--update --project-root . --restore`.",
+            "aim": "past the test",
+            "before": "   `--update --project-root . --yes`.",
+            "bug_key": "0fc0d073064ce3427264d6bf697de6b7892b1e1f9468ea62918ee13bcabb7535",
+            "case": "the usage from `--help` is compared with every flag the skill hands a reader; the proof says each one is listed; the changed skill tells the reader to run the script with `--restore`, which the usage does not list",
+            "file": "skills/init/SKILL.md",
+            "line": 161,
+            "result": "survived",
+            "test_key": "ce67a04691a2ef64f774441c24535d15a1d882f7c537d397c785b79d7a539a1d",
+            "why": ""
+          },
+          "PROOF-42": {
+            "after": "`references/formats/marker_format.mdx` is the contract. Read and change the file with the",
+            "aim": "past the test",
+            "before": "`references/formats/marker_format.md` is the contract. Read and change the file with the",
+            "bug_key": "8dac98bd698925bdda1da1a71f4e5614a604697c0134a1ab9fd5b7d2ec8cb197",
+            "case": "a reader looks for the reference `references/formats/marker_format.md`; the proof says the skill names it; the changed skill names `references/formats/marker_format.mdx`, a different file",
+            "file": "skills/init/SKILL.md",
+            "line": 63,
+            "result": "survived",
+            "test_key": "359e8b561e8ac0e7338e494a7df221f89dcb429c11fa108ff38899d0cf2a0125",
+            "why": ""
+          }
+        },
+        "code_hash": "e7255d0a68d4b6be66eed8d337e0a14c187c89c476ce34b5885581c505aa210f",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-2: the test asks a helper defined in another file for a line that holds the lookup, the script path and `--project-root` together, and expects no complaint.",
+          "PROOF-2: three lines of the skill hold all of these, so the setup line can lose `--project-root` and the two `--update` lines may still satisfy the test.",
+          "PROOF-24: the test runs the script with `--help`, checks it exits 0, and checks that no flag the helper collects is missing from the usage.",
+          "PROOF-24: the test also requires `--project-root` and at least one more flag among those collected, so an empty collection cannot pass.",
+          "PROOF-24: the helper that collects the flags is not shown, so a flag handed on a prose line that tells the reader what to run the script with may not be collected.",
+          "PROOF-42: the test checks that each of the five names is a substring of the skill's flattened text, then asks a helper defined in another file the same of the skill.",
+          "PROOF-42: a substring check passes when a longer path holds the name, and `.purlin/config.json`, `.purlin/evidence/` and `specs/` each appear several times, so one mention can change and the test still passes.",
+          "The spot tests found nothing, and each of the three tests holds an assertion that can fail."
+        ],
+        "findings": [
+          "PROOF-2: the test still passes when skills/init/SKILL.md:26 reads \"sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py\"\"",
+          "PROOF-2: the AI says this breaks: a reader looks for the line that runs setup through the lookup with `--project-root`; the proof says that line passes `--project-root`; the changed skill's setup line runs the script with no `--project-root`, and only the `--update` lines still carry it",
+          "PROOF-24: the test still passes when skills/init/SKILL.md:161 reads \"`--update --project-root . --restore`.\"",
+          "PROOF-24: the AI says this breaks: the usage from `--help` is compared with every flag the skill hands a reader; the proof says each one is listed; the changed skill tells the reader to run the script with `--restore`, which the usage does not list",
+          "PROOF-42: the test still passes when skills/init/SKILL.md:63 reads \"`references/formats/marker_format.mdx` is the contract. Read and change the file with the\"",
+          "PROOF-42: the AI says this breaks: a reader looks for the reference `references/formats/marker_format.md`; the proof says the skill names it; the changed skill names `references/formats/marker_format.mdx`, a different file"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "2e2755d82a07a55464cd10e6ad4b057f3874754d3c125ba9dc7ffa0112b837f7",
+        "rule_hash": "52d955a1e4d4f98549109474c930d3066157e3ad24621fae0e80e661c824b50d",
+        "test_hash": "def0fcbfebb312082bdd7525d6f8377922e6d6065a7fab8639a029172a83ba36",
+        "verdict": "weak"
+      },
+      "RULE-88": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-100": {
+            "after": "   sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py\" --update --project-root . --apply <id>,<id> --test-command pytest \"<command>\"",
+            "aim": "past the test",
+            "before": "   sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py\" --update --project-root . --apply <id>,<id> --test-command \"pytest=<command>\"",
+            "bug_key": "a1cc1f00596ba5a65262f3a00ec41bc182033e94c2f71c2820f689cb9f8e5e14",
+            "case": "the setup script run with --update --apply evidence and --test-command as the skill's line gives them on a 0.9.5 project; the proof says it asks nothing and applies the migration named alone; the changed line gives the tool and the command as two arguments, so the script refuses them and applies not",
+            "file": "skills/init/SKILL.md",
+            "line": 103,
+            "result": "survived",
+            "test_key": "dabd75694571b2c6a79c212a336d2c4c4f48dc39e89d71a035b1e0956979014e",
+            "why": ""
+          },
+          "PROOF-99": {
+            "after": "2. **Stop and ask** the person about each migration listed and the first proposed test command:",
+            "aim": "past the test",
+            "before": "2. **Stop and ask** the person about each migration listed and each proposed test command:",
+            "bug_key": "441f9ff7da1dbbb9c52fbb6da781538c5864cd93e820de27c7eec70a6db17b70",
+            "case": "a reader of the part on bringing a 0.9.5 project forward; the proof says the Stop and ask step names each migration and each proposed test command; the changed skill asks about each migration and only the first proposed test command",
+            "file": "skills/init/SKILL.md",
+            "line": 96,
+            "result": "survived",
+            "test_key": "bb7782845852670e4262a7943c5d0b28becb5d659b682c17ab0250ebf068769c",
+            "why": ""
+          }
+        },
+        "code_hash": "e7255d0a68d4b6be66eed8d337e0a14c187c89c476ce34b5885581c505aa210f",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-99: the test finds the three lines by the words `--update`, `< /dev/null`, `**Stop and ask**`, `each migration`, `test command`, `--apply` and `--test-command` and checks their order, which is what the proof names.",
+          "PROOF-99: the test looks for `test command` and not `each proposed test command`, so a step that asks about fewer than every proposed command still passes.",
+          "PROOF-100: the test reads only the flag names from the skill's apply line and compares them with `--apply`, `--project-root`, `--test-command` and `--update`.",
+          "PROOF-100: the test then runs the script with argument values it writes itself, `evidence` and `pytest=pytest {files}`, so the form the skill's line gives each value in is never run.",
+          "PROOF-100: the test checks an exit of `0`, no `[y/N]` in the output and that `evidence` alone left the pending list, which is the result the proof names.",
+          "No spot test fired, and none of the six applies: both tests assert, mock nothing, and take their expected values from literals."
+        ],
+        "findings": [
+          "PROOF-99: the test still passes when skills/init/SKILL.md:96 reads \"2. **Stop and ask** the person about each migration listed and the first proposed test command:\"",
+          "PROOF-99: the AI says this breaks: a reader of the part on bringing a 0.9.5 project forward; the proof says the Stop and ask step names each migration and each proposed test command; the changed skill asks about each migration and only the first proposed test command",
+          "PROOF-100: the test still passes when skills/init/SKILL.md:103 reads \"sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py\" --update --project-root . --apply <id>,<id> --test-command pytest \"<command>\"\"",
+          "PROOF-100: the AI says this breaks: the setup script run with --update --apply evidence and --test-command as the skill's line gives them on a 0.9.5 project; the proof says it asks nothing and applies the migration named alone; the changed line gives the tool and the command as two arguments, so the script refuses them and applies not"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "626177f25b6667b233b56808a8374fa880374ab2778fe004dbbc69d8d3ee8a34",
+        "rule_hash": "c25747d3bfc656d14b27fa433beb6eaa1b953d23319039d5dee374d6e7d07040",
+        "test_hash": "235e5f4449791567142f1481726fa8fb544895922946416de01053695350cbe7",
+        "verdict": "weak"
+      },
+      "RULE-89": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-101": {
+            "after": "setup writes is to restore: Purlin's lines in `.gitignore`, `.purlin/evidence/README.md`, the\nversion in the settings file, or the dashboard page at the project root. The same script\nrestores it, and none of the part above applies. Two steps:\n\n1. **List.** Run the line of step 1 above, which reads `.purlin/config.json`. It prints `<n> files to restore in <folder>:` and one",
+            "aim": "past the test",
+            "before": "setup writes is to restore: Purlin's lines in `.gitignore`, `.purlin/evidence/README.md`, the\n`version` in `.purlin/config.json`, or the dashboard page at the project root. The same script\nrestores it, and none of the part above applies. Two steps:\n\n1. **List.** Run the line of step 1 above. It prints `<n> files to restore in <folder>:` and one",
+            "bug_key": "112b2e7bf9cd53f5130765219c99c5111a71b49a79ea3a23eda1e12bee3b7d48",
+            "case": "a reader of the restoring part; the proof says the four files are named before the `List` step; the changed part names `.purlin/config.json` only inside the `List` step",
+            "file": "skills/init/SKILL.md",
+            "line": 154,
+            "result": "survived",
+            "test_key": "d9864c6be4a5d640183fa1701dfde9504bb1b1cea97f42bcb7a3938e3802001f",
+            "why": ""
+          },
+          "PROOF-102": {
+            "after": "It prints `Restoring <n> files: <files>.`, one line `restored <file>` for",
+            "aim": "plain",
+            "before": "It prints `Restoring <n> files: <files>.`, one line `restored <file>: <what the file is for>` for",
+            "bug_key": "fa7ad32f0499bd3414bd35f0038ddbd05b5fba98eda1b92b79f409d98ac6b489",
+            "case": "the restoring part's quoted lines; the proof says it quotes `restored <file>: <what the file is for>`; the changed part quotes `restored <file>` with nothing after it",
+            "file": "skills/init/SKILL.md",
+            "line": 163,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "e7255d0a68d4b6be66eed8d337e0a14c187c89c476ce34b5885581c505aa210f",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-101: the test looks for each file name anywhere in the restoring part and compares the order of the `List`, `Stop and ask` and `--update` `--yes` lines only, so a file named after the `List` step still passes.",
+          "PROOF-101: the `Stop and ask` line is found by the word `restore` on it, so the step is read as naming the restoring from that one word.",
+          "PROOF-102: the test looks for each of the five quoted lines in the part, in backticks, so a quote that is changed or removed fails it.",
+          "PROOF-102: the test runs the setup script with `--update` on a sample project, once with its input empty and once with `--yes`, and compares the first and last lines of the listing and the first, third and fourth lines of the restoring with the values the proof names.",
+          "PROOF-102: the expected lines are written out in the test as literals, with only the folder taken from the sample project's path, so none comes from the script under test.",
+          "No finding of the spot tests is listed, and both tests hold assertions that can fail."
+        ],
+        "findings": [
+          "PROOF-101: the test still passes when skills/init/SKILL.md:154 reads \"version in the settings file, or the dashboard page at the project root. The same script\"",
+          "PROOF-101: the AI says this breaks: a reader of the restoring part; the proof says the four files are named before the `List` step; the changed part names `.purlin/config.json` only inside the `List` step"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-102 is longer than 60 words and holds three cases: what the part quotes, the run with its input empty and the run with `--update --yes`."
+        ],
+        "proof_hash": "ee5d8e6aaff91d2af4b6fc8742f5523c42db374e58a13afb4db982637e90a6a6",
+        "rule_hash": "9e5432dd448ee001e94a68f65b08d85ddef446384b025fceb56a45c0b0bf4bbb",
+        "test_hash": "c4b8ef1f4981e3cf7fb9284764019b99ec7dd4e98d24cdffe9c680e3009e5d20",
+        "verdict": "weak"
+      }
+    }
+  },
   "feature": "skill_init",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T16:58:50Z",
-      "commit": "572679b298d96e95848047a5fa1a8bf9fcb76958",
+      "at": "2026-10-05T18:16:21Z",
+      "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -14,12 +190,6 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -28,12 +198,6 @@
           "test": "dev/test_skill_init.py::test_one_line_runs_the_script_through_the_lookup_with_the_root"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-24",
           "manual": false,
@@ -42,12 +206,6 @@
           "test": "dev/test_skill_init.py::test_every_flag_handed_is_one_the_usage_lists"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-42",
           "manual": false,
@@ -56,12 +214,6 @@
           "test": "dev/test_skill_init.py::test_a_reader_finds_the_files_setup_writes_and_the_two_references"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-99",
           "manual": false,
@@ -70,12 +222,6 @@
           "test": "dev/test_skill_init.py::test_the_upgrade_part_lists_then_asks_then_passes_each_answer"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-100",
           "manual": false,
@@ -84,12 +230,6 @@
           "test": "dev/test_skill_init.py::test_the_flags_the_upgrade_part_hands_apply_one_migration_unasked"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-101",
           "manual": false,
@@ -98,12 +238,6 @@
           "test": "dev/test_skill_init.py::test_the_restoring_part_names_the_files_then_lists_asks_and_restores"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-102",
           "manual": false,

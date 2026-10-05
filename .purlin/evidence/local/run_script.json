@@ -1670,7 +1670,7 @@
         "verdict": "strong"
       },
       "RULE-63": {
-        "at": "2026-10-05T16:43:59Z",
+        "at": "2026-10-05T18:42:48Z",
         "bugs": {
           "PROOF-130": {
             "after": "        'run': 'go test ./...',",
@@ -1708,27 +1708,30 @@
           }
         },
         "code_hash": "d9d157140fa076e224606149574766fd541d15bfddb5a9a7b7b834383bd7b207",
-        "commit": "5778e5e46e80f06273659ec6b43ab9686ee4ea09",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-130: the test reads the `run` of each of the seven suggested entries and looks for that tool's flag as whole words, and it checks that the seven names are the ones the proof lists.",
-          "PROOF-221: the test builds a project holding only what pytest leaves, asks for the suggestion with the system given as `windows`, and compares the one entry's whole command with `py -3 -m pytest {files} --junitxml={report}`.",
-          "PROOF-221: the test hands the system in by name, so the path where the machine's own system is read is never exercised, and a fault there still passes.",
-          "PROOF-133: the test compares the page's entries, in order, with the array a run prints for a project holding all seven tools and with the suggested entries, and compares each block's text with the entry written out, so a changed word or order on the page fails.",
-          "Findings: the spot tests found nothing; each test holds failable assertions against literals or the page, and the file holds the values PROOF-130 and PROOF-221 name."
+          "PROOF-130: the test checks that the suggested names are exactly the seven tools and that each `run` command holds its flag as whole words, with every flag written as a literal in the test, so a dropped or altered flag fails it.",
+          "PROOF-130: it compares the names sorted and reads only the flag inside each command, so the order of the entries and the rest of each command are left to PROOF-133; the source of the `suggestions` fixture is not shown, so whether it is what the run suggests cannot be read here.",
+          "PROOF-221: the test asks for the suggestions with the system named as `windows`, requires exactly one entry and compares its `run` with the whole literal `py -3 -m pytest {files} --junitxml={report}`, which is the case and the value the proof names.",
+          "PROOF-221: the system is handed in as an argument, so how a real Windows machine is detected is not observed here and is left to PROOF-326.",
+          "PROOF-326: the test runs `--all --test` and looks for the whole line `Suggested for pytest: py -3 -m pytest {files} --junitxml={report}` among the output lines, which is the proof's value exactly; it reads no exit code, and the proof names none.",
+          "PROOF-326: the test sets no system itself and relies on its Windows tag, so on any other machine it is not run and decides nothing.",
+          "PROOF-133: the test compares the page's entries with the entries the run prints for a project holding all seven tools, in order, then with the fixture's entries in `ORDER`, then each block of the page with the entry's JSON text, so a change to an entry, to the order or to the page's wording fails it.",
+          "PROOF-133: the page and the code are separate sources, so a change to either alone is seen; `ORDER`, `_page_entries` and `_suggested` are not shown, so whether the order is fixed by the test's own list or taken from the code cannot be read here.",
+          "The report's path under `.purlin/runtime/reports/`, its format and the globs are named by the rule and by no proof as literals; they are observed only through PROOF-133's comparison of the page with the run.",
+          "The spot tests found nothing, and nothing in the four tests shown is a check that cannot fail, a swallowed error, a mock of the code checked or an expected value taken from the code it checks."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [
           "No bug was caught for PROOF-221: two planted bugs left the proof's check passing.",
-          "PROOF-221 was settled with its test unchanged: it was judged to assert what the proof names."
+          "PROOF-221 was settled with its test unchanged: it was judged to assert what the proof names.",
+          "No bug was planted: PROOF-326 needs Windows, and this machine is macOS."
         ],
-        "notes": [
-          "PROOF-221 names the system as a given word in its test, while the proof speaks of a machine whose system is Windows."
-        ],
-        "proof_hash": "e6f448f72634c3a36abbd1a62a7b42690eb2aa7311392c26d909528bc44335c8",
+        "proof_hash": "885a244209e705bf8a675c5ae35345b35e134074b4c26eed5f1c9b16d5748fd3",
         "rule_hash": "4aac672a8d4d4cbba4d6890d1b2a648ce33ace55d18bfbbbc1b5cd5861f1e47e",
-        "test_hash": "0cfec2cc650c65855fa628abd42f9940668a67c62905f461ce6c6a0641735bed",
+        "test_hash": "ca42b50cfdaaa47b7f4f6612a03cf3aa95e90c986464bebb85363fe81bdc0bfd",
         "verdict": "strong"
       },
       "RULE-67": {

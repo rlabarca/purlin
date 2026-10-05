@@ -1,9 +1,948 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-1": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-1": {
+            "after": "                \"protocolVersion\": \"2024-11-06\",",
+            "aim": "plain",
+            "before": "                \"protocolVersion\": \"2024-11-05\",",
+            "bug_key": "430ffb104a0bc6cb2ab2f53b1ba0472d3f9832a684ea50313b669d89da64b10c",
+            "case": "a client starts the server as its own process and sends initialize; the proof says protocol version 2024-11-05; the changed code gives 2024-11-06",
+            "file": "scripts/mcp/purlin/server.py",
+            "line": 202,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-1: the test starts the server as a child process, sends initialize, and compares the protocol version with the literal `2024-11-05` and the server name with the literal `purlin`, as the proof names them.",
+          "PROOF-1: the test compares the version with what the helper `_version()` returns, and that helper's source is not shown, so whether the expected value is the text of the `VERSION` file or a value taken from the server's own code cannot be read here.",
+          "PROOF-1: the test checks that `tools` is a key of the capabilities, which is what the proof names, and reads nothing of that key's value.",
+          "The spot tests found nothing, and each of the four values the proof names is compared by an assertion that can fail."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "5ae28004eea5e90a62462a906860d30cb9580a7c390dd137e2ac4d5bea358bfd",
+        "rule_hash": "d0c391563c70759a77bbb63edf79cf51f30bfd88b4559b24096048eb83286050",
+        "test_hash": "b7c674906ed934c1d8a25fbb1a7bf5e69a5293aded65eed5c86398b1a7683156",
+        "verdict": "strong"
+      },
+      "RULE-2": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-2": {
+            "after": "            \"properties\": {},",
+            "aim": "plain",
+            "before": "            \"properties\": {\"project_root\": _PROJECT_ROOT_PROPERTY},",
+            "bug_key": "b781ebbb9efee38b75e619d2c477ed60792f0dabbbad8fa843632815e6213c9b",
+            "case": "a client sends tools/list; the proof says each of the three tools lists project_root among the arguments it takes; the changed code gives sync_status with no project_root argument",
+            "file": "scripts/mcp/purlin/server.py",
+            "line": 63,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-2: the test sends `tools/list` to the running server and compares the sorted tool names with the exact list `drift`, `purlin_config` and `sync_status`, so a missing, extra or renamed tool fails it.",
+          "PROOF-2: for every tool returned, the test asserts `project_root` is among the schema's properties and not among its required arguments, which is both halves of what the proof names.",
+          "PROOF-2: the spot tests found nothing, and the test observes the proof's case and each result it names, so the planted bug is a plain one."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "98ef73e2f56740ac1fb56ee99713e289707de9c7a14c2c602cc120fecd15e9bb",
+        "rule_hash": "e7c2351a5fde2946b2696ed60b15bb6b1807ade82f747b2a8366201acfdfc84d",
+        "test_hash": "0295bcd6087f91ae2ba52fdb320d19e9dcd696667b2eb803c1a031822896a730",
+        "verdict": "strong"
+      },
+      "RULE-22": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-137": {
+            "after": "        PURLIN_PY=\"python3 \"",
+            "aim": "past the test",
+            "before": "        PURLIN_PY=\"python3\"",
+            "bug_key": "fac74970aa6027dc1f600dc864e8435343649b8d1488190db8496d9d84ff1700",
+            "case": "the manifest's command run in a workspace with python3 on the search path and no PURLIN_PYTHON set, sent initialize; the proof says exactly 1 line carrying the server name purlin; the changed code execs a program that does not exist and gives 0 lines",
+            "file": "scripts/purlin_python.sh",
+            "line": 40,
+            "result": "survived",
+            "test_key": "eb8ca31e76c5bd9ebdccab8dd9fffc7e673071de878ef05c05679d5586157409",
+            "why": ""
+          },
+          "PROOF-158": {
+            "after": "        \"PURLIN_PYTHON_SOFT\": \"0\"",
+            "aim": "plain",
+            "before": "        \"PURLIN_PYTHON_SOFT\": \"1\"",
+            "bug_key": "19bc8f9be2216b025dbc5feb9758b7246746c50e9a91e4ae9d5493a83237f179",
+            "case": "the plugin manifest's entry for the purlin server; the proof says PURLIN_PYTHON_SOFT is set to 1; the changed manifest sets it to 0",
+            "file": ".claude-plugin/plugin.json",
+            "line": 19,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-137: the test runs the manifest's command with the plugin's folder substituted, sends initialize and compares the line count with 1 and the server name with purlin, which is the proof's case and result.",
+          "PROOF-137: the test sets PURLIN_PYTHON to its own interpreter, so only the resolver's first branch runs and a fault in the python3, python or py -3 branches still passes.",
+          "PROOF-158: the test compares the entry's whole environment with PURLIN_PYTHON_SOFT set to 1 and its command with sh, which is what the proof names.",
+          "PROOF-158: the test checks only that the arguments are not empty, so the rule's resolver and its last argument naming scripts/mcp/purlin/server.py are compared by neither test and are held only by PROOF-137's server starting.",
+          "The spot tests found nothing, and both tests hold assertions that can fail against the values their proofs name."
+        ],
+        "findings": [
+          "PROOF-137: the test still passes when scripts/purlin_python.sh:40 reads \"PURLIN_PY=\"python3 \"\"",
+          "PROOF-137: the AI says this breaks: the manifest's command run in a workspace with python3 on the search path and no PURLIN_PYTHON set, sent initialize; the proof says exactly 1 line carrying the server name purlin; the changed code execs a program that does not exist and gives 0 lines"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "24f0a29c51e9847aafbd7b8a548341d5d2b0d844adccf8666dee5301801e907e",
+        "rule_hash": "d710779f4fda8cf6bd29e104cb7c5987c193bb0d9591856bd1ab5be9330d8f39",
+        "test_hash": "29564743006350b64c189c7e9e6793fdcf149ec5d4e0eed8ea07736efb930abc",
+        "verdict": "weak"
+      },
+      "RULE-31": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-156": {
+            "after": "    [ \"${PURLIN_PYTHON_SOFT:-}\" = \"1\" ] && exit 0\n    exit 2",
+            "aim": "plain",
+            "before": "    [ \"${PURLIN_PYTHON_SOFT:-}\" = \"1\" ] && exit 0\n    exit 1",
+            "bug_key": "9e380d0d1b36076dcb0b9b09c37089b5d396756ae45b9666455976c618b5edb0",
+            "case": "the resolver started with no Python and no py on the search path, PURLIN_PYTHON unset and PURLIN_PYTHON_SOFT unset; the proof says it exits 1; the changed code exits 2",
+            "file": "scripts/purlin_python.sh",
+            "line": 69,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-157": {
+            "after": "    [ \"${PURLIN_PYTHON_SOFT:-}\" = \"true\" ] && exit 0",
+            "aim": "plain",
+            "before": "    [ \"${PURLIN_PYTHON_SOFT:-}\" = \"1\" ] && exit 0",
+            "bug_key": "d92a546113599f5d2e5f0d63e9bfb89564a2a91ec3f94c729bbb1c3651561e46",
+            "case": "the resolver started with no Python and no py on the search path, PURLIN_PYTHON unset and PURLIN_PYTHON_SOFT set to 1; the proof says it exits 0; the changed code exits 1",
+            "file": "scripts/purlin_python.sh",
+            "line": 68,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-156: the test compares the exit code, standard output and standard error together against 1, an empty string and NO_PYTHON, so a wrong exit code, any output or any other line on standard error fails it.",
+          "PROOF-156: the helper that starts the resolver and the constant NO_PYTHON are defined outside the test's own lines, so whether `/bin/sh` is used, whether the search path holds no Python and no `py`, and whether the constant holds the proof's sentence cannot be read from what is shown.",
+          "PROOF-157: the test passes soft='1' to the same helper and compares the exit code, standard output and standard error against 0, an empty string and NO_PYTHON, so an exit of 1 or a changed line fails it.",
+          "PROOF-157: the test also requires standard output to be empty, which the proof does not name, and it rests on the same helper and constant that are not shown.",
+          "Findings: the spot tests found nothing, and each test holds one failable comparison of all the values its proof names."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "f379739891488030ed8018d01b01715421b85ee83beade5cb559ae7de808947f",
+        "rule_hash": "34392c660bec9e4aa0935cf71cc2dbf9cce7c90c5051f6c623c89eead0e6abd3",
+        "test_hash": "de7d99c92b065f1973159ac158bb1d8138ea5f696216bc7d9eb85fd565953cec",
+        "verdict": "strong"
+      },
+      "RULE-35": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-125": {
+            "after": "                \"error\": {\"code\": -32600, \"message\": \"Parse error\"}}) + '\\n')",
+            "aim": "plain",
+            "before": "                \"error\": {\"code\": -32700, \"message\": \"Parse error\"}}) + '\\n')",
+            "bug_key": "b7b9063cc2a8602f17fb442f9080b8fcd40e509e27cc683081afaec1e488f201",
+            "case": "a client sends the line not json; the proof says 1 response, an error with code -32700; the changed code gives an error with code -32600",
+            "file": "scripts/mcp/purlin/server.py",
+            "line": 280,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-127": {
+            "after": "                          \"message\": \"Method not found: %s\" % method}}",
+            "aim": "plain",
+            "before": "                          \"message\": \"Unknown method: %s\" % method}}",
+            "bug_key": "f61755d311c6fd66ac6eef9eb34bde9e481d921e0fced1d8a1dd75a73701be23",
+            "case": "a client requests the method nope/at/all; the proof says an error with code -32601 and message Unknown method: nope/at/all; the changed code gives the message Method not found: nope/at/all",
+            "file": "scripts/mcp/purlin/server.py",
+            "line": 248,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-3": {
+            "after": "    if method == 'notifications/initialized':\n        return {\"jsonrpc\": \"2.0\", \"id\": req_id, \"result\": {}}",
+            "aim": "plain",
+            "before": "    if method == 'notifications/initialized':\n        return None",
+            "bug_key": "46f0e6818c1e84a079b56293534d3ef5682cec7a1e2b9165a5846ca8fd9b7d6f",
+            "case": "a client sends notifications/initialized with no id, then tools/list with id 9; the proof says exactly 1 response with id 9; the changed code gives 2 responses, the first with a null id",
+            "file": "scripts/mcp/purlin/server.py",
+            "line": 209,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-3: the test sends the notification and then the tools/list request with id 9 and compares the list of response ids with [9], so both the count of 1 and the id the proof names are observed.",
+          "PROOF-125: the test sends the line not json, checks that exactly 1 line comes back and that its error code is -32700, which is the count and the code the proof names.",
+          "PROOF-127: the test sends the method nope/at/all and compares the whole error with the code -32601 and the message Unknown method: nope/at/all, so both values the proof names are observed.",
+          "The spot tests found nothing, and each test asserts the literal values its proof names, so none of the three leaves a way past it.",
+          "The rule also names an unknown tool answering -32601, and none of the three proofs shown sends a call for an unknown tool."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "abd3d248e9c89450529247ecd956eac760e05fc0cb71cdc2d7f084df0563457e",
+        "rule_hash": "69b4656efe1fc6dae872bed358f4fe8c3bcc42e4365855d7a418575a929da162",
+        "test_hash": "aa782b240108b1ff4edcf41d2f8ebaabe83d229e63eefa9dafbe4ceb15ca3972",
+        "verdict": "strong"
+      },
+      "RULE-36": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-151": {
+            "after": "        if refusal:\n            if key == 'tests' and isinstance(value, str):\n                update_config(project_root, key, value)\n            return refusal",
+            "aim": "past the test",
+            "before": "        if refusal:\n            return refusal",
+            "bug_key": "91e85437aef1ccb7c79b7ee3d3db8f6d9b5c1cba7223509c83553121e69351ef",
+            "case": "a write of tests as the text pytest; the proof says the refusal is answered and .purlin/config.json is byte for byte as it was; the changed code gives the same refusal but saves tests as \"pytest\" to the file",
+            "file": "scripts/mcp/purlin/server.py",
+            "line": 168,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-155": {
+            "after": "        if refusal:\n            if key == 'version':\n                update_config(project_root, key, value)\n            return refusal",
+            "aim": "past the test",
+            "before": "        if refusal:\n            return refusal",
+            "bug_key": "2509f54046e58baaeff2765f034f71f7ca72f2ed92c8fe7bec07dbdc6bb18e23",
+            "case": "a write of version as 9.9.9; the proof says the refusal is answered and .purlin/config.json is byte for byte as it was; the changed code gives the same refusal but saves version 9.9.9 to the file",
+            "file": "scripts/mcp/purlin/server.py",
+            "line": 168,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-164": {
+            "after": "        if refusal:\n            if key not in KNOWN_KEYS:\n                update_config(project_root, key, value)\n            return refusal",
+            "aim": "past the test",
+            "before": "        if refusal:\n            return refusal",
+            "bug_key": "57ff00cdbc8bab69d8f4258624e6838d681851b94f67553a8db9e693c9a43624",
+            "case": "a write of gate as signed; the proof says the refusal is answered and .purlin/config.json is byte for byte as it was; the changed code gives the same refusal but saves gate as \"signed\" to the file",
+            "file": "scripts/mcp/purlin/server.py",
+            "line": 168,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-155: the test compares what `_refused` returns for a write of `version` as `9.9.9` with the exact sentence the proof names; its own lines never read `.purlin/config.json`, so the byte-for-byte half rests on the `_refused` helper, which is not shown.",
+          "PROOF-151: the test compares what `_refused` returns for `tests` as the text `pytest` with the exact sentence the proof names; whether the file is left as it was is observed only if `_refused` compares its bytes before and after.",
+          "PROOF-164: the test compares what `_refused` returns for `gate` as `signed` with the exact sentence the proof names; the unchanged file is again left to the helper.",
+          "The spot tests found nothing, and each test does hold its proof's exact message; what they cannot show is whether the file comparison happens, because that would sit in a helper outside the test's own lines.",
+          "The rule also names a write with no key, a write with no value and an action that is neither read nor write; none of the three proofs shown covers those cases."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "1b30368c7e897b12fdcf7b05a4fd933c7c34b3255a9ef05dbf3cd58fcfda9a3c",
+        "rule_hash": "1f49905751766a3537aabb55b8bbe5b711d0144125f813a12eb8f56782efc001",
+        "test_hash": "833c3bce46a301820616fcaba51e858d4e7dfa5a3af5df3e24e64807c93eff51",
+        "verdict": "strong"
+      },
+      "RULE-37": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-166": {
+            "after": "NEEDS_PROJECT_ROOT = ('%s needs project_root: pass the root folder of the git '\n                      'checkout you are working in.')",
+            "aim": "plain",
+            "before": "NEEDS_PROJECT_ROOT = ('%s needs project_root: pass the top folder of the git '\n                      'checkout you are working in.')",
+            "bug_key": "3bf88da7feedaa023e62cfcefcc50d0c6bd616359aa44474244c93b89652b6ea",
+            "case": "sync_status called with no arguments in a workspace with the spec login; the proof says the answer is exactly `sync_status needs project_root: pass the top folder of the git checkout you are working in.`; the changed code gives `sync_status needs project_root: pass the root folder of the git checkou",
+            "file": "scripts/mcp/purlin/server.py",
+            "line": 115,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-167": {
+            "after": "        call_root = _call_root(arguments) or (\n            STARTED_IN if tool_name == 'purlin_config' else None)\n        if call_root is None:",
+            "aim": "plain",
+            "before": "        call_root = _call_root(arguments)\n        if call_root is None:",
+            "bug_key": "b02e634d96f7838da0a4f1e193f954dc8736bbcfcc8d7c4ee996c7ff935d29e7",
+            "case": "sync_status names another workspace, then purlin_config writes tests as [] naming no root; the proof says the second answer opens `purlin_config needs project_root:` and the startup config is unchanged; the changed code answers `tests is now []; saved to .purlin/config.json.` and writes the startup ",
+            "file": "scripts/mcp/purlin/server.py",
+            "line": 223,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-166: the test starts the server in the workspace, calls sync_status with no arguments and compares the whole answer with the proof's line, so any other wording fails it.",
+          "PROOF-166: the test also checks that `login` is not in the answer, which the exact comparison already implies.",
+          "PROOF-167: the test sends both calls to one server, checks that the first answer opens `Purlin status:` and that the second opens `purlin_config needs project_root:`, as the proof names.",
+          "PROOF-167: the test reads the startup workspace's config file as bytes before the calls and compares it after, so a write there fails it unless it leaves the same bytes.",
+          "PROOF-167: the test does not read the other workspace's config file, and the proof does not name it, so a write that followed the earlier call's root would be seen only through the second answer's opening.",
+          "The spot tests found nothing, and both tests compare the values their proofs name."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "3984acfe6ce4b025e270483b43d7db0fe5d1bd012693ce1866a38680f758903f",
+        "rule_hash": "868b802743f442e19648da6604e384fad1762642013d1a296dc5e94a60b3d92d",
+        "test_hash": "0dc549822ec3d62521e06779b5aaaeec25731dfb77c0ced14e580b71426a0ec4",
+        "verdict": "strong"
+      },
+      "RULE-38": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-170": {
+            "after": "    if _within(os.path.realpath(project_root), own) and os.path.realpath(project_root) != own:",
+            "aim": "plain",
+            "before": "    if _within(os.path.realpath(project_root), own):",
+            "bug_key": "42e70b4348c740f9ac119b2c738e97c84687c390f0c5f46772012a8e5453cb60",
+            "case": "the copy's server is started in another workspace and sync_status names the copy; the proof says the answer is exactly the \"is Purlin's own folder\" line; the changed code refuses only folders under the copy, so the answer opens \"Purlin status:\"",
+            "file": "scripts/mcp/purlin/project.py",
+            "line": 73,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-171": {
+            "after": "        if not ((_within(started, own) or same_repository(started, own)) and started != own):",
+            "aim": "plain",
+            "before": "        if not (_within(started, own) or same_repository(started, own)):",
+            "bug_key": "9301a1e1d3c49175ad004541be7f8ef84479b7de32055d16706e7bf335097db2",
+            "case": "the copy's server is started in the copy and sync_status names the copy; the proof says the answer opens \"Purlin status:\" and names login; the changed code answers the \"is Purlin's own folder\" refusal",
+            "file": "scripts/mcp/purlin/project.py",
+            "line": 75,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-172": {
+            "after": "        result = subprocess.run(['git', 'rev-parse', '--git-dir'],",
+            "aim": "plain",
+            "before": "        result = subprocess.run(['git', 'rev-parse', '--git-common-dir'],",
+            "bug_key": "00446cdff3167a2a4312ecc11b8d2b439fe85732e7d876045a459370c4fcc5c9",
+            "case": "the copy's server is started in a second checkout made by git worktree add and sync_status names the copy; the proof says the answer opens \"Purlin status:\" and names login; the changed code compares each checkout's own git folder, so the answer is the \"is Purlin's own folder\" refusal",
+            "file": "scripts/mcp/purlin/project.py",
+            "line": 48,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-170: the test starts the copy's server in another project, calls sync_status naming the copy and compares the whole answer with the refusal line built from the copy's path, so any other text or any added report fails it.",
+          "PROOF-171: the test starts the server in the copy and checks that the answer opens `Purlin status:` and holds `login`, which are the two things the proof names.",
+          "PROOF-172: the test adds a second checkout with git worktree add, checks that git succeeded, starts the server there and checks the same opening and `login`, as the proof names.",
+          "All three tests rely on the helpers `_plugin_copy` and `_status_of_the_copy`, whose source was not shown, so how the server is started and how the folder it was started in is set could not be read.",
+          "The spot tests found nothing, and each test holds a failable assertion on the values its proof marks in backticks.",
+          "No proof of the rule names a folder under the plugin's folder, a server started under that folder, or a tool other than `sync_status`, so those parts of the rule are not shown by any test here."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "8f6dceb65fed3c5ec35ffbf2ea5d1823b0f39108e34c957193a04cd202659823",
+        "rule_hash": "4a9a9ca8eec49d85aaa8e61d643c1c8ee6df08c13b5523ac787aba4f5d155090",
+        "test_hash": "be7f49f17ef59eae89c057ef69782372c8168da11dce658c8f0ef00a6d836edf",
+        "verdict": "strong"
+      },
+      "RULE-39": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-173": {
+            "after": "                text = status_module.sync_status(call_root).lower()",
+            "aim": "past the test",
+            "before": "                text = status_module.sync_status(call_root)",
+            "bug_key": "14304a6170dc04e1700caad2b99a7de64a55ba642d79db6fb08f3c861ac969f6",
+            "case": "a project with the spec `login`; the proof says the script prints exactly the text the `sync_status` tool answers for that folder; the changed tool answers that text in lower case, so the script's `Purlin status:` output no longer matches it",
+            "file": "scripts/mcp/purlin/server.py",
+            "line": 235,
+            "result": "survived",
+            "test_key": "aba8917a1f7b48b987dbec2a9b2fd742124660f37ae49f8aaac8609ce1f46636",
+            "why": ""
+          },
+          "PROOF-174": {
+            "after": "        print(refused)\n        return 2",
+            "aim": "plain",
+            "before": "        print(refused)\n        return 1",
+            "bug_key": "a586e1f1b696b0a87c0a246629c253e5b088541d1deaf30b9750d46cdb08ee47",
+            "case": "an empty folder; the proof says the script prints only the `No Purlin project root at <dir>` line and exits 1; the changed code prints that line and exits 2",
+            "file": "scripts/run/purlin_status.py",
+            "line": 196,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-173: the test runs the script on a project with `login` and compares its whole output with the status function called directly in the test process, then reads the exit code as 0.",
+          "PROOF-173: the expected text comes from the code the script itself calls and never from the tool's answer through the server, so a tool that answers something else still passes.",
+          "PROOF-173: beyond that comparison the test reads only the opening `Purlin status:` and the word `login`, so a wrong status shared by the script and the function would pass.",
+          "PROOF-173: the proof names no literal text of the status, only that it equals what the tool answers.",
+          "PROOF-174: the test runs the script on an empty folder, compares its whole output with the refusal sentence written as a literal with the folder's path, and reads the exit code as 1, which is what the proof names.",
+          "Findings: the spot tests found nothing, and the check of an expected value taken from the code misses PROOF-173 because the expected value comes from a different function than the script the test runs."
+        ],
+        "findings": [
+          "PROOF-173: the test still passes when scripts/mcp/purlin/server.py:235 reads \"text = status_module.sync_status(call_root).lower()\"",
+          "PROOF-173: the AI says this breaks: a project with the spec `login`; the proof says the script prints exactly the text the `sync_status` tool answers for that folder; the changed tool answers that text in lower case, so the script's `Purlin status:` output no longer matches it"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "3410743ec1cfde6847d3e6b3db1895ce308a63146189289c05bd42b6e0aa177b",
+        "rule_hash": "45112d6fcc61905205248606180d0c5d323eef034561bd4ec1319b634f44704b",
+        "test_hash": "280bfb76d4576adab9f00744031745e58264f0fe992f1c55f5e0cd306195c7b4",
+        "verdict": "weak"
+      },
+      "RULE-40": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-177": {
+            "after": "        lines = report['view']['lines']\n        print('\\n'.join([lines[0].split(',')[0] + ', '] + list(lines[1:])))",
+            "aim": "past the test",
+            "before": "        print('\\n'.join(report['view']['lines']))",
+            "bug_key": "ac8aa8acfba4d696917fa712f204ca03e095f5e90da36ed85df3158eac5e23a2",
+            "case": "after a pull that adds RULE-3 to login; the proof says the first line printed names the range; the changed code prints only \"Since your last pull, \" as the first line, with the range cut off",
+            "file": "scripts/run/purlin_drift.py",
+            "line": 63,
+            "result": "survived",
+            "test_key": "f21e7b2bdfa1d885b0b7106564ba59e220cb32e08df2867adf95eaddb8f5cdfc",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-177: the test clones a project, commits RULE-3 to login, pulls, runs the script, and compares the second line onward with exactly `1 rule added: login RULE-3.` and the exit code with 0, so a wrong added-rule line, an extra line or a wrong exit code fails it.",
+          "PROOF-177: the test reads the first line only for the opening `Since your last pull, `, so a first line that loses or misstates the range after those words still passes.",
+          "PROOF-177: the proof names no value for the line naming the range, so the test has no exact text from the proof to compare the first line with.",
+          "PROOF-177: the spot tests found nothing, and that holds: the test asserts on the output and exit code of the real script, with literals for its expected values, and mocks nothing."
+        ],
+        "findings": [
+          "PROOF-177: the test still passes when scripts/run/purlin_drift.py:63 reads \"lines = report['view']['lines']\"",
+          "PROOF-177: the AI says this breaks: after a pull that adds RULE-3 to login; the proof says the first line printed names the range; the changed code prints only \"Since your last pull, \" as the first line, with the range cut off"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "84674fcd92c98ab75da4992684994d7e25e95d5312e6ab5275c76607070ab9e4",
+        "rule_hash": "16b0f703d293d738fb8c659b7fd79278472807648f53d39031391b98456e01bb",
+        "test_hash": "3e3011f45153713190a755c859da186db3ce6eec475425e409c406a1249d2da1",
+        "verdict": "weak"
+      },
+      "RULE-41": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-175": {
+            "after": "    return lines, 0",
+            "aim": "plain",
+            "before": "    return lines, 1 if warnings else 0",
+            "bug_key": "293dea17498995f58f63bd1deb26cac84f1326c9734b95756ffd9e516c4fdcf5",
+            "case": "login carries `> Requires: api` and is shown with --spec login; the proof says it exits 1; the changed code exits 0",
+            "file": "scripts/run/purlin_status.py",
+            "line": 114,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-176": {
+            "after": "    return lines + [NOT_A_SPEC % name], 1 if warnings else 0",
+            "aim": "past the test",
+            "before": "    return lines, 1 if warnings else 0",
+            "bug_key": "c6a79b5df44d698a5dc53b7c9099eb7adafed1ce8d8fcd81f6663cc7275422f9",
+            "case": "login has 2 rules, 3 proofs and no mistake; the proof says no line names a mistake; the changed code ends with `login: no spec of this checkout has that name. Run purlin:status to see its specs.`",
+            "file": "scripts/run/purlin_status.py",
+            "line": 114,
+            "result": "survived",
+            "test_key": "c10967fa90a4657dfb663993277b9ddca6302010641ad5da6dabc0bc5a4bff39",
+            "why": ""
+          },
+          "PROOF-178": {
+            "after": "        return [NOT_A_SPEC % name], 0",
+            "aim": "plain",
+            "before": "        return [NOT_A_SPEC % name], 1",
+            "bug_key": "99d6121714a97b502e4f226c0145e3d11293d36580bfc84bf01d641110299907",
+            "case": "the one spec is login and --spec signup is asked for; the proof says it exits 1; the changed code exits 0",
+            "file": "scripts/run/purlin_status.py",
+            "line": 105,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-175: the test runs the script on a spec carrying `> Requires: api` and compares the first three printed lines with the warning, the empty line and `specs/auth/login.md: 2 rules`, then the exit code with 1, which is everything the proof names.",
+          "PROOF-176: the test compares the first printed line with `specs/auth/login.md: 2 rules` and the exit code with 0, as the proof names.",
+          "PROOF-176: the test reads \"no line naming a mistake\" only as the word `mistake` being absent from the output, so a warning line printed after the first line that does not hold that word still passes.",
+          "PROOF-178: the test compares the whole output with the one sentence for `signup` and the exit code with 1, so both \"prints only\" and the exit code the proof names are checked.",
+          "The spot tests found nothing, and each test holds failable comparisons against literals its proof names."
+        ],
+        "findings": [
+          "PROOF-176: the test still passes when scripts/run/purlin_status.py:114 reads \"return lines + [NOT_A_SPEC % name], 1 if warnings else 0\"",
+          "PROOF-176: the AI says this breaks: login has 2 rules, 3 proofs and no mistake; the proof says no line names a mistake; the changed code ends with `login: no spec of this checkout has that name. Run purlin:status to see its specs.`"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "ff76c34b7b157a4a80c0f4b4bb6b118afe16e80ed0ce3e61eb4a37b873e56353",
+        "rule_hash": "d69486ca98c6b1e2f546ddf42d1a9f023a45993941436abeff5f6bd9044fe3d4",
+        "test_hash": "5dcfb57e6b114ba2cbe633054f27d1d9ce5d6ce6680065237f8867a99d841051",
+        "verdict": "weak"
+      },
+      "RULE-42": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-179": {
+            "after": "        lines.append(RULE_LINE % (rule['id'], words[1], words[0]))",
+            "aim": "plain",
+            "before": "        lines.append(RULE_LINE % (rule['id'], words[0], words[1]))",
+            "bug_key": "f3e5f9c59612431cfae97bf5b773b68c39ae00f460ab0b220b855dd518812a57",
+            "case": "`login` of 2 rules, RULE-1 passed in a current section and RULE-2 with no test; the proof says the rule lines are `  RULE-1  passed  not audited` then `  RULE-2  no test  waiting`; the changed code gives `  RULE-1  not audited  passed` then `  RULE-2  waiting  no test`",
+            "file": "scripts/run/purlin_status.py",
+            "line": 137,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-180": {
+            "after": "    return '%d %s' % (number, word if number == 0 else word + 's')",
+            "aim": "plain",
+            "before": "    return '%d %s' % (number, word if number == 1 else word + 's')",
+            "bug_key": "f9e6c0175870ef5628cb48357ce9dc784d4eb819ad9d3d213158004041eb6ba0",
+            "case": "the anchor `security` of 1 rule that no test carries; the proof says the first line is `specs/_anchors/security.md: 1 rule`; the changed code gives `specs/_anchors/security.md: 1 rules`",
+            "file": "scripts/run/purlin_status.py",
+            "line": 67,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-179: the test compares the first line with `specs/auth/login.md: 2 rules` and the full list of rule lines, in order, with the two lines the proof names, so a wrong count, word, order or extra rule line fails it.",
+          "PROOF-179: the starting situation is built by a helper not shown, so whether RULE-1's test passed in a current section is taken from that helper and not seen in the test itself.",
+          "PROOF-180: the test writes an anchor of one rule with no test and compares the first two lines with `specs/_anchors/security.md: 1 rule` and `  RULE-1  no test  waiting`, which are the two values the proof names.",
+          "The spot tests found nothing, and both tests compare literal lines taken from the proofs, so nothing here misses a case the proofs name."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "2cd0d61757889e36e308b4ae88c92783be4545d159d3898f8f46c0a41d96b280",
+        "rule_hash": "25ec6152beaa8c3ba0a5a7c62b22abb8421b09507af85a71bd58871f8cf0d315",
+        "test_hash": "fa5ab2f4f83358fc7028bfa044b4ec5a33c210c68c39a86aed01abcefc996fc0",
+        "verdict": "strong"
+      },
+      "RULE-43": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-181": {
+            "after": "    if not tests:\n        return [first, first]",
+            "aim": "past the test",
+            "before": "    if not tests:\n        return [first]",
+            "bug_key": "0b9aea5dc9c3951c401186fb8ef385e7f3ffd8c9dac6444268ec9b76dd37afb3",
+            "case": "`login` with RULE-2 untested; the proof says the two lines under `  RULE-2  no test  waiting` are `    no test: no test for PROOF-2` and `    PROOF-2  no test`; the changed code gives three lines, with `    PROOF-2  no test` printed twice",
+            "file": "scripts/run/purlin_status.py",
+            "line": 175,
+            "result": "survived",
+            "test_key": "efda693f709ddc01e3c82154f0e0a9c1e3a3714d08d3a199975f7695752c8cf6",
+            "why": ""
+          },
+          "PROOF-182": {
+            "after": "    lines.extend(indent + _test_name(test) for test in tests[0:])",
+            "aim": "past the test",
+            "before": "    lines.extend(indent + _test_name(test) for test in tests[1:])",
+            "bug_key": "6d9e10814bb05cd9db9f24b585080b9566b27bafd93208b5d39c912538c3a1f7",
+            "case": "RULE-1 found strong; the proof says the line under `  RULE-1  passed  strong` is `    PROOF-1  passed  tests/test_login.py::test_proof_1`; the changed code gives that line and a second line under it repeating `tests/test_login.py::test_proof_1`",
+            "file": "scripts/run/purlin_status.py",
+            "line": 178,
+            "result": "survived",
+            "test_key": "6f2841c219ebab1056533e8ef56bcb9e7f726cc19d79f1f9197bdaaebd0b7492",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-181: the test compares the first two lines under `  RULE-2  no test  waiting` with the two the proof names, so a `waiting` reason printed before the proof line would fail it, but a third line after them would not.",
+          "PROOF-181: the test compares only the first line under `  RULE-1  passed  not audited` with the proof's line, so a `not audited` reason printed before the proof line would fail it, and any line after it is not read.",
+          "PROOF-182: the test audits RULE-1 and compares only the first line under `  RULE-1  passed  strong` with the proof's line, so a reason printed above the proof line would fail it, and any line after it is not read.",
+          "No proof of the rule shows a rule with reasons in both cells, so the order \"the passed cell's reasons first\" is not observed by either test.",
+          "The spot tests found nothing, and both tests do compare the literal lines their proofs name."
+        ],
+        "findings": [
+          "PROOF-181: the test still passes when scripts/run/purlin_status.py:175 reads \"return [first, first]\"",
+          "PROOF-181: the AI says this breaks: `login` with RULE-2 untested; the proof says the two lines under `  RULE-2  no test  waiting` are `    no test: no test for PROOF-2` and `    PROOF-2  no test`; the changed code gives three lines, with `    PROOF-2  no test` printed twice",
+          "PROOF-182: the test still passes when scripts/run/purlin_status.py:178 reads \"lines.extend(indent + _test_name(test) for test in tests[0:])\"",
+          "PROOF-182: the AI says this breaks: RULE-1 found strong; the proof says the line under `  RULE-1  passed  strong` is `    PROOF-1  passed  tests/test_login.py::test_proof_1`; the changed code gives that line and a second line under it repeating `tests/test_login.py::test_proof_1`"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "21207b8b43b4c3c559fda5bb9ee5f7c9955e6e2ebc52058799496ef42650de1d",
+        "rule_hash": "150bf231b58d379b1a832cd20ac993fcea594f031edd1be2882daf22fda5dd54",
+        "test_hash": "daa5ef9fe19b8b270b9a5684338852fc722b6a83742820a6859116e9aef8040e",
+        "verdict": "weak"
+      },
+      "RULE-44": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-183": {
+            "after": "    lines = ['%s %s' % (first, _test_name(tests[0]))]",
+            "aim": "plain",
+            "before": "    lines = ['%s  %s' % (first, _test_name(tests[0]))]",
+            "bug_key": "26668048068f64c7fb7445771dc2bdcbea80a54a421e3d0b7b0eaa4d12d5dd71",
+            "case": "`login` with PROOF-1 tested and passing and PROOF-2 untested; the proof says RULE-1's last line is `    PROOF-1  passed  tests/test_login.py::test_proof_1`; the changed code gives `    PROOF-1  passed tests/test_login.py::test_proof_1`",
+            "file": "scripts/run/purlin_status.py",
+            "line": 176,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-184": {
+            "after": "    indent = ' ' * (len(first) + 1)",
+            "aim": "plain",
+            "before": "    indent = ' ' * (len(first) + 2)",
+            "bug_key": "5dd0e260d0c601bdf5e384dd08f68423d8cccae94b7839a7deabd69580d8582b",
+            "case": "PROOF-1 carried by test_proof_1 and test_proof_1_again; the proof says the second line is `                     tests/test_login.py::test_proof_1_again`, set under the first test; the changed code gives that line one space further left",
+            "file": "scripts/run/purlin_status.py",
+            "line": 177,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-185": {
+            "after": "            lines.append(PROOF_LINE % (rule['id'], test.get('file')))",
+            "aim": "plain",
+            "before": "            lines.append(PROOF_LINE % (rule['id'], _test_name(test)))",
+            "bug_key": "968d228f08822b5bee41e3cd49712bb946d277e46bf756b0ada40d0045bc52b8",
+            "case": "`login` of 1 rule and no proof line, test_rule_1 marked RULE-1 and passing; the proof says the last line is `    RULE-1  tests/test_login.py::test_rule_1`; the changed code gives `    RULE-1  tests/test_login.py`",
+            "file": "scripts/run/purlin_status.py",
+            "line": 149,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-183: the test builds a login with one tested and one untested proof and compares the last line under RULE-1 and the last line printed with the two whole lines the proof names, so a change to either line's wording or spacing fails it.",
+          "PROOF-183: the proof opens \"In that `login`\" and relies on a starting situation stated elsewhere, which the test supplies through a helper whose contents are not shown.",
+          "PROOF-184: the test writes two tests marked PROOF-1, records both as passing, and compares the full list of lines under the RULE-1 line with the two lines the proof names, indent included, so a wrong indent or an extra line fails it.",
+          "PROOF-185: the test makes a spec with no proof line and one test marked RULE-1, and compares the last line printed with the whole line the proof names, so a missing test name or a wrong id fails it.",
+          "The spot tests found nothing, and each test compares complete literal lines taken from its proof and not from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "70265447da7d9bfe030152d22efc8ffb921d8d1767a2302ef717ad81390e199f",
+        "rule_hash": "98e6d2ed8fee5deff0512b9791d856363f62c86aed4fed6541a5872a99eb3f2f",
+        "test_hash": "8b4d1436a7d71f8ebfb068d3fc6c26ee0def8fb7a14809d6ca161f765d909f43",
+        "verdict": "strong"
+      },
+      "RULE-45": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-186": {
+            "after": "    return [CARRIED_LINE % (str(carried[name])[:8],",
+            "aim": "plain",
+            "before": "    return [CARRIED_LINE % (str(carried[name])[:7],",
+            "bug_key": "3cbb0d3b5f13d6fd575aee713c1fbc63ecb423e8908b235a26f154d851232b19",
+            "case": "PROOF-1's one result carried from commit a1b2c3d4...; the proof says `      carried forward from a1b2c3d on <System>`; the changed code gives `      carried forward from a1b2c3d4 on <System>`",
+            "file": "scripts/run/purlin_status.py",
+            "line": 159,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-187": {
+            "after": "    return [CARRIED_LINE % (str(carried.get(name))[:7],\n                            evidence_module.os_word(name))\n            for name in states_module.SYSTEM_ORDER]",
+            "aim": "plain",
+            "before": "    return [CARRIED_LINE % (str(carried[name])[:7],\n                            evidence_module.os_word(name))\n            for name in states_module.SYSTEM_ORDER if carried.get(name)]",
+            "bug_key": "f5101e52c0c5b676ca436825ea2498a28cfbbfaceac426a63c6f63104f2a2714",
+            "case": "PROOF-1's test passed in a section this machine's own run took; the proof says no line holds `carried forward`; the changed code gives `      carried forward from None on <System>` lines under each proof",
+            "file": "scripts/run/purlin_status.py",
+            "line": 159,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-188": {
+            "after": "        lines.extend(_carried_lines(rule.get('carried')))\n        for test in rule.get('tests') or ():\n            lines.append(PROOF_LINE % (rule['id'], _test_name(test)))",
+            "aim": "plain",
+            "before": "        for test in rule.get('tests') or ():\n            lines.append(PROOF_LINE % (rule['id'], _test_name(test)))\n        lines.extend(_carried_lines(rule.get('carried')))",
+            "bug_key": "89571328a433ecfa132d6ab4420a8b4b9123aaa38ed96619e786fdfa9a79a8c0",
+            "case": "RULE-1 has no proof and its one test's result is carried from a1b2c3d4...; the proof says the last two lines are the test line then the carried line; the changed code gives the carried line first and the test line last",
+            "file": "scripts/run/purlin_status.py",
+            "line": 148,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-186: the test marks the result carried from `a1b2c3d4` repeated and compares the lines under `  RULE-1  passed  not audited` with the two lines the proof names, so the proof line, the indent, the wording and the 7 characters `a1b2c3d` are all checked.",
+          "PROOF-186: the system word in the expected line comes from the code's own `os_word(host_os())` and not from a literal, so a wrong word for this system would pass, and only one system is run.",
+          "PROOF-187: the test builds the view with no result carried and checks that no line holds `carried forward`, which is what the proof names; it does not first show that the view holds PROOF-1's line, so an empty view would pass too.",
+          "PROOF-188: the test builds a spec whose rule has no proof, marks its one test's result carried and compares the view's last two lines with the two the proof names, the system word again taken from `os_word(host_os())`.",
+          "Findings: none, and the spot tests miss that the system word in two expected lines is computed by the code and not written as `Linux/Unix`, `macOS` or `Windows`."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "bab061c02f0f71ac584d8bab108b6c3aa8692cd2c7e9f8504335c892b69d74a7",
+        "rule_hash": "ad349fe2f55eb29171e95e8e43fbfdc073a6e5355a5dab0ec9302072f82bd0e3",
+        "test_hash": "9418ffc1355d302320fb1e96d694f0e37ae8d4b132475885ece79db4c865543e",
+        "verdict": "strong"
+      },
+      "RULE-5": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-138": {
+            "after": "            \"results\": {\"content\": [{\"type\": \"text\", \"text\": text}]}}",
+            "aim": "past the test",
+            "before": "            \"result\": {\"content\": [{\"type\": \"text\", \"text\": text}]}}",
+            "bug_key": "f83f7f83d9d2576ede3cc757808ec7408bc80fc8b6c767c1f3b220cf91b2954c",
+            "case": "a client calls sync_status, drift and the configuration tool with ids 1, 2 and 3; the proof says stdout holds 3 lines, each a JSON-RPC answer; the changed code gives 3 lines with no `result` or `error` member, so none is a JSON-RPC answer",
+            "file": "scripts/mcp/purlin/server.py",
+            "line": 188,
+            "result": "survived",
+            "test_key": "65eb2a8db896bffdf7e5fb2e93b13c799cff34bc11436834b38dc069c889c996",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-138: the test starts the server as a child process, sends the three tool calls and checks that stdout has exactly 3 lines, each parsing as JSON with `jsonrpc` of `2.0` and the ids 1, 2 and 3 in order.",
+          "PROOF-138: the test never reads a `result` or `error` member of any line, so a line that is JSON with the right id but is not a JSON-RPC answer still passes.",
+          "PROOF-138: the test drops the error stream, so it does not observe where the startup line goes; the 3-line count on stdout is what shows the line is not there.",
+          "PROOF-159: the test reads the raw bytes of both streams after `initialize` and checks one line feed, no carriage return, the id 1 and the startup line with the version on the error stream, which is what the proof names.",
+          "Findings: the spot tests found nothing, and both tests hold assertions that can fail on the values their proofs name."
+        ],
+        "findings": [
+          "PROOF-138: the test still passes when scripts/mcp/purlin/server.py:188 reads \"\"results\": {\"content\": [{\"type\": \"text\", \"text\": text}]}}\"",
+          "PROOF-138: the AI says this breaks: a client calls sync_status, drift and the configuration tool with ids 1, 2 and 3; the proof says stdout holds 3 lines, each a JSON-RPC answer; the changed code gives 3 lines with no `result` or `error` member, so none is a JSON-RPC answer"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [
+          "No bug was planted: PROOF-159 needs Windows, and this machine is macOS."
+        ],
+        "proof_hash": "55e387205ee707788845b40217710c5b3c608599a980d850e80aeb3fefc4817d",
+        "rule_hash": "46597e2be4d3a2b3b7c7e1604a77d8f36afbfcb96250c395e6ee7297635ed43a",
+        "test_hash": "6e327fd41b2b7c705c9ebac208c26034968cc3923ecdd3a45dd1e7225288bd65",
+        "verdict": "weak"
+      },
+      "RULE-6": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-129": {
+            "after": "    return os.path.abspath(named)",
+            "aim": "plain",
+            "before": "    return os.path.abspath(os.path.expanduser(named))",
+            "bug_key": "bf6a0698604281786990cb5221d567a762d836a07f95bc6c7f680165fc16be23",
+            "case": "sync_status called with project_root `~/ws` from a server started in an empty folder; the proof says the answer opens `Purlin status: ws,` and names `login`; the changed code looks for `~/ws` under the empty folder and answers `No Purlin project root at ...`",
+            "file": "scripts/mcp/purlin/server.py",
+            "line": 183,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-129: the test asserts the answer opens `Purlin status: ws,` and holds `login`, the two results the proof names, so a call that no longer expands `~` should fail it.",
+          "PROOF-129: the arrangement (empty start folder, home folder holding `ws`, the `~/ws` argument) lives in the helper `_status_from_the_home_folder`, whose source is not shown, so whether the call really passes `~/ws` cannot be read from the test body.",
+          "PROOF-129: `login` is checked as a substring anywhere in the answer, so it would also be met by the word appearing outside the status table's row for that spec.",
+          "PROOF-160: the test body is the same as PROOF-129's and asserts the same opening and name; nothing in its own lines restricts it to Windows, so what differs on Windows rests on the helper and on the proof's tag.",
+          "No spot test fired, and both tests hold the proofs' backticked values `Purlin status: ws,` and `login`."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [
+          "No bug was planted: PROOF-160 needs Windows, and this machine is macOS."
+        ],
+        "proof_hash": "19546b45c69d12020a62929732ae83276deea2d969c3b7627168dad93892f5fc",
+        "rule_hash": "9a362b0697bb94b586f8f9e85e2f3a5cb27815ad4a3e22c13d9b8c37a13e12df",
+        "test_hash": "6ff5fdd2d374904f29b03d9cc3f53b83fff7403dc92d99a7a1c526c5f09fd4ce",
+        "verdict": "strong"
+      },
+      "RULE-7": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-141": {
+            "after": "    return None",
+            "aim": "plain",
+            "before": "    return config_problem(project_root)",
+            "bug_key": "a5d71e66055a87344bbd3dc2d034f317db127a586928eb509ae1cf88dccb40ff",
+            "case": "the configuration tool asked to write tests as [] where .purlin/config.json is malformed at line 2; the proof says the answer is exactly `.purlin/config.json cannot be read: <message> at line 2. Fix the file by hand; nothing ran and nothing was saved.`; the changed code gives no refusal and attempts",
+            "file": "scripts/mcp/purlin/project.py",
+            "line": 79,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-168": {
+            "after": "NO_PROJECT_HERE = ('No Purlin project root at %s: .purlin/config.json is missing. '",
+            "aim": "plain",
+            "before": "NO_PROJECT_HERE = ('No Purlin project root at %s: .purlin/config.json is not there. '",
+            "bug_key": "01e317f87465640a6c94548592053ed4f62b451586b53d2b225bb1bbc3231eb0",
+            "case": "sync_status called with project_root naming an empty folder; the proof says the answer is exactly `No Purlin project root at <that folder>: .purlin/config.json is not there. Run purlin:init.`; the changed code gives `No Purlin project root at <that folder>: .purlin/config.json is missing. Run purlin",
+            "file": "scripts/mcp/purlin/project.py",
+            "line": 25,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-169": {
+            "after": "        if refused and tool_name != 'purlin_config':\n            return _text_result(req_id, refused)",
+            "aim": "plain",
+            "before": "        if refused:\n            return _text_result(req_id, refused)",
+            "bug_key": "35d7e9d64a024f053ed9653c6514cfddd1c241ddfd538ced8ea1599adb759a17",
+            "case": "the configuration tool asked to write tests as an empty list with project_root naming an empty folder; the proof says the answer opens `No Purlin project root at` and nothing is written; the changed code skips the refusal and attempts the write, so the answer no longer opens with those words",
+            "file": "scripts/mcp/purlin/server.py",
+            "line": 230,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-168: the test calls sync_status through the server with an empty folder and compares the whole answer to the proof's sentence written out as a literal with the folder's path, so any change to the sentence fails it.",
+          "PROOF-169: the test asks the configuration tool to write tests as an empty list for an empty folder, then checks that the answer opens `No Purlin project root at` and that the folder holds no `.purlin/config.json`, which are the two results the proof names.",
+          "PROOF-169: the proof and its test fix only the opening of the answer, so text after the opening could change without failing this test; the full sentence is held by PROOF-168 for the status tool alone.",
+          "PROOF-141: the test compares the whole answer to a sentence, and the file's bytes to their earlier value, both returned by a helper `_unreadable` whose source is not shown, so it cannot be told here whether the expected sentence is a literal or taken from the code.",
+          "The spot tests found nothing, and each test holds an assertion on the answer that can fail."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "f54f2cb6663bbf8a696a74dbad2328635308b0a9be4362f51eb005d847c78247",
+        "rule_hash": "43ccc96d2d88301fb1be5ce23bb11026f2b3960152d22fc15ae76175373649c4",
+        "test_hash": "0fd7fa0dd1445e469175b6e123e21b2c6cd4174597748ba7d9f488ee1d583b97",
+        "verdict": "strong"
+      },
+      "RULE-8": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-133": {
+            "after": "                text = status_module.sync_status(call_root) * 2",
+            "aim": "past the test",
+            "before": "                text = status_module.sync_status(call_root)",
+            "bug_key": "62a85fccf5bbc7f9eb546677c576208edea47c5116713859c9df5a47a2db5a1c",
+            "case": "two sync_status calls in one session, the first failing with boom; the proof says the second answer is the status table naming login; the changed code gives the status table written twice over in the second answer",
+            "file": "scripts/mcp/purlin/server.py",
+            "line": 235,
+            "result": "survived",
+            "test_key": "34449a0262ed9b674089767fb86f93d5617742d5fbe60d2a54ebc94ddbeaf32a",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-133: the test sends two sync_status calls through one session with the table-building made to fail once with boom, and compares the ids of the answers with [1, 2], so a missing, extra or misnumbered answer fails it.",
+          "PROOF-133: the first answer's text is compared whole with `Error running sync_status: boom`, so any change to the error wording or to the message fails it.",
+          "PROOF-133: the second answer is read only for its opening `Purlin status: ` and for holding `login` somewhere, so text that is more or less than the status table still passes where it keeps that opening and that word.",
+          "PROOF-133: the mock replaces the status table's builder, which the server depends on, not the server's handling of the failure, which is what the test checks.",
+          "The spot tests found nothing, and that fits: the test asserts on the ids and both texts, swallows no error, and takes its expected values from literals the proof names."
+        ],
+        "findings": [
+          "PROOF-133: the test still passes when scripts/mcp/purlin/server.py:235 reads \"text = status_module.sync_status(call_root) * 2\"",
+          "PROOF-133: the AI says this breaks: two sync_status calls in one session, the first failing with boom; the proof says the second answer is the status table naming login; the changed code gives the status table written twice over in the second answer"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "92f63b93e32ba52b92293199ecccc5a7fce71ffc00a79660864453b38d5e8ce1",
+        "rule_hash": "c37dbf0c66092f9ecd9a773cee2dcc7d2313bfd451761e3df3b37cbca3cbd270",
+        "test_hash": "ea197ebf80641a48b84efe2d057247e6c7843a70efd2591b6751ed9005511ca7",
+        "verdict": "weak"
+      },
+      "RULE-9": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-134": {
+            "after": "        return SAVED % (key, value)",
+            "aim": "plain",
+            "before": "        return SAVED % (key, json.dumps(value))",
+            "bug_key": "efb0dbff072bc9c9c0a2f546c7f3969b482ddf41346a294c63e80730c24a2f18",
+            "case": "settings hold tests as an empty list and the client writes tests as [{\"name\": \"pytest\"}]; the proof says the answer is tests is now [{\"name\": \"pytest\"}]; saved to .purlin/config.json.; the changed code answers tests is now [{'name': 'pytest'}]; saved to .purlin/config.json.",
+            "file": "scripts/mcp/purlin/server.py",
+            "line": 173,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-142": {
+            "after": "            return json.dumps({key: config.get(key) or []}, indent=2)",
+            "aim": "plain",
+            "before": "            return json.dumps({key: config.get(key)}, indent=2)",
+            "bug_key": "7984ae7ba84b6cbf4cdb9e2048c56a4de0f5360ebad5990da34c6a749557bead",
+            "case": "settings hold no tests and the client reads the key tests; the proof says {\"tests\": null} over three lines; the changed code gives {\"tests\": []} over three lines",
+            "file": "scripts/mcp/purlin/server.py",
+            "line": 161,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-9": {
+            "after": "            return json.dumps({key: config.get(key) or None}, indent=2)",
+            "aim": "plain",
+            "before": "            return json.dumps({key: config.get(key)}, indent=2)",
+            "bug_key": "6e14fa3dd030ed04208ad632ef1dbdc949eb93b20cac790833f05472242a8846",
+            "case": "settings hold tests as an empty list and the client reads the key tests; the proof says exactly {\"tests\": []}; the changed code gives {\"tests\": null}",
+            "file": "scripts/mcp/purlin/server.py",
+            "line": 161,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-9: the test writes settings with an empty `tests`, reads the key through the tool and compares the whole answer with the indented JSON of `{\"tests\": []}`, so it observes the exact answer the proof names.",
+          "PROOF-134: the test writes `tests` through the tool, compares the whole answer with the sentence the proof names, and compares the whole of the file on disk with the new `tests` and the version as it was, so both results the proof names are observed.",
+          "PROOF-142: the test writes settings with no `tests`, reads the key and compares the whole answer with the three-line text `{\"tests\": null}`, so it observes the value and the indentation the proof names.",
+          "The spot tests found nothing, and each test holds a failable comparison against a literal or a library-built value, not against the tool's own output.",
+          "No proof of the rule reads the whole file with no key, or reads a key stored as null; the rule names both and neither is observed by these tests."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "4099789dddc7d9dc03f57a34d061df857213273dd16a76ff908b5075cbcab38b",
+        "rule_hash": "3c72b1dd6b16e9e319a6bb437cf81f17ac1a5329e996932757374928964cf97f",
+        "test_hash": "93a997fd961c64ef2a995dec8d3b7fd78567587e5dab978a32bce8a255d11b85",
+        "verdict": "strong"
+      }
+    }
+  },
   "feature": "server",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T16:58:50Z",
-      "commit": "572679b298d96e95848047a5fa1a8bf9fcb76958",
+      "at": "2026-10-05T18:16:20Z",
+      "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -14,12 +953,6 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -28,12 +961,6 @@
           "test": "dev/test_mcp_server.py::TestTransport::test_initialize_names_the_protocol_the_server_and_the_version"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -42,12 +969,6 @@
           "test": "dev/test_mcp_server.py::TestTransport::test_tools_list_names_the_three_tools_each_taking_an_optional_root"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-138",
           "manual": false,
@@ -56,12 +977,6 @@
           "test": "dev/test_mcp_server.py::TestTransport::test_stdout_holds_one_answer_per_tool_call_and_nothing_else"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "windows",
           "id": "PROOF-159",
           "manual": false,
@@ -70,12 +985,6 @@
           "test": "dev/test_mcp_server.py::TestTransport::test_on_windows_the_answer_is_one_line_and_the_startup_line_is_on_stderr"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-129",
           "manual": false,
@@ -84,12 +993,6 @@
           "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_workspace_named_from_the_home_folder_is_found"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "windows",
           "id": "PROOF-160",
           "manual": false,
@@ -98,12 +1001,6 @@
           "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_on_windows_a_workspace_named_from_the_home_folder_is_found"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-168",
           "manual": false,
@@ -112,12 +1009,6 @@
           "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_status_naming_an_empty_folder_says_no_project_is_there"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-169",
           "manual": false,
@@ -126,12 +1017,6 @@
           "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_config_write_naming_an_empty_folder_writes_nothing"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-141",
           "manual": false,
@@ -140,12 +1025,6 @@
           "test": "dev/test_mcp_server.py::TestAnUnreadableSettingsFile::test_the_configuration_tool_answers_the_sentence_and_writes_nothing"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-133",
           "manual": false,
@@ -154,12 +1033,6 @@
           "test": "dev/test_mcp_server.py::TestAToolThatFails::test_the_session_answers_the_call_after_a_failure"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-9",
           "manual": false,
@@ -168,12 +1041,6 @@
           "test": "dev/test_mcp_server.py::TestTheConfigurationTool::test_a_read_of_tests_answers_that_key"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-134",
           "manual": false,
@@ -182,12 +1049,6 @@
           "test": "dev/test_mcp_server.py::TestTheConfigurationTool::test_a_write_of_tests_sets_it_and_keeps_the_version"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-142",
           "manual": false,
@@ -196,12 +1057,6 @@
           "test": "dev/test_mcp_server.py::TestTheConfigurationTool::test_a_read_of_an_absent_tests_answers_it_as_null"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-137",
           "manual": false,
@@ -210,12 +1065,6 @@
           "test": "dev/test_mcp_server.py::TestThePluginManifest::test_the_manifest_command_starts_a_server_that_answers"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-158",
           "manual": false,
@@ -224,12 +1073,6 @@
           "test": "dev/test_mcp_server.py::TestThePluginManifest::test_the_plugin_entry_asks_the_resolver_for_a_soft_exit"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-156",
           "manual": false,
@@ -238,12 +1081,6 @@
           "test": "dev/test_mcp_server.py::TestTheInterpreterResolver::test_no_python_fails_loudly"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-157",
           "manual": false,
@@ -252,12 +1089,6 @@
           "test": "dev/test_mcp_server.py::TestTheInterpreterResolver::test_no_python_with_the_soft_variable_exits_0"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-3",
           "manual": false,
@@ -266,12 +1097,6 @@
           "test": "dev/test_mcp_server.py::TestTransport::test_the_initialized_notification_gets_no_response"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-125",
           "manual": false,
@@ -280,12 +1105,6 @@
           "test": "dev/test_mcp_server.py::TestTransport::test_a_line_that_is_not_json_gets_a_parse_error"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-127",
           "manual": false,
@@ -294,12 +1113,6 @@
           "test": "dev/test_mcp_server.py::TestTransport::test_an_unknown_method_is_an_error"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-155",
           "manual": false,
@@ -308,12 +1121,6 @@
           "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_a_write_of_the_version_is_refused"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-151",
           "manual": false,
@@ -322,12 +1129,6 @@
           "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_tests_given_as_text_is_refused"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-164",
           "manual": false,
@@ -336,12 +1137,6 @@
           "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_a_write_of_gate_is_refused"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-166",
           "manual": false,
@@ -350,12 +1145,6 @@
           "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_call_naming_no_root_is_refused_in_one_line"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-167",
           "manual": false,
@@ -364,12 +1153,6 @@
           "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_root_named_by_an_earlier_call_is_not_used_by_the_next"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-170",
           "manual": false,
@@ -378,12 +1161,6 @@
           "test": "dev/test_mcp_server.py::TestPurlinsOwnFolder::test_the_copy_named_from_another_workspace_is_refused"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-171",
           "manual": false,
@@ -392,12 +1169,6 @@
           "test": "dev/test_mcp_server.py::TestPurlinsOwnFolder::test_a_server_started_in_the_copy_answers_for_it"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-172",
           "manual": false,
@@ -406,12 +1177,6 @@
           "test": "dev/test_mcp_server.py::TestPurlinsOwnFolder::test_a_server_started_in_a_second_checkout_answers_for_the_copy"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-173",
           "manual": false,
@@ -420,12 +1185,6 @@
           "test": "dev/test_mcp_server.py::TestTheStatusScript::test_it_prints_what_the_tool_answers"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-174",
           "manual": false,
@@ -434,12 +1193,6 @@
           "test": "dev/test_mcp_server.py::TestTheStatusScript::test_an_empty_folder_is_refused_in_one_line"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-177",
           "manual": false,
@@ -448,12 +1201,6 @@
           "test": "dev/test_mcp_server.py::TestTheDriftScript::test_it_prints_the_view_one_line_per_line"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-175",
           "manual": false,
@@ -462,12 +1209,6 @@
           "test": "dev/test_mcp_server.py::TestTheStatusScript::test_a_spec_with_a_mistake_prints_its_warning_first"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-176",
           "manual": false,
@@ -476,12 +1217,6 @@
           "test": "dev/test_mcp_server.py::TestTheStatusScript::test_a_spec_with_no_mistake_opens_on_its_view"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-178",
           "manual": false,
@@ -490,12 +1225,6 @@
           "test": "dev/test_mcp_server.py::TestTheStatusScript::test_a_name_no_spec_has_is_said_so"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-179",
           "manual": false,
@@ -504,12 +1233,6 @@
           "test": "dev/test_mcp_server.py::TestOneSpecsView::test_it_opens_on_the_path_then_one_line_per_rule"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-180",
           "manual": false,
@@ -518,12 +1241,6 @@
           "test": "dev/test_mcp_server.py::TestOneSpecsView::test_an_anchor_is_shown_as_a_feature_is"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-181",
           "manual": false,
@@ -532,12 +1249,6 @@
           "test": "dev/test_mcp_server.py::TestOneSpecsView::test_a_cell_that_needs_work_gives_its_reasons_and_no_other_does"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-182",
           "manual": false,
@@ -546,12 +1257,6 @@
           "test": "dev/test_mcp_server.py::TestOneSpecsView::test_a_strong_rule_shows_no_reason"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-183",
           "manual": false,
@@ -560,12 +1265,6 @@
           "test": "dev/test_mcp_server.py::TestOneSpecsView::test_each_rule_ends_on_its_proof_lines"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-184",
           "manual": false,
@@ -574,12 +1273,6 @@
           "test": "dev/test_mcp_server.py::TestOneSpecsView::test_a_proof_of_two_tests_sets_the_second_under_the_first"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-185",
           "manual": false,
@@ -588,12 +1281,6 @@
           "test": "dev/test_mcp_server.py::TestOneSpecsView::test_a_rule_with_no_proof_lists_the_tests_marked_with_its_id"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-186",
           "manual": false,
@@ -602,12 +1289,6 @@
           "test": "dev/test_mcp_server.py::TestACarriedResultInTheView::test_a_carried_proof_names_the_commit_and_the_system"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-187",
           "manual": false,
@@ -616,12 +1297,6 @@
           "test": "dev/test_mcp_server.py::TestACarriedResultInTheView::test_a_result_the_run_took_has_no_such_line"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-188",
           "manual": false,

@@ -1,4 +1,2559 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-1": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-1": {
+            "after": "NO_PROOF_WRITTEN = 'no proof'",
+            "aim": "plain",
+            "before": "NO_PROOF_WRITTEN = 'no proof written'",
+            "bug_key": "55eff5b1a14328510e13621fbbd68b49c12d82ee65fbbfda2931c03b6937eea9",
+            "case": "a spec with two rules and one proof line naming RULE-2, no test marked; the proof says RULE-1's passed cell has the one reason `no proof written`; the changed code gives the reason `no proof`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 150,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-1: the test writes a spec with two rules and one proof line naming RULE-2, marks no test, and reads RULE-1's passed cell word against `no test`, as the proof names.",
+          "PROOF-1: the test compares the whole reasons list with `['no proof written']`, so a second reason or a different one fails it.",
+          "PROOF-1: the test compares RULE-1's proof list with an empty list and its `no_proof` flag with true, and RULE-2's `no_proof` flag with false, so each result the proof names is checked.",
+          "PROOF-1: the expected values are literals written in the test and none is taken from the code under test.",
+          "The spot tests found nothing, and the test leaves no value of the proof's case unchecked for a change to pass by."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "56951b337bd8de58188b25f06aa854f5f38f0699da5aecd594fbd57c3fbfcf4e",
+        "rule_hash": "71352648c77e63c6288df7503018da1ad9a891a0bb0ce2955a56fcbe8861957b",
+        "test_hash": "6dce605dba35a7593e3df4e3d904de2db70c277c0373c929e9fb69d647dfe375",
+        "verdict": "strong"
+      },
+      "RULE-102": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-248": {
+            "after": "        'spec_broken': [],",
+            "aim": "plain",
+            "before": "        'spec_broken': list(broken or ()),",
+            "bug_key": "e358cb1455f9ab185a6caea7b1a30d1f55b15e53b993b115cbf672c5284364bd",
+            "case": "login, whose tests pass, writes PROOF-2 twice; the proof says each of its two rules reads failed with the one reason \"PROOF-2 is written twice in the spec\"; the changed code gives passed with no reason",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 573,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-250": {
+            "after": "    if inp.get('spec_broken') is not None:",
+            "aim": "plain",
+            "before": "    if inp.get('spec_broken'):",
+            "bug_key": "3732040fa83aabcb50e6a22fb239b291d6dbd55853fd7409125b2023883991d9",
+            "case": "export, whose spec is sound and whose tests pass, beside login writing PROOF-2 twice; the proof says each of export's rules reads passed; the changed code gives failed",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 191,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-248: the test builds a project whose spec writes PROOF-2 twice, records passing results, and compares the passed cell's word and whole reason list of RULE-1 and RULE-2 with `failed` and the one reason the proof names, so a wrong word, a missing reason or an extra reason fails it.",
+          "PROOF-250: the test adds the sound spec export with passing results beside the broken login and compares the passed cell's word of each of export's two rules with `passed`, which is the result the proof names.",
+          "The spot tests found nothing, and both tests hold assertions that fail on a wrong word, with expected values written as literals in the test."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "fac08280a40baab7a2f60b06bfbca5cd9dc7838566527d7f1df5f008bc3481ef",
+        "rule_hash": "864d67823f08d366756d4eaeab8ab31e9f1f421d4f717672fbe3819bdad50553",
+        "test_hash": "70212624983312845d80cc9da97a09aaa3031183b9885392ac7b75336c3e3f62",
+        "verdict": "strong"
+      },
+      "RULE-107": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-262": {
+            "after": "        counts[bucket if bucket in counts and not (result.get('flags') or {}).get('weak') else 'untested'] += 1",
+            "aim": "past the test",
+            "before": "        counts[bucket if bucket in counts else 'untested'] += 1",
+            "bug_key": "2c3a5b951396714c9503d2b116cf32dbf2b191d244a3abe95a881331a44f8d96",
+            "case": "a rule whose test passes and that the audit found weak; the proof says it is counted in the bucket `passed`; the changed code counts it under `untested` in the feature's rollup and the project's summary, with 0 under `passed`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 823,
+            "result": "survived",
+            "test_key": "938f1875f381ad81cfe498a020a67636a0a0d42114eaf5fab32324c18044cba5",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-262: the test records a passing result and a weak audit entry for RULE-1, then compares the rule's passed cell with `passed`, its strong cell with `weak`, its `bucket` with `passed` and its `left` with `to_strengthen`, which are the four values the proof names.",
+          "PROOF-262: the test reads the bucket only from the rule's own entry and never reads the rollup or the summary count under `passed`, so a weak rule counted under another bucket there would still pass.",
+          "PROOF-262: the spot tests found nothing, and the test's four comparisons are each against a literal the proof names, so none of them is taken from the code."
+        ],
+        "findings": [
+          "PROOF-262: the test still passes when scripts/mcp/purlin/states.py:823 reads \"counts[bucket if bucket in counts and not (result.get('flags') or {}).get('weak') else 'untested'] += 1\"",
+          "PROOF-262: the AI says this breaks: a rule whose test passes and that the audit found weak; the proof says it is counted in the bucket `passed`; the changed code counts it under `untested` in the feature's rollup and the project's summary, with 0 under `passed`"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "1c124dc5418c4325c8bc0216fb5b87eadef7408d29f936693ec5b78ba1cdd7e8",
+        "rule_hash": "b92eccd066c97e8032de8432d7507946150993e2ce1ab9c9590fc2f59e676627",
+        "test_hash": "25d3b4c40f614996b36aa2edb2514043b9fb507b9fe0dd5d10a46fd3e758d086",
+        "verdict": "weak"
+      },
+      "RULE-109": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-264": {
+            "after": "NOT_CHECKED = 'no sign-off has checked it'",
+            "aim": "plain",
+            "before": "NOT_CHECKED = 'no sign-off has checked it yet'",
+            "bug_key": "1e9348558bee5693fee11b3ef1eb8a48c26e2e1136ddfd7ca3842a16672f81f6",
+            "case": "a rule whose one proof is `@manual`, with no test marked, nothing run and no sign-off; the proof says the one reason `no sign-off has checked it yet`; the changed code gives the reason `no sign-off has checked it`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 112,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-295": {
+            "after": "        cell.update({'word': CHECKED_AT_SIGNOFF, 'reasons': notes})",
+            "aim": "plain",
+            "before": "        cell.update({'word': 'passed', 'reasons': notes})",
+            "bug_key": "fe185e402b648c57b772f745eaaccd3c542dae6ac4ffced347c0e79345a70d45",
+            "case": "quinn.qa@labconnect.example signs 0.1.0 at HEAD with the note `the tube is red` on a rule whose one proof is `@manual`; the proof says the passed cell reads `passed`; the changed code gives `checked at sign-off`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 441,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-264: the test builds a project whose one rule has one `@manual` proof and no sign-off, then compares the passed cell's word, its whole list of reasons, the strong cell's word and the bucket with the four values the proof names, so no value of the proof is left unchecked.",
+          "PROOF-264: the expected values are literals written in the test, not taken from the code.",
+          "PROOF-295: the test signs through a helper, `_signed_with_a_note`, and a spec, `MANUAL_SPEC`, neither of which is shown, then compares the passed cell's word with `passed` and its whole list of reasons with the one sentence the proof names.",
+          "PROOF-295: the signer, the version, `at this commit` and the note are checked only as parts of that one literal reason, which is enough to fail on a change to any of them; that the helper signs as the proof says rests on source that is not shown.",
+          "The spot tests found nothing, and both tests hold failable comparisons against literals that are the proofs' own values."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "f3ae60107ddbe0ffe8cd1c89a7285aefec57d82ec4730856e6487a8ddd44044c",
+        "rule_hash": "0a0ce7bdcee3109d9a758c7790616c8bf8d8cba728baaacfa165d5f90b829f21",
+        "test_hash": "24d86e92ec5b23041da162c99b57c5ac36dcc69f3d020dd06913c86192de6cfd",
+        "verdict": "strong"
+      },
+      "RULE-110": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-265": {
+            "after": "        cache[path].setdefault(name, hashlib.sha256(\n            (bounds[2] + str(len(text))).encode('utf-8')).hexdigest())",
+            "aim": "past the test",
+            "before": "        cache[path].setdefault(name, hashlib.sha256(\n            bounds[2].encode('utf-8')).hexdigest())",
+            "bug_key": "8057aad4c1af7c11f6208c4d9f2aa792605731becb817c9455e6dac4988595dd",
+            "case": "editing the `PROOF-2` test in `tests/test_age.py` so the file's length changes; the proof says `RULE-1`'s test hash is unchanged; the changed code gives a different hash",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 846,
+            "result": "survived",
+            "test_key": "1824d129dc15afcd097cc9dba502f800e2e17134dbc813c51c1c6fffb7394cc6",
+            "why": ""
+          },
+          "PROOF-266": {
+            "after": "        cache[path].setdefault(name, hashlib.sha256(\n            ' '.join(bounds[2].split()).encode('utf-8')).hexdigest())",
+            "aim": "past the test",
+            "before": "        cache[path].setdefault(name, hashlib.sha256(\n            bounds[2].encode('utf-8')).hexdigest())",
+            "bug_key": "2bd8a8dadba6e32b19eb18b74679fa2ac19c0855b9873f02a3579d1b4b0a855f",
+            "case": "editing the body of the `sample_age PROOF-1` test by changing only its indentation or line breaks; the proof says `RULE-1`'s test hash changes; the changed code gives the same hash",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 846,
+            "result": "survived",
+            "test_key": "074b4515fbee62580eae2430c117af562c3d358e7a0648fd54e7e40bf9ed9e39",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-265: the test edits the other rule's test from `age(151)` to `age(152)`, then compares `RULE-1`'s hash before and after and checks the kind reads `test`, which is the proof's case; the edit keeps the file's length and line count, so a hash that leaks either from the rest of the file still passes.",
+          "PROOF-266: the test changes `age(90) == 90` to `age(91) == 91` in the `PROOF-1` test and checks the hash differs, which is the proof's case; it makes one edit of visible characters, so a hash that ignores part of the body, such as its whitespace, still passes."
+        ],
+        "findings": [
+          "PROOF-265: the test still passes when scripts/mcp/purlin/payload.py:846 reads \"(bounds[2] + str(len(text))).encode('utf-8')).hexdigest())\"",
+          "PROOF-265: the AI says this breaks: editing the `PROOF-2` test in `tests/test_age.py` so the file's length changes; the proof says `RULE-1`'s test hash is unchanged; the changed code gives a different hash",
+          "PROOF-266: the test still passes when scripts/mcp/purlin/payload.py:846 reads \"' '.join(bounds[2].split()).encode('utf-8')).hexdigest())\"",
+          "PROOF-266: the AI says this breaks: editing the body of the `sample_age PROOF-1` test by changing only its indentation or line breaks; the proof says `RULE-1`'s test hash changes; the changed code gives the same hash"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "2fe13b9639ca71c5c14ce230822ec557acfff61acd11cb4aff22d1f0d402845e",
+        "rule_hash": "74d6b86b74183b47d0f1c88bcd232b83642f83dc8a9d6a121bc0e902d01a03d6",
+        "test_hash": "7c7e9b5977d96eae580f23944404dbe054ecf54f1fb81044c3c8db47d0c4b898",
+        "verdict": "weak"
+      },
+      "RULE-112": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-269": {
+            "after": "        text = STALE % (path, marker.line + 1, marker.feature, marker.id, sha[:7],",
+            "aim": "plain",
+            "before": "        text = STALE % (path, marker.line, marker.feature, marker.id, sha[:7],",
+            "bug_key": "e403a25066baa94576a44a2f875f4f5a589a7634fdf049a65312142eccda8065",
+            "case": "the test at tests/test_age.py:3 is marked for sample_age PROOF-1, reworded by a later commit; the proof says one warning opens `tests/test_age.py:3 names sample_age PROOF-1, whose wording changed after the test was last changed`; the changed code gives a line opening `tests/test_age.py:4 names sampl",
+            "file": "scripts/mcp/purlin/wording.py",
+            "line": 87,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-270": {
+            "after": "            spans.append((marker, marker.line + 1, marker.line + 1))",
+            "aim": "plain",
+            "before": "            spans.append((marker, marker.line + 1, last))",
+            "bug_key": "bc4a887dc00588fb2b2c2c10e28eceb3697ef786891160f62d834f2a32954f38",
+            "case": "the reworded proof's test has its body changed and committed; the proof says the warnings name no test comment and `left` holds no `to_correct` entry; the changed code still names tests/test_age.py:3 and counts 1 test comment to correct",
+            "file": "scripts/mcp/purlin/wording.py",
+            "line": 160,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-269: the test builds the project, rewords the proof in a later commit, and requires exactly one warning that opens with the proof's full prefix, file and line `3` included, and the text `1 test comment to correct` in `left`.",
+          "PROOF-269: the test reads nothing after the prefix, so the commit, the old and new wording and the closing instruction of the line could be wrong and it would still pass; the proof names none of them.",
+          "PROOF-270: the test rewords the proof, changes the assert line of the test body, commits, and requires no warning holding `whose wording changed` and no `to_correct` kind in `left`, which is both results the proof names.",
+          "PROOF-270: the test does not itself confirm the comment was named before the body changed, so it passes whenever nothing is named at all; that the comment is named first is observed only by PROOF-269's test.",
+          "Findings: none, and both tests assert literal values taken from the proofs, not from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "10693d1c518e9d8ff0cd5d80561169939d3d4dfa4b6a6ab4ef48efb93167b715",
+        "rule_hash": "8cb7b014052498900db8e2426e6381c2d4f72f17ec4234df8086b02aa7336efe",
+        "test_hash": "8c868abd8740e94508ff3adcf4a1e7b51de50eafcc23e822996d4ef995f49d47",
+        "verdict": "strong"
+      },
+      "RULE-113": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-271": {
+            "after": "    for section in ('tool.poetry',):",
+            "aim": "plain",
+            "before": "    for section in ('project', 'tool.poetry'):",
+            "bug_key": "8bb6ac4a679bfa3467a346c197fa7d6809b2942af329b3fce27fdcc22a13963c",
+            "case": "a project in the folder `work` whose pyproject.toml names `labconnect` under `[project]`; the proof says `labconnect`; the changed code skips `[project]` and gives the folder's name `work`",
+            "file": "scripts/mcp/purlin/project.py",
+            "line": 92,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-271: the test moves a project into a folder named `work`, writes a pyproject.toml with `name = \"labconnect\"` under `[project]` after a `[build-system]` section, builds the payload and compares its `project` with the literal `labconnect`, which is the case and the value the proof names.",
+          "PROOF-271: the test also asserts the folder's name is `work`, so the folder-name fallback would give a different value from the expected one and a wrong source is told apart.",
+          "The spot tests found nothing, and the reading agrees: the expected value is a literal from the proof, the code under test is not mocked, and no error is swallowed."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "0d878bf64cf8289544d79cfe4ab28c8e15ef552f8e574c3a38db11ed702ab0e6",
+        "rule_hash": "1403e3e6d9fcdb804745c2171a80fa3404c49259244a8c396a501ecb2bfe6dc2",
+        "test_hash": "f36006f9bb53821864e1ea143407721527063abef903911b22fb0145e678f060",
+        "verdict": "strong"
+      },
+      "RULE-115": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-274": {
+            "after": "             for item in nothing] if not inp.get('anchor')",
+            "aim": "plain",
+            "before": "             for item in nothing] if inp.get('anchor')",
+            "bug_key": "c4af6c6bd91b9b09da854842b088a9390283a32eaa7f858b8de8eaad5e7220cd",
+            "case": "the anchor security_no_dangerous_patterns whose PROOF-3 test skipped with `nothing to check: this project has no screens`; the proof says RULE-3 reads passed with the one reason `PROOF-3: this project has no screens`; the changed code gives the reason `this project has no screens`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 392,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-278": {
+            "after": "                           else [])",
+            "aim": "plain",
+            "before": "                           else []) + said",
+            "bug_key": "6a817b1ddae50ccd20a336c5b121ff83b92b84cb255e266ab5ae3228e2a61d86",
+            "case": "the feature login, not an anchor, whose PROOF-1 test skipped with `nothing to check: no screens here`; the proof says RULE-1 reads not run with the reason `no screens here` kept; the changed code gives not run with no reason",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 415,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-274: the test builds the anchor with a PROOF-3 skip reading `nothing to check: this project has no screens` and compares RULE-3's passed cell word to `passed` and its reasons to exactly `['PROOF-3: this project has no screens']`, which is the case and the result the proof names.",
+          "PROOF-274: the test also looks for the status line `security_no_dangerous_patterns RULE-3 passes with nothing to check here: this project has no screens.`, which the rule states and the proof does not name.",
+          "PROOF-278: the test gives a feature that is not an anchor a PROOF-1 skip reading `nothing to check: no screens here` and compares RULE-1's passed cell word to `not run` and its reasons to exactly `['no screens here']`, which is the case and the result the proof names.",
+          "The spot tests found nothing, and both tests compare the word and the whole reasons list against literals, so neither leaves a value of its proof unread."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "53960e6e71547afb493256b44a301df9ae9d2962bd9b5af64ad1939fa0f82d14",
+        "rule_hash": "49cee304c2031491906b48b166e4c326655874445ecf3c60de7bb0315933e250",
+        "test_hash": "893e9c9d1a72267da5f6b44f6f4d11aadf97f18a85c34be08ddbaf8e7b5fe844",
+        "verdict": "strong"
+      },
+      "RULE-116": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-276": {
+            "after": "AT_THIS_COMMIT = 'at that commit'",
+            "aim": "plain",
+            "before": "AT_THIS_COMMIT = 'at this commit'",
+            "bug_key": "ca170fea06fe198bf9089a6efcde1dc6aeac16fd76181035321ffc4a684633fe",
+            "case": "a hand check signed 0.1.0 at HEAD with the note `the tube is red`; the proof says the reason reads `..., at this commit: the tube is red`; the changed code gives `..., at that commit: the tube is red`",
+            "file": "scripts/mcp/purlin/facts.py",
+            "line": 37,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-277": {
+            "after": "COMMITS_SINCE = '%d commits later'",
+            "aim": "plain",
+            "before": "COMMITS_SINCE = '%d commits since'",
+            "bug_key": "4bdad154d4e9dc043eb58150bfcf7a8424c114992ba2734dfc7d06893741d659",
+            "case": "the same hand check four commits after the sign-off; the proof says the reason reads `..., 4 commits since: the tube is red`; the changed code gives `..., 4 commits later: the tube is red`",
+            "file": "scripts/mcp/purlin/facts.py",
+            "line": 38,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-276: the test signs 0.1.0 at HEAD with the note, reads the strong cell of the hand-checked rule, and compares both the word `checked at sign-off` and the whole reason list with the proof's literal, so a wrong version, signer, distance or note fails it.",
+          "PROOF-277: the test makes four commits after the same sign-off and compares the whole reason list with the proof's literal `4 commits since` sentence, so a wrong count or wording fails it.",
+          "PROOF-277: the test does not read the cell's word, and the proof names none, so nothing the proof names is left unchecked.",
+          "No proof of the rule names the case before any sign-off, where the cell carries no reason, or the singular `1 commit since`, so those parts of the rule are not shown by either test.",
+          "The spot tests found nothing, and both tests compare exact literals taken from the proofs, not values computed by the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "b006922e36abb04af1ffd443bda0dc054ec8ad6efaaa77e9c4773c09c6afc485",
+        "rule_hash": "a36878551b6b529b22b57033b3be7d54b972c9c51188bb9c74010a2a40297158",
+        "test_hash": "7f0332597852537a62430d0c1452e7f1aa6403832162325238e494416f2f9b08",
+        "verdict": "strong"
+      },
+      "RULE-117": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-53": {
+            "after": "            reasons.append('%s %s' % (system_word(name), entry.get('word')))",
+            "aim": "plain",
+            "before": "            reasons.append('%s: %s' % (system_word(name), entry.get('word')))",
+            "bug_key": "b09e6b454fce9b5256cd01379ddabd254dd326c22949d2fadfe4add11dc1210c",
+            "case": "linux passes the untagged proof, windows passes it and fails the `@env(windows)` proof; the proof says the reasons are exactly `passed on Linux/Unix` and `Windows: failed`; the changed code gives `passed on Linux/Unix` and `Windows failed`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 624,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-66": {
+            "after": "    sections = [entry for entry in owner_evidence['sections']\n                if entry.get('source') != 'local']",
+            "aim": "past the test",
+            "before": "    sections = owner_evidence['sections']",
+            "bug_key": "5969af807a951a73f28d8db323fe66e267a3d3a98a8b92bff9ca67ea5579d926",
+            "case": "one proof passes in a ci section from linux and fails in a local section from macos, read through the project's payload; the proof says `partial` with platforms linux and macos; the changed code gives `passed` with platforms linux only",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 525,
+            "result": "survived",
+            "test_key": "ec4682e2885c18e25daad484c5e88a040266c67939fc5d92920524c62c89de01",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-53: the test records a linux section and a windows section in a made project, reads the rule back through the project, and compares the word `partial`, the exact list of two reasons, the bucket, the `partial` and `failing` flags and the `left` word `to_fix`, which is every value the proof names.",
+          "PROOF-66: the test hands two hand-built sections, a `ci` one from `linux` that passes and a `local` one from `macos` that fails, straight to the function that works out the cells, and compares the word `partial` and the sorted names in `platforms` with `linux` and `macos`, which are both values the proof names.",
+          "PROOF-66: the test never reads the rule through a project's evidence files, so a change in how the payload chooses the sections it passes on, such as leaving out a person's own local section, is not observed by it.",
+          "Findings: the spot tests found nothing, and each test holds failable comparisons against the literals its proof marks."
+        ],
+        "findings": [
+          "PROOF-66: the test still passes when scripts/mcp/purlin/payload.py:525 reads \"sections = [entry for entry in owner_evidence['sections']\"",
+          "PROOF-66: the AI says this breaks: one proof passes in a ci section from linux and fails in a local section from macos, read through the project's payload; the proof says `partial` with platforms linux and macos; the changed code gives `passed` with platforms linux only"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "f2f23ef2ef7e6282dd95e32da8b23e98a18c3712a4c3a52740bad3477c53f139",
+        "rule_hash": "93a9681bfb068d824fba4361b3204abe8294550a76b6ef7bf998531ab122596d",
+        "test_hash": "a068b903df200dad3157a789df75567d3668f7db3159f8c47d0ba427225804fe",
+        "verdict": "weak"
+      },
+      "RULE-118": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-13": {
+            "after": "        cell['word'] = 'weak'\n        cell['reasons'] = [WAITING_FOR_TESTS]",
+            "aim": "plain",
+            "before": "        cell['word'] = WAITING\n        cell['reasons'] = [WAITING_FOR_TESTS]",
+            "bug_key": "710073837b75394dbaccfc7644a87d43f392f92b7e5cf7945f903255224fca66",
+            "case": "RULE-2, which no run observed, while the ci section observed PROOF-1 alone; the proof says the strong cell reads waiting, not weak; the changed code gives weak",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 725,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-139": {
+            "after": "        cell['word'] = NOT_AUDITED\n        cell['reasons'] = [NO_PROOF_REASON]",
+            "aim": "plain",
+            "before": "        cell['word'] = NO_PROOF\n        cell['reasons'] = [NO_PROOF_REASON]",
+            "bug_key": "ae50ef12f40a63c23917cc65e81ddd2121a059edc628d098b11c45f72efd99b9",
+            "case": "a rule with no proof line and a passing test marked with its own id; the proof says the strong cell reads no proof; the changed code gives not audited",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 732,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-13: the test records a ci result for PROOF-1 alone and compares RULE-2's passed word with `no test`, its strong word with `waiting` and its whole reasons list with the one reason, which is every value the proof names.",
+          "PROOF-13: comparing the strong word with `waiting` also rules out `weak`, so the proof's \"not `weak`\" is observed.",
+          "PROOF-139: the test records a passing result under the rule's own id and compares the passed word with `passed`, the strong word with `no proof` and `left` with `no_proof`, which is every value the proof names.",
+          "PROOF-139: the test never reads the strong cell's reasons, so the reason `the rule has a test and no proof` that the rule names could be wrong and the test would still pass; the proof does not name that reason either.",
+          "No proof shown for the rule covers the `not audited` state or its reason `no audit has read this rule`.",
+          "The spot tests found nothing, and both tests compare literals taken from their proofs, not values taken from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "fda6351a3f1e25b838d65b7bed4daea0ee7ac915038c16c97c444093046a6121",
+        "rule_hash": "825b41560341ff46e08103ca731dd518ac3f3e67a48952b3acbbdcf11cb9048b",
+        "test_hash": "5bbb99eb301dbb1e39f065fef9ffd4102ead3b3c935d8215a528d89fade0aa33",
+        "verdict": "strong"
+      },
+      "RULE-119": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-238": {
+            "after": "    rollup = {'rules': len(rule_results) + 1}",
+            "aim": "plain",
+            "before": "    rollup = {'rules': len(rule_results)}",
+            "bug_key": "2a5f3883efdb0962b3ea7bc042a8af55fbc544e44de11b482f5531462cccb1a3",
+            "case": "login of 11 passing rules beside security of 8 passing rules; the proof says login's row reads 11 under Rules and 11 of 11 under Tests; the changed code gives 12 under Rules and 11 of 12 under Tests",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 827,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-30": {
+            "after": "        if own_results is not None and not anchor:\n            own_results[(name, rule_id)] = summary",
+            "aim": "plain",
+            "before": "        if own_results is not None:\n            own_results[(name, rule_id)] = summary",
+            "bug_key": "31e8cf7a141affe8b6d23e2a03a46326319020dd963247744cf52a3e6c997b7e",
+            "case": "the feature login of two rules beside the anchor security of one rule; the proof says the summary counts 3 rules and 2 features; the changed code gives 2 rules and 2 features",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 371,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-30: the test adds the anchor security to a project holding login, builds the payload and compares the summary's rules with 3 and its features with 2, which are both values the proof names.",
+          "PROOF-30: the test reads the payload's summary and not the printed status, so it shows the count the surfaces render from and not the line a person reads.",
+          "PROOF-238: the test builds login of 11 rules beside security of 8, makes every rule pass, and compares login's cells under Rules and Tests in the printed status with `11` and `11 of 11`, which is the proof's case and its result.",
+          "PROOF-238: the test also compares security's Tests cell with `8 of 8`, which the proof does not name and which shows the anchor's rules staying in the anchor's own row.",
+          "No spot test fired, and each test compares literal values that come from its proof and not from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "9133e7abb3772da2002ccc316ac684094b9b4bdf38623e4f8515c583875e417a",
+        "rule_hash": "e9cdc7198f36dfd12f1be2e897d9dbfefeebd23bea86e6ec2ef28d37ccc65fc8",
+        "test_hash": "6b2750129859cdb4fb44c1388fdf5be93885d8716a520a6686ee417d5eee0583",
+        "verdict": "strong"
+      },
+      "RULE-120": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-223": {
+            "after": "        cell['word'] = 'not run'\n        cell['reasons'] = said",
+            "aim": "plain",
+            "before": "        cell['word'] = 'passed'\n        cell['reasons'] = said",
+            "bug_key": "f996ccddd79fc91d90c706b61e00a3dd6f41175be8bafa17cb01648b797d4d9d",
+            "case": "a project whose one rule's marked test passes runs purlin:test --all with no data file yet; the proof says the rule's passed cell reads `passed`; the changed code gives `not run`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 405,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-37": {
+            "after": "    text = _PREFIX + body + '\\n'",
+            "aim": "plain",
+            "before": "    text = _PREFIX + body + ';\\n'",
+            "bug_key": "9d1551b9aa5114c0d6b8f57d6797c6e81ee4a5b16864ff81bb9a692af0873c55",
+            "case": "a payload written to the dashboard's data file; the proof says the file ends with `;` and a line break; the changed code ends it with the line break alone, no `;`",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 910,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-37: the test writes a payload, reads the file's bytes and text, and asserts the opening `const PURLIN_DATA = `, the closing `;` and line break, and that the text between equals the whole payload, so it observes each value the proof names.",
+          "PROOF-37: the expected payload is the fixture's own data passed through the JSON library, not through the writer, so the comparison does not take its expected value from the code under test.",
+          "PROOF-223: the test asserts no data file exists, runs the test command with `--all`, then reads the data file and asserts RULE-1's passed cell reads `passed`, which is the case and the value the proof names.",
+          "PROOF-223: the test reads the data file through a helper defined outside the test shown, so what that helper reads is not visible here.",
+          "Findings: the spot tests found nothing, and both tests hold assertions that can fail on the values their proofs name."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "0bd96bbe528b3dbcdef0ee5b5fa04186f6df2019c5c10211cf6814de7e21fa4e",
+        "rule_hash": "ae62370d3b7bc07e9d3408b800b05047b3143918ad534dc003a55f8bdb30919b",
+        "test_hash": "b3d18557cac9902df9b39a817e87f918545cb310cbed89a901b6626327de3671",
+        "verdict": "strong"
+      },
+      "RULE-121": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-100": {
+            "after": "        cell['word'] = 'not run'",
+            "aim": "plain",
+            "before": "        cell['word'] = 'failed'",
+            "bug_key": "9e86bcdc0afe54c6e858105d28a7cb6c332b5c6b61851bc0bc8be375e7666525",
+            "case": "a spec of two rules, one passing and one whose test fails on this machine; the proof says Tests reads 1 of 2 \u00b7 1 failing; the changed code reads the failing rule as not run and gives 1 of 2 with no failing count",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 369,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-242": {
+            "after": "SPECS = 'Features'",
+            "aim": "plain",
+            "before": "SPECS = 'Specs'",
+            "bug_key": "4d6cb426f4340214b8c5c1346f51bc56b531f914029f27c4f1441a50980eb076",
+            "case": "a project of the feature login and the anchor security; the proof says the lines read Anchors, security's row, Specs, login's row; the changed code prints Features in place of Specs",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 419,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-294": {
+            "after": "    audited = bool(\n        ((data.get('summary') or {}).get('audit') or {}).get('strong'))",
+            "aim": "plain",
+            "before": "    audited = board_module.shows_strong(\n        (data.get('summary') or {}).get('audit'), data.get('features'))",
+            "bug_key": "c07d1a74a238fd61edd7483346934f5b38b3557da388923c4abd4d8d4360c1cb",
+            "case": "RULE-2 audited strong and its test then fails, RULE-1 never read; the proof says the header still ends with Strong and the cell reads 0 of 1; the changed code drops the Strong column once no rule counts as strong",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 437,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-298": {
+            "after": "        cell.update({'word': 'passed',",
+            "aim": "plain",
+            "before": "        cell.update({'word': CHECKED_AT_SIGNOFF,",
+            "bug_key": "ad4c81234dd21569212f1664be791f2f4016740f546b47055002fe98dab37782",
+            "case": "a spec of 3 rules, 2 passing and 1 whose one proof is @manual with no sign-off note; the proof says Tests reads 2 of 3 \u00b7 1 by hand; the changed code counts the hand check as passed and gives 3 of 3",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 443,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-299": {
+            "after": "    cell['word'] = SPOT_CHECKED",
+            "aim": "plain",
+            "before": "    cell['word'] = 'strong'",
+            "bug_key": "d2a6780fdd04db95dcb9b023f2559072a45b41c103baa529ffcc97d910e166cb",
+            "case": "a spec of 10 rules, 9 passing and found strong and 1 by hand; the proof says Strong reads 9 of 9; the changed code reads each current strong entry as spot-checked and gives 0 of 9",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 781,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-43": {
+            "after": "    audited = True",
+            "aim": "plain",
+            "before": "    audited = board_module.shows_strong(\n        (data.get('summary') or {}).get('audit'), data.get('features'))",
+            "bug_key": "0588fe660e4cbee9a3bcea87919811fea99f503e7f55056bc2ca3f4b4a978aad",
+            "case": "a spec of two rules, one passing and none audited; the proof says the header names Spec, Rules, Proofs and Tests and not Strong; the changed code prints a header that ends with Strong",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 437,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-43: the test compares the whole header with `Spec`, `Rules`, `Proofs`, `Tests`, asserts `Strong` is absent, and compares the `Proofs` cell with `2 \u00b7 1 no test` and the `Tests` cell with `1 of 2`, which is every value the proof names.",
+          "PROOF-294: the test audits `RULE-2`, records its test as failing, then checks that the header's last word is `Strong` and that the `Strong` cell is `0 of 1`, so both results the proof names are compared after the failure.",
+          "PROOF-298: the test builds three rules with one hand check, records two passes and compares the `Tests` cell with `2 of 3 \u00b7 1 by hand` exactly.",
+          "PROOF-299: the test audits nine passing rules beside one hand check and compares the `Strong` cell with `9 of 9` exactly; it also compares the `Tests` cell with `9 of 10 \u00b7 1 by hand`, which the proof does not name.",
+          "PROOF-100: the test records one failing and one passing result and compares the `Tests` cell with `1 of 2 \u00b7 1 failing` exactly.",
+          "PROOF-242: the test compares the first word of each table row with `Anchors`, `security`, `Specs`, `login` and requires the two label lines to be exactly `Anchors` and `Specs`, so the order and the labels are both checked.",
+          "The spot tests found nothing, and each test holds its proof's values as literals rather than taking them from the code.",
+          "No proof of the rule covers `\u00b7 <k> partial`, the `Proofs` column being left out where no spec writes a proof line, or an empty `Strong` cell, so those parts of the rule are not observed by any test here."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "97d831832397a8573f4d6d5b257bdbbfd06d930f672f36bb209852c6d6724249",
+        "rule_hash": "abca020eb7d4d9cdfe41ebc817be080ac0fb5950e59558d6162e319e380639dd",
+        "test_hash": "52e6df9e97a1b40b8eba94487360e055f45af33dcc453c026846b74616eb14e6",
+        "verdict": "strong"
+      },
+      "RULE-122": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-212": {
+            "after": "    if problem:\n        return 'Settings: ' + problem",
+            "aim": "plain",
+            "before": "    if problem:\n        return problem",
+            "bug_key": "e3740db8ea72dd8da6088485cc69974771a819541d4ef4142406425facf47acc",
+            "case": "a settings file holding `{\"version\": \"0.10.0\",`; the proof says the report is exactly `.purlin/config.json cannot be read: Expecting property name enclosed in double quotes at line 1. Fix the file by hand; nothing ran and nothing was saved.`; the changed code gives that sentence with `Settings: ` in",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 154,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-231": {
+            "after": "                         % (row['anchor'], (row.get('pinned') or '')[:8],",
+            "aim": "plain",
+            "before": "                         % (row['anchor'], (row.get('pinned') or '')[:7],",
+            "bug_key": "7386e94c2bf9164309b54a0c949ae893c2980c752baedfb27581eab1a6db8073",
+            "case": "an anchor `policy` pinned to `<old7>` whose source's newest commit is `<new7>`; the proof says `policy: the pin <old7> is behind its source, now <new7>. Run purlin:anchor sync policy.`; the changed code prints the pin as eight characters, not seven",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 580,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-234": {
+            "after": "            lines.append('%s: (source refused: %s)'",
+            "aim": "plain",
+            "before": "            lines.append('%s: (source rejected: %s)'",
+            "bug_key": "7cea279392526996762ca7f1944903ef3d9ff71d6cef55aa4857e392780d0074",
+            "case": "an anchor `policy` whose `> Source:` begins with `--upload-pack=`; the proof says `policy: (source rejected: begins with \"-\")`; the changed code gives `policy: (source refused: begins with \"-\")`",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 575,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-212: the test writes the settings file the proof names, compares the whole report with the proof's sentence by equality, and also checks that no data file was written, so any other wording fails it.",
+          "PROOF-231: the test builds a source repository, advances it, and looks for the proof's full line with the first seven characters of the old and new commits, which it takes from git and not from the status.",
+          "PROOF-234: the test gives the anchor a source beginning `--upload-pack=` and looks for the proof's exact line among the status lines, so a different reason or wording fails it.",
+          "The spot tests found nothing, and each test does compare the literal text its proof names.",
+          "The rule lists also no specs found, unread settings keys, a missing or empty scope, an uncommitted spec, and a source that cannot be read; none of these three proofs covers those."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "e755625f9dc3e3903ef34b7d55e43c248e7be074049dab3c3edb91a248a5a9d6",
+        "rule_hash": "b42b3dc6e504b8f3873c49ec023907222c64007e05b7e41e13288b48ce6760b0",
+        "test_hash": "66f158fb782bfd4f57fe7f72a5a3a8c5bfae3dc626cf0cbac395213c2ebbfa65",
+        "verdict": "strong"
+      },
+      "RULE-123": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-279": {
+            "after": "                                             ' '.join(unmatched), name, name))",
+            "aim": "plain",
+            "before": "                                             ', '.join(unmatched), name, name))",
+            "bug_key": "3327aa3c6e1b8cd2eeec9d10b91bb720e429d6efae18ec7da963c6b8f3726472",
+            "case": "a spec `states` whose scope names facts.py, project.py and wording.py, none in git; the proof says the line lists `facts.py, project.py, wording.py`; the changed code prints `facts.py project.py wording.py` with no commas",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 543,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-280": {
+            "after": "            lines.append(NOT_WRITTEN_ONE % (name, scope[0], name, name))",
+            "aim": "plain",
+            "before": "            lines.append(NOT_WRITTEN_ONE % (name, unmatched[0], name, name))",
+            "bug_key": "9bac7645278b73c12567de95eb427739fdcc378bc4bd4c2b3d7b2f3e19294981",
+            "case": "a spec `login` whose scope names src/login.py, in git, and src/gone.py, not in git; the proof says the line names `src/gone.py` as not written yet; the changed code names `src/login.py`",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 540,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-279: the test writes a spec `states` whose scope names the three files, none of them in git, takes every status line holding `not written yet` and compares that list with the one full sentence the proof names, so a changed word, count, file list or a second line fails it.",
+          "PROOF-280: the test adds `src/gone.py` to the scope of a spec whose `src/login.py` is in git, and checks that the proof's full sentence is among the status lines, is the only entry of the dashboard data's `information`, and is absent from its `warnings`.",
+          "PROOF-280: the test reads the status with `line in lines`, so it does not observe whether the status prints the line once or where in the report it stands.",
+          "The spot tests found nothing, and both tests compare the literal sentences their proofs name, written out in the test and not taken from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "6ff820b4cb2c874564262da3791406a825366e7572f421bdf4a0a87f55e9133d",
+        "rule_hash": "a9acb7bdbed6cfff3a26b664ea1a2d75c4bbab2344b96e3c6fd73018e4ee12cd",
+        "test_hash": "f6a18923f8252c63339e65d86ac939516d2022c8332d16ec9f61576b456c7ce9",
+        "verdict": "strong"
+      },
+      "RULE-124": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-282": {
+            "after": "SLOW_REASON = 'slow: runs with purlin:test'",
+            "aim": "past the test",
+            "before": "SLOW_REASON = 'slow: runs with purlin:test --all'",
+            "bug_key": "663583fdcbd3ddbedf1906ff38db3ce9457600142b245923710a3513c6974345",
+            "case": "login's slow PROOF-2 listed as not run in a current section; the proof says RULE-2's one reason is `slow: runs with purlin:test --all`; the changed code gives `slow: runs with purlin:test`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 123,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-283": {
+            "after": "            if (not env or entry.get('os') == env)]",
+            "aim": "plain",
+            "before": "            if entry.get('current') and (not env or entry.get('os') == env)]",
+            "bug_key": "789d206c73abaa1a95bf3b260212945c8759a91cdede7f7d1174ab5722e94301",
+            "case": "slow PROOF-2 passed in a section, then src/login.py is rewritten and committed; the proof says PROOF-2 reads `not run`; the changed code gives `passed`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 512,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-284": {
+            "after": "SLOW_REASON = 'slow: runs with purlin:test --slow'",
+            "aim": "past the test",
+            "before": "SLOW_REASON = 'slow: runs with purlin:test --all'",
+            "bug_key": "f853c14f1a9d131bc7d75cca5de969c0933446eb2da4cc8ae2dd18d78531961b",
+            "case": "the anchor security's one slow proof with a marked test and no section; the proof says RULE-1's one reason is `slow: runs with purlin:test --all`; the changed code gives `slow: runs with purlin:test --slow`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 123,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-282: the test reads PROOF-2's id, its `slow` true, its result `not run`, the cell's word `not run` and its whole reason list, which is every value the proof names.",
+          "PROOF-282: the reason is compared with the name SLOW_REASON, whose source the test's own lines do not show, so if it is taken from the code a reworded reason still passes.",
+          "PROOF-283: the test reads the cell as `passed` with an empty reason list, then after the rewrite and commit reads the cell's word `out of date` and PROOF-2's result `not run`, which is every value the proof names.",
+          "PROOF-284: the test reads the anchor's RULE-1 passed cell, its word `not run` and its whole reason list, against the same name SLOW_REASON, so the same doubt about where the expected reason comes from holds.",
+          "PROOF-284: the test does not read the anchor proof's `slow` value or its own result, and the proof names neither, so the rule's \"carries `slow` true ... on an anchor's alike\" is observed on the feature's proof only.",
+          "Findings: none were reported, and the tests each act before observing and compare literal words, so nothing a spot test looks for is present."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-283 holds two cases: the slow proof passing in a current section, and the cell going out of date after the code is rewritten and committed."
+        ],
+        "proof_hash": "b9422749aa7f99cef631193b1c0ac3e72b233a007d375e5d7211238320f93e4d",
+        "rule_hash": "32c84776bc9c34d368671605729c1ae771c6dc1cbc5ef6a12051adcc63bd5b4f",
+        "test_hash": "d8b6d0c3fa5161872bc883a2f4b875106a3cd06a87d73b6e49936cb192860371",
+        "verdict": "strong"
+      },
+      "RULE-125": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-285": {
+            "after": "    return {proof_id: ' '.join(words.split())",
+            "aim": "plain",
+            "before": "    return {proof_id: _without_slow(' '.join(words.split()))",
+            "bug_key": "b7555f6f7c0267c59d480efc9a8ec8ebca8cb124127670144df5cd3a1cde3acb",
+            "case": "`@slow` is added to sample_age PROOF-1 with no word changed; the proof says the warnings name no test comment and `left` holds no `to_correct`; the changed code warns that tests/test_age.py:3 names a proof whose wording changed and counts 1 `to_correct`",
+            "file": "scripts/mcp/purlin/wording.py",
+            "line": 116,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-285: the test commits the spec with ` @slow` appended to the PROOF-1 line, builds the payload, and asserts that the proof reads as slow, that no warning holds `whose wording changed`, and that no entry of `left` is of kind `to_correct`, which are both results the proof names.",
+          "PROOF-285: the test looks for the fixed words `whose wording changed` taken from the warning's own text, not for any line naming `tests/test_age.py:3`, so a warning for that comment worded another way would pass the first check and be caught only by the `to_correct` check.",
+          "PROOF-285: the spot tests found nothing, and the test leaves no way past it for a one-line change, because every stale comment both adds its warning and raises the `to_correct` count."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "85afd40d7129153de6fe3b48d2ac0d0966dfd7d1c2ceb1f12e934aed13c6cf22",
+        "rule_hash": "8c245bf6af2f3b5480f9e59173b7f2be465a380b8618d3a28377870833b22397",
+        "test_hash": "d130726a73bf667ef3ce28e4ebe0c97fbead3060720c6fd4a69e178fcb5c5c76",
+        "verdict": "strong"
+      },
+      "RULE-126": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-286": {
+            "after": "        cell['reasons'].append(LAST_AUDIT % (\n            verdict, str(audit.get('at') or '')[:7]))",
+            "aim": "plain",
+            "before": "        cell['reasons'].append(LAST_AUDIT % (\n            verdict, str(audit.get('at') or '')[:10]))",
+            "bug_key": "82ccfc3f9db81a11fd7bfff88db8ffc3839ed1881c5c4ab5b33b0337f732744b",
+            "case": "RULE-2's strong audit entry written on 2026-09-13, then src/login.py rewritten and committed; the proof says the reasons are exactly `code changed since <c7>` and `the last audit found it strong on 2026-09-13`; the changed code gives `the last audit found it strong on 2026-09` as the second reason",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 759,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-287": {
+            "after": "    if verdict == 'weak':",
+            "aim": "plain",
+            "before": "    if verdict == 'weak' and not changed:",
+            "bug_key": "0bc56d49c60d3d436d14baa82da7cf732a9afe4557562e194eaf92a402396120",
+            "case": "RULE-2 passes and its weak audit entry with one finding was written for another rule text; the proof says the strong cell reads `out of date` with the first reason `rule changed since <sha7>`; the changed code gives the word `weak` with the finding as its first reason",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 747,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-286: the test audits RULE-2, rewrites and commits src/login.py, takes passing evidence again, and compares the strong cell's word and its whole list of reasons with the two the proof names, the sha7 taken from the head recorded before the rewrite, so a wrong word, a wrong commit, a wrong date or an extra reason fails it.",
+          "PROOF-286: the test also reads the passed cell as `passed`, which is the proof's \"its tests pass again\".",
+          "PROOF-287: the test writes a weak entry with one finding under a rule hash of zeros and compares the strong cell's word, its first reason, its `findings` and the rule's `left` with what the proof names, so each value the proof names is read.",
+          "PROOF-287: the expected sha7 is read from the project's head and not from the entry's recorded commit, so the test relies on the entry having been written at the head.",
+          "PROOF-287: the test reads only the first reason, as the proof does, so the `the last audit found it weak on <date>` reason the rule names is not read by this proof's test.",
+          "The spot tests found nothing, and both tests assert literals or values taken from the fixture rather than from the code that builds the cell."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "c5f7b06d7a2249d990c6e0116d64a391ab4975d39dfc11bd0e5ab45c5ab5a668",
+        "rule_hash": "2c3e7e6d9991553707efabf62c05045746d054592cc1a200f951857c1af9fbaa",
+        "test_hash": "c395d6a4ef5f793fa9308ba15cf5323f163d61ae9c39cdbbd3cae11b36471ce7",
+        "verdict": "strong"
+      },
+      "RULE-127": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-296": {
+            "after": "            broken, noted.get('notes'))",
+            "aim": "past the test",
+            "before": "            broken, noted.get('notes'), noted.get('changed'))",
+            "bug_key": "0ab6e0f4af85d660afb877e81766f84c572ac43f8c002621229d0f0373678ce2",
+            "case": "a rule checked by hand alone, noted at the sign-off of 0.1.0 1 commit ago and reworded since; the proof says its passed cell reads `checked at sign-off` with `the rule's wording changed since its last note` before the note; the changed code gives `passed` with the note alone",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 367,
+            "result": "survived",
+            "test_key": "273fc4bf8abbfe034e3acf271d3a456b21ec6b8e99389c093ea8fd4b06336968",
+            "why": ""
+          },
+          "PROOF-297": {
+            "after": "        'hand_changed': [part for part in hand_changed or () if part == 'rule'],",
+            "aim": "past the test",
+            "before": "        'hand_changed': list(hand_changed or ()),",
+            "bug_key": "b649432671b3e8fee6aa42bd728fdb7cb080cb6e556c61608a31b6ae35a50769",
+            "case": "a rule with a `@manual` PROOF-1 and a passing PROOF-2, noted at the sign-off of 0.1.0, PROOF-1 reworded since; the proof says the strong cell's first reason is `the proof's wording changed since its last note`; the changed code gives the note as the first reason",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 571,
+            "result": "survived",
+            "test_key": "a6e4dd5e39457554610aef2a2121560c5a258a9b877f486a1019350c1b82ddf3",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-296: the test hands the cell reader a ready-made note and a ready-made \"rule reworded\" flag, then compares the passed cell's word and its two reasons exactly, so both values the proof names are checked.",
+          "PROOF-296: the test never goes through a sign-off, a commit or a rewording, so a fault in how the project reads what was reworded since the note, or in how the note's `1 commit since` is worded, still passes.",
+          "PROOF-297: the test hands the cell reader a ready-made note and a ready-made \"proof reworded\" flag, then compares the passed word, the strong word and the strong cell's reasons exactly, so each value the proof names is checked.",
+          "PROOF-297: the test supplies the flag itself, so a fault in carrying a proof's rewording from the sign-off's record to the cell still passes.",
+          "No spot test fired, and none of the six applies: both tests assert literal expected values that appear in their proofs."
+        ],
+        "findings": [
+          "PROOF-296: the test still passes when scripts/mcp/purlin/payload.py:367 reads \"broken, noted.get('notes'))\"",
+          "PROOF-296: the AI says this breaks: a rule checked by hand alone, noted at the sign-off of 0.1.0 1 commit ago and reworded since; the proof says its passed cell reads `checked at sign-off` with `the rule's wording changed since its last note` before the note; the changed code gives `passed` with the note alone",
+          "PROOF-297: the test still passes when scripts/mcp/purlin/payload.py:571 reads \"'hand_changed': [part for part in hand_changed or () if part == 'rule'],\"",
+          "PROOF-297: the AI says this breaks: a rule with a `@manual` PROOF-1 and a passing PROOF-2, noted at the sign-off of 0.1.0, PROOF-1 reworded since; the proof says the strong cell's first reason is `the proof's wording changed since its last note`; the changed code gives the note as the first reason"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "420bc0ad4a16604746b866d2519f5c451534bb014e289f69d081b6f0488de40e",
+        "rule_hash": "e35ffc020ae61adb54fa4f3103c6dca6bd3d32464fb48f622a57ccf51a953aef",
+        "test_hash": "4aab7c9f7eaa0a7b9f181c9f5d93da622ae0568409699e242f1e6dd7cafb7762",
+        "verdict": "weak"
+      },
+      "RULE-128": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-300": {
+            "after": "    cell['word'] = 'strong' if inp.get('anchor') else NOT_AUDITED\n    return cell",
+            "aim": "past the test",
+            "before": "    cell['word'] = 'strong'\n    return cell",
+            "bug_key": "d01d440f5e6441198ff815870b0632e753680a6e10870d04ef929c9ed64d268f",
+            "case": "anchor `security` with 2 spot-checked rules beside `login` whose one rule the audit found strong; the proof says `login` reads `1 of 1`; the changed code gives `0 of 1` for `login`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 781,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-301": {
+            "after": "        cell['word'] = SPOT_CHECKED\n        cell['reasons'] = list(cell['findings'])",
+            "aim": "plain",
+            "before": "        cell['word'] = 'weak'\n        cell['reasons'] = list(cell['findings'])",
+            "bug_key": "daab5b8999638962cbdfdce0fe1e285e02999fa9bf4af85d0f5d5a2405c570bc",
+            "case": "`security` with `RULE-1` found spot-checked and `RULE-2` found weak; the proof says the `Strong` cell reads `weak`; the changed code gives `spot-checked`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 748,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-302": {
+            "after": "    if audit and changed and verdict != SPOT_CHECKED:",
+            "aim": "plain",
+            "before": "    if audit and changed:",
+            "bug_key": "1b9085aa9703148cbd6279c791160b8fc81a68401dda357a50ccdff0f474a6ff",
+            "case": "both of `security`'s rules found spot-checked and the code changed since `RULE-1`'s entry; the proof says the `Strong` cell reads `out of date`; the changed code gives `spot-checked`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 752,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-303": {
+            "after": "    if not audit:\n        cell['word'] = SPOT_CHECKED\n        cell['reasons'] = [NOT_AUDITED_REASON]",
+            "aim": "plain",
+            "before": "    if not audit:\n        cell['reasons'] = [NOT_AUDITED_REASON]",
+            "bug_key": "f3a7974a25c096a1c78e7d628977bc4edfbd1fd0b23d13452371a4bacdfe0242",
+            "case": "`security` with `RULE-1` found spot-checked and `RULE-2` never read by the audit; the proof says the `Strong` cell is empty; the changed code gives `spot-checked`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 778,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-300: the test compares the anchor's cell with `spot-checked` and never reads `login`'s cell, so a `login` that does not read `1 of 1` still passes.",
+          "PROOF-301: the test compares the anchor's cell with `weak` for one spot-checked and one weak rule, which is the proof's case and its result.",
+          "PROOF-302: the test compares the anchor's cell with `out of date` after giving another code hash, which is the proof's case and its result.",
+          "PROOF-303: the test compares the anchor's cell with the empty string where only `RULE-1` has an entry, which is the proof's case and its result.",
+          "All four tests go through the helper `_anchor_strong_cell`, whose source is not shown, so whether it builds the status table or only the cell cannot be read here.",
+          "The spot tests found nothing, and each test holds a failable comparison with a literal the proof names, except that `1 of 1` of PROOF-300 is not compared in its test."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "28ffc6508d4c8922216b2e2e8be65fa2edbb2aee4be3ce618c13f5c1e6005218",
+        "rule_hash": "832dac9eb8e8068ca563819a0951dcf99e936aa52c613bd5090c7d4c9b48358c",
+        "test_hash": "c75eb735b174e7b4c27a4575c28d6ac1f9c844fae21432f1c6bb1f619af7914e",
+        "verdict": "strong"
+      },
+      "RULE-129": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-304": {
+            "after": "PENDING = ('This project was set up by Purlin 0.9.5. Nothing here counts '\n           'until it is upgraded to %s.')",
+            "aim": "past the test",
+            "before": "PENDING = ('This project was set up by Purlin 0.9.5. Nothing here counts '\n           'until it is brought to %s.')",
+            "bug_key": "1d50fd775609d89cc68483e3c8677c7716c39f6ef9fc007177c3841d744f522e",
+            "case": "a project with one spec and the 0.9.5 settings file with no `tests` key, status command run; the proof says the second line is `This project was set up by Purlin 0.9.5. Nothing here counts until it is brought to <version>.`; the changed code prints `This project was set up by Purlin 0.9.5. Nothing h",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 71,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-305": {
+            "after": "            '%s Run: purlin:init' % ARROW]",
+            "aim": "plain",
+            "before": "            '%s Run: purlin:init --update' % ARROW]",
+            "bug_key": "df62f5bc2b55a67312be00bc512259a4e1c5a1eb790b8753bfb4134988f892ae",
+            "case": "the same 0.9.5 project, `sync_status` tool called; the proof says the third line is `\u2192 Run: purlin:init --update`; the changed code answers `\u2192 Run: purlin:init` as its third line",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 224,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-304: the test runs the status command on the fixture's project and compares every printed line with the fixture's `three`, so an extra, missing or changed line fails it.",
+          "PROOF-304: the fixture `set_up_by_095` is not shown, so whether `three` holds the proof's sentences as literals or is built from the code's own `PENDING` constant cannot be read here; if it is built from the constant, a changed sentence still passes.",
+          "PROOF-304: the test does not read the command's exit code, which the proof does not name.",
+          "PROOF-305: the test calls the `sync_status` tool for the same project and compares every line of its first answer with the same `three`, so it checks the three lines and nothing else, subject to the same unseen fixture.",
+          "No spot test fired, and nothing in the two test bodies shown contradicts that: each holds one failable equality against a value from the fixture."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "f0d9a49ebf9830998183f748b45eae9f8ed379be111535fcc95cbd4eb41978c7",
+        "rule_hash": "db05bf71b54ccbfc2f579611eea5b52d9949c8c5e72811eba73b369244b6c7a0",
+        "test_hash": "8c85f1fa9036d572687cbdc13fa9e33a2aa980428aaf3a0e9059ff4751b37cf9",
+        "verdict": "strong"
+      },
+      "RULE-130": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-306": {
+            "after": "SETTING_CHANGED = 'The tests setting changed, so each result is out of date.'",
+            "aim": "past the test",
+            "before": "SETTING_CHANGED = 'The tests setting changed, so every result is out of date.'",
+            "bug_key": "e39ffef8c46f286dcd13d3a48ac571eda18a8868a019405392bc296e54e543ed",
+            "case": "login and export with committed evidence, then the pytest command gains ` -v`; the proof says the status holds `The tests setting changed, so every result is out of date.` exactly once; the changed code prints `The tests setting changed, so each result is out of date.` and never the line the proof n",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 75,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-307": {
+            "after": "    if fingerprint_module.setting_changed(project_root) or data['features']:\n        lines.append('')\n        lines.append(SETTING_CHANGED + ' ')",
+            "aim": "past the test",
+            "before": "    if fingerprint_module.setting_changed(project_root):\n        lines.append('')\n        lines.append(SETTING_CHANGED)",
+            "bug_key": "a8c7686d57e4eada10531e0c008d52cf793818d101dc7b595a552422b6d5c20a",
+            "case": "the setting as it was and login's test file edited; the proof says the status holds no line reading `The tests setting changed, so every result is out of date.`; the changed code prints that line under the table, followed by one space",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 187,
+            "result": "survived",
+            "test_key": "2496ed2c32013926f3b8d1246a8c7b94720edd038f2a227160ca0c2f21c6d2c0",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-306: the test adds ` -v` to the setting and counts the status lines equal to `self.SAID`, expecting exactly 1, so it observes the proof's case and its count.",
+          "PROOF-306: the source shown does not include where `SAID` is defined, so if it is taken from the status module's own constant, a reworded line would still be counted once.",
+          "PROOF-307: the test edits login's test file with the setting untouched and asserts no status line equals `self.SAID`, then that some line holds `tests changed since` or `to test`.",
+          "PROOF-307: the comparison is whole-line equality, so the same sentence printed with an indent or a trailing space would not be seen.",
+          "No spot test fired, and nothing in the two tests shown is an assertion that cannot fail."
+        ],
+        "findings": [
+          "PROOF-307: the test still passes when scripts/mcp/purlin/status.py:187 reads \"if fingerprint_module.setting_changed(project_root) or data['features']:\"",
+          "PROOF-307: the AI says this breaks: the setting as it was and login's test file edited; the proof says the status holds no line reading `The tests setting changed, so every result is out of date.`; the changed code prints that line under the table, followed by one space"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "faa91c293cc6f0d55a2df6d9c391900013132c4c3ca00fa252270d0687b68e8a",
+        "rule_hash": "ca185dd9a4b866109fb2bc74c0c2fb147d8e483e6225c88c9039129806c3b8aa",
+        "test_hash": "76bd9ae01e8a6217431e283b02fd5e55880fb7f78ace106eba8fe04196f845b7",
+        "verdict": "weak"
+      },
+      "RULE-131": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-308": {
+            "after": "    return [place + found[place] for place in sorted(found, reverse=True)]",
+            "aim": "plain",
+            "before": "    return [place + found[place] for place in sorted(found)]",
+            "bug_key": "ecace2c78bdc3818f11efcbb16c244c0a037939a597b35d5591bbb9874b557fa",
+            "case": "three markers at tests/login.test.ts:2 and tests/test_login.py:4 and :9; the proof says the test lines read login.test.ts:2, test_login.py:4, test_login.py:9 in that order; the changed code prints test_login.py:9, test_login.py:4, login.test.ts:2",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 373,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-309": {
+            "after": "        lines.append(('  %s:%d %s' % (rel, line, named)).rstrip())",
+            "aim": "plain",
+            "before": "        lines.append(('  %s:%d  %s' % (rel, line, named)).rstrip())",
+            "bug_key": "11ae5099ef05ca243bf426a1343245a3ec00945c276ccd3a53c4546796db39e9",
+            "case": "the sync_status tool on the three-marker project; the proof says its answer holds `  tests/login.test.ts:2  login RULE-1` with two spaces before login; the changed code answers `  tests/login.test.ts:2 login RULE-1` with one space",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 406,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-310": {
+            "after": "    return (OLD_MARKER_ONE if len(found) <= 2",
+            "aim": "plain",
+            "before": "    return (OLD_MARKER_ONE if len(found) == 1",
+            "bug_key": "a2f9a2ce464f974416936e2b71fb67f50e72c781aa5b95e07df45c06efac7175",
+            "case": "two markers left, tests/login.test.ts:2 and tests/test_login.py:4; the proof says the warning opens `2 tests still carry a marker from Purlin 0.9.5, which is not read:`; the changed code opens `1 test still carries a marker from Purlin 0.9.5, which is not read:`",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 386,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-311": {
+            "after": "OLD_MARKER_ONE = '1 test still carry'",
+            "aim": "plain",
+            "before": "OLD_MARKER_ONE = '1 test still carries'",
+            "bug_key": "68382b1e5df1158fa7d8461fc13309e9b43c8cc31ba6796b5e022de6fb472d65",
+            "case": "one marker left at tests/test_login.py:4; the proof says the warning opens `1 test still carries a marker from Purlin 0.9.5, which is not read:`; the changed code opens `1 test still carry a marker from Purlin 0.9.5, which is not read:`",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 81,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-312": {
+            "after": "        lines.extend(old_marker_lines(old))\n        lines.extend(warnings)",
+            "aim": "plain",
+            "before": "        lines.extend(warnings)\n        lines.extend(old_marker_lines(old))",
+            "bug_key": "002215dd555a897c16c3a05e3ad11ab5afe98b7a45a1d14acd5870362260c4eb",
+            "case": "three markers and a line under ## Rules with no number; the proof says the `3 tests still carry` line is the line after the not-numbered warning and a blank line follows `For each`; the changed code prints the marker lines above that warning, so the warning follows `For each`",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 204,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-308: the test runs the status command and counts the five-line block once and the words `a marker from Purlin 0.9.5` once, which is what the proof names; the block comes from a fixture whose source is not shown.",
+          "PROOF-309: the test compares the tool's answer with the command's output line by line, so a difference in line endings or a last newline would pass; it also counts the five-line block once in the tool's answer.",
+          "PROOF-310: the test calls the status function directly, not the command, and counts the four-line block once with the opening `2 tests still carry` and both test lines written as literals.",
+          "PROOF-311: the test calls the status function directly on a project that tracks only `tests/test_login.py` with one mark, and counts the three-line block once with the opening `1 test still carries` written as a literal.",
+          "PROOF-312: the test reads the line above the block for the words `not numbered`, the five lines of the block, the blank line after it and no blank line later; it finds `2 rules. 0 pass their tests.` anywhere after the blank line, not at a named place.",
+          "The spot tests found nothing, and each test holds a check of its proof's lines that can fail."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-308 is longer than 60 words."
+        ],
+        "proof_hash": "453501f6ee6a79bf4bd6c01af43415e06320f8afd85fbde63be869886055de4f",
+        "rule_hash": "acdf76cae7dea4ee105ddd1f776bfc3a8aec21ac098719181b304fc367c14cc1",
+        "test_hash": "9fbc7438b0ce94ffc501e999536a7279397f90b028f808bdd26cc1e943837c83",
+        "verdict": "strong"
+      },
+      "RULE-132": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-314": {
+            "after": "        listed = subprocess.run(['git', 'ls-files', '--cached', '--others', '-z'], cwd=project_root,",
+            "aim": "plain",
+            "before": "        listed = subprocess.run(['git', 'ls-files', '-z'], cwd=project_root,",
+            "bug_key": "b78b178a50349bff3ea8af7bba0ac84a046f59003e4e9b7ac4b0f2ec1bb4099b",
+            "case": "an untracked tests/test_new.py holds a real pytest.mark.proof mark above a test; the proof says the status holds no line with \"a marker from Purlin 0.9.5\"; the changed code lists untracked files and prints that warning for tests/test_new.py",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 261,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-315": {
+            "after": "            PENDING % version,\n            '%s Run: purlin:init --update' % ARROW,\n            OLD_MARKERS_DO]",
+            "aim": "past the test",
+            "before": "            PENDING % version,\n            '%s Run: purlin:init --update' % ARROW]",
+            "bug_key": "0e338b44fa128e376bde18963e66d940ec34fd8f045cc02535b4a153f30453eb",
+            "case": "a pending 0.9.5 project tracking a test with an old mark; the proof says the status prints its three lines and nothing else; the changed code prints a fourth line, the instruction of the old-marker warning",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 224,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-314: the test builds the tracked Python file with the mark in a docstring and a comment, the TypeScript file with the tag in a comment and in a string passed to expect, and the untracked file with a real mark, then asserts the status text holds no `a marker from Purlin 0.9.5`, which is the result the proof names.",
+          "PROOF-314: the test also asserts the line `2 rules. 0 pass their tests.`, which the proof does not name; it shows the full status was printed and not the three pending lines.",
+          "PROOF-315: the test runs the status command and compares its lines for equality with `three`, a value from the `set_up_by_095` fixture whose source is not shown, so whether the expected lines are literals or come from the code cannot be read here.",
+          "PROOF-315: the test's name says the run writes nothing, and the test reads no file, which matches the proof, since the proof names only what is printed.",
+          "PROOF-315: the proof names no text of the three lines, so the wording of each line is held only by whatever the fixture supplies.",
+          "No finding of the spot tests is listed, and both tests hold an assertion that can fail."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-314 is longer than 60 words."
+        ],
+        "proof_hash": "02b075290a97359efe51f61c41a2f4ea1c50123005153f29a7cb8a0340fe5ac2",
+        "rule_hash": "f6239d21737858f4f8d58375abba2d1777ccb78ed50ac4cd37bd3e6bd5f4b79e",
+        "test_hash": "4292be3bf7b951348c287e4353c699d5331a7eb2eb6f01435770ac5242c0a0a9",
+        "verdict": "strong"
+      },
+      "RULE-133": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-316": {
+            "after": "_OLD_TAG_RULE_RE = re.compile(r':(RULE-\\d+)\\]')",
+            "aim": "plain",
+            "before": "_OLD_TAG_RULE_RE = re.compile(r':(RULE-\\d+)[:\\]]')",
+            "bug_key": "8b49ec3684d6ea802b4f43ba8a9bc8de328791070d7dd6c277124b4fc7af94b2",
+            "case": "a title tag `[proof:login:PROOF-1b:RULE-1:unit]` joined on line 8 of tests/login.test.ts; the proof says `  tests/login.test.ts:8  login RULE-1`; the changed code gives `  tests/login.test.ts:8  login`",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 291,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-317": {
+            "after": "                  'comment above the test, and take the old marker out.')",
+            "aim": "past the test",
+            "before": "                  'comment above the test, and take the old tag out.')",
+            "bug_key": "837067a67e1f325d93b103b7cc181333995e0138646dc5b8579c8fea7b544d80",
+            "case": "two old markers that name no rule, in tests/login.test.ts:2 and tests/test_login.py:4; the proof says the block ends `For each, write the proof with purlin:spec, put the comment above the test, and take the old tag out.`; the changed code ends it `... and take the old marker out.`",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 87,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-316: the test builds the proof's file, with the comment on line 2 and the tag joined on line 8, and asserts the exact line `  tests/login.test.ts:8  login RULE-1` is among the status's lines, so a wrong line number, feature or rule fails it.",
+          "PROOF-316: the test does not check that the status holds no line for the `// purlin: login PROOF-1` comment on line 2, which the proof sets up but names no result for.",
+          "PROOF-317: the test builds both files and asserts that a block made by the helper `_old_block` from `2 tests still carry` and the two places `tests/login.test.ts:2  login` and `tests/test_login.py:4  login` is held exactly once.",
+          "PROOF-317: the opening sentence's remainder and the closing `For each, ...` sentence do not appear in the test's own lines, so they come from `_old_block`, which is not shown; if it takes them from the code's constants, a change to either sentence still passes.",
+          "The spot tests found nothing, and nothing in the two tests shown contradicts that: each asserts a failable value on the status's output."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-317 is longer than 60 words."
+        ],
+        "proof_hash": "e9eafce751f2a45fa67c2ffe7be68e395b69f1b4e6ba888c2cfde41f3f5225a8",
+        "rule_hash": "87b530662f8871b4f452e7fba0e0b97cd7e4b9a67baa28de05cedbc82cae8814",
+        "test_hash": "4b19ec086111b66ee90fed48059c1d41b1ebe8df1aa5a6262a1d95dbb9509156",
+        "verdict": "strong"
+      },
+      "RULE-134": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-318": {
+            "after": "OLD_MARKERS_DO = ('For each, write the proof with purlin:spec, put the '\n                  'comment above the test, and take the old tag off.')",
+            "aim": "past the test",
+            "before": "OLD_MARKERS_DO = ('For each, write the proof with purlin:spec, put the '\n                  'comment above the test, and take the old tag out.')",
+            "bug_key": "2da79e1a1483270a6d3991364f0d0b1fca19c8f813e3622a2f3233f3b1df864f",
+            "case": "22 old-marked tests in tests/test_login.py; the proof says the warning ends `For each, write the proof with purlin:spec, put the comment above the test, and take the old tag out.`; the changed code ends it `... and take the old tag off.`",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 87,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-318: the test tracks a file of 22 marked tests, finds the opening line in the status and compares the 22 lines after it with the 20 lines for lines 4 to 99, the literal `  and 2 more` and the closing line.",
+          "PROOF-318: the 20 file lines and `  and 2 more` are written out in the test itself, so a wrong count, a wrong cut-off or a wrong line number fails it.",
+          "PROOF-318: the opening and closing sentences are compared through the names `OLD_OPENS` and `OLD_DO`, whose definitions are not shown; if they are read from the status code and not written out in the test file, a change to either sentence still passes.",
+          "PROOF-318: the spot tests found nothing, and they would not see where `OLD_OPENS` and `OLD_DO` come from."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-318 is longer than 60 words."
+        ],
+        "proof_hash": "f5421c35966c51471afb8c628097ebbe8d64281da83b34bca42de8a2d6292b59",
+        "rule_hash": "c63d6c47bb21edbd245c76ca5610bc0c8895305dec4c94fcac7ba021c11d5f48",
+        "test_hash": "e295da1418ed6a449f6de2820a946ed4a19a218596b9c547cb27ab09105dc985",
+        "verdict": "strong"
+      },
+      "RULE-135": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-313": {
+            "after": "OLD_MARKERS_DATA = ('%s a marker from Purlin 0.9.5, which is not read. Run '\n                    'purlin:status to see them.')",
+            "aim": "past the test",
+            "before": "OLD_MARKERS_DATA = ('%s a marker from Purlin 0.9.5, which is not read. Run '\n                    'purlin:status to see each.')",
+            "bug_key": "d2b99b9cf1a4fb0a4f17bdb1e9d8819d4b83b7e790e470675c316fd7628798e6",
+            "case": "the status of the three-marker project; the proof says the last entry of warnings ends `Run purlin:status to see each.`; the changed code gives `3 tests still carry a marker from Purlin 0.9.5, which is not read. Run purlin:status to see them.`",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 89,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-319": {
+            "after": "OLD_MARKER_ONE = '1 test still carry'",
+            "aim": "plain",
+            "before": "OLD_MARKER_ONE = '1 test still carries'",
+            "bug_key": "d59f85e565274b3caa04506769f64ef92bb76155d60cab0a6edc16f698695afc",
+            "case": "a project tracking one old mark on line 4 of tests/test_login.py; the proof says the last entry of warnings opens `1 test still carries`; the changed code gives `1 test still carry a marker from Purlin 0.9.5, which is not read. Run purlin:status to see each.`",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 81,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-313: the test runs the status on the three-marker project, reads `warnings` from the dashboard data and compares its last entry with `3 tests still carry` joined to `OLD_DATA`, then counts exactly one entry holding `a marker from Purlin 0.9.5`, which is what the proof names.",
+          "PROOF-313: `OLD_DATA` is defined outside the test's own lines and is not shown, so if it is built from the status's own wording, the rest of the sentence is checked against the code and a change to it still passes.",
+          "PROOF-319: the test tracks one old mark in `tests/test_login.py`, runs the status and compares the last entry of `warnings` with `1 test still carries` joined to `OLD_DATA`, so the singular opening is checked as a literal and the rest of the line rests on `OLD_DATA` as above.",
+          "PROOF-319: the test never reads which line the mark is on, which the dashboard line does not show either, so nothing the proof names is missed there.",
+          "The spot tests found nothing; both tests assert on a literal opening and can fail."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "91abe5488c2ac4bbaf003f6a7fcc48654fbbf91db30358e6c2623288ac494b86",
+        "rule_hash": "fdf877d84145552baac70e93f20390cae546a7500f8229343ceebdaaf19a684d",
+        "test_hash": "e5edc236f55de5d4e299a983cad21be115c3f951af82f7599bdadced82632a05",
+        "verdict": "strong"
+      },
+      "RULE-136": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-320": {
+            "after": "    return isinstance(config, dict) and 'tests' in config",
+            "aim": "plain",
+            "before": "    return isinstance(config, dict) and 'tests' not in config",
+            "bug_key": "97f2bb69b216287a63ccb0242ba381cbc0005dfc3366a2caeb168b2d8857c957",
+            "case": "the status command on a 0.9.5 project with its own page and data file; the proof says three lines are printed and every file keeps its bytes; the changed code no longer reads the project as set up by 0.9.5, so it prints the full report and rewrites .purlin/report-data.js",
+            "file": "scripts/mcp/purlin/project.py",
+            "line": 175,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-321": {
+            "after": "        payload_module.write_report_data(project_root, {})\n        return '\\n'.join(pending_lines(project_root))",
+            "aim": "plain",
+            "before": "        return '\\n'.join(pending_lines(project_root))",
+            "bug_key": "d99c2e80e69a00e9b99fa17c6f53cab7c11b7ef1f00f6b923d5aa1c40e3eafed",
+            "case": "the sync_status tool on the same 0.9.5 project; the proof says every file outside .git holds the bytes it held before; the changed code answers the three lines and overwrites .purlin/report-data.js with an empty payload",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 159,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-322": {
+            "after": "            and not _update_pending(project_root)):",
+            "aim": "plain",
+            "before": "            and _update_pending(project_root)):",
+            "bug_key": "c8640da951bb1f25745e1b937137aeb141ab5bf2298ff8242b3a0497b3923e3c",
+            "case": "the status command on a 0.9.5 project with no page and no data file; the proof says three lines are printed and neither file exists after; the changed code skips the pending answer, prints the full report and writes .purlin/report-data.js",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 156,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-320: the test runs the status command, compares the printed lines with the fixture's three and compares the whole tree before and after, so it observes both results the proof names.",
+          "PROOF-320: the three expected lines and the tree reader come from a fixture and a helper not shown, so whether the lines are literals or taken from the code cannot be read here.",
+          "PROOF-321: the test calls the `sync_status` tool, compares its answer with the same three lines and compares the tree before and after, which is what the proof names.",
+          "PROOF-322: the test writes a `.gitignore` naming both paths, runs the status command, compares the three lines and asserts that neither `purlin-report.html` nor `.purlin/report-data.js` exists, which is what the proof names.",
+          "PROOF-322: the test checks only those two paths, so any other file the status wrote would pass it, and the proof does not name any other file either.",
+          "The proofs say \"its three lines\" without quoting them, so the expected text is set by the fixture rather than by the proof.",
+          "The spot tests found nothing, and each test holds failable comparisons of the output and of the files."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "34ef2480710272fc92f4a57fd450f886ab96c6e962cc1399b91cf1136b1cd27d",
+        "rule_hash": "988763294946ed32b66edbc564e9f04fc799c4ba294f45257de65b6cb17985fc",
+        "test_hash": "c025928cdfb4ffaf5e1c9f75b21e0f9ba9faf2357d87a1fda8a6e0cdc8356c7b",
+        "verdict": "strong"
+      },
+      "RULE-137": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-323": {
+            "after": "        cell['word'] = 'not run'\n        cell['source'] = newest.get('source')",
+            "aim": "plain",
+            "before": "        cell['word'] = OUT_OF_DATE\n        cell['source'] = newest.get('source')",
+            "bug_key": "7aaa589120f67368a1a3a0e5725af5ec7a4a9bac32a2b01c82c24743d1d08dee",
+            "case": "the anchor `security` of 11 rules, each passing in a section taken before a commit that changes `src/login.py`; the proof says `0 of 11 \u00b7 11 out of date`; the changed code gives `0 of 11` with no out of date part, as no rule's passed cell reads `out of date`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 339,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-324": {
+            "after": "    proofs = list(written)",
+            "aim": "plain",
+            "before": "    proofs = [proof for proof in written if not proof.get('manual')]",
+            "bug_key": "da75cc7d11e08a3eeb5209d911adb2e8cf4115a6d286f361dea72c861bdae535",
+            "case": "the anchor `security` of 3 rules, `RULE-3`'s one proof `@manual` and the other two out of date; the proof says `0 of 3 \u00b7 1 by hand \u00b7 2 out of date`; the changed code reads `RULE-3` as `no test`, so the cell loses `1 by hand`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 326,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-325": {
+            "after": "                                  True,",
+            "aim": "plain",
+            "before": "                                  bool(feature.get('is_anchor')),",
+            "bug_key": "ff8c42cf80cab6c614581a71d29bbd4402f0599712a1ebc49498541d4332e8f6",
+            "case": "the feature `login` of 2 rules, both passing in a section taken before a commit that changes `src/login.py`; the proof says `0 of 2`; the changed code renders the feature's row as an anchor's and gives `0 of 2 \u00b7 2 out of date`",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 426,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-323: the test builds an anchor of 11 rules, changes the code after the results were taken and compares the anchor's whole `Tests` cell with `0 of 11 \u00b7 11 out of date`, so both the count and the wording are observed.",
+          "PROOF-324: the test marks the third rule's proof `@manual` and compares the anchor's whole `Tests` cell with `0 of 3 \u00b7 1 by hand \u00b7 2 out of date`, so the order of the parts and both counts are observed.",
+          "PROOF-325: the test compares the second row's whole `Tests` cell with `0 of 2`, so an added out of date part would fail it; the feature `login` and its 2 rules come from a helper not shown, and the test itself only builds an anchor of 1 rule.",
+          "The spot tests found nothing, and each test compares an exact literal that its proof names."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "25424a2d671eaaed5345be9e0b25281a592de736c9c97fcd26df24ae46596e1a",
+        "rule_hash": "c00e77c3eb9fcb03df16935bc7d3f520b159e812fce24c0d2cdc2ed16fa482fa",
+        "test_hash": "db34b2e2b6703ea2ea445dfcd71896cac4099bfaf460c6a6bc394aedb57f21c4",
+        "verdict": "strong"
+      },
+      "RULE-138": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-326": {
+            "after": "            commit = max(carried, key=lambda one: str(\n                one.get('at') or '')).get('at') or None",
+            "aim": "plain",
+            "before": "            commit = max(carried, key=lambda one: str(\n                one.get('at') or '')).get('commit') or None",
+            "bug_key": "36098ef41c2dac5045611acb22643282fbb938477be0eb8f51410a8c15d0d87e",
+            "case": "a current linux section whose PROOF-1 result is marked carried from commit <c>; the proof says RULE-1's proof reads carried {\"linux\": \"<c>\"}; the changed code gives {\"linux\": \"<the time the result was taken at>\"}",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 672,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-326: the test marks the linux section's PROOF-1 result as carried from a 40-character commit, then compares RULE-1's proof `carried` with exactly `{'linux': <that commit>}` and RULE-2's proof `carried` with exactly `{}`, which are the two results the proof names.",
+          "PROOF-326: the spot tests found nothing, and the test compares the whole map for both rules, so a wrong commit, a shortened commit, a missing system or an extra system would each fail it.",
+          "PROOF-326: the test holds one carried result on one system, so it does not observe the rule's \"newest of them\" choice among several carried results, nor a system left out because its own run took a result beside a carried one."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "667664052609f3f382129ab5d3e021f6a412f4bdbb7191ad3bca74e3ebfda8e4",
+        "rule_hash": "b62dbf1392ec17310368aa9ac72c8f14c1177ad7fc659991db3bb75f2b75fb1f",
+        "test_hash": "eb308e7dfeb6c91844012928f73856f566affd28135f22a38c6c5d32ac3f4e08",
+        "verdict": "strong"
+      },
+      "RULE-14": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-159": {
+            "after": "        cell['word'] = 'weak'\n        cell['reasons'] = []",
+            "aim": "plain",
+            "before": "        cell['word'] = 'weak'\n        cell['reasons'] = list(cell['findings'])",
+            "bug_key": "816d9b836eeb86a05f27b4923c9f3a2d57a344d96b4417bf7208eec89687a653",
+            "case": "RULE-2 passing with a current weak entry holding the finding `The test reads the status code alone.`; the proof says the strong cell reads `weak` with that sentence as its one reason; the changed code gives `weak` with no reason",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 749,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-290": {
+            "after": "SPOT_TESTS_FOUND_NOTHING = 'The spot tests found nothing.%s'",
+            "aim": "plain",
+            "before": "SPOT_TESTS_FOUND_NOTHING = 'The spot tests found nothing. %s'",
+            "bug_key": "b4226fc8d562bb7878557f5d5dcb5aa7c0075512729b06e7fc0c263379be030f",
+            "case": "RULE-2 passing with a current spot-checked entry holding one no_bug sentence; the proof says the one reason is `The spot tests found nothing. No bug was planted: ...claude is not on PATH.`; the changed code gives the reason without the space after `nothing.`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 95,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-159: the test writes a weak audit entry with the one finding for RULE-2 and compares the strong cell's word, its whole reasons list and its whole findings list with the values the proof names, so a wrong word, a missing or extra reason or a changed finding fails it.",
+          "PROOF-290: the test writes a spot-checked entry with the one `no_bug` sentence and compares the strong cell's word and its whole reasons list with the literal sentence the proof names, so a wrong word or any change to the reason's wording fails it.",
+          "PROOF-290: the entry holds one `no_bug` sentence, so the test does not observe how several sentences are joined.",
+          "Neither test reads the cell's `evidence` field, an entry out of date or a verdict the format does not name, and neither proof names those; the spot tests found nothing and nothing in the two tests contradicts that."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "ca25a5a82361ef51f99b9dae28f5180bd115daa28612f54037fef990d2dab1cd",
+        "rule_hash": "cfc8fc5e419d450cd1839434c02c65fe9eb75d7e6a5fdd77620a06655050207d",
+        "test_hash": "f4cfbd62cd562b7f525ada13ad7941f44d5ea075fc47fa91b9c4709e402e9679",
+        "verdict": "strong"
+      },
+      "RULE-16": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-19": {
+            "after": "            and passed['word'] in ('passed',):",
+            "aim": "plain",
+            "before": "            and passed['word'] in ('passed', CHECKED_AT_SIGNOFF):",
+            "bug_key": "e23f45116dc7e819d6e24fb1e219ec3c8b6ce2b71ca081b44a4641bf98ea8d4d",
+            "case": "a rule whose only proof is `@manual`, before any sign-off; the proof says the strong cell reads `checked at sign-off` with no reason; the changed code gives `waiting` with the reason `waiting for its tests to pass`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 716,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-288": {
+            "after": "        cell['reasons'] = []",
+            "aim": "plain",
+            "before": "        cell['reasons'] = list(cell['findings'])",
+            "bug_key": "b61790e1cd8f946d4a7a2d43da020d7ee5165f02c0bbc9a6f150e2b8a3df6e7b",
+            "case": "a rule with a `@manual` PROOF-1 and a passing PROOF-2 whose current audit reads `weak` with the finding `PROOF-2 reads the status alone.`; the proof says the strong cell's reasons hold that finding; the changed code gives `weak` with no reasons",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 749,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-291": {
+            "after": "    if audit and verdict == SPOT_CHECKED and not any(\n            proof.get('manual') for proof in proofs):",
+            "aim": "plain",
+            "before": "    if audit and verdict == SPOT_CHECKED:",
+            "bug_key": "ea565a3b3e0204eb8514ee12f6903ac8441832e15519b0333252b86e37936c3b",
+            "case": "a rule with a `@manual` PROOF-1 and a passing PROOF-2 whose current audit reads `spot-checked` with one `no_bug` sentence; the proof says the strong cell reads `spot-checked` with the one reason; the changed code gives `checked at sign-off` with no reasons",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 762,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-292": {
+            "after": "    if audit and changed and not any(\n            proof.get('manual') for proof in proofs):",
+            "aim": "plain",
+            "before": "    if audit and changed:",
+            "bug_key": "f8a99edfaa037ffd822ba7cb7a6b12e21559d9a5452ccbd6f710b5c2994901d4",
+            "case": "a rule with a `@manual` PROOF-1 and a passing PROOF-2 whose `strong` audit entry was written for another rule text; the proof says the strong cell reads `out of date` with the first reason `rule changed since <sha7>`; the changed code gives `checked at sign-off` with no reasons",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 752,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-293": {
+            "after": "    if not audit and any(proof.get('manual') for proof in inp.get('proofs') or ()):",
+            "aim": "plain",
+            "before": "    if any(proof.get('manual') for proof in inp.get('proofs') or ()):",
+            "bug_key": "80cad3b6574f0fed1b79980df4af758962c3a710af35248ab8044fc4307535de",
+            "case": "a rule with a `@manual` PROOF-1 and a passing PROOF-2 whose current audit entry reads `strong`; the proof says the strong cell reads `checked at sign-off`; the changed code gives `strong`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 768,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-19: the test gives the cells one `@manual` proof with no sections and compares the strong cell's word with `checked at sign-off`, its reasons with an empty list and the `manual` flag with true, which is everything the proof names.",
+          "PROOF-288: the test builds a project with a hand check and a tested proof, writes a weak audit entry with the finding, and compares the word with `weak`, looks for the finding among the reasons and compares `left` with `to_strengthen`, the three results the proof names.",
+          "PROOF-291: the test compares the word with `spot-checked`, the reasons with the one-item list of `The spot tests found nothing. ` and the sentence, and the `manual` flag with true, so each value the proof names is checked exactly.",
+          "PROOF-292: the test asks for an entry written for another rule hash and compares the word with `out of date` and the first reason with `rule changed since` and the first seven characters of the head commit, which is what the proof names.",
+          "PROOF-292: the sha in the expected reason comes from the helper `_rule`, whose source is not shown, so whether it is the commit the entry was written at cannot be read here.",
+          "PROOF-293: the test compares the strong cell's word with `checked at sign-off` for a current `strong` entry, the one result the proof names.",
+          "PROOF-291, PROOF-292 and PROOF-293 rest on the helper `_rule` to set up the `@manual` proof, the passing test and the audit entry; the tests shown do not themselves show that setup.",
+          "The spot tests found nothing, and each test holds failable assertions on the values its proof names."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "866141fafcf44ea10034345b365920a03d9e15d662bf974daaf8488c863efa2a",
+        "rule_hash": "3a4882f3b82422e4284321c1d28058f8b0776a00e240969c397dab7db9ca8874",
+        "test_hash": "8a9a945d8f23248962bbe10f8faafbfef05b19e8c0a3f5af9b02aeda469dfbf4",
+        "verdict": "strong"
+      },
+      "RULE-23": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-27": {
+            "after": "    if passed['word'] == 'failed':\n        return 'partial'",
+            "aim": "plain",
+            "before": "    if passed['word'] == 'failed':\n        return 'failing'",
+            "bug_key": "7ccef71ae08161d0c12953eb82cbf4093f4c142763d624013c2c29ff42feb032",
+            "case": "one feature with four rules: no proof line, a failing test, a passing test not audited, and one found strong; the proof says `untested`, `failing`, `passed`, `passed`; the changed code gives `untested`, `partial`, `passed`, `passed`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 799,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-27: the test builds one feature with four rules, records a fail for RULE-2 and passes for RULE-3 and RULE-4, writes a strong audit entry for RULE-4, and compares the four buckets with the exact list `untested`, `failing`, `passed`, `passed`, which is what the proof names.",
+          "PROOF-27: the test also checks that RULE-4's strong cell reads `strong`, so the fourth rule is shown to be the one the audit found strong and not merely one that passes.",
+          "PROOF-27: the spot tests found nothing, and the test compares every value the proof names, so a change to any of the four buckets fails it.",
+          "PROOF-27: the proof and its test read no rule whose bucket is `partial` or `by_hand`, so those two words of the rule are not observed here."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "46a74bb21ba0699862d9431c26cac10b6c961d43c0ba105620c3a157c99ded83",
+        "rule_hash": "52ac3078ac5fc5d2ca34cf0b13ed06c58bcc9634cffeed796026488be1f8c601",
+        "test_hash": "23f739d3c18b8f5afeaecc6b988e8265980200fcfb650f860c115399bb13e1d9",
+        "verdict": "strong"
+      },
+      "RULE-27": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-31": {
+            "after": "SCHEMA_VERSION = 16",
+            "aim": "plain",
+            "before": "SCHEMA_VERSION = 17",
+            "bug_key": "55bfb0f2982693d13bd25e3a3d78cb45de60946a9d55c8bddc2efb37a3ec9997",
+            "case": "the payload built for a project; the proof says `schema_version` reads 17; the changed code gives 16",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 188,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-31: the test builds the payload and compares `schema_version` with the literal 17, so a different version number fails it.",
+          "PROOF-31: the test compares the sorted top-level keys with a literal list of `schema_version` and the seventeen keys the rule names, so a missing, extra or renamed key fails it.",
+          "PROOF-31: the test checks that `generated_at` ends with `Z`, which is all the proof says of that value; the rest of the time format is not compared.",
+          "PROOF-31: the test's name says schema sixteen while its assertion and the proof say 17; this does not change what it checks.",
+          "PROOF-31: the spot tests found nothing, and the test compares every value the proof names, so no change breaks the proof's case without failing it."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "c66406814987de1075c4c4c4b419b117797c4faae4679d1013a503e7c7543763",
+        "rule_hash": "433d063d53ffc2b01d34f807cdadacff62f5480c67fc90e275fcbfbd71a6356e",
+        "test_hash": "87efd660cc72fa1f6bb74ec916a7a3586244849d0d75408dd30ed91fc717b89c",
+        "verdict": "strong"
+      },
+      "RULE-28": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-128": {
+            "after": "                     'current': bool(newest and not newest['current']),",
+            "aim": "plain",
+            "before": "                     'current': bool(newest and newest['current']),",
+            "bug_key": "bfcdad45765728ddd27bc32bbd52a5066737828bba7aaeb598a236bfd5dd755c",
+            "case": "an uncommitted local section from linux for login; the proof says `current` true; the changed code gives `current` false",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 453,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-129": {
+            "after": "                'committed': path in uncommitted,",
+            "aim": "plain",
+            "before": "                'committed': path not in uncommitted,",
+            "bug_key": "3ea652fb56aef304a79ed17f619e13b35823988a183d84eb589e5f3091d38efb",
+            "case": "the local linux section for login once it is committed; the proof says `evidence.local` reads `committed` true; the changed code gives `committed` false",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 445,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-128: the test writes an uncommitted linux section, builds the payload and compares `current`, the local path `.purlin/evidence/local/login.json`, `committed` false and the whole platform map for `linux` with its commit, time and `current`, so every value the proof names is checked.",
+          "PROOF-128: the test also checks that `evidence.ci` is null, which the proof does not name.",
+          "PROOF-129: the test commits the section with git, builds the payload and compares `evidence.local.committed` with true, which is the one value the proof names.",
+          "PROOF-129: the test never reads `committed` before the commit, but PROOF-128 covers the false value for the same starting state.",
+          "The rule's spec path and category are named by neither proof, so neither test reads them."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "bcb04b134f2c67d12ac61d62cb2ff62d41c10b92db96c0c693b844c7843a06df",
+        "rule_hash": "1ed0c2a22aa8cf0bb361c278fff8186c87861873d548d8e3348fd194485f3467",
+        "test_hash": "7865a434de8f915df2963fa810b60ef17052922cf02eecd482f7f0600317bcd5",
+        "verdict": "strong"
+      },
+      "RULE-3": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-151": {
+            "after": "        if not proved and env:\n            passes = False",
+            "aim": "plain",
+            "before": "        if not proved:\n            passes = False",
+            "bug_key": "fd338a4ae38fa7f1381a6fae249263a8451ab9c2c6df03257b5c41a9ae320e93",
+            "case": "RULE-2 with a second proof PROOF-3 that has a marked test, and a current section in which PROOF-2 alone passes; the proof says the passed cell reads `not run`; the changed code gives `passed`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 684,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-3": {
+            "after": "    if passes or missing_env:\n        cell['source'] = _named_source(entry['source'] for entry in used)\n        cell['counts'] = False",
+            "aim": "plain",
+            "before": "    if passes or missing_env:\n        cell['source'] = _named_source(entry['source'] for entry in used)\n        cell['counts'] = True",
+            "bug_key": "8965426249310a7c0145c4a016cd747355391c7b1ddc126bb3a06af4a1e29a3c",
+            "case": "an uncommitted local section in which PROOF-2 passes; the proof says the passed cell reads `passed` with source `local`, `current` true and `counts` true; the changed code gives `counts` false",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 397,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-3: the test writes an uncommitted local section in which PROOF-2 passes and compares the cell's word with `passed` and its source, current and counts with `local`, True and True, which is every value the proof names.",
+          "PROOF-151: the test adds PROOF-3 to RULE-2, commits a marked test for it, writes a current section in which PROOF-2 alone passes and compares the cell's word with `not run`, so a cell reading `passed` fails it.",
+          "The spot tests found nothing, and both tests assert literal values the proofs name after building the proofs' own situation."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "36a0d23ba0ac6452177f1482af85dbeddd9f98df5ffff2d499c43238813e8cd1",
+        "rule_hash": "ac9f1de7c2bded8b4b26017fb30836cf846ef7bc608cb7860c82c0f8258789be",
+        "test_hash": "298405651fec1304d61f46b65fbbe239df95a6b35cc2857a7a822ed3f9e2c218",
+        "verdict": "strong"
+      },
+      "RULE-34": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-39": {
+            "after": "                    'result': 'fail' if 'fail' not in results.values() else 'pass',",
+            "aim": "plain",
+            "before": "                    'result': 'fail' if 'fail' in results.values() else 'pass',",
+            "bug_key": "ce8a9e962c553e60ffb00bcccb45839aa80fa586041dffb4ffc255172eb8863d",
+            "case": "a linux section in which PROOF-2 fails and a windows section in which both proofs pass, written for login; the proof says linux reads result fail and windows reads pass; the changed code gives linux pass and windows fail",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 512,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-39: the test writes a linux section in which PROOF-2 fails and a windows section in which both proofs pass, then reads the payload's evidence map for login and compares its sources with `local` alone, linux's result with `fail` and windows's with `pass`, as the proof names.",
+          "PROOF-39: for each of the two sections the test compares the commit's length with 40, `current` with true and the path with `.purlin/evidence/local/login.json`, so every value the proof names is checked and a wrong result, source, currency or path fails it.",
+          "PROOF-39: the test checks the commit's length and not its value, and never reads `at`, the time the rule names beside the commit; the proof names neither, so a wrong time or a wrong commit of 40 characters would still pass.",
+          "The spot tests found nothing, which agrees with the test: it asserts literal values taken from the proof and mocks nothing it checks."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "96d74957b67f34e20aaf384ea585f12310b6842a4efe6718c808222250e8ac7c",
+        "rule_hash": "af10ad0cce0e6a2a4bc5c8b0b76cbdbc56898790af0a5eb5c35e4297da270fa9",
+        "test_hash": "081003696fb2681ae643293ee90f5d7bbc2d86cb86a1e14d5bbed2e87cbdb75a",
+        "verdict": "strong"
+      },
+      "RULE-35": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-164": {
+            "after": "                if pair not in observed and entry['source'] != 'ci':",
+            "aim": "plain",
+            "before": "                if pair not in observed:",
+            "bug_key": "b83d7cf5e4ca64624d886d32354e11193b5b75ce2e51e5d87f79680fea0ffcfd",
+            "case": "a local linux section names the shared test and the linux lock for PROOF-1, and a ci windows section names the shared test and the windows lock; the proof says RULE-1's test hash equals that of one section naming all three tests; the changed code gives the hash of the two local tests only",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 727,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-164: the test writes a local linux section and a ci windows section with the proof's three test names and compares RULE-1's test hash with the hash of one section naming all three, which is the proof's case and its result.",
+          "PROOF-164: the expected hash comes from a helper whose source is not shown, so whether it is worked out apart from the code under test cannot be read here.",
+          "PROOF-164: the spot tests found nothing, and the test's one comparison would fail if either source's tests were left out of the hash or a shared test were counted twice."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "e3047c77d39ccb6470ed97b8c42fb2a97efcde23c10ccc22d77f7e5c75cf224d",
+        "rule_hash": "fa0a8e502d99ea6d47f3eecb7dcfb9dd7ae3a0c686d20dfefba05f7adf605be2",
+        "test_hash": "e59cd9ed623ea7047a8e7401a8dec033afd5a6ab2ddb5b12f240b07c6077a394",
+        "verdict": "strong"
+      },
+      "RULE-4": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-5": {
+            "after": "    if passes or missing_env:\n        cell['source'] = _named_source(entry['source'] for entry in used)\n        cell['counts'] = False",
+            "aim": "plain",
+            "before": "    if passes or missing_env:\n        cell['source'] = _named_source(entry['source'] for entry in used)\n        cell['counts'] = True",
+            "bug_key": "601d405ec70d0044a3e0e262e67d88606679694fce162de410ac34c3be954a49",
+            "case": "a current section in the folder ci in which PROOF-2 passes; the proof says RULE-2's passed cell carries counts true; the changed code gives counts false",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 397,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-7": {
+            "after": "    if any(proof.get('tests') or proof.get('id') in marked for proof in proofs):\n        cell['word'] = 'passed'",
+            "aim": "plain",
+            "before": "    if any(proof.get('tests') or proof.get('id') in marked for proof in proofs):\n        cell['word'] = 'not run'",
+            "bug_key": "2dc493a34111dd49bfdec2b95539bff1dbded1c94d5df1a1aef97fb2d1dd7768",
+            "case": "no evidence, one test marked for PROOF-2 and a test report in which it passed; the proof says RULE-2's passed cell reads not run; the changed code gives passed",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 413,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-5: the test writes one passing entry for PROOF-2 into the ci folder and compares the cell's word with `passed`, its source with `ci` and its counts with true, which are the three values the proof names.",
+          "PROOF-5: the test reads nothing of the cell's reasons, so the rule's \"no reason at all\" is checked by neither proof shown here.",
+          "PROOF-7: the test writes a marked test and no evidence, then a report under `.purlin/runtime/reports/` listing that test as passed, and compares the cell's word with `not run` before and after the report, which is the value the proof names.",
+          "PROOF-7: the report is a pytest XML file with one test case and no failures, so the test covers that one report format only.",
+          "No spot test fired, and both tests compare the proof's own case with literal values, so no change was found that breaks either case and gets past its test."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "de59574a2bcb5b1edb55defd35695bdd5d43eea45ea06da524e4d33e484c4158",
+        "rule_hash": "eed09490f922faf0c5f4567204fda818ea75ddfa42d708e721155e12d1cfa997",
+        "test_hash": "988b8702ad054dad1e50aec88d22c72db0713473546b8847b521ad5b7e40d75b",
+        "verdict": "strong"
+      },
+      "RULE-42": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-50": {
+            "after": "        for warning in loaded['warnings']:\n            if warning in warnings:\n                warnings.append(warning)",
+            "aim": "plain",
+            "before": "        for warning in loaded['warnings']:\n            if warning not in warnings:\n                warnings.append(warning)",
+            "bug_key": "9da9f81b4454e76a65d220e158baeb57b211df2431e07343cf6e303df3f38699",
+            "case": "a file at .purlin/evidence/ci/login.json whose source reads local; the proof says the warnings carry exactly one line naming that path, holding \"it is ignored\"; the changed code gives no warning naming the path",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 423,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-50: the test writes a ci evidence file that claims `local` with a passing `PROOF-1`, checks the path is `.purlin/evidence/ci/login.json`, and compares the passed cell's word, source and platforms with `no test`, None and an empty map, as the proof names them.",
+          "PROOF-50: the test counts the warnings that hold the path, requires exactly one, and requires `it is ignored` in that line, so a missing, repeated or reworded warning fails it.",
+          "PROOF-50: the spot tests found nothing, and the test compares each value the proof names, so the planted bug is the plain one of dropping the warning.",
+          "PROOF-50: no proof shown for the rule names the opposite case, a file whose `source` agrees with its folder and is read."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "522e0e08d6bf872ff0de421ceffc28039a52bf7b325a2b7fb280f49fc76b7ad7",
+        "rule_hash": "86927d2ca4b9f8d7968ec704cfac522ceab4c102269230b012125cf3e863fe43",
+        "test_hash": "afdd76e8e1c1b6f7364ac9ee77e84c9996f91955cb757c61850ab71df1381919",
+        "verdict": "strong"
+      },
+      "RULE-43": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-51": {
+            "after": "        at = entry['section'].get('commit')\n        known = platforms.get(entry['os'])",
+            "aim": "plain",
+            "before": "        at = entry['section'].get('at')\n        known = platforms.get(entry['os'])",
+            "bug_key": "afa1f0cc6a2359241de0134f7711ddf57cc5c919b41b57e3fd27ddce4a8e238a",
+            "case": "passing ci sections from linux at 2026-09-13T12:00:00Z and windows at 2026-09-13T13:00:00Z; the proof says each platform carries its own section's time; the changed code gives each platform its section's commit as the time",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 547,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-52": {
+            "after": "            platforms[env] = {'word': 'not run', 'source': None, 'at': at}",
+            "aim": "plain",
+            "before": "            platforms[env] = {'word': 'not run', 'source': None, 'at': None}",
+            "bug_key": "9d2d23579fbc24a05dfc7a1a0c01707c0a5b2f8ed95db8e418ad4c293942688d",
+            "case": "one untagged proof and one tagged @env(windows) with only a passing linux ci section; the proof says windows reads not run with no source and no time; the changed code gives windows the linux section's time",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 555,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-51: the test writes a linux and a windows ci section, then compares the cell's word, the exact list of platforms and each platform's whole entry (word, source and time) with the literals the proof names, so a wrong word, source, time or extra platform fails it.",
+          "PROOF-52: the test builds a rule with one untagged and one windows-tagged proof over a single passing linux ci section and compares the whole windows entry with `not run`, no source and no time, and the linux word with `passed`, which is everything the proof names.",
+          "PROOF-52: the test does not compare the full list of platforms, so an extra platform beside linux and windows would still pass.",
+          "The spot tests found nothing, and both tests hold assertions on literal expected values that can fail."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "eda641f6da751eb502448b463eb6edd8f4bc4290245b5faea5f423fc14677daa",
+        "rule_hash": "7a40a05aab94c3b952b9c633cb0699c074337c473bb566155307f9eacbc4ba43",
+        "test_hash": "31970752d51b9731031837eadb98b1f0fae580cd985b4ce6e846ddc6d88d8f05",
+        "verdict": "strong"
+      },
+      "RULE-45": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-54": {
+            "after": "    current = list(answering)",
+            "aim": "plain",
+            "before": "    current = [entry for entry in answering if entry.get('current')]",
+            "bug_key": "a3432fbb97619375049fc769e63ce2e34647d2d781e11a01f2f9e542fdb5804e",
+            "case": "an out-of-date `ci` section from `linux` that failed beside a newer current `local` section from `macos` that passed; the proof says `passed` with `platforms` listing `macos` alone; the changed code gives `partial` with `platforms` listing `linux` and `macos`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 347,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-54: the test builds the proof's two sections, an older out-of-date failing `ci` one from `linux` and a newer current passing `local` one from `macos`, and compares the passed cell's word with `passed` and its sorted `platforms` with `['macos']`, which are the two results the proof names.",
+          "PROOF-54: the spot tests found nothing, and the test leaves no way past it for this case, since a change that reads the out-of-date section alters either the word or the platforms it compares."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "08260db83f07bd0bfa9a437b386c928b50852cadbcd7b8abdd3d950de3bc090a",
+        "rule_hash": "48d616f3be9d34d4d346f12de01ecada116f1f4e6b0d5dd62925bba2d743049c",
+        "test_hash": "5a378ce6944edce7d3834345265bad715d52ec7a6415183310259edb33b6881a",
+        "verdict": "strong"
+      },
+      "RULE-48": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-84": {
+            "after": "            if not proof.get('tests'):",
+            "aim": "plain",
+            "before": "            if (rule.get('feature'), proof.get('id')) not in (tied or ()):",
+            "bug_key": "cb62b21104b336301ac9be9ff78cd40f86c7459d39261a32b80f85ef084a3e4b",
+            "case": "with nothing run, a test file holds a test marked for PROOF-1 and none for PROOF-2; the proof says proofs_without_test 1 and proofs_without_test_ids exactly PROOF-2; the changed code gives 2 and PROOF-1, PROOF-2",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 346,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-84: the test writes a test file marked for PROOF-1 alone, runs nothing, and compares `proofs_without_test` with 1 and `proofs_without_test_ids` with exactly PROOF-2 on both the feature's rollup and the project summary, which is each count the proof names.",
+          "PROOF-84: the test compares the passed cell's word of every rule with `not run` for RULE-1 and `no test` for RULE-2 as one exact map, so a wrong word on either rule, or an extra rule, fails it.",
+          "PROOF-84: the spot tests found nothing, and the test leaves no named value unchecked, so the planted change is the plain one: reading whether a proof has a test from the evidence instead of from the markers."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "c847b24c49d26669a309417a5ed5a7ed1dd25b0479e12bde9def8a095c1bf793",
+        "rule_hash": "84ed08d6990c3214763900083461c1a26659984968e21af690154aecd9632950",
+        "test_hash": "9fe85ce62171ae185a0e35566fbd47624f0b6ea100d673ff8b365280453c66c1",
+        "verdict": "strong"
+      },
+      "RULE-49": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-58": {
+            "after": "    return (data.get('rollup') or {}).get('proofs') or 0",
+            "aim": "plain",
+            "before": "    return (data.get('summary') or {}).get('proofs') or 0",
+            "bug_key": "a6849aa92bd0abb967a8ade75629d97180ac080239277500ca9654d989428ca4",
+            "case": "each of the three sample payloads shown in the status table and on the dashboard; the proof says the two carry the same column headings; the changed code leaves the proof-count column out of the status table while the dashboard still shows it",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 432,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-58: the test renders each of the three samples as the status table and on the dashboard in a browser, and compares the column headings, the set of spec names and every cell after the name for each spec, which is what the proof names.",
+          "PROOF-58: the expected cells come from the status table and the observed ones from the dashboard page, so a change to the table alone shows as a difference, but a fault in rendering the two share would move both and pass.",
+          "PROOF-58: the comparison loops over the table's rows only, and the sorted spec names are compared first, so a row missing on either side still fails."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "3aa179b05b2677e736d8725c8647bb7f8c0af66fd80015f1dd6e5e008a82d3ac",
+        "rule_hash": "b1e05d7f5263034cc6e97ab33f6bbdf9e95e8c1439eccf4ea7c828692edce7ac",
+        "test_hash": "c85ced9896f0dffcd0912549935a524396df3f841473e316504e9e34c0bb9af5",
+        "verdict": "strong"
+      },
+      "RULE-59": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-168": {
+            "after": "            word = SIGNED_AT % (version, commit[:8])",
+            "aim": "plain",
+            "before": "            word = SIGNED_AT % (version, commit[:7])",
+            "bug_key": "64af15bfc145f65e57cdf686b4f3bb9f47b8ed5a2f0b8f1a7ff8f264a8ec91ba",
+            "case": "the walk signs 1.2.0 at HEAD; the proof says the word reads `signed 1.2.0 at <sha7>`; the changed code gives `signed 1.2.0 at` followed by eight characters of the sha",
+            "file": "scripts/mcp/purlin/facts.py",
+            "line": 94,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-169": {
+            "after": "    return not package.only_records_between(project_root, commit, head)",
+            "aim": "plain",
+            "before": "    return bool(package.only_records_between(project_root, commit, head))",
+            "bug_key": "5e80059186292e4eb776d637c7ae3149f3c645df18913da7f783806edc122e82",
+            "case": "1.2.0 signed, then one commit changing only .purlin/evidence/local/login.json; the proof says the word still reads `signed 1.2.0 at <sha7>`; the changed code gives `signed 1.2.0, 1 commit since`",
+            "file": "scripts/mcp/purlin/facts.py",
+            "line": 136,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-170": {
+            "after": "        numbers.append(part)",
+            "aim": "plain",
+            "before": "        numbers.append(int(part))",
+            "bug_key": "332a1bd7dd4197ecf906a46caef7e77c5700d21b60bdbe919b5085d43a74820f",
+            "case": "1.9.0, 1.10.0 and beta each signed on one commit; the proof says signoff.version reads 1.10.0; the changed code compares the numbers as text and gives 1.9.0",
+            "file": "scripts/mcp/purlin/facts.py",
+            "line": 209,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-168: the test signs 1.2.0 through the walk, reads the tagged commit from git itself, checks it is HEAD, and compares `version`, `commit` and `word` with the literal `1.2.0`, that commit and `signed 1.2.0 at` its first seven characters, which are the three values the proof names.",
+          "PROOF-169: the test appends a line to `.purlin/evidence/local/login.json`, commits it, checks HEAD moved, and compares `word` with `signed 1.2.0 at` the tagged commit's first seven characters, so a word that counts the commit or names the new HEAD fails it.",
+          "PROOF-170: the test signs `1.9.0`, `1.10.0` and `beta` in that order and compares `version` with the literal `1.10.0`, so an ordering by text or one that puts `beta` first fails it.",
+          "The spot tests found nothing, and each test's expected value comes from a literal or from git, not from the code that builds `signoff`.",
+          "No proof of the rule names the case where there is no sign-off and `word` reads `not signed`, a sign-off read from its files where the checkout holds no tag, or the value of `since`, so those parts of the rule have no test read here."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "9961e25594ed630ecaa2b626aade8a5fc9824b877159983c5034e74e2c39b4c4",
+        "rule_hash": "2375f79b79620561753545e0d94f4590791abe37e49e0276eb4ac00a80c179b7",
+        "test_hash": "edfdbe2d6bec1cddbe77611e2e493bd4029ae898eb8a1d0c15e508666848fd85",
+        "verdict": "strong"
+      },
+      "RULE-6": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-153": {
+            "after": "        if env:",
+            "aim": "plain",
+            "before": "        if env and env not in by_os:",
+            "bug_key": "29e37a7d546164c18705cab4235d307c378be4fadfe10d34c25107e2ffd6d7ce",
+            "case": "one proof tagged `@env(windows)` with passing sections from `linux` and `windows`; the proof says the passed cell reads `passed`; the changed code gives `not run`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 671,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-8": {
+            "after": "NO_RUN_YET = '%s: not run yet'",
+            "aim": "plain",
+            "before": "NO_RUN_YET = '%s: no run yet'",
+            "bug_key": "481e98064b094f804dae731b4aac8e4f07493e50b01d81713726def6be9b7e2d",
+            "case": "one proof tagged `@env(windows)` with only a passing `linux` section; the proof says the reasons carry `Windows: no run yet`; the changed code gives `Windows: not run yet`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 130,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-8: the test writes a spec with a Windows-tagged proof and one passing `linux` section, then compares the passed cell's word with `not run`, `missing_env` with `['windows']` and looks for `Windows: no run yet` among the reasons, which are the three values the proof names.",
+          "PROOF-153: the test records a passing `linux` section and a passing `windows` section for the same Windows-tagged proof and compares the passed cell's word with `passed`, which is the one value the proof names.",
+          "PROOF-8 and PROOF-153: both tests use only the `windows` tag, so the words `macOS` and `Linux/Unix` that the rule names are observed by neither.",
+          "The spot tests found nothing, and each test holds the values its proof marks in backticks as literals, not taken from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "15cdedd8adb55955de05387d1c05f2fe0cb4e97c38b62dd21654c89ddfb33376",
+        "rule_hash": "37cf9d28709067736674fd13c6471543900e5bac8fe82469b6b9796a3aa75919",
+        "test_hash": "b0d8f905bde9ce889e58d1ee71d278e1526b8a7fa1efa53cfa69c5a988ab8636",
+        "verdict": "strong"
+      },
+      "RULE-61": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-281": {
+            "after": "            'bugs': {} if bugs is None else {proof: dict(bug, line=float(bug['line'])) for proof, bug in bugs.items()},",
+            "aim": "past the test",
+            "before": "            'bugs': {} if bugs is None else bugs,",
+            "bug_key": "fa27d13f056497c25dd0305fd900a23ae6bc59b157ecc850c92088f30182f656",
+            "case": "the entry of RULE-2 holds PROOF-2 under `bugs` with the line 12; the proof says `bugs` equals the entry's value for value, line 12; the changed code gives the line as the float 12.0, a copy and not the entry's value",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 702,
+            "result": "survived",
+            "test_key": "e3e02729f51fe0d58a2cea7182f757633bcdb03d6832c6cafa54f375345ab496",
+            "why": ""
+          },
+          "PROOF-73": {
+            "after": "            'model': audit.get('model') or '',",
+            "aim": "plain",
+            "before": "            'model': audit.get('model') or 'unknown',",
+            "bug_key": "083adc29cc44ec51a69876a38e02ac717cba56d3c9e816532bdb47a2504913b3",
+            "case": "a weak audit entry with the finding `PROOF-2 reads 401 alone.` that names no model; the proof says `model` is `unknown`; the changed code gives an empty string",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 703,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-73: the test writes a weak entry with the one finding and no model, then compares the order of the eleven field names and the value of every one of them, the time and the commit included, so each value the proof names is observed.",
+          "PROOF-73: the test takes the expected commit from the project's head and the expected time as a literal, neither from the code that builds `audit`.",
+          "PROOF-281: the test writes the entry with the proof's explanation and its bug under `PROOF-2`, then compares `explanation` and `bugs` with the values it wrote, using literals the code under test does not produce.",
+          "PROOF-281: the comparison is by equality, which reads the number 12 and the number 12.0 as the same, so a line carried in another number form than the entry holds would still pass.",
+          "No spot test fired on either test; both hold assertions that can fail and both name the values their proofs give in backticks."
+        ],
+        "findings": [
+          "PROOF-281: the test still passes when scripts/mcp/purlin/payload.py:702 reads \"'bugs': {} if bugs is None else {proof: dict(bug, line=float(bug['line'])) for proof, bug in bugs.items()},\"",
+          "PROOF-281: the AI says this breaks: the entry of RULE-2 holds PROOF-2 under `bugs` with the line 12; the proof says `bugs` equals the entry's value for value, line 12; the changed code gives the line as the float 12.0, a copy and not the entry's value"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "0b7f91cd4388d640492b343da5432d835b0437f02e95b5910a7bf07142aff925",
+        "rule_hash": "610850eb1976f7d2604a8b8487b5f40ee9dc59a0ac4af256638d97a8c93552a6",
+        "test_hash": "eeb9d8ee37eaa10b1365b60a698f617de7d7ccf861aa2e3fb0b01c7ff3e497c8",
+        "verdict": "weak"
+      },
+      "RULE-65": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-77": {
+            "after": "    failing = _failing_where(proofs, current)\n    if failing and inp.get('proofs'):",
+            "aim": "plain",
+            "before": "    failing = _failing_where(proofs, current)\n    if failing:",
+            "bug_key": "5f7a9a9fdffbde6630b5943618966ff8544c359bf9ed7742b6b061a0aa745b20",
+            "case": "a spec of two rules with no proof line and a current section listing a failing test marked `RULE-2`; the proof says RULE-2's passed cell reads `failed`; the changed code gives `not run`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 368,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-77: the test writes a spec of two rules with no proof, records a passing result under `RULE-1` and a failing one under `RULE-2`, and compares each rule's passed cell word with `passed` and `failed`, the two values the proof names.",
+          "PROOF-77: the test's source does not show whether the section it records is current, as that is left to the `project.evidence` helper called with `commit_it=False`; a section that was not current would read `out of date` and fail both comparisons.",
+          "PROOF-77: the spot tests found nothing, and the test compares both results of the proof's case, so a change to either cell's word is seen."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "61be998ebebea4cf3508d14c729ab505d8760f3582e10eed62c1d3a198f09ece",
+        "rule_hash": "d859f0a153cc43e920eed53b730d807778b0b37703234cdbf4c21deff1ce6436",
+        "test_hash": "c84f17c7e05ead5b38a9d01eced6e1c44e93ede8fbc197a1ab3ebaf278f15aa2",
+        "verdict": "strong"
+      },
+      "RULE-7": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-117": {
+            "after": "    if newest is not None:",
+            "aim": "plain",
+            "before": "    if newest is not None and not newest.get('current'):",
+            "bug_key": "3fccc6160f4ffa8f93387c227c34c350c7b4d3bba33a1c587e29d06916df7a86",
+            "case": "the scoped source file rewritten, then a new passing section taken over the rewritten code; the proof says the passed cell reads `passed` and the flag is lowered; the changed code gives `out of date` with the flag raised",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 338,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-119": {
+            "after": "        commit = str(newest['section'].get('commit') or '')[:8]",
+            "aim": "plain",
+            "before": "        commit = str(newest['section'].get('commit') or '')[:7]",
+            "bug_key": "3fee583754e49fda0f02e09c73ec48c878fc4cab361292c6f6fc5860f123720f",
+            "case": "a person's uncommitted section, then the marked test file edited; the proof says the one reason is `tests changed since <sha7>`; the changed code gives the reason with eight characters of the sha",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 342,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-9": {
+            "after": "        'out_of_date': False,",
+            "aim": "plain",
+            "before": "        'out_of_date': passed['word'] == OUT_OF_DATE,",
+            "bug_key": "ad8cbce7dc0923b96122c715815466aee07e6fdc03579e9a2398e00c7ac91eab",
+            "case": "a committed passing section, then the scoped source file rewritten and committed; the proof says the `out_of_date` flag is raised; the changed code leaves the flag lowered",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 254,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-9: the test compares the cell's word, its whole list of reasons against the one `code changed since` line, `current`, the `out_of_date` flag and the rule's `left`, which is every result the proof names after the rewrite.",
+          "PROOF-9: the opening `passed` reading the proof names is not asserted in the test's own lines, so it holds only if the helper that rewrites the code checks it.",
+          "PROOF-9: the sha in the expected reason is the value the helper returns, so the test trusts the helper to return the section's commit.",
+          "PROOF-117: the test writes a new passing section after the rewrite and compares the cell's word with `passed` and the flag with `False`, which are both results the proof names.",
+          "PROOF-117: the test does not first assert that the cell read `out of date` before the new section, so \"again\" rests on the helper it shares with PROOF-9.",
+          "PROOF-119: the test leaves the section uncommitted, edits the marked test file and compares the word and the whole list of reasons, with the sha taken from the head commit through git and not from the cell.",
+          "PROOF-119: the test reads no flag, and the proof names none, so the rule's `out_of_date` flag for an uncommitted section is shown by no proof.",
+          "No proof of the rule names the reason `spec changed since <sha7>`, so that part of the rule is not observed by these tests.",
+          "The spot tests found nothing, and each test holds assertions that can fail on the values its proof names."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "3de6c1e4cd4e64adf5ff23cab827c783e28ed0f3385ff703287f0f7d8bd10fd2",
+        "rule_hash": "042d31c12160e43aa21a59fb6d0a92a7671ed1e4ab58ab1bd0951c424f8e3acd",
+        "test_hash": "4aaac9268acc5a7d6eb306c7586353add622085cbac451795b3690c68d411ebe",
+        "verdict": "strong"
+      },
+      "RULE-71": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-176": {
+            "after": "    if 'fail' in seen:\n        return 'passed'\n    if 'pass' in seen:",
+            "aim": "plain",
+            "before": "    if 'fail' in seen:\n        return 'failed'\n    if 'pass' in seen:",
+            "bug_key": "31846847b2449a46721ee82addd8395c0606a5cf5a11d941f1e6816febeb8eb0",
+            "case": "a current section passes PROOF-1's test and fails PROOF-2's; the proof says PROOF-2 reads `failed`; the changed code gives `passed`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 514,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-85": {
+            "after": "    return 'not run'",
+            "aim": "plain",
+            "before": "    return 'not run' if proof.get('id') in (marked or ()) else 'no test'",
+            "bug_key": "465bbca3dac20d7e99af179748761a2188fcf84fa88b715eb1f8b2017f31308d",
+            "case": "a test marked for PROOF-1 is committed and nothing has run; the proof says PROOF-2, which no marker names, reads `no test`; the changed code gives `not run`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 517,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-176: the test records a pass for `PROOF-1` and a fail for `PROOF-2`, then compares `PROOF-1`'s result with `passed`, its whole test list with the one entry `test_proof_1` in `tests/test_login.py` reading `pass`, `PROOF-2`'s result with `failed` and its tests' results with the one-item list `fail`, so every value the proof names is checked.",
+          "PROOF-85: the test commits a test marked for `PROOF-1`, records no run, and compares `PROOF-1`'s result with `not run`, its test list with the empty list and `PROOF-2`'s result with `no test`, so every value the proof names is checked.",
+          "The spot tests found nothing, and both tests compare exact literals read from the payload after an action, so there is nothing for them to flag.",
+          "Neither proof reaches the rule's `hand check` word for a `@manual` proof, its reading by the system an `@env` names, or a listed test reading `not run`, so those parts of the rule are not observed by these tests."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "b699345de5b178d08571ca857fbf17991ceced6dfb588b99bf28990a71539d3e",
+        "rule_hash": "87fc56130d5cc31abcf6f1a0325cffb29f419a945de8ee1d2706c982727f7307",
+        "test_hash": "ffdfcaa063ce85dffbb673a2beaf30f799ae50d21a2754c671b3a90c5a6ade3b",
+        "verdict": "strong"
+      },
+      "RULE-8": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-205": {
+            "after": "            if proof.get('id') in marked",
+            "aim": "plain",
+            "before": "            if proof.get('id') not in marked",
+            "bug_key": "32847d7967a5bbbbc41a72000a2e36804b4fce973c6a8d3203bfa17f1c280c92",
+            "case": "a current section passes PROOF-1's test and PROOF-2 has no marked test and is listed in no section; the proof says `no test` with the reason `no test for PROOF-2`; the changed code gives `not run` with no reason",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 491,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-221": {
+            "after": "            and not any(isinstance(item, dict)\n                        and item.get('id') == proof.get('id')\n                        for entry in current or ()\n                        for item in entry['section'].get('proofs') or ())]",
+            "aim": "plain",
+            "before": "            and not any(evidence_module.proof_tests(entry['section'],\n                                                    proof.get('id'))\n                        for entry in current or ())]",
+            "bug_key": "f379627b45cb47c32ba4064a15225801e9f1cfc959eb00e4e1ef114bdb53f4f5",
+            "case": "a current section passes PROOF-1's test and lists PROOF-2 as `missing` with no test named, and no marker names PROOF-2; the proof says `no test` with the reason `no test for PROOF-2`; the changed code gives `not run` with no reason",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 492,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-205: the test commits a test for PROOF-1 only, records a passing entry for it, and compares the passed cell's word with the literal `no test` and its reasons with the literal list `['no test for PROOF-2']`, which is the case and the result the proof names.",
+          "PROOF-205: the test also compares the cell's source, current and counts with `None`, `False` and `False`, which the rule states and the proof does not name.",
+          "PROOF-221: the test commits a test for PROOF-1, lists PROOF-2 in the section with no test named, and compares the passed cell's word and reasons with the same two literals, which is the case and the result the proof names.",
+          "PROOF-221: the test reads no source, current or counts, so a cell that named a source or counted in this case would still pass; the proof names none of the three.",
+          "PROOF-221: the section's contents come from two helpers not shown, so the reading takes it from their names that PROOF-1 is listed as passed and PROOF-2 as `missing`.",
+          "No spot test fired, and both tests take their expected values from literals, not from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "3be02cc341ec7f131c0322029b765ed41f68dfc65ae84d4766b1d0f7af69ad30",
+        "rule_hash": "67faa8151e38e9a78bd43975503cbe7b5710f44b1fabf02bd7deca2de3e2afa2",
+        "test_hash": "d418a87dcb884378ff89dca6492f0b4f4a8d862cfae2d036604991d8c2aa429e",
+        "verdict": "strong"
+      },
+      "RULE-81": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-213": {
+            "after": "    summary['sentence'] = summary_module.sentence(\n        summary, summary_module.anchors_audit(feature_entries))\n    summary['passed'] = summary['rules']",
+            "aim": "past the test",
+            "before": "    summary['sentence'] = summary_module.sentence(\n        summary, summary_module.anchors_audit(feature_entries))",
+            "bug_key": "19f5e7f0b9c66b21280a1102272d2835bd4c2cfc9be6a811514534e8cd23ecac",
+            "case": "2 rules, one passing and one with no test; the proof says the dashboard data counts 1 passing; the changed code gives summary.passed 2 while steps.passed stays 1",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 269,
+            "result": "survived",
+            "test_key": "378d8dbc21d077cf228f53f8ae48acd98bc42378035561055a55283bf30b499b",
+            "why": ""
+          },
+          "PROOF-98": {
+            "after": "    payload['met'] = facts_module.tests_fact(payload) == facts_module.TESTS_NOT_MET",
+            "aim": "plain",
+            "before": "    payload['met'] = facts_module.tests_fact(payload) == facts_module.TESTS_MET",
+            "bug_key": "08d553dbbe247d588c1ebc28d94761414787dac304622aa6fb931f2e3a093fc2",
+            "case": "two rules passing on committed evidence with no signed tag; the proof says `met` is true; the changed code gives `met` false",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 301,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-98: the test builds the payload over passing committed evidence and compares `left` with an empty list, `met` with true, the sign-off word with `not signed` and `last_line` with the sign sentence, so each value the proof names is checked.",
+          "PROOF-98: the test takes the expected last line from the constant SIGN_OPTIONAL and not from the literal the proof writes, so it holds only where that constant in the test file reads as the proof does.",
+          "PROOF-213: the test compares the last three lines of the status text with the three literals the proof names, and the dashboard data's `summary.rules`, `summary.steps` and the text, command and count of `left`.",
+          "PROOF-213: the test reads the passing count only under `summary.steps` and never `summary.passed` or the data's `summary.sentence`, so a wrong count in either of those still passes.",
+          "PROOF-213: the proof names `sync_status`, a function, where it could name the status report a person sees.",
+          "The spot tests found nothing, and both tests assert literal values against the code's output."
+        ],
+        "findings": [
+          "PROOF-213: the test still passes when scripts/mcp/purlin/payload.py:269 reads \"summary['passed'] = summary['rules']\"",
+          "PROOF-213: the AI says this breaks: 2 rules, one passing and one with no test; the proof says the dashboard data counts 1 passing; the changed code gives summary.passed 2 while steps.passed stays 1"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "1adc23a3ab8ea43829145535dadff0f0282e08127ee7bed4361dcd7f57680e63",
+        "rule_hash": "78cfd645010260b29fac2cc4c6de986106423cd0aa062a4320d9bbb3d218b16e",
+        "test_hash": "c191576e041bacc930c830a84eb3d4f2d132ff83288d8fdb3c606a18712560dd",
+        "verdict": "weak"
+      },
+      "RULE-85": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-112": {
+            "after": "        machine = section.get('host')",
+            "aim": "plain",
+            "before": "        machine = section.get('machine')",
+            "bug_key": "273056896ad8deb24b81df02ff60391ade3692c26941b129c8d2210ba8c9f4f6",
+            "case": "a current linux section whose machine reads build-7 and that passes both rules; the proof says each rule's machines reads {\"linux\": \"build-7\"}; the changed code gives {}",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 631,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-112: the test writes `build-7` as the machine of the linux section of passing evidence and compares the whole `machines` value of RULE-1 and of RULE-2 with `{'linux': 'build-7'}`, which is the case and the result the proof names, so a wrong machine, a wrong system key, an extra entry or an empty map fails it.",
+          "No spot test fired, and the test's exact comparison on both rules leaves nothing for one to find."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "25cf560436614c2a1fb1e6231960e7aed559a8e0e876498063b55afa1a681426",
+        "rule_hash": "66ab86dcc4118d8b20588f585e22f99e613eee8c262f447816257eb3bb3e78c4",
+        "test_hash": "34f7d0a7e75ac0789ca4dea82a424335666477f953e99a3b13a2db0c2b6dc0f7",
+        "verdict": "strong"
+      },
+      "RULE-9": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-11": {
+            "after": "    return name",
+            "aim": "past the test",
+            "before": "    return evidence_module.os_word(name)",
+            "bug_key": "ff614fb40cbff76bb09c9113653bfae148ab5451caba8030e0d751c07eb330bd",
+            "case": "a local section from this machine observed PROOF-1 failing; the proof says the reason reads `failing: macOS, local`, the system as a person reads it; the changed code gives `failing: macos, local`",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 598,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-156": {
+            "after": "            if proof.get('env') and proof.get('env') == entry['os']:",
+            "aim": "plain",
+            "before": "            if proof.get('env') and proof.get('env') != entry['os']:",
+            "bug_key": "05c22149e6a36a5bcda3478e2cc2f82302e708a0e4f2f1dc3966b5c510346ce4",
+            "case": "PROOF-1 tagged @env for another system, failing in a ci section from that system; the proof says `failed` with the one reason `failing: Windows, ci`; the changed code gives `not run` with no failing reason",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 645,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-289": {
+            "after": "    failing = _failing_where(proofs, [entry for entry in current if entry is newest])",
+            "aim": "plain",
+            "before": "    failing = _failing_where(proofs, current)",
+            "bug_key": "ed027418c596c84b5e86d228042c5dac8cbe6662ea1fdd7cc3b091b74208e9e5",
+            "case": "the one proof fails in a current ci section from linux dated 2026-09-01 and passes in a current local section dated 2026-09-02; the proof says `failed` with `failing: Linux/Unix, ci`; the changed code gives `passed` with no reason",
+            "file": "scripts/mcp/purlin/states.py",
+            "line": 367,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-11: the test records PROOF-1 failing and PROOF-2 passing in a local section and compares RULE-1's word `failed`, its `failing` flag, its bucket `failing`, RULE-2's flag and the summary count of 1, each result the proof names.",
+          "PROOF-11: the expected reason is built from `_word(here)`, a helper not shown, and not from a literal such as `failing: macOS, local`, so a wrong system word passes if that helper reads the same code the cell does.",
+          "PROOF-11: the reason is checked with `in`, so a second, wrong reason beside the right one would still pass.",
+          "PROOF-156: the test tags PROOF-1 for another system, records a failing local section from this machine and a failing ci section from the tagged system, and compares the word `failed`, the flag and the whole reasons list against the one ci reason, so a reason from the local section would fail it.",
+          "PROOF-156: the system word in the expected reason also comes from `_word(other)`, not a literal such as `failing: Windows, ci`.",
+          "PROOF-289: the test records the ci failure dated `2026-09-01T00:00:00Z` and the later local pass dated `2026-09-02T00:00:00Z`, both from `linux`, and compares the word `failed` and the whole reasons list against the literal `failing: Linux/Unix, ci`, which is the proof's case and its result.",
+          "The spot tests found nothing, and each test asserts on values it reads from the rule's cells after recording evidence."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "77ebb4fd598cd95307d163348c5c0238461319c551c8ffee49eb9894fbb05c6b",
+        "rule_hash": "ecf681f4ac3c01a9dbea4982c52628f3916e2bcb658a1fcc869fd18b6351dd34",
+        "test_hash": "8562a2ceaa126129955257c07caab93cb91f130b59b304e364608747c9e98010",
+        "verdict": "strong"
+      },
+      "RULE-90": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-41": {
+            "after": "    for wanted in (True,):\n        observed = []",
+            "aim": "plain",
+            "before": "    for wanted in (True, False):\n        observed = []",
+            "bug_key": "45dbc2a7ce889f10f6b95fb6c66fa67a84267daa7c7528adbb15e891cd08f473",
+            "case": "a project whose current section names test_valid_credentials_return_200 for PROOF-1, with the scoped source file rewritten; the proof says RULE-1's test hash is unchanged; the changed code lists no backing test once no section is current, so the test hash moves",
+            "file": "scripts/mcp/purlin/payload.py",
+            "line": 720,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-41: the test records RULE-1's test hash, rewrites the scoped code, then asserts the passed cell's word is `out of date` and the hash equals the recorded one, which are the two results the proof names.",
+          "PROOF-41: the first hash comes from the code under test, but it is taken before the rewrite and compared after it, so a hash that moves fails the test.",
+          "PROOF-41: the test never asserts that the section names `test_valid_credentials_return_200` for `PROOF-1`; that starting situation is left to the fixture.",
+          "PROOF-41: the proof names a test function, `test_valid_credentials_return_200`, which a person who cannot read code could not judge.",
+          "PROOF-218: the test commits the file with line feeds, records the hash, checks the file out again with `core.autocrlf` true, asserts the file holds `\\r\\n` and asserts the hash equals the recorded one, which is the proof's case and result.",
+          "PROOF-218: the test shown does not itself restrict the run to Windows, so the `\\r\\n` assertion is what shows the checkout wrote Windows line endings.",
+          "Findings: the spot tests found nothing, and both tests hold failable assertions on the values their proofs name."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [
+          "No bug was planted: PROOF-218 needs Windows, and this machine is macOS."
+        ],
+        "proof_hash": "e840fadae5c5a610a5b5428b6bdb7c99fbe29317b647790a9ab250629a5c8405",
+        "rule_hash": "c6036e41ee0309920fffd03cbe151fe7fa4af4f42e2a52df902483771e28cf27",
+        "test_hash": "d780d317339013fcf670bd4dc3d6f624ec7c990379dfe7bd70f8f366183b6d01",
+        "verdict": "strong"
+      },
+      "RULE-96": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-236": {
+            "after": "    if not data['features'] or not os.path.isfile(\n            os.path.join(project_root, '.purlin', 'config.json')):\n        return '\\n'.join(no_spec_lines(project_root))",
+            "aim": "plain",
+            "before": "    if not data['features']:\n        return '\\n'.join(no_spec_lines(project_root))",
+            "bug_key": "f8fc2b448e2e8e5fc0910bca8d72d5a4b7b6f1c10908f2e6f74cefe3d6a96d8a",
+            "case": "a git checkout with no `.purlin/config.json` and one spec, `login`, of two rules; the proof says the table lists `login` and the summary reads `2 rules. 0 pass their tests.`; the changed code prints `No specs found under specs/.` and the line naming purlin:init, with no table and no summary",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 170,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-236: the test removes `.purlin/config.json` from a made project and commits, then reads the status lines and checks that the `login` row opens with `login` and `2` and that the line `2 rules. 0 pass their tests.` is among them, which is the case and both results the proof names.",
+          "PROOF-236: the test reads only the first two cells of the `login` row, so the row's proof and test counts are not compared, and the proof names neither.",
+          "PROOF-236: the spot tests found nothing, and the test holds two failable assertions on values the proof gives, with no mock of the status and no expected value taken from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "eafa1aad0bbaeb8c3f9a7843403af2a6050db947c7f4e4ee32657f55fcdeaeac",
+        "rule_hash": "c11ac318952583c55845186ca611d7cf5eddc22969de7325e1706dcfd47f1cdb",
+        "test_hash": "4cfa967ddd0c72bb529064e8881da65296a81f62bd5650421cc07cf3bd2bac9c",
+        "verdict": "strong"
+      }
+    }
+  },
   "feature": "states",
   "platforms": {
     "macos": {

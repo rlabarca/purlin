@@ -155,41 +155,37 @@
         "verdict": "strong"
       },
       "RULE-17": {
-        "at": "2026-10-05T14:39:44Z",
+        "at": "2026-10-05T18:42:48Z",
         "bugs": {
           "PROOF-15": {
-            "after": null,
+            "after": "                    'at': (section.get('at') or '').replace('Z', '+00:00') or None,",
             "aim": "plain",
-            "before": null,
-            "bug_key": "0f1f591d3c09940e3db3baac2a8771128f0dd248ec0ca99686d5482746206f68",
-            "case": "",
-            "file": null,
-            "line": null,
-            "result": "not made",
-            "test_unchanged": true,
-            "why": "two planted bugs left the proof's check passing"
+            "before": "                    'at': section.get('at'),",
+            "bug_key": "89c9b42eba30b54f68281aca63e30d0ba5b50f0cb0ab3b83b010bcc00e2e9d80",
+            "case": "a signed package holding a result carried forward from a run at 2026-09-13T11:00:00Z; the proof says each time under `at` ends in `Z` with no offset, as 2026-09-13T12:00:00Z does; the changed code gives each result's `at` as 2026-09-13T12:00:00+00:00",
+            "file": "scripts/export/package.py",
+            "line": 596,
+            "result": "caught",
+            "why": ""
           }
         },
         "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
-        "commit": "edaf258a52c6977da3954720db668cad41b0fedf",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-15: the test walks the whole signed package, collects every non-null value stored under `at`, and requires at least `4` of them, as the proof names.",
-          "PROOF-15: the test requires each collected time to match the `UTC` pattern in full, so an offset, a fraction or a missing `Z` in any time the fixture's package holds would fail it.",
-          "PROOF-15: the `UTC` pattern is defined outside the test's own lines, so whether it holds a time to the second and `Z` exactly as the proof describes is not shown here.",
-          "PROOF-15: the test only sees the kinds of `at` its signed fixture produces, so a time under a carried result or an audit entry goes unchecked if the fixture has none.",
-          "PROOF-15: the rule speaks of every time in the package, while the proof and the test read only times stored under the name `at`, so a time under any other name is not observed."
+          "PROOF-15: the test builds a signed package with a carried result and gathers every non-null value stored under `at` at any depth.",
+          "PROOF-15: it asserts there are at least five such values, that `2026-09-13T11:00:00Z` is among them, and that each one matches the `UTC` pattern in full, so the proof's count, its named time and its form are all checked.",
+          "PROOF-15: the `UTC` pattern is defined outside the test's own lines, so whether it refuses an offset and a fraction of a second cannot be read from what is shown.",
+          "PROOF-15: the test reads only keys named `at`, as the proof does, so a time the package stored under any other key would not be read, though the rule speaks of every time.",
+          "The spot tests found nothing, and the test's lines show no assertion that cannot fail."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
-        "no_bug": [
-          "No bug was caught for PROOF-15: two planted bugs left the proof's check passing.",
-          "PROOF-15 was settled with its test unchanged: it was judged to assert what the proof names."
-        ],
-        "proof_hash": "b0c06b21d84a0e5c9df0240972728758b10358c8116c65997bef1e6c15ba1ddf",
+        "no_bug": [],
+        "proof_hash": "2f82ec410d9e5cd474854a542cc88373be9fc963c4c960f14ce35fb7735bcc7c",
         "rule_hash": "5c754e2c67636fe74ade190d62194ef1beb62623671b504f5c1541f6d0b9d4da",
-        "test_hash": "7e371ce9e3bfbbd8116aedb3c31bb1ca87f708f2170ace4c6988362245edbeaf",
-        "verdict": "spot-checked"
+        "test_hash": "50f16a45525e67bccd308359fdfe007422d7434fe8f9ef85373ea3b7082a43ca",
+        "verdict": "strong"
       },
       "RULE-2": {
         "at": "2026-10-05T14:32:26Z",

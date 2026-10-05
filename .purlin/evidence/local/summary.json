@@ -1,9 +1,699 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-18": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-44": {
+            "after": "LAST_LINE = 'Every rule passes its tests on the committed evidence. Optionally sign this version with purlin:sign'",
+            "aim": "past the test",
+            "before": "LAST_LINE = 'Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign'",
+            "bug_key": "3718470aaa1dc925d85e4e55280cf5735bc12cf1a7c1445c303dc9afd4ee57e3",
+            "case": "two rules passing on committed evidence with no signed/* tag; the proof says the last line reads `Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign`; the changed code ends on `... Optionally sign this version with purlin:sign`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 113,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-65": {
+            "after": "LAST_LINE = 'Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:build'",
+            "aim": "past the test",
+            "before": "LAST_LINE = 'Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign'",
+            "bug_key": "53bac4588fe0cd5c81b7bed6bae380c3f32c3b23cd85d505a8d894c1ec515ab9",
+            "case": "two rules passing on evidence committed at the commit it was taken on, nothing committed since; the proof says the status ends on `... Optional: sign this version with purlin:sign`; the changed code ends on `... Optional: sign this version with purlin:build`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 113,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "cba89e542bbd2e888caa6e349e293835484a03dd56bddbfe338febd4cde686dd",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-44: the test builds a project with two passing rules and no tag, and compares the status's last line with `SIGN_OPTIONAL` and the line above it with the literal `2 rules. 2 pass their tests.`, which is the proof's case and its result.",
+          "PROOF-44: `SIGN_OPTIONAL` is defined outside the lines shown, so the test holds the proof's sentence only if that name is a literal; if it is read from `summary.LAST_LINE`, a reworded line still passes.",
+          "PROOF-65: the test compares the status's last line with `SIGN_OPTIONAL` and checks that the sign-off's refusal starts with neither `NOT_THIS_CODE` nor `TAKEN_DIRTY`, which are the two things the proof names.",
+          "PROOF-65: all three expected values are names defined outside the lines shown, so the same doubt holds for each; an empty refusal also passes the second check, as the proof allows.",
+          "PROOF-65: the code that words the sign-off's refusal is not among the files shown, so the planted bug reaches only the status's last line.",
+          "The spot tests found nothing, and the lines shown give no reason to expect otherwise: both tests assert on values the code produces and neither mocks, swallows or self-compares.",
+          "Neither proof names a case with no last line, where the tests are not met or the code is signed, so these two proofs show the rule in one direction only."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-65 is longer than 60 words."
+        ],
+        "proof_hash": "ccd3c1200fd7fb0f0d3d0701a5aa14fc0632aab5a6a443426c2a72aacd53c172",
+        "rule_hash": "f209ebf2bc9880ec46bda60f419862dc7d39c7b0967a13c0429adceab0ffd6fe",
+        "test_hash": "856c991bdeb6bfb853f4841f3ca579bdce8f0e17f8c485a11d05b2eca4760bf6",
+        "verdict": "strong"
+      },
+      "RULE-19": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-47": {
+            "after": "    if (cells.get('strong') or {}).get('word') == 'weak':\n        return 'to_fix'",
+            "aim": "plain",
+            "before": "    if (cells.get('strong') or {}).get('word') == 'weak':\n        return 'to_strengthen'",
+            "bug_key": "afc4d9211c5f4b1b670c911f378cc27f5f374d06fa055931d3e75129531d09e4",
+            "case": "a rule that passes its tests on committed evidence and that the audit found weak; the proof says its left is to_strengthen and the status opens Tests: met; the changed code gives the left to_fix and Tests: not met",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 183,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-54": {
+            "after": "    ('no_proof', 'rule to write a proof for', 'rules to write a proof for',\n     'purlin:build'),",
+            "aim": "plain",
+            "before": "    ('no_proof', 'rule to write a proof for', 'rules to write a proof for',\n     'purlin:spec'),",
+            "bug_key": "124343acad2f6c6ff3f08a2314ddeadc0040bb5fba22b2108765e73d5c108df2",
+            "case": "a rule with no proof line whose marked test passes; the proof says it is counted as 1 rule to write a proof for: purlin:spec; the changed code gives 1 rule to write a proof for: purlin:build",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 75,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "cba89e542bbd2e888caa6e349e293835484a03dd56bddbfe338febd4cde686dd",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-47: the test commits passing evidence with a weak audit entry for the rule, then asserts the rule's left is to_strengthen and the status's second line is Tests: met, which are the two values the proof names.",
+          "PROOF-54: the test asserts the status's second line is Tests: met and that the line 1 rule to write a proof for: purlin:spec is among the status lines, which are the two values the proof names.",
+          "PROOF-54: the test writes the evidence and never commits it, so the proof's \"on committed evidence\" is not arranged the way PROOF-47's test arranges it.",
+          "The spot tests found nothing, and both tests compare literal values taken from the proofs, not from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "7b9a80c9895e0b08cc47106fc0363f763ee9f1a04c0c20c85543866ce016f9a4",
+        "rule_hash": "c8c83cf1986c7d08c7482ed7a45bbbe0056685782de2a4dad96fda191accb49b",
+        "test_hash": "ec52aa1a051bd643246a202802379a30e40a54962193ad3cba81ea6d5950f189",
+        "verdict": "strong"
+      },
+      "RULE-20": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-48": {
+            "after": "OPENING = 'Purlin status: %s plugin %s'",
+            "aim": "plain",
+            "before": "OPENING = 'Purlin status: %s, plugin %s'",
+            "bug_key": "f2ba2262d1260966da1de68bf5f6072d56f6c019dd96089bffe257392b9a6d46",
+            "case": "a project whose pyproject.toml names labconnect, with two rules passing on committed evidence; the proof says the first line is `Purlin status: labconnect, plugin <version>`; the changed code gives `Purlin status: labconnect plugin <version>`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 97,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-50": {
+            "after": "    if count < 1:\n        return (SIGNED_SINCE % (version, count)).replace('commits', 'commit')",
+            "aim": "plain",
+            "before": "    if count == 1:\n        return (SIGNED_SINCE % (version, count)).replace('commits', 'commit')",
+            "bug_key": "4a1fe4a4fcb852e469237fd274b3d57d2fc86ebb3c833e7498b95578df880f15",
+            "case": "0.1.0 signed by the walk, then one commit changing src/age.py; the proof says the third line reads `Sign-off: signed 0.1.0, 1 commit since`; the changed code gives `Sign-off: signed 0.1.0, 1 commits since`",
+            "file": "scripts/mcp/purlin/facts.py",
+            "line": 113,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-53": {
+            "after": "TESTS_NOT_MET = 'unmet'",
+            "aim": "plain",
+            "before": "TESTS_NOT_MET = 'not met'",
+            "bug_key": "15bdf1a7a9cefdbe1064e7816e9c1d96b88f1cdd2a956cc473d79457a8148ad2",
+            "case": "one rule whose test fails; the proof says the second line reads `Tests: not met`; the changed code gives `Tests: unmet`",
+            "file": "scripts/mcp/purlin/facts.py",
+            "line": 31,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "cba89e542bbd2e888caa6e349e293835484a03dd56bddbfe338febd4cde686dd",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-48: the test writes a pyproject.toml naming labconnect, records two passing results and compares the first two status lines whole with `Purlin status: labconnect, plugin <version>` and `Tests: met`; the version comes from the plugin's own constant, so a wrong version number would still pass.",
+          "PROOF-53: the test records one failing result for a one-rule spec and compares the second status line whole with `Tests: not met`, which is the case and the value the proof names.",
+          "PROOF-50: the test signs 0.1.0 through the walk, commits a change to src/age.py and compares the third status line whole with `Sign-off: signed 0.1.0, 1 commit since`, which is the case and the value the proof names.",
+          "The spot tests found nothing, and each test asserts a whole line against a literal, so that holds.",
+          "No proof of the rule names the `signed <version> at <sha7>` line, the `not signed` line, a count above one, or a sign-off read from its files where there is no tag."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "b1f5caf5427c774cd63545bd6da003b83ebadc733dd0880f9caa04cdb4dc1f2c",
+        "rule_hash": "eb2e23ebb469bf64e1ec68e6b37080f26941f49e3cba319fbe45a6b9bc25cc4e",
+        "test_hash": "b26f24c25cd4fcd82868ee7f54fe8406f13ec60972cbc072bdecd8f37fda6a20",
+        "verdict": "strong"
+      },
+      "RULE-21": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-52": {
+            "after": "        counts['to_commit'] = 1",
+            "aim": "plain",
+            "before": "        counts['to_commit'] = len(set(uncommitted))",
+            "bug_key": "fa6c26324c25cb188a0c8583e3b35ea1f759bac7780d0ae2ff003a0d7eb2c634",
+            "case": "two features with local results written and not committed; the proof says the status ends on `  2 features whose results are not committed: purlin:test --commit`; the changed code ends on `  1 feature whose results are not committed: purlin:test --commit`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 375,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "cba89e542bbd2e888caa6e349e293835484a03dd56bddbfe338febd4cde686dd",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-52: the test writes uncommitted results for two features, `login` and `export`, and compares the status's second line with `Tests: not met` and its last two lines with `Left to do:` and the exact `2 features whose results are not committed: purlin:test --commit` line, so it observes both results the proof names.",
+          "PROOF-52: the expected count, wording and command are literals in the test, not values taken from the code, so a wrong count, a wrong plural or a `to_commit` kind that no longer blocks would each fail it.",
+          "PROOF-52: the spot tests found nothing, and the test bears that out: it asserts, swallows no error, mocks nothing it checks and holds the proof's values.",
+          "PROOF-52: the rule's singular wording for one feature, and its condition that the count appears only once no other work stops the tests being met, are not covered by this proof, which is the only one shown for the rule."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "1506b5db9d809fc6be386597aa4edd50a4e405be6c7477de4bbffd55b4ff7edf",
+        "rule_hash": "5d051735b448554673436a8d80c180d7051c74c48b581fbe9342d36ec839e719",
+        "test_hash": "a5e83fae19f49662eee6c6fc35010fd99dc5ff95b2d5abe5f316f6050d12c2e6",
+        "verdict": "strong"
+      },
+      "RULE-22": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-4": {
+            "after": "    parts = ['%d %s.' % (total, _words('rule', 'rule', total)),",
+            "aim": "plain",
+            "before": "    parts = ['%d %s.' % (total, _words('rule', 'rules', total)),",
+            "bug_key": "ca254f2a08f574369dc551337637913ab3651c7db6742e65073b1c9906666baa",
+            "case": "an anchor's one passing rule beside two features of one passing rule each; the proof says `3 rules. 3 pass their tests.`; the changed code gives `3 rule. 3 pass their tests.`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 321,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-43": {
+            "after": "    return AUDIT_LINE % (strong, over, strong * 100 // (over + 1),",
+            "aim": "plain",
+            "before": "    return AUDIT_LINE % (strong, over, strong * 100 // over,",
+            "bug_key": "f3f51dc8874d8b401da4bf84756c9aa8efd5c13584a78cf97faa343c4c5e7c4a",
+            "case": "50 passing rules, 42 strong and 8 weak; the proof says `42 of 50 rules strong (84%)`; the changed code gives `42 of 50 rules strong (82%)`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 292,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-5": {
+            "after": "             '%d %s.' % (count, _words('pass its tests',",
+            "aim": "plain",
+            "before": "             '%d %s.' % (count, _words('passes its tests',",
+            "bug_key": "087f97e768686fb7a291330fd46e328df9e48356fe8915526d1e1495ffd3fa99",
+            "case": "a project of one rule that passes its tests; the proof says `1 rule. 1 passes its tests.`; the changed code gives `1 rule. 1 pass its tests.`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 322,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-57": {
+            "after": "               ('spot_checked', 'spot checked'),",
+            "aim": "plain",
+            "before": "               ('spot_checked', 'spot-checked'),",
+            "bug_key": "540c97efeadfcf23bb12c5bb7427f645653685d7057d9f4f6a5b42efd4a8f351",
+            "case": "40 passing rules, 34 strong, 4 weak and 2 spot-checked; the proof says the sentence ends `34 of 40 rules strong (85%): 34 strong, 4 weak, 2 spot-checked.`; the changed code gives `34 of 38 rules strong (89%): 34 strong, 4 weak.`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 104,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-58": {
+            "after": "BY_HAND_ONE = '1 are checked at sign-off.'",
+            "aim": "plain",
+            "before": "BY_HAND_ONE = '1 is checked at sign-off.'",
+            "bug_key": "4a0380e11106a6c32b0ee0ffaf1d4169502a55c8f4c438f8921a1588766dcc75",
+            "case": "10 rules, 9 passing and 1 with one `@manual` proof no sign-off has noted; the proof says `10 rules. 9 pass their tests. 1 is checked at sign-off.`; the changed code gives `10 rules. 9 pass their tests. 1 are checked at sign-off.`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 111,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-60": {
+            "after": "    if has_audit(audit) and not by_hand:",
+            "aim": "plain",
+            "before": "    if has_audit(audit):",
+            "bug_key": "4550e692d69045899c77b1757a5c6dba92c2bf04a22e22ae9d75ef0a9f330022",
+            "case": "9 passing rules found strong and a tenth with one `@manual` proof; the proof says the sentence ends `The audit found 9 of 9 rules strong (100%): 9 strong.`; the changed code gives `10 rules. 9 pass their tests. 1 is checked at sign-off.` with no audit part",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 327,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "cba89e542bbd2e888caa6e349e293835484a03dd56bddbfe338febd4cde686dd",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-5: the test builds one passing rule and compares the first line of the ending with the whole sentence `1 rule. 1 passes its tests.`, so a wrong word or count in either part fails it.",
+          "PROOF-4: the test builds an anchor and two features of one passing rule each and compares the payload's sentence with `3 rules. 3 pass their tests.`, and also checks that nothing is left to do.",
+          "PROOF-43: the test builds 42 strong and 8 weak rules and compares the whole sentence, including the share, the `84%` and both counts, with the proof's text.",
+          "PROOF-57: the test builds 34 strong, 4 weak and 2 spot-checked rules and compares the whole sentence, including `85%` and all three counts, with the proof's text.",
+          "PROOF-58: the test reads the sentence of a project of nine tested rules and a hand check, built by a helper not shown, and compares it whole with `10 rules. 9 pass their tests. 1 is checked at sign-off.`",
+          "PROOF-60: the test reads the sentence of the same project with its nine rules audited and compares it whole with the proof's text, so the share over 9 rather than 10 and the `100%` are both checked.",
+          "The spot tests found nothing, and each test compares the full sentence its proof names against a literal, so no finding is missed on these six cases.",
+          "No proof of the rule names a sentence with `out of date` or `not audited` counts, or with more than one rule checked at sign-off (`<h> are checked at sign-off.`), so those parts of the rule are not shown by any test here."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "1973ff67d75ff4b5ba7e2135af934ec2d880ad511bc107bf1d375cb37ac4b6b1",
+        "rule_hash": "66062f8561f79f382ecc5dd77e6a78a215c6810bf30f849c45117424334c6b84",
+        "test_hash": "98686c37a4b705e4965796665fa81ece7f1fb1dcf7359b5772c62b8daadba2af",
+        "verdict": "strong"
+      },
+      "RULE-23": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-29": {
+            "after": "    ('to_correct', 'test comments to correct', 'test comments to correct',",
+            "aim": "plain",
+            "before": "    ('to_correct', 'test comment to correct', 'test comments to correct',",
+            "bug_key": "5429f1f5ee596a9ebd247f55c06b90c6b69bf712dbcb01983a980e4fa8859503",
+            "case": "a test comment naming `login PROOF-9` beside two passing rules on committed evidence; the proof says the one line `  1 test comment to correct: purlin:build`; the changed code gives `  1 test comments to correct: purlin:build`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 76,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-40": {
+            "after": "    lines.append(summary_module.ending(dict(data, left=list(reversed(data.get('left') or ())))))",
+            "aim": "past the test",
+            "before": "    lines.append(summary_module.ending(data))",
+            "bug_key": "b1b4cbdbb4fb51883960ff937fa7a8d19d5e283af91cede785e1789850f23c17",
+            "case": "the status of a broken spec of three failing rules beside a spec of one failing rule; the proof says `  1 spec to repair: purlin:spec` then `  1 rule to fix: purlin:build`; the changed code prints `  1 rule to fix: purlin:build` first and `  1 spec to repair: purlin:spec` second",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 556,
+            "result": "survived",
+            "test_key": "2599e30032ee56fd7d7e6fd9c23abd1e81e28359283e2499b634b6a3608ad05d",
+            "why": ""
+          },
+          "PROOF-8": {
+            "after": "    lines.append(summary_module.ending(dict(data, left=sorted(data.get('left') or (), key=lambda item: item['text']))))",
+            "aim": "past the test",
+            "before": "    lines.append(summary_module.ending(data))",
+            "bug_key": "63679e54044b68d796989148bde79308d4b4984b9ea73ca34db52481e63c121c",
+            "case": "the status of two rules of each of the six kinds of rule work on macOS; the proof says six lines in RULE-23's order, the fifth `  2 rules to test on Windows: run purlin:test on Windows`; the changed code prints them sorted by their words, `rules to fix` first and `rules to write a proof for` fifth",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 556,
+            "result": "survived",
+            "test_key": "2b6c06cfaaefcae3a641f051a6695047eb72c642f60af3d255129550d4934f44",
+            "why": ""
+          }
+        },
+        "code_hash": "cba89e542bbd2e888caa6e349e293835484a03dd56bddbfe338febd4cde686dd",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-8: the test compares every line after the sentence with the six lines the proof names, in order and with the Windows line fifth, but it reads them from the summary's ending over a payload built by hand, so the order the printed status gives is not observed.",
+          "PROOF-8: the payload helper sits outside the test shown, so whether the case is taken as macOS over committed evidence cannot be read from the test itself.",
+          "PROOF-40: the test compares every line after the sentence with `Left to do:`, `  1 spec to repair: purlin:spec` and `  1 rule to fix: purlin:build` in that order, again from the summary's ending over a hand-built payload and not from the printed status.",
+          "PROOF-40: the three failing rules are one rule entry repeated three times, which still shows the broken spec counted once and its rules not counted as rules to fix.",
+          "PROOF-29: the test commits a test comment naming PROOF-9, records passing evidence, runs the status and compares its last two lines with `Left to do:` and `  1 test comment to correct: purlin:build`, which also shows there is only one line under the heading.",
+          "The spot tests found nothing, and each test compares exact literal lines that its proof names."
+        ],
+        "findings": [
+          "PROOF-8: the test still passes when scripts/mcp/purlin/status.py:556 reads \"lines.append(summary_module.ending(dict(data, left=sorted(data.get('left') or (), key=lambda item: item['text']))))\"",
+          "PROOF-8: the AI says this breaks: the status of two rules of each of the six kinds of rule work on macOS; the proof says six lines in RULE-23's order, the fifth `  2 rules to test on Windows: run purlin:test on Windows`; the changed code prints them sorted by their words, `rules to fix` first and `rules to write a proof for` fifth",
+          "PROOF-40: the test still passes when scripts/mcp/purlin/status.py:556 reads \"lines.append(summary_module.ending(dict(data, left=list(reversed(data.get('left') or ())))))\"",
+          "PROOF-40: the AI says this breaks: the status of a broken spec of three failing rules beside a spec of one failing rule; the proof says `  1 spec to repair: purlin:spec` then `  1 rule to fix: purlin:build`; the changed code prints `  1 rule to fix: purlin:build` first and `  1 spec to repair: purlin:spec` second"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "a9408879f67a013c668e54cfc85406d48f42b1c7342bd67d3974c3b21ddde7bb",
+        "rule_hash": "9d0a2063174bbaba86263f6ee0be2606483851bdb7dd88ee10941a43958e5fcb",
+        "test_hash": "e7382ed2473a4fc5e07932cc07d439e86d7a6b0f86045630eda90ca544ae1f8e",
+        "verdict": "weak"
+      },
+      "RULE-24": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-55": {
+            "after": "    ('to_run_slow', 'slow proofs to run', 'slow proofs to run',",
+            "aim": "plain",
+            "before": "    ('to_run_slow', 'slow proof to run', 'slow proofs to run',",
+            "bug_key": "2f9123e567d6845a7f85aedd0ddfbefb37b00dedfe7fd4bd11e053a3c7370d38",
+            "case": "one rule whose one `@slow` proof reads `not run`; the proof says the one line `  1 slow proof to run: purlin:test --all`; the changed code gives `  1 slow proofs to run: purlin:test --all`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 82,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-56": {
+            "after": "    return bool(proof.get('slow'))",
+            "aim": "plain",
+            "before": "    return bool(proof.get('slow')) and proof.get('env') in (None, here_os)",
+            "bug_key": "a4da774ede98cafa4fbd2c493a78579bced757010852524771f73430f0bd182d",
+            "case": "on macOS, three `@slow` proofs read `not run`, the third tagged `@env(windows)`; the proof says `  2 slow proofs to run: purlin:test --all`; the changed code gives `  3 slow proofs to run: purlin:test --all`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 189,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "cba89e542bbd2e888caa6e349e293835484a03dd56bddbfe338febd4cde686dd",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-55: the test builds one rule with one slow proof and compares every line after the sentence with `Left to do:` and `  1 slow proof to run: purlin:test --all`, so a wrong count, wording or command fails it.",
+          "PROOF-55: the test also checks that no line holds `to test`, that the last line is absent and that `purlin:sign` appears nowhere, which covers each thing the proof names.",
+          "PROOF-56: the test builds three slow rules on macOS, the third tagged for Windows, and compares the lines from the third on with the two lines the proof names, so a Windows proof counted as slow or a missing Windows line fails it.",
+          "PROOF-56: the test does not compare the `Left to do:` heading on the second line, which the proof does not name either.",
+          "The spot tests found nothing, and both tests compare whole lines against literals written in the test, so neither takes its expected value from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "9d1fa6e972a8187da41b98c97748663e07be171f9d8c74aace644dfa22c99e52",
+        "rule_hash": "e9107b6146c1e889af19a26f7e0df44030e8d7ed7ea866071c3a82710cbbe715",
+        "test_hash": "dc891b197ba69fd06c28524c7f31b683e902b3fe7beda9aab01e79a021a45ab3",
+        "verdict": "strong"
+      },
+      "RULE-25": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-59": {
+            "after": "LAST_LINE = 'Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:test'",
+            "aim": "past the test",
+            "before": "LAST_LINE = 'Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign'",
+            "bug_key": "737e90ef35bc5c1717ea05fd648dcc0d1af02a5cb88145bb9bd72e0d185e12d1",
+            "case": "9 tested rules passing and 1 unchecked hand check on committed evidence; the proof says the last line reads `Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign`; the changed code ends it `with purlin:test`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 113,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "cba89e542bbd2e888caa6e349e293835484a03dd56bddbfe338febd4cde686dd",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-59: the test builds nine tested rules and a hand check, reads the status and compares its second line with the literal `Tests: met`, so a status that reads `not met` fails it.",
+          "PROOF-59: the test checks that no line equals `Left to do:`, which is the heading as the status prints it, so a status that lists work left fails it.",
+          "PROOF-59: the test compares the last line with `SIGN_OPTIONAL`, whose definition is not in the source shown, so if that name is taken from the code's own constant a reworded last line still passes.",
+          "PROOF-59: the helper that builds the rules is not shown, so whether it makes the 10 rules on committed evidence that the proof names cannot be read from the test.",
+          "Findings: the spot tests found nothing, and they do not look at where `SIGN_OPTIONAL` gets its value."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "1ba17a02f5f0fdd4e4133dfe8d53a9cf6c985e42bd67c2dec5f3438c81dac680",
+        "rule_hash": "079d88a870845a81391c88c68a37bb46dd7eaced5cea0c6b171b100bbaca8005",
+        "test_hash": "8a7523b460a5f4ea5dbf31f1b8f47d68bf9b78d8fa564f6904b354e6a857926d",
+        "verdict": "strong"
+      },
+      "RULE-26": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-61": {
+            "after": "    over = sum((counts.get(key) or 0)",
+            "aim": "plain",
+            "before": "    over = sum((counts.get(key) or 0) - (anchors.get(key) or 0)",
+            "bug_key": "e04f29cccfd40aa8aeb42b5f0682ba629dbb26d1653c1b281f991069fc61f8f0",
+            "case": "a feature of 3 rules, 2 strong and 1 weak, beside an anchor of 8 spot-checked rules; the proof says `2 of 3 rules strong (66%)`; the changed code gives `2 of 11 rules strong (18%)`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 277,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-62": {
+            "after": "    return AUDIT_LINE % (strong, over, strong * 99 // over,",
+            "aim": "plain",
+            "before": "    return AUDIT_LINE % (strong, over, strong * 100 // over,",
+            "bug_key": "2763e20be5c2fbe44a6e3c7ae30065f5be4d4c88a4c09f008a91a0b79c32262b",
+            "case": "on committed evidence, one feature rule found strong beside one anchor rule found spot-checked; the proof says `1 of 1 rules strong (100%)`; the changed code gives `1 of 1 rules strong (99%)`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 292,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-63": {
+            "after": "            if key == 'strong' or (counts or {}).get(key))",
+            "aim": "plain",
+            "before": "            if (counts or {}).get(key))",
+            "bug_key": "f287d2df81d223e2b58621938a083d97d3e73bd5570ac98d70fedd4c42c84afd",
+            "case": "an anchor of 8 rules alone, 7 spot-checked and 1 weak; the proof says `The audit found 1 weak, 7 spot-checked.`; the changed code gives `The audit found 0 strong, 1 weak, 7 spot-checked.`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 291,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "cba89e542bbd2e888caa6e349e293835484a03dd56bddbfe338febd4cde686dd",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-61: the test builds a feature of 2 strong and 1 weak rules beside an anchor of 8 spot-checked rules and compares the whole sentence with the one the proof names, so a wrong share, per cent or count fails it.",
+          "PROOF-62: the test commits a spec, an anchor, evidence and audit entries in a real project and compares the whole sentence with the one the proof names, so the share of `1 of 1` and `100%` are both checked.",
+          "PROOF-63: the test builds an anchor alone with 7 spot-checked and 1 weak rules and compares the whole sentence with the one the proof names, so a share or a zero count appearing in it fails the test.",
+          "The spot tests found nothing, and each test holds its proof's expected sentence as a literal that the code cannot influence.",
+          "The tests for PROOF-61 and PROOF-63 build their feature entries through helpers whose source is not shown, so how close those entries are to a real project's is not visible here."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "3dda0a4cf0d32937b3ec2085ad316b98fa4138a955bbce3789033280634a6754",
+        "rule_hash": "94109d0724eeab9c5907ea80739b50964c5ec08a40fed2f84532153150de8415",
+        "test_hash": "26a2cc8ff0527170126ce4a910173edf2171a53d03c32a170652590193a308fe",
+        "verdict": "strong"
+      },
+      "RULE-27": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-64": {
+            "after": "LAST_LINE_RUN_FIRST = ('Every rule passes its tests on the committed evidence. Before the '",
+            "aim": "past the test",
+            "before": "LAST_LINE_RUN_FIRST = ('Every rule passes its tests on the committed evidence. Before a '",
+            "bug_key": "056c3dfaf3a7aab65ec18cf416c502297238cbca61fdc5a19767fb30a99ac401",
+            "case": "two rules pass on committed evidence and a later commit adds notes.txt; the proof says the last line reads `... Before a sign-off, run purlin:test --all --commit: ...`; the changed code gives `... Before the sign-off, run purlin:test --all --commit: ...`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 116,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-66": {
+            "after": "LAST_LINE = 'Every rule passes its tests on the committed evidence. Optional: sign this code with purlin:sign'",
+            "aim": "past the test",
+            "before": "LAST_LINE = 'Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign'",
+            "bug_key": "0b537350951a9bb7c61251f4f15b2e56d8f2d6d34cfc94f95cfc942b27be9caf",
+            "case": "two rules pass on evidence at HEAD with PROOF-2 marked carried; the proof says the last line ends `Optional: sign this version with purlin:sign`; the changed code gives `Optional: sign this code with purlin:sign`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 113,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-67": {
+            "after": "                       'sign-off run %s: a sign-off counts only results recorded on '",
+            "aim": "past the test",
+            "before": "                       'sign-off, run %s: a sign-off counts only results recorded on '",
+            "bug_key": "5dc9ac11db39ed9d09b2549dc08c79d22273c8339083da07cac0feb350b73a82",
+            "case": "Windows results from a project's own run, then a commit adds notes.txt, then this machine's results are committed; the proof says the last line reads `Before a sign-off, run purlin:test on Windows: ...`; the changed code gives `Before a sign-off run purlin:test on Windows: ...`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 117,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "cba89e542bbd2e888caa6e349e293835484a03dd56bddbfe338febd4cde686dd",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-64: the test builds the proof's case and compares `Tests: met`, the whole last line against `RUN_FIRST` filled with `purlin:test --all --commit`, the line's ending as a literal, and the refusal's opening and ending.",
+          "PROOF-64: `RUN_FIRST` and `NOT_THIS_CODE` are defined outside the lines shown, so if they are read from the code, the opening words of the last line and of the refusal are compared with the code's own text.",
+          "PROOF-66: the test marks the second proof's result `carried`, commits the evidence, and compares `Tests: met` and the whole last line against `SIGN_OPTIONAL`.",
+          "PROOF-66: no literal from the proof's last line stands in the test itself, so if `SIGN_OPTIONAL` is read from the code, a change to that sentence's wording still passes.",
+          "PROOF-66: the check that the refusal does not open with the named sentence passes on any other refusal text, which is what the proof names.",
+          "PROOF-67: the test records another system's results, adds `notes.txt`, commits this machine's results, and compares the last line and the refusal's ending with the system's word filled in.",
+          "PROOF-67: the system's word comes from `purlin_evidence.os_word`, so the test never compares the literal `Windows` the proof names.",
+          "PROOF-67: the Linux/Unix case runs only on a Windows machine, so on any other machine it is not observed.",
+          "The spot tests found nothing, and each test does assert on the status's last line and on the refusal, so none of the six checks applies.",
+          "No proof of the rule names the case where both commands are joined by ` and `, which the rule states."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-64 is longer than 60 words.",
+          "PROOF-66 is longer than 60 words.",
+          "PROOF-67 is longer than 60 words and holds a second case, the Windows machine whose other system is Linux/Unix."
+        ],
+        "proof_hash": "4a5108787ac0ef870091db5882a6c6c59164fb092679fe88085bb71dc09c5b69",
+        "rule_hash": "b8d8833350cb899da497a4482644ec6f5596ee1613f530ed1240cfd3472a4101",
+        "test_hash": "729abf382cbb9b307242e535953406214c10d1e1a035bdfa2dc21f6b73118db4",
+        "verdict": "strong"
+      },
+      "RULE-28": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-68": {
+            "after": "                       'nothing left uncommitted.')",
+            "aim": "past the test",
+            "before": "                       'nothing uncommitted.')",
+            "bug_key": "56cf9215a1ef496aa845c36eece73ed56bd60e8d0c8d6efb695ececab75d589c",
+            "case": "two rules pass on evidence taken at HEAD whose section reads dirty true; the proof says the status ends on \"...a sign-off counts only results taken with nothing uncommitted.\"; the changed code ends it on \"...taken with nothing left uncommitted.\"",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 121,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "cba89e542bbd2e888caa6e349e293835484a03dd56bddbfe338febd4cde686dd",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-68: the test writes `dirty` true into the local evidence section, commits it, and compares the status's second line with the literal `Tests: met`, as the proof names.",
+          "PROOF-68: the last line is compared exactly with `RUN_CLEAN`, a name defined outside the test shown, so if that name is built from the code's own wording, a change to the sentence still passes.",
+          "PROOF-68: the refusal is compared by its opening with `TAKEN_DIRTY`, also defined outside the test shown, which matches the proof's \"opens\" if it is a literal.",
+          "PROOF-68: the spot tests found nothing, and the test does assert on all three results the proof names."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-68 is longer than 60 words and holds two actions, the status and the `purlin:sign` refusal."
+        ],
+        "proof_hash": "8b76ef90d671cba254cb2c89d8f266edf225bbae3c2eff76c3e7892be937e1a1",
+        "rule_hash": "af9db9a694cc66a188bb51812e3a56e1add1aae5354b80b0c2f6377c5f96d6a9",
+        "test_hash": "0c5203f040a6514a4a5e3179246aac02aba1f264b691640d7157c9bc132a8a23",
+        "verdict": "strong"
+      },
+      "RULE-29": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-69": {
+            "after": "RUN_AGAIN = {'local': 'purlin:test --all', 'ci': 'purlin:test on %s'}",
+            "aim": "plain",
+            "before": "RUN_AGAIN = {'local': 'purlin:test --all --commit', 'ci': 'purlin:test on %s'}",
+            "bug_key": "46d53ecb3504df05d0717015443aabccc5795f62b3fe9b80c1e4dd3f1e186ba4",
+            "case": "the status of PROOF-64's project, whose results were recorded on an earlier version of the code; the proof says `last_line` is the status's last line naming `purlin:test --all --commit`; the changed code gives a last line naming `purlin:test --all`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 131,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "cba89e542bbd2e888caa6e349e293835484a03dd56bddbfe338febd4cde686dd",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-69: the test commits a change after the evidence is taken, runs the status, reads `last_line` from `.purlin/report-data.js`, and compares it with the last line the status printed, so a data file that disagrees with the terminal fails.",
+          "PROOF-69: the test also compares `last_line` with the `RUN_FIRST` sentence filled with the literal `purlin:test --all --commit`, so a line naming another command fails.",
+          "PROOF-69: `RUN_FIRST` is defined outside the test shown, so if it is taken from the code a change to the words around the command would pass, though the command the proof names is still checked as a literal.",
+          "The spot tests found nothing, which fits: the test asserts, its expected command is a literal, and it mocks nothing."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "e827de657ef8f20fa25d2a3006c529cf37f4cc8d8a5a7d6abe98c1bb428c90da",
+        "rule_hash": "a97315d1fbdb8562c049b2c64d5060633ffd36ccc2ecba27503c2ac078a95a25",
+        "test_hash": "f98748775a14fa58802527b5c72269a9c9dc291d100e28b9b1b1e0b7f6d5761a",
+        "verdict": "strong"
+      },
+      "RULE-30": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-70": {
+            "after": "                     'Purlin 0.9.5: purlin:status names each.')",
+            "aim": "past the test",
+            "before": "                     'Purlin 0.9.5: purlin:status names it.')",
+            "bug_key": "3b0736b605fb1a834ef3e2d7fddb30c64e01e26a81135cd3054e27485f575fd5",
+            "case": "one tracked test carries a Purlin 0.9.5 marker and every rule passes; the proof says the status ends on `... rewrite the 1 test that still carries a marker from Purlin 0.9.5: purlin:status names it.`; the changed code ends it on `... purlin:status names each.`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 126,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "cba89e542bbd2e888caa6e349e293835484a03dd56bddbfe338febd4cde686dd",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-70: the test commits `tests/test_old.py` with the old mark, takes the evidence again, and compares the status's second line with the literal `Tests: met`, as the proof names.",
+          "PROOF-70: the test compares the status's last line with `OLD_FIRST`, a name whose definition is not in the source shown, so the proof's sentence is checked only if that name holds it as a literal and not as the code's own constant.",
+          "PROOF-70: the test compares the opening of the sign-off's refusal with the literal `No sign-off: 1 test still carries`, as the proof names.",
+          "PROOF-70: the spot tests found nothing, and the test's three assertions can each fail; what the spot tests cannot see is where `OLD_FIRST` takes its value from."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-70 is longer than 60 words and holds two actions, the status and the `purlin:sign` refusal."
+        ],
+        "proof_hash": "8e102450b5a20cb23e4d9d6420edaa559e81953f6953f7c04df48c3b17ac428c",
+        "rule_hash": "6390ecab41a215a716ebb78b8bf32a92fc40a6dcc5940ccf7760aa261913dce8",
+        "test_hash": "282f0b4614ea249d1a2c11607fe4ca6444b0bfcbb6bfd4bde56e979f25bcf331",
+        "verdict": "strong"
+      },
+      "RULE-8": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-15": {
+            "after": "    if word == 'partial':",
+            "aim": "plain",
+            "before": "    if word in ('failed', 'partial'):",
+            "bug_key": "e8a4cf448f489111e8011fbc00c2c84244afadbb8c59db929e4b0776d9c2ef70",
+            "case": "a rule with no proof line whose own marked test fails; the proof says `1 rule to fix` and no other kind; the changed code gives `1 rule to test: purlin:test`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 165,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-23": {
+            "after": "        if missing:",
+            "aim": "plain",
+            "before": "        if missing and here_os not in missing:",
+            "bug_key": "f4f7543582ad34f96b33573b691becef4e1228065193414400c4cddfa17473d4",
+            "case": "on macOS, a rule not run and waiting on macos and windows; the proof says `1 rule to test: purlin:test`; the changed code gives `1 rule to test on macOS and Windows: run purlin:test on macOS and Windows`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 171,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-33": {
+            "after": "        if missing and here_os in missing:",
+            "aim": "plain",
+            "before": "        if missing and here_os not in missing:",
+            "bug_key": "2f72c2b3dd14a9c17be27d8df16ee5cd98ac384bf152fb0d9a0465ce0fd2dcf2",
+            "case": "on macOS, a rule whose PROOF-1 passes and whose PROOF-2, tagged @env(windows), was skipped; the proof says the status ends on `  1 rule to test on Windows: run purlin:test on Windows`; the changed code ends on `  1 rule to test: purlin:test`",
+            "file": "scripts/mcp/purlin/summary.py",
+            "line": 171,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "cba89e542bbd2e888caa6e349e293835484a03dd56bddbfe338febd4cde686dd",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-15: the test builds a rule entry with no proofs and a passed cell reading `failed`, then compares the kind with `to_fix` and every line after the sentence with `Left to do:` and `  1 rule to fix: purlin:build`, so a second kind or another kind would fail it.",
+          "PROOF-23: the test builds a rule entry reading `not run` and waiting on `macos` and `windows`, then compares every line after `Left to do:` on macOS with `  1 rule to test: purlin:test`, which is the proof's case and its result.",
+          "PROOF-33: the test makes a project whose second proof is tagged `@env(windows)`, records `PROOF-1` as passed and `PROOF-2` as `not run` on macOS, and compares the last line of the real status with the exact line the proof names.",
+          "The spot tests found nothing, and each test compares the literal its proof names, so none of the three leaves a way past it."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "d22485d34c725c4e5a23e587f8c56b580307083e50e3e0cf71455b200fda4fec",
+        "rule_hash": "bb2b9de1c887685e0f70478f090d647d20d4ff1a651816ea3a9dfa6cc354ba38",
+        "test_hash": "18472358d4027e082f6ae58af03eec5623a1ec6ff59daa74d2e3c628e0057e72",
+        "verdict": "strong"
+      }
+    }
+  },
   "feature": "summary",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T16:58:50Z",
-      "commit": "572679b298d96e95848047a5fa1a8bf9fcb76958",
+      "at": "2026-10-05T18:16:20Z",
+      "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -14,12 +704,6 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-48",
           "manual": false,
@@ -28,12 +712,6 @@
           "test": "dev/test_summary.py::TestTheOpeningLines::test_the_status_opens_on_the_project_named_by_pyproject_then_tests_met"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-53",
           "manual": false,
@@ -42,12 +720,6 @@
           "test": "dev/test_summary.py::TestTheOpeningLines::test_one_failing_rule_makes_the_second_line_tests_not_met"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-50",
           "manual": false,
@@ -56,12 +728,6 @@
           "test": "dev/test_summary.py::TestTheOpeningLines::test_a_commit_to_the_code_after_the_walk_reads_one_commit_since"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-5",
           "manual": false,
@@ -70,12 +736,6 @@
           "test": "dev/test_summary.py::TestTheSentence::test_one_rule_that_passes_reads_one_rule_one_passes_its_tests"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-4",
           "manual": false,
@@ -84,12 +744,6 @@
           "test": "dev/test_summary.py::TestTheSentence::test_an_anchor_rule_beside_two_features_reads_three_rules"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-43",
           "manual": false,
@@ -98,12 +752,6 @@
           "test": "dev/test_summary.py::TestTheSentence::test_fifty_rules_forty_two_strong_read_the_audits_share_84"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-57",
           "manual": false,
@@ -112,12 +760,6 @@
           "test": "dev/test_summary.py::TestTheSentence::test_forty_rules_read_each_count_that_is_not_zero"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-58",
           "manual": false,
@@ -126,12 +768,6 @@
           "test": "dev/test_summary.py::TestAHandCheckInTheSentence::test_nine_passing_rules_and_a_hand_check_read_one_is_checked"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-60",
           "manual": false,
@@ -140,12 +776,6 @@
           "test": "dev/test_summary.py::TestAHandCheckInTheSentence::test_nine_strong_rules_and_a_hand_check_read_nine_of_nine_strong"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-61",
           "manual": false,
@@ -154,12 +784,6 @@
           "test": "dev/test_summary.py::TestTheSentence::test_an_anchors_rules_are_left_out_of_the_share_and_kept_in_the_counts"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-62",
           "manual": false,
@@ -168,12 +792,6 @@
           "test": "dev/test_summary.py::TestTheSentence::test_a_project_reaches_100_per_cent_beside_a_spot_checked_anchor"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-63",
           "manual": false,
@@ -182,12 +800,6 @@
           "test": "dev/test_summary.py::TestTheSentence::test_an_audit_that_read_an_anchor_alone_lists_what_it_found"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-8",
           "manual": false,
@@ -196,12 +808,6 @@
           "test": "dev/test_summary.py::TestTheLines::test_two_rules_of_each_of_the_six_kinds_read_in_rule_23s_order"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-40",
           "manual": false,
@@ -210,12 +816,6 @@
           "test": "dev/test_summary.py::TestTheLines::test_a_broken_spec_reads_one_spec_to_repair_before_one_rule_to_fix"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-29",
           "manual": false,
@@ -224,12 +824,6 @@
           "test": "dev/test_summary.py::TestTheLines::test_a_comment_naming_login_proof_9_on_committed_evidence"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-15",
           "manual": false,
@@ -238,12 +832,6 @@
           "test": "dev/test_summary.py::TestOneKindPerRule::test_a_rule_with_no_proof_whose_test_fails_is_one_rule_to_fix"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-23",
           "manual": false,
@@ -252,12 +840,6 @@
           "test": "dev/test_summary.py::TestOneKindPerRule::test_a_rule_this_machine_can_run_part_of_is_to_test"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-33",
           "manual": false,
@@ -266,12 +848,6 @@
           "test": "dev/test_summary.py::TestOneKindPerRule::test_a_rule_waiting_only_on_windows_is_to_test_there"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-47",
           "manual": false,
@@ -280,12 +856,6 @@
           "test": "dev/test_summary.py::TestWhatLetsTheTestsBeMet::test_a_weak_rule_on_committed_evidence_is_to_strengthen_tests_met"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-54",
           "manual": false,
@@ -294,12 +864,6 @@
           "test": "dev/test_summary.py::TestWhatLetsTheTestsBeMet::test_a_rule_with_no_proof_whose_test_passes_is_to_write_a_proof_for"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-52",
           "manual": false,
@@ -308,12 +872,6 @@
           "test": "dev/test_summary.py::TestTheLines::test_two_features_with_results_not_committed_end_on_the_commit"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-55",
           "manual": false,
@@ -322,12 +880,6 @@
           "test": "dev/test_summary.py::TestSlowProofsToRun::test_one_slow_proof_not_run_is_the_one_line_and_stops_the_sign_off"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-56",
           "manual": false,
@@ -336,12 +888,6 @@
           "test": "dev/test_summary.py::TestSlowProofsToRun::test_a_slow_proof_tagged_for_windows_is_to_test_on_windows"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-44",
           "manual": false,
@@ -350,12 +896,6 @@
           "test": "dev/test_summary.py::TestWhatLetsTheTestsBeMet::test_two_passing_rules_with_no_tag_end_on_the_sign_off"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-65",
           "manual": false,
@@ -364,12 +904,6 @@
           "test": "dev/test_summary.py::TestTheLastLineAgreesWithTheSignOff::test_results_taken_on_this_code_end_on_the_sign_off"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-64",
           "manual": false,
@@ -378,12 +912,6 @@
           "test": "dev/test_summary.py::TestTheLastLineAgreesWithTheSignOff::test_results_recorded_before_a_later_commit_name_the_run_first"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-66",
           "manual": false,
@@ -392,12 +920,6 @@
           "test": "dev/test_summary.py::TestTheLastLineAgreesWithTheSignOff::test_a_result_carried_forward_ends_on_the_sign_off"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-67",
           "manual": false,
@@ -406,12 +928,6 @@
           "test": "dev/test_summary.py::TestTheLastLineAgreesWithTheSignOff::test_results_from_another_system_name_the_run_there"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-68",
           "manual": false,
@@ -420,12 +936,6 @@
           "test": "dev/test_summary.py::TestTheLastLineAgreesWithTheSignOff::test_results_taken_with_files_uncommitted_name_the_run_first"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-69",
           "manual": false,
@@ -434,12 +944,6 @@
           "test": "dev/test_summary.py::TestTheLastLineAgreesWithTheSignOff::test_the_dashboard_data_carries_the_same_last_line"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-59",
           "manual": false,
@@ -448,12 +952,6 @@
           "test": "dev/test_summary.py::TestAHandCheckInTheSentence::test_an_unchecked_hand_check_leaves_the_tests_met"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-70",
           "manual": false,

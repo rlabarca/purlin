@@ -1,9 +1,825 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-1": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-1": {
+            "after": "                'error': 'invalid since',",
+            "aim": "plain",
+            "before": "                'error': 'rejected since',",
+            "bug_key": "1ff588f02acb18ab845552bc24af402988dce85776200f107c4634231a33bd9a",
+            "case": "drift asked for the changes since `--output=/tmp/x`; the proof says the error is `rejected since`; the changed code gives the error `invalid since`",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 339,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-1: the test asks for a report with since `--output=/tmp/x` and compares the error with `rejected since`, the reason with the proof's whole sentence, and the list of spied calls with an empty list, so it observes each of the three results the proof names.",
+          "PROOF-1: the expected error and reason are written as literals in the test and not taken from the code, so a change to either string in the code fails the test.",
+          "PROOF-1: what counts as a started process rests on the helper `_spied`, whose source is not shown, so a process started by a route that helper does not watch would not be seen.",
+          "The spot tests found nothing, and nothing in the test shown contradicts that: it asserts, its checks can fail, and the proof's values appear in it."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "53c9c228d681e561be655a0c98f40362b4586d222a62b5c49101b1cc7394351b",
+        "rule_hash": "651118fc6c70a8419d090af964b884a6f1bb4f36cc7f7b3f32042987c5a9c2a5",
+        "test_hash": "b7a15eb98e724e7f33e024e43207acf6f9c9f3cff61428bfc48a87e04f503a14",
+        "verdict": "strong"
+      },
+      "RULE-10": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-17": {
+            "after": "            row['remote_sha'] = result['remote_sha'][:8]",
+            "aim": "plain",
+            "before": "            row['remote_sha'] = result['remote_sha'][:7]",
+            "bug_key": "817c272a876ed458b4953cfdc30f45dd4b6608f33aba39a02f1b6eca0e9706d4",
+            "case": "a pin at the source's first commit after the source gains a second; the proof says the row and the line hold the first 7 characters of the new sha; the changed code gives 8 characters",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 223,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-19": {
+            "after": "    if not pinned:\n        _ls_remote(project_root, source_url)\n        return {'status': 'unpinned', 'remote_sha': None}",
+            "aim": "plain",
+            "before": "    if not pinned:\n        return {'status': 'unpinned', 'remote_sha': None}",
+            "bug_key": "66da9dae7f63135deebf5676de0dfeaaaa7ad7784e0a1a746dc6353fd3d8920b",
+            "case": "the anchor policy names https://github.com/acme/p.git and no pin; the proof says no process is handed that source; the changed code hands it to git ls-remote before answering unpinned",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 163,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-40": {
+            "after": "        return {'error': url[:200]}",
+            "aim": "past the test",
+            "before": "        return {'error': ' '.join(result.stderr.split())[:200]}",
+            "bug_key": "74b618b4b59860aeb09a4727acb4bf2263cbee8797add98793ea29e1d4c85a6f",
+            "case": "the anchor policy pinned to a path with no repository; the proof says the row and the line hold a reason naming that path; the changed code gives the bare path alone, with none of git's message saying why it could not be read",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 199,
+            "result": "survived",
+            "test_key": "1778974b0690480830aaeb203ecac85f07a75638710cd1a6b3a789e1a10d0856",
+            "why": ""
+          }
+        },
+        "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-17: the test builds a real source, advances it, and compares the row count, the anchor's name, the status, the 7-character sha and the whole line against shas taken from the repository itself, so each result the proof names is checked.",
+          "PROOF-19: the test compares the whole row with a literal, the line with a literal, and the processes handed the source with an empty list; that last check rests on the helpers `_one_anchor` and `_handed`, whose source is not shown, so what they record cannot be read here.",
+          "PROOF-40: the test checks the status, that the row has no sha, and that the path appears in the row's reason, but it builds the expected line from the row's own reason, so any reason text that contains the path passes.",
+          "PROOF-40: the proof names the reason only as `<the reason>`, with no literal wording, so the test has no value from the proof to compare the reason against.",
+          "The spot tests found nothing, and each test holds failable assertions on literal values or on values taken from the source repository."
+        ],
+        "findings": [
+          "PROOF-40: the test still passes when scripts/mcp/purlin/drift.py:199 reads \"return {'error': url[:200]}\"",
+          "PROOF-40: the AI says this breaks: the anchor policy pinned to a path with no repository; the proof says the row and the line hold a reason naming that path; the changed code gives the bare path alone, with none of git's message saying why it could not be read"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "68348edfd84d928dad9beda10b745f38e80665ccb624c2c996cf06dad89a4c44",
+        "rule_hash": "a2a61cb6332a982d73711b5652ebcc1e83f151c39a6834efb05eaa9ce9c8e75f",
+        "test_hash": "7c60bc280a6a938b261ae95c89c3badf38d982dab012068f086002a9152b8faf",
+        "verdict": "weak"
+      },
+      "RULE-11": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-20": {
+            "after": "    if url.startswith('-') and not url.startswith('--'):",
+            "aim": "plain",
+            "before": "    if url.startswith('-'):",
+            "bug_key": "910b9d288059c8371089dfcda42e30f21d0e7b49a468c6e3bb656010f4f81b26",
+            "case": "the anchor policy pinned to --upload-pack=/bin/echo; the proof says its row reads error with the reason begins with \"-\" and no process is handed the source; the changed code takes the source as safe and hands it to git ls-remote, with no such reason",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 98,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-42": {
+            "after": "    if 'ext:://' in url:",
+            "aim": "past the test",
+            "before": "    if 'ext::' in url:",
+            "bug_key": "f73f02d4eb2611836a8ae28ccfe604c2712a7f7e90019e924a2c46afdcd64114",
+            "case": "an anchor pinned to ext::sh -c id; the proof says it reads error with the reason names an ext:: transport; the changed code still reads error and starts no process, but gives no reason and calls the source not a spec",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 100,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-44": {
+            "after": "        return False, 'contains a null byte'",
+            "aim": "plain",
+            "before": "        return False, 'contains a NUL byte'",
+            "bug_key": "1233f287340f6b96f06b997cb7db992e48cbad6c7797ba63bb49d825f629315c",
+            "case": "an anchor pinned to /srv/anchors<NUL>.git; the proof says it reads error with the reason contains a NUL byte; the changed code gives the reason contains a null byte",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 105,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-20: the test hands the source `--upload-pack=/bin/echo` and the reason `begins with \"-\"` to the helper `_refused`, then compares the whole view line the proof names against the report's lines, so a wrong reason in the view fails it.",
+          "PROOF-20: the row's `error` status and the claim that no process is handed the source are left to `_refused`, whose source is not shown, so what it checks of them cannot be read here.",
+          "PROOF-42: the test's body holds no assertion of its own and passes `ext::sh -c id` and `names an ext:: transport` to `_refused`, so the status, the reason and the absence of a process are checked only if that helper checks them.",
+          "PROOF-44: the test's body holds no assertion of its own and passes a source with a real NUL byte and `contains a NUL byte` to `_refused`, so everything the proof names rests on that helper.",
+          "The spot tests found nothing, which fits: each test names its proof's values and reaches its assertions through a helper in the same file."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-20 names the row, the view line and the absence of a process for one source, which is one case with three results."
+        ],
+        "proof_hash": "542f806093b4e7e56720340940a9ec2a5cbfed93e5c1eaddf476ea1d624b2120",
+        "rule_hash": "0b1de64efc9714e09d7d620b338b799deb1f6ddaf2277442102c51d8a86fc91a",
+        "test_hash": "e5db5d7d0b42de10d0448a0e7485b0d2497914de4519e3deb17e54105a4952c8",
+        "verdict": "strong"
+      },
+      "RULE-2": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-29": {
+            "after": "    if words[:1] == ['commit'] and stage == 'merged':",
+            "aim": "plain",
+            "before": "    if words[:1] == ['commit'] and stage == 'merge':",
+            "bug_key": "5a48810708147a733d7b0121fe75b9cfeb7c5ade8e2eb71ca9e0e8dab48db147",
+            "case": "a conflicted merge of a 2-commit branch resolved and committed by hand; the proof says the range runs from main before the merge, 3 commits, action merge; the changed code passes over the merge commit and names an earlier action, not merge",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 270,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-3": {
+            "after": "        old = entries[start][0] if start + 1 < len(entries) else None",
+            "aim": "plain",
+            "before": "        old = entries[start + 1][0] if start + 1 < len(entries) else None",
+            "bug_key": "48af6387ada2f0a505ee95c015a24767bd99f7281a511523378446ea469898de",
+            "case": "a checkout pulls 2 commits then commits once on its own; the proof says the range runs from the commit before the pull, 3 commits; the changed code starts the range at the commit the pull ended on and gives 1 commit",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 302,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-86": {
+            "after": "                and entries[index + 1][0] != sha):",
+            "aim": "plain",
+            "before": "                and entries[index + 1][0] == sha):",
+            "bug_key": "bef2a776dc04b6b8447c87f0a59ff872e43cbebfcb806b222b9e2cbfbaa79e28",
+            "case": "a pull of 2 commits then git checkout -b topic at HEAD; the proof says the range runs from before the pull, 2 commits, action pull; the changed code starts the range at the checkout and gives action checkout with 0 commits",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 293,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-3: the test pulls 2 commits, commits once more, and compares the action with `pull`, the start with the commit recorded before the pull, the end with HEAD and the count with 3, so it observes every value the proof names.",
+          "PROOF-29: the test builds the conflicted merge through a helper and compares the action with `merge`, the start with main before the merge, the end with HEAD and the count with 3, so it observes every value the proof names.",
+          "PROOF-29: the two-commit branch, the same-line conflict and the resolution by hand all happen inside the helper, which is not shown, so the test's own lines do not show that the case is the one the proof describes.",
+          "PROOF-86: the test pulls 2 commits, makes the branch with `git checkout -b topic`, confirms git's newest log entry is a checkout, and compares the action with `pull`, the start, the end and the count with 2, so it observes every value the proof names.",
+          "The spot tests found nothing, and each test holds failable comparisons against literals and against commits read from git rather than from the code under test."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "7064754ba158762b45431f872795b1ebe30c644d24f3cc464554f5733f941261",
+        "rule_hash": "4ba300a1b159420107eff8155f9f52b3d2180a8b103382037d6b9bcec238d389",
+        "test_hash": "397289cdff48f8854c66f9398f1a7cb4f55a528e1460aa1fc740b97bebfb361c",
+        "verdict": "strong"
+      },
+      "RULE-20": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-56": {
+            "after": "            if os.path.isfile(candidate):\n                return True",
+            "aim": "plain",
+            "before": "            if os.path.isfile(candidate):\n                return False",
+            "bug_key": "72ae3a305386a4b67dc76454408af4bb94b66e53cc9620c3da5e48c6d6815b90",
+            "case": "the anchor refunds pinned to policy.txt, a text file in the project; the proof says its row reads error with the line beginning \"anchor refunds: its source, policy.txt, is not a spec in Purlin's format kept in a git repository\", naming purlin:spec refunds, and no process handed policy.txt; the chang",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 140,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-56: the test pins the anchor refunds to policy.txt, a text file it writes into the project, and compares the anchor rows with exactly one row, refunds with status error, as the proof names.",
+          "PROOF-56: the test keeps the lines that begin with the proof's quoted opening, requires exactly one, and requires purlin:spec refunds in it, so a different opening or a different command fails it.",
+          "PROOF-56: the test reads the spied process calls and requires that none was handed policy.txt; the spy and the reading of its calls are helpers not shown, so how they match the source is not visible here.",
+          "PROOF-56: the spot tests found nothing, and the test compares each result the proof names with a literal value written in the test."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "e622d8a360d0b68a170ab2c04b06911e95f0164c299d3b75dc65e189ee39908b",
+        "rule_hash": "94fdcd81ada3ed2d7ef8c70324aff4c33864aa853694bfd8d56c32340e092a0f",
+        "test_hash": "51f84976f80219d5e96b7dadb12bf89301f056740ef517d6f9e53a923b3e8c66",
+        "verdict": "strong"
+      },
+      "RULE-3": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-8": {
+            "after": "DEFAULT_WINDOW = 10",
+            "aim": "plain",
+            "before": "DEFAULT_WINDOW = 20",
+            "bug_key": "9fefecbb77826dc94eb841113a7113abce8aab58e2368f587c84e93494248f9d",
+            "case": "a clone of a repository of 25 commits; the proof says the range is the last 20 commits, from the 21st commit back to HEAD, with the action clone; the changed code gives the last 10 commits, from the 11th commit back",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 48,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-8: the test clones a repository of 25 commits and compares the report's action with `clone`, its start with the commit 20 back from HEAD, its end with HEAD and its count with 20, so it observes every value the proof names.",
+          "PROOF-8: the expected start and end come from git itself and the count is a literal, so none of the expected values is taken from the code under test.",
+          "PROOF-8: the spot tests found nothing, and the test leaves no value of the proof's case unchecked; it does not read the first line of the view, which the proof does not name."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "ec211384758dffbdb0e54d72fd779fc8eb8dc1ef14df5f00a530d2633c40e4f8",
+        "rule_hash": "7b049a3b3f957ee7aaa817ff6eb79458f70b369755b78c29e0a2fc23d7a2da1f",
+        "test_hash": "28da26bcc449595928d40748298871c2e15312333d416132b09b3744bde04baf",
+        "verdict": "strong"
+      },
+      "RULE-31": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-70": {
+            "after": "                                 if index == keeper)",
+            "aim": "plain",
+            "before": "                                 if index != keeper)",
+            "bug_key": "bb766e9c25f657e49248c43edecf1d34c53249f77f1e8a2ce1f3a8fd413102e9",
+            "case": "after a merge `login` writes PROOF-4 twice, `A` on origin/main and `B` on the branch; the proof says the line ends `: \"B\".`; the changed code names the kept line and ends `: \"A\".`",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 791,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-71": {
+            "after": "                    entry['line'] = NUMBER_NEITHER % (name, item, ref, ref,\n                                                      to, item)",
+            "aim": "plain",
+            "before": "                    entry['line'] = NUMBER_NEITHER % (name, item, ref, ref,\n                                                      item, to)",
+            "bug_key": "5df3e9494493a2968f3823c3e81378c6149ec61889c7c3fd35d2ab463d6b2ab7",
+            "case": "`login` writes PROOF-7 twice with neither line on origin/main; the proof says `keeps PROOF-7; renumber the other to PROOF-8`; the changed code gives `keeps PROOF-8; renumber the other to PROOF-7`",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 788,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-85": {
+            "after": "    for entry in twice:",
+            "aim": "plain",
+            "before": "    for entry in twice:\n        lines.append(entry['line'])",
+            "bug_key": "d47a2a6987c65031b0ecd455770b8a10d9bcc01214dfbbf138d3b5eb5920d5e1",
+            "case": "after a merge `login` writes PROOF-4 twice, `A` from origin/main and `B` from the branch; the proof says the view names PROOF-4 as written twice; the changed code leaves that line out of the view",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 889,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-70: the test builds the merged checkout and looks for the proof's whole sentence among the view's lines, so the kept number, the new number `PROOF-5` and the quoted `B` are all compared.",
+          "PROOF-71: the test writes `PROOF-7` twice in a checkout whose origin/main holds neither line and looks for the proof's whole sentence, so `PROOF-8` and the neither-line wording are compared.",
+          "PROOF-85: the test reads the view's twice-written entries as exactly `login` `PROOF-4`, requires a line opening `login: PROOF-4 is written twice`, requires no line opening `login PROOF-4 changed`, and requires the changed-proofs list to be empty, so both halves of the proof are observed.",
+          "The spot tests found nothing, and each test compares the literal values its proof names, so no change to the proof's case was seen to get past any of them."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "7731c5dae1814bffa5e0d4b41dab706600f97c1273406815e8c51a2af6f950ec",
+        "rule_hash": "cba0dc6b72e4230aa7122ab80bf99c91d0e0d9427f1f98f7efaf6db315374a99",
+        "test_hash": "932542f05bfe8c78debb83b02d0aee1f58c67c5fdbf686d65c22b4cb8f04ba39",
+        "verdict": "strong"
+      },
+      "RULE-32": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-73": {
+            "after": "            return _plural((seconds - 60) // size, word)",
+            "aim": "past the test",
+            "before": "            return _plural(seconds // size, word)",
+            "bug_key": "a60ed01e74076819458d09a17a0225fae8f351d39614ab0ea47d3e720c331173",
+            "case": "`login` writes `PROOF-4` twice and origin/main was last updated exactly three days ago (259200 seconds); the proof says `origin/main was last fetched 3 days ago, ...`; the changed code gives `origin/main was last fetched 2 days ago, ...`",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 679,
+            "result": "survived",
+            "test_key": "6046ef1a95396215f5a9b04af826ad85adf1dc8189c7c591a6094e5e4e565bc6",
+            "why": ""
+          }
+        },
+        "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-73: the test sets origin/main's own log to three days and 120 seconds ago, runs drift on a checkout that writes a number twice, and looks for the whole sentence the proof names among the view's lines, so a wrong ref, a wrong count, a wrong unit or a missing line fails it.",
+          "PROOF-73: the test also reads the view's default branch as `origin/main`, which the proof's sentence already implies.",
+          "PROOF-73: the age the test sets is 120 seconds past three whole days, so a count that is wrong only within the first minute or two after a whole day, such as an age of exactly three days read as `2 days`, still passes.",
+          "PROOF-73: the spot tests found nothing, and the test does assert a literal taken from the proof, not a value from the code."
+        ],
+        "findings": [
+          "PROOF-73: the test still passes when scripts/mcp/purlin/drift.py:679 reads \"return _plural((seconds - 60) // size, word)\"",
+          "PROOF-73: the AI says this breaks: `login` writes `PROOF-4` twice and origin/main was last updated exactly three days ago (259200 seconds); the proof says `origin/main was last fetched 3 days ago, ...`; the changed code gives `origin/main was last fetched 2 days ago, ...`"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "322c143c9e72e44452a18aa09bdb5f7cea7d40d66e2f3d56513ef2c1fb65283d",
+        "rule_hash": "e33999b0531d99f973cdc4b984356885777aa96eddc63a0dc6b202ea54f38bb3",
+        "test_hash": "9124c6ff4ae99cb0e1f5f54c9b650c5fa06d8979c11608a05d51b7c7775d7945",
+        "verdict": "weak"
+      },
+      "RULE-33": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-75": {
+            "after": "STALE_BUILD = ('Run purlin:spec %s to make the test show it; the line clears once the test '",
+            "aim": "plain",
+            "before": "STALE_BUILD = ('Run purlin:build %s to make the test show it; the line clears once the test '",
+            "bug_key": "1bf60a23e2e5730240296036e9b06fe3c68feee1607d42c39b98a6dc9020ca8a",
+            "case": "a test marked login PROOF-4 committed while PROOF-4 reads A, then a pull rewords it B; the proof says the line ends \"Run purlin:build login to make the test show it; the line clears once the test changes.\"; the changed code gives \"Run purlin:spec login to make the test show it; ...\"",
+            "file": "scripts/mcp/purlin/wording.py",
+            "line": 36,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-76": {
+            "after": "                          if other != marker.id and words[other] == new), None)",
+            "aim": "plain",
+            "before": "                          if other != marker.id and words[other] == old), None)",
+            "bug_key": "ef47011a3ee405b750c5bf37323583db0aa8bfc27f2dcc42aed1c058b8380006",
+            "case": "a test marked login PROOF-4 committed while PROOF-4 reads A, then a pull rewords it B and puts A under PROOF-6; the proof says the line ends \"Its old wording is now PROOF-6: move the comment there.\"; the changed code finds no proof holding the old wording and ends the line \"Run purlin:build login to",
+            "file": "scripts/mcp/purlin/wording.py",
+            "line": 86,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-75: the test builds the pulled checkout with PROOF-4 reworded `B` and asserts the proof's whole sentence, with the commit's short sha filled in, is one of the view's lines, so any change to the file, line, proof name, sha, either wording or the closing instruction fails it.",
+          "PROOF-75: the sha in the expected sentence comes from the test's own helper and not from the view, so the expected value is not taken from the code under test.",
+          "PROOF-76: the test builds the pulled checkout with `A` under PROOF-6, asserts exactly one line names line 1 of the test file, and asserts that line ends with the proof's quoted ending, so both wordings and the move instruction are compared exactly.",
+          "PROOF-76: the test does not compare the start of the line, which the proof does not name either.",
+          "Neither proof names a case where no line is shown, such as a test changed after the rewording or a rewording outside the range, so the rule's limits \"after its test was last changed\" and \"where the range changed that proof or that test's file\" are shown in one direction only.",
+          "The spot tests found nothing, and both tests hold the values their proofs name in backticks."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "571521b2561ae07c7dc72eb368bf07fdcd51cf5a62e3a7a030fd34dfe27bd24a",
+        "rule_hash": "1a344a2dc1e102b03be27d68fda3805ccbb5fd1f4e5b8e60324858d1d345eaf5",
+        "test_hash": "bc922ef3dcab72fb0a76319d1243e96b10382b8c0c8d74a59a892870548c3d1b",
+        "verdict": "strong"
+      },
+      "RULE-35": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-82": {
+            "after": "        span = lines[max(first, 1) - 1:max(first, 1)]",
+            "aim": "plain",
+            "before": "        span = lines[max(first, 1) - 1:last]",
+            "bug_key": "c09aa3121f9779a41bdceec0dbfd1eddcde2b321d089ded6aae22a6de7c0ca03",
+            "case": "a test committed at wording A, reworded to B by a pull, then an assertion changed in a later commit; the proof says no line names tests/test_login.py:1; the changed code reads only the first line below the comment, so the line is still named",
+            "file": "scripts/mcp/purlin/wording.py",
+            "line": 220,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-83": {
+            "after": "        span = [entry for entry in span if entry[0] != _UNCOMMITTED]\n        if not span:\n            return None",
+            "aim": "plain",
+            "before": "        if not span or any(sha == _UNCOMMITTED for sha, _when, _who in span):\n            return None",
+            "bug_key": "349e691de9d4dd600803b7b0151910d56ec99aeeae5e5109a5799ebc7e3e6103",
+            "case": "a test committed at wording A, reworded to B by a pull, then an assertion changed and not committed; the proof says no line names tests/test_login.py:1; the changed code drops the uncommitted line and dates the test by its committed lines, so the line is named",
+            "file": "scripts/mcp/purlin/wording.py",
+            "line": 221,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-84": {
+            "after": "            spans.append((marker, marker.line, last))",
+            "aim": "plain",
+            "before": "            spans.append((marker, marker.line + 1, last))",
+            "bug_key": "781346a003f495cb47d851160fbd9baf6e72238e75c81e4756320b854f8e73e9",
+            "case": "a test committed at wording A, reworded to B by a pull, then a commit rewrites only the comment line; the proof says a line still names tests/test_login.py:1; the changed code counts the comment line as part of the test, so no line names it",
+            "file": "scripts/mcp/purlin/wording.py",
+            "line": 160,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-82: the test commits a changed assertion after the pull and asserts the report holds no line naming `tests/test_login.py:1`, which is the case and the result the proof names.",
+          "PROOF-82: the changed assertion `assert 4 == 4` sits in the fixture file the test writes, not in the test's own checks, and the test's own check compares the report's lines with an empty list.",
+          "PROOF-83: the test rewrites the assertion without committing, confirms git reports the file as modified, and asserts no line names `tests/test_login.py:1`, as the proof says.",
+          "PROOF-84: the test commits a respaced comment line and asserts exactly one line opens `tests/test_login.py:1 names login PROOF-4,`, so it observes the line the proof says is still held.",
+          "PROOF-84: the test does not compare the commit or the old and new wording printed in that line, so a line naming the wrong commit would still pass.",
+          "No spot test fired, and nothing in the three tests gives one cause to: each asserts a failable comparison on the report the code produces."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "7e2754b04eaa1074707fdd948e78af12da68500993205f84c2695dc80d4d0d27",
+        "rule_hash": "48b5a1881150a2e849eb4a6d14ffbb68f45f5650fe1b7d8f4e7e2ddba4d44b38",
+        "test_hash": "d4b7b48103ff6be0aa06e20f3be8f570f5076dc440c5e863dcf662ee3f4adfd4",
+        "verdict": "strong"
+      },
+      "RULE-4": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-10": {
+            "after": "                                               first]) or None",
+            "aim": "plain",
+            "before": "                                               first + '^']) or None",
+            "bug_key": "855cbd3b9e8154312b1020b7a93cf713b1ce2d644b70e8a99ddaa34615007719",
+            "case": "three commits dated 2026-01-01, 2026-03-01 and 2026-04-01, drift asked for the changes since 2026-02-15; the proof says the range is the last 2 commits, from the first commit to HEAD; the changed code gives 1 commit, from the second commit to HEAD",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 366,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-9": {
+            "after": "            from_sha, commits = _last_commits(project_root, int(since_arg) - 1,\n                                              head)",
+            "aim": "plain",
+            "before": "            from_sha, commits = _last_commits(project_root, int(since_arg),\n                                              head)",
+            "bug_key": "893d8d3f0db89f1a638b260b4d4d20b002d422ee445c204e8bcd133bf8f2d20b",
+            "case": "after a pull of 1 commit, drift is asked for the changes since 3; the proof says the range is the last 3 commits and the first line begins \"The last 3 commits (\"; the changed code gives the last 2 commits and a first line beginning \"The last 2 commits (\"",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 353,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-9: the test pulls 1 commit into a clone, confirms the plain report counts 1, then asks since 3 and compares the commit count with 3, the start with HEAD~3, the end with HEAD and the opening of the first line with \"The last 3 commits (\", so every result the proof names is observed.",
+          "PROOF-10: the test makes three commits on the proof's three dates, asks since 2026-02-15 and compares the commit count with 2, the start with the first commit, the end with the third and the opening of the first line with \"Since 2026-02-15 (\", so every result the proof names is observed.",
+          "PROOF-10: the rule says a date gives every commit made on or after it, and no proof names a commit dated on the day asked for, so that boundary is not shown.",
+          "The spot tests found nothing, and both tests take their expected values from literals and from git, not from drift's own answer."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "2380f3bbbad14242b46bb2a03d79005cb94edab227eca66f103abb517d740e9c",
+        "rule_hash": "6e0600557b4e7ae32487411e7d21167e0d100b52bde356790ae33141fbde4cd9",
+        "test_hash": "f6dafeb692062896ba463db4e607542be3a069cef18083bf274e2305f1d06afd",
+        "verdict": "strong"
+      },
+      "RULE-40": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-58": {
+            "after": "    if problem:\n        return problem + '\\n'",
+            "aim": "past the test",
+            "before": "    if problem:\n        return problem",
+            "bug_key": "2561a40fb0bf951b59aeab254341c6524401219e1392f2f860945efb16040732",
+            "case": "config.json holds a comma after its last setting; the proof says the whole answer is the sentence ending `nothing was saved.`; the changed code gives that sentence followed by a line break",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 920,
+            "result": "survived",
+            "test_key": "8bfd736be4fe52bc5618fd2f884e32f874dadd0f9f0fd9250617b5c40f21432e",
+            "why": ""
+          },
+          "PROOF-61": {
+            "after": "        return {'error': 'no commit',",
+            "aim": "plain",
+            "before": "        return {'error': 'no commits',",
+            "bug_key": "22983c957129540052131c4e99647f0bc3231c2dd7c8fde43c52fb3853549500",
+            "case": "a repository made with git init and no commit is asked for its report; the proof says the error is `no commits`; the changed code gives the error `no commit`",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 348,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-58: the test writes a config with a trailing comma, matches the answer against the proof's sentence from its first character with any reader message and any line number, and compares the spied process calls with an empty list.",
+          "PROOF-58: the pattern ends in `$`, which also matches just before a final line break, so an answer with a line break after `nothing was saved.` still passes and the answer is not shown to be the sentence alone.",
+          "PROOF-58: the reader's message is checked only for holding `comma` or `property name`, which the proof leaves open as the JSON reader's own message.",
+          "PROOF-61: the test makes a repository with `git init` and no commit and compares the whole answer with the error `no commits` and the reason the proof names, so any other error or reason fails it.",
+          "PROOF-61: the test does not observe whether any process starts beyond reading git, which the rule states and this proof does not name."
+        ],
+        "findings": [
+          "PROOF-58: the test still passes when scripts/mcp/purlin/drift.py:920 reads \"return problem + '\\n'\"",
+          "PROOF-58: the AI says this breaks: config.json holds a comma after its last setting; the proof says the whole answer is the sentence ending `nothing was saved.`; the changed code gives that sentence followed by a line break"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "1759d5e602631ce3d6e176e4dd33a5c7eea4358169684ba980bd5e0cbdc6aefb",
+        "rule_hash": "2dd1bae9c50ec735c563fafdd487826b8e131397d2992b5b0be50438902702f7",
+        "test_hash": "0ab08d7dad495147ec1b244038bb8158ee2365bccf95d2b9e3cd368dd63237bd",
+        "verdict": "weak"
+      },
+      "RULE-41": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-66": {
+            "after": "    features = specs_module.scan_specs(project_root)\n    with open(os.path.join(project_root, 'drift.json'), 'w') as handle:\n        handle.write(rng['line'])",
+            "aim": "plain",
+            "before": "    features = specs_module.scan_specs(project_root)",
+            "bug_key": "2d5072b8de11a9b8ffbed88c188901246b27318d56d3a9fe139ebb32faa716ee",
+            "case": "drift is asked twice after a pull of a spec and a source file change; the proof says `git status --porcelain` and the bytes of every file outside `.git` read the same; the changed code leaves a new file drift.json in the checkout",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 875,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-74": {
+            "after": "    _git(project_root, ['fetch', '-q', 'origin'])\n    ref = default_branch(project_root)",
+            "aim": "plain",
+            "before": "    ref = default_branch(project_root)",
+            "bug_key": "97e011a3921745bcf8223d79d0ce43e4323dfdc561b860f9be27e3cb12d60a6f",
+            "case": "another clone pushes a commit to the bare repository and drift runs here; the proof says origin/main names the commit it named before; the changed code fetches, so origin/main names the pushed commit",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 884,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-88": {
+            "after": "    _git(project_root, ['fetch', '-q', source_url, 'HEAD'])\n    return {'status': 'behind', 'remote_sha': remote_sha}",
+            "aim": "plain",
+            "before": "    return {'status': 'behind', 'remote_sha': remote_sha}",
+            "bug_key": "dbf544046dc0976bf07015b1d05cb28a0328ea523ef377ddd60f3989c44c0818",
+            "case": "an anchor pinned to its source's first commit, the source gains a second and the view names it behind; the proof says this checkout holds no object of the second commit; the changed code fetches the source's HEAD, so the checkout holds it",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 179,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-66: the test asks for the report twice after a pull of a spec and a source file, then compares HEAD, `git status --porcelain` and the files outside `.git` with what it read before, which are the three things the proof names.",
+          "PROOF-66: the test also asserts each report names login RULE-1 as changed, so the comparison is made after drift really read the pulled range.",
+          "PROOF-66: the file comparison rests on a helper not shown, so whether it reads every file's bytes cannot be judged from the test's own lines.",
+          "PROOF-74: the test has a second clone push to the bare repository, runs drift, and compares `refs/remotes/origin/main` with its value before, which is the result the proof names.",
+          "PROOF-74: the test also asserts the bare repository's main moved, so an unchanged origin/main cannot be explained by a push that never landed.",
+          "PROOF-88: the test asserts the view's one row names the anchor `behind`, compares the anchor file's bytes with those read before, and asserts git does not find the source's second commit in the checkout.",
+          "PROOF-88: the object check passes on any non-zero exit of git, so it would also pass if the project folder built by the unseen helper were not a git repository.",
+          "No spot test fired, and nothing in the three tests shown is a check that cannot fail."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "d96bed6275ea034a08cb20498784238eb2c303265847667a701efbb41cfe6f0d",
+        "rule_hash": "0306db2747bc63a3259e7d38a8f9d207f85a1e9d04d739d528401bdc32f418be",
+        "test_hash": "81a72ab8e3a113b4e131ae73be51aa7b8d8380cb390f7a7261e0b29b65e4f006",
+        "verdict": "strong"
+      },
+      "RULE-42": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-27": {
+            "after": "    since_out = {key: rng[key] for key in ('from', 'to', 'commits', 'action',\n                                           'line')}",
+            "aim": "plain",
+            "before": "    since_out = {key: rng[key] for key in ('from', 'to', 'commits', 'action',\n                                           'when', 'line')}",
+            "bug_key": "0bc14544baf909e7dee606761edf27004465ef5934810869ca2069f1892b336d",
+            "case": "a report read after a pull; the proof says `since` carries exactly `action`, `commits`, `from`, `line`, `to` and `when`; the changed code gives a `since` with no `when`",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 908,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-49": {
+            "after": "             'proofs_changed', 'proofs_moved', 'rules_added', 'rules_changed')",
+            "aim": "plain",
+            "before": "             'proofs_changed', 'proofs_moved', 'rules_added', 'rules_changed',\n             'rules_removed')",
+            "bug_key": "2488c303a362c8699490e88034557d6a97f03109dcd603001d99288009963e7f",
+            "case": "a report read after a pull; the proof says the view carries exactly twelve keys, `rules_removed` among them; the changed code gives a view of eleven keys with no `rules_removed`",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 43,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-27: the test builds a report after a pulled change and compares the sorted keys of the report with `since` and `view`, and the sorted keys of `since` with the six names the proof lists, so a missing, extra or renamed key fails it.",
+          "PROOF-27: the test reads only the key names, which is all the proof names; the values under the keys are not compared.",
+          "PROOF-49: the test builds a report after a pulled change and compares the sorted keys of the view with the twelve names the proof lists, written as literals in the test, so a missing, extra or renamed key fails it.",
+          "PROOF-49: the expected names are written out in the test and not taken from the code's own list of keys, so a change to that list is seen.",
+          "The spot tests found nothing, and both tests hold failable assertions on the values their proofs name."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "c0ddb21e99906ab34dd02215b7b3072a77275af3a60972815944efd1986a1007",
+        "rule_hash": "b5e67c86cbff8e167d01cbc2776cd33c40b8622c106b97fcd552af5efe0225c3",
+        "test_hash": "efc58bc634e129fd26e8fe54093de4dfcf8e4f2f3552fbea879ccc782cbbbf78",
+        "verdict": "strong"
+      },
+      "RULE-43": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-67": {
+            "after": "            _plural(len(view['proofs_added']), 'proof'),",
+            "aim": "plain",
+            "before": "            _plural(_rule_count(view['proofs_added']), 'proof'),",
+            "bug_key": "9bb8744479a01359bbe4e0f412fcce4e907597811d2bcfa84052f4e2e02255ff",
+            "case": "a pull adds PROOF-5 and PROOF-6 to login; the proof says `2 proofs added: login PROOF-5, PROOF-6.`; the changed code gives `1 proof added: login PROOF-5, PROOF-6.`",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 569,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-68": {
+            "after": "            entry['feature'], entry['id'], entry['new'], entry['old']))",
+            "aim": "plain",
+            "before": "            entry['feature'], entry['id'], entry['old'], entry['new']))",
+            "bug_key": "14e27b669f4a72c8cd88e34a538995a9b1bfc8666feb85256e465ea8d4d8e7e0",
+            "case": "a pull changes login's PROOF-1 from \"An age of 150 minutes\" to \"An age of 90 minutes\"; the proof says it read \"An age of 150 minutes\" and now reads \"An age of 90 minutes\"; the changed code gives it read \"An age of 90 minutes\" and now reads \"An age of 150 minutes\"",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 573,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-69": {
+            "after": "        lines.append('%s %s moved to %s.' % (entry['feature'], entry['to'],\n                                             entry['from']))",
+            "aim": "plain",
+            "before": "        lines.append('%s %s moved to %s.' % (entry['feature'], entry['from'],\n                                             entry['to']))",
+            "bug_key": "a8b4e71da412e1393aba803a0a71b316cc8d7ea7ea4d426dff4d40740177b7b8",
+            "case": "a pull moves the text of login's PROOF-4 to PROOF-6 and gives PROOF-4 a new text; the proof says `login PROOF-4 moved to PROOF-6.`; the changed code gives `login PROOF-6 moved to PROOF-4.`",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 575,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-67: the test pulls a spec that gains PROOF-5 and PROOF-6 and looks for the exact line `2 proofs added: login PROOF-5, PROOF-6.` among the view's lines, and also compares the added proofs by feature, so a wrong count, id or feature fails it.",
+          "PROOF-68: the test pulls a rewording of PROOF-1 and looks for the exact sentence quoting \"An age of 150 minutes\" and \"An age of 90 minutes\" in order, and also compares the recorded old and new texts, so a swapped or missing wording fails it.",
+          "PROOF-69: the test pulls a spec where PROOF-4's text sits under PROOF-6 and PROOF-4 has a new text, looks for the exact line `login PROOF-4 moved to PROOF-6.`, and compares the recorded move, so a wrong source or target id fails it.",
+          "PROOF-69: the test does not check whether PROOF-6 is left out of the added count or whether PROOF-4 is also named as changed, and the proof names neither.",
+          "The spot tests found nothing, and each test compares the literal line its proof names, with expected values written in the test and not taken from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "61b503b74c9bd7644ee0b432d2bbfb18c63ce00ddca83dbb03972b26e3be7dd4",
+        "rule_hash": "a1874b35b6bc73059789767fadd30f68a5d6555ac5733ead121c200c72750981",
+        "test_hash": "e50db01da63460b00304335baf438a08ad688b16925bd803cd282c4e54ce48af",
+        "verdict": "strong"
+      },
+      "RULE-44": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-89": {
+            "after": "                 'lines': ([rng['line']] + lines\n                           + ([MERGE_LINE] if merging else []))})",
+            "aim": "plain",
+            "before": "                 'lines': ([rng['line']] + ([MERGE_LINE] if merging else [])\n                           + lines)})",
+            "bug_key": "66931f06998306bdebea9279049ca67329500237a45ba3880ba5007514ec22c5",
+            "case": "a merge stopped on a conflict in specs/auth/login.md and not committed; the proof says the view's second line reads the merge sentence; the changed code puts that sentence last, so the second line is the rules line",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 905,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-89: the test makes a real merge of a branch that stops on a conflict in specs/auth/login.md, checks git reported the conflict in that file, then compares the view's second line with the proof's whole sentence and checks `merge_in_progress` is True, so it observes both results the proof names for the proof's case.",
+          "PROOF-89: the expected sentence is written out in the test and not taken from the code, so a change to the sentence, to its place in the view or to the flag fails the test.",
+          "The spot tests found nothing, and the test gives them nothing to find: it asserts on literals, mocks nothing and swallows no error."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "75f8d637289f93793601874005c0413a12ade2b5f5e6320dfa1077d81399cf56",
+        "rule_hash": "dbc97f849c25f2c446d0d39364d621d78bfdcb053ee135c56294c8a64aabae8d",
+        "test_hash": "d17d2b01822ea3a91b1b5dba8ee68433e2fbe016f60f75fc5e9948ee0f151ceb",
+        "verdict": "strong"
+      },
+      "RULE-45": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-90": {
+            "after": "        lines += [PROOF_WILL_NAME % (entry['feature'], follow['proof'],\n                                     entry['id'])",
+            "aim": "plain",
+            "before": "        lines += [PROOF_WILL_NAME % (entry['feature'], follow['proof'],\n                                     entry['to'])",
+            "bug_key": "dab9b500d473edc7dea4e70e6272a9a3ae49edb46e1ccf9a96f92388063c96be",
+            "case": "after a merge login writes RULE-2 twice, the branch's with PROOF-3; the proof says the line after the one naming RULE-2 reads `login: PROOF-3 will name RULE-3.`; the changed code gives `login: PROOF-3 will name RULE-2.`",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 892,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-90: the test builds a real merge in which login writes RULE-2 twice, with the branch's PROOF-3 and main's PROOF-2 both naming it, and reads the view's lines from the report.",
+          "PROOF-90: it finds the single line opening `login: RULE-2 is written twice.` and compares the line directly after it with the exact sentence `login: PROOF-3 will name RULE-3.`, so a wrong proof, a wrong new number or a wrong position fails it.",
+          "PROOF-90: it also checks that no line says PROOF-2 will name anything, which the proof does not name but which shows that main's proof stays where it is.",
+          "PROOF-90: the spot tests found nothing, and the test checks the proof's case and its result, which leaves no way past it."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "325f1a43fb3c6f8430929f0f248e42667b11cf727e30b3a1538b2cccf645f7e8",
+        "rule_hash": "0350ab24d9a667aa595d0226dc5fefe6e73f663e3a21fb5d289d96731f3fd7b8",
+        "test_hash": "e17fe024c2dde7a796bdad28d81ca1e602b0e8c7cb14111dc1f1cd712c87a91e",
+        "verdict": "strong"
+      },
+      "RULE-6": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-12": {
+            "after": "            elif old[rule_id] == new[rule_id]:",
+            "aim": "plain",
+            "before": "            elif old[rule_id] != new[rule_id]:",
+            "bug_key": "8c4e5273f8b5af992e008d2648071bc451f8e8ed0ace52459024eb91ca035b0e",
+            "case": "one pull adds login RULE-3, rewords login RULE-1 and removes cart RULE-2; the proof says `1 rule changed: login RULE-1.`; the changed code leaves out login RULE-1 and names the rules whose text stayed the same as changed",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 497,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-38": {
+            "after": "        found[path] = specs_module._parse_spec(name, path, content)",
+            "aim": "plain",
+            "before": "        found[name] = specs_module._parse_spec(name, path, content)",
+            "bug_key": "1d643518ae345e451fcd486d20e49d453162ed1295c20f107aa3d55b550fdccf",
+            "case": "a pull moves the spec other from specs/a to specs/b with its rules unchanged; the proof says `No rule was added, changed or removed since your last pull.`; the changed code gives `1 rule added: specs/b/other.md RULE-1.` and `1 rule removed: specs/a/other.md RULE-1.`",
+            "file": "scripts/mcp/purlin/drift.py",
+            "line": 470,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-12: the test makes a real pull that adds login RULE-3, rewords login RULE-1 and removes cart RULE-2, then compares every line after the first with the three sentences the proof names, and the view's three rule lists as well, so a wrong count, feature or rule id fails it.",
+          "PROOF-38: the test makes a real pull that deletes specs/a/other.md and adds the same text at specs/b/other.md, then compares every line after the first with the one sentence the proof names, so a move reported as a rule added or removed fails it.",
+          "PROOF-38: the test reads only the printed lines and not the view's rule lists, which the proof does not name.",
+          "The spot tests found nothing, and both tests assert the literal sentences their proofs name against a view built from a real repository, with no mock of the code under test."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "52b621a98eb89faf100a577fcc6f07e508c6971a7c36e5ed88c0848b5185b584",
+        "rule_hash": "1314727a52a9dc8f78e038b9533f1de982dc716c45e403864233466baf85b6ad",
+        "test_hash": "903877a62b85aeae6f4076b2b2986257d0b18272eb0375320a075c0dc39fb2f8",
+        "verdict": "strong"
+      }
+    }
+  },
   "feature": "drift",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T13:24:28Z",
-      "commit": "572679b298d96e95848047a5fa1a8bf9fcb76958",
+      "at": "2026-10-05T18:16:20Z",
+      "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -14,12 +830,6 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -28,12 +838,6 @@
           "test": "dev/test_drift.py::TestSinceValidation::test_a_since_that_is_no_count_or_date_is_refused"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-3",
           "manual": false,
@@ -42,12 +846,6 @@
           "test": "dev/test_drift.py::TestWhereDriftStarts::test_a_pull_is_measured_from_where_head_stood_before_it"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-29",
           "manual": false,
@@ -56,12 +854,6 @@
           "test": "dev/test_drift.py::TestWhereDriftStarts::test_a_merge_of_a_two_commit_branch_resolved_by_hand_runs_3_commits_from_main"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-86",
           "manual": false,
@@ -70,12 +862,6 @@
           "test": "dev/test_drift.py::TestWhereDriftStarts::test_a_branch_made_at_head_after_a_pull_leaves_the_range_at_the_pull"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-8",
           "manual": false,
@@ -84,12 +870,6 @@
           "test": "dev/test_drift.py::TestTheLastTwentyCommits::test_a_clone_measures_its_last_twenty_commits"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-9",
           "manual": false,
@@ -98,12 +878,6 @@
           "test": "dev/test_drift.py::TestSinceOverrides::test_since_3_after_a_pull_of_1_runs_the_last_3_commits"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-10",
           "manual": false,
@@ -112,12 +886,6 @@
           "test": "dev/test_drift.py::TestSinceOverrides::test_since_a_date_runs_the_last_2_of_3_dated_commits"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-12",
           "manual": false,
@@ -126,12 +894,6 @@
           "test": "dev/test_drift.py::TestRules::test_rules_added_changed_and_removed"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-38",
           "manual": false,
@@ -140,12 +902,6 @@
           "test": "dev/test_drift.py::TestRules::test_a_spec_moved_with_its_rules_unchanged_is_named_nowhere"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-17",
           "manual": false,
@@ -154,12 +910,6 @@
           "test": "dev/test_drift.py::TestAnchorsBehind::test_a_pin_behind_its_source_reads_behind_with_the_new_sha7"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-19",
           "manual": false,
@@ -168,12 +918,6 @@
           "test": "dev/test_drift.py::TestAnchorsBehind::test_a_source_with_no_pin_reads_unpinned"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-40",
           "manual": false,
@@ -182,12 +926,6 @@
           "test": "dev/test_drift.py::TestAnchorsBehind::test_a_source_path_with_no_repository_reads_error_naming_it"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-20",
           "manual": false,
@@ -196,12 +934,6 @@
           "test": "dev/test_drift.py::TestUnsafeSources::test_a_source_that_begins_with_a_dash_is_refused"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-42",
           "manual": false,
@@ -210,12 +942,6 @@
           "test": "dev/test_drift.py::TestUnsafeSources::test_a_source_naming_the_ext_transport_is_refused"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-44",
           "manual": false,
@@ -224,12 +950,6 @@
           "test": "dev/test_drift.py::TestUnsafeSources::test_a_source_carrying_a_nul_byte_is_refused"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-56",
           "manual": false,
@@ -238,12 +958,6 @@
           "test": "dev/test_drift.py::TestSourceNamesNoRepository::test_a_text_file_in_the_project_reads_error"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-70",
           "manual": false,
@@ -252,12 +966,6 @@
           "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_the_line_on_the_default_branch_keeps_the_number"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-71",
           "manual": false,
@@ -266,12 +974,6 @@
           "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_proof_7_twice_with_neither_line_on_origin_main_renumbers_to_8"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-85",
           "manual": false,
@@ -280,12 +982,6 @@
           "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_a_number_written_twice_by_a_merge_is_never_a_proof_changed"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-73",
           "manual": false,
@@ -294,12 +990,6 @@
           "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_origin_main_fetched_three_days_ago_says_so"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-75",
           "manual": false,
@@ -308,12 +998,6 @@
           "test": "dev/test_drift.py::TestCommentsChanged::test_a_test_marked_while_proof_4_read_a_is_named_after_a_pull_rewords_it"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-76",
           "manual": false,
@@ -322,12 +1006,6 @@
           "test": "dev/test_drift.py::TestCommentsChanged::test_a_pull_that_puts_a_under_proof_6_says_move_the_comment_there"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-82",
           "manual": false,
@@ -336,12 +1014,6 @@
           "test": "dev/test_drift.py::TestCommentsChanged::test_a_test_changed_in_a_commit_after_the_pull_is_not_named"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-83",
           "manual": false,
@@ -350,12 +1022,6 @@
           "test": "dev/test_drift.py::TestCommentsChanged::test_a_test_changed_and_not_committed_is_not_named"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-84",
           "manual": false,
@@ -364,12 +1030,6 @@
           "test": "dev/test_drift.py::TestCommentsChanged::test_a_commit_that_rewrites_only_the_comment_line_leaves_it_named"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-58",
           "manual": false,
@@ -378,12 +1038,6 @@
           "test": "dev/test_drift.py::TestCannotRead::test_a_trailing_comma_answers_the_sentence_alone"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-61",
           "manual": false,
@@ -392,12 +1046,6 @@
           "test": "dev/test_drift.py::TestCannotRead::test_a_repository_with_no_commit_is_refused"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-66",
           "manual": false,
@@ -406,12 +1054,6 @@
           "test": "dev/test_drift.py::TestChangesNothing::test_two_reports_after_a_pull_of_a_spec_and_a_source_file_change_nothing"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-74",
           "manual": false,
@@ -420,12 +1062,6 @@
           "test": "dev/test_drift.py::TestChangesNothing::test_drift_does_not_fetch"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-88",
           "manual": false,
@@ -434,12 +1070,6 @@
           "test": "dev/test_drift.py::TestAnchorsBehind::test_a_pin_named_behind_leaves_the_anchor_file_and_this_checkouts_objects"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-27",
           "manual": false,
@@ -448,12 +1078,6 @@
           "test": "dev/test_drift.py::TestReportShape::test_the_report_carries_since_and_view_and_since_its_six_keys"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-49",
           "manual": false,
@@ -462,12 +1086,6 @@
           "test": "dev/test_drift.py::TestReportShape::test_the_view_carries_its_twelve_keys"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-67",
           "manual": false,
@@ -476,12 +1094,6 @@
           "test": "dev/test_drift.py::TestProofsChanged::test_a_pull_adding_proof_5_and_6_names_both_in_one_line"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-68",
           "manual": false,
@@ -490,12 +1102,6 @@
           "test": "dev/test_drift.py::TestProofsChanged::test_a_pull_rewording_proof_1_quotes_both_wordings"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-69",
           "manual": false,
@@ -504,12 +1110,6 @@
           "test": "dev/test_drift.py::TestProofsChanged::test_a_pull_moving_proof_4s_text_to_proof_6_names_the_move"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-89",
           "manual": false,
@@ -518,12 +1118,6 @@
           "test": "dev/test_drift.py::TestWhereDriftStarts::test_a_merge_stopped_on_a_conflict_is_named_on_the_second_line"
         },
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-90",
           "manual": false,

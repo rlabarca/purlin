@@ -1,9 +1,56 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-15": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-43": {
+            "after": "and which git facts it comes from live in `references/drift.md`; do not restate them",
+            "aim": "plain",
+            "before": "and which git facts it comes from live in `references/drift_criteria.md`; do not restate them",
+            "bug_key": "a1edd32ddbafe1ebe588988be64d2c0431d6b6c07f78947d5781ac6a6837435f",
+            "case": "a copy of the drift skill with every `purlin:spec` taken out; the proof says it is reported as `drift does not name purlin:spec`; the changed skill's copy is reported as that and also as not naming `references/drift_criteria.md`",
+            "file": "skills/drift/SKILL.md",
+            "line": 51,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-46": {
+            "after": "| An anchor behind its source | `\u2192 Run: purlin:anchor <name>` |",
+            "aim": "plain",
+            "before": "| An anchor behind its source | `\u2192 Run: purlin:anchor sync <name>` |",
+            "bug_key": "5b4ceaf6c1120bd52df17a88bc77e6de8c77ff057cb2f4c8d8f20b2c180dd2fc",
+            "case": "the drift skill as it stands; the proof says it names `purlin:anchor sync`; the changed skill names `purlin:anchor <name>` and never `purlin:anchor sync`",
+            "file": "skills/drift/SKILL.md",
+            "line": 82,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "fb8d7afd4a809665237f97a3df3006bb987eae8572b63bf87447ef99adcb97cc",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-46: the test reads the skill's text and requires every name in COMMANDS and PATHS to be in it, then requires the name check to report nothing, so a name taken out of the skill fails it.",
+          "PROOF-46: the seven names the proof lists are held in COMMANDS and PATHS, which are defined outside the test's own lines, so the test covers the proof's names only as far as those lists hold them.",
+          "PROOF-43: the test takes `purlin:spec` out of a copy of the skill and compares the whole list of problems with the single sentence `drift does not name purlin:spec`, so a missing report, a different sentence or an extra one fails it.",
+          "The spot tests found nothing, and both tests assert on values the proofs name, with the expected sentence in PROOF-43 written as a literal."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "197bc5e8d4281c4df4674c54f34ae30e7e106c058e56273de1535e0b7f9f511f",
+        "rule_hash": "ff445f0c9bdbc1ad1e22dc5d5028c292f8c9b882187456144c1ff97ec1fa7fe1",
+        "test_hash": "dc3d67e01f92714cca9db3ca9ced0a683d9d506ce6d8358046af85df73abe220",
+        "verdict": "strong"
+      }
+    }
+  },
   "feature": "skill_drift",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T16:58:50Z",
-      "commit": "572679b298d96e95848047a5fa1a8bf9fcb76958",
+      "at": "2026-10-05T18:16:21Z",
+      "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -14,12 +61,6 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-46",
           "manual": false,
@@ -28,12 +69,6 @@
           "test": "dev/test_skill_drift.py::test_the_drift_skill_names_its_commands_its_criteria_and_its_script"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-43",
           "manual": false,

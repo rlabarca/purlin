@@ -1,9 +1,44 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-53": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-167": {
+            "after": "When the project has no `.purlin/config.json`, set the project up first. Run",
+            "aim": "plain",
+            "before": "When the project has no `.purlin/config.json`, run `purlin:init` first. Run",
+            "bug_key": "2bb57cfeaaae3a3b31c2508eb0bdabd911c23237e4c6c692265174619137dc6d",
+            "case": "the text of skills/spec-from-code/SKILL.md is searched for `purlin:init`; the proof says it is held and none is missing; the changed file no longer holds `purlin:init`",
+            "file": "skills/spec-from-code/SKILL.md",
+            "line": 36,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "271c2f50167b0bc056eab6fec2f0e4170a429de4fe608506ed4b39ed13ab4055",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-167: the test reads the skill's text and asserts that no name in COMMANDS + FILES is missing from it, then asserts the same through must_name, so a name removed from the skill fails it if that name is in those lists.",
+          "PROOF-167: COMMANDS and FILES are defined outside the test's own lines, so the source shown does not confirm that they hold all nine names the proof lists; a name absent from them would go unchecked.",
+          "PROOF-167: the spot tests found nothing, and that fits the test as shown: it has two failable assertions, no mock, no swallowed error, and its expected value is the literal empty list."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "aee930f13092224a0d258c4835acb0e756c7691ba51f369a2c7407340af3aeed",
+        "rule_hash": "d78d3a5adbc7e9f212c8c13f72f1532b54cb875e91c3b629d1552d4e505bdd1c",
+        "test_hash": "ca06f336e0bccb5c0851a831fdd095b40e7999fc37f721a0e01b2ccd86f3725c",
+        "verdict": "strong"
+      }
+    }
+  },
   "feature": "skill_spec_from_code",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T16:58:50Z",
-      "commit": "572679b298d96e95848047a5fa1a8bf9fcb76958",
+      "at": "2026-10-05T18:16:21Z",
+      "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -14,12 +49,6 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-167",
           "manual": false,

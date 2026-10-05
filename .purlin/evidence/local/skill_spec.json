@@ -1,9 +1,78 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-32": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-62": {
+            "after": "step 7 says, commit it with the `spec(<name>):` prefix from `references/commit_convention.md`, then end with exactly",
+            "aim": "plain",
+            "before": "step 7 says, commit it with the `spec(<name>):` prefix from `references/commit_conventions.md`, then end with exactly",
+            "bug_key": "8047ce6f3f5457056b414bccd299488bc71237110d0859e6a370f8666fdae431",
+            "case": "the text of skills/spec/SKILL.md is searched for `references/commit_conventions.md`; the proof says none of the eight names is missing; the changed text names `references/commit_convention.md`, so that file name is missing",
+            "file": "skills/spec/SKILL.md",
+            "line": 237,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "da0f65375f5ed9d8a44e3626716dc7616e09a1e26cceecb5ce5b5511abfb71b0",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-62: the test reads the skill's text, lists every name of COMMANDS and FILES that the text does not hold, and asserts the list is empty, which is the proof's \"none is missing\".",
+          "PROOF-62: COMMANDS and FILES are defined outside the test's own lines, so the test as shown does not show whether they hold all eight names the proof lists; a name absent from those lists could leave the skill unchecked.",
+          "PROOF-62: the second assertion goes through the helper must_name, whose body is not shown, so what it adds to the first assertion cannot be read here.",
+          "PROOF-62: the check is a substring match, so a name that survives only inside a longer word, such as `sync_status` inside `mcp__plugin_purlin_purlin__sync_status`, still counts as held.",
+          "PROOF-62: the proof names a file path of the plugin and observes its text with no action before it, and it names no failure case of its own; it does name each expected literal.",
+          "Findings: none were reported, and the test holds assertions that can fail when a listed name leaves the file."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "ca62bb6577c52e583f50bc84e7dd47eb3260bdfdf7f5f9b0a21fe2b19854b0cb",
+        "rule_hash": "6332939cafa0511a9ae684d68c3b9748ba8ba455bf4a72240dae20086d707e6b",
+        "test_hash": "68b71472bfa139bfba47496801b7890c722bf986e3271f518c626edbf702ea45",
+        "verdict": "strong"
+      },
+      "RULE-33": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-63": {
+            "after": "`> Highest-Proof:` first, then `> Highest-Rule:`. Where one is there, the other goes beside it.",
+            "aim": "plain",
+            "before": "`> Highest-Rule:` first, then `> Highest-Proof:`. Where one is there, the other goes beside it.",
+            "bug_key": "df864d1536a0624b2b50e426bcacd06138d7a1b0d38d630ebae4a85efaab57d8",
+            "case": "a reader of the spec skill's part headed `Ids` looks for the sentence on a spec that has neither line; the proof says it reads \"`> Highest-Rule:` first, then `> Highest-Proof:`\"; the changed file reads \"`> Highest-Proof:` first, then `> Highest-Rule:`\"",
+            "file": "skills/spec/SKILL.md",
+            "line": 172,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "da0f65375f5ed9d8a44e3626716dc7616e09a1e26cceecb5ce5b5511abfb71b0",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-63: the test reads the spec skill, cuts out the part from the heading `Ids` to the next heading, and asserts that a fixed sentence is in that part once its line breaks are flattened, so a reworded, reordered or moved sentence fails it.",
+          "PROOF-63: the expected sentence is a constant defined outside the test's own lines and not shown, so whether it matches the proof's sentence word for word cannot be seen from the test alone.",
+          "PROOF-63: the spot tests found nothing, and the test holds a failable assertion on text read from the skill file, not from the code under test."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "a4110b1d31bda521cc782c0b1638362467b41333d05c2915ee818d7d58c1507f",
+        "rule_hash": "78c809b9b4bc412fb6abc5c7ef0519f17978b563b57e86ecc40a1d5d1e297866",
+        "test_hash": "00be2996eb540aff86e6edd4e4cb458ddd68e98d0ca25526fe4943ece8452cd3",
+        "verdict": "strong"
+      }
+    }
+  },
   "feature": "skill_spec",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T16:58:50Z",
-      "commit": "572679b298d96e95848047a5fa1a8bf9fcb76958",
+      "at": "2026-10-05T18:16:21Z",
+      "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -14,12 +83,6 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-62",
           "manual": false,
@@ -28,12 +91,6 @@
           "test": "dev/test_skill_spec.py::test_the_spec_skill_holds_each_command_and_file"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-63",
           "manual": false,

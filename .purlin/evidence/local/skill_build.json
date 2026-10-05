@@ -1,9 +1,79 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-21": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-51": {
+            "after": "  `\u2192 Run: purlin:test --commit --all`, after which a person may sign with `purlin:sign`",
+            "aim": "past the test",
+            "before": "  `\u2192 Run: purlin:test --all --commit`, after which a person may sign with `purlin:sign`",
+            "bug_key": "6823ba60dc669d72a7edb2825308a508fa553e9c4901e90e43c976d375470ec2",
+            "case": "the text of skills/build/SKILL.md is searched for `purlin:test --all --commit`; the proof says none is missing; the changed text holds `purlin:test --commit --all` and `purlin:test --all --commit` is missing",
+            "file": "skills/build/SKILL.md",
+            "line": 221,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8707183d934f16f45e09a13658906527b7334e097d7e8842fbeb1967215f10d3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-51: the test reads the skill's text and asserts that no name in the lists COMMANDS and FILES is missing from it, which is the observation the proof names.",
+          "PROOF-51: the test confirms only that `purlin:audit <feature> RULE-N --settle` and `references/review_criteria.md` are in those lists, so the other eight names the proof gives are checked only if the lists, which are defined outside the test's own lines, hold them.",
+          "PROOF-51: the second check, through `must_name`, reads the same two lists, so it adds no name the first check lacks.",
+          "PROOF-51: the spot tests found nothing, and the test does hold an assertion that can fail, on values written in its file rather than taken from the skill's text."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "934ef4cd5122d3023d6d1f356ab16732eefe6e91fa10f619d18588b450d59af0",
+        "rule_hash": "c1fdf2922b760e96a869877c3db7fcc73bf226e331897c5ef5780a074d6220e6",
+        "test_hash": "bb7647b669d0ba2856bbc9ced3d29890c17659c7c099269b61bd770630a60da1",
+        "verdict": "strong"
+      },
+      "RULE-22": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-52": {
+            "after": "   pass it for a test you did not read, and never to get past a refusal.",
+            "aim": "past the test",
+            "before": "   pass it for a test you did not read against its proof, and never to get past a refusal.",
+            "bug_key": "a755fdceb20d227bddc97a4a3f8f1cbe552a6a3ee0cb55c68be7b5f1e71520a6",
+            "case": "the text under `Strengthening a weak rule` in skills/build/SKILL.md; the proof says it holds `Never pass it for a test you did not read against its proof`; the changed text reads `Never pass it for a test you did not read, and never to get past a refusal`",
+            "file": "skills/build/SKILL.md",
+            "line": 178,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8707183d934f16f45e09a13658906527b7334e097d7e8842fbeb1967215f10d3",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-52: the test reads the text under the heading `Strengthening a weak rule`, asserts it is not empty, and asserts that `not_named(section, SOUND)` returns an empty list.",
+          "PROOF-52: the two strings the proof names appear nowhere in the test's own lines; they would have to be in the constant `SOUND`, which is defined outside the test shown, so the test's lines alone do not show that both are compared.",
+          "PROOF-52: if `SOUND` holds only the command `purlin:audit <feature> RULE-N --settle --sound PROOF-N`, removing the words `against its proof` from the \"Never pass it\" sentence would leave the test passing.",
+          "PROOF-52: the sentence the proof names runs across a line break in the file, so the test can match it only if `not_named` joins lines before it compares, which the shown source does not show.",
+          "PROOF-52: the proof reads a fixed text with nothing done before the observation, and it names a file path and a heading where it could name what a reader of the skill sees.",
+          "Findings: the spot tests found nothing; the test has assertions that can fail, and whether the proof's values are in the test's file cannot be seen from the lines shown."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "f86e761dde3beee9df8f19328ab0b8184f91da85b326832c501561e0e7df9591",
+        "rule_hash": "297c214de5f0a7e3616eac781dbadbd41073756cb83c2bd78daf38f192a6b2b3",
+        "test_hash": "609e02081db7e92455abc855e633074e5589ea3a59ac388e104ec6a3d8dc99a1",
+        "verdict": "strong"
+      }
+    }
+  },
   "feature": "skill_build",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T16:58:50Z",
-      "commit": "572679b298d96e95848047a5fa1a8bf9fcb76958",
+      "at": "2026-10-05T18:16:21Z",
+      "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -14,12 +84,6 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-51",
           "manual": false,
@@ -28,12 +92,6 @@
           "test": "dev/test_skill_build.py::test_the_build_skill_holds_each_command_and_file_the_settle_included"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-52",
           "manual": false,

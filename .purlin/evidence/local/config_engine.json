@@ -1,9 +1,372 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-10": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-26": {
+            "after": "        if os.path.exists(tmp_path):\n            os.remove(tmp_path)\n        with open(path, 'a', encoding='utf-8') as f:\n            f.write('\\n')\n        raise",
+            "aim": "past the test",
+            "before": "        if os.path.exists(tmp_path):\n            os.remove(tmp_path)\n        raise",
+            "bug_key": "b5ed67a834bf10da4da227631533f942248799d572a80ac9e3287852f058714e",
+            "case": "the settings file holds `{\"key\": \"val\"}` and the move onto it fails; the proof says the file reads exactly `{\"key\": \"val\"}`; the changed code leaves `{\"key\": \"val\"}` followed by an added newline",
+            "file": "scripts/mcp/config_engine.py",
+            "line": 184,
+            "result": "survived",
+            "test_key": "ce72ac731fe965a4cb4130fbcf2f716e9e3af13f8354b6061a017f0d4c497c4e",
+            "why": ""
+          },
+          "PROOF-27": {
+            "after": "        if os.path.exists(tmp_path):\n            os.remove(tmp_path)\n        with open(path, 'a', encoding='utf-8') as f:\n            f.write('\\n')\n        raise",
+            "aim": "past the test",
+            "before": "        if os.path.exists(tmp_path):\n            os.remove(tmp_path)\n        raise",
+            "bug_key": "d76cdc4e503ac3f068b124e863cf6a86467abb08354bfcfa40ee4d03c67d3e5c",
+            "case": "the settings file holds `{\"key\": \"val\"}` and the write fails partway with the disk full; the proof says the file reads exactly `{\"key\": \"val\"}`; the changed code leaves `{\"key\": \"val\"}` followed by an added newline",
+            "file": "scripts/mcp/config_engine.py",
+            "line": 184,
+            "result": "survived",
+            "test_key": "b1bb0a1fec737e5aff6e1839211467b79f6eb37d84cd66b28bac14a301aa4cb8",
+            "why": ""
+          }
+        },
+        "code_hash": "68e99bf4d0000ed85fd9561ce0236ba846eda50faf449a99fcfcfc1433cd8aa8",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-26: the test makes the move fail, then checks the error's exact message `the move failed`, the settings as parsed JSON and that `.purlin/` lists only `config.json`.",
+          "PROOF-26: the settings are compared after parsing, so a change to the file's bytes that parses to the same object still passes, where the proof says the file reads exactly `{\"key\": \"val\"}`.",
+          "PROOF-26: the proof names the error only as \"that failure's error\", and the test supplies its own message and checks that it comes through unchanged.",
+          "PROOF-27: the test makes the write fail after part of the new contents is written, then checks the error text `No space left on device`, the settings as parsed JSON and that `.purlin/` lists only `config.json`.",
+          "PROOF-27: the settings are compared after parsing here too, so the file's exact bytes are not observed.",
+          "PROOF-39: the test holds the file open, expects any system error, and checks that `.purlin/` lists only `config.json` and that the file's raw bytes are exactly `{\"key\": \"val\"}`.",
+          "PROOF-39: the proof names no particular error, and the test runs only on Windows.",
+          "The spot tests found nothing: each test asserts on the error, the file and the folder, and mocks only the move or the JSON writer, not the write it checks."
+        ],
+        "findings": [
+          "PROOF-26: the test still passes when scripts/mcp/config_engine.py:184 reads \"with open(path, 'a', encoding='utf-8') as f:\"",
+          "PROOF-26: the AI says this breaks: the settings file holds `{\"key\": \"val\"}` and the move onto it fails; the proof says the file reads exactly `{\"key\": \"val\"}`; the changed code leaves `{\"key\": \"val\"}` followed by an added newline",
+          "PROOF-27: the test still passes when scripts/mcp/config_engine.py:184 reads \"with open(path, 'a', encoding='utf-8') as f:\"",
+          "PROOF-27: the AI says this breaks: the settings file holds `{\"key\": \"val\"}` and the write fails partway with the disk full; the proof says the file reads exactly `{\"key\": \"val\"}`; the changed code leaves `{\"key\": \"val\"}` followed by an added newline"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [
+          "No bug was planted: PROOF-39 needs Windows, and this machine is macOS."
+        ],
+        "proof_hash": "5b9fc6d29efbb2e6e74812aabb80789917a1df07307a4946b9d5c3df639965dc",
+        "rule_hash": "81f36b2c0114d21f5fb8970231db4dad9100e3a5da17ab4edeca21386a9b7d21",
+        "test_hash": "4498243389a2166a56fb0582adee7f1d35d3aa10aa7be0928e29c3bbdac26536",
+        "verdict": "weak"
+      },
+      "RULE-14": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-32": {
+            "after": "                         'by hand; nothing ran and nothing was changed.')",
+            "aim": "past the test",
+            "before": "                         'by hand; nothing ran and nothing was saved.')",
+            "bug_key": "533f858a0dee909f4037be24fb70e72fceabbd05141a7eb3947792059733d949",
+            "case": "a settings file with `{` then `  \"tests\": [],}`; the proof says the sentence ends `nothing ran and nothing was saved.`; the changed code ends it `nothing ran and nothing was changed.`",
+            "file": "scripts/mcp/config_engine.py",
+            "line": 93,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-33": {
+            "after": "CONFIG_CANNOT_BE_READ = ('.purlin/config.json could not be read: %s. Fix the file '",
+            "aim": "past the test",
+            "before": "CONFIG_CANNOT_BE_READ = ('.purlin/config.json cannot be read: %s. Fix the file '",
+            "bug_key": "654b1ca45bd21bec93f2d4f1a33c81fbb0dec62644758361bb8317d339a1faa3",
+            "case": "a settings file holding `{\"version\": \"`, the byte 0xFF, `\"}`; the proof says `.purlin/config.json cannot be read: it is not UTF-8 text. ...`; the changed code gives `.purlin/config.json could not be read: it is not UTF-8 text. ...`",
+            "file": "scripts/mcp/config_engine.py",
+            "line": 92,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-35": {
+            "after": "                         '; nothing ran and nothing was saved.')",
+            "aim": "past the test",
+            "before": "                         'by hand; nothing ran and nothing was saved.')",
+            "bug_key": "06b34f936ddfa3485952e9f3081f88fcf4a74ec95376dab8e7dea81c05857acf",
+            "case": "a write of `tests` as an empty list over the trailing-comma file; the proof says it stops with the sentence `... Fix the file by hand; nothing ran and nothing was saved.`; the changed code stops with `... Fix the file; nothing ran and nothing was saved.`",
+            "file": "scripts/mcp/config_engine.py",
+            "line": 93,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "68e99bf4d0000ed85fd9561ce0236ba846eda50faf449a99fcfcfc1433cd8aa8",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-32: the test writes the two lines the proof names and compares the whole sentence, with the line fixed at `2` and the reader's message taken from the helper `_readers_message`, whose source is not shown.",
+          "PROOF-32: the sentence around the cause comes from the helper `_cannot_be_read`, whose source is not shown, so a test that builds it from the code's own constant would pass with a wrong sentence.",
+          "PROOF-33: the test writes the bytes the proof names and compares the whole sentence with the cause `it is not UTF-8 text` as a literal, the surrounding sentence again coming from `_cannot_be_read`.",
+          "PROOF-35: the test attempts the write the proof names, compares the refusal's whole message with line `2`, compares the file's bytes with those read before the write, and compares the folder's listing with `config.json` alone.",
+          "PROOF-35: the refusal's sentence is built by the same `_cannot_be_read` helper, so its fixed words are checked only as far as that helper holds them apart from the code.",
+          "The spot tests found nothing, and nothing in the three tests shown is always true, swallowed or mocked."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "621e26dd0dc5c337283c07df8dc391f06f4fe540eefdaa747bfb604eef3459f3",
+        "rule_hash": "0c63a5ed65a7452d89fe4cad6b6029d8fb18575ffe700571c6add469251564c3",
+        "test_hash": "0f63bdaf5742f3167816c3b65786665a13be659e158f1dce41343fc4d7e8ed30",
+        "verdict": "strong"
+      },
+      "RULE-19": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-45": {
+            "after": "    for section in ('projects', 'tool.poetry'):",
+            "aim": "plain",
+            "before": "    for section in ('project', 'tool.poetry'):",
+            "bug_key": "f701834a53b3bdbfd4bd002481d949b0e77ecba1c0e53b44b7c3ba87b69417a2",
+            "case": "a project whose pyproject.toml reads [project] and name = \"labconnect\", beside a package.json naming intake-web; the proof says the status opens `Purlin status: labconnect,`; the changed code gives `Purlin status: intake-web,`",
+            "file": "scripts/mcp/purlin/project.py",
+            "line": 92,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-48": {
+            "after": "        result = subprocess.run(['git', 'remote', 'get-url', 'upstream'],",
+            "aim": "plain",
+            "before": "        result = subprocess.run(['git', 'remote', 'get-url', 'origin'],",
+            "bug_key": "2d0432130dd4ea6bcd7ab2c9dd85a8c952476146544af00e271e4589b00a8d44",
+            "case": "a project in the folder work with no project file, whose origin remote is /srv/git/labconnect.git; the proof says the status opens `Purlin status: labconnect,`; the changed code gives `Purlin status: work,`",
+            "file": "scripts/mcp/purlin/project.py",
+            "line": 147,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-49": {
+            "after": "    return os.path.basename(os.path.dirname(os.path.abspath(project_root)))",
+            "aim": "plain",
+            "before": "    return os.path.basename(os.path.abspath(project_root))",
+            "bug_key": "7a8ad1e6ad83a83d1f3af935cc6ac74e18966df7066c540f86205a1ae7342bff",
+            "case": "a project in the folder labconnect with no project file and no git remote; the proof says the status opens `Purlin status: labconnect,`; the changed code gives the name of the folder above it",
+            "file": "scripts/mcp/purlin/project.py",
+            "line": 99,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "68e99bf4d0000ed85fd9561ce0236ba846eda50faf449a99fcfcfc1433cd8aa8",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-45: the test writes the pyproject.toml and package.json the proof names in a folder called intake, reads the status's first line against `Purlin status: labconnect,`, and checks the settings file holds only `tests` and `version` and no `labconnect`, so both results the proof names are observed.",
+          "PROOF-48: the test sets up a folder called work with no project file, adds the origin remote `/srv/git/labconnect.git` and reads the status's first line against `Purlin status: labconnect,`, which only the remote can supply since the folder is named otherwise.",
+          "PROOF-49: the test sets up a folder called labconnect with no project file and no remote and reads the status's first line against `Purlin status: labconnect,`, which is the proof's case and its result.",
+          "The three proofs cover `[project]` ahead of `package.json`, the origin remote and the folder's name; no proof reads a name from `[tool.poetry]`, from `package.json` on its own or from a `*.csproj` file, so those three sources of the rule are not observed by any test here."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "bf440420e31ccf44b8701efaaaea99517c292facdc9f3529f0aab57f55b2237e",
+        "rule_hash": "69129d9d1c30c9331bb0a52eca85f5358aae804b56718e33c30d0c8dbc4cd727",
+        "test_hash": "4882dd5d988be9d658dd1b253c5032dd542baeacde9e65c5b035a207db4fecd0",
+        "verdict": "strong"
+      },
+      "RULE-20": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-50": {
+            "after": "    return [SETTINGS_NOT_READ % ', '.join(sorted(others)) + fix]",
+            "aim": "plain",
+            "before": "    return [SETTINGS_NOT_READ % ', '.join(others) + fix]",
+            "bug_key": "b8f3de9f2fd5f277e49616e819750b1f024d406e359544e438585835b5b041a9",
+            "case": "a settings file holding version, tests, pre_push and digest in that order; the proof says the warning names `pre_push, digest`; the changed code names `digest, pre_push`",
+            "file": "scripts/mcp/config_engine.py",
+            "line": 45,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-51": {
+            "after": "        fix = SETTINGS_REMOVE if len(others) > 1 else SETTINGS_REMOVE_MANY",
+            "aim": "plain",
+            "before": "        fix = SETTINGS_REMOVE if len(others) == 1 else SETTINGS_REMOVE_MANY",
+            "bug_key": "f29a01c2c093def82a5ac989dd6c485ca340427728fec25178ab9f46b20dd17c",
+            "case": "a settings file holding version, tests and colour; the proof says the warning ends `Remove it from .purlin/config.json.`; the changed code ends it `Remove them from .purlin/config.json.`",
+            "file": "scripts/mcp/config_engine.py",
+            "line": 44,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "68e99bf4d0000ed85fd9561ce0236ba846eda50faf449a99fcfcfc1433cd8aa8",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-50: the test writes the four keys in the proof's order and compares the whole list of warnings with the one sentence the proof names, so a changed key order, a changed ending or a second warning fails it.",
+          "PROOF-51: the test writes `version`, `tests` and `colour` and compares the whole list of warnings with the one sentence the proof names, so a wrong ending or an extra warning fails it.",
+          "PROOF-50 and PROOF-51: both expected sentences are written out in the tests as literals and not taken from the code's constants, so a change to the wording in the code is seen.",
+          "No proof of the rule names a file that holds both a key the upgrade removes and one it does not, so the ending for that mix is observed by neither test."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "bd83bd18f4fa951d8715be9cabad17f37f88840090e16daf453a04b6397303f1",
+        "rule_hash": "6c01f7401b8718c817702510cee72d50ba682ef283101d8b32121f8d2a3f3a67",
+        "test_hash": "460511d5718693d132105da5accf80f1bfc7a8a2a17741775d98d79e0c84f907",
+        "verdict": "strong"
+      },
+      "RULE-21": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-18": {
+            "after": "            return os.path.dirname(current), 'climb'",
+            "aim": "plain",
+            "before": "            return current, 'climb'",
+            "bug_key": "298635dd63d1f649ce8632efde1627b0d550e48e4ab30a0065caf84c29d23d3c",
+            "case": "PURLIN_PROJECT_ROOT unset, markers in <tmp>/outer and <tmp>/outer/inner, start <tmp>/outer/inner/src; the proof says <tmp>/outer/inner; the changed code gives <tmp>/outer",
+            "file": "scripts/mcp/config_engine.py",
+            "line": 74,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-28": {
+            "after": "    if env_root and os.path.isdir(os.path.join(env_root, '.purlin')):",
+            "aim": "plain",
+            "before": "    if env_root and os.path.isdir(env_root):",
+            "bug_key": "0f963af189fe43fdf6e31e3bd0a27e82dce4dd8385cbaba5899d07ffdf8b8b37",
+            "case": "marker at <tmp>/project/.purlin/, PURLIN_PROJECT_ROOT naming the unmarked folder <tmp>/elsewhere, start <tmp>/project/src; the proof says <tmp>/elsewhere found by env; the changed code gives <tmp>/project found by climb",
+            "file": "scripts/mcp/config_engine.py",
+            "line": 68,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-30": {
+            "after": "    return os.path.abspath(os.getcwd()), 'climb'",
+            "aim": "plain",
+            "before": "    return os.path.abspath(os.getcwd()), 'cwd'",
+            "bug_key": "a6721f1bad825138017cc898c4529c471106565fd12f624e77bed9ea6269ec73",
+            "case": "PURLIN_PROJECT_ROOT unset, working directory <tmp>/work, no marker anywhere, start <tmp>/bare; the proof says <tmp>/work found by cwd; the changed code gives <tmp>/work found by climb",
+            "file": "scripts/mcp/config_engine.py",
+            "line": 80,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "68e99bf4d0000ed85fd9561ce0236ba846eda50faf449a99fcfcfc1433cd8aa8",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-28: the test builds the marked project and the unmarked `elsewhere`, sets the variable, and compares both the pair with `(elsewhere, 'env')` and the root alone with `elsewhere`, so it observes every value the proof names.",
+          "PROOF-28: the test does not clear or check anything about the marker being skipped beyond the returned root, which is enough, since a climb would return `project` and fail the comparison.",
+          "PROOF-18: the test marks `outer` and `inner`, starts from `inner/src` and compares the root alone with `inner` and against `outer`, which is what the proof names.",
+          "PROOF-18: the test does not itself unset `PURLIN_PROJECT_ROOT`, so the proof's \"unset\" rests on a fixture or on the environment the tests run in, which the shown source does not settle.",
+          "PROOF-18: the test reads the root alone and never the name of how it was found; the proof names none, so no proof shown for this rule observes `climb`.",
+          "PROOF-30: the test changes the working directory to `work`, starts from `bare` and compares the pair with `(work, 'cwd')` and the root alone with `work`, so it observes every value the proof names.",
+          "PROOF-30: the proof's \"no marker in or above\" depends on the temporary folder having no `.purlin/` above it and on the variable being unset, neither of which the shown test arranges itself.",
+          "The findings are `none`, and nothing in the three tests matches a spot test: each asserts against values built in the test, not taken from the code under test."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "c7f5ae22742731419b1de8989d7b10f1c732fb5824ac6d1e11c07030b921f8d6",
+        "rule_hash": "349224419d95c8e661e1a7bab8107ca93aae7b393304784e2b1e61a2dfceb892",
+        "test_hash": "e58683afde9d76238295d75790d5d91c5abaccde15b20c0d2ad430f71d005607",
+        "verdict": "strong"
+      },
+      "RULE-4": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-4": {
+            "after": "        return {key: value for key, value in json.load(f).items() if key in KNOWN_KEYS}",
+            "aim": "plain",
+            "before": "        return json.load(f)",
+            "bug_key": "c3b3dcf8833efb4fa252d4996f4db3f7ac9072fe15f090d8127fe76118dae58a",
+            "case": "the settings file holds {\"team\": \"default\", \"shared\": {\"paths\": [\"a\", \"b\"]}}; the proof says the config reads as exactly that; the changed code gives {}",
+            "file": "scripts/mcp/config_engine.py",
+            "line": 152,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-7": {
+            "after": "    \"\"\"Return `.purlin/config.json` as a dict, or {} when it is absent.\"\"\"\n    return _read_json(project_root) or {'version': None}",
+            "aim": "plain",
+            "before": "    \"\"\"Return `.purlin/config.json` as a dict, or {} when it is absent.\"\"\"\n    return _read_json(project_root) or {}",
+            "bug_key": "ca864cd001078dbd63ad708fe20351d51953c3885b99ca7f69a6d6577bd22dd3",
+            "case": ".purlin/ holds no settings file; the proof says the config reads as exactly {}; the changed code gives {\"version\": None}",
+            "file": "scripts/mcp/config_engine.py",
+            "line": 157,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "68e99bf4d0000ed85fd9561ce0236ba846eda50faf449a99fcfcfc1433cd8aa8",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-4: the test writes the proof's own settings, nested value included, and compares the whole config with them for equality, so a dropped, changed or added key fails it.",
+          "PROOF-7: the test first confirms `.purlin/` holds no file and then compares the config with `{}` for equality, so any other value read for a missing file fails it.",
+          "The spot tests found nothing, and both tests hold the values their proofs name and compare them with a result the code under test did not supply."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "cc11d661bd2c9d422d7e05e6c2d097b7abfd86be4e9fce49f46a2834d45e0e8d",
+        "rule_hash": "067df9b4ef739c2c9b995948da3fd7012ea460cf43a28f4b79a4cbd0f8068362",
+        "test_hash": "c43dfa38d1dece73ae0d6a488a7f4e6348bc85e44548fe4fdb18611407987a8b",
+        "verdict": "strong"
+      },
+      "RULE-8": {
+        "at": "2026-10-05T18:42:48Z",
+        "bugs": {
+          "PROOF-24": {
+            "after": "    config[key] = int(value) if isinstance(value, bool) else value",
+            "aim": "past the test",
+            "before": "    config[key] = value",
+            "bug_key": "6fdfa8ddac3ac6c57e7ba5ea47bd38191a0a8bb09b9d25df4cb106ea76bd79de",
+            "case": ".purlin/ holds no settings file and new is set to true; the proof says config.json holds exactly {\"new\": true}; the changed code writes {\"new\": 1}",
+            "file": "scripts/mcp/config_engine.py",
+            "line": 170,
+            "result": "survived",
+            "test_key": "94cabaf23e7f2323bbe25f245d2f36d6088cfac5e087c5cd07254e169def9918",
+            "why": ""
+          },
+          "PROOF-8": {
+            "after": "    config = {}",
+            "aim": "plain",
+            "before": "    config = _read_json(project_root) or {}",
+            "bug_key": "595ff3a4c245e3f0a50fdc64ffed66dc6887e55f18611d124644e23952d77b4c",
+            "case": "the settings file holds {\"team\": \"v1\"} and user_pref is set to dark; the proof says it holds exactly {\"team\": \"v1\", \"user_pref\": \"dark\"}; the changed code leaves {\"user_pref\": \"dark\"}",
+            "file": "scripts/mcp/config_engine.py",
+            "line": 169,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "68e99bf4d0000ed85fd9561ce0236ba846eda50faf449a99fcfcfc1433cd8aa8",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-8: the test starts from `{\"team\": \"v1\"}`, sets `user_pref` to `dark`, and compares the whole parsed file with `{\"team\": \"v1\", \"user_pref\": \"dark\"}` and the folder's listing with `['config.json']`, so a lost key, a wrong value or a leftover file fails it.",
+          "PROOF-24: the test confirms `.purlin/` is empty, sets `new` to true and compares the parsed file with `{\"new\": True}`, which Python also holds equal to `{\"new\": 1}`, so a file holding the number `1` where the proof names `true` still passes.",
+          "PROOF-24: the test reads the file through a helper not shown and never lists `.purlin/` after the write, so the name `config.json` is observed only as far as that helper reads that path.",
+          "PROOF-38: the test compares the file's bytes with the exact text, checks that no carriage return is present and checks the folder's listing, so it observes the content, the line endings and the absence of another file that the proof names.",
+          "Findings: the spot tests found nothing, and each test holds failable assertions with literal expected values; the gap between `true` and `1` in PROOF-24 is outside what they look for."
+        ],
+        "findings": [
+          "PROOF-24: the test still passes when scripts/mcp/config_engine.py:170 reads \"config[key] = int(value) if isinstance(value, bool) else value\"",
+          "PROOF-24: the AI says this breaks: .purlin/ holds no settings file and new is set to true; the proof says config.json holds exactly {\"new\": true}; the changed code writes {\"new\": 1}"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [
+          "No bug was planted: PROOF-38 needs Windows, and this machine is macOS."
+        ],
+        "proof_hash": "21ac3e99c46c56e1f966b5b41f182b9916b43d36df2c3fdd0099d00774e0b831",
+        "rule_hash": "f8d9ebe9932a211200aa72b82f8fab8e9744d29a9195915998e550c741332e04",
+        "test_hash": "ce29d8b47f9d3a888b89d3040b5441a3ec9d449496fa654f45c6625d8e71c7a7",
+        "verdict": "weak"
+      }
+    }
+  },
   "feature": "config_engine",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T16:58:49Z",
-      "commit": "572679b298d96e95848047a5fa1a8bf9fcb76958",
+      "at": "2026-10-05T18:16:21Z",
+      "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -14,12 +377,6 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-4",
           "manual": false,
@@ -28,12 +385,6 @@
           "test": "dev/test_config_engine.py::TestReading::test_the_settings_file_is_read_whole"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-7",
           "manual": false,
@@ -42,12 +393,6 @@
           "test": "dev/test_config_engine.py::TestReading::test_no_settings_file_reads_as_empty"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-8",
           "manual": false,
@@ -56,12 +401,6 @@
           "test": "dev/test_config_engine.py::TestWriting::test_a_write_adds_its_key_to_the_settings_file"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-24",
           "manual": false,
@@ -70,12 +409,6 @@
           "test": "dev/test_config_engine.py::TestWriting::test_a_write_creates_the_settings_file_when_absent"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "windows",
           "id": "PROOF-38",
           "manual": false,
@@ -84,12 +417,6 @@
           "test": "dev/test_config_engine.py::TestWriting::test_on_windows_a_write_ends_its_lines_with_no_carriage_return"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-26",
           "manual": false,
@@ -98,12 +425,6 @@
           "test": "dev/test_config_engine.py::TestAtomicWrite::test_a_failed_move_leaves_the_previous_file_and_no_temporary"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-27",
           "manual": false,
@@ -112,12 +433,6 @@
           "test": "dev/test_config_engine.py::TestAtomicWrite::test_a_disk_full_partway_leaves_the_previous_file_and_no_temporary"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "windows",
           "id": "PROOF-39",
           "manual": false,
@@ -126,12 +441,6 @@
           "test": "dev/test_config_engine.py::TestAtomicWrite::test_on_windows_a_move_onto_a_file_held_open_leaves_it_whole"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-32",
           "manual": false,
@@ -140,12 +449,6 @@
           "test": "dev/test_config_engine.py::TestASettingsFileThatCannotBeRead::test_a_trailing_comma_is_named_with_the_readers_message_and_line"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-33",
           "manual": false,
@@ -154,12 +457,6 @@
           "test": "dev/test_config_engine.py::TestASettingsFileThatCannotBeRead::test_bytes_that_are_not_utf8_are_named"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-35",
           "manual": false,
@@ -168,12 +465,6 @@
           "test": "dev/test_config_engine.py::TestASettingsFileThatCannotBeRead::test_a_write_is_refused_and_the_file_left_as_it_was"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-45",
           "manual": false,
@@ -182,12 +473,6 @@
           "test": "dev/test_config_engine.py::TestTheProjectsName::test_the_name_under_project_in_pyproject_wins"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-48",
           "manual": false,
@@ -196,12 +481,6 @@
           "test": "dev/test_config_engine.py::TestTheProjectsName::test_with_no_project_file_the_origin_remote_names_it"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-49",
           "manual": false,
@@ -210,12 +489,6 @@
           "test": "dev/test_config_engine.py::TestTheProjectsName::test_with_no_project_file_and_no_remote_the_folder_names_it"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-50",
           "manual": false,
@@ -224,12 +497,6 @@
           "test": "dev/test_config_engine.py::TestKeysThisVersionDoesNotRead::test_keys_the_upgrade_removes_name_the_upgrade"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-51",
           "manual": false,
@@ -238,12 +505,6 @@
           "test": "dev/test_config_engine.py::TestKeysThisVersionDoesNotRead::test_a_key_the_upgrade_has_no_step_for_is_to_be_removed"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-28",
           "manual": false,
@@ -252,12 +513,6 @@
           "test": "dev/test_config_engine.py::TestProjectRoot::test_the_variable_is_found_by_env"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-18",
           "manual": false,
@@ -266,12 +521,6 @@
           "test": "dev/test_config_engine.py::TestProjectRoot::test_the_climb_stops_at_the_nearest_marker"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-30",
           "manual": false,

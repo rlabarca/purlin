@@ -2225,30 +2225,39 @@
         "verdict": "strong"
       },
       "RULE-76": {
-        "at": "2026-10-05T16:50:24Z",
+        "at": "2026-10-05T18:42:48Z",
         "bugs": {
           "PROOF-185": {
-            "after": "            reading['files'] = (list(item['scope_files'])\n                                if not reading['plant'] else [])",
-            "aim": "past the test",
-            "before": "            reading['files'] = (list(item['scope_files'])\n                                if reading['plant'] else [])",
-            "bug_key": "e04e1a84ea2289e570c251fc3928f71d7caa50252ab1bf442570c0ff21fa20ef",
-            "case": "the helper's line is rewritten as two lines and sample_intake is audited without --settle; the proof says claude is asked a bug for PROOF-5 in the rule's request, as for any proof whose code changed; the changed code names PROOF-5 in the request but sends none of the feature's files with it",
+            "after": "            settled.append((proof_id, 'kept', kept))",
+            "aim": "plain",
+            "before": "            settled.append((proof_id, 'plant', key))",
+            "bug_key": "816b5d43d42c0ca1664371698ca94a59927a82d0a50c696f52db9cdb04103629",
+            "case": "the kept bug's line is now two lines, so the recorded change cannot be planted, audited without --settle; the proof says claude is asked a bug for PROOF-5 with src/intake.py and `hours = seconds // 3600 + 1` reads survived; the changed code asks for no bug and keeps the old entry",
             "file": "scripts/review/audit_run.py",
-            "line": 712,
+            "line": 488,
             "result": "caught",
             "why": ""
           }
         },
         "code_hash": "1e59cd62345438bad502f5bfac96d062550203a265e09ab5e5c1482878ff6026",
-        "commit": "78557cc04ddd99b189b499be0ba1f8fda50a388e",
+        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
+        "explanation": [
+          "PROOF-185: the test rewrites the helper's line as two lines, audits without `--settle`, and asserts the request for RULE-3 asks for exactly `PROOF-5`, so a run that asks for no new bug fails it.",
+          "PROOF-185: the test asserts the request holds one `File:` block and that it is `src/intake.py` followed by the file's whole text as read from disk, with the two rewritten lines present, which is the \"one file as it now stands\" the proof names.",
+          "PROOF-185: the test asserts the recorded bug's `after` is `    hours = seconds // 3600 + 1`, its result is `survived`, the verdict is `weak`, and the two lines printed under the rule name `src/intake.py:17` and the model's case, which is the result the proof names.",
+          "PROOF-185: the test does not compare the entry's `bug_key`, `test_key`, `before` or `aim`, and the proof names none of them.",
+          "PROOF-185: the spot tests found nothing, and the test's expected values are literals or the file on disk, not values taken from the code under test."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "proof_hash": "f3e8b4a42a288582c0d427754545662d11223dabc3123ad972c234317bcf8b43",
+        "notes": [
+          "PROOF-185 names a helper's source line and the internal proof id `PROOF-5`, which a person who cannot read code could judge only with the sample project beside it."
+        ],
+        "proof_hash": "1c9f13112d84d8792c68b96c2a62c98c6512dd4cbca5d965cd4f9f8afe2728db",
         "rule_hash": "4a4e0e63c27723c2d9b985ad74fe8ebc2a1ded77e0f8b2a27cccfb6475356e43",
-        "test_hash": "9e42ad5378bea51d370e3d001dcd58e01fba386216ef1216fe449c7836b169b0",
+        "test_hash": "b6477f7fe5c0d32a8530031b743bd6b1a8333f2499bf2f4836be9d3ef8dbcbfe",
         "verdict": "strong"
       }
     }
