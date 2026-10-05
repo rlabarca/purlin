@@ -2,18 +2,17 @@
   "audit": {
     "rules": {
       "RULE-1": {
-        "at": "2026-10-05T16:31:23Z",
+        "at": "2026-10-05T16:50:24Z",
         "bugs": {
           "PROOF-103": {
             "after": "        if not any(what in ('replay', 'refused')",
             "aim": "past the test",
             "before": "        if settle and not any(what in ('replay', 'refused')",
-            "bug_key": "67dfd78b33fc2b184fdc90ce1c2a380d1fe6449e9ce18d97c7fa9d36173c660c",
+            "bug_key": "23e383faac58b39463aa451605f005955220b314b0c2e3da5ceb268769671afd",
             "case": "RULE-2 has an entry and src/login.py changes from return 401 to return 403 if locked else 401; the proof says the audit reads it; the changed audit run says it has nothing to settle and does not read it",
             "file": "scripts/review/audit_run.py",
             "line": 686,
-            "result": "survived",
-            "test_key": "9402183e8f53cd5ea1fb102fbba2369bd1dcfc0f4e1ead436bcc3b06ef984035",
+            "result": "caught",
             "why": ""
           },
           "PROOF-122": {
@@ -62,31 +61,16 @@
           }
         },
         "code_hash": "1e59cd62345438bad502f5bfac96d062550203a265e09ab5e5c1482878ff6026",
-        "commit": "8f6c667e2272988f42e45a65f2b45bc0f88571a2",
+        "commit": "78557cc04ddd99b189b499be0ba1f8fda50a388e",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-4: the test checks the entry reads `strong` at the current commit, that RULE-2 is not in the list to read, and that the audit run prints and asks about RULE-1 alone, which is what the proof names.",
-          "PROOF-103: the test makes the proof's change to `src/login.py`, checks the entry is out of date for its code and that RULE-2 is in the list to read, but never runs the audit itself, so a fault in the run after that list is built still passes.",
-          "PROOF-103: the proof names a source file path and lines of code, which a person who cannot read code could not judge.",
-          "PROOF-51: the test checks RULE-2 is left out of the list without reading again and is in it when asked again, then runs the audit and checks RULE-2 is printed and asked about.",
-          "PROOF-122: the test runs each of the three causes, checks the `spot-checked` verdict and the exact reason, then checks the second run prints RULE-2 alone and that `claude` was started `1` time.",
-          "PROOF-160: the test lowers the limit to 1 second with a `claude` that sleeps 3, checks the exact reason sentence, then checks the second run prints RULE-2 alone and that `claude` was started `1` time.",
-          "No spot test fired, and none of the six patterns shows in these tests: each asserts values the code cannot set for itself."
-        ],
-        "findings": [
-          "PROOF-103: the test still passes when scripts/review/audit_run.py:686 reads \"if not any(what in ('replay', 'refused')\"",
-          "PROOF-103: the AI says this breaks: RULE-2 has an entry and src/login.py changes from return 401 to return 403 if locked else 401; the proof says the audit reads it; the changed audit run says it has nothing to settle and does not read it"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-122 holds three cases, one for each way the model is not reached.",
-          "PROOF-160 is longer than 60 words."
-        ],
         "proof_hash": "013984b9a60f3fd59f12692965945f9eb81933e783cab4ff0145be3fade15b13",
         "rule_hash": "c71d2613b205d8f786996ae4675277f6fabb35e23eb2a363e43bd6c4834b4361",
-        "test_hash": "90e314f669c8113a58115141753ff9bb449b47b986a41c23d578262ed75d81b3",
-        "verdict": "weak"
+        "test_hash": "d311541e8af2098f45b5ad977253b7c8742b9ff7b244720b17742d09b3f85a04",
+        "verdict": "strong"
       },
       "RULE-11": {
         "at": "2026-10-05T16:31:23Z",
@@ -450,18 +434,17 @@
         "verdict": "strong"
       },
       "RULE-36": {
-        "at": "2026-10-05T16:31:23Z",
+        "at": "2026-10-05T16:50:24Z",
         "bugs": {
           "PROOF-100": {
             "after": "        if isinstance(kept, dict) and kept.get('bug_key') == key:\n            plan.append((proof['id'], 'again', (kept, key)))\n        elif (isinstance(kept, dict) and kept.get('result') == 'survived'",
             "aim": "past the test",
             "before": "        if isinstance(kept, dict) and kept.get('bug_key') == key:\n            plan.append((proof['id'], 'kept', kept))\n        elif (isinstance(kept, dict) and kept.get('result') == 'survived'",
-            "bug_key": "0e7c79f541062af7b3075c7bd7bdf2a4a924923c1458aea7caa46e7d9f35b4dc",
+            "bug_key": "545ca4841dbb29fcecc6d366482dbbcbdc6728c0acf37fc4d1d5e0a89f09f9a9",
             "case": "a caught bug for PROOF-2 with only RULE-2's text changed; the proof says none is planted for PROOF-2 and its result is kept; the changed code plants the recorded bug again in a copy and runs the test, with no request for it and the result still reading caught",
             "file": "scripts/review/audit_run.py",
             "line": 390,
-            "result": "survived",
-            "test_key": "81a8eaa8044211b42d22a9cd6654b1448f32be62ea73113e55ef6b4ad63899e5",
+            "result": "caught",
             "why": ""
           },
           "PROOF-115": {
@@ -477,25 +460,16 @@
           }
         },
         "code_hash": "1e59cd62345438bad502f5bfac96d062550203a265e09ab5e5c1482878ff6026",
-        "commit": "8f6c667e2272988f42e45a65f2b45bc0f88571a2",
+        "commit": "78557cc04ddd99b189b499be0ba1f8fda50a388e",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-100: the test changes only RULE-2's text, runs the audit, and checks one model call, a request naming no proof, a result of `caught` and the recorded change's `after` line.",
-          "PROOF-100: the test reads nothing that shows whether a bug was planted without being asked for, such as the printed lines or a run of the proof's test in a copy, so a recorded bug planted again and caught again leaves every checked value as it was.",
-          "PROOF-115: the test changes `== 401` to `== 403` in the test file, runs the audit, and checks that the one request names `login RULE-2` and asks for `PROOF-2`, and that the entry's `bug_key` is set and differs from the one read before the change.",
-          "PROOF-115: both results the proof names are compared, so a change that stops the key following the test's source is seen by either check.",
-          "The spot tests found nothing, and each test holds the values its proof names in backticks."
-        ],
-        "findings": [
-          "PROOF-100: the test still passes when scripts/review/audit_run.py:390 reads \"plan.append((proof['id'], 'again', (kept, key)))\"",
-          "PROOF-100: the AI says this breaks: a caught bug for PROOF-2 with only RULE-2's text changed; the proof says none is planted for PROOF-2 and its result is kept; the changed code plants the recorded bug again in a copy and runs the test, with no request for it and the result still reading caught"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "f8416600fd97fa4a8cf5aff5f2e6ee3d34975e8e18a240750b0574d3fa853a8e",
         "rule_hash": "48c4b02475115d56d0234e630cffd2b5b66074f2b973f7cb63ef7b808f9456aa",
-        "test_hash": "921bf06bad77cdd03732936f427f1a2ed089af249064c13aa5afd85f76749c08",
-        "verdict": "weak"
+        "test_hash": "3e5d1dba28f33f3a776a5ed08eaad467050a097f5e8dc0aab06cb7e681bd6503",
+        "verdict": "strong"
       },
       "RULE-37": {
         "at": "2026-10-05T16:31:23Z",
@@ -698,30 +672,28 @@
         "verdict": "strong"
       },
       "RULE-40": {
-        "at": "2026-10-05T16:31:23Z",
+        "at": "2026-10-05T16:50:24Z",
         "bugs": {
           "PROOF-34": {
             "after": "            parts.append((reading['tests'][0].get('body') or '').rstrip('\\n'))",
             "aim": "past the test",
             "before": "            parts.append(test['body'].rstrip('\\n'))",
-            "bug_key": "64f28c15ab24bb0696ec2021ae9463a7d0570db0c62d8cc5a0b9c756d1a0dbe3",
+            "bug_key": "eca3f8a4e0c089f98a9742a0ba9483c421385f8f8b188b598c8d5460d33215d2",
             "case": "two tests marked for PROOF-1 in tests/test_login.py; the proof says each is shown with its own source, `== 200` and `token`, neither holding the other's; the changed code shows the first-listed test's source under both names in the request",
             "file": "scripts/review/ai_audit.py",
             "line": 360,
-            "result": "survived",
-            "test_key": "2fa5aabb10b8292341bdd0a36d970c2939160d7fe14b7032de2fdded384a1cff",
+            "result": "caught",
             "why": ""
           },
           "PROOF-35": {
             "after": "        parts.append((test.get('body') or reading['tests'][0].get('body')\n                      or '').rstrip('\\n'))",
             "aim": "past the test",
             "before": "        if test.get('body'):\n            parts.append(test['body'].rstrip('\\n'))",
-            "bug_key": "6f680488b69a122463c1458971909c7d00f8b12e4f004cb800c9a3549d9ed243",
+            "bug_key": "f65257fc9a98a092242e3df3c0b9746f6f69d018458f36e86bd74b9fc772302d",
             "case": "the evidence names test_renamed_away, which the file no longer holds; the proof says no source is shown under it; the changed code shows the first test's source under test_renamed_away in the request",
             "file": "scripts/review/ai_audit.py",
             "line": 359,
-            "result": "survived",
-            "test_key": "a7c85ee7c746c1fea2b780c03583aeca49b8d8d7993e6d9b32a0af77304d01f5",
+            "result": "caught",
             "why": ""
           },
           "PROOF-65": {
@@ -737,34 +709,19 @@
           }
         },
         "code_hash": "1e59cd62345438bad502f5bfac96d062550203a265e09ab5e5c1482878ff6026",
-        "commit": "8f6c667e2272988f42e45a65f2b45bc0f88571a2",
+        "commit": "78557cc04ddd99b189b499be0ba1f8fda50a388e",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-34: the test compares the two names, the proof, the file and one heading per test in the request, then reads each test's source from what the audit read and checks `== 200` and `tok-` each sit in their own test only.",
-          "PROOF-34: the test never reads the source printed under each heading in the request, so a request that shows one test's source under the other's name still passes.",
-          "PROOF-35: the test observes that the source of `test_renamed_away` is none and that each of the other two holds its own `def` line, which is the case the proof names.",
-          "PROOF-35: the test reads only what the audit gathered, not the request or the printed rule, so a source shown under `test_renamed_away` there is not seen; it also does not check that either remaining source lacks the other's lines.",
-          "PROOF-65: the test asks for the source under `Acme.LoginTests.Denied(user: \"x\")` and checks it holds `public void Denied` and nowhere `Allowed`, which is the proof's case and its result.",
-          "No spot test fired, and none of the six applies: each test asserts failable values, and the values the proofs name appear in the test file."
-        ],
-        "findings": [
-          "PROOF-34: the test still passes when scripts/review/ai_audit.py:360 reads \"parts.append((reading['tests'][0].get('body') or '').rstrip('\\n'))\"",
-          "PROOF-34: the AI says this breaks: two tests marked for PROOF-1 in tests/test_login.py; the proof says each is shown with its own source, `== 200` and `token`, neither holding the other's; the changed code shows the first-listed test's source under both names in the request",
-          "PROOF-35: the test still passes when scripts/review/ai_audit.py:359 reads \"parts.append((test.get('body') or reading['tests'][0].get('body')\"",
-          "PROOF-35: the AI says this breaks: the evidence names test_renamed_away, which the file no longer holds; the proof says no source is shown under it; the changed code shows the first test's source under test_renamed_away in the request"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-34 is longer than 60 words."
-        ],
         "proof_hash": "f61c17bae209091e831e67fdfb8ae494fe4ad75d4a47cb8a91d6eaebfc180dfa",
         "rule_hash": "eff6ee5ab15b4145d3b5896525bd8ebfaffff373d4d30794af9578579f6934fd",
-        "test_hash": "7d8e007a7c1916d20b6b13e9d668f2b243329d73300f31bf2bdfa545b3293066",
-        "verdict": "weak"
+        "test_hash": "48842995164d22709debb88e4d7324d69ee13ded6ca51b80fc63bacd21c51627",
+        "verdict": "strong"
       },
       "RULE-41": {
-        "at": "2026-10-05T16:31:23Z",
+        "at": "2026-10-05T16:50:24Z",
         "bugs": {
           "PROOF-74": {
             "after": "            args.error = 'unknown argument %s' % item",
@@ -781,12 +738,11 @@
             "after": "            if args.rule:\n                print(USAGE, file=sys.stderr)\n                print(not_a_rule(args.feature, rule))",
             "aim": "past the test",
             "before": "            if args.rule:\n                print(not_a_rule(args.feature, rule))",
-            "bug_key": "3c7dd579f5a015547aa4449f83cbb1b922fb42e1739fb6296da06b53776a5c8c",
+            "bug_key": "ab28a2bb70b5ea76510eb30fadaf975ee809d7d537730aa352cda59d4b8044ce",
             "case": "`--feature login --rule RULE-99`; the proof says it prints only the line naming the rule; the changed code also prints the usage line on standard error",
             "file": "scripts/review/ai_audit.py",
             "line": 733,
-            "result": "survived",
-            "test_key": "b5172781f6115a32da1cbba9db2abfa6d5fea98890398bc6de96293fff805d6b",
+            "result": "caught",
             "why": ""
           },
           "PROOF-81": {
@@ -802,30 +758,16 @@
           }
         },
         "code_hash": "1e59cd62345438bad502f5bfac96d062550203a265e09ab5e5c1482878ff6026",
-        "commit": "8f6c667e2272988f42e45a65f2b45bc0f88571a2",
+        "commit": "78557cc04ddd99b189b499be0ba1f8fda50a388e",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-74: the test runs the command with `--nope`, compares the exit code with 2 and looks for the exact line `ai_audit.py: unexpected argument --nope` among the lines of standard error, so a wrong code or wording fails it.",
-          "PROOF-74: the test reads nothing of the project's files, so the rule's \"writes nothing\" is not observed for this refusal.",
-          "PROOF-76: the test compares the exit code with 1 and the whole of what its `command` helper returns with the proof's sentence, written as a literal, so a wrong code or wording fails it.",
-          "PROOF-76: the `command` helper is defined outside the test shown, so whether \"prints only\" covers standard error as well as standard output cannot be told from here.",
-          "PROOF-76: the test reads no file after the run, so \"writes nothing\" is not observed for this refusal.",
-          "PROOF-81: the test writes the trailing comma, compares the exit code with 1, compares the whole printed text with the proof's sentence and compares every file under `.purlin/` before and after.",
-          "PROOF-81: the message and line number in the expected sentence come from Python's own JSON reader run on the same text, not from the command under test, so the expected value is independent of the code.",
-          "PROOF-81: as with PROOF-76, what `command` captures decides whether an extra line on standard error would be seen.",
-          "The spot tests found nothing, and nothing in the three tests shown contradicts that: each asserts a literal exit code and a message the code cannot influence.",
-          "The rule also names a missing `--feature`, a `--project-root` that is not a folder and an unknown feature, and none of the three proofs shown covers those refusals."
-        ],
-        "findings": [
-          "PROOF-76: the test still passes when scripts/review/ai_audit.py:733 reads \"print(USAGE, file=sys.stderr)\"",
-          "PROOF-76: the AI says this breaks: `--feature login --rule RULE-99`; the proof says it prints only the line naming the rule; the changed code also prints the usage line on standard error"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "59e88b1ae15a7aac105fd4779d605e94d4a2f3df6742875610d9cf39bc8c1819",
         "rule_hash": "5118e940dabaab5145b6a1b808607472f006fde064a56aace236b5c25882f8ba",
-        "test_hash": "75191138f1205c163bd50ca0cddd00271125e2dbc5ffd6957204c19fe16b9a1a",
-        "verdict": "weak"
+        "test_hash": "24615fd4f59ecee9e07c2a9716c48ff05694c69b11f982e2f9dfee751baa4a1e",
+        "verdict": "strong"
       },
       "RULE-42": {
         "at": "2026-10-05T16:31:23Z",
@@ -899,7 +841,7 @@
         "verdict": "strong"
       },
       "RULE-43": {
-        "at": "2026-10-05T16:31:23Z",
+        "at": "2026-10-05T16:50:24Z",
         "bugs": {
           "PROOF-108": {
             "after": "ALONE_ONE = ' 1 rules are spot-checked alone.'",
@@ -927,12 +869,11 @@
             "after": "    if reasons:\n        for lead in ('', '  '):\n            say(lead + NOT_REACHED % ('; '.join(reasons),\n                           '' if not alone else ALONE_ONE if alone == 1\n                           else ALONE_MANY % alone))",
             "aim": "past the test",
             "before": "    if reasons:\n        say(NOT_REACHED % ('; '.join(reasons),\n                           '' if not alone else ALONE_ONE if alone == 1\n                           else ALONE_MANY % alone))",
-            "bug_key": "4777f6dbbb407871bc04ca40246124678177672660c0253703a6331891221fd4",
+            "bug_key": "73f8a21675f3589ef34100baf8614dff77bb3c8abecf9aa48e8bfd983eec0015",
             "case": "claude exits 1 and two passing rules are read with no spot finding; the proof says the `2 rules are spot-checked alone` line is printed once; the changed code prints it twice, the second copy indented by two spaces",
             "file": "scripts/review/audit_run.py",
             "line": 782,
-            "result": "survived",
-            "test_key": "e44672892850365f73e306c88e4751cf70f96aeb4138ac39ff11fef511ca9780",
+            "result": "caught",
             "why": ""
           },
           "PROOF-119": {
@@ -948,27 +889,16 @@
           }
         },
         "code_hash": "1e59cd62345438bad502f5bfac96d062550203a265e09ab5e5c1482878ff6026",
-        "commit": "8f6c667e2272988f42e45a65f2b45bc0f88571a2",
+        "commit": "78557cc04ddd99b189b499be0ba1f8fda50a388e",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-108: the test reads the entry's verdict and its empty bugs, the printed `login RULE-2   spot-checked` line, and that exactly one line holding `The model could not be reached` is printed with the text the proof names, so it observes all the proof names.",
-          "PROOF-108: the test never reads the entry's `no_bug` sentence `No bug was planted: the model could not be reached: <why>.`, which the rule states and no proof names.",
-          "PROOF-109: the test compares the verdict, the one finding, the empty bugs, the model `unknown` and the printed line without the middle sentence, which is what the proof names.",
-          "PROOF-109: the test counts only lines that do not start with a space, so an indented copy of the printed line would go unseen.",
-          "PROOF-110: the test compares both verdicts and the printed line, but it drops every line that starts with a space before counting, so a second, indented copy of the line would not break its check of `once`.",
-          "PROOF-119: the test compares the verdict `weak` and the whole list of findings, the change and the case, and reads nothing of what the audit prints, which the proof does not name either.",
-          "No spot test fired on these tests, and each test holds assertions on values its proof names."
-        ],
-        "findings": [
-          "PROOF-110: the test still passes when scripts/review/audit_run.py:782 reads \"for lead in ('', '  '):\"",
-          "PROOF-110: the AI says this breaks: claude exits 1 and two passing rules are read with no spot finding; the proof says the `2 rules are spot-checked alone` line is printed once; the changed code prints it twice, the second copy indented by two spaces"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "4a98b7d82033a124240dbff4f3a3a369ccf85753a4fb9702549133ee0da65378",
         "rule_hash": "d5b52f0befcd88527609cd2a5cdc2654907acf4cacc6af1c131dbb874f8d47b8",
-        "test_hash": "9004164ac4f877cc7cfe231275e2c93c89942be956e6d6bc95e016936dc85929",
-        "verdict": "weak"
+        "test_hash": "f62be3a3c3ae266e1c5371c10717a9abc8b34b60c0571a1c3e531e3d73c4a51a",
+        "verdict": "strong"
       },
       "RULE-44": {
         "at": "2026-10-05T16:31:23Z",
@@ -1431,7 +1361,7 @@
         "verdict": "strong"
       },
       "RULE-56": {
-        "at": "2026-10-05T16:31:23Z",
+        "at": "2026-10-05T16:50:24Z",
         "bugs": {
           "PROOF-147": {
             "after": "TWO_SURVIVED = \"two planted bugs left the proof's test passing\"",
@@ -1448,12 +1378,11 @@
             "after": "        for line in rule_lines(item['verdict'], item['findings'],\n                               item['no_bug'] if settle else []):",
             "aim": "past the test",
             "before": "        for line in rule_lines(item['verdict'], item['findings'],\n                               item['no_bug']):",
-            "bug_key": "2e482821e5d4a6df609241ffece31f4ca5e3a32510ec44ce7e27443ca2f9f869",
+            "bug_key": "f5691a7ca661ea04f00630b054127b12e24a5e51c824b31e3c75c20e084f6f62",
             "case": "two bugs for PROOF-5 dropped, then every rule read again with nothing changed; the proof says RULE-3 reads spot-checked with `No bug was caught for PROOF-5: two planted bugs left the proof's check passing.`; the changed code prints only `The spot tests found nothing.` under RULE-3",
             "file": "scripts/review/audit_run.py",
             "line": 779,
-            "result": "survived",
-            "test_key": "7ebfbe6c3009f34626b92e78e6e7c945adf4ce0cde4e6f9f5134bef4ac4d46ec",
+            "result": "caught",
             "why": ""
           },
           "PROOF-158": {
@@ -1469,68 +1398,43 @@
           }
         },
         "code_hash": "1e59cd62345438bad502f5bfac96d062550203a265e09ab5e5c1482878ff6026",
-        "commit": "8f6c667e2272988f42e45a65f2b45bc0f88571a2",
+        "commit": "78557cc04ddd99b189b499be0ba1f8fda50a388e",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-147: the test reads the exit code, the one call to the model, the entry's result and reason, its bug key, the `--sound` arguments, the first `no_bug` sentence and `test_unchanged`, which is every result the proof names.",
-          "PROOF-147: the reason and the sentence are compared with the names `TWO_SURVIVED` and `NO_BUG_CAUGHT_5`, whose definitions are not shown, so if they are taken from the audit's code a reworded reason still passes.",
-          "PROOF-148: the test reads that one request names RULE-3 and does not hold `Plant one bug`, the entry's verdict and its whole `no_bug` list, and the printed rule line.",
-          "PROOF-148: the test reads no printed line under the rule in the later audit, so the sentence can be missing from what is printed while the entry still holds it.",
-          "PROOF-148: the request is checked for the literal words `Plant one bug`, so a request that asked for a bug in other words would still pass.",
-          "PROOF-158: the test reads the rule line, the first line under it in full, the opening of the second and that there are only two, which is the order and text the proof names.",
-          "PROOF-158: the first line under the rule is compared with the name `DROPPED_5`, whose definition is not shown, so if it is built from the audit's code a reworded line still passes.",
-          "Findings: the spot tests found nothing, and each test holds assertions that can fail on the proof's case."
-        ],
-        "findings": [
-          "PROOF-148: the test still passes when scripts/review/audit_run.py:779 reads \"item['no_bug'] if settle else []):\"",
-          "PROOF-148: the AI says this breaks: two bugs for PROOF-5 dropped, then every rule read again with nothing changed; the proof says RULE-3 reads spot-checked with `No bug was caught for PROOF-5: two planted bugs left the proof's check passing.`; the changed code prints only `The spot tests found nothing.` under RULE-3"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-147 names a starting situation through a flag and a test double's call count (`claude` was started `1` time), which a person who cannot read code can still follow.",
-          "PROOF-148 holds two observations of one case, the request and the rule's reading, and stays within one case."
-        ],
         "proof_hash": "c1e1002a89c724ab4079caf44651f4052a9c51c397450031c1b5a151d9c7ea89",
         "rule_hash": "32f9578a4f3eb21f5efddd921471fdd236c27bf56fa070bc8ef796a6a06ae360",
-        "test_hash": "ed70aa7eb746be40e122d8908deaa426a1be5251d9dabc5a7ec36987ffcc2b20",
-        "verdict": "weak"
+        "test_hash": "95c4365e4ee668e3605a73a65708def79539012842f602770a2c10fa3414d68b",
+        "verdict": "strong"
       },
       "RULE-57": {
-        "at": "2026-10-05T16:31:23Z",
+        "at": "2026-10-05T16:50:24Z",
         "bugs": {
           "PROOF-149": {
             "after": "                    findings.append(NO_BUG_CAUGHT % (proof_id, TWO_SURVIVED))",
             "aim": "past the test",
             "before": "                    note(NO_BUG_CAUGHT % (proof_id, TWO_SURVIVED))",
-            "bug_key": "216567c0ca12cd140d05e4f89d076f50ba268ffb9c3ecb0eb9092ae49a5e0ceb",
+            "bug_key": "dfebf6965c045f8991c600cae61bf99ce4f442ceb82c93b470a7fed14cf83bc5",
             "case": "two bugs for PROOF-5 were dropped; the proof says the entry of RULE-3 holds no finding; the changed code leaves the finding \"No bug was caught for PROOF-5: two planted bugs left the proof's check passing.\" in it and the rule reads weak",
             "file": "scripts/review/audit_run.py",
             "line": 576,
-            "result": "survived",
-            "test_key": "c950d991315042d2342716ebd0fdd2c10b45d99eff33d00f41af72a7cc052342",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "1e59cd62345438bad502f5bfac96d062550203a265e09ab5e5c1482878ff6026",
-        "commit": "8f6c667e2272988f42e45a65f2b45bc0f88571a2",
+        "commit": "78557cc04ddd99b189b499be0ba1f8fda50a388e",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-149: the test reads the evidence file's text for both dropped changes, which matches the two values the proof names, and first confirms the rounded change was in the evidence before the settle.",
-          "PROOF-149: for \"holds no finding\" the test only looks for the words `the AI says this breaks` in the entry of `RULE-3`, so a finding worded any other way, or a non-empty `findings` list, still passes.",
-          "PROOF-149: the test never reads the entry's `bugs` or its verdict, so the rule's \"not under `bugs`\" is observed only through the two change strings being absent from the whole file.",
-          "Findings: the spot tests found nothing, which fits, since each assertion can fail and both of the proof's values appear in the test's file."
-        ],
-        "findings": [
-          "PROOF-149: the test still passes when scripts/review/audit_run.py:576 reads \"findings.append(NO_BUG_CAUGHT % (proof_id, TWO_SURVIVED))\"",
-          "PROOF-149: the AI says this breaks: two bugs for PROOF-5 were dropped; the proof says the entry of RULE-3 holds no finding; the changed code leaves the finding \"No bug was caught for PROOF-5: two planted bugs left the proof's check passing.\" in it and the rule reads weak"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "2a5639ef5387e821980cf262961a92c3fc98a4989c953d78839a09b5803f417f",
         "rule_hash": "b353b684093a58b39f57f577df14a4009d87be41c6d4a9469e02f7a5e3e1eb77",
-        "test_hash": "aa36f7f2758ef3395efdb87a58e2953938b114e6ce4ef541c1e1b96a61b1da95",
-        "verdict": "weak"
+        "test_hash": "c3a6005bd2c63781f122f8f60d8248a808f2a62f0917b0445750a2b798faa534",
+        "verdict": "strong"
       },
       "RULE-58": {
         "at": "2026-10-05T16:31:23Z",
@@ -1578,18 +1482,17 @@
         "verdict": "strong"
       },
       "RULE-59": {
-        "at": "2026-10-05T16:31:23Z",
+        "at": "2026-10-05T16:50:24Z",
         "bugs": {
           "PROOF-152": {
             "after": "        return [(SPOT_CHECKED % '').strip()]",
             "aim": "past the test",
             "before": "        return [(SPOT_CHECKED % ' '.join(no_bug)).strip()]",
-            "bug_key": "d5d2ba5a535fa655ef3f022ed9884644634d82ef577e68f50645566d2fd6495c",
+            "bug_key": "74ba8f382e46e8ee91ed4a15fddd49f3bf9f1f6ef35b46c367710237cf804489",
             "case": "the test of PROOF-2 skips with the kept bug in place and RULE-2 is settled; the proof says RULE-2 reads spot-checked with `A bug was planted for PROOF-2 and its test did not run.`; the changed code prints RULE-2 spot-checked with `The spot tests found nothing.` alone",
             "file": "scripts/review/audit_run.py",
             "line": 795,
-            "result": "survived",
-            "test_key": "0f5acb8c9ff8fed8d4c95e6e49f5f40352cfd5de67ad14ea87750fd43137a55a",
+            "result": "caught",
             "why": ""
           },
           "PROOF-164": {
@@ -1605,28 +1508,16 @@
           }
         },
         "code_hash": "1e59cd62345438bad502f5bfac96d062550203a265e09ab5e5c1482878ff6026",
-        "commit": "8f6c667e2272988f42e45a65f2b45bc0f88571a2",
+        "commit": "78557cc04ddd99b189b499be0ba1f8fda50a388e",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-152: the test settles RULE-2 with a test that skips on the bug and compares the entry's `after` with `    return 200`, its result with `not run`, `no_bug` with the one sentence, the verdict with `spot-checked` and the calls to `claude` with an empty list, which is each value the proof names as the entry holds it.",
-          "PROOF-152: the test uses the printed lines only as the message of its exit code assertion, so what the audit prints under RULE-2 could lose the sentence and the test would still pass.",
-          "PROOF-164: the test settles RULE-2 with a test whose setup raises on the bug and compares the result and its reason with `not run` and `the test ended in an error, not a failure`, and `no_bug` with the exact sentence the proof names, so a wrong sentence or result fails it.",
-          "PROOF-164: the test also compares the verdict with `spot-checked` and the calls to `claude` with an empty list, which the proof does not name.",
-          "The spot tests found nothing, and both tests hold assertions on literal values the proofs name."
-        ],
-        "findings": [
-          "PROOF-152: the test still passes when scripts/review/audit_run.py:795 reads \"return [(SPOT_CHECKED % '').strip()]\"",
-          "PROOF-152: the AI says this breaks: the test of PROOF-2 skips with the kept bug in place and RULE-2 is settled; the proof says RULE-2 reads spot-checked with `A bug was planted for PROOF-2 and its test did not run.`; the changed code prints RULE-2 spot-checked with `The spot tests found nothing.` alone"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-152 does not cover the rule's third cause, a test that runs past its limit, and no other proof of the rule does."
-        ],
         "proof_hash": "39da11e427a9ff37ad7bf10e7f3578ea72cdc3cb3a6fc49fe6e2e0c94c2c1c97",
         "rule_hash": "e4a9dbc30fca2c8970d31c5664286db9f54b08ec3ebe04cb78fdbd9e23fa5563",
-        "test_hash": "6fb07181c710c7c2ab8d199805be108ec1921cca4bf560406bb85d8a40dff842",
-        "verdict": "weak"
+        "test_hash": "08a08eb5eacf0c567b560e71e6830d457ed83f5800873a775a2204ea5d9f92ba",
+        "verdict": "strong"
       },
       "RULE-6": {
         "at": "2026-10-05T16:31:23Z",
@@ -2344,54 +2235,45 @@
         "verdict": "strong"
       },
       "RULE-76": {
-        "at": "2026-10-05T16:31:23Z",
+        "at": "2026-10-05T16:50:24Z",
         "bugs": {
           "PROOF-185": {
             "after": "            reading['files'] = (list(item['scope_files'])\n                                if not reading['plant'] else [])",
             "aim": "past the test",
             "before": "            reading['files'] = (list(item['scope_files'])\n                                if reading['plant'] else [])",
-            "bug_key": "85ac1e8f43689892b6917fc10d11bcadfe076c59d41e20ca8b9eb1c2030d0ac1",
+            "bug_key": "e04e1a84ea2289e570c251fc3928f71d7caa50252ab1bf442570c0ff21fa20ef",
             "case": "the helper's line is rewritten as two lines and sample_intake is audited without --settle; the proof says claude is asked a bug for PROOF-5 in the rule's request, as for any proof whose code changed; the changed code names PROOF-5 in the request but sends none of the feature's files with it",
             "file": "scripts/review/audit_run.py",
             "line": 712,
-            "result": "survived",
-            "test_key": "2966d2c09678af5ec073ecd3c232c4b2f07ee892f22f32ad13133b9e8932d678",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "1e59cd62345438bad502f5bfac96d062550203a265e09ab5e5c1482878ff6026",
-        "commit": "8f6c667e2272988f42e45a65f2b45bc0f88571a2",
+        "commit": "78557cc04ddd99b189b499be0ba1f8fda50a388e",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-185: the test rewrites the helper, audits without `--settle` with a canned reply, and checks the exit code, that the request asks a bug for exactly `PROOF-5`, the new bug's `after` line, its `survived` result, the `weak` verdict and the two lines printed under the rule.",
-          "PROOF-185: the test reads only which proofs the request names, so a request that asks for the bug without the text of the feature's files would still pass, because the canned reply does not depend on what was sent.",
-          "PROOF-185: the test does not check that the stored bug entry records the hash of the tests it got past, so a new survivor without it would still pass.",
-          "PROOF-185: the spot tests found nothing, and the test does compare the values the proof names, `PROOF-5`, `hours = seconds // 3600 + 1` and `survived`."
-        ],
-        "findings": [
-          "PROOF-185: the test still passes when scripts/review/audit_run.py:712 reads \"if not reading['plant'] else [])\"",
-          "PROOF-185: the AI says this breaks: the helper's line is rewritten as two lines and sample_intake is audited without --settle; the proof says claude is asked a bug for PROOF-5 in the rule's request, as for any proof whose code changed; the changed code names PROOF-5 in the request but sends none of the feature's files with it"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "f3e8b4a42a288582c0d427754545662d11223dabc3123ad972c234317bcf8b43",
         "rule_hash": "4a4e0e63c27723c2d9b985ad74fe8ebc2a1ded77e0f8b2a27cccfb6475356e43",
-        "test_hash": "87a69159a53fc343970732c3b1a832be7dc6b629d2d8cb50b2c8b42918d94539",
-        "verdict": "weak"
+        "test_hash": "9e42ad5378bea51d370e3d001dcd58e01fba386216ef1216fe449c7836b169b0",
+        "verdict": "strong"
       }
     }
   },
   "feature": "ai_audit",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T15:50:23Z",
-      "commit": "8f6c667e2272988f42e45a65f2b45bc0f88571a2",
+      "at": "2026-10-05T16:49:03Z",
+      "commit": "78557cc04ddd99b189b499be0ba1f8fda50a388e",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "1e59cd62345438bad502f5bfac96d062550203a265e09ab5e5c1482878ff6026",
         "spec": "108cad2bd4ed1382aca2ebefbec46a1329bacdfed5bc95cf4b65a21e581cad69",
-        "tests": "4f2a8358f755ed249a1bcf4241210e3e6736b16e135df0078b632653737be1fe"
+        "tests": "d5c34eca8d9b86c570ec5206774109f0654df12ad82606c5d7d3e05389da19d4"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
