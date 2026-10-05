@@ -301,7 +301,8 @@ EACH_KIND = (
 class TestTheLines:
 
     # purlin: summary PROOF-8
-    def test_two_rules_of_each_of_the_six_kinds_read_in_rule_23s_order(self):
+    def test_two_rules_of_each_of_the_six_kinds_read_in_rule_23s_order(
+            self, monkeypatch):
         features = [feature([make(), make()], name=kind)
                     for kind, make in EACH_KIND]
         lines = summary.ending(payload(features)).splitlines()
@@ -314,6 +315,55 @@ class TestTheLines:
             '  2 rules to test on Windows: run purlin:test on Windows',
             '  2 rules to strengthen: purlin:build',
         ]
+        # The status of a project on macOS, over committed evidence: twelve
+        # rules of `login`, two of each kind. `RULE-1` and `RULE-2` have no
+        # proof and a passing test, 3 and 4 fail, 5 and 6 have no test,
+        # 7 and 8 have a test that has not run, 9 and 10 are tagged for
+        # Windows alone, 11 and 12 pass and were found weak.
+        monkeypatch.setattr(purlin_evidence, 'host_os', lambda: 'macos')
+        numbers = range(1, 13)
+        made = Project(spec=(
+            '# Feature: login\n\n> Scope: src/login.py\n\n## Rules\n\n'
+            + ''.join('- RULE-%d: Case %d returns %d\n'
+                      % (number, number, 200 + number) for number in numbers)
+            + '\n## Proof\n\n'
+            + ''.join('- PROOF-%d (RULE-%d): Send case %d; verify %d%s\n'
+                      % (number, number, number, 200 + number,
+                         ' @env(windows)' if number in (9, 10) else '')
+                      for number in numbers if number > 2)))
+        try:
+            _commit_tests(made, *['PROOF-%d' % number
+                                  for number in (3, 4, 7, 8, 9, 10, 11, 12)])
+            made.evidence(
+                [{'id': 'RULE-%d' % number, 'rule': 'RULE-%d' % number,
+                  'status': 'pass'} for number in (1, 2)]
+                + [_entry('PROOF-%d' % number, 'RULE-%d' % number,
+                          status=word)
+                   for number, word in ((3, 'fail'), (4, 'fail'),
+                                        (9, 'not run'), (10, 'not run'),
+                                        (11, 'pass'), (12, 'pass'))],
+                os_name='macos')
+            for number in (11, 12):
+                made.audit('RULE-%d' % number, word='weak',
+                           observations=['The test reads the status alone.'])
+            _git(made.root, 'add', '-A')
+            _git(made.root, 'commit', '-q', '-m',
+                 'purlin: evidence at abc1234')
+            printed = _status(made)
+        finally:
+            made.close()
+        assert printed[-7:] == [
+            'Left to do:',
+            '  2 rules to write a proof for: purlin:spec',
+            '  2 rules to fix: purlin:build',
+            '  2 rules to write a test for: purlin:build',
+            '  2 rules to test: purlin:test',
+            '  2 rules to test on Windows: run purlin:test on Windows',
+            '  2 rules to strengthen: purlin:build',
+        ], printed
+        assert printed[-2] == ('  2 rules to test on Windows: '
+                               'run purlin:test on Windows'), printed
+        assert printed.count('Left to do:') == 1, printed
 
     # purlin: summary PROOF-40
     def test_a_broken_spec_reads_one_spec_to_repair_before_one_rule_to_fix(
@@ -325,6 +375,43 @@ class TestTheLines:
         assert lines[1:] == ['Left to do:',
                              '  1 spec to repair: purlin:spec',
                              '  1 rule to fix: purlin:build'], lines
+        # The status of a project: `login`, which writes `PROOF-2` twice,
+        # of three failing rules, beside `export` of one failing rule.
+        project = Project(spec=(
+            '# Feature: login\n\n> Scope: src/login.py\n\n## Rules\n\n'
+            + ''.join('- RULE-%d: Case %d returns %d\n'
+                      % (number, number, 200 + number)
+                      for number in (1, 2, 3))
+            + '\n## Proof\n\n'
+            + ''.join('- PROOF-%d (RULE-%d): Send case %d; verify %d\n'
+                      % (number, number, number, 200 + number)
+                      for number in (1, 2, 3))
+            + '- PROOF-2 (RULE-2): Send case 2 again; verify 202\n'))
+        try:
+            project.spec(
+                '# Feature: export\n\n> Scope: src/export.py\n\n'
+                '## Rules\n\n- RULE-1: An export is a CSV file\n\n'
+                '## Proof\n\n'
+                '- PROOF-1 (RULE-1): Export one row; verify one line\n',
+                name='export')
+            _write(os.path.join(project.root, 'src', 'export.py'),
+                   'ROWS = 1\n')
+            _git(project.root, 'add', '-A')
+            _git(project.root, 'commit', '-q', '-m',
+                 'feat(export): the export')
+            project.evidence([_entry('PROOF-%d' % number, 'RULE-%d' % number,
+                                     status='fail') for number in (1, 2, 3)])
+            project.evidence(
+                [_entry('PROOF-1', 'RULE-1', status='fail', feature='export',
+                        test_file='tests/test_export.py')], feature='export')
+            printed = _status(project)
+        finally:
+            project.close()
+        assert printed[-4:] == ['4 rules. 0 pass their tests.',
+                                'Left to do:',
+                                '  1 spec to repair: purlin:spec',
+                                '  1 rule to fix: purlin:build'], printed
+        assert printed.count('Left to do:') == 1, printed
 
     # purlin: summary PROOF-29
     def test_a_comment_naming_login_proof_9_on_committed_evidence(self):
