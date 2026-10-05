@@ -272,7 +272,7 @@
         "verdict": "strong"
       },
       "RULE-23": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-05T18:56:35Z",
         "bugs": {
           "PROOF-29": {
             "after": "    ('to_correct', 'test comments to correct', 'test comments to correct',",
@@ -289,50 +289,36 @@
             "after": "    lines.append(summary_module.ending(dict(data, left=list(reversed(data.get('left') or ())))))",
             "aim": "past the test",
             "before": "    lines.append(summary_module.ending(data))",
-            "bug_key": "b1b4cbdbb4fb51883960ff937fa7a8d19d5e283af91cede785e1789850f23c17",
+            "bug_key": "18de28ead67adc0b4ffb64b7a69eb6f70f150da45d94b4bca542d72bc1f6e414",
             "case": "the status of a broken spec of three failing rules beside a spec of one failing rule; the proof says `  1 spec to repair: purlin:spec` then `  1 rule to fix: purlin:build`; the changed code prints `  1 rule to fix: purlin:build` first and `  1 spec to repair: purlin:spec` second",
             "file": "scripts/mcp/purlin/status.py",
             "line": 556,
-            "result": "survived",
-            "test_key": "2599e30032ee56fd7d7e6fd9c23abd1e81e28359283e2499b634b6a3608ad05d",
+            "result": "caught",
             "why": ""
           },
           "PROOF-8": {
             "after": "    lines.append(summary_module.ending(dict(data, left=sorted(data.get('left') or (), key=lambda item: item['text']))))",
             "aim": "past the test",
             "before": "    lines.append(summary_module.ending(data))",
-            "bug_key": "63679e54044b68d796989148bde79308d4b4984b9ea73ca34db52481e63c121c",
+            "bug_key": "0a1bf7a6296d1d55ab4e29ba74027ac897f0074c80fcb7ae5f000e63cf9a0ecf",
             "case": "the status of two rules of each of the six kinds of rule work on macOS; the proof says six lines in RULE-23's order, the fifth `  2 rules to test on Windows: run purlin:test on Windows`; the changed code prints them sorted by their words, `rules to fix` first and `rules to write a proof for` fifth",
             "file": "scripts/mcp/purlin/status.py",
             "line": 556,
-            "result": "survived",
-            "test_key": "2b6c06cfaaefcae3a641f051a6695047eb72c642f60af3d255129550d4934f44",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "cba89e542bbd2e888caa6e349e293835484a03dd56bddbfe338febd4cde686dd",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "f5e9edeb1d1b541478ffb5a1f38b5bee1d3da4a5",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-8: the test compares every line after the sentence with the six lines the proof names, in order and with the Windows line fifth, but it reads them from the summary's ending over a payload built by hand, so the order the printed status gives is not observed.",
-          "PROOF-8: the payload helper sits outside the test shown, so whether the case is taken as macOS over committed evidence cannot be read from the test itself.",
-          "PROOF-40: the test compares every line after the sentence with `Left to do:`, `  1 spec to repair: purlin:spec` and `  1 rule to fix: purlin:build` in that order, again from the summary's ending over a hand-built payload and not from the printed status.",
-          "PROOF-40: the three failing rules are one rule entry repeated three times, which still shows the broken spec counted once and its rules not counted as rules to fix.",
-          "PROOF-29: the test commits a test comment naming PROOF-9, records passing evidence, runs the status and compares its last two lines with `Left to do:` and `  1 test comment to correct: purlin:build`, which also shows there is only one line under the heading.",
-          "The spot tests found nothing, and each test compares exact literal lines that its proof names."
-        ],
-        "findings": [
-          "PROOF-8: the test still passes when scripts/mcp/purlin/status.py:556 reads \"lines.append(summary_module.ending(dict(data, left=sorted(data.get('left') or (), key=lambda item: item['text']))))\"",
-          "PROOF-8: the AI says this breaks: the status of two rules of each of the six kinds of rule work on macOS; the proof says six lines in RULE-23's order, the fifth `  2 rules to test on Windows: run purlin:test on Windows`; the changed code prints them sorted by their words, `rules to fix` first and `rules to write a proof for` fifth",
-          "PROOF-40: the test still passes when scripts/mcp/purlin/status.py:556 reads \"lines.append(summary_module.ending(dict(data, left=list(reversed(data.get('left') or ())))))\"",
-          "PROOF-40: the AI says this breaks: the status of a broken spec of three failing rules beside a spec of one failing rule; the proof says `  1 spec to repair: purlin:spec` then `  1 rule to fix: purlin:build`; the changed code prints `  1 rule to fix: purlin:build` first and `  1 spec to repair: purlin:spec` second"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "a9408879f67a013c668e54cfc85406d48f42b1c7342bd67d3974c3b21ddde7bb",
         "rule_hash": "9d0a2063174bbaba86263f6ee0be2606483851bdb7dd88ee10941a43958e5fcb",
-        "test_hash": "e7382ed2473a4fc5e07932cc07d439e86d7a6b0f86045630eda90ca544ae1f8e",
-        "verdict": "weak"
+        "test_hash": "50cf7789837807fcbc9e3486a382edf3215ab516a00c9bd7583e7bee293c6576",
+        "verdict": "strong"
       },
       "RULE-24": {
         "at": "2026-10-05T18:42:48Z",
@@ -692,14 +678,14 @@
   "feature": "summary",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T18:16:20Z",
-      "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+      "at": "2026-10-05T18:56:22Z",
+      "commit": "f5e9edeb1d1b541478ffb5a1f38b5bee1d3da4a5",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "cba89e542bbd2e888caa6e349e293835484a03dd56bddbfe338febd4cde686dd",
         "spec": "7a99aac2b05c7f7c911cf9c11b4b2269059d7c4cb099f6ae663cae964d3dc2db",
-        "tests": "b33f5af93517eba366987e736fa980f41780fe75527d9294fa2ed3e94910af59"
+        "tests": "33e7e9ea9a91360d79856a5ef808f7c7514ef3788902a6c9adb3f6a3c6539efc"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
