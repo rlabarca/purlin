@@ -2226,14 +2226,14 @@
   "feature": "run_script",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T17:43:45Z",
-      "commit": "572679b298d96e95848047a5fa1a8bf9fcb76958",
+      "at": "2026-10-05T19:04:13Z",
+      "commit": "8c67b7b740011bf59c991f705f8b7cdbd736ab9f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "d9d157140fa076e224606149574766fd541d15bfddb5a9a7b7b834383bd7b207",
         "spec": "f31a247bdbdde6b0b766957b335f8600d26a89cdc0a46f6db2d464f9870d1372",
-        "tests": "e6f0cd92f89ff0bee04af4bbc0be55ca87d65d236447401c08cf3da0c669ec7d"
+        "tests": "21b52c6d4805c1e8f043c457ec3cb5e5009d8baae892d15af2649f1f678634f1"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [

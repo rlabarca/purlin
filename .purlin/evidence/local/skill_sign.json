@@ -51,7 +51,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-05T18:16:21Z",
-      "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+      "commit": "8c67b7b740011bf59c991f705f8b7cdbd736ab9f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -62,6 +62,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-05T18:16:21Z",
+            "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-63",
           "manual": false,
@@ -70,6 +76,12 @@
           "test": "dev/test_skill_sign.py::test_the_sign_skill_holds_each_of_its_seven_commands"
         },
         {
+          "carried": {
+            "at": "2026-10-05T18:16:21Z",
+            "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-64",
           "manual": false,

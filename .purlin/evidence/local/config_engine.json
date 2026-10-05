@@ -366,7 +366,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-05T18:46:50Z",
-      "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+      "commit": "8c67b7b740011bf59c991f705f8b7cdbd736ab9f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -377,6 +377,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-05T18:46:50Z",
+            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-4",
           "manual": false,
@@ -385,6 +391,12 @@
           "test": "dev/test_config_engine.py::TestReading::test_the_settings_file_is_read_whole"
         },
         {
+          "carried": {
+            "at": "2026-10-05T18:46:50Z",
+            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-7",
           "manual": false,
@@ -393,6 +405,12 @@
           "test": "dev/test_config_engine.py::TestReading::test_no_settings_file_reads_as_empty"
         },
         {
+          "carried": {
+            "at": "2026-10-05T18:46:50Z",
+            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-8",
           "manual": false,
@@ -401,6 +419,12 @@
           "test": "dev/test_config_engine.py::TestWriting::test_a_write_adds_its_key_to_the_settings_file"
         },
         {
+          "carried": {
+            "at": "2026-10-05T18:46:50Z",
+            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-24",
           "manual": false,
@@ -409,6 +433,12 @@
           "test": "dev/test_config_engine.py::TestWriting::test_a_write_creates_the_settings_file_when_absent"
         },
         {
+          "carried": {
+            "at": "2026-10-05T18:46:50Z",
+            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": "windows",
           "id": "PROOF-38",
           "manual": false,
@@ -417,6 +447,12 @@
           "test": "dev/test_config_engine.py::TestWriting::test_on_windows_a_write_ends_its_lines_with_no_carriage_return"
         },
         {
+          "carried": {
+            "at": "2026-10-05T18:46:50Z",
+            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-26",
           "manual": false,
@@ -425,6 +461,12 @@
           "test": "dev/test_config_engine.py::TestAtomicWrite::test_a_failed_move_leaves_the_previous_file_and_no_temporary"
         },
         {
+          "carried": {
+            "at": "2026-10-05T18:46:50Z",
+            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-27",
           "manual": false,
@@ -433,6 +475,12 @@
           "test": "dev/test_config_engine.py::TestAtomicWrite::test_a_disk_full_partway_leaves_the_previous_file_and_no_temporary"
         },
         {
+          "carried": {
+            "at": "2026-10-05T18:46:50Z",
+            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": "windows",
           "id": "PROOF-39",
           "manual": false,
@@ -441,6 +489,12 @@
           "test": "dev/test_config_engine.py::TestAtomicWrite::test_on_windows_a_move_onto_a_file_held_open_leaves_it_whole"
         },
         {
+          "carried": {
+            "at": "2026-10-05T18:46:50Z",
+            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-32",
           "manual": false,
@@ -449,6 +503,12 @@
           "test": "dev/test_config_engine.py::TestASettingsFileThatCannotBeRead::test_a_trailing_comma_is_named_with_the_readers_message_and_line"
         },
         {
+          "carried": {
+            "at": "2026-10-05T18:46:50Z",
+            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-33",
           "manual": false,
@@ -457,6 +517,12 @@
           "test": "dev/test_config_engine.py::TestASettingsFileThatCannotBeRead::test_bytes_that_are_not_utf8_are_named"
         },
         {
+          "carried": {
+            "at": "2026-10-05T18:46:50Z",
+            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-35",
           "manual": false,
@@ -465,6 +531,12 @@
           "test": "dev/test_config_engine.py::TestASettingsFileThatCannotBeRead::test_a_write_is_refused_and_the_file_left_as_it_was"
         },
         {
+          "carried": {
+            "at": "2026-10-05T18:46:50Z",
+            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-45",
           "manual": false,
@@ -473,6 +545,12 @@
           "test": "dev/test_config_engine.py::TestTheProjectsName::test_the_name_under_project_in_pyproject_wins"
         },
         {
+          "carried": {
+            "at": "2026-10-05T18:46:50Z",
+            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-48",
           "manual": false,
@@ -481,6 +559,12 @@
           "test": "dev/test_config_engine.py::TestTheProjectsName::test_with_no_project_file_the_origin_remote_names_it"
         },
         {
+          "carried": {
+            "at": "2026-10-05T18:46:50Z",
+            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-49",
           "manual": false,
@@ -489,6 +573,12 @@
           "test": "dev/test_config_engine.py::TestTheProjectsName::test_with_no_project_file_and_no_remote_the_folder_names_it"
         },
         {
+          "carried": {
+            "at": "2026-10-05T18:46:50Z",
+            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-50",
           "manual": false,
@@ -497,6 +587,12 @@
           "test": "dev/test_config_engine.py::TestKeysThisVersionDoesNotRead::test_keys_the_upgrade_removes_name_the_upgrade"
         },
         {
+          "carried": {
+            "at": "2026-10-05T18:46:50Z",
+            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-51",
           "manual": false,
@@ -505,6 +601,12 @@
           "test": "dev/test_config_engine.py::TestKeysThisVersionDoesNotRead::test_a_key_the_upgrade_has_no_step_for_is_to_be_removed"
         },
         {
+          "carried": {
+            "at": "2026-10-05T18:46:50Z",
+            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-28",
           "manual": false,
@@ -513,6 +615,12 @@
           "test": "dev/test_config_engine.py::TestProjectRoot::test_the_variable_is_found_by_env"
         },
         {
+          "carried": {
+            "at": "2026-10-05T18:46:50Z",
+            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-18",
           "manual": false,
@@ -521,6 +629,12 @@
           "test": "dev/test_config_engine.py::TestProjectRoot::test_the_climb_stops_at_the_nearest_marker"
         },
         {
+          "carried": {
+            "at": "2026-10-05T18:46:50Z",
+            "commit": "65bfd2c24dd1ae09d9f6e93a78ddd6f3b6fce8a0",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-30",
           "manual": false,
