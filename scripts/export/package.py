@@ -624,7 +624,7 @@ def _audit(rule, loaded, code=''):
                             entry.get('out_of_date') or ()],
             'notes': [str(line) for line in summary.get('notes') or ()],
             'explanation': [str(line) for line in entry.get('explanation') or ()],
-            'breaks': dict(entry.get('breaks') or {}),
+            'bugs': dict(entry.get('bugs') or {}),
             'model': summary.get('model'),
             'criteria': entry.get('criteria'),
             'at': summary.get('at'),

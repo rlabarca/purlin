@@ -946,7 +946,7 @@ def test_a_run_over_a_conflicted_file_drops_an_audit_of_older_text(tmp_path):
 
 def _entry(word='strong'):
     return {'rule_hash': 'r', 'proof_hash': 'p', 'test_hash': 't',
-            'verdict': word, 'findings': [], 'breaks': {}, 'explanation': [],
+            'verdict': word, 'findings': [], 'bugs': {}, 'explanation': [],
             'model': 'm', 'criteria': 'c', 'at': 'x', 'commit': 'y'}
 
 
@@ -973,7 +973,7 @@ def test_an_audit_adds_the_entry_it_read_and_keeps_the_others(tmp_path):
 
 # The model's reply for one rule: the part of `PROOF-1`, then its reading.
 NOTHING_TO_CHANGE = ('=== PROOF-1 ===\n'
-                     'no break: the code has nothing to change\n\n'
+                     'no bug: the code has nothing to change\n\n'
                      '=== reading ===\n'
                      '- The test adds 1 and 1 and checks the sum.\n')
 
@@ -1010,7 +1010,7 @@ def test_an_audit_run_writes_the_entry_for_the_rule_it_read(tmp_path):
     assert entry['no_bug'] == [
         'No bug was planted: the model found no change that would break '
         'PROOF-1: the code has nothing to change.']
-    assert entry['breaks']['PROOF-1']['result'] == 'not made'
+    assert entry['bugs']['PROOF-1']['result'] == 'not made'
     assert entry['model'] == 'claude-fake-1'
     with open(os.path.join(REPO, 'references', 'review_criteria.md'),
               encoding='utf-8') as handle:

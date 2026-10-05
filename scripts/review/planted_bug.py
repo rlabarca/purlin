@@ -13,7 +13,7 @@ proof's test, exactly
     after:
     <the lines>
 
-or `no break: <why>`, alone or under its `aim:` and `case:` lines, read as far as
+or `no bug: <why>`, alone or under its `aim:` and `case:` lines, read as far as
 the end of that line. `aim` is recorded `past the test` or `plain`, and `plain`
 for any other word or none; `case` is the model's line, kept as written, at
 most `CASE_LIMIT` characters. A case wrapped over a second line is read to the
@@ -25,7 +25,7 @@ the same two runs of the proof's tests, and asks no model: it is how
 `purlin:audit --settle` learns whether a test now catches the bug it missed.
 
 The change is made in a copy of the project, built from
-`git ls-files -co --exclude-standard -z` under a folder named `purlin-break-*`
+`git ls-files -co --exclude-standard -z` under a folder named `purlin-bug-*`
 in the system's temporary folder, never in the project. Only the proof's own
 tests run there, through their suite's own `run` command, once before the
 change and once with it in place; the copy is removed whatever they do.
@@ -72,7 +72,7 @@ PAST_THE_TEST = 'past the test'
 PLAIN = 'plain'
 CASE_LIMIT = 300
 
-COPY_PREFIX = 'purlin-break-'
+COPY_PREFIX = 'purlin-bug-'
 NO_CHANGE = 'the answer named no change'
 NO_CASE = 'the answer named no case of the proof'
 ONLY_COMMENT = 'the change touches only a comment'
@@ -89,7 +89,7 @@ BASELINE = 'the test does not pass in a copy of the project'
 ERRORED = 'the test ended in an error, not a failure'
 
 # Why no bug was planted, which the audit picks its sentence by. `_plant` sets
-# it by where the reason came from: the model's own `no break` line, a refusal
+# it by where the reason came from: the model's own `no bug` line, a refusal
 # of this module's, or the proof's tests.
 MODEL_FOUND_NONE = 'model found none'
 ANSWER_UNUSABLE = 'answer unusable'
@@ -97,7 +97,7 @@ TEST_DOES_NOT_PASS = 'test does not pass'
 _OWN_WORDS = (NO_CHANGE, NO_CASE, ONLY_COMMENT, OUTSIDE, NOT_IN_SCOPE, NO_FILE, NOT_FOUND, FOUND_MORE,
               NO_DIFFERENCE, TEST_FILE, NO_PART)
 
-_NO_BREAK_RE = re.compile(r'^[ \t]*no break:(.*)$')
+_NO_BUG_RE = re.compile(r'^[ \t]*no bug:(.*)$')
 _CHANGE_RE = re.compile(r'^file:[ \t]*(?P<file>[^\n]+?)[ \t]*\nbefore:[ \t]*\n(?P<before>.*?)\n'
                         r'after:[ \t]*\n?(?P<after>.*)$', re.S)
 # What a terminal obeys and a person does not read: an escape sequence, then any
@@ -110,7 +110,7 @@ _CASE_RE = re.compile(r'^\s*case:(.*)$', re.I)
 _BEFORE_RE = re.compile(r'^before:[ \t]*$')
 # What the line after a `case:` line opens with where it is no second line of
 # the case.
-_OPENS_RE = re.compile(r'^\s*(?:aim:|case:|file:|before:|after:|no break:|===)', re.I)
+_OPENS_RE = re.compile(r'^\s*(?:aim:|case:|file:|before:|after:|no bug:|===)', re.I)
 
 # A comment line starts, after its indent, with `//` in any file, or with `#`
 # in a file with one of these endings. A comment at the end of a code line
@@ -141,16 +141,16 @@ def shown(text):
 
 
 def parse_answer(text):
-    """`('change', file, before, after, aim, case)`, `('no break', why)`, or None for
+    """`('change', file, before, after, aim, case)`, `('no bug', why)`, or None for
     anything else. `aim` and `case` are read from the lines `aim:` and `case:` that
     stand before `before:`, above the `file:` line or under it, in any letter case
     and after any indent: `aim` is `past the test` or `plain`, and `plain` for any
     other word or no such line; `case` is its line with outer spaces cut, at most
     `CASE_LIMIT` characters, and `''` where there is no such line. Where the line
     after `case:` is not blank and opens none of `aim:`, `case:`, `file:`,
-    `before:`, `after:`, `no break:` or `===`, it is the case's second line, read
+    `before:`, `after:`, `no bug:` or `===`, it is the case's second line, read
     to its end. `case`, the file's path and `why` are each as `shown` gives them.
-    Where the first line that is neither reads `no break: <why>`, the part names
+    Where the first line that is neither reads `no bug: <why>`, the part names
     no bug, and `why` is that one line's."""
     text = (text or '').strip('\n')
     lines = text.split('\n')
@@ -175,9 +175,9 @@ def parse_answer(text):
             case = shown(words)[:CASE_LIMIT]
         elif line.strip() or head:
             if not head:
-                found = _NO_BREAK_RE.match(line)
+                found = _NO_BUG_RE.match(line)
                 if found and shown(found.group(1)):
-                    return ('no break', shown(found.group(1)))
+                    return ('no bug', shown(found.group(1)))
             head.append(line)
         index += 1
     found = _CHANGE_RE.match('\n'.join(head + lines[index:]).strip('\n'))
@@ -256,7 +256,7 @@ def cause_of(why):
     return MODEL_FOUND_NONE
 
 
-def break_proof(project_root, feature, proof, tests, scope_files, answer, timeout=None):
+def plant_bug(project_root, feature, proof, tests, scope_files, answer, timeout=None):
     """One planted bug for one proof. `tests` is the proof's own tied tests. `answer` is
     the proof's part of the model's reply, or None where the reply holds none.
     Returns {'proof','aim','case','file','line','before','after','result','why','cause',
@@ -275,10 +275,10 @@ def break_proof(project_root, feature, proof, tests, scope_files, answer, timeou
 
 def replay(project_root, feature, proof, tests, scope_files, kept, timeout=None):
     """The change an earlier audit recorded, planted again: `kept` is its entry under
-    `breaks`, whose `file`, `before`, `after`, `aim` and `case` name it. The change
-    goes through every refusal `break_proof` has, the proof's own tests run once
+    `bugs`, whose `file`, `before`, `after`, `aim` and `case` name it. The change
+    goes through every refusal `plant_bug` has, the proof's own tests run once
     before it and once with it in place, and no model is asked. Returns what
-    `break_proof` returns."""
+    `plant_bug` returns."""
     if isinstance(proof, str):
         proof = {'id': proof}
     change = (shown(kept.get('file')), str(kept.get('before') or ''),
@@ -322,7 +322,7 @@ def _plant(project_root, feature, proof, tests, scope_files, answer, timeout):
     parsed = parse_answer(answer)
     if parsed is None:
         return _result(proof_id, 'not made', NO_CHANGE)
-    if parsed[0] == 'no break':
+    if parsed[0] == 'no bug':
         # The reason is the model's, whatever its words are.
         return _result(proof_id, 'not made', parsed[1], cause=MODEL_FOUND_NONE)
     return _plant_change(project_root, feature, proof_id, tests, scope_files,

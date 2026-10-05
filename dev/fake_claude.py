@@ -15,7 +15,7 @@ The audit asks once per rule, and the reply holds one part per proof it asks
 a bug for and then the reading (`reply`). A part names no bug,
 
     === PROOF-2 ===
-    no break: the fake model plants no bug
+    no bug: the fake model plants no bug
 
     === reading ===
     - The test reads the status.
@@ -34,7 +34,7 @@ or one change, with its aim and the case it breaks (`change`):
 What the fake answers is set in `fake_claude.json` beside it:
 
     answers   one per call in order; the last one repeats. Each is
-              - null: a part reading `no break: the fake model plants no bug`
+              - null: a part reading `no bug: the fake model plants no bug`
                 for each proof the request asks a bug for, and an empty reading;
               - an object `{"PROOF-2": <part>, "reading": <lines>}`: the part
                 of each proof the request asks for and the object names, then
@@ -56,7 +56,7 @@ import os
 import stat
 import sys
 
-DEFAULT_ANSWER = 'no break: the fake model plants no bug'
+DEFAULT_ANSWER = 'no bug: the fake model plants no bug'
 DEFAULT_MODEL = 'claude-fake-1'
 
 _SCRIPT = r'''#!%(python)s

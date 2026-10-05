@@ -24,7 +24,7 @@ model is the one its `modelUsage` names, or `unknown` where it names none.
 
 **The reply.** Cut at each line `=== PROOF-N ===` or `=== reading ===`
 (`read_reply`). A proof's part names its planted bug, with its aim and the
-case it breaks, which `targeted_break.parse_answer` reads. Under the reading, one sentence per line
+case it breaks, which `planted_bug.parse_answer` reads. Under the reading, one sentence per line
 opening `- ` is the explanation, and the lines under a `notes:` line are the
 notes. A reply with no such line at all is read whole as the reading. The
 reply sets no verdict.
@@ -172,9 +172,9 @@ def is_read(entry, again=False, audit=None, plant=()):
         return False
     if again or not audit or audit.get('out_of_date'):
         return True
-    breaks = audit.get('breaks') if isinstance(audit.get('breaks'),
-                                               dict) else {}
-    return any(proof not in breaks for proof in plant or ())
+    bugs = audit.get('bugs') if isinstance(audit.get('bugs'),
+                                           dict) else {}
+    return any(proof not in bugs for proof in plant or ())
 
 
 def reading_for(project_root, payload, feature, rule, findings=()):
@@ -304,7 +304,7 @@ REPLY_PARTS = (
     'or, for a proof no change to these files can break:',
     '',
     '=== %(proof)s ===',
-    'no break: <why, in one sentence>',
+    'no bug: <why, in one sentence>',
     '',
     'Then the reading:',
     '',
@@ -594,7 +594,7 @@ def audit_all(project_root, readings, parallel=AUDIT_PARALLEL, runner=None,
         return [future.result() for future in futures]
 
 
-def break_key(test_source_hash, code_part):
+def bug_key(test_source_hash, code_part):
     """The sha256 of a proof's tests' source hash and its code part, joined
     by a line feed: a planted bug's result holds while this is unchanged."""
     return hashlib.sha256(('%s\n%s' % (test_source_hash or '',

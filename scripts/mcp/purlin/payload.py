@@ -1,4 +1,4 @@
-"""The structured project payload, schema 16.
+"""The structured project payload, schema 17.
 
 One reader assembles specs and evidence into the cells of every rule, and
 every surface renders that: the status table, the dashboard, the evidence
@@ -6,7 +6,7 @@ package and the drift report. A surface that parsed the rendered table would
 be coupled to a layout; this is the shape they all read instead.
 
     {
-      "schema_version": 16,
+      "schema_version": 17,
       "generated_at": "2026-10-01T12:00:00Z",
       "generated_by": "sync_status",
       "project": "labconnect",
@@ -50,10 +50,10 @@ be coupled to a layout; this is the shape they all read instead.
             "left": "to_strengthen",
             "audit": {"verdict": "weak", "findings": ["..."], "no_bug": [],
                       "notes": [], "explanation": ["..."],
-                      "breaks": {"PROOF-1": {"file": "src/login.py", "line": 12,
-                                             "before": "...", "after": "...",
-                                             "result": "survived", "why": "",
-                                             "break_key": "<sha256>"}},
+                      "bugs": {"PROOF-1": {"file": "src/login.py", "line": 12,
+                                           "before": "...", "after": "...",
+                                           "result": "survived", "why": "",
+                                           "bug_key": "<sha256>"}},
                       "model": "<model>", "at": "...", "commit": "<sha>",
                       "path": ".purlin/evidence/local/login.json",
                       "out_of_date": []},
@@ -185,7 +185,7 @@ from purlin import (PURLIN_VERSION,
                     summary as summary_module,
                     wording as wording_module)
 
-SCHEMA_VERSION = 16
+SCHEMA_VERSION = 17
 REPORT_DATA_PATH = os.path.join('.purlin', 'report-data.js')
 _PREFIX = 'const PURLIN_DATA = '
 
@@ -682,24 +682,24 @@ def audit_summary(audit):
     """`rules[].audit`: the rule's audit entry in eleven fields, or None.
 
     The `verdict`, the findings, the `no_bug` sentences and the notes, the
-    model's `explanation` and the planted bugs under `breaks`, both exactly
+    model's `explanation` and the planted bugs under `bugs`, both exactly
     as the entry holds them, the model that read the rule, when and at which
     commit, the evidence file the entry sits in, and `out_of_date`, the
     parts that changed since the entry was written, `[]` for a current one.
     An entry that holds no `explanation` carries `[]` and one that holds no
-    `breaks` carries `{}`, which is what an entry with none is written with.
+    `bugs` carries `{}`, which is what an entry with none is written with.
     An entry whose verdict the format does not name answers nothing.
     """
     if not audit or audit.get('verdict') not in states.VERDICTS:
         return None
     explanation = audit.get('explanation')
-    breaks = audit.get('breaks')
+    bugs = audit.get('bugs')
     return {'verdict': audit.get('verdict'),
             'findings': [str(line) for line in audit.get('findings') or ()],
             'no_bug': [str(line) for line in audit.get('no_bug') or ()],
             'notes': [str(line) for line in audit.get('notes') or ()],
             'explanation': [] if explanation is None else explanation,
-            'breaks': {} if breaks is None else breaks,
+            'bugs': {} if bugs is None else bugs,
             'model': audit.get('model') or 'unknown',
             'at': audit.get('at'),
             'commit': audit.get('commit'),

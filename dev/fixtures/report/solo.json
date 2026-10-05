@@ -488,7 +488,7 @@
     }
   },
   "project": "ledger",
-  "schema_version": 16,
+  "schema_version": 17,
   "signoff": {
     "commit": null,
     "since": null,

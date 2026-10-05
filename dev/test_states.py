@@ -738,7 +738,7 @@ class TestTheAuditOnTheRule:
         audit = project.rule('RULE-2')['audit']
         head = project.head()
         assert list(audit) == ['verdict', 'findings', 'no_bug', 'notes',
-                               'explanation', 'breaks', 'model', 'at',
+                               'explanation', 'bugs', 'model', 'at',
                                'commit', 'path', 'out_of_date'], audit
         assert audit['verdict'] == 'weak', audit
         assert audit['findings'] == ['PROOF-2 reads 401 alone.']
@@ -746,7 +746,7 @@ class TestTheAuditOnTheRule:
         assert audit['out_of_date'] == [], audit
         assert audit['notes'] == [], audit
         assert audit['explanation'] == [], audit
-        assert audit['breaks'] == {}, audit
+        assert audit['bugs'] == {}, audit
         assert audit['model'] == 'unknown', audit
         assert audit['path'] == '.purlin/evidence/local/login.json'
         assert audit['at'] == '2026-09-13T12:05:00Z', audit
@@ -756,17 +756,17 @@ class TestTheAuditOnTheRule:
     def test_the_explanation_and_the_planted_bug_are_carried_as_the_entry_holds_them(
             self, project):
         explanation = ['The test calls login and reads no status.']
-        breaks = {'PROOF-2': {'file': 'src/login.py', 'line': 12,
-                              'before': 'return 401', 'after': 'return 200',
-                              'result': 'survived', 'why': '',
-                              'break_key': 'a' * 64}}
+        bugs = {'PROOF-2': {'file': 'src/login.py', 'line': 12,
+                            'before': 'return 401', 'after': 'return 200',
+                            'result': 'survived', 'why': '',
+                            'bug_key': 'a' * 64}}
         project.evidence(PASSING)
         project.audit('RULE-2', observations=[
             'PROOF-2: the test still passes when src/login.py:12 reads '
-            '"return 200"'], explanation=explanation, breaks=breaks)
+            '"return 200"'], explanation=explanation, bugs=bugs)
         audit = project.rule('RULE-2')['audit']
         assert audit['explanation'] == explanation, audit
-        assert audit['breaks'] == breaks, audit
+        assert audit['bugs'] == bugs, audit
 
 
 # ---------------------------------------------------------------------------
@@ -826,7 +826,7 @@ class TestPayload:
     # purlin: states PROOF-31
     def test_schema_sixteen_carries_exactly_the_seventeen_keys(self, project):
         data = project.payload()
-        assert data['schema_version'] == 16
+        assert data['schema_version'] == 17
         assert sorted(data) == sorted((
             'schema_version', 'generated_at', 'generated_by', 'project',
             'version', 'branch', 'commit', 'dirty', 'summary', 'features',

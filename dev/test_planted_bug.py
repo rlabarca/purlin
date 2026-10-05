@@ -1,7 +1,7 @@
 """The planted bug: one change per proof, made in a copy of the project and never in it.
 
 Each test builds a small project of its own, `src/age.py` with one marked test per proof,
-and either hands one part of a reply to `targeted_break.break_proof` or runs the audit there
+and either hands one part of a reply to `planted_bug.plant_bug` or runs the audit there
 with the fake `claude`. No test audits this repository's code and none reaches a real model.
 """
 
@@ -23,7 +23,7 @@ sys.path.insert(0, _HERE)
 
 import audit_run  # noqa: E402
 import fake_claude  # noqa: E402
-import targeted_break  # noqa: E402
+import planted_bug  # noqa: E402
 
 RUN_SCRIPT = os.path.join(_ROOT, 'scripts', 'run', 'purlin_run.py')
 EVIDENCE = '.purlin/evidence/local/age.json'
@@ -59,7 +59,7 @@ def part(before, after, path='src/age.py', case=CASE, aim=None):
     return fake_claude.change(path, before, after, case=case, aim=aim)
 
 
-BREAK = part('    return days', '    return 0')
+BUG = part('    return days', '    return 0')
 # A bug that makes the test run past a limit of 2 seconds.
 SLOW = part('    return days', '    __import__("time").sleep(20)\n    return days')
 
@@ -153,7 +153,7 @@ def files_of(root):
 
 def copies(tmp_path):
     return [name for name in os.listdir(str(tmp_path / 'tmp'))
-            if name.startswith('purlin-break-')]
+            if name.startswith('purlin-bug-')]
 
 
 # purlin: planted_bug PROOF-1
@@ -162,8 +162,8 @@ def test_the_project_holds_the_same_bytes_after_a_bug(tmp_path):
     write(root, 'notes.txt', 'untracked\n')
     before = files_of(root)
     status = git(root, 'status', '--porcelain')
-    result = targeted_break.break_proof(root, 'age', PROOF, own_test(), SCOPE,
-                                        BREAK)
+    result = planted_bug.plant_bug(root, 'age', PROOF, own_test(), SCOPE,
+                                   BUG)
     assert result['file'] == 'src/age.py'
     assert files_of(root) == before
     assert git(root, 'status', '--porcelain') == status
@@ -173,7 +173,7 @@ def test_the_project_holds_the_same_bytes_after_a_bug(tmp_path):
 def test_the_project_holds_the_same_bytes_after_a_test_runs_past_its_limit(tmp_path):
     root = project(tmp_path, {'PROOF-1': STRONG})
     before = files_of(root)
-    result = targeted_break.break_proof(root, 'age', PROOF, own_test(), SCOPE, SLOW, timeout=2)
+    result = planted_bug.plant_bug(root, 'age', PROOF, own_test(), SCOPE, SLOW, timeout=2)
     assert files_of(root) == before
     assert result['after'].startswith('    __import__("time").sleep(20)'), result
     assert result['result'] == 'not run'
@@ -182,8 +182,8 @@ def test_the_project_holds_the_same_bytes_after_a_test_runs_past_its_limit(tmp_p
 # purlin: planted_bug PROOF-2
 def test_a_test_that_still_passes_reads_survived(tmp_path):
     root = project(tmp_path, {'PROOF-1': WEAK})
-    result = targeted_break.break_proof(root, 'age', PROOF, own_test(), SCOPE,
-                                        BREAK)
+    result = planted_bug.plant_bug(root, 'age', PROOF, own_test(), SCOPE,
+                                   BUG)
     assert result['line'] == 12
     assert result['result'] == 'survived'
     assert result['finding'] == 'PROOF-1: the test still passes when src/age.py:12 reads "return 0"'
@@ -192,8 +192,8 @@ def test_a_test_that_still_passes_reads_survived(tmp_path):
 # purlin: planted_bug PROOF-3
 def test_a_test_that_fails_reads_caught(tmp_path):
     root = project(tmp_path, {'PROOF-1': STRONG})
-    result = targeted_break.break_proof(root, 'age', PROOF, own_test(), SCOPE,
-                                        BREAK)
+    result = planted_bug.plant_bug(root, 'age', PROOF, own_test(), SCOPE,
+                                   BUG)
     assert result['result'] == 'caught'
     assert result['finding'] is None
 
@@ -202,7 +202,7 @@ def test_a_test_that_fails_reads_caught(tmp_path):
 def test_a_test_that_can_no_longer_be_collected_reads_not_run(tmp_path):
     root = project(tmp_path, {'PROOF-1': STRONG})
     answer = part('def age(', 'def age_(')
-    result = targeted_break.break_proof(root, 'age', PROOF, own_test(), SCOPE, answer)
+    result = planted_bug.plant_bug(root, 'age', PROOF, own_test(), SCOPE, answer)
     assert result['line'] == 8, result
     assert result['result'] == 'not run'
     assert result['result'] != 'caught'
@@ -219,7 +219,7 @@ RAISES = part('    return 90', '    raise ValueError(stamp)')
 # purlin: planted_bug PROOF-20
 def test_a_test_that_ends_in_an_error_reads_not_run(tmp_path):
     root = project(tmp_path, {'PROOF-1': STRONG}, extra=SETUP)
-    result = targeted_break.break_proof(root, 'age', PROOF, own_test(), SCOPE, RAISES)
+    result = planted_bug.plant_bug(root, 'age', PROOF, own_test(), SCOPE, RAISES)
     assert result['after'] == '    raise ValueError(stamp)', result
     assert (result['result'], result['why']) == (
         'not run', 'the test ended in an error, not a failure'), result
@@ -234,7 +234,7 @@ SAME_SIZE = part('    return 90', '    return 91')
 # purlin: planted_bug PROOF-21
 def test_a_change_that_keeps_the_files_size_is_still_run(tmp_path):
     root = project(tmp_path, {'PROOF-1': STRONG})
-    result = targeted_break.break_proof(root, 'age', PROOF, own_test(), SCOPE, SAME_SIZE)
+    result = planted_bug.plant_bug(root, 'age', PROOF, own_test(), SCOPE, SAME_SIZE)
     assert (result['before'], result['after']) == ('    return 90', '    return 91')
     assert result['result'] == 'caught', result
     assert result['result'] != 'survived'
@@ -244,8 +244,8 @@ def test_a_change_that_keeps_the_files_size_is_still_run(tmp_path):
 def test_a_file_outside_the_copy_is_not_made(tmp_path):
     root = project(tmp_path, {'PROOF-1': STRONG})
     answer = part('    return days', '    return 0', path='../outside.py')
-    result = targeted_break.break_proof(root, 'age', PROOF, own_test(), SCOPE + ['../outside.py'],
-                                        answer)
+    result = planted_bug.plant_bug(root, 'age', PROOF, own_test(), SCOPE + ['../outside.py'],
+                                   answer)
     assert result['result'] == 'not made'
     assert result['why'] == '../outside.py is outside the copy of the project'
     assert not os.path.exists(os.path.join(str(tmp_path), 'outside.py'))
@@ -255,7 +255,7 @@ def test_a_file_outside_the_copy_is_not_made(tmp_path):
 # purlin: planted_bug PROOF-7
 def test_a_project_that_changes_while_the_audit_runs_stops_the_audit(tmp_path, own_claude):
     root = project(tmp_path, {'PROOF-1': STRONG})
-    fake_claude.install(own_claude, answers=[{'PROOF-1': BREAK}], writes=[
+    fake_claude.install(own_claude, answers=[{'PROOF-1': BUG}], writes=[
         os.path.join(root, 'src', 'age.py'), '# the model wrote here\n'])
     code, lines, before, after = audit(root)
     assert len(fake_claude.calls(own_claude)) == 1
@@ -270,10 +270,10 @@ def test_a_project_that_changes_while_the_audit_runs_stops_the_audit(tmp_path, o
 def test_three_bugs_with_nothing_else_touching_the_project(tmp_path, own_claude):
     root = project(tmp_path, {'PROOF-1': STRONG, 'PROOF-2': WEAK, 'PROOF-3': STRONG})
     fake_claude.install(own_claude, answers=[
-        {'PROOF-1': BREAK, 'PROOF-2': BREAK, 'PROOF-3': BREAK}])
+        {'PROOF-1': BUG, 'PROOF-2': BUG, 'PROOF-3': BUG}])
     code, lines, _before, after = audit(root)
-    breaks = json.loads(after)['audit']['rules']['RULE-1']['breaks']
-    assert {proof: made['result'] for proof, made in breaks.items()} == {
+    bugs = json.loads(after)['audit']['rules']['RULE-1']['bugs']
+    assert {proof: made['result'] for proof, made in bugs.items()} == {
         'PROOF-1': 'caught', 'PROOF-2': 'survived', 'PROOF-3': 'caught'}
     assert not [line for line in lines if line.startswith('The audit stopped:')]
     assert code == 0
@@ -284,20 +284,20 @@ def test_the_copy_is_removed_when_the_test_fails(tmp_path):
     seen = os.path.join(str(tmp_path), 'seen.txt')
     body = 'open(%r, "w").write(__import__("os").getcwd())\n%s' % (seen, STRONG)
     root = project(tmp_path, {'PROOF-1': body})
-    result = targeted_break.break_proof(root, 'age', PROOF, own_test(), SCOPE,
-                                        BREAK)
+    result = planted_bug.plant_bug(root, 'age', PROOF, own_test(), SCOPE,
+                                   BUG)
     assert result['result'] == 'caught'
     with open(seen, encoding='utf-8') as handle:
         ran_in = handle.read()
-    assert os.path.basename(ran_in).startswith('purlin-break-')
+    assert os.path.basename(ran_in).startswith('purlin-bug-')
     assert copies(tmp_path) == []
 
 
 # purlin: planted_bug PROOF-14
 def test_the_copy_is_removed_when_the_test_runs_past_its_limit(tmp_path):
     root = project(tmp_path, {'PROOF-1': STRONG})
-    result = targeted_break.break_proof(root, 'age', PROOF, own_test(), SCOPE,
-                                        SLOW, timeout=2)
+    result = planted_bug.plant_bug(root, 'age', PROOF, own_test(), SCOPE,
+                                   SLOW, timeout=2)
     assert result['result'] == 'not run'
     assert copies(tmp_path) == []
 
@@ -312,10 +312,10 @@ def test_claude_resolves_under_this_tests_own_folder(tmp_path):
 # purlin: planted_bug PROOF-12
 def test_only_the_proofs_own_test_runs_against_its_bug(tmp_path):
     root = project(tmp_path, {'PROOF-1': WEAK, 'PROOF-2': STRONG})
-    result = targeted_break.break_proof(root, 'age', PROOF, own_test('PROOF-1'), SCOPE,
-                                        BREAK)
-    other = targeted_break.break_proof(root, 'age', dict(PROOF, id='PROOF-2'),
-                                       own_test('PROOF-2'), SCOPE, BREAK)
+    result = planted_bug.plant_bug(root, 'age', PROOF, own_test('PROOF-1'), SCOPE,
+                                   BUG)
+    other = planted_bug.plant_bug(root, 'age', dict(PROOF, id='PROOF-2'),
+                                  own_test('PROOF-2'), SCOPE, BUG)
     assert other['result'] == 'caught'
     assert result['result'] == 'survived'
 
@@ -324,8 +324,8 @@ def test_only_the_proofs_own_test_runs_against_its_bug(tmp_path):
 def test_another_proofs_test_in_the_same_file_is_not_started(tmp_path):
     log, logging = logs_where_it_runs(tmp_path)
     root = project(tmp_path, {'PROOF-1': STRONG, 'PROOF-2': logging})
-    result = targeted_break.break_proof(root, 'age', PROOF, own_test('PROOF-1'), SCOPE,
-                                        BREAK)
+    result = planted_bug.plant_bug(root, 'age', PROOF, own_test('PROOF-1'), SCOPE,
+                                   BUG)
     assert result['result'] == 'caught'
     # The test of PROOF-2 writes a line each time it runs, and it never ran:
     # not before the bug and not with it in place.
@@ -342,8 +342,8 @@ def test_a_change_that_matches_twice_is_not_made(tmp_path):
     ran, body = ran_marker(tmp_path)
     twice = AGE + '\n\ndef older(stamp):\n    days = minutes(stamp) * 2\n    return days\n'
     root = project(tmp_path, {'PROOF-1': body}, age=twice)
-    result = targeted_break.break_proof(root, 'age', PROOF, own_test(), SCOPE,
-                                        BREAK)
+    result = planted_bug.plant_bug(root, 'age', PROOF, own_test(), SCOPE,
+                                   BUG)
     assert result['result'] == 'not made'
     assert result['why'] == 'the lines before the change are in src/age.py 2 times, not once'
     assert not os.path.exists(ran)
@@ -355,19 +355,19 @@ def test_a_file_the_scope_does_not_name_is_not_made(tmp_path):
     root = project(tmp_path, {'PROOF-1': body})
     write(root, 'README.md', 'return days\n')
     answer = part('return days', 'return 0', path='README.md')
-    result = targeted_break.break_proof(root, 'age', PROOF, own_test(), SCOPE,
-                                        answer)
+    result = planted_bug.plant_bug(root, 'age', PROOF, own_test(), SCOPE,
+                                   answer)
     assert result['result'] == 'not made'
     assert result['why'] == "README.md is not a file the feature's scope names"
     assert not os.path.exists(ran)
 
 
 # purlin: planted_bug PROOF-10
-def test_an_answer_of_no_break_is_not_made_with_its_reason(tmp_path):
+def test_an_answer_of_no_bug_is_not_made_with_its_reason(tmp_path):
     root = project(tmp_path, {'PROOF-1': STRONG})
-    result = targeted_break.break_proof(
+    result = planted_bug.plant_bug(
         root, 'age', PROOF, own_test(), SCOPE,
-        'no break: the proof names no value the code computes')
+        'no bug: the proof names no value the code computes')
     assert result['result'] == 'not made'
     assert result['why'] == 'the proof names no value the code computes'
     assert result['cause'] == 'model found none'
@@ -380,8 +380,8 @@ def test_a_change_to_the_proofs_own_test_file_is_not_made(tmp_path):
     root = project(tmp_path, {'PROOF-1': body})
     answer = part('    assert age(s) == 90', '    assert age(s) == 0',
                   path='tests/test_age.py')
-    result = targeted_break.break_proof(root, 'age', PROOF, own_test(),
-                                        SCOPE + ['tests/test_age.py'], answer)
+    result = planted_bug.plant_bug(root, 'age', PROOF, own_test(),
+                                   SCOPE + ['tests/test_age.py'], answer)
     assert result['result'] == 'not made'
     assert result['why'] == "tests/test_age.py holds one of the proof's tests"
     assert not os.path.exists(ran)
@@ -396,7 +396,7 @@ def test_a_test_that_does_not_pass_in_the_copy_has_no_bug_planted(tmp_path):
         'ignore data')
     write(root, 'data/built.json', '[90]\n')
     assert git(root, 'status', '--porcelain') == ''
-    result = targeted_break.break_proof(root, 'age', PROOF, own_test(), SCOPE, BREAK)
+    result = planted_bug.plant_bug(root, 'age', PROOF, own_test(), SCOPE, BUG)
     assert result['result'] == 'not made'
     assert result['result'] != 'caught'
     assert result['why'] == 'the test does not pass in a copy of the project'
@@ -408,8 +408,8 @@ def test_a_test_that_does_not_pass_in_the_copy_has_no_bug_planted(tmp_path):
 # ---------------------------------------------------------------------------
 
 def bug_of(after, proof='PROOF-1'):
-    """The entry under `breaks` the audit wrote for `proof`."""
-    return json.loads(after)['audit']['rules']['RULE-1']['breaks'][proof]
+    """The entry under `bugs` the audit wrote for `proof`."""
+    return json.loads(after)['audit']['rules']['RULE-1']['bugs'][proof]
 
 
 def logs_where_it_runs(tmp_path):
@@ -420,12 +420,12 @@ def logs_where_it_runs(tmp_path):
 
 
 def ran_in_a_copy(log):
-    """The folders named `purlin-break-*` the test ran in."""
+    """The folders named `purlin-bug-*` the test ran in."""
     with open(log, encoding='utf-8') as handle:
         folders = handle.read().split('\n')
     assert [folder for folder in folders if folder], 'the test never ran'
     return [folder for folder in folders
-            if os.path.basename(folder).startswith('purlin-break-')]
+            if os.path.basename(folder).startswith('purlin-bug-')]
 
 
 def refused(reason):
@@ -665,10 +665,10 @@ def found_none(reason):
 
 
 # purlin: planted_bug PROOF-39
-def test_no_break_after_an_aim_line_is_read_as_no_break(tmp_path, own_claude):
+def test_no_bug_after_an_aim_line_is_read_as_no_bug(tmp_path, own_claude):
     root = project(tmp_path, {'PROOF-1': STRONG})
     fake_claude.install(own_claude, answers=[
-        {'PROOF-1': 'aim: plain\nno break: the test checks the case and its result\n'}])
+        {'PROOF-1': 'aim: plain\nno bug: the test checks the case and its result\n'}])
     code, lines, _before, after = audit(root)
     assert code == 0
     at = lines.index('age RULE-1   spot-checked')
@@ -677,10 +677,10 @@ def test_no_break_after_an_aim_line_is_read_as_no_break(tmp_path, own_claude):
 
 
 # purlin: planted_bug PROOF-40
-def test_a_no_break_reason_of_two_lines_is_cut_to_its_first(tmp_path, own_claude):
+def test_a_no_bug_reason_of_two_lines_is_cut_to_its_first(tmp_path, own_claude):
     root = project(tmp_path, {'PROOF-1': STRONG})
     fake_claude.install(own_claude, answers=[
-        {'PROOF-1': 'no break: nothing here.\nThe code is a constant.\n'}])
+        {'PROOF-1': 'no bug: nothing here.\nThe code is a constant.\n'}])
     code, lines, _before, after = audit(root)
     assert code == 0
     at = lines.index('age RULE-1   spot-checked')
@@ -763,10 +763,10 @@ def test_a_case_is_printed_and_kept_without_its_escape_sequences(tmp_path, own_c
 
 
 # purlin: planted_bug PROOF-45
-def test_a_no_break_reason_is_printed_without_its_escape_sequences(tmp_path, own_claude):
+def test_a_no_bug_reason_is_printed_without_its_escape_sequences(tmp_path, own_claude):
     root = project(tmp_path, {'PROOF-1': STRONG})
     fake_claude.install(own_claude, answers=[
-        {'PROOF-1': 'no break: the test %schecks the case%s\n' % (CLEAR, BELL)}])
+        {'PROOF-1': 'no bug: the test %schecks the case%s\n' % (CLEAR, BELL)}])
     code, lines, _before, after = audit(root)
     assert code == 0
     assert found_none('the test checks the case') in lines, lines
@@ -829,9 +829,9 @@ OWN_WORDS = 'the refund path the proof names is not in the project'
 
 
 # purlin: planted_bug PROOF-51
-def test_a_no_break_reason_in_the_modules_own_words_is_the_models(tmp_path, own_claude):
+def test_a_no_bug_reason_in_the_modules_own_words_is_the_models(tmp_path, own_claude):
     root = project(tmp_path, {'PROOF-1': STRONG})
-    fake_claude.install(own_claude, answers=[{'PROOF-1': 'no break: %s\n' % OWN_WORDS}])
+    fake_claude.install(own_claude, answers=[{'PROOF-1': 'no bug: %s\n' % OWN_WORDS}])
     code, lines, _before, after = audit(root)
     assert code == 0
     at = lines.index('age RULE-1   spot-checked')
@@ -840,9 +840,9 @@ def test_a_no_break_reason_in_the_modules_own_words_is_the_models(tmp_path, own_
 
 
 # purlin: planted_bug PROOF-52
-def test_a_kept_no_break_reason_prints_as_the_models_when_read_again(tmp_path, own_claude):
+def test_a_kept_no_bug_reason_prints_as_the_models_when_read_again(tmp_path, own_claude):
     root = project(tmp_path, {'PROOF-1': STRONG})
-    fake_claude.install(own_claude, answers=[{'PROOF-1': 'no break: %s\n' % OWN_WORDS}])
+    fake_claude.install(own_claude, answers=[{'PROOF-1': 'no bug: %s\n' % OWN_WORDS}])
     code, _lines, _before, _after = audit(root)
     assert code == 0
     out = io.StringIO()
@@ -959,7 +959,7 @@ def test_an_indented_go_directive_changed_is_planted(tmp_path, own_claude):
 # a copy the audit made, which is where a planted bug is.
 WRITES_IN_THE_PROJECT = (
     'import os\n'
-    'if "purlin-break-" in os.path.abspath(__file__):\n'
+    'if "purlin-bug-" in os.path.abspath(__file__):\n'
     '    with open(%r, "a") as handle:\n'
     '        handle.write("the test ran\\n")\n'
     + WEAK)
@@ -969,7 +969,7 @@ WRITES_IN_THE_PROJECT = (
 def test_a_project_that_changes_as_a_bug_is_planted_again_stops_the_settle(
         tmp_path, own_claude):
     root = project(tmp_path, {'PROOF-1': WEAK})
-    fake_claude.install(own_claude, answers=[{'PROOF-1': BREAK}])
+    fake_claude.install(own_claude, answers=[{'PROOF-1': BUG}])
     code, _lines, _before, kept = audit(root)
     assert code == 0
     assert bug_of(kept)['result'] == 'survived', bug_of(kept)
