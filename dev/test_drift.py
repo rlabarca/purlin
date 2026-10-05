@@ -568,10 +568,23 @@ class TestAnchorsBehind:
         assert rows[0]['anchor'] == 'policy', rows
         assert rows[0]['status'] == 'error', rows
         assert 'remote_sha' not in rows[0], rows
-        assert missing in rows[0]['error'], rows
-        assert ('anchor policy: the source could not be read (%s). Check its '
-                '> Source: line, then run purlin:anchor sync policy.'
-                % rows[0]['error']) in _lines(report), _lines(report)
+        reason = rows[0]['error']
+        assert missing in reason, rows
+        # A reason says why, in git's own words for that path: the path alone
+        # is no reason.
+        said = ' '.join(_git(['ls-remote', missing, 'HEAD'], str(tmp_path),
+                             check=False).stderr.split())
+        assert missing in said, said
+        assert reason != missing, rows
+        assert said.startswith(reason), (reason, said)
+        assert reason.startswith(said[:said.index(missing)]), (reason, said)
+        assert rows == [{'anchor': 'policy', 'source': missing,
+                         'pinned': 'abc1234', 'status': 'error',
+                         'error': reason}], rows
+        assert _lines(report).count(
+            'anchor policy: the source could not be read (%s). Check its '
+            '> Source: line, then run purlin:anchor sync policy.'
+            % reason) == 1, _lines(report)
 
 
 # ---------------------------------------------------------------------------
@@ -742,9 +755,12 @@ class TestNumbersWrittenTwice:
             lines
 
     # purlin: drift PROOF-73
-    def test_origin_main_fetched_three_days_ago_says_so(self, tmp_path):
+    def test_origin_main_fetched_three_days_ago_says_so(self, tmp_path,
+                                                        monkeypatch):
         checkout = _merged_twice(tmp_path)
-        when = int(time.time()) - 3 * 86400 - 120
+        # Three days to the second: one second less would read 2 days.
+        now = int(time.time())
+        when = now - 3 * 86400
         fetched = _sha(checkout, 'refs/remotes/origin/main')
         # Git logs a ref's update only when its value moves, so the ref steps
         # back one commit and forward again, both at that time.
@@ -752,10 +768,16 @@ class TestNumbersWrittenTwice:
             _git(['update-ref', '-m', 'fetch: long ago',
                   'refs/remotes/origin/main', sha],
                  checkout, env={'GIT_COMMITTER_DATE': '@%d +0000' % when})
-        report = _report(checkout)
-        assert ('origin/main was last fetched 3 days ago, and drift does not '
-                'fetch. Run git fetch, then purlin:drift again.') in \
-            _lines(report), _lines(report)
+        with monkeypatch.context() as clock:
+            clock.setattr(purlin_drift.time, 'time', lambda: float(now))
+            report = _report(checkout)
+        assert _lines(report).count(
+            'origin/main was last fetched 3 days ago, and drift does not '
+            'fetch. Run git fetch, then purlin:drift again.') == 1, \
+            _lines(report)
+        assert not [line for line in _lines(report)
+                    if 'was last fetched' in line
+                    and '3 days ago' not in line], _lines(report)
         assert _view(report)['default_branch']['ref'] == 'origin/main'
 
 
@@ -850,18 +872,28 @@ class TestCannotRead:
     def test_a_trailing_comma_answers_the_sentence_alone(self, tmp_path,
                                                          monkeypatch):
         root = _repo(str(tmp_path / 'proj'), LOGIN_FILES)
-        _write(os.path.join(root, '.purlin', 'config.json'),
-               '{\n  "version": "0.10.0",\n}\n')
+        held = '{\n  "version": "0.10.0",\n}\n'
+        _write(os.path.join(root, '.purlin', 'config.json'), held)
         calls = _spied(monkeypatch)
 
         answer = purlin_drift.drift(root)
 
         # The JSON reader's own message and line differ between versions of
-        # Python, so they are read as any message and any line.
-        assert re.match(re.escape('.purlin/config.json cannot be read: ')
-                        + r'\S.* at line \d+'
-                        + re.escape('. Fix the file by hand; nothing ran and '
-                                    'nothing was saved.') + '$', answer), answer
+        # Python, so this Python's reader is asked for them.
+        try:
+            json.loads(held)
+        except json.JSONDecodeError as refused:
+            message, line = refused.msg, refused.lineno
+        assert message and line in (2, 3), (message, line)
+        # The whole answer: the sentence, with nothing before or after it.
+        assert answer == ('.purlin/config.json cannot be read: %s at line %d. '
+                          'Fix the file by hand; nothing ran and nothing was '
+                          'saved.' % (message, line)), answer
+        assert re.fullmatch(re.escape('.purlin/config.json cannot be read: ')
+                            + r'\S.* at line \d+'
+                            + re.escape('. Fix the file by hand; nothing ran '
+                                        'and nothing was saved.'),
+                            answer), answer
         assert 'comma' in answer.lower() or 'property name' in answer, answer
         assert calls == [], calls
 
