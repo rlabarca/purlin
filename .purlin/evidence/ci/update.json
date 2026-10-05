@@ -3,7 +3,7 @@
   "platforms": {
     "windows": {
       "at": "2026-10-05T13:47:48Z",
-      "commit": "82a3eb3254460c7781dc3b7fecaa7337be173404",
+      "commit": "c5ebf322fda22e7e98adb07d6b1757d966e1bbb2",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -14,6 +14,12 @@
       "machine": "runnervmfi6oq",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-05T13:47:48Z",
+            "commit": "82a3eb3254460c7781dc3b7fecaa7337be173404",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "machine": "runnervmfi6oq"
+          },
           "env": "windows",
           "id": "PROOF-117",
           "manual": false,
@@ -22,6 +28,12 @@
           "test": "dev/test_init_update.py::test_on_windows_a_second_run_finds_nothing_and_changes_nothing"
         },
         {
+          "carried": {
+            "at": "2026-10-05T13:47:48Z",
+            "commit": "82a3eb3254460c7781dc3b7fecaa7337be173404",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "machine": "runnervmfi6oq"
+          },
           "env": "windows",
           "id": "PROOF-118",
           "manual": false,
@@ -30,6 +42,12 @@
           "test": "dev/test_init_update.py::test_on_windows_every_backup_keeps_the_bytes_from_before"
         },
         {
+          "carried": {
+            "at": "2026-10-05T13:47:48Z",
+            "commit": "82a3eb3254460c7781dc3b7fecaa7337be173404",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "machine": "runnervmfi6oq"
+          },
           "env": "windows",
           "id": "PROOF-120",
           "manual": false,

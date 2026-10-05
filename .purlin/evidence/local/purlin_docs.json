@@ -3,7 +3,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-05T13:24:28Z",
-      "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
+      "commit": "c5ebf322fda22e7e98adb07d6b1757d966e1bbb2",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -14,6 +14,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-05T13:24:28Z",
+            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-17",
           "manual": false,
@@ -22,6 +28,12 @@
           "test": "dev/test_purlin_docs.py::test_every_relative_link_on_the_docs_pages_names_a_file_and_a_heading"
         },
         {
+          "carried": {
+            "at": "2026-10-05T13:24:28Z",
+            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-21",
           "manual": false,
@@ -30,6 +42,12 @@
           "test": "dev/test_purlin_docs.py::test_the_audit_page_cites_the_five_papers_each_as_an_https_link"
         },
         {
+          "carried": {
+            "at": "2026-10-05T13:24:28Z",
+            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-22",
           "manual": false,
@@ -38,6 +56,12 @@
           "test": "dev/test_purlin_docs.py::test_every_link_of_the_audit_page_appears_again_under_sources"
         },
         {
+          "carried": {
+            "at": "2026-10-05T13:24:28Z",
+            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-24",
           "manual": false,
@@ -46,6 +70,12 @@
           "test": "dev/test_purlin_docs.py::test_one_paragraph_of_working_together_names_a_worktree"
         },
         {
+          "carried": {
+            "at": "2026-10-05T13:24:28Z",
+            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-25",
           "manual": false,
@@ -54,6 +84,12 @@
           "test": "dev/test_purlin_docs.py::test_the_audit_page_says_what_to_do_with_a_finding_after_how_it_works"
         },
         {
+          "carried": {
+            "at": "2026-10-05T13:24:28Z",
+            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-26",
           "manual": false,
