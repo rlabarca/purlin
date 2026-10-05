@@ -2,8 +2,8 @@
   "feature": "evidence",
   "platforms": {
     "windows": {
-      "at": "2026-10-05T17:25:01Z",
-      "commit": "572679b298d96e95848047a5fa1a8bf9fcb76958",
+      "at": "2026-10-05T18:05:31Z",
+      "commit": "ace18da3b7297c71a8f52d8f00cf662f1f66b649",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -14,12 +14,6 @@
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-05T17:25:01Z",
-            "commit": "0fe3708d5da0064845e46d8e745cea14430d0d93",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-71",
           "manual": false,
@@ -28,12 +22,6 @@
           "test": "dev/test_fingerprint.py::test_a_crlf_checkout_takes_the_code_part_of_the_commit"
         },
         {
-          "carried": {
-            "at": "2026-10-05T17:25:01Z",
-            "commit": "0fe3708d5da0064845e46d8e745cea14430d0d93",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-84",
           "manual": false,
@@ -42,12 +30,6 @@
           "test": "dev/test_fingerprint.py::test_an_anchors_code_part_is_the_blob_ids_the_commit_holds"
         },
         {
-          "carried": {
-            "at": "2026-10-05T17:25:01Z",
-            "commit": "0fe3708d5da0064845e46d8e745cea14430d0d93",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-75",
           "manual": false,

@@ -2,17 +2,25 @@
   "feature": "run_script",
   "platforms": {
     "windows": {
-      "at": "2026-10-05T17:25:02Z",
-      "commit": "0fe3708d5da0064845e46d8e745cea14430d0d93",
+      "at": "2026-10-05T18:05:31Z",
+      "commit": "ace18da3b7297c71a8f52d8f00cf662f1f66b649",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
         "code": "d9d157140fa076e224606149574766fd541d15bfddb5a9a7b7b834383bd7b207",
-        "spec": "c77fb340950aa1b9f8664f199085c09912c9681af1aaac63d6bef873ffe2ea68",
-        "tests": "10a4f8781c0bae2ece97c8d2f1289fe69bd0464cf644157c13abc2194a619c51"
+        "spec": "f31a247bdbdde6b0b766957b335f8600d26a89cdc0a46f6db2d464f9870d1372",
+        "tests": "e6f0cd92f89ff0bee04af4bbc0be55ca87d65d236447401c08cf3da0c669ec7d"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
+        {
+          "env": "windows",
+          "id": "PROOF-326",
+          "manual": false,
+          "result": "pass",
+          "rule": "RULE-63",
+          "test": "dev/test_run_script.py::TestNoTestCommand::test_a_windows_machine_is_suggested_the_launcher"
+        },
         {
           "env": "windows",
           "id": "PROOF-229",
@@ -23,7 +31,8 @@
         }
       ],
       "rules": {
-        "RULE-39": "passed"
+        "RULE-39": "passed",
+        "RULE-63": "passed"
       },
       "runner": "41898282-github-actions-bot"
     }
