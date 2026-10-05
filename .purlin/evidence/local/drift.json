@@ -34,7 +34,7 @@
         "verdict": "strong"
       },
       "RULE-10": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-05T18:47:59Z",
         "bugs": {
           "PROOF-17": {
             "after": "            row['remote_sha'] = result['remote_sha'][:8]",
@@ -62,35 +62,25 @@
             "after": "        return {'error': url[:200]}",
             "aim": "past the test",
             "before": "        return {'error': ' '.join(result.stderr.split())[:200]}",
-            "bug_key": "74b618b4b59860aeb09a4727acb4bf2263cbee8797add98793ea29e1d4c85a6f",
+            "bug_key": "223ece91915a95d94ffdfdafae348706ff9ad5a483094e689f2475791ce47923",
             "case": "the anchor policy pinned to a path with no repository; the proof says the row and the line hold a reason naming that path; the changed code gives the bare path alone, with none of git's message saying why it could not be read",
             "file": "scripts/mcp/purlin/drift.py",
             "line": 199,
-            "result": "survived",
-            "test_key": "1778974b0690480830aaeb203ecac85f07a75638710cd1a6b3a789e1a10d0856",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "67c84358808275836365042584ad0fb9bda06b20",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-17: the test builds a real source, advances it, and compares the row count, the anchor's name, the status, the 7-character sha and the whole line against shas taken from the repository itself, so each result the proof names is checked.",
-          "PROOF-19: the test compares the whole row with a literal, the line with a literal, and the processes handed the source with an empty list; that last check rests on the helpers `_one_anchor` and `_handed`, whose source is not shown, so what they record cannot be read here.",
-          "PROOF-40: the test checks the status, that the row has no sha, and that the path appears in the row's reason, but it builds the expected line from the row's own reason, so any reason text that contains the path passes.",
-          "PROOF-40: the proof names the reason only as `<the reason>`, with no literal wording, so the test has no value from the proof to compare the reason against.",
-          "The spot tests found nothing, and each test holds failable assertions on literal values or on values taken from the source repository."
-        ],
-        "findings": [
-          "PROOF-40: the test still passes when scripts/mcp/purlin/drift.py:199 reads \"return {'error': url[:200]}\"",
-          "PROOF-40: the AI says this breaks: the anchor policy pinned to a path with no repository; the proof says the row and the line hold a reason naming that path; the changed code gives the bare path alone, with none of git's message saying why it could not be read"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "68348edfd84d928dad9beda10b745f38e80665ccb624c2c996cf06dad89a4c44",
         "rule_hash": "a2a61cb6332a982d73711b5652ebcc1e83f151c39a6834efb05eaa9ce9c8e75f",
-        "test_hash": "7c60bc280a6a938b261ae95c89c3badf38d982dab012068f086002a9152b8faf",
-        "verdict": "weak"
+        "test_hash": "39f6ce45bbf8f2a45dcf793fc12821a7804ae6c28919b72a1dc6df850cc413a4",
+        "verdict": "strong"
       },
       "RULE-11": {
         "at": "2026-10-05T18:42:48Z",
@@ -323,40 +313,31 @@
         "verdict": "strong"
       },
       "RULE-32": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-05T18:47:59Z",
         "bugs": {
           "PROOF-73": {
             "after": "            return _plural((seconds - 60) // size, word)",
             "aim": "past the test",
             "before": "            return _plural(seconds // size, word)",
-            "bug_key": "a60ed01e74076819458d09a17a0225fae8f351d39614ab0ea47d3e720c331173",
+            "bug_key": "3f7693726e512b45d7ba8257a9a45b56a31dfdf711a5b1c335ef91a15ca3e5a9",
             "case": "`login` writes `PROOF-4` twice and origin/main was last updated exactly three days ago (259200 seconds); the proof says `origin/main was last fetched 3 days ago, ...`; the changed code gives `origin/main was last fetched 2 days ago, ...`",
             "file": "scripts/mcp/purlin/drift.py",
             "line": 679,
-            "result": "survived",
-            "test_key": "6046ef1a95396215f5a9b04af826ad85adf1dc8189c7c591a6094e5e4e565bc6",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "67c84358808275836365042584ad0fb9bda06b20",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-73: the test sets origin/main's own log to three days and 120 seconds ago, runs drift on a checkout that writes a number twice, and looks for the whole sentence the proof names among the view's lines, so a wrong ref, a wrong count, a wrong unit or a missing line fails it.",
-          "PROOF-73: the test also reads the view's default branch as `origin/main`, which the proof's sentence already implies.",
-          "PROOF-73: the age the test sets is 120 seconds past three whole days, so a count that is wrong only within the first minute or two after a whole day, such as an age of exactly three days read as `2 days`, still passes.",
-          "PROOF-73: the spot tests found nothing, and the test does assert a literal taken from the proof, not a value from the code."
-        ],
-        "findings": [
-          "PROOF-73: the test still passes when scripts/mcp/purlin/drift.py:679 reads \"return _plural((seconds - 60) // size, word)\"",
-          "PROOF-73: the AI says this breaks: `login` writes `PROOF-4` twice and origin/main was last updated exactly three days ago (259200 seconds); the proof says `origin/main was last fetched 3 days ago, ...`; the changed code gives `origin/main was last fetched 2 days ago, ...`"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "322c143c9e72e44452a18aa09bdb5f7cea7d40d66e2f3d56513ef2c1fb65283d",
         "rule_hash": "e33999b0531d99f973cdc4b984356885777aa96eddc63a0dc6b202ea54f38bb3",
-        "test_hash": "9124c6ff4ae99cb0e1f5f54c9b650c5fa06d8979c11608a05d51b7c7775d7945",
-        "verdict": "weak"
+        "test_hash": "829cf2613ff0578d0d53391902f61d1f4490953126965e09c7634bf37f56e66e",
+        "verdict": "strong"
       },
       "RULE-33": {
         "at": "2026-10-05T18:42:48Z",
@@ -503,18 +484,17 @@
         "verdict": "strong"
       },
       "RULE-40": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-05T18:47:59Z",
         "bugs": {
           "PROOF-58": {
             "after": "    if problem:\n        return problem + '\\n'",
             "aim": "past the test",
             "before": "    if problem:\n        return problem",
-            "bug_key": "2561a40fb0bf951b59aeab254341c6524401219e1392f2f860945efb16040732",
+            "bug_key": "adc3a2757cb26554eed296dfd4059ff52b778324af0ffc5a67d5d969290a9c86",
             "case": "config.json holds a comma after its last setting; the proof says the whole answer is the sentence ending `nothing was saved.`; the changed code gives that sentence followed by a line break",
             "file": "scripts/mcp/purlin/drift.py",
             "line": 920,
-            "result": "survived",
-            "test_key": "8bfd736be4fe52bc5618fd2f884e32f874dadd0f9f0fd9250617b5c40f21432e",
+            "result": "caught",
             "why": ""
           },
           "PROOF-61": {
@@ -530,25 +510,16 @@
           }
         },
         "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "67c84358808275836365042584ad0fb9bda06b20",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-58: the test writes a config with a trailing comma, matches the answer against the proof's sentence from its first character with any reader message and any line number, and compares the spied process calls with an empty list.",
-          "PROOF-58: the pattern ends in `$`, which also matches just before a final line break, so an answer with a line break after `nothing was saved.` still passes and the answer is not shown to be the sentence alone.",
-          "PROOF-58: the reader's message is checked only for holding `comma` or `property name`, which the proof leaves open as the JSON reader's own message.",
-          "PROOF-61: the test makes a repository with `git init` and no commit and compares the whole answer with the error `no commits` and the reason the proof names, so any other error or reason fails it.",
-          "PROOF-61: the test does not observe whether any process starts beyond reading git, which the rule states and this proof does not name."
-        ],
-        "findings": [
-          "PROOF-58: the test still passes when scripts/mcp/purlin/drift.py:920 reads \"return problem + '\\n'\"",
-          "PROOF-58: the AI says this breaks: config.json holds a comma after its last setting; the proof says the whole answer is the sentence ending `nothing was saved.`; the changed code gives that sentence followed by a line break"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "1759d5e602631ce3d6e176e4dd33a5c7eea4358169684ba980bd5e0cbdc6aefb",
         "rule_hash": "2dd1bae9c50ec735c563fafdd487826b8e131397d2992b5b0be50438902702f7",
-        "test_hash": "0ab08d7dad495147ec1b244038bb8158ee2365bccf95d2b9e3cd368dd63237bd",
-        "verdict": "weak"
+        "test_hash": "9f1e175ffd68f5f9c8b3710e507d47008e93685799b322f56c8e838ad9de2c64",
+        "verdict": "strong"
       },
       "RULE-41": {
         "at": "2026-10-05T18:42:48Z",
@@ -818,14 +789,14 @@
   "feature": "drift",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T18:16:20Z",
-      "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+      "at": "2026-10-05T18:47:44Z",
+      "commit": "67c84358808275836365042584ad0fb9bda06b20",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
         "spec": "c735e3d720c2d8dafc2cc75f3d617f0eac7a5d3b915da5e260c2ab603431799c",
-        "tests": "1fe401843efbb399040445f921e4de6d80c256ba4a96a9645088de01e55dda9e"
+        "tests": "496f5a9622affde8de82d1d08a2bf7fb681701183204980f1d79996f72219566"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
