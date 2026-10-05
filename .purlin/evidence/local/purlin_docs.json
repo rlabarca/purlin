@@ -2,41 +2,31 @@
   "audit": {
     "rules": {
       "RULE-12": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-05T18:47:45Z",
         "bugs": {
           "PROOF-17": {
             "after": "Nothing waits on it. [audit.md](Audit.md) says what it checks and why.",
             "aim": "past the test",
             "before": "Nothing waits on it. [audit.md](audit.md) says what it checks and why.",
-            "bug_key": "ae70f68fdbf4b863046282451b625cf615dc762dbc1c1c61fb479c2f4cdee303",
+            "bug_key": "34c8e65b97a65125d3f7e8560a897960d1c26b4747a39cb086538cc669b3fccb",
             "case": "the link to the audit guide on docs/getting-started.md, followed from docs/; the proof says it names a file the repository holds; the changed page links to Audit.md, and the repository holds only audit.md",
             "file": "docs/getting-started.md",
             "line": 260,
-            "result": "survived",
-            "test_key": "7956b89b24db5275dd7e8a19923b5f120b308f827f74a513c869984cbd9a16cb",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "1004e4b483f03e56407fdec8c8f52095bd2cbb9ab9c902c657fb307438b5f2c0",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "28ea2ca723e53146153f609098e5c8d838f200a9",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-17: the test collects every page under `docs/`, requires at least 9 pages and 40 relative links, and asserts that the list of broken links across all of them is empty, which is the proof's case and its result.",
-          "PROOF-17: the test also feeds four made-up links from `docs/index.md` and expects exactly the missing file and the missing heading to be reported, so a helper that reports nothing would fail.",
-          "PROOF-17: the helper that decides whether a file is held is not shown; if it asks the file system rather than git, a link differing only in letter case passes on a case-insensitive disk, though the repository holds no file of that name.",
-          "PROOF-17: the made-up links never test a wrong-case file name, an image link or a heading with punctuation, so how the helper spells those anchors is seen only through the real pages.",
-          "PROOF-17: the proof names no failure case in its own words; the refusals the test checks come from the test alone."
-        ],
-        "findings": [
-          "PROOF-17: the test still passes when docs/getting-started.md:260 reads \"Nothing waits on it. [audit.md](Audit.md) says what it checks and why.\"",
-          "PROOF-17: the AI says this breaks: the link to the audit guide on docs/getting-started.md, followed from docs/; the proof says it names a file the repository holds; the changed page links to Audit.md, and the repository holds only audit.md"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "a3b2f36f8a51804569000e8750f4430db74f577c977f01e0dd73d14afb401ae6",
         "rule_hash": "ce5d0cd5d0bb23c40996cee62bec0d025708d428393fb11bfdc8a459f5aa2e98",
-        "test_hash": "3b87f7824d9e2b4c0248328433352fcf03de2dd756d48f8a9c67be64bea4c9eb",
-        "verdict": "weak"
+        "test_hash": "906044041cf11ca73d40561fddb29acc81fa68f86029897c481fce75db434bec",
+        "verdict": "strong"
       },
       "RULE-15": {
         "at": "2026-10-05T18:42:48Z",
@@ -86,124 +76,99 @@
         "verdict": "strong"
       },
       "RULE-16": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-05T18:47:45Z",
         "bugs": {
           "PROOF-24": {
             "after": "Each checkout of a repository, a worktree included, lacks its own results, its own status and its own dashboard. Nothing is shared until the work is merged. After you merge work from a worktree, run `purlin:status` in the main checkout: that brings its status and dashboard up to date.",
             "aim": "past the test",
             "before": "Each checkout of a repository, a worktree included, has its own results, its own status and its own dashboard. Nothing is shared until the work is merged. After you merge work from a worktree, run `purlin:status` in the main checkout: that brings its status and dashboard up to date.",
-            "bug_key": "5309280a2cffffd1f1dbf129f29512afe8431768455ed00dd72982172a3bb815",
+            "bug_key": "895894f8518758db8cf193f46d110bafe6e93ef20904c6e4c4f1a5d50cb1e78d",
             "case": "the one paragraph of docs/working-together.md that names a worktree; the proof says it says each checkout has its own results and its own dashboard; the changed paragraph says each checkout lacks its own results and its own dashboard",
             "file": "docs/working-together.md",
             "line": 160,
-            "result": "survived",
-            "test_key": "d3cee43075b7bcc26058ebccda9c26db56865f197a47ab6cd3dd782e4f244e92",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "1004e4b483f03e56407fdec8c8f52095bd2cbb9ab9c902c657fb307438b5f2c0",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "28ea2ca723e53146153f609098e5c8d838f200a9",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-24: the test counts the paragraphs holding `worktree` and requires exactly 1, so a second paragraph naming a worktree, or none, fails it.",
-          "PROOF-24: the test looks in that paragraph for the phrases `Each checkout`, `its own results`, `its own dashboard`, `merge` and `purlin:status` as separate pieces of text, and reads nothing of the words that join them, so a sentence that denies each checkout its own results and dashboard still passes.",
-          "PROOF-24: the spot tests found nothing, which holds, since every phrase the test looks for is a literal the code under test cannot influence and each check can fail."
-        ],
-        "findings": [
-          "PROOF-24: the test still passes when docs/working-together.md:160 reads \"Each checkout of a repository, a worktree included, lacks its own results, its own status and its own dashboard. Nothing is shared until the work is merged. After you merge work from a worktree, run `purlin:status` in the main checkout: that brings its status and dashboard up to date.\"",
-          "PROOF-24: the AI says this breaks: the one paragraph of docs/working-together.md that names a worktree; the proof says it says each checkout has its own results and its own dashboard; the changed paragraph says each checkout lacks its own results and its own dashboard"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "f0e44dedf54ad79e979a9753e1ed9dd65b61b6271a7ff57a265a6fd855d56fb0",
         "rule_hash": "1f3f502cd01fce46fb61442e9e0e4206945004ba4eff4951f20dcbf3def99ac0",
-        "test_hash": "a5158e9ff919ac3791995568f6f2353b1c621034157bc70da2dbd2aed43fac7b",
-        "verdict": "weak"
+        "test_hash": "6ccf7ed7b0ec01847691d07c8e6903ba6e14694907087d0c8e740dad39e8fb39",
+        "verdict": "strong"
       },
       "RULE-17": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-05T18:47:45Z",
         "bugs": {
           "PROOF-25": {
             "after": "* Auditing again does not clear a finding. If the code changes and the test does not,",
             "aim": "past the test",
             "before": "Auditing again does not clear a finding. If the code changes and the test does not,",
-            "bug_key": "2fd3c993de0f086147de9d5214a67e2651b0aaadf1729d29cda898d9ff54fcf9",
+            "bug_key": "0394e933609e9d01c038faccf9c258d1fdc46ce47bfacf5c89335c298b0c13e6",
             "case": "the part under `What to do with a finding` in docs/audit.md; the proof says exactly 6 bullets; the changed page holds 7, the seventh written with a `*` marker",
             "file": "docs/audit.md",
             "line": 61,
-            "result": "survived",
-            "test_key": "472143e28bfccef73e0de854c487e55a6ec822143271ae2419451679fca081e5",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "1004e4b483f03e56407fdec8c8f52095bd2cbb9ab9c902c657fb307438b5f2c0",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "28ea2ca723e53146153f609098e5c8d838f200a9",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-25: the test reads the page's headings and compares the one after `How it works` with `What to do with a finding`, which is the order the proof names.",
-          "PROOF-25: the test counts the part's bullets through a helper whose source is not shown and compares the count with 6, so a bullet the helper does not recognise, such as one written with `*`, would not be counted.",
-          "PROOF-25: the test looks for `purlin:build`, `strong` and `spot-checked` anywhere in the part, so the two paragraphs after the bullets satisfy it for `strong` and `spot-checked` even if no bullet names them.",
-          "PROOF-25: the spot tests found nothing, and that holds on the text shown: the test asserts on literals the proof names and replaces nothing."
-        ],
-        "findings": [
-          "PROOF-25: the test still passes when docs/audit.md:61 reads \"* Auditing again does not clear a finding. If the code changes and the test does not,\"",
-          "PROOF-25: the AI says this breaks: the part under `What to do with a finding` in docs/audit.md; the proof says exactly 6 bullets; the changed page holds 7, the seventh written with a `*` marker"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "b3845bf19f9ae3c3704dadb40d07a6de94cd5e9c810623617d6c13aa19b015d0",
         "rule_hash": "18624330ceb13d4e6f959c601624a56f0ed98507b11ea23e96ab9cfa677d8fb1",
-        "test_hash": "2048c647673888210627f6beec6037f8527b9c3a7371d7a73b0ca4b34001d7af",
-        "verdict": "weak"
+        "test_hash": "814d6d7800ed7b8098ffc463ef0a2b604988fe9c839d24ac2c6aee1e6c057f38",
+        "verdict": "strong"
       },
       "RULE-18": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-05T18:47:45Z",
         "bugs": {
           "PROOF-26": {
             "after": "        run: git clone --depth 1 --branch signed/0.10.0 https://github.com/rlabarca/purlin \"$RUNNER_TEMP/purlin\" || git clone --depth 1 -b main https://github.com/rlabarca/purlin \"$RUNNER_TEMP/purlin\"",
             "aim": "past the test",
             "before": "        run: git clone --depth 1 --branch signed/0.10.0 https://github.com/rlabarca/purlin \"$RUNNER_TEMP/purlin\"",
-            "bug_key": "4be394b16fbd5d2d8fba14eade6f41ddf78ccf840463c79baa4209711d357212",
+            "bug_key": "e9aec9337237759d76fe0b2aa0c94c2cb3588356e411e45d136032008db26dbf",
             "case": "the clones of the purlin repository on docs/running-and-evidence.md that name a branch; the proof says exactly 1, naming `signed/` plus the `VERSION` content; the changed page holds 2, the second naming `main` with `-b`",
             "file": "docs/running-and-evidence.md",
             "line": 635,
-            "result": "survived",
-            "test_key": "817baf6698aa5cc3eb8e6657396791b5a0c467be5d9452183a3cc9db65219db9",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "1004e4b483f03e56407fdec8c8f52095bd2cbb9ab9c902c657fb307438b5f2c0",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "28ea2ca723e53146153f609098e5c8d838f200a9",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-26: the test reads the `VERSION` file, collects every branch written as `--branch <name>` on a `git clone` line that also holds `/purlin`, and compares the whole list with the one value `signed/` plus the version, so a wrong tag or a second `--branch` clone fails it.",
-          "PROOF-26: the test counts only a branch spelled `--branch` followed by a space, so a clone that names its branch with `-b` or `--branch=` is not counted and a second such clone still passes.",
-          "PROOF-26: the test's `/purlin` also matches the folder the clone is written to, so a clone of another repository into a folder named `purlin` would be counted as a clone of the purlin repository."
-        ],
-        "findings": [
-          "PROOF-26: the test still passes when docs/running-and-evidence.md:635 reads \"run: git clone --depth 1 --branch signed/0.10.0 https://github.com/rlabarca/purlin \"$RUNNER_TEMP/purlin\" || git clone --depth 1 -b main https://github.com/rlabarca/purlin \"$RUNNER_TEMP/purlin\"\"",
-          "PROOF-26: the AI says this breaks: the clones of the purlin repository on docs/running-and-evidence.md that name a branch; the proof says exactly 1, naming `signed/` plus the `VERSION` content; the changed page holds 2, the second naming `main` with `-b`"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "d75f07512091ddaacd81b40b67d529c54a59cfdfa4aec7f49f57be57a4f00e69",
         "rule_hash": "6778b6cf1d3d4a498737621b2f6676109f96f91b6877fef7e230ca6188771600",
-        "test_hash": "d1332259d69c4ed70dd95c03e85c3f49f55354daeb399378f8d401de681206c5",
-        "verdict": "weak"
+        "test_hash": "7f49b1d78448ea2e6f20285f33701b42badeb5d6e7df7c288e8bb97edd3edbb6",
+        "verdict": "strong"
       }
     }
   },
   "feature": "purlin_docs",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T18:16:21Z",
-      "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+      "at": "2026-10-05T18:47:33Z",
+      "commit": "28ea2ca723e53146153f609098e5c8d838f200a9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "1004e4b483f03e56407fdec8c8f52095bd2cbb9ab9c902c657fb307438b5f2c0",
         "spec": "b55a6ea3adec6f43c9f344ce7f2d82560adb591c1966e3f02e4699306fcf84ab",
-        "tests": "be7aae6197d0f906193a76f17626602c44a3c673f121327d6df198f59ad517da"
+        "tests": "ff762b4aa97f6cd6dd788a04958d6972f1921754837a37fd57be7b8ec0f8da03"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
