@@ -148,7 +148,12 @@ class TestWriting:
     def test_a_write_creates_the_settings_file_when_absent(self, project):
         assert _purlin_files(project) == []
         update_config(project, "new", True)
-        assert _read(project) == {"new": True}
+        assert _purlin_files(project) == ['config.json']
+        held = _read(project)
+        assert held == {"new": True}
+        # `true`, the JSON word: 1 equals True in Python and is not it.
+        assert held["new"] is True
+        assert _read_bytes(project) == b'{\n  "new": true\n}\n'
 
 
 def _hold_open(path):
@@ -177,6 +182,8 @@ class TestAtomicWrite:
             with pytest.raises(OSError, match='^the move failed$'):
                 update_config(project, "key", "other")
         assert _read(project) == {"key": "val"}
+        # The bytes: exactly what the file held, with nothing added after it.
+        assert _read_bytes(project) == b'{"key": "val"}'
         assert _purlin_files(project) == ['config.json']
 
     # purlin: config_engine PROOF-39
@@ -211,6 +218,8 @@ class TestAtomicWrite:
                 update_config(project, "key", "other")
         assert stopped.value.strerror == 'No space left on device'
         assert _read(project) == {"key": "val"}
+        # The bytes: exactly what the file held, with nothing added after it.
+        assert _read_bytes(project) == b'{"key": "val"}'
         assert _purlin_files(project) == ['config.json']
 
 
