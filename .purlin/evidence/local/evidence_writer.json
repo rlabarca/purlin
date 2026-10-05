@@ -313,18 +313,17 @@
         "verdict": "strong"
       },
       "RULE-19": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-05T14:37:04Z",
         "bugs": {
           "PROOF-49": {
             "after": "    if not (listed or '').strip():\n        print(WORK_COMMITTED % head[:7], file=sys.stderr)\n        return head",
             "aim": "past the test",
             "before": "    if not (listed or '').strip():\n        return head",
-            "bug_key": "ea5562684aad5132c55d8db7c99445d481684f77afc73047748270c434c75e31",
+            "bug_key": "cd2f2e5a97769cc681d35d2cc1009a89684f9022431eaeeceea22e851a5907e4",
             "case": "the specs, tests and settings of a run over `feat` all committed, then the run's work is committed; the proof says it prints nothing; the changed code prints `Committed <sha7>, the work these results describe:` to standard error",
             "file": "scripts/run/evidence.py",
             "line": 722,
-            "result": "survived",
-            "test_key": "dd6fd89a1a7f39643e6b743c0f10d8896d6de3c2f8f1f2cdc60b51e162f41d28",
+            "result": "caught",
             "why": ""
           },
           "PROOF-50": {
@@ -353,41 +352,25 @@
             "after": "            '-m', ' '.join(features)]",
             "aim": "past the test",
             "before": "            '-m', '\\n'.join(features)]",
-            "bug_key": "ca104b82dcf0be7a0c4b89a2271f6fd724831796fbfe863ae0c07c75b1c4f66f",
+            "bug_key": "a885cfd3d58ce68760019b5866fd51878a85f22a987a4635d570bd131f7806b2",
             "case": "the specs `f1` to `f6` edited and not committed, then `--all --test --commit`; the proof says the commit's body is the six lines `f1` to `f6`; the changed code gives a body of one line, `f1 f2 f3 f4 f5 f6`",
             "file": "scripts/run/evidence.py",
             "line": 745,
-            "result": "survived",
-            "test_key": "774581f488327f6a3596e91da2c716d949bb40fb901055f51368c868568b7b39",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-50: the test runs `--all --test --commit` over an edited spec and compares both commit subjects, the `Committed <sha7>` line and the line after it with the values the proof names, so it observes each result of the case.",
-          "PROOF-50: the test reads only the one line after the `Committed` line, so a second file printed below `  specs/a/feat.md` would still pass.",
-          "PROOF-49: the test calls the commit step directly rather than a run, and compares the returned sha, HEAD and the evidence commit's subject with the HEAD taken before, which is what the proof names.",
-          "PROOF-49: the test reads standard output alone for \"prints nothing\", so a line written to standard error still passes.",
-          "PROOF-98: the test compares the work commit's file list with `specs/a/feat.md` alone, looks for ` M src/other.py` in `git status` and reads the section's `dirty` as true, so all three results of the proof are observed.",
-          "PROOF-99: the test compares the work commit's subject with `purlin: specs, tests and settings for 6 features` exactly.",
-          "PROOF-99: the test splits the body on any whitespace before comparing it with `f1` to `f6`, so it sees the six names and their order but not that each stands on a line of its own.",
-          "No test of the rule reads the author of the work commit, so \"under the person's own git identity\" is not observed, and no proof names it.",
-          "No proof names the case of two to five features, whose subject joins the names with commas."
-        ],
-        "findings": [
-          "PROOF-49: the test still passes when scripts/run/evidence.py:722 reads \"print(WORK_COMMITTED % head[:7], file=sys.stderr)\"",
-          "PROOF-49: the AI says this breaks: the specs, tests and settings of a run over `feat` all committed, then the run's work is committed; the proof says it prints nothing; the changed code prints `Committed <sha7>, the work these results describe:` to standard error",
-          "PROOF-99: the test still passes when scripts/run/evidence.py:745 reads \"'-m', ' '.join(features)]\"",
-          "PROOF-99: the AI says this breaks: the specs `f1` to `f6` edited and not committed, then `--all --test --commit`; the proof says the commit's body is the six lines `f1` to `f6`; the changed code gives a body of one line, `f1 f2 f3 f4 f5 f6`"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "624ac59c48921c0fbadc51942358f9e8dae3a743c40aeab949ea8f7413676a15",
         "rule_hash": "f50140de41c134f41fd7cde681546590770ecece7ca6dc7ff03400f353fe1673",
-        "test_hash": "097bf32a4d6cac51b111576825bb52742bf7ec73cfba9dc07d0fa129bd3612e5",
-        "verdict": "weak"
+        "test_hash": "53fbf0582f611a8c9a393e7139e3df86ce2bf817bfb9b39600ea2ba38e4f65ca",
+        "verdict": "strong"
       },
       "RULE-2": {
         "at": "2026-10-05T14:32:26Z",
@@ -446,41 +429,31 @@
         "verdict": "strong"
       },
       "RULE-23": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-05T14:37:04Z",
         "bugs": {
           "PROOF-85": {
             "after": "    return 'unknown'",
             "aim": "past the test",
             "before": "    return platform.node() or 'unknown'",
-            "bug_key": "b9d40bc9d5c9bd932b5b94e9f616a370cc5723370c8d7591b3b657f4946e06b5",
+            "bug_key": "d434163347903c90a18143764e7b27c6ff19162bf0eb174dbffca32f55abb4a0",
             "case": "a section resolved to the `build-9` side, then a `--feature feat --test` run; the proof says the rewritten section names this machine; the changed code writes `unknown` as the machine",
             "file": "scripts/run/evidence.py",
             "line": 87,
-            "result": "survived",
-            "test_key": "3cc1952f8dcaf0d7bbfe05899daac85020f397a150420551ff86f3ac126a431d",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-85: the test commits a `build-9` section on one branch and a `build-8` section on the other, sees the merge conflict, resolves it to the `build-9` side and reads `build-9` back from the file before the run, so the proof's starting situation is set up for real.",
-          "PROOF-85: after the `--feature feat --test` run it reads the section's machine and compares it with `writer.local_machine()`, which shows the `build-9` section was replaced.",
-          "PROOF-85: the expected machine name comes from the same function the writer uses to fill the section, so a wrong name from that function still passes; the test never compares the section with the host's name taken from anywhere else.",
-          "PROOF-85: the test reads only the `machine` field after the run, so the rest of the rewritten section (its commit, time, results) is not observed.",
-          "The spot tests found nothing: the test asserts, mocks nothing, and holds the proof's `build-9`, `build-8` and `feat` values."
-        ],
-        "findings": [
-          "PROOF-85: the test still passes when scripts/run/evidence.py:87 reads \"return 'unknown'\"",
-          "PROOF-85: the AI says this breaks: a section resolved to the `build-9` side, then a `--feature feat --test` run; the proof says the rewritten section names this machine; the changed code writes `unknown` as the machine"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "593134e18812f727d69532826ef838a3d6a46d09e9104f09a8ae5586db80e23a",
         "rule_hash": "deccfef49e6472f1400f1998374114d5d34f82212e3a149af9fd35be44510061",
-        "test_hash": "a6f4640eaf26c5384fe195e47326db2a4063fb9f97c05112b76799edbabb0d0e",
-        "verdict": "weak"
+        "test_hash": "ff5b519e2f002dadcbb0d1664a4f9c4e87090ffe0ce482d2b7708ee3f8a97100",
+        "verdict": "strong"
       },
       "RULE-26": {
         "at": "2026-10-05T14:32:26Z",
@@ -936,40 +909,31 @@
         "verdict": "strong"
       },
       "RULE-6": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-05T14:37:04Z",
         "bugs": {
           "PROOF-6": {
             "after": "REMOVED = 'Removed %s: no spec defines %s.json.'",
             "aim": "past the test",
             "before": "REMOVED = 'Removed %s: no spec defines %s.'",
-            "bug_key": "19f55eb1024a3bda485898459048f6d650dce43aa506424d540f7c0ae0dd2d48",
+            "bug_key": "1c48baa9b32312f2948242411518ef61207bb061b746c45f6be5137cdf022a56",
             "case": "evidence for `gone` under local/ and ci/ with only spec `feat`; the proof says each line reads `Removed <path>: no spec defines gone.`; the changed code prints `Removed <path>: no spec defines gone.json.`",
             "file": "scripts/run/evidence.py",
             "line": 70,
-            "result": "survived",
-            "test_key": "0216a91764db35e8a94fca85ee9e6f5cab0c6634fa9f950a8e829f4b8864edc8",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-6: the test runs `--all --test` over a project holding evidence for `gone` in both folders and checks that both files are gone, which is the deletion the proof names.",
-          "PROOF-6: the test checks only that `.purlin/evidence/local/feat.json` exists, so a file written with wrong contents still passes.",
-          "PROOF-6: the test looks for each `Removed` line as a substring of the whole output, so a line carrying extra text after the feature's name still passes.",
-          "PROOF-6: the spot tests found nothing, and the test does assert each value the proof names, so the substring match and the unread contents of `feat.json` are what a failable check here leaves open."
-        ],
-        "findings": [
-          "PROOF-6: the test still passes when scripts/run/evidence.py:70 reads \"REMOVED = 'Removed %s: no spec defines %s.json.'\"",
-          "PROOF-6: the AI says this breaks: evidence for `gone` under local/ and ci/ with only spec `feat`; the proof says each line reads `Removed <path>: no spec defines gone.`; the changed code prints `Removed <path>: no spec defines gone.json.`"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "96a651452d2a4886ccba8181f2ed40f6fb080051db4ba29de54196c6dbdb10d7",
         "rule_hash": "b3d5d04ebb5857cf41bc39667dda1deb1ea475da27b61a1b70854d6196a1cb5d",
-        "test_hash": "b26e039411859c9b21cbca3430b2c25af81c757e24942f6444d2f0c3bb03d2ee",
-        "verdict": "weak"
+        "test_hash": "a4013dccc25192e020b1eed8c290403ead501a0de3863846d70413a9b37e4548",
+        "verdict": "strong"
       },
       "RULE-9": {
         "at": "2026-10-05T14:32:26Z",
@@ -1008,14 +972,14 @@
   "feature": "evidence_writer",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T14:08:28Z",
-      "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+      "at": "2026-10-05T14:36:44Z",
+      "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
         "spec": "c51c5e3ea370b3309a537c4a7541e2f3b80f294ce03cf5ccc67ec5ffb101ea1b",
-        "tests": "36d65bae8a70cec13de660eb7a58f29e5863725632fb528838b54e99674ded11"
+        "tests": "4824a3d74feae68ac42770691aa65c5f9e34baa52f0c7e104d766a06d5999e91"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
