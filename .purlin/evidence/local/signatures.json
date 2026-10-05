@@ -144,18 +144,17 @@
         "verdict": "strong"
       },
       "RULE-106": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-05T14:45:10Z",
         "bugs": {
           "PROOF-214": {
             "after": "              'audit_list_opened': list_opened,\n              'answered': 'sign: %s' % str(given).strip().lower()}",
             "aim": "past the test",
             "before": "              'audit_list_opened': list_opened}",
-            "bug_key": "f5bf886dd62998aad8a02b0a91077ce81fab5ae5d64a615f0f4a5415e1c69625",
+            "bug_key": "9849c10343686aef8e3bbb49948589a9352066d3f47aaf319678efba1100d084",
             "case": "login RULE-2 answered `the lockout page read 401`, the audit's list not opened, then y; the proof says no answer word is recorded; the changed code records `sign: y` under `shown`",
             "file": "scripts/review/sign.py",
             "line": 995,
-            "result": "survived",
-            "test_key": "43583ebec437d61a052fbd8db4b1b6b2828b5207e0ea891f0a04688187c5d1ed",
+            "result": "caught",
             "why": ""
           },
           "PROOF-235": {
@@ -171,25 +170,16 @@
           }
         },
         "code_hash": "6c8a85dfc7b14b801096f49feef3cebfdbb50f8d0407a8a10a228bd77b0bab40",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "commit": "52cb4809d7f5ab869e5e94054a6953e12d394a16",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-214: the test walks with `go on`, the note and `y`, then compares `package_hash` with the fingerprint in the written package, looks for `login RULE-2` among `shown.hand_checks`, checks `audit_list_opened` is false and compares the whole `notes` list with the one typed note.",
-          "PROOF-214: the test's search for an answer word compares each key and each whole value with the five words, so an answer word held inside a longer value still passes.",
-          "PROOF-214: the test reads neither the overview nor the runs under `shown`, which the rule names and no proof does.",
-          "PROOF-235: the test gives an empty line at the hand check, then `y`, and compares the whole `notes` list with one entry whose note is `no note`, which is the case and the value the proof names.",
-          "No spot test fired, and each test asserts on values written to the sign-off file by the walk."
-        ],
-        "findings": [
-          "PROOF-214: the test still passes when scripts/review/sign.py:995 reads \"'audit_list_opened': list_opened,\"",
-          "PROOF-214: the AI says this breaks: login RULE-2 answered `the lockout page read 401`, the audit's list not opened, then y; the proof says no answer word is recorded; the changed code records `sign: y` under `shown`"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "3775159dcf50b87c00f3db600a5984d83b2a8dbe0bd443d811d86a7fe7c84c06",
         "rule_hash": "f415c2a8a31b45494b3118cfd2cc447018c20ec5a7626ca0e226db64791d799e",
-        "test_hash": "1b1a9793899ca2c9d4973e4325f4a8e5e0557abe987c333c2ddc29afecb75019",
-        "verdict": "weak"
+        "test_hash": "1e204bdba8ab80d36480181025161998757b2f87133070ce7db156fa7d173021",
+        "verdict": "strong"
       },
       "RULE-108": {
         "at": "2026-10-05T14:32:26Z",
@@ -535,18 +525,17 @@
         "verdict": "strong"
       },
       "RULE-120": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-05T14:45:10Z",
         "bugs": {
           "PROOF-236": {
             "after": "    _git(project_root, 'commit', '-q', '--allow-empty', '-m', message)\n    add = _git(project_root, 'add', '--', *rels)",
             "aim": "past the test",
             "before": "    add = _git(project_root, 'add', '--', *rels)",
-            "bug_key": "b6d01d24b0e5dd22dbe7ec0006b9e13fe9a871ab4ec7503f58d1e0338a97fa2a",
+            "bug_key": "44209831ccf078504e1973dde5a159c2d85ed48b4a82c036abdfd6613f204d32",
             "case": "quinn.qa@labconnect.example makes the first sign-off of 0.1.0; the proof says one signed commit sign(0.1.0): quinn.qa@labconnect.example; the changed code gives two commits of that name, the first empty and unsigned",
             "file": "scripts/review/sign.py",
             "line": 1071,
-            "result": "survived",
-            "test_key": "ba7a398c84d724c35e2bfaedd71e2529046760a08a784af883e6002c6a81f8ac",
+            "result": "caught",
             "why": ""
           },
           "PROOF-237": {
@@ -562,24 +551,16 @@
           }
         },
         "code_hash": "6c8a85dfc7b14b801096f49feef3cebfdbb50f8d0407a8a10a228bd77b0bab40",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "commit": "52cb4809d7f5ab869e5e94054a6953e12d394a16",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-236: the test reads the newest commit's subject, its SSH signature, the two files it changes, the commit `signed/0.1.0` names and the `Tagged signed/0.1.0 at <sha7>.` line, each against the value the proof names.",
-          "PROOF-236: the test reads only the newest commit and never counts the commits the sign-off made, so a second commit under the same name before it would still pass.",
-          "PROOF-237: the test reads the files Pat's commit changes against the one path the proof names, and the commit `signed/0.1.0` names against Quinn's head taken before Pat signs, so it observes both results the proof names.",
-          "No spot test fired, and none of the tests takes an expected value from the code under test: the paths, the subject and the tag name are literals."
-        ],
-        "findings": [
-          "PROOF-236: the test still passes when scripts/review/sign.py:1071 reads \"_git(project_root, 'commit', '-q', '--allow-empty', '-m', message)\"",
-          "PROOF-236: the AI says this breaks: quinn.qa@labconnect.example makes the first sign-off of 0.1.0; the proof says one signed commit sign(0.1.0): quinn.qa@labconnect.example; the changed code gives two commits of that name, the first empty and unsigned"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "dfec7775462b70c87b8037b11ca53b1a57b151e273775e4ff443d7334e5dd7d3",
         "rule_hash": "7624addcce5b2e3438015344dcb210333ad6e3986eecc2aebcef9b15a8c9eb42",
-        "test_hash": "7d47f15f54b30329998bb362174c7753cffcb2681e769e967cd289477c9182f1",
-        "verdict": "weak"
+        "test_hash": "e867d2a4e3c7fdc1e6f5e5070324e8589d32a4135c59de47cae94dffc3950c26",
+        "verdict": "strong"
       },
       "RULE-121": {
         "at": "2026-10-05T14:32:26Z",
@@ -1445,7 +1426,7 @@
         "verdict": "strong"
       },
       "RULE-139": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-05T14:45:10Z",
         "bugs": {
           "PROOF-284": {
             "after": "AUDIT_JUDGED = '  %s %s   %s'",
@@ -1473,12 +1454,11 @@
             "after": "    ok, said = write_tag(project_root, tag,\n                         tag_message(info['version'], info['package']), info['head'])",
             "aim": "past the test",
             "before": "    ok, said = write_tag(project_root, tag,\n                         tag_message(info['version'], info['package']), at)",
-            "bug_key": "29886d26b10bfd76eaeed89faa6d47102b53b822d88d398114d6e6d2a6ca1f6c",
+            "bug_key": "fa78d9b2cfda30290c3f03b88ffd248fbb224e1915ca77fe8aa420d36e549fbd",
             "case": "login RULE-1 settled with its test unchanged, no hand check, the walk answered list, go on and y; the proof says the signed commit `sign(2.1.0): jane@acme.com` has `signed/2.1.0` on it; the changed code writes `signed/2.1.0` on the commit before it while still printing the sign-off commit's id",
             "file": "scripts/review/sign.py",
             "line": 1141,
-            "result": "survived",
-            "test_key": "efdb2a1ca1974d3f3335075b3c7330afd5c6dddae3f6c6b347b106b5d62f8f48",
+            "result": "caught",
             "why": ""
           },
           "PROOF-287": {
@@ -1505,26 +1485,16 @@
           }
         },
         "code_hash": "6c8a85dfc7b14b801096f49feef3cebfdbb50f8d0407a8a10a228bd77b0bab40",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "commit": "52cb4809d7f5ab869e5e94054a6953e12d394a16",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-284: the test compares the lines printed between the questions with the one settled line and the second question with `go on: `, which is what the proof names.",
-          "PROOF-285: the test compares the printed lines, in order, with the weak finding's line then the settled line, which is what the proof names.",
-          "PROOF-286: the test compares the three questions, the exit code, the commit's subject and the printed `Tagged signed/2.1.0 at` line, and never reads which commit the tag is on or whether the commit carries a signature, so a tag written elsewhere still passes.",
-          "PROOF-287: the test compares the questions asked with the sign question alone and looks for `was settled` in every printed line, which is what the proof names.",
-          "PROOF-288: the test finds the findings line in what `--show` prints, compares the line after it with the settled line and reads the exit code, which is what the proof names.",
-          "Findings: the spot tests found nothing, and every test holds the values its proof marks or builds them from constants of its own file."
-        ],
-        "findings": [
-          "PROOF-286: the test still passes when scripts/review/sign.py:1141 reads \"tag_message(info['version'], info['package']), info['head'])\"",
-          "PROOF-286: the AI says this breaks: login RULE-1 settled with its test unchanged, no hand check, the walk answered list, go on and y; the proof says the signed commit `sign(2.1.0): jane@acme.com` has `signed/2.1.0` on it; the changed code writes `signed/2.1.0` on the commit before it while still printing the sign-off commit's id"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "b2c628ed5656580b36c5591c2f291752646a06e9163366f62b13a00775745b8a",
         "rule_hash": "a239962af2af51907726a12dbacc3f4dad8fd53dd7584e5959ba9324eaf9cdf2",
-        "test_hash": "a89cf575fa5334fa2d242996295290d79f375d63d372d827b5b3e22adade2f5d",
-        "verdict": "weak"
+        "test_hash": "71c3fcf6fc929a12071c8458ef9401e22d28a0e7fe51abdb1d411c07e9610299",
+        "verdict": "strong"
       },
       "RULE-140": {
         "at": "2026-10-05T14:32:26Z",
@@ -1878,14 +1848,14 @@
   "feature": "signatures",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T14:08:28Z",
-      "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+      "at": "2026-10-05T14:44:48Z",
+      "commit": "52cb4809d7f5ab869e5e94054a6953e12d394a16",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "6c8a85dfc7b14b801096f49feef3cebfdbb50f8d0407a8a10a228bd77b0bab40",
         "spec": "b92abb0cc44bf1dc10f6ef9ed583029508c1d61803c4bdc7d9161b25a7125f2b",
-        "tests": "96bfcfa63b57da6916aeb8ff31b46b90b0a9069bd3428d2b6742e33ca03024c5"
+        "tests": "348aea2f9fdc1f4c1b34208819cac693aca96f906cf77a332905c2e3c74c9ff6"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
