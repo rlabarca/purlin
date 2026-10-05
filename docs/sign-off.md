@@ -400,15 +400,12 @@ something to say, and signed the package's fingerprint in one signed commit. The
 evidence itself, filed beside the package.
 
 **A requirement's number** from the regulated system reaches the evidence in the rule's own
-words:
+words. Write the number into the rule, at the end of its sentence, and it travels with the rule
+into the package.
 
-```
-- RULE-3: Lock the account for 15 minutes after 5 consecutive failures (URS-042)
-```
-
-Purlin does nothing with the number. It reaches the package because the rule's words do. So the
-receiving system can trace `URS-042` to the rule, its proofs, its tests, its results and its
-authors, and to the sign-offs over the package that holds them.
+Purlin does nothing else with the number. It reaches the package because the rule's words do. So
+the receiving system can trace the number to the rule, its proofs, its tests, its results and
+its authors, and to the sign-offs over the package that holds them.
 
 **A version is signed on a branch of its own** where the team wants one, such as
 `release/1.2.0`, cut from the default branch once its specs are done. New specs land on the

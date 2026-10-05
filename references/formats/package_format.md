@@ -159,7 +159,7 @@ A feature entry holds exactly these five fields.
 | Field | Type | What it holds |
 |---|---|---|
 | `id` | string | `RULE-N` |
-| `text` | string | the rule's words as the spec has them. A requirement's number written in the words, such as `(URS-042)`, is part of them; Purlin does nothing else with it |
+| `text` | string | the rule's words as the spec has them. A requirement's number written in the words is part of them and travels with the rule into the package; Purlin does nothing else with it |
 | `left` | string or null | the one kind of work the rule waits for, the first that applies in the order of "What is left", or null when it waits for none |
 | `proofs` | array | `{id, text, manual, env}` per proof: `manual` is whether the proof is a hand check (`@manual`), `env` the operating system its `@env` names, or null |
 | `tests` | array | `{proof, file, name}` per test backing a proof, then per test marked with the rule's own id, whose `proof` is then the `RULE-N` |

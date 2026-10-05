@@ -45,24 +45,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      # What each framework needs before its tests run. A project with none of
-      # these files installs nothing and the step is a no-op. A project whose
-      # tests drive a browser through playwright also needs the browser:
-      # `--with-deps` installs the libraries a Linux/Unix runner lacks and does
-      # nothing on Windows and macOS.
-      - name: Set up the test framework
+      # The tests a run starts here are this repository's pytest files. They
+      # import pytest and the standard library alone.
+      - name: Install what the tests need
         shell: bash
-        run: |
-          if [ -f requirements.txt ]; then
-            python3 -m pip install -r requirements.txt
-          fi
-          if [ -f conftest.py ] || [ -f pytest.ini ] || [ -f pyproject.toml ]; then
-            python3 -m pip install pytest
-          fi
-          if python3 -c "import playwright" 2>/dev/null; then
-            python3 -m playwright install --with-deps chromium
-          fi
-          if [ -f package.json ]; then npm ci; fi
+        run: python3 -m pip install pytest
 
       # The commit --commit makes is an ordinary git commit, so it needs a name
       # and an email. The email is also what each result records as who ran it.
