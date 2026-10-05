@@ -155,40 +155,41 @@
         "verdict": "strong"
       },
       "RULE-17": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-05T14:39:44Z",
         "bugs": {
           "PROOF-15": {
-            "after": "        out.append(dict({key: newest.get(key) or None\n                         for key in _CARRIED_KEYS}, proof=proof_id,\n                        at=str(newest.get('at') or '').replace('Z', '+00:00') or None))",
-            "aim": "past the test",
-            "before": "        out.append(dict({key: newest.get(key) or None\n                         for key in _CARRIED_KEYS}, proof=proof_id))",
+            "after": null,
+            "aim": "plain",
+            "before": null,
             "bug_key": "0f1f591d3c09940e3db3baac2a8771128f0dd248ec0ca99686d5482746206f68",
-            "case": "a signed project's package holding a result carried forward from an earlier run; the proof says every non-null `at` reads like `2026-09-13T12:00:00Z` with no offset; the changed code gives `2026-09-13T12:00:00+00:00` under that result's `carried[].at`",
-            "file": "scripts/export/package.py",
-            "line": 551,
-            "result": "survived",
-            "test_key": "aac05e0b038e8aa2f191ef81a9f2906f2393457ccd3f14096be9c1fbbbc949bc",
-            "why": ""
+            "case": "",
+            "file": null,
+            "line": null,
+            "result": "not made",
+            "test_unchanged": true,
+            "why": "two planted bugs left the proof's check passing"
           }
         },
         "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "commit": "edaf258a52c6977da3954720db668cad41b0fedf",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-15: the test walks the whole signed package, collects every non-null value stored under `at`, requires at least `4` of them and requires each to match the `UTC` pattern in full, which is what the proof names.",
-          "PROOF-15: the `UTC` pattern is defined outside the test's own lines, so whether it refuses an offset or a fraction of a second cannot be read from the test shown.",
-          "PROOF-15: the test sees only the times its signed fixture produces, so an `at` the fixture never fills, such as that of a result carried forward from an earlier run, could take a wrong form and the test would still pass.",
-          "PROOF-15: the spot tests found nothing, and the test does hold assertions that can fail, with the count `4` and a full match rather than a check against the code's own output."
+          "PROOF-15: the test walks the whole signed package, collects every non-null value stored under `at`, and requires at least `4` of them, as the proof names.",
+          "PROOF-15: the test requires each collected time to match the `UTC` pattern in full, so an offset, a fraction or a missing `Z` in any time the fixture's package holds would fail it.",
+          "PROOF-15: the `UTC` pattern is defined outside the test's own lines, so whether it holds a time to the second and `Z` exactly as the proof describes is not shown here.",
+          "PROOF-15: the test only sees the kinds of `at` its signed fixture produces, so a time under a carried result or an audit entry goes unchecked if the fixture has none.",
+          "PROOF-15: the rule speaks of every time in the package, while the proof and the test read only times stored under the name `at`, so a time under any other name is not observed."
         ],
-        "findings": [
-          "PROOF-15: the test still passes when scripts/export/package.py:551 reads \"for key in _CARRIED_KEYS}, proof=proof_id,\"",
-          "PROOF-15: the AI says this breaks: a signed project's package holding a result carried forward from an earlier run; the proof says every non-null `at` reads like `2026-09-13T12:00:00Z` with no offset; the changed code gives `2026-09-13T12:00:00+00:00` under that result's `carried[].at`"
-        ],
+        "findings": [],
         "model": "claude-opus-5-5",
-        "no_bug": [],
+        "no_bug": [
+          "No bug was caught for PROOF-15: two planted bugs left the proof's check passing.",
+          "PROOF-15 was settled with its test unchanged: it was judged to assert what the proof names."
+        ],
         "proof_hash": "b0c06b21d84a0e5c9df0240972728758b10358c8116c65997bef1e6c15ba1ddf",
         "rule_hash": "5c754e2c67636fe74ade190d62194ef1beb62623671b504f5c1541f6d0b9d4da",
         "test_hash": "7e371ce9e3bfbbd8116aedb3c31bb1ca87f708f2170ace4c6988362245edbeaf",
-        "verdict": "weak"
+        "verdict": "spot-checked"
       },
       "RULE-2": {
         "at": "2026-10-05T14:32:26Z",
@@ -907,18 +908,17 @@
         "verdict": "strong"
       },
       "RULE-6": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-05T14:39:44Z",
         "bugs": {
           "PROOF-18": {
             "after": "    return ([{'proof': proof.get('id'), 'file': test.get('file'),\n              'name': test.get('file')}",
             "aim": "past the test",
             "before": "    return ([{'proof': proof.get('id'), 'file': test.get('file'),\n              'name': test.get('name')}",
-            "bug_key": "78ccef8c9b41fff541e60505a02027e248191b4294d328be5869bc39f00d2a0b",
+            "bug_key": "8352b09f0e7f767bf8fe530c0dad40def11187ac7a2a4945412481cce723fdb7",
             "case": "a signed project where RULE-3 has no proof and RULE-2 has one; the proof says RULE-2 lists its test, test_a_bad_password_is_denied, under PROOF-2; the changed code lists under PROOF-2 a test named tests/test_login.py",
             "file": "scripts/export/package.py",
             "line": 475,
-            "result": "survived",
-            "test_key": "3c75afa0e6d63e133bfc103e874171734bddac5d5c56dca8951fa99f8f02b6a7",
+            "result": "caught",
             "why": ""
           },
           "PROOF-9": {
@@ -934,24 +934,16 @@
           }
         },
         "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "commit": "edaf258a52c6977da3954720db668cad41b0fedf",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-9: the test compares RULE-2's words, its `left`, its whole proof list and its whole test list with literals, so every value the proof names is checked.",
-          "PROOF-18: the test compares RULE-3's empty proofs, its one test's proof, file and name, and its one result `passed` with literals, so the case of a rule with no proof is checked in full.",
-          "PROOF-18: for RULE-2 the test reads only the proof id of each test, so a wrong file or name on the test listed under PROOF-2 still passes.",
-          "PROOF-18: the `assert True` in the test is the body of a fixture test written into the made project, not a check of the package, and the spot tests found nothing."
-        ],
-        "findings": [
-          "PROOF-18: the test still passes when scripts/export/package.py:475 reads \"'name': test.get('file')}\"",
-          "PROOF-18: the AI says this breaks: a signed project where RULE-3 has no proof and RULE-2 has one; the proof says RULE-2 lists its test, test_a_bad_password_is_denied, under PROOF-2; the changed code lists under PROOF-2 a test named tests/test_login.py"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "c4cf99930284aab2b923e2c961dae6b46b212a97f8531eadf9b797fa028a5c90",
         "rule_hash": "106366b77466ac75882be1f7fcdef44e3a91fad9949d6022f49a2f4282ba8227",
-        "test_hash": "598ce103001bee134d02decab49c45ee225c1c981bd622680744fb3d809baa58",
-        "verdict": "weak"
+        "test_hash": "bb5e9c1f36c40051bd5548a2f6904ba32e87b0363cff3a403a92db1c96c91c5a",
+        "verdict": "strong"
       },
       "RULE-8": {
         "at": "2026-10-05T14:32:26Z",
@@ -1050,14 +1042,14 @@
   "feature": "package",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T14:08:28Z",
-      "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+      "at": "2026-10-05T14:39:01Z",
+      "commit": "edaf258a52c6977da3954720db668cad41b0fedf",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
         "spec": "5efa8cce73ed6ef96d4c3e8205cc97203b34c06668ba1623abfafc6df4140db5",
-        "tests": "b047cfbeadf1b1ab1c055524350a603a3869dda647efc276deb33b4c5d515562"
+        "tests": "c723f65941f4e570960a331b74e680de739b9e94d721804bf9016dbbc3f4ce01"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
