@@ -1,4 +1,4 @@
-# Handoff, 2026-10-03: the goal-seek test, the stale sweep and decision 129
+# Handoff, 2026-10-05: the goal-seek test, the stale sweep and decision 129
 
 Local `main` is green and not pushed. Decisions 100 to 129 are built, with five answers the
 owner gave on 2026-10-03. Nothing is signed or tagged. GitHub holds `main` (far behind local)
@@ -15,7 +15,7 @@ and the two `qa/` branches.
   counts. The run prints `Ran pytest on 3 features and carried 62 forward. purlin:test --clean
   runs every test.` and `Carried the Windows results of 9 features forward.` The status of one
   spec, the dashboard's rule page (`Carried from`, `Mac 4f1c2ab`) and the sign-off's opening
-  say where a result was carried from. The evidence and package formats are at version 15;
+  say where a result was carried from. The evidence and package formats are at version 16;
   `kept` is now `carried`. The refusal and the status say `recorded on this version of the
   code`.
 - **A goal-seek test by a real AI session.** The lab sample with three traps (11 rules, 15
@@ -67,8 +67,8 @@ The audit's results: `The audit found 15 of 569 rules strong (2%): 15 strong, 19
 every earlier result reads `out of date`; `specs` alone keeps its 6 strong. A plain audit of
 the specs brings them current.
 
-Formats: spec 24, anchor 12, marker 5, evidence 15, package 15, signature 16.
-The dashboard's data is schema 16.
+Formats: spec 24, anchor 12, marker 5, evidence 16, package 16, signature 16.
+The dashboard's data is schema 17.
 
 ## Lines a person reads, chosen this round
 
@@ -91,41 +91,45 @@ The dashboard's data is schema 16.
 
 1. **Read the pages this round changed**: `docs/audit.md` ("What to do with a finding", the
    paragraph under its six bullets, and the two new bullets), `docs/running-and-evidence.md`
-   and `docs/sign-off.md` (carried results), `docs/upgrading.md` ("A project this release set
-   up"), and the first ten minutes on the README and `docs/getting-started.md`.
-2. **A finding can still leave with no stronger test**: where the code changed so that the
-   unchanged test now fails with the old bug in place, the bug reads `caught`. The audit page
-   says so.
-3. **No real session has used `--settle --sound` or met the settle's refusal.** The second
-   goal-seek session judged the sound test right and then audited again in place of settling.
-   With the old bug now planted again, that audit would have left the rule `weak` and named
-   `purlin:build`.
+   and `docs/sign-off.md` (carried results, and the requirement number said in words),
+   `docs/upgrading.md` ("A project this release set up"), and the first ten minutes on the
+   README and `docs/getting-started.md`.
+2. **A finding leaves where the unchanged test now fails with the old bug in place**: the bug
+   reads `caught`. The owner kept this on 2026-10-05, and the audit page says so.
+3. **A real session used `--settle --sound`.** A third goal-seek session, on the code with the
+   old bug planted again, left the sound test alone with the build skill's reasoning and ran
+   `--settle RULE-9 --sound PROOF-13`. No session has met the settle's refusal line.
 4. **A session runs the scripts directly** where a skill names `purlin:test` or
    `purlin:audit`, and guesses their options; a wrong guess got the usage line and was
    corrected at once.
 5. **The first run commits the settings file without `--commit`**, after the yes to its
-   question. Where the person gives a command of their own, the test skill tells the agent to
-   make that commit.
-6. **The code's own word for a planted bug is still `break`**: the file
-   `scripts/review/targeted_break.py`, the evidence fields `breaks` and `break_key`, the
-   model's reply line `no break:`. No person reads them.
-7. **`docs/sign-off.md` and the package format use `(URS-042)` as their example**; kept, since
-   tracing a requirement is the point made there.
+   question, which says so. Where the person gives a command of their own, the test skill
+   tells the agent to make that commit.
+6. **The code says planted bug throughout** (the owner's answer of 2026-10-05):
+   `scripts/review/planted_bug.py`, the evidence fields `bugs` and `bug_key`, the model's
+   reply line `no bug:`. This repository's own evidence had its two keys renamed once, by
+   hand. The audit entries it holds still quote the old file name and `no break` in what the
+   last audit recorded; the audit before signing writes them again.
+7. **No page shows an example requirement number.** The sign-off page and the package format
+   say in words that a number written into a rule travels with it. `specs/export/package.md`
+   PROOF-5 and its test still use `(URS-042)` as the value that proves it.
 8. **Left by earlier rounds, unchanged**: a rule can read `strong` while one of its proofs has
    no caught bug; the four rules on how `--settle` is typed read `spot-checked`; a plain
    `purlin:test` reruns a feature whose rule stays `not run`; `evidence_writer` RULE-16's "or
    `unknown`" has no proof; `ai_audit` RULE-56's "until its test or code changes" has no
-   proof; a capitalised `No break:` is not read; a session's status tool keeps the code it
-   loaded when the session started.
-9. **`dev/plans/three-levels.md` still points at plan files deleted in earlier rounds**
-   (`d100-plan.md`, `d115-plan.md`, `d119-plan.md`, `d122-plan.md` and others) and its parts A
-   to C describe a design decisions 23 to 106 replaced. It is the decisions log and was left.
-10. **`.github/workflows/windows.yml`'s setup step** still holds `if [ -f package.json ]; then
-    npm ci; fi`, which this repository has no use for. Not changed, since it runs only on a
-    push.
-11. **The deck is published at version 136**: the `slow`, `signoff`, `remote`, `audit` and
-    `start` slides say what decision 129, the audit and the first run now do. The live deck
-    is changed whenever its source is; nothing waits for a later publish.
+   proof; a session's status tool keeps the code it loaded when the session started.
+9. **`dev/plans/three-levels.md` is the decisions and nothing else**: its three replaced parts
+   and 19 pointers to deleted files are gone. Decision 31 still names
+   `references/hard_gates.md` in its own words.
+10. **The Windows workflow installs pytest alone.** A browser test tagged for Windows would
+    skip there until the browser install is put back.
+11. **The sign-off's preview takes about 15 seconds here**, where it took two minutes: the
+    package asks git its questions eight at a time and blames each test file once.
+12. **The deck is published at version 137.** The live deck is changed whenever its source is;
+    nothing waits for a later publish. Pushing waits for the owner's word.
+13. **The evidence and package schema strings stayed** `purlin-evidence/2` and
+    `purlin-package/4` through the rename, so an evidence file an unreleased build wrote reads
+    as holding no planted bugs, with no warning.
 
 ## What is left
 

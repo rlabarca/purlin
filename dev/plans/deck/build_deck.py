@@ -211,7 +211,7 @@ slide('regulated', 'Regulated work', 'Purlin supplies evidence. It does not clai
  'The package holds, for each rule: its words, its proofs, its tests, each result with when and '
  'where it ran and who ran it, what the audit found and which model was asked, and who wrote each rule '
  'and proof and last changed each test, read from git. Each sign-off records who signed, when, with '
- 'which key, what they were shown and every note they typed. A requirement number such as (URS-042) '
+ 'which key, what they were shown and every note they typed. A requirement number written into a rule '
  'reaches it in the rule\'s own words.', numbers=False)
 slide('manual', 'Judgment calls', 'Pass or fail. What about judgment calls?', [
     ('A proof is pass or fail', 'A test checks an exact result, like the message %s.' % m('Account locked')),
